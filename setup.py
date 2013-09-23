@@ -9,5 +9,5 @@ setup(name='emma2',
 
       package_dir={'' : 'src'}, # all packages are in 'src' folder
       packages=['disc'], # list packages here
-      requires=['Pycluster']
+      requires=['Pycluster'] # example dependency to Pycluster package, which may be used for kmeans etc.
      )
