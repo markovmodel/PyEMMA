@@ -5,6 +5,23 @@
 ###############################################################################################################################################
 
 
+def trajectory(T, length, start='random', stopat=None):
+    """
+        length: the maximal trajectory length. If a list is passed, multiple trajectories are generated and returned as a list
+        start:    'random' random (uniform)
+                starting distribution
+                starting state
+        stopat: state or set of states to stop at
+    """
+
+
+###############################################################################################################################################
+#
+# Eigenvalues and Eigenvectors
+#
+###############################################################################################################################################
+
+
 def timescales(T, tau):
     """
         T: transition matrix
