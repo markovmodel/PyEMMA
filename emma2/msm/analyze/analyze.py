@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 ###############################################################################################################################################
 #
 # Eigenvalues and Eigenvectors
@@ -15,6 +16,7 @@ def statdist(T):
     """
         compute the stationary distribution of T
     """
+    pass
 
 def statdist_sensitivity(T):
     """
