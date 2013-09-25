@@ -32,8 +32,3 @@ def isProbabilisticMatrix(T):
     else:
         raise NotImplemented("only impled for NumPy ndarray type")
 
-def isTransitionMatrix(T):
-    """
-    returns whether T is a transition matrix
-    """
-    return isProbabilisticMatrix(T)
