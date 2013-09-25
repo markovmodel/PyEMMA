@@ -11,6 +11,8 @@ Contents:
 .. toctree::
    :maxdepth: 1
 
+   rest
+
    Tutorial
    Documentation
    Sandbox
