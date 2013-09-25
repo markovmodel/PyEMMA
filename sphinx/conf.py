@@ -25,7 +25,9 @@ sys.path.insert(0, os.path.abspath('..'))
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc']
+extensions = [
+              'sphinx.ext.autodoc',
+              'sphinx.ext.autosummary']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -41,7 +43,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'EMMA'
-copyright = u'2013, Frank Noe'
+copyright = u'2013, CMB group'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -91,7 +93,7 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'default'
+html_theme = 'agogo'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -184,7 +186,7 @@ latex_elements = {
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
   ('index', 'EMMA.tex', u'EMMA Documentation',
-   u'Frank Noe', 'manual'),
+   u'CMB group', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -214,7 +216,7 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'emma', u'EMMA Documentation',
-     [u'Frank Noe'], 1)
+     [u'CMB group'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -228,7 +230,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
   ('index', 'EMMA', u'EMMA Documentation',
-   u'Frank Noe', 'EMMA', 'One line description of project.',
+   u'CMB group', 'EMMA', 'One line description of project.',
    'Miscellaneous'),
 ]
 
