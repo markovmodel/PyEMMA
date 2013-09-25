@@ -5,6 +5,7 @@ Created on 24.09.2013
 '''
 import unittest
 
+from emma2.msm.analyze import *
 
 class Test(unittest.TestCase):
 
@@ -17,7 +18,9 @@ class Test(unittest.TestCase):
         pass
 
 
-    def testName(self):
+    def testCommitorForward(self):
+        committor_forward(T, A, B)
+        self.assertAlmostEqual(first, second, places, msg, delta)
         pass
 
 
