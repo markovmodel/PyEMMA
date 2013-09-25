@@ -4,6 +4,8 @@
 #
 ###############################################################################################################################################
 
+#from emma2.msm.util import isProbabilisticMatrix
+import emma2.msm.util
 
 def is_connected(disc):
     """
@@ -67,6 +69,7 @@ def is_transitionmatrix(T):
     """
         True if T is a transition matrix
     """
+    return emma2.msm.util.isProbabilisticMatrix(T)
 
 def is_rate_matrix(K):
     """
