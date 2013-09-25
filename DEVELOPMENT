@@ -24,13 +24,18 @@ branch. When he is done with his fancy feature (have written at least a working
 test case for it), he pushes this work to his feature branch and merges it to
 the development branch.
 
+1. create a branch from the development branch and switch to it
+git pull # first get the lastest changes
+git checkout development # switch to development branch
 git branch impl_fancy_feature # create new branch
 git checkout impl_fancy_feature # switch to new branch
 
+2. work on the newly created branch
 ... work, create/edit files, commit them to "impl_..." branch
 
 TEST IT! :-)
 
+3. reintegrate your work with the development branch 
 # push your branch to the origin (remote repo) to backup it
 git push origin impl_fancy_feature
 # switch to devel branch 
