@@ -3,7 +3,10 @@ Proposal for development workflow
 
 Basic Idea:
 Use a development branch to work on and reintegrate this periodically into the
-master branch.
+master branch. To develop certain features one should use feature branches,
+which are themselves branched from the development branch. Feature branches
+will be reintegrated into the development branch.
+For releases we merge the development branch into the master branch.
 
 Why:
 * Have a tested, "stable" master branch, which is directly available by cloning.
