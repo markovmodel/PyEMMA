@@ -20,5 +20,5 @@ setup(
                 'emma2.msm.estimate',
                 'emma2.pmm'],
       # requires=['Pycluster']  # example dependency to Pycluster package, which may be used for kmeans etc.
-      #test_suite='test.test_msmanalyze'
+      test_suite='emma2.test.testsuite'
 )
