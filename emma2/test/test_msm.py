@@ -7,7 +7,7 @@ import unittest
 import numpy as np
 from emma2.msm.estimate import *
 
-class TestMSM(unittest.TestCase):
+class _TestMSM(unittest.TestCase):
 
     def test_is_transition_matrix(self):
         """

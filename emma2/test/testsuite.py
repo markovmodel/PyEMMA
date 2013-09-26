@@ -4,7 +4,7 @@ Created on 25.09.2013
 @author: marscher
 '''
 import unittest
-from emma2.test.test_msm import TestMSM
+from emma2.test.test_msm import _TestMSM
 
 class Emma2TestSuite(unittest.TestSuite):
     '''
@@ -16,7 +16,8 @@ class Emma2TestSuite(unittest.TestSuite):
         '''
         Constructor
         '''
-        self.addTest(TestMSM)
+        self.addTest(_TestMSM)
         
 if __name__ == '__main__':
+    print "running test suite with xml runner"
     unittest.main()
