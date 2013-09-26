@@ -10,6 +10,24 @@ def isProbabilisticMatrix(T):
     """
     returns whether T is a probabilistic matrix.
     Only implemented for NumPy array types
+    
+    Parameters :
+    ------------
+    T : ndarray, shape=(N, N)
+        The matrix to test.
+
+    Returns :
+    ---------
+    nonnegative : bool
+        Is T a probabilistic matrix?
+        
+    Examples :
+    ----------
+    >>> import numpy as np
+    >>> A=np.array([[0.4, 0.1, 0.4], [0.2, 0.6, 0.2], [0.3, 0.3, 0.4]])
+    >>> x=isProbabilisticMatrix(A)
+    >>> x
+    False
     """
     if not isinstance(T, np.ndarray):
         raise NotImplemented("only impled for NumPy ndarray type")
@@ -18,7 +36,6 @@ def isProbabilisticMatrix(T):
     if T.shape[0] != T.shape[1]:
         return False
     
-    r = False
     # check that all values lies between [0.0, 1.0]
     r = (T >= 0.0).all() and (T <= 1).all()
     # check row sums

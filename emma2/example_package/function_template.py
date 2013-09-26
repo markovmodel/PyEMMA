@@ -1,3 +1,6 @@
+"""
+    module doc string goes here?
+"""
 from numpy import *
 
 def check_nonnegativity(A):
