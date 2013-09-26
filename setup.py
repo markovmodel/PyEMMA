@@ -16,9 +16,9 @@ setup(
       
       # list packages here
       packages=['emma2',
-                'emma2.msm.analyze',
-                'emma2.msm.estimate',
+                'emma2.msm',
                 'emma2.pmm'],
-      # requires=['Pycluster']  # example dependency to Pycluster package, which may be used for kmeans etc.
+      # runtime dependencies
+      requires=['numpy'],
       test_suite='emma2.test.testsuite'
 )
