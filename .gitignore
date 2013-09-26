@@ -1,5 +1,7 @@
+*.egg
 /.settings
 /.tox
 *.pyc
 *.egg-info
 /temp
+__pycache__
