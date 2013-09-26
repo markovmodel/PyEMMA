@@ -1,3 +1,5 @@
+/.settings
+/.tox
 *.pyc
 *.egg-info
 /temp
