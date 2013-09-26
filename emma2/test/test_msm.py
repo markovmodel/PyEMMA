@@ -5,7 +5,7 @@ Created on 24.09.2013
 '''
 import unittest
 import numpy as np
-import emma2.msm.estimate
+from emma2.msm.estimate import *
 
 class TestMSM(unittest.TestCase):
 
