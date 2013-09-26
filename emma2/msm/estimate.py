@@ -4,8 +4,8 @@
 #
 ###############################################################################################################################################
 
-#from emma2.msm.util import isProbabilisticMatrix
 import emma2.msm.util
+import numpy as np
 
 def is_connected(disc):
     """
@@ -73,8 +73,85 @@ def is_transitionmatrix(T):
 
 def is_rate_matrix(K):
     """
+    Checks nonnegativity of a matrix.
+
+    Matrix A=(a_ij) is nonnegative if 
+
+        a_ij>=0 for all i, j.
+
+    Parameters :
+    ------------
+    A : ndarray, shape=(M, N)
+        The matrix to test.
+
+    Returns :
+    ---------
+    nonnegative : bool
+        The truth value of the nonnegativity test.
+
+    Notes :
+    -------
+    The nonnegativity test is performed using
+    boolean ndarrays.
+
+    Nonnegativity is import for transition matrix estimation.
+
+    Examples :
+    ----------
+    >>> import numpy as np
+    >>> A=np.array([[0.4, 0.1, 0.4], [0.2, 0.6, 0.2], [0.3, 0.3, 0.4]])
+    >>> x=check_nonnegativity(A)
+    >>> x
+    True
+    
+    >>> B=np.array([[1.0, 0.0], [2.0, 3.0]])
+    >>> x=check_nonnegativity(A)
+    >>> x
+    False
+    
+    
         True if K is a rate matrix
+        // check elements
+        for (IDoubleIterator it = K.nonzeroIterator(); it.hasNext(); it.advance())
+        {
+            int i = it.row();
+            int j = it.column();
+            double kij = it.get();
+            if (i == j && kij > 0)
+                return(false);
+            if (i != j && kij < 0)
+                return(false);
+        } 
+        
+        // check row sums
+        for (int i=0; i<K.rows(); i++)
+        {
+            if (Math.abs(Doubles.util.sum(K.viewRow(i))) > 1e-6)
+                return(false);
+        }
+        return(true);
     """
+    if not isinstance(K, np.ndarray):
+        raise NotImplemented("only impled for NumPy ndarray type")
+    
+    diag = np.diag(K)
+    diag.any()
+    
+    # check elements
+    for i in xrange(0, K.shape[0]):
+        for j in xrange(0, K.shape[1]):
+            print K[i][j]
+            if i == j and K[i][j] > 0:
+                return False
+            if i != j and K[i][j] < 0:
+                return False
+    # check row sums
+    for i in xrange(0, K.shape[1]):
+        if abs(K[i].sum()) > 1e-6:
+            return False
+        
+    return True
+        
 
 def is_ergodic(T):
     """
