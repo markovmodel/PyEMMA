@@ -7,8 +7,8 @@
 :Revision: $Revision: 7612 $
 :Description: This is a "docinfo block", or bibliographic field list
 
-.. NOTE:: If you are reading this as HTML, please read
-   `<cheatsheet.txt>`_ instead to see the input syntax examples!
+.. NOTE:: This is the HTML version; click **SHOW SOURCE** (on the bottom of
+   this page) and learn ;)
 
 Section Structure
 =================
