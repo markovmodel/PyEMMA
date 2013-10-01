@@ -8,22 +8,30 @@ from scipy.sparse import issparse
 
 def is_transition_matrix(T, tol=1e-15):
     """
-        True if T is a transition matrix
+    True if T is a transition matrix
+    
+    Parameters
+    ----------
+    T : numpy.ndarray, shape(d, d) or scipy.sparse matrix
+        Matrix to check
+    tol : float
+        tolerance to check with
+    
+    Returns
+    -------
+    Truth value: bool
+        True, if T is positive and normed
+        False, otherwise
+    
     """
     if issparse(T):
         return sparse.assessment._is_stochastic_matrix_impl(T, tol)
     elif isinstance(T, np.ndarray):
         return dense.assessment._is_stochastic_matrix_impl(T, tol)
     else:
-        try:
-            T_ = np.asarray(T, np.float64)
-            return sparse.assessment.is_stochastic_matrix_impl(T_, tol)
-        except:
-            raise TypeError("could not convert input to NumPy NDArray.")
-    
-    raise NotImplementedError("unsupported matrix type") 
+        raise ValueError("unsupported matrix type")
       
-# TODO: Implement in Python directly
+# TODO: martin: Implement in Python directly
 def is_rate_matrix(K, tol=1e-15):
     """
         True if K is a rate matrix
@@ -35,7 +43,7 @@ def is_ergodic(T, tol=1e-15):
         True if T is connected (irreducible) and aperiodic
     """
 
-# TODO: Implement in Python directly
+# TODO: martin: Implement in Python directly
 def is_reversible(T, mu=None, tol=1e-15):
     """
         True if T is a transition matrix
@@ -47,7 +55,7 @@ def is_reversible(T, mu=None, tol=1e-15):
 # Eigenvalues and eigenvectors
 ################################################################################
 
-# TODO: Implement in Python directly
+# TODO: ben: Implement in Python directly
 def mu(T):
     """
         compute the stationary distribution of T
@@ -59,7 +67,7 @@ def mu_sensitivity(T):
         compute the sensitivity matrix of the stationary distribution of T
     """
 
-# TODO: Implement in Python directly
+# TODO: ben: Implement in Python directly
 def statdist(T):
     """
         compute the stationary distribution of T
@@ -83,7 +91,7 @@ def eigenvalues(T, k=None):
     if isinstance(k, (list, set, tuple)):
         try:
             return [eig[n] for n in k]
-        except IndexError as ie:
+        except IndexError:
             raise ValueError("given indices do not exist: ", n)
     elif k != None:
         return eig[: k]
@@ -100,7 +108,7 @@ def eigenvalues_sensitivity(T, k=None):
             Compute the sensitivity of the first k eigenvalues of T.
     """
 
-# TODO: Implement in Python directly
+# TODO: ben: Implement in Python directly
 def timescales(T, tau=1, k=None):
     """
         T: transition matrix
@@ -109,7 +117,7 @@ def timescales(T, tau=1, k=None):
             Compute the first k implied time scales of T.
     """
 
-# TODO: Implement in Python directly
+# TODO: ben: Implement in Python directly
 def eigenvectors(T, k=None, right=True):
     """Compute eigenvectors of T
 
@@ -129,7 +137,7 @@ def eigenvectors_sensitivity(T, k=None, right=True):
         If True compute right eigenvectors, otherwise compute left eigenvectors.
     """
 
-# TODO: Implement in Python directly
+# TODO: ben: Implement in Python directly
 def rdl_decomposition(T, k=None, norm='standard'):
     """Compute eigenvector snesitivity of T
 
@@ -174,7 +182,7 @@ def mfpt_sensitivity(T, i):
 # Expectations
 ################################################################################
 
-# TODO: Implement in Python directly
+# TODO: martin: Implement in Python directly
 def expectation(T, a):
     """
         computes the expectation value of a
@@ -186,7 +194,7 @@ def expectation_sensitivity(T, a):
         computes the sensitivity of the expectation value of a
     """
 
-# TODO: Implement in Python directly
+# TODO: ben: Implement in Python directly
 def expected_counts(p0, T, N):
    """
    Expected transition counts for Markov chain with n steps. 
@@ -211,7 +219,7 @@ def expected_counts(p0, T, N):
 
    """
 
-# TODO: Implement in Python directly
+# TODO: ben: Implement in Python directly
 def expected_counts_stationary(P, N, mu=None):
    """
    Expected transition counts for Markov chain in equilibrium. 
@@ -241,7 +249,7 @@ def expected_counts_stationary(P, N, mu=None):
 # Fingerprints
 ################################################################################
 
-# TODO: Implement in Python directly
+# TODO: martin: Implement in Python directly
 def autocorrelation(P, obs):
     """Compute dynamical fingerprint crosscorrelation.
 
