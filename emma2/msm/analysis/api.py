@@ -1,8 +1,9 @@
 ################################################################################
 # Assessment tools
 ################################################################################
-
 import dense.assessment
+import dense.decomposition
+
 import numpy as np
 from scipy.sparse import issparse
 
@@ -57,9 +58,29 @@ def is_reversible(T, mu=None, tol=1e-15):
 
 # TODO: ben: Implement in Python directly
 def mu(T):
+    r"""Compute stationary distribution of stochastic matrix T. 
+      
+    The stationary distribution is the left eigenvector corresponding to the 
+    non-degenerate eigenvalue :math: `\lambda=1`.
+
+    Input
+    -----
+    T : numpy array, shape(d,d) or scipy.sparse matrix
+        Transition matrix (stochastic matrix).
+
+    Returns
+    -------
+    mu : numpy array, shape(d,)      
+        Vector of stationary probabilities.
+
     """
-        compute the stationary distribution of T
-    """
+    if issparse(T):
+        raise TypeError("Not implemented for sparse matrices.")
+    elif isinstance(T, np.ndarray):
+        return dense.decomposition.mu(T)
+    else: 
+        raise TypeError("T is not a numpy.ndarray or a scipy.sparse matrix.")
+
 
 # TODO: Implement in Python directly
 def mu_sensitivity(T):
@@ -69,9 +90,25 @@ def mu_sensitivity(T):
 
 # TODO: ben: Implement in Python directly
 def statdist(T):
+    r"""Compute stationary distribution of stochastic matrix T. 
+      
+    The stationary distribution is the left eigenvector corresponding to the 
+    non-degenerate eigenvalue :math: `\lambda=1`.
+
+    Input
+    -----
+    T : numpy array, shape(d,d) or scipy.sparse matrix
+        Transition matrix (stochastic matrix).
+
+    Returns
+    -------
+    mu : numpy array, shape(d,)      
+        Vector of stationary probabilities.
+
     """
-        compute the stationary distribution of T
-    """
+    statdist=mu(T)
+    return statdist
+
 
 # TODO: Implement in Python directly
 def statdist_sensitivity(T):
@@ -119,13 +156,30 @@ def timescales(T, tau=1, k=None):
 
 # TODO: ben: Implement in Python directly
 def eigenvectors(T, k=None, right=True):
-    """Compute eigenvectors of T
+    r"""Compute eigenvectors of given transition matrix.
 
-    k : int (optional)
-        Compute eigenvectors to 
-    right : bool
-        If True compute right eigenvectors, otherwise compute left eigenvectors.
+    Eigenvectors are computed using the numpy.linalg interface 
+    for the corresponding LAPACK routines.    
+
+    Input
+    -----
+    T : numpy.ndarray, shape(d,d)
+        Transition matrix (stochastic matrix).
+    k : int (optional) or tuple of ints
+        Compute the first k eigenvalues of T.
+
+    Returns
+    -------
+    eigvec : numpy.ndarray, shape=(d, n)
+        The eigenvectors of T ordered with decreasing absolute value of
+        the corresponding eigenvalue. If k is None then n=d, if k is\
+        int then n=k otherwise n is the length of the given tuple of\
+        eigenvector indices.
+
     """
+    
+    
+
 
 # TODO: Implement in Python directly
 def eigenvectors_sensitivity(T, k=None, right=True):
