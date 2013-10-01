@@ -2,13 +2,27 @@
 # Assessment tools
 ################################################################################
 
-# TODO: Implement in Python directly
+import dense.assessment
+import numpy as np
+from scipy.sparse import issparse
+
 def is_transition_matrix(T, tol=1e-15):
     """
         True if T is a transition matrix
     """
-    #return emma2.msm.util.isProbabilisticMatrix(T)
-
+    if issparse(T):
+        return sparse.assessment._is_stochastic_matrix_impl(T, tol)
+    elif isinstance(T, np.ndarray):
+        return dense.assessment._is_stochastic_matrix_impl(T, tol)
+    else:
+        try:
+            T_ = np.asarray(T, np.float64)
+            return sparse.assessment.is_stochastic_matrix_impl(T_, tol)
+        except:
+            raise TypeError("could not convert input to NumPy NDArray.")
+    
+    raise NotImplementedError("unsupported matrix type") 
+      
 # TODO: Implement in Python directly
 def is_rate_matrix(K, tol=1e-15):
     """
@@ -57,7 +71,6 @@ def statdist_sensitivity(T):
         compute the sensitivity matrix of the stationary distribution of T
     """    
 
-# TODO: Implement in Python directly
 def eigenvalues(T, k=None):
     """
         computes the eigenvalues
@@ -66,6 +79,17 @@ def eigenvalues(T, k=None):
         k : int (optional) or tuple of ints
             Compute the first k eigenvalues of T.
     """
+    eig = np.sort(np.linalg.eigvals(T))[::-1]
+    if isinstance(k, (list, set, tuple)):
+        try:
+            return [eig[n] for n in k]
+        except IndexError as ie:
+            raise ValueError("given indices do not exist: ", n)
+    elif k != None:
+        return eig[: k]
+    else:
+        return eig
+
 
 # TODO: Implement in Python directly
 def eigenvalues_sensitivity(T, k=None):
