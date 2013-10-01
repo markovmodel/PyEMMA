@@ -6,7 +6,6 @@ Created on 24.09.2013
 '''
 import unittest
 import numpy as np
-from scipy.sparse import coo_matrix
 from msm.analysis.api import *
 
 class _TestMSM(unittest.TestCase):
@@ -37,13 +36,20 @@ class _TestMSM(unittest.TestCase):
 
 
     def test_eigenvalues(self):
-        result = np.asarray([[2,0,0], [0,3,4], [0,4,9]])
+        matrix = np.asarray([[2,0,0], [0,3,4], [0,4,9]])
+        result = eigenvalues(matrix)
         exp_result = np.asarray([11.0, 2.0, 1.0])
         
         self.assert_(np.allclose(result, exp_result))
-        print eigenvalues(result, 2)
-        print eigenvalues(result, 1)
-        print eigenvalues(result, (0,1))
+        
+        self.assertEqual(eigenvalues(matrix, 1)[-1], 11.0, "not equal") 
+        self.assertEqual(eigenvalues(matrix, 2)[-1], 2.0, "not equal") 
+        self.assertEqual(eigenvalues(matrix, 3)[-1], 1.0, "not equal")
+          
+        self.assertEqual(eigenvalues(matrix, (0,1)), [11.0, 2.0], "not equal")
+        
+        # indices are wrong and should raise
+        self.assertRaises(ValueError, eigenvalues(matrix, [3, 4, 9]))
         
     def test_is_rate_matrix(self):
         l = 10
