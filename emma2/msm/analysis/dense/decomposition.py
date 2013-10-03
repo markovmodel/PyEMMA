@@ -1,8 +1,12 @@
-from numpy import *
+"""This module provides matrix-decomposition based functions for the
+analysis of stochastic matrices
 
+Below are the dense implementations for functions specified in msm.api. 
+Dense matrices are represented by numpy.ndarrays throughout this module.
 """
-Implementation of decompositions for transition matrix analysis
-"""
+
+import numpy as np
+from scipy.linalg import eig, eigvals
 
 def mu(T):
     r"""Compute stationary distribution of stochastic matrix T. 
@@ -24,12 +28,12 @@ def mu(T):
     val, L  = eig(T, left=True, right=False)
 
     """ Sorted eigenvalues and left and right eigenvectors. """
-    perm=argsort(val)[::-1]
+    perm=np.argsort(val)[::-1]
 
-    eigval=val[perm]
-    eigvecL=L[:,perm]
+    val=val[perm]
+    L=L[:,perm]
     """ Make sure that stationary distribution is non-negative and l1-normalized """
-    mu=abs(eigvecL[:,0])/sum(abs(eigvecL[:,0]))
+    mu=np.abs(L[:,0])/np.sum(np.abs(L[:,0]))
     return mu
     
 def eigenvalues(T, k=None):
@@ -53,16 +57,16 @@ def eigenvalues(T, k=None):
         n is the length of the given tuple of eigenvalue indices.
 
     """
-    eig = sort(linalg.eigvals(T))[::-1]
+    evals = np.sort(eigvals(T))[::-1]
     if isinstance(k, (list, set, tuple)):
         try:
-            return [eig[n] for n in k]
+            return [evals[n] for n in k]
         except IndexError:
             raise ValueError("given indices do not exist: ", n)
     elif k != None:
-        return eig[: k]
+        return evals[: k]
     else:
-        return eig
+        return evals
 
 def eigenvectors(T, k=None, right=True):
     r"""Compute eigenvectors of given transition matrix.
@@ -86,4 +90,28 @@ def eigenvectors(T, k=None, right=True):
         eigenvector indices.
 
     """
-    
+    if right:
+        val, R=eig(T, left=False, right=True)
+        """ Sorted eigenvalues and left and right eigenvectors. """
+        perm=np.argsort(val)[::-1]
+
+        eigval=val[perm]
+        eigvec=R[:,perm]        
+
+    else:
+        val, L  = eig(T, left=True, right=False)
+
+        """ Sorted eigenvalues and left and right eigenvectors. """
+        perm=np.argsort(val)[::-1]
+
+        eigval=val[perm]
+        eigvec=L[:,perm]
+
+    """ Return eigenvectors """
+    if k==None:
+        return eigvec
+    elif isinstance(k, int):
+        return eigvec[:,0:k]
+    else:
+        ind=np.asarray(k)
+        return eigvec[:, ind] 

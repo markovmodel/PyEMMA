@@ -165,21 +165,25 @@ def eigenvectors(T, k=None, right=True):
     -----
     T : numpy.ndarray, shape(d,d)
         Transition matrix (stochastic matrix).
-    k : int (optional) or tuple of ints
-        Compute the first k eigenvalues of T.
+    k : int (optional) or array-like 
+        For integer k compute the first k eigenvalues of T
+        else return those eigenvector sepcified by integer indices in k.
 
     Returns
     -------
     eigvec : numpy.ndarray, shape=(d, n)
         The eigenvectors of T ordered with decreasing absolute value of
-        the corresponding eigenvalue. If k is None then n=d, if k is\
-        int then n=k otherwise n is the length of the given tuple of\
-        eigenvector indices.
+        the corresponding eigenvalue. If k is None then n=d, if k is
+        int then n=k otherwise n is the length of the given indices array.
 
     """
+    if issparse(T):
+        raise TypeError("Not implemented for sparse matrices.")
+    elif isinstance(T, np.ndarray):
+        return dense.decomposition.eigenvectors(T, k=k, right=right)
+    else: 
+        raise TypeError("T is not a numpy.ndarray or a scipy.sparse matrix.")
     
-    
-
 
 # TODO: Implement in Python directly
 def eigenvectors_sensitivity(T, k=None, right=True):
