@@ -88,7 +88,6 @@ def mu_sensitivity(T):
         compute the sensitivity matrix of the stationary distribution of T
     """
 
-# TODO: ben: Implement in Python directly
 def statdist(T):
     r"""Compute stationary distribution of stochastic matrix T. 
       
@@ -115,7 +114,7 @@ def statdist_sensitivity(T):
     """
         compute the sensitivity matrix of the stationary distribution of T
     """    
-
+# TODO: Martin move implementation to dense.decomposition create implementation in sparse.decomposition
 def eigenvalues(T, k=None):
     """
         computes the eigenvalues
