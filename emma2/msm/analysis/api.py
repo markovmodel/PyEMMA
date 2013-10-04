@@ -26,7 +26,7 @@ def is_transition_matrix(T, tol=1e-15):
     
     """
     if issparse(T):
-        return sparse.assessment._is_stochastic_matrix_impl(T, tol)
+        return sparse.assessment.is_transition_matrix(T, tol)
     elif isinstance(T, np.ndarray):
         return dense.assessment._is_stochastic_matrix_impl(T, tol)
     else:
@@ -157,12 +157,12 @@ def timescales(T, tau=1, k=None):
 def eigenvectors(T, k=None, right=True):
     r"""Compute eigenvectors of given transition matrix.
 
-    Eigenvectors are computed using the numpy.linalg interface 
-    for the corresponding LAPACK routines.    
+    Eigenvectors are computed using the scipy interface 
+    to the corresponding LAPACK/ARPACK routines.    
 
     Input
     -----
-    T : numpy.ndarray, shape(d,d)
+    T : numpy.ndarray, shape(d,d) or scipy.sparse matrix
         Transition matrix (stochastic matrix).
     k : int (optional) or array-like 
         For integer k compute the first k eigenvalues of T
