@@ -8,6 +8,8 @@ Dense matrices are represented by numpy.ndarrays throughout this module.
 import numpy as np
 from scipy.linalg import eig, eigvals
 
+import assessment
+
 def mu(T):
     r"""Compute stationary distribution of stochastic matrix T. 
       
@@ -33,7 +35,8 @@ def mu(T):
     val=val[perm]
     L=L[:,perm]
     """ Make sure that stationary distribution is non-negative and l1-normalized """
-    mu=np.abs(L[:,0])/np.sum(np.abs(L[:,0]))
+    nu=np.abs(L[:,0])
+    mu=nu/np.sum(nu)
     return mu
     
 def eigenvalues(T, k=None):
