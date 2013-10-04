@@ -69,5 +69,9 @@ class _TestMSM(unittest.TestCase):
         self.fail("not yet impled")
         self.assert_(is_rate_matrix(Q), "Q should be a rate matrix")
 
+    def test_eigenvectors(self):
+        
+        
+
 if __name__ == "__main__":
     unittest.main()
