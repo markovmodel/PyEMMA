@@ -1,11 +1,12 @@
 """This module provides unit tests for the decomposition module"""
 
 import unittest
-import decomposition
 
 from numpy import random, sum, sqrt, newaxis, ones, allclose, eye, asarray
 from numpy import  diag, transpose, argsort, dot, asarray, array, arange, diag_indices
 from scipy.linalg import eig, eigh, eigvals, eigvalsh, qr, solve
+
+import decomposition
 
 def random_orthorgonal_matrix(d):
     r"""Compute a random orthorgonal matrix.
@@ -158,10 +159,7 @@ class TestDecomposition(unittest.TestCase):
         Rn=decomposition.eigenvectors(self.A, k=ind)
         X=dot(transpose(self.L[:,asarray(ind)]), Rn)
         X[ind_diag]=0.0    
-        self.assertTrue(allclose(X, 0.0))
-        
-
-        
+        self.assertTrue(allclose(X, 0.0))        
         
         
 if __name__=="__main__":

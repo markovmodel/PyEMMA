@@ -1,6 +1,6 @@
 import numpy as np
 
-def _is_stochastic_matrix_impl(T, tol):
+def _is_stochastic_matrix_impl(T, tol=1e-15):
     dim = T.shape[0]
     X = np.abs(T) - T
     x = np.sum(T, axis = 1)
