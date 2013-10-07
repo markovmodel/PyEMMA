@@ -41,7 +41,6 @@ def is_transition_matrix(T, tol=1e-15):
     else:
         raise TypeError("T is not a numpy.ndarray or a scipy.sparse matrix.")
       
-# TODO: martin: Implement in Python directly
 def is_rate_matrix(K, tol=1e-15):
     r"""True if K is a rate matrix
     """
@@ -134,7 +133,7 @@ def eigenvalues(T, k=None):
             Compute the first k eigenvalues of T.
     """
     if issparse(T):
-        return sparse.decompostion.eigenvalues(T, k)
+        return sparse.decomposition.eigenvalues(T, k)
     elif isdense(T):
         return dense.decomposition.eigenvalues(T, k)
     else:
@@ -247,7 +246,22 @@ def mfpt_sensitivity(T, i):
 # TODO: martin: Implement in Python directly
 def expectation(T, a):
     r"""computes the expectation value of a
+    
+    Parameters
+    ----------
+        T : matrix
+        a : scalar
+        
+        
+    Returns
+    -------
+        expectation value of a
     """
+    
+    # check a is contained in T
+    
+    # calculate E[a]
+    
 
 # TODO: Implement in Python directly
 def expectation_sensitivity(T, a):    
