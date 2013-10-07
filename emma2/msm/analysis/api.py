@@ -4,6 +4,9 @@
 import dense.assessment
 import dense.decomposition
 
+import sparse.asessment
+import sparse.decomposition
+
 import numpy as np
 from scipy.sparse import issparse
 
@@ -34,20 +37,17 @@ def is_transition_matrix(T, tol=1e-15):
       
 # TODO: martin: Implement in Python directly
 def is_rate_matrix(K, tol=1e-15):
-    """
-        True if K is a rate matrix
+    r"""True if K is a rate matrix
     """
 
 # TODO: Implement in Python directly
 def is_ergodic(T, tol=1e-15):
-    """
-        True if T is connected (irreducible) and aperiodic
+    r"""True if T is connected (irreducible) and aperiodic
     """
 
 # TODO: martin: Implement in Python directly
 def is_reversible(T, mu=None, tol=1e-15):
-    """
-        True if T is a transition matrix
+    r"""True if T is a transition matrix
         mu : tests with respect to this stationary distribution
     """
     
@@ -56,7 +56,7 @@ def is_reversible(T, mu=None, tol=1e-15):
 # Eigenvalues and eigenvectors
 ################################################################################
 
-# TODO: ben: Implement in Python directly
+# DONE: ben: Implement in Python directly
 def mu(T):
     r"""Compute stationary distribution of stochastic matrix T. 
       
@@ -75,7 +75,7 @@ def mu(T):
 
     """
     if issparse(T):
-        raise TypeError("Not implemented for sparse matrices.")
+        return sparse.decomposition.mu(T)
     elif isinstance(T, np.ndarray):
         return dense.decomposition.mu(T)
     else: 
@@ -84,10 +84,9 @@ def mu(T):
 
 # TODO: Implement in Python directly
 def mu_sensitivity(T):
-    """
-        compute the sensitivity matrix of the stationary distribution of T
-    """
+    r"""compute the sensitivity matrix of the stationary distribution of T"""
 
+# DONE: ben: Implement in Python directly
 def statdist(T):
     r"""Compute stationary distribution of stochastic matrix T. 
       
@@ -111,13 +110,11 @@ def statdist(T):
 
 # TODO: Implement in Python directly
 def statdist_sensitivity(T):
-    """
-        compute the sensitivity matrix of the stationary distribution of T
+    r"""compute the sensitivity matrix of the stationary distribution of T
     """    
 # TODO: Martin move implementation to dense.decomposition create implementation in sparse.decomposition
 def eigenvalues(T, k=None):
-    """
-        computes the eigenvalues
+    r"""computes the eigenvalues
 
         T : transition matrix
         k : int (optional) or tuple of ints
@@ -137,8 +134,7 @@ def eigenvalues(T, k=None):
 
 # TODO: Implement in Python directly
 def eigenvalues_sensitivity(T, k=None):
-    """
-        computes the sensitivity of the specified eigenvalue
+    r"""computes the sensitivity of the specified eigenvalue
 
         k : int (optional)
             Compute the sensitivity of the first k eigenvalues of T.
@@ -146,7 +142,8 @@ def eigenvalues_sensitivity(T, k=None):
 
 # TODO: ben: Implement in Python directly
 def timescales(T, tau=1, k=None):
-    """
+    r"""Compute implied time scales of given transition matrix
+
         T: transition matrix
         tau: lag time
         k : int (optional)
@@ -186,7 +183,7 @@ def eigenvectors(T, k=None, right=True):
 
 # TODO: Implement in Python directly
 def eigenvectors_sensitivity(T, k=None, right=True):
-    """Compute eigenvector snesitivity of T
+    r"""Compute eigenvector snesitivity of T
 
     k : int (optional)
         Compute eigenvectors to 
@@ -196,7 +193,7 @@ def eigenvectors_sensitivity(T, k=None, right=True):
 
 # TODO: ben: Implement in Python directly
 def rdl_decomposition(T, k=None, norm='standard'):
-    """Compute eigenvector snesitivity of T
+    r"""Compute the decomposition into left and right eigenvectors.
 
         T : transition matrix    
         k : int (optional)
@@ -207,13 +204,12 @@ def rdl_decomposition(T, k=None, norm='standard'):
             
         Returns
         -------
-        (R,D,L):    tuple of nd_arrays for right and left eigenvector matrix. Eigenvalues are passed as 1-d array
+        (R,D,L) :    tuple of nd_arrays for right and left eigenvector matrix. Eigenvalues are passed as 1-d array
     """
     
 # TODO: Implement in Python directly
 def mfpt(T, i):
-    """
-    Computes vector of mean first passage times for given target state.
+    r"""Computes vector of mean first passage times for given target state.
 
     Parameters
     ----------
@@ -231,7 +227,7 @@ def mfpt(T, i):
 
 # TODO: Implement in Python directly
 def mfpt_sensitivity(T, i):
-    """
+    r"""Compute sensitivity of mfpt
     """
 
 
@@ -241,20 +237,19 @@ def mfpt_sensitivity(T, i):
 
 # TODO: martin: Implement in Python directly
 def expectation(T, a):
-    """
-        computes the expectation value of a
+    r"""computes the expectation value of a
     """
 
 # TODO: Implement in Python directly
 def expectation_sensitivity(T, a):    
-    """
-        computes the sensitivity of the expectation value of a
+    r"""computes the sensitivity of the expectation value of a
     """
 
 # TODO: ben: Implement in Python directly
 def expected_counts(p0, T, N):
-   """
-   Expected transition counts for Markov chain with n steps. 
+   r"""Compute expected transition counts for Markov chain with n steps. 
+
+   Expected counts are computed according to ..math::
    
                                 \sum_{k=0}^n-1 diag(p^{T} T^{k})*T  n \geq 1
    E[C^{(n)}(x_0,\dotsc,x_n)]=   

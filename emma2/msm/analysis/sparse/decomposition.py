@@ -11,7 +11,7 @@ import scipy.sparse.linalg
 def mu(T):
     r"""Compute stationary distribution of stochastic matrix T. 
       
-    The stationary distribution is the left eigenvector corresponding to the 
+    The stationary distribution is the left eigenvector corresponding to the 1
     non-degenerate eigenvalue :math: `\lambda=1`.
 
     Input:
@@ -30,3 +30,27 @@ def mu(T):
     mu=nu/sum(nu)
     return mu
 
+def eigenvalues(T, k=None):
+    r"""Compute the eigenvalues of a sparse transition matrix
+
+    The first k eigenvalues of largest magnitude are computed.
+
+    Parameters
+    ----------
+    T : scipy.sparse matrix
+        Transition matrix
+    k : int (optional)
+        Number of eigenvalues to compute.
+    
+    Returns
+    -------
+    v : ndarray
+        Eigenvalues
+
+    """
+    if k is None:
+        raise ValueError("Number of eigenvalues required for decomposition of sparse matrix")
+    else:
+        v=scipy.sparse.linalg.eigs(T, k=k, which='LM', return_eigenvectors=False)
+        return v
+    
