@@ -1,4 +1,4 @@
-"""This module provides unit tests for the decomposition module"""
+"""This module provides unit tests for the assessment module"""
 
 import unittest
 import assessment
@@ -25,7 +25,7 @@ def normalize_rows(A):
     return scipy.sparse.csr_matrix((normed_values,indices,indptr))
 
 def random_nonempty_rows(M, N, density=0.01):
-    """Generate a random sparse matrix with nonemptry rows"""
+    """Generate a random sparse matrix with nonempty rows"""
     N_el=int(density*M*N) # total number of non-zero elements
     if N_el<M:
         raise ValueError("Density too small to obtain nonempty rows")
@@ -44,7 +44,7 @@ class TestAssessment(unittest.TestCase):
         self.density=0.001
         self.tol=1e-15
         A=random_nonempty_rows(self.dim, self.dim, density=self.density)
-        self.T=normalize_rows(A)        
+        self.T=normalize_rows(A)
 
     def tearDown(self):
         pass
