@@ -8,64 +8,59 @@ import scipy.sparse
 
 import decomposition
 
-def random_linearly_independent_vectors(d, k):
-    r"""Generate a set of linear independent vectors
-    
-    The algorithm picks k random points uniformly distributed
-    on the d-sphere. They will form a set of linear independent
-    vectors with probability one for k<=d.
+def random_orthonormal_sparse_vectors(d, k):
+    r"""Generate a random set of k orthonormal sparse vectors 
+
+    The algorithm draws random indices, {i_1,...,i_k}, from the set
+    of all possible indices, {0,...,d-1}, without replacement.
+    Random sparse vectors v are given by
+
+    v[i]=k^{-1/2} for i in {i_1,...,i_k} and zero elsewhere.
 
     """
-    if k>d:
-        raise ValueError("Can not pick more linear independent vectors"+\
-                             " than the full dimension of the vector space")
-    else:
-        """Pick k-vectors with gaussian distributed entries"""
-        G=np.random.randn(d, k)
-        """Normalize to length=1 to get uniform distribution on the d-sphere"""
-        length=np.sqrt(np.sum(G**2, axis=0))
-        X=G/length[np.newaxis, :]
-        return X
+    indices=np.random.choice(d, replace=False, size=(k*k))
+    indptr=np.arange(0, k*(k+1), k)
+    values=1.0/np.sqrt(k)*np.ones(k*k)
+    return scipy.sparse.csc_matrix((values, indices, indptr))    
 
-def random_orthonormal_vectors(d, k):
-    r"""Generate a random set of k-orthonormal vectors
-
-    The algorithm picks k random points uniformly distributed
-    on the d-sphere. They will form a set of linear independent
-    vectors with probability one for k<=d.
-
-    A subsequent QR-decomposition produces an orthonormal set"""
-    X=random_linearly_independent_vectors(d, k)
-    Q, R=scipy.linalg.qr(X, mode='economic')
-    return Q
 
 class TestDecomposition(unittest.TestCase):
     
     def setUp(self):
-        pass
+        self.k=20
+        self.d=10000
+        """Generate a random kxk dense transition matrix"""
+        C=np.random.random_integers(0, 100, size=(self.k, self.k))
+        T=1.0*C/np.sum(C, axis=1)[:, np.newaxis]
+        v, L, R=scipy.linalg.eig(T, left=True, right=True)
+        nu=L[:,0]
+        mu=nu/np.sum(nu)
+
+        """
+        Generate k random sparse
+        orthorgonal vectors of dimension d
+        """
+        Q=random_orthonormal_sparse_vectors(self.d, self.k)
+        
+        """Push forward dense decomposition to sparse one via Q"""
+        self.L_sparse=Q.dot(scipy.sparse.csr_matrix(L))
+        self.R_sparse=Q.dot(scipy.sparse.csr_matrix(R))
+        self.v_sparse=v # Eigenvalues are invariant
+
+        """Push forward transition matrix and stationary distribution"""
+        self.T_sparse=Q.dot(scipy.sparse.csr_matrix(T)).dot(Q.transpose())
+        self.mu_sparse=Q.dot(mu)/np.sqrt(self.k)
 
     def tearDown(self):
         pass
 
-    def test_mu(self):
-        """Generate a random kxk dense transition matrix"""
-        k=100
-        C=np.random.random_integers(0, 100, size=(k, k))
-        T=1.0*C/np.sum(C, axis=1)[:, np.newaxis]
-        v, L, R=scipy.linalg.eig(T, left=True, right=True)
-        nu=L[:,0]
-        statdist=nu/np.sum(nu)
-        
-        """Convert to sparse matrix"""
-        T_sparse=scipy.sparse.csr_matrix(T)
-        statdist_sparse=decomposition.mu(T_sparse)
-
-        self.assertTrue(np.allclose(statdist, statdist_sparse))
+    def test_mu(self):           
+        mu_n=decomposition.mu(self.T_sparse)
+        self.assertTrue(np.allclose(self.mu_sparse, mu_n))
 
 if __name__=="__main__":
     unittest.main()
 
-    
     
     
     
