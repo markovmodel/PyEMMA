@@ -86,6 +86,7 @@ def mu(T):
 def mu_sensitivity(T):
     r"""compute the sensitivity matrix of the stationary distribution of T"""
 
+# DONE: ben: Implement in Python directly
 def statdist(T):
     r"""Compute stationary distribution of stochastic matrix T. 
       
@@ -192,7 +193,7 @@ def eigenvectors_sensitivity(T, k=None, right=True):
 
 # TODO: ben: Implement in Python directly
 def rdl_decomposition(T, k=None, norm='standard'):
-    r"""Compute eigenvector snesitivity of T
+    r"""Compute the decomposition into left and right eigenvectors.
 
         T : transition matrix    
         k : int (optional)
