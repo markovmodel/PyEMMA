@@ -54,3 +54,36 @@ def eigenvalues(T, k=None):
         v=scipy.sparse.linalg.eigs(T, k=k, which='LM', return_eigenvectors=False)
         return v
     
+def eigenvectors(T, k=None, right=True):
+    r"""Compute eigenvectors of given transition matrix.
+
+    Eigenvectors are computed using the scipy interface 
+    to the corresponding ARPACK routines.    
+
+    Input
+    -----
+    T : scipy.sparse matrix
+        Transition matrix (stochastic matrix).
+    k : int (optional) or array-like 
+        For integer k compute the first k eigenvalues of T
+        else return those eigenvector sepcified by integer indices in k.
+
+    Returns
+    -------
+    eigvec : numpy.ndarray, shape=(d, n)
+        The eigenvectors of T ordered with decreasing absolute value of
+        the corresponding eigenvalue. If k is None then n=d, if k is
+        int then n=k otherwise n is the length of the given indices array.
+
+    """
+    if k is None:
+        raise ValueError("Number of eigenvectors required for decomposition of sparse matrix")
+    else:
+        if right:
+            val, vecs=scipy.sparse.linalg.eigs(T, k=k, which='LM')
+            return val, vecs
+        else:            
+            val, vecs=scipy.sparse.linalg.eigs(T.transpose(), k=k, which='LM')
+            return val, vecs
+        
+        
