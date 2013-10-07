@@ -4,6 +4,9 @@
 import dense.assessment
 import dense.decomposition
 
+import sparse.asessment
+import sparse.decomposition
+
 import numpy as np
 from scipy.sparse import issparse
 
@@ -56,7 +59,7 @@ def is_reversible(T, mu=None, tol=1e-15):
 # Eigenvalues and eigenvectors
 ################################################################################
 
-# TODO: ben: Implement in Python directly
+# DONE: ben: Implement in Python directly
 def mu(T):
     r"""Compute stationary distribution of stochastic matrix T. 
       
@@ -75,7 +78,7 @@ def mu(T):
 
     """
     if issparse(T):
-        raise TypeError("Not implemented for sparse matrices.")
+        return sparse.decomposition.mu(T)
     elif isinstance(T, np.ndarray):
         return dense.decomposition.mu(T)
     else: 
