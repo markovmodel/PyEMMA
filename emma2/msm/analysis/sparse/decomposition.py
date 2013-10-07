@@ -81,9 +81,11 @@ def eigenvectors(T, k=None, right=True):
     else:
         if right:
             val, vecs=scipy.sparse.linalg.eigs(T, k=k, which='LM')
-            return val, vecs
+            ind=np.argsort(np.abs(val))
+            return vecs[:,ind]
         else:            
             val, vecs=scipy.sparse.linalg.eigs(T.transpose(), k=k, which='LM')
-            return val, vecs
+            ind=np.argsort(np.abs(val))
+            return vecs[:, ind]
         
         
