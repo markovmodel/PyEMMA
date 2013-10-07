@@ -11,7 +11,7 @@ import scipy.sparse.linalg
 def mu(T):
     r"""Compute stationary distribution of stochastic matrix T. 
       
-    The stationary distribution is the left eigenvector corresponding to the 
+    The stationary distribution is the left eigenvector corresponding to the 1
     non-degenerate eigenvalue :math: `\lambda=1`.
 
     Input:
