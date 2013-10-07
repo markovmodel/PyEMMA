@@ -107,10 +107,7 @@ class TestDecomposition(unittest.TestCase):
         A[ind_diag]=0.0
 
         """Assert that off-diagonal elements are zero"""
-        self.assertTrue(np.allclose(A, 0.0))
-        
-
-        #self.assertTrue(np.allclose(Rn, self.R_sparse.toarray()))
+        self.assertTrue(np.allclose(A, 0.0))      
 
 if __name__=="__main__":
     unittest.main()
