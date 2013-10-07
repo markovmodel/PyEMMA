@@ -31,9 +31,16 @@ class TestDecomposition(unittest.TestCase):
         self.d=10000
         """Generate a random kxk dense transition matrix"""
         C=np.random.random_integers(0, 100, size=(self.k, self.k))
+        C=C+np.transpose(C) # Symmetric count matrix for real eigenvalues
         T=1.0*C/np.sum(C, axis=1)[:, np.newaxis]
         v, L, R=scipy.linalg.eig(T, left=True, right=True)
-        nu=L[:,0]
+        """Sort eigenvalues and eigenvectors by increasing absolute value"""
+        ind=np.argsort(abs(v))
+        v=v[ind]
+        L=L[:, ind]
+        R=R[:, ind]
+        
+        nu=L[:,-1]
         mu=nu/np.sum(nu)
 
         """
@@ -57,6 +64,12 @@ class TestDecomposition(unittest.TestCase):
     def test_mu(self):           
         mu_n=decomposition.mu(self.T_sparse)
         self.assertTrue(np.allclose(self.mu_sparse, mu_n))
+
+    def test_eigenvalues(self):
+        vn=decomposition.eigenvalues(self.T_sparse, k=self.k)
+        ind=np.argsort(np.abs(vn))
+        vn=vn[ind]
+        self.assertTrue(np.allclose(vn, self.v_sparse))
 
 if __name__=="__main__":
     unittest.main()
