@@ -12,7 +12,7 @@ def is_rate_matrix(K, tol=1e-15):
     True if K is a rate matrix
     Parameters
     ----------
-    K : scipy.sparse matrix
+    K : numpy.ndarray matrix
         Matrix to check
     tol : float
         tolerance to check with
@@ -26,7 +26,7 @@ def is_rate_matrix(K, tol=1e-15):
     R = K - K.diagonal()
     off_diagonal_positive = np.allclose(R, abs(R), 0.0, tol)
     
-    row_sum = K.sum( axis = 1)
-    row_sum_eq_1 = np.allclose(row_sum, 1.0, 0.0, tol)
+    row_sum = K.sum(axis = 1)
+    row_sum_eq_0 = np.allclose(row_sum, 0.0, rtol=0.0, atol=tol)
     
-    return off_diagonal_positive and row_sum_eq_1
+    return off_diagonal_positive and row_sum_eq_0
