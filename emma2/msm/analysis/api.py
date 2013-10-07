@@ -174,7 +174,7 @@ def eigenvectors(T, k=None, right=True):
 
     """
     if issparse(T):
-        raise TypeError("Not implemented for sparse matrices.")
+        return sparse.decomposition.eigenvectors(T, k=k, right=right)
     elif isinstance(T, np.ndarray):
         return dense.decomposition.eigenvectors(T, k=k, right=right)
     else: 

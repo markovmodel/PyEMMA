@@ -71,6 +71,47 @@ class TestDecomposition(unittest.TestCase):
         vn=vn[ind]
         self.assertTrue(np.allclose(vn, self.v_sparse))
 
+    def test_eigenvectors(self):
+        """Right eigenvectors"""        
+        vn, Rn=decomposition.eigenvectors(self.T_sparse, k=self.k)
+
+        """Sort eigenvalues and eigenvectors by absolute value"""
+        ind=np.argsort(np.abs(vn))
+        vn=vn[ind]
+        Rn=Rn[:,ind]
+
+        L_dense=self.L_sparse.toarray()
+
+        """Compute overlapp between true left and computed right eigenvectors"""
+        A=np.dot(np.transpose(L_dense), Rn)
+        ind_diag=np.diag_indices(self.k)
+        A[ind_diag]=0.0
+
+        """Assert that off-diagonal elements are zero"""
+        self.assertTrue(np.allclose(A, 0.0))
+        
+
+        """Left eigenvectors"""        
+        vn, Ln=decomposition.eigenvectors(self.T_sparse, k=self.k, right=False)
+
+        """Sort eigenvalues and eigenvectors by absolute value"""
+        ind=np.argsort(np.abs(vn))
+        vn=vn[ind]
+        Ln=Ln[:,ind]
+
+        R_dense=self.R_sparse.toarray()
+
+        """Compute overlapp between true right and computed left eigenvectors"""
+        A=np.dot(np.transpose(Ln), R_dense)
+        ind_diag=np.diag_indices(self.k)
+        A[ind_diag]=0.0
+
+        """Assert that off-diagonal elements are zero"""
+        self.assertTrue(np.allclose(A, 0.0))
+        
+
+        #self.assertTrue(np.allclose(Rn, self.R_sparse.toarray()))
+
 if __name__=="__main__":
     unittest.main()
 
