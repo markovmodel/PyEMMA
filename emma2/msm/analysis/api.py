@@ -230,6 +230,12 @@ def rdl_decomposition(T, k=None, norm='standard'):
         w[i], dot(T,R[:,i])=w[i]*R[:,i]
       
     """
+    if issparse(T):
+        return sparse.decomposition.rdl_decomposition(T, k=k, norm=norm)
+    elif isdense(T):
+        return dense.decomposition.rdl_decomposition(T, k=k, norm=norm)
+    else: 
+        raise _type_not_supported
     
 # TODO: Implement in Python directly
 def mfpt(T, i):
