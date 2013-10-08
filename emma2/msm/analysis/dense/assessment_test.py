@@ -11,7 +11,7 @@ import numpy as np
 
 def create_rate_matrix():
     a = [[-3, 3, 0, 0 ],
-         [2, -5, 3, 0 ],
+         [3, -5, 2, 0 ],
          [0, 3, -5, 2],
          [0, 0, 3, -3] ]
     
