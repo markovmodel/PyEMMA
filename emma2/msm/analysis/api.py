@@ -46,7 +46,7 @@ def is_rate_matrix(K, tol=1e-15):
     """
     if issparse(K):
         return sparse.assessment.is_rate_matrix(K, tol)
-    elif isinstance(K, np.ndarray):
+    elif isdense(K):
         return dense.assessment.is_rate_matrix(K, tol)
     else:
         raise _type_not_supported
