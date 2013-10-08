@@ -52,7 +52,8 @@ def eigenvalues(T, k=None):
         raise ValueError("Number of eigenvalues required for decomposition of sparse matrix")
     else:
         v=scipy.sparse.linalg.eigs(T, k=k, which='LM', return_eigenvectors=False)
-        return v
+        ind=np.argsort(np.abs(v))[::-1]
+        return v[ind]
     
 def eigenvectors(T, k=None, right=True):
     r"""Compute eigenvectors of given transition matrix.
@@ -67,25 +68,23 @@ def eigenvectors(T, k=None, right=True):
     k : int (optional) or array-like 
         For integer k compute the first k eigenvalues of T
         else return those eigenvector sepcified by integer indices in k.
-
+        
     Returns
     -------
     eigvec : numpy.ndarray, shape=(d, n)
         The eigenvectors of T ordered with decreasing absolute value of
         the corresponding eigenvalue. If k is None then n=d, if k is
         int then n=k otherwise n is the length of the given indices array.
-
+        
     """
     if k is None:
         raise ValueError("Number of eigenvectors required for decomposition of sparse matrix")
     else:
         if right:
             val, vecs=scipy.sparse.linalg.eigs(T, k=k, which='LM')
-            ind=np.argsort(np.abs(val))
+            ind=np.argsort(np.abs(val))[::-1]
             return vecs[:,ind]
         else:            
             val, vecs=scipy.sparse.linalg.eigs(T.transpose(), k=k, which='LM')
-            ind=np.argsort(np.abs(val))
-            return vecs[:, ind]
-        
-        
+            ind=np.argsort(np.abs(val))[::-1]
+            return vecs[:, ind]        

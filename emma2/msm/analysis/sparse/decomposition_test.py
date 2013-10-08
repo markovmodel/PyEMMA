@@ -34,13 +34,13 @@ class TestDecomposition(unittest.TestCase):
         C=C+np.transpose(C) # Symmetric count matrix for real eigenvalues
         T=1.0*C/np.sum(C, axis=1)[:, np.newaxis]
         v, L, R=scipy.linalg.eig(T, left=True, right=True)
-        """Sort eigenvalues and eigenvectors by increasing absolute value"""
-        ind=np.argsort(abs(v))
+        """Sort eigenvalues and eigenvectors, order is decreasing absolute value"""
+        ind=np.argsort(abs(v))[::-1]
         v=v[ind]
         L=L[:, ind]
         R=R[:, ind]
         
-        nu=L[:,-1]
+        nu=L[:, 0]
         mu=nu/np.sum(nu)
 
         """
@@ -66,9 +66,7 @@ class TestDecomposition(unittest.TestCase):
         self.assertTrue(np.allclose(self.mu_sparse, mu_n))
 
     def test_eigenvalues(self):
-        vn=decomposition.eigenvalues(self.T_sparse, k=self.k)
-        ind=np.argsort(np.abs(vn))
-        vn=vn[ind]
+        vn=decomposition.eigenvalues(self.T_sparse, k=self.k)        
         self.assertTrue(np.allclose(vn, self.v_sparse))
 
     def test_eigenvectors(self):

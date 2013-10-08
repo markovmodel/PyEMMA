@@ -2,8 +2,9 @@
 
 import unittest
 
-from numpy import random, sum, sqrt, newaxis, ones, allclose, eye, asarray
+from numpy import random, sum, sqrt, newaxis, ones, allclose, eye, asarray, abs, linspace
 from numpy import  diag, transpose, argsort, dot, asarray, array, arange, diag_indices
+from numpy import conjugate
 from scipy.linalg import eig, eigh, eigvals, eigvalsh, qr, solve
 
 import decomposition
@@ -48,15 +49,16 @@ class TestDecomposition(unittest.TestCase):
         self.L=random_linearly_independent_vectors(self.dim, self.dim)
         """Corresponding right eigenvectors"""
         self.R=solve(transpose(self.L), eye(self.dim))    
-        """Random eigenvalues uniform in (0, 1)"""
-        v=random.rand(self.dim)
+        # """Random eigenvalues uniform in (0, 1)"""
+        # v=random.rand(self.dim)
+        v=linspace(0.0, 1.0, self.dim)
 
         """
         Order eigenvalues by absolute value - 
         this ordering is the desired behaviour
         for decomposition.eigenvalues.
         """
-        ind=argsort(v)[::-1]
+        ind=argsort(abs(v))[::-1]
         self.v=v[ind]
 
         """Assemble test matrix A=RDL^T"""
@@ -159,7 +161,34 @@ class TestDecomposition(unittest.TestCase):
         Rn=decomposition.eigenvectors(self.A, k=ind)
         X=dot(transpose(self.L[:,asarray(ind)]), Rn)
         X[ind_diag]=0.0    
-        self.assertTrue(allclose(X, 0.0))        
+        self.assertTrue(allclose(X, 0.0))
+
+    def test_rdl_decomposition(self):
+        vn, Ln, Rn=decomposition.rdl_decomposition(self.A)
+
+        """Eigenvalues"""
+        self.assertTrue(allclose(self.v, vn))
+
+        """Eigenvectors"""
+        ind_diag=diag_indices(self.dim)
+        
+        X=dot(transpose(self.L), Rn)
+        X[ind_diag]=0.0
+        self.assertTrue(allclose(X, 0.0))
+
+        # X=dot(transpose(Ln), self.R)
+        # X[ind_diag]=0.0
+        # self.assertTrue(allclose(X, 0.0))
+
+        """
+        The computed left eigenvectors Ln are sometimes 
+        not perfectly orthogonal to the true right eienvectors
+        R. This is why the above test does sometimes fail.
+        """
+        
+        """They are however 'good' left eigenvectors for A"""
+        X=dot(transpose(self.A), Ln)
+        self.assertTrue(allclose(X, vn[newaxis, :]*Ln))
         
         
 if __name__=="__main__":

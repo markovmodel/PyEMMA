@@ -6,7 +6,7 @@ Dense matrices are represented by numpy.ndarrays throughout this module.
 """
 
 import numpy as np
-from scipy.linalg import eig, eigvals
+from scipy.linalg import eig, eigvals, solve
 
 import assessment
 
@@ -118,3 +118,97 @@ def eigenvectors(T, k=None, right=True):
     else:
         ind=np.asarray(k)
         return eigvec[:, ind] 
+
+
+def rdl_decomposition(T, k=None, norm='standard'):
+    r"""Compute the decomposition into left and right eigenvectors.
+    
+    Parameters
+    ----------
+    T : (M, M) ndarray 
+        Transition matrix    
+    k : int (optional)
+        Number of eigenvector/eigenvalue pairs
+    norm: {'standard', 'reversible'}
+        standard: (L'R) = Id, L[:,0] is a probability distribution,
+            the stationary distribution mu of T. Right eigenvectors
+            R have a 2-norm of 1.
+        reversible: R and L are related via L=L[:,0]*R.
+        
+    Returns
+    -------
+    w : (M,) ndarray
+        The eigenvalues, each repeated according to its multiplicity
+    L : (M, M) ndarray
+        The normalized ("unit length") left eigenvectors, such that the 
+        column L[:,i] is the left eigenvector corresponding to the eigenvalue
+        w[i], dot(L[:,i], T)=w[i]*L[:,i], L[:,0] is a probability distribution
+        ("positive and l1 unit length").
+    R : (M, M) ndarray
+        The normalized (with respect to L) right eigenvectors, such that the 
+        column R[:,i] is the right eigenvector corresponding to the eigenvalue 
+        w[i], dot(T,R[:,i])=w[i]*R[:,i]
+      
+    """
+    d=T.shape[0]
+    w, R=eig(T)
+
+    """Sort by decreasing magnitude of eigenvalue"""
+    ind=np.argsort(np.abs(w))[::-1]
+    w=w[ind]
+    R=R[:,ind]   
+
+    if norm =='standard':
+        L=solve(np.transpose(R), np.eye(d))
+        
+        """l1- normalization of L[:, 0]"""
+        R[:, 0]=R[:, 0]*np.sum(L[:, 0])
+        L[:, 0]=L[:, 0]/np.sum(L[:, 0])
+        
+
+        if k is None:
+            return w, L, R
+        else:
+            return w[0:k], L[:,0:k], R[:,0:k]
+
+    elif norm=='reversible':
+        b=np.zeros(d)
+        b[0]=1.0 
+
+        A=np.transpose(R)
+        nu=solve(A, b)
+        mu=nu/np.sum(nu)
+
+        """Make the first right eigenvector the constant one vector"""
+        R[:, 0]=R[:, 0]*np.sum(nu)
+
+        """Use mu to connect L and R"""
+        L=mu[:, np.newaxis]*R
+
+        """Compute overlap"""
+        ov=np.diag(np.dot(np.transpose(L), R))
+
+        """Renormalize the left eigenvectors to ensure L'R=Id"""
+        L=L/ov[np.newaxis, :]
+
+        if k is None:
+            return w, L, R
+        else:
+            return w[0:k], L[:,0:k], R[:,0:k]
+    else:
+        raise ValueError("Keyword 'norm' has to be either 'standard' or 'reversible'")
+    
+if __name__=="__main__":
+    C=1.0*np.random.random_integers(1, 10, size=(4, 4))
+    C=0.5*(np.transpose(C)+C)
+    T=C/np.sum(C, axis=1)[:, np.newaxis]
+
+    w, L, R=rdl_decomposition(T, norm='reversible')
+
+    print w
+
+    print L[:, 0], np.sum(L[:,0])
+    print np.dot(np.transpose(L), R)
+
+    
+    

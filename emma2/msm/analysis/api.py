@@ -1,14 +1,20 @@
 ################################################################################
 # Assessment tools
 ################################################################################
+from scipy.sparse import issparse
+from scipy.sparse.sputils import isdense
+
 import dense.assessment
 import dense.decomposition
 
-import sparse.asessment
+import sparse.assessment
 import sparse.decomposition
 
 import numpy as np
-from scipy.sparse import issparse
+
+
+_type_not_supported = \
+    TypeError("given matrix is not a numpy.ndarray or a scipy.sparse matrix.")
 
 def is_transition_matrix(T, tol=1e-15):
     """
@@ -30,15 +36,22 @@ def is_transition_matrix(T, tol=1e-15):
     """
     if issparse(T):
         return sparse.assessment.is_transition_matrix(T, tol)
-    elif isinstance(T, np.ndarray):
-        return dense.assessment._is_stochastic_matrix_impl(T, tol)
+    elif isdense(T):
+        return dense.assessment.is_stochastic_matrix(T, tol)
     else:
-        raise ValueError("unsupported matrix type")
+        raise TypeError("T is not a numpy.ndarray or a scipy.sparse matrix.")
       
-# TODO: martin: Implement in Python directly
+
 def is_rate_matrix(K, tol=1e-15):
     r"""True if K is a rate matrix
     """
+    if issparse(K):
+        return sparse.assessment.is_rate_matrix(K, tol)
+    elif isinstance(K, np.ndarray):
+        return dense.assessment.is_rate_matrix(K, tol)
+    else:
+        raise _type_not_supported
+
 
 # TODO: Implement in Python directly
 def is_ergodic(T, tol=1e-15):
@@ -76,10 +89,10 @@ def mu(T):
     """
     if issparse(T):
         return sparse.decomposition.mu(T)
-    elif isinstance(T, np.ndarray):
+    elif isdense(T):
         return dense.decomposition.mu(T)
     else: 
-        raise TypeError("T is not a numpy.ndarray or a scipy.sparse matrix.")
+        raise _type_not_supported
 
 
 # TODO: Implement in Python directly
@@ -120,16 +133,12 @@ def eigenvalues(T, k=None):
         k : int (optional) or tuple of ints
             Compute the first k eigenvalues of T.
     """
-    eig = np.sort(np.linalg.eigvals(T))[::-1]
-    if isinstance(k, (list, set, tuple)):
-        try:
-            return [eig[n] for n in k]
-        except IndexError:
-            raise ValueError("given indices do not exist: ", n)
-    elif k != None:
-        return eig[: k]
+    if issparse(T):
+        return sparse.decomposition.eigenvalues(T, k)
+    elif isdense(T):
+        return dense.decomposition.eigenvalues(T, k)
     else:
-        return eig
+        raise _type_not_supported
 
 
 # TODO: Implement in Python directly
@@ -150,7 +159,7 @@ def timescales(T, tau=1, k=None):
             Compute the first k implied time scales of T.
     """
 
-# TODO: ben: Implement in Python directly
+# DONE: ben: Implement in Python directly
 def eigenvectors(T, k=None, right=True):
     r"""Compute eigenvectors of given transition matrix.
 
@@ -175,10 +184,10 @@ def eigenvectors(T, k=None, right=True):
     """
     if issparse(T):
         return sparse.decomposition.eigenvectors(T, k=k, right=right)
-    elif isinstance(T, np.ndarray):
+    elif isdense(T):
         return dense.decomposition.eigenvectors(T, k=k, right=right)
     else: 
-        raise TypeError("T is not a numpy.ndarray or a scipy.sparse matrix.")
+        raise _type_not_supported
     
 
 # TODO: Implement in Python directly
@@ -194,17 +203,32 @@ def eigenvectors_sensitivity(T, k=None, right=True):
 # TODO: ben: Implement in Python directly
 def rdl_decomposition(T, k=None, norm='standard'):
     r"""Compute the decomposition into left and right eigenvectors.
-
-        T : transition matrix    
-        k : int (optional)
-            Number of eigenvector/eigenvalue pairs
-        norm: standard | reversible
-            standard: (L'R) = Id, l[0] is a probability distribution, r[i] have a 2-norm of 1
-            reversible: R and L are related by stationary distribution of T
-            
-        Returns
-        -------
-        (R,D,L) :    tuple of nd_arrays for right and left eigenvector matrix. Eigenvalues are passed as 1-d array
+    
+    Parameters
+    ----------
+    T : ndarray or sparse matrix
+        Transition matrix    
+    k : int (optional)
+        Number of eigenvector/eigenvalue pairs
+    norm: {'standard', 'reversible'}
+        standard: (L'R) = Id, L[:,0] is a probability distribution,
+            the stationary distribution mu of T. Right eigenvectors
+            R have a 2-norm of 1.
+        reversible: R and L are related via L=L[:,0]*R.
+                         
+    Returns
+    -------
+    w : (M,) ndarray
+        The eigenvalues, each repeated according to its multiplicity
+    L : (M, M) ndarray
+        The normalized (with respect to R) left eigenvectors, such that the 
+        column L[:,i] is the left eigenvector corresponding to the eigenvalue
+        w[i], dot(L[:,i], T)=w[i]*L[:,i]
+    R : (M, M) ndarray
+        The normalized ("unit length") right eigenvectors, such that the 
+        column R[:,i] is the right eigenvector corresponding to the eigenvalue 
+        w[i], dot(T,R[:,i])=w[i]*R[:,i]
+      
     """
     
 # TODO: Implement in Python directly
@@ -238,7 +262,22 @@ def mfpt_sensitivity(T, i):
 # TODO: martin: Implement in Python directly
 def expectation(T, a):
     r"""computes the expectation value of a
+    
+    Parameters
+    ----------
+        T : matrix
+        a : scalar
+        
+        
+    Returns
+    -------
+        expectation value of a
     """
+    
+    # check a is contained in T
+    
+    # calculate E[a]
+    
 
 # TODO: Implement in Python directly
 def expectation_sensitivity(T, a):    
@@ -273,7 +312,7 @@ def expected_counts(p0, T, N):
 
 # TODO: ben: Implement in Python directly
 def expected_counts_stationary(P, N, mu=None):
-   """
+    """
    Expected transition counts for Markov chain in equilibrium. 
 
    Since mu is stationary for T we have 
