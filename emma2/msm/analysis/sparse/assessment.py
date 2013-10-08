@@ -59,3 +59,13 @@ def is_rate_matrix(K, tol):
     diag = org_diag
     
     return gt_zero
+
+
+def is_reversible(T, mu=None, tol=1e-15):
+    r"""True if T is a transition matrix
+        mu : tests with respect to this stationary distribution
+    """
+    if is_transition_matrix(T, tol):
+        raise NotImplementedError("not yet impled for sparse.")
+    else:
+        ValueError("given matrix is not a valid transition matrix.")

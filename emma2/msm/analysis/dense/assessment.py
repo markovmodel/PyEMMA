@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def is_stochastic_matrix(T, tol=1e-15):
     dim = T.shape[0]
     X = np.abs(T) - T
@@ -30,3 +31,12 @@ def is_rate_matrix(K, tol=1e-15):
     row_sum_eq_0 = np.allclose(row_sum, 0.0, rtol=0.0, atol=tol)
     
     return off_diagonal_positive and row_sum_eq_0
+
+def is_reversible(T, mu=None, tol):
+    if is_stochastic_matrix(T, tol):
+        if mu is None:
+            mu = mu(T)
+        
+        return np.allclose( T * mu[: np.newaxis ], T*mu, ltol=tol)
+    else:
+        raise ValueError("given matrix is not a valid transition matrix.")

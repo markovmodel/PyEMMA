@@ -58,12 +58,16 @@ def is_ergodic(T, tol=1e-15):
     r"""True if T is connected (irreducible) and aperiodic
     """
 
-# TODO: martin: Implement in Python directly
 def is_reversible(T, mu=None, tol=1e-15):
     r"""True if T is a transition matrix
         mu : tests with respect to this stationary distribution
     """
-    
+    if issparse(T):
+        pass
+    elif isdense(T):
+        dense.assessment.is_reversible(T, mu, tol)
+    else:
+        raise _type_not_supported
     
 ################################################################################
 # Eigenvalues and eigenvectors
