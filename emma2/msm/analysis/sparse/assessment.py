@@ -47,11 +47,15 @@ def is_rate_matrix(K, tol):
         False, otherwise
     """
     values = K.data
+    # store copy of original diagonal
     org_diag = K.diagonal().copy()
     diag = K.diagonal()
+    # set diagonal to 0
     diag[:] = 0
     
-    gt_zero = np.allclose(values, 0.0, atol = tol, rtol = np.inf)
+    # check all values are greater zero within given tolerance
+    gt_zero = np.allclose(values-values, 0.0, atol = tol)
+    # restore original diagonal
     diag = org_diag
     
     return gt_zero
