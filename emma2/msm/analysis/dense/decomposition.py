@@ -96,7 +96,7 @@ def eigenvectors(T, k=None, right=True):
     if right:
         val, R=eig(T, left=False, right=True)
         """ Sorted eigenvalues and left and right eigenvectors. """
-        perm=np.argsort(val)[::-1]
+        perm=np.argsort(np.abs(val))[::-1]
 
         eigval=val[perm]
         eigvec=R[:,perm]        
@@ -105,7 +105,7 @@ def eigenvectors(T, k=None, right=True):
         val, L  = eig(T, left=True, right=False)
 
         """ Sorted eigenvalues and left and right eigenvectors. """
-        perm=np.argsort(val)[::-1]
+        perm=np.argsort(np.abs(val))[::-1]
 
         eigval=val[perm]
         eigvec=L[:,perm]
