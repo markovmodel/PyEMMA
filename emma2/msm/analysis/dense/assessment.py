@@ -34,25 +34,25 @@ def is_rate_matrix(K, tol=1e-15):
 
 def is_reversible(T, mu=None, tol):
     r"""
-        checks whether T is reversible in terms of given stationary distribution.
-        If no distribution is given, it will be calculated out of T.
+    checks whether T is reversible in terms of given stationary distribution.
+    If no distribution is given, it will be calculated out of T.
+    
+    performs follwing check:
+    :math:`\pi_i P_{ij} = \pi_j P_{ji}
+    Parameters
+    ----------
+    T : numpy.ndarray matrix
+        Transition matrix
+    mu : numpy.ndarray vector
+        stationary distribution
+    tol : float
+        tolerance to check with
         
-        performs follwing check:
-        :math:`\pi_i P_{ij} = \pi_j P_{ji}
-        Parameters
-        ----------
-        T : numpy.ndarray matrix
-            Transition matrix
-        mu : numpy.ndarray vector
-            stationary distribution
-        tol : float
-            tolerance to check with
-            
-        Returns
-        -------
-        Truth value : bool
-            True, if T is a stochastic matrix
-            False, otherwise
+    Returns
+    -------
+    Truth value : bool
+        True, if T is a stochastic matrix
+        False, otherwise
     """
     if is_stochastic_matrix(T, tol):
         if mu is None:
