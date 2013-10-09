@@ -292,29 +292,33 @@ def expectation_sensitivity(T, a):
 
 # TODO: ben: Implement in Python directly
 def expected_counts(p0, T, N):
-   r"""Compute expected transition counts for Markov chain with n steps. 
-
-   Expected counts are computed according to ..math::
-   
-                                \sum_{k=0}^n-1 diag(p^{T} T^{k})*T  n \geq 1
-   E[C^{(n)}(x_0,\dotsc,x_n)]=   
-                                0                                  n=0
-
-   Parameters
-   ----------
-   p0 : numpy array, shape=(n,)
-      Starting (probability) vector of the chain, numpy.sum(p)=1.0.
-   T : numpy array, shape=(n,n)
-      Transition matrix for the chain. T\geq 0, numpy.sum(T,axis=1)=(1,...,1)
-   N : int
-      Number of steps for chain.
-
-   Returns
-   --------
-   EC : numpy array, shape=(n,n)
-       Expected value for transition counts after a propagation of n steps. 
-
-   """
+    r"""Compute expected transition counts for Markov chain after N steps. 
+    
+    Expected counts are computed according to ..math::
+    
+    E[C_{ij}^{(n)}]=\sum_{k=0}^{N-1} (p_0^T T^{k})_{i} p_{ij}   
+    
+    Parameters
+    ----------
+    p0 : (M,) ndarray
+        Starting (probability) vector of the chain.
+    T : (M, M) ndarray or sparse matrix
+        Transition matrix of the chain.
+    N : int
+        Number of steps to take from initial state.
+        
+    Returns
+    --------
+    EC : (M, M) ndarray or sparse matrix
+        Expected value for transition counts after N steps. 
+    
+    """
+    if issparse(T):
+        raise TypeError("Not implmented for sparse matrices")
+    elif isdense(T):
+        raise TypeError("Not implmented for dense matrices")
+    else:
+        _type_not_supported
 
 # TODO: ben: Implement in Python directly
 def expected_counts_stationary(P, N, mu=None):
