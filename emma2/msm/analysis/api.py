@@ -318,19 +318,25 @@ def expected_counts(p0, T, N):
     
     Parameters
     ----------
-    p0 : numpy array, shape=(n,)
-        Starting (probability) vector of the chain, numpy.sum(p)=1.0.
-    T : numpy array, shape=(n,n)
-        Transition matrix for the chain. T\geq 0, numpy.sum(T,axis=1)=(1,...,1)
+    p0 : (M,) ndarray
+        Starting (probability) vector of the chain.
+    T : (M, M) ndarray or sparse matrix
+        Transition matrix of the chain.
     N : int
         Number of steps for chain.
     
     Returns
     --------
-    EC : numpy array, shape=(n,n)
-        Expected value for transition counts after a propagation of n steps. 
+    EC : (M, M) ndarray or sparse matrix
+        Expected value for transition counts after N steps. 
     
     """
+    if issparse(T):
+        raise TypeError("Not implmented for sparse matrices")
+    elif isdense(T):
+        raise TypeError("Not implmented for dense matrices")
+    else:
+        _type_not_supported
 
 # TODO: ben: Implement in Python directly
 def expected_counts_stationary(P, N, mu=None):
