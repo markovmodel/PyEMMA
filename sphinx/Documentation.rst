@@ -8,4 +8,5 @@ Documentation
    modules
    example_package
 
+   test
 
