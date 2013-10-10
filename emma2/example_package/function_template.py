@@ -7,9 +7,11 @@ def check_nonnegativity(A):
     r"""
     Checks nonnegativity of a matrix.
 
-    Matrix A=(a_ij) is nonnegative if 
+    Matrix :math:`A=(a_{ij})` is nonnegative if 
     
-        a_ij>=0 for all i, j.
+    .. math::
+
+        a_{ij}>=0 \quad \forall~i,j.
     
     Parameters
     ----------
@@ -39,7 +41,7 @@ def check_nonnegativity(A):
     >>> B=np.array([[1.0, 0.0], [2.0, 3.0]])
     >>> x=check_nonnegativity(A)
     >>> x
-    False
+    True
     
     """
     ind=(A<=0.0)
