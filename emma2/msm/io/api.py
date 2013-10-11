@@ -6,8 +6,8 @@
 
 # TODO: Implement in Python directly
 def read_discrete_trajectory(filename):
-    """
-    Read one or multiple ascii textfiles, each containing a single column with integer
+    """Read one or multiple ascii textfiles,
+    each containing a single column with integer
     entries into a list of integers.
 
     Parameters
@@ -16,11 +16,31 @@ def read_discrete_trajectory(filename):
         The filename of the discretized trajectory file. 
         The filename can either contain the full or the 
         relative path to the file.
-
+    
     Returns
     -------
     dtraj : array-like (or list of array-like)
         A list with integer entries.
+    
+    """
+# TODO: Implement in Python directly
+def load_discrete_trajectory(filename):
+    r"""Read one or multiple binary files,
+    each containing a single column with integer
+    entries into a list of integers.
+
+    Parameters
+    ---------- 
+    filename : str or list of str
+        The filename of the discretized trajectory file. 
+        The filename can either contain the full or the 
+        relative path to the file.
+    
+    Returns
+    -------
+    dtraj : array-like (or list of array-like)
+        A list with integer entries.
+    
     """
 
 # TODO: Implement in Python directly
@@ -28,6 +48,56 @@ def read_dtraj(filename):
     """
     (short version of the above)
     """
+# TODO: Implement in Python directly
+def load_dtraj(filename):
+    """
+    (short version of above)
+    """
+
+def write_discrete_trajectory(filename, dtraj):
+    r"""Write one or multiple discrete trajectories.
+    
+    Each discrete trajectory is written to a 
+    single column ascii text file.
+    
+    Parameters
+    ----------
+    filename : str or list of str
+        The filename of the discretized trajectory file. 
+        The filename can either contain the full or the 
+        relative path to the file. For a list of discrete
+        trajectories filename can also be a directory name
+        instead of a list of filenames.
+    
+    """
+
+def save_discrete_trajectory(filename, dtraj):
+    r"""Write one or multiple discrete trajectories
+    
+    Each discrete trajectory is written to as 
+    a numpy ndarray to a numpy binary .npy file.
+    
+    Parameters
+    ----------
+    filename : str or list of str
+        The filename of the discretized trajectory file. 
+        The filename can either contain the full or the 
+        relative path to the file. For a list of discrete
+        trajectories filename can also be a directory name
+        instead of a list of filenames.
+    
+    """
+    
+def write_dtraj(filename, dtraj):
+    r"""Short version
+    
+    """
+
+def save dtraj(filename, dtraj):
+    r"""Short version
+
+    """
+
 ################################################################################
 # Matrix IO
 ################################################################################
