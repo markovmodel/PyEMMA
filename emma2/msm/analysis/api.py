@@ -6,9 +6,11 @@ from scipy.sparse.sputils import isdense
 
 import dense.assessment
 import dense.decomposition
+import dense.expectations
 
 import sparse.assessment
 import sparse.decomposition
+import sparse.expectations
 
 import numpy as np
 
@@ -332,9 +334,9 @@ def expected_counts(p0, T, N):
     
     """
     if issparse(T):
-        raise TypeError("Not implmented for sparse matrices")
+        return sparse.expectations.expected_counts(p0, T, N)
     elif isdense(T):
-        raise TypeError("Not implmented for dense matrices")
+        return dense.expectations.expected_counts(p0, T, N)
     else:
         _type_not_supported
 
@@ -364,6 +366,12 @@ def expected_counts_stationary(P, N, mu=None):
         Expected value for transition counts after a propagation of n steps. 
     
     """
+    if issparse(T):
+        raise TypeError("Not implmented for sparse matrices")
+    elif isdense(T):
+        raise TypeError("Not implmented for dense matrices")
+    else:
+        _type_not_supported
 
 ################################################################################
 # Fingerprints
