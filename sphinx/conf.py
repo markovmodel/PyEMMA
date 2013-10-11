@@ -124,8 +124,6 @@ pngmath_latex_preamble = r"""
 pngmath_use_preview = True
 pngmath_dvipng_args = ['-gamma 1.5', '-D 96', '-bg Transparent']
 
-
-
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = []
 html_theme_path = ['_theme']

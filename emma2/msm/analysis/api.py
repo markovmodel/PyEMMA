@@ -312,7 +312,7 @@ def expected_counts(p0, T, N):
     
     Expected counts are computed according to
     
-    ..math::
+    .. math::
     
         E[C^{(n)}]=\sum_{k=0}^{n-1} diag(p^{T} T^{k})*T
     
