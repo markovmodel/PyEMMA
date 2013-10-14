@@ -55,7 +55,7 @@ def is_rate_matrix(K, tol=1e-15):
         raise _type_not_supported
 
 
-# TODO: Implement in Python directly
+# TODO: Martin Implement in Python directly
 def is_ergodic(T, tol=1e-15):
     r"""True if T is connected (irreducible) and aperiodic
     """
