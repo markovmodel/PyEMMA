@@ -1,6 +1,6 @@
 """This module implements the countmatrix estimation functionality"""
 
-import numpy
+import numpy as np
 import scipy.sparse
 
 def count_matrix(dtraj, lag, sliding=True):
@@ -34,22 +34,22 @@ def count_matrix(dtraj, lag, sliding=True):
         row=dtraj[0:-lag]
         col=dtraj[lag:]
         N=row.shape[0]
-        data=numpy.ones(N)
+        data=np.ones(N)
         C=scipy.sparse.coo_matrix((data, (row, col)))
 
     else:
         row=dtraj[0:-lag:lag]
         col=dtraj[lag::lag]
         N=row.shape[0]
-        data=numpy.ones(N)
+        data=np.ones(N)
         C=scipy.sparse.coo_matrix((data, (row, col)))        
 
     C=C.tocsr().tocoo()
-    C=_make_square_coo_matrix(C)
+    C=make_square_coo_matrix(C)
     return C
 
 
-def _make_square_coo_matrix(A):
+def make_square_coo_matrix(A):
     r"""Reshape a COO sparse matrix to a square matrix.
 
     Transform a given sparse matrix in coordinate list (COO) format 
@@ -68,7 +68,35 @@ def _make_square_coo_matrix(A):
         Square sparse matrix in coordinate list format.
     
     """
+    A=A.tocoo()
     N=max(A.shape)
     A_sq=scipy.sparse.coo_matrix((A.data, (A.row, A.col)), shape=(N, N))
     return A_sq    
     
+def add_coo_matrix(A, B):
+    """
+    Add two sparse matrices in coordinate list (COO) format 
+    with possibly incosistent shapes. If A is (k,l) shaped and
+    B has shape (m, n) than C=A+B has shape (max(k, m), max(l, n)).
+
+    Parameters :
+    ------------
+    A : scipy.sparse.coo_matrix
+        Sparse matrix in coordinate list format
+    B : scipy.sparse.coo_matrix
+        Sparse matrix in coordinate list format
+
+    Returns :
+    ---------
+    C : scipy.sparse.coo_matrix
+        Sparse matrix in coordinate list format 
+
+    """
+    A=A.tocoo()
+    B=B.tocoo()
+    data=np.hstack((A.data, B.data))
+    row=np.hstack((A.row, B.row))
+    col=np.hstack((A.col, B.col))
+    C=scipy.sparse.coo_matrix((data, (row, col)))
+    return C.tocsr().tocoo()
+
