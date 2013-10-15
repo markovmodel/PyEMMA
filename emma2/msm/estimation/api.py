@@ -31,7 +31,7 @@ def read_dtraj(filename):
 # Count matrix
 ################################################################################
 
-# TODO: Implement in Python directly
+# TODO: Benjamin Implement in Python directly
 def count_matrix(dtraj, lag, sliding=True):
     r"""Generate a count matrix in from a given list of integers.
 
@@ -52,14 +52,7 @@ def count_matrix(dtraj, lag, sliding=True):
     
     """
 
-# def count_matrix(dtrajs, lag=1, subset=None):
-#     """
-#         count matrix on the given set of states
-#         dtrajs: list of files or list of integer lists corresponding to discrete trajectories
-#         lag: lag time in time units
-#     """
-
-# TODO: Implement in Python directly
+# TODO: Benjamin Implement in Python directly
 def cmatrix(dtraj, lag, sliding=True):
     r"""Generate a count matrix in from a given list of integers.
 
@@ -80,7 +73,7 @@ def cmatrix(dtraj, lag, sliding=True):
         
     """
 
-# TODO: Implement in Python directly
+# TODO: Jan Implement in Python directly
 def cmatrix_cores(dtraj, cores, lag, sliding=True):
     r"""Generate a countmatrix for the milestoning process on the given core sets
     """
@@ -89,7 +82,7 @@ def cmatrix_cores(dtraj, cores, lag, sliding=True):
 # Connectivity
 ################################################################################
 
-# TODO: Implement in Python directly
+# TODO: Ben Implement in Python directly
 def connected_sets(C):
     """
     Compute connected components for a directed graph with weights
@@ -108,7 +101,7 @@ def connected_sets(C):
 
     """
 
-# TODO: Implement in Python directly
+# TODO: Ben Implement in Python directly
 def largest_connected_set(C):
     """
     Compute connected components for a directed graph with weights
@@ -126,7 +119,7 @@ def largest_connected_set(C):
 
     """
 
-# TODO: Implement in Python directly
+# TODO: Ben Implement in Python directly
 def connected_cmatrix(C):
     """
     Compute the count matrix of the largest connected set.
@@ -151,7 +144,7 @@ def connected_cmatrix(C):
 
     """
 
-# TODO: Implement in Python directly
+# TODO: Jan Implement in Python directly
 def is_connected(C):
     """Return true if C is a countmatrix for a completely connected process.    
     """
@@ -178,9 +171,9 @@ def mapping(set):
 # Transition matrix
 ################################################################################
 
-# TODO: Implement in Python directly (Nonreversible)
+# TODO: Jan Implement in Python directly (Nonreversible)
 # TODO: Implement in Python directly (Reversible with stat dist)
-# TODO: Map to Stallone (Reversible)
+# TODO: Martin Map to Stallone (Reversible)
 def transition_matrix(C, reversible=False, mu=None, **kwargs):
     """
     Estimate the transition matrix from the given countmatrix.
@@ -209,14 +202,14 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
 
     """
 
-# TODO: Implement in Python directly (Nonreversible)
+# TODO: Jan Implement in Python directly (Nonreversible)
 # TODO: Implement in Python directly (Reversible with stat dist)
 # TODO: Map to Stallone (Reversible)
 def tmatrix(C, reversible=False, mu=None):
     r"""Estimate the transition matrix from the given countmatrix.
     """
 
-# TODO: Implement in Python directly
+# TODO: Jan Implement in Python directly
 def tmatrix_cov(C, k=None):
     """
     Computes a nonreversible covariance matrix of transition matrix elments
@@ -230,7 +223,7 @@ def tmatrix_cov(C, k=None):
         
     """
     
-# TODO: Implement in Python directly
+# TODO: Jan Implement in Python directly
 def log_likelihood(C, T):
     """
         likelihood of C given T
@@ -245,7 +238,7 @@ def error_perturbation(C, sensitivity):
         returns: (m x m) covariance matrix of the target quantity 
     """
 
-# TODO: Map to Stallone (Reversible)
+# TODO: Martin Map to Stallone (Reversible)
 def tmatrix_sampler(C, reversible=False, mu=None, P0=None):
     """
     Parameters

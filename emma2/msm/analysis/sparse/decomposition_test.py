@@ -5,6 +5,7 @@ import numpy as np
 import scipy
 import scipy.linalg
 import scipy.sparse
+import scipy.sparse.linalg
 
 import decomposition
 
@@ -35,7 +36,7 @@ class TestDecomposition(unittest.TestCase):
         T=1.0*C/np.sum(C, axis=1)[:, np.newaxis]
         v, L, R=scipy.linalg.eig(T, left=True, right=True)
         """Sort eigenvalues and eigenvectors, order is decreasing absolute value"""
-        ind=np.argsort(abs(v))[::-1]
+        ind=np.argsort(np.abs(v))[::-1]
         v=v[ind]
         L=L[:, ind]
         R=R[:, ind]
@@ -93,7 +94,60 @@ class TestDecomposition(unittest.TestCase):
         A[ind_diag]=0.0
 
         """Assert that off-diagonal elements are zero"""
-        self.assertTrue(np.allclose(A, 0.0))      
+        self.assertTrue(np.allclose(A, 0.0))
+
+    def test_rdl_decomposition(self):
+        # k=self.k
+        # v, R=scipy.sparse.linalg.eigs(self.T_sparse, k=k, which='LM')
+        # r, L=scipy.sparse.linalg.eigs(self.T_sparse.transpose(), k=k, which='LM')
+
+        """Standard norm"""
+        vn, Ln, Rn=decomposition.rdl_decomposition(self.T_sparse, k=self.k)
+
+        """Eigenvalues"""
+        self.assertTrue(np.allclose(self.v_sparse, vn))
+
+        """Computed left eigenvectors Ln"""
+        R_dense=self.R_sparse.toarray()
+        A=np.dot(np.transpose(Ln), R_dense)
+        ind_diag=np.diag_indices(self.k)
+        A[ind_diag]=0.0
+
+        """Assert that off-diagonal elements are zero"""
+        self.assertTrue(np.allclose(A, 0.0))
+
+        """Computed right eigenvectors Rn"""
+        L_dense=self.L_sparse.toarray()        
+        A=np.dot(np.transpose(L_dense), Rn)
+        ind_diag=np.diag_indices(self.k)
+        A[ind_diag]=0.0
+
+        """Assert that off-diagonal elements are zero"""
+        self.assertTrue(np.allclose(A, 0.0))        
+
+        """Reversible"""
+        vn, Ln, Rn=decomposition.rdl_decomposition(self.T_sparse, k=self.k, norm='reversible')
+
+        """Eigenvalues"""
+        self.assertTrue(np.allclose(self.v_sparse, vn))
+
+        """Computed left eigenvectors Ln"""
+        R_dense=self.R_sparse.toarray()
+        A=np.dot(np.transpose(Ln), R_dense)
+        ind_diag=np.diag_indices(self.k)
+        A[ind_diag]=0.0
+
+        """Assert that off-diagonal elements are zero"""
+        self.assertTrue(np.allclose(A, 0.0))
+
+        """Computed right eigenvectors Rn"""
+        L_dense=self.L_sparse.toarray()        
+        A=np.dot(np.transpose(L_dense), Rn)
+        ind_diag=np.diag_indices(self.k)
+        A[ind_diag]=0.0
+
+        """Assert that off-diagonal elements are zero"""
+        self.assertTrue(np.allclose(A, 0.0))        
 
 if __name__=="__main__":
     unittest.main()
