@@ -1,39 +1,13 @@
-################################################################################
-# Discrete trajectory IO
-################################################################################
+"""This module contains the api definitions for the estimation module"""
 
-# TODO: Implement in Python directly
-def read_discrete_trajectory(filename):
-    """
-    Read one or multiple ascii textfiles, each containing a single column with integer
-    entries into a list of integers.
-
-    Parameters
-    ---------- 
-    filename : str or list of str
-        The filename of the discretized trajectory file. 
-        The filename can either contain the full or the 
-        relative path to the file.
-
-    Returns
-    -------
-    dtraj : array-like (or list of array-like)
-        A list with integer entries.
-    """
-
-# TODO: Implement in Python directly
-def read_dtraj(filename):
-    """
-    (short version of the above)
-    """
 
 ################################################################################
 # Count matrix
 ################################################################################
 
-# TODO: Benjamin Implement in Python directly
+# DONE: Benjamin Implement in Python directly
 def count_matrix(dtraj, lag, sliding=True):
-    r"""Generate a count matrix in from a given list of integers.
+    r"""Generate a count matrix from a given list of integers.
 
     Parameters
     ----------
@@ -51,6 +25,7 @@ def count_matrix(dtraj, lag, sliding=True):
         The countmatrix at given lag in coordinate list format.
     
     """
+    
 
 # TODO: Benjamin Implement in Python directly
 def cmatrix(dtraj, lag, sliding=True):
