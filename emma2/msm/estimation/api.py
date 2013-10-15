@@ -52,13 +52,6 @@ def count_matrix(dtraj, lag, sliding=True):
     
     """
 
-# def count_matrix(dtrajs, lag=1, subset=None):
-#     """
-#         count matrix on the given set of states
-#         dtrajs: list of files or list of integer lists corresponding to discrete trajectories
-#         lag: lag time in time units
-#     """
-
 # TODO: Benjamin Implement in Python directly
 def cmatrix(dtraj, lag, sliding=True):
     r"""Generate a count matrix in from a given list of integers.
