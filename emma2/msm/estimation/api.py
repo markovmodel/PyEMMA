@@ -1,5 +1,7 @@
 """This module contains the api definitions for the estimation module"""
 
+import sparse.count_matrix
+
 ################################################################################
 # Count matrix
 ################################################################################
@@ -23,10 +25,10 @@ def count_matrix(dtraj, lag, sliding=True):
     C : scipy.sparse.coo_matrix
         The countmatrix at given lag in coordinate list format.
     
-    """
-    
+    """    
+    return sparse.count_matrix.count_matrix(dtraj, lag, sliding=sliding)
 
-# TODO: Benjamin Implement in Python directly
+# DONE: Benjamin Implement in Python directly
 def cmatrix(dtraj, lag, sliding=True):
     r"""Generate a count matrix in from a given list of integers.
 
@@ -46,6 +48,7 @@ def cmatrix(dtraj, lag, sliding=True):
         The countmatrix at given lag in coordinate list format.
         
     """
+    return count_matrix(dtraj, lag, sliding=sliding)
 
 # TODO: Jan Implement in Python directly
 def cmatrix_cores(dtraj, cores, lag, sliding=True):
