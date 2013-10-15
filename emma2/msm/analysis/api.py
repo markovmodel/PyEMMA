@@ -151,13 +151,13 @@ def eigenvalues(T, k=None):
 
 
 # TODO: Implement in Python directly
-def eigenvalues_sensitivity(T, k=None):
+def eigenvalue_sensitivity(T, k):
     r"""computes the sensitivity of the specified eigenvalue
     
     Parameters
     ----------
-    k : int (optional)
-        Compute the sensitivity of the first k eigenvalues of T.
+    k : int
+        Eigenvalue index
     
     """
 
@@ -206,13 +206,15 @@ def eigenvectors(T, k=None, right=True):
     
 
 # TODO: Implement in Python directly
-def eigenvectors_sensitivity(T, k=None, right=True):
+def eigenvector_sensitivity(T, k, j, right=True):
     r"""Compute eigenvector snesitivity of T
     
     Parameters
     ----------
-    k : int (optional)
-        Compute eigenvectors to 
+    k : int
+        Eigenvector index 
+    j : int
+        Element index 
     right : bool
         If True compute right eigenvectors, otherwise compute left eigenvectors.
     
@@ -256,15 +258,15 @@ def rdl_decomposition(T, k=None, norm='standard'):
         raise _type_not_supported
     
 # TODO: Implement in Python directly
-def mfpt(T, i):
+def mfpt(T, target):
     r"""Computes vector of mean first passage times for given target state.
     
     Parameters
     ----------
-    P : ndarray, shape=(n,n) 
+    T : ndarray, shape=(n,n) 
         Transition matrix.
-    i : Integer
-        Target state for mfpt calculation.
+    target : Integer or List of integers
+        Target state or set for mfpt calculation.
     
     Returns
     -------
@@ -274,10 +276,18 @@ def mfpt(T, i):
     """
 
 # TODO: Implement in Python directly
-def mfpt_sensitivity(T, i):
+def mfpt_sensitivity(T, target, i):
     r"""Compute sensitivity of mfpt
+    
+    Parameters
+    ----------
+    T : ndarray, shape=(n,n)
+        Transition matrix 
+    target : Integer or List of integers
+        Target state or set for mfpt calculation.
+    i : state to compute the sensitivity for
+    
     """
-
 
 ################################################################################
 # Expectations
@@ -481,7 +491,7 @@ def committor(P, A, B, forward=True):
     """
 
 # TODO: Implement in Python directly
-def committor_sensitivity(P, A, B, forward=True):
+def committor_sensitivity(P, A, B, i, forward=True):
     r"""Compute the committor between sets of microstates.
     
     Parameters
@@ -493,6 +503,7 @@ def committor_sensitivity(P, A, B, forward=True):
         List of integer state labels for set A
     B : array_like
         List of integer state labels for set B
+    i : state to compute the sensitivity for
     forward : bool
         If True compute the forward committor, else
         compute the backward committor.
