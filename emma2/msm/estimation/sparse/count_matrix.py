@@ -25,6 +25,7 @@ def count_matrix(dtraj, lag, sliding=True):
         The countmatrix at given lag in coordinate list format.
     
     """
+    dtraj=np.asarray(dtraj)
     M=len(dtraj)
     if(lag>M):
         raise ValueError("Value for lag is greater than "+\
