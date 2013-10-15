@@ -88,3 +88,81 @@ def eigenvectors(T, k=None, right=True):
             val, vecs=scipy.sparse.linalg.eigs(T.transpose(), k=k, which='LM')
             ind=np.argsort(np.abs(val))[::-1]
             return vecs[:, ind]        
+
+def rdl_decomposition(T, k=None, norm='standard'):
+    r"""Compute the decomposition into left and right eigenvectors.
+    
+    Parameters
+    ----------
+    T : sparse matrix 
+        Transition matrix    
+    k : int (optional)
+        Number of eigenvector/eigenvalue pairs
+    norm: {'standard', 'reversible'}
+        standard: (L'R) = Id, L[:,0] is a probability distribution,
+            the stationary distribution mu of T. Right eigenvectors
+            R have a 2-norm of 1.
+        reversible: R and L are related via L=L[:,0]*R.
+        
+    Returns
+    -------
+    w : (M,) ndarray
+        The eigenvalues, each repeated according to its multiplicity
+    L : (M, M) ndarray
+        The normalized ("unit length") left eigenvectors, such that the 
+        column L[:,i] is the left eigenvector corresponding to the eigenvalue
+        w[i], dot(L[:,i], T)=w[i]*L[:,i], L[:,0] is a probability distribution
+        ("positive and l1 unit length").
+    R : (M, M) ndarray
+        The normalized (with respect to L) right eigenvectors, such that the 
+        column R[:,i] is the right eigenvector corresponding to the eigenvalue 
+        w[i], dot(T,R[:,i])=w[i]*R[:,i]
+      
+    """
+    if k is None:
+        raise ValueError("Number of eigenvectors required for decomposition of sparse matrix")
+    if norm=='standard':
+        v, R=scipy.sparse.linalg.eigs(T, k=k, which='LM')
+        r, L=scipy.sparse.linalg.eigs(T.transpose(), k=k, which='LM')
+
+        """Sort right eigenvectors"""
+        ind=np.argsort(np.abs(v))[::-1]
+        v=v[ind]
+        R=R[:,ind]
+
+        """Sort left eigenvectors"""
+        ind=np.argsort(np.abs(r))[::-1]
+        r=r[ind]
+        L=L[:,ind]        
+        
+        """l1-normalization of L[:, 0]"""
+        L[:, 0]=L[:, 0]/np.sum(L[:, 0])
+        
+        """Standard normalization L'R=Id"""
+        ov=np.diag(np.dot(np.transpose(L), R))
+        R=R/ov[np.newaxis, :]
+
+        return v, L, R
+
+    elif norm=='reversible':
+        v, R=scipy.sparse.linalg.eigs(T, k=k, which='LM')
+        r, L=scipy.sparse.linalg.eigs(T.transpose(), k=1, which='LM')
+        nu=L[:, 0]
+
+        """Sort right eigenvectors"""
+        ind=np.argsort(np.abs(v))[::-1]
+        v=v[ind]
+        R=R[:,ind]
+
+        mu=nu/np.sum(nu)
+        L=mu[:, np.newaxis]*R        
+
+        L[:, 0]=mu
+        ov=np.diag(np.dot(np.transpose(L), R))
+        R=R/ov[np.newaxis, :]
+
+        return v, L, R        
+        
+    else:
+        raise ValueError("Keyword 'norm' has to be either 'standard' or 'reversible'")
+        

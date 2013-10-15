@@ -5,6 +5,8 @@ Documentation
 .. toctree::
    :maxdepth: 2
 
-   generated/modules
+   modules
+   example_package
 
+   test
 
