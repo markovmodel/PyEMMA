@@ -79,16 +79,22 @@ def is_ergodic(T, tol=1e-15):
         raise _type_not_supported
     
 
-# TODO: martin: Implement in Python directly
+# Done: martin: Implement in Python directly
 def is_reversible(T, mu=None, tol=1e-15):
     r"""True if T is a transition matrix
     
     Parameters
     ----------
-    mu : tests with respect to this stationary distribution
+    T : ndarray or scipy.sparse matrix
+        Transition matrix
+    mu : ndarray
+        tests with respect to this stationary distribution
     
     Returns
     -------
+    Truth value : bool
+        True, if T is reversible
+        False, otherwise
     """
     if issparse(T):
         sparse.assessment.is_reversible(T, mu, tol)
