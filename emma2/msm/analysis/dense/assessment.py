@@ -31,7 +31,7 @@ def is_rate_matrix(K, tol=1e-15):
     
     return off_diagonal_positive and row_sum_eq_0
 
-def is_reversible(T, mu=None, tol):
+def is_reversible(T, tol, mu=None):
     r"""
     checks whether T is reversible in terms of given stationary distribution.
     If no distribution is given, it will be calculated out of T.
