@@ -46,6 +46,18 @@ def is_transition_matrix(T, tol=1e-15):
 
 def is_rate_matrix(K, tol=1e-15):
     r"""True if K is a rate matrix
+    Parameters
+    ----------
+    K : ndarray or scipy.sparse matrix
+        Rate matrix
+    tol : float
+        tolerance to check with
+
+    Returns
+    -------
+    Truth value: bool
+        True, if K is a rate matrix
+        False, otherwise
     """
     if issparse(K):
         return sparse.assessment.is_rate_matrix(K, tol)
