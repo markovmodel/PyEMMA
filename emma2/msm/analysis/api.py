@@ -55,10 +55,29 @@ def is_rate_matrix(K, tol=1e-15):
         raise _type_not_supported
 
 
-# TODO: Martin Implement in Python directly
+# Done: Martin Implement in Python directly
 def is_ergodic(T, tol=1e-15):
-    r"""True if T is connected (irreducible) and aperiodic
+    r"""True if T is connected (irreducible) and aperiodic.
+    
+    Parameters
+    ----------
+    T : ndarray or scipy.sparse matrix
+        Transition matrix
+    tol : float
+        tolerance to check with
+    
+    Returns
+    -------
+    Truth value : bool
+        True, if T is ergodic
+        False, otherwise
     """
+    if issparse(T) or isdense(T):
+        # T has to be sparse, and will be converted in sparse impl
+        sparse.assessment.is_ergodic(T, tol)
+    else:
+        raise _type_not_supported
+    
 
 # TODO: martin: Implement in Python directly
 def is_reversible(T, mu=None, tol=1e-15):
