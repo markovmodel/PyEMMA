@@ -68,7 +68,15 @@ def is_reversible(T, mu=None, tol=1e-15):
     ----------
     mu : tests with respect to this stationary distribution
     
+    Returns
+    -------
     """
+    if issparse(T):
+        sparse.assessment.is_reversible(T, mu, tol)
+    elif isdense(T):
+        dense.assessment.is_reversible(T, mu, tol)
+    else:
+        raise _type_not_supported
 
 
 ################################################################################

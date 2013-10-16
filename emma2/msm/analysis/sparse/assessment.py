@@ -1,5 +1,7 @@
 import numpy as np
-  
+from scipy.sparse.csr import csr_matrix
+from scipy.sparse.lil import lil_matrix
+
 def is_transition_matrix(T, tol):
     """
     True if T is a transition matrix
@@ -59,3 +61,36 @@ def is_rate_matrix(K, tol):
     diag = org_diag
     
     return gt_zero
+
+def is_reversible(T, mu=None, tol=1e-15):
+    r"""
+    checks whether T is reversible in terms of given stationary distribution.
+    If no distribution is given, it will be calculated out of T.
+    
+    performs follwing check:
+    :math:`\pi_i P_{ij} = \pi_j P_{ji}
+    Parameters
+    ----------
+    T : scipy.sparse matrix
+        Transition matrix
+    mu : numpy.ndarray vector
+        stationary distribution
+    tol : float
+        tolerance to check with
+        
+    Returns
+    -------
+    Truth value : bool
+        True, if T is a stochastic matrix
+        False, otherwise
+    """
+    if is_transition_matrix(T, tol):
+        # todo test: csr supports slicing (lil does)
+        if isinstance(T, (csr_matrix, lil_matrix)):
+            return np.allclose(T * mu[ : , np.newaxis ], \
+                           T[ : , np.newaxis] * mu,  atol=tol)
+        else:
+            r = T * mu
+            return np.allclose(r, np.transpose(r), atol=tol)
+    else:
+        ValueError("given matrix is not a valid transition matrix.")
