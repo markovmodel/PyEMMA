@@ -46,6 +46,18 @@ def is_transition_matrix(T, tol=1e-15):
 
 def is_rate_matrix(K, tol=1e-15):
     r"""True if K is a rate matrix
+    Parameters
+    ----------
+    K : ndarray or scipy.sparse matrix
+        Rate matrix
+    tol : float
+        tolerance to check with
+
+    Returns
+    -------
+    Truth value: bool
+        True, if K is a rate matrix
+        False, otherwise
     """
     if issparse(K):
         return sparse.assessment.is_rate_matrix(K, tol)
@@ -55,19 +67,53 @@ def is_rate_matrix(K, tol=1e-15):
         raise _type_not_supported
 
 
-# TODO: Martin Implement in Python directly
+# Done: Martin Implement in Python directly
 def is_ergodic(T, tol=1e-15):
-    r"""True if T is connected (irreducible) and aperiodic
+    r"""True if T is connected (irreducible) and aperiodic.
+    
+    Parameters
+    ----------
+    T : ndarray or scipy.sparse matrix
+        Transition matrix
+    tol : float
+        tolerance to check with
+    
+    Returns
+    -------
+    Truth value : bool
+        True, if T is ergodic
+        False, otherwise
     """
+    if issparse(T) or isdense(T):
+        # T has to be sparse, and will be converted in sparse impl
+        sparse.assessment.is_ergodic(T, tol)
+    else:
+        raise _type_not_supported
+    
 
+# Done: martin: Implement in Python directly
 def is_reversible(T, mu=None, tol=1e-15):
     r"""True if T is a transition matrix
     
     Parameters
     ----------
-    mu : tests with respect to this stationary distribution
+    T : ndarray or scipy.sparse matrix
+        Transition matrix
+    mu : ndarray
+        tests with respect to this stationary distribution
     
+    Returns
+    -------
+    Truth value : bool
+        True, if T is reversible
+        False, otherwise
     """
+    if issparse(T):
+        sparse.assessment.is_reversible(T, mu, tol)
+    elif isdense(T):
+        dense.assessment.is_reversible(T, mu, tol)
+    else:
+        raise _type_not_supported
 
 
 ################################################################################
@@ -375,9 +421,9 @@ def expected_counts_stationary(P, N, mu=None):
         Expected value for transition counts after a propagation of n steps. 
     
     """
-    if issparse(T):
+    if issparse(P):
         raise TypeError("Not implmented for sparse matrices")
-    elif isdense(T):
+    elif isdense(P):
         raise TypeError("Not implmented for dense matrices")
     else:
         _type_not_supported
