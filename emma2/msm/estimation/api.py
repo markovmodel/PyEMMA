@@ -1,6 +1,7 @@
 """This module contains the api definitions for the estimation module"""
 
 import sparse.count_matrix
+import sparse.connectivity
 
 ################################################################################
 # Count matrix
@@ -50,7 +51,7 @@ def cmatrix(dtraj, lag, sliding=True):
     """
     return count_matrix(dtraj, lag, sliding=sliding)
 
-# TODO: Jan Implement in Python directly
+# TODO: Implement in Python directly
 def cmatrix_cores(dtraj, cores, lag, sliding=True):
     r"""Generate a countmatrix for the milestoning process on the given core sets
     """
@@ -61,8 +62,7 @@ def cmatrix_cores(dtraj, cores, lag, sliding=True):
 
 # TODO: Ben Implement in Python directly
 def connected_sets(C):
-    """
-    Compute connected components for a directed graph with weights
+    r"""Compute connected components for a directed graph with weights
     represented by the given count matrix.
 
     Parameters
@@ -72,16 +72,18 @@ def connected_sets(C):
 
     Returns
     -------
-    cc : list of lists of integers
-        Each entry is a list containing all vertices (states) in 
-        the corresponding connected component.
+    cc : list of arrays of integers
+        Each entry is an array containing all vertices (states) in the
+        corresponding connected component. The list is sorted
+        according to the size of the individual components. The
+        largest connected set is the first entry in the list, lcc=cc[0].
 
     """
+    return sparse.connectivity.connected_sets(C)
 
-# TODO: Ben Implement in Python directly
+# DONE: Ben Implement in Python directly
 def largest_connected_set(C):
-    """
-    Compute connected components for a directed graph with weights
+    r"""Compute connected components for a directed graph with weights
     represented by the given count matrix.
 
     Parameters
@@ -91,22 +93,22 @@ def largest_connected_set(C):
 
     Returns
     -------
-    lcc : list of integers
+    lcc : array of integers
         The largest connected component of the directed graph.
 
     """
+    return sparse.connectivity.largest_connected_set(C)
 
-# TODO: Ben Implement in Python directly
-def connected_cmatrix(C):
-    """
-    Compute the count matrix of the largest connected set.
+# DONE: Ben Implement in Python directly
+def connected_count_matrix(C):
+    r"""Compute the count matrix of the largest connected set.
 
     The input count matrix is used as a weight matrix for the
-    construction of a directed graph. The largest connected set of
-    the constructed graph is computed. Vertices belonging to the
-    largest connected component are used to generate a completely
-    connected subgraph. The weight matrix of the subgraph is the
-    desired completely connected count matrix.
+    construction of a directed graph. The largest connected set of the
+    constructed graph is computed. Vertices belonging to the largest
+    connected component are used to generate a completely connected
+    subgraph. The weight matrix of the subgraph is the desired
+    completely connected count matrix.
     
     Parameters
     ----------
@@ -120,8 +122,9 @@ def connected_cmatrix(C):
         connected set of vertices (states)
 
     """
+    return sparse.connectivity.connected_count_matrix(C)
 
-# TODO: Jan Implement in Python directly
+# TODO: Implement in Python directly
 def is_connected(C):
     """Return true if C is a countmatrix for a completely connected process.    
     """
@@ -140,9 +143,7 @@ def mapping(set):
     dict : python dictionary mapping original to internal states 
     dict : python dictionary mapping internal to original states 
 
-    """
-    
-
+    """   
 
 ################################################################################
 # Transition matrix
