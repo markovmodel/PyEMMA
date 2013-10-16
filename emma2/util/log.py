@@ -3,6 +3,7 @@ Created on 15.10.2013
 
 @author: marscher
 '''
+# import log levels
 from logging import DEBUG, INFO, WARN, ERROR, CRITICAL
 import logging
 
@@ -19,14 +20,14 @@ import logging
 log = logging.getLogger('emma2')
 
 # set up logging to file - see previous section for more details
-logging.basicConfig(level=DEBUG,
+logging.basicConfig(level=logging.DEBUG,
             format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
             datefmt='%m-%d %H:%M',
             filename='emma2.log',
             filemode='w')
 # define a Handler which writes INFO messages or higher to the sys.stderr
 _console = logging.StreamHandler()
-_console.setLevel(INFO)
+_console.setLevel(logging.INFO)
 # set a format which is simpler for console use
 _formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
 # tell the handler to use this format
