@@ -93,7 +93,7 @@ def write_dtraj(filename, dtraj):
     
     """
 
-def save dtraj(filename, dtraj):
+def save_dtraj(filename, dtraj):
     r"""Short version
 
     """
