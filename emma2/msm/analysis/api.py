@@ -384,9 +384,9 @@ def expected_counts_stationary(P, N, mu=None):
         Expected value for transition counts after a propagation of n steps. 
     
     """
-    if issparse(T):
+    if issparse(P):
         raise TypeError("Not implmented for sparse matrices")
-    elif isdense(T):
+    elif isdense(P):
         raise TypeError("Not implmented for dense matrices")
     else:
         _type_not_supported
