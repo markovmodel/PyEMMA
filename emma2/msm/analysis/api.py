@@ -12,7 +12,7 @@ import sparse.assessment
 import sparse.decomposition
 import sparse.expectations
 
-import numpy as np
+from ...util.stallone import stallone_available                                 
 
 
 _type_not_supported = \
@@ -517,5 +517,51 @@ def committor_sensitivity(P, A, B, i, forward=True):
 
 # TODO: Translate from stallone
 def tpt(T, A, B):
-    r"""returns a TPT object
+    r""" returns a transition path TPT object                                   
+    Parameters                                                                  
+    ----------                                                                  
+    T : ndarray shape = (n, n)                                                  
+        transition matrix                                                       
+    A : ndarray(dtype=int, shape=(n, ))                                         
+        cluster centers of set A                                                
+    B : cluster centers of set B                                                
+        ndarray(dtype=int, shape=(n, ))                                         
+    mu : ndarray(dtype=double, shape(n, ))                                      
+        stationary distribution                                                 
+                                                                                
+    Returns                                                                     
+    -------                                                                     
+    tpt : pystallone.TPTFlux                                                    
+        a transition path TPT object                                            
+                                                                                
+    Notes # TODO check if this recognized by sphinx                             
+    ----                                                                        
+    invokes stallones (java) markov model factory to create a TPT
     """
+    if stallone_available:                                                      
+        # import pystallone as stallone                                          
+        from ...util.stallone import stallone                                   
+        # from pystallone.ArrayWrapper import ArrayWrapper                       
+        try:                                      
+            A = stallone.ArrayWrapper(A)                                     
+            B = stallone.ArrayWrapper(B)                                     
+            T = stallone.ArrayWrapper(T)                                      
+                                                                                
+            if mu == None:                                                      
+                return stallone.API.msmNew.createTPT(T, A, B)                   
+            else:                                                               
+                mu = stallone.ArrayWrapper(mu)                                  
+                return stallone.API.msmNew.createTPT(T, mu, A, B)               
+        except stallone.JavaError as je:                                        
+            raise RuntimeError(je.getJavaException())                           
+    else:                                                                       
+        raise NotImplementedError('currently only available in stallone')
+
+# temporary test!                                                               
+if __name__ == '__main__':                                                      
+    from numpy import *                                                         
+    T=random.rand(100,100)                                                      
+    A=random.randint(100)                                                       
+    B=A                                                                         
+                                                                                
+    tpt(T, A, B)
