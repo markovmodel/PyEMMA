@@ -1,6 +1,3 @@
-################################################################################
-# Assessment tools
-################################################################################
 from scipy.sparse import issparse
 from scipy.sparse.sputils import isdense
 
@@ -17,6 +14,10 @@ import numpy as np
 
 _type_not_supported = \
     TypeError("given matrix is not a numpy.ndarray or a scipy.sparse matrix.")
+
+################################################################################
+# Assessment tools
+################################################################################
 
 def is_transition_matrix(T, tol=1e-15):
     r"""
@@ -121,7 +122,7 @@ def is_reversible(T, mu=None, tol=1e-15):
 ################################################################################
 
 # DONE: ben: Implement in Python directly
-def mu(T):
+def stationary_distribution(T):
     r"""Compute stationary distribution of stochastic matrix T. 
     
     The stationary distribution is the left eigenvector corresponding to the 
@@ -147,7 +148,7 @@ def mu(T):
 
 
 # TODO: Implement in Python directly
-def mu_sensitivity(T):
+def stationary_distribution_sensitivity(T):
     r"""compute the sensitivity matrix of the stationary distribution of T"""
 
 # DONE: ben: Implement in Python directly
@@ -183,7 +184,7 @@ def eigenvalues(T, k=None):
     Parameters
     ----------
     T : transition matrix
-    k : int (optional) or tuple of ints
+    k : int (optional)
         Compute the first k eigenvalues of T.
     
     """
@@ -215,7 +216,7 @@ def timescales(T, tau=1, k=None):
     T : transition matrix
     tau : lag time
     k : int (optional)
-        Compute the first k implied time scales of T.
+        Compute the first k implied time scales.
     
     """
 
@@ -230,16 +231,15 @@ def eigenvectors(T, k=None, right=True):
     ----------
     T : numpy.ndarray, shape(d,d) or scipy.sparse matrix
         Transition matrix (stochastic matrix).
-    k : int (optional) or array-like 
-        For integer k compute the first k eigenvalues of T
-        else return those eigenvector sepcified by integer indices in k.
+    k : int (optional)
+        Compute the first k eigenvectors.
     
     Returns
     -------
     eigvec : numpy.ndarray, shape=(d, n)
         The eigenvectors of T ordered with decreasing absolute value of
         the corresponding eigenvalue. If k is None then n=d, if k is
-        int then n=k otherwise n is the length of the given indices array.
+        int then n=k.
     
     """
     if issparse(T):
