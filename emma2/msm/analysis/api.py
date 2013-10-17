@@ -12,9 +12,6 @@ import sparse.assessment
 import sparse.decomposition
 import sparse.expectations
 
-from ...util.stallone import stallone_available
-
-
 _type_not_supported = \
     TypeError("given matrix is not a numpy.ndarray or a scipy.sparse matrix.")
 
@@ -572,8 +569,7 @@ def tpt(T, A, B):
         cluster centers of set A
     B : cluster centers of set B
         ndarray(dtype=int, shape=(n, ))
-    mu : ndarray(dtype=double, shape(n, ))
-        stationary distribution
+    
     Returns
     -------
     tpt : pystallone.TPTFlux
@@ -582,19 +578,17 @@ def tpt(T, A, B):
     ----
     invokes stallones (java) markov model factory to create a TPT
     """
-    if stallone_available:
-        # import pystallone as stallone
-        from ...util.stallone import stallone
-        # from pystallone.ArrayWrapper import ArrayWrapper
+    if not is_transition_matrix(T):
+        raise ValueError("given matrix T is not a transition matrix")
+    
+    import util.stallone as stallone
+    if stallone.stallone_available:
+        #from ...util.stallone import stallone
         try:
-            A = stallone.ArrayWrapper(A)
-            B = stallone.ArrayWrapper(B)
-            T = stallone.ArrayWrapper(T)
-            if mu == None:
-                return stallone.API.msmNew.createTPT(T, A, B)
-            else:
-                mu = stallone.ArrayWrapper(mu)
-                return stallone.API.msmNew.createTPT(T, mu, A, B)
+            A = stallone.ndarray_to_stallone_array(A)
+            B = stallone.ndarray_to_stallone_array(B)
+            T = stallone.ndarray_to_stallone_array(T)
+            return stallone.API.msmNew.createTPT(T, A, B)
         except stallone.JavaError as je:
             raise RuntimeError(je.getJavaException())
     else:
@@ -602,7 +596,13 @@ def tpt(T, A, B):
 # temporary test!
 if __name__ == '__main__':
     from numpy import *
-    T=random.rand(100,100)
-    A=random.randint(100)
-    B=A
+    size = 10
+    C=random.random_integers(100, size=(size,size))
+    row_sums = C.sum(axis=1)
+    C=C.astype(float)
+    row_sums=row_sums.astype(float)
+    T = C / row_sums[:, newaxis]
+    A=random.random_integers(0,0,size=1)
+    B=random.random_integers(0,0,size=1)
+    print A, B
     tpt(T, A, B)
