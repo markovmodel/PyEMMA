@@ -1,4 +1,5 @@
 import numpy as np
+from decomposition import mu as statdist
 
 def is_transition_matrix(T, tol=1e-15):
     dim = T.shape[0]
@@ -31,12 +32,12 @@ def is_rate_matrix(K, tol=1e-15):
     
     return off_diagonal_positive and row_sum_eq_0
 
-def is_reversible(T, mu=None, tol):
+def is_reversible(T, mu=None, tol=1e-15):
     r"""
     checks whether T is reversible in terms of given stationary distribution.
     If no distribution is given, it will be calculated out of T.
     
-    performs follwing check:
+    performs following check:
     :math:`\pi_i P_{ij} = \pi_j P_{ji}
     Parameters
     ----------
@@ -55,7 +56,7 @@ def is_reversible(T, mu=None, tol):
     """
     if is_transition_matrix(T, tol):
         if mu is None:
-            mu = mu(T)
+            mu = statdist(T)
         return np.allclose(T * mu[ : , np.newaxis ], \
                            T[ : , np.newaxis] * mu,  atol=tol)
     else:
