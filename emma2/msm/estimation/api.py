@@ -128,6 +128,7 @@ def connected_count_matrix(C):
 def is_connected(C):
     """Return true if C is a countmatrix for a completely connected process.    
     """
+    
 
 # TODO: Implement in Python directly
 def mapping(set):
