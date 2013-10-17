@@ -1,3 +1,6 @@
+"""
+    API functions for markov state model analysis
+"""
 from scipy.sparse import issparse
 from scipy.sparse.sputils import isdense
 
@@ -8,9 +11,6 @@ import dense.expectations
 import sparse.assessment
 import sparse.decomposition
 import sparse.expectations
-
-import numpy as np
-
 
 _type_not_supported = \
     TypeError("given matrix is not a numpy.ndarray or a scipy.sparse matrix.")
@@ -150,27 +150,6 @@ def stationary_distribution(T):
 # TODO: Implement in Python directly
 def stationary_distribution_sensitivity(T):
     r"""compute the sensitivity matrix of the stationary distribution of T"""
-
-# DONE: ben: Implement in Python directly
-def statdist(T):
-    r"""Compute stationary distribution of stochastic matrix T. 
-    
-    The stationary distribution is the left eigenvector corresponding to the 
-    non-degenerate eigenvalue :math:`\lambda=1`.
-    
-    Parameters
-    ----------
-    T : numpy array, shape(d,d) or scipy.sparse matrix
-        Transition matrix (stochastic matrix).
-    
-    Returns
-    -------
-    mu : numpy array, shape(d,)      
-        Vector of stationary probabilities.
-    
-    """
-    statdist=mu(T)
-    return statdist
 
 
 # TODO: Implement in Python directly
