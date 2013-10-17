@@ -187,7 +187,7 @@ def read_matrix(filename, fmt='default'):
             name.xxx : the file is read as dense matrix
             name.coo.xxx :  the file is read as sparse matrix
         'dense' : Reads file as dense matrix 
-        'sparse' : Reads file as sparse matrx in COO-format.
+        'sparse' : Reads file as sparse matrix in COO-format.
     
     """
 
@@ -211,7 +211,7 @@ def load_matrix(filename, fmt='default'):
             name.npy : the file is read as dense matrix
             name.coo.npy :  the file is read as sparse matrix
         'dense' : Reads file as dense matrix 
-        'sparse' : Reads file as sparse matrx in COO-format.
+        'sparse' : Reads file as sparse matrix in COO-format.
     
     """
 
