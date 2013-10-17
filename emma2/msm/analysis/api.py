@@ -40,7 +40,7 @@ def is_transition_matrix(T, tol=1e-15):
     if issparse(T):
         return sparse.assessment.is_transition_matrix(T, tol)
     elif isdense(T):
-        return dense.assessment.is_stochastic_matrix(T, tol)
+        return dense.assessment.is_transition_matrix(T, tol)
     else:
         raise TypeError("T is not a numpy.ndarray or a scipy.sparse matrix.")
       
