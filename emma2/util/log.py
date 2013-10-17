@@ -22,7 +22,7 @@ log = logging.getLogger('emma2')
 # set up logging to file - see previous section for more details
 logging.basicConfig(level=logging.DEBUG,
             format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-            datefmt='%m-%d %H:%M',
+            datefmt='%m-%d %H:%M:%S',
             filename='emma2.log',
             filemode='w')
 # define a Handler which writes INFO messages or higher to the sys.stderr
