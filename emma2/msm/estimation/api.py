@@ -178,6 +178,21 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
        The MLE transition matrix
 
     """
+    
+    if reversible:
+        from emma2.util.stallone import stallone_available
+        print stallone_available
+        if stallone_available == False:
+            raise RuntimeError("stallone not available and reversible only impled there")
+        
+        import emma2.util.stallone as stallone
+        try:
+            C = stallone.ndarray_to_stallone_array(C)
+            # T is of type stallone.IDoubleArray, so wrap it in an ndarray
+            return stallone.ArrayWrapper(stallone.API.msm.estimateTrev(C))
+        except stallone.JavaError as je:
+            raise RuntimeError(je.getJavaException())
+            
 
 # TODO: Jan Implement in Python directly (Nonreversible)
 # TODO: Implement in Python directly (Reversible with stat dist)
