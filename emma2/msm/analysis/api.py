@@ -581,22 +581,9 @@ def tpt(T, A, B):
     if not is_transition_matrix(T):
         raise ValueError("given matrix T is not a transition matrix")
     
-    import util.stallone as stallone
-    if stallone.stallone_available:
+    from emma2.util.stallone import stallone_available
+    if stallone_available:
         from _impl import TPT
         return TPT(T, A, B)
     else:
         raise NotImplementedError('currently only available in stallone')
-# temporary test!
-if __name__ == '__main__':
-    from numpy import *
-    size = 10
-    C=random.random_integers(100, size=(size,size))
-    row_sums = C.sum(axis=1)
-    C=C.astype(float)
-    row_sums=row_sums.astype(float)
-    T = C / row_sums[:, newaxis]
-    A=random.random_integers(0,0,size=1)
-    B=random.random_integers(0,0,size=1)
-    print A, B
-    tpt(T, A, B)
