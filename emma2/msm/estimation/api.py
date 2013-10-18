@@ -3,6 +3,9 @@
 import sparse.count_matrix
 import sparse.connectivity
 
+from scipy.sparse import issparse
+from scipy.sparse.sputils import isdense
+
 ################################################################################
 # Count matrix
 ################################################################################
@@ -179,6 +182,10 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
        The MLE transition matrix
 
     """
+    if issparse(C):
+        return sparse.transition_matrix.transition_matrix(T, reversible, mu)
+    else:
+        raise TypeError("C is not a scipy.sparse matrix.")
 
 # TODO: Jan Implement in Python directly (Nonreversible)
 # TODO: Implement in Python directly (Reversible with stat dist)
