@@ -572,7 +572,7 @@ def tpt(T, A, B):
     
     Returns
     -------
-    tpt : pystallone.TPTFlux
+    tpt : pystallone.ITPTFlux
         a transition path TPT object
     Notes # TODO check if this recognized by sphinx
     ----
@@ -583,14 +583,8 @@ def tpt(T, A, B):
     
     import util.stallone as stallone
     if stallone.stallone_available:
-        #from ...util.stallone import stallone
-        try:
-            A = stallone.ndarray_to_stallone_array(A)
-            B = stallone.ndarray_to_stallone_array(B)
-            T = stallone.ndarray_to_stallone_array(T)
-            return stallone.API.msmNew.createTPT(T, A, B)
-        except stallone.JavaError as je:
-            raise RuntimeError(je.getJavaException())
+        from _impl import TPT
+        return TPT(T, A, B)
     else:
         raise NotImplementedError('currently only available in stallone')
 # temporary test!
