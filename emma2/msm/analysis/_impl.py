@@ -30,6 +30,7 @@ class TPT():
             B = stallone.ndarray_to_stallone_array(B)
             T = stallone.ndarray_to_stallone_array(T)
             self.ITPT = stallone.API.msmNew.createTPT(T, A, B)
+            # TODO: consider: should we call calculate here?
         except stallone.JavaError as je:
             raise RuntimeError(je.getJavaException().getStackTrace())
     
