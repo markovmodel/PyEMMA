@@ -52,7 +52,11 @@ def ndarray_to_stallone_array(ndarray):
     elif len(shape) == 2:
         n = shape[0]
         m = shape[1]
-        A = factory.matrix(n, m)
+        try:
+            A = factory.matrix(n, m)
+        except AttributeError:
+            A = factory.table(n, m)
+        
         for i in xrange(n):
             for j in xrange(m):
                 val = ndarray[i, j]
