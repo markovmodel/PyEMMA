@@ -11,13 +11,14 @@ import numpy as np
 class Test(unittest.TestCase):
 
     def testTPT(self):
-        A = np.ndarray([1, 2, 3], dtype=int)
-        B = np.ndarray([4, 2], dtype=int)
-        
-        T = np.ndarray([[ 0.5, 0, 0.5, 0],
+        A = np.asarray([0, 1], dtype=int)
+        B = np.asarray([3, 2], dtype=int)
+        # TODO: check if matrix is regular (and fullfills detailed balance) 
+        T = np.ndarray(buffer=np.array(
+           [[ 0.5, 0, 0.5, 0],
            [0, 0.5, 0.5, 0],
            [1 / 3., 1 / 3., 0, 1 / 3.],
-           [0, 0, 1, 0]], shape=(4,4), dtype=np.double)
+           [0, 0, 1, 0]]), shape=(4,4))
 
         itpt = api.tpt(T, A, B)
         
