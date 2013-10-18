@@ -3,7 +3,7 @@ Created on 18.10.2013
 
 @author: marscher
 '''
-import emma2.util.stallone
+import emma2.util.stallone as stallone
 from emma2.util.stallone import ArrayWrapper
 
 class TPT():
@@ -24,6 +24,10 @@ class TPT():
             ndarray( dtype = int, shape=?)
         B : set of states 
             ndarray( dtype = int)
+        # TODO: is this valid in sphinx?
+        Throws
+        ------
+        RuntimeError, if stallone is not available
         """
         try:
             A = stallone.ndarray_to_stallone_array(A)
@@ -32,7 +36,10 @@ class TPT():
             self.ITPT = stallone.API.msmNew.createTPT(T, A, B)
             # TODO: consider: should we call calculate here?
         except stallone.JavaError as je:
-            raise RuntimeError(je.getJavaException().getStackTrace())
+            exception = je.getJavaException()
+            msg = str(exception) + '\n' + \
+                str(exception.getStackTrace()).replace(',', '\n')
+            raise RuntimeError(msg)
     
     def getBackwardCommittor(self):
         """
