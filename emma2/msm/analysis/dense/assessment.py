@@ -31,7 +31,7 @@ def is_rate_matrix(K, tol=1e-15):
     
     return off_diagonal_positive and row_sum_eq_0
 
-def is_reversible(T, tol, mu=None):
+def is_reversible(T, mu=None, tol=1e-15):
     r"""
     checks whether T is reversible in terms of given stationary distribution.
     If no distribution is given, it will be calculated out of T.
@@ -55,7 +55,8 @@ def is_reversible(T, tol, mu=None):
     """
     if is_stochastic_matrix(T, tol):
         if mu is None:
-            mu = mu(T)
+            from emma2.msm.analysis.api import statdist
+            mu = statdist(T)
         return np.allclose(T * mu[ : , np.newaxis ], \
                            T[ : , np.newaxis] * mu,  atol=tol)
     else:
