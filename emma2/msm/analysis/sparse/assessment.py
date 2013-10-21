@@ -2,7 +2,7 @@ import numpy as np
 from scipy.sparse.csr import csr_matrix
 from scipy.sparse.lil import lil_matrix
 
-from scipy.sparse.cs_graph import connected_components
+from scipy.sparse.csgraph import connected_components
 from scipy.sparse.sputils import isdense
 
 def is_transition_matrix(T, tol):
