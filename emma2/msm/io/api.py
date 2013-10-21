@@ -74,7 +74,7 @@ def write_discrete_trajectory(filename, dtraj):
 def save_discrete_trajectory(filename, dtraj):
     r"""Write one or multiple discrete trajectories
     
-    Each discrete trajectory is written to as 
+    Each discrete trajectory is written as 
     a numpy ndarray to a numpy binary .npy file.
     
     Parameters
