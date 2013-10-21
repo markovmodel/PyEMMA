@@ -1,4 +1,8 @@
 
+Python imports
+--------------
+Relative imports (eg. you are in package A and import other modules from A)
+should be avoided due to pylint
 
 Commit messages
 ---------------
