@@ -13,6 +13,7 @@ Contents:
 
    rest
 
+   DevelopersGuide
    Tutorial
    Documentation
    Sandbox
