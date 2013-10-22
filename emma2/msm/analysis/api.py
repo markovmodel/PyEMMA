@@ -558,7 +558,6 @@ def committor_sensitivity(P, A, B, i, forward=True):
     
     """
 
-# TODO: Translate from stallone
 def tpt(T, A, B):
     r""" returns a transition path TPT object
     Parameters
