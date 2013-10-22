@@ -92,7 +92,7 @@ class TestRateMatrix(unittest.TestCase):
         return dia_matrix((diag, offsets), shape=(dim, dim))
 
     def setUp(self):
-        self.dim = 10
+        self.dim = 10000
         self.K = self.create_sparse_rate_matrix()
         self.tol = 1e-15
     
@@ -128,9 +128,8 @@ class TestReversible(unittest.TestCase):
         return dia_matrix((diag, [0, 1, -1]), shape=(dim, dim))
     
     def setUp(self):
-        np.set_printoptions(precision=4, suppress=True)
         unittest.TestCase.setUp(self)
-        self.dim = 10000
+        self.dim = 10
         self.tol = 1e-15
         self.T = self.create_rev_t()
 
@@ -140,4 +139,5 @@ class TestReversible(unittest.TestCase):
 
 if __name__=="__main__":
     import cProfile as profiler
+    unittest.main()
     profiler.run('unittest.main()', sort=1)

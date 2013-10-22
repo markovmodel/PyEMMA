@@ -1,27 +1,32 @@
-import numpy as np
-from scipy.sparse.csr import csr_matrix
-from scipy.sparse.lil import lil_matrix
+"""
+    Sparse assessment module of msm analysis package
+"""
 
+from scipy.sparse.construct import diags
 from scipy.sparse.csgraph import connected_components
 from scipy.sparse.sputils import isdense
+
+from emma2.msm.util import allclose_sparse
+
+import numpy as np
 
 def is_transition_matrix(T, tol):
     """
     True if T is a transition matrix
-    
+
     Parameters
     ----------
     T : scipy.sparse matrix
         Matrix to check
     tol : float
         tolerance to check with
-    
+
     Returns
     -------
     Truth value: bool
         True, if T is positive and normed
         False, otherwise
-    
+
     """
     T=T.tocsr() # compressed sparse row for fast row slicing
     values=T.data # non-zero entries of T
@@ -51,19 +56,26 @@ def is_rate_matrix(K, tol):
         True, if K negated diagonal is positive and row sums up to zero.
         False, otherwise
     """
+    K = K.tocsr()
     values = K.data
-    # store copy of original diagonal
-    org_diag = K.diagonal().copy()
-    diag = K.diagonal()
-    # set diagonal to 0
-    diag[:] = 0
-    
+
+    # check rows sum up to zero.
+    row_sum = K.sum(axis = 1)
+    sum_eq_zero = np.allclose(row_sum, np.zeros(shape=row_sum.shape), atol=tol)
+
+
+    # store copy of original diagonal, set it to zero and check off diagonals are > 0
+    # FIXME: think about a different solution, since element wise setting is slow
+    org_diag = K.diagonal()
+    for i in xrange(K.shape[0]):
+        K[i,i] = 0
+
     # check all values are greater zero within given tolerance
-    gt_zero = np.allclose(values-values, 0.0, atol = tol)
-    # restore original diagonal
-    diag = org_diag
-    
-    return gt_zero
+    values_gt_zero = np.allclose(values, np.abs(values), atol = tol)
+    for i in xrange(len(org_diag)):
+        K[i, i] = org_diag[i]
+
+    return values_gt_zero and sum_eq_zero
 
 def is_reversible(T, mu=None, tol=1e-15):
     r"""
@@ -87,20 +99,42 @@ def is_reversible(T, mu=None, tol=1e-15):
         True, if T is a stochastic matrix
         False, otherwise
     """
-    if is_transition_matrix(T, tol):
-        # todo test: csr supports slicing (lil does)
-        if isinstance(T, (csr_matrix, lil_matrix)):
-            return np.allclose(T * mu[ : , np.newaxis ], \
-                           T[ : , np.newaxis] * mu,  atol=tol)
-        else:
-            r = T * mu
-            return np.allclose(r, np.transpose(r), atol=tol)
-    else:
-        ValueError("given matrix is not a valid transition matrix.")
+    if not is_transition_matrix(T, tol):
+        raise ValueError("given matrix is not a valid transition matrix.")
+    
+    T = T.tocsr()
+    
+    if mu is None:
+        from decomposition import mu as statdist
+        mu = statdist(T)
+    
+    Mu = diags(mu, 0)
+    prod = Mu * T
+    
+    return allclose_sparse(prod, prod.transpose())
         
 def is_ergodic(T, tol):
+    """
+    checks if T is 'ergodic'
+    
+    Parameters
+    ----------
+    T : scipy.sparse matrix
+        Transition matrix
+    tol : float
+        tolerance
+        
+    Returns
+    -------
+    Truth value : bool
+    True, if # strongly connected components = 1
+    False, otherwise
+    """
     if isdense(T):
-        T = csr_matrix(T)
+        T = T.tocsr()
+    if not is_transition_matrix(T, tol):
+        raise ValueError("given matrix is not a valid transition matrix.")
+    
     num_components = connected_components(T, directed=True, \
                                           connection='strong', \
                                           return_labels=False)
