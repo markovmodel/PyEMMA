@@ -6,8 +6,6 @@ import unittest
 
 import assessment
 import numpy as np
-from numpy.core.numeric import ndarray
-
 
 def normalize_rows(A):
     """Normalize rows of sparse marix"""
@@ -128,7 +126,6 @@ class TestReversible(unittest.TestCase):
         diag[2, : ] = forward_p
         
         return dia_matrix((diag, [0, 1, -1]), shape=(dim, dim))
-
     
     def setUp(self):
         np.set_printoptions(precision=4, suppress=True)
@@ -142,4 +139,5 @@ class TestReversible(unittest.TestCase):
                         'matrix should be reversible')
 
 if __name__=="__main__":
-    unittest.main()
+    import cProfile as profiler
+    profiler.run('unittest.main()', sort=1)
