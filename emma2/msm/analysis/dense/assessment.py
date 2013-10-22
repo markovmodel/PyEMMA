@@ -2,6 +2,25 @@ import numpy as np
 from decomposition import mu as statdist
 
 def is_transition_matrix(T, tol=1e-15):
+    """
+    Tests whether T is a transition matrix
+    
+    Parameters
+    ----------
+    T : ndarray shape=(n, n)
+        matrix to test
+    tol : float
+        tolerance to check with
+    
+    Returns
+    -------
+    Truth value : bool
+        True, if all elements are in interval [0, 1] 
+            and each row of T sums up to 1.
+        False, otherwise
+    """
+    if T.shape[0] != T.shape[1]:
+        raise ValueError('T is not a quadratic matrix')
     dim = T.shape[0]
     X = np.abs(T) - T
     x = np.sum(T, axis = 1)
