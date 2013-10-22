@@ -17,7 +17,7 @@ try:
     from pystallone.ArrayWrapper import ArrayWrapper as ArrayWrapper
     jenv = initVM(initialheap='32m', maxheap='512m')
     stallone_available = True
-    _log.debug('stallone initialized successfully.')
+    _log.info('stallone initialized successfully.')
 except ImportError:
     _log.error('stallone could not be found.')
     stallone_available = False
@@ -41,7 +41,7 @@ def ndarray_to_stallone_array(ndarray):
     elif dtype == _np.int32 or dtype == _np.int64:
         factory = API.intsNew
     else:
-        raise TypeError('unsupported datatype')
+        raise TypeError('unsupported datatype: ', dtype)
     
     if len(shape) == 1:
         n = shape[0]
@@ -63,4 +63,4 @@ def ndarray_to_stallone_array(ndarray):
                 A.set(i, j, float(val))
         return A
     else:
-        raise ValueError('unsupported shape')
+        raise ValueError('unsupported shape: ', shape)
