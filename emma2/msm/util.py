@@ -1,6 +1,7 @@
-
+"""
+Utility functions
+"""
 from numpy import allclose
-from scipy.sparse.csr import isspmatrix_csr
 
 def allclose_sparse(A, B, rtol=1e-5, atol=1e-9):
     """
@@ -20,14 +21,17 @@ def allclose_sparse(A, B, rtol=1e-5, atol=1e-9):
     -------
     True, if given matrices are equal in bounds of rtol and atol
     False, otherwise
+    
+    Notes
+    -----
+    If the following equation is element-wise True, then allclose returns
+    True.
+
+     absolute(`a` - `b`) <= (`atol` + `rtol` * absolute(`b`))
+
+    The above equation is not symmetric in `a` and `b`, so that
+    `allclose(a, b)` might be different from `allclose(b, a)` in
+    some rare cases.
     """
-    if not isspmatrix_csr(A):
-        A = A.tocsr()
-    if not isspmatrix_csr(B):
-        B = B.tocsr()
-    
-    close_values = allclose(A.data, B.data, rtol=rtol, atol=atol)
-    equal_inds = (A.indices == B.indices).all()
-    equal_indptr = (A.indptr == B.indptr).all()
-    
-    return close_values and equal_inds and equal_indptr
+    diff = (A - B).data
+    return allclose(diff, 0.0, rtol=rtol, atol=atol)
