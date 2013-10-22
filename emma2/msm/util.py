@@ -1,5 +1,6 @@
 
-import numpy as np
+from numpy import allclose
+from scipy.sparse.csr import isspmatrix_csr
 
 def allclose_sparse(A, B, rtol=1e-5, atol=1e-9):
     """
@@ -20,10 +21,12 @@ def allclose_sparse(A, B, rtol=1e-5, atol=1e-9):
     True, if given matrices are equal in bounds of rtol and atol
     False, otherwise
     """
-    A = A.tocsr()
-    B = B.tocsr()
+    if not isspmatrix_csr(A):
+        A = A.tocsr()
+    if not isspmatrix_csr(B):
+        B = B.tocsr()
     
-    close_values = np.allclose(A.data, B.data, rtol=rtol, atol=atol)
+    close_values = allclose(A.data, B.data, rtol=rtol, atol=atol)
     equal_inds = (A.indices == B.indices).all()
     equal_indptr = (A.indptr == B.indptr).all()
     
