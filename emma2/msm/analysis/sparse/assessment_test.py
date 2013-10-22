@@ -6,6 +6,7 @@ import unittest
 
 import assessment
 import numpy as np
+from numpy.core.numeric import ndarray
 
 
 def normalize_rows(A):
@@ -106,6 +107,39 @@ class TestRateMatrix(unittest.TestCase):
                         np.allclose(self.K.offsets, K_copy.offsets), \
                         "object modified!")
 
+
+class TestReversible(unittest.TestCase):
+    def create_rev_t(self):
+        dim = self.dim
+        
+        diag = np.zeros((3, dim))
+        
+        forward_p = 4 / 5.
+        backward_p = 1 - forward_p
+        # main diagonal
+        diag[0, 0] = backward_p
+        diag[0, -1] = backward_p
+        
+        # lower diag
+        diag[1, : ] = backward_p
+        diag[1, 1] = forward_p
+         
+        # upper diag
+        diag[2, : ] = forward_p
+        
+        return dia_matrix((diag, [0, 1, -1]), shape=(dim, dim))
+
+    
+    def setUp(self):
+        np.set_printoptions(precision=4, suppress=True)
+        unittest.TestCase.setUp(self)
+        self.dim = 10000
+        self.tol = 1e-15
+        self.T = self.create_rev_t()
+
+    def test_is_reversible(self):
+        self.assertTrue(assessment.is_reversible(self.T, tol=self.tol), \
+                        'matrix should be reversible')
 
 if __name__=="__main__":
     unittest.main()
