@@ -11,14 +11,17 @@ import numpy as np
 class Test(unittest.TestCase):
 
     def testTPT(self):
-        A = np.asarray([0, 1], dtype=int)
-        B = np.asarray([3, 2], dtype=int)
-        # TODO: check if matrix is regular (and fullfills detailed balance) 
-        T = np.ndarray(buffer=np.array(
-           [[ 0.5, 0, 0.5, 0],
-           [0, 0.5, 0.5, 0],
-           [1 / 3., 1 / 3., 0, 1 / 3.],
-           [0, 0, 1, 0]]), shape=(4,4))
+        A = np.asarray([0], dtype=int)
+        B = np.asarray([0], dtype=int)
+        C = np.ndarray(buffer=np.array(
+            [[6000, 3, 0, 0, 0, 0],
+             [3, 1000, 3, 0, 0, 0],
+             [0, 3, 1000, 3, 0, 0],
+             [0, 0, 3, 1000, 3, 0],
+             [0, 0, 0, 3, 1000, 3],
+             [0, 0, 0, 0, 3, 90000]]), shape=(6, 6))
+        
+        T = C / np.sum(C, axis=1)[:, np.newaxis]
 
         itpt = api.tpt(T, A, B)
         
