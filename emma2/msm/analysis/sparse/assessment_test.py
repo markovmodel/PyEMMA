@@ -1,12 +1,16 @@
 """This module provides unit tests for the assessment module"""
+import time
+import unittest
+
+import numpy as np
+# from numpy.core.numeric import ndarray
 
 import scipy.sparse
 from scipy.sparse.dia import dia_matrix
-import unittest
 
 import assessment
-import numpy as np
-from numpy.core.numeric import ndarray
+import decomposition
+
 
 
 def normalize_rows(A):
@@ -105,7 +109,7 @@ class TestRateMatrix(unittest.TestCase):
         
         self.assertTrue(np.allclose(self.K.data, K_copy.data) and \
                         np.allclose(self.K.offsets, K_copy.offsets), \
-                        "object modified!")
+                        "object modified!")        
 
 
 class TestReversible(unittest.TestCase):
@@ -114,7 +118,8 @@ class TestReversible(unittest.TestCase):
         
         diag = np.zeros((3, dim))
         
-        forward_p = 4 / 5.
+        # forward_p = 4 / 5.
+        forward_p=0.6
         backward_p = 1 - forward_p
         # main diagonal
         diag[0, 0] = backward_p
@@ -129,17 +134,22 @@ class TestReversible(unittest.TestCase):
         
         return dia_matrix((diag, [0, 1, -1]), shape=(dim, dim))
 
-    
     def setUp(self):
         np.set_printoptions(precision=4, suppress=True)
-        unittest.TestCase.setUp(self)
-        self.dim = 10000
+        self.dim = 100
         self.tol = 1e-15
+        
+        start=time.time()
         self.T = self.create_rev_t()
+        end=time.time()
+        print '%.3fs' %(end-start)
 
+       
     def test_is_reversible(self):
         self.assertTrue(assessment.is_reversible(self.T, tol=self.tol), \
                         'matrix should be reversible')
+
+        
 
 if __name__=="__main__":
     unittest.main()

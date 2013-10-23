@@ -27,7 +27,7 @@ def mu(T):
     """
     vals, vecs=scipy.sparse.linalg.eigs(T.transpose(), k=1, which='LR')
     nu=vecs[:, 0].real
-    mu=nu/sum(nu)
+    mu=nu/np.sum(nu)
     return mu
 
 def eigenvalues(T, k=None):
