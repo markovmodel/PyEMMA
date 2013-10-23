@@ -1,5 +1,7 @@
-
-import numpy as np
+"""
+Utility functions
+"""
+from numpy import allclose
 
 def allclose_sparse(A, B, rtol=1e-5, atol=1e-9):
     """
@@ -19,12 +21,17 @@ def allclose_sparse(A, B, rtol=1e-5, atol=1e-9):
     -------
     True, if given matrices are equal in bounds of rtol and atol
     False, otherwise
+    
+    Notes
+    -----
+    If the following equation is element-wise True, then allclose returns
+    True.
+
+     absolute(`a` - `b`) <= (`atol` + `rtol` * absolute(`b`))
+
+    The above equation is not symmetric in `a` and `b`, so that
+    `allclose(a, b)` might be different from `allclose(b, a)` in
+    some rare cases.
     """
-    A = A.tocsr()
-    B = B.tocsr()
-    
-    close_values = np.allclose(A.data, B.data, rtol=rtol, atol=atol)
-    equal_inds = (A.indices == B.indices).all()
-    equal_indptr = (A.indptr == B.indptr).all()
-    
-    return close_values and equal_inds and equal_indptr
+    diff = (A - B).data
+    return allclose(diff, 0.0, rtol=rtol, atol=atol)

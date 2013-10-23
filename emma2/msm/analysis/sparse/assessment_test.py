@@ -1,5 +1,4 @@
 """This module provides unit tests for the assessment module"""
-import time
 import unittest
 
 import numpy as np
@@ -9,7 +8,6 @@ import scipy.sparse
 from scipy.sparse.dia import dia_matrix
 
 import assessment
-import decomposition
 
 
 
@@ -133,23 +131,17 @@ class TestReversible(unittest.TestCase):
         diag[2, : ] = forward_p
         
         return dia_matrix((diag, [0, 1, -1]), shape=(dim, dim))
-
+    
     def setUp(self):
-        np.set_printoptions(precision=4, suppress=True)
         self.dim = 100
         self.tol = 1e-15
-        
-        start=time.time()
         self.T = self.create_rev_t()
-        end=time.time()
-        print '%.3fs' %(end-start)
 
-       
     def test_is_reversible(self):
         self.assertTrue(assessment.is_reversible(self.T, tol=self.tol), \
                         'matrix should be reversible')
 
-        
-
 if __name__=="__main__":
+    import cProfile as profiler
     unittest.main()
+    profiler.run('unittest.main()', sort=1)

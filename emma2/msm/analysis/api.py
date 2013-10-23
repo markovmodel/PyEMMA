@@ -540,7 +540,31 @@ def committor_sensitivity(P, A, B, i, forward=True):
     
     """
 
-# TODO: Translate from stallone
 def tpt(T, A, B):
-    r"""returns a TPT object
+    r""" returns a transition path TPT object
+    Parameters
+    ----------
+    T : ndarray shape = (n, n)
+        transition matrix
+    A : ndarray(dtype=int, shape=(n, ))
+        cluster centers of set A
+    B : cluster centers of set B
+        ndarray(dtype=int, shape=(n, ))
+    
+    Returns
+    -------
+    tpt : pystallone.ITPTFlux
+        a transition path TPT object
+    Notes # TODO check if this recognized by sphinx
+    ----
+    invokes stallones (java) markov model factory to create a TPT
     """
+    if not is_transition_matrix(T):
+        raise ValueError("given matrix T is not a transition matrix")
+    
+    from emma2.util.stallone import stallone_available
+    if stallone_available:
+        from _impl import TPT
+        return TPT(T, A, B)
+    else:
+        raise NotImplementedError('currently only available in stallone')
