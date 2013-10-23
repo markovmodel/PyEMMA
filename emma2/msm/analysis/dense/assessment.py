@@ -25,10 +25,10 @@ def is_rate_matrix(K, tol=1e-15):
         False, otherwise
     """
     R = K - K.diagonal()
-    off_diagonal_positive = np.allclose(R, abs(R), 0.0, tol)
+    off_diagonal_positive = np.allclose(R, abs(R), 0.0, atol=tol)
     
     row_sum = K.sum(axis = 1)
-    row_sum_eq_0 = np.allclose(row_sum, 0.0, rtol=0.0, atol=tol)
+    row_sum_eq_0 = np.allclose(row_sum, 0.0, atol=tol)
     
     return off_diagonal_positive and row_sum_eq_0
 
