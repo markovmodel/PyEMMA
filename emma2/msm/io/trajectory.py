@@ -75,7 +75,7 @@ def load_discrete_trajectory(filename):
     Returns
     -------
     dtraj : (M,) ndarray
-        Array with integer entries.
+        Discrete state trajectory.
     
     """        
     dtraj=np.load(filename)
