@@ -1,12 +1,14 @@
 """This module provides unit tests for the assessment module"""
-
-import scipy.sparse
-from scipy.sparse.construct import spdiags
-from scipy.sparse.dia import dia_matrix
 import unittest
 
-import assessment
 import numpy as np
+# from numpy.core.numeric import ndarray
+
+import scipy.sparse
+from scipy.sparse.dia import dia_matrix
+
+import assessment
+
 
 
 def normalize_rows(A):
@@ -79,22 +81,22 @@ class TestRateMatrix(unittest.TestCase):
         # main diagonal
         diag[0, 0] = (-lambda_)
         diag[0, 1:dim - 1] = -(mu + lambda_)
-        diag[0, dim-1] = lambda_
+        diag[0, dim - 1] = lambda_
         
         # lower diag
         diag[1, : ] = mu
         diag[1, -2 : ] = -mu
+        diag[1, -2: ] = lambda_
+        diag[0, dim -1] = -lambda_
         # upper diag
         diag[2, : ] = lambda_
         
         offsets = [0, -1, 1]
         
-        return spdiags(diag, offsets, dim, dim, format='csr')
-        A = dia_matrix((diag, offsets), shape=(dim, dim))
-        return A.tocsr()
+        return dia_matrix((diag, offsets), shape=(dim, dim))
 
     def setUp(self):
-        self.dim = 1e6
+        self.dim = 10
         self.K = self.create_sparse_rate_matrix()
         self.tol = 1e-15
     
@@ -102,11 +104,44 @@ class TestRateMatrix(unittest.TestCase):
         K_copy = self.K.copy()
         self.assertTrue(assessment.is_rate_matrix(self.K, self.tol), \
                         "K should be evaluated as rate matrix.")
+        
         self.assertTrue(np.allclose(self.K.data, K_copy.data) and \
-                        np.allclose(self.K.indptr, K_copy.indptr) and \
-                        np.allclose(self.K.indices, K_copy.indices), \
-                        "object modified!")
+                        np.allclose(self.K.offsets, K_copy.offsets), \
+                        "object modified!")        
 
+
+class TestReversible(unittest.TestCase):
+    def create_rev_t(self):
+        dim = self.dim
+        
+        diag = np.zeros((3, dim))
+        
+        # forward_p = 4 / 5.
+        forward_p=0.6
+        backward_p = 1 - forward_p
+        # main diagonal
+        diag[0, 0] = backward_p
+        diag[0, -1] = backward_p
+        
+        # lower diag
+        diag[1, : ] = backward_p
+        diag[1, 1] = forward_p
+         
+        # upper diag
+        diag[2, : ] = forward_p
+        
+        return dia_matrix((diag, [0, 1, -1]), shape=(dim, dim))
+    
+    def setUp(self):
+        self.dim = 100
+        self.tol = 1e-15
+        self.T = self.create_rev_t()
+
+    def test_is_reversible(self):
+        self.assertTrue(assessment.is_reversible(self.T, tol=self.tol), \
+                        'matrix should be reversible')
 
 if __name__=="__main__":
+    import cProfile as profiler
     unittest.main()
+    profiler.run('unittest.main()', sort=1)
