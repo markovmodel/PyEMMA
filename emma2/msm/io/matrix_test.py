@@ -8,6 +8,51 @@ import scipy.sparse
 import matrix
 
 ################################################################################
+# util
+################################################################################
+
+class TestIsSparseFile(unittest.TestCase):
+    
+    def setUp(self):
+        self.dense_name1='matrix.dat'
+        self.dense_name2='tmp/matrix.npy'
+        self.sparse_name1='matrix.coo.dat'
+        self.sparse_name2='tmp/matrix.coo.npy'
+
+    def tearDown(self):
+        pass
+
+    def test_is_sparse_file(self):
+        self.assertTrue(not matrix.is_sparse_file(self.dense_name1))
+        self.assertTrue(not matrix.is_sparse_file(self.dense_name2))
+        self.assertTrue(matrix.is_sparse_file(self.sparse_name1))
+        self.assertTrue(matrix.is_sparse_file(self.sparse_name2))
+
+class TestToDense(unittest.TestCase):
+    def setUp(self):
+        self.A=scipy.sparse.rand(100, 100)
+        self.B=np.random.rand(10,10)
+    
+    def tearDown(self):
+        pass
+
+    def test_todense(self):
+        self.assertTrue(scipy.sparse.sputils.isdense(matrix.todense(self.A)))
+        self.assertTrue(scipy.sparse.sputils.isdense(matrix.todense(self.B)))
+
+class TestToSparse(unittest.TestCase):
+    def setUp(self):
+        self.A=scipy.sparse.rand(100, 100)
+        self.B=np.random.rand(10,10)
+    
+    def tearDown(self):
+        pass
+
+    def test_tosparse(self):
+        self.assertTrue(scipy.sparse.issparse(matrix.tosparse(self.A)))
+        self.assertTrue(scipy.sparse.issparse(matrix.tosparse(self.B)))              
+
+################################################################################
 # ascii
 ################################################################################
 
