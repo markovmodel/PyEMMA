@@ -185,7 +185,7 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
     if issparse(C):
         return sparse.transition_matrix.transition_matrix(T, reversible, mu)
     else:
-        raise TypeError("C is not a scipy.sparse matrix.")
+        raise TypeError("C is not of type scipy.sparse.")
 
 # TODO: Jan Implement in Python directly (Nonreversible)
 # TODO: Implement in Python directly (Reversible with stat dist)
@@ -193,6 +193,7 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
 def tmatrix(C, reversible=False, mu=None):
     r"""Estimate the transition matrix from the given countmatrix.
     """
+    return transition_matrix(C, reversible, mu)
 
 # TODO: Jan Implement in Python directly
 def tmatrix_cov(C, k=None):
@@ -213,6 +214,7 @@ def log_likelihood(C, T):
     """
         likelihood of C given T
     """
+    sparse.likelihood.log_likelihood(C, T)
     
 # TODO: Implement in Python directly
 def error_perturbation(C, sensitivity):
