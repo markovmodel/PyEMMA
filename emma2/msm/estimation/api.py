@@ -198,7 +198,7 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
             raise RuntimeError(je.getJavaException())
     else:
         if issparse(C):
-            return sparse.transition_matrix.transition_matrix(T, reversible, mu)
+            return sparse.transition_matrix.transition_matrix(C, reversible, mu)
         else:
             raise TypeError("C is not of type scipy.sparse.")
             
