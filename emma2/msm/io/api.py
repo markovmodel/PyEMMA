@@ -4,12 +4,16 @@
 # Discrete trajectory IO
 ################################################################################
 
+################################################################################
+# i) ascii
+################################################################################
+
 # TODO: Implement in Python directly
 def read_discrete_trajectory(filename):
     """Read discrete trajectory from ascii file. 
 
-    The ascii file containing a single column with integer entries is
-    read into an array of integers.
+    The discrete trajectory file containing a single column with
+    integer entries is read into an array of integers.
 
     Parameters
     ---------- 
@@ -24,7 +28,68 @@ def read_discrete_trajectory(filename):
         Array with integer entries.
     
     """
+
+# TODO: Implement in Python directly
+def read_dtraj(filename):
+    """Read discrete trajectory from ascii file. 
+
+    The discrete trajectory file containing a single column with
+    integer entries is read into an array of integers.
+
+    Parameters
+    ---------- 
+    filename : str r
+        The filename of the discretized trajectory file. 
+        The filename can either contain the full or the 
+        relative path to the file.
     
+    Returns
+    -------
+    dtraj : (M, ) ndarray
+        Array with integer entries.
+    
+    """    
+
+# TODO: Implement in Python directly
+def write_discrete_trajectory(filename, dtraj):
+    r"""Write discrete trajectory to ascii file.
+    
+    The discrete trajectory is written to a 
+    single column ascii file with integer entries
+    
+    Parameters
+    ---------- 
+    filename : str 
+        The filename of the discrete state trajectory file. 
+        The filename can either contain the full or the 
+        relative path to the file.
+
+    dtraj : array-like
+        Discrete state trajectory.
+    
+    """    
+
+def write_dtraj(filename, dtraj):
+    r"""Write discrete trajectory to ascii file.
+    
+    The discrete trajectory is written to a 
+    single column ascii file with integer entries
+    
+    Parameters
+    ---------- 
+    filename : str 
+        The filename of the discrete state trajectory file. 
+        The filename can either contain the full or the 
+        relative path to the file.
+
+    dtraj : array-like
+        Discrete state trajectory.
+    
+    """    
+
+################################################################################
+# binary
+################################################################################
 
 # TODO: Implement in Python directly
 def load_discrete_trajectory(filename):
@@ -47,35 +112,27 @@ def load_discrete_trajectory(filename):
     
     """
 
-# TODO: Implement in Python directly
-def read_dtraj(filename):
-    """
-    (short version of the above)
-    """
+
 # TODO: Implement in Python directly
 def load_dtraj(filename):
-    """
-    (short version of above)
-    """
-# TODO: Implement in Python directly
-def write_discrete_trajectory(filename, dtraj):
-    r"""Write discrete trajectory to ascii file.
-    
-    The discrete trajectory is written to a 
-    single column ascii file with integer entries
-    
+    r"""Read discrete trajectory form binary file.
+
+    The binary file is a one dimensional numpy array
+    of integers stored in numpy .npy format.
+
     Parameters
     ---------- 
     filename : str 
         The filename of the discrete state trajectory file. 
         The filename can either contain the full or the 
         relative path to the file.
-
-    dtraj : array-like
-        Discrete state trajectory.
     
-    """    
-
+    Returns
+    -------
+    dtraj : (M,) ndarray
+        Array with integer entries.
+    
+    """
 
 def save_discrete_trajectory(filename, dtraj):
     r"""Write one or multiple discrete trajectories
@@ -92,21 +149,56 @@ def save_discrete_trajectory(filename, dtraj):
         trajectories filename can also be a directory name
         instead of a list of filenames.
     
-    """
-    
-def write_dtraj(filename, dtraj):
-    r"""Short version
-    
-    """
+    """   
 
 def save_dtraj(filename, dtraj):
-    r"""Short version
-
+    r"""Write one or multiple discrete trajectories
+    
+    Each discrete trajectory is written as 
+    a numpy ndarray to a numpy binary .npy file.
+    
+    Parameters
+    ----------
+    filename : str or list of str
+        The filename of the discrete state trajectory file. 
+        The filename can either contain the full or the 
+        relative path to the file. For a list of discrete
+        trajectories filename can also be a directory name
+        instead of a list of filenames.
+    
     """
+
 
 ################################################################################
 # Matrix IO
 ################################################################################
+
+################################################################################
+# ascii
+################################################################################
+
+def read_matrix(filename, fmt='default'):
+    r"""Read matrix from ascii file
+    
+    (M, N) dense matrices are read from ascii files
+    with M rows and N columns.
+    
+    Sparse matrices are read from ascii files in 
+    coordinate list (COO) format and converted
+    to sparse matrices in (COO) format.
+    
+    Parameters
+    ----------
+    filename : str
+        Relative or absolute pathname of the input file.
+    fmt : {'default', 'dense', 'sparse'}
+        'default' : Use the filename to determine the matrix format.
+            name.xxx : the file is read as dense matrix
+            name.coo.xxx :  the file is read as sparse matrix
+        'dense' : Reads file as dense matrix 
+        'sparse' : Reads file as sparse matrix in COO-format.
+    
+    """
 
 def write_matrix(filename, A, fmt='default'):
     r"""Write matrix to ascii file 
@@ -136,10 +228,14 @@ def write_matrix(filename, A, fmt='default'):
     -----
     Using the naming scheme name.xxx for dense matrices 
     and name.coo.xxx for sparse matrices will allow
-    read_matrix to automatically return the appropriate matrix
+    read_matrix to automatically infer the appropriate matrix
     type from the given filename.                       
     
     """
+
+################################################################################
+# binary
+################################################################################
 
 def save_matrix(filename, A, fmt='default'):
     r"""Write matrix to ascii file 
@@ -169,33 +265,11 @@ def save_matrix(filename, A, fmt='default'):
     -----
     Using the naming scheme name.npy for dense matrices 
     and name.coo.npy for sparse matrices will allow
-    read_matrix to automatically return the appropriate matrix
+    load_matrix to automatically infer the appropriate matrix
     type from the given filename.
     
     """    
 
-def read_matrix(filename, fmt='default'):
-    r"""Read matrix from ascii file
-    
-    (M, N) dense matrices are read from ascii files
-    with M rows and N columns.
-    
-    Sparse matrices are read from ascii files in 
-    coordinate list (COO) format and converted
-    to sparse matrices in (COO) format.
-    
-    Parameters
-    ----------
-    filename : str
-        Relative or absolute pathname of the input file.
-    fmt : {'default', 'dense', 'sparse'}
-        'default' : Use the filename to determine the matrix format.
-            name.xxx : the file is read as dense matrix
-            name.coo.xxx :  the file is read as sparse matrix
-        'dense' : Reads file as dense matrix 
-        'sparse' : Reads file as sparse matrix in COO-format.
-    
-    """
 
 def load_matrix(filename, fmt='default'):
     r"""Read matrix from binary file
