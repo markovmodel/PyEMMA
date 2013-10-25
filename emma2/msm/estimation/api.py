@@ -3,6 +3,9 @@
 import sparse.count_matrix
 import sparse.connectivity
 
+__all__=['count_matrix', 'cmatrix', 'connected_sets', 'largest_connected_set',\
+             'connected_count_matrix']
+
 ################################################################################
 # Count matrix
 ################################################################################
@@ -29,32 +32,15 @@ def count_matrix(dtraj, lag, sliding=True):
     """    
     return sparse.count_matrix.count_matrix(dtraj, lag, sliding=sliding)
 
-# DONE: Benjamin Implement in Python directly
-def cmatrix(dtraj, lag, sliding=True):
-    r"""Generate a count matrix in from a given list of integers.
-
-    Parameters
-    ----------
-    dtraj : array_like
-        Discretized trajectory
-    lag : int
-        Lagtime in trajectory steps
-    sliding : bool, optional
-        If true the sliding window approach 
-        is used for transition counting.
-
-    Returns
-    -------
-    C : scipy.sparse.coo_matrix
-        The countmatrix at given lag in coordinate list format.
-        
-    """
-    return count_matrix(dtraj, lag, sliding=sliding)
+cmatrix=count_matrix
 
 # TODO: Implement in Python directly
-def cmatrix_cores(dtraj, cores, lag, sliding=True):
+def count_matrix_cores(dtraj, cores, lag, sliding=True):
     r"""Generate a countmatrix for the milestoning process on the given core sets
     """
+    raise NotImplementedError('Not implemented.')
+
+cmatrix_cores=count_matrix_cores
 
 ################################################################################
 # Connectivity
@@ -128,6 +114,7 @@ def connected_count_matrix(C):
 def is_connected(C):
     """Return true if C is a countmatrix for a completely connected process.    
     """
+    raise NotImplementedError('Not implemented.')
     
 
 # TODO: Implement in Python directly
@@ -145,6 +132,7 @@ def mapping(set):
     dict : python dictionary mapping internal to original states 
 
     """   
+    raise NotImplementedError('Not implemented.')
 
 ################################################################################
 # Transition matrix
@@ -195,13 +183,7 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
         except stallone.JavaError as je:
             raise RuntimeError(je.getJavaException())
             
-
-# TODO: Jan Implement in Python directly (Nonreversible)
-# TODO: Implement in Python directly (Reversible with stat dist)
-# TODO: Map to Stallone (Reversible)
-def tmatrix(C, reversible=False, mu=None):
-    r"""Estimate the transition matrix from the given countmatrix.
-    """
+tmatrix=transition_matrix
 
 # TODO: Jan Implement in Python directly
 def tmatrix_cov(C, k=None):
@@ -216,12 +198,14 @@ def tmatrix_cov(C, k=None):
         If set, only the covariance matrix for this row is returned.
         
     """
+    raise NotImplementedError('Not implemented.')
     
 # TODO: Jan Implement in Python directly
 def log_likelihood(C, T):
     """
         likelihood of C given T
     """
+    raise NotImplementedError('Not implemented.')
     
 # TODO: Implement in Python directly
 def error_perturbation(C, sensitivity):
@@ -231,6 +215,7 @@ def error_perturbation(C, sensitivity):
         The sensitivity matrix should be evaluated at an appropriate maximum likelihood or mean of the transition matrix estimated from C.
         returns: (m x m) covariance matrix of the target quantity 
     """
+    raise NotImplementedError('Not implemented.')
 
 # TODO: Martin Map to Stallone (Reversible)
 def tmatrix_sampler(C, reversible=False, mu=None, P0=None):
@@ -254,6 +239,6 @@ def tmatrix_sampler(C, reversible=False, mu=None, P0=None):
     sampler : A TransitionMatrixSampler object.
         
     """
-
+    raise NotImplementedError('Not implemented.')
 
 
