@@ -1,1 +1,1 @@
-"""THis module provides implementations for the estimation package"""
+"""This module provides implementations for the estimation package"""
