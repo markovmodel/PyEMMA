@@ -35,11 +35,14 @@ def ndarray_to_stallone_array(ndarray):
     shape = ndarray.shape
     dtype = ndarray.dtype
     factory = None
+    cast_func = None
     
     if dtype == _np.float32 or dtype == _np.float64:
         factory = API.doublesNew
+        cast_func = float
     elif dtype == _np.int32 or dtype == _np.int64:
         factory = API.intsNew
+        cast_func = int
     else:
         raise TypeError('unsupported datatype: ', dtype)
     
@@ -47,7 +50,7 @@ def ndarray_to_stallone_array(ndarray):
         n = shape[0]
         v = factory.array(n)
         for i in xrange(n):
-            v.set(i, int(ndarray[i]))
+            v.set(i, cast_func(ndarray[i]))
         return v
     elif len(shape) == 2:
         n = shape[0]
@@ -60,7 +63,7 @@ def ndarray_to_stallone_array(ndarray):
         for i in xrange(n):
             for j in xrange(m):
                 val = ndarray[i, j]
-                A.set(i, j, float(val))
+                A.set(i, j, cast_func(val))
         return A
     else:
         raise ValueError('unsupported shape: ', shape)
