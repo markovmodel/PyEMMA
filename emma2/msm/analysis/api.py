@@ -12,6 +12,11 @@ import sparse.assessment
 import sparse.decomposition
 import sparse.expectations
 
+__all__=['is_transition_matrix', 'is_tmatrix', 'is_rate_matrix',\
+             'is_ergodic', 'is_reversible', 'stationary_distribution',\
+             'statdist', 'eigenvalues', 'eigenvectors', 'rdl_decomposition',\
+             'expected_counts']
+
 _type_not_supported = \
     TypeError("given matrix is not a numpy.ndarray or a scipy.sparse matrix.")
 
@@ -42,8 +47,9 @@ def is_transition_matrix(T, tol=1e-15):
     elif isdense(T):
         return dense.assessment.is_transition_matrix(T, tol)
     else:
-        raise TypeError("T is not a numpy.ndarray or a scipy.sparse matrix.")
-      
+        raise _type_not_supported
+
+is_tmatrix=is_transition_matrix      
 
 def is_rate_matrix(K, tol=1e-15):
     r"""True if K is a rate matrix
@@ -146,17 +152,17 @@ def stationary_distribution(T):
     else: 
         raise _type_not_supported
 
+statdist=stationary_distribution
 
 # TODO: Implement in Python directly
 def stationary_distribution_sensitivity(T):
     r"""compute the sensitivity matrix of the stationary distribution of T"""
+    raise NotImplementedError('Not implemented.')
 
+statdist_sensitivity=stationary_distribution_sensitivity
 
-# TODO: Implement in Python directly
-def statdist_sensitivity(T):
-    r"""compute the sensitivity matrix of the stationary distribution of T
-    """    
-# DONE: Martin move implementation to dense.decomposition create implementation in sparse.decomposition
+# DONE: Martin move implementation to dense.decomposition create
+# implementation in sparse.decomposition
 def eigenvalues(T, k=None):
     r"""computes the eigenvalues
     
@@ -185,6 +191,7 @@ def eigenvalue_sensitivity(T, k):
         Eigenvalue index
     
     """
+    raise NotImplementedError('Not implemented.')
 
 # TODO: ben: Implement in Python directly
 def timescales(T, tau=1, k=None):
@@ -198,6 +205,7 @@ def timescales(T, tau=1, k=None):
         Compute the first k implied time scales.
     
     """
+    raise NotImplementedError('Not implemented.')
 
 # DONE: ben: Implement in Python directly
 def eigenvectors(T, k=None, right=True):
@@ -298,6 +306,7 @@ def mfpt(T, target):
         Vector of mean first passage times.
     
     """
+    raise NotImplementedError('Not implemented.')
 
 # TODO: Implement in Python directly
 def mfpt_sensitivity(T, target, i):
@@ -312,6 +321,7 @@ def mfpt_sensitivity(T, target, i):
     i : state to compute the sensitivity for
     
     """
+    raise NotImplementedError('Not implemented.')
 
 ################################################################################
 # Expectations
@@ -330,19 +340,18 @@ def expectation(T, a):
     -------
     expectation value of a : ...
     
-    """
-    
+    """    
     # check a is contained in T
-    
     # calculate E[a]
-    
+    raise NotImplementedError('Not implemented.')    
 
 # TODO: Implement in Python directly
 def expectation_sensitivity(T, a):    
     r"""computes the sensitivity of the expectation value of a
     """
+    raise NotImplementedError('Not implemented.')
 
-# TODO: ben: Implement in Python directly
+# DONE: ben: Implement in Python directly
 def expected_counts(p0, T, N):
     r"""Compute expected transition counts for Markov chain with n steps. 
     
@@ -400,12 +409,7 @@ def expected_counts_stationary(P, N, mu=None):
         Expected value for transition counts after a propagation of n steps. 
     
     """
-    if issparse(P):
-        raise TypeError("Not implmented for sparse matrices")
-    elif isdense(P):
-        raise TypeError("Not implmented for dense matrices")
-    else:
-        _type_not_supported
+    raise NotImplementedError('Not implemented.')
 
 ################################################################################
 # Fingerprints
@@ -430,6 +434,7 @@ def autocorrelation(P, obs):
     -------
     
     """
+    raise NotImplementedError('Not implemented.')
 
 # TODO: Implement in Python directly
 def crosscorrelation(P, obs1, obs2):
@@ -452,6 +457,7 @@ def crosscorrelation(P, obs1, obs2):
     -------
     
     """
+    raise NotImplementedError('Not implemented.')
 
 # TODO: Implement in Python directly
 def perturbation(P, obs, p0):
@@ -470,6 +476,7 @@ def perturbation(P, obs, p0):
     -------
     
     """
+    raise NotImplementedError('Not implemented.')
 
 ################################################################################
 # PCCA
@@ -485,6 +492,7 @@ def pcca(T, n):
     n : number of metastable processes
     
     """
+    raise NotImplementedError('Not implemented.')
 
 
 ################################################################################
@@ -513,6 +521,7 @@ def committor(P, A, B, forward=True):
         Commitor vector.
     
     """
+    raise NotImplementedError('Not implemented.')
 
 # TODO: Implement in Python directly
 def committor_sensitivity(P, A, B, i, forward=True):
@@ -539,6 +548,7 @@ def committor_sensitivity(P, A, B, i, forward=True):
         Commitor vector.
     
     """
+    raise NotImplementedError('Not implemented.')
 
 def tpt(T, A, B):
     r""" returns a transition path TPT object
