@@ -6,7 +6,7 @@ import trajectory
 import matrix
 
 __all__=['read_discrete_trajectory', 'read_dtraj', 'write_discrete_trajectory',\
-             'write_dtraj', 'load_discrete_trajectory', 
+             'write_dtraj', 'load_discrete_trajectory', ]
 
 ################################################################################
 # Discrete trajectory IO
