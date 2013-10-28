@@ -172,6 +172,7 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
     """
     
     if reversible:
+        """
         from emma2.util.stallone import stallone_available
         print stallone_available
         if stallone_available == False:
@@ -184,6 +185,7 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
             return stallone.ArrayWrapper(stallone.API.msm.estimateTrev(C))
         except stallone.JavaError as je:
             raise RuntimeError(je.getJavaException())
+            """
     else:
         if issparse(C):
             return sparse.transition_matrix.transition_matrix(C, reversible, mu)
