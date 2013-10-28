@@ -108,6 +108,7 @@ def connected_count_matrix(C):
 
     return C_cc.tocoo()
 
+# TODO: Don't forget the non-sparse implementation !
 def is_connected(C):
     r"""Return true, if the input count matrix is completely connected.
     Effectively checking if the number of connected components equals one.
