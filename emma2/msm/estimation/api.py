@@ -113,11 +113,10 @@ def connected_count_matrix(C):
     """
     return sparse.connectivity.connected_count_matrix(C)
 
-# TODO: Implement in Python directly
 def is_connected(C):
     """Return true if C is a countmatrix for a completely connected process.    
     """
-    raise NotImplementedError('Not implemented.')
+    return sparse.connectivity.is_connected(C)
 
 # TODO: Implement in Python directly
 def mapping(set):
@@ -172,7 +171,6 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
     """
     
     if reversible:
-        """
         from emma2.util.stallone import stallone_available
         print stallone_available
         if stallone_available == False:
@@ -185,7 +183,6 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
             return stallone.ArrayWrapper(stallone.API.msm.estimateTrev(C))
         except stallone.JavaError as je:
             raise RuntimeError(je.getJavaException())
-            """
     else:
         if issparse(C):
             return sparse.transition_matrix.transition_matrix(C, reversible, mu)
