@@ -6,10 +6,12 @@ import numpy as np
 
 import trajectory
 
+testpath = __package__.replace('.', '/')
+
 class TestReadDiscreteTrajectory(unittest.TestCase):
     
     def setUp(self):
-        self.filename='test/dtraj.dat'
+        self.filename= testpath +'/test/dtraj.dat'
 
     def tearDown(self):
         pass
@@ -21,7 +23,7 @@ class TestReadDiscreteTrajectory(unittest.TestCase):
 
 class TestWriteDiscreteTrajectory(unittest.TestCase):
     def setUp(self):
-        self.filename='test/out_dtraj.dat'
+        self.filename=testpath +'/test/out_dtraj.dat'
         self.dtraj=np.arange(10000)
 
     def tearDown(self):
@@ -35,7 +37,7 @@ class TestWriteDiscreteTrajectory(unittest.TestCase):
 class TestLoadDiscreteTrajectory(unittest.TestCase):
     
     def setUp(self):
-        self.filename='test/dtraj.npy'
+        self.filename=testpath +'/test/dtraj.npy'
 
     def tearDown(self):
         pass
@@ -48,7 +50,7 @@ class TestLoadDiscreteTrajectory(unittest.TestCase):
 class TestSaveDiscreteTrajectory(unittest.TestCase):
     
     def setUp(self):
-        self.filename='test/out_dtraj.npy'
+        self.filename=testpath +'/test/out_dtraj.npy'
         self.dtraj=np.arange(10000)
 
     def tearDown(self):
@@ -61,4 +63,3 @@ class TestSaveDiscreteTrajectory(unittest.TestCase):
 
 if __name__=="__main__":
     unittest.main()
-        
