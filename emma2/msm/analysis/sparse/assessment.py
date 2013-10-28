@@ -6,40 +6,9 @@ from scipy.sparse.construct import diags
 from scipy.sparse.csgraph import connected_components
 from scipy.sparse.sputils import isdense
 
+from emma2.util.numeric import allclose_sparse
+
 import numpy as np
-
-def allclose_sparse(A, B, rtol=1e-5, atol=1e-9):
-    """
-    Compares two sparse matrices in the same matter like numpy.allclose()
-    Parameters
-    ----------
-    A : scipy.sparse matrix
-        first matrix to compare
-    B : scipy.sparse matrix
-        second matrix to compare
-    rtol : float
-        relative tolerance
-    atol : float
-        absolute tolerance
-    
-    Returns
-    -------
-    True, if given matrices are equal in bounds of rtol and atol
-    False, otherwise
-    
-    Notes
-    -----
-    If the following equation is element-wise True, then allclose returns
-    True.
-
-     absolute(`a` - `b`) <= (`atol` + `rtol` * absolute(`b`))
-
-    The above equation is not symmetric in `a` and `b`, so that
-    `allclose(a, b)` might be different from `allclose(b, a)` in
-    some rare cases.
-    """
-    diff = (A - B).data
-    return np.allclose(diff, 0.0, rtol=rtol, atol=atol)
 
 def is_transition_matrix(T, tol):
     """
@@ -63,10 +32,10 @@ def is_transition_matrix(T, tol):
     values=T.data # non-zero entries of T
 
     """Check entry-wise positivity"""
-    is_positive=np.allclose(values, np.abs(values), rtol=0.0, atol=tol)
+    is_positive=np.allclose(values, np.abs(values), rtol=tol)
 
     """Check row normalization"""
-    is_normed=np.allclose(T.sum(axis=1), 1.0, rtol=0.0, atol=tol)
+    is_normed=np.allclose(T.sum(axis=1), 1.0, rtol=tol)
 
     return is_positive and is_normed
 
@@ -142,7 +111,7 @@ def is_reversible(T, mu=None, tol=1e-15):
     Mu = diags(mu, 0)
     prod = Mu * T
     
-    return allclose_sparse(prod, prod.transpose())
+    return allclose_sparse(prod, prod.transpose(), rtol=tol)
         
 def is_ergodic(T, tol):
     """
