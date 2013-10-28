@@ -1,7 +1,39 @@
 """Implementation of IO for dense and sparse matrices"""
 
+import os
 import numpy as np
 import scipy.sparse
+
+################################################################################
+# util
+################################################################################
+
+def is_sparse_file(filename):
+    """Determine if the given filename indicates a dense or a sparse matrix
+
+       If pathname is xxx.coo.yyy return True otherwise False.
+
+    """
+    dirname, basename=os.path.split(filename)
+    name, ext=os.path.splitext(basename)
+    matrix_name, matrix_ext=os.path.splitext(name)
+    if matrix_ext=='.coo':
+        return True
+    else:
+        return False      
+
+def todense(A):
+    if scipy.sparse.issparse(A):
+        return A.toarray()
+    else:
+        return A
+
+def tosparse(A):
+    if scipy.sparse.sputils.isdense(A):
+        return scipy.sparse.coo_matrix(A)
+    else:
+        return A   
+    
 
 ################################################################################
 # ascii

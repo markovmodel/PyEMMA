@@ -8,6 +8,53 @@ import scipy.sparse
 import matrix
 
 ################################################################################
+# util
+################################################################################
+
+testpath = __package__.replace('.', '/')
+
+class TestIsSparseFile(unittest.TestCase):
+    
+    def setUp(self):
+        self.dense_name1='matrix.dat'
+        self.dense_name2='tmp/matrix.npy'
+        self.sparse_name1='matrix.coo.dat'
+        self.sparse_name2='tmp/matrix.coo.npy'
+
+    def tearDown(self):
+        pass
+
+    def test_is_sparse_file(self):
+        self.assertTrue(not matrix.is_sparse_file(self.dense_name1))
+        self.assertTrue(not matrix.is_sparse_file(self.dense_name2))
+        self.assertTrue(matrix.is_sparse_file(self.sparse_name1))
+        self.assertTrue(matrix.is_sparse_file(self.sparse_name2))
+
+class TestToDense(unittest.TestCase):
+    def setUp(self):
+        self.A=scipy.sparse.rand(100, 100)
+        self.B=np.random.rand(10,10)
+    
+    def tearDown(self):
+        pass
+
+    def test_todense(self):
+        self.assertTrue(scipy.sparse.sputils.isdense(matrix.todense(self.A)))
+        self.assertTrue(scipy.sparse.sputils.isdense(matrix.todense(self.B)))
+
+class TestToSparse(unittest.TestCase):
+    def setUp(self):
+        self.A=scipy.sparse.rand(100, 100)
+        self.B=np.random.rand(10,10)
+    
+    def tearDown(self):
+        pass
+
+    def test_tosparse(self):
+        self.assertTrue(scipy.sparse.issparse(matrix.tosparse(self.A)))
+        self.assertTrue(scipy.sparse.issparse(matrix.tosparse(self.B)))              
+
+################################################################################
 # ascii
 ################################################################################
 
@@ -18,9 +65,9 @@ import matrix
 class TestReadMatrixDense(unittest.TestCase):
     
     def setUp(self):
-        self.filename_int='test/matrix_int.dat'
-        self.filename_float='test/matrix_float.dat'
-        self.filename_complex='test/matrix_complex.dat'        
+        self.filename_int=testpath +'/test/matrix_int.dat'
+        self.filename_float=testpath +'/test/matrix_float.dat'
+        self.filename_complex=testpath +'/test/matrix_complex.dat'
 
         self.A_int=np.loadtxt(self.filename_int, dtype=np.int)
         self.A_float=np.loadtxt(self.filename_float, dtype=np.float)
@@ -42,9 +89,9 @@ class TestReadMatrixDense(unittest.TestCase):
 class TestWriteMatrixDense(unittest.TestCase):
 
     def setUp(self):
-        self.filename_int='test/matrix_int_out.dat'
-        self.filename_float='test/matrix_float_out.dat'
-        self.filename_complex='test/matrix_complex_out.dat'
+        self.filename_int=testpath +'/test/matrix_int_out.dat'
+        self.filename_float=testpath +'/test/matrix_float_out.dat'
+        self.filename_complex=testpath +'/test/matrix_complex_out.dat'
         
         self.A_int=np.arange(3*3).reshape(3, 3)
         self.A_float=1.0*self.A_int
@@ -76,14 +123,14 @@ class TestWriteMatrixDense(unittest.TestCase):
 class TestReadMatrixSparse(unittest.TestCase):       
 
     def setUp(self):
-        self.filename_int='test/spmatrix_int.coo.dat'
-        self.filename_float='test/spmatrix_float.coo.dat'
-        self.filename_complex='test/spmatrix_complex.coo.dat'
+        self.filename_int=testpath +'/test/spmatrix_int.coo.dat'
+        self.filename_float=testpath +'/test/spmatrix_float.coo.dat'
+        self.filename_complex=testpath +'/test/spmatrix_complex.coo.dat'
 
         """Reference matrices in dense storage"""
-        self.reference_int='test/spmatrix_int_reference.dat'
-        self.reference_float='test/spmatrix_float_reference.dat'
-        self.reference_complex='test/spmatrix_complex_reference.dat'
+        self.reference_int=testpath +'/test/spmatrix_int_reference.dat'
+        self.reference_float=testpath +'/test/spmatrix_float_reference.dat'
+        self.reference_complex=testpath +'/test/spmatrix_complex_reference.dat'
 
     def tearDown(self):
         pass
@@ -147,9 +194,9 @@ class TestWriteMatrixSparse(unittest.TestCase):
             raise ValueError('coo contains complex entries for row and col.')
 
     def setUp(self):
-        self.filename_int='test/spmatrix_int_out.coo.dat'
-        self.filename_float='test/spmatrix_float_out.coo.dat'
-        self.filename_complex='test/spmatrix_complex_out.coo.dat'
+        self.filename_int=testpath +'/test/spmatrix_int_out.coo.dat'
+        self.filename_float=testpath +'/test/spmatrix_float_out.coo.dat'
+        self.filename_complex=testpath +'/test/spmatrix_complex_out.coo.dat'
 
         """Tri-diagonal test matrices"""
         dim=10
@@ -202,9 +249,9 @@ class TestWriteMatrixSparse(unittest.TestCase):
 class TestLoadMatrixDense(unittest.TestCase):
     
     def setUp(self):
-        self.filename_int='test/matrix_int.npy'
-        self.filename_float='test/matrix_float.npy'
-        self.filename_complex='test/matrix_complex.npy'        
+        self.filename_int=testpath +'/test/matrix_int.npy'
+        self.filename_float=testpath +'/test/matrix_float.npy'
+        self.filename_complex=testpath +'/test/matrix_complex.npy'        
 
         self.A_int=np.load(self.filename_int)
         self.A_float=np.load(self.filename_float)
@@ -226,9 +273,9 @@ class TestLoadMatrixDense(unittest.TestCase):
 class TestSaveMatrixDense(unittest.TestCase):
 
     def setUp(self):
-        self.filename_int='test/matrix_int_out.npy'
-        self.filename_float='test/matrix_float_out.npy'
-        self.filename_complex='test/matrix_complex_out.npy'
+        self.filename_int=testpath +'/test/matrix_int_out.npy'
+        self.filename_float=testpath +'/test/matrix_float_out.npy'
+        self.filename_complex=testpath +'/test/matrix_complex_out.npy'
         
         self.A_int=np.arange(3*3).reshape(3, 3)
         self.A_float=1.0*self.A_int
@@ -260,14 +307,14 @@ class TestSaveMatrixDense(unittest.TestCase):
 class TestLoadMatrixSparse(unittest.TestCase):       
 
     def setUp(self):
-        self.filename_int='test/spmatrix_int.coo.npy'
-        self.filename_float='test/spmatrix_float.coo.npy'
-        self.filename_complex='test/spmatrix_complex.coo.npy'
+        self.filename_int=testpath +'/test/spmatrix_int.coo.npy'
+        self.filename_float=testpath +'/test/spmatrix_float.coo.npy'
+        self.filename_complex=testpath +'/test/spmatrix_complex.coo.npy'
 
         """Reference matrices in dense storage"""
-        self.reference_int='test/spmatrix_int_reference.dat'
-        self.reference_float='test/spmatrix_float_reference.dat'
-        self.reference_complex='test/spmatrix_complex_reference.dat'
+        self.reference_int=testpath +'/test/spmatrix_int_reference.dat'
+        self.reference_float=testpath +'/test/spmatrix_float_reference.dat'
+        self.reference_complex=testpath +'/test/spmatrix_complex_reference.dat'
 
     def tearDown(self):
         pass
@@ -331,9 +378,9 @@ class TestSaveMatrixSparse(unittest.TestCase):
             raise ValueError('coo contains complex entries for row and col.')       
 
     def setUp(self):
-        self.filename_int='test/spmatrix_int_out.coo.npy'
-        self.filename_float='test/spmatrix_float_out.coo.npy'
-        self.filename_complex='test/spmatrix_complex_out.coo.npy'
+        self.filename_int=testpath +'/test/spmatrix_int_out.coo.npy'
+        self.filename_float=testpath +'/test/spmatrix_float_out.coo.npy'
+        self.filename_complex=testpath +'/test/spmatrix_complex_out.coo.npy'
 
         """Tri-diagonal test matrices"""
         dim=10
