@@ -10,8 +10,8 @@ def log_likelihood(C, T):
     """
     
     ind = scipy.nonzero(C);
-    relT = T[ind];
+    relT = np.array(T[ind])[0,:];
     relT = np.log(relT)
-    relC = C[ind]; 
-    
-    return sum(relT * relC)
+    relC = np.array(C[ind])[0,:]; 
+        
+    return relT.dot(relC)
