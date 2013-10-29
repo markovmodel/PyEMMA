@@ -1,5 +1,6 @@
 import numpy as np
-from decomposition import mu as statdist
+
+import decomposition
 
 def is_transition_matrix(T, tol=1e-15):
     """
@@ -75,7 +76,7 @@ def is_reversible(T, mu=None, tol=1e-15):
     """
     if is_transition_matrix(T, tol):
         if mu is None:
-            mu = statdist(T)
+            mu = decomposition.stationary_distribution(T)
         return np.allclose(T * mu[ : , np.newaxis ], \
                            T[ : , np.newaxis] * mu,  atol=tol)
     else:
