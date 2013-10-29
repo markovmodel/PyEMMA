@@ -226,11 +226,11 @@ def timescales(T, tau=1, k=None):
 
     """Check for dominant eigenvalues with large imaginary part"""
     if not np.allclose(values.imag, 0.0):
-        raise RuntimeWarning('Using eigenvalues with non-zero imaginary part'+\
+        raise RuntimeWarning('Using eigenvalues with non-zero imaginary part '+\
                                      'for implied time scale computation')
 
     """Check for multiple eigenvalues of magnitude one"""
-    ind_abs_one=np.abs(values)==1.0
+    ind_abs_one=np.isclose(np.abs(values), 1.0)
     if sum(ind_abs_one)>1:
         raise RuntimeWarning('Multiple eigenvalues with magnitude one.')
 
@@ -238,10 +238,11 @@ def timescales(T, tau=1, k=None):
     ts=np.zeros(len(values))
 
     """Eigenvalues of magnitude one imply infinite rate"""
-    ts[ind_abs_one]=inf
+    ts[ind_abs_one]=np.inf
 
     """All other eigenvalues give rise to finite rates"""
-    ts[np.logical_not(ind_abs_one)]=-1.0*tau/log(np.abs(values[np.logical_not(ind_abs_one)]))
+    ts[np.logical_not(ind_abs_one)]=\
+        -1.0*tau/np.log(np.abs(values[np.logical_not(ind_abs_one)]))
     return ts
         
    
