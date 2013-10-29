@@ -18,6 +18,9 @@ import emma2 as _emma2
     log.error('error message')
     log.critical('critical message')
 """
+#TODO: setup file logging here, but do not define a logger object and use
+# import logging; log=logging.getLogger(__name__) in each unit instead.
+# this should work, because everthing is derived from root logger
 log = logging.getLogger('emma2')
 
 # set up logging to file - see previous section for more details
