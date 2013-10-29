@@ -7,7 +7,10 @@ import scipy.sparse
 
 import count_matrix
 
-testpath = __package__.replace('.', '/')
+from os.path import abspath, join
+from os import pardir
+
+testpath = abspath(join(abspath(__file__), pardir)) + '/test/'
 
 class TestCountMatrix(unittest.TestCase):
     
@@ -23,14 +26,14 @@ class TestCountMatrix(unittest.TestCase):
         self.B3_sliding=np.array([[2, 1], [0, 1]])
 
         """Larger test cases"""
-        self.S_long=np.loadtxt(testpath + '/test/dtraj.dat')
-        self.C1_lag=np.loadtxt(testpath + '/test/C_1_lag.dat')
-        self.C7_lag=np.loadtxt(testpath + '/test/C_7_lag.dat')
-        self.C13_lag=np.loadtxt(testpath + '/test/C_13_lag.dat')
+        self.S_long=np.loadtxt(testpath + 'dtraj.dat')
+        self.C1_lag=np.loadtxt(testpath + 'C_1_lag.dat')
+        self.C7_lag=np.loadtxt(testpath + 'C_7_lag.dat')
+        self.C13_lag=np.loadtxt(testpath + 'C_13_lag.dat')
 
-        self.C1_sliding=np.loadtxt(testpath + '/test/C_1_sliding.dat')
-        self.C7_sliding=np.loadtxt(testpath + '/test/C_7_sliding.dat')
-        self.C13_sliding=np.loadtxt(testpath + '/test/C_13_sliding.dat')              
+        self.C1_sliding=np.loadtxt(testpath + 'C_1_sliding.dat')
+        self.C7_sliding=np.loadtxt(testpath + 'C_7_sliding.dat')
+        self.C13_sliding=np.loadtxt(testpath + 'C_13_sliding.dat')
 
 
     def tearDown(self):

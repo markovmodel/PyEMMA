@@ -9,6 +9,9 @@ from scipy.sparse.sputils import isdense
 __all__=['count_matrix', 'cmatrix', 'connected_sets', 'largest_connected_set',\
              'connected_count_matrix']
 
+_stallone_not_available = RuntimeError('stallone not available and reversible \
+ only impled there')
+
 ################################################################################
 # Count matrix
 ################################################################################
@@ -35,7 +38,27 @@ def count_matrix(dtraj, lag, sliding=True):
     """    
     return sparse.count_matrix.count_matrix(dtraj, lag, sliding=sliding)
 
-cmatrix=count_matrix
+# DONE: Benjamin Implement in Python directly
+def cmatrix(dtraj, lag, sliding=True):
+    r"""Generate a count matrix in from a given list of integers.
+
+    Parameters
+    ----------
+    dtraj : array_like
+        Discretized trajectory
+    lag : int
+        Lagtime in trajectory steps
+    sliding : bool, optional
+        If true the sliding window approach 
+        is used for transition counting.
+
+    Returns
+    -------
+    C : scipy.sparse.coo_matrix
+        The countmatrix at given lag in coordinate list format.
+        
+    """
+    return count_matrix(dtraj, lag, sliding=sliding)
 
 # TODO: Implement in Python directly
 def count_matrix_cores(dtraj, cores, lag, sliding=True):
@@ -141,14 +164,14 @@ def mapping(set):
 
 # TODO: Jan Implement in Python directly (Nonreversible)
 # TODO: Implement in Python directly (Reversible with stat dist)
-# TODO: Martin Map to Stallone (Reversible)
+# Done: Martin Map to Stallone (Reversible)
 def transition_matrix(C, reversible=False, mu=None, **kwargs):
     """
     Estimate the transition matrix from the given countmatrix.
 
     The transition matrix is a maximum likelihood estimate (MLE)
     of the probability distribution of transition matrices
-    with parameters given by the countmatrix. 
+    with parameters given by the countmatrix.
 
     Parameters
     ----------
@@ -170,18 +193,39 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
 
     """
     
-    if reversible:
+    if reversible and mu is None:
         from emma2.util.stallone import stallone_available
         print stallone_available
         if stallone_available == False:
-            raise RuntimeError("stallone not available and reversible only impled there")
-        
-        import emma2.util.stallone as stallone
+            raise _stallone_not_available
+
+        from emma2.util.stallone import API as API, ndarray_to_stallone_array, \
+            JavaError
         try:
-            C = stallone.ndarray_to_stallone_array(C)
+            C = ndarray_to_stallone_array(C)
             # T is of type stallone.IDoubleArray, so wrap it in an ndarray
-            return stallone.ArrayWrapper(stallone.API.msm.estimateTrev(C))
-        except stallone.JavaError as je:
+            return ArrayWrapper(API.msm.estimateTrev(C))
+        except JavaError as je:
+            raise RuntimeError(je.getJavaException())
+
+# TODO: Jan Implement in Python directly (Nonreversible)
+# TODO: Implement in Python directly (Reversible with stat dist)
+# Done: Map to Stallone (Reversible)
+def tmatrix(C, reversible=False, mu=None):
+    r"""Estimate the transition matrix from the given countmatrix.
+    """
+    if reversible and mu is None:
+        from emma2.util.stallone import stallone_available
+        if stallone_available == False:
+            raise _stallone_not_available
+        
+        from emma2.util.stallone import API as API, ndarray_to_stallone_array, \
+            JavaError, ArrayWrapper
+        try:
+            C = ndarray_to_stallone_array(C)
+            # T is of type stallone.IDoubleArray, so wrap it in an ndarray
+            return ArrayWrapper(API.msm.estimateTrev(C))
+        except JavaError as je:
             raise RuntimeError(je.getJavaException())
     else:
         if issparse(C):
@@ -190,7 +234,6 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
             raise TypeError("C is not of type scipy.sparse.")
             
 tmatrix=transition_matrix
-
 
 # TODO: Jan Implement in Python directly
 def tmatrix_cov(C, k=None):
@@ -224,29 +267,45 @@ def error_perturbation(C, sensitivity):
     """
     raise NotImplementedError('Not implemented.')
 
-# TODO: Martin Map to Stallone (Reversible)
+# Done: Martin Map to Stallone (Reversible)
 def tmatrix_sampler(C, reversible=False, mu=None, P0=None):
     """
     Parameters
     ----------
     C : ndarray, shape=(n, n) or scipy.sparse matrix
-        Count matrix    
+        Count matrix
     reversible : bool
         If true sample from the ensemble of transition matrices
         restricted to those obeying a detailed balance condition,
-        else draw from the whole ensemble of stochatic matrices.
+        else draw from the whole ensemble of stochastic matrices.
     mu : array_like
         The stationary distribution of the transition matrix samples.
     P0 : ndarray, shape=(n, n) or scipy.sparse matrix
         Starting point of the MC chain of the sampling algorithm.
-        Has to obey the required constraints.    
+        Has to obey the required constraints.
 
     Returns :
     ---------
-    sampler : A TransitionMatrixSampler object.
-        
-    """
-    raise NotImplementedError('Not implemented.')
+    sampler : A TransitionMatrixSampler object. In case reversible is True, 
+        returns a stallone.ITransitionMatrixSampler instance.
 
+    """
+    if reversible:
+        from emma2.util.stallone import stallone_available
+        if not stallone_available:
+            raise _stallone_not_available
+
+        from emma2.util.stallone import API as API, ndarray_to_stallone_array, \
+            JavaError
+        try:
+            C = ndarray_to_stallone_array(C)
+            if mu != None:
+                mu = ndarray_to_stallone_array(mu)
+                sampler = API.msmNew.createTransionMatrixSamplerRev(C, mu)
+            else:
+                sampler = API.msmNew.createTransitionMatrixSamplerRev(C)
+            return sampler
+        except JavaError as je:
+            raise RuntimeError(je.getJavaException())
 
 
