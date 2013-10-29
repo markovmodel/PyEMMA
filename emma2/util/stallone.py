@@ -23,7 +23,7 @@ except ImportError:
     stallone_available = False
 except ValueError as ve:
     stallone_available = False
-    _log.error('java vm initialization for stallone went wrong: ', ve)
+    _log.error('java vm initialization for stallone went wrong: %s' % ve)
 except:
     _log.error('unknown exception occured.')
 
