@@ -189,6 +189,11 @@ class TestDecomposition(unittest.TestCase):
         """They are however 'good' left eigenvectors for A"""
         X=dot(transpose(self.A), Ln)
         self.assertTrue(allclose(X, vn[newaxis, :]*Ln))
+
+    def test_timescales(self):
+        ts=decomposition.timescales(self.A)
+        print ts
+        
         
         
 if __name__=="__main__":
