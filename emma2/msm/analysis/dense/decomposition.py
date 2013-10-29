@@ -8,9 +8,7 @@ Dense matrices are represented by numpy.ndarrays throughout this module.
 import numpy as np
 from scipy.linalg import eig, eigvals, solve
 
-import assessment
-
-def mu(T):
+def stationary_distribution(T):
     r"""Compute stationary distribution of stochastic matrix T. 
       
     The stationary distribution is the left eigenvector corresponding to the 
@@ -197,18 +195,55 @@ def rdl_decomposition(T, k=None, norm='standard'):
             return w[0:k], L[:,0:k], R[:,0:k]
     else:
         raise ValueError("Keyword 'norm' has to be either 'standard' or 'reversible'")
+
+
+def timescales(T, tau=1, k=None):
+    r"""Compute implied time scales of given transition matrix
     
-if __name__=="__main__":
-    C=1.0*np.random.random_integers(1, 10, size=(4, 4))
-    C=0.5*(np.transpose(C)+C)
-    T=C/np.sum(C, axis=1)[:, np.newaxis]
+    Parameters
+    ----------
+    T : transition matrix
+    tau : lag time
+    k : int (optional)
+        Compute the first k implied time scales.
 
-    w, L, R=rdl_decomposition(T, norm='reversible')
-
-    print w
-
-    print L[:, 0], np.sum(L[:,0])
-    print np.dot(np.transpose(L), R)
-
+    Returns
+    -------
+    ts : ndarray
+        The implied time scales of the transition matrix.          
     
+    """
+    values=eigvals(T)
+
+    """Sort by absolute value"""
+    ind=np.argsort(np.abs(values))[::-1]
+    values=values[ind]
+    
+    if k is None:
+        values=values
+    else:
+        values=values[0:k]
+
+    """Check for dominant eigenvalues with large imaginary part"""
+    if not np.allclose(values.imag, 0.0):
+        raise RuntimeWarning('Using eigenvalues with non-zero imaginary part '+\
+                                     'for implied time scale computation')
+
+    """Check for multiple eigenvalues of magnitude one"""
+    ind_abs_one=np.isclose(np.abs(values), 1.0)
+    if sum(ind_abs_one)>1:
+        raise RuntimeWarning('Multiple eigenvalues with magnitude one.')
+
+    """Compute implied time scales"""
+    ts=np.zeros(len(values))
+
+    """Eigenvalues of magnitude one imply infinite rate"""
+    ts[ind_abs_one]=np.inf
+
+    """All other eigenvalues give rise to finite rates"""
+    ts[np.logical_not(ind_abs_one)]=\
+        -1.0*tau/np.log(np.abs(values[np.logical_not(ind_abs_one)]))
+    return ts
+        
+   
     
