@@ -108,4 +108,23 @@ def connected_count_matrix(C):
 
     return C_cc.tocoo()
 
+# TODO: Don't forget the non-sparse implementation !
+def is_connected(C):
+    r"""Return true, if the input count matrix is completely connected.
+    Effectively checking if the number of connected components equals one.
+    
+    Parameters
+    ----------
+    C : scipy.sparse matrix 
+        Count matrix specifying edge weights.
+
+    Returns
+    -------
+    connected : boolean, returning true only if C is connected.
+        
+
+    """
+    nc, indices=csgraph.connected_components(C, directed=True, connection='strong')
+    
+    return nc == 1
     

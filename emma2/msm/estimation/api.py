@@ -3,6 +3,9 @@
 import sparse.count_matrix
 import sparse.connectivity
 
+from scipy.sparse import issparse
+from scipy.sparse.sputils import isdense
+
 __all__=['count_matrix', 'cmatrix', 'connected_sets', 'largest_connected_set',\
              'connected_count_matrix']
 
@@ -110,12 +113,10 @@ def connected_count_matrix(C):
     """
     return sparse.connectivity.connected_count_matrix(C)
 
-# TODO: Implement in Python directly
 def is_connected(C):
     """Return true if C is a countmatrix for a completely connected process.    
     """
-    raise NotImplementedError('Not implemented.')
-    
+    return sparse.connectivity.is_connected(C)
 
 # TODO: Implement in Python directly
 def mapping(set):
@@ -182,8 +183,14 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
             return stallone.ArrayWrapper(stallone.API.msm.estimateTrev(C))
         except stallone.JavaError as je:
             raise RuntimeError(je.getJavaException())
+    else:
+        if issparse(C):
+            return sparse.transition_matrix.transition_matrix(C, reversible, mu)
+        else:
+            raise TypeError("C is not of type scipy.sparse.")
             
 tmatrix=transition_matrix
+
 
 # TODO: Jan Implement in Python directly
 def tmatrix_cov(C, k=None):
@@ -205,7 +212,7 @@ def log_likelihood(C, T):
     """
         likelihood of C given T
     """
-    raise NotImplementedError('Not implemented.')
+    sparse.likelihood.log_likelihood(C, T)
     
 # TODO: Implement in Python directly
 def error_perturbation(C, sensitivity):
@@ -240,5 +247,6 @@ def tmatrix_sampler(C, reversible=False, mu=None, P0=None):
         
     """
     raise NotImplementedError('Not implemented.')
+
 
 
