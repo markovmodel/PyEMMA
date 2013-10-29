@@ -46,7 +46,7 @@ def connected_sets(C):
     csum=np.zeros(len(count)+1)
     csum[1:]=np.cumsum(count)
 
-    """Generate list containing components, sort each conponent by
+    """Generate list containing components, sort each component by
     increasing state label"""
     cc=[]
     for i in range(nc):
