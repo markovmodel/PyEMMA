@@ -1,5 +1,5 @@
 """
-    API functions for markov state model analysis
+    API functions for Markov state model analysis
 """
 from scipy.sparse import issparse
 from scipy.sparse.sputils import isdense
@@ -12,10 +12,12 @@ import sparse.assessment
 import sparse.decomposition
 import sparse.expectations
 
-__all__=['is_transition_matrix', 'is_tmatrix', 'is_rate_matrix',\
+__all__=['is_transition_matrix', 'is_rate_matrix',\
              'is_ergodic', 'is_reversible', 'stationary_distribution',\
-             'statdist', 'eigenvalues', 'eigenvectors', 'rdl_decomposition',\
+             'eigenvalues', 'eigenvectors', 'rdl_decomposition',\
              'expected_counts']
+# shortcuts added later:
+# ['statdist', 'is_tmatrix', 'statdist_sensitivity']
 
 _type_not_supported = \
     TypeError("given matrix is not a numpy.ndarray or a scipy.sparse matrix.")
@@ -49,7 +51,8 @@ def is_transition_matrix(T, tol=1e-15):
     else:
         raise _type_not_supported
 
-is_tmatrix=is_transition_matrix      
+is_tmatrix=is_transition_matrix
+__all__.append('is_tmatrix')
 
 def is_rate_matrix(K, tol=1e-15):
     r"""True if K is a rate matrix
@@ -153,6 +156,7 @@ def stationary_distribution(T):
         raise _type_not_supported
 
 statdist=stationary_distribution
+__all__.append('statdist')
 
 # TODO: Implement in Python directly
 def stationary_distribution_sensitivity(T):
@@ -160,6 +164,7 @@ def stationary_distribution_sensitivity(T):
     raise NotImplementedError('Not implemented.')
 
 statdist_sensitivity=stationary_distribution_sensitivity
+__all__.append('statdist_sensitivity')
 
 # DONE: Martin move implementation to dense.decomposition create
 # implementation in sparse.decomposition
