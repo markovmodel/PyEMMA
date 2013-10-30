@@ -2,9 +2,10 @@
 
 import unittest
 
+import numpy
 from numpy import random, sum, sqrt, newaxis, ones, allclose, eye, asarray, abs, linspace
 from numpy import  diag, transpose, argsort, dot, asarray, array, arange, diag_indices
-from numpy import conjugate
+from numpy import conjugate, zeros, log, inf
 from scipy.linalg import eig, eigh, eigvals, eigvalsh, qr, solve
 
 import decomposition
@@ -51,7 +52,7 @@ class TestDecomposition(unittest.TestCase):
         self.R=solve(transpose(self.L), eye(self.dim))    
         # """Random eigenvalues uniform in (0, 1)"""
         # v=random.rand(self.dim)
-        v=linspace(0.0, 1.0, self.dim)
+        v=linspace(0.1, 1.0, self.dim)
 
         """
         Order eigenvalues by absolute value - 
@@ -76,7 +77,7 @@ class TestDecomposition(unittest.TestCase):
         T=statdist_true[newaxis, :]*ones(self.dim)[:,newaxis]
         
         """Compute stationary distribution"""
-        statdist_test=decomposition.mu(T)
+        statdist_test=decomposition.stationary_distribution(T)
 
         """Assert numerical equality of statdist_true and statdist_test"""
         self.assertTrue(allclose(statdist_test, statdist_true))
@@ -189,6 +190,97 @@ class TestDecomposition(unittest.TestCase):
         """They are however 'good' left eigenvectors for A"""
         X=dot(transpose(self.A), Ln)
         self.assertTrue(allclose(X, vn[newaxis, :]*Ln))
+
+    def test_timescales(self):
+        ts_n=decomposition.timescales(self.A)
+        ts=zeros(len(self.v))
+        ts[0]=inf
+        ts[1:]=-1.0/log(self.v[1:])
+        self.assertTrue(allclose(ts, ts_n))
+
+        v=random.rand(self.dim)
+        v[0:5]=1.0
+        
+class TestTimescales(unittest.TestCase):
+
+    def setUp(self):
+        self.dim=100
+
+        """Random left eigenvectors"""
+        self.L=random_linearly_independent_vectors(self.dim, self.dim)
+        """Corresponding right eigenvectors"""
+        self.R=solve(transpose(self.L), eye(self.dim))    
+
+        """Purely real spectrum, unique eigenvalue with modulus one"""
+        v_real=linspace(0.1, 1.0, self.dim)
+        ind=argsort(abs(v_real))[::-1]
+        self.v_real=v_real[ind]
+        self.A_real=dot(self.R, dot(diag(self.v_real), transpose(self.L)))
+        self.ts_real=zeros(len(self.v_real))
+        self.ts_real[0]=inf
+        self.ts_real[1:]=-1.0/log(abs(self.v_real[1:]))
+
+        """Complex spectrum, unique eigenvalue with modulus one"""
+        v_complex=linspace(0.1, 1.0, self.dim)+0.0*1j
+        v_complex[1:5]=0.9+0.1*1j
+        ind=argsort(abs(v_complex))[::-1]
+        self.v_complex=v_complex[ind]
+        self.A_complex=dot(self.R, dot(diag(self.v_complex), transpose(self.L)))
+        self.ts_complex=zeros(len(self.v_complex))
+        self.ts_complex[0]=inf
+        self.ts_complex[1:]=-1.0/log(abs(self.v_complex[1:]))
+
+        """Purely real spectrum, multiple eigenvalues with modulus one"""
+        v_real_m=linspace(0.1, 1.0, self.dim)
+        ind=argsort(abs(v_real_m))[::-1]
+        self.v_real_m=v_real_m[ind]
+        self.v_real_m[1:5]=1.0
+        self.A_real_m=dot(self.R, dot(diag(self.v_real_m), transpose(self.L)))
+        self.ts_real_m=zeros(len(self.v_real_m))
+        self.ts_real_m[0:5]=inf
+        self.ts_real_m[5:]=-1.0/log(abs(self.v_real_m[5:]))
+
+        """Complex spectrum, multiple eigenvalues with modulus one"""
+        v_complex_m=linspace(0.1, 1.0, self.dim)+0.0*1j
+        ind=argsort(abs(v_complex_m))[::-1]
+        self.v_complex_m=v_complex_m[ind]
+        self.v_complex_m[1:5]=(1.0+1.0*1j)/sqrt(2.0)
+        self.A_complex_m=dot(self.R, dot(diag(self.v_complex_m), transpose(self.L)))
+        self.ts_complex_m=zeros(len(self.v_complex_m))
+        self.ts_complex_m[0:5]=inf
+        self.ts_complex_m[5:]=-1.0/log(abs(self.v_complex_m[5:]))      
+
+       
+    def tearDown(self):
+        pass
+
+    def mdot(self, *args):
+        return reduce(numpy.dot, args)
+    
+    def test_timescales(self):
+        """tau=1"""
+        ts_n=decomposition.timescales(self.A_real)
+        self.assertTrue(allclose(ts_n, self.ts_real))
+        
+        with self.assertRaises(RuntimeWarning):
+            ts_n=decomposition.timescales(self.A_complex)
+            self.assertTrue(allclose(ts_n, self.ts_complex))
+
+        with self.assertRaises(RuntimeWarning):
+            ts_n=decomposition.timescales(self.A_real_m)
+            self.assertTrue(allclose(ts_n, self.ts_real_m))
+        
+        with self.assertRaises(RuntimeWarning):
+            ts_n=decomposition.timescales(self.A_complex_m)
+            self.assertTrue(allclose(ts_n, self.ts_complex_m))           
+
+        """tau=10"""
+        ts_n=decomposition.timescales(self.A_real, tau=10)
+        self.assertTrue(allclose(ts_n, 10*self.ts_real))
+
+        """tau=10, k=8"""
+        ts_n=decomposition.timescales(self.A_real, tau=10, k=8)
+        self.assertTrue(allclose(ts_n, 10*self.ts_real[0:8]))
         
         
 if __name__=="__main__":
