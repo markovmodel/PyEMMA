@@ -149,9 +149,9 @@ def stationary_distribution(T):
     
     """
     if issparse(T):
-        return sparse.decomposition.mu(T)
+        return sparse.decomposition.stationary_distribution(T)
     elif isdense(T):
-        return dense.decomposition.mu(T)
+        return dense.decomposition.stationary_distribution(T)
     else: 
         raise _type_not_supported
 
@@ -208,6 +208,11 @@ def timescales(T, tau=1, k=None):
     tau : lag time
     k : int (optional)
         Compute the first k implied time scales.
+
+    Returns
+    -------
+    ts : ndarray
+        The implied time scales of the transition matrix.          
     
     """
     raise NotImplementedError('Not implemented.')
