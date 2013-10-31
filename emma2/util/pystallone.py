@@ -13,19 +13,19 @@ stallone_available = None
 
 try:
     _log.debug('try to initialize stallone module')
-    from pystallone import *
-    from pystallone.ArrayWrapper import ArrayWrapper as ArrayWrapper
+    from stallone import *
+    import ArrayWrapper
     jenv = initVM(initialheap='32m', maxheap='512m')
     stallone_available = True
     _log.info('stallone initialized successfully.')
-except ImportError:
-    _log.error('stallone could not be found.')
+except ImportError as ie:
+    _log.error('stallone could not be found: %s' % ie)
     stallone_available = False
 except ValueError as ve:
     stallone_available = False
     _log.error('java vm initialization for stallone went wrong: %s' % ve)
-except:
-    _log.error('unknown exception occured.')
+except BaseException as e:
+    _log.error('unknown exception occurred: %s' %e)
 
 
 def ndarray_to_stallone_array(ndarray):

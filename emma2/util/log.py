@@ -3,9 +3,8 @@ Created on 15.10.2013
 
 @author: marscher
 '''
-# import log levels
-from logging import DEBUG, INFO, WARN, ERROR, CRITICAL
 import logging
+import os
 import emma2 as _emma2
 
 # import log levels to this namespace
@@ -21,12 +20,12 @@ import emma2 as _emma2
 #TODO: setup file logging here, but do not define a logger object and use
 # import logging; log=logging.getLogger(__name__) in each unit instead.
 # this should work, because everthing is derived from root logger
-log = logging.getLogger('emma2')
+log = logging.getLogger()
 
 # set up logging to file - see previous section for more details
 # TODO: martin prepend the path of emma2 module (+ '..') to filename
 # and think about putting these options to an ini file etc.
-_filename = _emma2.__path__[0] + '/../emma2.log'
+_filename = os.getcwd() + '/emma2.log'
 logging.basicConfig(level=logging.DEBUG,
             format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
             datefmt='%m-%d %H:%M:%S',
