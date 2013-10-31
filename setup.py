@@ -8,6 +8,39 @@ try:
 except ImportError:
     from distutils.core import setup
 
+def setupPyStallone():
+    try:
+        from jcc import cpp as cpp
+    except ImportError:
+        raise RuntimeError('apache jcc not available')
+    
+    stallone_api_jar = 'lib/stallone/stallone-1.0-SNAPSHOT-api.jar'
+    stallone_whole_in_one_jar = \
+        'lib/stallone/stallone-1.0-SNAPSHOT-jar-with-dependencies.jar'
+    args = ['--jar', stallone_api_jar,
+         '--package', 'stallone.mc',
+         '--package', 'stallone.algebra',
+         '--package', 'stallone.cluster',
+         '--include', stallone_whole_in_one_jar,
+         #'--use_full_names',
+         '--python', 'stallone',
+         '--version', '1.0',
+         '--reserved', 'extern',
+         #'--use-distutils',
+         '--egg-info',
+         '--files', '2', '--build', '--bdist']
+    args.insert(0, __file__)
+    cpp.jcc(args)
+
+try:
+    import pystallone
+    print "stallone module found. Not Installing"
+    if False:
+        print "forcing reinstallation of stallone."
+        setupPyStallone()
+except ImportError:
+    setupPyStallone()
+
 setup(
       name = 'Emma2',
       version = __version__,
@@ -33,41 +66,3 @@ setup(
       requires = ['JCC (>=2.17)']
 )
 
-def setupPyStallone():
-    try:
-        from jcc import cpp as cpp
-    except ImportError:
-        raise RuntimeError('apache jcc not available')
-    
-    stallone_api_jar = 'lib/stallone/stallone-1.0-SNAPSHOT-api.jar'
-    stallone_whole_in_one_jar = \
-        'lib/stallone/stallone-1.0-SNAPSHOT-jar-with-dependencies.jar'
-    args = ['--jar', stallone_api_jar,
-         '--package', 'stallone.mc',
-         '--package', 'stallone.algebra',
-         '--package', 'stallone.cluster',
-         '--include', stallone_whole_in_one_jar,
-         '--use_full_names',
-         '--python', 'stallone',
-         '--version', '1.0',
-         '--reserved', 'extern',
-         #'--use-distutils',
-         '--egg-info',
-         '--files', '2', '--build', '--bdist']
-    args.insert(0, __file__)
-    cpp.jcc(args)
-
-#import argparse
-#parser = argparse.ArgumentParser()
-#parser.add_argument('--recompile', metavar='N', type=bool, default=False,
-#                   help='should stallone be recompiled even if already installed?')
-#args = parser.parse_args()
-
-try:
-    import stallone
-    print "stallone module found. Not Installing"
-    if False:
-        print "forcing reinstallation of stallone."
-        setupPyStallone()
-except ImportError:
-    setupPyStallone()
