@@ -573,7 +573,7 @@ def tpt(T, A, B):
     
     Returns
     -------
-    tpt : pystallone.ITPTFlux
+    tpt : stallone.ITPTFlux
         a transition path TPT object
     Notes # TODO check if this recognized by sphinx
     ----
