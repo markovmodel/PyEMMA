@@ -12,7 +12,8 @@ def setupPyStallone():
     try:
         from jcc import cpp as cpp
     except ImportError:
-        raise RuntimeError('apache jcc not available')
+        raise RuntimeError('Apache JCC not available! '\
+                           'Install with easy_install [--user] JCC')
     
     stallone_api_jar = 'lib/stallone/stallone-1.0-SNAPSHOT-api.jar'
     stallone_whole_in_one_jar = \
