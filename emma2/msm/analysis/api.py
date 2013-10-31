@@ -573,16 +573,16 @@ def tpt(T, A, B):
     
     Returns
     -------
-    tpt : pystallone.ITPTFlux
+    tpt : stallone.ITPTFlux
         a transition path TPT object
     Notes # TODO check if this recognized by sphinx
     ----
     invokes stallones (java) markov model factory to create a TPT
     """
     if not is_transition_matrix(T):
-        raise ValueError("given matrix T is not a transition matrix")
+        raise ValueError('given matrix T is not a transition matrix')
     
-    from emma2.util.stallone import stallone_available
+    from emma2.util.pystallone import stallone_available
     if stallone_available:
         from _impl import TPT
         return TPT(T, A, B)
