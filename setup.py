@@ -33,9 +33,10 @@ def setupPyStallone():
     cpp.jcc(args)
 
 try:
-    import pystallone
+    import stallone
     print "stallone module found. Not Installing"
-    if False:
+    # FIXME: add a parameter to this script to trigger reinstallation of stallone
+    if False: # change this to True to force reinstallation
         print "forcing reinstallation of stallone."
         setupPyStallone()
 except ImportError:
@@ -48,16 +49,17 @@ setup(
       url = 'http://compmolbio.biocomputing-berlin.de/index.php',
       author = 'The emma2 team',
       # list packages here
-      packages = [#'emma2',
-                 'emma2.msm.analysis',
-                 'emma2.msm.analysis.dense',
-                 'emma2.msm.analysis.sparse',
-                 'emma2.msm.estimation',
-                 'emma2.msm.estimation.sparse',
-                 'emma2.msm.io',
-                 'emma2.msm.shared',
-                 #'emma2.pmm',
-                 'emma2.util'],
+      packages = ['emma2',
+                  'emma2.msm',
+                  'emma2.msm.analysis',
+                  'emma2.msm.analysis.dense',
+                  'emma2.msm.analysis.sparse',
+                  'emma2.msm.estimation',
+                  'emma2.msm.estimation.sparse',
+                  'emma2.msm.io',
+                  'emma2.msm.shared',
+                  #'emma2.pmm',
+                  'emma2.util'],
       # runtime dependencies
       install_requires = ['numpy >=1.7',
                          'scipy >=0.11',
