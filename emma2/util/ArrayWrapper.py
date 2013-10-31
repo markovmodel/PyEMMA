@@ -1,4 +1,6 @@
-from numpy import ndarray 
+from numpy import ndarray
+
+__all__ = ['ArrayWrapper']
 
 class ArrayWrapper(ndarray):
     """
@@ -56,33 +58,3 @@ class ArrayWrapper(ndarray):
             return arr
             
         return ndarray.__new__(cls, *args, **kwargs)
-
-if __name__ == '__main__':
-    import stallone as st
-    import numpy as np
-    st.initVM(initialheap='32m')
-    """
-    size = 10
-    intArray1 = ArrayWrapper(st.API.intsNew.arrayRandomIndexes(size, 10))
-    matrix = ArrayWrapper(st.API.doublesNew.identity(size))
-    matrix[1][1] = 0
-    v = np.array([randint(1, 100) for x in xrange(size) ])
-    print matrix * v
-    print matrix * intArray1
-    """
-    
-    # test for modification of java instances by wrapper
-    a = st.API.intsNew.array(3)
-    b = ArrayWrapper(a)
-    
-    list = [1,2,3]
-    list_arr = np.array(list, copy=False, dtype=np.int32, order='A')
-    list_arr[0] = 42
-    print list, list_arr
-    """
-    b[0] = 42
-    print "shape of b: ", b.shape
-    print "a: %s, b: %s" %(a, b)
-    
-    print (b.flags['OWNDATA'])
-    """
