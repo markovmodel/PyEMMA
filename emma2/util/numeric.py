@@ -5,6 +5,8 @@ Created on 28.10.2013
 '''
 from numpy import allclose
 
+__all__ = ['allclose_sparse']
+
 def allclose_sparse(A, B, rtol=1e-5, atol=1e-9):
     """
     Compares two sparse matrices in the same matter like numpy.allclose()
