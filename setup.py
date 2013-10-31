@@ -58,7 +58,7 @@ setup(
                   'emma2.msm.estimation.sparse',
                   'emma2.msm.io',
                   'emma2.msm.shared',
-                  #'emma2.pmm',
+                  'emma2.pmm',
                   'emma2.util'],
       # runtime dependencies
       install_requires = ['numpy >=1.7',
