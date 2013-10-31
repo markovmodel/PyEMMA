@@ -14,7 +14,6 @@ stallone_available = None
 try:
     _log.debug('try to initialize stallone module')
     from stallone import *
-    #API = api.API
     import ArrayWrapper
     jenv = initVM(initialheap='32m', maxheap='512m')
     stallone_available = True
@@ -68,6 +67,3 @@ def ndarray_to_stallone_array(ndarray):
         return A
     else:
         raise ValueError('unsupported shape: ', shape)
-    
-if __name__ == '__main__':
-    print API.doublesNew.arrayFrom([1,2,3])
