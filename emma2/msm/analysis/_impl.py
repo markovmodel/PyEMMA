@@ -3,8 +3,8 @@ Created on 18.10.2013
 
 @author: marscher
 '''
-import emma2.util.stallone as stallone
-from emma2.util.stallone import ArrayWrapper
+import emma2.util.pystallone as stallone
+from emma2.util.ArrayWrapper import ArrayWrapper
 
 class TPT():
     """
