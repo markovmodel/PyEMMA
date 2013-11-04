@@ -25,6 +25,25 @@ def random_orthonormal_sparse_vectors(d, k):
     return scipy.sparse.csc_matrix((values, indices, indptr))    
 
 
+def random_linearly_independent_vectors(d, k):
+    r"""Generate a set of linear independent vectors
+    
+    The algorithm picks k random points uniformly distributed
+    on the d-sphere. They will form a set of linear independent
+    vectors with probability one for k<=d.
+
+    """
+    if k>d:
+        raise ValueError("Can not pick more linear independent vectors"+\
+                             " than the full dimension of the vector space")
+    else:
+        """Pick k-vectors with gaussian distributed entries"""
+        G=np.random.randn(d, k)
+        """Normalize to length=1 to get uniform distribution on the d-sphere"""
+        length=np.sqrt(np.sum(G**2, axis=0))
+        X=G/length[np.newaxis, :]
+        return X
+
 class TestDecomposition(unittest.TestCase):
     
     def setUp(self):
@@ -149,6 +168,95 @@ class TestDecomposition(unittest.TestCase):
         """Assert that off-diagonal elements are zero"""
         self.assertTrue(np.allclose(A, 0.0))        
 
+class TestTimescales(unittest.TestCase):
+
+    def setUp(self):
+        self.d=10000
+        self.k=20
+
+        """Random sparse orthonormal vectors for blow-up"""
+        Q=random_orthonormal_sparse_vectors(self.d, self.k)
+
+        """Random left eigenvectors"""
+        self.L=random_linearly_independent_vectors(self.k, self.k)
+        """Corresponding right eigenvectors"""
+        self.R=np.linalg.solve(np.transpose(self.L), np.eye(self.k))    
+
+        """Purely real spectrum, unique eigenvalue with modulus one"""
+        v_real=np.linspace(0.1, 1.0, self.k)
+        ind=np.argsort(np.abs(v_real))[::-1]
+        self.v_real=v_real[ind]
+        A=np.dot(self.R, np.dot(np.diag(self.v_real), np.transpose(self.L)))
+        self.A_real=Q.dot(scipy.sparse.csr_matrix(A)).dot(Q.transpose())        
+        self.ts_real=np.zeros(len(self.v_real))
+        self.ts_real[0]=np.inf
+        self.ts_real[1:]=-1.0/np.log(np.abs(self.v_real[1:]))
+
+        """Complex spectrum, unique eigenvalue with modulus one"""
+        v_complex=np.linspace(0.1, 1.0, self.k)+0.0*1j
+        v_complex[1:5]=0.9+0.1*1j
+        ind=np.argsort(np.abs(v_complex))[::-1]
+        self.v_complex=v_complex[ind]
+        A=np.dot(self.R, np.dot(np.diag(self.v_complex), np.transpose(self.L)))
+        self.A_complex=Q.dot(scipy.sparse.csr_matrix(A)).dot(Q.transpose())        
+        self.ts_complex=np.zeros(len(self.v_complex))
+        self.ts_complex[0]=np.inf
+        self.ts_complex[1:]=-1.0/np.log(np.abs(self.v_complex[1:]))
+
+        """Purely real spectrum, multiple eigenvalues with modulus one"""
+        v_real_m=np.linspace(0.1, 1.0, self.k)
+        ind=np.argsort(np.abs(v_real_m))[::-1]
+        self.v_real_m=v_real_m[ind]
+        self.v_real_m[1:5]=1.0
+        A=np.dot(self.R, np.dot(np.diag(self.v_real_m), np.transpose(self.L)))
+        self.A_real_m=Q.dot(scipy.sparse.csr_matrix(A)).dot(Q.transpose())        
+        self.ts_real_m=np.zeros(len(self.v_real_m))
+        self.ts_real_m[0:5]=np.inf
+        self.ts_real_m[5:]=-1.0/np.log(np.abs(self.v_real_m[5:]))
+
+        """Complex spectrum, multiple eigenvalues with modulus one"""
+        v_complex_m=np.linspace(0.1, 1.0, self.k)+0.0*1j
+        ind=np.argsort(np.abs(v_complex_m))[::-1]
+        self.v_complex_m=v_complex_m[ind]
+        self.v_complex_m[1:5]=(1.0+1.0*1j)/np.sqrt(2.0)
+        A=np.dot(self.R, np.dot(np.diag(self.v_complex_m), np.transpose(self.L)))
+        self.A_complex_m=Q.dot(scipy.sparse.csr_matrix(A)).dot(Q.transpose())        
+        self.ts_complex_m=np.zeros(len(self.v_complex_m))
+        self.ts_complex_m[0:5]=np.inf
+        self.ts_complex_m[5:]=-1.0/np.log(np.abs(self.v_complex_m[5:]))      
+
+       
+    def tearDown(self):
+        pass
+
+    def mdot(self, *args):
+        return reduce(numpy.dot, args)
+    
+    def test_timescales(self):
+        """tau=1"""
+        ts_n=decomposition.timescales(self.A_real, k=self.k)
+        self.assertTrue(np.allclose(ts_n, self.ts_real))
+        
+        with self.assertRaises(RuntimeWarning):
+            ts_n=decomposition.timescales(self.A_complex, k=self.k)
+            self.assertTrue(np.allclose(ts_n, self.ts_complex))
+
+        with self.assertRaises(RuntimeWarning):
+            ts_n=decomposition.timescales(self.A_real_m, k=self.k)
+            self.assertTrue(np.allclose(ts_n, self.ts_real_m))
+        
+        with self.assertRaises(RuntimeWarning):
+            ts_n=decomposition.timescales(self.A_complex_m, k=self.k)
+            self.assertTrue(np.allclose(ts_n, self.ts_complex_m))           
+
+        """tau=10"""
+        ts_n=decomposition.timescales(self.A_real, tau=10, k=self.k)
+        self.assertTrue(np.allclose(ts_n, 10*self.ts_real))
+
+        """tau=10, k=8"""
+        ts_n=decomposition.timescales(self.A_real, tau=10, k=8)
+        self.assertTrue(np.allclose(ts_n, 10*self.ts_real[0:8]))
+        
 if __name__=="__main__":
     unittest.main()
 
