@@ -15,7 +15,7 @@ import sparse.expectations
 __all__=['is_transition_matrix', 'is_rate_matrix',\
              'is_ergodic', 'is_reversible', 'stationary_distribution',\
              'eigenvalues', 'eigenvectors', 'rdl_decomposition',\
-             'expected_counts']
+             'expected_counts', 'timescales']
 # shortcuts added later:
 # ['statdist', 'is_tmatrix', 'statdist_sensitivity']
 
@@ -198,7 +198,7 @@ def eigenvalue_sensitivity(T, k):
     """
     raise NotImplementedError('Not implemented.')
 
-# TODO: ben: Implement in Python directly
+# DONE: ben: Implement in Python directly
 def timescales(T, tau=1, k=None):
     r"""Compute implied time scales of given transition matrix
     
@@ -215,7 +215,12 @@ def timescales(T, tau=1, k=None):
         The implied time scales of the transition matrix.          
     
     """
-    raise NotImplementedError('Not implemented.')
+    if issparse(T):
+        return sparse.decomposition.timescales(T, tau=tau, k=k)
+    elif isdense(T):
+        return dense.decomposition.timescales(T, tau=tau, k=k)
+    else:
+        raise _type_not_supported
 
 # DONE: ben: Implement in Python directly
 def eigenvectors(T, k=None, right=True):
@@ -261,6 +266,7 @@ def eigenvector_sensitivity(T, k, j, right=True):
         If True compute right eigenvectors, otherwise compute left eigenvectors.
     
     """
+    raise NotImplementedError('Not implemented.')
 
 # TODO: ben: Implement in Python directly
 def rdl_decomposition(T, k=None, norm='standard'):
