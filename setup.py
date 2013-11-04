@@ -8,6 +8,9 @@ try:
 except ImportError:
     from distutils.core import setup
 
+from os import environ
+from sys import argv
+
 def setupPyStallone():
     try:
         from jcc import cpp as cpp
@@ -23,23 +26,58 @@ def setupPyStallone():
          '--package', 'stallone.algebra',
          '--package', 'stallone.cluster',
          '--include', stallone_whole_in_one_jar,
-         #'--use_full_names',
-         '--python', 'stallone',
+         #'--use_full_names', # does not work...
+         '--python', 'stallone', # python module name
          '--version', '1.0',
          '--reserved', 'extern',
          #'--use-distutils',
-         '--egg-info',
-         '--files', '2', '--build', '--bdist']
-    args.insert(0, __file__)
+         #'--egg-info',
+         '--output', 'target', # output directory, name 'build' is buggy in
+                               # case of setup.py sdist, which does not include stuff from this dirs
+         '--files', '2']
+
+    # program name first. (this is needed, as source files of jcc are looked up 
+    # relative to this path)
+    args.insert(0, cpp.__file__)
+    
+    if 'sdist' in argv:
+        # call the setup once to generate the wrapper code
+        cpp.jcc(args)
+        
+        # now try to build sdist....
+        args.append('--egg-info')
+        # FIXME: include jars in lib dir as resources for source distribution
+        # .....
+        #args.append('--resources')
+        #args.append('lib/stallone')
+        #args.append(stallone_api_jar)
+        #args.append('--resources')
+        #args.append(stallone_whole_in_one_jar)
+
+        
+        # create source dist
+        args.append('--extra-setup-arg')
+        args.append('sdist')
+    else: # we want to build this now.
+        args.append('--build')
+        args.append('--bdist')
+    
     cpp.jcc(args)
 
 try:
     import stallone
-    print "stallone module found. Not Installing"
-    # FIXME: add a parameter to this script to trigger reinstallation of stallone
-    if False: # change this to True to force reinstallation
-        print "forcing reinstallation of stallone."
+    print "stallone module found."
+    try:
+        environ['REBUILD_STALLONE']
+        rebuild = True
+    except KeyError:
+        rebuild = False
+    
+    if rebuild:
+        print "forcing rebuild of stallone."
         setupPyStallone()
+    else:
+        print "skipping installation of stallone."
 except ImportError:
     setupPyStallone()
 
@@ -66,6 +104,5 @@ setup(
                          'scipy >=0.11',
                          'JCC >=2.17'],
       # build time dependencies
-      requires = ['JCC (>=2.17)']
+      requires = ['JCC (>=2.17)'],
 )
-
