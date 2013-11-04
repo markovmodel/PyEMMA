@@ -41,7 +41,7 @@ def read_discrete_trajectory(filename):
 
 read_dtraj=read_discrete_trajectory
 
-__all__.append['read_dtraj']
+__all__.append('read_dtraj')
 
 # DONE: Implement in Python directly
 def write_discrete_trajectory(filename, dtraj):
@@ -65,7 +65,7 @@ def write_discrete_trajectory(filename, dtraj):
 
 write_dtraj=write_discrete_trajectory
 
-__all__.append['write_dtraj']
+__all__.append('write_dtraj')
 
 ################################################################################
 # binary
@@ -95,7 +95,7 @@ def load_discrete_trajectory(filename):
 
 load_dtraj=load_discrete_trajectory
 
-__all__.append['load_dtraj']
+__all__.append('load_dtraj')
 
 # DONE : Implement in Python directly
 def save_discrete_trajectory(filename, dtraj):
@@ -120,7 +120,7 @@ def save_discrete_trajectory(filename, dtraj):
 
 save_dtraj=save_discrete_trajectory
 
-__all__.append['save_dtraj']
+__all__.append('save_dtraj')
 
 ################################################################################
 # Matrix IO
