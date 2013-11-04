@@ -11,6 +11,10 @@ import numpy as np
 class Test(unittest.TestCase):
 
     def testTPT(self):
+        from emma2.util.pystallone import stallone_available
+        if not stallone_available:
+            self.skipTest('stallone not installed')
+
         A = np.asarray([0], dtype=int)
         B = np.asarray([5], dtype=int)
         C = np.ndarray(buffer=np.array(
