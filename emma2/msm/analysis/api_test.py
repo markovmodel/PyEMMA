@@ -7,10 +7,15 @@ import unittest
 
 import emma2.msm.analysis.api as api
 import numpy as np
+from unittest.case import SkipTest
 
 class Test(unittest.TestCase):
 
     def testTPT(self):
+        try:
+            import stallone
+        except ImportError:
+            self.skipTest('stallone not installed')
         A = np.asarray([0], dtype=int)
         B = np.asarray([5], dtype=int)
         C = np.ndarray(buffer=np.array(
