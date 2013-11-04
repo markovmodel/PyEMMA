@@ -109,6 +109,7 @@ class TPT():
         
         """
         self.K = stallone.ndarray_to_stallone_array(K)
+        self.ITPT.setRateMatrix(self.K)
         
     def setStationaryDistribution(self, pi):
         """
@@ -118,6 +119,7 @@ class TPT():
         
         """
         self.pi = stallone.ndarray_to_stallone_array(pi)
+        self.ITPT.setStationaryDistribution(self.pi)
         
     def setTransitionMatrix(self, T):
         """
@@ -126,3 +128,4 @@ class TPT():
         T : ndarray
         """
         self.T = stallone.ndarray_to_stallone_array(T)
+        self.ITPT.setTransitionMatrix(self.T)
