@@ -7,3 +7,4 @@
 *.egg-info
 /temp
 __pycache__
+/pylint/pylint_*.txt
