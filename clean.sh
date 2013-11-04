@@ -1,4 +1,5 @@
 # deletes build artifacts
+rm target -rf
 rm build -rf
 rm dist -rf
 rm *egg-info -rf
