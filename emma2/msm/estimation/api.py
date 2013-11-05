@@ -136,6 +136,10 @@ def connected_count_matrix(C):
     """
     return sparse.connectivity.connected_count_matrix(C)
 
+connected_cmatrix=connected_count_matrix
+
+__all__.append('connected_cmatrix')
+
 def is_connected(C):
     """Return true if C is a countmatrix for a completely connected process.    
     """
