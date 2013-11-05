@@ -43,7 +43,7 @@ def count_matrix(dtraj, lag, sliding=True):
         col=dtraj[lag::lag]
         N=row.shape[0]
         data=np.ones(N)
-        C=scipy.sparse.coo_matrix((data, (row, col)))        
+        C=scipy.sparse.coo_matrix((data, (row, col)))
 
     C=C.tocsr().tocoo()
     C=make_square_coo_matrix(C)
@@ -72,7 +72,7 @@ def make_square_coo_matrix(A):
     A=A.tocoo()
     N=max(A.shape)
     A_sq=scipy.sparse.coo_matrix((A.data, (A.row, A.col)), shape=(N, N))
-    return A_sq    
+    return A_sq
     
 def add_coo_matrix(A, B):
     """
