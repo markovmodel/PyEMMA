@@ -7,7 +7,7 @@ from scipy.sparse import issparse
 from scipy.sparse.sputils import isdense
 
 __all__=['count_matrix', 'cmatrix', 'connected_sets', 'largest_connected_set',\
-             'connected_count_matrix']
+             'connected_count_matrix', 'is_connected', 'transition_matrix']
 
 _stallone_not_available = RuntimeError('stallone not available and reversible \
  only impled there')
@@ -162,7 +162,7 @@ def mapping(set):
 # Transition matrix
 ################################################################################
 
-# TODO: Jan Implement in Python directly (Nonreversible)
+# DONE: Jan Implement in Python directly (Nonreversible)
 # TODO: Implement in Python directly (Reversible with stat dist)
 # Done: Martin Map to Stallone (Reversible)
 def transition_matrix(C, reversible=False, mu=None, **kwargs):
@@ -192,48 +192,27 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
        The MLE transition matrix
 
     """
-    
-    if reversible and mu is None:
-        from emma2.util.stallone import stallone_available
-        print stallone_available
-        if stallone_available == False:
-            raise _stallone_not_available
-
-        from emma2.util.stallone import API as API, ndarray_to_stallone_array, \
-            JavaError
-        try:
-            C = ndarray_to_stallone_array(C)
-            # T is of type stallone.IDoubleArray, so wrap it in an ndarray
-            return ArrayWrapper(API.msm.estimateTrev(C))
-        except JavaError as je:
-            raise RuntimeError(je.getJavaException())
-
-# TODO: Jan Implement in Python directly (Nonreversible)
-# TODO: Implement in Python directly (Reversible with stat dist)
-# Done: Map to Stallone (Reversible)
-def tmatrix(C, reversible=False, mu=None):
-    r"""Estimate the transition matrix from the given countmatrix.
-    """
-    if reversible and mu is None:
-        from emma2.util.stallone import stallone_available
-        if stallone_available == False:
-            raise _stallone_not_available
-        
-        from emma2.util.stallone import API as API, ndarray_to_stallone_array, \
-            JavaError, ArrayWrapper
-        try:
-            C = ndarray_to_stallone_array(C)
-            # T is of type stallone.IDoubleArray, so wrap it in an ndarray
-            return ArrayWrapper(API.msm.estimateTrev(C))
-        except JavaError as je:
-            raise RuntimeError(je.getJavaException())
-    else:
-        if issparse(C):
-            return sparse.transition_matrix.transition_matrix(C, reversible, mu)
+    if reversible:
+        if mu is None:
+            from emma2.util.stallone import stallone_available
+            if stallone_available == False:
+                raise _stallone_not_available        
+            from emma2.util.stallone import API as API, ndarray_to_stallone_array, \
+                JavaError, ArrayWrapper
+            try:
+                C = ndarray_to_stallone_array(C)
+                # T is of type stallone.IDoubleArray, so wrap it in an ndarray
+                return ArrayWrapper(API.msm.estimateTrev(C))
+            except JavaError as je:
+                raise RuntimeError(je.getJavaException())
         else:
-            raise TypeError("C is not of type scipy.sparse.")
+            raise NotImplementedError('mle with fixed stationary distribution not implemented.')
+    else:
+        return sparse.transition_matrix.transition_matrix_non_reversible(C)        
             
 tmatrix=transition_matrix
+
+__all__.append('tmatrix')
 
 # TODO: Jan Implement in Python directly
 def tmatrix_cov(C, k=None):
@@ -250,7 +229,7 @@ def tmatrix_cov(C, k=None):
     """
     raise NotImplementedError('Not implemented.')
     
-# TODO: Jan Implement in Python directly
+# DONE: Jan Implement in Python directly
 def log_likelihood(C, T):
     """
         likelihood of C given T
@@ -260,10 +239,13 @@ def log_likelihood(C, T):
 # TODO: Implement in Python directly
 def error_perturbation(C, sensitivity):
     """
-        C: count matrix
-        sensitivity: sensitivity matrix or tensor of size (m x n x n) where m is the dimension of the target quantity and (n x n) is the size of the transition matrix.
-        The sensitivity matrix should be evaluated at an appropriate maximum likelihood or mean of the transition matrix estimated from C.
-        returns: (m x m) covariance matrix of the target quantity 
+        C: count matrix sensitivity: sensitivity matrix or tensor of
+        size (m x n x n) where m is the dimension of the target
+        quantity and (n x n) is the size of the transition matrix.
+        The sensitivity matrix should be evaluated at an appropriate
+        maximum likelihood or mean of the transition matrix estimated
+        from C.  returns: (m x m) covariance matrix of the target
+        quantity
     """
     raise NotImplementedError('Not implemented.')
 
@@ -299,7 +281,7 @@ def tmatrix_sampler(C, reversible=False, mu=None, P0=None):
             JavaError
         try:
             C = ndarray_to_stallone_array(C)
-            if mu != None:
+            if mu is not None:
                 mu = ndarray_to_stallone_array(mu)
                 sampler = API.msmNew.createTransionMatrixSamplerRev(C, mu)
             else:
@@ -307,5 +289,7 @@ def tmatrix_sampler(C, reversible=False, mu=None, P0=None):
             return sampler
         except JavaError as je:
             raise RuntimeError(je.getJavaException())
+    else:
+        raise NotImplementedError('Non-reversible sampler not implemented.')
 
 
