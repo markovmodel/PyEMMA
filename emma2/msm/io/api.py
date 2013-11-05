@@ -5,8 +5,9 @@ from scipy.sparse.sputils import isdense
 import trajectory
 import matrix
 
-__all__=['read_discrete_trajectory', 'read_dtraj', 'write_discrete_trajectory',\
-             'write_dtraj', 'load_discrete_trajectory', ]
+__all__=['read_discrete_trajectory', 'write_discrete_trajectory',\
+             'load_discrete_trajectory', 'save_discrete_trajectory',\
+            'read_matrix', 'write_matrix', 'load_matrix', 'save_matrix']
 
 ################################################################################
 # Discrete trajectory IO
@@ -40,6 +41,8 @@ def read_discrete_trajectory(filename):
 
 read_dtraj=read_discrete_trajectory
 
+__all__.append('read_dtraj')
+
 # DONE: Implement in Python directly
 def write_discrete_trajectory(filename, dtraj):
     r"""Write discrete trajectory to ascii file.
@@ -61,6 +64,8 @@ def write_discrete_trajectory(filename, dtraj):
     trajectory.write_discrete_trajectory(filename, dtraj)
 
 write_dtraj=write_discrete_trajectory
+
+__all__.append('write_dtraj')
 
 ################################################################################
 # binary
@@ -90,6 +95,8 @@ def load_discrete_trajectory(filename):
 
 load_dtraj=load_discrete_trajectory
 
+__all__.append('load_dtraj')
+
 # DONE : Implement in Python directly
 def save_discrete_trajectory(filename, dtraj):
     r"""Write discrete trajectory to binary file.
@@ -112,6 +119,8 @@ def save_discrete_trajectory(filename, dtraj):
     trajectory.save_discrete_trajectory(filename, dtraj)
 
 save_dtraj=save_discrete_trajectory
+
+__all__.append('save_dtraj')
 
 ################################################################################
 # Matrix IO
