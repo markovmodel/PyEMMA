@@ -2,6 +2,7 @@
 
 import sparse.count_matrix
 import sparse.connectivity
+import sparse.transition_matrix
 
 from scipy.sparse import issparse
 from scipy.sparse.sputils import isdense
