@@ -234,6 +234,7 @@ def tmatrix(C, reversible=False, mu=None):
             raise TypeError("C is not of type scipy.sparse.")
             
 tmatrix=transition_matrix
+__all__.append('tmatrix')
 
 # TODO: Jan Implement in Python directly
 def tmatrix_cov(C, k=None):
