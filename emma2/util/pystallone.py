@@ -14,7 +14,7 @@ stallone_available = None
 try:
     _log.debug('try to initialize stallone module')
     from stallone import *
-    import ArrayWrapper
+    from ArrayWrapper import ArrayWrapper
     jenv = initVM(initialheap='32m', maxheap='512m')
     stallone_available = True
     _log.info('stallone initialized successfully.')
