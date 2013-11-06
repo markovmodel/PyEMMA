@@ -6,5 +6,6 @@
 *.pyc
 *.egg-info
 /temp
+/target
 __pycache__
 /pylint/pylint_*.txt
