@@ -7,7 +7,7 @@ import transition_matrix
 
 """Unit tests for the transition_matrix module"""
 
-class TestTransitionMatrix(unittest.TestCase):
+class TestTransitionMatrixNonReversible(unittest.TestCase):
     
     def setUp(self):
         """Small test cases"""
@@ -25,10 +25,10 @@ class TestTransitionMatrix(unittest.TestCase):
 
     def test_count_matrix(self):
         """Small test cases"""
-        T=transition_matrix.transition_matrix(self.C1).toarray()
+        T=transition_matrix.transition_matrix_non_reversible(self.C1).toarray()
         self.assertTrue(np.allclose(T, self.T1.toarray()))
         
-        T=transition_matrix.transition_matrix(self.C1).toarray()
+        T=transition_matrix.transition_matrix_non_reversible(self.C1).toarray()
         self.assertTrue(np.allclose(T, self.T1.toarray()))
 
 if __name__=="__main__":
