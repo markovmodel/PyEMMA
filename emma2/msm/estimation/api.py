@@ -34,7 +34,7 @@ def count_matrix(dtraj, lag, sliding=True):
     Returns
     -------
     C : scipy.sparse.coo_matrix
-        The countmatrix at given lag in coordinate list format.
+        The count matrix at given lag in coordinate list format.
     
     """    
     return sparse.count_matrix.count_matrix(dtraj, lag, sliding=sliding)
@@ -176,7 +176,7 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
 
     The transition matrix is a maximum likelihood estimate (MLE)
     of the probability distribution of transition matrices
-    with parameters given by the countmatrix.
+    with parameters given by the count matrix.
 
     Parameters
     ----------
@@ -199,12 +199,13 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
     """
     if reversible:
         if mu is None:
-            from emma2.util.stallone import stallone_available
+            from emma2.util.pystallone import stallone_available
             if stallone_available == False:
                 raise _stallone_not_available        
-            from emma2.util.stallone import API as API, ndarray_to_stallone_array, \
+            from emma2.util.pystallone import API as API, ndarray_to_stallone_array, \
                 JavaError, ArrayWrapper
             try:
+                C = C.tocsr()
                 C = ndarray_to_stallone_array(C)
                 # T is of type stallone.IDoubleArray, so wrap it in an ndarray
                 return ArrayWrapper(API.msm.estimateTrev(C))
@@ -215,9 +216,8 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
     else:
         return sparse.transition_matrix.transition_matrix_non_reversible(C)        
             
-tmatrix=transition_matrix
-__all__.append('tmatrix')
 
+tmatrix = transition_matrix
 __all__.append('tmatrix')
 
 # TODO: Jan Implement in Python directly
@@ -279,11 +279,11 @@ def tmatrix_sampler(C, reversible=False, mu=None, P0=None):
 
     """
     if reversible:
-        from emma2.util.stallone import stallone_available
+        from emma2.util.pystallone import stallone_available
         if not stallone_available:
             raise _stallone_not_available
 
-        from emma2.util.stallone import API as API, ndarray_to_stallone_array, \
+        from emma2.util.pystallone import API as API, ndarray_to_stallone_array,\
             JavaError
         try:
             C = ndarray_to_stallone_array(C)
