@@ -9,9 +9,9 @@ import ConfigParser
 """ this filenames are being tried to read """
 filenames = ['emma2.cfg', '/etc/emma2.cfg']
 """ default values for logging system """
-defaults = {'enabled': True,
-            'toconsole' : True,
-            'tofile' : False,
+defaults = {'enabled': 'True',
+            'toconsole' : 'True',
+            'tofile' : 'False',
             'file' : 'emma2.log',
             'level' : 'DEBUG',
             'format' : '%%(asctime)s %%(name)-12s %%(levelname)-8s %%(message)s'}
@@ -28,6 +28,8 @@ used_filenames = config.read(filenames)
 
 if used_filenames == []:
     args = _AttribStore(defaults)
+    """ we need to strip the string interpolation marks """
+    args.format = args.format.replace('%%', '%')
 else:
     section = 'Logging'
     args = _AttribStore()
@@ -37,7 +39,7 @@ else:
     args.file = config.get(section, 'file')
     args.level = config.get(section, 'level')
     args.format = config.get(section, 'format')
-
+    
 if args.enabled:
     if args.tofile and args.file:
         _filename = args.file
