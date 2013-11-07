@@ -14,22 +14,20 @@ log = logging.getLogger('emma2/scripts/LagTimePlot')
 
 import argparse
 
-parser = argparse.ArgumentParser(description='Lag time plotting arguments')
+parser = argparse.ArgumentParser(description='Implied time scales plotting arguments')
 
-parser.add_argument('--trajectory')
+parser.add_argument('--trajectory', '-t',
+                    help='filename of discretized trajectory to operate on.')
 parser.add_argument('-k', help='k implied timescales (eigenvalues)',
                     type=int, default=10)
-parser.add_argument('--lagtimes', help='list of lag time values (integers)',
+parser.add_argument('--lagtimes', '-l',
+                    help='list of lag time values (integers). Eg. -l 10 100 1000',
                     nargs='+', type=int, default=[1])
-parser.add_argument('--output', help='output file name', default='')
+parser.add_argument('--output', '-o', help='output file name', default='')
 args = parser.parse_args()
 
 traj = io.read_dtraj(args.trajectory)
 k = args.k
-
-# tau_min = 10
-# tau_max = 65
-# step = 25
 
 def impl_timescales(tau):
     """
