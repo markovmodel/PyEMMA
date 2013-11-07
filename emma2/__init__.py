@@ -1,5 +1,5 @@
 """
-    module doc string goes here
+    Emma2 package
 """
 
 import msm
