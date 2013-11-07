@@ -96,9 +96,9 @@ setup(
                   'emma2.msm.estimation',
                   'emma2.msm.estimation.sparse',
                   'emma2.msm.io',
-                  'emma2.msm.shared',
                   'emma2.pmm',
                   'emma2.util'],
+      scripts = ['scripts/ImpliedTimescalePlot.py'],
       # runtime dependencies
       install_requires = ['numpy >=1.7',
                          'scipy >=0.11',
