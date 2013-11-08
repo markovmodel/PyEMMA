@@ -535,7 +535,7 @@ def committor(T, A, B, forward=True):
     Returns
     -------
     x : ndarray, shape=(n, )
-        Commitor vector.
+        Committor vector.
     
     """
     if issparse(T):

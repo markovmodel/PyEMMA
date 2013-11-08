@@ -5,7 +5,7 @@ Created on 08.11.2013
 '''
 import numpy
 
-def forward_commitor(T, A, B):
+def forward_committor(T, A, B):
     """ 
     calculate forward committor from A to B given transition matrix T.
     Parameters
@@ -20,7 +20,7 @@ def forward_commitor(T, A, B):
     Returns
     -------
     x : ndarray, shape=(n, )
-    Commitor vector.
+    Committor vector.
     """
     n = len(T)
     set_X = set(range(n))
