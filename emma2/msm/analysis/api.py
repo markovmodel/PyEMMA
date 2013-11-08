@@ -7,6 +7,7 @@ from scipy.sparse.sputils import isdense
 import dense.assessment
 import dense.decomposition
 import dense.expectations
+import dense.committor
 
 import sparse.assessment
 import sparse.decomposition
@@ -516,7 +517,7 @@ def pcca(T, n):
 ################################################################################
 
 # TODO: Implement in Python directly
-def committor(P, A, B, forward=True):
+def committor(T, A, B, forward=True):
     r"""Compute the committor between sets of microstates.
     
     Parameters
@@ -537,7 +538,15 @@ def committor(P, A, B, forward=True):
         Commitor vector.
     
     """
-    raise NotImplementedError('Not implemented.')
+    if issparse(T):
+        raise NotImplementedError('not yet impled for sparse.')
+    elif isdense(T):
+        if forward:
+            dense.committor.forward_committor(T, A, B)
+        else:
+            raise NotImplementedError('not impled for backward/dense.')
+    else:
+        raise _type_not_supported
 
 # TODO: Implement in Python directly
 def committor_sensitivity(P, A, B, i, forward=True):
