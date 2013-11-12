@@ -544,7 +544,11 @@ def committor(T, A, B, forward=True):
         if forward:
             dense.committor.forward_committor(T, A, B)
         else:
-            raise NotImplementedError('not impled for backward/dense.')
+            """ if T is time reversible backward commitor is equal 1 - q+"""
+            if is_reversible(T):
+                committor = 1.0 - dense.committor.forward_committor(T, A, B)
+            else:
+                raise NotImplementedError('not impled for backward/dense.')
     else:
         raise _type_not_supported
 
@@ -590,8 +594,8 @@ def tpt(T, A, B):
     -------
     tpt : stallone.ITPTFlux
         a transition path TPT object
-    Notes # TODO check if this recognized by sphinx
-    ----
+    Notes
+    -----
     invokes stallones (java) markov model factory to create a TPT
     """
     if not is_transition_matrix(T):
