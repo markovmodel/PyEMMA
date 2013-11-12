@@ -86,7 +86,7 @@ setup(
       version = __version__,
       description = 'EMMA 2',
       url = 'http://compmolbio.biocomputing-berlin.de/index.php',
-      author = 'The emma2 team',
+      author = 'The Emma2 team',
       # list packages here
       packages = ['emma2',
                   'emma2.msm',
@@ -99,6 +99,8 @@ setup(
                   'emma2.pmm',
                   'emma2.util'],
       scripts = ['scripts/ImpliedTimescalePlot.py'],
+      # FIXME: this goes to egg meta info directory and is not found during init
+      data_files = [('emma2', ['emma2.cfg'])],
       # runtime dependencies
       install_requires = ['numpy >=1.7',
                          'scipy >=0.11',
