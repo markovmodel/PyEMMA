@@ -12,19 +12,6 @@ import logging
 log = logging.getLogger('emma2/scripts/LagTimePlot')
 
 import argparse
-parser = argparse.ArgumentParser(description =
-                                 'Implied time scales plotting arguments')
-parser.add_argument('--trajectory', '-t',
-                    help='filename of discretized trajectory to operate on.')
-parser.add_argument('-k', help='k implied timescales (eigenvalues)',
-                    type=int, default=10)
-parser.add_argument('--lagtimes', '-l',
-                    help='list of lag time values (integers). Eg. -l 10 100 1000',
-                    nargs='+', type=int, default=[1])
-parser.add_argument('--output', '-o', help='output file name', default='')
-parser.add_argument('--numprocs', '-p', type=int, default = cpu_count(),
-                    help='number of processes used for calculation')
-args = parser.parse_args()
 
 traj = io.read_dtraj(args.trajectory)
 k = args.k
@@ -92,4 +79,17 @@ def perform():
         plt.show()
 
 if __name__ == '__main__':
+    message='Implied time scales plotting arguments'
+    parser = argparse.ArgumentParser(description=message)
+    message='filename of discretized trajectory to operate on.'
+    parser.add_argument('--trajectory', '-t', help=message)
+    parser.add_argument('-k', help='k implied timescales (eigenvalues)',\
+                            type=int, default=10)
+    message='list of lag time values (integers). Eg. -l 10 100 1000'
+    parser.add_argument('--lagtimes', '-l', help=message, 
+                    nargs='+', type=int, default=[1])
+    parser.add_argument('--output', '-o', help='output file name', default='')
+    parser.add_argument('--numprocs', '-p', type=int, default = cpu_count(),
+                    help='number of processes used for calculation')
+    args = parser.parse_args()
     perform()
