@@ -10,9 +10,6 @@ from scipy.sparse.sputils import isdense
 __all__=['count_matrix', 'cmatrix', 'connected_sets', 'largest_connected_set',\
              'connected_count_matrix', 'is_connected', 'transition_matrix']
 
-_stallone_not_available = RuntimeError('stallone not available and reversible \
- only impled there')
-
 ################################################################################
 # Count matrix
 ################################################################################
@@ -201,7 +198,8 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
         if mu is None:
             from emma2.util.pystallone import stallone_available
             if stallone_available == False:
-                raise _stallone_not_available        
+                raise RuntimeError('stallone not available and reversible \
+                     only impled there')
             from emma2.util.pystallone import API as API, ndarray_to_stallone_array, \
                 JavaError, ArrayWrapper
             try:
@@ -281,8 +279,8 @@ def tmatrix_sampler(C, reversible=False, mu=None, P0=None):
     if reversible:
         from emma2.util.pystallone import stallone_available
         if not stallone_available:
-            raise _stallone_not_available
-
+                raise RuntimeError('stallone not available and reversible \
+                     only impled there')
         from emma2.util.pystallone import API as API, ndarray_to_stallone_array,\
             JavaError
         try:
