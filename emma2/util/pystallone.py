@@ -9,7 +9,7 @@ from log import log as _log
 import numpy as _np
 
 """is the stallone python binding available?"""
-stallone_available = None
+stallone_available = False
 
 try:
     _log.debug('try to initialize stallone module')
@@ -20,9 +20,7 @@ try:
     _log.info('stallone initialized successfully.')
 except ImportError as ie:
     _log.error('stallone could not be found: %s' % ie)
-    stallone_available = False
 except ValueError as ve:
-    stallone_available = False
     _log.error('java vm initialization for stallone went wrong: %s' % ve)
 except BaseException as e:
     _log.error('unknown exception occurred: %s' %e)
@@ -31,6 +29,9 @@ except BaseException as e:
 def ndarray_to_stallone_array(ndarray):
     if not stallone_available:
         raise RuntimeError('stallone not available')
+    
+    if not isinstance(ndarray, _np.ndarray):
+        ndarray = _np.asarray(ndarray)
     
     shape = ndarray.shape
     dtype = ndarray.dtype
@@ -48,6 +49,7 @@ def ndarray_to_stallone_array(ndarray):
     
     if len(shape) == 1:
         n = shape[0]
+        # TODO: factory should support a mapping to native memory
         v = factory.array(n)
         for i in xrange(n):
             v.set(i, cast_func(ndarray[i]))
