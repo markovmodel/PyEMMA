@@ -29,12 +29,16 @@ class TPT():
         ------
         RuntimeError, if stallone is not available
         """
+        import numpy as np
         try:
-            A = stallone.ndarray_to_stallone_array(A)
-            B = stallone.ndarray_to_stallone_array(B)
-            T = stallone.ndarray_to_stallone_array(T)
+            T = T.astype(np.float32)
+            print T.shape
+            A = np.asarray(A).astype(np.int32)
+            B = np.asarray(B).astype(np.int32)
+            #A = stallone.ndarray_to_stallone_array(A)
+            #B = stallone.ndarray_to_stallone_array(B)
+            #T = stallone.ndarray_to_stallone_array(T)
             self.ITPT = stallone.API.msmNew.createTPT(T, A, B)
-            # TODO: consider: should we call calculate here?
         except stallone.JavaError as je:
             exception = je.getJavaException()
             msg = str(exception) + '\n' + \
@@ -55,7 +59,9 @@ class TPT():
         -------
         Flux : ndarray
         """
-        return ArrayWrapper(self.ITPT.getFlux())
+        flux = self.ITPT.getFlux()
+        print type(flux)
+        return ArrayWrapper(flux)
     
     def getForwardCommittor(self):
         """
@@ -108,8 +114,8 @@ class TPT():
         K (Rate matrix) : ndarray
         
         """
-        self.K = stallone.ndarray_to_stallone_array(K)
-        self.ITPT.setRateMatrix(self.K)
+        #self.K = stallone.ndarray_to_stallone_array(K)
+        self.ITPT.setRateMatrix(K)
         
     def setStationaryDistribution(self, pi):
         """
@@ -118,8 +124,8 @@ class TPT():
         pi : stationary distribution
         
         """
-        self.pi = stallone.ndarray_to_stallone_array(pi)
-        self.ITPT.setStationaryDistribution(self.pi)
+        #self.pi = stallone.ndarray_to_stallone_array(pi)
+        self.ITPT.setStationaryDistribution(pi)
         
     def setTransitionMatrix(self, T):
         """
@@ -127,5 +133,5 @@ class TPT():
         ----------
         T : ndarray
         """
-        self.T = stallone.ndarray_to_stallone_array(T)
-        self.ITPT.setTransitionMatrix(self.T)
+        #self.T = stallone.ndarray_to_stallone_array(T)
+        self.ITPT.setTransitionMatrix(T)
