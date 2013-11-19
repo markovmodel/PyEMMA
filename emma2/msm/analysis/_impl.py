@@ -3,8 +3,10 @@ Created on 18.10.2013
 
 @author: marscher
 '''
-import emma2.util.pystallone as stallone
-from emma2.util.ArrayWrapper import ArrayWrapper
+from emma2.util.pystallone import API, JavaError,\
+    stallone_array_to_ndarray, ndarray_to_stallone_array
+from emma2.util.log import getLogger
+log = getLogger()
 
 class TPT():
     """
@@ -29,17 +31,24 @@ class TPT():
         ------
         RuntimeError, if stallone is not available
         """
+        import numpy as np
         try:
-            A = stallone.ndarray_to_stallone_array(A)
-            B = stallone.ndarray_to_stallone_array(B)
-            T = stallone.ndarray_to_stallone_array(T)
-            self.ITPT = stallone.API.msmNew.createTPT(T, A, B)
-            # TODO: consider: should we call calculate here?
-        except stallone.JavaError as je:
+            T = T.astype(np.float64)
+            A = np.asarray(A).astype(np.int32)
+            B = np.asarray(B).astype(np.int32)
+            A = ndarray_to_stallone_array(A)
+            B = ndarray_to_stallone_array(B)
+            T = ndarray_to_stallone_array(T)
+            log.debug('create TPT instance and calculate fluxes.')
+            self.ITPT = API.msmNew.createTPT(T, A, B)
+            log.debug('finished TPT calculation.')
+        except JavaError as je:
             exception = je.getJavaException()
             msg = str(exception) + '\n' + \
                 str(exception.getStackTrace()).replace(',', '\n')
             raise RuntimeError(msg)
+        except Exception as e:
+            log.error("tpt: unknown error occured: %s" %e)
     
     def getBackwardCommittor(self):
         """
@@ -47,7 +56,7 @@ class TPT():
         -------
         Backward Committor : ndarray
         """
-        return ArrayWrapper(self.ITPT.getBackwardCommittor())
+        return stallone_array_to_ndarray(self.ITPT.getBackwardCommittor())
     
     def getFlux(self):
         """
@@ -55,7 +64,7 @@ class TPT():
         -------
         Flux : ndarray
         """
-        return ArrayWrapper(self.ITPT.getFlux())
+        return stallone_array_to_ndarray(self.ITPT.getFlux())
     
     def getForwardCommittor(self):
         """
@@ -64,7 +73,7 @@ class TPT():
         Forward Committor : ndarray
         
         """
-        return ArrayWrapper(self.ITPT.getForwardCommittor())
+        return stallone_array_to_ndarray(self.ITPT.getForwardCommittor())
     
     def getNetFlux(self):
         """
@@ -73,7 +82,7 @@ class TPT():
         Net flux : ndarray
         
         """
-        return ArrayWrapper(self.ITPT.getNetFlux())
+        return stallone_array_to_ndarray(self.ITPT.getNetFlux())
     
     def getRate(self):
         """
@@ -90,7 +99,7 @@ class TPT():
         Stationary distribution : ndarray
         
         """
-        return ArrayWrapper(self.ITPT.getStationaryDistribution())
+        return stallone_array_to_ndarray(self.ITPT.getStationaryDistribution())
     
     def getTotalFlux(self):
         """
@@ -108,8 +117,7 @@ class TPT():
         K (Rate matrix) : ndarray
         
         """
-        self.K = stallone.ndarray_to_stallone_array(K)
-        self.ITPT.setRateMatrix(self.K)
+        self.K = ndarray_to_stallone_array(K)
         
     def setStationaryDistribution(self, pi):
         """
@@ -118,8 +126,8 @@ class TPT():
         pi : stationary distribution
         
         """
-        self.pi = stallone.ndarray_to_stallone_array(pi)
-        self.ITPT.setStationaryDistribution(self.pi)
+        self.pi = ndarray_to_stallone_array(pi)
+        #self.ITPT.setStationaryDistribution(pi)
         
     def setTransitionMatrix(self, T):
         """
@@ -127,5 +135,5 @@ class TPT():
         ----------
         T : ndarray
         """
-        self.T = stallone.ndarray_to_stallone_array(T)
-        self.ITPT.setTransitionMatrix(self.T)
+        self.T = ndarray_to_stallone_array(T)
+        #self.ITPT.setTransitionMatrix(T)
