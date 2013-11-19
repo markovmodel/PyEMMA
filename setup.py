@@ -4,12 +4,13 @@ __version__ = 2.0
 
 # prefer setuptools in favour of distutils
 try:
-    from setuptools.core import setup
+    from setuptools.core import setup, Extension
 except ImportError:
-    from distutils.core import setup
+    from distutils.core import setup, Extension
 
 from os import environ
 from sys import argv
+import numpy
 
 def setupPyStallone():
     try:
@@ -83,6 +84,8 @@ try:
 except ImportError:
     setupPyStallone()
 
+cocovar_module = Extension('cocovar', sources = ['extensions/cocovar.c'])
+
 setup(
       name = 'Emma2',
       version = __version__,
@@ -100,7 +103,12 @@ setup(
                   'emma2.msm.io',
                   'emma2.pmm',
                   'emma2.util'],
-      scripts = ['scripts/ImpliedTimescalePlot.py'],
+      scripts = ['scripts/ImpliedTimescalePlot.py',
+                 'scripts/mm_tica',
+                 'scripts/mm_acf',
+                 'scripts/mm_project'],
+      include_dirs = [numpy.get_include()],
+      ext_modules = [cocovar_module],
       # FIXME: this goes to egg meta info directory and is not found during init
       data_files = [('emma2', ['emma2.cfg'])],
       # runtime dependencies
