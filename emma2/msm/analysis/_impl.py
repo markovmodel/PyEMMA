@@ -3,16 +3,20 @@ Created on 18.10.2013
 
 @author: marscher
 '''
-from emma2.util.pystallone import API, JavaError,\
-    stallone_array_to_ndarray, ndarray_to_stallone_array
 from emma2.util.log import getLogger
 log = getLogger()
+
+from emma2.util.pystallone import stallone_available,\
+    stallone_array_to_ndarray, ndarray_to_stallone_array
+
+if stallone_available:
+    from emma2.util.pystallone import API, JavaError
+else:
+    log.warn('stallone not available. No functionality of TPT class!')
 
 class TPT():
     """
         This class wraps around a stallone ITPTFlux class.
-        Performs internal array wrapping between python and java (bad performance)
-
     """
     def __init__(self, T, A, B):
         """
@@ -127,7 +131,6 @@ class TPT():
         
         """
         self.pi = ndarray_to_stallone_array(pi)
-        #self.ITPT.setStationaryDistribution(pi)
         
     def setTransitionMatrix(self, T):
         """
@@ -136,4 +139,3 @@ class TPT():
         T : ndarray
         """
         self.T = ndarray_to_stallone_array(T)
-        #self.ITPT.setTransitionMatrix(T)
