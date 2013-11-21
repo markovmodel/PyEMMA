@@ -10,6 +10,8 @@ import numpy
 
 ''' import correlation covariance module '''
 import cocovar
+from emma2.util.log import getLogger
+log = getLogger()
 
 def correlation(cov, var):
     '''Calculate covariance matrix from correlation matrix.'''
@@ -67,7 +69,7 @@ class Amuse:
 
         # calculate mean
         if mean == None:
-            print 'computing mean'
+            log.info('computing mean')
             mean_stats = {}
             for f in log_loop(files):
                 cocovar.run(f, mean_stats, True, False, False, False, 0)
@@ -80,7 +82,7 @@ class Amuse:
                 amuse.mean = mean
 
         # calculate rest of statistics
-        print 'computing covariances'
+        log.info('computing covariances')
         stats = { 'mean': amuse.mean }
         for f in log_loop(files):
             cocovar.run(f, stats, False, False, True, True, lag)
