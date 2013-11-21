@@ -25,6 +25,8 @@ def setupPyStallone():
          '--package', 'stallone.mc',
          '--package', 'stallone.algebra',
          '--package', 'stallone.cluster',
+         '--package', 'java.lang',
+         '--package', 'java.util',
          '--include', stallone_whole_in_one_jar,
          #'--use_full_names', # does not work...
          '--python', 'stallone', # python module name
