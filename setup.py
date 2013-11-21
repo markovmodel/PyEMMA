@@ -94,6 +94,7 @@ setup(
       author = 'The Emma2 team',
       # list packages here
       packages = ['emma2',
+                  'emma.coordinates',
                   'emma2.msm',
                   'emma2.msm.analysis',
                   'emma2.msm.analysis.dense',
