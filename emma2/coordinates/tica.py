@@ -7,7 +7,6 @@ Created on 19.11.2013
 import os
 import sys
 import numpy
-import math
 
 ''' import correlation covariance module '''
 import cocovar
@@ -19,7 +18,7 @@ def correlation(cov, var):
     corr = numpy.zeros([n, n])
     for i in xrange(n):
         for j in xrange(n):
-            corr[i, j] = cov[i, j] / math.sqrt(var[i] * var[j])
+            corr[i, j] = cov[i, j] / numpy.sqrt(var[i] * var[j])
     return corr
 
 def log_loop(iterable):
@@ -114,7 +113,7 @@ class Amuse:
         amuse.pca_values, amuse.pca_weights = numpy.linalg.eig(corr)
         # normalize weights by dividing by the standard deviation of the pcs 
         for i, l in enumerate(amuse.pca_values):
-            amuse.pca_weights[:, i] = amuse.pca_weights[:, i] / math.sqrt(l)
+            amuse.pca_weights[:, i] = amuse.pca_weights[:, i] / numpy.sqrt(l)
 
         pc_tcorr = numpy.dot(numpy.dot(numpy.transpose(amuse.pca_weights), tcorr), amuse.pca_weights)
         amuse.tica_values, amuse.intermediate_weights = numpy.linalg.eig(pc_tcorr)
