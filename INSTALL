@@ -1,3 +1,14 @@
+The requirements are currently the following:
+numpy >= 1.7.0
+scipy >= 0.13.0
+jcc >= 2.17
+
+This requirements will be installed automatically, if you use a python package
+manager like pip or easy_install.
+
+For the stallone wrapper you need a JDK to compile the wrapper code. So far, we
+recommend at least JDK 1.6
+
 To install this package to your home directory, please call:
 
 easy_setup --user .
