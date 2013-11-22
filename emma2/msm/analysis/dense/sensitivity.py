@@ -1,11 +1,12 @@
 '''
-Created on 08.11.2013
+Created on 22.11.2013
 
-@author: marscher
+@author: jan-hendrikprinz
 '''
+
 import numpy
 
-def forward_committor(T, A, B):
+def forward_committor_sensitivity(T, A, B, i):
     """ 
     calculate forward committor from A to B given transition matrix T.
     Parameters
@@ -16,6 +17,7 @@ def forward_committor(T, A, B):
         List of integer state labels for set A
     B : array like
         List of integer state labels for set B
+    i : entry of the committor which 
         
     Returns
     -------

@@ -360,6 +360,7 @@ def expectation(T, a):
     """    
     # check a is contained in T
     # calculate E[a]
+    
     raise NotImplementedError('Not implemented.')    
 
 # TODO: Implement in Python directly
@@ -517,7 +518,7 @@ def pcca(T, n):
 ################################################################################
 
 # TODO: Implement in Python directly
-def committor(T, A, B, forward=True):
+def committor(P, A, B, forward=True):
     r"""Compute the committor between sets of microstates.
     
     Parameters
@@ -538,15 +539,15 @@ def committor(T, A, B, forward=True):
         Committor vector.
     
     """
-    if issparse(T):
+    if issparse(P):
         raise NotImplementedError('not yet impled for sparse.')
-    elif isdense(T):
+    elif isdense(P):
         if forward:
-            dense.committor.forward_committor(T, A, B)
+            dense.committor.forward_committor(P, A, B)
         else:
-            """ if T is time reversible backward commitor is equal 1 - q+"""
-            if is_reversible(T):
-                committor = 1.0 - dense.committor.forward_committor(T, A, B)
+            """ if P is time reversible backward commitor is equal 1 - q+"""
+            if is_reversible(P):
+                committor = 1.0 - dense.committor.forward_committor(P, A, B)
             else:
                 raise NotImplementedError('not impled for backward/dense.')
     else:
