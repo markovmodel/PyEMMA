@@ -219,6 +219,7 @@ tmatrix = transition_matrix
 __all__.append('tmatrix')
 
 # TODO: Jan Implement in Python directly
+# TODO: Is C posterior or prior counts? 
 def tmatrix_cov(C, k=None):
     """
     Computes a nonreversible covariance matrix of transition matrix elments

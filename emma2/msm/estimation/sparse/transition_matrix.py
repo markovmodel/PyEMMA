@@ -15,6 +15,7 @@ def transition_matrix_non_reversible(C):
     norm = scipy.sparse.diags(rowsum, 0)
     return norm * C
 
+
 def tmatrix_cov(C, row=None):
     if row is not None:
         matrix = dirichlet_covariance(C[row])
