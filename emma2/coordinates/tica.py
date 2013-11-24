@@ -8,6 +8,8 @@ import os
 import sys
 import numpy
 
+__all__ = ['correlation', 'log_loop', 'rename', 'Amuse']
+
 ''' import correlation covariance module '''
 import cocovar
 from emma2.util.log import getLogger
