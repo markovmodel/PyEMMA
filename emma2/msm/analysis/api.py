@@ -371,7 +371,7 @@ def expectation_sensitivity(T, a):
 
 # DONE: ben: Implement in Python directly
 def expected_counts(p0, T, N):
-    r"""Compute expected transition counts for Markov chain with n steps. 
+    r"""Compute expected transition counts for Markov chain with n steps.
     
     Expected counts are computed according to
     
