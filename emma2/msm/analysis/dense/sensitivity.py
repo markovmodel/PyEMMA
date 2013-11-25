@@ -85,13 +85,15 @@ def eigenvector_sensitivity(T, k, j, right=True):
     
     perm = numpy.argsort(eValues)[::-1]
 
+    eValues = eValues[perm]
     rightEigenvectors=rightEigenvectors[perm]
     leftEigenvectors=leftEigenvectors[perm]
     
-    matA = T - numpy.diag(numpy.ones((n)))
-    
+    matA = T - numpy.diag(eValues*numpy.ones((n)))
     matAInv = numpy.linalg.pinv(matA, 10.^-12)
+    
+    invVector = matAInv[j]
+    
+    sensitivity = invVector.rightEigenvectors[k] * numpy.outer(leftEigenvectors[k],rightEigenvectors[k]) - numpy.outer(invVector, rightEigenvectors[k])
             
-    sensitivity = numpy.outer(leftEigenvectors[k], rightEigenvectors[k])
-
     return sensitivity
