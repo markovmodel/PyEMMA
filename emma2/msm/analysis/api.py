@@ -197,7 +197,12 @@ def eigenvalue_sensitivity(T, k):
         Eigenvalue index
     
     """
-    raise NotImplementedError('Not implemented.')
+    if issparse(T):
+        raise NotImplementedError('Not implemented.')
+    elif isdense(T):
+        return dense.sensitivity.eigenvalue_sensitivity(T, k)
+    else:
+        raise _type_not_supported
 
 # DONE: ben: Implement in Python directly
 def timescales(T, tau=1, k=None):
@@ -267,7 +272,13 @@ def eigenvector_sensitivity(T, k, j, right=True):
         If True compute right eigenvectors, otherwise compute left eigenvectors.
     
     """
-    raise NotImplementedError('Not implemented.')
+    if issparse(T):
+        raise NotImplementedError('Not implemented.')
+    elif isdense(T):
+        if right is True:
+            return dense.sensitivity.eigenvector_sensitivity(T, k, j, right)
+    else:
+        raise _type_not_supported
 
 # TODO: ben: Implement in Python directly
 def rdl_decomposition(T, k=None, norm='standard'):
@@ -325,7 +336,7 @@ def mfpt(T, target):
     """
     raise NotImplementedError('Not implemented.')
 
-# TODO: Implement in Python directly
+# TODO: Implement sparse in Python directly
 def mfpt_sensitivity(T, target, i):
     r"""Compute sensitivity of mfpt
     
@@ -338,7 +349,12 @@ def mfpt_sensitivity(T, target, i):
     i : state to compute the sensitivity for
     
     """
-    raise NotImplementedError('Not implemented.')
+    if issparse(T):
+        raise NotImplementedError('Not implemented.')
+    elif isdense(T):
+        return dense.sensitivity.mfpt_sensitivity(T, target, i)
+    else:
+        raise _type_not_supported
 
 ################################################################################
 # Expectations
@@ -554,7 +570,7 @@ def committor(P, A, B, forward=True):
         raise _type_not_supported
 
 # TODO: Implement in Python directly
-def committor_sensitivity(P, A, B, i, forward=True):
+def committor_sensitivity(T, A, B, index, forward=True):
     r"""Compute the committor between sets of microstates.
     
     Parameters
@@ -566,7 +582,7 @@ def committor_sensitivity(P, A, B, i, forward=True):
         List of integer state labels for set A
     B : array_like
         List of integer state labels for set B
-    i : state to compute the sensitivity for
+    index : state to compute the sensitivity for
     forward : bool
         If True compute the forward committor, else
         compute the backward committor.
@@ -578,7 +594,13 @@ def committor_sensitivity(P, A, B, i, forward=True):
         Commitor vector.
     
     """
-    raise NotImplementedError('Not implemented.')
+    if issparse(T):
+        raise NotImplementedError('Not implemented.')
+    elif isdense(T):
+        return dense.sensitivity.forward_committor_sensitivity(T, A, B, index)
+    else:
+        raise _type_not_supported
+
 
 def tpt(T, A, B):
     r""" returns a transition path TPT object
