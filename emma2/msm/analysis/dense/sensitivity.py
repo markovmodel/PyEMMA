@@ -78,10 +78,9 @@ def eigenvalue_sensitivity(T, k):
 
 def eigenvector_sensitivity(T, k, j, right=True):
     n = len(T)
-    
+
     eValues, rightEigenvectors = numpy.linalg.eig(T)
-    leftEigenvectors = numpy.linalg.inv(rightEigenvectors)    
-    
+    leftEigenvectors = numpy.linalg.inv(rightEigenvectors)        
     perm = numpy.argsort(eValues)[::-1]
 
     eValues = eValues[perm]
@@ -90,13 +89,9 @@ def eigenvector_sensitivity(T, k, j, right=True):
     
     matA = T - numpy.diag(eValues*numpy.ones((n)))
 
-#TODO: Make sure that pinv is really the Moore-Penrose-Inverse
     matAInv = numpy.linalg.pinv(matA, 10.^-12)
-    
-    invVector = matAInv[j]
-    
-    sensitivity = invVector.rightEigenvectors[k] * numpy.outer(leftEigenvectors[k],rightEigenvectors[k]) - numpy.outer(invVector, rightEigenvectors[k])
-            
+    invVector = matAInv[j]    
+    sensitivity = invVector.rightEigenvectors[k] * numpy.outer(leftEigenvectors[k],rightEigenvectors[k]) - numpy.outer(invVector, rightEigenvectors[k])            
     return sensitivity
 
 def mfpt_sensitivity(T, target, i):

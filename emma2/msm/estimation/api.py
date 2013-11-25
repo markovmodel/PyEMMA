@@ -242,7 +242,7 @@ def log_likelihood(C, T):
     """
     sparse.likelihood.log_likelihood(C, T)
     
-# TODO: Implement in Python directly
+# TODO: this function can be mixed dense/sparse, so maybe we should change the place for this function.
 def error_perturbation(C, sensitivity):
     """
         C: count matrix 
@@ -254,7 +254,7 @@ def error_perturbation(C, sensitivity):
         from C.  returns: (m x m) covariance matrix of the target
         quantity
     """
-    raise NotImplementedError('Not implemented.')
+    return sparse.perturbation.error_perturbation(C, sensitivity)
 
 # Done: Martin Map to Stallone (Reversible)
 def tmatrix_sampler(C, reversible=False, mu=None, P0=None):
