@@ -71,7 +71,7 @@ cmatrix_cores=count_matrix_cores
 ################################################################################
 
 # TODO: Ben Implement in Python directly
-def connected_sets(C):
+def connected_sets(C, directed=True):
     r"""Compute connected components for a directed graph with weights
     represented by the given count matrix.
 
@@ -79,6 +79,9 @@ def connected_sets(C):
     ----------
     C : scipy.sparse matrix 
         Count matrix specifying edge weights.
+    directed : bool, optional
+       Whether to compute connected components for a directed  or
+       undirected graph. Default is True.       
 
     Returns
     -------
@@ -92,7 +95,7 @@ def connected_sets(C):
     return sparse.connectivity.connected_sets(C)
 
 # DONE: Ben Implement in Python directly
-def largest_connected_set(C):
+def largest_connected_set(C, directed=True):
     r"""Compute connected components for a directed graph with weights
     represented by the given count matrix.
 
@@ -100,6 +103,9 @@ def largest_connected_set(C):
     ----------
     C : scipy.sparse matrix 
         Count matrix specifying edge weights.
+    directed : bool, optional
+       Whether to compute connected components for a directed  or
+       undirected graph. Default is True.       
 
     Returns
     -------
@@ -110,7 +116,7 @@ def largest_connected_set(C):
     return sparse.connectivity.largest_connected_set(C)
 
 # DONE: Ben Implement in Python directly
-def connected_count_matrix(C):
+def connected_count_matrix(C, directed=True):
     r"""Compute the count matrix of the largest connected set.
 
     The input count matrix is used as a weight matrix for the
@@ -124,6 +130,9 @@ def connected_count_matrix(C):
     ----------
     C : scipy.sparse matrix 
         Count matrix specifying edge weights.
+    directed : bool, optional
+       Whether to compute connected components for a directed or
+       undirected graph. Default is True.       
 
     Returns
     -------
@@ -138,15 +147,31 @@ connected_cmatrix=connected_count_matrix
 
 __all__.append('connected_cmatrix')
 
-def is_connected(C):
-    """Return true if C is a countmatrix for a completely connected process.    
+def is_connected(C, directed=True):
+    """Check if C is a countmatrix for a completely connected process.
+
+    Parameters
+    ----------
+    C : scipy.sparse matrix 
+        Count matrix specifying edge weights.
+    directed : bool, optional
+       Whether to compute connected components for a directed or
+       undirected graph. Default is True.       
+
+    Returns
+    -------
+    is_connected: bool
+        True if C is countmatrix for a completely connected process
+        False otherwise.
+
     """
     return sparse.connectivity.is_connected(C)
 
 # TODO: Implement in Python directly
 def mapping(set):
     """
-    Constructs two dictionaries that map from the set values to their indexes, and vice versa.
+    Constructs two dictionaries that map from the set values to their
+    indexes, and vice versa.
     
     Parameters
     ----------
