@@ -4,7 +4,7 @@ import numpy as np
 import scipy.sparse
 import scipy.sparse.csgraph as csgraph
 
-def connected_sets(C):
+def connected_sets(C, directed=True):
     r"""Compute connected components for a directed graph with weights
     represented by the given count matrix.
 
@@ -12,6 +12,9 @@ def connected_sets(C):
     ----------
     C : scipy.sparse matrix 
         Count matrix specifying edge weights.
+    directed : bool, optional
+       Whether to compute connected components for a directed  or
+       undirected graph. Default is True.       
 
     Returns
     -------
@@ -24,7 +27,7 @@ def connected_sets(C):
     """ Compute connected components of C. nc is the number of
     components, indices contain the component labels of the states
     """
-    nc, indices=csgraph.connected_components(C, directed=True, connection='strong')
+    nc, indices=csgraph.connected_components(C, directed=directed, connection='strong')
     
     states=np.arange(M) # Discrete states
 
@@ -57,7 +60,7 @@ def connected_sets(C):
 
     return cc
 
-def largest_connected_set(C):
+def largest_connected_set(C, directed=True):
     r"""Compute connected components for a directed graph with weights
     represented by the given count matrix.
 
@@ -72,9 +75,9 @@ def largest_connected_set(C):
         The largest connected component of the directed graph.
 
     """
-    return connected_sets(C)[0]
+    return connected_sets(C, directed=directed)[0]
 
-def connected_count_matrix(C):
+def connected_count_matrix(C, directed=True):
     r"""Compute the count matrix of the largest connected set.
 
     The input count matrix is used as a weight matrix for the
@@ -96,7 +99,7 @@ def connected_count_matrix(C):
         connected set of vertices (states)
 
     """
-    lcc=largest_connected_set(C)
+    lcc=largest_connected_set(C, directed=directed)
     
     """Row slicing"""
     C_cc=C.tocsr()
@@ -108,8 +111,8 @@ def connected_count_matrix(C):
 
     return C_cc.tocoo()
 
-# TODO: Don't forget the non-sparse implementation !
-def is_connected(C):
+#TODO: Dense implementation
+def is_connected(C, directed=True):
     r"""Return true, if the input count matrix is completely connected.
     Effectively checking if the number of connected components equals one.
     
@@ -117,6 +120,9 @@ def is_connected(C):
     ----------
     C : scipy.sparse matrix 
         Count matrix specifying edge weights.
+    directed : bool, optional
+       Whether to compute connected components for a directed  or
+       undirected graph. Default is True.       
 
     Returns
     -------
@@ -124,7 +130,7 @@ def is_connected(C):
         
 
     """
-    nc, indices=csgraph.connected_components(C, directed=True, connection='strong')
-    
+    nc=csgraph.connected_components(C, directed=directed, connection='strong', \
+                                        return_labels=False)    
     return nc == 1
     
