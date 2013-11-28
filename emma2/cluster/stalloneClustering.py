@@ -10,7 +10,7 @@ if stallone_available:
 from emma2.util.log import getLogger
 log = getLogger(__name__)
 
-__all__ = ['getDataSequenceLoader', 'constructClusterAlgorithm']
+__all__ = ['getDataSequenceLoader', 'getClusterAlgorithm', 'writeASCIIResults']
 
 
 def getDataSequenceLoader(files):
@@ -29,7 +29,7 @@ def getDataSequenceLoader(files):
         log.error('java exception occured: %s' % je)
         raise RuntimeError('something went wrong during file reading.')
 
-def constructClusterAlgorithm(data, **kwargs):
+def getClusterAlgorithm(data, **kwargs):
     """
     constructs the algorithm in stallone factory with given parameters
 
@@ -76,4 +76,6 @@ def constructClusterAlgorithm(data, **kwargs):
     else:
         raise ValueError('no valid algorithm (%s) given!')
 
-    
+def writeASCIIResults(data, filename):
+    writer = API.dataNew.createASCIIDataWriter(filename, 0, ',', '')
+    writer.addAll(data)
