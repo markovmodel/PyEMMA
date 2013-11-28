@@ -4,12 +4,12 @@
 import os
 import sys
 
-from emma2.util.pystallone import stallone_available
-if stallone_available:
-    from emma2.util.pystallone import *
+# from emma2.util.pystallone import stallone_available
+# if stallone_available:
+#     from emma2.util.pystallone import *
 
 
-from emma2.cluster.stalloneWrapperUtil import *
+from emma2.cluster.stalloneClustering import *
 
 from emma2.util.log import getLogger
 log = getLogger('mm_cluster')
@@ -105,13 +105,12 @@ if __name__ == '__main__':
     data = loader.loadSequence(0)
     log.info('data loaded.')
     
-    algo = constructClusterAlgorithm(data, **vars(args))
+    algo = getClusterAlgorithm(data, **vars(args))
     algo.perform()
     centers = algo.getClusterCenters()
     cluster_inds = algo.getClusterIndexes()
     
     # save cluster centers to file
     # TODO: emma1 supports writing to dcd, but writer in stallone is buggy
-    writer = API.dataNew.createASCIIDataWriter(args.output, 0, ',', '')
-    writer.addAll(centers)
+    writeASCIIResults(data, args.output)
     log.info("successfully written cluster centers to file %s" % args.output)
