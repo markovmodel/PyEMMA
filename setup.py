@@ -25,6 +25,10 @@ def setupPyStallone():
          '--package', 'stallone.mc',
          '--package', 'stallone.algebra',
          '--package', 'stallone.cluster',
+         '--sequence', 'stallone.api.datasequence.IDataSequence', 'size:()I',
+         'get:(I)Lstallone.api.doubles.IDoubleArray;',
+         '--sequence', 'stallone.api.IDoubleArray', 'size:()I',
+         'get:(I)jdouble;',
          '--include', stallone_whole_in_one_jar,
          #'--use_full_names', # does not work...
          '--python', 'stallone', # python module name
