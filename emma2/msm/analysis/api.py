@@ -269,7 +269,7 @@ def eigenvector_sensitivity(T, k, j, right=True):
     """
     raise NotImplementedError('Not implemented.')
 
-# TODO: ben: Implement in Python directly
+# DONE: ben: Implement in Python directly
 def rdl_decomposition(T, k=None, norm='standard'):
     r"""Compute the decomposition into left and right eigenvectors.
     
@@ -516,7 +516,7 @@ def pcca(T, n):
 # Transition path theory
 ################################################################################
 
-# TODO: Implement in Python directly
+# DONE: Implement in Python directly
 def committor(T, A, B, forward=True):
     r"""Compute the committor between sets of microstates.
     
