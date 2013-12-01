@@ -12,6 +12,7 @@ import dense.committor
 import sparse.assessment
 import sparse.decomposition
 import sparse.expectations
+from emma2.msm.analysis.sparse import correlations
 
 __all__=['is_transition_matrix', 'is_rate_matrix',\
              'is_ergodic', 'is_reversible', 'stationary_distribution',\
@@ -432,7 +433,7 @@ def expected_counts_stationary(P, N, mu=None):
 # Fingerprints
 ################################################################################
 
-# TODO: martin: Implement in Python directly
+# Done: martin: Implement in Python directly
 def autocorrelation(P, obs):
     r"""Compute dynamical fingerprint crosscorrelation.
     
@@ -451,9 +452,17 @@ def autocorrelation(P, obs):
     -------
     
     """
-    raise NotImplementedError('Not implemented.')
+    # rdl_decomposition already handles sparsecity of P.
+    # return types are dense in sparse and dense case of P
+    w, R, L = rdl_decomposition(P)
+    sum_ = 0.0
+    from numpy import dot
+    # TODO: write in numpy syntax for more speed
+    for i in range(len(w)):
+        sum_ = dot(L[i], obs) * obs
+    return sum_
 
-# TODO: Implement in Python directly
+# Done: Implement in Python directly
 def crosscorrelation(P, obs1, obs2):
     r"""Compute dynamical fingerprint crosscorrelation.
     
@@ -474,8 +483,13 @@ def crosscorrelation(P, obs1, obs2):
     -------
     
     """
-    raise NotImplementedError('Not implemented.')
-
+    if issparse(P):
+        sparse.correlations.crosscorrelation(P, obs1, obs2)
+    elif isdense(P):
+        dense.correlations.crosscorrelation(P, obs1, obs2)
+    else:
+        raise _type_not_supported
+        
 # TODO: Implement in Python directly
 def perturbation(P, obs, p0):
     """

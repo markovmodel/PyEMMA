@@ -7,8 +7,6 @@ __author_email__ = 'fabian.paul@mpikg.mpg.de'
 import argparse
 import numpy
 import sys
-import os
-import inspect
 
 def log_loop(iterable):
     for i, x in enumerate(iterable):
@@ -19,7 +17,6 @@ def log_loop(iterable):
 def acf(trajs, acffname, stride=1, max_lag=None, subtract_mean=True, normalize=True, mean=None):
     if subtract_mean and mean == None:
         # compute mean over all trajectories
-        sys.path.append(os.path.realpath(os.path.dirname(inspect.getfile(inspect.currentframe())) + os.sep + '..'))
         import cocovar
         stats = {}
         print 'computing mean'
@@ -82,7 +79,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()  
 
-    if args.mean: 
+    if args.mean:
         mean = numpy.loadtxt(args.mean)
     else:
         mean = None
