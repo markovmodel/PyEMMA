@@ -392,19 +392,19 @@ def rdl_decomposition(T, k=None, norm='standard'):
 
 # TODO: Implement in Python directly
 def mfpt(T, target):
-    r"""Computes vector of mean first passage times for given target state.
+    r"""Compute vector of mean first passage times to target state.
     
     Parameters
     ----------
     T : ndarray, shape=(n,n) 
         Transition matrix.
-    target : Integer or List of integers
-        Target state or set for mfpt calculation.
+    target : int
+        Target state for mfpt calculation.
     
     Returns
     -------
-    x : ndarray, shape=(n,)
-        Vector of mean first passage times.
+    m_t : ndarray, shape=(n,)
+         Vector of mean first passage times to target state t.
     
     """
     raise NotImplementedError('Not implemented.')
