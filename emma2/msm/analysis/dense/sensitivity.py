@@ -107,8 +107,12 @@ def mfpt_sensitivity(T, target, i):
     
     mfpt = numpy.linalg.solve(matA, tVec)
     
-    aInv = numpy.linalg.inv(matA)
-    phiVec = aInv[i]
+#    aInv = numpy.linalg.inv(matA)
+#    phiVec = aInv[i]
+
+# This should be faster than computing the full solution
+    
+    phiVec = numpy.linalg(matA, numpy.eye(1,n,i) )
     
     sensitivity = numpy.outer(phiVec, mfpt)
     
