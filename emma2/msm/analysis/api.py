@@ -518,7 +518,8 @@ def perturbation(P, obs, p0):
 
 # TODO: Implement in Python directly
 def pcca(T, n):
-    r"""returns a PCCA object
+    r"""returns an ndarray(m,n) with n membership functions of length m in columns to be in
+    correspondence with the column structure of right and left eigenvectors
     
     Parameters
     ----------
@@ -526,7 +527,12 @@ def pcca(T, n):
     n : number of metastable processes
     
     """
-    raise NotImplementedError('Not implemented.')
+    if issparse(T):
+        raise NotImplementedError('not yet impled for sparse.')
+    elif isdense(T):
+        return dense.pcca.pcca(T, n)
+    else:
+        _type_not_supported
 
 
 ################################################################################
