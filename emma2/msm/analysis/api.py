@@ -167,8 +167,7 @@ def stationary_distribution_sensitivity(T):
 statdist_sensitivity=stationary_distribution_sensitivity
 __all__.append('statdist_sensitivity')
 
-# DONE: Martin move implementation to dense.decomposition create
-# implementation in sparse.decomposition
+# DONE: Martin
 def eigenvalues(T, k=None):
     r"""computes the eigenvalues
     
