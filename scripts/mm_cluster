@@ -1,0 +1,110 @@
+#!/usr/bin/env python
+# encoding: utf-8
+
+import sys
+
+from emma2.cluster.stalloneClustering import *
+
+from emma2.util.log import getLogger
+log = getLogger('mm_cluster')
+
+algorithms = ['kcenter', 'kmeans', 'regularspatial', 'regulartemporal']
+input_formats = ['xtc', 'dcd' , 'ascii' , 'ensembleascii', 'auto']
+metrics = ['rmsd', 'euclidian']
+
+def handleArgs():
+    """
+    TODO: order args according to this (if it is possible
+      + " -i (<string:filename|filenamepattern>)+"
+                    + "[-iformat [ xtc | dcd | ascii | ensembleascii | {auto} ]]"
+                    + "\n"
+                    + "[-istepwidth {int:1}]\n"
+                    + "[ -algorithm kmeans -clustercenters <int> [-metric {euclidean}] [-maxiterations <int>]\n"
+                    + " |-algorithm kcenters -clustercenters <int> -metric [ minrmsd | euclidean ]\n"
+                    + " |-algorithm regularspatial -dmin <double> -metric [ minrmsd | euclidean ]\n"
+                    + " |-algorithm regulartemporal -spacing <int> -metric [ minrmsd | euclidean ]\n"
+                    + "]\n"
+                    + "-o (<string:filename_for_cluster_centers>)\n";
+    """
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-i', '--input', nargs='+', dest='input', help='input filename or filename pattern', required=True)
+    parser.add_argument('-iformat', help='format of input files',
+                         choices=input_formats, default='auto')
+    # TODO: this is eg. unsupported by current kmeans impl in stallone
+    #parser.add_argument('-istepwidth', type=int, default=1)
+    parser.add_argument('-ialgorithm', dest='algorithm', type=str, choices=algorithms, required=True)
+    parser.add_argument('-metric', dest='metric', type=str, choices=metrics, default='euclidian')
+    parser.add_argument('-o', '--output', dest='output', default='centers.dat', help='')
+    
+    # algorithm dependent arguments
+    parser.add_argument('-clustercenters', '-k', dest='k', type=int)
+    parser.add_argument('-dmin', type=float)
+    parser.add_argument('-spacing', type=int)
+    parser.add_argument('-maxiterations', type=int, default=1000)
+    
+    args = parser.parse_args()
+
+    # do some sanity checks on input
+    if args.algorithm == 'kmeans' or args.algorithm == 'kcenter':
+        if args.k is None:
+            parser.error('kmeans and kcenter need parameter -clustercenters') 
+            
+    if args.algorithm == 'regularspatial' and args.dmin is None:
+        parser.error('regularspatial needs parameter -dmin')
+        
+    if args.algorithm == 'regulartemporal' and args.spacing is None:
+        parser.error('regulartemporal needs parameter -spacing')
+    
+    # check for input file pattern and create a proper list then
+    args.input = handleInputFileArg(args.input)
+    if args.input == []:
+        log.error('empty input file list! eg. check your pattern and if the files exists.')
+        sys.exit(-1)
+        
+    return args
+
+def handleInputFileArg(inputPattern):
+    """
+        handle input patterns like *.xtc or name00[5-9].* and returns
+        a list with filenames matching that pattern.
+    """
+    import re
+    import glob
+    # if its a string wrap it in a list.
+    if isinstance(inputPattern, str):
+        return handleInputFileArg([inputPattern])
+    
+    result = []
+    
+    for e in inputPattern:
+        # split several arguments
+        pattern = re.split('\s+', e)
+        
+        for i in pattern:
+            tmp = glob.glob(i)
+            if tmp != []:
+                result.append(tmp)
+    return [item for sublist in result for item in sublist]
+
+
+if __name__ == '__main__':
+    args = handleArgs()
+    loader = getDataSequenceLoader(args.input)
+    log.info('loading data...')
+    # TODO: check if dimension of data is same
+    # TODO: check if data fits into memory
+    # TODO: this loads only the first file... if loadAll() is used a list 
+    # is returned, but we need a single datasequence object
+    data = loader.loadSequence(0)
+    log.info('data loaded.')
+    
+    algo = getClusterAlgorithm(data, **vars(args))
+    algo.perform()
+    centers = algo.getClusterCenters()
+    cluster_inds = algo.getClusterIndexes()
+    
+    # save cluster centers to file
+    # TODO: emma1 supports writing to dcd, but writer in stallone is buggy
+    writeASCIIResults(data, args.output)
+    log.info("successfully written cluster centers to file %s" % args.output)
