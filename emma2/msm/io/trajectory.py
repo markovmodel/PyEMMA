@@ -52,8 +52,8 @@ def write_discrete_trajectory(filename, dtraj):
     
     """    
     dtraj=np.asarray(dtraj)
-    with open(filename, 'w') as impl_timescales:
-        dtraj.tofile(impl_timescales, sep='\n', format='%d')
+    with open(filename, 'w') as f:
+        dtraj.tofile(f, sep='\n', format='%d')
 
 ################################################################################
 # binary
