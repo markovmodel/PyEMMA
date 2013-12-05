@@ -80,3 +80,62 @@ def time_correlations_direct(P, pi, obs1, obs2=None, times):
     return f
 
 
+def time_relaxation_direct(P, p0, obs, time=1):
+    r"""Compute time-correlation of obs1, or time-cross-correlation with obs2.
+    
+    The time-correlation at time=k is computed by the matrix-vector expression: 
+    cor(k) = obs1' diag(pi) P^k obs2
+    
+    
+    Parameters
+    ----------
+    P : ndarray, shape=(n, n) or scipy.sparse matrix
+        Transition matrix
+    p0 : ndarray, shape=(n)
+        initial distribution
+    obs : ndarray, shape=(n)
+        Vector representing observable on discrete states. 
+    time : int or array like
+        time point(s) at which the (auto)correlation will be evaluated 
+    
+    Returns
+    -------
+    
+    """
+    if not (type( time ) == int):
+        raise TypeError("time is not an integer: "+str(time))
+    # raise transition matrix to power of time
+    Pk = np.linalg.matrix_power(P, time)
+    # propagate time
+    pk = np.dot(p0, Pk)
+    # return result
+    return np.dot(pk,obs)
+
+
+def time_relaxations_direct(P, p0, obs, times):
+    r"""Compute time-correlation of obs1, or time-cross-correlation with obs2.
+    
+    The time-correlation at time=k is computed by the matrix-vector expression: 
+    cor(k) = obs1' diag(pi) P^k obs2
+    
+    
+    Parameters
+    ----------
+    P : ndarray, shape=(n, n) or scipy.sparse matrix
+        Transition matrix
+    p0 : ndarray, shape=(n)
+        initial distribution
+    obs : ndarray, shape=(n)
+        Vector representing observable on discrete states. 
+    times : array-like, shape(n_t)
+        Vector of time points at which the (auto)correlation will be evaluated 
+    
+    Returns
+    -------
+    
+    """
+    n_t = len(times)
+    f = np.zeros((n_t))
+    for i in range(n_t):
+        f[i] = time_relaxation_direct(P, p0, obs, times[i])
+    return f

@@ -13,7 +13,6 @@ import dense.committor
 import sparse.assessment
 import sparse.decomposition
 import sparse.expectations
-from emma2.msm.analysis.sparse import correlations
 
 __all__=['is_transition_matrix', 'is_rate_matrix',\
              'is_ergodic', 'is_reversible', 'stationary_distribution',\
@@ -444,10 +443,11 @@ def expected_counts_stationary(P, N, mu=None):
     """
     raise NotImplementedError('Not implemented.')
 
+
+
 ################################################################################
 # Fingerprints
 ################################################################################
-
 
 # DONE: Martin+Frank: Implement in Python directly
 def fingerprint_correlation(P, obs1, obs2=None, tau=1):
@@ -615,6 +615,45 @@ def correlation(P, obs1, obs2=None, tau=1, times=[1], pi=None):
         f = dense.correlations.time_correlation_direct(P, pi, obs1, obs2, times)
     else:
         timescales,amplitudes = fingerprint_correlation(P, obs1, obs2, tau)
+        f = evaluate_fingerprint(timescales, amplitudes, times)
+    # return
+    return f
+
+
+# DONE: Martin+Frank: Implement in Python directly
+def relaxation(P, p0, obs, tau=1, times=[1], pi=None):
+    r"""Compute time-correlation of obs1, or time-cross-correlation with obs2.
+    
+    The dynamical fingerprint crosscorrelation is the timescale
+    amplitude spectrum of the crosscorrelation of the given observables 
+    under the action of the dynamics P. The correlation is computed as
+    
+    Parameters
+    ----------
+    P : ndarray, shape=(n, n) or scipy.sparse matrix
+        Transition matrix
+    obs1 : ndarray, shape=(n)
+        Vector representing observable 1 on discrete states
+    obs2 : ndarray, shape=(n)
+        Vector representing observable 2 on discrete states. If not given,
+        the autocorrelation of obs1 will be computed
+    times : array-like, shape(n_t), type=int or float
+        Vector of time points at which the (auto)correlation will be evaluated
+    pi : ndarray, shape=(n)
+        stationary distribution. If given, it will not be recomputed (much faster!)
+    
+    Returns
+    -------
+    
+    """
+    # compute pi if necessary
+    if (pi is None):
+        pi = stationary_distribution(P)
+    # if few and integer time points, compute explicitly
+    if (len(times) < 10 and type(sum(times)) == int and isdense(P)):
+        f = dense.correlations.time_relaxations_direct(P, pi, obs, times)
+    else:
+        timescales,amplitudes = fingerprint_relaxation(P, pi, obs, tau)
         f = evaluate_fingerprint(timescales, amplitudes, times)
     # return
     return f
