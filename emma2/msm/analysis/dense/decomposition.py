@@ -224,26 +224,45 @@ def timescales(T, tau=1, k=None):
     else:
         values=values[0:k]
 
+    """Compute implied time scales"""
+    return timescales_from_eigenvalues(values, tau)
+
+
+def timescales_from_eigenvalues(eval, tau=1):
+    r"""Compute implied time scales from given eigenvalues
+    
+    Parameters
+    ----------
+    eval : eigenvalues
+    tau : lag time
+
+    Returns
+    -------
+    ts : ndarray
+        The implied time scales to the given eigenvalues, in the same order.
+    
+    """
+    
     """Check for dominant eigenvalues with large imaginary part"""
-    if not np.allclose(values.imag, 0.0):
+    if not np.allclose(eval.imag, 0.0):
         raise RuntimeWarning('Using eigenvalues with non-zero imaginary part '+\
                                      'for implied time scale computation')
 
     """Check for multiple eigenvalues of magnitude one"""
-    ind_abs_one=np.isclose(np.abs(values), 1.0)
+    ind_abs_one=np.isclose(np.abs(eval), 1.0)
     if sum(ind_abs_one)>1:
         raise RuntimeWarning('Multiple eigenvalues with magnitude one.')
 
     """Compute implied time scales"""
-    ts=np.zeros(len(values))
+    ts=np.zeros(len(eval))
 
-    """Eigenvalues of magnitude one imply infinite rate"""
+    """Eigenvalues of magnitude one imply infinite timescale"""
     ts[ind_abs_one]=np.inf
 
-    """All other eigenvalues give rise to finite rates"""
+    """All other eigenvalues give rise to finite timescales"""
     ts[np.logical_not(ind_abs_one)]=\
-        -1.0*tau/np.log(np.abs(values[np.logical_not(ind_abs_one)]))
+        -1.0*tau/np.log(np.abs(eval[np.logical_not(ind_abs_one)]))
     return ts
-        
-   
     
+
+

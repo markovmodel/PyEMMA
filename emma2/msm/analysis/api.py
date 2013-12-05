@@ -1,6 +1,7 @@
 """
     API functions for Markov state model analysis
 """
+import numpy as np
 from scipy.sparse import issparse
 from scipy.sparse.sputils import isdense
 
@@ -28,6 +29,8 @@ _type_not_supported = \
 # Assessment tools
 ################################################################################
 
+
+# Done
 def is_transition_matrix(T, tol=1e-15):
     r"""
     True if T is a transition matrix
@@ -56,6 +59,8 @@ def is_transition_matrix(T, tol=1e-15):
 is_tmatrix=is_transition_matrix
 __all__.append('is_tmatrix')
 
+
+# Done
 def is_rate_matrix(K, tol=1e-15):
     r"""True if K is a rate matrix
     Parameters
@@ -101,7 +106,7 @@ def is_ergodic(T, tol=1e-15):
         sparse.assessment.is_ergodic(T, tol)
     else:
         raise _type_not_supported
-    
+
 
 # Done: martin: Implement in Python directly
 def is_reversible(T, mu=None, tol=1e-15):
@@ -223,6 +228,7 @@ def timescales(T, tau=1, k=None):
     else:
         raise _type_not_supported
 
+
 # DONE: ben: Implement in Python directly
 def eigenvectors(T, k=None, right=True):
     r"""Compute eigenvectors of given transition matrix.
@@ -251,7 +257,7 @@ def eigenvectors(T, k=None, right=True):
         return dense.decomposition.eigenvectors(T, k=k, right=right)
     else: 
         raise _type_not_supported
-    
+
 
 # TODO: Implement in Python directly
 def eigenvector_sensitivity(T, k, j, right=True):
@@ -268,6 +274,7 @@ def eigenvector_sensitivity(T, k, j, right=True):
     
     """
     raise NotImplementedError('Not implemented.')
+
 
 # DONE: ben: Implement in Python directly
 def rdl_decomposition(T, k=None, norm='standard'):
@@ -305,7 +312,8 @@ def rdl_decomposition(T, k=None, norm='standard'):
         return dense.decomposition.rdl_decomposition(T, k=k, norm=norm)
     else: 
         raise _type_not_supported
-    
+
+
 # TODO: Implement in Python directly
 def mfpt(T, target):
     r"""Computes vector of mean first passage times for given target state.
@@ -324,6 +332,7 @@ def mfpt(T, target):
     
     """
     raise NotImplementedError('Not implemented.')
+
 
 # TODO: Implement in Python directly
 def mfpt_sensitivity(T, target, i):
@@ -344,26 +353,32 @@ def mfpt_sensitivity(T, target, i):
 # Expectations
 ################################################################################
 
-# TODO: martin: Implement in Python directly
-def expectation(T, a):
-    r"""computes the expectation value of a
+
+# DONE: frank
+def expectation(T, a, mu=None):
+    r"""computes the expectation value of a, given by <pi,a>
     
     Parameters
     ----------
-    T : matrix
-    a : scalar
+    T : ndarray, shape(n,n)
+        Transition matrix
+    a : ndarray, shape(n)
+        state vector
+    mu : ndarray, shape(n)
+        stationary distribution of T. If given, the stationary distribution
+        will not be recalculated (saving lots of time)
     
     Returns
     -------
-    expectation value of a : ...
+    expectation value of a : <a> = <pi,a> = sum_i pi_i a_i
     
-    """    
-    # check a is contained in T
-    # calculate E[a]
-    raise NotImplementedError('Not implemented.')    
+    """
+    pi = stationary_distribution(T)
+    return np.dot(pi,a)
+
 
 # TODO: Implement in Python directly
-def expectation_sensitivity(T, a):    
+def expectation_sensitivity(T, a):
     r"""computes the sensitivity of the expectation value of a
     """
     raise NotImplementedError('Not implemented.')
@@ -400,6 +415,7 @@ def expected_counts(p0, T, N):
     else:
         _type_not_supported
 
+
 # TODO: ben: Implement in Python directly
 def expected_counts_stationary(P, N, mu=None):
     r"""Expected transition counts for Markov chain in equilibrium. 
@@ -432,8 +448,9 @@ def expected_counts_stationary(P, N, mu=None):
 # Fingerprints
 ################################################################################
 
-# Done: martin: Implement in Python directly
-def autocorrelation(P, obs):
+
+# DONE: Martin+Frank: Implement in Python directly
+def fingerprint_correlation(P, obs1, obs2=None, tau=1):
     r"""Compute dynamical fingerprint crosscorrelation.
     
     The dynamical fingerprint autocorrelation is the timescale
@@ -444,51 +461,165 @@ def autocorrelation(P, obs):
     ----------
     P : ndarray, shape=(n, n) or scipy.sparse matrix
         Transition matrix
-    obs : ndarray, shape=(n,)
-        Vector representing observable on discrete states
+    obs1 : ndarray, shape=(n,)
+        Vector representing observable 1 on discrete states
+    obs2 : ndarray, shape=(n,)
+        Vector representing observable 2 on discrete states. 
+        If none, obs2=obs1, i.e. the autocorrelation is used
+    tau : lag time of the the transition matrix. Used for 
+        computing the timescales returned
     
     Returns
     -------
+    (timescales, amplitudes)
+    timescales : ndarray, shape=(n-1)
+        timescales of the relaxation processes of P
+    amplitudes : ndarray, shape=(n-1)
+        fingerprint amplitdues of the relaxation processes
     
     """
-    # rdl_decomposition already handles sparsecity of P.
-    # return types are dense in sparse and dense case of P
-    w, R, L = rdl_decomposition(P)
-    sum_ = 0.0
-    from numpy import dot
-    # TODO: write in numpy syntax for more speed
-    for i in range(len(w)):
-        sum_ = dot(L[i], obs) * obs
-    return sum_
+    # handle input
+    if (obs2 is None):
+        obs2 = obs1
+    # rdl_decomposition already handles sparsity of P.
+    w, L, R = rdl_decomposition(P)
+    # timescales:
+    timescales = dense.decomposition.timescales_from_eigenvalues(w, tau)
+    n = len(timescales)
+    # amplitudes:
+    amplitudes = np.zeros(n)
+    for i in range(n):
+        amplitudes[i] = np.dot(L[i], obs1) * np.dot(L[i], obs2)
+    # return
+    return timescales, amplitudes
 
-# Done: Implement in Python directly
-def crosscorrelation(P, obs1, obs2):
+
+# DONE: Martin+Frank: Implement in Python directly
+def fingerprint_relaxation(P, p0, obs, tau=1):
     r"""Compute dynamical fingerprint crosscorrelation.
     
-    The dynamical fingerprint crosscorrelation is the timescale
-    amplitude spectrum of the crosscorrelation of the given observables 
+    The dynamical fingerprint autocorrelation is the timescale
+    amplitude spectrum of the autocorrelation of the given observables 
     under the action of the dynamics P
     
     Parameters
     ----------
     P : ndarray, shape=(n, n) or scipy.sparse matrix
         Transition matrix
-    obs1 : ndarray, shape=(n,)
-        Vector representing observable on discrete states
-    obs2 : ndarray, shape=(n,)
-        Vector representing observable on discrete states
+    p0 : ndarray, shape=(n)
+        starting distribution
+    obs : ndarray, shape=(n)
+        Vector representing observable 2 on discrete states. 
+        If none, obs2=obs1, i.e. the autocorrelation is used
+    tau : lag time of the the transition matrix. Used for 
+        computing the timescales returned
+    
+    Returns
+    -------
+    (timescales, amplitudes)
+    timescales : ndarray, shape=(n-1)
+        timescales of the relaxation processes of P
+    amplitudes : ndarray, shape=(n-1)
+        fingerprint amplitdues of the relaxation processes
+    
+    """
+    # rdl_decomposition already handles sparsity of P.
+    w, L, R = rdl_decomposition(P)
+    # timescales:
+    timescales = dense.decomposition.timescales_from_eigenvalues(w, tau)
+    n = len(timescales)
+    # amplitudes:
+    amplitudes = np.zeros(n)
+    for i in range(n):
+        amplitudes[i] = np.dot(p0, R[:,i]) * np.dot(L[i], obs)
+    # return
+    return timescales, amplitudes
+
+
+# DONE: Frank
+def evaluate_fingerprint(timescales, amplitudes, times=[1]):
+    r"""Compute time-correlation of obs1, or time-cross-correlation with obs2.
+    
+    The time-correlation at time=k is computed by the matrix-vector expression: 
+    cor(k) = obs1' diag(pi) P^k obs2
+    
+    
+    Parameters
+    ----------
+    timescales : ndarray, shape=(n)
+        vectors with timescales
+    amplitudes : ndarray, shape=(n)
+        vector with amplitudes
+    times : array-like, shape=(n_t)
+        times to evaluate the fingerprint at
     
     Returns
     -------
     
     """
-    if issparse(P):
-        sparse.correlations.crosscorrelation(P, obs1, obs2)
-    elif isdense(P):
-        dense.correlations.crosscorrelation(P, obs1, obs2)
+    # check input
+    n = len(timescales)
+    if (len(amplitudes) != n):
+        raise TypeError("length of timescales and amplitudes don't match.")
+    n_t = len(times)
+    
+    # rates
+    rates = np.divide(np.ones(n), timescales)
+    
+    # result
+    f = np.zeros(n_t)
+    
+    for it in range(len(times)):
+        t = times[it]
+        exponents = -t * rates
+        eigenvalues_t = np.exp(exponents)
+        f[it] = np.dot(eigenvalues_t, amplitudes)
+    
+    return f
+
+
+# DONE: Martin+Frank: Implement in Python directly
+def correlation(P, obs1, obs2=None, tau=1, times=[1], pi=None):
+    r"""Compute time-correlation of obs1, or time-cross-correlation with obs2.
+    
+    The dynamical fingerprint crosscorrelation is the timescale
+    amplitude spectrum of the crosscorrelation of the given observables 
+    under the action of the dynamics P. The correlation is computed as
+    
+    Parameters
+    ----------
+    P : ndarray, shape=(n, n) or scipy.sparse matrix
+        Transition matrix
+    obs1 : ndarray, shape=(n)
+        Vector representing observable 1 on discrete states
+    obs2 : ndarray, shape=(n)
+        Vector representing observable 2 on discrete states. If not given,
+        the autocorrelation of obs1 will be computed
+    times : array-like, shape(n_t), type=int or float
+        Vector of time points at which the (auto)correlation will be evaluated
+    pi : ndarray, shape=(n)
+        stationary distribution. If given, it will not be recomputed (much faster!)
+    
+    Returns
+    -------
+    
+    """
+    # observation
+    if (obs2 is None):
+        obs1 = obs2
+    # compute pi if necessary
+    if (pi is None):
+        pi = stationary_distribution(P)
+    # if few and integer time points, compute explicitly
+    if (len(times) < 10 and type(sum(times)) == int and isdense(P)):
+        f = dense.correlations.time_correlation_direct(P, pi, obs1, obs2, times)
     else:
-        raise _type_not_supported
-        
+        timescales,amplitudes = fingerprint_correlation(P, obs1, obs2, tau)
+        f = evaluate_fingerprint(timescales, amplitudes, times)
+    # return
+    return f
+
+
 # TODO: Implement in Python directly
 def perturbation(P, obs, p0):
     """
