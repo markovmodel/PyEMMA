@@ -15,10 +15,12 @@ import sparse.assessment
 import sparse.decomposition
 import sparse.expectations
 
-__all__=['is_transition_matrix', 'is_rate_matrix',\
-             'is_ergodic', 'is_reversible', 'stationary_distribution',\
-             'eigenvalues', 'eigenvectors', 'rdl_decomposition',\
-             'expected_counts', 'timescales']
+__all__=['is_transition_matrix', 'is_rate_matrix',
+             'is_ergodic', 'is_reversible', 
+             'stationary_distribution', 'eigenvalues', 'eigenvectors', 'rdl_decomposition',\
+             'expected_counts', 'timescales',
+             'committor', 'tpt',
+             'fingerprint_correlation', 'fingerprint_relaxation','evaluate_fingerprint','correlation','relaxation']
 # shortcuts added later:
 # ['statdist', 'is_tmatrix', 'statdist_sensitivity']
 
@@ -659,25 +661,6 @@ def relaxation(P, p0, obs, tau=1, times=[1], pi=None):
     # return
     return f
 
-
-# TODO: Implement in Python directly
-def perturbation(P, obs, p0):
-    """
-    
-    Parameters
-    ----------
-    P : ndarray, shape=(n, n) or scipy.sparse matrix
-        Transition matrix
-    obs : ndarray, shape=(n,)
-        Vector representing observable on discrete states
-    p0 : ndarray, shape=(n,)
-        Vector of initial probabilities.
-    
-    Returns
-    -------
-    
-    """
-    raise NotImplementedError('Not implemented.')
 
 ################################################################################
 # PCCA
