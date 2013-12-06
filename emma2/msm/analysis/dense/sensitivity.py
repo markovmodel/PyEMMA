@@ -69,10 +69,10 @@ def eigenvalue_sensitivity(T, k):
     
     perm = numpy.argsort(eValues)[::-1]
 
-    rightEigenvectors=rightEigenvectors[perm]
+    rightEigenvectors=rightEigenvectors[:,perm]
     leftEigenvectors=leftEigenvectors[perm]
-        
-    sensitivity = numpy.outer(leftEigenvectors[k], rightEigenvectors[k])
+    
+    sensitivity = numpy.outer(leftEigenvectors[k], rightEigenvectors[:,k])
     
     return sensitivity
 
