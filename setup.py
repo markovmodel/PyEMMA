@@ -23,8 +23,10 @@ def setupPyStallone():
     stallone_whole_in_one_jar = \
         'lib/stallone/stallone-1.0-SNAPSHOT-jar-with-dependencies.jar'
     args = ['--jar', stallone_api_jar,
+         '--package', 'stallone.api.coordinates',
          '--package', 'stallone.mc',
          '--package', 'stallone.algebra',
+         '--package', 'stallone.coordinates',
          '--package', 'stallone.cluster',
          '--package', 'java.lang',
          '--package', 'java.util',
