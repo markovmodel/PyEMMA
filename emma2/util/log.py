@@ -68,7 +68,8 @@ def getLogger(name = None):
     """ if name is not given, return a logger with name of the calling module."""
     if not name:
         import traceback
-        t=traceback.extract_stack(limit=2)
-        return logging.getLogger(str(t[-1]))
-    else:
-        return logging.getLogger(name)
+        t = traceback.extract_stack(limit=2)
+        path = t[0][0]
+        pos = path.rfind('emma2')
+        name = path[pos:]
+    return logging.getLogger(name)
