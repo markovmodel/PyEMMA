@@ -48,7 +48,7 @@ def time_correlation_direct(P, pi, obs1, obs2=None, time=1):
     return np.dot(l,r)
 
 
-def time_correlations_direct(P, pi, obs1, obs2=None, times):
+def time_correlations_direct(P, pi, obs1, obs2=None, times=[1]):
     r"""Compute time-correlation of obs1, or time-cross-correlation with obs2.
     
     The time-correlation at time=k is computed by the matrix-vector expression: 
