@@ -48,7 +48,7 @@ def time_correlation_direct(P, pi, obs1, obs2=None, time=1):
     return np.dot(l,r)
 
 
-def time_correlations_direct(P, pi, obs1, obs2=None, times):
+def time_correlations_direct(P, pi, obs1, times, obs2=None):
     r"""Compute time-correlation of obs1, or time-cross-correlation with obs2.
     
     The time-correlation at time=k is computed by the matrix-vector expression: 
@@ -105,6 +105,7 @@ def time_relaxation_direct(P, p0, obs, time=1):
     if not (type( time ) == int):
         raise TypeError("time is not an integer: "+str(time))
     # raise transition matrix to power of time
+    # TODO: cache this some how if called from time_correlations_direct
     Pk = np.linalg.matrix_power(P, time)
     # propagate time
     pk = np.dot(p0, Pk)
