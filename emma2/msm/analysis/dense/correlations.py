@@ -105,6 +105,7 @@ def time_relaxation_direct(P, p0, obs, time=1):
     if not (type( time ) == int):
         raise TypeError("time is not an integer: "+str(time))
     # raise transition matrix to power of time
+    # TODO: cache this some how if called from time_correlations_direct
     Pk = np.linalg.matrix_power(P, time)
     # propagate time
     pk = np.dot(p0, Pk)

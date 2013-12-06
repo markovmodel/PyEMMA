@@ -6,9 +6,10 @@ from scipy.sparse import issparse
 from scipy.sparse.sputils import isdense
 
 import dense.assessment
+import dense.committor
+import dense.correlations
 import dense.decomposition
 import dense.expectations
-import dense.committor
 
 import sparse.assessment
 import sparse.decomposition
@@ -612,7 +613,7 @@ def correlation(P, obs1, obs2=None, tau=1, times=[1], pi=None):
         pi = stationary_distribution(P)
     # if few and integer time points, compute explicitly
     if (len(times) < 10 and type(sum(times)) == int and isdense(P)):
-        f = dense.correlations.time_correlation_direct(P, pi, obs1, obs2, times)
+        f = dense.correlations.time_correlation_direct(P, pi, obs1, times, obs2)
     else:
         timescales,amplitudes = fingerprint_correlation(P, obs1, obs2, tau)
         f = evaluate_fingerprint(timescales, amplitudes, times)
