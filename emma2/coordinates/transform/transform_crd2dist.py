@@ -8,7 +8,7 @@ import os
 import filetransform
 from emma2.util.pystallone import *
 
-class Transform_dcd2dist(filetransform.FileTransform):
+class Transform_crd2dist(filetransform.FileTransform):
 
     # Atom set 1
     _set1 = JArray_int([0])

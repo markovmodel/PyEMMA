@@ -50,17 +50,9 @@ class Transform_ClusterAssign(filetransform.FileTransform):
 
         print "number of clusters: ", self.clustering.getNumberOfClusters();
         clustercenters = self.clustering.getClusterCenters();
-        writer = API.dataNew.createASCIIDataWriter(self.file_clustercenters, 0, ' ', '\n')
+        writer = API.dataNew.createASCIIDataWriter(self.file_clustercenters, clustercenters.dimension(), ' ', '\n')
         writer.addAll(clustercenters)
         writer.close()
-        
-        #cmd = (self.emma_path+"mm_cluster "
-        #      +" -i "+(" ".join(all_input_files))
-        #      +" -istepwidth "+str(self.skipframes)
-        #      +" -algorithm "+self.algorithm
-        #      +" -o "+self.file_clustercenters);
-        #print cmd
-        #os.system(cmd)
 
 
     def transform(self, infile, outfile):
@@ -78,10 +70,3 @@ class Transform_ClusterAssign(filetransform.FileTransform):
             fout.write(str(i)+"\n")
         # close output
         fout.close()
-        
-        #cmd = (self.emma_path+"mm_assign "
-        #      +" -i "+infile
-        #      +" -ic "+self.file_clustercenters
-        #      +" -o "+os.path.split(outfile)[0])
-        #print cmd
-        #os.system(cmd)
