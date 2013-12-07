@@ -104,6 +104,7 @@ setup(
       author = 'The Emma2 team',
       # list packages here
       packages = ['emma2',
+                  'emma2.autobuilder',
                   'emma2.cluster',
                   'emma2.coordinates',
                   'emma2.coordinates.transform',
