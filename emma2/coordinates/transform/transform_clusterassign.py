@@ -6,10 +6,21 @@ Created on Nov 16, 2013
 import os
 import filetransform
 
-class ClusterAndAssign(filetransform.FileTransform):
+from emma2.util.pystallone import *
+from emma2.cluster.stalloneClustering import *
 
-    def __init__(self, file_clustercenters,
-                 skipframes = 1, algorithm="regularspatial -dmin 1 -metric euclidean", 
+class Transform_ClusterAssign(filetransform.FileTransform):
+
+    file_clustercenters = "./clustercenters.dat"
+    parameters={'algorithm': 'regularspatial', 
+                'dmin': 1.0, 
+                'metric': 'euclidean'}
+    clustering = None
+    assignment = None
+
+    def __init__(self, file_clustercenters = "./clustercenters.dat",
+                 skipframes = 1, 
+                 parameters={'algorithm': 'regularspatial', 'dmin': 1.0, 'metric': 'euclidean'}, 
                  filepattern="*", emma_path=""):
         """
         input_directory: directory with input data files
@@ -21,7 +32,7 @@ class ClusterAndAssign(filetransform.FileTransform):
         # call superclass initialization
         self.file_clustercenters = file_clustercenters
         self.skipframes = skipframes;
-        self.algorithm = algorithm;
+        self.parameters = parameters
         self.emma_path = emma_path
 
 
@@ -29,22 +40,48 @@ class ClusterAndAssign(filetransform.FileTransform):
         """
         Perform clustering and write cluster centers file
         """
-        cmd = (self.emma_path+"mm_cluster "
-              +" -i "+(" ".join(all_input_files))
-              +" -istepwidth "+str(self.skipframes)
-              +" -algorithm "+self.algorithm
-              +" -o "+self.file_clustercenters);
-        print cmd
-        os.system(cmd)
+        loader = getDataSequenceLoader(all_input_files)
+        loader.scan()
+        data = loader.getSingleDataLoader()
+
+        self.clustering = getClusterAlgorithm(data, loader.size(), **self.parameters)
+        self.clustering.perform()
+        self.assignment = self.clustering.getClusterAssignment()
+
+        print "number of clusters: ", self.clustering.getNumberOfClusters();
+        clustercenters = self.clustering.getClusterCenters();
+        writer = API.dataNew.createASCIIDataWriter(self.file_clustercenters, 0, ' ', '\n')
+        writer.addAll(clustercenters)
+        writer.close()
+        
+        #cmd = (self.emma_path+"mm_cluster "
+        #      +" -i "+(" ".join(all_input_files))
+        #      +" -istepwidth "+str(self.skipframes)
+        #      +" -algorithm "+self.algorithm
+        #      +" -o "+self.file_clustercenters);
+        #print cmd
+        #os.system(cmd)
 
 
     def transform(self, infile, outfile):
         """
         Assign individual file
         """
-        cmd = (self.emma_path+"mm_assign "
-              +" -i "+infile
-              +" -ic "+self.file_clustercenters
-              +" -o "+os.path.split(outfile)[0])
-        print cmd
-        os.system(cmd)
+        loader = API.dataNew.dataSequenceLoader(infile)
+        loader.scan()
+        fout = open(outfile, "w")
+        # iterate input file and assign cluster
+        it = loader.iterator()
+        while it.hasNext():
+            x = it.next()
+            i = self.assignment.assign(x)
+            fout.write(str(i)+"\n")
+        # close output
+        fout.close()
+        
+        #cmd = (self.emma_path+"mm_assign "
+        #      +" -i "+infile
+        #      +" -ic "+self.file_clustercenters
+        #      +" -o "+os.path.split(outfile)[0])
+        #print cmd
+        #os.system(cmd)
