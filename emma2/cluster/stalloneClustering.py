@@ -29,7 +29,7 @@ def getDataSequenceLoader(files):
         log.error('java exception occured: %s' % je)
         raise RuntimeError('something went wrong during file reading.')
 
-def getClusterAlgorithm(data, **kwargs):
+def getClusterAlgorithm(data, size, **kwargs):
     """
     constructs the algorithm in stallone factory with given parameters
 
@@ -50,7 +50,7 @@ def getClusterAlgorithm(data, **kwargs):
     metric = kwargs['metric']
     algorithm = kwargs['algorithm']
     
-    if metric == 'euclidian':
+    if metric == 'euclidean':
         # TODO: set dimension of data
         imetric = API.clusterNew.metric(0, 0)
     elif metric == 'minrmsd':
@@ -61,14 +61,14 @@ def getClusterAlgorithm(data, **kwargs):
     
     if algorithm == 'kcenter':
         k = kwargs['k']
-        return API.clusterNew.createKcenter(data, imetric, k)
+        return API.clusterNew.createKcenter(data, size, imetric, k)
     elif algorithm == 'kmeans':
         k = kwargs['k']
         maxIter = kwargs['maxiterations']
-        return API.clusterNew.createKmeans(data, imetric, k, maxIter)
+        return API.clusterNew.createKmeans(data, size, imetric, k, maxIter)
     elif algorithm == 'regularspatial':
         dmin = kwargs['dmin']
-        return API.clusterNew.createRegularSpatial(data, imetric, dmin)
+        return API.clusterNew.createRegularSpatial(data, size, imetric, dmin)
     elif algorithm == 'regulartemporal':
         # TODO: copy impl from emma1 to stallone and map it here
         spacing = kwargs['spacing']
