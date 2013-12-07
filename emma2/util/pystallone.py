@@ -148,3 +148,45 @@ def stallone_array_to_ndarray(stArray):
         
     arr.shape = (rows, cols)
     return arr
+
+
+def list1d_to_java_array(a):
+    """
+    Converts python list of primitive int or double to java array
+    """
+    if type(a) is list:
+        if type(a[0]) is int:
+            return JArray_int(a)
+        else:
+            return JArray_double(a)
+    else:
+        raise TypeError("Not a list: "+str(a))
+
+
+def list_to_jarray(a):
+    """
+    Converts 1d or 2d python list of primitve int or double to
+    java array or nested array
+    """
+    if type(a) is list:
+        if type(a[0]) is int or type(a[0]) is float:
+            return list1d_to_java_array(a)
+        if type(a[0]) is list:
+            n = len(a)
+            ja = JArray_object(n)
+            for i in range(n):
+                ja[i] = list1d_to_java_array(a[i])
+            return ja
+
+
+def jarray(a):
+    """
+    Converts array-like (python list or ndarray) to java array
+    """
+    if type(a) is list:
+        return list_to_jarray(a)
+    elif isinstance(a, _np.ndarray):
+        return list_to_jarray(a.tolist())
+    else:
+        raise TypeError("Type is not supported for conversion to java array")
+    

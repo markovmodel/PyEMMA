@@ -18,7 +18,11 @@ def setupPyStallone():
     except ImportError:
         raise RuntimeError('Apache JCC not available! '\
                            'Install with easy_install [--user] JCC')
-    
+
+    print "==================================================="
+    print "Building the STALLONE wrapper"    
+    print "==================================================="
+
     stallone_api_jar = 'lib/stallone/stallone-1.0-SNAPSHOT-api.jar'
     stallone_whole_in_one_jar = \
         'lib/stallone/stallone-1.0-SNAPSHOT-jar-with-dependencies.jar'
@@ -101,6 +105,7 @@ setup(
       # list packages here
       packages = ['emma2',
                   'emma2.coordinates',
+                  'emma2.coordinates.transform',
                   'emma2.msm',
                   'emma2.msm.analysis',
                   'emma2.msm.analysis.dense',
