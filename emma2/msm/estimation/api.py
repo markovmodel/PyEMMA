@@ -8,7 +8,8 @@ from scipy.sparse import issparse
 from scipy.sparse.sputils import isdense
 
 __all__=['count_matrix', 'cmatrix', 'connected_sets', 'largest_connected_set',\
-             'connected_count_matrix', 'is_connected', 'transition_matrix']
+             'connected_count_matrix', 'is_connected', 'transition_matrix', 'log_likelihood',\
+             'tmatrix_sampler']
 
 ################################################################################
 # Count matrix
@@ -16,12 +17,12 @@ __all__=['count_matrix', 'cmatrix', 'connected_sets', 'largest_connected_set',\
 
 # DONE: Benjamin Implement in Python directly
 def count_matrix(dtraj, lag, sliding=True):
-    r"""Generate a count matrix from a given list of integers.
+    r"""Generate a count matrix from given list(s) of integers.
 
     Parameters
     ----------
-    dtraj : array_like
-        Discretized trajectory
+    dtraj : array_like or list of array_like
+        Discretized trajectory or list of discretized trajectories
     lag : int
         Lagtime in trajectory steps
     sliding : bool, optional
@@ -33,17 +34,20 @@ def count_matrix(dtraj, lag, sliding=True):
     C : scipy.sparse.coo_matrix
         The count matrix at given lag in coordinate list format.
     
-    """    
-    return sparse.count_matrix.count_matrix(dtraj, lag, sliding=sliding)
+    """
+    if type(dtraj) is list:
+        return sparse.count_matrix.count_matrix_mult(dtraj, lag, sliding=sliding)
+    else:
+        return sparse.count_matrix.count_matrix(dtraj, lag, sliding=sliding)
 
 # DONE: Benjamin Implement in Python directly
 def cmatrix(dtraj, lag, sliding=True):
-    r"""Generate a count matrix in from a given list of integers.
+    r"""Generate a count matrix in from given list(s) of integers.
 
     Parameters
     ----------
-    dtraj : array_like
-        Discretized trajectory
+    dtraj : array_like or list of array_like
+        Discretized trajectory or list of discretized trajectories
     lag : int
         Lagtime in trajectory steps
     sliding : bool, optional
@@ -70,7 +74,7 @@ cmatrix_cores=count_matrix_cores
 # Connectivity
 ################################################################################
 
-# TODO: Ben Implement in Python directly
+# DONE: Ben Implement in Python directly
 def connected_sets(C, directed=True):
     r"""Compute connected components for a directed graph with weights
     represented by the given count matrix.
