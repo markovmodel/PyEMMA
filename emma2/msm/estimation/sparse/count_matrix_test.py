@@ -12,6 +12,28 @@ from os import pardir
 
 testpath = abspath(join(abspath(__file__), pardir)) + '/test/'
 
+class TestCountMatrixMult(unittest.TestCase):
+    
+    def setUp(self):
+        """Small test cases"""
+        self.S1=np.array([0, 0, 0, 1, 1, 1])
+        self.S2=np.array([0, 0, 0, 1, 1, 1])
+
+        self.B1_sliding=np.array([[4, 2], [0, 4]])
+        self.B2_sliding=np.array([[2, 4], [0, 2]])
+
+    def tearDown(self):
+        pass
+
+    def test_count_matrix(self):
+        """Small test cases"""
+        C=count_matrix.count_matrix_mult([self.S1,self.S2], 1, sliding=True).toarray()
+        self.assertTrue(np.allclose(C, self.B1_sliding))
+
+        C=count_matrix.count_matrix_mult([self.S1,self.S2], 2, sliding=True).toarray()
+        self.assertTrue(np.allclose(C, self.B2_sliding))
+
+
 class TestCountMatrix(unittest.TestCase):
     
     def setUp(self):
@@ -80,7 +102,7 @@ class TestCountMatrix(unittest.TestCase):
 
         """Test raising of value error if lag greater than trajectory length"""
         with self.assertRaises(ValueError):
-            C=count_matrix.count_matrix(self.S_short, 10)       
+            C=count_matrix.count_matrix(self.S_short, 10)
 
 
 class TestAddCooMatrix(unittest.TestCase):
