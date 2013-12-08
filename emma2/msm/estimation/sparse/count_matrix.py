@@ -29,7 +29,7 @@ def count_matrix_mult(dtrajs, lag, sliding=True):
     for dtraj in dtrajs:
         Zi = count_matrix(dtraj, lag, sliding)
         Z = add_coo_matrix(Z, Zi)
-    return Z
+    return make_square_coo_matrix(Z)
 
 
 def count_matrix(dtraj, lag, sliding=True):
