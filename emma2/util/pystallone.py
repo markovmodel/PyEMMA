@@ -5,8 +5,8 @@ Created on 15.10.2013
 
 @author: marscher
 '''
-import logging
-_log = logging.getLogger(__name__)
+from log import getLogger
+_log = getLogger()
 import numpy as _np
 
 """is the stallone python binding available?"""
@@ -50,38 +50,40 @@ def ndarray_to_stallone_array(ndarray):
     
     if dtype == _np.float32 or dtype == _np.float64:
         factory = API.doublesNew
-        cast_func = float
+        cast_func = 'double'
     elif dtype == _np.int32 or dtype == _np.int64:
         factory = API.intsNew
-        cast_func = int
+        cast_func = 'int'
     else:
         raise TypeError('unsupported datatype: ', dtype)
     
     if len(shape) == 1:
         _log.debug('creating java vector.')
-        n = shape[0]
-        # TODO: factory should support a mapping to native memory
-        v = factory.arrayFrom(ndarray.tolist())#factory.array(n)
-        #for i in xrange(n):
-        #    v.set(i, cast_func(ndarray[i]))
+        # create a JArrayWrapper
+        jarr = JArray(cast_func)(ndarray)
+        v = factory.arrayFrom(jarr)
+        _log.debug('finished java vector.')
         return v
     elif len(shape) == 2:
-        n = shape[0]
-        m = shape[1]
-        _log.debug('creating java matrix.')
+        _log.debug('converting to JArray matrix.')
+        _log.debug('cast func: %s' %cast_func)
+        if cast_func == 'int':
+            #TODO: check with jcc folks why this stupid conversion is neccessary
+            # this has nothing to do with the missing int[][] ctor in stallone, since
+            # it only affects the JArray ctor which throws type errors.
+            ndarray = ndarray.tolist()
+        _log.debug(type(ndarray))
+        _log.debug('before JArray()')
+        jrows = [ JArray(cast_func)(row) for row in ndarray ]
+        _log.debug('after JArray()')
+
+        jobjectTable = JArray('object')(jrows)
+        _log.debug(type(jobjectTable))
         try:
-            A = factory.matrix(n, m)
+            A = factory.matrix(jobjectTable)
         except AttributeError:
-            A = factory.table(n, m)
-            
-        _log.debug('created java matrix.')
+            A = factory.table(jobjectTable)
         
-        # fixme: slow...
-        for i in xrange(n):
-            for j in xrange(m):
-                val = ndarray[i, j]
-                A.set(i, j, cast_func(val))
-                
         _log.debug('finished setting values.')
 
         return A
@@ -148,3 +150,16 @@ def stallone_array_to_ndarray(stArray):
         
     arr.shape = (rows, cols)
     return arr
+
+
+if __name__ == '__main__':
+    n = 5000
+    print "n^2=", n**2
+    a=_np.random.random(size=(n,n))
+    print "start conversion"
+    j=ndarray_to_stallone_array(a)
+    
+    a=_np.random.random_integers(100,size=(n,n))
+    print "start conversion"
+    j=ndarray_to_stallone_array(a)
+    print "end"
