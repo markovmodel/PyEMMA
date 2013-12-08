@@ -11,5 +11,10 @@ recommend at least JDK 1.6
 
 To install this package to your home directory, please call:
 
-easy_setup --user .
+easy_install --user .
 
+If you want to update the stallone wrapper module for some reason (updated the
+library jars), please call:
+
+# pwd is emma2 project root
+REBUILD_STALLONE=y easy_install --user .
