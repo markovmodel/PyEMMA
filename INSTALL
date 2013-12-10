@@ -6,12 +6,14 @@ jcc >= 2.17
 This requirements will be installed automatically, if you use a python package
 manager like pip or easy_install.
 
+For all install methods you can prepend '--user' to install to your local user
+directory:
+python setup.py install [--user]
+pip install . [--user]
+easy_install [--user] .
+
 For the stallone wrapper you need a JDK to compile the wrapper code. So far, we
 recommend at least JDK 1.6
-
-To install this package to your home directory, please call:
-
-easy_install --user .
 
 If you want to update the stallone wrapper module for some reason (updated the
 library jars), please call:
