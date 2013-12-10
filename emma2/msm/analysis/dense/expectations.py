@@ -25,6 +25,11 @@ def expected_counts(p0, T, N):
         Expected value for transition counts after N steps. 
     
     """
+    
+# TODO: Implement using RDL_decomposition and geometric series. 
+# Should be much faster for large N. Now it is order N*k^2 and the 
+# other is k^3 or whatever the RDL decomposition costs.
+    
     if(N<=0):
         EC=np.zeros(T.shape)
         return EC
