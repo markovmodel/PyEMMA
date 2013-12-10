@@ -57,12 +57,6 @@ def ndarray_to_stallone_array(ndarray):
     else:
         raise TypeError('unsupported datatype: ', dtype)
     
-    #TODO: check with jcc folks why this stupid conversion is neccessary
-    # this has nothing to do with the missing int[][] ctor in stallone, since
-    # it only affects the JArray ctor which throws type errors.
-    if cast_func == 'int':
-            ndarray = ndarray.tolist()
-
     if len(shape) == 1:
         _log.debug('creating java vector.')
         # create a JArrayWrapper
@@ -152,16 +146,3 @@ def stallone_array_to_ndarray(stArray):
         
     arr.shape = (rows, cols)
     return arr
-
-
-if __name__ == '__main__':
-    n = 5000
-    print "n^2=", n**2
-    a=_np.random.random(size=(n,n))
-    print "start conversion"
-    j=ndarray_to_stallone_array(a)
-    
-    a=_np.random.random_integers(100,size=(n,n))
-    print "start conversion"
-    j=ndarray_to_stallone_array(a)
-    print "end"
