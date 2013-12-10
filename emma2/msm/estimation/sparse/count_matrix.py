@@ -3,6 +3,35 @@
 import numpy as np
 import scipy.sparse
 
+def count_matrix_mult(dtrajs, lag, sliding=True):
+    r"""Generate a count matrix from a given list of discrete trajectories.
+
+    The generated count matrix is a sparse matrix in coordinate 
+    list (COO) format. 
+
+    Parameters
+    ----------
+    dtraj : list of array_like
+        Discretized trajectories
+    lag : int
+        Lagtime in trajectory steps
+    sliding : bool, optional
+        If true the sliding window approach 
+        is used for transition counting.
+
+    Returns
+    -------
+    C : scipy.sparse.coo_matrix
+        The countmatrix at given lag in coordinate list format.
+    
+    """
+    Z = scipy.sparse.coo_matrix((0,0))
+    for dtraj in dtrajs:
+        Zi = count_matrix(dtraj, lag, sliding)
+        Z = add_coo_matrix(Z, Zi)
+    return make_square_coo_matrix(Z)
+
+
 def count_matrix(dtraj, lag, sliding=True):
     r"""Generate a count matrix from a given list of integers.
 
