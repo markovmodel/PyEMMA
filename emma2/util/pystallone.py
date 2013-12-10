@@ -57,9 +57,16 @@ def ndarray_to_stallone_array(ndarray):
     else:
         raise TypeError('unsupported datatype: ', dtype)
     
+    #TODO: check with jcc folks why this stupid conversion is neccessary
+    # this has nothing to do with the missing int[][] ctor in stallone, since
+    # it only affects the JArray ctor which throws type errors.
+    if cast_func == 'int':
+            ndarray = ndarray.tolist()
+
     if len(shape) == 1:
         _log.debug('creating java vector.')
         # create a JArrayWrapper
+        
         jarr = JArray(cast_func)(ndarray)
         v = factory.arrayFrom(jarr)
         _log.debug('finished java vector.')
@@ -67,11 +74,6 @@ def ndarray_to_stallone_array(ndarray):
     elif len(shape) == 2:
         _log.debug('converting to JArray matrix.')
         _log.debug('cast func: %s' %cast_func)
-        if cast_func == 'int':
-            #TODO: check with jcc folks why this stupid conversion is neccessary
-            # this has nothing to do with the missing int[][] ctor in stallone, since
-            # it only affects the JArray ctor which throws type errors.
-            ndarray = ndarray.tolist()
         _log.debug(type(ndarray))
         _log.debug('before JArray()')
         jrows = [ JArray(cast_func)(row) for row in ndarray ]
