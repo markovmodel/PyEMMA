@@ -22,6 +22,8 @@ __all__=['is_transition_matrix', 'is_rate_matrix',
              'stationary_distribution', 'eigenvalues', 'eigenvectors', 'rdl_decomposition',\
              'expected_counts', 'timescales',
              'committor', 'tpt',
+             'mfpt_sensitivity', 'eigenvalue_sensitivity', 'eigenvector_sensitivity', 'committor_sensitivity',
+             'pcca',
              'fingerprint_correlation', 'fingerprint_relaxation','evaluate_fingerprint','correlation','relaxation']
 # shortcuts added later:
 # ['statdist', 'is_tmatrix', 'statdist_sensitivity']
