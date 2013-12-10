@@ -248,6 +248,7 @@ tmatrix = transition_matrix
 __all__.append('tmatrix')
 
 # TODO: Jan Implement in Python directly
+# TODO: Is C posterior or prior counts? 
 def tmatrix_cov(C, k=None):
     """
     Computes a nonreversible covariance matrix of transition matrix elments
@@ -260,8 +261,9 @@ def tmatrix_cov(C, k=None):
         If set, only the covariance matrix for this row is returned.
         
     """
-    raise NotImplementedError('Not implemented.')
     
+    return sparse.transition_matrix.tmatrix_cov(C, k)
+        
 # DONE: Jan Implement in Python directly
 def log_likelihood(C, T):
     """
@@ -269,10 +271,11 @@ def log_likelihood(C, T):
     """
     sparse.likelihood.log_likelihood(C, T)
     
-# TODO: Implement in Python directly
+# TODO: this function can be mixed dense/sparse, so maybe we should change the place for this function.
 def error_perturbation(C, sensitivity):
     """
-        C: count matrix sensitivity: sensitivity matrix or tensor of
+        C: count matrix 
+        sensitivity: sensitivity matrix or tensor of
         size (m x n x n) where m is the dimension of the target
         quantity and (n x n) is the size of the transition matrix.
         The sensitivity matrix should be evaluated at an appropriate
@@ -280,7 +283,7 @@ def error_perturbation(C, sensitivity):
         from C.  returns: (m x m) covariance matrix of the target
         quantity
     """
-    raise NotImplementedError('Not implemented.')
+    return sparse.perturbation.error_perturbation(C, sensitivity)
 
 # Done: Martin Map to Stallone (Reversible)
 def tmatrix_sampler(C, reversible=False, mu=None, P0=None):
