@@ -4,6 +4,8 @@ Created on 06.12.2013
 @author: jan-hendrikprinz
 
 This module provides the unittest for the pcca module
+
+We still need to define what should be the outcome
 '''
 import unittest
 import numpy as np
@@ -131,7 +133,7 @@ class Test(unittest.TestCase):
     def test_pcca(self):
         
         print pcca(self.matrix, 4)
-        
+        pass
 
 
 if __name__ == "__main__":

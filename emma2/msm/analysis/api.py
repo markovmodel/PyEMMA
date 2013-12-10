@@ -8,6 +8,8 @@ import dense.assessment
 import dense.decomposition
 import dense.expectations
 import dense.committor
+import dense.pcca
+import dense.sensitivity
 
 import sparse.assessment
 import sparse.decomposition
