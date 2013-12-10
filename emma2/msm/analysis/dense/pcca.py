@@ -27,7 +27,11 @@ def pcca(T, n):
     
     rot_matrix = pcca_impl.fill_matrix(rot_crop_matrix, right_eigenvectors)
 
-    # use the predefined matrix as initial guess for the optimizer
+    # use the predefined rotation matrix as initial guess for the optimizer
+    
+    
+    # Alternative 
+    # rot_matrix = pcca_impl.cluster_by_isa(right_eigenvectors, n)
     
     rot_matrix = pcca_impl.opt_soft(right_eigenvectors, rot_matrix, n)
     

@@ -1,7 +1,7 @@
 '''
 Created on 22.11.2013
 
-@author: jan-hendrikprinz
+@author: Jan-Hendrik Prinz
 '''
 
 import numpy
@@ -39,6 +39,7 @@ def forward_committor_sensitivity(T, A, B, index):
     U = K[numpy.ix_(notAB, notAB)]
     
     v = numpy.zeros((m))
+    
     for i in range(0, m):
         for k in range(0, len(set_B)):
             v[i] = v[i] - K[notAB[i], B[k]]
@@ -52,13 +53,15 @@ def forward_committor_sensitivity(T, A, B, index):
         q_forward[i] = 1
     for i in range(len(notAB)):
         q_forward[notAB[i]] = qI[i]
+        
+    target = numpy.eye(1,n,index)
+    target = target[0,notAB]
 
-    Uinv = numpy.linalg.inv(U)
+    UinvVec = numpy.linalg.solve(numpy.transpose(U), target)
     Siab = numpy.zeros((n,n))
-    
+        
     for i in range(0, m):
-        for a in range(0, m):
-            Siab[notAB[i],notAB[a]] = - Uinv[a,i] * q_forward[index]
+        Siab[notAB[i]] = - UinvVec[i] * q_forward
 
     return Siab
 
@@ -84,14 +87,23 @@ def eigenvector_sensitivity(T, k, j, right=True):
     perm = numpy.argsort(eValues)[::-1]
 
     eValues = eValues[perm]
-    rightEigenvectors=rightEigenvectors[perm]
+    rightEigenvectors=rightEigenvectors[:,perm]
     leftEigenvectors=leftEigenvectors[perm]
     
-    matA = T - numpy.diag(eValues*numpy.ones((n)))
-
-    matAInv = numpy.linalg.pinv(matA, 10.^-12)
-    invVector = matAInv[j]    
-    sensitivity = invVector.rightEigenvectors[k] * numpy.outer(leftEigenvectors[k],rightEigenvectors[k]) - numpy.outer(invVector, rightEigenvectors[k])            
+    rEV = rightEigenvectors[:,k]
+    lEV = leftEigenvectors[k]
+    eVal = eValues[k]
+    
+    matA = T - eVal * numpy.identity(n)
+    matA = numpy.concatenate((matA, [rEV]))
+                
+    vecA = numpy.zeros(n)
+    vecA[j] = 1.0
+    
+    phi = numpy.linalg.lstsq(numpy.transpose(matA), vecA)    
+    phi = numpy.delete(phi[0], -1)
+            
+    sensitivity = -numpy.outer(phi,rEV) + numpy.dot(phi,rEV) * numpy.outer(lEV, rEV)            
     return sensitivity
 
 def mfpt_sensitivity(T, target, i):
@@ -106,14 +118,14 @@ def mfpt_sensitivity(T, target, i):
     tVec[target] = 0;
     
     mfpt = numpy.linalg.solve(matA, tVec)
+    aVec = numpy.zeros(n)
+    aVec[i] = 1.0
     
-#    aInv = numpy.linalg.inv(matA)
-#    phiVec = aInv[i]
-
-# This should be faster than computing the full solution
+    phiVec = numpy.linalg.solve(numpy.transpose(matA), aVec )
     
-    phiVec = numpy.linalg(matA, numpy.eye(1,n,i) )
-    
-    sensitivity = numpy.outer(phiVec, mfpt)
+    # TODO: Check sign of sensitivity!
+        
+    sensitivity = -1.0 * numpy.outer(phiVec, mfpt)
+    sensitivity[target] *= 0;
     
     return sensitivity
