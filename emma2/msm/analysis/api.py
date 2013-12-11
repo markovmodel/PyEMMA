@@ -10,6 +10,8 @@ import dense.committor
 import dense.correlations
 import dense.decomposition
 import dense.expectations
+import dense.pcca
+import dense.sensitivity
 
 import sparse.assessment
 import sparse.decomposition
@@ -20,6 +22,8 @@ __all__=['is_transition_matrix', 'is_rate_matrix',
              'stationary_distribution', 'eigenvalues', 'eigenvectors', 'rdl_decomposition',\
              'expected_counts', 'timescales',
              'committor', 'tpt',
+             'mfpt_sensitivity', 'eigenvalue_sensitivity', 'eigenvector_sensitivity', 'committor_sensitivity',
+             'pcca',
              'fingerprint_correlation', 'fingerprint_relaxation','evaluate_fingerprint','correlation','relaxation']
 # shortcuts added later:
 # ['statdist', 'is_tmatrix', 'statdist_sensitivity']
@@ -204,7 +208,12 @@ def eigenvalue_sensitivity(T, k):
         Eigenvalue index
     
     """
-    raise NotImplementedError('Not implemented.')
+    if issparse(T):
+        raise NotImplementedError('Not implemented.')
+    elif isdense(T):
+        return dense.sensitivity.eigenvalue_sensitivity(T, k)
+    else:
+        raise _type_not_supported
 
 # DONE: ben: Implement in Python directly
 def timescales(T, tau=1, k=None):
@@ -275,7 +284,13 @@ def eigenvector_sensitivity(T, k, j, right=True):
         If True compute right eigenvectors, otherwise compute left eigenvectors.
     
     """
-    raise NotImplementedError('Not implemented.')
+    if issparse(T):
+        raise NotImplementedError('Not implemented.')
+    elif isdense(T):
+        if right is True:
+            return dense.sensitivity.eigenvector_sensitivity(T, k, j, right)
+    else:
+        raise _type_not_supported
 
 
 # DONE: ben: Implement in Python directly
@@ -336,7 +351,7 @@ def mfpt(T, target):
     raise NotImplementedError('Not implemented.')
 
 
-# TODO: Implement in Python directly
+# TODO: Implement sparse in Python directly
 def mfpt_sensitivity(T, target, i):
     r"""Compute sensitivity of mfpt
     
@@ -349,7 +364,12 @@ def mfpt_sensitivity(T, target, i):
     i : state to compute the sensitivity for
     
     """
-    raise NotImplementedError('Not implemented.')
+    if issparse(T):
+        raise NotImplementedError('Not implemented.')
+    elif isdense(T):
+        return dense.sensitivity.mfpt_sensitivity(T, target, i)
+    else:
+        raise _type_not_supported
 
 ################################################################################
 # Expectations
@@ -668,7 +688,8 @@ def relaxation(P, p0, obs, tau=1, times=[1], pi=None):
 
 # TODO: Implement in Python directly
 def pcca(T, n):
-    r"""returns a PCCA object
+    r"""returns an ndarray(m,n) with n membership functions of length m in columns to be in
+    correspondence with the column structure of right and left eigenvectors
     
     Parameters
     ----------
@@ -676,7 +697,12 @@ def pcca(T, n):
     n : number of metastable processes
     
     """
-    raise NotImplementedError('Not implemented.')
+    if issparse(T):
+        raise NotImplementedError('not yet impled for sparse.')
+    elif isdense(T):
+        return dense.pcca.pcca(T, n)
+    else:
+        _type_not_supported
 
 
 ################################################################################
@@ -684,7 +710,7 @@ def pcca(T, n):
 ################################################################################
 
 # DONE: Implement in Python directly
-def committor(T, A, B, forward=True):
+def committor(P, A, B, forward=True):
     r"""Compute the committor between sets of microstates.
     
     Parameters
@@ -705,22 +731,22 @@ def committor(T, A, B, forward=True):
         Committor vector.
     
     """
-    if issparse(T):
+    if issparse(P):
         raise NotImplementedError('not yet impled for sparse.')
-    elif isdense(T):
+    elif isdense(P):
         if forward:
-            dense.committor.forward_committor(T, A, B)
+            dense.committor.forward_committor(P, A, B)
         else:
-            """ if T is time reversible backward commitor is equal 1 - q+"""
-            if is_reversible(T):
-                committor = 1.0 - dense.committor.forward_committor(T, A, B)
+            """ if P is time reversible backward commitor is equal 1 - q+"""
+            if is_reversible(P):
+                committor = 1.0 - dense.committor.forward_committor(P, A, B)
             else:
                 raise NotImplementedError('not impled for backward/dense.')
     else:
         raise _type_not_supported
 
 # TODO: Implement in Python directly
-def committor_sensitivity(P, A, B, i, forward=True):
+def committor_sensitivity(T, A, B, index, forward=True):
     r"""Compute the committor between sets of microstates.
     
     Parameters
@@ -732,7 +758,7 @@ def committor_sensitivity(P, A, B, i, forward=True):
         List of integer state labels for set A
     B : array_like
         List of integer state labels for set B
-    i : state to compute the sensitivity for
+    index : state to compute the sensitivity for
     forward : bool
         If True compute the forward committor, else
         compute the backward committor.
@@ -744,7 +770,13 @@ def committor_sensitivity(P, A, B, i, forward=True):
         Commitor vector.
     
     """
-    raise NotImplementedError('Not implemented.')
+    if issparse(T):
+        raise NotImplementedError('Not implemented.')
+    elif isdense(T):
+        return dense.sensitivity.forward_committor_sensitivity(T, A, B, index)
+    else:
+        raise _type_not_supported
+
 
 def tpt(T, A, B):
     r""" returns a transition path TPT object
