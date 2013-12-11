@@ -6,6 +6,7 @@ Created on 15.10.2013
 @author: marscher
 '''
 import logging
+from scipy.sparse.base import issparse
 _log = logging.getLogger(__name__)
 import numpy as _np
 
@@ -38,6 +39,9 @@ def ndarray_to_stallone_array(ndarray):
     """
     if not stallone_available:
         raise RuntimeError('stallone not available')
+    
+    if issparse(ndarray):
+        ndarray = ndarray.todense()
     
     _log.debug('called ndarray_to_stallone_array()')
     
