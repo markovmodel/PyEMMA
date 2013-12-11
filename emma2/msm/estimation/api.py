@@ -230,12 +230,11 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
                 raise RuntimeError('stallone not available and reversible \
                      only impled there')
             from emma2.util.pystallone import API as API, ndarray_to_stallone_array, \
-                JavaError, ArrayWrapper
+                JavaError, stallone_array_to_ndarray
             try:
-                C = C.tocsr()
                 C = ndarray_to_stallone_array(C)
                 # T is of type stallone.IDoubleArray, so wrap it in an ndarray
-                return ArrayWrapper(API.msm.estimateTrev(C))
+                return stallone_array_to_ndarray(API.msm.estimateTrev(C))
             except JavaError as je:
                 raise RuntimeError(je.getJavaException())
         else:
