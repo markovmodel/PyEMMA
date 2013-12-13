@@ -14,7 +14,8 @@ import numpy as np
 
 import sensitivity
 
-from emma2.msm.analysis.api import eigenvalue_sensitivity, mfpt_sensitivity, committor_sensitivity, eigenvector_sensitivity
+from emma2.msm.analysis.api import eigenvalue_sensitivity, mfpt_sensitivity, committor_sensitivity, eigenvector_sensitivity,\
+    stationary_distribution_sensitivity
 
 class TestExpectations(unittest.TestCase):
     def setUp(self):
@@ -38,6 +39,13 @@ class TestExpectations(unittest.TestCase):
                               [0., 10.3806, 13.4948, 17.6471], 
                               [0., 3.46021, 4.49826, 5.88235], 
                               [0., 0., 0., 0.]])
+        
+        self.qSI41 = np.array(
+                              [[-0.8370915, -4.4385316, 0.7235325, 2.4042048],
+                               [-1.4649101, 1.8717024, 2.8727056, 4.2073585],
+                               [-3.4978465, 15.8788050, 8.7609111, 10.0461416],
+                               [-1.9432481, 13.1056296, 5.5811895, 5.5811898]]
+                              )
         
         self.S4zero = np.zeros((4,4))
         
@@ -82,6 +90,20 @@ class TestExpectations(unittest.TestCase):
                               [-0.6032816, -0.6032783, -0.6032800, -0.6032799],
                               [-3.1129331, -3.1129331, -3.1129321, -3.1129312]]
                              )
+        
+        self.mV01left = np.array(
+                             [[0.4473028, 2.5148236, -0.8052692, -0.6389904],
+                              [0.7827807, 4.4009367, -1.4092215, -1.1182336],
+                              [1.8690916, 10.5083832, -3.3648744, -2.6700682],
+                              [1.0383831, 5.8379865, -1.8693753, -1.4833698]]
+                             )
+        
+        self.pS1 = np.array(
+                            [[0.0868655, 1.2556020, -0.3514107, -0.3514107],
+                             [0.1520148, 2.1973013, -0.6149689, -0.6149689],
+                             [0.3629750, 5.2466298, -1.4683944, -1.4683955],
+                             [0.2016525, 2.9147921, -0.8157750, -0.8157744]]
+                            )
 
                 
         pass
@@ -99,7 +121,11 @@ class TestExpectations(unittest.TestCase):
         self.assertTrue(np.allclose(committor_sensitivity(self.T4, [0], [3], 1), self.qS41))      
         self.assertTrue(np.allclose(committor_sensitivity(self.T4, [0], [3], 2), self.qS42))      
         self.assertTrue(np.allclose(committor_sensitivity(self.T4, [0], [3], 3), self.S4zero))      
+
+    def test_backward_committor_sensitivity(self):
         
+        self.assertTrue(np.allclose(committor_sensitivity(self.T4, [0], [3], 1, forward=False), self.qSI41))      
+                
     def test_mfpt_sensitivity(self):
         
         self.assertTrue(np.allclose(mfpt_sensitivity(self.T4, 0, 0), self.S4zero))    
@@ -108,10 +134,14 @@ class TestExpectations(unittest.TestCase):
         self.assertTrue(np.allclose(mfpt_sensitivity(self.T4, 3, 2), self.mS32))  
         
     def test_eigenvector_sensitivity(self):
-                        
         self.assertTrue(np.allclose(eigenvector_sensitivity(self.T4, 1 , 1), self.mV11, atol=1e-5))      
         self.assertTrue(np.allclose(eigenvector_sensitivity(self.T4, 2 , 2), self.mV22, atol=1e-5))      
-        self.assertTrue(np.allclose(eigenvector_sensitivity(self.T4, 0 , 3), self.mV03, atol=1e-5))      
+        self.assertTrue(np.allclose(eigenvector_sensitivity(self.T4, 0 , 3), self.mV03, atol=1e-5))  
+                
+        self.assertTrue(np.allclose(eigenvector_sensitivity(self.T4, 0 , 1, right=False), self.mV01left, atol=1e-5))   
+                 
+    def test_stationary_sensitivity(self):    
+        self.assertTrue(np.allclose(stationary_distribution_sensitivity(self.T4, 1), self.pS1, atol=1e-5))      
 
 if __name__=="__main__":
     unittest.main()

@@ -22,7 +22,7 @@ __all__=['is_transition_matrix', 'is_rate_matrix',
              'stationary_distribution', 'eigenvalues', 'eigenvectors', 'rdl_decomposition',\
              'expected_counts', 'timescales',
              'committor', 'tpt',
-             'mfpt_sensitivity', 'eigenvalue_sensitivity', 'eigenvector_sensitivity', 'committor_sensitivity',
+             'stationary_distribution_sensitivity', 'mfpt_sensitivity', 'eigenvalue_sensitivity', 'eigenvector_sensitivity', 'committor_sensitivity',
              'pcca',
              'fingerprint_correlation', 'fingerprint_relaxation','evaluate_fingerprint','correlation','relaxation']
 # shortcuts added later:
@@ -171,10 +171,22 @@ def stationary_distribution(T):
 statdist=stationary_distribution
 __all__.append('statdist')
 
-# TODO: Implement in Python directly
-def stationary_distribution_sensitivity(T):
-    r"""compute the sensitivity matrix of the stationary distribution of T"""
-    raise NotImplementedError('Not implemented.')
+# DONE: Implement in Python directly
+def stationary_distribution_sensitivity(T, j):
+    r"""compute the sensitivity matrix of the stationary distribution of T
+    
+        Parameters
+    ----------
+    T : transition matrix
+    j : int
+        index of stationary distribution
+    """
+    if issparse(T):
+        raise NotImplementedError('Not implemented.')
+    elif isdense(T):
+        return dense.sensitivity.stationary_distribution_sensitivity(T, j)
+    else:
+        raise _type_not_supported
 
 statdist_sensitivity=stationary_distribution_sensitivity
 __all__.append('statdist_sensitivity')
@@ -198,7 +210,7 @@ def eigenvalues(T, k=None):
         raise _type_not_supported
 
 
-# TODO: Implement in Python directly
+# TODO: Implement sparse in Python directly
 def eigenvalue_sensitivity(T, k):
     r"""computes the sensitivity of the specified eigenvalue
     
@@ -241,6 +253,7 @@ def timescales(T, tau=1, k=None):
 
 
 # DONE: ben: Implement in Python directly
+# TODO: What about normalization? Or use rdl for this?
 def eigenvectors(T, k=None, right=True):
     r"""Compute eigenvectors of given transition matrix.
     
@@ -270,7 +283,7 @@ def eigenvectors(T, k=None, right=True):
         raise _type_not_supported
 
 
-# TODO: Implement in Python directly
+# TODO: Implement sparse in Python directly
 def eigenvector_sensitivity(T, k, j, right=True):
     r"""Compute eigenvector snesitivity of T
     
@@ -288,7 +301,9 @@ def eigenvector_sensitivity(T, k, j, right=True):
         raise NotImplementedError('Not implemented.')
     elif isdense(T):
         if right is True:
-            return dense.sensitivity.eigenvector_sensitivity(T, k, j, right)
+            return dense.sensitivity.eigenvector_sensitivity(T, k, j, True)
+        else:
+            return dense.sensitivity.eigenvector_sensitivity(T, k, j, False)
     else:
         raise _type_not_supported
 
@@ -735,15 +750,17 @@ def committor(P, A, B, forward=True):
         raise NotImplementedError('not yet impled for sparse.')
     elif isdense(P):
         if forward:
-            dense.committor.forward_committor(P, A, B)
+            committor = dense.committor.forward_committor(P, A, B)
         else:
             """ if P is time reversible backward commitor is equal 1 - q+"""
             if is_reversible(P):
                 committor = 1.0 - dense.committor.forward_committor(P, A, B)
             else:
-                raise NotImplementedError('not impled for backward/dense.')
+                committor = dense.committor.backward_committor(P, A, B)
     else:
         raise _type_not_supported
+    
+    return committor
 
 # TODO: Implement in Python directly
 def committor_sensitivity(T, A, B, index, forward=True):
@@ -773,7 +790,10 @@ def committor_sensitivity(T, A, B, index, forward=True):
     if issparse(T):
         raise NotImplementedError('Not implemented.')
     elif isdense(T):
-        return dense.sensitivity.forward_committor_sensitivity(T, A, B, index)
+        if forward:
+            return dense.sensitivity.forward_committor_sensitivity(T, A, B, index)
+        else:
+            return dense.sensitivity.backward_committor_sensitivity(T, A, B, index)
     else:
         raise _type_not_supported
 
