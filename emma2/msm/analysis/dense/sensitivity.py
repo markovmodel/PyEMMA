@@ -10,7 +10,7 @@ from emma2.autobuilder.emma_msm_mockup import stationary_distribution
 # TODO:make faster. So far not effectively programmed
 def forward_committor_sensitivity(T, A, B, index):
     """ 
-    calculate forward committor from A to B given transition matrix T.
+    calculate the sensitivity matrix for index of the forward committor from A to B given transition matrix T.
     Parameters
     ----------
     T : numpy.ndarray shape = (n, n)
@@ -24,7 +24,7 @@ def forward_committor_sensitivity(T, A, B, index):
     Returns
     -------
     x : ndarray, shape=(n, n)
-    Sensitivity matrix for entry index around transition matrix T. Reversibility is not assumed.
+        Sensitivity matrix for entry index around transition matrix T. Reversibility is not assumed.
     """
     
     n = len(T)
@@ -68,7 +68,7 @@ def forward_committor_sensitivity(T, A, B, index):
 
 def backward_committor_sensitivity(T, A, B, index):
     """ 
-    calculate the sensitivity of index of the backward committor from A to B given transition matrix T.
+    calculate the sensitivity matrix for index of the backward committor from A to B given transition matrix T.
     Parameters
     ----------
     T : numpy.ndarray shape = (n, n)
@@ -82,11 +82,12 @@ def backward_committor_sensitivity(T, A, B, index):
     Returns
     -------
     x : ndarray, shape=(n, n)
-    Sensitivity matrix for entry index around transition matrix T. Reversibility is not assumed.
+        Sensitivity matrix for entry index around transition matrix T. Reversibility is not assumed.
     """
     
     # This is really ugly to compute. The problem is, that changes in T induce changes in
     # the stationary distribution and so we need to add this influence, too
+    # I implemented something which is correct, but don't ask me about the derivation
     
     n = len(T)
     
@@ -130,6 +131,20 @@ def backward_committor_sensitivity(T, A, B, index):
     return sensitivity
 
 def eigenvalue_sensitivity(T, k):
+    """ 
+    calculate the sensitivity matrix for eigenvalue k given transition matrix T.
+    Parameters
+    ----------
+    T : numpy.ndarray shape = (n, n)
+        Transition matrix
+    k : int
+        eigenvalue index for eigenvalues order descending
+        
+    Returns
+    -------
+    x : ndarray, shape=(n, n)
+        Sensitivity matrix for entry index around transition matrix T. Reversibility is not assumed.
+    """
         
     eValues, rightEigenvectors = numpy.linalg.eig(T)
     leftEigenvectors = numpy.linalg.inv(rightEigenvectors)    
@@ -145,8 +160,42 @@ def eigenvalue_sensitivity(T, k):
 
 # TODO: The eigenvector sensitivity depends on the normalization, e.g. l^T r = 1 or norm(r) = 1
 # Should we fix that or add another option. Also the sensitivity depends on the initial eigenvectors
-# Now everything is set to use norm(v) = 1
+# Now everything is set to use norm(v) = 1 for left and right
+# In the case of the stationary distribution we want sum(pi) = 1, so this function
+# does NOT return the same as stationary_distribution_sensitivity if we choose k = 0 and right = False!
+
+# TODO: If we choose k = 0 and right = False we might throw a warning!?!
+
 def eigenvector_sensitivity(T, k, j, right=True):
+    """ 
+    calculate the sensitivity matrix for entry j of left or right eigenvector k given transition matrix T.
+    Parameters
+    ----------
+    T : numpy.ndarray shape = (n, n)
+        Transition matrix
+    k : int
+        eigenvector index ordered with descending eigenvalues
+    j : int
+        entry of eigenvector k for which the sensitivity is to be computed
+    right : boolean (default: True)
+        If set to True (default) the right eigenvectors are considered, otherwise the left ones
+        
+    Returns
+    -------
+    x : ndarray, shape=(n, n)
+        Sensitivity matrix for entry index around transition matrix T. Reversibility is not assumed.
+    
+    Remarks
+    -------
+    Eigenvectors can naturally be scaled and so will their sensitivity depend on their size.
+    For that reason we need to agree on a normalization for which the sensitivity is computed.
+    Here we use the natural norm(vector) = 1 condition which is different from the results, e.g.
+    the rdl_decomposition returns. 
+    This is especially important for the stationary distribution, which is the first left eigenvector.
+    For this reason this function return a different sensitivity for the first left eigenvector
+    than the function stationary_distribution_sensitivity and this function should not be used in this
+    case!
+    """
     
     n = len(T)
     
@@ -185,7 +234,26 @@ def eigenvector_sensitivity(T, k, j, right=True):
     return sensitivity
 
 def stationary_distribution_sensitivity(T, j):
+    """ 
+    calculate the sensitivity matrix for entry j the stationary distribution vector given transition matrix T.
+    Parameters
+    ----------
+    T : numpy.ndarray shape = (n, n)
+        Transition matrix
+    j : int
+        entry of stationary distribution for which the sensitivity is to be computed
         
+    Returns
+    -------
+    x : ndarray, shape=(n, n)
+        Sensitivity matrix for entry index around transition matrix T. Reversibility is not assumed.
+    
+    Remark
+    ------
+    Note, that this function uses a different normalization convention for the sensitivity compared to
+    eigenvector_sensitivity. See there for further information.
+    """
+            
     n = len(T)
         
     lEV = numpy.ones(n)
@@ -208,7 +276,23 @@ def stationary_distribution_sensitivity(T, j):
         
     return sensitivity
 
-def mfpt_sensitivity(T, target, i):
+def mfpt_sensitivity(T, target, j):
+    """ 
+    calculate the sensitivity matrix for entry j of the mean first passage time (MFPT) given transition matrix T.
+    Parameters
+    ----------
+    T : numpy.ndarray shape = (n, n)
+        Transition matrix
+    target : int
+        target state to which the MFPT is computed
+    j : int
+        entry of the mfpt vector for which the sensitivity is to be computed
+        
+    Returns
+    -------
+    x : ndarray, shape=(n, n)
+        Sensitivity matrix for entry index around transition matrix T. Reversibility is not assumed.
+    """
     
     n = len(T)
     
@@ -221,7 +305,7 @@ def mfpt_sensitivity(T, target, i):
     
     mfpt = numpy.linalg.solve(matA, tVec)
     aVec = numpy.zeros(n)
-    aVec[i] = 1.0
+    aVec[j] = 1.0
     
     phiVec = numpy.linalg.solve(numpy.transpose(matA), aVec )
     
