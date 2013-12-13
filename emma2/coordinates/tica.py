@@ -13,7 +13,7 @@ __all__ = ['correlation', 'log_loop', 'rename', 'Amuse']
 ''' import correlation covariance module '''
 # TODO: Someone imported a module cocovar here, which is not in devel branch!
 # I made a comment out of it. Please check! Since commands are used from it
-#import cocovar
+import cocovar
 from emma2.util.log import getLogger
 log = getLogger()
 
