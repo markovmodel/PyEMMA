@@ -29,8 +29,8 @@ def read_discrete_trajectory(filename):
         Discrete state trajectory.
     
     """
-    with open(filename, "r") as impl_timescales:
-        lines=impl_timescales.read()
+    with open(filename, "r") as f:
+        lines=f.read()
         dtraj=np.fromstring(lines, dtype=int, sep="\n")
         return dtraj    
     

@@ -25,7 +25,7 @@ def count_matrix_mult(dtrajs, lag, sliding=True):
         The countmatrix at given lag in coordinate list format.
     
     """
-    Z = scipy.sparse.coo_matrix((0,0))
+    Z = scipy.sparse.coo_matrix((1,1))
     for dtraj in dtrajs:
         Zi = count_matrix(dtraj, lag, sliding)
         Z = add_coo_matrix(Z, Zi)
