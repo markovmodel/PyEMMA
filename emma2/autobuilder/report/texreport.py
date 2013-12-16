@@ -5,6 +5,9 @@ Created on Nov 20, 2013
 '''
 
 import os
+import socket
+import datetime
+
 
 class TexReport:
     """
@@ -15,15 +18,21 @@ class TexReport:
     # basic text chunks
     documentheader = ("\\documentclass[12pt]{article}\n"
                       "\\usepackage{graphicx}\n"
-                      "\\usepackage{float}"
+                      "\\usepackage{float}\n"
+                      "\\usepackage[top=2.5cm, bottom=2.5cm, left=2cm, right=2cm]{geometry}\n"
                       "\n"
                       "\\title{MSM report}\n"
-                      "\\date{}\n"
+                      "\\author{"+os.getlogin()+"@"+socket.gethostname()+"}\n"
+                      "\\date{"+datetime.datetime.now().strftime("%Y-%m-%d %H:%M")+"}\n"
                       "\\begin{document}\n"
                       "\\maketitle\n"
                       "\n")
     
-    documentfooter = "\\end{document}"
+    documentfooter = ("\\clearpage\n"
+                      "\n"
+                      "\\bibliographystyle{plain}\n"
+                      "\\bibliography{report}\n"
+                      "\\end{document}")
     
     plotcount = 0
     
@@ -58,19 +67,35 @@ class TexReport:
     def text(self, text):
         self.tex.write(text+"\n")
 
+    def cite(self, key):
+        self.tex.write("\\cite{"+key+"}")
+
     def get_figure_name(self,ext):
         self.plotcount += 1
         return os.path.join(self.directory,str(self.plotcount)+"."+ext)
 
-    def figure(self,filename,caption):
+    def figure(self,filename,caption, width = 0.8):
+        head,tail = os.path.split(filename)
         self.tex.write("\n\\begin{figure}[h!]\n"
                       "\\begin{center}\n"
-                      "\\includegraphics[width=0.8\textwidth]{"+filename+"}\n"
+                      "\\includegraphics[width="+str(width)+"\\textwidth]{"+tail+"}\n"
                       "\\caption{"+caption+"}\n"
-                      "\\label{fig:"+filename+"}\n"
+                      "\\label{fig:"+tail+"}\n"
                       "\\end{center}\n"
                       "\\end{figure}\n"
                       "\n\n")
+
+    def figure_mult(self,filenames,caption, width = 0.8):
+        self.tex.write("\n\\begin{figure}[h!]\n"
+                       "\\begin{center}\n")
+        for filename in filenames:
+            head,tail = os.path.split(filename)
+            self.tex.write("\\includegraphics[width="+str(width)+"\\textwidth]{"+tail+"}\n")
+        self.tex.write("\\caption{"+caption+"}\n"
+                       "\\label{fig:"+tail+"}\n"
+                       "\\end{center}\n"
+                       "\\end{figure}\n"
+                       "\n\n")
 
 
     def finish(self):
@@ -78,6 +103,8 @@ class TexReport:
         self.tex.close();
         cwd = os.getcwd();
         os.chdir(self.directory)
+        os.system("pdflatex "+self.name)
+        os.system("bibtex "+self.name)
         os.system("pdflatex "+self.name)
         os.system("pdflatex "+self.name)
         os.chdir(cwd)

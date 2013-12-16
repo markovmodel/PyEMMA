@@ -105,6 +105,8 @@ setup(
       # list packages here
       packages = ['emma2',
                   'emma2.autobuilder',
+                  'emma2.autobuilder.analysis',
+                  'emma2.autobuilder.report',
                   'emma2.cluster',
                   'emma2.coordinates',
                   'emma2.coordinates.transform',
