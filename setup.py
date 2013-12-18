@@ -125,7 +125,6 @@ setup(
                  'scripts/mm_project'],
       include_dirs = [numpy.get_include()],
       ext_modules = [cocovar_module],
-      # FIXME: this goes to egg meta info directory and is not found during init
       data_files = [('emma2', ['emma2.cfg'])],
       # runtime dependencies
       install_requires = ['numpy >=1.8.0',
