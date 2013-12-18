@@ -73,3 +73,20 @@ def getLogger(name = None):
         pos = path.rfind('emma2')
         name = path[pos:]
     return logging.getLogger(name)
+
+
+def logargs(func):
+    """
+    use like this:
+    >>> @logargs
+    >>> def sample():
+    >>>    return 2
+    >>> sample(1, 3)
+    Arguments were: (1, 3), {}
+    
+    """
+    def inner(*args, **kwargs): #1
+        log.debug("Arguments to function %s were: %s, %s" 
+                  % (func.__name__, args, kwargs))
+        return func(*args, **kwargs) #2
+    return inner
