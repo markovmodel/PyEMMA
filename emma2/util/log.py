@@ -3,13 +3,21 @@ Created on 15.10.2013
 
 @author: marscher
 '''
-__all__ = ['log', 'getLogger']
+__all__ = ['log', 'getLogger', 'logargs']
 
 import logging
 import ConfigParser
+import os
 
-""" this filenames are being tried to read """
-filenames = ['emma2.cfg', '/etc/emma2.cfg']
+""" this filenames are being tried to read to obtain basic configuration values 
+    for the logging system."""
+cfg = 'emma2.cfg'
+filenames = [cfg,
+            '/etc/' + cfg,
+            os.path.expanduser('~') + cfg,
+            # This should always be last
+            os.path.dirname(__import__('emma2').__file__) + cfg,
+            ]
 """ default values for logging system """
 defaults = {'enabled': 'True',
             'toconsole' : 'True',
@@ -21,11 +29,11 @@ defaults = {'enabled': 'True',
 class AttribStore(dict):
     def __getattr__(self, name):
         return self[name]
-
+ 
     def __setattr__(self, name, value):
         self[name] = value
 
-config = ConfigParser.SafeConfigParser(defaults)
+config = ConfigParser.SafeConfigParser()
 used_filenames = config.read(filenames)
 
 if used_filenames == []:
@@ -61,10 +69,30 @@ if args.enabled:
         ch.setFormatter(logging.Formatter(args.format))
         logging.getLogger('').addHandler(ch)
 
-""" default logger for emma2 """
-log = logging.getLogger('emma2')
+    """ default logger for emma2 """
+    log = logging.getLogger('emma2')
+else:
+    """ set up a dummy logger if logging is disabled"""
+    class dummyLogger:
+        def log(self, kwargs):
+            pass
+        def debug(self, kwargs):
+            pass
+        def info(self, kwargs):
+            pass
+        def warn(self, kwargs):
+            pass
+        def error(self, kwargs):
+            pass
+        def critical(self, kwargs):
+            pass
+        def setLevel(self, kwargs):
+            pass
+    log = dummyLogger()
 
 def getLogger(name = None):
+    if not args.enabled:
+        return dummyLogger()
     """ if name is not given, return a logger with name of the calling module."""
     if not name:
         import traceback
@@ -74,7 +102,6 @@ def getLogger(name = None):
         name = path[pos:]
     return logging.getLogger(name)
 
-
 def logargs(func):
     """
     use like this:
@@ -82,7 +109,7 @@ def logargs(func):
     >>> def sample():
     >>>    return 2
     >>> sample(1, 3)
-    Arguments were: (1, 3), {}
+    Arguments to function sample were: (1, 3), {}
     
     """
     def inner(*args, **kwargs): #1
