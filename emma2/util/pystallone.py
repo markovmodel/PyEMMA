@@ -8,6 +8,7 @@ Created on 15.10.2013
 import logging
 from scipy.sparse.base import issparse
 _log = logging.getLogger(__name__)
+_log.setLevel(logging.ERROR)
 import numpy as _np
 
 """is the stallone python binding available?"""

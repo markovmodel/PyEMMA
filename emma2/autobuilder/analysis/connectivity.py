@@ -59,4 +59,4 @@ class Analysis_Connectivity:
         tab = [["index","states","count","in-links","out-links"]]
         for i in range(min(10,len(self.C))):
             tab.append([(i+1), len(self.C[i]), self.histC[i], self.incoming[i], self.outgoing[i]])
-        rep.table(tab,"Connectivity analysis")
+        rep.table(tab,"Connectivity analysis on lag time "+str(self._lag))

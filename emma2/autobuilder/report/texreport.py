@@ -42,7 +42,7 @@ class TexReport:
                  directory = "./report"
                  ):
         
-        print self.documentheader
+        #print self.documentheader
         self.name = name;
         self.directory = directory;
         
@@ -74,6 +74,35 @@ class TexReport:
         self.plotcount += 1
         return os.path.join(self.directory,str(self.plotcount)+"."+ext)
 
+    def __table_row(self, row):
+        ncol = len(row)
+        self.tex.write(str(row[0]))
+        for i in range(1,ncol):
+            self.tex.write(" & "+str(row[i]))
+        self.tex.write(" \\\\ \n")
+
+    def table(self,tab,caption,align=None):
+        ncol = len(tab[0])
+        self.tex.write("\n\\begin{table}[h!]\n"
+                      "\\begin{center}\n"
+                      "\\begin{tabular}{\n")
+        if (align != None):
+            self.tex.write(align)
+        else:
+            for i in range(ncol):
+                self.tex.write('c')
+        self.tex.write("}")
+        self.__table_row(tab[0])
+        self.tex.write("\\hline\n")
+        for i in range(1, len(tab)):
+            self.__table_row(tab[i])
+        self.tex.write("\\end{tabular}\n"
+                       "\\caption{"+caption+"}\n"
+                       #"\\label{tab:"+tail+"}\n"
+                       "\\end{center}\n"
+                       "\\end{table}\n"
+                       "\n\n")
+
     def figure(self,filename,caption, width = 0.8):
         head,tail = os.path.split(filename)
         self.tex.write("\n\\begin{figure}[h!]\n"
@@ -103,9 +132,9 @@ class TexReport:
         self.tex.close();
         cwd = os.getcwd();
         os.chdir(self.directory)
-        os.system("pdflatex "+self.name)
-        os.system("bibtex "+self.name)
-        os.system("pdflatex "+self.name)
-        os.system("pdflatex "+self.name)
+        os.system("pdflatex "+self.name+" >& /dev/null")
+        os.system("bibtex "+self.name+" >& /dev/null")
+        os.system("pdflatex "+self.name+" >& /dev/null")
+        os.system("pdflatex "+self.name+" >& /dev/null")
         os.chdir(cwd)
 
