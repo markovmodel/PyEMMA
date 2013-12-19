@@ -94,7 +94,8 @@ try:
 except ImportError:
     setupPyStallone()
 
-cocovar_module = Extension('cocovar', sources = ['extensions/cocovar.c'])
+cocovar_module = Extension('cocovar', sources = ['extensions/cocovar.c'],
+                           extra_compile_args=['-O3'])
 
 setup(
       name = 'Emma2',
