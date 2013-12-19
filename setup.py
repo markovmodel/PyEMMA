@@ -94,7 +94,8 @@ try:
 except ImportError:
     setupPyStallone()
 
-cocovar_module = Extension('cocovar', sources = ['extensions/cocovar.c'])
+cocovar_module = Extension('cocovar', sources = ['extensions/cocovar.c'],
+                           extra_compile_args=['-O3'])
 
 setup(
       name = 'Emma2',
@@ -125,10 +126,9 @@ setup(
                  'scripts/mm_project'],
       include_dirs = [numpy.get_include()],
       ext_modules = [cocovar_module],
-      # FIXME: this goes to egg meta info directory and is not found during init
       data_files = [('emma2', ['emma2.cfg'])],
       # runtime dependencies
-      install_requires = ['numpy >=1.7',
+      install_requires = ['numpy >=1.8.0',
                          'scipy >=0.11',
                          'JCC >=2.17'],
       # build time dependencies
