@@ -33,7 +33,7 @@ class AttribStore(dict):
     def __setattr__(self, name, value):
         self[name] = value
 
-config = ConfigParser.SafeConfigParser()
+config = ConfigParser.SafeConfigParser(defaults)
 used_filenames = config.read(filenames)
 
 if used_filenames == []:
