@@ -7,9 +7,11 @@
 /.tox
 *.pyc
 *.egg-info
+*.so
 /temp
 /target
 __pycache__
 /pylint/pylint_*.txt
 /dist
 sphinx/generated/*
+sphinx/_build/*
