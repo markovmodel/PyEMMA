@@ -1,8 +1,4 @@
-#"""
-#    API functions for Markov state model analysis
-#"""
-##
-"""
+r"""
 ======================================================
 Emma2 MSM Analysis API (:mod:`emma2.msm.analysis.api`)
 ======================================================
