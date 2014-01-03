@@ -18,7 +18,7 @@ try:
     _log.debug('try to initialize stallone module')
     from stallone import *
     # todo: store and read jvm parameters in emma2.cfg
-    jenv = initVM(initialheap='32m', maxheap='512m')
+    jenv = initVM(initialheap='32m', maxheap='2048m')
     stallone_available = True
     _log.info('stallone initialized successfully.')
 except ImportError as ie:
@@ -92,6 +92,22 @@ def ndarray_to_stallone_array(ndarray):
         raise ValueError('unsupported shape: ', shape)
 
 
+def IDoubleArray2ndarray(d_arr):
+    rows = d_arr.rows()
+    cols = d_arr.columns()
+    order = d_arr.order() 
+    
+    if order < 2:
+        arr = _np.array(d_arr.getArray())
+    elif order == 2:
+        arr = _np.array(d_arr.getArray())
+        arr.reshape(rows,cols)
+    else:
+        raise NotImplemented
+    
+    return arr
+
+
 def stallone_array_to_ndarray(stArray):
     """
     Returns
@@ -139,14 +155,17 @@ def stallone_array_to_ndarray(stArray):
         # np.frombuffer(d_arr.getArray(), dtype=dtype, count=size )
         arr = nparray(d_arr.getArray(), dtype=dtype)
     elif order == 2:
-        table = d_arr.getTable()
-        arr = empty((rows, cols))
+        # FN: This is more efficient!
+        arr = nparray(d_arr.getArray(), dtype=dtype)
+        arr.reshape(rows,cols)
+        #table = d_arr.getTable()
+        #arr = empty((rows, cols))
         # assign rows
-        for i in xrange(rows):
-            jarray = caster(table[i])
-            row = nparray(jarray, dtype=dtype)
-            arr[i] = row
-    elif order == 3:
+        #for i in xrange(rows):
+        #    jarray = caster(table[i])
+        #    row = nparray(jarray, dtype=dtype)
+        #    arr[i] = row
+    else:
         raise NotImplemented
         
     arr.shape = (rows, cols)
