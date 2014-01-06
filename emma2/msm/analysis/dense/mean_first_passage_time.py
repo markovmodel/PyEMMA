@@ -1,4 +1,4 @@
-"""Dense implementation of mean first passage time computations"""
+"""Dense implementation of mean first passage time computation"""
 import numpy as np
 import scipy.linalg
 
