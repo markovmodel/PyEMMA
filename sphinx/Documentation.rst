@@ -2,11 +2,19 @@
 Documentation
 =============
 
+Example for docstrings
+----------------------
+
 .. toctree::
    :maxdepth: 2
 
-   modules
    example_package
 
-   test
+Reference
+---------
+
+.. toctree::
+   :maxdepth: 1
+
+   api
 

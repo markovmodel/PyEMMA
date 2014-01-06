@@ -261,12 +261,15 @@ class ModelBuilder:
 #                 self.__write_discretization();
 
         # HISTOGRAM
+        self.out.write(self.__time()+"\t Calculating counts\n");
         self.__calculate_counts();
 
         # STATIONARY DISTRIBUTION
+        self.out.write(self.__time()+"\t Calculating stationary distribution\n");
         self.__calculate_stationary();
 
         # KINETICS
+        self.out.write(self.__time()+"\t Calculating kinetics\n");
         self.__calculate_kinetics();
 
         # FINISH
