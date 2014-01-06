@@ -69,7 +69,7 @@ class FileTransform:
 
         # call process_new_input
         self.__process_new_input(input_files_full, new_files_full)
-        print "Algorithm '"+self.name+"' processes new input files: "+str(new_files)
+        print "    Algorithm '"+self.name+"' processes new input files: "+str(new_files)
         # register as processed
         self.processed_files = input_files
 
