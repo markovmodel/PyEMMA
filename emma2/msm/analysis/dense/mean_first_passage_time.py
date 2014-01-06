@@ -1,5 +1,6 @@
 """Dense implementation of mean first passage time computations"""
 import numpy as np
+import scipy.linalg
 
 def mfpt(T, target):
     r"""Compute vector of mean first passage times to given target state.
@@ -26,12 +27,12 @@ def mfpt(T, target):
     
     """
     dim=T.shape[0]
-    A=T-np.eye(dim)
+    A=np.eye(dim)-T
     A[target, :]=0.0
     A[target, target]=1.0
     b=np.ones(dim)
     b[target]=0.0
-    m_t=np.solve(A, b)
+    m_t=scipy.linalg.solve(A, b)
     return m_t
 
 
