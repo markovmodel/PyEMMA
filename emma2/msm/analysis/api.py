@@ -44,7 +44,6 @@ blub?
 
 """
 
-
 import numpy as np
 from scipy.sparse import issparse
 from scipy.sparse.sputils import isdense
@@ -56,19 +55,24 @@ import dense.decomposition
 import dense.expectations
 import dense.pcca
 import dense.sensitivity
+import dense.mean_first_passage_time
 
 import sparse.assessment
 import sparse.decomposition
 import sparse.expectations
+import sparse.mean_first_passage_time
 
-__all__=['is_transition_matrix', 'is_rate_matrix',
-             'is_ergodic', 'is_reversible', 
-             'stationary_distribution', 'eigenvalues', 'eigenvectors', 'rdl_decomposition',\
-             'expected_counts', 'timescales',
-             'committor', 'tpt',
-             'stationary_distribution_sensitivity', 'mfpt_sensitivity', 'eigenvalue_sensitivity', 'eigenvector_sensitivity', 'committor_sensitivity',
-             'pcca',
-             'fingerprint_correlation', 'fingerprint_relaxation','evaluate_fingerprint','correlation','relaxation']
+__all__=['is_transition_matrix', 'is_rate_matrix',\
+             'is_ergodic', 'is_reversible',\
+             'stationary_distribution', 'eigqenvalues',\
+             'eigenvectors', 'rdl_decomposition',\
+             'expected_counts', 'timescales',\
+             'committor', 'tpt',\
+             'stationary_distribution_sensitivity', 'mfpt', 'mfpt_sensitivity',\
+             'eigenvalue_sensitivity', 'eigenvector_sensitivity',\
+             'committor_sensitivity', 'pcca',\
+             'fingerprint_correlation', 'fingerprint_relaxation',\
+             'evaluate_fingerprint','correlation','relaxation']
 # shortcuts added later:
 # ['statdist', 'is_tmatrix', 'statdist_sensitivity']
 
@@ -79,8 +83,7 @@ _type_not_supported = \
 # Assessment tools
 ################################################################################
 
-
-# Done
+# DONE : Martin, Ben
 def is_transition_matrix(T, tol=1e-15):
     r"""
     True if T is a transition matrix
@@ -110,7 +113,7 @@ is_tmatrix=is_transition_matrix
 __all__.append('is_tmatrix')
 
 
-# Done
+# DONE: Martin, Ben
 def is_rate_matrix(K, tol=1e-15):
     r"""True if K is a rate matrix
     Parameters
@@ -134,7 +137,7 @@ def is_rate_matrix(K, tol=1e-15):
         raise _type_not_supported
 
 
-# Done: Martin Implement in Python directly
+# DONE: Martin 
 def is_ergodic(T, tol=1e-15):
     r"""True if T is connected (irreducible) and aperiodic.
     
@@ -158,7 +161,7 @@ def is_ergodic(T, tol=1e-15):
         raise _type_not_supported
 
 
-# Done: martin: Implement in Python directly
+# DONE: Martin
 def is_reversible(T, mu=None, tol=1e-15):
     r"""True if T is a transition matrix
     
@@ -187,7 +190,7 @@ def is_reversible(T, mu=None, tol=1e-15):
 # Eigenvalues and eigenvectors
 ################################################################################
 
-# DONE: ben: Implement in Python directly
+# DONE: Ben
 def stationary_distribution(T):
     r"""Compute stationary distribution of stochastic matrix T. 
     
@@ -271,7 +274,7 @@ def eigenvalue_sensitivity(T, k):
     else:
         raise _type_not_supported
 
-# DONE: ben: Implement in Python directly
+# DONE: Ben
 def timescales(T, tau=1, k=None):
     r"""Compute implied time scales of given transition matrix
     
@@ -296,7 +299,7 @@ def timescales(T, tau=1, k=None):
         raise _type_not_supported
 
 
-# DONE: ben: Implement in Python directly
+# DONE: Ben
 # TODO: What about normalization? Or use rdl for this?
 def eigenvectors(T, k=None, right=True):
     r"""Compute eigenvectors of given transition matrix.
@@ -329,7 +332,7 @@ def eigenvectors(T, k=None, right=True):
 
 # TODO: Implement sparse in Python directly
 def eigenvector_sensitivity(T, k, j, right=True):
-    r"""Compute eigenvector snesitivity of T
+    r"""Compute eigenvector sensitivity of T
     
     Parameters
     ----------
@@ -352,7 +355,7 @@ def eigenvector_sensitivity(T, k, j, right=True):
         raise _type_not_supported
 
 
-# DONE: ben: Implement in Python directly
+# DONE: Ben
 def rdl_decomposition(T, k=None, norm='standard'):
     r"""Compute the decomposition into left and right eigenvectors.
     
@@ -390,7 +393,7 @@ def rdl_decomposition(T, k=None, norm='standard'):
         raise _type_not_supported
 
 
-# TODO: Implement in Python directly
+# DONE: Ben
 def mfpt(T, target):
     r"""Compute vector of mean first passage times to target state.
     
@@ -407,7 +410,12 @@ def mfpt(T, target):
          Vector of mean first passage times to target state t.
     
     """
-    raise NotImplementedError('Not implemented.')
+    if issparse(T):
+        return sparse.mean_first_passage_time.mfpt(T, target)
+    elif isdense(T):
+        return dense.mean_first_passage_time.mfpt(T, target)
+    else:
+        raise _type_not_supported
 
 
 # TODO: Implement sparse in Python directly
@@ -464,7 +472,7 @@ def expectation_sensitivity(T, a):
     """
     raise NotImplementedError('Not implemented.')
 
-# DONE: ben: Implement in Python directly
+# DONE: Ben: Implement in Python directly
 def expected_counts(p0, T, N):
     r"""Compute expected transition counts for Markov chain with n steps. 
     
@@ -497,7 +505,7 @@ def expected_counts(p0, T, N):
         _type_not_supported
 
 
-# TODO: ben: Implement in Python directly
+# TODO: Ben: Implement in Python directly
 def expected_counts_stationary(P, N, mu=None):
     r"""Expected transition counts for Markov chain in equilibrium. 
     
@@ -806,7 +814,7 @@ def committor(P, A, B, forward=True):
     
     return committor
 
-# TODO: Implement in Python directly
+# DONE: Jan (sparse implementation missing)
 def committor_sensitivity(T, A, B, index, forward=True):
     r"""Compute the committor between sets of microstates.
     
@@ -841,7 +849,7 @@ def committor_sensitivity(T, A, B, index, forward=True):
     else:
         raise _type_not_supported
 
-
+# DONE: Martin (sparse implementation missing)
 def tpt(T, A, B):
     r""" returns a transition path TPT object
     Parameters
