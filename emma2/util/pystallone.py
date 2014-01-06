@@ -5,9 +5,9 @@ Created on 15.10.2013
 
 @author: marscher
 '''
-import logging
+from emma2.util.log import getLogger
 from scipy.sparse.base import issparse
-_log = logging.getLogger(__name__)
+_log = getLogger(__name__)
 import numpy as _np
 
 """is the stallone python binding available?"""
@@ -16,7 +16,7 @@ stallone_available = False
 try:
     _log.debug('try to initialize stallone module')
     from stallone import *
-    # todo: store and read jvm parameters in emma2.cfg
+    # TODO: store and read jvm parameters in emma2.cfg
     jenv = initVM(initialheap='32m', maxheap='512m')
     stallone_available = True
     _log.info('stallone initialized successfully.')
