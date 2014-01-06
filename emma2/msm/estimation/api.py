@@ -1,11 +1,15 @@
 """This module contains the api definitions for the estimation module"""
 
+import numpy as np
 import sparse.count_matrix
 import sparse.connectivity
 import sparse.transition_matrix
 
 from scipy.sparse import issparse
 from scipy.sparse.sputils import isdense
+
+import emma2.util.pystallone as stallone
+
 
 __all__=['count_matrix', 'cmatrix', 'connected_sets', 'largest_connected_set',\
              'connected_count_matrix', 'is_connected', 'transition_matrix', 'log_likelihood',\
@@ -225,22 +229,31 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
     """
     if reversible:
         if mu is None:
-            from emma2.util.pystallone import stallone_available
-            if stallone_available == False:
+            if stallone.stallone_available == False:
                 raise RuntimeError('stallone not available and reversible \
                      only impled there')
-            from emma2.util.pystallone import API as API, ndarray_to_stallone_array, \
-                JavaError, stallone_array_to_ndarray
             try:
-                C = ndarray_to_stallone_array(C)
+                C = stallone.ndarray_to_stallone_array(C)
                 # T is of type stallone.IDoubleArray, so wrap it in an ndarray
-                return stallone_array_to_ndarray(API.msm.estimateTrev(C))
-            except JavaError as je:
+                return stallone.stallone_array_to_ndarray(stallone.API.msm.estimateTrev(C))
+            except stallone.JavaError as je:
                 raise RuntimeError(je.getJavaException())
         else:
-            raise NotImplementedError('mle with fixed stationary distribution not implemented.')
+            if stallone.stallone_available == False:
+                raise RuntimeError('stallone not available and reversible \
+                     only impled there')
+            try:
+                Cstall = stallone.ndarray_to_stallone_array(C)
+                mustall = stallone.ndarray_to_stallone_array(mu)
+                Tstall = stallone.API.msm.estimateTrev(Cstall,mustall)
+                return stallone.stallone_array_to_ndarray(Tstall)
+            except stallone.JavaError as je:
+                raise RuntimeError(je.getJavaException())
     else:
-        return sparse.transition_matrix.transition_matrix_non_reversible(C)        
+        if mu is None:
+            return sparse.transition_matrix.transition_matrix_non_reversible(C)
+        else:
+            raise NotImplementedError('nonreversible mle with fixed stationary distribution not implemented.')
             
 
 tmatrix = transition_matrix
