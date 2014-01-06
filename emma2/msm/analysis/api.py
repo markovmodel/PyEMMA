@@ -1,6 +1,50 @@
+r"""
+======================================================
+Emma2 MSM Analysis API (:mod:`emma2.msm.analysis.api`)
+======================================================
+
+.. currentmodule:: emma2.msm.analysis.api
+
+API functions for Markov state model analysis
+
+Contents
+========
+
+Checks
+------
+
+.. autosummary::
+   :toctree: generated/
+
+   is_transition_matrix
+   is_rate_matrix
+   is_ergodic
+   is_reversible
+
+TODOS here in Contents
+----------------------
+
+Add remaining subsections (eigenvector, fingerprints, etc) here.
+Stick to the pattern in subsection Checks (above)!
+
+Usage information
+=================
+
+blub?
+
+Example 1
+---------
+
+blub?
+
+Further details
+---------------
+
+blub?
+
 """
-    API functions for Markov state model analysis
-"""
+
+
 import numpy as np
 from scipy.sparse import issparse
 from scipy.sparse.sputils import isdense

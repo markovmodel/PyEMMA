@@ -40,46 +40,49 @@ class Analysis_Data:
         
         # read internal coordinates
         icdir = self._dirs[1]
-        icfile = os.path.join(icdir, os.listdir(icdir)[0])
-        ic0 = np.loadtxt(icfile)
+        icfiles = [os.path.join(icdir,f) for f in os.listdir(icdir)]
+        self.icsize = sum([os.stat(f).st_size for f in icfiles])
+        ic0 = np.loadtxt(icfiles[0])
         self.icdim = len(ic0[0])
-        # total size
-        self.icsize = os.stat(icdir).st_size
         
         # read tica coordinates
         ticadir = self._dirs[2]
-        ticafile = os.path.join(ticadir, os.listdir(ticadir)[0])
-        tic0 = np.loadtxt(ticafile)
+        ticafiles = [os.path.join(ticadir,f) for f in os.listdir(ticadir)]
+        self.ticasize = sum([os.stat(f).st_size for f in ticafiles])
+        tic0 = np.loadtxt(ticafiles[0])
         self.ticadim = len(tic0[0])
-        # total size
-        self.icsize = os.stat(ticadir).st_size
         
         # read discrete trajectories
         dtrajdir = self._dirs[3]
         dtrajfiles = [os.path.join(dtrajdir,f) for f in os.listdir(dtrajdir)]
+        self.dtrajsize = sum([os.stat(f).st_size for f in dtrajfiles])
         dtrajs = [np.loadtxt(f) for f in dtrajfiles]
         nstates_byfile = [np.max(dtraj)+1 for dtraj in dtrajs]
-        self.nstates = max(nstates_byfile)
-        # total size
-        self.icsize = os.stat(dtrajdir).st_size
+        self.nstates = int(max(nstates_byfile))
     
     
     def report(self, rep):
         """
         Reports results into rep
         """
+        rep.paragraph('Input trajectory data')
+        rep.text('An analysis of the input trajectory data and the first processing steps is given below:')
+        
         # INPUT TRAJECTORY LIST
-        sizes = reversed(np.unique(self.nframes))
-        table = [["# traj.","# frames"]]
+        sizes = np.unique(self.nframes)[::-1]
+        table = [[" ","\# traj.","\# frames"]]
         for i in range(len(sizes)):
             matches = [x for x in self.nframes if x == sizes[i]]
-            table.append([len(matches),sizes[i]])
-        rep.paragraph('Input trajectory data')
-        rep.table()
+            table.append([" ",len(matches),sizes[i]])
+        table.append([" "," "," "])
+        table.append(["total",len(self.nframes),sum(self.nframes)])
+        rep.table(table,'List of input trajectories',align='lrr')
         
         # DATA PROCESSING TABLE
-        
-        outfile_scatter = rep.get_figure_name('png')
-        head,tail = os.path.split(outfile_scatter)
-        rep.paragraph('TICA projection')
+        table = [["Processing step","dimension","disk space (MB)"]]
+        table.append(["coordinates",str(self.natoms[0])+" atoms",("%.2f" % (sum(self.crdsizes)/1000000.0))])
+        table.append(["internal coordinates",str(self.icdim)+" dims",("%.2f" % (self.icsize/1000000.0))])
+        table.append(["TIC's",str(self.ticadim)+" dims",("%.2f" % (self.ticasize/1000000.0))])
+        table.append(["discrete trajectories",str(self.nstates)+" clusters",("%.2f" % (self.dtrajsize/1000000.0))])
+        rep.table(table,'Data of trajectory processing steps',align='lrr')
 
