@@ -505,7 +505,7 @@ def expected_counts(p0, T, n):
         _type_not_supported
 
 
-# TODO: Ben: Implement in Python directly
+# DONE: Ben
 def expected_counts_stationary(T, n, mu=None):
     r"""Expected transition counts for Markov chain in equilibrium. 
     
