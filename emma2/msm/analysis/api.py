@@ -532,7 +532,7 @@ def expected_counts_stationary(T, n, mu=None):
     
     """
     if issparse(T):
-        raise NotImplementedError('Not implemented for sparse matrices.')
+        return sparse.expectations.expected_counts_stationary(T, n, mu=mu)
     elif isdense(T):
         return dense.expectations.expected_counts_stationary(T, n, mu=mu)
     else:
