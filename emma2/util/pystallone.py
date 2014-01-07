@@ -97,9 +97,9 @@ def IDoubleArray2ndarray(d_arr):
     order = d_arr.order() 
     
     if order < 2:
-        arr = _np.array(d_arr.getArray())
+        arr = _np.array(d_arr.getArray(), copy=False)
     elif order == 2:
-        arr = _np.array(d_arr.getArray())
+        arr = _np.array(d_arr.getArray(), copy=False)
         arr.reshape(rows,cols)
     else:
         raise NotImplemented
