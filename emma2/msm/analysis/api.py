@@ -472,8 +472,8 @@ def expectation_sensitivity(T, a):
     """
     raise NotImplementedError('Not implemented.')
 
-# DONE: Ben: Implement in Python directly
-def expected_counts(p0, T, N):
+# DONE: Ben
+def expected_counts(p0, T, n):
     r"""Compute expected transition counts for Markov chain with n steps. 
     
     Expected counts are computed according to
@@ -488,7 +488,7 @@ def expected_counts(p0, T, N):
         Starting (probability) vector of the chain.
     T : (M, M) ndarray or sparse matrix
         Transition matrix of the chain.
-    N : int
+    n : int
         Number of steps for chain.
     
     Returns
@@ -498,15 +498,15 @@ def expected_counts(p0, T, N):
     
     """
     if issparse(T):
-        return sparse.expectations.expected_counts(p0, T, N)
+        return sparse.expectations.expected_counts(p0, T, n)
     elif isdense(T):
-        return dense.expectations.expected_counts(p0, T, N)
+        return dense.expectations.expected_counts(p0, T, n)
     else:
         _type_not_supported
 
 
 # TODO: Ben: Implement in Python directly
-def expected_counts_stationary(P, N, mu=None):
+def expected_counts_stationary(T, n, mu=None):
     r"""Expected transition counts for Markov chain in equilibrium. 
     
     Since mu is stationary for T we have 
@@ -517,22 +517,26 @@ def expected_counts_stationary(P, N, mu=None):
     
     Parameters
     ----------
-    P : numpy array, shape=(n,n)
-        Transition matrix for the chain.
+    T : (M, M) ndarray or sparse matrix
+        Transition matrix.
     n : int
         Number of steps for chain.
-    mu : numpy array, shape=(n,)
-        Stationary probability vector of the chain, numpy.sum(p)=1.0. 
-        If mu is not specified it will be computed via diagonalization of T.  
+    mu : (M,) ndarray (optional)
+        Stationary distribution for T. If mu is not specified it will be
+        computed via diagonalization of T.
     
     Returns
     -------
-    EC : numpy array, shape=(n,n)
-        Expected value for transition counts after a propagation of n steps. 
+    EC : (M, M) ndarray or sparse matrix
+        Expected value for transition counts after N steps.         
     
     """
-    raise NotImplementedError('Not implemented.')
-
+    if issparse(T):
+        raise NotImplementedError('Not implemented for sparse matrices.')
+    elif isdense(T):
+        return dense.expectations.expected_counts_stationary(T, n, mu=mu)
+    else:
+        _type_not_supported   
 
 
 ################################################################################
