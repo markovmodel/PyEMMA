@@ -3,7 +3,7 @@ Created on 15.10.2013
 
 @author: marscher
 '''
-__all__ = ['log', 'getLogger', 'logargs']
+__all__ = ['log', 'getLogger']
 
 import logging
 import ConfigParser
@@ -22,14 +22,14 @@ filenames = [cfg,
 defaults = {'enabled': 'True',
             'toconsole' : 'True',
             'tofile' : 'False',
-            'file' : 'emma2.log',
+            'file' : os.path.expanduser('~/.emma2.log'),
             'level' : 'DEBUG',
             'format' : '%%(asctime)s %%(name)-12s %%(levelname)-8s %%(message)s'}
 
 class AttribStore(dict):
     def __getattr__(self, name):
         return self[name]
- 
+
     def __setattr__(self, name, value):
         self[name] = value
 
@@ -101,19 +101,3 @@ def getLogger(name = None):
         pos = path.rfind('emma2')
         name = path[pos:]
     return logging.getLogger(name)
-
-def logargs(func):
-    """
-    use like this:
-    >>> @logargs
-    >>> def sample():
-    >>>    return 2
-    >>> sample(1, 3)
-    Arguments to function sample were: (1, 3), {}
-    
-    """
-    def inner(*args, **kwargs): #1
-        log.debug("Arguments to function %s were: %s, %s" 
-                  % (func.__name__, args, kwargs))
-        return func(*args, **kwargs) #2
-    return inner
