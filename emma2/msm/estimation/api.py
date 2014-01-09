@@ -19,7 +19,7 @@ __all__=['count_matrix', 'cmatrix', 'connected_sets', 'largest_connected_set',\
 # Count matrix
 ################################################################################
 
-# DONE: Benjamin Implement in Python directly
+# DONE: Benjamin 
 def count_matrix(dtraj, lag, sliding=True):
     r"""Generate a count matrix from given list(s) of integers.
 
@@ -44,7 +44,7 @@ def count_matrix(dtraj, lag, sliding=True):
     else:
         return sparse.count_matrix.count_matrix(dtraj, lag, sliding=sliding)
 
-# DONE: Benjamin Implement in Python directly
+# DONE: Benjamin 
 def cmatrix(dtraj, lag, sliding=True):
     r"""Generate a count matrix in from given list(s) of integers.
 
@@ -78,7 +78,7 @@ cmatrix_cores=count_matrix_cores
 # Connectivity
 ################################################################################
 
-# DONE: Ben Implement in Python directly
+# DONE: Ben 
 def connected_sets(C, directed=True):
     r"""Compute connected components for a directed graph with weights
     represented by the given count matrix.
@@ -102,7 +102,7 @@ def connected_sets(C, directed=True):
     """
     return sparse.connectivity.connected_sets(C)
 
-# DONE: Ben Implement in Python directly
+# DONE: Ben 
 def largest_connected_set(C, directed=True):
     r"""Compute connected components for a directed graph with weights
     represented by the given count matrix.
@@ -123,7 +123,7 @@ def largest_connected_set(C, directed=True):
     """
     return sparse.connectivity.largest_connected_set(C)
 
-# DONE: Ben Implement in Python directly
+# DONE: Ben 
 def connected_count_matrix(C, directed=True):
     r"""Compute the count matrix of the largest connected set.
 
@@ -155,6 +155,7 @@ connected_cmatrix=connected_count_matrix
 
 __all__.append('connected_cmatrix')
 
+# DONE: Jan
 def is_connected(C, directed=True):
     """Check if C is a countmatrix for a completely connected process.
 
@@ -253,8 +254,7 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
         if mu is None:
             return sparse.transition_matrix.transition_matrix_non_reversible(C)
         else:
-            raise NotImplementedError('nonreversible mle with fixed stationary distribution not implemented.')
-            
+            raise NotImplementedError('nonreversible mle with fixed stationary distribution not implemented.')            
 
 tmatrix = transition_matrix
 __all__.append('tmatrix')
@@ -276,7 +276,7 @@ def tmatrix_cov(C, k=None):
     
     return sparse.transition_matrix.tmatrix_cov(C, k)
         
-# DONE: Jan Implement in Python directly
+# DONE: Jan 
 def log_likelihood(C, T):
     """
         likelihood of C given T
@@ -297,7 +297,7 @@ def error_perturbation(C, sensitivity):
     """
     return sparse.perturbation.error_perturbation(C, sensitivity)
 
-# Done: Martin Map to Stallone (Reversible)
+# DONE: Martin Map to Stallone (Reversible)
 def tmatrix_sampler(C, reversible=False, mu=None, P0=None):
     """
     Parameters
