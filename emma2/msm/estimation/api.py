@@ -3,7 +3,9 @@
 import numpy as np
 import sparse.count_matrix
 import sparse.connectivity
+import sparse.likelihood
 import sparse.transition_matrix
+import dense.util
 
 from scipy.sparse import issparse
 from scipy.sparse.sputils import isdense
@@ -78,6 +80,7 @@ cmatrix_cores=count_matrix_cores
 # Connectivity
 ################################################################################
 
+
 # DONE: Ben Implement in Python directly
 def connected_sets(C, directed=True):
     r"""Compute connected components for a directed graph with weights
@@ -102,6 +105,7 @@ def connected_sets(C, directed=True):
     """
     return sparse.connectivity.connected_sets(C)
 
+
 # DONE: Ben Implement in Python directly
 def largest_connected_set(C, directed=True):
     r"""Compute connected components for a directed graph with weights
@@ -122,6 +126,7 @@ def largest_connected_set(C, directed=True):
 
     """
     return sparse.connectivity.largest_connected_set(C)
+
 
 # DONE: Ben Implement in Python directly
 def connected_count_matrix(C, directed=True):
@@ -155,6 +160,7 @@ connected_cmatrix=connected_count_matrix
 
 __all__.append('connected_cmatrix')
 
+
 def is_connected(C, directed=True):
     """Check if C is a countmatrix for a completely connected process.
 
@@ -174,6 +180,7 @@ def is_connected(C, directed=True):
 
     """
     return sparse.connectivity.is_connected(C)
+
 
 # TODO: Implement in Python directly
 def mapping(set):
@@ -263,7 +270,7 @@ __all__.append('tmatrix')
 # TODO: Is C posterior or prior counts? 
 def tmatrix_cov(C, k=None):
     """
-    Computes a nonreversible covariance matrix of transition matrix elments
+    Computes a nonreversible covariance matrix of transition matrix elements
     
     Parameters
     ----------
@@ -275,14 +282,28 @@ def tmatrix_cov(C, k=None):
     """
     
     return sparse.transition_matrix.tmatrix_cov(C, k)
-        
-# DONE: Jan Implement in Python directly
+
+
+# DONE: FN+Jan Implement in Python directly
 def log_likelihood(C, T):
+    r"""
+        log-likelihood of T, i.e. p(C|T)
     """
-        likelihood of C given T
-    """
-    sparse.likelihood.log_likelihood(C, T)
-    
+    if issparse(C) and issparse(T):
+        return sparse.likelihood.log_likelihood(C, T)
+    else: # use the dense likelihood calculator for all other cases
+        # if a mix of dense/sparse C/T matrices is used, then both
+        # will be converted to ndarrays.
+        if (not isinstance(C, np.ndarray)):
+            C = np.array(C)
+        if (not isinstance(T, np.ndarray)):
+            T = np.array(T)
+        # computation is still efficient, because we only use terms
+        # for nonzero elements of T
+        nz = np.nonzero(T)
+        return np.dot(C[nz], np.log(T[nz]))
+
+
 # TODO: this function can be mixed dense/sparse, so maybe we should change the place for this function.
 def error_perturbation(C, sensitivity):
     """
@@ -296,6 +317,7 @@ def error_perturbation(C, sensitivity):
         quantity
     """
     return sparse.perturbation.error_perturbation(C, sensitivity)
+
 
 # Done: Martin Map to Stallone (Reversible)
 def tmatrix_sampler(C, reversible=False, mu=None, P0=None):
