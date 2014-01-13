@@ -7,6 +7,8 @@ import numpy as np
 import scipy.sparse
 from scipy.sparse import coo_matrix, csr_matrix
 
+import decomposition
+
 def expected_counts(p0, T, N):
     r"""Compute expected transition counts for Markov chain after N steps. 
     
@@ -46,5 +48,39 @@ def expected_counts(p0, T, N):
             p_sum+=p_k
         D_psum=scipy.sparse.diags(p_sum, 0)
         EC=D_psum.dot(T)
+        return EC            
+
+def expected_counts_stationary(T, n, mu=None):
+    r"""Expected transition counts for Markov chain in equilibrium. 
+    
+    Since mu is stationary for T we have 
+    
+    .. math::
+    
+        E(C^{(n)})=n diag(mu)*T.
+    
+    Parameters
+    ----------
+    T : (M, M) sparse matrix
+        Transition matrix.
+    n : int
+        Number of steps for chain.
+    mu : (M,) ndarray (optional)
+        Stationary distribution for T. If mu is not specified it will be
+        computed via diagonalization of T.
+    
+    Returns
+    -------
+    EC : (M, M) sparse matrix
+        Expected value for transition counts after N steps.         
+    
+    """
+    if(n<=0):
+        EC=coo_matrix(T.shape, dtype=float)
         return EC
-            
+    else:
+        if mu is None:
+            mu=decomposition.stationary_distribution(T)
+        D_mu=scipy.sparse.diags(mu, 0)
+        EC=n*D_mu.dot(T)
+        return EC
