@@ -153,7 +153,7 @@ def is_ergodic(T, tol=1e-15):
     """
     if issparse(T) or isdense(T):
         # T has to be sparse, and will be converted in sparse impl
-        sparse.assessment.is_ergodic(T, tol)
+        return sparse.assessment.is_ergodic(T, tol)
     else:
         raise _type_not_supported
 
@@ -176,9 +176,9 @@ def is_reversible(T, mu=None, tol=1e-15):
         False, otherwise
     """
     if issparse(T):
-        sparse.assessment.is_reversible(T, mu, tol)
+        return sparse.assessment.is_reversible(T, mu, tol)
     elif isdense(T):
-        dense.assessment.is_reversible(T, mu, tol)
+        return dense.assessment.is_reversible(T, mu, tol)
     else:
         raise _type_not_supported
 

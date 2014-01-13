@@ -101,7 +101,7 @@ def IDoubleArray2ndarray(d_arr):
         arr = _np.array(d_arr.getArray())
     elif order == 2:
         arr = _np.array(d_arr.getArray())
-        arr.reshape(rows,cols)
+        arr = arr.reshape(rows,cols)
     else:
         raise NotImplemented
     
