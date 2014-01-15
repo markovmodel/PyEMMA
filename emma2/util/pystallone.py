@@ -125,17 +125,14 @@ def stallone_array_to_ndarray(stArray):
     if not isinstance(stArray, (IIntArray, IDoubleArray)):
         raise TypeError('can only convert IDouble- or IIntArrays')
     
-    from numpy import float64, int32, int64, array as nparray, empty
+    from numpy import float64, int32, int64, array
     dtype = None
-    caster = None
 
     from platform import architecture
     arch = architecture()[0]
     if type(stArray) == IDoubleArray:
         dtype = float64
-        caster = JArray_double.cast_
     elif type(stArray) == IIntArray:
-        caster = JArray_int.cast_
         if arch == '64bit':
             dtype = int64 # long int?
         else:
@@ -149,21 +146,15 @@ def stallone_array_to_ndarray(stArray):
     # TODO: support sparse
     #isSparse = d_arr.isSparse()
     
+    # construct an ndarray using a slice onto the JArray
+    # make sure to always use slices, if you want to access ranges (0:n), else
+    # an getter for every single element will be called and you can you will wait for ages.
     if order < 2:
-        #arr =  np.fromiter(d_arr.getArray(), dtype=dtype)
-        # np.frombuffer(d_arr.getArray(), dtype=dtype, count=size )
-        arr = nparray(d_arr.getArray(), dtype=dtype)
+        arr = array(d_arr.getArray()[:], dtype=dtype)
     elif order == 2:
         # FN: This is more efficient!
-        arr = nparray(d_arr.getArray(), dtype=dtype)
-        arr.reshape(rows,cols)
-        #table = d_arr.getTable()
-        #arr = empty((rows, cols))
-        # assign rows
-        #for i in xrange(rows):
-        #    jarray = caster(table[i])
-        #    row = nparray(jarray, dtype=dtype)
-        #    arr[i] = row
+        arr = array(d_arr.getArray()[:], dtype=dtype)
+        arr.reshape(rows, cols)
     else:
         raise NotImplemented
         
