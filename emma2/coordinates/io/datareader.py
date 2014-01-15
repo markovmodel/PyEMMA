@@ -59,7 +59,10 @@ class DataReader:
         # when a change is made:
         if (not np.array_equal(selection, self._selection)):
             self._selection = selection
-            self._java_reader.select(stallone.jarray(selection))
+            if (selection is None):
+                self._java_reader.select()
+            else:
+                self._java_reader.select(stallone.jarray(selection))
 
     def get(self, index, select = None):
         """
@@ -77,6 +80,7 @@ class DataReader:
             (N x 3) arrays, a (n x 3) subset will be returned.
         """
         self.__select(select)
+        #return stallone.stallone_array_to_ndarray(self._java_reader.get(index))
         return stallone.IDoubleArray2ndarray(self._java_reader.get(index))
 
     def load(self, select = None, frames = None):
