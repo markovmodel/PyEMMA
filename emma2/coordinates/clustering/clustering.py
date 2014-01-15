@@ -10,13 +10,11 @@ class Clustering:
     """
     Wrapper to stallone clustering
     """
-    _jclustering = None
-    
     def __init__(self, jclustering):
         self._jclustering = jclustering
     
     def __jclustering(self):
-        return _jclustering
+        return self._jclustering
     
     def nclusters(self):
         """
