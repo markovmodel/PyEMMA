@@ -91,7 +91,7 @@ def IDoubleArray2ndarray(d_arr):
         arr = _np.array(d_arr.getArray()[:], copy=False)
     elif order == 2:
         arr = _np.array(d_arr.getArray()[:], copy=False)
-        arr = arr.reshape(rows,cols)
+        arr = arr.reshape((rows, cols))
     else:
         raise NotImplemented
     
@@ -143,11 +143,10 @@ def stallone_array_to_ndarray(stArray):
         arr = _np.array(d_arr.getArray()[:], dtype=dtype, copy=False)
     elif order == 2:
         arr = _np.array(d_arr.getArray()[:], dtype=dtype, copy=False)
-        arr.reshape(rows, cols)
     else:
         raise NotImplemented
         
-    arr.reshape((rows, cols))
+    arr = arr.reshape((rows, cols))
     return arr
 
 
