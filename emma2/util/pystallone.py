@@ -140,9 +140,9 @@ def stallone_array_to_ndarray(stArray):
     # make sure to always use slices, if you want to access ranges (0:n), else
     # an getter for every single element will be called and you can you will wait for ages.
     if order < 2:
-        arr = array(d_arr.getArray()[:], dtype=dtype, copy=False)
+        arr = _np.array(d_arr.getArray()[:], dtype=dtype, copy=False)
     elif order == 2:
-        arr = array(d_arr.getArray()[:], dtype=dtype, copy=False)
+        arr = _np.array(d_arr.getArray()[:], dtype=dtype, copy=False)
         arr.reshape(rows, cols)
     else:
         raise NotImplemented
