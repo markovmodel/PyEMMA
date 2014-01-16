@@ -8,6 +8,8 @@ Created on 15.10.2013
 from emma2.util.log import getLogger
 from scipy.sparse.base import issparse
 _log = getLogger(__name__)
+# need this for ipython!!!
+_log.setLevel(50)
 import numpy as _np
 
 """is the stallone python binding available?"""
@@ -97,10 +99,10 @@ def IDoubleArray2ndarray(d_arr):
     order = d_arr.order() 
     
     if order < 2:
-        arr = _np.array(d_arr.getArray(), copy=False)
+        arr = _np.array(d_arr.getArray()[:], copy=False)
     elif order == 2:
-        arr = _np.array(d_arr.getArray(), copy=False)
-        arr.reshape(rows,cols)
+        arr = _np.array(d_arr.getArray()[:], copy=False)
+        arr = arr.reshape(rows,cols)
     else:
         raise NotImplemented
     
