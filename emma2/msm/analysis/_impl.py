@@ -3,6 +3,8 @@ Created on 18.10.2013
 
 @author: marscher
 '''
+__all__ = ['TPT']
+
 from emma2.util.log import getLogger
 log = getLogger()
 
@@ -26,11 +28,9 @@ class TPT():
         T : Transition matrix
             ndarray
         A : set of states
-        # TODO: shape?
-            ndarray( dtype = int, shape=?)
+            ndarray( dtype = int)
         B : set of states 
             ndarray( dtype = int)
-        # TODO: is this valid in sphinx?
         Throws
         ------
         RuntimeError, if stallone is not available
@@ -52,7 +52,7 @@ class TPT():
                 str(exception.getStackTrace()).replace(',', '\n')
             raise RuntimeError(msg)
         except Exception as e:
-            log.error("tpt: unknown error occured: %s" %e)
+            log.error("tpt: unknown error occurred: %s" %e)
     
     def getBackwardCommittor(self):
         """
