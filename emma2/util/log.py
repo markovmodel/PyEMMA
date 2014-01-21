@@ -18,7 +18,7 @@ filenames = [cfg,
             # This should always be last
             os.path.dirname(__import__('emma2').__file__) + os.path.sep + cfg,
             ]
-print "files to try: " , filenames
+
 """ default values for logging system """
 defaults = {'enabled': 'True',
             'toconsole' : 'True',
@@ -36,7 +36,7 @@ class AttribStore(dict):
 
 config = ConfigParser.SafeConfigParser(defaults)
 used_filenames = config.read(filenames)
-print used_filenames
+
 if used_filenames == []:
     args = AttribStore(defaults)
     """ we need to strip the string interpolation marks """
@@ -51,7 +51,6 @@ else:
     args.level = config.get(section, 'level')
     args.format = config.get(section, 'format')
 
-print args
 
 if args.enabled:
     if args.tofile and args.file:
