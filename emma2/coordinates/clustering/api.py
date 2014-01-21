@@ -1,3 +1,4 @@
+# coding=utf-8
 '''
 Created on Dec 30, 2013
 
@@ -54,7 +55,7 @@ def regspace(infiles, mindist, metric='Euclidean'):
     Citation
     --------
     J.-H. Prinz, H. Wu, M. Sarich, B. Keller, M. Senne, M. Held, J.D. Chodera,
-    Ch. SchŸtte and F. NoŽ: 
+    Ch. Schï¿½tte and F. Noï¿½: 
     Markov models of molecular kinetics: Generation and Validation. 
     J. Chem. Phys. 134, 174105  (2011).
     """
