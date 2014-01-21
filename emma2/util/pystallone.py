@@ -60,13 +60,17 @@ def ndarray_to_stallone_array(pyarray):
         factory = API.intsNew
         cast_func = 'int'
     else:
-        raise TypeError('unsupported datatype: ', dtype)
-    
+        raise TypeError('unsupported datatype:', dtype)
+
     if len(shape) == 1:
-        # create a JArrayWrapper
+        # create a JArray wrapper
         jarr = JArray(cast_func)(pyarray)
-        v = factory.array(jarr[:])
-        return v
+        if cast_func is 'double':
+            return factory.array(jarr[:])
+        if cast_func is 'int':
+            return factory.arrayFrom(jarr[:])
+        raise TypeError('type not mapped to a stallone factory')
+
     elif len(shape) == 2:
         # TODO: use linear memory layout here, when supported in stallone
         jrows = [ JArray(cast_func)(row[:]) for row in pyarray ]
@@ -79,7 +83,7 @@ def ndarray_to_stallone_array(pyarray):
             A = factory.table(jobjectTable)
         return A
     else:
-        raise ValueError('unsupported shape: ', shape)
+        raise ValueError('unsupported shape:', shape)
 
 
 def IDoubleArray2ndarray(d_arr):
