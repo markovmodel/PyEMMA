@@ -855,7 +855,7 @@ def committor_sensitivity(T, A, B, index, forward=True):
 
 # DONE: Martin (sparse implementation missing)
 def tpt(T, A, B):
-    r""" returns a transition path TPT object
+    r""" returns a transition path TPTFlux object
     Parameters
     ----------
     T : ndarray shape = (n, n)
@@ -868,17 +868,17 @@ def tpt(T, A, B):
     Returns
     -------
     tpt : stallone.ITPTFlux
-        a transition path TPT object
+        a transition path TPTFlux object
     Notes
     -----
-    invokes stallones (java) markov model factory to create a TPT
+    invokes stallones (java) markov model factory to create a TPTFlux
     """
     if not is_transition_matrix(T):
         raise ValueError('given matrix T is not a transition matrix')
     
     from emma2.util.pystallone import stallone_available
     if stallone_available:
-        from _impl import TPT
-        return TPT(T, A, B)
+        from _impl import TPTFlux
+        return TPTFlux(T, A, B)
     else:
         raise NotImplementedError('currently only available in stallone')
