@@ -3,20 +3,15 @@ Created on 18.10.2013
 
 @author: marscher
 '''
-__all__ = ['TPT']
+__all__ = ['TPTFlux']
 
 from emma2.util.log import getLogger
 log = getLogger()
 
-from emma2.util.pystallone import stallone_available,\
+from emma2.util.pystallone import API, JavaError,\
     stallone_array_to_ndarray, ndarray_to_stallone_array
 
-if stallone_available:
-    from emma2.util.pystallone import API, JavaError
-else:
-    log.warn('stallone not available. No functionality of TPT class!')
-
-class TPT():
+class TPTFlux():
     """
         This class wraps around a stallone ITPTFlux class.
     """
@@ -38,21 +33,25 @@ class TPT():
         import numpy as np
         try:
             T = T.astype(np.float64)
-            A = np.asarray(A).astype(np.int32)
-            B = np.asarray(B).astype(np.int32)
+            A = np.asarray(A).astype(np.int64)
+            B = np.asarray(B).astype(np.int64)
             A = ndarray_to_stallone_array(A)
             B = ndarray_to_stallone_array(B)
             T = ndarray_to_stallone_array(T)
-            log.debug('create TPT instance and calculate fluxes.')
+            log.debug('creating TPTFlux instance and calculate fluxes...')
             self.ITPT = API.msmNew.createTPT(T, A, B)
-            log.debug('finished TPT calculation.')
+            log.debug('finished TPTFlux calculation.')
         except JavaError as je:
             exception = je.getJavaException()
             msg = str(exception) + '\n' + \
                 str(exception.getStackTrace()).replace(',', '\n')
             raise RuntimeError(msg)
+        except TypeError as t:
+            log.error("type error occurred: %s" %t)
+            raise t
         except Exception as e:
-            log.error("tpt: unknown error occurred: %s" %e)
+            log.error("unknown error occurred: %s" %e)
+            raise e
     
     def getBackwardCommittor(self):
         """
