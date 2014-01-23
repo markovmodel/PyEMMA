@@ -3,7 +3,7 @@ Created on 15.10.2013
 
 @author: marscher
 '''
-__all__ = ['log', 'getLogger', 'logargs']
+__all__ = ['log', 'getLogger']
 
 import logging
 import ConfigParser
@@ -14,22 +14,23 @@ import os
 cfg = 'emma2.cfg'
 filenames = [cfg,
             '/etc/' + cfg,
-            os.path.expanduser('~') + cfg,
+            os.path.expanduser('~') + os.path.sep + cfg,
             # This should always be last
-            os.path.dirname(__import__('emma2').__file__) + cfg,
+            os.path.dirname(__import__('emma2').__file__) + os.path.sep + cfg,
             ]
+
 """ default values for logging system """
 defaults = {'enabled': 'True',
             'toconsole' : 'True',
             'tofile' : 'False',
-            'file' : 'emma2.log',
+            'file' : os.path.expanduser('~/.emma2.log'),
             'level' : 'DEBUG',
             'format' : '%%(asctime)s %%(name)-12s %%(levelname)-8s %%(message)s'}
 
 class AttribStore(dict):
     def __getattr__(self, name):
         return self[name]
- 
+
     def __setattr__(self, name, value):
         self[name] = value
 
@@ -49,7 +50,8 @@ else:
     args.file = config.get(section, 'file')
     args.level = config.get(section, 'level')
     args.format = config.get(section, 'format')
-    
+
+
 if args.enabled:
     if args.tofile and args.file:
         filename = args.file
@@ -101,19 +103,3 @@ def getLogger(name = None):
         pos = path.rfind('emma2')
         name = path[pos:]
     return logging.getLogger(name)
-
-def logargs(func):
-    """
-    use like this:
-    >>> @logargs
-    >>> def sample():
-    >>>    return 2
-    >>> sample(1, 3)
-    Arguments to function sample were: (1, 3), {}
-    
-    """
-    def inner(*args, **kwargs): #1
-        log.debug("Arguments to function %s were: %s, %s" 
-                  % (func.__name__, args, kwargs))
-        return func(*args, **kwargs) #2
-    return inner

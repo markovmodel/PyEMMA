@@ -64,7 +64,7 @@ import sparse.mean_first_passage_time
 
 __all__=['is_transition_matrix', 'is_rate_matrix',\
              'is_ergodic', 'is_reversible',\
-             'stationary_distribution', 'eigqenvalues',\
+             'stationary_distribution', 'eigenvalues',\
              'eigenvectors', 'rdl_decomposition',\
              'expected_counts', 'timescales',\
              'committor', 'tpt',\
@@ -156,7 +156,7 @@ def is_ergodic(T, tol=1e-15):
     """
     if issparse(T) or isdense(T):
         # T has to be sparse, and will be converted in sparse impl
-        sparse.assessment.is_ergodic(T, tol)
+        return sparse.assessment.is_ergodic(T, tol)
     else:
         raise _type_not_supported
 
@@ -179,9 +179,9 @@ def is_reversible(T, mu=None, tol=1e-15):
         False, otherwise
     """
     if issparse(T):
-        sparse.assessment.is_reversible(T, mu, tol)
+        return sparse.assessment.is_reversible(T, mu, tol)
     elif isdense(T):
-        dense.assessment.is_reversible(T, mu, tol)
+        return dense.assessment.is_reversible(T, mu, tol)
     else:
         raise _type_not_supported
 
@@ -472,8 +472,8 @@ def expectation_sensitivity(T, a):
     """
     raise NotImplementedError('Not implemented.')
 
-# DONE: Ben: Implement in Python directly
-def expected_counts(p0, T, N):
+# DONE: Ben
+def expected_counts(p0, T, n):
     r"""Compute expected transition counts for Markov chain with n steps. 
     
     Expected counts are computed according to
@@ -488,7 +488,7 @@ def expected_counts(p0, T, N):
         Starting (probability) vector of the chain.
     T : (M, M) ndarray or sparse matrix
         Transition matrix of the chain.
-    N : int
+    n : int
         Number of steps for chain.
     
     Returns
@@ -498,15 +498,15 @@ def expected_counts(p0, T, N):
     
     """
     if issparse(T):
-        return sparse.expectations.expected_counts(p0, T, N)
+        return sparse.expectations.expected_counts(p0, T, n)
     elif isdense(T):
-        return dense.expectations.expected_counts(p0, T, N)
+        return dense.expectations.expected_counts(p0, T, n)
     else:
         _type_not_supported
 
 
-# TODO: Ben: Implement in Python directly
-def expected_counts_stationary(P, N, mu=None):
+# DONE: Ben
+def expected_counts_stationary(T, n, mu=None):
     r"""Expected transition counts for Markov chain in equilibrium. 
     
     Since mu is stationary for T we have 
@@ -517,22 +517,26 @@ def expected_counts_stationary(P, N, mu=None):
     
     Parameters
     ----------
-    P : numpy array, shape=(n,n)
-        Transition matrix for the chain.
+    T : (M, M) ndarray or sparse matrix
+        Transition matrix.
     n : int
         Number of steps for chain.
-    mu : numpy array, shape=(n,)
-        Stationary probability vector of the chain, numpy.sum(p)=1.0. 
-        If mu is not specified it will be computed via diagonalization of T.  
+    mu : (M,) ndarray (optional)
+        Stationary distribution for T. If mu is not specified it will be
+        computed via diagonalization of T.
     
     Returns
     -------
-    EC : numpy array, shape=(n,n)
-        Expected value for transition counts after a propagation of n steps. 
+    EC : (M, M) ndarray or sparse matrix
+        Expected value for transition counts after N steps.         
     
     """
-    raise NotImplementedError('Not implemented.')
-
+    if issparse(T):
+        return sparse.expectations.expected_counts_stationary(T, n, mu=mu)
+    elif isdense(T):
+        return dense.expectations.expected_counts_stationary(T, n, mu=mu)
+    else:
+        _type_not_supported   
 
 
 ################################################################################
@@ -851,7 +855,7 @@ def committor_sensitivity(T, A, B, index, forward=True):
 
 # DONE: Martin (sparse implementation missing)
 def tpt(T, A, B):
-    r""" returns a transition path TPT object
+    r""" returns a transition path TPTFlux object
     Parameters
     ----------
     T : ndarray shape = (n, n)
@@ -864,17 +868,17 @@ def tpt(T, A, B):
     Returns
     -------
     tpt : stallone.ITPTFlux
-        a transition path TPT object
+        a transition path TPTFlux object
     Notes
     -----
-    invokes stallones (java) markov model factory to create a TPT
+    invokes stallones (java) markov model factory to create a TPTFlux
     """
     if not is_transition_matrix(T):
         raise ValueError('given matrix T is not a transition matrix')
     
     from emma2.util.pystallone import stallone_available
     if stallone_available:
-        from _impl import TPT
-        return TPT(T, A, B)
+        from _impl import TPTFlux
+        return TPTFlux(T, A, B)
     else:
         raise NotImplementedError('currently only available in stallone')
