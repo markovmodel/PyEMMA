@@ -3,8 +3,11 @@
 import numpy as np
 import sparse.count_matrix
 import sparse.connectivity
+import sparse.likelihood
 import sparse.transition_matrix
+import dense.transition_matrix
 
+from scipy.sparse import csr_matrix
 from scipy.sparse import issparse
 from scipy.sparse.sputils import isdense
 
@@ -19,7 +22,7 @@ __all__=['count_matrix', 'cmatrix', 'connected_sets', 'largest_connected_set',\
 # Count matrix
 ################################################################################
 
-# DONE: Benjamin Implement in Python directly
+# DONE: Benjamin 
 def count_matrix(dtraj, lag, sliding=True):
     r"""Generate a count matrix from given list(s) of integers.
 
@@ -44,7 +47,7 @@ def count_matrix(dtraj, lag, sliding=True):
     else:
         return sparse.count_matrix.count_matrix(dtraj, lag, sliding=sliding)
 
-# DONE: Benjamin Implement in Python directly
+# DONE: Benjamin 
 def cmatrix(dtraj, lag, sliding=True):
     r"""Generate a count matrix in from given list(s) of integers.
 
@@ -102,7 +105,7 @@ def connected_sets(C, directed=True):
     """
     return sparse.connectivity.connected_sets(C)
 
-# DONE: Ben Implement in Python directly
+# DONE: Ben 
 def largest_connected_set(C, directed=True):
     r"""Compute connected components for a directed graph with weights
     represented by the given count matrix.
@@ -123,7 +126,7 @@ def largest_connected_set(C, directed=True):
     """
     return sparse.connectivity.largest_connected_set(C)
 
-# DONE: Ben Implement in Python directly
+# DONE: Ben 
 def connected_count_matrix(C, directed=True):
     r"""Compute the count matrix of the largest connected set.
 
@@ -155,6 +158,7 @@ connected_cmatrix=connected_count_matrix
 
 __all__.append('connected_cmatrix')
 
+# DONE: Jan
 def is_connected(C, directed=True):
     """Check if C is a countmatrix for a completely connected process.
 
@@ -174,6 +178,7 @@ def is_connected(C, directed=True):
 
     """
     return sparse.connectivity.is_connected(C)
+
 
 # TODO: Implement in Python directly
 def mapping(set):
@@ -197,6 +202,7 @@ def mapping(set):
 # Transition matrix
 ################################################################################
 
+# DONE: Frank implemented dense (Nonreversible + reversible with fixed pi)
 # DONE: Jan Implement in Python directly (Nonreversible)
 # TODO: Implement in Python directly (Reversible with stat dist)
 # Done: Martin Map to Stallone (Reversible)
@@ -210,7 +216,7 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
 
     Parameters
     ----------
-    C : scipy.sparse matrix
+    C : numpy ndarray or scipy.sparse matrix
         Count matrix
     reversible : bool (optional)
         If True restrict the ensemble of transition matrices
@@ -224,46 +230,61 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
     Returns
     -------
     P : numpy ndarray, shape=(n, n) or scipy.sparse matrix
-       The MLE transition matrix
+       The MLE transition matrix. P has the same data type (dense or sparse) 
+       as the input matrix C
 
     """
+    if (issparse(C)):
+        sparse_mode = True
+    elif (isdense(C)):
+        sparse_mode = False
+    else:
+        raise NotImplementedError('C has an unknown type.')
+    
     if reversible:
         if mu is None:
             if stallone.stallone_available == False:
                 raise RuntimeError('stallone not available and reversible \
                      only impled there')
             try:
-                C = stallone.ndarray_to_stallone_array(C)
-                # T is of type stallone.IDoubleArray, so wrap it in an ndarray
-                return stallone.stallone_array_to_ndarray(stallone.API.msm.estimateTrev(C))
+                if sparse_mode:
+                    Cs = stallone.ndarray_to_stallone_array(1.0*C.toarray())
+                    # T is of type stallone.IDoubleArray, so wrap it in an ndarray
+                    return csr_matrix(stallone.stallone_array_to_ndarray(stallone.API.msm.estimateTrev(Cs)))
+                else:
+                    Cs = stallone.ndarray_to_stallone_array(1.0*C)
+                    # T is of type stallone.IDoubleArray, so wrap it in an ndarray
+                    return stallone.stallone_array_to_ndarray(stallone.API.msm.estimateTrev(Cs))
             except stallone.JavaError as je:
                 raise RuntimeError(je.getJavaException())
         else:
-            if stallone.stallone_available == False:
-                raise RuntimeError('stallone not available and reversible \
-                     only impled there')
-            try:
-                Cstall = stallone.ndarray_to_stallone_array(C)
-                mustall = stallone.ndarray_to_stallone_array(mu)
-                Tstall = stallone.API.msm.estimateTrev(Cstall,mustall)
-                return stallone.stallone_array_to_ndarray(Tstall)
-            except stallone.JavaError as je:
-                raise RuntimeError(je.getJavaException())
-    else:
+            if sparse_mode:
+                # Sparse, reversible, fixed pi (currently using dense with sparse conversion)
+                return csr_matrix(dense.transition_matrix.transition_matrix_reversible_fixpi(C.toarray(), mu))
+            else:
+                # Dense,  reversible, fixed pi
+                return dense.transition_matrix.transition_matrix_reversible_fixpi(C, mu)
+    else: # nonreversible estimation
         if mu is None:
-            return sparse.transition_matrix.transition_matrix_non_reversible(C)
+            if sparse_mode:
+                # Sparse,  nonreversible
+                return sparse.transition_matrix.transition_matrix_non_reversible(C)
+            else:
+                # Dense,  nonreversible
+                return dense.transition_matrix.transition_matrix_non_reversible(C)
         else:
             raise NotImplementedError('nonreversible mle with fixed stationary distribution not implemented.')
-            
 
 tmatrix = transition_matrix
 __all__.append('tmatrix')
+
+
 
 # TODO: Jan Implement in Python directly
 # TODO: Is C posterior or prior counts? 
 def tmatrix_cov(C, k=None):
     """
-    Computes a nonreversible covariance matrix of transition matrix elments
+    Computes a nonreversible covariance matrix of transition matrix elements
     
     Parameters
     ----------
@@ -275,14 +296,28 @@ def tmatrix_cov(C, k=None):
     """
     
     return sparse.transition_matrix.tmatrix_cov(C, k)
-        
-# DONE: Jan Implement in Python directly
+
+
+# DONE: FN+Jan Implement in Python directly
 def log_likelihood(C, T):
+    r"""
+        log-likelihood of T, i.e. p(C|T)
     """
-        likelihood of C given T
-    """
-    sparse.likelihood.log_likelihood(C, T)
-    
+    if issparse(C) and issparse(T):
+        return sparse.likelihood.log_likelihood(C, T)
+    else: # use the dense likelihood calculator for all other cases
+        # if a mix of dense/sparse C/T matrices is used, then both
+        # will be converted to ndarrays.
+        if (not isinstance(C, np.ndarray)):
+            C = np.array(C)
+        if (not isinstance(T, np.ndarray)):
+            T = np.array(T)
+        # computation is still efficient, because we only use terms
+        # for nonzero elements of T
+        nz = np.nonzero(T)
+        return np.dot(C[nz], np.log(T[nz]))
+
+
 # TODO: this function can be mixed dense/sparse, so maybe we should change the place for this function.
 def error_perturbation(C, sensitivity):
     """
@@ -297,7 +332,7 @@ def error_perturbation(C, sensitivity):
     """
     return sparse.perturbation.error_perturbation(C, sensitivity)
 
-# Done: Martin Map to Stallone (Reversible)
+# DONE: Martin Map to Stallone (Reversible)
 def tmatrix_sampler(C, reversible=False, mu=None, P0=None):
     """
     Parameters
