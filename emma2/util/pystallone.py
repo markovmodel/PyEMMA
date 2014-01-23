@@ -5,30 +5,90 @@ Created on 15.10.2013
 
 @author: marscher
 '''
-from emma2.util.log import getLogger
+# FIXME: logger support imports pystallone twice as its causes this shit:
+"""
+  File "emma2/util/pystallone_test.py", line 8, in <module>
+    import pystallone as st
+  File "/home/marscher/workspace/emma2/emma2/util/pystallone.py", line 9, in <module>
+    from emma2.util.log import getLogger
+  File "/home/marscher/workspace/emma2/emma2/__init__.py", line 8, in <module>
+    import coordinates
+  File "/home/marscher/workspace/emma2/emma2/coordinates/__init__.py", line 1, in <module>
+    import transform
+  File "/home/marscher/workspace/emma2/emma2/coordinates/transform/__init__.py", line 3, in <module>
+    from api import *
+  File "/home/marscher/workspace/emma2/emma2/coordinates/transform/api.py", line 8, in <module>
+    import emma2.util.pystallone as stallone
+  File "/home/marscher/workspace/emma2/emma2/util/pystallone.py", line 16, in <module>
+    raise
+"""
+#from emma2.util.log import getLogger
 from scipy.sparse.base import issparse
-_log = getLogger(__name__)
+#_log = getLogger(__name__)
 # need this for ipython!!!
-_log.setLevel(50)
+#_log.setLevel(50)
+# import sys, os.path as path
+# if path.dirname(path.abspath(__file__)) in sys.path:
+#     raise
+#     pass
+
+from jpype import \
+ startJVM as _startJVM, \
+ getDefaultJVMPath as _getDefaultJVMPath, \
+ JavaException,\
+ JArray, JInt, JDouble, JObject, JPackage
+
 import numpy as _np
 
 """is the stallone python binding available?"""
-stallone_available = False
+# TODO: remove in future
+stallone_available = True
+""" stallone package"""
+stallone = None
+""" main stallone API entry point -> JPackage"""
+API = None
+_initialized = False
 
-try:
-    _log.debug('try to initialize stallone module')
-    from stallone import *
-    # TODO: store and read jvm parameters in emma2.cfg
-    jenv = initVM(initialheap='32m', maxheap='512m')
-    stallone_available = True
-    _log.info('stallone initialized successfully.')
-except ImportError as ie:
-    _log.error('stallone could not be found: %s' % ie)
-except ValueError as ve:
-    _log.error('java vm initialization for stallone went wrong: %s' % ve)
-except BaseException as e:
-    _log.error('unknown exception occurred: %s' %e)
-
+def _initVM():
+    import os
+    
+    def getStalloneJarFilename():
+        filename = 'stallone-1.0-SNAPSHOT-jar-with-dependencies.jar'
+        abspath = os.path.abspath(__file__)
+        abspath = os.path.dirname(abspath) + os.path.sep
+        relpath = "../../lib/stallone/".replace('/', os.path.sep)
+        abspath = abspath + relpath + filename
+        return abspath
+        #return "/home/marscher/workspace/stallone/pystallone/stallone-1.0.0.0-SNAPSHOT-jar-with-dependencies-proguard.jar"
+    stallone_jar = getStalloneJarFilename()
+    if not os.path.exists(stallone_jar):
+        raise RuntimeError('stallone jar not found! Expected it here: %s' 
+                           % stallone_jar)
+    
+    # TODO: store and read options in emma2.cfg
+    classpath = "-Djava.class.path=%s" % stallone_jar
+    memory = "-Xms64m -Xmx512m"
+    # TODO: for reasons unknown classpath has to be last param
+    options = "%s %s" % (memory, classpath)
+    try:
+        # _log.debug('init with options: "%s"' % options)
+        # print 'init with options: "%s"' % options
+        # print "def jvm path: ",_getDefaultJVMPath()
+        _startJVM(_getDefaultJVMPath(), classpath)
+    except RuntimeError as re:
+        #_log.error(re)
+        raise
+    global stallone, API, _initialized
+    try:
+        stallone = JPackage('stallone')
+        API = stallone.api.API
+        #if type(API) != type(jpype._jclass.stallone.api.API$$Static):
+        #    raise
+    except Exception as e:
+        print e
+        raise
+    
+_initVM()
 
 def ndarray_to_stallone_array(pyarray):
     """
@@ -46,6 +106,7 @@ def ndarray_to_stallone_array(pyarray):
         them to the java side!
     """
     if issparse(pyarray):
+        #_log.warning("converting sparse object to dense for stallone.")
         pyarray = pyarray.todense()
     
     shape = pyarray.shape
@@ -55,52 +116,34 @@ def ndarray_to_stallone_array(pyarray):
     
     if dtype == _np.float32 or dtype == _np.float64:
         factory = API.doublesNew
-        cast_func = 'double'
+        cast_func = JDouble
     elif dtype == _np.int32 or dtype == _np.int64:
-        factory = API.intsNew
-        cast_func = 'int'
+        factory = stallone.api.API.intsNew
+        cast_func = JInt
     else:
         raise TypeError('unsupported datatype:', dtype)
 
     if len(shape) == 1:
         # create a JArray wrapper
         jarr = JArray(cast_func)(pyarray)
-        if cast_func is 'double':
-            return factory.array(jarr[:])
-        if cast_func is 'int':
-            return factory.arrayFrom(jarr[:])
+        if cast_func is JDouble:
+            return stallone.api.API.doublesNew.array(jarr[0:len(jarr)])
+        if cast_func is JInt:
+            return factory.arrayFrom(jarr[0:len(jarr)])
         raise TypeError('type not mapped to a stallone factory')
 
     elif len(shape) == 2:
         # TODO: use linear memory layout here, when supported in stallone
-        jrows = [ JArray(cast_func)(row[:]) for row in pyarray ]
-        jobjectTable = JArray('object')(jrows)
+        jarr = JArray(cast_func, 2)(pyarray)
         try:
             # for double arrays
-            A = factory.array(jobjectTable)
+            A = factory.array(jarr)
         except AttributeError:
             # for int 2d arrays
-            A = factory.table(jobjectTable)
+            A = factory.table(jarr)
         return A
     else:
         raise ValueError('unsupported shape:', shape)
-
-
-def IDoubleArray2ndarray(d_arr):
-    rows = d_arr.rows()
-    cols = d_arr.columns()
-    order = d_arr.order() 
-    
-    if order < 2:
-        arr = _np.array(d_arr.getArray()[:], copy=False)
-    elif order == 2:
-        arr = _np.array(d_arr.getArray()[:], copy=False)
-        arr = arr.reshape((rows, cols))
-    else:
-        raise NotImplemented
-    
-    return arr
-
 
 def stallone_array_to_ndarray(stArray):
     """
@@ -117,18 +160,19 @@ def stallone_array_to_ndarray(stArray):
     direct wrapping.
     """
     # if first argument is of type IIntArray or IDoubleArray
-    if not isinstance(stArray, (IIntArray, IDoubleArray)):
+    if not isinstance(stArray, (stallone.api.ints.IIntArray,
+                                stallone.api.doubles.IDoubleArray)):
         raise TypeError('can only convert IDouble- or IIntArrays')
     
     dtype = None
 
     from platform import architecture
     arch = architecture()[0]
-    if type(stArray) == IDoubleArray:
+    if type(stArray) == stallone.api.doubles.IDoubleArray:
         dtype = _np.float64
-    elif type(stArray) == IIntArray:
+    elif type(stArray) == stallone.api.ints.IIntArray:
         if arch == '64bit':
-            dtype = _np.int64 # long int?
+            dtype = _np.int64  # long int?
         else:
             dtype = _np.int32
 
@@ -138,20 +182,26 @@ def stallone_array_to_ndarray(stArray):
     order = d_arr.order() 
     
     # TODO: support sparse
-    #isSparse = d_arr.isSparse()
+    # isSparse = d_arr.isSparse()
     
     # construct an ndarray using a slice onto the JArray
     # make sure to always use slices, if you want to access ranges (0:n), else
     # an getter for every single element will be called and you can you will wait for ages.
     if order < 2:
-        arr = _np.array(d_arr.getArray()[:], dtype=dtype, copy=False)
+        jarr = d_arr.getArray()
+        arr = _np.array(jarr[0:len(jarr)], dtype=dtype, copy=False)
     elif order == 2:
-        arr = _np.array(d_arr.getArray()[:], dtype=dtype, copy=False)
+        jarr = d_arr.getArray()
+        arr = _np.array(jarr[0:len(jarr)], dtype=dtype, copy=False)
     else:
         raise NotImplemented
-        
-    arr = arr.reshape((rows, cols))
-    return arr
+    
+    if cols > 1:
+        shape = (rows, cols)
+    else:
+        shape = (rows,)
+
+    return arr.reshape(shape)
 
 
 def list1d_to_java_array(a):
@@ -160,11 +210,11 @@ def list1d_to_java_array(a):
     """
     if type(a) is list:
         if type(a[0]) is int:
-            return JArray_int(a)
+            return JArray(JInt)(a)
         else:
-            return JArray_double(a)
+            return JArray(JDouble)(a)
     else:
-        raise TypeError("Not a list: "+str(a))
+        raise TypeError("Not a list: " + str(a))
 
 
 def list_to_jarray(a):
@@ -177,7 +227,7 @@ def list_to_jarray(a):
             return list1d_to_java_array(a)
         if type(a[0]) is list:
             n = len(a)
-            ja = JArray_object(n)
+            ja = JArray(JObject)(n)
             for i in range(n):
                 ja[i] = list1d_to_java_array(a[i])
             return ja
