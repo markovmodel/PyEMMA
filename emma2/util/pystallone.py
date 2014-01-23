@@ -40,14 +40,10 @@ from jpype import \
 
 import numpy as _np
 
-"""is the stallone python binding available?"""
-# TODO: remove in future
-stallone_available = True
-""" stallone package"""
+""" stallone java package. Should be used to access all classes in the stallone library."""
 stallone = None
 """ main stallone API entry point -> JPackage"""
 API = None
-_initialized = False
 
 def _initVM():
     import os
@@ -59,26 +55,24 @@ def _initVM():
         relpath = "../../lib/stallone/".replace('/', os.path.sep)
         abspath = abspath + relpath + filename
         return abspath
-        #return "/home/marscher/workspace/stallone/pystallone/stallone-1.0.0.0-SNAPSHOT-jar-with-dependencies-proguard.jar"
     stallone_jar = getStalloneJarFilename()
     if not os.path.exists(stallone_jar):
         raise RuntimeError('stallone jar not found! Expected it here: %s' 
                            % stallone_jar)
     
     # TODO: store and read options in emma2.cfg
-    classpath = "-Djava.class.path=%s" % stallone_jar
-    memory = "-Xms64m -Xmx512m"
-    # TODO: for reasons unknown classpath has to be last param
-    options = "%s %s" % (memory, classpath)
+    classpath = "-Djava.class.path=%s%s" % (stallone_jar, os.sep)
+    initHeap = "-Xms64m"
+    maxHeap = "-Xms512m"
+    
+    args = [initHeap, maxHeap, classpath]
     try:
-        # _log.debug('init with options: "%s"' % options)
-        # print 'init with options: "%s"' % options
-        # print "def jvm path: ",_getDefaultJVMPath()
-        _startJVM(_getDefaultJVMPath(), classpath)
+        # _log.debug('init with options: "%s"' % args)
+        _startJVM(_getDefaultJVMPath(), *args)
     except RuntimeError as re:
         #_log.error(re)
         raise
-    global stallone, API, _initialized
+    global stallone, API
     try:
         stallone = JPackage('stallone')
         API = stallone.api.API
@@ -219,7 +213,7 @@ def list1d_to_java_array(a):
 
 def list_to_jarray(a):
     """
-    Converts 1d or 2d python list of primitve int or double to
+    Converts 1d or 2d python list of primitive int or double to
     java array or nested array
     """
     if type(a) is list:
