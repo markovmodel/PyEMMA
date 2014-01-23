@@ -130,11 +130,12 @@ setup(
                  'scripts/mm_project'],
       include_dirs = [numpy.get_include()],
       ext_modules = [cocovar_module],
-      data_files = [('emma2', ['emma2.cfg'])],
+      data_files = [('emma2', ['emma2.cfg']),
+                    # TODO: make this somehow choose the latest version available.
+                    ('lib',
+                     ['lib/stallone/stallone-1.0-SNAPSHOT-jar-with-dependencies.jar'])],
       # runtime dependencies
       install_requires = ['numpy >=1.8.0',
                          'scipy >=0.11',
-                         'JCC >=2.17'],
-      # build time dependencies
-      requires = ['JCC (>=2.17)'],
+                         'JPype1 >= 0.5.4.5'],
 )
