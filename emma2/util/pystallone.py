@@ -5,32 +5,11 @@ Created on 15.10.2013
 
 @author: marscher
 '''
-# FIXME: logger support imports pystallone twice as its causes this shit:
-"""
-  File "emma2/util/pystallone_test.py", line 8, in <module>
-    import pystallone as st
-  File "/home/marscher/workspace/emma2/emma2/util/pystallone.py", line 9, in <module>
-    from emma2.util.log import getLogger
-  File "/home/marscher/workspace/emma2/emma2/__init__.py", line 8, in <module>
-    import coordinates
-  File "/home/marscher/workspace/emma2/emma2/coordinates/__init__.py", line 1, in <module>
-    import transform
-  File "/home/marscher/workspace/emma2/emma2/coordinates/transform/__init__.py", line 3, in <module>
-    from api import *
-  File "/home/marscher/workspace/emma2/emma2/coordinates/transform/api.py", line 8, in <module>
-    import emma2.util.pystallone as stallone
-  File "/home/marscher/workspace/emma2/emma2/util/pystallone.py", line 16, in <module>
-    raise
-"""
-#from emma2.util.log import getLogger
+from log import getLogger
 from scipy.sparse.base import issparse
-#_log = getLogger(__name__)
+_log = getLogger(__name__)
 # need this for ipython!!!
-#_log.setLevel(50)
-# import sys, os.path as path
-# if path.dirname(path.abspath(__file__)) in sys.path:
-#     raise
-#     pass
+_log.setLevel(50)
 
 from jpype import \
  startJVM as _startJVM, \
@@ -121,9 +100,9 @@ def ndarray_to_stallone_array(pyarray):
         # create a JArray wrapper
         jarr = JArray(cast_func)(pyarray)
         if cast_func is JDouble:
-            return stallone.api.API.doublesNew.array(jarr[0:len(jarr)])
+            return stallone.api.API.doublesNew.array(jarr)
         if cast_func is JInt:
-            return factory.arrayFrom(jarr[0:len(jarr)])
+            return factory.arrayFrom(jarr)
         raise TypeError('type not mapped to a stallone factory')
 
     elif len(shape) == 2:
