@@ -2,7 +2,6 @@
 """
 EMMA2 setup
 """
-
 import sys
 
 if len(sys.argv) < 2:
@@ -16,7 +15,7 @@ if len(sys.argv) < 2:
 we are using setuptools via the bootstrapper ez_setup
 """
 from ez_setup import use_setuptools
-use_setuptools(version="2.0.2")
+use_setuptools(version="2.1")
 from setuptools import __version__ as st_version
 print "Using setuptools version: ", st_version
 from setuptools import setup, Extension, find_packages
@@ -58,9 +57,10 @@ setup(name = 'Emma2',
       # FIXME: this goes to egg meta info directory and is not found during init
       data_files = [('emma2', ['emma2.cfg']),
                     # TODO: make this somehow choose the latest version available.
-                    ('lib',
+                    ('lib/stallone',
                      ['lib/stallone/stallone-1.0-SNAPSHOT-jar-with-dependencies.jar'])],
-      setup_requires = ['numpy >= 1.8'],
+      # TODO: this is a open issue in setuptools: https://bitbucket.org/pypa/setuptools/issue/141/setup_requires-feature-does-not-handle
+      #      setup_requires = ['numpy >= 1.8'],
       # runtime dependencies
       install_requires = ['numpy >= 1.8',
                          'scipy >= 0.11',
