@@ -41,9 +41,10 @@ def _initVM():
         filename = 'stallone-1.0-SNAPSHOT-jar-with-dependencies.jar'
         abspath = os.path.abspath(__file__)
         abspath = os.path.dirname(abspath) + os.path.sep
-        relpath = "../../lib/stallone/".replace('/', os.path.sep)
+        relpath = '../../lib/stallone/'.replace('/', os.path.sep)
         abspath = abspath + relpath + filename
         return abspath
+    
     stallone_jar = getStalloneJarFilename()
     if not os.path.exists(stallone_jar):
         raise RuntimeError('stallone jar not found! Expected it here: %s' 
@@ -89,7 +90,7 @@ def ndarray_to_stallone_array(pyarray):
         them to the java side!
     """
     if issparse(pyarray):
-        #_log.warning("converting sparse object to dense for stallone.")
+        _log.warning("converting sparse object to dense for stallone.")
         pyarray = pyarray.todense()
     
     shape = pyarray.shape
@@ -101,8 +102,10 @@ def ndarray_to_stallone_array(pyarray):
         factory = API.doublesNew
         cast_func = JDouble
     elif dtype == _np.int32 or dtype == _np.int64:
-        factory = stallone.api.API.intsNew
+        factory = API.intsNew
         cast_func = JInt
+        # TODO: remove this, when that is solved: https://github.com/originell/jpype/issues/24
+        pyarray=pyarray.astype(_np.int64)
     else:
         raise TypeError('unsupported datatype:', dtype)
 
@@ -110,7 +113,7 @@ def ndarray_to_stallone_array(pyarray):
         # create a JArray wrapper
         jarr = JArray(cast_func)(pyarray)
         if cast_func is JDouble:
-            return stallone.api.API.doublesNew.array(jarr)
+            return factory.array(jarr)
         if cast_func is JInt:
             return factory.arrayFrom(jarr)
         raise TypeError('type not mapped to a stallone factory')
