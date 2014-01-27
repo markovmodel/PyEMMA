@@ -1,6 +1,16 @@
 '''
-This module is used to initialize a global Java VM instance, to run the python
-wrapper for the stallone library
+This module is used to initialize a global Java VM instance, to run the Python
+wrapper for the Stallone library.
+
+The API variable is the main entry point into the Stallone API factory.
+
+
+Examples
+--------
+Read a trajectory:
+>>> from emma2.util.pystallone import stallone as st
+>>> st.api.API.data.
+
 Created on 15.10.2013
 
 @author: marscher
@@ -9,19 +19,19 @@ from log import getLogger
 from scipy.sparse.base import issparse
 _log = getLogger(__name__)
 # need this for ipython!!!
-_log.setLevel(50)
+#_log.setLevel(50)
 
 from jpype import \
  startJVM as _startJVM, \
  getDefaultJVMPath as _getDefaultJVMPath, \
- JavaException,\
+ JavaException, \
  JArray, JInt, JDouble, JObject, JPackage
 
 import numpy as _np
 
 """ stallone java package. Should be used to access all classes in the stallone library."""
 stallone = None
-""" main stallone API entry point -> JPackage"""
+""" main stallone API entry point """
 API = None
 
 def _initVM():
@@ -46,19 +56,19 @@ def _initVM():
     
     args = [initHeap, maxHeap, classpath]
     try:
-        # _log.debug('init with options: "%s"' % args)
+        _log.debug('init with options: "%s"' % args)
         _startJVM(_getDefaultJVMPath(), *args)
     except RuntimeError as re:
-        #_log.error(re)
+        _log.error(re)
         raise
     global stallone, API
     try:
         stallone = JPackage('stallone')
         API = stallone.api.API
-        #if type(API) != type(jpype._jclass.stallone.api.API$$Static):
-        #    raise
+        if type(API) is type(JPackage):
+            raise RuntimeError('jvm initialization borked. Type of API should be JClass')
     except Exception as e:
-        print e
+        _log.error(e)
         raise
     
 _initVM()
@@ -216,4 +226,3 @@ def jarray(a):
         return list_to_jarray(a.tolist())
     else:
         raise TypeError("Type is not supported for conversion to java array")
-    
