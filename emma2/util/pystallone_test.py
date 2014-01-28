@@ -13,33 +13,58 @@ class TestPyStallone(unittest.TestCase):
         # setup a random numpy array for each test case
         self.n = 100000
         self.a = np.random.random(self.n)
+
+    def convertToNPandCompare(self, stArray, npArray):
+        """
+        converts stArray to a numpy array and compares with npArray
+        """
+        newNPArr = st.stallone_array_to_ndarray(stArray)
         
+        self.assertEqual(npArray.shape, newNPArr.shape, 'differing shape')
+        self.assertTrue(np.allclose(npArray, newNPArr), 'conversion failed')
+        self.assertEqual(npArray.dtype, newNPArr.dtype, 
+                         'differing datatypes: is %s, should be %s' 
+                          %(npArray.dtype, newNPArr.dtype))
+        self.assertEqual(type(npArray), type(newNPArr), 'differing types')
+        
+    def compareNP(self, a, b):
+        self.assertEqual(type(a), type(b), 'differing types: should be %s, but is %s' 
+                         % (type(a), type(b)))
+        self.assertEqual(a.dtype, b.dtype, 'differing datatypes:'\
+                         ' should be %s, but is %s' % (a.dtype, b.dtype))
+        self.assertEqual(a.shape, b.shape, 'differing shape: should be %s, but is %s'
+                         % (a.shape, b.shape))
+        self.assertTrue(np.allclose(a, b), 'conversion failed')
+
+
     def testConversionND_Float32(self):
         a = self.a.astype(np.float32)
         b = st.ndarray_to_stallone_array(a)
+        self.convertToNPandCompare(b, a)
 
     def testConversionND_Float64(self):
         a = self.a.astype(np.float64)
         b = st.ndarray_to_stallone_array(a)
-        
+        self.convertToNPandCompare(b, a)
+
+
     def testConversionND_Int32(self):
         a = self.a.astype(np.int32)
         b = st.ndarray_to_stallone_array(a)
-    
+        self.convertToNPandCompare(b, a)
+        
+
     def testConversionND_Int64(self):
         a = self.a.astype(np.int64)
         b = st.ndarray_to_stallone_array(a)
-        
+        self.convertToNPandCompare(b, a)
+
     def testIDoubleArray2ND_double1d(self):
         jarr = st.JArray(st.JDouble)(self.a)
         a = st.API.doublesNew.array(jarr)
         b = st.stallone_array_to_ndarray(a)
-        
-        self.assertEqual(type(self.a), type(b), 'differing types')
-        self.assertEqual(self.a.dtype, b.dtype, 'differing datatypes')
-        self.assertEqual(self.a.shape, b.shape, 'differing shape')
-        self.assertTrue(np.allclose(self.a, b), 'conversion failed')
-         
+        self.compareNP(self.a, b)
+    
     def testIDoubleArray2ND_double2d(self):
         self.a = self.a.reshape(( 10, self.n/ 10 ))
         # create 2d Jarray
@@ -48,10 +73,8 @@ class TestPyStallone(unittest.TestCase):
         a = st.API.doublesNew.array(jarr)
         # convert back
         b = st.stallone_array_to_ndarray(a)
-        self.assertEqual(type(self.a), type(b), 'differing types')
-        self.assertEqual(self.a.dtype, b.dtype, 'differing datatypes')
-        self.assertEqual(self.a.shape, b.shape, 'differing shape')
-        self.assertTrue(np.allclose(self.a, b), 'conversion failed')
+        
+        self.compareNP(self.a, b)
 
     def testJArr2ND_int1d(self):
         self.a = np.random.randint(1, size=self.n)
@@ -60,12 +83,8 @@ class TestPyStallone(unittest.TestCase):
         a = st.API.intsNew.arrayFrom(jarr)
         b = st.stallone_array_to_ndarray(a)
          
-        self.assertEqual(type(self.a), type(b), 'differing types')
-        self.assertEqual(self.a.dtype, b.dtype, 'differing datatypes:'\
-                         ' should be %s, but is %s' % (self.a.dtype, b.dtype))
-        self.assertEqual(self.a.shape, b.shape, 'differing shape')
-        self.assertTrue(np.allclose(self.a, b), 'conversion failed')
-         
+        self.compareNP(self.a, b)
+    
     def testJArr2ND_int2d(self):
         self.a = np.random.randint(1, size=self.n)
         self.a = self.a.reshape((10, self.n / 10))
@@ -74,10 +93,7 @@ class TestPyStallone(unittest.TestCase):
         print type(jarr)
         a = st.API.intsNew.table(jarr)
         b = st.stallone_array_to_ndarray(a)
-        self.assertEqual(type(self.a), type(b), 'differing types')
-        self.assertEqual(self.a.dtype, b.dtype, 'differing datatypes')
-        self.assertEqual(self.a.shape, b.shape, 'differing shape')
-        self.assertTrue(np.allclose(self.a, b), 'conversion failed')
+        self.compareNP(self.a, b)
 
 if __name__ == "__main__":
     unittest.main()
