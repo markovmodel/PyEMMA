@@ -62,7 +62,7 @@ setup(name = 'Emma2',
       # TODO: this is a open issue in setuptools: https://bitbucket.org/pypa/setuptools/issue/141/setup_requires-feature-does-not-handle
       #      setup_requires = ['numpy >= 1.8'],
       # runtime dependencies
-      install_requires = ['numpy >= 1.8',
+      install_requires = ['numpy >= 1.6.0',
                          'scipy >= 0.11',
                          'JPype1 >= 0.5.4.5'],
 )
