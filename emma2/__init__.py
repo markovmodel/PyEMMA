@@ -2,9 +2,6 @@
     Emma2 package
 """
 
-import pkg_resources
-pkg_resources.require('numpy >= 1.8.0')
-
 import coordinates
 import msm
 import pmm
