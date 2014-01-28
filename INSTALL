@@ -1,3 +1,7 @@
+It is recommended to upgrade to latest setuptools (2.1) with the provided
+script ez_setup.py. Invoke it like that to upgrade:
+ python ez_setup.py [--user]
+
 The requirements are currently the following:
 python >= 2.7
 numpy >= 1.6.0
@@ -14,7 +18,3 @@ directory:
  python setup.py install [--user]
  pip install . [--user]
  easy_install [--user] .
-
-It is recommended to upgrade to latest setuptools (2.1) with the provided
-script ez_setup.py. Invoke it like that to upgrade:
- python ez_setup.py [--user]
