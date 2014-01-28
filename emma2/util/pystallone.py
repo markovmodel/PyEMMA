@@ -66,7 +66,8 @@ def _initVM():
     try:
         stallone = JPackage('stallone')
         API = stallone.api.API
-        if type(API) is type(JPackage):
+        from jpype._jpackage import JPackage as jp
+        if type(API) == type(jp): #TODO: this check does not work
             raise RuntimeError('jvm initialization borked. Type of API should be JClass')
     except Exception as e:
         _log.error(e)
@@ -105,7 +106,8 @@ def ndarray_to_stallone_array(pyarray):
         factory = API.intsNew
         cast_func = JInt
         # TODO: remove this, when that is solved: https://github.com/originell/jpype/issues/24
-        pyarray=pyarray.astype(_np.int64)
+        #pyarray=pyarray.astype(_np.int64)
+        pyarray = pyarray.tolist() # this works always, but is undesired
     else:
         raise TypeError('unsupported datatype:', dtype)
 
