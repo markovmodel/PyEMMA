@@ -243,9 +243,6 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
     
     if reversible:
         if mu is None:
-            if stallone.stallone_available == False:
-                raise RuntimeError('stallone not available and reversible \
-                     only impled there')
             try:
                 if sparse_mode:
                     Cs = stallone.ndarray_to_stallone_array(1.0*C.toarray())
