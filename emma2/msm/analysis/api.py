@@ -20,6 +20,7 @@ Checks
    is_rate_matrix
    is_ergodic
    is_reversible
+   stationary_distribution
 
 TODOS here in Contents
 ----------------------
@@ -90,10 +91,10 @@ def is_transition_matrix(T, tol=1e-15):
     
     Parameters
     ----------
-    T : numpy.ndarray, shape(d, d) or scipy.sparse matrix
-        Matrix to check
+    T : (M, M) ndarray or scipy.sparse matrix
+        Matrix to check.
     tol : float
-        tolerance to check with
+        Floating point tolerance.
     
     Returns
     -------
@@ -116,18 +117,20 @@ __all__.append('is_tmatrix')
 # DONE: Martin, Ben
 def is_rate_matrix(K, tol=1e-15):
     r"""True if K is a rate matrix
+    
     Parameters
     ----------
     K : ndarray or scipy.sparse matrix
         Rate matrix
     tol : float
         tolerance to check with
-
+        
     Returns
     -------
     Truth value: bool
         True, if K is a rate matrix
         False, otherwise
+    
     """
     if issparse(K):
         return sparse.assessment.is_rate_matrix(K, tol)
@@ -135,7 +138,7 @@ def is_rate_matrix(K, tol=1e-15):
         return dense.assessment.is_rate_matrix(K, tol)
     else:
         raise _type_not_supported
-
+    
 
 # DONE: Martin 
 def is_ergodic(T, tol=1e-15):
@@ -177,6 +180,7 @@ def is_reversible(T, mu=None, tol=1e-15):
     Truth value : bool
         True, if T is reversible
         False, otherwise
+        
     """
     if issparse(T):
         sparse.assessment.is_reversible(T, mu, tol)
@@ -222,11 +226,12 @@ __all__.append('statdist')
 def stationary_distribution_sensitivity(T, j):
     r"""compute the sensitivity matrix of the stationary distribution of T
     
-        Parameters
+    Parameters
     ----------
     T : transition matrix
     j : int
         index of stationary distribution
+        
     """
     if issparse(T):
         raise NotImplementedError('Not implemented.')
@@ -284,7 +289,7 @@ def timescales(T, tau=1, k=None):
     tau : lag time
     k : int (optional)
         Compute the first k implied time scales.
-
+        
     Returns
     -------
     ts : ndarray
@@ -469,6 +474,7 @@ def expectation(T, a, mu=None):
 # TODO: Implement in Python directly
 def expectation_sensitivity(T, a):
     r"""computes the sensitivity of the expectation value of a
+    
     """
     raise NotImplementedError('Not implemented.')
 
@@ -513,7 +519,7 @@ def expected_counts_stationary(T, n, mu=None):
     
     .. math::
     
-        E(C^{(N)})=N diag(mu)*T.
+        E(C^{(N)})=N diag(\mu)*T.
     
     Parameters
     ----------
@@ -635,8 +641,7 @@ def evaluate_fingerprint(timescales, amplitudes, times=[1]):
     r"""Compute time-correlation of obs1, or time-cross-correlation with obs2.
     
     The time-correlation at time=k is computed by the matrix-vector expression: 
-    cor(k) = obs1' diag(pi) P^k obs2
-    
+    cor(k) = obs1' diag(pi) P^k obs2    
     
     Parameters
     ----------
@@ -869,9 +874,11 @@ def tpt(T, A, B):
     -------
     tpt : stallone.ITPTFlux
         a transition path TPT object
+        
     Notes
     -----
     invokes stallones (java) markov model factory to create a TPT
+    
     """
     if not is_transition_matrix(T):
         raise ValueError('given matrix T is not a transition matrix')
