@@ -53,7 +53,7 @@ def _initVM():
     # TODO: store and read options in emma2.cfg
     classpath = "-Djava.class.path=%s%s" % (stallone_jar, os.sep)
     initHeap = "-Xms64m"
-    maxHeap = "-Xms512m"
+    maxHeap = "-Xmx512m"
     
     args = [initHeap, maxHeap, classpath]
     try:
