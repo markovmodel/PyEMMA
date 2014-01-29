@@ -14,10 +14,11 @@ import os
 cfg = 'emma2.cfg'
 filenames = [cfg,
             '/etc/' + cfg,
-            os.path.expanduser('~') + cfg,
+            os.path.expanduser('~') + os.path.sep + cfg,
             # This should always be last
-            os.path.dirname(__import__('emma2').__file__) + cfg,
+            os.path.dirname(__import__('emma2').__file__) + os.path.sep + cfg,
             ]
+
 """ default values for logging system """
 defaults = {'enabled': 'True',
             'toconsole' : 'True',
@@ -49,7 +50,8 @@ else:
     args.file = config.get(section, 'file')
     args.level = config.get(section, 'level')
     args.format = config.get(section, 'format')
-    
+
+
 if args.enabled:
     if args.tofile and args.file:
         filename = args.file
