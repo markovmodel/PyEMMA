@@ -8,6 +8,8 @@ Created on 15.10.2013
 from emma2.util.log import getLogger
 from scipy.sparse.base import issparse
 _log = getLogger(__name__)
+# need this for ipython!!!
+_log.setLevel(50)
 import numpy as _np
 
 """is the stallone python binding available?"""
@@ -28,29 +30,28 @@ except BaseException as e:
     _log.error('unknown exception occurred: %s' %e)
 
 
-def ndarray_to_stallone_array(ndarray):
+def ndarray_to_stallone_array(pyarray):
     """
         Parameters
         ----------
-        ndarray : 
+        pyarray : numpy.ndarray or scipy.sparse type one or two dimensional
+        
         Returns
         -------
         IDoubleArray or IIntArray depending on input type
+        
+        Note:
+        -----
+        scipy.sparse types will be currently converted to dense, before passing
+        them to the java side!
     """
-    if not stallone_available:
-        raise RuntimeError('stallone not available')
+    if issparse(pyarray):
+        pyarray = pyarray.todense()
     
-    if issparse(ndarray):
-        ndarray = ndarray.todense()
-    
-    _log.debug('called ndarray_to_stallone_array()')
-    
-    shape = ndarray.shape
-    dtype = ndarray.dtype
+    shape = pyarray.shape
+    dtype = pyarray.dtype
     factory = None
     cast_func = None
-    
-    _log.debug("type of ndarray: %s" % dtype)
     
     if dtype == _np.float32 or dtype == _np.float64:
         factory = API.doublesNew
@@ -59,36 +60,30 @@ def ndarray_to_stallone_array(ndarray):
         factory = API.intsNew
         cast_func = 'int'
     else:
-        raise TypeError('unsupported datatype: ', dtype)
-    
+        raise TypeError('unsupported datatype:', dtype)
+
     if len(shape) == 1:
-        _log.debug('creating java vector.')
-        # create a JArrayWrapper
-        
-        jarr = JArray(cast_func)(ndarray)
-        v = factory.arrayFrom(jarr)
-        _log.debug('finished java vector.')
-        return v
+        # create a JArray wrapper
+        jarr = JArray(cast_func)(pyarray)
+        if cast_func is 'double':
+            return factory.array(jarr[:])
+        if cast_func is 'int':
+            return factory.arrayFrom(jarr[:])
+        raise TypeError('type not mapped to a stallone factory')
+
     elif len(shape) == 2:
-        _log.debug('converting to JArray matrix.')
-        _log.debug('cast func: %s' %cast_func)
-        _log.debug(type(ndarray))
-        _log.debug('before JArray()')
-        jrows = [ JArray(cast_func)(row) for row in ndarray ]
-        _log.debug('after JArray()')
-
+        # TODO: use linear memory layout here, when supported in stallone
+        jrows = [ JArray(cast_func)(row[:]) for row in pyarray ]
         jobjectTable = JArray('object')(jrows)
-        _log.debug(type(jobjectTable))
         try:
-            A = factory.matrix(jobjectTable)
+            # for double arrays
+            A = factory.array(jobjectTable)
         except AttributeError:
+            # for int 2d arrays
             A = factory.table(jobjectTable)
-        
-        _log.debug('finished setting values.')
-
         return A
     else:
-        raise ValueError('unsupported shape: ', shape)
+        raise ValueError('unsupported shape:', shape)
 
 
 def IDoubleArray2ndarray(d_arr):
@@ -97,10 +92,10 @@ def IDoubleArray2ndarray(d_arr):
     order = d_arr.order() 
     
     if order < 2:
-        arr = _np.array(d_arr.getArray(), copy=False)
+        arr = _np.array(d_arr.getArray()[:], copy=False)
     elif order == 2:
-        arr = _np.array(d_arr.getArray(), copy=False)
-        arr.reshape(rows,cols)
+        arr = _np.array(d_arr.getArray()[:], copy=False)
+        arr = arr.reshape((rows, cols))
     else:
         raise NotImplemented
     
@@ -125,21 +120,17 @@ def stallone_array_to_ndarray(stArray):
     if not isinstance(stArray, (IIntArray, IDoubleArray)):
         raise TypeError('can only convert IDouble- or IIntArrays')
     
-    from numpy import float64, int32, int64, array as nparray, empty
     dtype = None
-    caster = None
 
     from platform import architecture
     arch = architecture()[0]
     if type(stArray) == IDoubleArray:
-        dtype = float64
-        caster = JArray_double.cast_
+        dtype = _np.float64
     elif type(stArray) == IIntArray:
-        caster = JArray_int.cast_
         if arch == '64bit':
-            dtype = int64 # long int?
+            dtype = _np.int64 # long int?
         else:
-            dtype = int32
+            dtype = _np.int32
 
     d_arr = stArray
     rows = d_arr.rows()
@@ -149,25 +140,17 @@ def stallone_array_to_ndarray(stArray):
     # TODO: support sparse
     #isSparse = d_arr.isSparse()
     
+    # construct an ndarray using a slice onto the JArray
+    # make sure to always use slices, if you want to access ranges (0:n), else
+    # an getter for every single element will be called and you can you will wait for ages.
     if order < 2:
-        #arr =  np.fromiter(d_arr.getArray(), dtype=dtype)
-        # np.frombuffer(d_arr.getArray(), dtype=dtype, count=size )
-        arr = nparray(d_arr.getArray(), dtype=dtype)
+        arr = _np.array(d_arr.getArray()[:], dtype=dtype, copy=False)
     elif order == 2:
-        # FN: This is more efficient!
-        arr = nparray(d_arr.getArray(), dtype=dtype)
-        arr.reshape(rows,cols)
-        #table = d_arr.getTable()
-        #arr = empty((rows, cols))
-        # assign rows
-        #for i in xrange(rows):
-        #    jarray = caster(table[i])
-        #    row = nparray(jarray, dtype=dtype)
-        #    arr[i] = row
+        arr = _np.array(d_arr.getArray()[:], dtype=dtype, copy=False)
     else:
         raise NotImplemented
         
-    arr.shape = (rows, cols)
+    arr = arr.reshape((rows, cols))
     return arr
 
 

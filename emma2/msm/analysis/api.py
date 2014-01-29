@@ -20,7 +20,6 @@ Checks
    is_rate_matrix
    is_ergodic
    is_reversible
-   stationary_distribution
 
 TODOS here in Contents
 ----------------------
@@ -91,10 +90,10 @@ def is_transition_matrix(T, tol=1e-15):
     
     Parameters
     ----------
-    T : (M, M) ndarray or scipy.sparse matrix
-        Matrix to check.
+    T : numpy.ndarray, shape(d, d) or scipy.sparse matrix
+        Matrix to check
     tol : float
-        Floating point tolerance.
+        tolerance to check with
     
     Returns
     -------
@@ -124,13 +123,12 @@ def is_rate_matrix(K, tol=1e-15):
         Rate matrix
     tol : float
         tolerance to check with
-        
+
     Returns
     -------
     Truth value: bool
         True, if K is a rate matrix
         False, otherwise
-    
     """
     if issparse(K):
         return sparse.assessment.is_rate_matrix(K, tol)
@@ -138,7 +136,7 @@ def is_rate_matrix(K, tol=1e-15):
         return dense.assessment.is_rate_matrix(K, tol)
     else:
         raise _type_not_supported
-    
+
 
 # DONE: Martin 
 def is_ergodic(T, tol=1e-15):
@@ -159,7 +157,7 @@ def is_ergodic(T, tol=1e-15):
     """
     if issparse(T) or isdense(T):
         # T has to be sparse, and will be converted in sparse impl
-        sparse.assessment.is_ergodic(T, tol)
+        return sparse.assessment.is_ergodic(T, tol)
     else:
         raise _type_not_supported
 
@@ -180,12 +178,11 @@ def is_reversible(T, mu=None, tol=1e-15):
     Truth value : bool
         True, if T is reversible
         False, otherwise
-        
     """
     if issparse(T):
-        sparse.assessment.is_reversible(T, mu, tol)
+        return sparse.assessment.is_reversible(T, mu, tol)
     elif isdense(T):
-        dense.assessment.is_reversible(T, mu, tol)
+        return dense.assessment.is_reversible(T, mu, tol)
     else:
         raise _type_not_supported
 
@@ -226,12 +223,11 @@ __all__.append('statdist')
 def stationary_distribution_sensitivity(T, j):
     r"""compute the sensitivity matrix of the stationary distribution of T
     
-    Parameters
+        Parameters
     ----------
     T : transition matrix
     j : int
         index of stationary distribution
-        
     """
     if issparse(T):
         raise NotImplementedError('Not implemented.')
@@ -289,7 +285,7 @@ def timescales(T, tau=1, k=None):
     tau : lag time
     k : int (optional)
         Compute the first k implied time scales.
-        
+
     Returns
     -------
     ts : ndarray
@@ -474,7 +470,6 @@ def expectation(T, a, mu=None):
 # TODO: Implement in Python directly
 def expectation_sensitivity(T, a):
     r"""computes the sensitivity of the expectation value of a
-    
     """
     raise NotImplementedError('Not implemented.')
 
@@ -519,7 +514,7 @@ def expected_counts_stationary(T, n, mu=None):
     
     .. math::
     
-        E(C^{(N)})=N diag(\mu)*T.
+        E(C^{(N)})=N diag(mu)*T.
     
     Parameters
     ----------
@@ -641,7 +636,8 @@ def evaluate_fingerprint(timescales, amplitudes, times=[1]):
     r"""Compute time-correlation of obs1, or time-cross-correlation with obs2.
     
     The time-correlation at time=k is computed by the matrix-vector expression: 
-    cor(k) = obs1' diag(pi) P^k obs2    
+    cor(k) = obs1' diag(pi) P^k obs2
+    
     
     Parameters
     ----------
@@ -860,7 +856,7 @@ def committor_sensitivity(T, A, B, index, forward=True):
 
 # DONE: Martin (sparse implementation missing)
 def tpt(T, A, B):
-    r""" returns a transition path TPT object
+    r""" returns a transition path TPTFlux object
     Parameters
     ----------
     T : ndarray shape = (n, n)
@@ -873,19 +869,17 @@ def tpt(T, A, B):
     Returns
     -------
     tpt : stallone.ITPTFlux
-        a transition path TPT object
-        
+        a transition path TPTFlux object
     Notes
     -----
-    invokes stallones (java) markov model factory to create a TPT
-    
+    invokes stallones (java) markov model factory to create a TPTFlux
     """
     if not is_transition_matrix(T):
         raise ValueError('given matrix T is not a transition matrix')
     
     from emma2.util.pystallone import stallone_available
     if stallone_available:
-        from _impl import TPT
-        return TPT(T, A, B)
+        from _impl import TPTFlux
+        return TPTFlux(T, A, B)
     else:
         raise NotImplementedError('currently only available in stallone')

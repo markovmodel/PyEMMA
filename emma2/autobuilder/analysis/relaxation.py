@@ -15,8 +15,6 @@ import math
 
 class Analysis_Relaxation:
     
-    timescales = None
-    
     """
     Analyses the lagtime-dependence of eigenvalues and relaxation timescales
     

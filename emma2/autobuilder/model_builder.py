@@ -62,8 +62,8 @@ class ModelBuilder:
         # Flags determining what to compute
         self.calculate_stationary = calculate_stationary;
         self.calculate_kinetics = calculate_kinetics;
-        print "calculate stationary = "+str(self.calculate_stationary);
-        print "calculate kinetics = "+str(self.calculate_kinetics);
+        #print "calculate stationary = "+str(self.calculate_stationary);
+        #print "calculate kinetics = "+str(self.calculate_kinetics);
         self.out = out;
 
 
