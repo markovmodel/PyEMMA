@@ -4,17 +4,22 @@ script ez_setup.py. Invoke it like that to upgrade:
 
 The requirements are currently the following:
 python >= 2.7
-numpy >= 1.6.0
-scipy >= 0.13.0
-jpype1 >= 0.5.4.5 
 
 For jpype you need a recent JDK (tested on 1.7) installed!
+
+Python packages:
+ numpy >= 1.6.0
+ scipy >= 0.13.0
+ jpype1 >= 0.5.4.5 
 
 These requirements will be installed automatically, if you use a python package
 manager like pip or easy_install.
 
-For all install methods you can prepend '--user' to install to your local user
+For all install methods you can append '--user' to install to your local user
 directory:
  python setup.py install [--user]
  pip install . [--user]
  easy_install [--user] .
+
+Note that the dot in invocation of pip and easy_install are necessary to point
+to the current dir, where setup.py is located
