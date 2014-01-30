@@ -3,9 +3,7 @@ Created on 20.11.2013
 
 @author: marscher
 '''
-from emma2.util.pystallone import stallone_available
-if stallone_available:
-    from emma2.util.pystallone import API, JavaError
+from emma2.util.pystallone import API, JavaException
 
 from emma2.util.log import getLogger
 log = getLogger(__name__)
@@ -25,7 +23,7 @@ def getDataSequenceLoader(files):
             # create ArrayList of files an pass it
         files = API.str.toList(files)
         return API.dataNew.dataSequenceLoader(files)
-    except JavaError as je:
+    except JavaException as je:
         log.error('java exception occured: %s' % je)
         raise RuntimeError('something went wrong during file reading.')
 
