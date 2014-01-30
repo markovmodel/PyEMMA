@@ -83,8 +83,8 @@ if __name__ not in _sys.modules:
     pass
 else:
     del __name__ # delete module
-    import warnings
-    warnings.warn('stallone already imported...', RuntimeWarning)
+    #import warnings
+    #warnings.warn('stallone already imported...', RuntimeWarning)
     _initVM()
 
 def ndarray_to_stallone_array(pyarray):
