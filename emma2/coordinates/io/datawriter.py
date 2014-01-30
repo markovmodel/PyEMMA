@@ -4,9 +4,6 @@ Created on Jan 5, 2014
 @author: noe
 '''
 
-import numpy as np
-import emma2.util.pystallone as stallone
-
 class DataWriter:
     _jwriter = None
     
@@ -14,6 +11,7 @@ class DataWriter:
         self._jwriter = jwriter
     
     def add(self, x):
+        import emma2.util.pystallone as stallone
         self._jwriter.add(stallone.ndarray_to_stallone_array(x))
 
     def addAll(self, X):
@@ -22,4 +20,7 @@ class DataWriter:
 
     def close(self):
         self._jwriter.close()
+        
+    def __del__(self):
+        self.close()
 
