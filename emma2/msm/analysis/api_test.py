@@ -14,9 +14,6 @@ log = logging.getLogger(__name__)
 class Test(unittest.TestCase):
     
     def setUp(self):
-        from emma2.util.pystallone import stallone_available
-        if not stallone_available:
-            self.skipTest('stallone not installed')
         C = np.ndarray(buffer=np.array(
             [[6000, 3, 0, 0, 0, 0],
              [3, 1000, 3, 0, 0, 0],

@@ -1,140 +1,68 @@
 #!/usr/bin/env python
+"""
+EMMA2 setup
+"""
+import sys
 
-__version__ = 2.0
+if len(sys.argv) < 2:
+    """
+        in case we have no args let distutils setup show a basic error message
+    """
+    from distutils.core import setup
+    setup()
 
-# prefer setuptools in favour of distutils
-try:
-    from setuptools.core import setup, Extension
-except ImportError:
-    from distutils.core import setup, Extension
+"""
+we are using setuptools via the bootstrapper ez_setup
+"""
+from ez_setup import use_setuptools
+use_setuptools(version="2.1")
+from setuptools import __version__ as st_version
+print "Using setuptools version: ", st_version
+from setuptools import setup, Extension, find_packages
 
-from os import environ
-from sys import argv
-import numpy
+if '--help' in sys.argv:
+    sys.exit(0)
+"""
+################################################################################
+    EMMA2 Setup
+################################################################################
+"""
+cocovar_module = Extension('cocovar', sources = ['extensions/cocovar.c'])
 
-def setupPyStallone():
-    try:
-        from jcc import cpp as cpp
-    except ImportError:
-        raise RuntimeError('Apache JCC not available! '\
-                           'Install with easy_install [--user] JCC')
+from distutils.command.build_ext import build_ext
+class np_build(build_ext):
+    """
+    Sets numpy include path for extensions. Its ensured, that numpy exists
+    at runtime. Note that this workaround seems to disable the ability to
+    add additional include dirs via the setup(include_dirs=['...'] option.
+    So add them here!
+    """
+    def initialize_options(self):
+        build_ext.initialize_options(self)
+        from numpy import get_include
+        self.include_dirs = get_include()
 
-    print "==================================================="
-    print "Building the STALLONE wrapper"    
-    print "==================================================="
-
-    stallone_api_jar = 'lib/stallone/stallone-1.0-SNAPSHOT-api.jar'
-    stallone_whole_in_one_jar = \
-        'lib/stallone/stallone-1.0-SNAPSHOT-jar-with-dependencies.jar'
-    args = ['--jar', stallone_api_jar,
-         '--package', 'stallone.api.coordinates',
-         '--package', 'stallone.mc',
-         '--package', 'stallone.algebra',
-         '--package', 'stallone.coordinates',
-         '--package', 'stallone.cluster',
-         '--package', 'java.lang',
-         '--package', 'java.util',
-         '--sequence', 'stallone.api.datasequence.IDataSequence', 'size:()I',
-         'get:(I)Lstallone.api.doubles.IDoubleArray;',
-         '--sequence', 'stallone.api.IDoubleArray', 'size:()I',
-         'get:(I)jdouble;',
-         '--include', stallone_whole_in_one_jar,
-         #'--use_full_names', # does not work...
-         '--python', 'stallone', # python module name
-         '--version', '1.0',
-         '--reserved', 'extern',
-         #'--use-distutils',
-         #'--egg-info',
-         '--output', 'target', # output directory, name 'build' is buggy in
-                               # case of setup.py sdist, which does not include stuff from this dirs
-         '--files', '2']
-
-    # program name first. (this is needed, as source files of jcc are looked up 
-    # relative to this path)
-    args.insert(0, cpp.__file__)
-    
-    if 'sdist' in argv:
-        # call the setup once to generate the wrapper code
-        cpp.jcc(args)
-        
-        # now try to build sdist....
-        args.append('--egg-info')
-        # FIXME: include jars in lib dir as resources for source distribution
-        # .....
-        #args.append('--resources')
-        #args.append('lib/stallone')
-        #args.append(stallone_api_jar)
-        #args.append('--resources')
-        #args.append(stallone_whole_in_one_jar)
-
-        
-        # create source dist
-        args.append('--extra-setup-arg')
-        args.append('sdist')
-    else: # we want to build this now.
-        args.append('--build')
-        args.append('--bdist')
-    
-    cpp.jcc(args)
-
-try:
-    import stallone
-    print "stallone module found."
-    try:
-        environ['REBUILD_STALLONE']
-        rebuild = True
-    except KeyError:
-        rebuild = False
-    
-    if rebuild:
-        print "forcing rebuild of stallone."
-        setupPyStallone()
-    else:
-        print "skipping installation of stallone."
-except ImportError:
-    setupPyStallone()
-
-cocovar_module = Extension('cocovar', sources = ['extensions/cocovar.c'],
-                           extra_compile_args=['-O3'])
-
-setup(
-      name = 'Emma2',
-      version = __version__,
+setup(name = 'Emma2',
+      version = '2.0',
       description = 'EMMA 2',
       url = 'http://compmolbio.biocomputing-berlin.de/index.php',
       author = 'The Emma2 team',
-      # list packages here
-      packages = ['emma2',
-                  'emma2.autobuilder',
-                  'emma2.autobuilder.analysis',
-                  'emma2.autobuilder.report',
-                  'emma2.cluster',
-                  'emma2.coordinates',
-                  'emma2.coordinates.io',
-                  'emma2.coordinates.transform',
-                  'emma2.coordinates.clustering',
-                  'emma2.msm',
-                  'emma2.msm.analysis',
-                  'emma2.msm.analysis.dense',
-                  'emma2.msm.analysis.sparse',
-                  'emma2.msm.estimation',
-                  'emma2.msm.estimation.dense',
-                  'emma2.msm.estimation.sparse',
-                  'emma2.msm.generation',
-                  'emma2.msm.io',
-                  'emma2.pmm',
-                  'emma2.util'],
-      scripts = ['scripts/ImpliedTimescalePlot.py',
-                 'scripts/mm_tica',
+      # packages are found if their folder contains an __init__.py,
+      packages = find_packages(),
+      scripts = ['scripts/mm_tica',
                  'scripts/mm_acf',
                  'scripts/mm_project'],
-      include_dirs = [numpy.get_include()],
+      cmdclass = dict(build_ext = np_build),
       ext_modules = [cocovar_module],
-      data_files = [('emma2', ['emma2.cfg'])],
+      # FIXME: this goes to egg meta info directory and is not found during init
+      data_files = [('emma2', ['emma2.cfg']),
+                    # TODO: make this somehow choose the latest version available.
+                    ('lib/stallone',
+                     ['lib/stallone/stallone-1.0-SNAPSHOT-jar-with-dependencies.jar'])],
+      # TODO: this is a open issue in setuptools: https://bitbucket.org/pypa/setuptools/issue/141/setup_requires-feature-does-not-handle
+      #      setup_requires = ['numpy >= 1.8'],
       # runtime dependencies
-      install_requires = ['numpy >=1.8.0',
-                         'scipy >=0.11',
-                         'JCC >=2.17'],
-      # build time dependencies
-      requires = ['JCC (>=2.17)'],
+      install_requires = ['numpy >= 1.6.0',
+                         'scipy >= 0.11',
+                         'JPype1 >= 0.5.4.5'],
 )
