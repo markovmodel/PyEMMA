@@ -243,9 +243,6 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
     
     if reversible:
         if mu is None:
-            if stallone.stallone_available == False:
-                raise RuntimeError('stallone not available and reversible \
-                     only impled there')
             try:
                 if sparse_mode:
                     Cs = stallone.ndarray_to_stallone_array(1.0*C.toarray())
@@ -255,8 +252,8 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
                     Cs = stallone.ndarray_to_stallone_array(1.0*C)
                     # T is of type stallone.IDoubleArray, so wrap it in an ndarray
                     return stallone.stallone_array_to_ndarray(stallone.API.msm.estimateTrev(Cs))
-            except stallone.JavaError as je:
-                raise RuntimeError(je.getJavaException())
+            except stallone.JavaException as je:
+                raise RuntimeError(je)
         else:
             if sparse_mode:
                 # Sparse, reversible, fixed pi (currently using dense with sparse conversion)
@@ -356,12 +353,8 @@ def tmatrix_sampler(C, reversible=False, mu=None, P0=None):
 
     """
     if reversible:
-        from emma2.util.pystallone import stallone_available
-        if not stallone_available:
-                raise RuntimeError('stallone not available and reversible \
-                     only impled there')
         from emma2.util.pystallone import API as API, ndarray_to_stallone_array,\
-            JavaError
+            JavaException
         try:
             C = ndarray_to_stallone_array(C)
             if mu is not None:
@@ -370,8 +363,8 @@ def tmatrix_sampler(C, reversible=False, mu=None, P0=None):
             else:
                 sampler = API.msmNew.createTransitionMatrixSamplerRev(C)
             return sampler
-        except JavaError as je:
-            raise RuntimeError(je.getJavaException())
+        except JavaException as je:
+            raise RuntimeError(je)
     else:
         raise NotImplementedError('Non-reversible sampler not implemented.')
 
