@@ -8,7 +8,7 @@ __all__ = ['TPTFlux']
 from emma2.util.log import getLogger
 log = getLogger()
 
-from emma2.util.pystallone import API, JavaError,\
+from emma2.util.pystallone import API, JavaException, \
     stallone_array_to_ndarray, ndarray_to_stallone_array
 
 class TPTFlux():
@@ -41,17 +41,17 @@ class TPTFlux():
             log.debug('creating TPTFlux instance and calculate fluxes...')
             self.ITPT = API.msmNew.createTPT(T, A, B)
             log.debug('finished TPTFlux calculation.')
-        except JavaError as je:
-            exception = je.getJavaException()
-            msg = str(exception) + '\n' + \
-                str(exception.getStackTrace()).replace(',', '\n')
-            raise RuntimeError(msg)
+        except JavaException as je:
+            msg = str(je.message()) + '\n' + \
+                str(je.stacktrace().replace(',', '\n'))
+            log.error(msg)
+            raise
         except TypeError as t:
             log.error("type error occurred: %s" %t)
-            raise t
+            raise
         except Exception as e:
             log.error("unknown error occurred: %s" %e)
-            raise e
+            raise
     
     def getBackwardCommittor(self):
         """
