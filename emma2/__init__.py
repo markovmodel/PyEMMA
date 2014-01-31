@@ -1,7 +1,6 @@
 """
     Emma2 package
 """
-
 import coordinates
 import msm
 import pmm
