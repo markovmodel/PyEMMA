@@ -1,4 +1,12 @@
-"""This module contains the api definitions for the estimation module"""
+r"""
+==========================================================
+Emma2 MSM Estimation API (:mod:`emma2.msm.estimation.api`)
+==========================================================
+
+.. currentmodule:: emma2.msm.analysis.api
+
+API functions for Markov state model estimation.
+"""
 
 import numpy as np
 import sparse.count_matrix
@@ -25,7 +33,7 @@ __all__=['count_matrix', 'cmatrix', 'connected_sets', 'largest_connected_set',\
 # DONE: Benjamin 
 def count_matrix(dtraj, lag, sliding=True):
     r"""Generate a count matrix from given list(s) of integers.
-
+    
     Parameters
     ----------
     dtraj : array_like or list of array_like
@@ -35,7 +43,7 @@ def count_matrix(dtraj, lag, sliding=True):
     sliding : bool, optional
         If true the sliding window approach 
         is used for transition counting.
-
+    
     Returns
     -------
     C : scipy.sparse.coo_matrix
@@ -50,7 +58,7 @@ def count_matrix(dtraj, lag, sliding=True):
 # DONE: Benjamin 
 def cmatrix(dtraj, lag, sliding=True):
     r"""Generate a count matrix in from given list(s) of integers.
-
+    
     Parameters
     ----------
     dtraj : array_like or list of array_like
@@ -60,7 +68,7 @@ def cmatrix(dtraj, lag, sliding=True):
     sliding : bool, optional
         If true the sliding window approach 
         is used for transition counting.
-
+    
     Returns
     -------
     C : scipy.sparse.coo_matrix
@@ -71,7 +79,9 @@ def cmatrix(dtraj, lag, sliding=True):
 
 # TODO: Implement in Python directly
 def count_matrix_cores(dtraj, cores, lag, sliding=True):
-    r"""Generate a countmatrix for the milestoning process on the given core sets
+    r"""Generate a countmatrix for the milestoning process on the
+    given core sets.
+    
     """
     raise NotImplementedError('Not implemented.')
 
@@ -85,7 +95,7 @@ cmatrix_cores=count_matrix_cores
 def connected_sets(C, directed=True):
     r"""Compute connected components for a directed graph with weights
     represented by the given count matrix.
-
+    
     Parameters
     ----------
     C : scipy.sparse matrix 
@@ -93,7 +103,7 @@ def connected_sets(C, directed=True):
     directed : bool, optional
        Whether to compute connected components for a directed  or
        undirected graph. Default is True.       
-
+    
     Returns
     -------
     cc : list of arrays of integers
@@ -101,7 +111,7 @@ def connected_sets(C, directed=True):
         corresponding connected component. The list is sorted
         according to the size of the individual components. The
         largest connected set is the first entry in the list, lcc=cc[0].
-
+    
     """
     return sparse.connectivity.connected_sets(C)
 
@@ -109,7 +119,7 @@ def connected_sets(C, directed=True):
 def largest_connected_set(C, directed=True):
     r"""Compute connected components for a directed graph with weights
     represented by the given count matrix.
-
+    
     Parameters
     ----------
     C : scipy.sparse matrix 
@@ -117,19 +127,19 @@ def largest_connected_set(C, directed=True):
     directed : bool, optional
        Whether to compute connected components for a directed  or
        undirected graph. Default is True.       
-
+    
     Returns
     -------
     lcc : array of integers
         The largest connected component of the directed graph.
-
+    
     """
     return sparse.connectivity.largest_connected_set(C)
 
 # DONE: Ben 
 def connected_count_matrix(C, directed=True):
     r"""Compute the count matrix of the largest connected set.
-
+    
     The input count matrix is used as a weight matrix for the
     construction of a directed graph. The largest connected set of the
     constructed graph is computed. Vertices belonging to the largest
@@ -144,13 +154,13 @@ def connected_count_matrix(C, directed=True):
     directed : bool, optional
        Whether to compute connected components for a directed or
        undirected graph. Default is True.       
-
+    
     Returns
     -------
     C_cc : scipy.sparse matrix
         Count matrix of largest completely 
         connected set of vertices (states)
-
+    
     """
     return sparse.connectivity.connected_count_matrix(C)
 
@@ -161,7 +171,7 @@ __all__.append('connected_cmatrix')
 # DONE: Jan
 def is_connected(C, directed=True):
     """Check if C is a countmatrix for a completely connected process.
-
+    
     Parameters
     ----------
     C : scipy.sparse matrix 
@@ -169,13 +179,13 @@ def is_connected(C, directed=True):
     directed : bool, optional
        Whether to compute connected components for a directed or
        undirected graph. Default is True.       
-
+    
     Returns
     -------
     is_connected: bool
         True if C is countmatrix for a completely connected process
         False otherwise.
-
+    
     """
     return sparse.connectivity.is_connected(C)
 
@@ -189,12 +199,11 @@ def mapping(set):
     Parameters
     ----------
     set : array-like of integers 
-
+    
     Returns
     -------
     dict : python dictionary mapping original to internal states 
-    dict : python dictionary mapping internal to original states 
-
+    
     """   
     raise NotImplementedError('Not implemented.')
 
@@ -209,11 +218,11 @@ def mapping(set):
 def transition_matrix(C, reversible=False, mu=None, **kwargs):
     """
     Estimate the transition matrix from the given countmatrix.
-
+    
     The transition matrix is a maximum likelihood estimate (MLE)
     of the probability distribution of transition matrices
     with parameters given by the count matrix.
-
+    
     Parameters
     ----------
     C : numpy ndarray or scipy.sparse matrix
@@ -226,13 +235,13 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
     mu : array_like
         The stationary distribution of the MLE transition matrix.
     **kwargs: Optional algorithm-specific parameters
-
+    
     Returns
     -------
     P : numpy ndarray, shape=(n, n) or scipy.sparse matrix
        The MLE transition matrix. P has the same data type (dense or sparse) 
        as the input matrix C
-
+    
     """
     if (issparse(C)):
         sparse_mode = True
@@ -290,15 +299,14 @@ def tmatrix_cov(C, k=None):
     k : row index (optional). 
         If set, only the covariance matrix for this row is returned.
         
-    """
-    
+    """    
     return sparse.transition_matrix.tmatrix_cov(C, k)
 
 
 # DONE: FN+Jan Implement in Python directly
 def log_likelihood(C, T):
-    r"""
-        log-likelihood of T, i.e. p(C|T)
+    r"""log-likelihood of T, i.e. p(C|T).
+    
     """
     if issparse(C) and issparse(T):
         return sparse.likelihood.log_likelihood(C, T)
@@ -317,21 +325,29 @@ def log_likelihood(C, T):
 
 # TODO: this function can be mixed dense/sparse, so maybe we should change the place for this function.
 def error_perturbation(C, sensitivity):
-    """
-        C: count matrix 
-        sensitivity: sensitivity matrix or tensor of
+    r"""Compute error perturbation.
+    
+    Parameters
+    ----------
+    C : count matrix 
+    sensitivity : sensitivity matrix or tensor of
         size (m x n x n) where m is the dimension of the target
         quantity and (n x n) is the size of the transition matrix.
         The sensitivity matrix should be evaluated at an appropriate
         maximum likelihood or mean of the transition matrix estimated
-        from C.  returns: (m x m) covariance matrix of the target
-        quantity
+        from C.
+
+    Returns
+    -------
+    cov : (m x m) covariance matrix of the target quantity
+    
     """
     return sparse.perturbation.error_perturbation(C, sensitivity)
 
 # DONE: Martin Map to Stallone (Reversible)
 def tmatrix_sampler(C, reversible=False, mu=None, P0=None):
-    """
+    r"""Generate transition matrix sampler object.
+    
     Parameters
     ----------
     C : ndarray, shape=(n, n) or scipy.sparse matrix
@@ -345,12 +361,12 @@ def tmatrix_sampler(C, reversible=False, mu=None, P0=None):
     P0 : ndarray, shape=(n, n) or scipy.sparse matrix
         Starting point of the MC chain of the sampling algorithm.
         Has to obey the required constraints.
-
-    Returns :
-    ---------
+    
+    Returns
+    -------
     sampler : A TransitionMatrixSampler object. In case reversible is True, 
         returns a stallone.ITransitionMatrixSampler instance.
-
+    
     """
     if reversible:
         from emma2.util.pystallone import API as API, ndarray_to_stallone_array,\
