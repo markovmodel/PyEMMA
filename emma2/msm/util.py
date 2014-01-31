@@ -1,4 +1,0 @@
-"""
-MSM related utility functions
-"""
-
