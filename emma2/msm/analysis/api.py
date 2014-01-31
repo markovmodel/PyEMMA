@@ -10,17 +10,6 @@ API functions for Markov state model analysis
 Contents
 ========
 
-Checks
-------
-
-.. autosummary::
-   :toctree: generated/
-
-   is_transition_matrix
-   is_rate_matrix
-   is_ergodic
-   is_reversible
-
 TODOS here in Contents
 ----------------------
 
@@ -362,30 +351,37 @@ def rdl_decomposition(T, k=None, norm='standard'):
     
     Parameters
     ----------
-    T : ndarray or sparse matrix
+    T : (M, M) ndarray or sparse matrix
         Transition matrix    
     k : int (optional)
         Number of eigenvector/eigenvalue pairs
-    norm: {'standard', 'reversible'}
-        standard: (L'R) = Id, L[:,0] is a probability distribution,
-            the stationary distribution mu of T. Right eigenvectors
-            R have a 2-norm of 1.
-        reversible: R and L are related via L=L[:,0]*R.
+    norm: {'standard', 'reversible'}, optional
+        which normalization convention to use
+
+        ============ ===========================================
+        norm       
+        ============ ===========================================
+        'standard'   L'R = Id, is a probability\
+                     distribution, the stationary distribution\
+                     of `T`. Right eigenvectors `R`\
+                     have a 2-norm of 1
+        'reversible' `R` and `L` are related via ``L[:,0]*R``  
+        ============ ===========================================        
     
     Returns
     -------
     w : (M,) ndarray
         The eigenvalues, each repeated according to its multiplicity
     L : (M, M) ndarray
-        The normalized (with respect to R) left eigenvectors, such that the 
-        column L[:,i] is the left eigenvector corresponding to the eigenvalue
-        w[i], dot(L[:,i], T)=w[i]*L[:,i]
+        The normalized (with respect to `R`) left eigenvectors, such that the 
+        column ``L[:,i]`` is the left eigenvector corresponding to the eigenvalue
+        ``w[i]``, ``dot(L[:,i], T)``=``w[i]*L[:,i]``
     R : (M, M) ndarray
         The normalized ("unit length") right eigenvectors, such that the 
-        column R[:,i] is the right eigenvector corresponding to the eigenvalue 
-        w[i], dot(T,R[:,i])=w[i]*R[:,i]
-    
-    """
+        column ``R[:,i]`` is the right eigenvector corresponding to the eigenvalue 
+        ``w[i]``, ``dot(T,R[:,i])``=``w[i]*R[:,i]``    
+
+    """    
     if issparse(T):
         return sparse.decomposition.rdl_decomposition(T, k=k, norm=norm)
     elif isdense(T):
@@ -479,9 +475,9 @@ def expected_counts(p0, T, n):
     
     Expected counts are computed according to
     
-    ..math::
+    .. math::
     
-        E[C^{(n)}]=\sum_{k=0}^{n-1} diag(p^{T} T^{k})*T
+        E[C^{(n)}]=\sum_{k=0}^{n-1} \text{diag}(p^{T} T^{k}) T
     
     Parameters
     ----------
@@ -856,7 +852,8 @@ def committor_sensitivity(T, A, B, index, forward=True):
 
 # DONE: Martin (sparse implementation missing)
 def tpt(T, A, B):
-    r""" returns a transition path TPTFlux object
+    r""" returns a transition path TPTFlux object.
+
     Parameters
     ----------
     T : ndarray shape = (n, n)
@@ -870,9 +867,11 @@ def tpt(T, A, B):
     -------
     tpt : stallone.ITPTFlux
         a transition path TPTFlux object
+
     Notes
     -----
     invokes stallones (java) markov model factory to create a TPTFlux
+
     """
     if not is_transition_matrix(T):
         raise ValueError('given matrix T is not a transition matrix')
