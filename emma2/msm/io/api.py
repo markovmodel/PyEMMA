@@ -2,8 +2,8 @@
 from scipy.sparse import issparse
 from scipy.sparse.sputils import isdense
 
-import trajectory
-import matrix
+import trajectory.trajectory as trajectory
+import matrix.matrix as matrix
 
 __all__=['read_discrete_trajectory', 'write_discrete_trajectory',\
              'load_discrete_trajectory', 'save_discrete_trajectory',\
@@ -144,14 +144,19 @@ def read_matrix(filename, mode='default', dtype=float, comments='#'):
     ----------
     filename : str
         Relative or absolute pathname of the input file.
-    mode : {'default', 'dense', 'sparse'}
-        'default' : Use the filename to determine the matrix format.
-            name.xxx : the file is read as dense matrix
-            name.coo.xxx :  the file is read as sparse matrix
-        'dense' : Reads file as dense matrix 
-        'sparse' : Reads file as sparse matrix in COO-format.
+    mode : {'default', 'dense', 'sparse'}       
+        How to determine the matrix format
+        
+        ========== ====================================================
+         mode
+        ========== ====================================================
+        'default'   Use the filename to determine the format
+        'dense'     Reads file as dense matrix 
+        'sparse'    Reads file as sparse matrix in COO-format
+        ========== ====================================================  
+    
     dtype : data-type, optional
-        Data-type of the resulting array; default: float. 
+        Data-type of the resulting array; default is float. 
     comments : str, optional
         The character used to indicate the start of a comment; default: '#'.
 
@@ -159,13 +164,13 @@ def read_matrix(filename, mode='default', dtype=float, comments='#'):
     -------
     A : (M, N) ndarray or scipy.sparse matrix
         The stored matrix
-
+    
     Notes 
     ----- 
     The dtype and comments options do only apply to
     reading and writing of ascii files.
-
-    """
+            
+    """    
     if mode=='dense':
         return matrix.read_matrix_dense(filename, dtype=dtype, comments=comments)
     elif mode=='sparse':
@@ -195,35 +200,34 @@ def write_matrix(filename, A, mode='default', fmt='%.18e', header='', comments='
         Relative or absolute pathname of the output file.
     A : (M, N) ndarray or sparse matrix
     mode : {'default', 'dense', 'sparse'}
-        'default' : Use the type of A to determine if to store
-            in dense or sparse format.
-        'dense' : Enforces conversion to a dense representation
-            and stores the corresponding ndarray.
-        'sparse' : Converts to sparse matrix in COO-format and
-            and stores the coordinate list as dense array.
+        How to determine the storage format
+        
+        ========== ===============================================
+         mode
+        ========== ===============================================
+        'default'   Use the type of A to determine the format
+        'dense'     Enforce conversion to a dense representation\
+                    and store the corresponding ndarray
+        'sparse'    Convert to sparse matrix in COO-format and\
+                    and store the coordinate list as ndarray
+        ========== ===============================================
+
     fmt : str or sequence of strs, optional        
         A single format (%10.5f), a sequence of formats, or a multi-format
         string, e.g. 'Iteration %d - %10.5f', in which case delimiter is
-        ignored. For complex X, the legal options for fmt are:
-            a single specifier, fmt='%.4e', resulting in numbers formatted
-                like ' (%s+%sj)' % (fmt, fmt)
-            a full string specifying every real and imaginary part, e.g.
-                ' %.4e %+.4j %.4e %+.4j %.4e %+.4j' for 3 columns
-            a list of specifiers, one per column - in this case, the real
-                and imaginary part must have separate specifiers, e.g. 
-                ['%.3e + %.3ej', '(%.15e%+.15ej)'] for 2 columns
+        ignored.
     header : str, optional
         String that will be written at the beginning of the file.
     comments : str, optional
         String that will be prepended to the header strings,
-        to mark them as comments. Default: '#'. 
+        to mark them as comments. Default: '# '. 
     
     Notes
     -----
-    Using the naming scheme name.xxx for dense matrices 
-    and name.coo.xxx for sparse matrices will allow
-    read_matrix to automatically infer the appropriate matrix
-    type from the given filename.                       
+    Using the naming scheme name.xxx for dense matrices and
+    name.coo.xxx for sparse matrices will allow read_matrix to
+    automatically infer the appropriate matrix type from the given
+    filename.
     
     """
     if mode=='dense':   
@@ -245,7 +249,7 @@ def write_matrix(filename, A, mode='default', fmt='%.18e', header='', comments='
 ################################################################################
 
 def save_matrix(filename, A, mode='default'):
-    r"""Write matrix to ascii file 
+    r"""Save matrix as binary file.
     
     (M, N) dense matrices are stored as ndarrays 
     in numpy .npy binary format
@@ -261,12 +265,24 @@ def save_matrix(filename, A, mode='default'):
         Relative or absolute pathname of the output file.
     A : (M, N) ndarray or sparse matrix
     mode : {'default', 'dense', 'sparse'}
-        'default' : Use the type of A to determine if to store
-            in dense or sparse format.
-        'dense' : Enforces conversion to a dense representation
-            and stores the corresponding ndarray.
-        'sparse' : Converts to sparse matrix in COO-format and
-            and stores the coordinate list as dense array.   
+    
+        ========== ===================================================
+         mode
+        ========== ===================================================
+        'default'   Use the type of A to determine the format
+        
+                    ============== ==================================
+                     extension
+                    ============== ==================================
+                     name.xxx      the file is read as dense matrix
+                     name.coo.xxx  the file is read as sparse matrix
+                    ============== ==================================
+                    
+        'dense'     Enforce conversion to a dense representation\
+                    and store the corresponding ndarray
+        'sparse'    Convert to sparse matrix in COO-format\
+                    and store the coordinate list as ndarray
+        ========== ===================================================
     
     Notes
     -----
@@ -307,11 +323,22 @@ def load_matrix(filename, mode='default'):
     filename : str
         Relative or absolute pathname of the input file.
     mode : {'default', 'dense', 'sparse'}
-        'default' : Use the filename to determine the matrix format.
-            name.npy : the file is read as dense matrix
-            name.coo.npy :  the file is read as sparse matrix
-        'dense' : Reads file as dense matrix 
-        'sparse' : Reads file as sparse matrix in COO-format.
+
+        ========== ====================================================
+         mode
+        ========== ====================================================
+        'default'   Use the filename to determine the matrix format
+        
+                    ============== ==================================
+                     extension        
+                    ============== ==================================
+                     name.npy       the file is read as dense matrix
+                     name.coo.npy   the file is read as sparse matrix
+                    ============== ==================================
+        
+        'dense'     Read file as dense matrix 
+        'sparse'    Read file as sparse matrix in COO-format
+        ========== ====================================================
     
     """
     if mode=='dense':
