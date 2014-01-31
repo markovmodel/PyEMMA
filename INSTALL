@@ -1,22 +1,25 @@
-The requirements are currently the following:
-numpy >= 1.7.0
-scipy >= 0.13.0
-jcc >= 2.17
+It is recommended to upgrade to latest setuptools (2.1) with the provided
+script ez_setup.py. Invoke it like that to upgrade:
+ python ez_setup.py [--user]
 
-This requirements will be installed automatically, if you use a python package
+The requirements are currently the following:
+python >= 2.7
+
+For jpype you need a recent JDK (tested on 1.7) installed!
+
+Python packages:
+ numpy >= 1.6.0
+ scipy >= 0.13.0
+ jpype1 >= 0.5.4.5 
+
+These requirements will be installed automatically, if you use a python package
 manager like pip or easy_install.
 
-For all install methods you can prepend '--user' to install to your local user
+For all install methods you can append '--user' to install to your local user
 directory:
-python setup.py install [--user]
-pip install . [--user]
-easy_install [--user] .
+ python setup.py install [--user]
+ pip install . [--user]
+ easy_install [--user] .
 
-For the stallone wrapper you need a JDK to compile the wrapper code. So far, we
-recommend at least JDK 1.6
-
-If you want to update the stallone wrapper module for some reason (updated the
-library jars), please call:
-
-# pwd is emma2 project root
-REBUILD_STALLONE=y easy_install --user .
+Note that the dot in invocation of pip and easy_install are necessary to point
+to the current dir, where setup.py is located
