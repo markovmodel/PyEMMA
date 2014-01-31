@@ -90,7 +90,7 @@ class TestPyStallone(unittest.TestCase):
         self.a = self.a.reshape((10, self.n / 10))
         jarr = st.JArray(st.JInt, 2)(self.a)
         # FIXME: 2d jarray not compatible with table(int[][]) prototype?!
-        print type(jarr)
+        # in current jar this method is not existant... (proguard may have stripped it)
         a = st.API.intsNew.table(jarr)
         b = st.stallone_array_to_ndarray(a)
         self.compareNP(self.a, b)
