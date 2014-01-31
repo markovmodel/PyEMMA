@@ -877,9 +877,5 @@ def tpt(T, A, B):
     if not is_transition_matrix(T):
         raise ValueError('given matrix T is not a transition matrix')
     
-    from emma2.util.pystallone import stallone_available
-    if stallone_available:
-        from _impl import TPTFlux
-        return TPTFlux(T, A, B)
-    else:
-        raise NotImplementedError('currently only available in stallone')
+    from _impl import TPTFlux
+    return TPTFlux(T, A, B)
