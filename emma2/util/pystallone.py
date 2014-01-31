@@ -150,18 +150,6 @@ def ndarray_to_stallone_array(pyarray):
     else:
         raise ValueError('unsupported shape:', shape)
 
-tmparr = _np.ones((10,10))
-
-def mytrans(stallone_array):
-    from platform import architecture
-    arch = architecture()[0]
-    jarr = stallone_array.getArray()
-    res = _np.array(jarr[:])
-    return tmparr
-#    rows = stallone_array.rows()
-#    cols = stallone_array.columns()
-#    res = _np.array(jarr[:])
-#    return res.reshape((rows,cols))#_np.reshape(res, (jarr.rows(),jarr.columns()))
 
 
 def stallone_array_to_ndarray(stArray):
@@ -236,6 +224,22 @@ def list1d_to_java_array(a):
         raise TypeError("Not a list: " + str(a))
 
 
+def list2d_to_java_array(a):
+    """
+    Converts python list of primitive int or double to java array
+    """
+    if type(a) is list:
+        if type(a[0]) is list:
+            if type(a[0][0]) is int:
+                return JArray(JInt,2)(a)
+            else:
+                return JArray(JDouble,2)(a)
+        else:
+            raise TypeError("Not a list: " + str(a[0]))
+    else:
+        raise TypeError("Not a list: " + str(a))
+
+
 def list_to_jarray(a):
     """
     Converts 1d or 2d python list of primitive int or double to
@@ -245,11 +249,7 @@ def list_to_jarray(a):
         if type(a[0]) is int or type(a[0]) is float:
             return list1d_to_java_array(a)
         if type(a[0]) is list:
-            n = len(a)
-            ja = JArray(JObject)(n)
-            for i in range(n):
-                ja[i] = list1d_to_java_array(a[i])
-            return ja
+            return list2d_to_java_array(a)
 
 
 def jarray(a):
