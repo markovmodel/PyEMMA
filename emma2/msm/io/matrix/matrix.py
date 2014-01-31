@@ -4,6 +4,15 @@ import os
 import numpy as np
 import scipy.sparse
 
+__all__=['read_matrix_dense',
+         'read_matrix_sparse',
+         'write_matrix_dense',
+         'write_matrix_sparse',
+         'load_matrix_dense',
+         'load_matrix_sparse',
+         'save_matrix_dense',
+         'save_matrix_sparse']
+
 ################################################################################
 # util
 ################################################################################
