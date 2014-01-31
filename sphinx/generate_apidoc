@@ -1,0 +1,47 @@
+#!/usr/bin/env python
+"""Generate the .rst files for the emma2 api documentation"""
+import os
+import glob
+import subprocess
+import sphinx
+
+from distutils.version import StrictVersion
+
+apidoc_dir='apidoc'
+# excludes=['../testpackage/msm/analysis/dense',
+#               '../testpackage/msm/analysis/sparse',
+#               '../testpackage/msm/estimation/dense',
+#               '../testpackage/msm/estimation/sparse',
+#               '../testpackage/msm/io',
+#           '../testpackage/msm/analysis/api_test.py']
+
+excludes=['../emma2/autobuilder',
+          '../emma2/example_package',
+          '../emma2/cluster',
+          '../emma2/coordinates',
+          '../emma2/pmm',
+          '../emma2/util',
+          '../emma2/coordinates',
+          '../emma2/msm/estimation/dense',
+          '../emma2/msm/estimation/sparse',
+          '../emma2/msm/io/matrix',
+          '../emma2/msm/io/trajectory',
+          '../emma2/msm/analysis/dense',
+          '../emma2/msm/analysis/sparse',
+          '../emma2/msm/analysis/api_test.py']
+
+if __name__=="__main__":
+    if StrictVersion(sphinx.__version__)<StrictVersion('1.2.1'):
+        raise RuntimeError("Sphinx version has to be at least 1.2.1")
+        
+    oldfiles=glob.glob(apidoc_dir+'/*')    
+    for f in oldfiles:
+        os.remove(f)
+    subprocess.call(['sphinx-apidoc', '-E', '-o'+apidoc_dir, \
+                         '../emma2']+excludes)
+    
+
+
+       
+    
+                   
