@@ -30,6 +30,10 @@ from jpype import \
 
 import numpy as _np
 
+from platform import architecture
+arch = architecture()[0]
+
+
 """ stallone java package. Should be used to access all classes in the stallone library."""
 stallone = None
 """ main stallone API entry point """
@@ -54,7 +58,7 @@ def _initVM():
     # TODO: store and read options in emma2.cfg
     classpath = "-Djava.class.path=%s%s" % (stallone_jar, os.sep)
     initHeap = "-Xms64m"
-    maxHeap = "-Xmx512m"
+    maxHeap = "-Xmx2000m"
     
     args = [initHeap, maxHeap, classpath]
     try:
@@ -146,6 +150,20 @@ def ndarray_to_stallone_array(pyarray):
     else:
         raise ValueError('unsupported shape:', shape)
 
+tmparr = _np.ones((10,10))
+
+def mytrans(stallone_array):
+    from platform import architecture
+    arch = architecture()[0]
+    jarr = stallone_array.getArray()
+    res = _np.array(jarr[:])
+    return tmparr
+#    rows = stallone_array.rows()
+#    cols = stallone_array.columns()
+#    res = _np.array(jarr[:])
+#    return res.reshape((rows,cols))#_np.reshape(res, (jarr.rows(),jarr.columns()))
+
+
 def stallone_array_to_ndarray(stArray):
     """
     Returns
@@ -167,8 +185,6 @@ def stallone_array_to_ndarray(stArray):
     
     dtype = None
 
-    from platform import architecture
-    arch = architecture()[0]
     if type(stArray) == stallone.api.doubles.IDoubleArray:
         dtype = _np.float64
     elif type(stArray) == stallone.api.ints.IIntArray:
@@ -194,6 +210,8 @@ def stallone_array_to_ndarray(stArray):
     elif order == 2:
         jarr = d_arr.getArray()
         arr = _np.array(jarr[0:len(jarr)], dtype=dtype, copy=False)
+        #arr = _np.array(jarr[0:len(jarr)], copy=False)
+        #arr = _np.zeros((rows,cols))
     else:
         raise NotImplemented
     

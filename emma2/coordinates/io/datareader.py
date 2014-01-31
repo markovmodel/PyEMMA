@@ -80,6 +80,7 @@ class DataReader:
             (N x 3) arrays, a (n x 3) subset will be returned.
         """
         self.__select(select)
+        #return stallone.mytrans(self._java_reader.get(index))
         return stallone.stallone_array_to_ndarray(self._java_reader.get(index))
 
     def load(self, select = None, frames = None):
