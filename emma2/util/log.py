@@ -16,7 +16,8 @@ filenames = [cfg,
             '/etc/' + cfg,
             os.path.expanduser('~') + os.path.sep + cfg,
             # This should always be last
-            os.path.dirname(__import__('emma2').__file__) + os.path.sep + cfg,
+            # FIXME: this causes problems with circular imports...
+            #os.path.dirname(__import__('emma2').__file__) + os.path.sep + cfg,
             ]
 
 """ default values for logging system """

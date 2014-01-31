@@ -8,6 +8,7 @@ The API variable is the main entry point into the Stallone API factory.
 Examples
 --------
 Read a trajectory:
+TODO: create a good example
 >>> from emma2.util.pystallone import stallone as st
 >>> st.api.API.data.
 
@@ -15,9 +16,8 @@ Created on 15.10.2013
 
 @author: marscher
 '''
-from log import getLogger
-from scipy.sparse.base import issparse
-_log = getLogger(__name__)
+from log import getLogger as _getLogger
+_log = _getLogger(__name__)
 # need this for ipython!!!
 #_log.setLevel(50)
 
@@ -25,7 +25,8 @@ from jpype import \
  startJVM as _startJVM, \
  getDefaultJVMPath as _getDefaultJVMPath, \
  JavaException, \
- JArray, JInt, JDouble, JObject, JPackage
+ JArray, JInt, JDouble, JObject, JPackage, \
+ java, javax
 
 import numpy as _np
 
@@ -58,6 +59,7 @@ def _initVM():
     args = [initHeap, maxHeap, classpath]
     try:
         _log.debug('init with options: "%s"' % args)
+        _log.debug('default vm path: %s' % _getDefaultJVMPath())
         _startJVM(_getDefaultJVMPath(), *args)
     except RuntimeError as re:
         _log.error(re)
@@ -72,8 +74,18 @@ def _initVM():
     except Exception as e:
         _log.error(e)
         raise
-    
-_initVM()
+
+# FIXME: avoid this hack!
+# this is necessary, because pystallone gets imported twice and startJVM will
+# segfault if started twice from same thread!
+import sys as _sys
+if __name__ not in _sys.modules:
+    pass
+else:
+    del __name__ # delete module
+    #import warnings
+    #warnings.warn('stallone already imported...', RuntimeWarning)
+    _initVM()
 
 def ndarray_to_stallone_array(pyarray):
     """
@@ -90,6 +102,7 @@ def ndarray_to_stallone_array(pyarray):
         scipy.sparse types will be currently converted to dense, before passing
         them to the java side!
     """
+    from scipy.sparse.base import issparse
     if issparse(pyarray):
         _log.warning("converting sparse object to dense for stallone.")
         pyarray = pyarray.todense()

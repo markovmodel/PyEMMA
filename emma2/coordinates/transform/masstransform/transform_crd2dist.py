@@ -4,14 +4,13 @@ Created on Nov 16, 2013
 @author: noe
 '''
 
-import os
 import filetransform
 from emma2.util.pystallone import *
 
 class Transform_crd2dist(filetransform.FileTransform):
 
     # Atom set 1
-    _set1 = JArray_int([0])
+    _set1 = JArray(JInt)([0])
     _set2 = None
 
     def __init__(self, set1, set2=None):
