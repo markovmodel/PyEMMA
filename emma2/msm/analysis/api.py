@@ -287,6 +287,23 @@ def timescales(T, tau=1, k=None):
         return dense.decomposition.timescales(T, tau=tau, k=k)
     else:
         raise _type_not_supported
+    
+# TODO: Implement sparse in Python directly
+def timescale_sensitivity(T, k):
+    r"""computes the sensitivity of the specified eigenvalue
+    
+    Parameters
+    ----------
+    k : int
+        Eigenvalue index
+    
+    """
+    if issparse(T):
+        raise NotImplementedError('Not implemented.')
+    elif isdense(T):
+        return dense.sensitivity.timescale_sensitivity(T, k)
+    else:
+        raise _type_not_supported
 
 
 # DONE: Ben

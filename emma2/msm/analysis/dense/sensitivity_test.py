@@ -12,9 +12,7 @@ against numerical differentiation results.
 import unittest
 import numpy as np
 
-import sensitivity
-
-from emma2.msm.analysis.api import eigenvalue_sensitivity, mfpt_sensitivity, committor_sensitivity, eigenvector_sensitivity,\
+from emma2.msm.analysis.api import timescale_sensitivity, eigenvalue_sensitivity, mfpt_sensitivity, committor_sensitivity, eigenvector_sensitivity,\
     stationary_distribution_sensitivity
 
 class TestExpectations(unittest.TestCase):
@@ -24,6 +22,8 @@ class TestExpectations(unittest.TestCase):
         
         self.S0=np.array([[0.2, 0.2], [0.8, 0.8]])
         self.S1=np.array([[0.8, -0.2], [-0.8, 0.2]])
+        
+        self.TS1=np.array([[12.8885223, -3.2221306], [-12.8885223, 3.2221306]])
         
         self.T4 = np.array([[0.9, 0.04, 0.03, 0.03], 
                             [0.02, 0.94, 0.02, 0.02], 
@@ -46,7 +46,8 @@ class TestExpectations(unittest.TestCase):
                                [-3.4978465, 15.8788050, 8.7609111, 10.0461416],
                                [-1.9432481, 13.1056296, 5.5811895, 5.5811898]]
                               )
-        
+
+        self.S2zero = np.zeros((2,2))        
         self.S4zero = np.zeros((4,4))
         
         self.mS01 = np.array(
@@ -114,6 +115,10 @@ class TestExpectations(unittest.TestCase):
                 
         self.assertTrue(np.allclose(eigenvalue_sensitivity(self.T,0), self.S0))      
         self.assertTrue(np.allclose(eigenvalue_sensitivity(self.T,1), self.S1))      
+        
+    def test_timescale_sensitivity(self):
+                    
+        self.assertTrue(np.allclose(timescale_sensitivity(self.T,1), self.TS1))   
         
     def test_forward_committor_sensitivity(self):
             
