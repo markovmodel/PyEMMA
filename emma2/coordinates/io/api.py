@@ -4,6 +4,8 @@ Created on Dec 30, 2013
 @author: noe
 '''
 
+# python imports
+import numpy as np
 # emma imports
 from datareader import DataReader
 from datawriter import DataWriter
@@ -61,7 +63,7 @@ def read_traj(filename, select = None, frames = None):
 
 
 # DONE: Map to stallone (Frank)
-def writer(filename, nframes = None, natoms = None):
+def writer(filename, nframes=None, natoms=None):
     """
     Opens a trajectory writer to a given trajectory file
     
@@ -81,7 +83,8 @@ def writer(filename, nframes = None, natoms = None):
     if (str(filename).lower().endswith('dcd')):
         if (nframes is None) or (natoms is None):
             raise ValueError('To open a dcd writer, please specify nframes and natoms')
-        return DataWriter(sapi.dataNew.writer(filename,nframes,natoms))
+        ndim = natoms * 3
+        return DataWriter(sapi.dataNew.writer(filename,nframes,ndim))
     else:
         return DataWriter(sapi.dataNew.writerASCII(filename))
 
@@ -93,8 +96,19 @@ def write_traj(filename, traj):
     Supports xtc and dcd. For these file types, trajectory frames will be received
     as Nx3 arrays. 
     """
-    writer = DataWriter(sapi.dataNew.writer(filename))
-    reader.addAll(traj)
-    reader.close()
+    # number of frames to write
+    nframes = np.shape(traj)[0]
+    # number of dimensions
+    ndim = np.shape(traj)[1]
+    if (len(np.shape(traj)) > 2):
+        ndim *= np.shape(traj)[2]
+    # open java writer
+    jwriter = sapi.dataNew.writer(filename,nframes,ndim)
+    # wrap into python
+    writer = DataWriter(jwriter)
+    # write trajectory
+    writer.addAll(traj)
+    # close file
+    writer.close()
 
 

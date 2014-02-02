@@ -7,6 +7,7 @@ Created on Dec 30, 2013
 import numpy as np
 import emma2.util.pystallone as stallone
 import general_transform
+import linear_transform
 
 # shortcuts to stallone API
 coorNew = stallone.API.coorNew
@@ -15,6 +16,8 @@ dataNew = stallone.API.dataNew
 data = stallone.API.data
 # shortcuts to python
 CoordinateTransform = general_transform.CoordinateTransform
+PCA = linear_transform.PCA
+TICA = linear_transform.TICA
 
 
 
@@ -122,7 +125,7 @@ def pca(input, ndim = None):
     T = coorNew.pca(datainput)
     if (ndim != None):
         T.setDimension(ndim)
-    return T;
+    return PCA(T);
 
 
 def tica(input, lag = 1, ndim = None):
@@ -142,7 +145,7 @@ def tica(input, lag = 1, ndim = None):
     T = coorNew.tica(datainput, lag)
     if (ndim != None):
         T.setDimension(ndim)
-    return T;
+    return TICA(T);
 
 
 def transform_file(infile, transformation, outfile, output_precision = (10,10)):

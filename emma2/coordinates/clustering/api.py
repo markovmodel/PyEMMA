@@ -33,8 +33,8 @@ def kmeans(infiles, k, maxiter = 100):
     -------
     A clustering object
     """
-    input = data.dataInput(infiles)
-    return Clustering(clusterNew.kmeans(input, k, maxiter))
+    input = dataNew.dataInput(infiles)
+    return Clustering(cluster.kmeans(input, k, maxiter))
 
 
 def regspace(infiles, mindist, metric='Euclidean'):
@@ -55,21 +55,23 @@ def regspace(infiles, mindist, metric='Euclidean'):
     Citation
     --------
     J.-H. Prinz, H. Wu, M. Sarich, B. Keller, M. Senne, M. Held, J.D. Chodera,
-    Ch. Sch�tte and F. No�: 
+    Ch. Schütte and F. Noe: 
     Markov models of molecular kinetics: Generation and Validation. 
     J. Chem. Phys. 134, 174105  (2011).
     """
     datainput = dataNew.dataInput(infiles)
+    mindist = 1.0*mindist
     dim = datainput.dimension()
     # get metric
     if (str(metric).lower().startswith('euclid')):
-        metric = clusterNew.metric(clusterNew.METRIC_EUCLIDEAN, dim)
+        jmetric = clusterNew.metric(clusterNew.METRIC_EUCLIDEAN, dim)
     elif (str(metric).lower().endswith('rmsd')):
-        metric = clusterNew.metric(clusterNew.METRIC_MINRMSD, dim/3)
+        jmetric = clusterNew.metric(clusterNew.METRIC_MINRMSD, dim/3)
     else:
         raise ValueError("Metric "+str(metric)+" not recognized. Use Euclidean or minRMSD")
     # do clustering
-    return Clustering(clusterNew.regspace(datainput, metric, mindist))
+    jregspace = cluster.regspace(datainput, jmetric, mindist)
+    return Clustering(jregspace)
 
 
 def kregspace(infiles, k):
@@ -97,25 +99,33 @@ def assign(infiles, clustering, outfiles=None, return_discretization=True):
     # check input
     if (not isinstance(clustering, Clustering)):
         raise AttributeError("clustering is not an instance of Clustering")
-    if (isinstance(infiles, str)):
+    if (isinstance(infiles, str) and isinstance(outfiles, str)):
         infiles = [infiles]
-    if (isinstance(outfiles, str)):
         outfiles = [outfiles]
+        singlefile = True
+    elif (isinstance(infiles, list) and isinstance(outfiles, list)):
+        singlefile = False
+    else:
+        raise AttributeError("input/output files must be either single filenames of equally sized lists of filenames, but not a mix.")
+    
     # load input
-    datainput = dataNew.dataInput(infiles)
+    datainput = dataNew.dataInput(stallone.list_to_java_list(infiles))
     nseq = datainput.numberOfSequences()
     # assign data
     res = []
     for i in range(0,nseq):
         seq = datainput.getSequence(i)
-        jdtraj = cluster.discretize(seq, clustering.__jclustering())
+        jdtraj = cluster.discretize(seq, clustering._jclustering)
         # write to file if requested
         if (outfiles != None):
-            intseqNew.writeIntSequence(jdtraj, outfiles[i])
+            intseq.writeIntSequence(jdtraj, outfiles[i])
         # store return data if requested
         if (return_discretization):
             dtraj = stallone.stallone_array_to_ndarray(jdtraj)
             res.append(dtraj)
     # return discrete trajectories if requested
     if (return_discretization):
-        return res
+        if singlefile:
+            return res[0]
+        else:
+            return res

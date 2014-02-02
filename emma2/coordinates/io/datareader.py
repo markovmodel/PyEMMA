@@ -60,7 +60,7 @@ class DataReader:
         if (not np.array_equal(selection, self._selection)):
             self._selection = selection
             if (selection is None):
-                self._java_reader.select()
+                self._java_reader.select(None)
             else:
                 self._java_reader.select(stallone.jarray(selection))
 

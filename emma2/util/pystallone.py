@@ -25,7 +25,7 @@ from jpype import \
  startJVM as _startJVM, \
  getDefaultJVMPath as _getDefaultJVMPath, \
  JavaException, \
- JArray, JInt, JDouble, JObject, JPackage, \
+ JArray, JInt, JDouble, JString, JObject, JPackage, \
  java, javax
 
 import numpy as _np
@@ -218,8 +218,24 @@ def list1d_to_java_array(a):
     if type(a) is list:
         if type(a[0]) is int:
             return JArray(JInt)(a)
-        else:
+        elif type(a[0]) is float:
             return JArray(JDouble)(a)
+        elif type(a[0]) is str:
+            return JArray(JString)(a)
+        else:
+            return JArray(JObject)(a)
+    else:
+        raise TypeError("Not a list: " + str(a))
+
+def list_to_java_list(a):
+    """
+    Converts python list of primitive int or double to java array
+    """
+    if type(a) is list:
+        jlist = java.util.ArrayList()
+        for el in a:
+            jlist.add(el)
+        return jlist
     else:
         raise TypeError("Not a list: " + str(a))
 
@@ -232,8 +248,12 @@ def list2d_to_java_array(a):
         if type(a[0]) is list:
             if type(a[0][0]) is int:
                 return JArray(JInt,2)(a)
-            else:
+            elif type(a[0][0]) is float:
                 return JArray(JDouble,2)(a)
+            elif type(a[0][0]) is str:
+                return JArray(JString,2)(a)
+            else:
+                return JArray(JObject,2)(a)
         else:
             raise TypeError("Not a list: " + str(a[0]))
     else:
@@ -246,10 +266,10 @@ def list_to_jarray(a):
     java array or nested array
     """
     if type(a) is list:
-        if type(a[0]) is int or type(a[0]) is float:
-            return list1d_to_java_array(a)
         if type(a[0]) is list:
             return list2d_to_java_array(a)
+        else:
+            return list1d_to_java_array(a)
 
 
 def jarray(a):
