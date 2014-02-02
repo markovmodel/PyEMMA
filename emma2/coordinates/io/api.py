@@ -93,7 +93,14 @@ def write_traj(filename, traj):
     Opens a trajectory writer to a given trajectory file
     
     Supports xtc and dcd. For these file types, trajectory frames will be received
-    as Nx3 arrays. 
+    as (N,3) arrays. 
+    
+    Parameters
+    ----------
+    filename : string
+        file name
+    traj : numpy array with shape (F,N,3) or (F,d)
+        array containing the full trajectory to be written
     """
     # number of frames to write
     nframes = np.shape(traj)[0]
