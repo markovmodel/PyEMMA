@@ -19,31 +19,31 @@ class PCA(CoordinateTransform):
     _ndim = None
     
     def __init__(self, jpca):
-        super().__init__(jpca)
+        CoordinateTransform.__init__(self,jpca)
     
     def mean(self):
         """
         Returns the mean vector estimated from the data
         """
-        return stallone.stallone_array_to_ndarray(self.__jtransform().getMeanVector())
+        return stallone.stallone_array_to_ndarray(self.jtransform().getMeanVector())
 
     def covariance_matrix(self):
         """
         Returns the covariance matrix estimated from the data
         """
-        return stallone.stallone_array_to_ndarray(self.__jtransform().getCovarianceMatrix())
+        return stallone.stallone_array_to_ndarray(self.jtransform().getCovarianceMatrix())
     
     def eigenvalues(self):
         """
         Returns the eigenvalues of the covariance matrix
         """
-        return stallone.stallone_array_to_ndarray(self.__jtransform().getEigenvalues())
+        return stallone.stallone_array_to_ndarray(self.jtransform().getEigenvalues())
     
     def eigenvector(self, i):
         """
         Returns the i'th largest eigenvector of the covariance matrix
         """
-        return stallone.stallone_array_to_ndarray(self.__jtransform().getEigenvector(i))
+        return stallone.stallone_array_to_ndarray(self.jtransform().getEigenvector(i))
     
     def eigenvectors(self):
         """
@@ -51,7 +51,7 @@ class PCA(CoordinateTransform):
         with eigenvectors as column vectors
         """
         if (self._evec is None):
-            self._evec = self.__jtransform().getEigenvectors()
+            self._evec = stallone.stallone_array_to_ndarray(self.jtransform().getEigenvectorMatrix())
         return self._evec
     
     def set_dimension(self, d):
@@ -61,7 +61,7 @@ class PCA(CoordinateTransform):
         has the same dimension as the input data.
         """
         self._ndim = d
-        self._tica.setDimension(d)
+        self.jtransform().setDimension(d)
     
     def transform(self, x):
         """
@@ -69,7 +69,7 @@ class PCA(CoordinateTransform):
         if set_dimension has been used) of the input vector x to the 
         coordinate system defined by the covariance matrix eigenvectors.
         """
-        return util.project(x, self.eigenvectors(), self._ndim)
+        return util.project(x.flatten(), self.eigenvectors(), self._ndim)
     
     def __has_efficient_transform(self):
         """
@@ -84,7 +84,7 @@ class TICA(PCA):
     """
     
     def __init__(self, jtica):
-        super().__init__(jtica)
+        PCA.__init__(self,jtica)
     
     def covariance_matrix_lagged(self):
         """

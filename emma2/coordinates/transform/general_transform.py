@@ -7,7 +7,7 @@ Created on Jan 5, 2014
 import emma2.util.pystallone as stallone
 import util
 
-class CoordinateTransform:
+class CoordinateTransform(object):
     """
     Wrapper class to stallone coordinate transform
     """

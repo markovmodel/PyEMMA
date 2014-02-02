@@ -34,4 +34,4 @@ def project(x, T, ndim = None):
     if (ndim is None):
         return np.dot(x.T, T)
     else:
-        np.dot(x.T, T[:,0:ndim])
+        return np.dot(x.T, T[:,0:ndim])
