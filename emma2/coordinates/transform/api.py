@@ -24,12 +24,42 @@ TICA = linear_transform.TICA
 ###################################################################################################
 # Compute Order parameters from coordinates
 ###################################################################################################
+
 def createtransform_selection(selection):
+    """
+    Creates a transform that will select the given set of atoms
+    
+    Parameters
+    ----------
+    selection : integer list
+        list of selected atoms
+    
+    """
     jsel = stallone.jarray(selection)
     T = CoordinateTransform(coorNew.transform_selection(jsel))
     return T
 
 def createtransform_distances(selection, selection2=None):
+    """
+    Creates a transform that computes intramolecular distances between the selected atoms
+    
+    By default, the distances between all atoms in the given selection will be computed. 
+    When one selection (N integers or N tuples of integers) is given, the N(N+1)/2 distances 
+    dij with i<j will be computed as a vector
+    (containing the flattened lower triangle of the symmetric distance matrix). 
+    When selection2 (M integers or M tuples of integers) is also given, the full NxM distance matrix 
+    will be computed
+    
+    Parameters
+    ----------
+    selection : list of N integers of list of N lists of integers
+        atoms amongst which distances will be computed. When lists of atoms are given, then the
+        minima between the atoms in these lists will be used
+    selection2 : list of N integers of list of N lists of integers
+        second selection of atoms or lists of atoms. The pairwise distances between all members of
+        selection and selection2 will be computed
+
+    """
     jsel1 = stallone.jarray(selection)
     if (selection2 is None):
         T = CoordinateTransform(coorNew.transform_distances(jsel1))
@@ -40,52 +70,49 @@ def createtransform_distances(selection, selection2=None):
 
 
 def createtransform_angles(selection):
+    """
+    Creates a transform that will compute the angles (in degrees) between the given list of triplets
+    
+    Parameters
+    ----------
+    selection : list of lists or tuples with three elements
+        list of triplets used to compute angles
+
+    """
     jsel = stallone.jarray(selection)
     T = CoordinateTransform(coorNew.transform_angles(jsel))
     return T
 
 
 def createtransform_dihedrals(selection):
+    """
+    Creates a transform that will compute the dihedrals (in degrees) between the given list of triplets
+    
+    Parameters
+    ----------
+    selection : list of lists or tuples with three elements
+        list of triplets used to compute angles
+
+    """
     jsel = stallone.jarray(selection)
     T = CoordinateTransform(coorNew.transform_angles(jsel))
     return T
 
 
 def createtransform_minrmsd(X):
+    """
+    Creates a transform that will compute the minimal rmsd to the reference structure X
+    
+    Parameters
+    ----------
+    X : (nx3) numpy array
+        the reference structure used to align every other structure
+
+    """
     sX = stallone.ndarray_to_stallone_array(X)
     T = CoordinateTransform(coorNew.transform_minrmsd(sX))
     return T
 
-
-def distances(input, selection, selection2=None):
-    """
-    Computes the intramolecular distances between the selected atoms
-    
-    By default, the distances between all atoms will be computed. When selection 
-    (N integers or N tuples of integers) is given, the NxN symmetric distance 
-    matrix for that selection will be computed. When selection2 (M integers
-    or M tuples of integers) is also given, the full MxN distance matrix 
-    will be computed
-    
-    input : array(s) or filename(s)
-        When a single filename pointing to a molecular coordinate file or single
-        coordinate set (N x 3) is given, a distance matrix will be returned
-        When a single filename pointing to a molecular trajectory or (F x N x 3)
-        coordinate sequence is given, a list of F distance matrices will be returned
-    """
-    raise NotImplementedError('Not implemented.')
-
-
-def angles(crd, selection):
-    """
-    Computes the angles for the N x 3 selection matrix
-    or the dihedrals of the N x 4 selection matrix
-    
-    Returns
-    -------
-    An array of size N
-    """
-    raise NotImplementedError('Not implemented.')
 
 
 # def custom_evaluate(crd, f):

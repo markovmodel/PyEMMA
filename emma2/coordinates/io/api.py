@@ -10,7 +10,6 @@ import numpy as np
 from datareader import DataReader
 from datawriter import DataWriter
 # stallone imports
-import emma2.util.pystallone as stallone
 from emma2.util.pystallone import API as sapi
 
 ###################################################################################################
