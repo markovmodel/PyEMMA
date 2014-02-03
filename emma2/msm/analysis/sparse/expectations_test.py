@@ -4,6 +4,7 @@ import unittest
 import numpy as np
 import scipy
 import scipy.linalg
+from emma2.util.numeric import diags
 import scipy.sparse
 import scipy.sparse.linalg
 
@@ -91,7 +92,7 @@ class TestExpectedCounts(unittest.TestCase):
 
         EC_n=expectations.expected_counts(p0, T, N)
 
-        D_mu=scipy.sparse.diags(self.mu_sparse, 0)
+        D_mu=diags(self.mu_sparse, 0)
         EC_true=N*D_mu.dot(T)
 
         self.assertTrue(sparse_allclose(EC_true, EC_n))        
@@ -137,7 +138,7 @@ class TestExpectedCountsStationary(unittest.TestCase):
         T=self.T_sparse        
         mu=self.mu_sparse
 
-        D_mu=scipy.sparse.diags(self.mu_sparse, 0)
+        D_mu=diags(self.mu_sparse, 0)
         EC_true=n*D_mu.dot(T)
 
         """Compute mu on the fly"""
