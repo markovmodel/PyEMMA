@@ -1,5 +1,5 @@
 """
-    Emma2 package
+    Emma2 - Emma's Markov Model Algorithms 
 """
 
 import coordinates
