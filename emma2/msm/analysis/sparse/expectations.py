@@ -5,6 +5,7 @@ expectation values for a given transition matrix."""
 import numpy as np
 
 import scipy.sparse
+from emma2.util.numeric import diags
 from scipy.sparse import coo_matrix, csr_matrix
 
 import decomposition
@@ -46,7 +47,7 @@ def expected_counts(p0, T, N):
             p_k=Tt.dot(p_k)
             """Update sum"""
             p_sum+=p_k
-        D_psum=scipy.sparse.diags(p_sum, 0)
+        D_psum=diags(p_sum, 0)
         EC=D_psum.dot(T)
         return EC            
 
@@ -81,6 +82,6 @@ def expected_counts_stationary(T, n, mu=None):
     else:
         if mu is None:
             mu=decomposition.stationary_distribution(T)
-        D_mu=scipy.sparse.diags(mu, 0)
+        D_mu=diags(mu, 0)
         EC=n*D_mu.dot(T)
         return EC
