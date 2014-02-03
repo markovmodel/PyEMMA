@@ -132,3 +132,39 @@ def eigenvalues(ev):
     ax.set_xlabel(r"$n$")
     ax.set_ylabel(r"$\lambda_n$")
     ax.plot(np.arange(len(ev)), ev, ls=' ', marker='o')
+
+def pcca(centers, crisp):
+    r"""Color sets according to their membership.
+
+    Parameters
+    ----------
+    crisp : tuple of (M, ) ndarray
+        crisp[0] contains the state index array and crisp[1]
+        contains the membership number array.
+
+    """
+    states=crisp[0]
+    member=crisp[1]
+
+    fig=plt.figure()
+    ax=fig.add_subplot(111)
+    ax.set_xlim(-180.0, 180.0)
+    ax.set_ylim(-180.0, 180.0)
+    ax.set_xticks(np.linspace(-180.0, 180.0, 11))
+    ax.set_yticks(np.linspace(-180.0, 180.0, 11))
+    ax.set_xlabel(r"$\phi$")
+    ax.set_ylabel(r"$\psi$")
+    k=member.max()
+    my_colors="bgrcyk"
+    if k>len(my_colors):
+        raise ValueError("There are too many different memberships to assign a unique color.")
+    else:
+        dx=18.0
+        dy=18.0
+        patches=[]
+        for i in range (len(states)):
+            x=centers[states[i], 0]
+            y=centers[states[i], 1]
+            col=my_colors[member[i]]            
+            patch=plt.Rectangle((x, y), dx, dy, color=col)
+            ax.add_patch(patch)                     
