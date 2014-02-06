@@ -20,7 +20,7 @@ def cluster_by_isa(eigenvectors, n_clusters):
     c = eigenvectors[:, range(n_clusters)]
     ortho_sys = np.copy(c)
     max_dist = 0.0
-    ind = np.zeros(n_clusters, dtype=np.int8)
+    ind = np.zeros(n_clusters, dtype=np.int32)
 
     # first two representatives with maximum distance
     for (i, row) in enumerate(c):        
@@ -34,12 +34,11 @@ def cluster_by_isa(eigenvectors, n_clusters):
     for k in range(1, n_clusters):
         max_dist = 0.0
         temp = np.copy(ortho_sys[ind[k-1]])
-        
 
         for (i, row) in enumerate(ortho_sys):
             row -= np.dot( np.dot(temp, np.transpose(row)), temp )
             distt = np.linalg.norm(row, 2)
-            if distt > max_dist:
+            if distt > max_dist and i not in ind[0:k]:
                 max_dist = distt
                 ind[k] = i
 
@@ -89,7 +88,7 @@ def opt_soft(eigvectors, rot_matrix, n_clusters):
 
 
     from scipy.optimize import fmin
-    rot_crop_vec_opt = fmin( susanna_func, rot_crop_vec, args=(eigvectors,) )
+    rot_crop_vec_opt = fmin( susanna_func, rot_crop_vec, args=(eigvectors,), disp=False)
     
     rot_crop_matrix = np.reshape(rot_crop_vec_opt, (x, y))
     rot_matrix = fill_matrix(rot_crop_matrix, eigvectors)

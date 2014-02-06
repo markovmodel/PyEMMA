@@ -12,6 +12,7 @@ against numerical differentiation results.
 import unittest
 import numpy as np
 
+#TODO: Change tests also to test API calls!!!!
 from emma2.msm.analysis.api import timescale_sensitivity, eigenvalue_sensitivity, mfpt_sensitivity, committor_sensitivity, eigenvector_sensitivity,\
     stationary_distribution_sensitivity
 

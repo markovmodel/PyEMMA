@@ -12,6 +12,7 @@ import numpy as np
 import sparse.count_matrix
 import sparse.connectivity
 import sparse.likelihood
+import sparse.perturbation
 import sparse.transition_matrix
 import dense.transition_matrix
 
@@ -24,7 +25,7 @@ import emma2.util.pystallone as stallone
 
 __all__=['count_matrix', 'cmatrix', 'connected_sets', 'largest_connected_set',\
              'connected_count_matrix', 'is_connected', 'transition_matrix', 'log_likelihood',\
-             'tmatrix_sampler']
+             'tmatrix_sampler', 'error_perturbation', 'tmatrix_cov']
 
 ################################################################################
 # Count matrix
