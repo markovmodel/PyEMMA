@@ -15,7 +15,6 @@ def transition_matrix_non_reversible(C):
     norm = scipy.sparse.diags(rowsum, 0)
     return norm * C
 
-
 def tmatrix_cov(C, row=None):
     if row is not None:
         matrix = dirichlet_covariance(C[row])
@@ -27,6 +26,7 @@ def tmatrix_cov(C, row=None):
             tensor[i] = dirichlet_covariance(C[i]);
         return tensor
 
+#TODO: Check for integer array type and convert if necessary
 def dirichlet_covariance(c):
     """Returns a matrix of covariances between all elements of the dirichlet distribution parametrized by the vector c
         
@@ -41,14 +41,12 @@ def dirichlet_covariance(c):
     """
     
     cTotal = numpy.sum(c)
-    
-    cNorm = c / cTotal
+    cNorm = (1.0 * c) / cTotal
     
     mOff = numpy.outer(cNorm,cNorm)
     mDiag = numpy.diagflat(cNorm)
     
     norm = 1.0 / (cTotal + 1.0)
-    
     cov = norm * (mDiag - mOff)  
     
     return cov
