@@ -1,12 +1,11 @@
 r"""
-==========================================================
-Emma2 MSM Estimation API (:mod:`emma2.msm.estimation.api`)
-==========================================================
+========================
+Emma2 MSM Estimation API
+========================
 
-.. currentmodule:: emma2.msm.analysis.api
-
-API functions for Markov state model estimation.
 """
+
+__docformat__ = "restructuredtext en"
 
 import numpy as np
 import sparse.count_matrix
