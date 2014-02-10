@@ -2,7 +2,7 @@
     Sparse assessment module of msm analysis package
 """
 
-from scipy.sparse.construct import diags
+from emma2.util.numeric import diags
 from scipy.sparse.csgraph import connected_components
 from scipy.sparse.sputils import isdense
 
