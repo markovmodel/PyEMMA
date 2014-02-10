@@ -3,7 +3,7 @@ Created on 25.11.2013
 
 @author: jan-hendrikprinz
 '''
-from emma2.msm.estimation.api import tmatrix_cov
+from transition_matrix import tmatrix_cov
 
 import numpy
 
