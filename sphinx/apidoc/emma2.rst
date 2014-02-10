@@ -7,7 +7,6 @@ Subpackages
 .. toctree::
 
     emma2.msm
-    emma2.pmm
 
 Module contents
 ---------------
