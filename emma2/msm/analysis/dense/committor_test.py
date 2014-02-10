@@ -6,6 +6,7 @@ Created on 11.12.2013
 import unittest
 import numpy as np
 
+
 from emma2.msm.analysis.api import committor
 
 class Test(unittest.TestCase):
