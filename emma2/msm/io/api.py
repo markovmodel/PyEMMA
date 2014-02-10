@@ -1,4 +1,13 @@
-"""This is the api-definition for the io module"""
+r"""
+
+================
+Emma2 MSM io API
+================
+
+"""
+
+__docformat__ = "restructuredtext en"
+
 from scipy.sparse import issparse
 from scipy.sparse.sputils import isdense
 
