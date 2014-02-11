@@ -187,7 +187,7 @@ __all__.append('statdist')
 def stationary_distribution_sensitivity(T, j):
     r"""compute the sensitivity matrix of the stationary distribution of T
     
-        Parameters
+    Parameters
     ----------
     T : transition matrix
     j : int
@@ -209,9 +209,15 @@ def eigenvalues(T, k=None):
     
     Parameters
     ----------
-    T : transition matrix
+    T : (M, M) ndarray or sparse matrix
+        transition matrix
     k : int (optional)
         Compute the first k eigenvalues of T.
+
+    Returns
+    -------
+    ts : ndarray
+        Implied time scales of transition matrix.
     
     """
     if issparse(T):
@@ -241,7 +247,7 @@ def eigenvalue_sensitivity(T, k):
 
 # DONE: Ben
 def timescales(T, tau=1, k=None):
-    r"""Compute implied time scales of given transition matrix
+    r"""Compute implied time scales of given transition matrix.
     
     Parameters
     ----------
