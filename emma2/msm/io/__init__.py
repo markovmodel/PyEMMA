@@ -13,6 +13,7 @@ Discrete trajectory io
    :toctree: generated/
    
    read_discrete_trajectory - read microstate trajectoryfrom ascii file
+   write_discrete_trajectory - write microstate trajectory to ascii file
 
 """
 from __future__ import division, print_function, absolute_import

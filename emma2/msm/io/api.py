@@ -14,9 +14,14 @@ from scipy.sparse.sputils import isdense
 import trajectory.trajectory as trajectory
 import matrix.matrix as matrix
 
-__all__=['read_discrete_trajectory', 'write_discrete_trajectory',\
-             'load_discrete_trajectory', 'save_discrete_trajectory',\
-            'read_matrix', 'write_matrix', 'load_matrix', 'save_matrix']
+__all__=['read_discrete_trajectory',
+         'write_discrete_trajectory',
+         'load_discrete_trajectory', 
+         'save_discrete_trajectory',
+         'read_matrix',
+         'write_matrix', 
+         'load_matrix', 
+         'save_matrix']
 
 ################################################################################
 # Discrete trajectory IO
