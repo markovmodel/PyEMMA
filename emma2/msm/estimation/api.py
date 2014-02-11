@@ -21,9 +21,15 @@ from scipy.sparse.sputils import isdense
 import emma2.util.pystallone as stallone
 
 
-__all__=['count_matrix', 'cmatrix', 'connected_sets', 'largest_connected_set',\
-             'connected_count_matrix', 'is_connected', 'transition_matrix', 'log_likelihood',\
-             'tmatrix_sampler']
+__all__=['count_matrix',
+         'cmatrix', 
+         'connected_sets',
+         'largest_connected_set',
+         'connected_count_matrix',
+         'is_connected',
+         'transition_matrix',
+         'log_likelihood',
+         'tmatrix_sampler']
 
 ################################################################################
 # Count matrix
@@ -92,8 +98,8 @@ cmatrix_cores=count_matrix_cores
 
 # DONE: Ben Implement in Python directly
 def connected_sets(C, directed=True):
-    r"""Compute connected components for a directed graph with weights
-    represented by the given count matrix.
+    r"""Connected components for a directed graph with edge-weights
+    given by the count matrix.
     
     Parameters
     ----------
@@ -116,8 +122,8 @@ def connected_sets(C, directed=True):
 
 # DONE: Ben 
 def largest_connected_set(C, directed=True):
-    r"""Compute connected components for a directed graph with weights
-    represented by the given count matrix.
+    r"""Largest connected component for a directed graph with edge-weights
+    given by the count matrix.
     
     Parameters
     ----------
@@ -137,7 +143,7 @@ def largest_connected_set(C, directed=True):
 
 # DONE: Ben 
 def connected_count_matrix(C, directed=True):
-    r"""Compute the count matrix of the largest connected set.
+    r"""Compute the count matrix on the largest connected set.
     
     The input count matrix is used as a weight matrix for the
     construction of a directed graph. The largest connected set of the
@@ -188,7 +194,6 @@ def is_connected(C, directed=True):
     """
     return sparse.connectivity.is_connected(C)
 
-
 # TODO: Implement in Python directly
 def mapping(set):
     """
@@ -212,7 +217,6 @@ def mapping(set):
 
 # DONE: Frank implemented dense (Nonreversible + reversible with fixed pi)
 # DONE: Jan Implement in Python directly (Nonreversible)
-# TODO: Implement in Python directly (Reversible with stat dist)
 # Done: Martin Map to Stallone (Reversible)
 def transition_matrix(C, reversible=False, mu=None, **kwargs):
     """
@@ -283,20 +287,21 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
 tmatrix = transition_matrix
 __all__.append('tmatrix')
 
-
-
 # TODO: Jan Implement in Python directly
 # TODO: Is C posterior or prior counts? 
 def tmatrix_cov(C, k=None):
-    """
-    Computes a nonreversible covariance matrix of transition matrix elements
+    r"""Nonreversible covariance matrix of transition matrix
     
     Parameters
     ----------
     C : scipy.sparse matrix
         Count matrix
-    k : row index (optional). 
-        If set, only the covariance matrix for this row is returned.
+    k : int (optional)
+        If set, only the covariance matrix for this row is returned
+       
+    Returns
+    -------
+    cov : 
         
     """    
     return sparse.transition_matrix.tmatrix_cov(C, k)
@@ -304,7 +309,19 @@ def tmatrix_cov(C, k=None):
 
 # DONE: FN+Jan Implement in Python directly
 def log_likelihood(C, T):
-    r"""log-likelihood of T, i.e. p(C|T).
+    r"""Log-likelihood of the count matrix given a transition matrix.
+
+    Parameters
+    ----------
+    C : scipy.sparse matrix
+        Count matrix
+    T : scipy.sparse matrix
+        Transition matrix
+
+    Returns
+    -------
+    logL : float
+        Log-likelihood of the count matrix           
     
     """
     if issparse(C) and issparse(T):
@@ -322,7 +339,8 @@ def log_likelihood(C, T):
         return np.dot(C[nz], np.log(T[nz]))
 
 
-# TODO: this function can be mixed dense/sparse, so maybe we should change the place for this function.
+# TODO: this function can be mixed dense/sparse, so maybe we should
+# change the place for this function.
 def error_perturbation(C, sensitivity):
     r"""Compute error perturbation.
     
