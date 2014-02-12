@@ -118,7 +118,7 @@ def connected_sets(C, directed=True):
         largest connected set is the first entry in the list, lcc=cc[0].
     
     """
-    return sparse.connectivity.connected_sets(C)
+    return sparse.connectivity.connected_sets(C, directed=directed)
 
 # DONE: Ben 
 def largest_connected_set(C, directed=True):
@@ -139,7 +139,7 @@ def largest_connected_set(C, directed=True):
         The largest connected component of the directed graph.
     
     """
-    return sparse.connectivity.largest_connected_set(C)
+    return sparse.connectivity.largest_connected_set(C, directed=directed)
 
 # DONE: Ben 
 def connected_count_matrix(C, directed=True):
@@ -167,7 +167,7 @@ def connected_count_matrix(C, directed=True):
         connected set of vertices (states)
     
     """
-    return sparse.connectivity.connected_count_matrix(C)
+    return sparse.connectivity.connected_count_matrix(C, directed=directed)
 
 connected_cmatrix=connected_count_matrix
 
@@ -192,7 +192,7 @@ def is_connected(C, directed=True):
         False otherwise.
     
     """
-    return sparse.connectivity.is_connected(C)
+    return sparse.connectivity.is_connected(C, directed=directed)
 
 # TODO: Implement in Python directly
 def mapping(set):
