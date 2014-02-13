@@ -1,0 +1,48 @@
+#!/usr/bin/env python
+'''
+Created on 13.02.2014
+
+Calculates the stationary distribution of a given transition matrix and writes it
+to a given file.
+@author: marscher
+'''
+
+import os
+import argparse
+
+from emma2.msm.io import read_matrix, write_matrix
+from emma2.msm.analysis import is_transition_matrix
+from emma2.util.log import getLogger
+
+log = getLogger()
+
+def handleArgs():
+    """ returns parsed arguments"""
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-inputtransitionmatrix', dest='inputT')
+    parser.add_argument('-free_energy')
+    parser.add_argument('-ktfactor', type=float)
+    parser.add_argument('-stationarydistribution')
+    parser.add_argument('-nev', type=int)
+    parser.add_argument('-eigenvalues')
+    parser.add_argument('-lefteigenvectors')
+    parser.add_argument('-righteigenvectors')
+    
+    
+    args = parser.parse_args()
+    
+    return args
+
+
+if __name__ == '__main__':
+    args = handleArgs()
+    
+    try:
+        T = read_matrix(args.inputT)
+    except Exception as e:
+        log.error('Error occured during reading of transition matrix')
+        raise e
+    
+    # TODO: correct requested number of eigenvectors
+    
+    
