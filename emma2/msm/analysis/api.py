@@ -751,6 +751,10 @@ def pcca(T, n):
     T : transition matrix
     n : number of metastable processes
     
+    Returns
+    -------
+    m : memberships
+    
     """
     if issparse(T):
         raise NotImplementedError('not yet impled for sparse.')
