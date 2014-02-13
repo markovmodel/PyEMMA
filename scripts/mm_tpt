@@ -1,0 +1,27 @@
+#!/usr/bin/env python
+'''
+Created on 29.11.2013
+
+@author: marscher
+'''
+
+"""
+TODO: add parser for this.
+" -inputtransitionmatrix <string:filename>\n" +
+"[-statdist <string:filename> ]\n" +
+" -seta <string:filename>\n" +
+" -setb <string:filename>\n" +
+"\n" +
+"[-oforwardcommittor <string:filename>]\n" +
+"[-obackwardcommittor <string:filename>]\n" +
+"[-oflux <string:filename>]\n" +
+"[-onetflux <string:filename>]\n" +
+"\n" +
+"[-coarsesets <string:filename_with_sets> \n" +
+"[-ocoarseforwardcommittor <string:filename>]\n" +
+"[-ocoarsebackwardcommittor <string:filename>]\n" +
+"[-ocoarseflux <string:filename>]\n" +
+"[-ocoarsenetflux <string:filename>]\n" +
+TODO: 
+            
+"""
