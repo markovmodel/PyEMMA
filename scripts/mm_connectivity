@@ -1,0 +1,39 @@
+#!/usr/bin/env python
+'''
+Created on 17.02.2014
+
+@author: marscher
+'''
+import argparse
+
+from emma2.msm.estimation.api import count_matrix, largest_connected_set
+from emma2.msm.io.api import write_matrix
+from emma2.util.files import read_dtrajs_from_pattern
+from emma2.util.log import getLogger
+
+
+log = getLogger()
+
+def handleArgs():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-i', dest='discTraj', required=True, nargs='+', help='list of discrete trajectories')
+    parser.add_argument('-o', dest='output', help='output filename of largest connected set')
+    return parser.parse_args()
+
+if __name__ == '__main__':
+    args = handleArgs()
+    
+    if args.discTraj != []:
+        dtrajs = read_dtrajs_from_pattern(args.discTraj, log)
+    else:
+        raise ValueError('no valid input given')
+
+    lagtime = 1
+    cmatrix = count_matrix(dtrajs, 1, sliding=True)
+    
+    lcs = largest_connected_set(cmatrix)
+    if args.output:
+        write_matrix(args.output, lcs)
+    else:
+        print lcs
+    
