@@ -1,0 +1,84 @@
+#!/usr/bin/env python
+'''
+Created on 17.02.2014
+
+Estimation of transition matrices
+@author: marscher
+'''
+import argparse
+import sys
+import os
+
+from emma2.msm.estimation.api import count_matrix, transition_matrix
+from emma2.msm.io import write_matrix_ascii, load_matrix
+from emma2.msm.io.api import read_discrete_trajectory
+from emma2.util.files import paths_from_patterns
+from emma2.util.log import getLogger
+
+log = getLogger()
+
+def handleArgs():
+    """ returns parsed arguments"""
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-i', dest='discTraj', nargs='+', help='list of discrete trajectories')
+    parser.add_argument('-restrictToStates', help='not impled yet')
+    parser.add_argument('-reversible', action='store_true', default=False)
+    parser.add_argument('-sampling', choices=['slidingwindow', 'lag'])
+    parser.add_argument('-stationaryDist', help='estimate transition matrix given a stationary distribution')
+    # TODO: if priors are impled, remove this warning
+    parser.add_argument('-prior', type=float, default=0.01, help='WARNING: this currently ignored')
+    parser.add_argument('-lagtime', type=int, default=1)
+    parser.add_argument('-outputtransitionmatrix')
+    parser.add_argument('-outputcountmatrix')
+    
+    return parser.parse_args()
+    
+    
+if __name__ == '__main__':
+    args = handleArgs()
+    
+    dtrajs = []
+    if args.discTraj != []:
+        filenames = paths_from_patterns(args.discTraj)
+        if filenames == []:
+            raise ValueError('no match to given pattern')
+        for dt in filenames:
+            # skip directories
+            if os.path.isdir(dt): 
+                continue
+            log.info('reading discrete trajectory: %s' % dt)
+            try:
+                dtrajs.append(read_discrete_trajectory(dt))
+            except Exception as e:
+                log.error('Exception occurred during reading of %s:\n%s' % (dt, e))
+                sys.exit(-1)
+    else:
+        raise ValueError('no valid input given')
+
+    sliding = args.sampling == 'slidingwindow'
+    
+    log.info('estimating count matrix with lagtime %i' % args.lagtime)
+    log.info('using sliding window approach: %s' % sliding)
+    
+    cmatrix = count_matrix(dtrajs, args.lagtime, sliding)
+    
+    # given a stationary distribution?
+    mu = None
+    if args.stationaryDist:
+        mu = load_matrix(args.stationaryDist)
+
+    log.info('estimating transition %s matrix...' % 
+             'reversible' if args.reversible else 'non reversible')
+    
+    T = transition_matrix(cmatrix, args.reversible, mu)
+    
+    log.info('...finished')
+    
+    # TODO: handle io exceptions?
+    if args.outputcountmatrix:
+        log.info('write count matrix to %s' % args.outputcountmatrix)
+        write_matrix_ascii(args.outputcountmatrix, cmatrix)
+        
+    if args.outputtransitionmatrix:
+        log.info('write transition matrix to %s ' %args.outputtransitionmatrix)
+        write_matrix_ascii(args.outputtransitionmatrix, T)
