@@ -6,14 +6,12 @@ Estimation of transition matrices
 @author: marscher
 '''
 import argparse
-import sys
-import os
 
 from emma2.msm.estimation.api import count_matrix, transition_matrix
 from emma2.msm.io import write_matrix_ascii, load_matrix
-from emma2.msm.io.api import read_discrete_trajectory
-from emma2.util.files import paths_from_patterns
+from emma2.util.files import read_dtrajs_from_pattern
 from emma2.util.log import getLogger
+
 
 log = getLogger()
 
@@ -32,26 +30,12 @@ def handleArgs():
     parser.add_argument('-outputcountmatrix')
     
     return parser.parse_args()
-    
-    
+
 if __name__ == '__main__':
     args = handleArgs()
     
-    dtrajs = []
     if args.discTraj != []:
-        filenames = paths_from_patterns(args.discTraj)
-        if filenames == []:
-            raise ValueError('no match to given pattern')
-        for dt in filenames:
-            # skip directories
-            if os.path.isdir(dt): 
-                continue
-            log.info('reading discrete trajectory: %s' % dt)
-            try:
-                dtrajs.append(read_discrete_trajectory(dt))
-            except Exception as e:
-                log.error('Exception occurred during reading of %s:\n%s' % (dt, e))
-                sys.exit(-1)
+        dtrajs = read_dtrajs_from_pattern(args.discTraj, log)
     else:
         raise ValueError('no valid input given')
 
