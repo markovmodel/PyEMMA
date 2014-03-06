@@ -27,6 +27,18 @@ def tmatrix_cov(C, row=None):
             tensor[i] = dirichlet_covariance(C[i]);
         return tensor
 
+
+def error_perturbation(C, sensitivity):
+    error = 0.0;
+    
+    n = len(C)
+    
+    for k in range(0,n):
+        cov = tmatrix_cov(C, k)
+        error += numpy.dot(numpy.dot(sensitivity[k],cov),sensitivity[k])
+    return error
+
+
 def dirichlet_covariance(c):
     """Returns a matrix of covariances between all elements of the dirichlet distribution parametrized by the vector c
         
