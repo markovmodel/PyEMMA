@@ -1,19 +1,30 @@
+To install the Emma2 Python package, you need a few 
+
 It is recommended to upgrade to latest setuptools (2.1) with the provided
 script ez_setup.py. Invoke it like that to upgrade:
  python ez_setup.py [--user]
 
-The requirements are currently the following:
-python >= 2.7
+We recommend the usage of Python-2.7
 
-For jpype you need a recent JDK (tested on 1.7) installed!
+For jpype you need to install a recent Java Development Kit (JDK) 
+(tested on version 1.7, also works with 1.6)
+On Debian/Ubuntu:
+  apt-get install openjdk-7-jdk
+On MacOs obtain a copy from Oracle:
+  http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html
+
+These Python packages are needed, and will be automatically installed, when you
+invoke the setup.py script.
 
 Python packages:
  numpy >= 1.6.0
- scipy >= 0.13.0
- jpype1 >= 0.5.4.5 
+ scipy >= 0.9.0
+ jpype1 >= 0.5.4.5
 
-These requirements will be installed automatically, if you use a python package
-manager like pip or easy_install.
+If you intend to build the Sphinx documentation yourself, you also need the
+following additional Python packages:
+sphinx >= 1.2.1
+numpydoc >= 0.4  
 
 For all install methods you can append '--user' to install to your local user
 directory:
