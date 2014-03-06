@@ -1,37 +1,6 @@
-r"""
-======================================================
-Emma2 MSM Analysis API (:mod:`emma2.msm.analysis.api`)
-======================================================
+#The analysis api-specifications
 
-.. currentmodule:: emma2.msm.analysis.api
-
-API functions for Markov state model analysis
-
-Contents
-========
-
-TODOS here in Contents
-----------------------
-
-Add remaining subsections (eigenvector, fingerprints, etc) here.
-Stick to the pattern in subsection Checks (above)!
-
-Usage information
-=================
-
-blub?
-
-Example 1
----------
-
-blub?
-
-Further details
----------------
-
-blub?
-
-"""
+__docformat__ = "restructuredtext en"
 
 import numpy as np
 from scipy.sparse import issparse
