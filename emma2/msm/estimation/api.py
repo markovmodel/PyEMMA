@@ -13,6 +13,7 @@ import sparse.count_matrix
 import sparse.connectivity
 import sparse.likelihood
 import sparse.transition_matrix
+#import sparse.perturbation
 import dense.transition_matrix
 
 from scipy.sparse import csr_matrix
@@ -22,9 +23,9 @@ from scipy.sparse.sputils import isdense
 import emma2.util.pystallone as stallone
 
 
-__all__=['count_matrix', 'cmatrix', 'connected_sets', 'largest_connected_set',\
+__all__=['count_matrix', 'cmatrix', 'connected_sets', 'error_perturbation', 'largest_connected_set',\
              'connected_count_matrix', 'is_connected', 'transition_matrix', 'log_likelihood',\
-             'tmatrix_sampler']
+             'tmatrix_sampler', 'tmatrix_cov']
 
 ################################################################################
 # Count matrix
@@ -342,7 +343,7 @@ def error_perturbation(C, sensitivity):
     cov : (m x m) covariance matrix of the target quantity
     
     """
-    return sparse.perturbation.error_perturbation(C, sensitivity)
+    return sparse.transition_matrix.error_perturbation(C, sensitivity)
 
 # DONE: Martin Map to Stallone (Reversible)
 def tmatrix_sampler(C, reversible=False, mu=None, P0=None):
