@@ -6,12 +6,34 @@ Created on 17.02.2014
 from __future__ import absolute_import
 
 import os
+import re
 from glob import glob
 from .log import log
 
 from emma2.msm.io.api import read_discrete_trajectory
 
 __all__ = ['paths_from_patterns', 'read_dtrajs_from_pattern']
+
+def handleInputFileArg(inputPattern):
+    """
+        handle input patterns like *.xtc or name00[5-9].* and returns
+        a list with filenames matching that pattern.
+    """
+    # if its a string wrap it in a list.
+    if isinstance(inputPattern, str):
+        return handleInputFileArg([inputPattern])
+    
+    result = []
+    
+    for e in inputPattern:
+        # split several arguments
+        pattern = re.split('\s+', e)
+        
+        for i in pattern:
+            tmp = glob(i)
+            if tmp != []:
+                result.append(tmp)
+    return [item for sublist in result for item in sublist]
 
 def paths_from_patterns(patterns):
     """
