@@ -22,7 +22,7 @@ def getDataSequenceLoader(files):
         #elif len(files) > 1:
             # create ArrayList of files an pass it
         files = API.str.toList(files)
-        return API.dataNew.dataSequenceLoader(files)
+        return API.dataNew.multiSequenceLoader(files)
     except JavaException as je:
         log.error('something went wrong during file reading: %s' % je)
         # reraise exception
@@ -49,29 +49,34 @@ def getClusterAlgorithm(data, size, **kwargs):
     metric = kwargs['metric']
     algorithm = kwargs['algorithm']
     
-    if metric == 'euclidean':
+    # TODO: ensure type data is either IDataInput or IDataSequence or else clusterfactory api methods will raise
+    
+    if metric == 'euclidian':
         # TODO: set dimension of data
         imetric = API.clusterNew.metric(0, 0)
     elif metric == 'minrmsd':
         nrows = 0 # TODO: set to something useful
         imetric = API.clusterNew.metric(1, nrows)
     else:
-        raise ValueError
+        raise ValueError('no valid metric given')
     
     if algorithm == 'kcenter':
         k = kwargs['k']
-        return API.clusterNew.createKcenter(data, size, imetric, k)
+        return API.clusterNew.kcenter(data, size, imetric, k)
     elif algorithm == 'kmeans':
         k = kwargs['k']
         maxIter = kwargs['maxiterations']
-        return API.clusterNew.createKmeans(data, size, imetric, k, maxIter)
+        if data is not None:
+            return API.clusterNew.kmeans(data, size, imetric, k, maxIter)
+        else:
+            return API.clusterNew.kmeans(imetric, k, maxIter)
     elif algorithm == 'regularspatial':
         dmin = kwargs['dmin']
-        return API.clusterNew.createRegularSpatial(data, size, imetric, dmin)
+        return API.clusterNew.regspace(data, imetric, dmin)
     elif algorithm == 'regulartemporal':
         # TODO: copy impl from emma1 to stallone and map it here
         spacing = kwargs['spacing']
-        raise NotImplemented
+        raise NotImplemented('regular temporal not impled in stallone')
     else:
         raise ValueError('no valid algorithm (%s) given!')
 
