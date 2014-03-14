@@ -81,5 +81,5 @@ def getClusterAlgorithm(data, size, **kwargs):
         raise ValueError('no valid algorithm (%s) given!')
 
 def writeASCIIResults(data, filename):
-    writer = API.dataNew.createASCIIDataWriter(filename, 0, ' ', '\n')
+    writer = API.dataNew.writerASCII(filename,' ', '\n')
     writer.addAll(data)
