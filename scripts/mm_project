@@ -25,4 +25,4 @@ if __name__ == '__main__':
     amuse = Amuse.fromfiles(args.mean, None, args.weights, args.timecolumn)
     
     for t in log_loop(args.trajectories):
-        amuse.stream(t, rename(t, args.outdir, args.descriptor), amuse.tica_weights, args.keepnp)
+        amuse.project(t, rename(t, args.outdir, args.descriptor), amuse.tica_weights, args.keepnp)
