@@ -3,6 +3,8 @@
 EMMA2 setup
 """
 import sys
+import os
+from glob import glob
 
 if len(sys.argv) < 2:
     """
@@ -81,9 +83,7 @@ setup(name = 'Emma2',
       author = 'The Emma2 team',
       # packages are found if their folder contains an __init__.py,
       packages = find_packages(),
-      scripts = ['scripts/mm_tica',
-                 'scripts/mm_acf',
-                 'scripts/mm_project'],
+      scripts = glob('scripts/*'),
       cmdclass = dict(build_ext = np_build),
       ext_modules = [cocovar_module],
       # FIXME: this goes to egg meta info directory and is not found during init
