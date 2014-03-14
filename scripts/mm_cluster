@@ -3,10 +3,12 @@
 
 import sys
 
-from emma2.coordinates.clustering.stalloneClustering import *
-
+from emma2.cluster.stalloneClustering import *
+from emma2.util.files import handleInputFileArg
 from emma2.util.log import getLogger
-log = getLogger('mm_cluster')
+
+#from emma2.util.pystallone import API, java
+log = getLogger()
 
 algorithms = ['kcenter', 'kmeans', 'regularspatial', 'regulartemporal']
 input_formats = ['xtc', 'dcd' , 'ascii' , 'ensembleascii', 'auto']
@@ -64,47 +66,38 @@ def handleArgs():
         
     return args
 
-def handleInputFileArg(inputPattern):
-    """
-        handle input patterns like *.xtc or name00[5-9].* and returns
-        a list with filenames matching that pattern.
-    """
-    import re
-    import glob
-    # if its a string wrap it in a list.
-    if isinstance(inputPattern, str):
-        return handleInputFileArg([inputPattern])
-    
-    result = []
-    
-    for e in inputPattern:
-        # split several arguments
-        pattern = re.split('\s+', e)
-        
-        for i in pattern:
-            tmp = glob.glob(i)
-            if tmp != []:
-                result.append(tmp)
-    return [item for sublist in result for item in sublist]
-
-
-if __name__ == '__main__':
+def main():
+    log.debug('parse args')
     args = handleArgs()
+    log.debug('create loader')
     loader = getDataSequenceLoader(args.input)
+    loader.scan()
     log.info('loading data...')
     # TODO: check if dimension of data is same
     # TODO: check if data fits into memory
-    # TODO: this loads only the first file... if loadAll() is used a list 
-    # is returned, but we need a single datasequence object
-    data = loader.loadSequence(0)
-    log.info('data loaded.')
-    
-    algo = getClusterAlgorithm(data, **vars(args))
-    algo.perform()
-    centers = algo.getClusterCenters()
-    cluster_inds = algo.getClusterIndexes()
-    
-    # save cluster centers to file
-    # TODO: emma1 supports writing to dcd, but writer in stallone is buggy
-    writeASCIIResults(data, args.output)
+   
+    try:
+        # this is online
+        data = loader.loadAll()
+        log.info('data loaded.')
+        # cluster algo needs either IDataInput or IDataSequence
+        
+        algo = getClusterAlgorithm(data, loader.size(), **vars(args))
+        algo.setInput(data)
+        log.info('performing algo')
+        algo.perform()
+        log.info('algo finished')
+        centers = algo.getClusterCenters()
+        #cluster_inds = algo.getClusterIndexes()
+        #log.info("cluster inds: " % cluster_inds.size())
+        
+        # save cluster centers to file
+        writeASCIIResults(centers, args.output)
+    except Exception as e:
+        log.error('something went wrong... %s' % e)
+        return 1
     log.info("successfully written cluster centers to file %s" % args.output)
+    return 0
+
+if __name__ == '__main__':
+    sys.exit(main())
