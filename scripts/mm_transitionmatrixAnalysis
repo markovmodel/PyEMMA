@@ -7,42 +7,117 @@ to a given file.
 @author: marscher
 '''
 
-import os
+import sys
 import argparse
 
 from emma2.msm.io import read_matrix, write_matrix
 from emma2.msm.analysis import is_transition_matrix
 from emma2.util.log import getLogger
+from emma2.msm.analysis.api import stationary_distribution
 
 log = getLogger()
 
 def handleArgs():
     """ returns parsed arguments"""
     parser = argparse.ArgumentParser()
-    parser.add_argument('-inputtransitionmatrix', dest='inputT')
-    parser.add_argument('-free_energy')
+    parser.add_argument('-inputtransitionmatrix', dest='T', required=True)
+    # TODO this looks so stupid eeeeeeee
+    parser.add_argument('-freeenergy', dest='freeEnergy',
+                        help='output filename of free energy')
     parser.add_argument('-ktfactor', type=float)
-    parser.add_argument('-stationarydistribution')
-    parser.add_argument('-nev', type=int)
-    parser.add_argument('-eigenvalues')
-    parser.add_argument('-lefteigenvectors')
-    parser.add_argument('-righteigenvectors')
+    parser.add_argument('-stationarydistribution', dest='statdist_output',
+                        help='output file name of stationary distribution')
+    parser.add_argument('-nev', type=int, help='number of eigenvalues')
+    parser.add_argument('-eigenvalues', help='output filename of eigenvalues --- currently unsupported')
+    parser.add_argument('-lefteigenvectors', help="currently unsupported")
+    parser.add_argument('-righteigenvectors',help="currently unsupported")
     
     
     args = parser.parse_args()
     
     return args
 
+def freeEnergy(kbTScale, pi):
+    """
+        Calculates the free energy according to following formula 
+    F_{i}=-k_{B}T\:\ln\frac{\pi_{i}}{\max\pi_{j}} 
+       """
+    import numpy as np
+    freeEnergy = np.empty(pi.shape)
+    max_pi = np.max(pi)
+    for i in range(freeEnergy.shape):
+        freeEnergy[i] = -kbTScale * np.log(pi[i] / max_pi)
+    return freeEnergy
 
-if __name__ == '__main__':
+def main():
     args = handleArgs()
     
     try:
-        T = read_matrix(args.inputT)
+        T = read_matrix(args.T)
     except Exception as e:
-        log.error('Error occured during reading of transition matrix')
-        raise e
+        log.error('Error occurred during reading of transition matrix: %s' % e)
+        raise
+        return 1
     
-    # TODO: correct requested number of eigenvectors
+    if not is_transition_matrix(T):
+        log.error('given matrix from file "%s" is not a valid transition matrix'
+                   % args.inputT)
+        return 1
     
+    nev = T.shape[0] # number of rows
+    nevRequested = nev; #if nothing is specified, do the full diagonalization
     
+    if args.nev: # number of eigenvalues requested
+        nevRequested = args.nev
+        if nevRequested > nev:
+            log.warning("Requesting " + args.nev + "eigenvalues, " +
+                        "but transition matrix has only dimension " + 
+                        T.shape[0] + "x" + T.shape[0] + ".");
+            nevRequested = nev
+                
+        elif nevRequested <= 0:
+            nevRequested = 1
+    """
+    calculateStationaryDistribution = False
+    if args.stationarydistribution or args.free_energy:
+        calculateStationaryDistribution = True
+        if nevRequested <= 1: # we need only one eigenvalue
+            nevRequested = 1;
+            
+            doLeftEVs = True
+            
+    if args.lefteigenvectors:
+        doLeftEVs = True
+    if args.righteigenvectors:
+        doRightEvs = True
+    """
+    
+    # todo:
+    pi = stationary_distribution(T)
+    # safe pi
+    if args.statdist_output:
+        try:
+            write_matrix(args.statdist_output, pi)
+        except Exception as e:
+            log.error('Error during writing stationary distribution to file "%s":'
+                      % (args.statdist_output, e))
+            return 1
+    else:
+        print('Stationary Distribution:\n', pi)
+    
+    E = freeEnergy(pi, args.ktfactor)
+    if args.freeEnergy:
+        try:
+            write_matrix(args.freeEnergy, E)
+        except Exception as e:
+            log.error('Error during writing free energy to file "%s": %s' 
+                      % (args.freeEnergy, e))
+            return 1
+    else:
+        print('Free Energy:\n', E)
+    
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())
