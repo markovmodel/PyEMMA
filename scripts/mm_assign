@@ -1,0 +1,84 @@
+#!/usr/bin/env python
+# encoding: utf-8
+"""
+assigns the simulation data (-i) to microstates (-ic) that have been previously
+generated/ or user supplied. The assignment is done such that each frame of the
+input data is assigned to the number of the nearest cluster center (Voronoi parition).
+
+TODO: this cmd needs either stallone or an pythonic trajectory reader
+"""
+import argparse
+import os
+import sys
+
+from emma2.msm.estimation.api import count_matrix, largest_connected_set
+from emma2.msm.io.api import write_matrix, read_matrix
+from emma2.util.files import read_dtrajs_from_pattern, paths_from_patterns
+from emma2.util.log import getLogger
+
+from emma2.util.pystallone import API, JString, java
+
+log = getLogger()
+
+def handleArgs():
+    parser = argparse.ArgumentParser() # TODO: somehow use module docstring here
+    parser.add_argument('-i', dest='trajs', required=True, nargs='+',
+                        help='list of trajectories to assign to clusters')
+    parser.add_argument('-istepwidth', type=int, default=1, help='')
+    parser.add_argument('-ic', dest='clusterCenters', required=True,
+                        help='previously generated microstates (cluster centers)')
+    parser.add_argument('-o', dest='output', default='.',
+        help='output directory for discretized trajectories, defaults to current directory')
+    
+    return parser.parse_args()
+
+def main():
+    args = handleArgs()
+    
+    if not os.path.isdir(args.output):
+        log.error('given output %s is not a directory' % args.output)
+        return 1
+    
+    trajs = paths_from_patterns(args.trajs)
+    if trajs == []:
+        log.error('given trajectory pattern "%s" does not match any files' % args.trajs)
+        return 1
+        
+    try:
+        # create IDataReader of cluster center
+        centersFile = API.dataNew.readerASCII(JString(args.clusterCenters))
+        # load to type IDataSequence
+        centers = centersFile.load()
+    except Exception as e:
+        log.error('Error during reading of cluster centers file: %s' % e)    
+        return 1
+        
+    # create discretization from factory, reflect options
+    disc = API.discNew.voronoiDiscretization(centers)
+    
+    # read traj and assign
+    trajsList = java.util.ArrayList(len(trajs))
+    for t in trajs:
+        trajsList.add(t)
+
+    try:
+        trajLoader = API.dataNew.multiSequenceLoader(trajsList)
+        trajIter = trajLoader.sequences().iterator()
+    
+        # TODO: this does not handle stepwidth
+        # for each traj, each frame (or interleaved with istepwidth: assign
+        while trajIter.hasNext():
+            traj = trajIter.next()
+            frameIter = traj.iterator()
+            while frameIter.hasNext():
+                # assign frame to disc, and save value in result
+                assignment = disc.assign(frameIter.next())
+                print assignment
+    except Exception as e:
+        log.error(e.stacktrace())
+        return 1
+            
+    return 0
+
+if __name__ == '__main__':
+    sys.exit(main())
