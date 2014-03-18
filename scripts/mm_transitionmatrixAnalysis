@@ -45,8 +45,7 @@ def freeEnergy(kbTScale, pi):
     import numpy as np
     freeEnergy = np.empty(pi.shape)
     max_pi = np.max(pi)
-    for i in range(freeEnergy.shape):
-        freeEnergy[i] = -kbTScale * np.log(pi[i] / max_pi)
+    freeEnergy[:] = -kbTScale * np.log(pi[:] / max_pi)
     return freeEnergy
 
 def main():
