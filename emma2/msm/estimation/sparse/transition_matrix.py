@@ -21,9 +21,9 @@ def tmatrix_cov(C, row=None):
         return matrix
     else:
         size = C.shape[1]
-        tensor = numpy.zeros((size,size,size))
-        for i in range(0,size):
-            tensor[i] = dirichlet_covariance(C[i]);
+        tensor = scipy.sparse.csr_matrix((size, size, size))
+        i = numpy.arange(size)
+        tensor[i] = dirichlet_covariance(C[i]);
         return tensor
 
 
