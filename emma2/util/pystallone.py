@@ -52,8 +52,7 @@ def _initVM():
         else:
             sep = ';'
         
-        stallone_jar = os.path.join('..','lib','stallone',
-                                    'stallone-1.0-SNAPSHOT-jar-with-dependencies.jar')
+        stallone_jar = os.path.join('..','lib','stallone','stallone-1.0-SNAPSHOT-jar-with-dependencies.jar')
         stallone_jar_file = pkg_resources.resource_filename('emma2', stallone_jar)
         if not os.path.exists(stallone_jar_file):
             raise RuntimeError('stallone jar not found! Expected it here: %s' 
@@ -66,15 +65,14 @@ def _initVM():
             optional_cp.replace(':', sep)
             
         # warn user about non existing custom cp
-        cp = []
+        good_opt_cp = []
         for p in optional_cp.split(sep):
             if p is not '' and not os.path.exists(p):
                 _log.warning('custom classpath "%s" does not exist!' % p)
             else:
-                cp.append(p)
+                good_opt_cp.append(p)
 
-        # user classpaths first, then stallone jar (to overwrite it optionally) 
-        cp.append(stallone_jar_file)
+        cp = [stallone_jar_file] + good_opt_cp
         return '-Djava.class.path=' + sep.join(cp)
     
     classpath = buildClassPath()
