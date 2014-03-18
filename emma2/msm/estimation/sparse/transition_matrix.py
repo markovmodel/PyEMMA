@@ -21,16 +21,16 @@ def tmatrix_cov(C, row=None):
         return matrix
     else:
         size = C.shape[1]
-        tensor = numpy.zeros((size,size,size))
-        for i in range(0,size):
-            tensor[i] = dirichlet_covariance(C[i]);
+        tensor = numpy.empty((size, size, size))
+        i = numpy.arange(size)
+        tensor[i] = dirichlet_covariance(C[i]);
         return tensor
 
 
 def error_perturbation(C, sensitivity):
     error = 0.0;
     
-    n = len(C)
+    n = C.shape[0]
     
     for k in range(0,n):
         cov = tmatrix_cov(C, k)
