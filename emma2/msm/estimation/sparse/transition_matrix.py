@@ -30,7 +30,7 @@ def tmatrix_cov(C, row=None):
 def error_perturbation(C, sensitivity):
     error = 0.0;
     
-    n = len(C)
+    n = C.shape[0]
     
     for k in range(0,n):
         cov = tmatrix_cov(C, k)
