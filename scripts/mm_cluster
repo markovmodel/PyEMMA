@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
+"""
+"""
 
 import sys
 
@@ -7,7 +9,6 @@ from emma2.cluster.stalloneClustering import *
 from emma2.util.files import handleInputFileArg
 from emma2.util.log import getLogger
 
-#from emma2.util.pystallone import API, java
 log = getLogger()
 
 algorithms = ['kcenter', 'kmeans', 'regularspatial', 'regulartemporal']
