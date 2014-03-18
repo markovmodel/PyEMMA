@@ -18,6 +18,7 @@ def handleArgs():
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', dest='discTraj', required=True, nargs='+', help='list of discrete trajectories')
     parser.add_argument('-o', dest='output', help='output filename of largest connected set')
+    parser.add_argument('-lag', dest='lag', help='lag time for which connectivity should be calculated for', type=int, default=1)
     return parser.parse_args()
 
 if __name__ == '__main__':
@@ -28,8 +29,7 @@ if __name__ == '__main__':
     else:
         raise ValueError('no valid input given')
 
-    lagtime = 1
-    cmatrix = count_matrix(dtrajs, 1, sliding=True)
+    cmatrix = count_matrix(dtrajs, args.lag, sliding=True)
     
     lcs = largest_connected_set(cmatrix)
     if args.output:
