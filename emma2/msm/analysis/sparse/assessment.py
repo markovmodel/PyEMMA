@@ -65,15 +65,13 @@ def is_rate_matrix(K, tol):
 
 
     # store copy of original diagonal, set it to zero and check off diagonals are > 0
-    # FIXME: think about a different solution, since element wise setting is slow
     org_diag = K.diagonal()
-    for i in xrange(K.shape[0]):
-        K[i,i] = 0
+    diag_inds = range(K.shape[0])
+    K[diag_inds, diag_inds] = 0
 
     # check all values are greater zero within given tolerance
     values_gt_zero = np.allclose(values, np.abs(values), atol = tol)
-    for i in xrange(len(org_diag)):
-        K[i, i] = org_diag[i]
+    K[diag_inds, diag_inds] = org_diag
 
     return values_gt_zero and sum_eq_zero
 
