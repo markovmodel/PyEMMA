@@ -3,15 +3,19 @@ Created on 18.10.2013
 
 @author: marscher
 '''
-__all__ = ['TPTFlux']
+import numpy as np
+from decimal import Decimal # for wrapping java.math.BigDecimal
 
 from emma2.util.log import getLogger
+from emma2.util.pystallone import API, JavaException, \
+    stallone_array_to_ndarray, ndarray_to_stallone_array, stallone, \
+    JArray, JInt, JDouble
+
+__all__ = ['TPTFlux', 'PathwayDecomposition']
+
 log = getLogger()
 
-from emma2.util.pystallone import API, JavaException, \
-    stallone_array_to_ndarray, ndarray_to_stallone_array
-
-class TPTFlux():
+class TPTFlux(object):
     """
         This class wraps around a stallone ITPTFlux class.
     """
@@ -30,7 +34,6 @@ class TPTFlux():
         ------
         RuntimeError, if stallone is not available
         """
-        import numpy as np
         try:
             T = T.astype(np.float64)
             A = np.asarray(A).astype(np.int64)
@@ -47,10 +50,10 @@ class TPTFlux():
             log.error(msg)
             raise
         except TypeError as t:
-            log.error("type error occurred: %s" %t)
+            log.exception("type error occurred.", t)
             raise
         except Exception as e:
-            log.error("unknown error occurred: %s" %e)
+            log.exception("unknown error occurred.", e)
             raise
     
     def getBackwardCommittor(self):
@@ -138,3 +141,80 @@ class TPTFlux():
         T : ndarray
         """
         self.T = ndarray_to_stallone_array(T)
+        
+        
+class PathwayDecomposition(object):
+    
+    def __init__(self, F, Q, A, B):
+        """
+        Parameters
+        ----------
+        F : The net fluxes matrix
+          ndarray(dtype=float, shape=(n,n))
+        Q : The committor vector
+          ndarray(dtype=float, shape=(n)
+        A : set of representatives (indices defining set A in F)
+          ndarray(dtype=int)
+        B : set of representatives
+          ndarray(dtype=int)
+        """
+        # F.shape[0] == F.shape[1] = n, A.shape = n = B.shape
+        if F.shape[0] != F.shape[1] != Q.shape[0]:
+            raise ValueError('shapes of inputs not matching')
+        n = F.shape[0]
+        if A.shape != B.shape != n:
+            raise ValueError('shapes of input sets not matching')
+        
+        F = ndarray_to_stallone_array(F)
+        Q = JArray(JDouble)(Q)
+        A = JArray(JInt)(A)
+        B = JArray(JInt)(B)
+        
+        # PathwayDecomposition(IDoubleArray _F, double[] _Q, int[] _A, int[] _B)
+        try:
+            self.PD = stallone.mc.tpt.PathwayDecomposition(F, Q, A, B)
+        except Exception as e:
+            log.exception('error during creation/calculation of PathwayDecomposition.', e)
+            raise
+    
+    #public int[][] removeEdge(int[][] set, int[] edge)
+    def removeEdge(self, set, edge):
+        self.PD.removeEdge(set, edge)
+    
+    #public int[][] findGap(int[][] pathway, int[] S1, int[] S2)
+    def findGap(self, pathway, S1, S2):
+        self.PD.findGap(pathway, S1, S2)
+    
+    #public int[] edges2vertices(int[][] path)
+    def edges2vertices(self, path):
+        self.PD.edges2vertices(path)
+    
+    def computeCurrentFlux(self):
+        # returns bigdecimal
+        cf = self.PD.computeCurrentFlux()
+        # convert java big decimal to string and pass it to python decimal
+        return Decimal(str(cf))
+    
+    def subtractCurrentPath(self):
+        self.PD.substractCurrentPath()
+    
+    def nextPathway(self):
+        """
+        Returns
+        -------
+        next path way : ndarray (dtype=int)
+        """
+        p = self.PD.nextPathway() # returns int[]
+        return np.asarray(p)
+    
+    def getCurrentPathway(self):
+        p = self.PD.getCurrentPathway() # returns int[] 
+        return np.asarray(p)
+
+    def getCurrentFlux(self):
+        # returns bigdecimal
+        cf = self.PD.getCurrentFlux()
+        # convert java big decimal to string and pass it to python decimal
+        return Decimal(str(cf))
+    
+    
