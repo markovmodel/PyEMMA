@@ -57,11 +57,15 @@ def main():
         log.exception('Error occurred during reading of set B.', e)
         return 1
     
+    log.debug('create tpt wrapper object.')
     TPTFlux = tpt(T, A, B)
+    log.debug('tpt wrapper object created.')
+    log.debug('converting output from java to python.')
     flux = TPTFlux.getFlux()
     netFlux = TPTFlux.getNetFlux()
     forwardCommittor = TPTFlux.getForwardCommittor()
     backwardCommittor = TPTFlux.getBackwardCommittor()
+    log.debug('successfully converted.')
     
     log.info("Forward committor is: ", forwardCommittor)
     log.info("Backward committor is: " + backwardCommittor)
