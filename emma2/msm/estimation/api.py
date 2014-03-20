@@ -19,7 +19,7 @@ from scipy.sparse import issparse
 from scipy.sparse.sputils import isdense
 
 import emma2.util.pystallone as stallone
-
+from emma2.util.log import getLogger
 
 __all__=['count_matrix',
          'cmatrix', 
@@ -378,7 +378,9 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
                     # T is of type stallone.IDoubleArray, so wrap it in an ndarray
                     # return stallone.stallone_array_to_ndarray(stallone.API.msm.estimateTrev(Cs))
             except stallone.JavaException as je:
-                raise RuntimeError(je)
+                log = getLogger()
+                log.exception('Error during reversible tmatrix estimatation', je)
+                raise
         else:
             if sparse_mode:
                 # Sparse, reversible, fixed pi (currently using dense with sparse conversion)
@@ -510,7 +512,9 @@ def tmatrix_sampler(C, reversible=False, mu=None, P0=None):
                 sampler = API.msmNew.createTransitionMatrixSamplerRev(C)
             return sampler
         except JavaException as je:
-            raise RuntimeError(je)
+            log = getLogger()
+            log.exception("Error during tmatrix sampling", je)
+            raise
     else:
         raise NotImplementedError('Non-reversible sampler not implemented.')
 
