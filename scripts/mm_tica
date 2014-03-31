@@ -6,10 +6,11 @@ __author_email__ = 'fabian.paul@mpikg.mpg.de'
 
 import argparse
 import numpy
+import sys
 
 from emma2.coordinates.tica import Amuse
 
-if __name__ == '__main__':
+def handleArgs():
     parser = argparse.ArgumentParser(description='Calculate covariance matrices and weight matrices for PCA and TICA.')
 
     parser.add_argument('-i', '--trajectories', required=True, nargs='+', help='(input) trajectories', metavar='files')
@@ -27,6 +28,10 @@ if __name__ == '__main__':
     parser.add_argument('-M', '--usemean', help='(input) expert option: file name for mean', metavar='file', type=file)
 
     args = parser.parse_args()
+    return args
+
+def main():
+    args = handleArgs()
 
     # --lagtime is only required for tica, handle this
     if not args.lagtime:
@@ -53,3 +58,8 @@ if __name__ == '__main__':
     if(args.var): numpy.savetxt(args.var, amuse.var)
     if(args.covariancematrix): numpy.savetxt(args.covariancematrix, amuse.corr)
     if(args.laggedcovariancematrix): numpy.savetxt(args.laggedcovariancematrix, amuse.tcorr)
+
+    return 0
+
+if __name__ == '__main__':
+    sys.exit(main())

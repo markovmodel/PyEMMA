@@ -6,12 +6,12 @@ Estimation of transition matrices
 @author: marscher
 '''
 import argparse
+import sys
 
 from emma2.msm.estimation.api import count_matrix, transition_matrix
 from emma2.msm.io import write_matrix_ascii, load_matrix
 from emma2.util.files import read_dtrajs_from_pattern
 from emma2.util.log import getLogger
-
 
 log = getLogger()
 
@@ -31,7 +31,7 @@ def handleArgs():
     
     return parser.parse_args()
 
-if __name__ == '__main__':
+def main():
     args = handleArgs()
     
     if args.discTraj != []:
@@ -58,11 +58,22 @@ if __name__ == '__main__':
     
     log.info('...finished')
     
-    # TODO: handle io exceptions?
     if args.outputcountmatrix:
         log.info('write count matrix to %s' % args.outputcountmatrix)
-        write_matrix_ascii(args.outputcountmatrix, cmatrix)
+        try:
+            write_matrix_ascii(args.outputcountmatrix, cmatrix)
+        except Exception as e:
+            log.exception('Exception during writing of count matrix', e)
+            return 1
         
     if args.outputtransitionmatrix:
         log.info('write transition matrix to %s ' %args.outputtransitionmatrix)
-        write_matrix_ascii(args.outputtransitionmatrix, T)
+        try:
+            write_matrix_ascii(args.outputtransitionmatrix, T)
+        except Exception as e:
+            log.exception('Exception during writing of transition matrix', e)
+            return 1
+
+    return 0
+if __name__ == '__main__':
+    sys.exit(main())

@@ -10,6 +10,8 @@ to a given file.
 import sys
 import argparse
 
+import numpy as np
+
 from emma2.msm.io import read_matrix, write_matrix
 from emma2.msm.analysis import is_transition_matrix
 from emma2.util.log import getLogger
@@ -42,10 +44,9 @@ def freeEnergy(kbTScale, pi):
         Calculates the free energy according to following formula 
     F_{i}=-k_{B}T\:\ln\frac{\pi_{i}}{\max\pi_{j}} 
        """
-    import numpy as np
     freeEnergy = np.empty(pi.shape)
     max_pi = np.max(pi)
-    freeEnergy[:] = -kbTScale * np.log(pi[:] / max_pi)
+    freeEnergy = -kbTScale * np.log(pi / max_pi)
     return freeEnergy
 
 def main():

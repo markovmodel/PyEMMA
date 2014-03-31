@@ -18,7 +18,7 @@ import emma2.autobuilder.emma_crd_mockup as emma_crd
 Qtransformer = True    # do you want to use a custom transformation?
 Qcluster =  False    # do clustering of trajectories yes/no
 
-if __name__ == "__main__":
+def main():
 
     ##########################################################################
     # READ command line
@@ -114,5 +114,9 @@ if __name__ == "__main__":
                 timeStartedWaiting = time.time();                
         now = time.ctime()            # get the time
         out.write('stopping model server ' + (now) + '\n')
-        out.flush() 
+        out.flush()
+
+    return 0
         
+if __name__ == "__main__":
+    sys.exit(main())
