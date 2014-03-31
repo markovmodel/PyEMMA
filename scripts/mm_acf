@@ -67,7 +67,7 @@ def acf(trajs, acffname, stride=1, max_lag=None, subtract_mean=True, normalize=T
     
     numpy.savetxt(acffname, acf)
   
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(description='Fast computation of autocorrelation functions over multiple trajectories')
     parser.add_argument('-i', '--trajectories', required=True, nargs='+', help='(input) trajectories', metavar='files')
     parser.add_argument('-o', '--acf', required=True, help='(output) file name for acfs', metavar='file')
@@ -85,3 +85,7 @@ if __name__ == "__main__":
         mean = None
     
     acf(args.trajectories, args.acf, args.stride, args.maxlag, not args.meanfree, not args.nonormalize, mean)
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(main())

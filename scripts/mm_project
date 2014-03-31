@@ -7,10 +7,11 @@ Created on 19.11.2013
 '''
 
 import argparse
-import os
+import sys
+
 from emma2.coordinates.tica import Amuse, rename, log_loop
 
-if __name__ == '__main__':
+def handleArgs():
     parser = argparse.ArgumentParser(description='Subtract mean and project using a matrix.')
 
     parser.add_argument('-i', '--trajectories', required=True, nargs='+', help='(input) trajectories', metavar='files')
@@ -22,8 +23,15 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--descriptor', default=None, help='string to insert between the file name and the extension of order parameter trajectories', metavar='string')
   
     args = parser.parse_args()
-    
-    amuse = Amuse.fromfiles(args.mean, None, args.weights, args.timecolumn)
+    return args
 
+def main():
+    args = handleArgs()
+    amuse = Amuse.fromfiles(args.mean, None, args.weights, args.timecolumn)
+    
     for t in log_loop(args.trajectories):
         amuse.project(t, rename(t, args.outdir, args.descriptor), amuse.tica_weights, args.keepnp)
+
+
+if __name__ == '__main__':
+    sys.exit(main())
