@@ -18,8 +18,6 @@ Created on 15.10.2013
 '''
 from log import getLogger as _getLogger
 _log = _getLogger(__name__)
-# need this for ipython!!!
-#_log.setLevel(50)
 
 from jpype import \
  startJVM as _startJVM, \
@@ -29,10 +27,9 @@ from jpype import \
  java, javax
 
 import numpy as _np
+import sys as _sys
 
-from platform import architecture
-arch = architecture()[0]
-
+_64bit = _sys.maxsize > 2**32
 
 """ stallone java package. Should be used to access all classes in the stallone library."""
 stallone = None
@@ -41,26 +38,46 @@ API = None
 
 def _initVM():
     import os
+    import pkg_resources
+    from emma2.util.config import configParser
     
-    def getStalloneJarFilename():
-        filename = 'stallone-1.0-SNAPSHOT-jar-with-dependencies.jar'
-        abspath = os.path.abspath(__file__)
-        abspath = os.path.dirname(abspath) + os.path.sep
-        relpath = '../../lib/stallone/'.replace('/', os.path.sep)
-        abspath = abspath + relpath + filename
-        return abspath
+    def buildClassPath():
+        # define classpath separator
+        if os.name is 'posix':
+            sep = ':'
+        else:
+            sep = ';'
+        
+        stallone_jar = os.path.join('..','lib','stallone','stallone-1.0-SNAPSHOT-jar-with-dependencies.jar')
+        stallone_jar_file = pkg_resources.resource_filename('emma2', stallone_jar)
+        if not os.path.exists(stallone_jar_file):
+            raise RuntimeError('stallone jar not found! Expected it here: %s' 
+                           % stallone_jar_file)
+        # cleanup optional cp (fix separator char etc)
+        optional_cp = configParser.get('Java', 'classpath')
+        if os.name is 'posix':
+            optional_cp.replace(';', sep)
+        else:
+            optional_cp.replace(':', sep)
+            
+        # warn user about non existing custom cp
+        good_opt_cp = []
+        for p in optional_cp.split(sep):
+            if p is not '' and not os.path.exists(p):
+                _log.warning('custom classpath "%s" does not exist!' % p)
+            else:
+                good_opt_cp.append(p)
+
+        cp = [stallone_jar_file] + good_opt_cp
+        return '-Djava.class.path=' + sep.join(cp)
     
-    stallone_jar = getStalloneJarFilename()
-    if not os.path.exists(stallone_jar):
-        raise RuntimeError('stallone jar not found! Expected it here: %s' 
-                           % stallone_jar)
+    classpath = buildClassPath()
+    initHeap = '-Xms%s' % configParser.get('Java', 'initHeap')
+    maxHeap = '-Xmx%s' % configParser.get('Java', 'maxHeap')
+    optionalArgs = configParser.get('Java', 'optionalArgs')
     
-    # TODO: store and read options in emma2.cfg
-    classpath = "-Djava.class.path=%s%s" % (stallone_jar, os.sep)
-    initHeap = "-Xms64m"
-    maxHeap = "-Xmx2000m"
+    args = [initHeap, maxHeap, classpath, optionalArgs]
     
-    args = [initHeap, maxHeap, classpath]
     try:
         _log.debug('init with options: "%s"' % args)
         _log.debug('default vm path: %s' % _getDefaultJVMPath())
@@ -79,17 +96,7 @@ def _initVM():
         _log.error(e)
         raise
 
-# FIXME: avoid this hack!
-# this is necessary, because pystallone gets imported twice and startJVM will
-# segfault if started twice from same thread!
-import sys as _sys
-if __name__ not in _sys.modules:
-    pass
-else:
-    del __name__ # delete module
-    #import warnings
-    #warnings.warn('stallone already imported...', RuntimeWarning)
-    _initVM()
+_initVM()
 
 def ndarray_to_stallone_array(pyarray):
     """
@@ -176,8 +183,8 @@ def stallone_array_to_ndarray(stArray):
     if type(stArray) == stallone.api.doubles.IDoubleArray:
         dtype = _np.float64
     elif type(stArray) == stallone.api.ints.IIntArray:
-        if arch == '64bit':
-            dtype = _np.int64  # long int?
+        if _64bit:
+            dtype = _np.int64
         else:
             dtype = _np.int32
 
