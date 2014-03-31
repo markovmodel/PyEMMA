@@ -7,11 +7,6 @@ import msm
 import pmm
 import util
 
-""" global logging support. See documentation of python library
-logging module for more information"""
-from util.log import log
-
-
 # scipy.sparse.diags function introduced in scipy 0.11, provide a fallback for
 # users of older versions
 import scipy.sparse
