@@ -24,7 +24,7 @@ def shortcut(alias_name, func):
     """
     import sys
     dict_ = sys._getframe(1).f_globals
-    f = func;
+    f = func
     f.__doc__ = func.__doc__
     dict_['__all__'].append(alias_name) # append to all variable
     return f
