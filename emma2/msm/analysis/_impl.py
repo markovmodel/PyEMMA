@@ -142,7 +142,7 @@ class TPTFlux(object):
         """
         self.T = ndarray_to_stallone_array(T)
         
-        
+# TODO: test
 class PathwayDecomposition(object):
     
     def __init__(self, F, Q, A, B):
