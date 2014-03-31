@@ -10,7 +10,7 @@ This could be a file format transformation, a coordinate transformation, or a cl
 import os
 import fnmatch
 
-class FileTransform:
+class FileTransform(object):
     def __init__(self,
                  name, 
                  transformer,
