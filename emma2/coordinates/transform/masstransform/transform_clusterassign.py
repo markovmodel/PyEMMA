@@ -7,7 +7,7 @@ import os
 import filetransform
 
 from emma2.util.pystallone import *
-from emma2.cluster.stalloneClustering import *
+from emma2.coordinates.clustering.stalloneClustering import *
 
 class Transform_ClusterAssign(filetransform.FileTransform):
 
