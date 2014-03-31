@@ -3,46 +3,24 @@ Created on 15.10.2013
 
 @author: marscher
 '''
-__all__ = ['log', 'getLogger']
+__all__ = ['getLogger', 'enabled']
 
 import logging
-import ConfigParser
-import os
+from emma2.util.config import configParser as config, AttribStore
 
-""" this filenames are being tried to read to obtain basic configuration values 
-    for the logging system."""
-cfg = 'emma2.cfg'
-filenames = [cfg,
-            '/etc/' + cfg,
-            os.path.expanduser('~') + os.path.sep + cfg,
-            # This should always be last
-            # FIXME: this causes problems with circular imports...
-            #os.path.dirname(__import__('emma2').__file__) + os.path.sep + cfg,
-            ]
+enabled = False
 
-""" default values for logging system """
-defaults = {'enabled': 'True',
-            'toconsole' : 'True',
-            'tofile' : 'False',
-            'file' : os.path.expanduser('~/.emma2.log'),
-            'level' : 'DEBUG',
-            'format' : '%%(asctime)s %%(name)-12s %%(levelname)-8s %%(message)s'}
-
-class AttribStore(dict):
+""" set up a dummy logger if logging is disabled"""
+class dummyLogger:
+    def dummy(self, kwargs):
+        pass
     def __getattr__(self, name):
-        return self[name]
+        return self.dummy
 
-    def __setattr__(self, name, value):
-        self[name] = value
-
-config = ConfigParser.SafeConfigParser(defaults)
-used_filenames = config.read(filenames)
-
-if used_filenames == []:
-    args = AttribStore(defaults)
-    """ we need to strip the string interpolation marks """
-    args.format = args.format.replace('%%', '%')
-else:
+def setupLogging():
+    """
+        parses emma2 configuration file and creates a logger config from that 
+    """
     section = 'Logging'
     args = AttribStore()
     args.enabled = config.getboolean(section, 'enabled')
@@ -51,50 +29,31 @@ else:
     args.file = config.get(section, 'file')
     args.level = config.get(section, 'level')
     args.format = config.get(section, 'format')
-
-
-if args.enabled:
-    if args.tofile and args.file:
-        filename = args.file
-    else:
-        filename = None
-
-    logging.basicConfig(level=args.level,
-                format=args.format,
-                datefmt='%d-%m-%y %H:%M:%S',
-                filename=filename,
-                filemode='a')
     
-    """ in case we want to log to both file and stream, add a separate handler"""
-    if args.toconsole and args.tofile:
-        ch = logging.StreamHandler()
-        ch.setLevel(args.level)
-        ch.setFormatter(logging.Formatter(args.format))
-        logging.getLogger('').addHandler(ch)
-
-    """ default logger for emma2 """
-    log = logging.getLogger('emma2')
-else:
-    """ set up a dummy logger if logging is disabled"""
-    class dummyLogger:
-        def log(self, kwargs):
-            pass
-        def debug(self, kwargs):
-            pass
-        def info(self, kwargs):
-            pass
-        def warn(self, kwargs):
-            pass
-        def error(self, kwargs):
-            pass
-        def critical(self, kwargs):
-            pass
-        def setLevel(self, kwargs):
-            pass
-    log = dummyLogger()
+    if args.enabled:
+        if args.tofile and args.file:
+            filename = args.file
+        else:
+            filename = None
+    
+        logging.basicConfig(level=args.level,
+                    format=args.format,
+                    datefmt='%d-%m-%y %H:%M:%S',
+                    filename=filename,
+                    filemode='a')
+        
+        """ in case we want to log to both file and stream, add a separate handler"""
+        if args.toconsole and args.tofile:
+            ch = logging.StreamHandler()
+            ch.setLevel(args.level)
+            ch.setFormatter(logging.Formatter(args.format))
+            logging.getLogger('').addHandler(ch)
+    
+    global enabled   
+    enabled = args.enabled
 
 def getLogger(name = None):
-    if not args.enabled:
+    if not enabled:
         return dummyLogger()
     """ if name is not given, return a logger with name of the calling module."""
     if not name:
@@ -104,3 +63,7 @@ def getLogger(name = None):
         pos = path.rfind('emma2')
         name = path[pos:]
     return logging.getLogger(name)
+
+
+# init logging
+setupLogging()
