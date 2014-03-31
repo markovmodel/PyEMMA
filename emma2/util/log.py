@@ -16,11 +16,15 @@ class dummyLogger:
         pass
     def __getattr__(self, name):
         return self.dummy
+    
+dummyInstance = None
 
 def setupLogging():
     """
         parses emma2 configuration file and creates a logger config from that 
     """
+    global enabled, dummyInstance
+    
     section = 'Logging'
     args = AttribStore()
     args.enabled = config.getboolean(section, 'enabled')
@@ -48,13 +52,14 @@ def setupLogging():
             ch.setLevel(args.level)
             ch.setFormatter(logging.Formatter(args.format))
             logging.getLogger('').addHandler(ch)
+    else:
+        dummyInstance = dummyLogger()
     
-    global enabled   
     enabled = args.enabled
 
 def getLogger(name = None):
     if not enabled:
-        return dummyLogger()
+        return dummyInstance
     """ if name is not given, return a logger with name of the calling module."""
     if not name:
         import traceback
