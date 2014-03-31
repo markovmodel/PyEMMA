@@ -77,9 +77,7 @@ def write_discrete_trajectory(filename, dtraj):
     """
     trajectory.write_discrete_trajectory(filename, dtraj)
 
-write_dtraj=write_discrete_trajectory
-
-__all__.append('write_dtraj')
+write_dtraj=shortcut('write_dtraj', write_discrete_trajectory)
 
 ################################################################################
 # binary
@@ -197,7 +195,7 @@ def read_matrix(filename, mode='default', dtype=float, comments='#'):
             return matrix.read_matrix_dense(filename, dtype=dtype, comments=comments)
     
 
-def write_matrix(filename, A, mode='default', fmt='%.18e', header='', comments='#'):
+def write_matrix_ascii(filename, A, mode='default', fmt='%.18e', header='', comments='#'):
     r"""Write matrix to ascii file 
     
     (M, N) dense matrices are stored as ascii file with M rows
@@ -262,7 +260,7 @@ def write_matrix(filename, A, mode='default', fmt='%.18e', header='', comments='
 # binary
 ################################################################################
 
-def save_matrix(filename, A, mode='default'):
+def write_matrix_binary(filename, A, mode='default'):
     r"""Save matrix as binary file.
     
     (M, N) dense matrices are stored as ndarrays 
