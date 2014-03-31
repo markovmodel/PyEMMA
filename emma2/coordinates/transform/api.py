@@ -216,7 +216,7 @@ def transform_trajectory(traj, transformation):
     shape = np.shape(transformation.transform(traj[0]))
     output = np.ndarray(tuple([N]) + shape)
     #if (transformation.has_efficient_transform()):
-    for i in range(0,N):
+    for i in xrange(0,N):
         output[i] = transformation.transform(traj[i])
     #else: # NOTE: this is not necessarily more efficient than above... need to solve the interface conversion problem.
     #    Y = coor.transform_data(input._java_reader, transformation)
