@@ -3,7 +3,7 @@
 
 import sys
 
-from emma2.cluster.stalloneClustering import *
+from emma2.coordinates.clustering.stalloneClustering import *
 
 from emma2.util.log import getLogger
 log = getLogger('mm_cluster')
