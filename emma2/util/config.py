@@ -34,21 +34,27 @@ def readConfiguration():
     """ this filenames are being tried to read to obtain basic configuration values 
         for the logging system."""
     cfg = 'emma2.cfg'
+    
+    # read defaults from ultimate_backup first, 
+    # then pass them as defaults to safeconfig parser
+    defParser = ConfigParser.RawConfigParser()
     ultimate_backup = pkg_resources.resource_filename('emma2', os.path.join('..', 'emma2.cfg'))
+    if defParser.read(ultimate_backup) == []:
+        raise RuntimeError('Default configuration values could not be red!')
+    defaults = {}
+    for section in defParser.sections():
+        for item in defParser.items(section):
+            defaults[item[0]] = item[1]
+    
+    # use these files to extend/overwrite the config.
+    # Last red files always overwrites existing values!
     filenames = [cfg, # config in current dir
                 '/etc/' + cfg, # config in global installation
-                os.path.join(os.path.expanduser('~'), os.path.sep, cfg), # config in user dir
-                # This should always be last, since it provides all default values
-                # and things will horribly fail, if this file can not be found.
-                ultimate_backup
+                os.path.join(os.path.expanduser('~' + os.path.sep), cfg), # config in user dir
                 ]
     
-    configParser = ConfigParser.SafeConfigParser()
+    configParser = ConfigParser.SafeConfigParser(defaults)
     """ this is a list of used configuration filenames during parsing the configuration"""
     used_filenames = configParser.read(filenames)
-    
-    if ultimate_backup not in used_filenames:
-        raise RuntimeError('Default configuration values could not be red!')
-
 
 readConfiguration()
