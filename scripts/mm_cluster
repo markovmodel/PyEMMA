@@ -2,7 +2,7 @@
 # encoding: utf-8
 """
 """
-
+import argparse
 import sys
 
 from emma2.coordinates.clustering.stalloneClustering import *
@@ -16,20 +16,6 @@ input_formats = ['xtc', 'dcd' , 'ascii' , 'ensembleascii', 'auto']
 metrics = ['rmsd', 'euclidian']
 
 def handleArgs():
-    """
-    TODO: order args according to this (if it is possible
-      + " -i (<string:filename|filenamepattern>)+"
-                    + "[-iformat [ xtc | dcd | ascii | ensembleascii | {auto} ]]"
-                    + "\n"
-                    + "[-istepwidth {int:1}]\n"
-                    + "[ -algorithm kmeans -clustercenters <int> [-metric {euclidean}] [-maxiterations <int>]\n"
-                    + " |-algorithm kcenters -clustercenters <int> -metric [ minrmsd | euclidean ]\n"
-                    + " |-algorithm regularspatial -dmin <double> -metric [ minrmsd | euclidean ]\n"
-                    + " |-algorithm regulartemporal -spacing <int> -metric [ minrmsd | euclidean ]\n"
-                    + "]\n"
-                    + "-o (<string:filename_for_cluster_centers>)\n";
-    """
-    import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--input', nargs='+', dest='input', help='input filename or filename pattern', required=True)
     parser.add_argument('-iformat', help='format of input files',
