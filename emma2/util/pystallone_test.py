@@ -14,18 +14,19 @@ class TestPyStallone(unittest.TestCase):
         self.n = 100000
         self.a = np.random.random(self.n)
 
-    def convertToNPandCompare(self, stArray, npArray):
+    def convertToNPandCompare(self, stArray, npArray, skipDataTypeCheck=False):
         """
         converts stArray to a numpy array and compares with npArray
         """
         newNPArr = st.stallone_array_to_ndarray(stArray)
-        
+        self.assertEqual(type(npArray), type(newNPArr), 'differing types')
         self.assertEqual(npArray.shape, newNPArr.shape, 'differing shape')
         self.assertTrue(np.allclose(npArray, newNPArr), 'conversion failed')
-        self.assertEqual(npArray.dtype, newNPArr.dtype, 
+        if not skipDataTypeCheck:
+            self.assertEqual(npArray.dtype, newNPArr.dtype, 
                          'differing datatypes: is %s, should be %s' 
                           %(npArray.dtype, newNPArr.dtype))
-        self.assertEqual(type(npArray), type(newNPArr), 'differing types')
+
         
     def compareNP(self, a, b):
         self.assertEqual(type(a), type(b), 'differing types: should be %s, but is %s' 
@@ -40,7 +41,7 @@ class TestPyStallone(unittest.TestCase):
     def testConversionND_Float32(self):
         a = self.a.astype(np.float32)
         b = st.ndarray_to_stallone_array(a)
-        self.convertToNPandCompare(b, a)
+        self.convertToNPandCompare(b, a, True)
 
     def testConversionND_Float64(self):
         a = self.a.astype(np.float64)
@@ -51,7 +52,7 @@ class TestPyStallone(unittest.TestCase):
     def testConversionND_Int32(self):
         a = self.a.astype(np.int32)
         b = st.ndarray_to_stallone_array(a)
-        self.convertToNPandCompare(b, a)
+        self.convertToNPandCompare(b, a, True)
         
 
     def testConversionND_Int64(self):
@@ -89,8 +90,6 @@ class TestPyStallone(unittest.TestCase):
         self.a = np.random.randint(1, size=self.n)
         self.a = self.a.reshape((10, self.n / 10))
         jarr = st.JArray(st.JInt, 2)(self.a)
-        # FIXME: 2d jarray not compatible with table(int[][]) prototype?!
-        # in current jar this method is not existant... (proguard may have stripped it)
         a = st.API.intsNew.table(jarr)
         b = st.stallone_array_to_ndarray(a)
         self.compareNP(self.a, b)
