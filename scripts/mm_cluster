@@ -5,7 +5,7 @@
 
 import sys
 
-from emma2.cluster.stalloneClustering import *
+from emma2.coordinates.clustering.stalloneClustering import *
 from emma2.util.files import handleInputFileArg
 from emma2.util.log import getLogger
 
@@ -35,7 +35,7 @@ def handleArgs():
     parser.add_argument('-iformat', help='format of input files',
                          choices=input_formats, default='auto')
     # TODO: this is eg. unsupported by current kmeans impl in stallone
-    #parser.add_argument('-istepwidth', type=int, default=1)
+    parser.add_argument('-istepwidth', type=int, default=1)
     parser.add_argument('-ialgorithm', dest='algorithm', type=str, choices=algorithms, required=True)
     parser.add_argument('-metric', dest='metric', type=str, choices=metrics, default='euclidian')
     parser.add_argument('-o', '--output', dest='output', default='centers.dat', help='')
@@ -94,8 +94,8 @@ def main():
         
         # save cluster centers to file
         writeASCIIResults(centers, args.output)
-    except Exception as e:
-        log.error('something went wrong... %s' % e)
+    except Exception:
+        log.exception('something went wrong...')
         return 1
     log.info("successfully written cluster centers to file %s" % args.output)
     return 0

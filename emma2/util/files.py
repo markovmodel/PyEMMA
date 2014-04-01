@@ -8,7 +8,7 @@ from __future__ import absolute_import
 import os
 import re
 from glob import glob
-from .log import log
+from .log import getLogger
 
 from emma2.msm.io.api import read_discrete_trajectory
 
@@ -55,7 +55,7 @@ def paths_from_patterns(patterns):
         return glob(patterns)
     
     
-def read_dtrajs_from_pattern(patterns, logger=log):
+def read_dtrajs_from_pattern(patterns, logger=getLogger()):
     """
     Parameters
     ----------

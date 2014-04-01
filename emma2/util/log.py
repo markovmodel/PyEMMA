@@ -6,7 +6,7 @@ Created on 15.10.2013
 __all__ = ['getLogger', 'enabled']
 
 import logging
-from emma2.util.config import configParser as config, AttribStore
+from .config import configParser as config, AttribStore
 
 enabled = False
 
