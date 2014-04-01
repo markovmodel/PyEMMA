@@ -7,10 +7,12 @@ The API variable is the main entry point into the Stallone API factory.
 
 Examples
 --------
-Read a trajectory:
-TODO: create a good example
+create a double vector and assigning values:
 >>> from emma2.util.pystallone import stallone as st
->>> st.api.API.data.
+>>> x = st.api.API.doublesNew.array(10) # create double array with 10 elements
+>>> x.set(5, 23.0) # set index 5 to 23.0
+>>> print(x)
+0.0     0.0     0.0     0.0     0.0     23.0     0.0     0.0     0.0     0.0
 
 Created on 15.10.2013
 
@@ -41,6 +43,8 @@ def _initVM():
     import pkg_resources
     from emma2.util.config import configParser
     
+    global stallone, API
+    
     def buildClassPath():
         # define classpath separator
         if os.name is 'posix':
@@ -48,7 +52,8 @@ def _initVM():
         else:
             sep = ';'
         
-        stallone_jar = os.path.join('..','lib','stallone','stallone-1.0-SNAPSHOT-jar-with-dependencies.jar')
+        stallone_jar = os.path.join('..','lib','stallone',
+                                    'stallone-1.0-SNAPSHOT-jar-with-dependencies.jar')
         stallone_jar_file = pkg_resources.resource_filename('emma2', stallone_jar)
         if not os.path.exists(stallone_jar_file):
             raise RuntimeError('stallone jar not found! Expected it here: %s' 
@@ -82,18 +87,17 @@ def _initVM():
         _log.debug('init with options: "%s"' % args)
         _log.debug('default vm path: %s' % _getDefaultJVMPath())
         _startJVM(_getDefaultJVMPath(), *args)
-    except RuntimeError as re:
-        _log.error(re)
+    except RuntimeError:
+        _log.exception('startJVM failed.')
         raise
-    global stallone, API
+
     try:
         stallone = JPackage('stallone')
         API = stallone.api.API
-        from jpype._jpackage import JPackage as jp
-        if type(API) == type(jp): #TODO: this check does not work
-            raise RuntimeError('jvm initialization borked. Type of API should be JClass')
-    except Exception as e:
-        _log.error(e)
+        if type(API).__name__ != 'stallone.api.API$$Static':
+            raise RuntimeError('Stallone package initialization borked. Check your JAR/classpath!') 
+    except Exception:
+        _log.exception('initialization went wrong')
         raise
 
 _initVM()
@@ -129,9 +133,6 @@ def ndarray_to_stallone_array(pyarray):
     elif dtype == _np.int32 or dtype == _np.int64:
         factory = API.intsNew
         cast_func = JInt
-        # TODO: remove this, when that is solved: https://github.com/originell/jpype/issues/24
-        #pyarray=pyarray.astype(_np.int64)
-        pyarray = pyarray.tolist() # this works always, but is undesired
     else:
         raise TypeError('unsupported datatype:', dtype)
 
