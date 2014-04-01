@@ -23,9 +23,12 @@ def getDataSequenceLoader(files):
             # create ArrayList of files an pass it
         files = API.str.toList(files)
         return API.dataNew.multiSequenceLoader(files)
-    except JavaException as je:
-        log.error('something went wrong during file reading: %s' % je)
+    except JavaException:
+        log.exception('Java exception during file reading.')
         # reraise exception
+        raise
+    except Exception:
+        log.exception('Unknown exception during file reading')
         raise
 
 def getClusterAlgorithm(data, size, **kwargs):
