@@ -39,9 +39,10 @@ def getClusterAlgorithm(data, size, **kwargs):
     ----------
     data : Stallone instance of IDataSequence
     algorithm : string
-        algorithm to construct
+        algorithm to construct. Valid values are one of ['kcenter', 'kmeans', 
+        'regularspatial']
     metric : string
-        metric to use
+        metric to use. Valid values are one of ['euclidian', 'minrmsd']
     k : int
         cluster centers in case of kcenter/kmeans
     dmin : float
