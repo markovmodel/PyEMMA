@@ -90,10 +90,10 @@ Examples
 --------
 >>> diagonals = [[1,2,3,4], [1,2,3], [1,2]]
 >>> diags(diagonals, [0, -1, 2]).todense()
-matrix([[1, 0, 1, 0],
-[1, 2, 0, 2],
-[0, 2, 3, 0],
-[0, 0, 3, 4]])
+matrix([[1., 0., 1., 0.],
+[1., 2., 0., 2.],
+[0., 2., 3., 0.],
+[0., 0., 3., 4.]])
 
 Broadcasting of scalars is supported (but shape needs to be
 specified):
