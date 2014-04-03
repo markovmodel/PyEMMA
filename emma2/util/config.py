@@ -5,7 +5,7 @@ different priorities:
 1. $CWD/emma2.cfg
 2. /etc/emma2.cfg
 3. ~/emma2.cfg
-4. $PYTHONPATH/Emma2/emma2.cfg
+4. $PYTHONPATH/Emma2/emma2.cfg (always taken as default configuration file)
 
 The default values are stored in later file to ensure these values are always
 defined. This is preferred over hardcoding them somewhere in the python code.
@@ -33,30 +33,36 @@ def readConfiguration():
     global configParser, used_filenames
     """ this filenames are being tried to read to obtain basic configuration values 
         for the logging system."""
-    cfg = 'emma2.cfg'
-    
-    # read defaults from ultimate_backup first, 
-    # then pass them as defaults to safeconfig parser
-    defParser = ConfigParser.RawConfigParser()
-    ultimate_backup = pkg_resources.resource_filename('emma2', os.path.join('..', 'emma2.cfg'))
-    if defParser.read(ultimate_backup) == []:
-        raise RuntimeError('Default configuration values could not be red! '
-                           'Tried following file: %s' % ultimate_backup)
-    defaults = {}
-    for section in defParser.sections():
-        for item in defParser.items(section):
-            defaults[item[0]] = item[1]
-            
-    print "defaults", defaults
-    
+        
     # use these files to extend/overwrite the config.
     # Last red files always overwrites existing values!
+    cfg = 'emma2.cfg'
     filenames = [cfg, # config in current dir
                 '/etc/' + cfg, # config in global installation
                 os.path.join(os.path.expanduser('~' + os.path.sep), cfg), # config in user dir
                 ]
     
-    configParser = ConfigParser.SafeConfigParser(defaults)
+    # read defaults from default_emma2_conf first.
+    defParser = ConfigParser.RawConfigParser()
+    default_emma2_conf = \
+        os.path.abspath(pkg_resources.resource_filename('emma2', os.path.join('..', 'emma2.cfg')))
+    
+    try:
+        with open(default_emma2_conf) as f:
+            defParser.readfp(f, default_emma2_conf)
+    except EnvironmentError as e:
+        print("FATAL ERROR: could not read default configuration file %s\n%s"
+              % (default_emma2_conf, e))
+        import sys
+        sys.exit(-1)
+    
+    # store values of defParser in configParser with sections
+    configParser = ConfigParser.SafeConfigParser()
+    for section in defParser.sections():
+        configParser.add_section(section)
+        for item in defParser.items(section):
+            configParser.set(section, item[0], item[1])
+            
     """ this is a list of used configuration filenames during parsing the configuration"""
     used_filenames = configParser.read(filenames)
 
