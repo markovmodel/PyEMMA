@@ -20,8 +20,6 @@ from setuptools import __version__ as st_version
 print "Using setuptools version: ", st_version
 from setuptools import setup, Extension, find_packages
 
-if '--help' in sys.argv:
-    sys.exit(0)
 """
 ################################################################################
     EMMA2 Setup
