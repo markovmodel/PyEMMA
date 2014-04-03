@@ -40,7 +40,8 @@ def readConfiguration():
     defParser = ConfigParser.RawConfigParser()
     ultimate_backup = pkg_resources.resource_filename('emma2', os.path.join('..', 'emma2.cfg'))
     if defParser.read(ultimate_backup) == []:
-        raise RuntimeError('Default configuration values could not be red!')
+        raise RuntimeError('Default configuration values could not be red! '
+                           'Tried following file: %s' % ultimate_backup)
     defaults = {}
     for section in defParser.sections():
         for item in defParser.items(section):
