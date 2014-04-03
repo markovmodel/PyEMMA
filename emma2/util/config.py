@@ -46,6 +46,8 @@ def readConfiguration():
     for section in defParser.sections():
         for item in defParser.items(section):
             defaults[item[0]] = item[1]
+            
+    print "defaults", defaults
     
     # use these files to extend/overwrite the config.
     # Last red files always overwrites existing values!
