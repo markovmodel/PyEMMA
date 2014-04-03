@@ -1,0 +1,3 @@
+include setup.py
+include setup.cfg
+include ez_setup.py
