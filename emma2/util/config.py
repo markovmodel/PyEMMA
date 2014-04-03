@@ -44,9 +44,7 @@ def readConfiguration():
     
     # read defaults from default_emma2_conf first.
     defParser = ConfigParser.RawConfigParser()
-    default_emma2_conf = \
-        os.path.abspath(pkg_resources.resource_filename('emma2', os.path.join('..', 'emma2.cfg')))
-    
+    default_emma2_conf = pkg_resources.resource_filename('emma2', cfg)
     try:
         with open(default_emma2_conf) as f:
             defParser.readfp(f, default_emma2_conf)
