@@ -66,14 +66,15 @@ def _initVM():
             optional_cp.replace(':', sep)
             
         # warn user about non existing custom cp
-        good_opt_cp = []
+        cp = []
         for p in optional_cp.split(sep):
             if p is not '' and not os.path.exists(p):
                 _log.warning('custom classpath "%s" does not exist!' % p)
             else:
-                good_opt_cp.append(p)
+                cp.append(p)
 
-        cp = [stallone_jar_file] + good_opt_cp
+        # user classpaths first, then stallone jar (to overwrite it optionally) 
+        cp.append(stallone_jar_file)
         return '-Djava.class.path=' + sep.join(cp)
     
     classpath = buildClassPath()
