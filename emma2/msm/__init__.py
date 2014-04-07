@@ -14,7 +14,7 @@ Submodules
 
    io - in and output
    estimation - estimate MSMs from data
-   analysis - analyse MSMs
+   analysis - analyze MSMs
 
 """
 from __future__ import division, print_function, absolute_import
