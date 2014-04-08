@@ -4,6 +4,8 @@ Created on Dec 30, 2013
 @author: noe
 '''
 
+__docformat__ = "restructuredtext en"
+
 import numpy as np
 import emma2.util.pystallone as stallone
 import general_transform

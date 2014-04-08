@@ -1,8 +1,10 @@
-'''
+r'''
 Created on Dec 30, 2013
 
 @author: noe
+
 '''
+__docformat__ = "restructuredtext en"
 
 # python imports
 import numpy as np
@@ -11,6 +13,9 @@ from datareader import DataReader
 from datawriter import DataWriter
 # stallone imports
 from emma2.util.pystallone import API as sapi
+
+__all__ = ['reader', 'read_traj', 'writer', 'write_traj']
+
 
 ###################################################################################################
 # Molecular IO
