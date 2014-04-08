@@ -1,19 +1,17 @@
 r"""
-==========================================================
-Emma2 MSM Estimation API (:mod:`emma2.msm.estimation.api`)
-==========================================================
+========================
+Emma2 MSM Estimation API
+========================
 
-.. currentmodule:: emma2.msm.analysis.api
-
-API functions for Markov state model estimation.
 """
+
+__docformat__ = "restructuredtext en"
 
 import numpy as np
 import sparse.count_matrix
 import sparse.connectivity
 import sparse.likelihood
 import sparse.transition_matrix
-#import sparse.perturbation
 import dense.transition_matrix
 
 from scipy.sparse import csr_matrix
@@ -23,9 +21,15 @@ from scipy.sparse.sputils import isdense
 import emma2.util.pystallone as stallone
 
 
-__all__=['count_matrix', 'cmatrix', 'connected_sets', 'error_perturbation', 'largest_connected_set',\
-             'connected_count_matrix', 'is_connected', 'transition_matrix', 'log_likelihood',\
-             'tmatrix_sampler', 'error_perturbation', 'tmatrix_cov']
+__all__=['count_matrix',
+         'cmatrix', 
+         'connected_sets',
+         'largest_connected_set',
+         'connected_count_matrix',
+         'is_connected',
+         'transition_matrix',
+         'log_likelihood',
+         'tmatrix_sampler']
 
 ################################################################################
 # Count matrix
@@ -96,8 +100,8 @@ cmatrix_cores=count_matrix_cores
 
 # DONE: Ben Implement in Python directly
 def connected_sets(C, directed=True):
-    r"""Compute connected components for a directed graph with weights
-    represented by the given count matrix.
+    r"""Connected components for a directed graph with edge-weights
+    given by the count matrix.
     
     Parameters
     ----------
@@ -116,12 +120,12 @@ def connected_sets(C, directed=True):
         largest connected set is the first entry in the list, lcc=cc[0].
     
     """
-    return sparse.connectivity.connected_sets(C)
+    return sparse.connectivity.connected_sets(C, directed=directed)
 
 # DONE: Ben 
 def largest_connected_set(C, directed=True):
-    r"""Compute connected components for a directed graph with weights
-    represented by the given count matrix.
+    r"""Largest connected component for a directed graph with edge-weights
+    given by the count matrix.
     
     Parameters
     ----------
@@ -137,11 +141,11 @@ def largest_connected_set(C, directed=True):
         The largest connected component of the directed graph.
     
     """
-    return sparse.connectivity.largest_connected_set(C)
+    return sparse.connectivity.largest_connected_set(C, directed=directed)
 
 # DONE: Ben 
 def connected_count_matrix(C, directed=True):
-    r"""Compute the count matrix of the largest connected set.
+    r"""Compute the count matrix on the largest connected set.
     
     The input count matrix is used as a weight matrix for the
     construction of a directed graph. The largest connected set of the
@@ -165,7 +169,7 @@ def connected_count_matrix(C, directed=True):
         connected set of vertices (states)
     
     """
-    return sparse.connectivity.connected_count_matrix(C)
+    return sparse.connectivity.connected_count_matrix(C, directed=directed)
 
 # shortcut
 connected_cmatrix=connected_count_matrix
@@ -190,8 +194,7 @@ def is_connected(C, directed=True):
         False otherwise.
     
     """
-    return sparse.connectivity.is_connected(C)
-
+    return sparse.connectivity.is_connected(C, directed=directed)
 
 # TODO: Implement in Python directly
 def mapping(set):
@@ -269,7 +272,6 @@ __all__.append('prior_const')
 
 # DONE: Frank implemented dense (Nonreversible + reversible with fixed pi)
 # DONE: Jan Implement in Python directly (Nonreversible)
-# TODO: Implement in Python directly (Reversible with stat dist)
 # Done: Martin Map to Stallone (Reversible)
 def transition_matrix(C, reversible=False, mu=None, **kwargs):
     """
@@ -340,19 +342,20 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
 tmatrix = transition_matrix
 __all__.append('tmatrix')
 
-
-
 # DONE: FN+Jan 
 def tmatrix_cov(C, k=None):
-    """
-    Computes a nonreversible covariance matrix of transition matrix elements
+    r"""Nonreversible covariance matrix of transition matrix
     
     Parameters
     ----------
     C : scipy.sparse matrix
         Count matrix
-    k : row index (optional). 
-        If set, only the covariance matrix for this row is returned.
+    k : int (optional)
+        If set, only the covariance matrix for this row is returned
+       
+    Returns
+    -------
+    cov : 
         
     """    
     return sparse.transition_matrix.tmatrix_cov(C, k)
@@ -360,7 +363,19 @@ def tmatrix_cov(C, k=None):
 
 # DONE: FN+Jan Implement in Python directly
 def log_likelihood(C, T):
-    r"""log-likelihood of T, i.e. p(C|T).
+    r"""Log-likelihood of the count matrix given a transition matrix.
+
+    Parameters
+    ----------
+    C : scipy.sparse matrix
+        Count matrix
+    T : scipy.sparse matrix
+        Transition matrix
+
+    Returns
+    -------
+    logL : float
+        Log-likelihood of the count matrix           
     
     """
     if issparse(C) and issparse(T):
@@ -379,7 +394,8 @@ def log_likelihood(C, T):
         return np.dot(C[nz], np.log(T[nz]))
 
 
-# TODO: this function can be mixed dense/sparse, so maybe we should change the place for this function.
+# TODO: this function can be mixed dense/sparse, so maybe we should
+# change the place for this function.
 def error_perturbation(C, sensitivity):
     r"""Compute error perturbation.
     

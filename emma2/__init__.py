@@ -1,5 +1,7 @@
-"""
-    Emma2 - Emma's Markov Model Algorithms 
+r"""
+==========================================
+    Emma2 - Emma's Markov Model Algorithms
+==========================================
 """
 
 import coordinates
