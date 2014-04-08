@@ -1,4 +1,10 @@
-#The analysis api-specifications
+r"""
+
+======================
+Emma2 MSM Analysis API
+======================
+
+"""
 
 __docformat__ = "restructuredtext en"
 
@@ -20,17 +26,33 @@ import sparse.decomposition
 import sparse.expectations
 import sparse.mean_first_passage_time
 
-__all__=['is_transition_matrix', 'is_rate_matrix',\
-             'is_ergodic', 'is_reversible',\
-             'stationary_distribution', 'eigenvalues',\
-             'eigenvectors', 'rdl_decomposition',\
-             'expected_counts', 'timescales',\
-             'committor', 'tpt',\
-             'stationary_distribution_sensitivity', 'mfpt', 'mfpt_sensitivity',\
-             'eigenvalue_sensitivity', 'eigenvector_sensitivity',\
-             'committor_sensitivity', 'pcca',\
-             'fingerprint_correlation', 'fingerprint_relaxation',\
-             'evaluate_fingerprint','correlation','relaxation']
+__all__=['is_transition_matrix',
+         'is_rate_matrix',
+         'is_ergodic',
+         'is_reversible',
+         'stationary_distribution',
+         'eigenvalues',
+         'timescales',
+         'eigenvectors',
+         'rdl_decomposition',
+         'expectation',
+         'expected_counts',
+         'expected_counts_stationary',
+         'mfpt',
+         'committor',
+         'tpt',
+         'pcca',
+         'fingerprint_correlation',
+         'fingerprint_relaxation',
+         'evaluate_fingerprint',
+         'correlation',
+         'relaxation',
+         'stationary_distribution_sensitivity',
+         'eigenvalue_sensitivity',
+         'timescale_sensitivity',
+         'eigenvector_sensitivity',
+         'mfpt_sensitivity',
+         'committor_sensitivity']
 # shortcuts added later:
 # ['statdist', 'is_tmatrix', 'statdist_sensitivity']
 
@@ -177,35 +199,23 @@ def stationary_distribution(T):
 statdist=stationary_distribution
 __all__.append('statdist')
 
-# DONE: Implement in Python directly
-def stationary_distribution_sensitivity(T, j):
-    r"""compute the sensitivity matrix of the stationary distribution of T
-    
-        Parameters
-    ----------
-    T : transition matrix
-    j : int
-        index of stationary distribution
-    """
-    if issparse(T):
-        raise NotImplementedError('Not implemented.')
-    elif isdense(T):
-        return dense.sensitivity.stationary_distribution_sensitivity(T, j)
-    else:
-        raise _type_not_supported
-
-statdist_sensitivity=stationary_distribution_sensitivity
-__all__.append('statdist_sensitivity')
 
 # DONE: Martin
 def eigenvalues(T, k=None):
-    r"""computes the eigenvalues
+    r"""Find eigenvalues of the transition matrix.
     
     Parameters
     ----------
-    T : transition matrix
+    T : (M, M) ndarray or sparse matrix
+        Transition matrix
     k : int (optional)
-        Compute the first k eigenvalues of T.
+        Compute the first `k` eigenvalues of `T`
+
+    Returns
+    -------
+    w : (M,) ndarray
+        Eigenvalues of `T`. If `k` is specified, `w` has
+        shape (k,)
     
     """
     if issparse(T):
@@ -215,39 +225,26 @@ def eigenvalues(T, k=None):
     else:
         raise _type_not_supported
 
-
-# TODO: Implement sparse in Python directly
-def eigenvalue_sensitivity(T, k):
-    r"""computes the sensitivity of the specified eigenvalue
-    
-    Parameters
-    ----------
-    k : int
-        Eigenvalue index
-    
-    """
-    if issparse(T):
-        raise NotImplementedError('Not implemented.')
-    elif isdense(T):
-        return dense.sensitivity.eigenvalue_sensitivity(T, k)
-    else:
-        raise _type_not_supported
-
 # DONE: Ben
 def timescales(T, tau=1, k=None):
-    r"""Compute implied time scales of given transition matrix
+    r"""Compute implied time scales of given transition matrix.
     
     Parameters
     ----------
-    T : transition matrix
-    tau : lag time
+    T : (M, M) ndarray or scipy.sparse matrix
+        Transition matrix
+    tau : int (optional)
+        The time-lag (in elementary time steps of the microstate
+        trajectory) at which the given transition matrix was
+        constructed.
     k : int (optional)
-        Compute the first k implied time scales.
-
+        Compute the first `k` implied time scales.
+        
     Returns
     -------
-    ts : ndarray
-        The implied time scales of the transition matrix.          
+    ts : (M,) ndarray
+        The implied time scales of the transition matrix.  If `k` is
+        not None then the shape of `ts` is (k,).
     
     """
     if issparse(T):
@@ -256,24 +253,6 @@ def timescales(T, tau=1, k=None):
         return dense.decomposition.timescales(T, tau=tau, k=k)
     else:
         raise _type_not_supported
-    
-# TODO: Implement sparse in Python directly
-def timescale_sensitivity(T, k):
-    r"""computes the sensitivity of the specified eigenvalue
-    
-    Parameters
-    ----------
-    k : int
-        Eigenvalue index
-    
-    """
-    if issparse(T):
-        raise NotImplementedError('Not implemented.')
-    elif isdense(T):
-        return dense.sensitivity.timescale_sensitivity(T, k)
-    else:
-        raise _type_not_supported
-
 
 # DONE: Ben
 # TODO: What about normalization? Or use rdl for this?
@@ -304,32 +283,6 @@ def eigenvectors(T, k=None, right=True):
         return dense.decomposition.eigenvectors(T, k=k, right=right)
     else: 
         raise _type_not_supported
-
-
-# TODO: Implement sparse in Python directly
-def eigenvector_sensitivity(T, k, j, right=True):
-    r"""Compute eigenvector sensitivity of T
-    
-    Parameters
-    ----------
-    k : int
-        Eigenvector index 
-    j : int
-        Element index 
-    right : bool
-        If True compute right eigenvectors, otherwise compute left eigenvectors.
-    
-    """
-    if issparse(T):
-        raise NotImplementedError('Not implemented.')
-    elif isdense(T):
-        if right is True:
-            return dense.sensitivity.eigenvector_sensitivity(T, k, j, True)
-        else:
-            return dense.sensitivity.eigenvector_sensitivity(T, k, j, False)
-    else:
-        raise _type_not_supported
-
 
 # DONE: Ben
 def rdl_decomposition(T, k=None, norm='standard'):
@@ -375,7 +328,6 @@ def rdl_decomposition(T, k=None, norm='standard'):
     else: 
         raise _type_not_supported
 
-
 # DONE: Ben
 def mfpt(T, target):
     r"""Compute vector of mean first passage times to target state.
@@ -400,27 +352,6 @@ def mfpt(T, target):
     else:
         raise _type_not_supported
 
-
-# TODO: Implement sparse in Python directly
-def mfpt_sensitivity(T, target, i):
-    r"""Compute sensitivity of mfpt
-    
-    Parameters
-    ----------
-    T : ndarray, shape=(n,n)
-        Transition matrix 
-    target : Integer or List of integers
-        Target state or set for mfpt calculation.
-    i : state to compute the sensitivity for
-    
-    """
-    if issparse(T):
-        raise NotImplementedError('Not implemented.')
-    elif isdense(T):
-        return dense.sensitivity.mfpt_sensitivity(T, target, i)
-    else:
-        raise _type_not_supported
-
 ################################################################################
 # Expectations
 ################################################################################
@@ -428,38 +359,38 @@ def mfpt_sensitivity(T, target, i):
 
 # DONE: frank
 def expectation(T, a, mu=None):
-    r"""computes the expectation value of a, given by <pi,a>
+    r"""Equilibrium expectation value of a given observable.
+
+    The expectation value of an observable a is defined as follows
+    
+    .. math::
+
+        <a> = \sum_i \pi_i a_i
     
     Parameters
     ----------
-    T : ndarray, shape(n,n)
+    T : (M, M) ndarray or scipy.sparse matrix
         Transition matrix
-    a : ndarray, shape(n)
-        state vector
-    mu : ndarray, shape(n)
-        stationary distribution of T. If given, the stationary distribution
-        will not be recalculated (saving lots of time)
+    a : (M,) ndarray
+        Observable vector
+    mu : (M,) ndarray (optional)
+        The stationary distribution of T.  If given, the stationary
+        distribution will not be recalculated (saving lots of time)
     
     Returns
     -------
-    expectation value of a : <a> = <pi,a> = sum_i pi_i a_i
-    
+    val: float
+        The expectation value fo the given observable:  <a> = <pi,a> = sum_i pi_i a_i
+        <a> = <pi,a> = sum_i pi_i a_i
     """
     pi = stationary_distribution(T)
     return np.dot(pi,a)
-
-
-# TODO: Implement in Python directly
-def expectation_sensitivity(T, a):
-    r"""computes the sensitivity of the expectation value of a
-    """
-    raise NotImplementedError('Not implemented.')
 
 # DONE: Ben
 def expected_counts(p0, T, n):
     r"""Compute expected transition counts for Markov chain with n steps. 
     
-    Expected counts are computed according to
+    Expected counts are given by
     
     .. math::
     
@@ -468,16 +399,16 @@ def expected_counts(p0, T, n):
     Parameters
     ----------
     p0 : (M,) ndarray
-        Starting (probability) vector of the chain.
+        Initial (probability) vector
     T : (M, M) ndarray or sparse matrix
-        Transition matrix of the chain.
+        Transition matrix
     n : int
-        Number of steps for chain.
+        Number of steps to take
     
     Returns
     --------
     EC : (M, M) ndarray or sparse matrix
-        Expected value for transition counts after N steps. 
+        Expected value for transition counts after n steps
     
     """
     if issparse(T):
@@ -486,7 +417,6 @@ def expected_counts(p0, T, n):
         return dense.expectations.expected_counts(p0, T, n)
     else:
         _type_not_supported
-
 
 # DONE: Ben
 def expected_counts_stationary(T, n, mu=None):
@@ -805,40 +735,7 @@ def committor(P, A, B, forward=True):
     
     return committor
 
-# DONE: Jan (sparse implementation missing)
-def committor_sensitivity(T, A, B, index, forward=True):
-    r"""Compute the committor between sets of microstates.
-    
-    Parameters
-    ----------
-    
-    P : ndarray, shape=(n, n) or scipy.sparse matrix
-        Transition matrix
-    A : array_like
-        List of integer state labels for set A
-    B : array_like
-        List of integer state labels for set B
-    index : state to compute the sensitivity for
-    forward : bool
-        If True compute the forward committor, else
-        compute the backward committor.
-    
-    Returns
-    -------
-    
-    x : ndarray, shape=(n, )
-        Commitor vector.
-    
-    """
-    if issparse(T):
-        raise NotImplementedError('Not implemented.')
-    elif isdense(T):
-        if forward:
-            return dense.sensitivity.forward_committor_sensitivity(T, A, B, index)
-        else:
-            return dense.sensitivity.backward_committor_sensitivity(T, A, B, index)
-    else:
-        raise _type_not_supported
+
 
 # DONE: Martin (sparse implementation missing)
 def tpt(T, A, B):
@@ -868,3 +765,183 @@ def tpt(T, A, B):
     
     from _impl import TPTFlux
     return TPTFlux(T, A, B)
+
+################################################################################
+# Sensitivities
+################################################################################
+
+# TODO: Implement sparse in Python directly
+def eigenvalue_sensitivity(T, k):
+    r"""Sensitivity matrix of a specified eigenvalue.
+    
+    Parameters
+    ----------
+    T : (M, M) ndarray
+        Transition matrix
+    k : int
+        Compute sensitivity matrix for k-th eigenvalue
+
+    Returns
+    -------
+    S : (M, M) ndarray
+        Sensitivity matrix for k-th eigenvalue.
+    
+    """
+    if issparse(T):
+        raise NotImplementedError('Not implemented.')
+    elif isdense(T):
+        return dense.sensitivity.eigenvalue_sensitivity(T, k)
+    else:
+        raise _type_not_supported
+
+# TODO: Implement sparse in Python directly
+def timescale_sensitivity(T, k):
+    r"""Sensitivity matrix of a specified time-scale.
+    
+    Parameters
+    ----------
+    T : (M, M) ndarray
+        Transition matrix
+    k : int
+        Compute sensitivity matrix for the k-th time-scale.
+
+    Returns
+    -------
+    S : (M, M) ndarray
+        Sensitivity matrix for the k-th time-scale.
+        
+    """
+    if issparse(T):
+        raise NotImplementedError('Not implemented.')
+    elif isdense(T):
+        return dense.sensitivity.timescale_sensitivity(T, k)
+    else:
+        raise _type_not_supported
+
+# TODO: Implement sparse in Python directly
+def eigenvector_sensitivity(T, k, j, right=True):
+    r"""Sensitivity matrix of a selected eigenvector element.
+    
+    Parameters
+    ----------
+    T : (M, M) ndarray
+        Transition matrix (stochastic matrix).
+    k : int
+        Eigenvector index 
+    j : int
+        Element index 
+    right : bool
+        If True compute for right eigenvector, otherwise compute for left eigenvector.
+
+    Returns
+    -------
+    S : (M, M) ndarray
+        Sensitivity matrix for the j-th element of the k-th eigenvector.
+    
+    """
+    if issparse(T):
+        raise NotImplementedError('Not implemented.')
+    elif isdense(T):
+        if right is True:
+            return dense.sensitivity.eigenvector_sensitivity(T, k, j, True)
+        else:
+            return dense.sensitivity.eigenvector_sensitivity(T, k, j, False)
+    else:
+        raise _type_not_supported
+
+# DONE: Implement in Python directly
+def stationary_distribution_sensitivity(T, j):
+    r"""Sensitivity matrix of a stationary distribution element.
+    
+    Parameters
+    ----------
+    T : (M, M) ndarray
+       Transition matrix (stochastic matrix).
+    j : int
+        Index of stationary distribution element
+        for which sensitivity matrix is computed.
+        
+
+    Returns
+    -------
+    S : (M, M) ndarray
+        Sensitivity matrix for the specified element
+        of the stationary distribution.
+    
+    """
+    if issparse(T):
+        raise NotImplementedError('Not implemented.')
+    elif isdense(T):
+        return dense.sensitivity.stationary_distribution_sensitivity(T, j)
+    else:
+        raise _type_not_supported
+
+statdist_sensitivity=stationary_distribution_sensitivity
+__all__.append('statdist_sensitivity')
+
+# TODO: Implement sparse in Python directly
+def mfpt_sensitivity(T, target, i):
+    r"""Sensitivity matrix of the mean first-passage time from specified state.
+    
+    Parameters
+    ----------
+    T : (M, M) ndarray
+        Transition matrix 
+    target : int or list
+        Target state or set for mfpt computation
+    i : int
+        Compute the sensitivity for state `i`
+        
+    Returns
+    -------
+    S : (M, M) ndarray
+        Sensitivity matrix for specified state
+    
+    """
+    if issparse(T):
+        raise NotImplementedError('Not implemented.')
+    elif isdense(T):
+        return dense.sensitivity.mfpt_sensitivity(T, target, i)
+    else:
+        raise _type_not_supported
+
+# DONE: Jan (sparse implementation missing)
+def committor_sensitivity(T, A, B, i, forward=True):
+    r"""Sensitivity matrix of a specified committor entry.
+    
+    Parameters
+    ----------
+    
+    T : (M, M) ndarray
+        Transition matrix
+    A : array_like
+        List of integer state labels for set A
+    B : array_like
+        List of integer state labels for set B
+    i : int
+        Compute the sensitivity for committor entry `i`
+    forward : bool (optional)
+        Compute the forward committor. If forward
+        is False compute the backward committor.
+    
+    Returns
+    -------    
+    S : (M, M) ndarray
+        Sensitivity matrix of the specified committor entry.
+    
+    """
+    if issparse(T):
+        raise NotImplementedError('Not implemented.')
+    elif isdense(T):
+        if forward:
+            return dense.sensitivity.forward_committor_sensitivity(T, A, B, i)
+        else:
+            return dense.sensitivity.backward_committor_sensitivity(T, A, B, i)
+    else:
+        raise _type_not_supported
+
+# TODO: Implement in Python directly
+def expectation_sensitivity(T, a):
+    r"""computes the sensitivity of the expectation value of a
+    """
+    raise NotImplementedError('Not implemented.')

@@ -1,13 +1,21 @@
-'''
+r"""
+====
+TICA
+====
+
+TODO: describe usage here
+
 Created on 19.11.2013
 @author: Fabian Paul <fabian.paul@mpikg.mpg.de>
 @author: marscher
-'''
+
+"""
 
 import os
 import sys
 import numpy
 
+__docformat__ = "restructuredtext en"
 __all__ = ['correlation', 'log_loop', 'rename', 'Amuse']
 
 ''' import correlation covariance C extension module '''
@@ -19,7 +27,7 @@ def correlation(cov, var):
     '''Calculate covariance matrix from correlation matrix.'''
     
     n = cov.shape[0]
-    corr = numpy.zeros([n, n])
+    corr = numpy.empty([n, n])
     for i in xrange(n):
         for j in xrange(n):
             corr[i, j] = cov[i, j] / numpy.sqrt(var[i] * var[j])
@@ -44,6 +52,9 @@ def rename(fname, directory, inset=None):
     return res
 
 class Amuse:
+    """
+    TODO: document class
+    """
 
     @classmethod
     def fromfiles(cls, mean, pca_weights, tica_weights, time_column=False):
@@ -65,6 +76,9 @@ class Amuse:
     
     @classmethod  
     def compute(cls, files, lag, normalize=False, time_column=False, mean=None):
+        """
+        compute it from given files
+        """
         amuse = cls(time_column)
         if not files:
             raise Exception('No input trajectories were given.')
@@ -145,6 +159,9 @@ class Amuse:
         return amuse
 
     def __init__(self, time_column):
+        """
+        TODO: document this
+        """
         self.time_column = time_column
     
     def pca(self, fin, fout, keep_pc):
@@ -156,6 +173,9 @@ class Amuse:
         self.project(fin, fout, self.tica_weights, keep_ic)
     
     def project(self, fin, fout, weights, keep_n=None):
+        """
+        project it
+        """
         if fin == fout:
             raise Exception('Input file name is equal to output file name.')
         if not keep_n:
