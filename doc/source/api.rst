@@ -6,8 +6,8 @@ Reference
 
 .. toctree::
    :maxdepth: 1
-   
-   msm
+
+   coordinates
    msm.io
    msm.estimation
    msm.analysis
