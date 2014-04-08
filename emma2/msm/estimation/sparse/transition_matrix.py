@@ -17,13 +17,13 @@ def transition_matrix_non_reversible(C):
 
 def tmatrix_cov(C, row=None):
     if row is not None:
-        matrix = dirichlet_covariance(C[row])
+        matrix = dirichlet_covariance(C[row]+1)
         return matrix
     else:
         size = C.shape[1]
         tensor = numpy.empty((size, size, size))
         i = numpy.arange(size)
-        tensor[i] = dirichlet_covariance(C[i]);
+        tensor[i] = dirichlet_covariance(C[i]+1);
         return tensor
 
 
@@ -39,12 +39,13 @@ def error_perturbation(C, sensitivity):
 
 
 #TODO: Check for integer array type and convert if necessary
-def dirichlet_covariance(c):
-    """Returns a matrix of covariances between all elements of the dirichlet distribution parametrized by the vector c
+def dirichlet_covariance(u):
+    """Returns a matrix of covariances between all elements of the dirichlet distribution parametrized by the vector u
         
     Parameters
     ----------
-    c : numpy.ndarray
+    u : numpy.ndarray
+        Dirichlet parameters (note that these are counts + 1)
     
     Returns
     -------
@@ -52,8 +53,8 @@ def dirichlet_covariance(c):
     
     """
     
-    cTotal = numpy.sum(c)
-    cNorm = (1.0 * c) / cTotal
+    cTotal = numpy.sum(u)
+    cNorm = (1.0 * u) / cTotal
     
     mOff = numpy.outer(cNorm,cNorm)
     mDiag = numpy.diagflat(cNorm)

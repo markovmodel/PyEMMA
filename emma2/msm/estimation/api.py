@@ -86,7 +86,9 @@ def count_matrix_cores(dtraj, cores, lag, sliding=True):
     """
     raise NotImplementedError('Not implemented.')
 
+# shortcut
 cmatrix_cores=count_matrix_cores
+
 
 ################################################################################
 # Connectivity
@@ -165,8 +167,8 @@ def connected_count_matrix(C, directed=True):
     """
     return sparse.connectivity.connected_count_matrix(C)
 
+# shortcut
 connected_cmatrix=connected_count_matrix
-
 __all__.append('connected_cmatrix')
 
 # DONE: Jan
@@ -200,6 +202,7 @@ def mapping(set):
     Parameters
     ----------
     set : array-like of integers 
+        a set of selected states
     
     Returns
     -------
@@ -207,6 +210,58 @@ def mapping(set):
     
     """   
     raise NotImplementedError('Not implemented.')
+
+
+################################################################################
+# Priors
+################################################################################
+
+# DONE: Frank
+def prior_neighbor(Z, alpha = 0.001):
+    """
+    Returns a neighbor prior of strength alpha associated with the given count matrix.
+    
+    Prior is defined by 
+        b_ij = alpha  if Z_ij+Z_ji > 0
+        b_ij = 0      else
+    
+    Parameters
+    ----------
+    Z : numpy ndarray or scipy.sparse matrix (n,n)
+        Count matrix
+    alpha : float (default 0.001 counts)
+    
+    Returns
+    -------
+    B : numpy ndarray or scipy.sparse matrix (n,n), same type as Z
+        Prior count matrix    
+    """
+    B = alpha * (Z + Z.transpose()).sign()
+    return B
+
+__all__.append('prior_neighbor')
+
+
+# DONE: Frank
+def prior_const(n, alpha = 0.001):
+    """
+    Returns a constant prior of strength alpha, i.e. b_ij=alpha for all i,j
+    
+    Parameters
+    ----------
+    n : the number of states. Determines the size of the return (n,n)
+    alpha : float (default 0.001 counts)
+    
+    Returns
+    -------
+    B : numpy ndarray 
+        Prior count matrix    
+    """
+    B = alpha*np.ones((n,n))
+    return B
+
+__all__.append('prior_const')
+
 
 ################################################################################
 # Transition matrix
@@ -287,8 +342,7 @@ __all__.append('tmatrix')
 
 
 
-# TODO: Jan Implement in Python directly
-# TODO: Is C posterior or prior counts? 
+# DONE: FN+Jan 
 def tmatrix_cov(C, k=None):
     """
     Computes a nonreversible covariance matrix of transition matrix elements
@@ -311,7 +365,8 @@ def log_likelihood(C, T):
     """
     if issparse(C) and issparse(T):
         return sparse.likelihood.log_likelihood(C, T)
-    else: # use the dense likelihood calculator for all other cases
+    else: 
+        # use the dense likelihood calculator for all other cases
         # if a mix of dense/sparse C/T matrices is used, then both
         # will be converted to ndarrays.
         if (not isinstance(C, np.ndarray)):
