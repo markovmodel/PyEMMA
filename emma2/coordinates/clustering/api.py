@@ -1,9 +1,15 @@
 # coding=utf-8
-'''
+r"""
+================================
+Clustering Coordinates API
+================================
+
 Created on Dec 30, 2013
 
 @author: noe
-'''
+"""
+
+__docformat__ = "restructuredtext en"
 
 import emma2.util.pystallone as stallone
 import clustering
@@ -17,6 +23,8 @@ clusterNew = stallone.API.clusterNew
 cluster = stallone.API.cluster
 #
 Clustering = clustering.Clustering
+
+__all__ = ['kmeans', 'regspace', 'kregspace', 'assign'] 
 
 def kmeans(infiles, k, maxiter = 100):
     """
