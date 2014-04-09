@@ -8,6 +8,7 @@ import numpy
 from emma2.autobuilder.emma_msm_mockup import stationary_distribution
 
 # TODO:make faster. So far not effectively programmed
+# Martin: done, but untested, since there is no testcase...
 def forward_committor_sensitivity(T, A, B, index):
     """ 
     calculate the sensitivity matrix for index of the forward committor from A to B given transition matrix T.
@@ -28,32 +29,31 @@ def forward_committor_sensitivity(T, A, B, index):
     """
     
     n = len(T)
-    set_X = set(range(n))
-    set_A = set(A)
-    set_B = set(B)
-    set_AB = set_A | set_B
-    notAB = list(set_X - set_AB)
+    set_X = numpy.arange(n)#set(range(n))
+    set_A = numpy.unique(A)#set(A)
+    set_B = numpy.unique(B)#set(B)
+    set_AB = numpy.union1d(set_A, set_B, True)#set_A | set_B
+    notAB = numpy.intersect1d(set_X, set_AB, True)#list(set_X - set_AB)
     m = len(notAB)
 
     K = T - numpy.diag(numpy.ones((n)))
 
     U = K[numpy.ix_(notAB, notAB)]
     
-    v = numpy.zeros((m))
+    v = numpy.zeros(m)
     
-    for i in range(0, m):
-        for k in range(0, len(set_B)):
-            v[i] = v[i] - K[notAB[i], B[k]]
+    #for i in xrange(0, m):
+    #   for k in xrange(0, len(set_B)):
+    #       v[i] = v[i] - K[notAB[i], B[k]]
+    v[:] = v[:] - K[notAB[:], B[:]]
 
     qI = numpy.linalg.solve(U, v)
 
-    q_forward = numpy.zeros((n))
-    for i in set_A:
-        q_forward[i] = 0
-    for i in set_B:
-        q_forward[i] = 1
-    for i in range(len(notAB)):
-        q_forward[notAB[i]] = qI[i]
+    q_forward = numpy.zeros(n)
+    q_forward[set_A] = 0
+    q_forward[set_B] = 1
+    #for i in range(len(notAB)):
+    q_forward[notAB[:]] = qI[:]
         
     target = numpy.eye(1,n,index)
     target = target[0,notAB]
@@ -61,8 +61,8 @@ def forward_committor_sensitivity(T, A, B, index):
     UinvVec = numpy.linalg.solve(numpy.transpose(U), target)
     Siab = numpy.zeros((n,n))
         
-    for i in range(0, m):
-        Siab[notAB[i]] = - UinvVec[i] * q_forward
+    #for i in range(0, m):
+    Siab[notAB[:]] = - UinvVec[:] * q_forward
 
     return Siab
 
