@@ -32,7 +32,7 @@ def forward_committor_sensitivity(T, A, B, index):
     set_X = numpy.arange(n)#set(range(n))
     set_A = numpy.unique(A)#set(A)
     set_B = numpy.unique(B)#set(B)
-    set_AB = numpy.union1d(set_A, set_B, True)#set_A | set_B
+    set_AB = numpy.union1d(set_A, set_B)#set_A | set_B
     notAB = numpy.setdiff1d(set_X, set_AB, True)#list(set_X - set_AB)
     m = len(notAB)
 
@@ -61,8 +61,8 @@ def forward_committor_sensitivity(T, A, B, index):
     UinvVec = numpy.linalg.solve(U.T, target)
     Siab = numpy.zeros((n,n))
         
-    #for i in range(0, m):
-    Siab[notAB[:]] = - UinvVec[:] * q_forward
+    for i in xrange(m):
+        Siab[notAB[i]] = - UinvVec[i] * q_forward
 
     return Siab
 
