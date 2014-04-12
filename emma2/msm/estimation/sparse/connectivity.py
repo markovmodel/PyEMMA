@@ -11,7 +11,7 @@ def connected_sets(C, directed=True):
     Parameters
     ----------
     C : scipy.sparse matrix or numpy ndarray 
-        Count matrix specifying edge weights.
+        square matrix specifying edge weights.
     directed : bool, optional
        Whether to compute connected components for a directed  or
        undirected graph. Default is True.       
@@ -79,7 +79,7 @@ def largest_connected_set(C, directed=True):
     """
     return connected_sets(C, directed=directed)[0]
 
-def connected_count_matrix(C, directed=True):
+def largest_connected_submatrix(C, directed=True):
     r"""Compute the count matrix of the largest connected set.
 
     The input count matrix is used as a weight matrix for the

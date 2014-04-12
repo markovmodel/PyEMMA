@@ -100,11 +100,11 @@ class TestConnectedCountMatrix(unittest.TestCase):
 
     def test_connected_count_matrix(self):
         """Directed"""
-        C_cc=connectivity.connected_count_matrix(self.C)
+        C_cc=connectivity.largest_connected_submatrix(self.C)
         self.assertTrue(np.allclose(C_cc.toarray(), self.C_cc_directed))
 
         """Undirected"""
-        C_cc=connectivity.connected_count_matrix(self.C, directed=False)
+        C_cc=connectivity.largest_connected_submatrix(self.C, directed=False)
         self.assertTrue(np.allclose(C_cc.toarray(), self.C_cc_undirected))
         
 class TestIsConnected(unittest.TestCase):

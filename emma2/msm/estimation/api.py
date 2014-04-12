@@ -25,7 +25,7 @@ __all__=['count_matrix',
          'cmatrix', 
          'connected_sets',
          'largest_connected_set',
-         'connected_count_matrix',
+         'largest_connected_submatrix',
          'is_connected',
          'transition_matrix',
          'log_likelihood',
@@ -154,7 +154,7 @@ def largest_connected_set(C, directed=True):
         return sparse.connectivity.largest_connected_set(C, directed=directed)
 
 # DONE: Ben 
-def connected_count_matrix(C, directed=True):
+def largest_connected_submatrix(C, directed=True):
     r"""Compute the count matrix on the largest connected set.
     
     The input count matrix is used as a weight matrix for the
@@ -182,12 +182,12 @@ def connected_count_matrix(C, directed=True):
     if isdense(C):
         # this should not be necessary because sparse.connectivity in principle works with dense matrices.
         # however there seems to be a bug for 2x2 matrices, therefore we use this detour
-        return sparse.connectivity.connected_count_matrix(csr_matrix(C), directed=directed).toarray()
+        return sparse.connectivity.largest_connected_submatrix(csr_matrix(C), directed=directed).toarray()
     else:
-        return sparse.connectivity.connected_count_matrix(C, directed=directed)
+        return sparse.connectivity.largest_connected_submatrix(C, directed=directed)
 
 # shortcut
-connected_cmatrix=connected_count_matrix
+connected_cmatrix=largest_connected_submatrix
 __all__.append('connected_cmatrix')
 
 # DONE: Jan
