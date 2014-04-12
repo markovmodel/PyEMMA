@@ -8,7 +8,7 @@ Dense matrices are represented by scipy.sparse matrices throughout this module.
 import numpy as np
 import scipy.sparse.linalg
 
-def stationary_distribution(T):
+def stationary_distribution_from_eigenvector(T):
     r"""Compute stationary distribution of stochastic matrix T. 
       
     The stationary distribution is the left eigenvector corresponding to the 1
@@ -29,6 +29,39 @@ def stationary_distribution(T):
     nu=vecs[:, 0].real
     mu=nu/np.sum(nu)
     return mu
+
+
+def stationary_distribution_from_linearsystem(T):
+    r"""Compute stationary distribution of stochastic matrix T. 
+      
+    The stationary distribution is the normalized solution of the System (T-I)x = 0.
+
+    Input:
+    ------
+    T : scipy sparse array, shape(d,d)
+        Transition matrix (stochastic matrix).
+
+    Returns:
+    --------
+    mu : numpy array, shape(d,)      
+        Vector of stationary probabilities.
+
+    """
+    n = scipy.shape(T)[0]
+    # A = T' - I
+    A = T.tolil().transpose() - scipy.sparse.eye(n)
+    # b = 0
+    b = scipy.sparse.lil_matrix((n,1))
+    # Add constraint x_1 = 1 to first row
+    A[0,0] += 1.0
+    b[0,0] = 1.0
+    # solve
+    x = scipy.sparse.linalg.spsolve(A, b)
+    # normalize
+    x /= scipy.sum(x)
+    # return 
+    return x
+
 
 def eigenvalues(T, k=None):
     r"""Compute the eigenvalues of a sparse transition matrix

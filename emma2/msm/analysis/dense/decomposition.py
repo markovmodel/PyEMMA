@@ -8,7 +8,7 @@ Dense matrices are represented by numpy.ndarrays throughout this module.
 import numpy as np
 from scipy.linalg import eig, eigvals, solve
 
-def stationary_distribution(T):
+def stationary_distribution_from_eigenvector(T):
     r"""Compute stationary distribution of stochastic matrix T. 
       
     The stationary distribution is the left eigenvector corresponding to the 
@@ -36,6 +36,37 @@ def stationary_distribution(T):
     nu=np.abs(L[:,0])
     mu=nu/np.sum(nu)
     return mu
+
+
+def stationary_distribution_from_linearsystem(T):
+    r"""Compute stationary distribution of stochastic matrix T. 
+      
+    The stationary distribution is the normalized solution of the System (T-I)x = 0.
+
+    Input:
+    ------
+    T : numpy array, shape(d,d)
+        Transition matrix (stochastic matrix).
+
+    Returns:
+    --------
+    mu : numpy array, shape(d,)      
+        Vector of stationary probabilities.
+
+    """
+    n = np.shape(T)[0]
+    # A = T' - I
+    A = np.transpose(T) - np.eye(n)
+    # b = 0
+    b = np.zeros((n))
+    # Add constraint |x|_1 = 1 to first row
+    A[0,:] += 1.0
+    b[0] = 1.0
+    # solve
+    x = np.linalg.solve(A, b)
+    # return 
+    return x
+
     
 def eigenvalues(T, k=None):
     r"""Compute eigenvalues of given transition matrix.
