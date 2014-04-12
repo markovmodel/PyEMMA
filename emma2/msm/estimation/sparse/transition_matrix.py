@@ -22,8 +22,8 @@ def tmatrix_cov(C, row=None):
     else:
         size = C.shape[1]
         tensor = numpy.empty((size, size, size))
-        i = numpy.arange(size)
-        tensor[i] = dirichlet_covariance(C[i]+1);
+        for i in numpy.arange(size):
+            tensor[i] = dirichlet_covariance(C[i]+1);
         return tensor
 
 
