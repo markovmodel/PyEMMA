@@ -26,6 +26,8 @@ import sparse.decomposition
 import sparse.expectations
 import sparse.mean_first_passage_time
 
+import emma2.msm.estimation as msmest
+
 __all__=['is_transition_matrix',
          'is_rate_matrix',
          'is_ergodic',
@@ -62,6 +64,10 @@ _type_not_supported = \
 ################################################################################
 # Assessment tools
 ################################################################################
+
+# connectivity also for transition matrix:
+is_connected = msmest.is_connected
+connected_sets = msmest.connected_sets
 
 # DONE : Martin, Ben
 def is_transition_matrix(T, tol=1e-15):
@@ -189,10 +195,18 @@ def stationary_distribution(T):
         Vector of stationary probabilities.
     
     """
+    # is this a transition matrix?
+    if not is_transition_matrix(T):
+        raise ValueError('Input matrix is not a transition matrix. Cannot compute stationary distribution')
+    # is the stationary distribution unique?
+    if not is_connected(T):
+        raise ValueError('Input matrix is not connected and therefore has no unique stationary distribution. '+
+                         'Separate disconnected components and handle their stationary distributions separately')
+    # we're good to go...
     if issparse(T):
-        return sparse.decomposition.stationary_distribution(T)
+        return sparse.decomposition.stationary_distribution_from_linearsystem(T)
     elif isdense(T):
-        return dense.decomposition.stationary_distribution(T)
+        return dense.decomposition.stationary_distribution_from_linearsystem(T)
     else: 
         raise _type_not_supported
 

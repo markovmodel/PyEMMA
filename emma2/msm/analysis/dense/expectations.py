@@ -69,7 +69,7 @@ def expected_counts_stationary(T, n, mu=None):
         return EC
     else:
         if mu is None:
-            mu=decomposition.stationary_distribution(T)
+            mu=decomposition.stationary_distribution_from_eigenvector(T)
         EC=n*mu[:, np.newaxis]*T
         return EC
 
