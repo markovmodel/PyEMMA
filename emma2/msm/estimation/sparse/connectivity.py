@@ -10,7 +10,7 @@ def connected_sets(C, directed=True):
 
     Parameters
     ----------
-    C : scipy.sparse matrix 
+    C : scipy.sparse matrix or numpy ndarray 
         Count matrix specifying edge weights.
     directed : bool, optional
        Whether to compute connected components for a directed  or
@@ -57,8 +57,10 @@ def connected_sets(C, directed=True):
     
     """Sort by size of component - largest component first"""
     cc=sorted(cc, key=lambda x: -len(x))
-
+    
     return cc
+
+
 
 def largest_connected_set(C, directed=True):
     r"""Compute connected components for a directed graph with weights
@@ -66,7 +68,7 @@ def largest_connected_set(C, directed=True):
 
     Parameters
     ----------
-    C : scipy.sparse matrix 
+    C : scipy.sparse matrix or numpy ndarray 
         Count matrix specifying edge weights.
 
     Returns
@@ -89,7 +91,7 @@ def connected_count_matrix(C, directed=True):
     
     Parameters
     ----------
-    C : scipy.sparse matrix 
+    C : scipy.sparse matrix or numpy ndarray 
         Count matrix specifying edge weights.
 
     Returns
@@ -102,14 +104,22 @@ def connected_count_matrix(C, directed=True):
     lcc=largest_connected_set(C, directed=directed)
     
     """Row slicing"""
-    C_cc=C.tocsr()
+    if scipy.sparse.issparse(C):
+        C_cc = C.tocsr()
+    else:
+        C_cc = C
     C_cc=C_cc[lcc, :]
 
     """Column slicing"""
-    C_cc=C_cc.tocsc()
+    if scipy.sparse.issparse(C):
+        C_cc = C_cc.tocsc()
     C_cc=C_cc[:, lcc]
 
-    return C_cc.tocoo()
+    if scipy.sparse.issparse(C):
+        return C_cc.tocoo()
+    else:
+        return C_cc
+
 
 #TODO: Dense implementation
 def is_connected(C, directed=True):
@@ -118,7 +128,7 @@ def is_connected(C, directed=True):
     
     Parameters
     ----------
-    C : scipy.sparse matrix 
+    C : scipy.sparse matrix or numpy ndarray
         Count matrix specifying edge weights.
     directed : bool, optional
        Whether to compute connected components for a directed  or
