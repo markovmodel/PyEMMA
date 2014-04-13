@@ -312,13 +312,46 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
         space of stochastic matrices.
     mu : array_like
         The stationary distribution of the MLE transition matrix.
-    **kwargs: Optional algorithm-specific parameters
+    **kwargs: Optional algorithm-specific parameters. See below for special cases
     
     Returns
     -------
     P : numpy ndarray, shape=(n, n) or scipy.sparse matrix
        The MLE transition matrix. P has the same data type (dense or sparse) 
        as the input matrix C
+    
+    Reversible transition matrix estimation
+    ---------------------------------------
+    For reversible estimation, an iterative solver is used which accepts the
+    following extra arguments and return behavior:
+    Xinit = None : ndarray (n,n)
+        initial value for the matrix of absolute transition probabilities. Unless set otherwise,
+        will use X = diag(pi) t, where T is a nonreversible transition matrix estimated from C,
+        i.e. T_ij = c_ij / sum_k c_ik, and pi is its stationary distribution.
+    nmax = 1000000 : int
+        maximum number of iterations before the method exits
+    convtol = 1e-8 : float
+        convergence tolerance. This specifies the maximum change of the Euclidean norm of relative
+        stationary probabilities (x_i = sum_k x_ik). The relative stationary probability changes
+        e_i = (x_i^(1) - x_i^(2))/(x_i^(1) + x_i^(2)) are used in order to track changes in small
+        probabilities. The Euclidean norm of the change vector, |e_i|_2, is compared to convtol.
+    return_statdist = False : Boolean
+        If set to true, the stationary distribution is also returned
+    return_conv = False : Boolean
+        If set to true, the likelihood history and the pi_change history is returned.
+    
+    The estimator returns by default only P, but may also return
+    (T,pi) or (T,lhist,pi_changes) or (T,pi,lhist,pi_changes) depending on the return settings
+    T : ndarray (n,n)
+        transition matrix. This is the only return for return_statdist = False, return_conv = False
+    (pi) : ndarray (n)
+        stationary distribution. Only returned if return_statdist = True
+    (lhist) : ndarray (k)
+        likelihood history. Has the length of the number of iterations needed. 
+        Only returned if return_conv = True
+    (pi_changes) : ndarray (k)
+        history of likelihood history. Has the length of the number of iterations needed. 
+        Only returned if return_conv = True
     
     """
     if (issparse(C)):
@@ -332,13 +365,18 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
         if mu is None:
             try:
                 if sparse_mode:
-                    Cs = stallone.ndarray_to_stallone_array(1.0*C.toarray())
-                    # T is of type stallone.IDoubleArray, so wrap it in an ndarray
-                    return csr_matrix(stallone.stallone_array_to_ndarray(stallone.API.msm.estimateTrev(Cs)))
+                    # currently no sparse impl, so we abuse dense impl (may be inefficient)
+                    return csr_matrix(dense.transition_matrix.estimate_transition_matrix_reversible(C.toarray(),kwargs))
+                    ## Call to stallone. Currently deactivated because our impl is newer:
+                    # Cs = stallone.ndarray_to_stallone_array(1.0*C.toarray())
+                    ## T is of type stallone.IDoubleArray, so wrap it in an ndarray
+                    # return csr_matrix(stallone.stallone_array_to_ndarray(stallone.API.msm.estimateTrev(Cs)))
                 else:
-                    Cs = stallone.ndarray_to_stallone_array(1.0*C)
+                    return dense.transition_matrix.estimate_transition_matrix_reversible(C,kwargs)
+                    ## Call to stallone. Currently deactivated because our impl is newer:
+                    # Cs = stallone.ndarray_to_stallone_array(1.0*C)
                     # T is of type stallone.IDoubleArray, so wrap it in an ndarray
-                    return stallone.stallone_array_to_ndarray(stallone.API.msm.estimateTrev(Cs))
+                    # return stallone.stallone_array_to_ndarray(stallone.API.msm.estimateTrev(Cs))
             except stallone.JavaException as je:
                 raise RuntimeError(je)
         else:
