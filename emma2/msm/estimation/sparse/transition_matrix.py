@@ -3,6 +3,7 @@
 import numpy
 import scipy.sparse
 
+
 def transition_matrix_non_reversible(C):
     """implementation of transition_matrix"""
     if not scipy.sparse.issparse(C):
@@ -14,6 +15,8 @@ def transition_matrix_non_reversible(C):
     rowsum = numpy.array(1. / rowsum).flatten()
     norm = scipy.sparse.diags(rowsum, 0)
     return norm * C
+
+
 
 def tmatrix_cov(C, row=None):
     if row is not None:
