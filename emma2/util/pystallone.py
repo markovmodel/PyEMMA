@@ -137,7 +137,7 @@ def ndarray_to_stallone_array(pyarray, copy=True):
         cast_func = JDouble
         if not copy:
             # TODO: add impl for int if ready in stallone.
-            if not pyarray.flags.c_continous:
+            if not pyarray.flags.c_contiguous:
                 raise RuntimeError('Can only pass continous memory to Java!')
             jbuff = _nio.convertToDirectBuffer(pyarray)
             rows = shape[0]
