@@ -77,7 +77,7 @@ class TestDecomposition(unittest.TestCase):
         T=statdist_true[newaxis, :]*ones(self.dim)[:,newaxis]
         
         """Compute stationary distribution"""
-        statdist_test=decomposition.stationary_distribution(T)
+        statdist_test=decomposition.stationary_distribution_from_eigenvector(T)
 
         """Assert numerical equality of statdist_true and statdist_test"""
         self.assertTrue(allclose(statdist_test, statdist_true))

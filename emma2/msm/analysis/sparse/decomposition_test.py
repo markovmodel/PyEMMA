@@ -82,7 +82,7 @@ class TestDecomposition(unittest.TestCase):
         pass
 
     def test_mu(self):           
-        mu_n=decomposition.stationary_distribution(self.T_sparse)
+        mu_n=decomposition.stationary_distribution_from_eigenvector(self.T_sparse)
         self.assertTrue(np.allclose(self.mu_sparse, mu_n))
 
     def test_eigenvalues(self):
