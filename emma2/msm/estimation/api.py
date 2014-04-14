@@ -366,13 +366,13 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
             try:
                 if sparse_mode:
                     # currently no sparse impl, so we abuse dense impl (may be inefficient)
-                    return csr_matrix(dense.transition_matrix.estimate_transition_matrix_reversible(C.toarray(),kwargs))
+                    return csr_matrix(dense.transition_matrix.estimate_transition_matrix_reversible(C.toarray(),**kwargs))
                     ## Call to stallone. Currently deactivated because our impl is newer:
                     # Cs = stallone.ndarray_to_stallone_array(1.0*C.toarray())
                     ## T is of type stallone.IDoubleArray, so wrap it in an ndarray
                     # return csr_matrix(stallone.stallone_array_to_ndarray(stallone.API.msm.estimateTrev(Cs)))
                 else:
-                    return dense.transition_matrix.estimate_transition_matrix_reversible(C,kwargs)
+                    return dense.transition_matrix.estimate_transition_matrix_reversible(C,**kwargs)
                     ## Call to stallone. Currently deactivated because our impl is newer:
                     # Cs = stallone.ndarray_to_stallone_array(1.0*C)
                     # T is of type stallone.IDoubleArray, so wrap it in an ndarray

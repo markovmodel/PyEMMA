@@ -6,8 +6,7 @@ Created on Jan 13, 2014
 
 import numpy as np
 
-import emma2.msm.estimation as msmest
-import emma2.msm.analysis as msmana
+import emma2
 
 
 def transition_matrix_non_reversible(C):
@@ -37,8 +36,8 @@ def __initX(C):
     """
     Computes an initial guess for a reversible correlation matrix
     """
-    T = msmest.tmatrix(C)
-    mu = msmana.statdist(T)
+    T = emma2.msm.estimation.tmatrix(C)
+    mu = emma2.msm.analysis.statdist(T)
     Corr = np.dot(np.diag(mu), T)
     return 0.5 * (Corr + Corr.T)
 
@@ -112,7 +111,7 @@ def estimate_transition_matrix_reversible(C, Xinit = None, nmax = 1000000, convt
         Only returned if return_conv = True
     """
     # check input
-    if (not msmest.is_connected(C)):
+    if (not emma2.msm.estimation.is_connected(C)):
         ValueError('Count matrix is not fully connected. '+
                    'Need fully connected count matrix for '+
                    'reversible transition matrix estimation.')
@@ -134,7 +133,7 @@ def estimate_transition_matrix_reversible(C, Xinit = None, nmax = 1000000, convt
         # likelihood
         lhist = np.zeros(nmax)
         T = X / xsum[:,np.newaxis]
-        lhist[0] = msmest.log_likelihood(C, T)
+        lhist[0] = emma2.msm.estimation.log_likelihood(C, T)
     # iteration
     i = 1
     while (i < nmax-1) and (not converged):
@@ -152,7 +151,7 @@ def estimate_transition_matrix_reversible(C, Xinit = None, nmax = 1000000, convt
         if (return_conv):
             # update T and likelihood
             T = X / xsum[:,np.newaxis]
-            lhist[i] = msmest.log_likelihood(C, T)
+            lhist[i] = emma2.msm.estimation.log_likelihood(C, T)
         # converged?
         converged = (diffs[i] < convtol)
         i += 1
