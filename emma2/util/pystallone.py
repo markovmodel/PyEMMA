@@ -26,7 +26,7 @@ from jpype import \
  getDefaultJVMPath as _getDefaultJVMPath, \
  JavaException, \
  JArray, JInt, JDouble, JString, JObject, JPackage, \
- java, javax
+ java, javax, nio as _nio
 
 import numpy as _np
 import sys as _sys
@@ -103,11 +103,15 @@ def _initVM():
 
 _initVM()
 
-def ndarray_to_stallone_array(pyarray):
+def ndarray_to_stallone_array(pyarray, copy=True):
     """
         Parameters
         ----------
         pyarray : numpy.ndarray or scipy.sparse type one or two dimensional
+        
+        copy : boolean
+          if false, a Java side ByteBuffer wrapping the given array buffer will
+          be used to avoid a copy. This is useful for very huge data sets.
         
         Returns
         -------
@@ -131,6 +135,14 @@ def ndarray_to_stallone_array(pyarray):
     if dtype == _np.float32 or dtype == _np.float64:
         factory = API.doublesNew
         cast_func = JDouble
+        if not copy:
+            # TODO: add impl for int if ready in stallone.
+            if not pyarray.flags.c_contiguous:
+                raise RuntimeError('Can only pass continous memory to Java!')
+            jbuff = _nio.convertToDirectBuffer(pyarray)
+            rows = shape[0]
+            cols = 1 if len(shape) == 1 else shape[1]
+            return factory.arrayFrom(jbuff, rows, cols)
     elif dtype == _np.int32 or dtype == _np.int64:
         factory = API.intsNew
         cast_func = JInt
