@@ -146,14 +146,18 @@ def estimate_transition_matrix_reversible(C, Xinit = None, nmax = 1000000, convt
         X[nz] = C2[nz] / D[nz]
         X[nz] /= np.sum(X[nz])         # renormalize
         xsumnew = np.sum(X, axis=1)
-        diffs[i] = __relative_error(xsum, xsumnew)
+        # compute difference in pi
+        diff = __relative_error(xsum, xsumnew)
+        # update pi
         xsum = xsumnew
+        # any convergence history wanted?
         if (return_conv):
             # update T and likelihood
             T = X / xsum[:,np.newaxis]
             lhist[i] = emma2.msm.estimation.log_likelihood(C, T)
+            diffs[i] = diff
         # converged?
-        converged = (diffs[i] < convtol)
+        converged = (diff < convtol)
         i += 1
     # finalize and return
     T = X / xsum[:,np.newaxis]
