@@ -62,5 +62,5 @@ setup(name = 'Emma2',
       # runtime dependencies
       install_requires = ['numpy >= 1.6.0',
                          'scipy >= 0.11',
-                         'JPype1 >= 0.5.4.5'],
+                         'JPype1 >= 0.5.5'],
 )
