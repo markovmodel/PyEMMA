@@ -50,7 +50,6 @@ class TestPyStallone(unittest.TestCase):
 
 
     def testConversionND_Int32(self):
-        self.skipTest('wait for jpype 0.5.5')
         a = self.a.astype(np.int32)
         b = st.ndarray_to_stallone_array(a)
         self.convertToNPandCompare(b, a, True)
