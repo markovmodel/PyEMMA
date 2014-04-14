@@ -6,9 +6,6 @@ Created on Jan 13, 2014
 
 import numpy as np
 
-import emma2
-
-
 def transition_matrix_non_reversible(C):
     r"""
     Estimates a nonreversible transition matrix from count matrix C
@@ -36,8 +33,11 @@ def __initX(C):
     """
     Computes an initial guess for a reversible correlation matrix
     """
-    T = emma2.msm.estimation.tmatrix(C)
-    mu = emma2.msm.analysis.statdist(T)
+    from ..api import tmatrix
+    from ...analysis import statdist
+    
+    T = tmatrix(C)
+    mu = statdist(T)
     Corr = np.dot(np.diag(mu), T)
     return 0.5 * (Corr + Corr.T)
 
@@ -110,8 +110,10 @@ def estimate_transition_matrix_reversible(C, Xinit = None, nmax = 1000000, convt
         history of likelihood history. Has the length of the number of iterations needed. 
         Only returned if return_conv = True
     """
+    from ..api import is_connected
+    from ...estimation import log_likelihood
     # check input
-    if (not emma2.msm.estimation.is_connected(C)):
+    if (not is_connected(C)):
         ValueError('Count matrix is not fully connected. '+
                    'Need fully connected count matrix for '+
                    'reversible transition matrix estimation.')
@@ -133,7 +135,7 @@ def estimate_transition_matrix_reversible(C, Xinit = None, nmax = 1000000, convt
         # likelihood
         lhist = np.zeros(nmax)
         T = X / xsum[:,np.newaxis]
-        lhist[0] = emma2.msm.estimation.log_likelihood(C, T)
+        lhist[0] = log_likelihood(C, T)
     # iteration
     i = 1
     while (i < nmax-1) and (not converged):
@@ -151,7 +153,7 @@ def estimate_transition_matrix_reversible(C, Xinit = None, nmax = 1000000, convt
         if (return_conv):
             # update T and likelihood
             T = X / xsum[:,np.newaxis]
-            lhist[i] = emma2.msm.estimation.log_likelihood(C, T)
+            lhist[i] = log_likelihood(C, T)
         # converged?
         converged = (diffs[i] < convtol)
         i += 1
