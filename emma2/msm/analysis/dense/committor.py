@@ -4,7 +4,6 @@ Created on 08.11.2013
 @author: marscher
 '''
 import numpy
-from emma2.autobuilder.emma_msm_mockup import stationary_distribution
 
 def forward_committor(T, A, B):
     """ 
@@ -24,29 +23,23 @@ def forward_committor(T, A, B):
     Committor vector.
     """
     n = len(T)
-    set_X = numpy.arange(n)#set(range(n))
-    set_A = numpy.unique(A)# set(A)
-    set_B = numpy.unique(B)#set(B)
-    set_AB = numpy.intersect1d(set_A, set_B, True)#set_A | set_B
-    notAB = numpy.setdiff1d(set_X, set_AB, True)#list(set_X - set_AB)
+    set_X = numpy.arange(n)
+    set_A = numpy.unique(A)
+    set_B = numpy.unique(B)
+    set_AB = numpy.intersect1d(set_A, set_B, True)
+    notAB = numpy.setdiff1d(set_X, set_AB, True)
     m = len(notAB)
 
     K = T - numpy.diag(numpy.ones((n)))
 
     U = K[numpy.ix_(notAB, notAB)]
     v = numpy.zeros(m)
-    #for i in range(0, m):
-    #    for k in range(0, len(set_B)):
     v[:] = v[:] - K[notAB[:], B[:]]
 
     qI = numpy.linalg.solve(U, v)
 
     q_forward = numpy.zeros(n)
-#     for i in set_A:
-#         q_forward[i] = 0
-    #for i in set_B:
     q_forward[set_B] = 1
-    #for i in range(len(notAB)):
     q_forward[notAB[:]] = qI[:]
 
     return q_forward
@@ -68,15 +61,16 @@ def backward_committor(T, A, B):
     x : ndarray, shape=(n, )
     Committor vector.
     """
+    from ..api import statdist
     n = len(T)
-    set_X = set(range(n))
-    set_A = set(A)
-    set_B = set(B)
-    set_AB = set_A | set_B
-    notAB = list(set_X - set_AB)
+    set_X = numpy.arange(n)
+    set_A = numpy.unique(A)
+    set_B = numpy.unique(B)
+    set_AB = numpy.intersect1d(set_A, set_B, True)
+    notAB = numpy.setdiff1d(set_X, set_AB, True)
     m = len(notAB)
     
-    eq = stationary_distribution(T)
+    eq = statdist(T)
         
     Tback = numpy.transpose(T)
     Tback = numpy.dot(numpy.diag(1.0 / eq), Tback)
@@ -85,19 +79,13 @@ def backward_committor(T, A, B):
     K = Tback - numpy.diag(numpy.ones((n)))
 
     U = K[numpy.ix_(notAB, notAB)]
-    v = numpy.zeros((m))
-    for i in range(0, m):
-        for k in range(0, len(set_B)):
-            v[i] = v[i] - K[notAB[i], B[k]]
+    v = numpy.zeros(m)
+    v[:] = v[:] - K[notAB[:], B[:]]
 
     qI = numpy.linalg.solve(U, v)
 
-    q_backward = numpy.zeros((n))
-    for i in set_A:
-        q_backward[i] = 0
-    for i in set_B:
-        q_backward[i] = 1
-    for i in range(len(notAB)):
-        q_backward[notAB[i]] = qI[i]
+    q_backward = numpy.zeros(n)
+    q_backward[set_B] = 1
+    q_backward[notAB[:]] = qI[:]
 
     return q_backward
