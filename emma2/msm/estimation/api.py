@@ -313,36 +313,35 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
     mu : array_like
         The stationary distribution of the MLE transition matrix.
     **kwargs: Optional algorithm-specific parameters. See below for special cases
-    
-    Returns
-    -------
-    P : numpy ndarray, shape=(n, n) or scipy.sparse matrix
-       The MLE transition matrix. P has the same data type (dense or sparse) 
-       as the input matrix C
-    
-    Reversible transition matrix estimation
-    ---------------------------------------
-    For reversible estimation, an iterative solver is used which accepts the
-    following extra arguments and return behavior:
     Xinit = None : ndarray (n,n)
+        Optional parameter with reversible = True.
         initial value for the matrix of absolute transition probabilities. Unless set otherwise,
         will use X = diag(pi) t, where T is a nonreversible transition matrix estimated from C,
         i.e. T_ij = c_ij / sum_k c_ik, and pi is its stationary distribution.
     nmax = 1000000 : int
+        Optional parameter with reversible = True.
         maximum number of iterations before the method exits
     convtol = 1e-8 : float
+        Optional parameter with reversible = True.
         convergence tolerance. This specifies the maximum change of the Euclidean norm of relative
         stationary probabilities (x_i = sum_k x_ik). The relative stationary probability changes
         e_i = (x_i^(1) - x_i^(2))/(x_i^(1) + x_i^(2)) are used in order to track changes in small
         probabilities. The Euclidean norm of the change vector, |e_i|_2, is compared to convtol.
     return_statdist = False : Boolean
+        Optional parameter with reversible = True.
         If set to true, the stationary distribution is also returned
     return_conv = False : Boolean
+        Optional parameter with reversible = True.
         If set to true, the likelihood history and the pi_change history is returned.
     
-    The estimator returns by default only P, but may also return
-    (T,pi) or (T,lhist,pi_changes) or (T,pi,lhist,pi_changes) depending on the return settings
-    T : ndarray (n,n)
+    Returns
+    -------
+    P : numpy ndarray, shape=(n, n) or scipy.sparse matrix
+       The MLE transition matrix. P has the same data type (dense or sparse) 
+       as the input matrix C.
+    The reversible estimator returns by default only P, but may also return
+    (P,pi) or (P,lhist,pi_changes) or (P,pi,lhist,pi_changes) depending on the return settings
+    P : ndarray (n,n)
         transition matrix. This is the only return for return_statdist = False, return_conv = False
     (pi) : ndarray (n)
         stationary distribution. Only returned if return_statdist = True
