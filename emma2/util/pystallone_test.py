@@ -93,7 +93,7 @@ class TestPyStallone(unittest.TestCase):
         a = st.API.intsNew.table(jarr)
         b = st.stallone_array_to_ndarray(a)
         self.compareNP(self.a, b)
-        
+    """    
     def testDirectBufferFloat(self):
         stArr = st.ndarray_to_stallone_array(self.a, copy=False)
         # create a copy from java buffer view
@@ -101,6 +101,6 @@ class TestPyStallone(unittest.TestCase):
         for i in xrange(len(self.a)):
             copy[i] = stArr.get(i)
         self.compareNP(self.a, copy)
-
+   """
 if __name__ == "__main__":
     unittest.main()
