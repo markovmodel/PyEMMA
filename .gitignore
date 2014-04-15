@@ -1,6 +1,6 @@
 *.orig
 *.bak
-/build*
+build*
 *.log
 *.egg
 /.settings
@@ -13,5 +13,3 @@
 __pycache__
 /pylint/pylint_*.txt
 /dist
-sphinx/generated/*
-sphinx/_build/*
