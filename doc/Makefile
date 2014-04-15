@@ -16,7 +16,12 @@ PAPEROPT_a4     = -D latex_paper_size=a4
 PAPEROPT_letter = -D latex_paper_size=letter
 ALLSPHINXOPTS   = -d build/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) source
 
-.PHONY: help clean html 
+# ipython notebook index file
+F			 = source/ipython.rst
+HEADER			="IPython notebooks\n================="
+
+
+.PHONY: help clean html ipython-rst
 
 #------------------------------------------------------------------------------
 all: html
@@ -27,8 +32,27 @@ help:
 clean:
 	-rm -rf build/* source/generated
 
-html:
+html: ipython-rst
 	mkdir -p build/html build/doctrees
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) build/html $(FILES)
 	@echo
 	@echo "Build finished. The HTML pages are in build/html."
+
+source/generated:
+	mkdir -p source/generated
+
+ipython-rst: source/generated
+	# find all ipython notebooks (without their checkpoints)
+	@$(eval notebooks:= $$(shell cd source/generated && \
+						find ../../../ipython/ -name \*.ipynb \
+							-and -not -name \*-checkpoint.ipynb))
+	# convert notebooks to rst
+	cd source/generated; ipython nbconvert --to rst $(notebooks)
+	# strip directory part and extensions
+	@$(eval notebooks=$$(notdir $(notebooks)))
+	@$(eval notebooks=$$(basename $(notebooks)))
+	# write header
+	@echo $(HEADER) > $(F)
+	# put every notebook as a link in index file
+	@$(foreach n,$(notebooks), echo "   :doc:\`generated/$n\`\n" >> $(F);)
+	@echo "Conversion finished."

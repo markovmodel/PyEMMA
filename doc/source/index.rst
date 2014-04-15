@@ -16,8 +16,7 @@ Contents:
    DevelopersGuide
    Tutorial
    api
-   Sandbox
-
+   ipython
 
 
 Indices and tables
