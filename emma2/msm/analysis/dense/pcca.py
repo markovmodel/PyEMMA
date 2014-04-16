@@ -11,7 +11,6 @@ import numpy
 
 def pcca(T, n):
     
-    # TODO: Here decomposition.eigenvectors could be used but they are not properly normalized!
     eigenvalues,left_eigenvectors,right_eigenvectors = decomposition.rdl_decomposition(T, n)
     
     right_eigenvectors = numpy.real(right_eigenvectors)
