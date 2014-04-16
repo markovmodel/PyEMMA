@@ -1,13 +1,18 @@
-Documentation of the emma2 API
-==============================
+Emma2 API Reference
+===================
 
-Reference
----------
-
+Markov State Models
+-------------------
 .. toctree::
    :maxdepth: 1
 
-   coordinates
    msm.io
    msm.estimation
    msm.analysis
+   
+Coordinates
+-----------
+.. toctree::
+   :maxdepth: 1
+   
+   coordinates
