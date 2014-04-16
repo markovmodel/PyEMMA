@@ -47,7 +47,7 @@ def time_correlation_direct(P, pi, obs1, obs2=None, time=1):
     # return result
     return np.dot(l,r)
 
-
+# TODO: efficient impl (avoid P^k via matrix vector product)
 def time_correlations_direct(P, pi, obs1, obs2=None, times=[1]):
     r"""Compute time-correlation of obs1, or time-cross-correlation with obs2.
     
