@@ -215,7 +215,7 @@ __all__.append('statdist')
 
 
 # DONE: Martin
-def eigenvalues(T, k=None):
+def eigenvalues(T, k=None, ncv=None):
     r"""Find eigenvalues of the transition matrix.
     
     Parameters
@@ -224,6 +224,9 @@ def eigenvalues(T, k=None):
         Transition matrix
     k : int (optional)
         Compute the first `k` eigenvalues of `T`
+    ncv : int (optional)
+        The number of Lanczos vectors generated, `ncv` must be greater than k;
+        it is recommended that ncv > 2*k
 
     Returns
     -------
@@ -233,7 +236,7 @@ def eigenvalues(T, k=None):
     
     """
     if issparse(T):
-        return sparse.decomposition.eigenvalues(T, k)
+        return sparse.decomposition.eigenvalues(T, k, ncv=ncv)
     elif isdense(T):
         return dense.decomposition.eigenvalues(T, k)
     else:
@@ -270,7 +273,7 @@ def timescales(T, tau=1, k=None):
 
 # DONE: Ben
 # TODO: What about normalization? Or use rdl for this?
-def eigenvectors(T, k=None, right=True):
+def eigenvectors(T, k=None, right=True, ncv=None):
     r"""Compute eigenvectors of given transition matrix.
     
     Eigenvectors are computed using the scipy interface 
@@ -282,6 +285,10 @@ def eigenvectors(T, k=None, right=True):
         Transition matrix (stochastic matrix).
     k : int (optional)
         Compute the first k eigenvectors.
+    ncv : int (optional)
+        The number of Lanczos vectors generated, `ncv` must be greater than k;
+        it is recommended that ncv > 2*k
+
     
     Returns
     -------
@@ -292,7 +299,7 @@ def eigenvectors(T, k=None, right=True):
     
     """
     if issparse(T):
-        return sparse.decomposition.eigenvectors(T, k=k, right=right)
+        return sparse.decomposition.eigenvectors(T, k=k, right=right, ncv=ncv)
     elif isdense(T):
         return dense.decomposition.eigenvectors(T, k=k, right=right)
     else: 

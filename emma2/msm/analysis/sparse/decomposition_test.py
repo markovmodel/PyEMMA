@@ -89,6 +89,12 @@ class TestDecomposition(unittest.TestCase):
         vn=decomposition.eigenvalues(self.T_sparse, k=self.k)        
         self.assertTrue(np.allclose(vn, self.v_sparse))
 
+        """Test ncv keyword computing self.k/4 eigenvalues 
+           with Kyrlov subspace of dim=self.k"""
+        vn=decomposition.eigenvalues(self.T_sparse, k=self.k/4, ncv=self.k)
+        self.assertTrue(np.allclose(vn, self.v_sparse[0:self.k/4]))
+
+
     def test_eigenvectors(self):
         """Right eigenvectors"""        
         Rn=decomposition.eigenvectors(self.T_sparse, k=self.k)        
@@ -114,6 +120,36 @@ class TestDecomposition(unittest.TestCase):
 
         """Assert that off-diagonal elements are zero"""
         self.assertTrue(np.allclose(A, 0.0))
+
+        """Check the same for self.k/4 eigenvectors wih ncv=k"""
+
+        """Right eigenvectors"""        
+        Rn=decomposition.eigenvectors(self.T_sparse, k=self.k/4, ncv=self.k)        
+
+        L_dense=self.L_sparse.toarray()[:,0:self.k/4]
+
+        """Compute overlapp between true left and computed right eigenvectors"""
+        A=np.dot(np.transpose(L_dense), Rn)
+        ind_diag=np.diag_indices(self.k/4)
+        A[ind_diag]=0.0
+
+        """Assert that off-diagonal elements are zero"""
+        self.assertTrue(np.allclose(A, 0.0))        
+
+        """Left eigenvectors"""        
+        Ln=decomposition.eigenvectors(self.T_sparse, k=self.k/4, right=False, ncv=self.k)
+        R_dense=self.R_sparse.toarray()[:,0:self.k/4]
+        
+
+        """Compute overlapp between true right and computed left eigenvectors"""
+        A=np.dot(np.transpose(Ln), R_dense)
+        ind_diag=np.diag_indices(self.k/4)
+        A[ind_diag]=0.0
+
+        """Assert that off-diagonal elements are zero"""
+        self.assertTrue(np.allclose(A, 0.0))
+        
+        
 
     def test_rdl_decomposition(self):
         # k=self.k

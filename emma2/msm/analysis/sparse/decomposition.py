@@ -8,7 +8,7 @@ Dense matrices are represented by scipy.sparse matrices throughout this module.
 import numpy as np
 import scipy.sparse.linalg
 
-def stationary_distribution_from_eigenvector(T):
+def stationary_distribution_from_eigenvector(T, ncv=None):
     r"""Compute stationary distribution of stochastic matrix T. 
       
     The stationary distribution is the left eigenvector corresponding to the 1
@@ -18,6 +18,9 @@ def stationary_distribution_from_eigenvector(T):
     ------
     T : numpy array, shape(d,d)
         Transition matrix (stochastic matrix).
+    ncv : int (optional)
+        The number of Lanczos vectors generated, `ncv` must be greater than k;
+        it is recommended that ncv > 2*k
 
     Returns:
     --------
@@ -25,7 +28,7 @@ def stationary_distribution_from_eigenvector(T):
         Vector of stationary probabilities.
 
     """
-    vals, vecs=scipy.sparse.linalg.eigs(T.transpose(), k=1, which='LR')
+    vals, vecs=scipy.sparse.linalg.eigs(T.transpose(), k=1, which='LR', ncv=ncv)
     nu=vecs[:, 0].real
     mu=nu/np.sum(nu)
     return mu
@@ -62,8 +65,7 @@ def stationary_distribution_from_linearsystem(T):
     # return 
     return x
 
-
-def eigenvalues(T, k=None):
+def eigenvalues(T, k=None, ncv=None):
     r"""Compute the eigenvalues of a sparse transition matrix
 
     The first k eigenvalues of largest magnitude are computed.
@@ -74,6 +76,9 @@ def eigenvalues(T, k=None):
         Transition matrix
     k : int (optional)
         Number of eigenvalues to compute.
+    ncv : int (optional)
+        The number of Lanczos vectors generated, `ncv` must be greater than k;
+        it is recommended that ncv > 2*k
     
     Returns
     -------
@@ -84,11 +89,11 @@ def eigenvalues(T, k=None):
     if k is None:
         raise ValueError("Number of eigenvalues required for decomposition of sparse matrix")
     else:
-        v=scipy.sparse.linalg.eigs(T, k=k, which='LM', return_eigenvectors=False)
+        v=scipy.sparse.linalg.eigs(T, k=k, which='LM', return_eigenvectors=False, ncv=ncv)
         ind=np.argsort(np.abs(v))[::-1]
         return v[ind]
     
-def eigenvectors(T, k=None, right=True):
+def eigenvectors(T, k=None, right=True, ncv=None):
     r"""Compute eigenvectors of given transition matrix.
 
     Eigenvectors are computed using the scipy interface 
@@ -101,6 +106,10 @@ def eigenvectors(T, k=None, right=True):
     k : int (optional) or array-like 
         For integer k compute the first k eigenvalues of T
         else return those eigenvector sepcified by integer indices in k.
+    ncv : int (optional)
+        The number of Lanczos vectors generated, `ncv` must be greater than k;
+        it is recommended that ncv > 2*k
+
         
     Returns
     -------
@@ -114,11 +123,11 @@ def eigenvectors(T, k=None, right=True):
         raise ValueError("Number of eigenvectors required for decomposition of sparse matrix")
     else:
         if right:
-            val, vecs=scipy.sparse.linalg.eigs(T, k=k, which='LM')
+            val, vecs=scipy.sparse.linalg.eigs(T, k=k, which='LM', ncv=ncv)
             ind=np.argsort(np.abs(val))[::-1]
             return vecs[:,ind]
         else:            
-            val, vecs=scipy.sparse.linalg.eigs(T.transpose(), k=k, which='LM')
+            val, vecs=scipy.sparse.linalg.eigs(T.transpose(), k=k, which='LM', ncv=ncv)
             ind=np.argsort(np.abs(val))[::-1]
             return vecs[:, ind]        
 
