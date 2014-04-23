@@ -684,7 +684,7 @@ def relaxation(P, p0, obs, tau=1, times=[1], pi=None):
 # PCCA
 ################################################################################
 
-# TODO: Implement in Python directly
+# DONE: Implement in Python directly
 def pcca(T, n):
     r"""returns an ndarray(m,n) with n membership functions of length m in columns to be in
     correspondence with the column structure of right and left eigenvectors
@@ -784,6 +784,11 @@ def tpt(T, A, B):
 # Sensitivities
 ################################################################################
 
+def _showSparseConversionWarning():
+    import warnings
+    warnings.warn('converting input to dense, since sensitivity is '
+                  'currently only impled for dense types.', UserWarning)
+
 # TODO: Implement sparse in Python directly
 def eigenvalue_sensitivity(T, k):
     r"""Sensitivity matrix of a specified eigenvalue.
@@ -802,7 +807,8 @@ def eigenvalue_sensitivity(T, k):
     
     """
     if issparse(T):
-        raise NotImplementedError('Not implemented.')
+        _showSparseConversionWarning()
+        eigenvalue_sensitivity(T.todense(), k)
     elif isdense(T):
         return dense.sensitivity.eigenvalue_sensitivity(T, k)
     else:
@@ -826,7 +832,8 @@ def timescale_sensitivity(T, k):
         
     """
     if issparse(T):
-        raise NotImplementedError('Not implemented.')
+        _showSparseConversionWarning()
+        timescale_sensitivity(T.todense(), k)
     elif isdense(T):
         return dense.sensitivity.timescale_sensitivity(T, k)
     else:
@@ -854,7 +861,8 @@ def eigenvector_sensitivity(T, k, j, right=True):
     
     """
     if issparse(T):
-        raise NotImplementedError('Not implemented.')
+        _showSparseConversionWarning()
+        eigenvector_sensitivity(T.todense(), k, j, right)
     elif isdense(T):
         if right is True:
             return dense.sensitivity.eigenvector_sensitivity(T, k, j, True)
@@ -884,7 +892,8 @@ def stationary_distribution_sensitivity(T, j):
     
     """
     if issparse(T):
-        raise NotImplementedError('Not implemented.')
+        _showSparseConversionWarning()
+        stationary_distribution_sensitivity(T.todense(), j)
     elif isdense(T):
         return dense.sensitivity.stationary_distribution_sensitivity(T, j)
     else:
@@ -913,7 +922,8 @@ def mfpt_sensitivity(T, target, i):
     
     """
     if issparse(T):
-        raise NotImplementedError('Not implemented.')
+        _showSparseConversionWarning()
+        mfpt_sensitivity(T.todense(), target, i)
     elif isdense(T):
         return dense.sensitivity.mfpt_sensitivity(T, target, i)
     else:
@@ -945,7 +955,8 @@ def committor_sensitivity(T, A, B, i, forward=True):
     
     """
     if issparse(T):
-        raise NotImplementedError('Not implemented.')
+        _showSparseConversionWarning()
+        committor_sensitivity(T.todense(), A, B, i, forward)
     elif isdense(T):
         if forward:
             return dense.sensitivity.forward_committor_sensitivity(T, A, B, i)
