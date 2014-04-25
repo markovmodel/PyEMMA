@@ -302,4 +302,4 @@ def jarray(a):
     elif isinstance(a, _np.ndarray):
         return list_to_jarray(a.tolist())
     else:
-        raise TypeError("Type is not supported for conversion to java array")
+        raise TypeError("Type '%s' is not supported for conversion to java array" % type(a))
