@@ -5,9 +5,13 @@ Developer's Guide
 .. toctree::
    :maxdepth: 2
 
-Workflow
---------
-Have a look at :ref:`Development workflow`.
+Dev Workflow
+------------
+Have a look at :doc:`DEVELOPMENT`.
+
+Testing the code
+----------------
+Have a look at :doc:`TESTING`.
 
 Python imports
 --------------
