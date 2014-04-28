@@ -11,9 +11,10 @@ Contents:
 .. toctree::
    :maxdepth: 1
 
-   rest
-
+   
+   INSTALL
    DevelopersGuide
+   DEVELOPMENT
    Tutorial
    api
    ipython
