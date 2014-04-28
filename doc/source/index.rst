@@ -13,12 +13,10 @@ Contents:
 
    
    INSTALL
-   DevelopersGuide
-   DEVELOPMENT
    Tutorial
    api
    ipython
-
+   DevelopersGuide
 
 Indices and tables
 ==================
