@@ -768,6 +768,8 @@ static PyObject *project(PyObject *self, PyObject *args) {
 			sum = 0;
 			for (i = 0; i < m; i++)
 				sum += record[i] * D(W,m*i+j);
+			// TODO: ensure this is always american floating point format with a dot
+			// german locales produce float numbers with comma!
 			fprintf(out, "%f", sum);
 			if (j != max - 1)
 				fprintf(out, " ");
