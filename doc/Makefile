@@ -17,9 +17,7 @@ PAPEROPT_letter = -D latex_paper_size=letter
 ALLSPHINXOPTS   = -d build/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) source
 
 # ipython notebook index file
-F			 = source/ipython.rst
-HEADER			="IPython notebooks\n================="
-
+F			 = source/generated/ipynb-list.rst
 
 .PHONY: help clean html ipython-rst
 
@@ -32,7 +30,7 @@ help:
 clean:
 	-rm -rf build/* source/generated
 
-html: ipython-rst
+html:
 	mkdir -p build/html build/doctrees
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) build/html $(FILES)
 	@echo

@@ -8,7 +8,12 @@ It is recommended to upgrade to latest setuptools with the provided
 script 'ez_setup.py'. Invoke it like that to upgrade:
 
 ::
-   python ez_setup.py [--user]
+
+    python ez_setup.py [--user]
+
+
+..note:: foo
+
 
 We recommend the usage of Python-2.7
 
@@ -17,15 +22,16 @@ For jpype you need to install a recent Java Development Kit (JDK)
 On Debian/Ubuntu:
 
 ::
-   apt-get install openjdk-7-jdk
-On MacOs obtain a copy from Oracle:
-  http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html
 
-These Python packages are needed, and will be automatically installed, when you
-invoke the setup.py script.
+    apt-get install openjdk-7-jdk
+On MacOs obtain a copy from Oracle:
+http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html
+
 
 Dependencies
 ------------
+These Python packages are needed, and will be installed automatically, when you
+invoke the setup.py script (no matter if via easy_install, pip or directly).
 
 Python packages:
  - numpy >= 1.6.0
@@ -39,17 +45,20 @@ following additional Python packages:
  - numpydoc >= 0.4
 
 For all install methods you can append '--user' to install to your local user
-directory:
+directory assuming you are in the root of the repository:
 
- - 
- :: 
-   python setup.py install [--user]
- - 
+- Install with setup.py
  ::
-   pip install . [--user]
- - 
+ 
+      python setup.py install [--user]
+- Install with pip package manager
  ::
-   easy_install [--user] .
+ 
+      pip install . [--user]
+- Install with easy_install package manager
+ ::
+ 
+      easy_install [--user] .
 
 Note that the dot in invocation of pip and easy_install are necessary to point
 to the current dir, where setup.py is located.
