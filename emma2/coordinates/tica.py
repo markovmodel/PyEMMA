@@ -14,6 +14,7 @@ Created on 19.11.2013
 import os
 import sys
 import numpy
+import warnings
 
 __docformat__ = "restructuredtext en"
 __all__ = ['correlation', 'log_loop', 'rename', 'Amuse']
@@ -82,7 +83,7 @@ class Amuse:
         amuse = cls(time_column)
         if not files:
             raise Exception('No input trajectories were given.')
-
+        
         # calculate mean
         if mean == None:
             log.info('computing mean')
@@ -105,9 +106,11 @@ class Amuse:
         
         amuse.n = stats['cov'].shape[0]
  
-        cov = numpy.array(stats['cov'] / stats['samples'], dtype=float)
-        tcov = numpy.array(stats['tcov'] / stats['tcov_samples'], dtype=float)
-      
+        cov = stats['cov'] / stats['samples']
+        if stats['tcov_samples'] != 0:
+            tcov = stats['tcov'] / stats['tcov_samples']
+        else:
+            tcov = stats['tcov_samples']
         amuse.var = cov.diagonal()
   
         if normalize:
@@ -130,8 +133,12 @@ class Amuse:
     
         amuse.pca_values, amuse.pca_weights = numpy.linalg.eig(corr)
         # normalize weights by dividing by the standard deviation of the pcs 
-        for i, l in enumerate(amuse.pca_values):
-            amuse.pca_weights[:, i] = amuse.pca_weights[:, i] / numpy.sqrt(l)
+        if numpy.all(amuse.pca_values > 0):
+            log.debug('normalize weights by dividing by the standard deviation of the pcs')
+            for i, l in enumerate(amuse.pca_values):
+                amuse.pca_weights[:, i] = amuse.pca_weights[:, i] / numpy.sqrt(l)
+        else:
+            warnings.warn('some pca weights are zero')
 
         pc_tcorr = numpy.dot(numpy.dot(numpy.transpose(amuse.pca_weights), tcorr), amuse.pca_weights)
         amuse.tica_values, amuse.intermediate_weights = numpy.linalg.eig(pc_tcorr)
