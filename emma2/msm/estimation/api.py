@@ -24,6 +24,7 @@ import emma2.util.pystallone as stallone
 __all__=['count_matrix',
          'cmatrix', 
          'connected_sets',
+         'error_perturbation',
          'largest_connected_set',
          'largest_connected_submatrix',
          'is_connected',
@@ -318,10 +319,10 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
         initial value for the matrix of absolute transition probabilities. Unless set otherwise,
         will use X = diag(pi) t, where T is a nonreversible transition matrix estimated from C,
         i.e. T_ij = c_ij / sum_k c_ik, and pi is its stationary distribution.
-    nmax = 1000000 : int
+    maxiter = 1000000 : int
         Optional parameter with reversible = True.
         maximum number of iterations before the method exits
-    convtol = 1e-8 : float
+    maxerr = 1e-8 : float
         Optional parameter with reversible = True.
         convergence tolerance. This specifies the maximum change of the Euclidean norm of relative
         stationary probabilities (x_i = sum_k x_ik). The relative stationary probability changes
@@ -381,10 +382,10 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
         else:
             if sparse_mode:
                 # Sparse, reversible, fixed pi (currently using dense with sparse conversion)
-                return csr_matrix(dense.transition_matrix.transition_matrix_reversible_fixpi(C.toarray(), mu))
+                return csr_matrix(dense.transition_matrix.transition_matrix_reversible_fixpi(C.toarray(), mu,**kwargs))
             else:
                 # Dense,  reversible, fixed pi
-                return dense.transition_matrix.transition_matrix_reversible_fixpi(C, mu)
+                return dense.transition_matrix.transition_matrix_reversible_fixpi(C, mu,**kwargs)
     else: # nonreversible estimation
         if mu is None:
             if sparse_mode:
