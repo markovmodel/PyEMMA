@@ -66,7 +66,7 @@ def __relative_error(x, y, norm=None):
 
 
 
-def estimate_transition_matrix_reversible(C, Xinit = None, nmax = 1000000, convtol = 1e-8, 
+def estimate_transition_matrix_reversible(C, Xinit = None, maxiter = 1000000, maxerr = 1e-8, 
                                           return_statdist = False, return_conv = False):
     """
     iterative method for estimating a maximum likelihood reversible transition matrix
@@ -84,9 +84,9 @@ def estimate_transition_matrix_reversible(C, Xinit = None, nmax = 1000000, convt
         initial value for the matrix of absolute transition probabilities. Unless set otherwise,
         will use X = diag(pi) T, where T is a nonreversible transition matrix estimated from C,
         i.e. T_ij = c_ij / sum_k c_ik, and pi is its stationary distribution.
-    nmax = 1000000 : int
+    maxerr = 1000000 : int
         maximum number of iterations before the method exits
-    convtol = 1e-8 : float
+    maxiter = 1e-8 : float
         convergence tolerance. This specifies the maximum change of the Euclidean norm of relative
         stationary probabilities (x_i = sum_k x_ik). The relative stationary probability changes
         e_i = (x_i^(1) - x_i^(2))/(x_i^(1) + x_i^(2)) are used in order to track changes in small
@@ -131,14 +131,14 @@ def estimate_transition_matrix_reversible(C, Xinit = None, nmax = 1000000, convt
     T = np.zeros((n,n)) # transition matrix
     # if convergence history requested, initialize variables 
     if (return_conv):
-        diffs = np.zeros(nmax)
+        diffs = np.zeros(maxiter)
         # likelihood
-        lhist = np.zeros(nmax)
+        lhist = np.zeros(maxiter)
         T = X / xsum[:,np.newaxis]
         lhist[0] = log_likelihood(C, T)
     # iteration
     i = 1
-    while (i < nmax-1) and (not converged):
+    while (i < maxiter-1) and (not converged):
         # c_i / x_i
         c_over_x = csum / xsum
         # d_ij = (c_i/x_i) + (c_j/x_j)
@@ -159,7 +159,7 @@ def estimate_transition_matrix_reversible(C, Xinit = None, nmax = 1000000, convt
             lhist[i] = log_likelihood(C, T)
             diffs[i] = diff
         # converged?
-        converged = (diff < convtol)
+        converged = (diff < maxerr)
         i += 1
     # finalize and return
     T = X / xsum[:,np.newaxis]
@@ -207,6 +207,8 @@ def transition_matrix_reversible_fixpi(Z, mu, maxerr=1e-10, maxiter=10000, retur
         raise ValueError('Count matrix has rowsum(s) of zero. Require a count matrix with positive rowsums.')
     if (np.min(mu) <= 0):
         raise ValueError('Stationary distribution has zero elements. Require a positive stationary distribution.')
+    if (np.min(np.diag(Z)) == 0):
+        raise ValueError('Count matrix has diagonals with 0. Cannot guarantee convergence of algorithm. Suggestion: add a small prior (e.g. 1e-10) to the diagonal')
     l = 1.0*csum
     lnew = 1.0*csum
     q = np.zeros((n))

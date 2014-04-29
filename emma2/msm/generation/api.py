@@ -4,8 +4,45 @@ Created on Jan 8, 2014
 @author: noe
 '''
 
+import math
 import numpy as np
 import emma2.util.pystallone as stallone
+
+
+def transition_matrix_metropolis_1d(E,d=1):
+    """
+    Generates a transition matrix describing the Metropolis chain jumping 
+    between neighbors in a discrete 1D energy landscape
+    
+    Parameters
+    ----------
+    E : ndarray (n)
+        energies in units of kT
+    d : diffusivity (0,1]. 
+        Transition probabilities are computed as p_i,i+1 = 0.5 * d * min(1.0, exp(-(E_i+1 - E_i)))
+        
+    Returns
+    -------
+    P : ndarray (n,n)
+        transition matrix of the Markov chain
+    """
+    # check input
+    if (d <= 0 or d > 1):
+        raise ValueError('Diffusivity must be in (0,1]. Trying to set the invalid value',str(d))
+    # init
+    n = len(E)
+    P = np.zeros((n,n))
+    # set offdiagonals
+    P[0,1] = 0.5 * d * min(1.0, math.exp(-(E[1]-E[0])))
+    for i in range(1,n-1):
+        P[i,i-1] = 0.5 * d * min(1.0, math.exp(-(E[i-1]-E[i])))
+        P[i,i+1] = 0.5 * d * min(1.0, math.exp(-(E[i+1]-E[i])))    
+    P[n-1,n-2] = 0.5 * d * min(1.0, math.exp(-(E[n-2]-E[n-1])))
+    # normalize
+    P += np.diag(1.0-np.sum(P,axis=1))
+    # done
+    return P
+
 
 def generate_traj(T, s, N, dt=1):
     r"""Generates a realization of the Markov chain with transition
