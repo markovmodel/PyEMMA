@@ -3,16 +3,13 @@ r"""
     Emma2 - Emma's Markov Model Algorithms
 ==========================================
 """
-
 import coordinates
 import msm
 import pmm
 import util
 
-# scipy.sparse.diags function introduced in scipy 0.11, provide a fallback for
-# users of older versions
-import scipy.sparse
-try:
-    scipy.sparse.__dict__.get('diags')
-except KeyError:
-    scipy.sparse.__dict__['diags'] = util.numeric.diags
+# note that this works only for installed (or egg links created via setup.py develop)
+from pkg_resources import get_distribution as _get_dist
+__version__ = _get_dist('emma2').version
+
+
