@@ -17,7 +17,7 @@ we are using setuptools via the bootstrapper ez_setup
 from ez_setup import use_setuptools
 use_setuptools(version="3.4.4")
 from setuptools import __version__ as st_version
-print "Using setuptools version: ", st_version
+#print "Using setuptools version: ", st_version
 from setuptools import setup, Extension, find_packages
 
 """
