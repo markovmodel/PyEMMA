@@ -39,13 +39,16 @@ def setupLogging():
             filename = args.file
         else:
             filename = None
-    
-        logging.basicConfig(level=args.level,
+        try:
+            logging.basicConfig(level=args.level,
                     format=args.format,
                     datefmt='%d-%m-%y %H:%M:%S',
                     filename=filename,
                     filemode='a')
-        
+        except IOError as ie:
+            import warnings
+            warnings.warn('logging could not be initialized, because of %s' % ie)
+            return
         """ in case we want to log to both file and stream, add a separate handler"""
         if args.toconsole and args.tofile:
             ch = logging.StreamHandler()
