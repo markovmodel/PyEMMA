@@ -1,3 +1,5 @@
+.. _ref_install:
+
 ============
 Installation
 ============
@@ -54,6 +56,7 @@ following additional Python packages:
  - numpydoc >= 0.4
 
 .. _ref-install-methods:
+
 Install methods
 ===============
 For all install methods you can append '--user' to install to your local user

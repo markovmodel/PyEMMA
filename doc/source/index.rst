@@ -6,8 +6,6 @@
 Welcome to EMMA's documentation!
 ================================
 
-Contents:
-
 .. toctree::
    :maxdepth: 1
 
@@ -17,11 +15,14 @@ Contents:
    api
    ipython
    DevelopersGuide
+   
 
-Indices and tables
-==================
+.. include:: ../../README.rst
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
 
+.. Indices and tables
+.. ==================
+
+.. * :ref:`genindex`
+.. * :ref:`modindex`
+.. * :ref:`search`
