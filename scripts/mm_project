@@ -7,6 +7,7 @@ Created on 19.11.2013
 '''
 
 import argparse
+import os
 from emma2.coordinates.tica import Amuse, rename, log_loop
 
 if __name__ == '__main__':
@@ -23,6 +24,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     amuse = Amuse.fromfiles(args.mean, None, args.weights, args.timecolumn)
-    
+    # this is a workaround for writing comma floating point values, instead of
+    # 'expected' dotted ones. This is due to a german locale, which is exported
+    # in environment. So we set it to 'C' to force dotted floats.
+    os.environ['LANG'] = 'C'
     for t in log_loop(args.trajectories):
         amuse.project(t, rename(t, args.outdir, args.descriptor), amuse.tica_weights, args.keepnp)
