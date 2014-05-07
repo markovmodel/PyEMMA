@@ -18,12 +18,6 @@ class Test(unittest.TestCase):
                             [0.02, 0.94, 0.02, 0.02], 
                             [0.01, 0.01, 0.94, 0.04], 
                             [0.01, 0.01, 0.08, 0.9]])
-        pass
-
-
-    def tearDown(self):
-        pass
-
 
     def testName(self):
         pass
@@ -32,5 +26,4 @@ class Test(unittest.TestCase):
         print committor(self.T4, [0],[3] ,forward = False)
 
 if __name__ == "__main__":
-    #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()
