@@ -45,15 +45,15 @@ These Python packages are needed, and will be installed automatically, when you
 invoke the setup.py script (no matter if via easy_install, pip or directly).
 
 Python packages:
- - numpy >= 1.6.0
- - scipy >= 0.13.0
- - jpype1 >= 0.5.5.1
+- numpy >= 1.6.0
+- scipy >= 0.13.0
+- jpype1 >= 0.5.5.1
 
 
 If you intend to build the Sphinx documentation yourself, you also need the
 following additional Python packages:
- - sphinx >= 1.2.1
- - numpydoc >= 0.4
+- sphinx >= 1.2.1
+- numpydoc >= 0.4
 
 .. _ref-install-methods:
 
@@ -63,17 +63,20 @@ For all install methods you can append '--user' to install to your local user
 directory assuming you are in the root of the repository:
 
 - Install with setup.py
- ::
- 
-      python setup.py install [--user]
+
+::
+
+    python setup.py install [--user]
 - Install with pip package manager
- ::
- 
-      pip install . [--user]
+
+::
+
+    pip install . [--user]
 - Install with easy_install package manager
- ::
- 
-      easy_install [--user] .
+
+::
+
+    easy_install [--user] .
 
 Note that the dot in invocation of pip and easy_install are necessary to point
 to the current dir, where setup.py is located.
