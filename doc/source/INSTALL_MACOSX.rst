@@ -1,5 +1,5 @@
 .. _ref-install-mac:
-=====================
+====================
 Install under Mac OSX
 =====================
 
@@ -7,7 +7,7 @@ If you simply want to use Emma it is absolutly fine to go for binary packages.
 
 Install binary Packages
 =======================
-It is recommended to use the pre-built **Anaconda** distribution. 
+It is recommended to use the pre-built **Anaconda** Python distribution.
 Get it from http://docs.continuum.io/anaconda/
 
 It already contains most of Emma's dependencies like *NumPy* and *SciPy*, which are
