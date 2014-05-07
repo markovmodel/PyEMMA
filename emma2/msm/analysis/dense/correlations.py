@@ -6,11 +6,6 @@ Created on 29.11.2013
 
 import numpy as np
 
-import scipy
-from scipy.sparse import issparse
-from scipy.sparse.sputils import isdense
-
-
 def time_correlation_direct(P, pi, obs1, obs2=None, time=1):
     r"""Compute time-correlation of obs1, or time-cross-correlation with obs2.
     
