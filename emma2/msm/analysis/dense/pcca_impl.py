@@ -3,15 +3,15 @@ Created on 04.12.2013
 
 @author: Susanna Roeblitz, Marcus Weber
 
-taken from ZIBMolPy which can also be found on github
+taken from ZIBMolPy which can also be found on Github:
+https://github.com/CMD-at-ZIB/ZIBMolPy/blob/master/ZIBMolPy_package/ZIBMolPy/algorithms.py
 '''
 
 import numpy as np
-import sys
 
 #===============================================================================
 def cluster_by_isa(eigenvectors, n_clusters):
-    #TODO: check this somehow, probably more args nessecary    
+    #TODO: check this somehow, probably more args nessecary
     # eigenvectors have to be sorted in descending order in regard to their eigenvalues
     if n_clusters > len(eigenvectors):
         n_clusters = len(eigenvectors)
@@ -23,13 +23,13 @@ def cluster_by_isa(eigenvectors, n_clusters):
     ind = np.zeros(n_clusters, dtype=np.int32)
 
     # first two representatives with maximum distance
-    for (i, row) in enumerate(c):        
+    for (i, row) in enumerate(c):
         if np.linalg.norm(row, 2) > max_dist:
             max_dist = np.linalg.norm(row, 2)
             ind[0] = i
 
     ortho_sys -= c[ind[0], None]
-    
+
     # further representatives via Gram-Schmidt orthogonalization
     for k in range(1, n_clusters):
         max_dist = 0.0
@@ -46,7 +46,7 @@ def cluster_by_isa(eigenvectors, n_clusters):
 
     # linear transformation of eigenvectors
     rot_mat = np.linalg.inv(c[ind])
-    
+
     chi = np.dot(c, rot_mat)
 
     # determining the indicator
@@ -64,12 +64,12 @@ def opt_soft(eigvectors, rot_matrix, n_clusters):
 
     # only consider first n_clusters eigenvectors
     eigvectors = eigvectors[:,:n_clusters]
-    
+
     # crop first row and first column from rot_matrix
     rot_crop_matrix = rot_matrix[1:,1:]
-    
+
     (x, y) = rot_crop_matrix.shape
-    
+
     # reshape rot_crop_matrix into linear vector
     rot_crop_vec = np.reshape(rot_crop_matrix, x*y)
 
@@ -84,16 +84,16 @@ def opt_soft(eigvectors, rot_matrix, n_clusters):
         for i in range(0, n_clusters):
             for j in range(1, n_clusters):
                 result += np.power(rot_matrix[j,i], 2) / rot_matrix[0,i]
-        return(-result)
+        return -result
 
 
     from scipy.optimize import fmin
     rot_crop_vec_opt = fmin( susanna_func, rot_crop_vec, args=(eigvectors,), disp=False)
-    
+
     rot_crop_matrix = np.reshape(rot_crop_vec_opt, (x, y))
     rot_matrix = fill_matrix(rot_crop_matrix, eigvectors)
 
-    return(rot_matrix)
+    return rot_matrix
 
 
 #===============================================================================
@@ -101,10 +101,10 @@ def fill_matrix(rot_crop_matrix, eigvectors):
 
     (x, y) = rot_crop_matrix.shape
 
-    row_sums = np.sum(rot_crop_matrix, axis=1)    
+    row_sums = np.sum(rot_crop_matrix, axis=1)
     row_sums = np.reshape(row_sums, (x,1))
 
-    # add -row_sums as leftmost column to rot_crop_matrix 
+    # add -row_sums as leftmost column to rot_crop_matrix
     rot_crop_matrix = np.concatenate((-row_sums, rot_crop_matrix), axis=1 )
 
     tmp = -np.dot(eigvectors[:,1:], rot_crop_matrix)
