@@ -52,7 +52,7 @@ def _initVM():
         else:
             sep = ';'
         
-        stallone_jar = os.path.join('..','lib','stallone','stallone-1.0-SNAPSHOT-jar-with-dependencies.jar')
+        stallone_jar = 'stallone-1.0-SNAPSHOT-jar-with-dependencies.jar'
         stallone_jar_file = pkg_resources.resource_filename('emma2', stallone_jar)
         if not os.path.exists(stallone_jar_file):
             raise RuntimeError('stallone jar not found! Expected it here: %s' 
