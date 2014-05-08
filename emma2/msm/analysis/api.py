@@ -26,7 +26,7 @@ import sparse.decomposition
 import sparse.expectations
 import sparse.mean_first_passage_time
 
-import emma2.msm.estimation as msmest
+from ..estimation import is_connected
 
 __all__=['is_transition_matrix',
          'is_rate_matrix',
@@ -64,10 +64,6 @@ _type_not_supported = \
 ################################################################################
 # Assessment tools
 ################################################################################
-
-# connectivity also for transition matrix:
-is_connected = msmest.is_connected
-connected_sets = msmest.connected_sets
 
 # DONE : Martin, Ben
 def is_transition_matrix(T, tol=1e-15):
