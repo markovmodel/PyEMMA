@@ -6,9 +6,9 @@ Markov State Models
 .. toctree::
    :maxdepth: 1
 
-   msm.io
-   msm.estimation
    msm.analysis
+   msm.estimation
+   msm.io
    
 Coordinates
 -----------
