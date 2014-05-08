@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-"""
-EMMA2 setup
-"""
 import sys
 
 if len(sys.argv) < 2:
@@ -16,11 +13,16 @@ import subprocess
 from glob import glob
 
 """
-we are using setuptools via the bootstrapper ez_setup
+define minimum requirements for our setup script.
 """
-from ez_setup import use_setuptools
-use_setuptools(version="3.4.4")
-from setuptools import setup, Extension, find_packages
+__requires__ = 'setuptools >= 3.0.0'
+
+try:
+    from setuptools import setup, Extension, find_packages, __version__ as stools_ver
+except:
+    print "Looks like your version of setuptools is too old. You should use " \
+          "provided ez_setup.py to upgrade your installation."
+    sys.exit(1)
 
 """
 ################################################################################
