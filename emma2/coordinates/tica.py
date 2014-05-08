@@ -187,4 +187,10 @@ class Amuse:
             raise Exception('Input file name is equal to output file name.')
         if not keep_n:
             keep_n = self.n  # keep all
+            
+        # this is a workaround for writing comma floating point values, instead of
+        # 'expected' dotted ones. This is due to a german locale, which is exported
+        # in environment. So we set it to 'C' to force dotted floats.
+        os.environ['LANG'] = 'C'
+        
         cocovar.project(fin, fout, self.mean, weights, keep_n, self.time_column)
