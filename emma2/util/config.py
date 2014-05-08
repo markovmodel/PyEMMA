@@ -49,10 +49,8 @@ def readConfiguration():
         with open(default_emma2_conf) as f:
             defParser.readfp(f, default_emma2_conf)
     except EnvironmentError as e:
-        print("FATAL ERROR: could not read default configuration file %s\n%s"
+        raise RuntimeError("FATAL ERROR: could not read default configuration file %s\n%s"
               % (default_emma2_conf, e))
-        import sys
-        sys.exit(-1)
     
     # store values of defParser in configParser with sections
     configParser = ConfigParser.SafeConfigParser()
