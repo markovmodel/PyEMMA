@@ -13,7 +13,7 @@ from emma2.coordinates.tica import Amuse
 def handleArgs():
     parser = argparse.ArgumentParser(description='Calculate covariance matrices and weight matrices for PCA and TICA.')
 
-    parser.add_argument('-i', '--trajectories', required=True, nargs='+', help='(input) trajectories', metavar='files')
+    parser.add_argument('-i', '--trajectories', required=True, nargs='+', help='(input) trajectories, either in ascii or dcd format', metavar='files')
     parser.add_argument('-T', '--timecolumn', default=False, help='ascii files contain time column?', action='store_true')
     parser.add_argument('-n', '--normalize', default=False, help='use correlation matrices instead of covariance matrices', action='store_true')
     parser.add_argument('-l', '--lagtime', help='lag time parameter tau for TICA (in frames)', metavar='frames', type=int)
