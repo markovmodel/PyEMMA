@@ -6,6 +6,9 @@ analysis - MSM analysis functions (:mod:`emma2.msm.analysis`)
 
 .. currentmodule:: emma2.msm.analysis
 
+This module contains functions to analyze a created Markov model, which is
+specified with a transition matrix T.
+
 Validation
 ==========
 
@@ -79,9 +82,4 @@ Sensitivity analysis
    committor_sensitivity
 
 """
-
-from __future__ import division, print_function, absolute_import
-
 from .api import *
-
-__all__=[s for s in dir() if not s.startswith('_')]
