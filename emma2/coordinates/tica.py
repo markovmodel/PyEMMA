@@ -20,7 +20,7 @@ __docformat__ = "restructuredtext en"
 __all__ = ['correlation', 'log_loop', 'rename', 'Amuse']
 
 ''' import correlation covariance C extension module '''
-import cocovar
+from . import cocovar
 from emma2.util.log import getLogger
 log = getLogger()
 
