@@ -5,14 +5,12 @@ Created on 30.11.2013
 '''
 
 import pcca_impl
-#import decomposition
+import decomposition
 
 import numpy
-from decomposition import eigenvectors
 
 def pcca(T, n):
-    #eigenvalues,left_eigenvectors,right_eigenvectors = decomposition.rdl_decomposition(T, n)
-    right_eigenvectors = eigenvectors(T, right = True)
+    eigenvalues,left_eigenvectors,right_eigenvectors = decomposition.rdl_decomposition(T, n)
     # TODO: complex warning maybe?
     right_eigenvectors = numpy.real(right_eigenvectors)
 
