@@ -3,8 +3,6 @@
 EMMA2 setup
 """
 import sys
-import os
-from glob import glob
 
 if len(sys.argv) < 2:
     """
@@ -15,6 +13,7 @@ if len(sys.argv) < 2:
 
 import os
 import subprocess
+from glob import glob
 
 """
 we are using setuptools via the bootstrapper ez_setup
@@ -59,7 +58,7 @@ else:
     __version__ = VERSION
 
 
-cocovar_module = Extension('cocovar', sources = ['extensions/cocovar.c'])
+cocovar_module = Extension('emma2.coordinates.cocovar', sources = ['extensions/cocovar.c'])
 
 from distutils.command.build_ext import build_ext
 class np_build(build_ext):
@@ -83,14 +82,15 @@ setup(name = 'Emma2',
       author = 'The Emma2 team',
       # packages are found if their folder contains an __init__.py,
       packages = find_packages(),
-      scripts = glob('scripts/*'),
+      package_data = {'emma2' : ['emma2.cfg']},
+      scripts = [s for s in glob('scripts/*') if s.startswith('mm_')],
       cmdclass = dict(build_ext = np_build),
       ext_modules = [cocovar_module],
       # FIXME: this goes to egg meta info directory and is not found during init
-      data_files = [('emma2', ['emma2.cfg']),
-                    # TODO: make this somehow choose the latest version available.
-                    ('lib/stallone',
-                     ['lib/stallone/stallone-1.0-SNAPSHOT-jar-with-dependencies.jar'])],
+      #data_files = [('config', ['emma2.cfg']),
+      #              # TODO: make this somehow choose the latest version available.
+      #              ('lib/stallone',
+      #               ['lib/stallone/stallone-1.0-SNAPSHOT-jar-with-dependencies.jar'])],
       setup_requires = ['numpy >= 1.6.0'],
       # runtime dependencies
       install_requires = ['numpy >= 1.6.0',
