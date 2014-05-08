@@ -1,6 +1,4 @@
 include setup.py
-include setup.cfg
 include ez_setup.py
-include emma2.cfg
 recursive-include lib *
 graft doc
