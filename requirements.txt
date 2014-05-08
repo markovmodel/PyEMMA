@@ -1,3 +1,2 @@
-numpy >= 1.6.0
-scipy >= 0.13.0
-jpype1 >= 0.5.5.2
+# this should use simply all dependencies defined in setup.py
+.
