@@ -12,12 +12,9 @@ Submodules
 .. autosummary::
    :toctree: generated/
 
-   io - in and output
-   estimation - estimate MSMs from data
-   analysis - analyze MSMs
-
 """
-from __future__ import division, print_function, absolute_import
+from . import analysis
+from . import estimation
+from . import io
+from . import generation
 
-__all__=[s for s in dir() if not s.startswith('_') and 
-         s not in ['emma2','division', 'print_function', 'absolute_import']]
