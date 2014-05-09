@@ -77,7 +77,8 @@ def write_discrete_trajectory(filename, dtraj):
     """
     trajectory.write_discrete_trajectory(filename, dtraj)
 
-write_dtraj=shortcut('write_dtraj', write_discrete_trajectory)
+write_dtraj=write_discrete_trajectory
+__all__.append('write_dtraj')
 
 ################################################################################
 # binary
