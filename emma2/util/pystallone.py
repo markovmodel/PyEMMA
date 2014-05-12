@@ -136,7 +136,7 @@ def ndarray_to_stallone_array(pyarray, copy=True):
         if not copy:
             # TODO: add impl for int if ready in stallone.
             if not pyarray.flags.c_contiguous:
-                raise RuntimeError('Can only pass continous memory to Java!')
+                raise RuntimeError('Can only pass contiguous memory to Java!')
             jbuff = _nio.convertToDirectBuffer(pyarray)
             rows = shape[0]
             cols = 1 if len(shape) == 1 else shape[1]
