@@ -78,6 +78,10 @@ class np_build(build_ext):
         from numpy import get_include
         self.include_dirs = get_include()
 
+# HACK for jpype installation:
+# we do not want the user to have jdk, so we provide jni.h here.
+os.environ['JAVA_HOME'] = os.path.abspath('lib/stallone/')
+
 setup(name = 'Emma2',
       version = __version__,
       description = 'EMMA 2',
