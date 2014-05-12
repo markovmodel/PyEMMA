@@ -272,7 +272,6 @@ def timescales(T, tau=1, k=None):
         raise _type_not_supported
 
 # DONE: Ben
-# TODO: What about normalization? Or use rdl for this?
 def eigenvectors(T, k=None, right=True, ncv=None):
     r"""Compute eigenvectors of given transition matrix.
     
@@ -282,12 +281,12 @@ def eigenvectors(T, k=None, right=True, ncv=None):
     Parameters
     ----------
     T : numpy.ndarray, shape(d,d) or scipy.sparse matrix
-        Transition matrix (stochastic matrix).
+        Transition matrix (stochastic matrix)
     k : int (optional)
-        Compute the first k eigenvectors.
+        Compute the first k eigenvectors
     ncv : int (optional)
-        The number of Lanczos vectors generated, `ncv` must be greater than k;
-        it is recommended that ncv > 2*k
+        The number of Lanczos vectors generated, `ncv` must be greater than `k`;
+        it is recommended that `ncv > 2*k`
 
     
     Returns
@@ -297,6 +296,25 @@ def eigenvectors(T, k=None, right=True, ncv=None):
         the corresponding eigenvalue. If k is None then n=d, if k is
         int then n=k.
     
+
+    Notes
+    ------
+    The returned eigenvectors :math:`v_i` are normalized such that 
+
+    ..  math::
+
+        \langle v_i, v_j \rangle = \delta_{i,j}
+
+    This is the case for right eigenvectors :math:`r_i` as well as
+    for left eigenvectors :math:`l_i`. 
+
+    If you desire orthonormal left and right eigenvectors please use the
+    rdl_decomposition method.
+
+    See also
+    --------
+    rdl_decomposition
+
     """
     if issparse(T):
         return sparse.decomposition.eigenvectors(T, k=k, right=right, ncv=ncv)
