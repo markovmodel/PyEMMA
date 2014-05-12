@@ -16,13 +16,14 @@ import matrix.matrix as matrix
 
 __all__=['read_discrete_trajectory',
          'write_discrete_trajectory',
-         'load_discrete_trajectory', 
+         'load_discrete_trajectory',
          'save_discrete_trajectory',
          'read_matrix',
-         'write_matrix', 
-         'load_matrix', 
-         'save_matrix']
-
+         'write_matrix',
+         'write_matrix_ascii',
+         'write_matrix_binary',
+         'load_matrix',
+         ]
 ################################################################################
 # Discrete trajectory IO
 ################################################################################
@@ -195,6 +196,14 @@ def read_matrix(filename, mode='default', dtype=float, comments='#'):
         else:
             return matrix.read_matrix_dense(filename, dtype=dtype, comments=comments)
     
+
+def write_matrix(filename, A, mode='default', format='ascii'):
+    if format == 'ascii':
+        write_matrix_ascii(filename, A, mode)
+    elif format == 'binary':
+        write_matrix_binary(filename, A, mode)
+    else:
+        raise ValueError('format "%s" invalid. Should be either ascii or binary')
 
 def write_matrix_ascii(filename, A, mode='default', fmt='%.18e', header='', comments='#'):
     r"""Write matrix to ascii file 
