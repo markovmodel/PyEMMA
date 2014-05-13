@@ -13,7 +13,7 @@ log = getLogger()
 
 algorithms = ['kcenter', 'kmeans', 'regularspatial', 'regulartemporal']
 input_formats = ['xtc', 'dcd' , 'ascii' , 'ensembleascii', 'auto']
-metrics = ['rmsd', 'euclidian']
+metrics = ['rmsd', 'euclidean']
 
 def handleArgs():
     parser = argparse.ArgumentParser()
