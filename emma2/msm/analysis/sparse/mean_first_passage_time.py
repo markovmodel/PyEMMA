@@ -1,4 +1,8 @@
-"""Sparse implementation of mean first passage time computation"""
+r"""Sparse implementation of mean first passage time computation
+
+.. moduleauthor:: B.Trendelkamp-Schroer <benjamin.trendelkampschroer@gmail.com>
+
+"""
 import numpy as np
 import scipy.sparse
 import scipy.sparse.linalg 

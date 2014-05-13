@@ -1,4 +1,8 @@
-"""Test package for the expectations module"""
+r"""Test package for the expectations module
+
+.. moduleauthor:: B.Trendelkamp-Schroer <benjamin.trendelkampschroer@gmail.com>
+
+"""
 import unittest
 
 import numpy as np
