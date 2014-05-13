@@ -91,7 +91,7 @@ setup(name = 'Emma2',
       packages = find_packages(),
       # install default emma.cfg and stallone jar into package.
       package_data = {'emma2' : ['emma2.cfg','stallone-1.0-SNAPSHOT-jar-with-dependencies.jar']},
-      scripts = [s for s in glob('scripts/*') if s.startswith('mm_')],
+      scripts = [s for s in glob('scripts/*') if s.find('mm_') != -1],
       cmdclass = dict(build_ext = np_build),
       ext_modules = [cocovar_module],
       setup_requires = ['numpy >= 1.6.0'],
