@@ -20,8 +20,8 @@ __requires__ = 'setuptools >= 3.0.0'
 try:
     from setuptools import setup, Extension, find_packages, __version__ as stools_ver
 except:
-    print "Looks like your version of setuptools is too old. You should use " \
-          "provided ez_setup.py to upgrade your installation."
+    print "Looks like your version (%s) of setuptools is too old. You should use " \
+          "provided ez_setup.py to upgrade your installation." % stools_ver
     sys.exit(1)
 
 """
