@@ -69,7 +69,12 @@ def getLogger(name = None):
         t = traceback.extract_stack(limit=2)
         path = t[0][0]
         pos = path.rfind('emma2')
+        if pos == -1:
+            pos = path.rfind('scripts/')
+            
         name = path[pos:]
+        
+        #logging.getLogger().debug('getLogger set name to %s; path was %s' % (name, path))
     return logging.getLogger(name)
 
 
