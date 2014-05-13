@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 # encoding: utf-8
-"""
+usage="""
 assigns the simulation data (-i) to microstates (-ic) that have been previously
 generated/ or user supplied. The assignment is done such that each frame of the
 input data is assigned to the number of the nearest cluster center (Voronoi parition).
-
-TODO: this cmd needs either stallone or an pythonic trajectory reader
 """
+# TODO: this cmd needs either stallone or an pythonic trajectory reader
 import argparse
 import os
 import sys
@@ -23,7 +22,7 @@ log = getLogger()
 metrics = ['rmsd', 'euclidean']
 
 def handleArgs():
-    parser = argparse.ArgumentParser() # TODO: somehow use module docstring here
+    parser = argparse.ArgumentParser(usage=usage) # TODO: somehow use module docstring here
     parser.add_argument('-i', dest='trajs', required=True, nargs='+',
                         help='list of trajectories to assign to clusters')
     parser.add_argument('-istepwidth', type=int, default=1, help='')
@@ -32,6 +31,7 @@ def handleArgs():
                         help='previously generated microstates (cluster centers)')
     parser.add_argument('-o', dest='output', default='.',
         help='output directory for discretized trajectories, defaults to current directory')
+    parser.add_argument('-timecolumn', action="store_true", help='this is happily ignored at the moment.')
     
     return parser.parse_args()
 
