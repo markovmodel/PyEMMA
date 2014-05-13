@@ -42,6 +42,7 @@ sys.path.insert(0, os.path.abspath('../..'))
 extensions = [
               'sphinx.ext.autodoc',
               'sphinx.ext.autosummary',
+              'sphinx.ext.todo',
               'numpydoc',
               'sphinx.ext.pngmath',
               'sphinx.ext.intersphinx',
@@ -279,3 +280,10 @@ texinfo_documents = [
 if sphinx.__version__ >= "0.7": 
     import glob
     autosummary_generate = glob.glob("*.rst")
+
+# intersphinx for linking to python std api
+intersphinx_mapping = {'python': ('http://docs.python.org/2.7', None)}
+
+autodoc_default_flags = []
+
+todo_include_todos = True
