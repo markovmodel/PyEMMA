@@ -15,7 +15,12 @@ Welcome to EMMA's documentation!
    api
    ipython
    DevelopersGuide
+   Configuration
    
+TODO-List in Docu
+=================
+.. todolist::
+
 
 .. include:: ../../README.rst
 
