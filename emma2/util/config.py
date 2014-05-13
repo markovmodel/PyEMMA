@@ -1,7 +1,12 @@
-'''
-The Emma2 configuration module reads several config files to build its final
+r'''
+Configuration files
+===================
+
+To configure the runtime behaviour like logging system or parameters for the 
+Java/Python bridge, the configuration module reads several config files to build its final
 set of settings. It searches for the file 'emma2.cfg' in several locations with
 different priorities:
+
 1. $CWD/emma2.cfg
 2. /etc/emma2.cfg
 3. ~/emma2.cfg
@@ -10,10 +15,26 @@ different priorities:
 The default values are stored in later file to ensure these values are always
 defined. This is preferred over hardcoding them somewhere in the python code.
 
-Created on 31.03.2014
 
-@author: marscher
+Default configuration file
+--------------------------
+
+Default settings are stored in a provided emma2.cfg file, which is included in the
+python package:
+
+.. literalinclude:: ../../emma2/emma2.cfg
+    :language: ini
+
+
+.. codeauthor:: Martin Scherer <m.scherer@fu-berlin.de>
+
+Members of module
+-----------------
+
 '''
+
+__docformat__ = "restructuredtext en"
+
 import ConfigParser
 import os
 import pkg_resources
@@ -21,21 +42,26 @@ import pkg_resources
 __all__ = ['configParser', 'used_filenames', 'AttribStore']
 
 configParser = None
+""" instance of `ConfigParser.SafeConfigParser` to have always valid config values."""
+
+used_filenames = []
+""" these filenames have been tried to red to obtain basic configuration values."""
 
 class AttribStore(dict):
+    """ store arbitrary attributes in this dictionary like class."""
     def __getattr__(self, name):
+        """ return attribute with given name or raise."""
         return self[name]
 
     def __setattr__(self, name, value):
+        """ store attribute with given name and value."""
         self[name] = value
 
 def readConfiguration():
     global configParser, used_filenames
-    """ this filenames are being tried to read to obtain basic configuration values 
-        for the logging system."""
         
     # use these files to extend/overwrite the config.
-    # Last red files always overwrites existing values!
+    # Last red file always overwrites existing values!
     cfg = 'emma2.cfg'
     filenames = [cfg, # config in current dir
                 '/etc/' + cfg, # config in global installation
