@@ -20,11 +20,14 @@ from emma2.util.pystallone import API, JString, java
 
 log = getLogger()
 
+metrics = ['rmsd', 'euclidean']
+
 def handleArgs():
     parser = argparse.ArgumentParser() # TODO: somehow use module docstring here
     parser.add_argument('-i', dest='trajs', required=True, nargs='+',
                         help='list of trajectories to assign to clusters')
     parser.add_argument('-istepwidth', type=int, default=1, help='')
+    parser.add_argument('-imetric', dest='metric', choices=metrics, default=metrics[1])
     parser.add_argument('-ic', dest='clusterCenters', required=True,
                         help='previously generated microstates (cluster centers)')
     parser.add_argument('-o', dest='output', default='.',
@@ -54,7 +57,15 @@ def main():
         return 1
         
     # create discretization from factory, reflect options
-    disc = API.discNew.voronoiDiscretization(centers)
+    imetric = None
+    if args.metric == 'euclidian':
+        # TODO: set dimension of data
+        imetric = API.clusterNew.metric(0, 0)
+    elif args.metric == 'minrmsd':
+        nrows = 0 # TODO: set to something useful
+        imetric = API.clusterNew.metric(1, nrows)
+        
+    disc = API.discNew.voronoiDiscretization(centers, imetric)
     
     # read traj and assign
     trajsList = java.util.ArrayList(len(trajs))
