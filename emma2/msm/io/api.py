@@ -4,6 +4,8 @@ r"""
 Emma2 MSM io API
 ================
 
+.. moduleauthor:: B.Trendelkamp-Schroer <benjamin.trendelkampschroer@gmail.com>
+
 """
 
 __docformat__ = "restructuredtext en"
