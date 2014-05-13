@@ -54,7 +54,7 @@ def getClusterAlgorithm(data, size, **kwargs):
     algorithm = kwargs['algorithm']
     
     # TODO: ensure type data is either IDataInput or IDataSequence or else clusterfactory api methods will raise
-    
+    imetric = None
     if metric == 'euclidian':
         # TODO: set dimension of data
         imetric = API.clusterNew.metric(0, 0)
