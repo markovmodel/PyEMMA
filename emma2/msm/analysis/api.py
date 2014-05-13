@@ -245,7 +245,7 @@ def eigenvalues(T, k=None, ncv=None):
         raise _type_not_supported
 
 # DONE: Ben
-def timescales(T, tau=1, k=None):
+def timescales(T, tau=1, k=None, ncv=None):
     r"""Compute implied time scales of given transition matrix.
     
     Parameters
@@ -258,6 +258,9 @@ def timescales(T, tau=1, k=None):
         constructed.
     k : int (optional)
         Compute the first `k` implied time scales.
+    ncv : int (optional)
+        The number of Lanczos vectors generated, `ncv` must be greater than k;
+        it is recommended that ncv > 2*k
         
     Returns
     -------
@@ -326,7 +329,7 @@ def eigenvectors(T, k=None, right=True, ncv=None):
         raise _type_not_supported
 
 # DONE: Ben
-def rdl_decomposition(T, k=None, norm='standard'):
+def rdl_decomposition(T, k=None, norm='standard', ncv=None):
     r"""Compute the decomposition into left and right eigenvectors.
     
     Parameters
@@ -346,7 +349,11 @@ def rdl_decomposition(T, k=None, norm='standard'):
                      of `T`. Right eigenvectors `R`\
                      have a 2-norm of 1
         'reversible' `R` and `L` are related via ``L[:,0]*R``  
-        ============ ===========================================        
+        ============ =========================================== 
+
+    ncv : int (optional)
+        The number of Lanczos vectors generated, `ncv` must be greater than k;
+        it is recommended that ncv > 2*k       
     
     Returns
     -------

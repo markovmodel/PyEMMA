@@ -214,7 +214,7 @@ def rdl_decomposition(T, k=None, norm='standard', ncv=None):
     else:
         raise ValueError("Keyword 'norm' has to be either 'standard' or 'reversible'")
         
-def timescales(T, tau=1, k=None):
+def timescales(T, tau=1, k=None, ncv=None):
     r"""Compute implied time scales of given transition matrix
     
     Parameters
@@ -223,6 +223,9 @@ def timescales(T, tau=1, k=None):
     tau : lag time
     k : int (optional)
         Compute the first k implied time scales.
+    ncv : int (optional)
+        The number of Lanczos vectors generated, `ncv` must be greater than k;
+        it is recommended that ncv > 2*k
 
     Returns
     -------
@@ -232,7 +235,7 @@ def timescales(T, tau=1, k=None):
     """
     if k is None:
         raise ValueError("Number of time scales required for decomposition of sparse matrix")    
-    values=scipy.sparse.linalg.eigs(T, k=k, which='LM', return_eigenvectors=False)
+    values=scipy.sparse.linalg.eigs(T, k=k, which='LM', return_eigenvectors=False, ncv=ncv)
     
     """Sort by absolute value"""
     ind=np.argsort(np.abs(values))[::-1]
