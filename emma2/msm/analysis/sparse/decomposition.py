@@ -1,8 +1,11 @@
-"""This module provides matrix-decomposition based functions for the
+r"""This module provides matrix-decomposition based functions for the
 analysis of stochastic matrices
 
 Below are the sparse implementations for functions specified in msm.api. 
-Dense matrices are represented by scipy.sparse matrices throughout this module.
+Matrices are represented by scipy.sparse matrices throughout this module.
+
+.. moduleauthor:: B.Trendelkamp-Schroer <benjamin.trendelkampschroer@gmail.com>
+
 """
 
 import numpy as np
@@ -131,7 +134,7 @@ def eigenvectors(T, k=None, right=True, ncv=None):
             ind=np.argsort(np.abs(val))[::-1]
             return vecs[:, ind]        
 
-def rdl_decomposition(T, k=None, norm='standard'):
+def rdl_decomposition(T, k=None, norm='standard', ncv=None):
     r"""Compute the decomposition into left and right eigenvectors.
     
     Parameters
@@ -145,6 +148,9 @@ def rdl_decomposition(T, k=None, norm='standard'):
             the stationary distribution mu of T. Right eigenvectors
             R have a 2-norm of 1.
         reversible: R and L are related via L=L[:,0]*R.
+    ncv : int (optional)
+        The number of Lanczos vectors generated, `ncv` must be greater than k;
+        it is recommended that ncv > 2*k
         
     Returns
     -------
@@ -164,8 +170,8 @@ def rdl_decomposition(T, k=None, norm='standard'):
     if k is None:
         raise ValueError("Number of eigenvectors required for decomposition of sparse matrix")
     if norm=='standard':
-        v, R=scipy.sparse.linalg.eigs(T, k=k, which='LM')
-        r, L=scipy.sparse.linalg.eigs(T.transpose(), k=k, which='LM')
+        v, R=scipy.sparse.linalg.eigs(T, k=k, which='LM', ncv=ncv)
+        r, L=scipy.sparse.linalg.eigs(T.transpose(), k=k, which='LM', ncv=ncv)
 
         """Sort right eigenvectors"""
         ind=np.argsort(np.abs(v))[::-1]
@@ -187,8 +193,8 @@ def rdl_decomposition(T, k=None, norm='standard'):
         return v, L, R
 
     elif norm=='reversible':
-        v, R=scipy.sparse.linalg.eigs(T, k=k, which='LM')
-        r, L=scipy.sparse.linalg.eigs(T.transpose(), k=1, which='LM')
+        v, R=scipy.sparse.linalg.eigs(T, k=k, which='LM', ncv=ncv)
+        r, L=scipy.sparse.linalg.eigs(T.transpose(), k=1, which='LM', ncv=ncv)
         nu=L[:, 0]
 
         """Sort right eigenvectors"""

@@ -5,6 +5,7 @@ analysis - MSM analysis functions (:mod:`emma2.msm.analysis`)
 =============================================================
 
 .. currentmodule:: emma2.msm.analysis
+.. moduleauthor:: B.Trendelkamp-Schroer <benjamin.trendelkampschroer@gmail.com>
 
 Validation
 ==========

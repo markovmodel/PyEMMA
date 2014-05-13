@@ -4,6 +4,8 @@ r"""
 Emma2 MSM Analysis API
 ======================
 
+.. moduleauthor:: B.Trendelkamp-Schroer <benjamin.trendelkampschroer@gmail.com>
+
 """
 
 __docformat__ = "restructuredtext en"
@@ -27,6 +29,8 @@ import sparse.expectations
 import sparse.mean_first_passage_time
 
 import emma2.msm.estimation as msmest
+
+__author__=[]
 
 __all__=['is_transition_matrix',
          'is_rate_matrix',
