@@ -3,6 +3,8 @@ r"""
 Emma2 MSM Estimation API
 ========================
 
+.. moduleauthor:: B.Trendelkamp-Schroer <benjamin.trendelkampschroer@gmail.com>
+
 """
 
 __docformat__ = "restructuredtext en"
