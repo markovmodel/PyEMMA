@@ -22,7 +22,7 @@ def handleArgs():
                          choices=input_formats, default='auto')
     # TODO: this is eg. unsupported by current kmeans impl in stallone
     parser.add_argument('-istepwidth', type=int, default=1)
-    parser.add_argument('-ialgorithm', dest='algorithm', type=str, choices=algorithms, required=True)
+    parser.add_argument('-algorithm', dest='algorithm', type=str, choices=algorithms, required=True)
     parser.add_argument('-metric', dest='metric', type=str, choices=metrics, default='euclidian')
     parser.add_argument('-o', '--output', dest='output', default='centers.dat', help='')
     
