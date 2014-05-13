@@ -22,7 +22,7 @@ Connectivity
 
    connected_sets - Find connected subsets
    largest_connected_set - Find largest connected set
-   connected_count_matrix - Count matrix on largest connected set
+   largest_connected_submatrix - Count matrix on largest connected set
    is_connected - Test count matrix connectivity
 
 Estimation
