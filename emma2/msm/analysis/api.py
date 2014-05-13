@@ -30,8 +30,6 @@ import sparse.mean_first_passage_time
 
 import emma2.msm.estimation as msmest
 
-__author__=[]
-
 __all__=['is_transition_matrix',
          'is_rate_matrix',
          'is_ergodic',
