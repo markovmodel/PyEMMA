@@ -13,14 +13,14 @@ __all__ = ['getDataSequenceLoader', 'getClusterAlgorithm', 'writeASCIIResults']
 
 def getDataSequenceLoader(files):
     """
-        creates a stallone instance of IDataSequenceLoader
-        TODO: maybe perform a check if data fits into memory here and return IDataSequence(s)
+        creates a stallone java instance of IDataSequenceLoader
+        
+        Returns
+        -------
+        Instance of stallone.api.datasequence.IDataSequenceLoader
     """
+    log.info('trying to build a SequenceLoader from this files: %s' % files)
     try:
-        #if len(files) == 1:
-        #    files = files[0]
-        #elif len(files) > 1:
-            # create ArrayList of files an pass it
         files = API.str.toList(files)
         return API.dataNew.multiSequenceLoader(files)
     except JavaException:
@@ -55,7 +55,7 @@ def getClusterAlgorithm(data, size, **kwargs):
     
     # TODO: ensure type data is either IDataInput or IDataSequence or else clusterfactory api methods will raise
     imetric = None
-    if metric == 'euclidian':
+    if metric == 'euclidean':
         # TODO: set dimension of data
         imetric = API.clusterNew.metric(0, 0)
     elif metric == 'minrmsd':
@@ -87,3 +87,17 @@ def getClusterAlgorithm(data, size, **kwargs):
 def writeASCIIResults(data, filename):
     writer = API.dataNew.writerASCII(filename,' ', '\n')
     writer.addAll(data)
+    
+    
+def checkFitIntoMemory(loader):
+    from emma2.util.pystallone import java
+    threshold = 32 * 1024 # 32 Mb left to JVM
+    
+    mem_needed = loader.memorySizeTotal()
+    mem_max = java.lang.Runtime.getRuntime().maxMemory() # in bytes
+    log.info('max jvm memory: %s MB' % (mem_max / 1024**2))
+    log.info('Memory needed for all data: %s MB' % (mem_needed / 1024**2))
+    if mem_max - mem_needed > threshold:
+        return True
+    else:
+        return False
