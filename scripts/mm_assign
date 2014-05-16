@@ -55,8 +55,8 @@ def main():
         centersFile = API.dataNew.readerASCII(JString(args.clusterCenters))
         # load to type IDataSequence
         centers = centersFile.load()
-    except Exception as e:
-        log.error('Error during reading of cluster centers file: %s' % e)    
+    except Exception:
+        log.exception('Error during reading of cluster centers file.')
         return 1
         
     # create discretization from factory, reflect options
