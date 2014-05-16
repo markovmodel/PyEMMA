@@ -8,17 +8,19 @@ to discretize the trajectories using a Voronoi (nearest-neighbor) partition.
 ================================================================================
 \n\n
 """
+
 import argparse
 import sys
 
-from emma2.coordinates.clustering.stalloneClustering import *
+from emma2.coordinates.clustering.stalloneClustering import getDataSequenceLoader, \
+    checkFitIntoMemory, getClusterAlgorithm, writeASCIIResults
 from emma2.util.files import handleInputFileArg
 from emma2.util.log import getLogger
-from emma2.util.pystallone import JavaException
+from emma2.util.pystallone import JavaException, API
+
 
 log = getLogger()
-
-algorithms = ['kcenter', 'kmeans', 'regularspatial', 'regulartemporal']
+algorithms = ['density_based', 'kcenter', 'kmeans', 'regularspatial', 'regulartemporal']
 input_formats = ['xtc', 'dcd' , 'ascii' , 'ensembleascii', 'auto']
 metrics = ['rmsd', 'euclidean']
 
@@ -64,27 +66,29 @@ def handleArgs():
 
 def main():
     args = handleArgs()
-    log.debug('create loader')
-    loader = getDataSequenceLoader(args.input)
-    loader.scan()
-    log.info('loading data...')
-    # TODO: check if dimension of data is same
-    # TODO: check if data fits into memory
-   
+    data = None
     try:
-        # this is online
-        data = loader.loadAll()
-        log.info('data loaded.')
-        # cluster algo needs either IDataInput or IDataSequence
-        
+        log.debug('create loader')
+        loader = getDataSequenceLoader(args.input)
+        loader.scan()
+        log.debug('create cluster algo instance')
         algo = getClusterAlgorithm(data, loader.size(), **vars(args))
+
+        # check if data fits into memory
+        if checkFitIntoMemory(loader):
+            log.info('performing online (in memory) clustering.')
+            data = loader.loadAll()
+            log.info('all data loaded.')
+        else:
+            log.info('performing offline clustering.')
+            files = API.str.toList(args.input)
+            data = API.dataNew.dataInput(files)
+
         algo.setInput(data)
         log.info('performing algo')
         algo.perform()
         log.info('algo finished')
         centers = algo.getClusterCenters()
-        #cluster_inds = algo.getClusterIndexes()
-        #log.info("cluster inds: " % cluster_inds.size())
         
         # save cluster centers to file
         writeASCIIResults(centers, args.output)

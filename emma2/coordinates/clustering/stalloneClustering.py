@@ -50,6 +50,7 @@ def getClusterAlgorithm(data, size, **kwargs):
     spacing : int
         in case of regulartemporal
     """
+    log.debug("args to getClusterAlgorithm: %s" % kwargs)
     metric = kwargs['metric']
     algorithm = kwargs['algorithm']
     
@@ -67,6 +68,13 @@ def getClusterAlgorithm(data, size, **kwargs):
     if algorithm == 'kcenter':
         k = kwargs['k']
         return API.clusterNew.kcenter(data, size, imetric, k)
+    elif algorithm == 'density_based':
+        k = kwargs['k']
+        dmin = kwargs['dmin']
+        if dmin:
+            return API.clusterNew.densitybased(data, imetric, dmin, k)
+        else:
+            return API.clusterNew.densitybased(data, imetric, k)
     elif algorithm == 'kmeans':
         k = kwargs['k']
         maxIter = kwargs['maxiterations']
@@ -91,13 +99,12 @@ def writeASCIIResults(data, filename):
     
 def checkFitIntoMemory(loader):
     from emma2.util.pystallone import java
-    threshold = 32 * 1024 # 32 Mb left to JVM
     
     mem_needed = loader.memorySizeTotal()
     mem_max = java.lang.Runtime.getRuntime().maxMemory() # in bytes
     log.info('max jvm memory: %s MB' % (mem_max / 1024**2))
     log.info('Memory needed for all data: %s MB' % (mem_needed / 1024**2))
-    if mem_max - mem_needed > threshold:
+    if mem_max - mem_needed > 0:
         return True
     else:
         return False
