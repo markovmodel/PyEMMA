@@ -1,7 +1,11 @@
-"""This module implements IO function for discrete state trajectory files
+r"""This module implements IO function for discrete state trajectory files
 
 Discrete trajectories are assumed to be stored either as single column
-ascii files or as ndarrays of shape (n,) in binary .npy format."""
+ascii files or as ndarrays of shape (n,) in binary .npy format.
+
+.. moduleauthor:: B.Trendelkamp-Schroer <benjamin.trendelkampschroer@gmail.com>
+
+"""
 
 import numpy as np
 import scipy.sparse

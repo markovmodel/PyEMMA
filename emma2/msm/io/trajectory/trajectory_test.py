@@ -1,4 +1,8 @@
-"""This module contains unit tests for the trajectory module"""
+r"""This module contains unit tests for the trajectory module
+
+.. moduleauthor:: B.Trendelkamp-Schroer <benjamin.trendelkampschroer@gmail.com>
+
+"""
 import os
 import unittest
 

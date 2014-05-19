@@ -1,14 +1,84 @@
-"""This module provides matrix-decomposition based functions for the
+r"""This module provides matrix-decomposition based functions for the
 analysis of stochastic matrices
 
 Below are the sparse implementations for functions specified in msm.api. 
-Dense matrices are represented by scipy.sparse matrices throughout this module.
+Matrices are represented by scipy.sparse matrices throughout this module.
+
+.. moduleauthor:: B.Trendelkamp-Schroer <benjamin.trendelkampschroer@gmail.com>
+
 """
 
 import numpy as np
 import scipy.sparse.linalg
 
-def stationary_distribution_from_eigenvector(T):
+from scipy.sparse import diags, eye
+from scipy.sparse.linalg import eigs, factorized
+
+def backward_iteration(A, mu, x0, tol=1e-15, maxiter=100):
+    r"""Find eigenvector to approximate eigenvalue via backward iteration.
+
+    Parameters
+    ----------
+    A : (N, N) scipy.sparse matrix
+        Matrix for which eigenvector is desired
+    mu : float
+        Approximate eigenvalue for desired eigenvector
+    x0 : (N, ) ndarray
+        Initial guess for eigenvector
+    tol : float
+        Tolerace parameter for termination of iteration
+
+    Returns
+    -------
+    x : (N, ) ndarray
+        Eigenvector to approximate eigenvalue mu
+
+    """
+    T=A-mu*eye(A.shape[0])
+    T=T.tocsc()
+    """Prefactor T and return a function for solution"""
+    solve=factorized(T)
+    """Starting iterate with ||y_0||=1"""
+    r0=1.0/np.linalg.norm(x0)
+    y0=x0*r0
+    """Local variables for inverse iteration"""
+    y=1.0*y0
+    r=1.0*r0
+    N=0
+    for iter in range(maxiter):
+        x=solve(y)
+        r=1.0/np.linalg.norm(x)
+        y=x*r
+        if r<=tol:
+            return y
+    msg = "Failed to converge after %d iterations, residuum is %e" %(maxiter, r)
+    raise RuntimeError(msg)
+
+def stationary_distribution_from_backward_iteration(P, eps=1e-15):
+    r"""Fast computation of the stationary vector using backward
+    iteration.
+
+    Parameters
+    ----------
+    P : (M, M) scipy.sparse matrix
+        Transition matrix
+    eps : float (optional)
+        Perturbation parameter for the true eigenvalue.
+        
+    Returns
+    -------
+    pi : (M,) ndarray
+        Stationary vector
+
+    """
+    A=P.transpose()
+    mu=1.0-eps
+    x0=np.ones(P.shape[0])
+    y=backward_iteration(A, mu, x0)
+    pi=y/y.sum()
+    return pi
+
+def stationary_distribution_from_eigenvector(T, ncv=None):
     r"""Compute stationary distribution of stochastic matrix T. 
       
     The stationary distribution is the left eigenvector corresponding to the 1
@@ -18,6 +88,9 @@ def stationary_distribution_from_eigenvector(T):
     ------
     T : numpy array, shape(d,d)
         Transition matrix (stochastic matrix).
+    ncv : int (optional)
+        The number of Lanczos vectors generated, `ncv` must be greater than k;
+        it is recommended that ncv > 2*k
 
     Returns:
     --------
@@ -25,45 +98,12 @@ def stationary_distribution_from_eigenvector(T):
         Vector of stationary probabilities.
 
     """
-    vals, vecs=scipy.sparse.linalg.eigs(T.transpose(), k=1, which='LR')
+    vals, vecs=scipy.sparse.linalg.eigs(T.transpose(), k=1, which='LR', ncv=ncv)
     nu=vecs[:, 0].real
     mu=nu/np.sum(nu)
     return mu
 
-
-def stationary_distribution_from_linearsystem(T):
-    r"""Compute stationary distribution of stochastic matrix T. 
-      
-    The stationary distribution is the normalized solution of the System (T-I)x = 0.
-
-    Input:
-    ------
-    T : scipy sparse array, shape(d,d)
-        Transition matrix (stochastic matrix).
-
-    Returns:
-    --------
-    mu : numpy array, shape(d,)      
-        Vector of stationary probabilities.
-
-    """
-    n = scipy.shape(T)[0]
-    # A = T' - I
-    A = T.tolil().transpose() - scipy.sparse.eye(n)
-    # b = 0
-    b = scipy.sparse.lil_matrix((n,1))
-    # Add constraint x_1 = 1 to first row
-    A[0,0] += 1.0
-    b[0,0] = 1.0
-    # solve
-    x = scipy.sparse.linalg.spsolve(A, b)
-    # normalize
-    x /= scipy.sum(x)
-    # return 
-    return x
-
-
-def eigenvalues(T, k=None):
+def eigenvalues(T, k=None, ncv=None):
     r"""Compute the eigenvalues of a sparse transition matrix
 
     The first k eigenvalues of largest magnitude are computed.
@@ -74,6 +114,9 @@ def eigenvalues(T, k=None):
         Transition matrix
     k : int (optional)
         Number of eigenvalues to compute.
+    ncv : int (optional)
+        The number of Lanczos vectors generated, `ncv` must be greater than k;
+        it is recommended that ncv > 2*k
     
     Returns
     -------
@@ -84,11 +127,11 @@ def eigenvalues(T, k=None):
     if k is None:
         raise ValueError("Number of eigenvalues required for decomposition of sparse matrix")
     else:
-        v=scipy.sparse.linalg.eigs(T, k=k, which='LM', return_eigenvectors=False)
+        v=scipy.sparse.linalg.eigs(T, k=k, which='LM', return_eigenvectors=False, ncv=ncv)
         ind=np.argsort(np.abs(v))[::-1]
         return v[ind]
     
-def eigenvectors(T, k=None, right=True):
+def eigenvectors(T, k=None, right=True, ncv=None):
     r"""Compute eigenvectors of given transition matrix.
 
     Eigenvectors are computed using the scipy interface 
@@ -101,6 +144,10 @@ def eigenvectors(T, k=None, right=True):
     k : int (optional) or array-like 
         For integer k compute the first k eigenvalues of T
         else return those eigenvector sepcified by integer indices in k.
+    ncv : int (optional)
+        The number of Lanczos vectors generated, `ncv` must be greater than k;
+        it is recommended that ncv > 2*k
+
         
     Returns
     -------
@@ -114,15 +161,15 @@ def eigenvectors(T, k=None, right=True):
         raise ValueError("Number of eigenvectors required for decomposition of sparse matrix")
     else:
         if right:
-            val, vecs=scipy.sparse.linalg.eigs(T, k=k, which='LM')
+            val, vecs=scipy.sparse.linalg.eigs(T, k=k, which='LM', ncv=ncv)
             ind=np.argsort(np.abs(val))[::-1]
             return vecs[:,ind]
         else:            
-            val, vecs=scipy.sparse.linalg.eigs(T.transpose(), k=k, which='LM')
+            val, vecs=scipy.sparse.linalg.eigs(T.transpose(), k=k, which='LM', ncv=ncv)
             ind=np.argsort(np.abs(val))[::-1]
             return vecs[:, ind]        
 
-def rdl_decomposition(T, k=None, norm='standard'):
+def rdl_decomposition(T, k=None, norm='standard', ncv=None):
     r"""Compute the decomposition into left and right eigenvectors.
     
     Parameters
@@ -136,6 +183,9 @@ def rdl_decomposition(T, k=None, norm='standard'):
             the stationary distribution mu of T. Right eigenvectors
             R have a 2-norm of 1.
         reversible: R and L are related via L=L[:,0]*R.
+    ncv : int (optional)
+        The number of Lanczos vectors generated, `ncv` must be greater than k;
+        it is recommended that ncv > 2*k
         
     Returns
     -------
@@ -155,8 +205,8 @@ def rdl_decomposition(T, k=None, norm='standard'):
     if k is None:
         raise ValueError("Number of eigenvectors required for decomposition of sparse matrix")
     if norm=='standard':
-        v, R=scipy.sparse.linalg.eigs(T, k=k, which='LM')
-        r, L=scipy.sparse.linalg.eigs(T.transpose(), k=k, which='LM')
+        v, R=scipy.sparse.linalg.eigs(T, k=k, which='LM', ncv=ncv)
+        r, L=scipy.sparse.linalg.eigs(T.transpose(), k=k, which='LM', ncv=ncv)
 
         """Sort right eigenvectors"""
         ind=np.argsort(np.abs(v))[::-1]
@@ -178,8 +228,8 @@ def rdl_decomposition(T, k=None, norm='standard'):
         return v, L, R
 
     elif norm=='reversible':
-        v, R=scipy.sparse.linalg.eigs(T, k=k, which='LM')
-        r, L=scipy.sparse.linalg.eigs(T.transpose(), k=1, which='LM')
+        v, R=scipy.sparse.linalg.eigs(T, k=k, which='LM', ncv=ncv)
+        r, L=scipy.sparse.linalg.eigs(T.transpose(), k=1, which='LM', ncv=ncv)
         nu=L[:, 0]
 
         """Sort right eigenvectors"""
@@ -199,7 +249,7 @@ def rdl_decomposition(T, k=None, norm='standard'):
     else:
         raise ValueError("Keyword 'norm' has to be either 'standard' or 'reversible'")
         
-def timescales(T, tau=1, k=None):
+def timescales(T, tau=1, k=None, ncv=None):
     r"""Compute implied time scales of given transition matrix
     
     Parameters
@@ -208,6 +258,9 @@ def timescales(T, tau=1, k=None):
     tau : lag time
     k : int (optional)
         Compute the first k implied time scales.
+    ncv : int (optional)
+        The number of Lanczos vectors generated, `ncv` must be greater than k;
+        it is recommended that ncv > 2*k
 
     Returns
     -------
@@ -217,7 +270,7 @@ def timescales(T, tau=1, k=None):
     """
     if k is None:
         raise ValueError("Number of time scales required for decomposition of sparse matrix")    
-    values=scipy.sparse.linalg.eigs(T, k=k, which='LM', return_eigenvectors=False)
+    values=scipy.sparse.linalg.eigs(T, k=k, which='LM', return_eigenvectors=False, ncv=ncv)
     
     """Sort by absolute value"""
     ind=np.argsort(np.abs(values))[::-1]

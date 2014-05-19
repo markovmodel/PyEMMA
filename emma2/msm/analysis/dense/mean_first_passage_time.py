@@ -1,4 +1,8 @@
-"""Dense implementation of mean first passage time computation"""
+r"""Dense implementation of mean first passage time computation
+
+.. moduleauthor:: B.Trendelkamp-Schroer <benjamin.trendelkampschroer@gmail.com>
+
+"""
 import numpy as np
 from scipy.linalg import solve
 
