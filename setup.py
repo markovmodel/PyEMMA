@@ -83,10 +83,8 @@ class DiscoverTest(test):
         # use the basic test runner that outputs to sys.stderr
         test_runner = unittest.TextTestRunner(verbosity=2)
         # automatically discover all tests
-        # NOTE: only works for python 2.7 and later
         search_path = os.path.join(setup_dir, 'emma2')
         test_suite = test_loader.discover(search_path, pattern='*_test.py')
-        #print test_suite
         # run the test suite
         test_runner.run(test_suite)
 
@@ -96,15 +94,15 @@ class DiscoverTest(test):
         self.test_suite = True
 
     def run_tests(self):
-        #assert False
-        os.environ.pop('JAVA_HOME', None)
-        import jpype
-        print jpype.getDefaultJVMPath()
+        # need to reset fake jdk for runtime.
+        if fake_jdk:
+            os.environ.pop('JAVA_HOME', None)
         self.discover_and_run_tests()
 
 # HACK for JPype installation:
 # we do not want the user to have JDK, so we provide jni.h here.
 if not os.environ.get('JAVA_HOME', None):
+    fake_jdk = True
     os.environ['JAVA_HOME'] = os.path.abspath('lib/stallone/')
 
 metadata = dict(
@@ -122,6 +120,7 @@ metadata = dict(
                       test = DiscoverTest),
       ext_modules = [cocovar_module],
       setup_requires = ['numpy >= 1.6.0'],
+      tests_require = [],
       # runtime dependencies
       install_requires = ['numpy >= 1.6.0',
                          'scipy >= 0.11',
