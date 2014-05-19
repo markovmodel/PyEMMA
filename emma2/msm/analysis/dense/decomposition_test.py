@@ -1,4 +1,8 @@
-"""This module provides unit tests for the decomposition module"""
+r"""This module provides unit tests for the decomposition module
+
+.. moduleauthor:: B.Trendelkamp-Schroer <benjamin.trendelkampschroer@gmail.com>
+
+"""
 
 import unittest
 

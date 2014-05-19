@@ -1,4 +1,8 @@
-"""Unit tests for the connectivity module"""
+r"""Unit tests for the connectivity module
+
+.. moduleauthor:: B.Trendelkamp-Schroer <benjamin.trendelkampschroer@gmail.com>
+
+"""
 
 import unittest
 

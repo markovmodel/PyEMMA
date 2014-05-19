@@ -1,4 +1,8 @@
-"""Test package for the decomposition module"""
+r"""Test package for the decomposition module
+
+.. moduleauthor:: B.Trendelkamp-Schroer <benjamin.trendelkampschroer@gmail.com>
+
+"""
 import unittest
 
 import numpy as np
@@ -89,6 +93,12 @@ class TestDecomposition(unittest.TestCase):
         vn=decomposition.eigenvalues(self.T_sparse, k=self.k)        
         self.assertTrue(np.allclose(vn, self.v_sparse))
 
+        """Test ncv keyword computing self.k/4 eigenvalues 
+           with Kyrlov subspace of dim=self.k"""
+        vn=decomposition.eigenvalues(self.T_sparse, k=self.k/4, ncv=self.k)
+        self.assertTrue(np.allclose(vn, self.v_sparse[0:self.k/4]))
+
+
     def test_eigenvectors(self):
         """Right eigenvectors"""        
         Rn=decomposition.eigenvectors(self.T_sparse, k=self.k)        
@@ -114,6 +124,34 @@ class TestDecomposition(unittest.TestCase):
 
         """Assert that off-diagonal elements are zero"""
         self.assertTrue(np.allclose(A, 0.0))
+
+        """Check the same for self.k/4 eigenvectors wih ncv=k"""
+
+        """Right eigenvectors"""        
+        Rn=decomposition.eigenvectors(self.T_sparse, k=self.k/4, ncv=self.k)        
+
+        L_dense=self.L_sparse.toarray()[:,0:self.k/4]
+
+        """Compute overlapp between true left and computed right eigenvectors"""
+        A=np.dot(np.transpose(L_dense), Rn)
+        ind_diag=np.diag_indices(self.k/4)
+        A[ind_diag]=0.0
+
+        """Assert that off-diagonal elements are zero"""
+        self.assertTrue(np.allclose(A, 0.0))        
+
+        """Left eigenvectors"""        
+        Ln=decomposition.eigenvectors(self.T_sparse, k=self.k/4, right=False, ncv=self.k)
+        R_dense=self.R_sparse.toarray()[:,0:self.k/4]
+        
+
+        """Compute overlapp between true right and computed left eigenvectors"""
+        A=np.dot(np.transpose(Ln), R_dense)
+        ind_diag=np.diag_indices(self.k/4)
+        A[ind_diag]=0.0
+
+        """Assert that off-diagonal elements are zero"""
+        self.assertTrue(np.allclose(A, 0.0))                                      
 
     def test_rdl_decomposition(self):
         # k=self.k
@@ -166,7 +204,58 @@ class TestDecomposition(unittest.TestCase):
         A[ind_diag]=0.0
 
         """Assert that off-diagonal elements are zero"""
+        self.assertTrue(np.allclose(A, 0.0))
+
+        """Check the same for self.k/4 eigenvectors wih ncv=k"""
+        
+        """Standard norm"""
+        vn, Ln, Rn=decomposition.rdl_decomposition(self.T_sparse, k=self.k/4, ncv=self.k)
+        
+        """Eigenvalues"""
+        self.assertTrue(np.allclose(self.v_sparse[0:self.k/4], vn))
+
+        """Computed left eigenvectors Ln"""
+        R_dense=self.R_sparse.toarray()[:,0:self.k/4]
+        A=np.dot(np.transpose(Ln), R_dense)
+        ind_diag=np.diag_indices(self.k/4)
+        A[ind_diag]=0.0
+
+        """Assert that off-diagonal elements are zero"""
+        self.assertTrue(np.allclose(A, 0.0))
+
+        """Computed right eigenvectors Rn"""
+        L_dense=self.L_sparse.toarray()[:,0:self.k/4]        
+        A=np.dot(np.transpose(L_dense), Rn)
+        ind_diag=np.diag_indices(self.k/4)
+        A[ind_diag]=0.0
+
+        """Assert that off-diagonal elements are zero"""
         self.assertTrue(np.allclose(A, 0.0))        
+
+        """Reversible"""
+        vn, Ln, Rn=decomposition.rdl_decomposition(self.T_sparse, k=self.k/4,\
+                                                       norm='reversible', ncv=self.k)
+
+        """Eigenvalues"""
+        self.assertTrue(np.allclose(self.v_sparse[0:self.k/4], vn))
+
+        """Computed left eigenvectors Ln"""
+        R_dense=self.R_sparse.toarray()[:,0:self.k/4]
+        A=np.dot(np.transpose(Ln), R_dense)
+        ind_diag=np.diag_indices(self.k/4)
+        A[ind_diag]=0.0
+
+        """Assert that off-diagonal elements are zero"""
+        self.assertTrue(np.allclose(A, 0.0))
+
+        """Computed right eigenvectors Rn"""
+        L_dense=self.L_sparse.toarray()[:,0:self.k/4]        
+        A=np.dot(np.transpose(L_dense), Rn)
+        ind_diag=np.diag_indices(self.k/4)
+        A[ind_diag]=0.0
+
+        """Assert that off-diagonal elements are zero"""
+        self.assertTrue(np.allclose(A, 0.0))
 
 class TestTimescales(unittest.TestCase):
 
@@ -255,6 +344,32 @@ class TestTimescales(unittest.TestCase):
 
         """tau=10, k=8"""
         ts_n=decomposition.timescales(self.A_real, tau=10, k=8)
+        self.assertTrue(np.allclose(ts_n, 10*self.ts_real[0:8]))
+
+        """Same with k=self.k/4 and ncv=self.k"""
+
+        """tau=1"""
+        ts_n=decomposition.timescales(self.A_real, k=self.k/4, ncv=self.k)
+        self.assertTrue(np.allclose(ts_n, self.ts_real[0:self.k/4]))
+        
+        with self.assertRaises(RuntimeWarning):
+            ts_n=decomposition.timescales(self.A_complex, k=self.k/4, ncv=self.k)
+            self.assertTrue(np.allclose(ts_n, self.ts_complex[0:self.k/4]))
+
+        with self.assertRaises(RuntimeWarning):
+            ts_n=decomposition.timescales(self.A_real_m, k=self.k/4, ncv=self.k)
+            self.assertTrue(np.allclose(ts_n, self.ts_real_m[0:self.k/4]))
+        
+        with self.assertRaises(RuntimeWarning):
+            ts_n=decomposition.timescales(self.A_complex_m, k=self.k/4, ncv=self.k)
+            self.assertTrue(np.allclose(ts_n, self.ts_complex_m[0:self.k/4]))           
+
+        """tau=10"""
+        ts_n=decomposition.timescales(self.A_real, tau=10, k=self.k/4, ncv=self.k)
+        self.assertTrue(np.allclose(ts_n, 10*self.ts_real[0:self.k/4]))
+
+        """tau=10, k=8"""
+        ts_n=decomposition.timescales(self.A_real, tau=10, k=8, ncv=self.k)
         self.assertTrue(np.allclose(ts_n, 10*self.ts_real[0:8]))
         
 if __name__=="__main__":

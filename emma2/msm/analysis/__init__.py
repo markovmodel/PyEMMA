@@ -5,6 +5,7 @@ analysis - MSM analysis functions (:mod:`emma2.msm.analysis`)
 =============================================================
 
 .. currentmodule:: emma2.msm.analysis
+.. moduleauthor:: B.Trendelkamp-Schroer <benjamin.trendelkampschroer@gmail.com>
 
 This module contains functions to analyze a created Markov model, which is
 specified with a transition matrix T.

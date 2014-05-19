@@ -1,4 +1,8 @@
-"""Unit tests for matrix io implementations"""
+r"""Unit tests for matrix io implementations
+
+.. moduleauthor:: B.Trendelkamp-Schroer <benjamin.trendelkampschroer@gmail.com>
+
+"""
 import os
 import unittest
 

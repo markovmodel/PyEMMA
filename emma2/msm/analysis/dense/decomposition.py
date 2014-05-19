@@ -1,8 +1,11 @@
-"""This module provides matrix-decomposition based functions for the
+r"""This module provides matrix-decomposition based functions for the
 analysis of stochastic matrices
 
 Below are the dense implementations for functions specified in msm.api. 
 Dense matrices are represented by numpy.ndarrays throughout this module.
+
+.. moduleauthor:: B.Trendelkamp-Schroer <benjamin.trendelkampschroer@gmail.com>
+
 """
 
 import numpy as np
