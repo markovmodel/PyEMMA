@@ -195,14 +195,14 @@ def stationary_distribution(T):
     """
     # is this a transition matrix?
     if not is_transition_matrix(T):
-        raise ValueError("Input matrix is not a transition matrix. 
-                         Cannot compute stationary distribution")
+        raise ValueError("Input matrix is not a transition matrix." 
+                         "Cannot compute stationary distribution")
     # is the stationary distribution unique?
     if not is_connected(T):
-        raise ValueError("Input matrix is not connected.
-                         Therefore it has no unique stationary
-                         distribution.\n Separate disconnected components
-                         and handle them separately")
+        raise ValueError("Input matrix is not connected."
+                         "Therefore it has no unique stationary"
+                         "distribution.\n Separate disconnected components"
+                         "and handle them separately")
     # we're good to go...
     if issparse(T):
         return sparse.decomposition.stationary_distribution_from_backward_iteration(T)
