@@ -72,7 +72,7 @@ class TestDecomposition(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def test_mu(self):        
+    def test_mu_eigenvector(self):        
         """Random bin counts"""
         c=random.random_integers(0, 100, size=(self.dim,))
         """Dirichlet distributed probabilities"""
@@ -82,6 +82,20 @@ class TestDecomposition(unittest.TestCase):
         
         """Compute stationary distribution"""
         statdist_test=decomposition.stationary_distribution_from_eigenvector(T)
+
+        """Assert numerical equality of statdist_true and statdist_test"""
+        self.assertTrue(allclose(statdist_test, statdist_true))
+
+    def test_mu_backward_iteration(self):        
+        """Random bin counts"""
+        c=random.random_integers(0, 100, size=(self.dim,))
+        """Dirichlet distributed probabilities"""
+        statdist_true=random.dirichlet(c)
+        """Transition matrix containing statdist_true in every row"""
+        T=statdist_true[newaxis, :]*ones(self.dim)[:,newaxis]
+        
+        """Compute stationary distribution"""
+        statdist_test=decomposition.stationary_distribution_from_backward_iteration(T)
 
         """Assert numerical equality of statdist_true and statdist_test"""
         self.assertTrue(allclose(statdist_test, statdist_true))
