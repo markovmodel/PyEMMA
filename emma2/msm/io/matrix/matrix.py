@@ -1,4 +1,8 @@
-"""Implementation of IO for dense and sparse matrices"""
+r"""Implementation of IO for dense and sparse matrices
+
+.. moduleauthor:: B.Trendelkamp-Schroer <benjamin.trendelkampschroer@gmail.com>
+
+"""
 
 import os
 import numpy as np

@@ -4,6 +4,8 @@ r"""
 Emma2 MSM Analysis API
 ======================
 
+.. moduleauthor:: B.Trendelkamp-Schroer <benjamin.trendelkampschroer@gmail.com>
+
 """
 
 __docformat__ = "restructuredtext en"
@@ -175,10 +177,10 @@ def is_reversible(T, mu=None, tol=1e-15):
 
 # DONE: Ben
 def stationary_distribution(T):
-    r"""Compute stationary distribution of stochastic matrix T. 
+    r"""Compute stationary distribution of stochastic matrix T.
     
-    The stationary distribution is the left eigenvector corresponding to the 
-    non-degenerate eigenvalue :math:`\lambda=1`.
+    The stationary distribution is the left eigenvector corresponding
+    to the non-degenerate eigenvalue :math:`\lambda=1`.
     
     Parameters
     ----------
@@ -193,16 +195,19 @@ def stationary_distribution(T):
     """
     # is this a transition matrix?
     if not is_transition_matrix(T):
-        raise ValueError('Input matrix is not a transition matrix. Cannot compute stationary distribution')
+        raise ValueError("Input matrix is not a transition matrix. 
+                         Cannot compute stationary distribution")
     # is the stationary distribution unique?
     if not is_connected(T):
-        raise ValueError('Input matrix is not connected and therefore has no unique stationary distribution. '+
-                         'Separate disconnected components and handle their stationary distributions separately')
+        raise ValueError("Input matrix is not connected.
+                         Therefore it has no unique stationary
+                         distribution.\n Separate disconnected components
+                         and handle them separately")
     # we're good to go...
     if issparse(T):
-        return sparse.decomposition.stationary_distribution_from_linearsystem(T)
+        return sparse.decomposition.stationary_distribution_from_backward_iteration(T)
     elif isdense(T):
-        return dense.decomposition.stationary_distribution_from_linearsystem(T)
+        return dense.decomposition.stationary_distribution_from_backward_iteration(T)
     else: 
         raise _type_not_supported
 
@@ -211,7 +216,7 @@ __all__.append('statdist')
 
 
 # DONE: Martin
-def eigenvalues(T, k=None):
+def eigenvalues(T, k=None, ncv=None):
     r"""Find eigenvalues of the transition matrix.
     
     Parameters
@@ -220,6 +225,9 @@ def eigenvalues(T, k=None):
         Transition matrix
     k : int (optional)
         Compute the first `k` eigenvalues of `T`
+    ncv : int (optional)
+        The number of Lanczos vectors generated, `ncv` must be greater than k;
+        it is recommended that ncv > 2*k
 
     Returns
     -------
@@ -229,14 +237,14 @@ def eigenvalues(T, k=None):
     
     """
     if issparse(T):
-        return sparse.decomposition.eigenvalues(T, k)
+        return sparse.decomposition.eigenvalues(T, k, ncv=ncv)
     elif isdense(T):
         return dense.decomposition.eigenvalues(T, k)
     else:
         raise _type_not_supported
 
 # DONE: Ben
-def timescales(T, tau=1, k=None):
+def timescales(T, tau=1, k=None, ncv=None):
     r"""Compute implied time scales of given transition matrix.
     
     Parameters
@@ -249,6 +257,9 @@ def timescales(T, tau=1, k=None):
         constructed.
     k : int (optional)
         Compute the first `k` implied time scales.
+    ncv : int (optional)
+        The number of Lanczos vectors generated, `ncv` must be greater than k;
+        it is recommended that ncv > 2*k
         
     Returns
     -------
@@ -265,8 +276,7 @@ def timescales(T, tau=1, k=None):
         raise _type_not_supported
 
 # DONE: Ben
-# TODO: What about normalization? Or use rdl for this?
-def eigenvectors(T, k=None, right=True):
+def eigenvectors(T, k=None, right=True, ncv=None):
     r"""Compute eigenvectors of given transition matrix.
     
     Eigenvectors are computed using the scipy interface 
@@ -275,9 +285,13 @@ def eigenvectors(T, k=None, right=True):
     Parameters
     ----------
     T : numpy.ndarray, shape(d,d) or scipy.sparse matrix
-        Transition matrix (stochastic matrix).
+        Transition matrix (stochastic matrix)
     k : int (optional)
-        Compute the first k eigenvectors.
+        Compute the first k eigenvectors
+    ncv : int (optional)
+        The number of Lanczos vectors generated, `ncv` must be greater than `k`;
+        it is recommended that `ncv > 2*k`
+
     
     Returns
     -------
@@ -286,16 +300,35 @@ def eigenvectors(T, k=None, right=True):
         the corresponding eigenvalue. If k is None then n=d, if k is
         int then n=k.
     
+
+    Notes
+    ------
+    The returned eigenvectors :math:`v_i` are normalized such that 
+
+    ..  math::
+
+        \langle v_i, v_j \rangle = \delta_{i,j}
+
+    This is the case for right eigenvectors :math:`r_i` as well as
+    for left eigenvectors :math:`l_i`. 
+
+    If you desire orthonormal left and right eigenvectors please use the
+    rdl_decomposition method.
+
+    See also
+    --------
+    rdl_decomposition
+
     """
     if issparse(T):
-        return sparse.decomposition.eigenvectors(T, k=k, right=right)
+        return sparse.decomposition.eigenvectors(T, k=k, right=right, ncv=ncv)
     elif isdense(T):
         return dense.decomposition.eigenvectors(T, k=k, right=right)
     else: 
         raise _type_not_supported
 
 # DONE: Ben
-def rdl_decomposition(T, k=None, norm='standard'):
+def rdl_decomposition(T, k=None, norm='standard', ncv=None):
     r"""Compute the decomposition into left and right eigenvectors.
     
     Parameters
@@ -315,7 +348,11 @@ def rdl_decomposition(T, k=None, norm='standard'):
                      of `T`. Right eigenvectors `R`\
                      have a 2-norm of 1
         'reversible' `R` and `L` are related via ``L[:,0]*R``  
-        ============ ===========================================        
+        ============ =========================================== 
+
+    ncv : int (optional)
+        The number of Lanczos vectors generated, `ncv` must be greater than k;
+        it is recommended that ncv > 2*k       
     
     Returns
     -------

@@ -1,4 +1,8 @@
-"""This module implements the connectivity functionality"""
+r"""This module implements the connectivity functionality
+
+.. moduleauthor:: B.Trendelkamp-Schroer <benjamin.trendelkampschroer@gmail.com>
+
+"""
 
 import numpy as np
 import scipy.sparse

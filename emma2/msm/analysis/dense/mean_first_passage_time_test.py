@@ -1,4 +1,8 @@
-"""Unit tests for the mean first passage time module"""
+r"""Unit tests for the mean first passage time module
+
+.. moduleauthor:: B.Trendelkamp-Schroer <benjamin.trendelkampschroer@gmail.com>
+
+"""
 import unittest
 
 import numpy as np
