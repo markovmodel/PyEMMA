@@ -11,6 +11,73 @@ Matrices are represented by scipy.sparse matrices throughout this module.
 import numpy as np
 import scipy.sparse.linalg
 
+from scipy.sparse import diags, eye
+from scipy.sparse.linalg import eigs, factorized
+
+def backward_iteration(A, mu, x0, tol=1e-15, maxiter=100):
+    r"""Find eigenvector to approximate eigenvalue via backward iteration.
+
+    Parameters
+    ----------
+    A : (N, N) scipy.sparse matrix
+        Matrix for which eigenvector is desired
+    mu : float
+        Approximate eigenvalue for desired eigenvector
+    x0 : (N, ) ndarray
+        Initial guess for eigenvector
+    tol : float
+        Tolerace parameter for termination of iteration
+
+    Returns
+    -------
+    x : (N, ) ndarray
+        Eigenvector to approximate eigenvalue mu
+
+    """
+    T=A-mu*eye(A.shape[0])
+    T=T.tocsc()
+    """Prefactor T and return a function for solution"""
+    solve=factorized(T)
+    """Starting iterate with ||y_0||=1"""
+    r0=1.0/np.linalg.norm(x0)
+    y0=x0*r0
+    """Local variables for inverse iteration"""
+    y=1.0*y0
+    r=1.0*r0
+    N=0
+    for iter in range(maxiter):
+        x=solve(y)
+        r=1.0/np.linalg.norm(x)
+        y=x*r
+        if r<=tol:
+            return y
+    msg = "Failed to converge after %d iterations, residuum is %e" %(maxiter, r)
+    raise RuntimeError(msg)
+
+def stationary_distribution_from_backward_iteration(P, eps=1e-15):
+    r"""Fast computation of the stationary vector using backward
+    iteration.
+
+    Parameters
+    ----------
+    P : (M, M) scipy.sparse matrix
+        Transition matrix
+    eps : float (optional)
+        Perturbation parameter for the true eigenvalue.
+        
+    Returns
+    -------
+    pi : (M,) ndarray
+        Stationary vector
+
+    """
+    A=P.transpose()
+    mu=1.0-eps
+    x0=np.ones(P.shape[0])
+    y=backward_iteration(A, mu, x0)
+    pi=y/y.sum()
+    return pi
+
 def stationary_distribution_from_eigenvector(T, ncv=None):
     r"""Compute stationary distribution of stochastic matrix T. 
       
@@ -35,38 +102,6 @@ def stationary_distribution_from_eigenvector(T, ncv=None):
     nu=vecs[:, 0].real
     mu=nu/np.sum(nu)
     return mu
-
-
-def stationary_distribution_from_linearsystem(T):
-    r"""Compute stationary distribution of stochastic matrix T. 
-      
-    The stationary distribution is the normalized solution of the System (T-I)x = 0.
-
-    Input:
-    ------
-    T : scipy sparse array, shape(d,d)
-        Transition matrix (stochastic matrix).
-
-    Returns:
-    --------
-    mu : numpy array, shape(d,)      
-        Vector of stationary probabilities.
-
-    """
-    n = scipy.shape(T)[0]
-    # A = T' - I
-    A = T.tolil().transpose() - scipy.sparse.eye(n)
-    # b = 0
-    b = scipy.sparse.lil_matrix((n,1))
-    # Add constraint x_1 = 1 to first row
-    A[0,0] += 1.0
-    b[0,0] = 1.0
-    # solve
-    x = scipy.sparse.linalg.spsolve(A, b)
-    # normalize
-    x /= scipy.sum(x)
-    # return 
-    return x
 
 def eigenvalues(T, k=None, ncv=None):
     r"""Compute the eigenvalues of a sparse transition matrix
