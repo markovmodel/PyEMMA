@@ -5,6 +5,7 @@ io - Input and output for MSM related files (:mod:`emma2.msm.io`)
 =================================================================
 
 .. currentmodule:: emma2.msm.io
+.. moduleauthor:: B.Trendelkamp-Schroer <benjamin.trendelkampschroer@gmail.com>
 
 Discrete trajectory io
 ======================

@@ -1,5 +1,9 @@
-"""This module provides sparse implementations for the computation of
-expectation values for a given transition matrix."""
+r"""This module provides sparse implementations for the computation of
+expectation values for a given transition matrix.
+
+.. moduleauthor:: B.Trendelkamp-Schroer <benjamin.trendelkampschroer@gmail.com>
+
+"""
 
 
 import numpy as np
