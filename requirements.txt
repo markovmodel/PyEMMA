@@ -1,2 +1,2 @@
-# this should use simply all dependencies defined in setup.py
+# this uses simply all dependencies defined in setup.py
 .
