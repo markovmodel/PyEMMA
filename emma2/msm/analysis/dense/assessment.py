@@ -57,8 +57,9 @@ def is_reversible(T, mu=None, tol=1e-10):
     checks whether T is reversible in terms of given stationary distribution.
     If no distribution is given, it will be calculated out of T.
     
-    performs following check:
-    :math:`\pi_i P_{ij} = \pi_j P_{ji}
+    It performs following check:
+    :math:`\pi_i P_{ij} = \pi_j P_{ji}`
+    
     Parameters
     ----------
     T : numpy.ndarray matrix
@@ -71,12 +72,12 @@ def is_reversible(T, mu=None, tol=1e-10):
     Returns
     -------
     Truth value : bool
-        True, if T is a stochastic matrix
+        True, if T is a reversible transitition matrix
         False, otherwise
     """
     if is_transition_matrix(T, tol):
         if mu is None:
-            mu = decomposition.stationary_distribution_from_linearsystem(T)
+            mu = decomposition.stationary_distribution_from_backward_iteration(T)
         return np.allclose(T * mu[ : , np.newaxis ], \
                            T[ : , np.newaxis] * mu,  atol=tol)
     else:
