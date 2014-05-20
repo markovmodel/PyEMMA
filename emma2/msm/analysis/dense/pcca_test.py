@@ -121,7 +121,7 @@ class TestPCCA(unittest.TestCase):
 
     def test_pcca(self):
         # TODO: We still need to define what should be the outcome
-        print pcca(self.matrix, 4)
+        pcca(self.matrix, 4)
 
 
 if __name__ == "__main__":

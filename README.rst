@@ -21,4 +21,4 @@ Support
 -------
 For support/bug reports/sugguestions/complains please visit:
 
-TODO: enter public url of your repo.
+.. TODO: enter public url of your repo.

@@ -18,7 +18,7 @@ Created on 15.10.2013
 
 @author: marscher
 '''
-from log import getLogger as _getLogger
+from .log import getLogger as _getLogger
 _log = _getLogger(__name__)
 
 from jpype import \
@@ -72,7 +72,7 @@ def _initVM():
             else:
                 good_opt_cp.append(p)
 
-        cp = [stallone_jar_file] + good_opt_cp
+        cp = good_opt_cp + [stallone_jar_file]
         return '-Djava.class.path=' + sep.join(cp)
     
     classpath = buildClassPath()
@@ -220,7 +220,7 @@ def stallone_array_to_ndarray(stArray):
         #arr = _np.array(jarr[0:len(jarr)], copy=False)
         #arr = _np.zeros((rows,cols))
     else:
-        raise NotImplemented
+        raise NotImplementedError
     
     if cols > 1:
         shape = (rows, cols)

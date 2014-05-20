@@ -1,13 +1,5 @@
 #!/usr/bin/env python
 import sys
-
-if len(sys.argv) < 2:
-    """
-        in case we have no args let distutils setup show a basic error message
-    """
-    from distutils.core import setup
-    setup()
-
 import os
 import subprocess
 from glob import glob
@@ -78,11 +70,43 @@ class np_build(build_ext):
         from numpy import get_include
         self.include_dirs = get_include()
 
-# HACK for jpype installation:
-# we do not want the user to have jdk, so we provide jni.h here.
-os.environ['JAVA_HOME'] = os.path.abspath('lib/stallone/')
 
-setup(name = 'Emma2',
+from setuptools.command.test import test
+class DiscoverTest(test):
+    def discover_and_run_tests(self):
+        import unittest
+        # get setup.py directory
+        setup_file = sys.modules['__main__'].__file__
+        setup_dir = os.path.abspath(os.path.dirname(setup_file))
+        # use the default shared TestLoader instance
+        test_loader = unittest.defaultTestLoader
+        # use the basic test runner that outputs to sys.stderr
+        test_runner = unittest.TextTestRunner(verbosity=2)
+        # automatically discover all tests
+        search_path = os.path.join(setup_dir, 'emma2')
+        test_suite = test_loader.discover(search_path, pattern='*_test.py')
+        # run the test suite
+        test_runner.run(test_suite)
+
+    def finalize_options(self):
+        test.finalize_options(self)
+        self.test_args = []
+        self.test_suite = True
+
+    def run_tests(self):
+        # need to reset fake jdk for runtime.
+        if fake_jdk:
+            os.environ.pop('JAVA_HOME', None)
+        self.discover_and_run_tests()
+
+# HACK for JPype installation:
+# we do not want the user to have JDK, so we provide jni.h here.
+if not os.environ.get('JAVA_HOME', None):
+    fake_jdk = True
+    os.environ['JAVA_HOME'] = os.path.abspath('lib/stallone/')
+
+metadata = dict(
+      name = 'Emma2',
       version = __version__,
       description = 'EMMA 2',
       url = 'http://compmolbio.biocomputing-berlin.de/index.php',
@@ -92,11 +116,15 @@ setup(name = 'Emma2',
       # install default emma.cfg and stallone jar into package.
       package_data = {'emma2' : ['emma2.cfg','stallone-1.0-SNAPSHOT-jar-with-dependencies.jar']},
       scripts = [s for s in glob('scripts/*') if s.find('mm_') != -1],
-      cmdclass = dict(build_ext = np_build),
+      cmdclass = dict(build_ext = np_build,
+                      test = DiscoverTest),
       ext_modules = [cocovar_module],
       setup_requires = ['numpy >= 1.6.0'],
+      tests_require = [],
       # runtime dependencies
       install_requires = ['numpy >= 1.6.0',
                          'scipy >= 0.11',
                          'JPype1 >= 0.5.5'],
 )
+
+setup(**metadata)

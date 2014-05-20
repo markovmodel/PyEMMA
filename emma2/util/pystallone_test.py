@@ -5,7 +5,7 @@ Created on 22.01.2014
 '''
 import unittest
 
-import pystallone as st
+import emma2.util.pystallone as st
 import numpy as np
 
 class TestPyStallone(unittest.TestCase):
