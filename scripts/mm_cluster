@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
+from emma2.coordinates.clustering.api import kmeans, regspace, kregspace
 usage = """
 ================================================================================
 clusters the simulation (MD) data to microstate generators. These generators are
@@ -12,27 +13,24 @@ to discretize the trajectories using a Voronoi (nearest-neighbor) partition.
 import argparse
 import sys
 
-from emma2.coordinates.clustering.stalloneClustering import getDataSequenceLoader, \
-    checkFitIntoMemory, getClusterAlgorithm, writeASCIIResults
 from emma2.util.files import handleInputFileArg
 from emma2.util.log import getLogger
 from emma2.util.pystallone import JavaException, API
 
-
 log = getLogger()
-algorithms = ['density_based', 'kcenter', 'kmeans', 'regularspatial', 'regulartemporal']
-input_formats = ['xtc', 'dcd' , 'ascii' , 'ensembleascii', 'auto']
+# these are currently supported in emma2.coordinates.clustering
+algorithms = ['kmeans', 'regspace', 'kregspace']
 metrics = ['rmsd', 'euclidean']
 
 def handleArgs():
     parser = argparse.ArgumentParser(usage=usage)
     parser.add_argument('-i', '--input', nargs='+', dest='input', help='input filename or filename pattern', required=True)
-    parser.add_argument('-iformat', help='format of input files',
-                         choices=input_formats, default='auto')
+    parser.add_argument('-iformat', help='format of input files (deprecated)',
+                         choices=[], default='auto')
     # TODO: this is eg. unsupported by current kmeans impl in stallone
     parser.add_argument('-istepwidth', type=int, default=1)
-    parser.add_argument('-algorithm', dest='algorithm', type=str, choices=algorithms, required=True)
-    parser.add_argument('-metric', dest='metric', type=str, choices=metrics, default='euclidian')
+    parser.add_argument('-algorithm', choices=algorithms, required=True)
+    parser.add_argument('-metric', choices=metrics, default='euclidian')
     parser.add_argument('-o', '--output', dest='output', default='centers.dat', help='')
     
     # algorithm dependent arguments
@@ -41,7 +39,6 @@ def handleArgs():
     parser.add_argument('-spacing', type=int)
     parser.add_argument('-maxiterations', type=int, default=1000)
     parser.add_argument('-timecolumn', action="store_true", help='this is happily ignored at the moment.')
-
     
     args = parser.parse_args()
 
@@ -53,8 +50,8 @@ def handleArgs():
     if args.algorithm == 'regularspatial' and args.dmin is None:
         parser.error('regularspatial needs parameter -dmin')
         
-    if args.algorithm == 'regulartemporal' and args.spacing is None:
-        parser.error('regulartemporal needs parameter -spacing')
+#     if args.algorithm == 'regulartemporal' and args.spacing is None:
+#         parser.error('regulartemporal needs parameter -spacing')
     
     # check for input file pattern and create a proper list then
     args.input = handleInputFileArg(args.input)
@@ -66,32 +63,20 @@ def handleArgs():
 
 def main():
     args = handleArgs()
-    data = None
+    
     try:
-        log.debug('create loader')
-        loader = getDataSequenceLoader(args.input)
-        loader.scan()
-        log.debug('create cluster algo instance')
-        algo = getClusterAlgorithm(data, loader.size(), **vars(args))
-
-        # check if data fits into memory
-        if checkFitIntoMemory(loader):
-            log.info('performing online (in memory) clustering.')
-            data = loader.loadAll()
-            log.info('all data loaded.')
-        else:
-            log.info('performing offline clustering.')
-            files = API.str.toList(args.input)
-            data = API.dataNew.dataInput(files)
-
-        algo.setInput(data)
-        log.info('performing algo')
-        algo.perform()
-        log.info('algo finished')
-        centers = algo.getClusterCenters()
+        if args.algorithm == 'kmeans':
+            clustering = kmeans(args.input, args.k, args.maxiterations)
+        elif args.algorithm == 'regspace':
+            clustering = regspace(args.input, args.dmin, args.metric)
+        elif args.algorithm == 'kregspace':
+            clustering = kregspace(args.input, args.k)
+        
+        centers = clustering.clustercenters()
         
         # save cluster centers to file
-        writeASCIIResults(centers, args.output)
+        writer = API.dataNew.writerASCII(args.output,' ', '\n')
+        writer.addAll(centers)
     except JavaException as je:
         log.exception('Java exception occured! message: %s\n stacktrace:\n%s' 
                 % (je.message(), je.stacktrace()))
