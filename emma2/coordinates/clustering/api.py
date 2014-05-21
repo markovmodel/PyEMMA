@@ -50,7 +50,7 @@ def regspace(infiles, mindist, metric='Euclidean'):
     Performs regular space clustering on the input files using the given
     minimal distance. Regspace clustering defines the first data point
     to be the first cluster center. The next cluster center is defined
-    by the next data point whose minimal distance ot all existing data
+    by the next data point whose minimal distance of all existing data
     points is at least mindist, and so on. The number of clusters is
     thus a function of mindist and the data and is hard to predict. If
     you want to have approximately uniformly spaced cluster centers with
