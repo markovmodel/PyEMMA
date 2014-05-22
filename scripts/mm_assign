@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
+from jpype._jexception import JavaException
 usage="""
 ================================================================================
 assigns the simulation data (-i) to microstates (-ic) that have been previously
@@ -13,12 +14,11 @@ import argparse
 import os
 import sys
 
-from emma2.msm.estimation.api import count_matrix, largest_connected_set
-from emma2.msm.io.api import write_matrix, read_matrix
-from emma2.util.files import read_dtrajs_from_pattern, paths_from_patterns
+from emma2.util.files import paths_from_patterns
 from emma2.util.log import getLogger
+from emma2.coordinates.clustering import assign
 
-from emma2.util.pystallone import API, JString, java
+from emma2.util.pystallone import API, JString
 
 log = getLogger()
 
@@ -36,59 +36,64 @@ def handleArgs():
         help='output directory for discretized trajectories, defaults to current directory')
     parser.add_argument('-timecolumn', action="store_true", help='this is happily ignored at the moment.')
     
-    return parser.parse_args()
-
-def main():
-    args = handleArgs()
+    args = parser.parse_args()
     
     if not os.path.isdir(args.output):
-        log.error('given output %s is not a directory' % args.output)
-        return 1
+        parser.error('given output %s is not a directory' % args.output)
+    
     
     trajs = paths_from_patterns(args.trajs)
     if trajs == []:
-        log.error('given trajectory pattern "%s" does not match any files' % args.trajs)
-        return 1
+        parser.error('given trajectory pattern "%s" does not match any files' % args.trajs)
+    args.trajs = trajs
+    
+    
+    return args
+
+def main():
+    args = handleArgs()
         
     try:
         # create IDataReader of cluster center
         centersFile = API.dataNew.readerASCII(JString(args.clusterCenters))
+        centersFile.scan()
         # load to type IDataSequence
         centers = centersFile.load()
-    except Exception:
+    except JavaException:
         log.exception('Error during reading of cluster centers file.')
         return 1
         
-    # create discretization from factory, reflect options
-    imetric = None
-    if args.metric == 'euclidian':
-        # TODO: set dimension of data
-        imetric = API.clusterNew.metric(0, 0)
-    elif args.metric == 'minrmsd':
-        nrows = 0 # TODO: set to something useful
-        imetric = API.clusterNew.metric(1, nrows)
-        
-    disc = API.discNew.voronoiDiscretization(centers, imetric)
-    
-    # read traj and assign
-    trajsList = java.util.ArrayList(len(trajs))
-    for t in trajs:
-        trajsList.add(t)
-
+    # create metric and discretization from factory, reflect options
     try:
-        trajLoader = API.dataNew.multiSequenceLoader(trajsList)
-        trajIter = trajLoader.sequences().iterator()
+        dim = centers.dimension()
+        clusterNew = API.clusterNew
+        if  args.metric == 'euclidian':
+            jmetric = API.clusterNew.metric(clusterNew.METRIC_EUCLIDEAN, dim)
+        elif args.metric == 'minrmsd': 
+            jmetric = API.clusterNew.metric(clusterNew.METRIC_MINRMSD, dim/3)
+        disc = API.discNew.voronoiDiscretization(centers, jmetric)
+    except JavaException:
+        log.exception('Error during reading of cluster centers file.')
+        return 1
     
-        # TODO: this does not handle stepwidth
-        # for each traj, each frame (or interleaved with istepwidth: assign
-        while trajIter.hasNext():
-            traj = trajIter.next()
-            frameIter = traj.iterator()
-            while frameIter.hasNext():
-                # assign frame to disc, and save value in result
-                assignment = disc.assign(frameIter.next())
-                print assignment
-    except Exception as e:
+    # construct output file names for discrete trajectories
+    outfiles = []
+    for t in args.trajs:
+        log.debug('creating dtraj name from "%s"'%t)
+        if args.output:
+            # strip path from traj
+            t = os.path.basename(t)
+        base, ext = os.path.splitext(t)
+        outfiles.append(base + ".dtraj")
+
+    # assign to dtrajs
+    try:
+        assign(args.trajs, disc, outfiles, return_discretization=False)
+    except JavaException as je:
+        log.exception('Java exception occured! message: %s\nstacktrace:\n%s' 
+                % (je.message(), je.stacktrace()))
+        return 1
+    except Exception:
         log.exception('error during assignment.')
         return 1
             
