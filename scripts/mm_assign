@@ -9,7 +9,6 @@ input data is assigned to the number of the nearest cluster center (Voronoi pari
 ================================================================================
 \n\n
 """
-# TODO: this cmd needs either stallone or an pythonic trajectory reader
 import argparse
 import os
 import sys
