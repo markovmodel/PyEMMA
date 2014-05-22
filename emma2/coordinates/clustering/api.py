@@ -11,8 +11,9 @@ Created on Dec 30, 2013
 
 __docformat__ = "restructuredtext en"
 
+from emma2.util.pystallone import jarray
 import emma2.util.pystallone as stallone
-import clustering
+from . import clustering
 
 # shortcuts
 intseqNew = stallone.API.intseqNew
@@ -41,6 +42,9 @@ def kmeans(infiles, k, maxiter = 100):
     -------
     A clustering object
     """
+    if not isinstance(infiles, basestring):
+        arr = jarray(infiles)
+        infiles = stallone.API.str.toList(arr)
     input = dataNew.dataInput(infiles)
     return Clustering(cluster.kmeans(input, k, maxiter))
 
@@ -67,6 +71,9 @@ def regspace(infiles, mindist, metric='Euclidean'):
     Markov models of molecular kinetics: Generation and Validation. 
     J. Chem. Phys. 134, 174105  (2011).
     """
+    if not isinstance(infiles, basestring):
+        arr = jarray(infiles)
+        infiles = stallone.API.str.toList(arr)
     datainput = dataNew.dataInput(infiles)
     mindist = 1.0*mindist
     dim = datainput.dimension()
@@ -97,7 +104,7 @@ def assign(infiles, clustering, outfiles=None, return_discretization=True):
     -----------
     infiles : string or list of strings
         trajectory file names
-    clustering : Clustering
+    clustering : Clustering or an IDiscretization instance
         the clustering object used for discretizing the data
     outfiles : string or list of strings
         discrete trajectory file names. Will only be written if requested
@@ -105,8 +112,14 @@ def assign(infiles, clustering, outfiles=None, return_discretization=True):
         if true (default), will return the discrete trajectories.
     """
     # check input
-    if (not isinstance(clustering, Clustering)):
-        raise AttributeError("clustering is not an instance of Clustering")
+    if (isinstance(clustering, Clustering)):
+        idisc = clustering._jclustering
+    elif isinstance(clustering, stallone.stallone.api.discretization.IDiscretization):
+        idisc = clustering
+    else:
+        raise AttributeError("clustering is not an instance of Clustering or"
+                             " stallone.api.discretization.IClustering!")
+    
     if (isinstance(infiles, str) and isinstance(outfiles, str)):
         infiles = [infiles]
         outfiles = [outfiles]
@@ -114,16 +127,19 @@ def assign(infiles, clustering, outfiles=None, return_discretization=True):
     elif (isinstance(infiles, list) and isinstance(outfiles, list)):
         singlefile = False
     else:
-        raise AttributeError("input/output files must be either single filenames of equally sized lists of filenames, but not a mix.")
+        raise AttributeError("input/output files must be either single filenames"
+                             " of equally sized lists of filenames, but not a mix.")
     
     # load input
     datainput = dataNew.dataInput(stallone.list_to_java_list(infiles))
     nseq = datainput.numberOfSequences()
     # assign data
     res = []
-    for i in range(0,nseq):
+   
+    for i in xrange(nseq):
         seq = datainput.getSequence(i)
-        jdtraj = cluster.discretize(seq, clustering._jclustering)
+        jdtraj = cluster.discretize(seq, idisc)
+        
         # write to file if requested
         if (outfiles != None):
             intseq.writeIntSequence(jdtraj, outfiles[i])

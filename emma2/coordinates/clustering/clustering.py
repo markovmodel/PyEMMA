@@ -7,13 +7,10 @@ Created on Jan 5, 2014
 import numpy as np
 import emma2.util.pystallone as stallone
 
-class Clustering:
+class Clustering(object):
     """
     Wrapper to stallone clustering
     """
-
-    # java clustering object
-    _jclustering = None
 
     def __init__(self, jclustering):
         self._jclustering = jclustering
