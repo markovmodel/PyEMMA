@@ -11,7 +11,9 @@ import scipy.linalg
 import scipy.sparse
 import scipy.sparse.linalg
 
+from emma2.util.exceptions import SpectralWarning
 import decomposition
+import warnings
 
 def random_orthonormal_sparse_vectors(d, k):
     r"""Generate a random set of k orthonormal sparse vectors 
@@ -323,24 +325,29 @@ class TestTimescales(unittest.TestCase):
         pass
 
     def mdot(self, *args):
-        return reduce(numpy.dot, args)
+        return reduce(np.dot, args)
     
     def test_timescales(self):
         """tau=1"""
         ts_n=decomposition.timescales(self.A_real, k=self.k)
         self.assertTrue(np.allclose(ts_n, self.ts_real))
+        # enable all warnings
+        warnings.simplefilter("always")
         
-        with self.assertRaises(RuntimeWarning):
+        with warnings.catch_warnings(record=True) as w:
             ts_n=decomposition.timescales(self.A_complex, k=self.k)
             self.assertTrue(np.allclose(ts_n, self.ts_complex))
+            assert issubclass(w[-1].category, SpectralWarning)
 
-        with self.assertRaises(RuntimeWarning):
+        with warnings.catch_warnings(record=True) as w:
             ts_n=decomposition.timescales(self.A_real_m, k=self.k)
             self.assertTrue(np.allclose(ts_n, self.ts_real_m))
+            assert issubclass(w[-1].category, SpectralWarning)
         
-        with self.assertRaises(RuntimeWarning):
+        with warnings.catch_warnings(record=True) as w:
             ts_n=decomposition.timescales(self.A_complex_m, k=self.k)
-            self.assertTrue(np.allclose(ts_n, self.ts_complex_m))           
+            self.assertTrue(np.allclose(ts_n, self.ts_complex_m))
+            assert issubclass(w[-1].category, SpectralWarning)
 
         """tau=10"""
         ts_n=decomposition.timescales(self.A_real, tau=10, k=self.k)
@@ -356,17 +363,20 @@ class TestTimescales(unittest.TestCase):
         ts_n=decomposition.timescales(self.A_real, k=self.k/4, ncv=self.k)
         self.assertTrue(np.allclose(ts_n, self.ts_real[0:self.k/4]))
         
-        with self.assertRaises(RuntimeWarning):
+        with warnings.catch_warnings(record=True) as w:
             ts_n=decomposition.timescales(self.A_complex, k=self.k/4, ncv=self.k)
             self.assertTrue(np.allclose(ts_n, self.ts_complex[0:self.k/4]))
+            assert issubclass(w[-1].category, SpectralWarning)
 
-        with self.assertRaises(RuntimeWarning):
+        with warnings.catch_warnings(record=True) as w:
             ts_n=decomposition.timescales(self.A_real_m, k=self.k/4, ncv=self.k)
             self.assertTrue(np.allclose(ts_n, self.ts_real_m[0:self.k/4]))
-        
-        with self.assertRaises(RuntimeWarning):
+            assert issubclass(w[-1].category, SpectralWarning)
+
+        with warnings.catch_warnings(record=True) as w:
             ts_n=decomposition.timescales(self.A_complex_m, k=self.k/4, ncv=self.k)
-            self.assertTrue(np.allclose(ts_n, self.ts_complex_m[0:self.k/4]))           
+            self.assertTrue(np.allclose(ts_n, self.ts_complex_m[0:self.k/4]))
+            assert issubclass(w[-1].category, SpectralWarning)
 
         """tau=10"""
         ts_n=decomposition.timescales(self.A_real, tau=10, k=self.k/4, ncv=self.k)
