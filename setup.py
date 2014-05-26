@@ -1,26 +1,40 @@
 #!/usr/bin/env python
-import sys
-import os
-import subprocess
-from glob import glob
-
-"""
-define minimum requirements for our setup script.
-"""
-__requires__ = 'setuptools >= 3.0.0'
-
-try:
-    from setuptools import setup, Extension, find_packages, __version__ as stools_ver
-except:
-    print "Looks like your version (%s) of setuptools is too old. You should use " \
-          "provided ez_setup.py to upgrade your installation." % stools_ver
-    sys.exit(1)
-
 """
 ################################################################################
     EMMA2 Setup
 ################################################################################
 """
+import sys
+import os
+import subprocess
+from glob import glob
+
+
+# define minimum requirements for our setup script.
+__requires__ = 'setuptools >= 3.0.0'
+
+def getSetuptoolsError():
+    bootstrap_setuptools = 'python2.7 -c \"import urllib2;\n\
+url=\'https://bitbucket.org/pypa/setuptools/raw/bootstrap/ez_setup.py\';\n\
+exec urllib2.urlopen(url).read()\"'
+    
+    cmd = ((80*'=') + '\n' + bootstrap_setuptools + '\n' +(80*'='))
+    s = 'You can use the following command to upgrade/install it:\n%s' % cmd
+    return s
+
+try:
+    from setuptools import setup, Extension, find_packages
+except ImportError as ie:
+    print "Sorry, we require %s\n" % __requires__
+    print getSetuptoolsError()
+    sys.exit(23)
+except: # this should catch pkg_resources.DistributionNotFound, which is not importable now.
+    print "Your version of setuptools is too old. We require at least %s\n" \
+          % __requires__
+    print getSetuptoolsError()
+    sys.exit(24)
+
+
 VERSION = "2.0.0"
 ISRELEASED = False
 
