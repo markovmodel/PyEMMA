@@ -78,7 +78,7 @@ def is_reversible(T, mu=None, tol=1e-10):
     if is_transition_matrix(T, tol):
         if mu is None:
             mu = decomposition.stationary_distribution_from_backward_iteration(T)
-        return np.allclose(T * mu[ : , np.newaxis ], \
-                           T[ : , np.newaxis] * mu,  atol=tol)
+        X=mu[ : , np.newaxis ]*T
+        return np.allclose(X, np.transpose(X),  atol=tol)
     else:
         raise ValueError("given matrix is not a valid transition matrix.")
