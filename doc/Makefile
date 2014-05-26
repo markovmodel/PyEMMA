@@ -18,6 +18,7 @@ ALLSPHINXOPTS   = -d build/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) source
 
 # ipython notebook index file
 F			 = source/generated/ipynb-list.rst
+HEADER = .. toctree:: \n   :maxdepth: 1 \n
 
 .PHONY: help clean html ipython-rst
 
@@ -52,5 +53,6 @@ ipython-rst: source/generated
 	# write header
 	@echo $(HEADER) > $(F)
 	# put every notebook as a link in index file
-	@$(foreach n,$(notebooks), echo "   :doc:\`generated/$n\`\n" >> $(F);)
+	@$(foreach n,$(notebooks), echo "   generated/$n\n" >> $(F);)
+
 	@echo "Conversion finished."
