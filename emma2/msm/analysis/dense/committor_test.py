@@ -168,7 +168,6 @@ class TestCommittor(unittest.TestCase):
     def tearDown(self):
         pass
 
-
     def test_forward_comittor(self):
         P=self.bdc.transition_matrix()
         un=committor.forward_committor(P, [0, 1], [8, 9])
