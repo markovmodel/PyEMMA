@@ -5,6 +5,7 @@ r"""This module provides unit tests for the decomposition module
 """
 
 import unittest
+import warnings
 
 import numpy
 from numpy import random, sum, sqrt, newaxis, ones, allclose, eye, asarray, abs, linspace
@@ -12,6 +13,7 @@ from numpy import  diag, transpose, argsort, dot, asarray, array, arange, diag_i
 from numpy import conjugate, zeros, log, inf
 from scipy.linalg import eig, eigh, eigvals, eigvalsh, qr, solve
 
+from emma2.util.exceptions import SpectralWarning
 import decomposition
 
 def random_orthorgonal_matrix(d):
@@ -279,18 +281,23 @@ class TestTimescales(unittest.TestCase):
         """tau=1"""
         ts_n=decomposition.timescales(self.A_real)
         self.assertTrue(allclose(ts_n, self.ts_real))
+        # Cause all warnings to always be triggered.
+        warnings.simplefilter("always")
         
-        with self.assertRaises(RuntimeWarning):
+        with warnings.catch_warnings(record=True) as w:
             ts_n=decomposition.timescales(self.A_complex)
             self.assertTrue(allclose(ts_n, self.ts_complex))
+            assert issubclass(w[-1].category, SpectralWarning)
 
-        with self.assertRaises(RuntimeWarning):
+        with warnings.catch_warnings(record=True) as w:
             ts_n=decomposition.timescales(self.A_real_m)
             self.assertTrue(allclose(ts_n, self.ts_real_m))
+            assert issubclass(w[-1].category, SpectralWarning)
         
-        with self.assertRaises(RuntimeWarning):
+        with warnings.catch_warnings(record=True) as w:
             ts_n=decomposition.timescales(self.A_complex_m)
-            self.assertTrue(allclose(ts_n, self.ts_complex_m))           
+            self.assertTrue(allclose(ts_n, self.ts_complex_m))
+            assert issubclass(w[-1].category, SpectralWarning)
 
         """tau=10"""
         ts_n=decomposition.timescales(self.A_real, tau=10)
