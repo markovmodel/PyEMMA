@@ -3,11 +3,13 @@ r"""Unit tests for the committor module
 .. moduleauthor:: B.Trendelkamp-Schroer <benjamin.trendelkampschroer@gmail.com>
 
 """
-
 import unittest
 import numpy as np
 
+from scipy.sparse import diags
+
 import committor
+
 
 class BirthDeathChain():
     """Birth and death chain class
@@ -57,6 +59,20 @@ class BirthDeathChain():
         P1=np.diag(self.p[0:-1], k=1)
         P_1=np.diag(self.q[1:], k=-1)
         return P0+P1+P_1
+
+    def transition_matrix_sparse(self):
+        """Tridiagonal transition matrix for birth and death chain
+
+        Returns
+        -------
+        P : (N,N) scipy.sparse matrix
+            Transition matrix for birth and death chain with given
+            birth and death probabilities.
+
+        """        
+        P=diags([self.q[1:], self.r, self.p[0:-1]], [-1, 0, 1])
+        return P
+
 
     def stationary_distribution(self):
         a=np.zeros(self.dim)
@@ -156,12 +172,12 @@ class BirthDeathChain():
 
 class TestCommittor(unittest.TestCase):
     def setUp(self):
-        p=np.zeros(10)
-        q=np.zeros(10)
+        p=np.zeros(100)
+        q=np.zeros(100)
         p[0:-1]=0.5
         q[1:]=0.5
-        p[4]=0.01
-        q[6]=0.1
+        p[49]=0.01
+        q[51]=0.1
 
         self.bdc=BirthDeathChain(q, p)
 
@@ -169,18 +185,16 @@ class TestCommittor(unittest.TestCase):
         pass
 
     def test_forward_comittor(self):
-        P=self.bdc.transition_matrix()
-        un=committor.forward_committor(P, [0, 1], [8, 9])
-        u=self.bdc.committor_forward(1, 8)              
+        P=self.bdc.transition_matrix_sparse()
+        un=committor.forward_committor(P, range(10), range(90,100))
+        u=self.bdc.committor_forward(9, 90)               
         self.assertTrue(np.allclose(un, u))
 
     def test_backward_comittor(self):
-        P=self.bdc.transition_matrix()
-        un=committor.backward_committor(P, [0, 1], [8, 9])
-        u=self.bdc.committor_backward(1, 8)        
+        P=self.bdc.transition_matrix_sparse()
+        un=committor.backward_committor(P, range(10), range(90,100))
+        u=self.bdc.committor_backward(9, 90)               
         self.assertTrue(np.allclose(un, u))
-
-        
 
 if __name__ == "__main__":
     unittest.main()
