@@ -11,8 +11,11 @@ Matrices are represented by scipy.sparse matrices throughout this module.
 import numpy as np
 import scipy.sparse.linalg
 
-from scipy.sparse import diags, eye
-from scipy.sparse.linalg import eigs, factorized
+from scipy.sparse import eye
+from scipy.sparse.linalg import factorized
+
+import warnings
+from emma2.util.exceptions import ImaginaryEigenValueWarning, SpectralWarning
 
 def backward_iteration(A, mu, x0, tol=1e-15, maxiter=100):
     r"""Find eigenvector to approximate eigenvalue via backward iteration.
@@ -265,8 +268,7 @@ def timescales(T, tau=1, k=None, ncv=None):
     Returns
     -------
     ts : ndarray
-        The implied time scales of the transition matrix.          
-    
+        The implied time scales of the transition matrix.
     """
     if k is None:
         raise ValueError("Number of time scales required for decomposition of sparse matrix")    
@@ -278,13 +280,13 @@ def timescales(T, tau=1, k=None, ncv=None):
     
     """Check for dominant eigenvalues with large imaginary part"""
     if not np.allclose(values.imag, 0.0):
-        raise RuntimeWarning('Using eigenvalues with non-zero imaginary part '+\
-                                     'for implied time scale computation')
+        warnings.warn('Using eigenvalues with non-zero imaginary part '
+                      'for implied time scale computation', ImaginaryEigenValueWarning)
 
     """Check for multiple eigenvalues of magnitude one"""
     ind_abs_one=np.isclose(np.abs(values), 1.0)
     if sum(ind_abs_one)>1:
-        raise RuntimeWarning('Multiple eigenvalues with magnitude one.')
+        warnings.warn('Multiple eigenvalues with magnitude one.', SpectralWarning)
 
     """Compute implied time scales"""
     ts=np.zeros(len(values))
