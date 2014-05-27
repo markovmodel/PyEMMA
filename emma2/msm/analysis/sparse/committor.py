@@ -1,12 +1,13 @@
 r"""This module provides functions for the computation of forward and
-backward comittors using dense linear algebra.
+backward comittors using sparse linear algebra.
 
 .. moduleauthor:: B.Trendelkamp-Schroer <benjamin.trendelkampschroer@gmail.com>
 
 """
-
 import numpy as np
-from scipy.linalg import solve
+
+from scipy.sparse import eye, coo_matrix, diags
+from scipy.sparse.linalg import spsolve
 
 from decomposition import stationary_distribution_from_backward_iteration as statdist
 
@@ -18,7 +19,7 @@ def forward_committor(T, A, B):
 
     Parameters
     ----------
-    T : (M, M) ndarray
+    T : (M, M) scipy.sparse matrix
         Transition matrix
     A : array_like
         List of integer state labels for set A
@@ -51,26 +52,32 @@ def forward_committor(T, A, B):
     notAB=X.difference(A).difference(B)
     if len(AB)>0:
         raise ValueError("Sets A and B have to be disjoint")
-    L=T-np.eye(T.shape[0]) # Generator matrix
-
+    L=T-eye(T.shape[0])
+    
     """Assemble left hand-side W for linear system"""    
     """Equation (I)"""
     W=1.0*L
+
     """Equation (II)"""
+    W=W.todok()
     W[list(A), :]=0.0
-    W[list(A), list(A)]=1.0
+    W.tocsr()
+    W=W + coo_matrix( (np.ones(len(A)), (list(A), list(A))), shape=W.shape).tocsr()
+
     """Equation (III)"""
+    W=W.todok()
     W[list(B), :]=0.0
-    W[list(B), list(B)]=1.0
+    W.tocsr()
+    W=W + coo_matrix( (np.ones(len(B)), (list(B), list(B))), shape=W.shape).tocsr()
 
     """Assemble right hand side r for linear system"""
     """Equation (I+II)"""
     r=np.zeros(T.shape[0])
     """Equation (III)"""
     r[list(B)]=1.0
-    
-    u=solve(W, r)
-    return u       
+
+    u=spsolve(W, r)
+    return u
 
 def backward_committor(T, A, B):
     r"""Backward committor between given sets.
@@ -115,17 +122,25 @@ def backward_committor(T, A, B):
     if len(AB)>0:
         raise ValueError("Sets A and B have to be disjoint")
     pi=statdist(T)
-    K=np.transpose(pi[:,np.newaxis]*(T-np.eye(T.shape[0])))
+    L=T-eye(T.shape[0])
+    D=diags([pi,], [0,])
+    K=(D.dot(L)).T
 
     """Assemble left-hand side W for linear system"""
     """Equation (I)"""
     W=1.0*K
+
     """Equation (II)"""
+    W=W.todok()
     W[list(A), :]=0.0
-    W[list(A), list(A)]=1.0
+    W.tocsr()
+    W=W + coo_matrix( (np.ones(len(A)), (list(A), list(A))), shape=W.shape).tocsr()
+
     """Equation (III)"""
+    W=W.todok()
     W[list(B), :]=0.0
-    W[list(B), list(B)]=1.0
+    W.tocsr()
+    W=W + coo_matrix( (np.ones(len(B)), (list(B), list(B))), shape=W.shape).tocsr()
 
     """Assemble right-hand side r for linear system"""
     """Equation (I)+(III)"""
@@ -133,6 +148,6 @@ def backward_committor(T, A, B):
     """Equation (II)"""
     r[list(A)]=1.0
 
-    u=solve(W, r)
+    u=spsolve(W, r)
 
     return u
