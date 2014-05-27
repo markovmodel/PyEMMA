@@ -11,7 +11,7 @@ Dense matrices are represented by numpy.ndarrays throughout this module.
 import numpy as np
 from scipy.linalg import eig, eigvals, solve, lu_factor, lu_solve
 
-def backward_iteration(A, mu, x0, tol=1e-15, maxiter=100):
+def backward_iteration(A, mu, x0, tol=1e-14, maxiter=100):
     r"""Find eigenvector to approximate eigenvalue via backward iteration.
 
     Parameters
@@ -40,7 +40,6 @@ def backward_iteration(A, mu, x0, tol=1e-15, maxiter=100):
     """Local variables for inverse iteration"""
     y=1.0*y0
     r=1.0*r0
-    N=0
     for iter in range(maxiter):
         x=lu_solve(lupiv, y)
         r=1.0/np.linalg.norm(x)
