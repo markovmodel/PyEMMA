@@ -1,8 +1,10 @@
-'''
-Created on 08.11.2013
+r"""This module provides functions for the computation of forward and
+backward comittors using dense linear algebra.
 
-@author: marscher
-'''
+.. moduleauthor:: B.Trendelkamp-Schroer <benjamin.trendelkampschroer@gmail.com>
+
+"""
+
 import numpy as np
 from scipy.linalg import solve
 
@@ -36,8 +38,8 @@ def forward_committor(T, A, B):
     .. math::
 
         \sum_j L_{ij} u_{j}=0    for i in X\(A u B) (I)
-                          u_{i}=0    for i \in A        (II)
-                          u_{i}=1    for i \in B        (III)
+                      u_{i}=0    for i \in A        (II)
+                      u_{i}=1    for i \in B        (III)
 
     with generator matrix L=(P-I).
                           
