@@ -2,6 +2,8 @@
 Developer's Guide
 =================
 
+.. TODO: codestyle?
+
 .. toctree::
    :maxdepth: 2
 

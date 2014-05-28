@@ -3,31 +3,48 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to EMMA's documentation!
-================================
+EMMA -> Emmas Markov Modeling Algorithms
+========================================
+
+.. include:: intro.rst
+
+Installation
+============
 
 .. toctree::
-   :maxdepth: 1
-
-   
    INSTALL
-   Tutorial
+   INSTALL_MACOSX
+   Configuration
+
+
+Usage
+=====
+
+.. toctree::
+   :maxdepth: 3
+
    api
    ipython
-   DevelopersGuide
-   Configuration
    
+Development
+===========
+.. toctree::
+   DevelopersGuide
+   TESTING
+
+
 TODO-List in Docu
 =================
 .. todolist::
 
 
-.. include:: ../../README.rst
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
 
 
-.. Indices and tables
-.. ==================
-
-.. * :ref:`genindex`
-.. * :ref:`modindex`
-.. * :ref:`search`
+.. TODO: ipython rst conversion is not supported on RTD (readthedocs),
+    so shall we commit converted rst with images to repo?

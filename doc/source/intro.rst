@@ -8,12 +8,12 @@ process input data (clustering, coordinate transformations etc). For documentati
 of the API, please have a look at the sphinx docs (:ref:`ref_api`).
 
 
-Installation
-------------
-To install it refer to the :ref:`Installation Guide <ref_install>`.
+To install this software and additional dependencies refer to the 
+:ref:`Installation Guide <ref_install>`.
 
-Support
--------
 For support/bug reports/sugguestions/complains please visit:
 
+
 .. TODO: enter public url of your repo.
+
+http://github.com/
