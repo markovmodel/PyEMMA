@@ -333,7 +333,9 @@ class Mock(object):
 # TODO: adopt this
 MOCK_MODULES = ['emma2.coordinates.cocovar',
                 'argparse', 'numpy', 'scipy', 
-                'scipy.sparse', 'numpy.ctypeslib', 'scipy.cluster',
+                'scipy.sparse', 'scipy.sparse.sputils',
+                'scipy.sparse.csgraph',
+                'numpy.ctypeslib', 'scipy.cluster',
                 'scipy.stats',
                 'scipy.cluster.hierarchy', 'scipy.spatial', 'scipy.spatial.distance',
                 'scipy.linalg', 'scipy.optimize', 'scipy.sparse.linalg', 'scipy.io',
