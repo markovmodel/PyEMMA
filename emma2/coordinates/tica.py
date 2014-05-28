@@ -1,13 +1,23 @@
+# -*- coding: utf-8 -*-
+
 r"""
 ====
 TICA
 ====
 
-TODO: describe usage here
+performs this algo [Ref]_.
 
-Created on 19.11.2013
-@author: Fabian Paul <fabian.paul@mpikg.mpg.de>
-@author: marscher
+.. TODO: describe method. See http://msmbuilder.org/theory/tICA.html
+
+
+.. date: Created on 19.11.2013
+
+.. moduleauthor:: Fabian Paul <fabian.paul@mpikg.mpg.de>, marscher
+
+.. [Ref] Identification of slow molecular order parameters for Markov model construction
+    Pérez-Hernández, Guillermo and Paul, Fabian and Giorgino, Toni and De Fabritiis,
+    Gianni and Noé, Frank, The Journal of Chemical Physics, 139, 015102 (2013),
+    DOI:http://dx.doi.org/10.1063/1.4811489
 
 """
 
@@ -17,10 +27,8 @@ import numpy
 import warnings
 
 __docformat__ = "restructuredtext en"
-__all__ = ['correlation', 'log_loop', 'rename', 'Amuse']
+__all__ = ['correlation', 'Amuse']
 
-''' import correlation covariance C extension module '''
-from . import cocovar
 from emma2.util.log import getLogger
 log = getLogger()
 
