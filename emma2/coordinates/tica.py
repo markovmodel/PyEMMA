@@ -109,6 +109,8 @@ class Amuse:
         # calculate rest of statistics
         log.info('computing covariances')
         stats = { 'mean': amuse.mean }
+        ''' import correlation covariance C extension module '''
+        from emma2.coordinates import cocovar
         for f in log_loop(files):
             cocovar.run(f, stats, False, False, True, True, lag)
         
@@ -200,5 +202,6 @@ class Amuse:
         # 'expected' dotted ones. This is due to a german locale, which is exported
         # in environment. So we set it to 'C' to force dotted floats.
         os.environ['LANG'] = 'C'
-        
+        ''' import correlation covariance C extension module '''
+        from emma2.coordinates import cocovar
         cocovar.project(fin, fout, self.mean, weights, keep_n, self.time_column)

@@ -14,11 +14,7 @@
 import sys, os
 
 # Check Sphinx version
-import sphinx
-if sphinx.__version__ < "1.1":
-    raise RuntimeError("Sphinx 1.1 or newer required")
-
-needs_sphinx = '1.1'
+needs_sphinx = '1.2'
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -65,13 +61,14 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Emma'
-copyright = u'2013, CMB-group'
+copyright = u'2014, CMB-group'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
 # The short X.Y version.
+#TODO: use emma2.__version__ here
 version = '2.0'
 # The full version, including alpha/beta/rc tags.
 release = '2.0.0'
@@ -149,7 +146,7 @@ if False:
 
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = []
-html_theme_path = ['_theme']
+#html_theme_path = ['_theme']
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
@@ -295,9 +292,8 @@ texinfo_documents = [
 # Autosummary
 # -----------------------------------------------------------------------------
 
-if sphinx.__version__ >= "0.7": 
-    import glob
-    autosummary_generate = glob.glob("*.rst")
+import glob
+autosummary_generate = glob.glob("*.rst")
 
 # intersphinx for linking to other api's
 intersphinx_mapping = {
@@ -335,15 +331,14 @@ class Mock(object):
         else:
             return Mock()
 # TODO: adopt this
-MOCK_MODULES = ['cocovar', 'numpy', 'numpy.core.multiarray']
-"""
-                'argparse', 'numpy', 'scipy', 'tables', 'deap', 'fastcluster',
-                'networkx', 'scipy.sparse', 'numpy.ctypeslib', 'scipy.cluster',
+MOCK_MODULES = ['emma2.coordinates.cocovar',
+                'argparse', 'numpy', 'scipy', 
+                'scipy.sparse', 'numpy.ctypeslib', 'scipy.cluster',
                 'scipy.stats',
                 'scipy.cluster.hierarchy', 'scipy.spatial', 'scipy.spatial.distance',
                 'scipy.linalg', 'scipy.optimize', 'scipy.sparse.linalg', 'scipy.io',
                 'scipy.weave', 'numpy.ma', 'matplotlib', 'matplotlib.pyplot',
-                'statsmodels', 'mdtraj']"""
+                ]
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] =  Mock()
 
