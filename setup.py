@@ -1,55 +1,43 @@
 #!/usr/bin/env python
-import sys
-import os
-import subprocess
-from glob import glob
-
-"""
-define minimum requirements for our setup script.
-"""
-__requires__ = 'setuptools >= 3.0.0'
-
-try:
-    from setuptools import setup, Extension, find_packages, __version__ as stools_ver
-except:
-    print "Looks like your version (%s) of setuptools is too old. You should use " \
-          "provided ez_setup.py to upgrade your installation." % stools_ver
-    sys.exit(1)
-
 """
 ################################################################################
     EMMA2 Setup
 ################################################################################
 """
-VERSION = "2.0.0"
-ISRELEASED = False
+import sys
+import os
+from glob import glob
 
-# taken from numpy setup
-def git_version():
-    def _minimal_ext_cmd(cmd):
-        # construct minimal environment
-        env = {}
-        for k in ['SYSTEMROOT', 'PATH']:
-            v = os.environ.get(k)
-            if v is not None:
-                env[k] = v
-        # LANGUAGE is used on win32
-        env['LANGUAGE'] = 'C'
-        env['LANG'] = 'C'
-        env['LC_ALL'] = 'C'
-        out = subprocess.Popen(cmd, stdout=subprocess.PIPE, env=env).communicate()[0]
-        return out
-    try:
-        out = _minimal_ext_cmd(['git', 'rev-parse', '--short', 'HEAD'])
-        GIT_REVISION = out.strip().decode('ascii')
-    except OSError:
-        GIT_REVISION = "Unknown"
-    return GIT_REVISION
 
-if not ISRELEASED and os.path.exists('.git'):
-    __version__ = VERSION + '-' + git_version()
-else:
-    __version__ = VERSION
+# define minimum requirements for our setup script.
+__requires__ = 'setuptools >= 3.0.0'
+
+def getSetuptoolsError():
+    bootstrap_setuptools = 'python2.7 -c \"import urllib2;\n\
+url=\'https://bitbucket.org/pypa/setuptools/raw/bootstrap/ez_setup.py\';\n\
+exec urllib2.urlopen(url).read()\"'
+    
+    cmd = ((80*'=') + '\n' + bootstrap_setuptools + '\n' +(80*'='))
+    s = 'You can use the following command to upgrade/install it:\n%s' % cmd
+    return s
+
+try:
+    from setuptools import setup, Extension, find_packages
+except ImportError as ie:
+    print "Sorry, we require %s\n" % __requires__
+    print getSetuptoolsError()
+    sys.exit(23)
+except: # this should catch pkg_resources.DistributionNotFound, which is not importable now.
+    print "Your version of setuptools is too old. We require at least %s\n" \
+          % __requires__
+    print getSetuptoolsError()
+    sys.exit(24)
+
+import versioneer
+versioneer.versionfile_source = 'emma2/_version.py'
+versioneer.versionfile_build = 'emma2/_version.py'
+versioneer.tag_prefix = '' # tags are like 1.2.0
+versioneer.parentdir_prefix = 'emma2-' # dirname like 'myproject-1.2.0'
 
 
 cocovar_module = Extension('emma2.coordinates.cocovar',
@@ -107,17 +95,23 @@ if not os.environ.get('JAVA_HOME', None):
 
 metadata = dict(
       name = 'Emma2',
-      version = __version__,
+      version = versioneer.get_version(),
       description = 'EMMA 2',
       url = 'http://compmolbio.biocomputing-berlin.de/index.php',
       author = 'The Emma2 team',
+      author_email = '', # TODO: add this
       # packages are found if their folder contains an __init__.py,
       packages = find_packages(),
       # install default emma.cfg and stallone jar into package.
       package_data = {'emma2' : ['emma2.cfg','stallone-1.0-SNAPSHOT-jar-with-dependencies.jar']},
       scripts = [s for s in glob('scripts/*') if s.find('mm_') != -1],
       cmdclass = dict(build_ext = np_build,
-                      test = DiscoverTest),
+                      test = DiscoverTest,
+                      version = versioneer.cmd_version,
+                      versioneer = versioneer.cmd_update_files,
+                      build = versioneer.cmd_build,
+                      sdist = versioneer.cmd_sdist,
+                      ),
       ext_modules = [cocovar_module],
       setup_requires = ['numpy >= 1.6.0'],
       tests_require = [],

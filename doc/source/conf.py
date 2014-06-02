@@ -14,11 +14,7 @@
 import sys, os
 
 # Check Sphinx version
-import sphinx
-if sphinx.__version__ < "1.1":
-    raise RuntimeError("Sphinx 1.1 or newer required")
-
-needs_sphinx = '1.1'
+needs_sphinx = '1.2'
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -46,10 +42,13 @@ extensions = [
               'numpydoc',
               'sphinx.ext.pngmath',
               'sphinx.ext.intersphinx',
-              'sphinx.ext.coverage']
+              'sphinx.ext.coverage',
+              'sphinx.ext.viewcode'
+              #'sphinxcontrib.spelling',
+             ]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+#templates_path = ['_templates']
 
 # The suffix of source filenames.
 source_suffix = '.rst'
@@ -62,13 +61,14 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Emma'
-copyright = u'2013, CMB-group'
+copyright = u'2014, CMB-group'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
 # The short X.Y version.
+#TODO: use emma2.__version__ here
 version = '2.0'
 # The full version, including alpha/beta/rc tags.
 release = '2.0.0'
@@ -114,7 +114,22 @@ pygments_style = 'sphinx'
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 # html_theme = 'agogo'
-html_theme = 'agogo'
+
+# on_rtd is whether we are on readthedocs.org
+on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
+
+if False:
+#if not on_rtd:  # only import and set the theme if we're building docs locally
+    import sphinx_rtd_theme
+    html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+    print html_theme_path
+    #sys.exit(1)
+    html_theme = 'sphinx_rtd_theme'
+    #html_theme_path= ['_themes']
+    #p = '/home/marscher/.local/lib/python2.7/site-packages/sphinx_rtd_theme'
+
+# otherwise, readthedocs.org uses their theme by default, so no need to specify it
+#html_theme = 'agogo'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -131,7 +146,7 @@ html_theme = 'agogo'
 
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = []
-html_theme_path = ['_theme']
+#html_theme_path = ['_theme']
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
@@ -277,13 +292,55 @@ texinfo_documents = [
 # Autosummary
 # -----------------------------------------------------------------------------
 
-if sphinx.__version__ >= "0.7": 
-    import glob
-    autosummary_generate = glob.glob("*.rst")
+import glob
+autosummary_generate = glob.glob("*.rst")
 
-# intersphinx for linking to python std api
-intersphinx_mapping = {'python': ('http://docs.python.org/2.7', None)}
+# intersphinx for linking to other api's
+intersphinx_mapping = {
+    'http://docs.python.org/': None,
+    'http://docs.scipy.org/doc/numpy': None,
+    'http://docs.scipy.org/doc/scipy/reference/': None,
+    'http://matplotlib.sourceforge.net/' : None,
+}
+#autodoc_default_flags = []
 
-autodoc_default_flags = []
-
+# todo list extension
 todo_include_todos = True
+
+# spell checking
+spelling_lang = 'en_US'
+spelling_word_list_filename='spelling_wordlist.txt'
+spelling_show_suggestions=False
+
+
+# mocking modules, not present on RTD
+
+class Mock(object):
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def __call__(self, *args, **kwargs):
+        return Mock()
+
+    @classmethod
+    def __getattr__(cls, name):
+        if name in ('__file__', '__path__'):
+            return '/dev/null'
+        elif name[0] == name[0].upper():
+            return type(name, (), {})
+        else:
+            return Mock()
+# TODO: adopt this
+MOCK_MODULES = ['emma2.coordinates.cocovar',
+                'argparse', 'numpy', 'scipy', 
+                'scipy.sparse', 'scipy.sparse.sputils',
+                'scipy.sparse.csgraph',
+                'numpy.ctypeslib', 'scipy.cluster',
+                'scipy.stats',
+                'scipy.cluster.hierarchy', 'scipy.spatial', 'scipy.spatial.distance',
+                'scipy.linalg', 'scipy.optimize', 'scipy.sparse.linalg', 'scipy.io',
+                'scipy.weave', 'numpy.ma', 'matplotlib', 'matplotlib.pyplot',
+                ]
+for mod_name in MOCK_MODULES:
+    sys.modules[mod_name] =  Mock()
+

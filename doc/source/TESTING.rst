@@ -10,6 +10,7 @@ run single tests from their locations on the command line.
 In the emma2 root directory of your repository execute:
 
 ::
+
    python test/testsuite.py
 
 

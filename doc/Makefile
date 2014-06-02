@@ -17,7 +17,9 @@ PAPEROPT_letter = -D latex_paper_size=letter
 ALLSPHINXOPTS   = -d build/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) source
 
 # ipython notebook index file
-F			 = source/generated/ipynb-list.rst
+F = source/ipynb-list.rst
+IPY_DIR = source/ipython
+HEADER = ".. toctree::\n   :maxdepth: 2\n"
 
 .PHONY: help clean html ipython-rst
 
@@ -28,7 +30,7 @@ help:
 	@echo "  html      to make standalone HTML files"
 
 clean:
-	-rm -rf build/* source/generated
+	-rm -rf build/* source/generated $(IPY_DIR)/*
 
 html:
 	mkdir -p build/html build/doctrees
@@ -36,21 +38,19 @@ html:
 	@echo
 	@echo "Build finished. The HTML pages are in build/html."
 
-source/generated:
-	mkdir -p source/generated
-
-ipython-rst: source/generated
+ipython-rst:
 	# find all ipython notebooks (without their checkpoints)
-	@$(eval notebooks:= $$(shell cd source/generated && \
+	@$(eval notebooks:= $$(shell cd $(IPY_DIR) && \
 						find ../../../ipython/ -name \*.ipynb \
 							-and -not -name \*-checkpoint.ipynb))
 	# convert notebooks to rst
-	cd source/generated; ipython nbconvert --to rst $(notebooks)
+	cd $(IPY_DIR); ipython nbconvert --to rst $(notebooks)
 	# strip directory part and extensions
 	@$(eval notebooks=$$(notdir $(notebooks)))
 	@$(eval notebooks=$$(basename $(notebooks)))
 	# write header
 	@echo $(HEADER) > $(F)
-	# put every notebook as a link in index file
-	@$(foreach n,$(notebooks), echo "   :doc:\`generated/$n\`\n" >> $(F);)
+	# put every notebook as a link in index file, relative to path of $F
+	@$(foreach n,$(notebooks), echo "   ipython/$n" >> $(F);)
+
 	@echo "Conversion finished."
