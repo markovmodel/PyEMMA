@@ -239,17 +239,17 @@ class BirthDeathChain():
         
 class TestTPT(unittest.TestCase):
     def setUp(self):
-        p=np.zeros(20)
-        q=np.zeros(20)
+        p=np.zeros(10)
+        q=np.zeros(10)
         p[0:-1]=0.5
         q[1:]=0.5
-        p[8]=0.01
-        q[10]=0.1
+        p[4]=0.01
+        q[6]=0.1
 
         self.A=[0,1]
-        self.B=[18,19]
+        self.B=[8,9]
         self.a=1
-        self.b=18
+        self.b=8
 
         self.bdc=BirthDeathChain(q, p)
         self.T=self.bdc.transition_matrix()
