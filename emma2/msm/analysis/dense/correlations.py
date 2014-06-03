@@ -1,12 +1,13 @@
 '''
 Created on 29.11.2013
 
-@author: marscher, noe
+.. moduleauthor:: marscher, noe
 '''
 
 import numpy as np
 
-def time_correlation_direct(P, pi, obs1, obs2=None, time=1):
+def time_correlation_direct(P, mu, obs1, obs2=None, time=1, start_values=None,
+                            return_P_k_obs=False):
     r"""Compute time-correlation of obs1, or time-cross-correlation with obs2.
     
     The time-correlation at time=k is computed by the matrix-vector expression: 
@@ -22,29 +23,64 @@ def time_correlation_direct(P, pi, obs1, obs2=None, time=1):
     obs2 : ndarray, shape=(n)
         Vector representing observable 2 on discrete states. If not given,
         the autocorrelation of obs1 will be computed
-    pi : ndarray, shape=(n)
-        stationary distribution vector. Will be computed if not given
-    time : int or array like
-        time point(s) at which the (auto)correlation will be evaluated 
+    mu : ndarray, shape=(n)
+        stationary distribution vector.
+    time : int
+        time point at which the (auto)correlation will be evaluated.
+    start_values : (time, ndarray <P, <P, obs2>>_t)
+        start iteration of calculation of matrix power product, with this values.
+        only useful when calling this function out of a loop over times.
+    return_P_k_obs : bool
+        if True, the dot product <P^time, obs2> will be returned for further
+        calculations.
     
     Returns
     -------
-    
+    cor(k) : float
+           correlation between observations
     """
-    if not (type( time ) == int):
-        raise TypeError("time is not an integer: "+str(time))
+    # input checks
+    if not (type(time) == int):
+        if not (type(time) == np.int64):
+            raise TypeError("given time (%s) is not an integer, but has type: %s" 
+                        % (str(time), type(time)))
+    if obs1.shape[0] != P.shape[0]:
+        raise ValueError("observable shape not compatible with given matrix")
+    if obs2 is None:
+        obs2 = obs1
     # multiply element-wise obs1 and pi. this is obs1' diag(pi)
-    l = np.multiply(obs1, pi)
-    # raise transition matrix to power of time
-    Pk = np.linalg.matrix_power(P, time)
-    # compute product P^k obs2
-    r = np.dot(Pk, obs2)
-    # return result
-    return np.dot(l,r)
+    l = np.multiply(obs1, mu)
+    # raise transition matrix to power of time by substituting dot product
+    # <Pk, obs2> with something like <P, <P, obs2>>.
+    # This saves a lot of matrix matrix multiplications.
+    if start_values: # begin with a previous calculated val
+        P_i_obs = start_values[1]
+        # calculate difference properly!
+        time_prev = start_values[0]
+        t_diff = time - time_prev
+        r = xrange(t_diff)
+    else:
+        if time >= 2:
+            
+            P_i_obs = np.dot(P, np.dot(P, obs2)) # vector <P, <P, obs2> := P^2 * obs
+            r = xrange(time - 2)
+        elif time == 1:
+            P_i_obs = np.dot(P, obs2) # P^1 = P*obs
+            r = xrange(0)
+        elif time == 0: # P^0 = I => I*obs2 = obs2 
+            P_i_obs = obs2
+            r = xrange(0)
 
-# TODO: efficient impl (avoid P^k via matrix vector product)
+    for k in r: # since we already substituted started with 0
+        P_i_obs = np.dot(P, P_i_obs)
+    corr = np.dot(l, P_i_obs)
+    if return_P_k_obs:
+        return corr, (time, P_i_obs)
+    else:
+        return corr
+
 def time_correlations_direct(P, pi, obs1, obs2=None, times=[1]):
-    r"""Compute time-correlation of obs1, or time-cross-correlation with obs2.
+    r"""Compute time-correlations of obs1, or time-cross-correlation with obs2.
     
     The time-correlation at time=k is computed by the matrix-vector expression: 
     cor(k) = obs1' diag(pi) P^k obs2
@@ -69,18 +105,23 @@ def time_correlations_direct(P, pi, obs1, obs2=None, times=[1]):
     
     """
     n_t = len(times)
-    f = np.zeros((n_t))
-    for i in range(n_t):
-        f[i] = time_correlation_direct(P, pi, obs1, obs2, times[i])
+    times = np.sort(times) # sort it to use caching of previously computed correlations
+    f = np.zeros(n_t)
+    if n_t < 2:
+        for i in xrange(n_t):
+            f[i] = time_correlation_direct(P, pi, obs1, obs2, times[i]) 
+    else:
+        f[0], start_values = time_correlation_direct(P, pi, obs1, obs2, times[0],
+                                      return_P_k_obs=True)
+        for i in xrange(1, n_t):
+            f[i], start_values = time_correlation_direct(P, pi, obs1, obs2, times[i],
+                                                    start_values, return_P_k_obs=True)
     return f
 
-
-def time_relaxation_direct(P, p0, obs, time=1):
-    r"""Compute time-correlation of obs1, or time-cross-correlation with obs2.
+def time_relaxation_direct(P, p0, obs, time=1, start_values=None, return_pP_k=False):
+    r"""Compute time-relaxations of obs with respect of given initial distribution.
     
-    The time-correlation at time=k is computed by the matrix-vector expression: 
-    cor(k) = obs1' diag(pi) P^k obs2
-    
+    relaxation(k) = p0 P^k obs
     
     Parameters
     ----------
@@ -89,31 +130,56 @@ def time_relaxation_direct(P, p0, obs, time=1):
     p0 : ndarray, shape=(n)
         initial distribution
     obs : ndarray, shape=(n)
-        Vector representing observable on discrete states. 
+        Vector representing observable on discrete states.
     time : int or array like
-        time point(s) at which the (auto)correlation will be evaluated 
+        time point at which the (auto)correlation will be evaluated.
     
     Returns
     -------
-    
+    relaxation : float 
     """
-    if not (type( time ) == int):
-        raise TypeError("time is not an integer: "+str(time))
-    # raise transition matrix to power of time
-    # TODO: cache this some how if called from time_correlations_direct
-    Pk = np.linalg.matrix_power(P, time)
-    # propagate time
-    pk = np.dot(p0, Pk)
-    # return result
-    return np.dot(pk,obs)
+    # input checks
+    if not type(time) == int:
+        if not type(time) == np.int64:
+            raise TypeError("given time (%s) is not an integer, but has type: %s" 
+                        % (str(time), type(time)))
+    if obs.shape[0] != P.shape[0]:
+        raise ValueError("observable shape not compatible with given matrix")
+    if p0.shape[0] != P.shape[0]:
+        raise ValueError("shape of init dist p0 (%s) not compatible with given matrix (shape=%s)"
+                         % (p0.shape[0], P.shape))
+    # propagate in time
+    if start_values: # begin with a previous calculated val
+        pk_i = start_values[1]
+        time_prev = start_values[0]
+        t_diff = time - time_prev
+        r = xrange(t_diff)
+    else:
+        if time >= 2:
+            pk_i = np.dot(np.dot(p0, P), P) # pk_2
+            r = xrange(time - 2)
+        elif time == 1:
+            pk_i = np.dot(p0, P) # propagate once
+            r = xrange(0)
+        elif time == 0: # P^0 = I => p0*I = p0
+            pk_i = p0
+            r = xrange(0)
+
+    for k in r: # perform the rest of the propagations p0 P^t_diff
+        pk_i = np.dot(pk_i, P)
+    
+    # result
+    l = np.dot(pk_i, obs)
+    if return_pP_k:
+        return l, (time, pk_i)
+    else:
+        return l
 
 
-def time_relaxations_direct(P, p0, obs, times):
-    r"""Compute time-correlation of obs1, or time-cross-correlation with obs2.
+def time_relaxations_direct(P, p0, obs, times = [1]):
+    r"""Compute time-relaxations of obs with respect of given initial distribution.
     
-    The time-correlation at time=k is computed by the matrix-vector expression: 
-    cor(k) = obs1' diag(pi) P^k obs2
-    
+    relaxation(k) = p0 P^k obs
     
     Parameters
     ----------
@@ -128,10 +194,18 @@ def time_relaxations_direct(P, p0, obs, times):
     
     Returns
     -------
-    
+    relaxations : ndarray, shape(n_t)
     """
     n_t = len(times)
-    f = np.zeros((n_t))
-    for i in range(n_t):
-        f[i] = time_relaxation_direct(P, p0, obs, times[i])
+    times = np.sort(times)
+    f = np.empty(n_t)
+    
+    if n_t < 2:
+        for i in xrange(n_t):
+            f[i] = time_relaxation_direct(P, p0, obs, times[i])
+    else:
+        f[0], start_values = time_relaxation_direct(P, p0, obs, times[0], return_pP_k=True)
+        for i in xrange(1, n_t):
+            f[i], start_values = time_relaxation_direct(P, p0, obs, times[i],
+                                                    start_values, return_pP_k=True)
     return f
