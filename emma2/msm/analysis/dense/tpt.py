@@ -10,7 +10,7 @@ from decomposition import stationary_distribution_from_backward_iteration as sta
 from committor import forward_committor, backward_committor
 
 class TPT:
-    def __init__(self, T, A, B):
+    def __init__(self, T, A, B, mu=None, qminus=None, qplus=None):
         r""" A multi-purpose TPT-object.
 
         The TPT-object provides methods for Transition Path analysis 
@@ -24,7 +24,13 @@ class TPT:
             List of integer state labels for set A
         B : array_like
             List of integer state labels for set B
-
+        mu : (M,) ndarray (optional)
+            Stationary vector
+        qminus : (M,) ndarray (optional)
+            Backward committor for A->B reaction
+        qplus : (M,) ndarray (optional)
+            Forward committor for A-> B reaction
+         
         Notes
         -----
         The central object used in transition path theory is
@@ -39,16 +45,22 @@ class TPT:
         self.A=A
         self.B=B
 
-        """Precompute quantities required for TPT-analysis"""
-        self.pi=statdist(T)
-        self.qplus=forward_committor(T, A, B)
-        self.qminus=backward_committor(T, A, B)   
+        """Precompute quantities required for TPT-analysis (if necessary)"""
+        if mu is None:
+            mu=statdist(T)
+        if qminus is None:
+            qminus=backward_committor(T, A, B)               
+        if qplus is None:
+            qplus=forward_committor(T, A, B)
+        self.mu=mu
+        self.qminus=qminus
+        self.qplus=qplus
 
         """Compute TPT-quantities"""
-        self.flux=self._flux(self.T, self.pi, self.qminus, self.qplus)
+        self.flux=self._flux(self.T, self.mu, self.qminus, self.qplus)
         self.netflux=self._netflux(self.flux)
         self.totalflux=self._totalflux(self.flux, self.A)
-        self.rate=self._rate(self.totalflux, self.pi, self.qminus)
+        self.rate=self._rate(self.totalflux, self.mu, self.qminus)
           
     def _flux(self, T, pi, qminus, qplus):
         r"""Compute the flux.
@@ -187,5 +199,152 @@ class TPT:
             Markov chain)
             
         """
-        return self.rate
+        return self.rate    
+
+def tpt_flux(T, A, B, mu=None, qminus=None, qplus=None):
+    r"""Flux network for the reaction A -> B.
     
+    Parameters
+    ----------
+    T : (M, M) ndarray
+        Transition matrix
+    A : array_like
+        List of integer state labels for set A
+    B : array_like
+        List of integer state labels for set B
+    mu : (M,) ndarray (optional)
+        Stationary vector
+    qminus : (M,) ndarray (optional)
+        Backward committor for A->B reaction
+    qplus : (M,) ndarray (optional)
+        Forward committor for A-> B reaction
+        
+    Returns
+    -------
+    flux : (M, M) ndarray
+        Matrix of flux values between pairs of states.
+        
+    Notes
+    -----
+    Computation of the flux network relies on transition path theory
+    (TPT). The central object used in transition path theory is the
+    forward and backward comittor function.
+    
+    See also
+    --------
+    committor.forward_committor, committor.backward_committor
+    
+    """    
+    tpt=TPT(T, A, B, mu=mu, qminus=qminus, qplus=qplus)
+    return tpt.get_flux()
+
+def tpt_netflux(T, A, B, mu=None, qminus=None, qplus=None):
+    r"""Netflux network for the reaction A -> B.
+    
+    Parameters
+    ----------
+    T : (M, M) ndarray
+        Transition matrix
+    A : array_like
+        List of integer state labels for set A
+    B : array_like
+        List of integer state labels for set B
+    mu : (M,) ndarray (optional)
+        Stationary vector
+    qminus : (M,) ndarray (optional)
+        Backward committor for A->B reaction
+    qplus : (M,) ndarray (optional)
+        Forward committor for A-> B reaction
+
+    Returns
+    -------
+    netflux : (M, M) ndarray
+        Matrix of netflux values between pairs of states.
+
+    Notes
+    -----
+    Computation of the netflux network relies on transition path theory
+    (TPT). The central object used in transition path theory is the
+    forward and backward comittor function.
+
+    See also
+    --------
+    committor.forward_committor, committor.backward_committor
+
+    """    
+    tpt=TPT(T, A, B, mu=mu, qminus=qminus, qplus=qplus)
+    return tpt.get_netflux()
+
+def tpt_totalflux(T, A, B, mu=None, qminus=None, qplus=None):
+    r"""Total flux for the reaction A -> B.
+    
+    Parameters
+    ----------
+    T : (M, M) ndarray
+        Transition matrix
+    A : array_like
+        List of integer state labels for set A
+    B : array_like
+        List of integer state labels for set B
+    mu : (M,) ndarray (optional)
+        Stationary vector
+    qminus : (M,) ndarray (optional)
+        Backward committor for A->B reaction
+    qplus : (M,) ndarray (optional)
+        Forward committor for A-> B reaction
+
+    Returns
+    -------
+    F : float
+        The total flux between reactant and product
+
+    Notes
+    -----
+    Computation of the total flux network relies on transition path
+    theory (TPT). The central object used in transition path theory is
+    the forward and backward comittor function.
+
+    See also
+    --------
+    committor.forward_committor, committor.backward_committor
+
+    """    
+    tpt=TPT(T, A, B, mu=mu, qminus=qminus, qplus=qplus)
+    return tpt.get_totalflux()
+
+def tpt_rate(T, A, B, mu=None, qminus=None, qplus=None):
+    r"""Rate of the reaction A -> B.
+    
+    Parameters
+    ----------
+    T : (M, M) ndarray
+        Transition matrix
+    A : array_like
+        List of integer state labels for set A
+    B : array_like
+        List of integer state labels for set B
+    mu : (M,) ndarray (optional)
+        Stationary vector
+    qminus : (M,) ndarray (optional)
+        Backward committor for A->B reaction
+    qplus : (M,) ndarray (optional)
+        Forward committor for A-> B reaction
+
+    Returns
+    -------
+    kAB : float
+        The reaction rate (per time step of the Markov chain)
+
+    Notes
+    -----
+    Computation of the rate relies on transition path theory
+    (TPT). The central object used in transition path theory is the
+    forward and backward comittor function.
+
+    See also
+    --------
+    committor.forward_committor, committor.backward_committor
+
+    """    
+    tpt=TPT(T, A, B, mu=mu, qminus=qminus, qplus=qplus)
+    return tpt.get_rate()
