@@ -430,8 +430,9 @@ def expectation(T, a, mu=None):
         The expectation value fo the given observable:  <a> = <pi,a> = sum_i pi_i a_i
         <a> = <pi,a> = sum_i pi_i a_i
     """
-    pi = stationary_distribution(T)
-    return np.dot(pi,a)
+    if not mu:
+        mu = stationary_distribution(T)
+    return np.dot(mu,a)
 
 # DONE: Ben
 def expected_counts(p0, T, n):
