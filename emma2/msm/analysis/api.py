@@ -16,6 +16,7 @@ from scipy.sparse.sputils import isdense
 
 import dense.assessment
 import dense.committor
+import dense.tpt
 import dense.correlations
 import dense.decomposition
 import dense.expectations
@@ -26,9 +27,9 @@ import dense.mean_first_passage_time
 import sparse.assessment
 import sparse.decomposition
 import sparse.expectations
+import sparse.committor
+import sparse.tpt
 import sparse.mean_first_passage_time
-
-from ..estimation import is_connected
 
 __all__=['is_transition_matrix',
          'is_rate_matrix',
@@ -121,6 +122,33 @@ def is_rate_matrix(K, tol=1e-15):
     else:
         raise _type_not_supported
 
+#Done: Ben
+def is_connected(T, directed=True):
+    r"""Check connectivity of the transition matrix.
+
+    Return true, if the input matrix is completely connected,
+    effectively checking if the number of connected components equals one.
+    
+    Parameters
+    ----------
+    T : scipy.sparse matrix 
+        Transition matrix
+    directed : bool, optional
+       Whether to compute connected components for a directed  or
+       undirected graph. Default is True.       
+
+    Returns
+    -------
+    connected : boolean, returning true only if T is connected.        
+
+    """
+    if isparse(T):
+        return sparse.assessment.is_connected(T, directed=directed)
+    elif isdense(T):
+        T=T.tocsr()
+        return sparse.assessment.is_connected(T, directed=directed)
+    else:
+        raise _type_not_supported
 
 # DONE: Martin 
 def is_ergodic(T, tol=1e-15):
@@ -144,7 +172,6 @@ def is_ergodic(T, tol=1e-15):
         return sparse.assessment.is_ergodic(T, tol)
     else:
         raise _type_not_supported
-
 
 # DONE: Martin
 def is_reversible(T, mu=None, tol=1e-15):
@@ -733,7 +760,7 @@ def pcca(T, n):
     
     """
     if issparse(T):
-        raise NotImplementedError('not yet impled for sparse.')
+        raise NotImplementedError('PCCA is not implemented for sparse matrices.')
     elif isdense(T):
         return dense.pcca.pcca(T, n)
     else:
@@ -744,13 +771,13 @@ def pcca(T, n):
 # Transition path theory
 ################################################################################
 
-# DONE: Implement in Python directly
-def committor(P, A, B, forward=True):
+# DONE: Ben
+def committor(T, A, B, forward=True):
     r"""Compute the committor between sets of microstates.
     
     Parameters
     ----------
-    P : ndarray, shape=(n, n) or scipy.sparse matrix
+    T : (M, M) ndarray or scipy.sparse matrix
         Transition matrix
     A : array_like
         List of integer state labels for set A
@@ -762,29 +789,37 @@ def committor(P, A, B, forward=True):
     
     Returns
     -------
-    x : ndarray, shape=(n, )
-        Committor vector.
+    q : (M,) ndarray
+        Vector of comittor probabilities.
     
     """
-    if issparse(P):
-        raise NotImplementedError('not yet impled for sparse.')
-    elif isdense(P):
+    if issparse(T):
         if forward:
-            committor = dense.committor.forward_committor(P, A, B)
+            return sparse.committor.forward_committor(T, A, B)
         else:
             """ if P is time reversible backward commitor is equal 1 - q+"""
             if is_reversible(P):
-                committor = 1.0 - dense.committor.forward_committor(P, A, B)
+                return 1.0-sparse.committor.forward_committor(T, A, B)
+                
             else:
-                committor = dense.committor.backward_committor(P, A, B)
+                return sparse.committor.backward_committor(T, A, B)
+
+    elif isdense(T):
+        if forward:
+            return dense.committor.forward_committor(T, A, B)
+        else:
+            """ if P is time reversible backward commitor is equal 1 - q+"""
+            if is_reversible(P):
+                return 1.0-dense.committor.forward_committor(T, A, B)
+            else:
+                return dense.committor.backward_committor(T, A, B)
+
     else:
         raise _type_not_supported
     
     return committor
 
-
-
-# DONE: Martin (sparse implementation missing)
+# DONE: Ben
 def tpt(T, A, B):
     r""" returns a transition path TPTFlux object.
 
@@ -809,9 +844,14 @@ def tpt(T, A, B):
     """
     if not is_transition_matrix(T):
         raise ValueError('given matrix T is not a transition matrix')
+   
+    if issparse(T):
+        return sparse.tpt.TPT(T, A, B)
+    elif isdense(T):
+        return dense.tpt.TPT(T, A, B)
+    else:
+        raise _type_not_supported                
     
-    from _impl import TPTFlux
-    return TPTFlux(T, A, B)
 
 ################################################################################
 # Sensitivities
