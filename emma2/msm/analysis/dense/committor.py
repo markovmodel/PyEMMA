@@ -72,7 +72,7 @@ def forward_committor(T, A, B):
     u=solve(W, r)
     return u       
 
-def backward_committor(T, A, B):
+def backward_committor(T, A, B, mu=None):
     r"""Backward committor between given sets.
 
     The backward committor u(x) between sets A and B is the
@@ -87,6 +87,8 @@ def backward_committor(T, A, B):
         List of integer state labels for set A
     B : array_like
         List of integer state labels for set B
+    mu : (M, ) ndarray (optional)
+        Stationary vector        
 
     Returns
     -------
@@ -114,8 +116,9 @@ def backward_committor(T, A, B):
     notAB=X.difference(A).difference(B)
     if len(AB)>0:
         raise ValueError("Sets A and B have to be disjoint")
-    pi=statdist(T)
-    K=np.transpose(pi[:,np.newaxis]*(T-np.eye(T.shape[0])))
+    if mu is None:
+        mu=statdist(T)
+    K=np.transpose(mu[:,np.newaxis]*(T-np.eye(T.shape[0])))
 
     """Assemble left-hand side W for linear system"""
     """Equation (I)"""
