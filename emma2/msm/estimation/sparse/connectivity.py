@@ -64,8 +64,6 @@ def connected_sets(C, directed=True):
     
     return cc
 
-
-
 def largest_connected_set(C, directed=True):
     r"""Compute connected components for a directed graph with weights
     represented by the given count matrix.
@@ -124,8 +122,6 @@ def largest_connected_submatrix(C, directed=True):
     else:
         return C_cc
 
-
-#TODO: Dense implementation
 def is_connected(C, directed=True):
     r"""Return true, if the input count matrix is completely connected.
     Effectively checking if the number of connected components equals one.
