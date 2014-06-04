@@ -17,7 +17,7 @@ from scipy.sparse.sputils import isdense
 import dense.assessment
 import dense.committor
 import dense.tpt
-import dense.correlations
+import dense.fingerprints
 import dense.decomposition
 import dense.expectations
 import dense.pcca
@@ -564,20 +564,7 @@ def fingerprint_correlation(P, obs1, obs2=None, tau=1):
         fingerprint amplitdues of the relaxation processes
     
     """
-    # handle input
-    if (obs2 is None):
-        obs2 = obs1
-    # rdl_decomposition already handles sparsity of P.
-    w, L, R = rdl_decomposition(P)
-    # timescales:
-    timescales = dense.decomposition.timescales_from_eigenvalues(w, tau)
-    n = len(timescales)
-    # amplitudes:
-    amplitudes = np.zeros(n)
-    for i in range(n):
-        amplitudes[i] = np.dot(L[i], obs1) * np.dot(L[i], obs2)
-    # return
-    return timescales, amplitudes
+    return dense.fingerprints.fingerprint_correlation(P, obs1, obs2, tau)
 
 
 # DONE: Martin+Frank: Implement in Python directly
@@ -609,18 +596,7 @@ def fingerprint_relaxation(P, p0, obs, tau=1):
         fingerprint amplitdues of the relaxation processes
     
     """
-    # rdl_decomposition already handles sparsity of P.
-    w, L, R = rdl_decomposition(P)
-    # timescales:
-    timescales = dense.decomposition.timescales_from_eigenvalues(w, tau)
-    n = len(timescales)
-    # amplitudes:
-    amplitudes = np.zeros(n)
-    for i in range(n):
-        amplitudes[i] = np.dot(p0, R[:,i]) * np.dot(L[i], obs)
-    # return
-    return timescales, amplitudes
-
+    return dense.fingerprints.fingerprint_relaxation(P, p0, obs, tau)
 
 # DONE: Frank
 def evaluate_fingerprint(timescales, amplitudes, times=[1]):
@@ -643,25 +619,7 @@ def evaluate_fingerprint(timescales, amplitudes, times=[1]):
     -------
     
     """
-    # check input
-    n = len(timescales)
-    if (len(amplitudes) != n):
-        raise TypeError("length of timescales and amplitudes don't match.")
-    n_t = len(times)
-    
-    # rates
-    rates = np.divide(np.ones(n), timescales)
-    
-    # result
-    f = np.zeros(n_t)
-    
-    for it in range(len(times)):
-        t = times[it]
-        exponents = -t * rates
-        eigenvalues_t = np.exp(exponents)
-        f[it] = np.dot(eigenvalues_t, amplitudes)
-    
-    return f
+    return dense.fingerprints.evaluate_fingerprint(timescales, amplitudes, times)
 
 
 # DONE: Martin+Frank: Implement in Python directly
@@ -690,20 +648,7 @@ def correlation(P, obs1, obs2=None, tau=1, times=[1], pi=None):
     -------
     
     """
-    # observation
-    if (obs2 is None):
-        obs1 = obs2
-    # compute pi if necessary
-    if (pi is None):
-        pi = stationary_distribution(P)
-    # if few and integer time points, compute explicitly
-    if (len(times) < 10 and type(sum(times)) == int and isdense(P)):
-        f = dense.correlations.time_correlation_direct(P, pi, obs1, obs2, times)
-    else:
-        timescales,amplitudes = fingerprint_correlation(P, obs1, obs2, tau)
-        f = evaluate_fingerprint(timescales, amplitudes, times)
-    # return
-    return f
+    return dense.fingerprints.fingerprint_correlation(P, obs1, obs2, tau)
 
 
 # DONE: Martin+Frank: Implement in Python directly
@@ -732,18 +677,7 @@ def relaxation(P, p0, obs, tau=1, times=[1], pi=None):
     -------
     
     """
-    # compute pi if necessary
-    if (pi is None):
-        pi = stationary_distribution(P)
-    # if few and integer time points, compute explicitly
-    if (len(times) < 10 and type(sum(times)) == int and isdense(P)):
-        f = dense.correlations.time_relaxations_direct(P, pi, obs, times)
-    else:
-        timescales,amplitudes = fingerprint_relaxation(P, pi, obs, tau)
-        f = evaluate_fingerprint(timescales, amplitudes, times)
-    # return
-    return f
-
+    return dense.fingerprints.relaxation(P, p0, obs, tau, times, pi)
 
 ################################################################################
 # PCCA
