@@ -109,8 +109,32 @@ def is_reversible(T, mu=None, tol=1e-15):
     Mu = diags(mu, 0)
     prod = Mu * T
     
-    return allclose_sparse(prod, prod.transpose(), rtol=tol)
+    return allclose_sparse(prod, prod.transpose(), rtol=tol)        
+
+def is_connected(T, directed=True):
+    r"""Check connectivity of the transition matrix.
+
+    Return true, if the input matrix is completely connected,
+    effectively checking if the number of connected components equals one.
+    
+    Parameters
+    ----------
+    T : scipy.sparse matrix 
+        Transition matrix
+    directed : bool, optional
+       Whether to compute connected components for a directed  or
+       undirected graph. Default is True.       
+
+    Returns
+    -------
+    connected : boolean, returning true only if T is connected.
         
+
+    """
+    nc=csgraph.connected_components(T, directed=directed, connection='strong', \
+                                        return_labels=False)    
+    return nc == 1
+
 def is_ergodic(T, tol):
     """
     checks if T is 'ergodic'
