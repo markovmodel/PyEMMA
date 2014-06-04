@@ -131,7 +131,6 @@ class TPT:
         A=set(A)
         notA=X.difference(A)
         F=(flux[list(A),:])[:,list(notA)].sum()
-        # F=(flux[list(A), list(notA)]).sum()
         return F        
 
     def _rate(self, F, pi, qminus):
