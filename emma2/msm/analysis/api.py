@@ -820,38 +820,215 @@ def committor(T, A, B, forward=True):
     return committor
 
 # DONE: Ben
-def tpt(T, A, B):
-    r""" returns a transition path TPTFlux object.
+def tpt(T, A, B, mu=None, qminus=None, qplus=None):
+    r""" A multi-purpose TPT-object.
+    
+    The TPT-object provides methods for Transition Path analysis 
+    of transition matrices.
 
     Parameters
     ----------
-    T : ndarray shape = (n, n)
-        transition matrix
-    A : ndarray(dtype=int, shape=(n, ))
-        cluster centers of set A
-    B : cluster centers of set B
-        ndarray(dtype=int, shape=(n, ))
-    
+    T : (M, M) ndarray or scipy.sparse matrix
+        Transition matrix
+    A : array_like
+        List of integer state labels for set A
+    B : array_like
+        List of integer state labels for set B
+    mu : (M,) ndarray (optional)
+        Stationary vector
+    qminus : (M,) ndarray (optional)
+        Backward committor for A->B reaction
+    qplus : (M,) ndarray (optional)
+        Forward committor for A-> B reaction
+        
     Returns
     -------
-    tpt : stallone.ITPTFlux
-        a transition path TPTFlux object
-
+    tpt: emma2.msm.analysis.dense/sparse.tpt.TPT object
+        A python object for Transition Path analysis
+        
     Notes
     -----
-    invokes stallones (java) markov model factory to create a TPTFlux
+    The central object used in transition path theory is
+    the forward and backward comittor function.
 
-    """
+    See also
+    --------
+    committor
+    
+    """    
     if not is_transition_matrix(T):
-        raise ValueError('given matrix T is not a transition matrix')
-   
+        raise ValueError('given matrix T is not a transition matrix')   
     if issparse(T):
         return sparse.tpt.TPT(T, A, B)
     elif isdense(T):
         return dense.tpt.TPT(T, A, B)
     else:
         raise _type_not_supported                
+
+def tpt_flux(T, A, B, mu=None, qminus=None, qplus=None):
+    r"""Flux network for the reaction A -> B.
     
+    Parameters
+    ----------
+    T : (M, M) ndarray or scipy.sparse matrix
+        Transition matrix
+    A : array_like
+        List of integer state labels for set A
+    B : array_like
+        List of integer state labels for set B
+    mu : (M,) ndarray (optional)
+        Stationary vector
+    qminus : (M,) ndarray (optional)
+        Backward committor for A->B reaction
+    qplus : (M,) ndarray (optional)
+        Forward committor for A-> B reaction
+        
+    Returns
+    -------
+    flux : (M, M) ndarray or scipy.sparse matrix
+        Matrix of flux values between pairs of states.
+        
+    Notes
+    -----
+    Computation of the flux network relies on transition path theory
+    (TPT). The central object used in transition path theory is the
+    forward and backward comittor function.
+    
+    See also
+    --------
+    committor, tpt
+    
+    """    
+    if issparse(T):
+        return sparse.tpt.tpt_flux(T, A, B, mu=mu, qminus=qminus, qplus=qplus)
+    elif isdense(T):
+        return dense.tpt.tpt_flux(T, A, B, mu=mu, qminus=qminus, qplus=qplus)
+    else:
+        raise _type_not_supported      
+
+def tpt_netflux(T, A, B, mu=None, qminus=None, qplus=None):
+    r"""Netflux network for the reaction A -> B.
+    
+    Parameters
+    ----------
+    T : (M, M) ndarray or scipy.sparse matrix
+        Transition matrix
+    A : array_like
+        List of integer state labels for set A
+    B : array_like
+        List of integer state labels for set B
+    mu : (M,) ndarray (optional)
+        Stationary vector
+    qminus : (M,) ndarray (optional)
+        Backward committor for A->B reaction
+    qplus : (M,) ndarray (optional)
+        Forward committor for A-> B reaction
+
+    Returns
+    -------
+    netflux : (M, M) ndarray or scipy.sparse matrix
+        Matrix of netflux values between pairs of states.
+
+    Notes
+    -----
+    Computation of the netflux network relies on transition path theory
+    (TPT). The central object used in transition path theory is the
+    forward and backward comittor function.
+
+    See also
+    --------
+    committor, tpt
+
+    """    
+    if issparse(T):
+        return sparse.tpt.tpt_netflux(T, A, B, mu=mu, qminus=qminus, qplus=qplus)
+    elif isdense(T):
+        return dense.tpt.tpt_netflux(T, A, B, mu=mu, qminus=qminus, qplus=qplus)
+    else:
+        raise _type_not_supported
+
+def tpt_totalflux(T, A, B, mu=None, qminus=None, qplus=None):
+    r"""Total flux for the reaction A -> B.
+    
+    Parameters
+    ----------
+    T : (M, M) ndarray or scipy.sparse matrix
+        Transition matrix
+    A : array_like
+        List of integer state labels for set A
+    B : array_like
+        List of integer state labels for set B
+    mu : (M,) ndarray (optional)
+        Stationary vector
+    qminus : (M,) ndarray (optional)
+        Backward committor for A->B reaction
+    qplus : (M,) ndarray (optional)
+        Forward committor for A-> B reaction
+
+    Returns
+    -------
+    F : float
+        The total flux between reactant and product
+
+    Notes
+    -----
+    Computation of the total flux network relies on transition path
+    theory (TPT). The central object used in transition path theory is
+    the forward and backward comittor function.
+
+    See also
+    --------
+    committor, tpt
+
+    """  
+    if issparse(T):
+        return sparse.tpt.tpt_totalflux(T, A, B, mu=mu, qminus=qminus, qplus=qplus)
+    elif isdense(T):
+        return dense.tpt.tpt_totalflux(T, A, B, mu=mu, qminus=qminus, qplus=qplus)
+    else:
+        raise _type_not_supported  
+
+def tpt_rate(T, A, B, mu=None, qminus=None, qplus=None):
+    r"""Rate of the reaction A -> B.
+    
+    Parameters
+    ----------
+    T : (M, M) ndarray or scipy.sparse matrix
+        Transition matrix
+    A : array_like
+        List of integer state labels for set A
+    B : array_like
+        List of integer state labels for set B
+    mu : (M,) ndarray (optional)
+        Stationary vector
+    qminus : (M,) ndarray (optional)
+        Backward committor for A->B reaction
+    qplus : (M,) ndarray (optional)
+        Forward committor for A-> B reaction
+
+    Returns
+    -------
+    kAB : float
+        The reaction rate (per time step of the Markov chain)
+
+    Notes
+    -----
+    Computation of the rate relies on transition path theory
+    (TPT). The central object used in transition path theory is the
+    forward and backward comittor function.
+
+    See also
+    --------
+    committor, tpt
+
+    """
+    if issparse(T):
+        return sparse.tpt.tpt_rate(T, A, B, mu=mu, qminus=qminus, qplus=qplus)
+    elif isdense(T):
+        return dense.tpt.tpt_rate(T, A, B, mu=mu, qminus=qminus, qplus=qplus)
+    else:
+        raise _type_not_supported          
+
 
 ################################################################################
 # Sensitivities
