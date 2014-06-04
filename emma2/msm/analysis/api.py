@@ -61,7 +61,7 @@ __all__=['is_transition_matrix',
 # ['statdist', 'is_tmatrix', 'statdist_sensitivity']
 
 _type_not_supported = \
-    TypeError("given matrix is not a numpy.ndarray or a scipy.sparse matrix.")
+    TypeError("T is not a numpy.ndarray or a scipy.sparse matrix.")
 
 ################################################################################
 # Assessment tools
@@ -895,12 +895,9 @@ def eigenvector_sensitivity(T, k, j, right=True):
     """
     if issparse(T):
         _showSparseConversionWarning()
-        eigenvector_sensitivity(T.todense(), k, j, right)
+        eigenvector_sensitivity(T.todense(), k, j, right=right)
     elif isdense(T):
-        if right is True:
-            return dense.sensitivity.eigenvector_sensitivity(T, k, j, True)
-        else:
-            return dense.sensitivity.eigenvector_sensitivity(T, k, j, False)
+        return dense.sensitivity.eigenvector_sensitivity(T, k, j, right=right)
     else:
         raise _type_not_supported
 
