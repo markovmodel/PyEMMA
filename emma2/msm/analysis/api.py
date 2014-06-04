@@ -16,6 +16,7 @@ from scipy.sparse.sputils import isdense
 
 import dense.assessment
 import dense.committor
+import dense.tpt
 import dense.correlations
 import dense.decomposition
 import dense.expectations
@@ -26,9 +27,9 @@ import dense.mean_first_passage_time
 import sparse.assessment
 import sparse.decomposition
 import sparse.expectations
+import sparse.committor
+import sparse.tpt
 import sparse.mean_first_passage_time
-
-from ..estimation import is_connected
 
 __all__=['is_transition_matrix',
          'is_rate_matrix',
@@ -45,6 +46,10 @@ __all__=['is_transition_matrix',
          'mfpt',
          'committor',
          'tpt',
+         'tpt_flux',
+         'tpt_netflux',
+         'tpt_totalflux',
+         'tpt_rate',
          'pcca',
          'fingerprint_correlation',
          'fingerprint_relaxation',
@@ -61,7 +66,7 @@ __all__=['is_transition_matrix',
 # ['statdist', 'is_tmatrix', 'statdist_sensitivity']
 
 _type_not_supported = \
-    TypeError("given matrix is not a numpy.ndarray or a scipy.sparse matrix.")
+    TypeError("T is not a numpy.ndarray or a scipy.sparse matrix.")
 
 ################################################################################
 # Assessment tools
@@ -121,6 +126,33 @@ def is_rate_matrix(K, tol=1e-15):
     else:
         raise _type_not_supported
 
+#Done: Ben
+def is_connected(T, directed=True):
+    r"""Check connectivity of the transition matrix.
+
+    Return true, if the input matrix is completely connected,
+    effectively checking if the number of connected components equals one.
+    
+    Parameters
+    ----------
+    T : scipy.sparse matrix 
+        Transition matrix
+    directed : bool, optional
+       Whether to compute connected components for a directed  or
+       undirected graph. Default is True.       
+
+    Returns
+    -------
+    connected : boolean, returning true only if T is connected.        
+
+    """
+    if isparse(T):
+        return sparse.assessment.is_connected(T, directed=directed)
+    elif isdense(T):
+        T=T.tocsr()
+        return sparse.assessment.is_connected(T, directed=directed)
+    else:
+        raise _type_not_supported
 
 # DONE: Martin 
 def is_ergodic(T, tol=1e-15):
@@ -144,7 +176,6 @@ def is_ergodic(T, tol=1e-15):
         return sparse.assessment.is_ergodic(T, tol)
     else:
         raise _type_not_supported
-
 
 # DONE: Martin
 def is_reversible(T, mu=None, tol=1e-15):
@@ -734,7 +765,7 @@ def pcca(T, n):
     
     """
     if issparse(T):
-        raise NotImplementedError('not yet impled for sparse.')
+        raise NotImplementedError('PCCA is not implemented for sparse matrices.')
     elif isdense(T):
         return dense.pcca.pcca(T, n)
     else:
@@ -745,13 +776,13 @@ def pcca(T, n):
 # Transition path theory
 ################################################################################
 
-# DONE: Implement in Python directly
-def committor(P, A, B, forward=True):
+# DONE: Ben
+def committor(T, A, B, forward=True):
     r"""Compute the committor between sets of microstates.
     
     Parameters
     ----------
-    P : ndarray, shape=(n, n) or scipy.sparse matrix
+    T : (M, M) ndarray or scipy.sparse matrix
         Transition matrix
     A : array_like
         List of integer state labels for set A
@@ -763,56 +794,246 @@ def committor(P, A, B, forward=True):
     
     Returns
     -------
-    x : ndarray, shape=(n, )
-        Committor vector.
+    q : (M,) ndarray
+        Vector of comittor probabilities.
     
     """
-    if issparse(P):
-        raise NotImplementedError('not yet impled for sparse.')
-    elif isdense(P):
+    if issparse(T):
         if forward:
-            committor = dense.committor.forward_committor(P, A, B)
+            return sparse.committor.forward_committor(T, A, B)
         else:
             """ if P is time reversible backward commitor is equal 1 - q+"""
             if is_reversible(P):
-                committor = 1.0 - dense.committor.forward_committor(P, A, B)
+                return 1.0-sparse.committor.forward_committor(T, A, B)
+                
             else:
-                committor = dense.committor.backward_committor(P, A, B)
+                return sparse.committor.backward_committor(T, A, B)
+
+    elif isdense(T):
+        if forward:
+            return dense.committor.forward_committor(T, A, B)
+        else:
+            """ if P is time reversible backward commitor is equal 1 - q+"""
+            if is_reversible(P):
+                return 1.0-dense.committor.forward_committor(T, A, B)
+            else:
+                return dense.committor.backward_committor(T, A, B)
+
     else:
         raise _type_not_supported
     
     return committor
 
-
-
-# DONE: Martin (sparse implementation missing)
-def tpt(T, A, B):
-    r""" returns a transition path TPTFlux object.
+# DONE: Ben
+def tpt(T, A, B, mu=None, qminus=None, qplus=None):
+    r""" A multi-purpose TPT-object.
+    
+    The TPT-object provides methods for Transition Path analysis 
+    of transition matrices.
 
     Parameters
     ----------
-    T : ndarray shape = (n, n)
-        transition matrix
-    A : ndarray(dtype=int, shape=(n, ))
-        cluster centers of set A
-    B : cluster centers of set B
-        ndarray(dtype=int, shape=(n, ))
-    
+    T : (M, M) ndarray or scipy.sparse matrix
+        Transition matrix
+    A : array_like
+        List of integer state labels for set A
+    B : array_like
+        List of integer state labels for set B
+    mu : (M,) ndarray (optional)
+        Stationary vector
+    qminus : (M,) ndarray (optional)
+        Backward committor for A->B reaction
+    qplus : (M,) ndarray (optional)
+        Forward committor for A-> B reaction
+        
     Returns
     -------
-    tpt : stallone.ITPTFlux
-        a transition path TPTFlux object
+    tpt: emma2.msm.analysis.dense/sparse.tpt.TPT object
+        A python object for Transition Path analysis
+        
+    Notes
+    -----
+    The central object used in transition path theory is
+    the forward and backward comittor function.
+
+    See also
+    --------
+    committor
+    
+    """    
+    if not is_transition_matrix(T):
+        raise ValueError('given matrix T is not a transition matrix')   
+    if issparse(T):
+        return sparse.tpt.TPT(T, A, B)
+    elif isdense(T):
+        return dense.tpt.TPT(T, A, B)
+    else:
+        raise _type_not_supported                
+
+def tpt_flux(T, A, B, mu=None, qminus=None, qplus=None):
+    r"""Flux network for the reaction A -> B.
+    
+    Parameters
+    ----------
+    T : (M, M) ndarray or scipy.sparse matrix
+        Transition matrix
+    A : array_like
+        List of integer state labels for set A
+    B : array_like
+        List of integer state labels for set B
+    mu : (M,) ndarray (optional)
+        Stationary vector
+    qminus : (M,) ndarray (optional)
+        Backward committor for A->B reaction
+    qplus : (M,) ndarray (optional)
+        Forward committor for A-> B reaction
+        
+    Returns
+    -------
+    flux : (M, M) ndarray or scipy.sparse matrix
+        Matrix of flux values between pairs of states.
+        
+    Notes
+    -----
+    Computation of the flux network relies on transition path theory
+    (TPT). The central object used in transition path theory is the
+    forward and backward comittor function.
+    
+    See also
+    --------
+    committor, tpt
+    
+    """    
+    if issparse(T):
+        return sparse.tpt.tpt_flux(T, A, B, mu=mu, qminus=qminus, qplus=qplus)
+    elif isdense(T):
+        return dense.tpt.tpt_flux(T, A, B, mu=mu, qminus=qminus, qplus=qplus)
+    else:
+        raise _type_not_supported      
+
+def tpt_netflux(T, A, B, mu=None, qminus=None, qplus=None):
+    r"""Netflux network for the reaction A -> B.
+    
+    Parameters
+    ----------
+    T : (M, M) ndarray or scipy.sparse matrix
+        Transition matrix
+    A : array_like
+        List of integer state labels for set A
+    B : array_like
+        List of integer state labels for set B
+    mu : (M,) ndarray (optional)
+        Stationary vector
+    qminus : (M,) ndarray (optional)
+        Backward committor for A->B reaction
+    qplus : (M,) ndarray (optional)
+        Forward committor for A-> B reaction
+
+    Returns
+    -------
+    netflux : (M, M) ndarray or scipy.sparse matrix
+        Matrix of netflux values between pairs of states.
 
     Notes
     -----
-    invokes stallones (java) markov model factory to create a TPTFlux
+    Computation of the netflux network relies on transition path theory
+    (TPT). The central object used in transition path theory is the
+    forward and backward comittor function.
+
+    See also
+    --------
+    committor, tpt
+
+    """    
+    if issparse(T):
+        return sparse.tpt.tpt_netflux(T, A, B, mu=mu, qminus=qminus, qplus=qplus)
+    elif isdense(T):
+        return dense.tpt.tpt_netflux(T, A, B, mu=mu, qminus=qminus, qplus=qplus)
+    else:
+        raise _type_not_supported
+
+def tpt_totalflux(T, A, B, mu=None, qminus=None, qplus=None):
+    r"""Total flux for the reaction A -> B.
+    
+    Parameters
+    ----------
+    T : (M, M) ndarray or scipy.sparse matrix
+        Transition matrix
+    A : array_like
+        List of integer state labels for set A
+    B : array_like
+        List of integer state labels for set B
+    mu : (M,) ndarray (optional)
+        Stationary vector
+    qminus : (M,) ndarray (optional)
+        Backward committor for A->B reaction
+    qplus : (M,) ndarray (optional)
+        Forward committor for A-> B reaction
+
+    Returns
+    -------
+    F : float
+        The total flux between reactant and product
+
+    Notes
+    -----
+    Computation of the total flux network relies on transition path
+    theory (TPT). The central object used in transition path theory is
+    the forward and backward comittor function.
+
+    See also
+    --------
+    committor, tpt
+
+    """  
+    if issparse(T):
+        return sparse.tpt.tpt_totalflux(T, A, B, mu=mu, qminus=qminus, qplus=qplus)
+    elif isdense(T):
+        return dense.tpt.tpt_totalflux(T, A, B, mu=mu, qminus=qminus, qplus=qplus)
+    else:
+        raise _type_not_supported  
+
+def tpt_rate(T, A, B, mu=None, qminus=None, qplus=None):
+    r"""Rate of the reaction A -> B.
+    
+    Parameters
+    ----------
+    T : (M, M) ndarray or scipy.sparse matrix
+        Transition matrix
+    A : array_like
+        List of integer state labels for set A
+    B : array_like
+        List of integer state labels for set B
+    mu : (M,) ndarray (optional)
+        Stationary vector
+    qminus : (M,) ndarray (optional)
+        Backward committor for A->B reaction
+    qplus : (M,) ndarray (optional)
+        Forward committor for A-> B reaction
+
+    Returns
+    -------
+    kAB : float
+        The reaction rate (per time step of the Markov chain)
+
+    Notes
+    -----
+    Computation of the rate relies on transition path theory
+    (TPT). The central object used in transition path theory is the
+    forward and backward comittor function.
+
+    See also
+    --------
+    committor, tpt
 
     """
-    if not is_transition_matrix(T):
-        raise ValueError('given matrix T is not a transition matrix')
-    
-    from _impl import TPTFlux
-    return TPTFlux(T, A, B)
+    if issparse(T):
+        return sparse.tpt.tpt_rate(T, A, B, mu=mu, qminus=qminus, qplus=qplus)
+    elif isdense(T):
+        return dense.tpt.tpt_rate(T, A, B, mu=mu, qminus=qminus, qplus=qplus)
+    else:
+        raise _type_not_supported          
+
 
 ################################################################################
 # Sensitivities
@@ -896,12 +1117,9 @@ def eigenvector_sensitivity(T, k, j, right=True):
     """
     if issparse(T):
         _showSparseConversionWarning()
-        eigenvector_sensitivity(T.todense(), k, j, right)
+        eigenvector_sensitivity(T.todense(), k, j, right=right)
     elif isdense(T):
-        if right is True:
-            return dense.sensitivity.eigenvector_sensitivity(T, k, j, True)
-        else:
-            return dense.sensitivity.eigenvector_sensitivity(T, k, j, False)
+        return dense.sensitivity.eigenvector_sensitivity(T, k, j, right=right)
     else:
         raise _type_not_supported
 
