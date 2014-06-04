@@ -201,6 +201,40 @@ class TPT:
         """
         return self.rate    
 
+    def get_backward_committor(self):
+        r"""Backward committor for A to B reaction.
+
+        Returns
+        -------
+        qminus : (M,) ndarray
+            Backward committor
+
+        """
+        return self.qminus
+
+    def get_forward_committor(self):
+        r"""Forward committor for A to B reaction.
+
+        Returns
+        -------
+        qplus : (M,) ndarray
+            Forward committor
+
+        """
+        return self.qplus
+
+    def get_stationary_distribution(self):
+        r"""Stationary distribution. 
+
+        Returns
+        -------
+        mu : (M,) ndarray
+            Stationary distribution
+            
+        """
+        return self.mu
+    
+
 def tpt_flux(T, A, B, mu=None, qminus=None, qplus=None):
     r"""Flux network for the reaction A -> B.
     

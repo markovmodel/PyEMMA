@@ -301,6 +301,34 @@ class TestTPT(unittest.TestCase):
         kn=self.tpt_fast.get_rate()
         self.assertTrue(np.allclose(kn, k))
 
+    def test_backward_committor(self):
+        qminus=self.qminus
+
+        qminusn=self.tpt.get_backward_committor()
+        self.assertTrue(np.allclose(qminusn, qminus))
+
+        qminusn=self.tpt_fast.get_backward_committor()
+        self.assertTrue(np.allclose(qminusn, qminus))
+
+    def test_forward_committor(self):
+        qplus=self.qplus
+
+        qplusn=self.tpt.get_forward_committor()
+        self.assertTrue(np.allclose(qplusn, qplus))
+
+        qplusn=self.tpt_fast.get_forward_committor()
+        self.assertTrue(np.allclose(qplusn, qplus))
+
+    def test_stationary_distribution(self):
+        mu=self.mu
+        
+        mun=self.tpt.get_stationary_distribution()
+        self.assertTrue(np.allclose(mun, mu))
+
+        mun=self.tpt_fast.get_stationary_distribution()
+        self.assertTrue(np.allclose(mun, mu))
+
+
 class TestTptFunctions(unittest.TestCase):
     def setUp(self):
         p=np.zeros(10)
