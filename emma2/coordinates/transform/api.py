@@ -3,6 +3,8 @@ Created on Dec 30, 2013
 
 @author: noe
 '''
+from emma2.util.pystallone import JavaException
+from emma2.util.log import getLogger
 
 __docformat__ = "restructuredtext en"
 
@@ -150,12 +152,16 @@ def pca(input, ndim = None):
         multiple (F x N x d) arrays (trajectories)
         multiple filenames (pointing to trajectories)
     """
-    datainput = dataNew.dataInput(input)
-    T = coorNew.pca(datainput)
-    if (ndim != None):
-        T.setDimension(ndim)
-    return PCA(T);
-
+    # TODO: use amuse, until stallone pca impl is fixed
+    try:
+        datainput = dataNew.dataInput(input)
+        T = coorNew.pca(datainput)
+        if (ndim != None):
+            T.setDimension(ndim)
+        return PCA(T)
+    except JavaException as je:
+        getLogger().exception('Java exception occured! message: %s\nstacktrace:\n%s' 
+                % (je.message(), je.stacktrace()))
 
 def tica(input, lag = 1, ndim = None):
     """
