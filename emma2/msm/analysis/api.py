@@ -146,7 +146,7 @@ def is_connected(T, directed=True):
     connected : boolean, returning true only if T is connected.        
 
     """
-    if isparse(T):
+    if issparse(T):
         return sparse.assessment.is_connected(T, directed=directed)
     elif isdense(T):
         T=T.tocsr()
@@ -803,7 +803,7 @@ def committor(T, A, B, forward=True):
             return sparse.committor.forward_committor(T, A, B)
         else:
             """ if P is time reversible backward commitor is equal 1 - q+"""
-            if is_reversible(P):
+            if is_reversible(T):
                 return 1.0-sparse.committor.forward_committor(T, A, B)
                 
             else:
@@ -814,7 +814,7 @@ def committor(T, A, B, forward=True):
             return dense.committor.forward_committor(T, A, B)
         else:
             """ if P is time reversible backward commitor is equal 1 - q+"""
-            if is_reversible(P):
+            if is_reversible(T):
                 return 1.0-dense.committor.forward_committor(T, A, B)
             else:
                 return dense.committor.backward_committor(T, A, B)
