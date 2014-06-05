@@ -272,8 +272,9 @@ def eigenvector_sensitivity(T, k, j, right=True):
     return sensitivity
 
 def stationary_distribution_sensitivity(T, j):
-    """ 
-    calculate the sensitivity matrix for entry j the stationary distribution vector given transition matrix T.
+    r"""Calculate the sensitivity matrix for entry j the stationary
+    distribution vector given transition matrix T.
+
     Parameters
     ----------
     T : numpy.ndarray shape = (n, n)
@@ -353,3 +354,26 @@ def mfpt_sensitivity(T, target, j):
     sensitivity[target] *= 0;
     
     return sensitivity
+
+def expectation_sensitivity(T, a):
+    r"""Sensitivity of expectation value of observable A=(a_i).
+
+    Parameters
+    ----------
+    T : (M, M) ndarray
+        Transition matrix
+    a : (M,) ndarray
+        Observable, a[i] is the value of the observable at state i.
+
+    Returns
+    -------
+    S : (M, M) ndarray
+        Sensitivity matrix of the expectation value.
+    
+    """
+    M=T.shape[0]
+    S=numpy.zeros((M, M))
+    for i in range(M):
+        S+=a[i]*stationary_distribution_sensitivity(T, i)
+    return S
+

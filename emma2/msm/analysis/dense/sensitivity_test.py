@@ -14,7 +14,7 @@ import numpy as np
 
 from sensitivity import timescale_sensitivity, eigenvalue_sensitivity, mfpt_sensitivity,\
     forward_committor_sensitivity, backward_committor_sensitivity, eigenvector_sensitivity,\
-    stationary_distribution_sensitivity
+    stationary_distribution_sensitivity, expectation_sensitivity
 
 class TestExpectations(unittest.TestCase):
     def setUp(self):
@@ -148,6 +148,15 @@ class TestExpectations(unittest.TestCase):
                  
     def test_stationary_sensitivity(self):    
         self.assertTrue(np.allclose(stationary_distribution_sensitivity(self.T4, 1), self.pS1, atol=1e-5))      
+
+    def test_expectation_sensitivity(self):
+        a=np.array([0.0, 3.0, 0.0, 0.0])
+        S=3.0*self.pS1
+        Sn=expectation_sensitivity(self.T4, a)
+        self.assertTrue(np.allclose(Sn, S))
+        
+        
+        
 
 if __name__=="__main__":
     unittest.main()
