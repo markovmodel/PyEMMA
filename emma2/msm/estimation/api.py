@@ -480,6 +480,8 @@ def error_perturbation(C, sensitivity):
     cov : (m x m) covariance matrix of the target quantity
     
     """
+    if isdende(C):
+        C=csr_matrix(C)
     return sparse.transition_matrix.error_perturbation(C, sensitivity)
 
 def _showSparseConversionWarning():
