@@ -35,7 +35,7 @@ import sparse.mean_first_passage_time
 
 __all__=['is_transition_matrix',
          'is_rate_matrix',
-         'is_ergodic',
+         'is_connected',
          'is_reversible',
          'stationary_distribution',
          'eigenvalues',
