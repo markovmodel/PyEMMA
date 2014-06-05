@@ -955,7 +955,7 @@ def tpt_rate(T, A, B, mu=None, qminus=None, qplus=None):
 ################################################################################
 
 def _showSparseConversionWarning():
-    warnings.warn('converting input to dense, since sensitivity is '
+    warnings.warn('Converting input to dense, since sensitivity is '
                   'currently only impled for dense types.', UserWarning)
 
 # TODO: Implement sparse in Python directly
@@ -1133,6 +1133,25 @@ def committor_sensitivity(T, A, B, i, forward=True):
 
 # TODO: Implement in Python directly
 def expectation_sensitivity(T, a):
-    r"""computes the sensitivity of the expectation value of a
+    r"""Sensitivity of expectation value of observable A=(a_i).
+
+    Parameters
+    ----------
+    T : (M, M) ndarray
+        Transition matrix
+    a : (M,) ndarray
+        Observable, a[i] is the value of the observable at state i.
+
+    Returns
+    -------
+    S : (M, M) ndarray
+        Sensitivity matrix of the expectation value.
+    
     """
-    raise NotImplementedError('Not implemented.')
+    if issparse(T):
+        _showSparseConversionWarning()
+        return dense.sensitivity.expectation_sensitivity(T.toarray(), a)
+    elif isdense(T):
+        return dense.sensitivity.expectation_sensitivity(T, a)
+    else:
+        raise _type_not_supported
