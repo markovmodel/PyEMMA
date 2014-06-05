@@ -9,7 +9,7 @@ import warnings
 
 import numpy
 from numpy import random, sum, sqrt, newaxis, ones, allclose, eye, asarray, abs, linspace
-from numpy import  diag, transpose, argsort, dot, asarray, array, arange, diag_indices
+from numpy import  diag, diagonal, transpose, argsort, dot, asarray, array, arange, diag_indices
 from numpy import conjugate, zeros, log, inf
 from scipy.linalg import eig, eigh, eigvals, eigvalsh, qr, solve
 
@@ -185,7 +185,8 @@ class TestDecomposition(unittest.TestCase):
         self.assertTrue(allclose(X, 0.0))
 
     def test_rdl_decomposition(self):
-        vn, Ln, Rn=decomposition.rdl_decomposition(self.A)
+        Rn, Dn, Ln=decomposition.rdl_decomposition(self.A)
+        vn=diagonal(Dn)
 
         """Eigenvalues"""
         self.assertTrue(allclose(self.v, vn))
@@ -208,8 +209,8 @@ class TestDecomposition(unittest.TestCase):
         """
         
         """They are however 'good' left eigenvectors for A"""
-        X=dot(transpose(self.A), Ln)
-        self.assertTrue(allclose(X, vn[newaxis, :]*Ln))
+        X=dot(Ln, self.A)
+        self.assertTrue(allclose(X, vn[:, newaxis]*Ln))
 
     def test_timescales(self):
         ts_n=decomposition.timescales(self.A)
