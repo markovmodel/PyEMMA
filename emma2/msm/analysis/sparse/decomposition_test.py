@@ -165,7 +165,10 @@ class TestDecomposition(unittest.TestCase):
         # r, L=scipy.sparse.linalg.eigs(self.T_sparse.transpose(), k=k, which='LM')
 
         """Standard norm"""
-        vn, Ln, Rn=decomposition.rdl_decomposition(self.T_sparse, k=self.k)
+        # vn, Ln, Rn=decomposition.rdl_decomposition(self.T_sparse, k=self.k)
+        Rn, Dn, Ln=decomposition.rdl_decomposition(self.T_sparse, k=self.k)
+        vn=np.diagonal(Dn)
+        Ln=np.transpose(Ln)
 
         """Eigenvalues"""
         self.assertTrue(np.allclose(self.v_sparse, vn))
@@ -189,7 +192,10 @@ class TestDecomposition(unittest.TestCase):
         self.assertTrue(np.allclose(A, 0.0))        
 
         """Reversible"""
-        vn, Ln, Rn=decomposition.rdl_decomposition(self.T_sparse, k=self.k, norm='reversible')
+        # vn, Ln, Rn=decomposition.rdl_decomposition(self.T_sparse, k=self.k, norm='reversible')
+        Rn, Dn, Ln=decomposition.rdl_decomposition(self.T_sparse, k=self.k, norm='reversible')
+        vn=np.diagonal(Dn)
+        Ln=np.transpose(Ln)
 
         """Eigenvalues"""
         self.assertTrue(np.allclose(self.v_sparse, vn))
@@ -215,7 +221,9 @@ class TestDecomposition(unittest.TestCase):
         """Check the same for self.k/4 eigenvectors wih ncv=k"""
         
         """Standard norm"""
-        vn, Ln, Rn=decomposition.rdl_decomposition(self.T_sparse, k=self.k/4, ncv=self.k)
+        Rn, Dn, Ln=decomposition.rdl_decomposition(self.T_sparse, k=self.k/4, ncv=self.k)
+        vn=np.diagonal(Dn)
+        Ln=np.transpose(Ln)
         
         """Eigenvalues"""
         self.assertTrue(np.allclose(self.v_sparse[0:self.k/4], vn))
@@ -239,8 +247,10 @@ class TestDecomposition(unittest.TestCase):
         self.assertTrue(np.allclose(A, 0.0))        
 
         """Reversible"""
-        vn, Ln, Rn=decomposition.rdl_decomposition(self.T_sparse, k=self.k/4,\
+        Rn, Dn, Ln=decomposition.rdl_decomposition(self.T_sparse, k=self.k/4,\
                                                        norm='reversible', ncv=self.k)
+        vn=np.diagonal(Dn)
+        Ln=np.transpose(Ln)
 
         """Eigenvalues"""
         self.assertTrue(np.allclose(self.v_sparse[0:self.k/4], vn))
@@ -361,20 +371,28 @@ class TestTimescales(unittest.TestCase):
 
         """tau=1"""
         ts_n=decomposition.timescales(self.A_real, k=self.k/4, ncv=self.k)
-        self.assertTrue(np.allclose(ts_n, self.ts_real[0:self.k/4]))
+        # print ts_n
+        # print self.ts_real[0:self.k/4]
+        self.assertTrue(np.allclose(ts_n, self.ts_real[0:self.k/4]))        
         
         with warnings.catch_warnings(record=True) as w:
             ts_n=decomposition.timescales(self.A_complex, k=self.k/4, ncv=self.k)
+            # print ts_n
+            # print self.ts_complex[0:self.k/4]
             self.assertTrue(np.allclose(ts_n, self.ts_complex[0:self.k/4]))
             assert issubclass(w[-1].category, SpectralWarning)
 
         with warnings.catch_warnings(record=True) as w:
-            ts_n=decomposition.timescales(self.A_real_m, k=self.k/4, ncv=self.k)
+            ts_n=decomposition.timescales(self.A_real_m, k=self.k/4, ncv=2*self.k)
+            # print ts_n
+            # print self.ts_real_m[0:self.k/4]
             self.assertTrue(np.allclose(ts_n, self.ts_real_m[0:self.k/4]))
             assert issubclass(w[-1].category, SpectralWarning)
 
         with warnings.catch_warnings(record=True) as w:
             ts_n=decomposition.timescales(self.A_complex_m, k=self.k/4, ncv=self.k)
+            # print ts_n
+            # print self.ts_complex_m[0:self.k/4]
             self.assertTrue(np.allclose(ts_n, self.ts_complex_m[0:self.k/4]))
             assert issubclass(w[-1].category, SpectralWarning)
 

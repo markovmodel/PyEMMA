@@ -18,7 +18,7 @@ Validation
 
    is_transition_matrix - Positive entries and rows sum to one
    is_rate_matrix - Nonpositive off-diagonal entries and rows sum to zero
-   is_ergodic - Irreducible matrix
+   is_connected - Irreducible matrix
    is_reversible - Symmetric with respect to some probability vector pi
 
 Decomposition
@@ -81,6 +81,7 @@ Sensitivity analysis
    eigenvector_sensitivity
    mfpt_sensitivity
    committor_sensitivity
+   expectation_sensitivity
 
 """
 from .api import *

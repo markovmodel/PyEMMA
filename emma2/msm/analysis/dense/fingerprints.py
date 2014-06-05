@@ -6,11 +6,9 @@ Created on Jun 4, 2014
 
 import numpy as np
 
-from emma2.msm.analysis.dense.decomposition import rdl_decomposition,\
-    timescales_from_eigenvalues
+from decomposition import rdl_decomposition, timescales_from_eigenvalues
 from scipy.sparse.sputils import isdense
-from emma2.msm.analysis.dense.decomposition import \
-    stationary_distribution_from_backward_iteration as stationary_distribution
+from decomposition import stationary_distribution_from_backward_iteration as stationary_distribution
 
 from correlations import time_correlation_direct, time_relaxations_direct
 
@@ -46,7 +44,10 @@ def fingerprint_correlation(P, obs1, obs2=None, tau=1):
     if obs2 is None:
         obs2 = obs1
     # rdl_decomposition already handles sparsity of P.
-    w, L, R = rdl_decomposition(P)
+    # w, L, R = rdl_decomposition(P)
+    R, D, L=rdl_decomposition(P)
+    w=np.diagonal(D)
+    L=np.transpose(L)
     # timescales:
     timescales = timescales_from_eigenvalues(w, tau)
     n = len(timescales)
@@ -86,7 +87,10 @@ def fingerprint_relaxation(P, p0, obs, tau=1):
     
     """
     # rdl_decomposition already handles sparsity of P.
-    w, L, R = rdl_decomposition(P)
+    # w, L, R = rdl_decomposition(P)
+    R, D, L=rdl_decomposition(P)
+    w=np.diagonal(D)
+    L=np.transpose(L)
     # timescales:
     timescales = timescales_from_eigenvalues(w, tau)
     n = len(timescales)

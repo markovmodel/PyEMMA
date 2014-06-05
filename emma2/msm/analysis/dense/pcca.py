@@ -10,7 +10,11 @@ import decomposition
 import numpy
 
 def pcca(T, n):
-    eigenvalues,left_eigenvectors,right_eigenvectors = decomposition.rdl_decomposition(T, n)
+    # eigenvalues,left_eigenvectors,right_eigenvectors = decomposition.rdl_decomposition(T, n)
+    R, D, L=decomposition.rdl_decomposition(T, n)
+    eigenvalues=numpy.diagonal(D)
+    left_eigenvectors=numpy.transpose(L)
+    right_eigenvectors=R
     # TODO: complex warning maybe?
     right_eigenvectors = numpy.real(right_eigenvectors)
 
