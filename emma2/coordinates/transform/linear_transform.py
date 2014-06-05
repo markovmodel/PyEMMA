@@ -14,12 +14,11 @@ class PCA(CoordinateTransform):
     """
     Wrapper class to stallone PCA
     """
-    
-    _evec = None
-    _ndim = None
-    
+       
     def __init__(self, jpca):
         CoordinateTransform.__init__(self,jpca)
+        self.self_evec = None
+        self._ndim = None
     
     def mean(self):
         """
@@ -77,6 +76,31 @@ class PCA(CoordinateTransform):
         """
         return True
 
+class PCA_AMUSE(PCA):
+    
+    def __init__(self, amuse):
+        self.amuse = amuse
+        
+    def mean(self):
+        return self.amuse.mean
+    
+    def covariance_matrix(self):
+        return self.amuse.cov
+    
+    def eigenvalues(self):
+        return self.amuse.pca_values
+    
+    def eigenvector(self, i):
+        return self.amuse.pca_weights[i]
+    
+    def eigenvectors(self):
+        return self.amuse.pca_weights
+    
+    def set_dimension(self, d):
+        self.d = d
+        
+    def transform(self, x):
+        return util.project(x.flatten(), self.eigenvectors(), self.d)
 
 class TICA(PCA):
     """
