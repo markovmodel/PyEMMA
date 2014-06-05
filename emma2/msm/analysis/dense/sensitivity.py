@@ -5,7 +5,7 @@ Created on 22.11.2013
 '''
 
 import numpy
-from emma2.autobuilder.emma_msm_mockup import stationary_distribution
+from decomposition import stationary_distribution_from_backward_iteration as stationary_distribution
 
 # TODO:make faster. So far not effectively programmed
 # Martin: done, but untested, since there is no testcase...

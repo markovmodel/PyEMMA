@@ -6,11 +6,9 @@ Created on Jun 4, 2014
 
 import numpy as np
 
-from emma2.msm.analysis.dense.decomposition import rdl_decomposition,\
-    timescales_from_eigenvalues
+from decomposition import rdl_decomposition, timescales_from_eigenvalues
 from scipy.sparse.sputils import isdense
-from emma2.msm.analysis.dense.decomposition import \
-    stationary_distribution_from_backward_iteration as stationary_distribution
+from decomposition import stationary_distribution_from_backward_iteration as stationary_distribution
 
 from correlations import time_correlation_direct, time_relaxations_direct
 
