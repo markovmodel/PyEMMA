@@ -93,6 +93,29 @@ if not os.environ.get('JAVA_HOME', None):
     fake_jdk = True
     os.environ['JAVA_HOME'] = os.path.abspath('lib/stallone/')
 
+data_files = []
+
+# installation destination of ipython notebooks for users
+# TODO: maybe give user opportunity to specify install location
+if os.getenv('INSTALL_IPYTHON', False) or 'install' in sys.argv:
+    dest = os.path.join(os.path.expanduser('~'), 'emma2-ipython' ) 
+    def ipython_notebooks_mapping(dest):
+        """
+        returns a mapping for each file in ipython directory:
+        [ (dest/$dir, [$file]) ] for each $dir and $file in this dir.
+        """
+        result = []
+        for root, dirs, files in os.walk('ipython'):
+            ipynb = []
+            for f in files:
+                ipynb.append(os.path.join(root, f))
+            result.append(tuple(os.path.join(dest, root), ipynb))
+                
+        return result
+    
+    m = ipython_notebooks_mapping(dest)
+    data_files.extend(m)
+
 metadata = dict(
       name = 'Emma2',
       version = versioneer.get_version(),
@@ -104,6 +127,7 @@ metadata = dict(
       packages = find_packages(),
       # install default emma.cfg and stallone jar into package.
       package_data = {'emma2' : ['emma2.cfg','stallone-1.0-SNAPSHOT-jar-with-dependencies.jar']},
+      data_files = data_files,
       scripts = [s for s in glob('scripts/*') if s.find('mm_') != -1],
       cmdclass = dict(build_ext = np_build,
                       test = DiscoverTest,
