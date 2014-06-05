@@ -7,7 +7,8 @@ expectation values for a given transition matrix.
 
 import numpy as np
 
-import decomposition
+from decomposition import rdl_decomposition
+from decomposition import stationary_distribution_from_backward_iteration as statdist
 
 def expected_counts(p0, T, n):
     r"""Compute expected transition counts for Markov chain after n steps. 
@@ -73,7 +74,7 @@ def expected_counts_stationary(T, n, mu=None):
         return EC
     else:
         if mu is None:
-            mu=decomposition.stationary_distribution_from_eigenvector(T)
+            mu=statdist(T)
         EC=n*mu[:, np.newaxis]*T
         return EC
 
@@ -206,7 +207,10 @@ def ec_geometric_series(p0, T, n):
         EC=np.zeros(T.shape)
         return EC
     else:
-        w, L, R=decomposition.rdl_decomposition(T)
+        R, D, L=rdl_decomposition(T)
+        w=np.diagonal(D)
+        L=np.transpose(L)
+
         D_sum=np.diag(geometric_series(w, n-1))
         T_sum=np.dot(np.dot(R, D_sum), np.conjugate(np.transpose(L)))
         p_sum=np.dot(p0, T_sum)
