@@ -81,6 +81,7 @@ Sensitivity analysis
    eigenvector_sensitivity
    mfpt_sensitivity
    committor_sensitivity
+   expectation_sensitivity
 
 """
 from .api import *
