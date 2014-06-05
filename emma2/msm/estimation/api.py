@@ -9,6 +9,8 @@ Emma2 MSM Estimation API
 
 __docformat__ = "restructuredtext en"
 
+import warnings
+
 import numpy as np
 import sparse.count_matrix
 import sparse.connectivity
@@ -419,7 +421,9 @@ def tmatrix_cov(C, k=None):
     -------
     cov : 
         
-    """    
+    """ 
+    if isdense(C):
+        C=csr_matrix(C)
     return sparse.transition_matrix.tmatrix_cov(C, k)
 
 
@@ -478,6 +482,10 @@ def error_perturbation(C, sensitivity):
     """
     return sparse.transition_matrix.error_perturbation(C, sensitivity)
 
+def _showSparseConversionWarning():
+    warnings.warn('Converting input to dense, since method is '
+                  'currently only implemented for dense matrices.', UserWarning)
+
 # DONE: Martin Map to Stallone (Reversible)
 def tmatrix_sampler(C, reversible=False, mu=None, P0=None):
     r"""Generate transition matrix sampler object.
@@ -502,6 +510,10 @@ def tmatrix_sampler(C, reversible=False, mu=None, P0=None):
         returns a stallone.ITransitionMatrixSampler instance.
     
     """
+    if issparse(C):
+        _showSparseConversionWarning()
+        C=C.toarray()
+    
     if reversible:
         from emma2.util.pystallone import API as API, ndarray_to_stallone_array,\
             JavaException
