@@ -202,18 +202,18 @@ def rdl_decomposition(T, k=None, norm='standard'):
         
     Returns
     -------
-    w : (M,) ndarray
-        The eigenvalues, each repeated according to its multiplicity
-    L : (M, M) ndarray
-        The normalized ("unit length") left eigenvectors, such that the 
-        column L[:,i] is the left eigenvector corresponding to the eigenvalue
-        w[i], dot(L[:,i], T)=w[i]*L[:,i], L[:,0] is a probability distribution
-        ("positive and l1 unit length").
     R : (M, M) ndarray
         The normalized (with respect to L) right eigenvectors, such that the 
         column R[:,i] is the right eigenvector corresponding to the eigenvalue 
         w[i], dot(T,R[:,i])=w[i]*R[:,i]
-      
+    D : (M, M) ndarray
+        A diagonal matrix containing the eigenvalues, each repeated
+        according to its multiplicity
+    L : (M, M) ndarray
+        The normalized (with respect to `R`) left eigenvectors, such that the 
+        row ``L[i, :]`` is the left eigenvector corresponding to the eigenvalue
+        ``w[i]``, ``dot(L[i, :], T)``=``w[i]*L[i, :]``
+        
     """
     d=T.shape[0]
     w, R=eig(T)
@@ -223,6 +223,9 @@ def rdl_decomposition(T, k=None, norm='standard'):
     w=w[ind]
     R=R[:,ind]   
 
+    """Diagonal matrix containing eigenvalues"""
+    D=np.diag(w)
+    
     if norm =='standard':
         L=solve(np.transpose(R), np.eye(d))
         
@@ -232,9 +235,9 @@ def rdl_decomposition(T, k=None, norm='standard'):
         
 
         if k is None:
-            return w, L, R
+            return R, D, np.transpose(L)
         else:
-            return w[0:k], L[:,0:k], R[:,0:k]
+            return R[:,0:k], D[0:k,0:k], np.transpose(L[:,0:k])
 
     elif norm=='reversible':
         b=np.zeros(d)
@@ -257,9 +260,9 @@ def rdl_decomposition(T, k=None, norm='standard'):
         L=L/ov[np.newaxis, :]
 
         if k is None:
-            return w, L, R
+            return R, D, np.transpose(L)
         else:
-            return w[0:k], L[:,0:k], R[:,0:k]
+            return R[:,0:k], D[0:k,0:k], np.transpose(L[:,0:k])
     else:
         raise ValueError("Keyword 'norm' has to be either 'standard' or 'reversible'")
 

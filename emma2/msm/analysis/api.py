@@ -10,6 +10,8 @@ Emma2 MSM Analysis API
 
 __docformat__ = "restructuredtext en"
 
+import warnings
+
 import numpy as np
 from scipy.sparse import issparse
 from scipy.sparse.sputils import isdense
@@ -33,7 +35,7 @@ import sparse.mean_first_passage_time
 
 __all__=['is_transition_matrix',
          'is_rate_matrix',
-         'is_ergodic',
+         'is_connected',
          'is_reversible',
          'stationary_distribution',
          'eigenvalues',
@@ -61,7 +63,8 @@ __all__=['is_transition_matrix',
          'timescale_sensitivity',
          'eigenvector_sensitivity',
          'mfpt_sensitivity',
-         'committor_sensitivity']
+         'committor_sensitivity',
+         'expectation_sensitivity']
 # shortcuts added later:
 # ['statdist', 'is_tmatrix', 'statdist_sensitivity']
 
@@ -151,29 +154,6 @@ def is_connected(T, directed=True):
     elif isdense(T):
         T=T.tocsr()
         return sparse.assessment.is_connected(T, directed=directed)
-    else:
-        raise _type_not_supported
-
-# DONE: Martin 
-def is_ergodic(T, tol=1e-15):
-    r"""True if T is connected (irreducible) and aperiodic.
-    
-    Parameters
-    ----------
-    T : ndarray or scipy.sparse matrix
-        Transition matrix
-    tol : float
-        tolerance to check with
-    
-    Returns
-    -------
-    Truth value : bool
-        True, if T is ergodic
-        False, otherwise
-    """
-    if issparse(T) or isdense(T):
-        # T has to be sparse, and will be converted in sparse impl
-        return sparse.assessment.is_ergodic(T, tol)
     else:
         raise _type_not_supported
 
@@ -360,7 +340,8 @@ def eigenvectors(T, k=None, right=True, ncv=None):
 
 # DONE: Ben
 def rdl_decomposition(T, k=None, norm='standard', ncv=None):
-    r"""Compute the decomposition into left and right eigenvectors.
+    r"""Compute the decomposition into eigenvalues, left and right
+    eigenvectors.
     
     Parameters
     ----------
@@ -374,11 +355,11 @@ def rdl_decomposition(T, k=None, norm='standard', ncv=None):
         ============ ===========================================
         norm       
         ============ ===========================================
-        'standard'   L'R = Id, is a probability\
+        'standard'   LR = Id, is a probability\
                      distribution, the stationary distribution\
                      of `T`. Right eigenvectors `R`\
                      have a 2-norm of 1
-        'reversible' `R` and `L` are related via ``L[:,0]*R``  
+        'reversible' `R` and `L` are related via ``L[0, :]*R``  
         ============ =========================================== 
 
     ncv : int (optional)
@@ -387,20 +368,21 @@ def rdl_decomposition(T, k=None, norm='standard', ncv=None):
     
     Returns
     -------
-    w : (M,) ndarray
-        The eigenvalues, each repeated according to its multiplicity
-    L : (M, M) ndarray
-        The normalized (with respect to `R`) left eigenvectors, such that the 
-        column ``L[:,i]`` is the left eigenvector corresponding to the eigenvalue
-        ``w[i]``, ``dot(L[:,i], T)``=``w[i]*L[:,i]``
     R : (M, M) ndarray
         The normalized ("unit length") right eigenvectors, such that the 
         column ``R[:,i]`` is the right eigenvector corresponding to the eigenvalue 
-        ``w[i]``, ``dot(T,R[:,i])``=``w[i]*R[:,i]``    
+        ``w[i]``, ``dot(T,R[:,i])``=``w[i]*R[:,i]``
+    D : (M, M) ndarray
+        A diagonal matrix containing the eigenvalues, each repeated
+        according to its multiplicity    
+    L : (M, M) ndarray
+        The normalized (with respect to `R`) left eigenvectors, such that the 
+        row ``L[i, :]`` is the left eigenvector corresponding to the eigenvalue
+        ``w[i]``, ``dot(L[i, :], T)``=``w[i]*L[i, :]``    
 
     """    
     if issparse(T):
-        return sparse.decomposition.rdl_decomposition(T, k=k, norm=norm)
+        return sparse.decomposition.rdl_decomposition(T, k=k, norm=norm, ncv=ncv)
     elif isdense(T):
         return dense.decomposition.rdl_decomposition(T, k=k, norm=norm)
     else: 
@@ -974,8 +956,7 @@ def tpt_rate(T, A, B, mu=None, qminus=None, qplus=None):
 ################################################################################
 
 def _showSparseConversionWarning():
-    import warnings
-    warnings.warn('converting input to dense, since sensitivity is '
+    warnings.warn('Converting input to dense, since sensitivity is '
                   'currently only impled for dense types.', UserWarning)
 
 # TODO: Implement sparse in Python directly
@@ -1153,6 +1134,25 @@ def committor_sensitivity(T, A, B, i, forward=True):
 
 # TODO: Implement in Python directly
 def expectation_sensitivity(T, a):
-    r"""computes the sensitivity of the expectation value of a
+    r"""Sensitivity of expectation value of observable A=(a_i).
+
+    Parameters
+    ----------
+    T : (M, M) ndarray
+        Transition matrix
+    a : (M,) ndarray
+        Observable, a[i] is the value of the observable at state i.
+
+    Returns
+    -------
+    S : (M, M) ndarray
+        Sensitivity matrix of the expectation value.
+    
     """
-    raise NotImplementedError('Not implemented.')
+    if issparse(T):
+        _showSparseConversionWarning()
+        return dense.sensitivity.expectation_sensitivity(T.toarray(), a)
+    elif isdense(T):
+        return dense.sensitivity.expectation_sensitivity(T, a)
+    else:
+        raise _type_not_supported
