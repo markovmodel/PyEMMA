@@ -12,8 +12,8 @@ against numerical differentiation results.
 import unittest
 import numpy as np
 
-#TODO: Change tests also to test API calls!!!!
-from emma2.msm.analysis.api import timescale_sensitivity, eigenvalue_sensitivity, mfpt_sensitivity, committor_sensitivity, eigenvector_sensitivity,\
+from sensitivity import timescale_sensitivity, eigenvalue_sensitivity, mfpt_sensitivity,\
+    forward_committor_sensitivity, backward_committor_sensitivity, eigenvector_sensitivity,\
     stationary_distribution_sensitivity
 
 class TestExpectations(unittest.TestCase):
@@ -123,14 +123,14 @@ class TestExpectations(unittest.TestCase):
         
     def test_forward_committor_sensitivity(self):
             
-        self.assertTrue(np.allclose(committor_sensitivity(self.T4, [0], [3], 0), self.S4zero))      
-        self.assertTrue(np.allclose(committor_sensitivity(self.T4, [0], [3], 1), self.qS41))      
-        self.assertTrue(np.allclose(committor_sensitivity(self.T4, [0], [3], 2), self.qS42))      
-        self.assertTrue(np.allclose(committor_sensitivity(self.T4, [0], [3], 3), self.S4zero))      
+        self.assertTrue(np.allclose(forward_committor_sensitivity(self.T4, [0], [3], 0), self.S4zero))      
+        self.assertTrue(np.allclose(forward_committor_sensitivity(self.T4, [0], [3], 1), self.qS41))      
+        self.assertTrue(np.allclose(forward_committor_sensitivity(self.T4, [0], [3], 2), self.qS42))      
+        self.assertTrue(np.allclose(forward_committor_sensitivity(self.T4, [0], [3], 3), self.S4zero))      
 
     def test_backward_committor_sensitivity(self):
         
-        self.assertTrue(np.allclose(committor_sensitivity(self.T4, [0], [3], 1, forward=False), self.qSI41))      
+        self.assertTrue(np.allclose(backward_committor_sensitivity(self.T4, [0], [3], 1), self.qSI41))      
                 
     def test_mfpt_sensitivity(self):
         
