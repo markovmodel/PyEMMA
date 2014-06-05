@@ -46,7 +46,10 @@ def fingerprint_correlation(P, obs1, obs2=None, tau=1):
     if obs2 is None:
         obs2 = obs1
     # rdl_decomposition already handles sparsity of P.
-    w, L, R = rdl_decomposition(P)
+    # w, L, R = rdl_decomposition(P)
+    R, D, L=rdl_decomposition(P)
+    w=np.diagonal(D)
+    L=np.transpose(L)
     # timescales:
     timescales = timescales_from_eigenvalues(w, tau)
     n = len(timescales)
@@ -86,7 +89,10 @@ def fingerprint_relaxation(P, p0, obs, tau=1):
     
     """
     # rdl_decomposition already handles sparsity of P.
-    w, L, R = rdl_decomposition(P)
+    # w, L, R = rdl_decomposition(P)
+    R, D, L=rdl_decomposition(P)
+    w=np.diagonal(D)
+    L=np.transpose(L)
     # timescales:
     timescales = timescales_from_eigenvalues(w, tau)
     n = len(timescales)
