@@ -9,8 +9,6 @@ from scipy.sparse.dia import dia_matrix
 
 import assessment
 
-
-
 def normalize_rows(A):
     """Normalize rows of sparse marix"""
     A=A.tocsr()
