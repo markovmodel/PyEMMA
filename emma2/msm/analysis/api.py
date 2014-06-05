@@ -10,6 +10,8 @@ Emma2 MSM Analysis API
 
 __docformat__ = "restructuredtext en"
 
+import warnings
+
 import numpy as np
 from scipy.sparse import issparse
 from scipy.sparse.sputils import isdense
@@ -953,7 +955,6 @@ def tpt_rate(T, A, B, mu=None, qminus=None, qplus=None):
 ################################################################################
 
 def _showSparseConversionWarning():
-    import warnings
     warnings.warn('converting input to dense, since sensitivity is '
                   'currently only impled for dense types.', UserWarning)
 
