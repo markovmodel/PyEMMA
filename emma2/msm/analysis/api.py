@@ -63,7 +63,8 @@ __all__=['is_transition_matrix',
          'timescale_sensitivity',
          'eigenvector_sensitivity',
          'mfpt_sensitivity',
-         'committor_sensitivity']
+         'committor_sensitivity',
+         'expectation_sensitivity']
 # shortcuts added later:
 # ['statdist', 'is_tmatrix', 'statdist_sensitivity']
 
