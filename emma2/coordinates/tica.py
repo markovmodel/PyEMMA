@@ -92,6 +92,10 @@ class Amuse:
         if not files:
             raise Exception('No input trajectories were given.')
         
+        # case for a single file
+        if not type(files) == list:
+            files = [files]
+        
         ''' import correlation covariance C extension module '''
         from emma2.coordinates import cocovar
         
