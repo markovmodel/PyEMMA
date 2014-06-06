@@ -109,7 +109,7 @@ if os.getenv('INSTALL_IPYTHON', False) or 'install' in sys.argv:
             ipynb = []
             for f in files:
                 ipynb.append(os.path.join(root, f))
-            result.append(tuple(os.path.join(dest, root), ipynb))
+            result.append( (os.path.join(dest, root), ipynb) )
                 
         return result
     
