@@ -7,7 +7,7 @@ import unittest
 from emma2.msm.estimation.dense.tmatrix_sampler_jwrapper import ITransitionMatrixSampler
 import numpy as np
 
-def testSampler2x2(sampler, C, nsample, errtol):
+def assertSampler2x2(sampler, C, nsample, errtol):
     """
      same function as in stallone.test.mc.MarkovModelFactoryTest
     """
