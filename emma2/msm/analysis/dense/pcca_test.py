@@ -9,7 +9,7 @@ This module provides the unittest for the pcca module
 import unittest
 import numpy as np
 
-from emma2.msm.analysis.api import pcca
+from pcca import pcca
 
 
 class TestPCCA(unittest.TestCase):
