@@ -159,12 +159,14 @@ def ndarray_to_stallone_array(pyarray, copy=True):
     elif len(shape) == 2:
         # TODO: use linear memory layout here, when supported in stallone
         jarr = JArray(cast_func, 2)(pyarray)
-        try:
+        if cast_func is JDouble:
             # for double arrays
             A = factory.array(jarr)
-        except AttributeError:
+        elif cast_func is JInt:
             # for int 2d arrays
             A = factory.table(jarr)
+        else:
+            raise TypeError('type not mapped to a stallone factory')
         return A
     else:
         raise ValueError('unsupported shape:', shape)

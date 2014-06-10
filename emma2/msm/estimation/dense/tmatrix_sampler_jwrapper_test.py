@@ -59,10 +59,10 @@ class TestJavaTransitionMatrixSampler(unittest.TestCase):
         self.sampler_nonrev = ITransitionMatrixSampler(self.C, reversible=False)
         
     def testSamplerRev(self):
-        testSampler2x2(self.sampler_rev, self.C, self.nsample, self.errtol)
+        assertSampler2x2(self.sampler_rev, self.C, self.nsample, self.errtol)
         
     def testSamplerNonRev(self):
-        testSampler2x2(self.sampler_nonrev, self.C, self.nsample, self.errtol)     
+        assertSampler2x2(self.sampler_nonrev, self.C, self.nsample, self.errtol)     
 
     # TODO: impl
     def testSampleRefStatDist(self):
