@@ -1,3 +1,4 @@
+from emma2.msm.estimation.dense.tmatrix_sampler_jwrapper import ITransitionMatrixSampler
 r"""
 ========================
 Emma2 MSM Estimation API
@@ -480,7 +481,7 @@ def error_perturbation(C, sensitivity):
     cov : (m x m) covariance matrix of the target quantity
     
     """
-    if isdende(C):
+    if isdense(C):
         C=csr_matrix(C)
     return sparse.transition_matrix.error_perturbation(C, sensitivity)
 
@@ -508,30 +509,17 @@ def tmatrix_sampler(C, reversible=False, mu=None, P0=None):
     
     Returns
     -------
-    sampler : A TransitionMatrixSampler object. In case reversible is True, 
-        returns a stallone.ITransitionMatrixSampler instance.
+    sampler : A :py:class:dense.ITransitionMatrixSampler object.
     
     """
     if issparse(C):
         _showSparseConversionWarning()
         C=C.toarray()
     
-    if reversible:
-        from emma2.util.pystallone import API as API, ndarray_to_stallone_array,\
-            JavaException
-        try:
-            C = ndarray_to_stallone_array(C)
-            if mu is not None:
-                mu = ndarray_to_stallone_array(mu)
-                sampler = API.msmNew.createTransionMatrixSamplerRev(C, mu)
-            else:
-                sampler = API.msmNew.createTransitionMatrixSamplerRev(C)
-            return sampler
-        except JavaException as je:
-            log = getLogger()
-            log.exception("Error during tmatrix sampling", je)
-            raise
-    else:
-        raise NotImplementedError('Non-reversible sampler not implemented.')
-
-
+    from emma2.util.pystallone import JavaException
+    try:
+        return ITransitionMatrixSampler(C, mu, reversible)
+    except JavaException as je:
+        log = getLogger()
+        log.exception("Error during tmatrix sampling")
+        raise
