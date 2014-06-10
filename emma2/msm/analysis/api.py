@@ -13,7 +13,7 @@ __docformat__ = "restructuredtext en"
 import warnings
 
 import numpy as np
-from scipy.sparse import issparse
+from scipy.sparse import issparse, csr_matrix
 from scipy.sparse.sputils import isdense
 
 import dense.assessment
@@ -152,7 +152,7 @@ def is_connected(T, directed=True):
     if issparse(T):
         return sparse.assessment.is_connected(T, directed=directed)
     elif isdense(T):
-        T=T.tocsr()
+        T=csr_matrix(T)
         return sparse.assessment.is_connected(T, directed=directed)
     else:
         raise _type_not_supported

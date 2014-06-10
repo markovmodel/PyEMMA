@@ -57,21 +57,24 @@ def is_rate_matrix(K, tol):
         False, otherwise
     """
     K = K.tocsr()
-    values = K.data
-
+    
     # check rows sum up to zero.
     row_sum = K.sum(axis = 1)
     sum_eq_zero = np.allclose(row_sum, np.zeros(shape=row_sum.shape), atol=tol)
 
 
-    # store copy of original diagonal, set it to zero and check off diagonals are > 0
+    # store copy of original diagonal
     org_diag = K.diagonal()
-    diag_inds = range(K.shape[0])
-    K[diag_inds, diag_inds] = 0
+    
+    # substract diagonal
+    K=K-diags(org_diag, 0)
 
-    # check all values are greater zero within given tolerance
+    # check off diagonals are > 0
+    values=K.data
     values_gt_zero = np.allclose(values, np.abs(values), atol = tol)
-    K[diag_inds, diag_inds] = org_diag
+
+    # add diagonal
+    K=K+diags(org_diag, 0)
 
     return values_gt_zero and sum_eq_zero
 
@@ -131,7 +134,7 @@ def is_connected(T, directed=True):
         
 
     """
-    nc=csgraph.connected_components(T, directed=directed, connection='strong', \
+    nc=connected_components(T, directed=directed, connection='strong', \
                                         return_labels=False)    
     return nc == 1
 
