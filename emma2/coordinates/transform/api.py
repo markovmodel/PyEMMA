@@ -152,16 +152,19 @@ def pca(input, ndim = None):
         multiple (F x N x d) arrays (trajectories)
         multiple filenames (pointing to trajectories)
     """
-    # TODO: use amuse, until stallone pca impl is fixed
-    try:
-        datainput = dataNew.dataInput(input)
-        T = coorNew.pca(datainput)
-        if (ndim != None):
-            T.setDimension(ndim)
-        return PCA(T)
-    except JavaException as je:
-        getLogger().exception('Java exception occured! message: %s\nstacktrace:\n%s' 
-                % (je.message(), je.stacktrace()))
+    # use amuse, until stallone pca impl is fixed
+    from emma2.coordinates.tica import Amuse
+    amuse = Amuse.compute(input, 1)
+    return linear_transform.PCA_AMUSE(amuse)
+#     try:
+#         datainput = dataNew.dataInput(input)
+#         T = coorNew.pca(datainput)
+#         if (ndim != None):
+#             T.setDimension(ndim)
+#         return PCA(T)
+#     except JavaException as je:
+#         getLogger().exception('Java exception occured! message: %s\nstacktrace:\n%s' 
+#                 % (je.message(), je.stacktrace()))
 
 def tica(input, lag = 1, ndim = None):
     """
