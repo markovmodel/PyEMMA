@@ -64,9 +64,9 @@ class ITransitionMatrixSampler(object):
                     warnings.warn("given stationary distribution ignored") 
                 self.sampler = API.msmNew.createTransitionMatrixSamplerNonrev(C)
                 
-            if Tinit:
+            if Tinit is not None:
                 Tinit = ndarray_to_stallone_array(Tinit)
-                self.sampler.init(Tinit)
+                self.sampler.init(C, Tinit)
         except JavaException:
             log = getLogger()
             log.exception("Error during creation of tmatrix sampling wrapper")
