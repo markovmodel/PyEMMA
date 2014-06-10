@@ -518,7 +518,7 @@ def tmatrix_sampler(C, reversible=False, mu=None, P0=None):
     
     from emma2.util.pystallone import JavaException
     try:
-        return ITransitionMatrixSampler(C, mu, reversible)
+        return ITransitionMatrixSampler(C, mu, reversible, Tinit=P0)
     except JavaException as je:
         log = getLogger()
         log.exception("Error during tmatrix sampling")
