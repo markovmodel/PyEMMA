@@ -131,7 +131,7 @@ def is_connected(T, directed=True):
         
 
     """
-    nc=csgraph.connected_components(T, directed=directed, connection='strong', \
+    nc=connected_components(T, directed=directed, connection='strong', \
                                         return_labels=False)    
     return nc == 1
 
