@@ -38,15 +38,14 @@ class TestCorrelations(unittest.TestCase):
         obs2[8] = 1
         obs2[9] = 1
         time = 0
-        corr = correlations.time_correlation_direct(self.T, self.mu,
+        corr = correlations.time_correlation_direct_by_mtx_vec_prod(self.T, self.mu,
                                                     obs1, obs2, time)
         self.assertEqual(corr, 0)
         
         
         time = 100
-        corr = correlations.time_correlation_direct(self.T, self.mu,
+        corr = correlations.time_correlation_direct_by_mtx_vec_prod(self.T, self.mu,
                                                     obs1, obs2, time)
-        print "result: ", corr
         self.assertGreater(corr, 0.0, "correlation should be > 0.")
     
     @unittest.SkipTest
@@ -54,22 +53,23 @@ class TestCorrelations(unittest.TestCase):
         #TODO:
         """test with obs2 = obs1, to test autocorrelation"""
         obs1 = np.zeros(10)
-        obs1[5] = 1
-        time = 0
-        print correlations.time_correlation_direct(self.T, self.mu, obs1, time=time)
-        
+        obs1[0] = 1
+        time = 100
+        print correlations.time_correlation_direct_by_mtx_vec_prod(self.T, self.mu, obs1, time=time)
+       
+    @unittest.SkipTest 
     def test_time_corr2(self):
         obs1 = np.zeros(10)
         obs1[5:] = 1
         obs2 = np.zeros(10)
         obs2[8] = 1
         time = 2
-        print correlations.time_correlation_direct(self.T, self.mu, obs1, obs2, time=time)
+        print correlations.time_correlation_direct_by_mtx_vec_prod(self.T, self.mu, obs1, obs2, time=time)
         
     def test_time_correlations(self):
         """
         tests whether the outcome of the wrapper time_correlations_direct
-        is equivalent to calls to time_correlation_direct with same time set.
+        is equivalent to calls to time_correlation_direct_by_mtx_vec_prod with same time set.
         """
         obs1 = np.zeros(10)
         obs1[3:5] = 1
@@ -80,7 +80,7 @@ class TestCorrelations(unittest.TestCase):
         corr_expected = np.empty(len(times))
         i = 0
         for t in times:
-            corr_expected[i] = correlations.time_correlation_direct(self.T, self.mu,
+            corr_expected[i] = correlations.time_correlation_direct_by_mtx_vec_prod(self.T, self.mu,
                                                            obs1, obs2, t)
             i += 1
         # calculate with wrapper
@@ -98,8 +98,8 @@ class TestCorrelations(unittest.TestCase):
         obs = np.zeros(10)
         obs[9] = 1
         p0 = self.mu
-        c1 = correlations.time_relaxation_direct(self.T, p0, obs, time=1)
-        c1000 = correlations.time_relaxation_direct(self.T, p0, obs, time=1000)
+        c1 = correlations.time_relaxation_direct_by_mtx_vec_prod(self.T, p0, obs, time=1)
+        c1000 = correlations.time_relaxation_direct_by_mtx_vec_prod(self.T, p0, obs, time=1000)
         self.assertAlmostEqual(c1, c1000,
                                msg="relaxation should be same, since we start in equilibrium.")
 
@@ -113,7 +113,7 @@ class TestCorrelations(unittest.TestCase):
         # p0 P^k obs
         P1000 = np.linalg.matrix_power(self.T, 1000)
         expected = np.dot(np.dot(p0, P1000), obs)
-        result =  correlations.time_relaxation_direct(self.T, p0, obs, time=1000)
+        result =  correlations.time_relaxation_direct_by_mtx_vec_prod(self.T, p0, obs, time=1000)
         self.assertAlmostEqual(expected, result)
         
     def test_time_relaxations(self):
@@ -122,9 +122,9 @@ class TestCorrelations(unittest.TestCase):
         
         p0 = np.zeros(10) * 1./10
         times = [1, 100, 1000]
-        expected = [] 
+        expected = []
         for t in times:
-            expected.append(correlations.time_relaxation_direct(self.T, p0, obs, t))
+            expected.append(correlations.time_relaxation_direct_by_mtx_vec_prod(self.T, p0, obs, t))
         
         result = correlations.time_relaxations_direct(self.T, p0, obs, times)
         

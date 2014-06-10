@@ -5,12 +5,11 @@ Created on Jun 4, 2014
 '''
 
 import numpy as np
+from scipy.sparse.sputils import isdense
 
 from decomposition import rdl_decomposition, timescales_from_eigenvalues
-from scipy.sparse.sputils import isdense
 from decomposition import stationary_distribution_from_backward_iteration as stationary_distribution
-
-from correlations import time_correlation_direct, time_relaxations_direct
+from correlations import time_correlations_direct, time_relaxations_direct
 
 def fingerprint_correlation(P, obs1, obs2=None, tau=1):
     r"""Compute dynamical fingerprint crosscorrelation.
@@ -43,11 +42,11 @@ def fingerprint_correlation(P, obs1, obs2=None, tau=1):
     # handle input
     if obs2 is None:
         obs2 = obs1
-    # rdl_decomposition already handles sparsity of P.
+    # rdl_decomposition already handles sparsity of P. # FIXME: no it doesn't
     # w, L, R = rdl_decomposition(P)
     R, D, L=rdl_decomposition(P)
     w=np.diagonal(D)
-    L=np.transpose(L)
+    L=np.transpose(L) # TODO: is L already transposed?
     # timescales:
     timescales = timescales_from_eigenvalues(w, tau)
     n = len(timescales)
@@ -90,7 +89,7 @@ def fingerprint_relaxation(P, p0, obs, tau=1):
     # w, L, R = rdl_decomposition(P)
     R, D, L=rdl_decomposition(P)
     w=np.diagonal(D)
-    L=np.transpose(L)
+    L=np.transpose(L) # TODO: double transposed here?
     # timescales:
     timescales = timescales_from_eigenvalues(w, tau)
     n = len(timescales)
@@ -175,7 +174,7 @@ def correlation(P, obs1, obs2=None, tau=1, times=[1], pi=None):
     # if few and integer time points, compute explicitly
     # TODO: investigate, if this hard cutoff is really necessary.
     if (len(times) < 10 and type(sum(times)) == int and isdense(P)):
-        f = time_correlation_direct(P, pi, obs1, obs2, times)
+        f = time_correlations_direct(P, pi, obs1, obs2, times)
     else:
         timescales,amplitudes = fingerprint_correlation(P, obs1, obs2, tau)
         f = evaluate_fingerprint(timescales, amplitudes, times)
@@ -211,6 +210,7 @@ def relaxation(P, p0, obs, tau=1, times=[1], pi=None):
     if pi is None:
         pi = stationary_distribution(P)
     # if few and integer time points, compute explicitly
+    # TODO: reconsider(measure) if improvements in correlations module allow more direct calculations, btw. this is an arbitrary cutoff...
     if len(times) < 10 and type(sum(times)) == int and isdense(P):
         f = time_relaxations_direct(P, pi, obs, times)
     else:
