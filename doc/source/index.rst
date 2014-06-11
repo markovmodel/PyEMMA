@@ -3,8 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-EMMA -> Emmas Markov Modeling Algorithms
-========================================
+EMMA ("Emma brings you Markov Model Algorithms")
+================================================
 
 .. include:: intro.rst
 
@@ -47,4 +47,4 @@ Indices and tables
 
 
 .. TODO: ipython rst conversion is not supported on RTD (readthedocs),
-    so shall we commit converted rst with images to repo?
+    so shall we commit converted rst with images to repo or have our own build process(travis).
