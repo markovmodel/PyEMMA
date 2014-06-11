@@ -56,7 +56,7 @@ class ITransitionMatrixSampler(object):
             if reversible:
                 if mu is not None:
                     mu = ndarray_to_stallone_array(mu)
-                    self.sampler = API.msmNew.createTransionMatrixSamplerRev(C, mu)
+                    self.sampler = API.msmNew.createTransitionMatrixSamplerRev(C, mu)
                 else:
                     self.sampler = API.msmNew.createTransitionMatrixSamplerRev(C)
             else:
