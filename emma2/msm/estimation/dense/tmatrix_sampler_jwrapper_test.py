@@ -6,6 +6,8 @@ Created on Jun 6, 2014
 import unittest
 from emma2.msm.estimation.dense.tmatrix_sampler_jwrapper import ITransitionMatrixSampler
 import numpy as np
+from emma2.msm.analysis.api import stationary_distribution
+from emma2.util.pystallone import ndarray_to_stallone_array
 
 def assertSampler2x2(sampler, C, nsample, errtol):
     """
@@ -54,19 +56,19 @@ class TestJavaTransitionMatrixSampler(unittest.TestCase):
                            [1, 10]])
         self.errtol = 1e-2
         self.nsample = 100000
-        # create wrapper class instances
-        self.sampler_rev = ITransitionMatrixSampler(self.C, reversible=True)
-        self.sampler_nonrev = ITransitionMatrixSampler(self.C, reversible=False)
-        
-    def testSamplerRev(self):
-        assertSampler2x2(self.sampler_rev, self.C, self.nsample, self.errtol)
-        
-    def testSamplerNonRev(self):
-        assertSampler2x2(self.sampler_nonrev, self.C, self.nsample, self.errtol)     
-
-    # TODO: impl
-    def testSampleRefStatDist(self):
-        pass
     
+    def testSamplerRev(self):
+        sampler_rev = ITransitionMatrixSampler(self.C, reversible=True)
+        assertSampler2x2(sampler_rev, self.C, self.nsample, self.errtol)
+    
+    def testSamplerNonRev(self):
+        sampler_nonrev = ITransitionMatrixSampler(self.C, reversible=False)
+        assertSampler2x2(sampler_nonrev, self.C, self.nsample, self.errtol)
+    
+    def testSamplerRevPiFix(self):
+        mu = np.array([0.62921595, 0.37078405])
+        sampler_rev_pi = ITransitionMatrixSampler(self.C, reversible=True, mu=mu)
+        assertSampler2x2(sampler_rev_pi, self.C, self.nsample, self.errtol)
+
 if __name__ == "__main__":
     unittest.main()
