@@ -13,15 +13,18 @@ __docformat__ = "restructuredtext en"
 import warnings
 
 import numpy as np
-import sparse.count_matrix
-import sparse.connectivity
-import sparse.likelihood
-import sparse.transition_matrix
-import dense.transition_matrix
 
 from scipy.sparse import csr_matrix
 from scipy.sparse import issparse
 from scipy.sparse.sputils import isdense
+
+import sparse.count_matrix
+import sparse.connectivity
+import sparse.likelihood
+import sparse.transition_matrix
+import sparse.prior
+
+import dense.transition_matrix
 
 import emma2.util.pystallone as stallone
 from emma2.util.log import getLogger
@@ -33,6 +36,9 @@ __all__=['count_matrix',
          'largest_connected_set',
          'largest_connected_submatrix',
          'is_connected',
+         'prior_neighbor',
+         'prior_const',
+         'prior_rev',
          'transition_matrix',
          'log_likelihood',
          'tmatrix_sampler']
@@ -242,13 +248,12 @@ def mapping(set):
 
 
 ################################################################################
-# Priors
+# priors
 ################################################################################
 
-# DONE: Frank
-def prior_neighbor(Z, alpha = 0.001):
-    """
-    Returns a neighbor prior of strength alpha associated with the given count matrix.
+# DONE: Frank, Ben
+def prior_neighbor(C, alpha = 0.001):
+    r"""Neighbor prior of strength alpha for the given count matrix.
     
     Prior is defined by 
         b_ij = alpha  if Z_ij+Z_ji > 0
@@ -256,40 +261,87 @@ def prior_neighbor(Z, alpha = 0.001):
     
     Parameters
     ----------
-    Z : numpy ndarray or scipy.sparse matrix (n,n)
+    C : (M, M) ndarray or scipy.sparse matrix
         Count matrix
-    alpha : float (default 0.001 counts)
+    alpha : float (optional)
+        Value of prior counts
     
     Returns
     -------
-    B : numpy ndarray or scipy.sparse matrix (n,n), same type as Z
-        Prior count matrix    
+    B : (M, M) ndarray or scipy.sparse matrix
+        Prior count matrix
+        
     """
-    B = alpha * (Z + Z.transpose()).sign()
-    return B
 
-__all__.append('prior_neighbor')
+    if isdense(C):
+        B=sparse.prior.prior_neighbour(csr_matrix(C), alpha=alpha)
+        return B.toarray()
+    else:
+        return sparse.prior.prior_neighbour(C, alpha=alpha)    
 
+# DONE: Frank, Ben
+def prior_const(C, alpha = 0.001):
+    """Constant prior of strength alpha.
 
-# DONE: Frank
-def prior_const(n, alpha = 0.001):
-    """
-    Returns a constant prior of strength alpha, i.e. b_ij=alpha for all i,j
+    Prior is defined via
+
+        b_ij=alpha for all i,j
     
     Parameters
     ----------
-    n : the number of states. Determines the size of the return (n,n)
-    alpha : float (default 0.001 counts)
+    C : (M, M) ndarray or scipy.sparse matrix
+        Count matrix
+    alpha : float (optional)
+        Value of prior counts    
     
     Returns
     -------
-    B : numpy ndarray 
+    B : (M, M) ndarray 
         Prior count matrix    
+        
     """
-    B = alpha*np.ones((n,n))
-    return B
+    if isdense(C):
+        return sparse.prior.prior_const(C, alpha=alpha)
+    else:
+        warnings.warn("Prior will be a dense matrix for sparse input")
+        return sparse.prior.prior_const(C, alpha=alpha)
 
 __all__.append('prior_const')
+
+# DONE: Ben
+def prior_rev(C, alpha=-1.0):
+    r"""Prior counts for sampling of reversible transition
+    matrices.  
+
+    Prior is defined as 
+
+    b_ij= alpha if i<=j
+    b_ij=0         else
+
+    The reversible prior adds -1 to the upper triagular part of
+    the given count matrix. This prior respects the fact that
+    for a reversible transition matrix the degrees of freedom
+    correspond essentially to the upper, respectively the lower
+    triangular part of the matrix.
+
+    Parameters
+    ----------
+    C : (M, M) ndarray or scipy.sparse matrix
+        Count matrix
+    alpha : float (optional)
+        Value of prior counts
+       
+    Returns
+    -------
+    B : (M, M) ndarray
+        Matrix of prior counts        
+    
+    """
+    if isdense(C):
+        return sparse.prior.prior_rev(C, alpha=alpha)
+    else:
+        warnings.warn("Prior will be a dense matrix for sparse input")
+        return sparse.prior.prior_rev(C, alpha=alpha)     
 
 
 ################################################################################
@@ -490,7 +542,7 @@ def _showSparseConversionWarning():
                   'currently only implemented for dense matrices.', UserWarning)
 
 # DONE: Martin Map to Stallone (Reversible)
-def tmatrix_sampler(C, reversible=False, mu=None, P0=None):
+def tmatrix_sampler(C, reversible=False, mu=None, T0=None):
     r"""Generate transition matrix sampler object.
     
     Parameters
@@ -503,7 +555,7 @@ def tmatrix_sampler(C, reversible=False, mu=None, P0=None):
         else draw from the whole ensemble of stochastic matrices.
     mu : array_like
         The stationary distribution of the transition matrix samples.
-    P0 : ndarray, shape=(n, n) or scipy.sparse matrix
+    T0 : ndarray, shape=(n, n) or scipy.sparse matrix
         Starting point of the MC chain of the sampling algorithm.
         Has to obey the required constraints.
     
@@ -518,7 +570,7 @@ def tmatrix_sampler(C, reversible=False, mu=None, P0=None):
     
     from emma2.util.pystallone import JavaException
     try:
-        return ITransitionMatrixSampler(C, mu, reversible, Tinit=P0)
+        return ITransitionMatrixSampler(C, mu, reversible, Tinit=T0)
     except JavaException as je:
         log = getLogger()
         log.exception("Error during tmatrix sampling")
