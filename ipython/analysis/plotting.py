@@ -186,3 +186,18 @@ def timescale_histogram(ts, n=100):
     ax.set_ylabel(r"$p(t_i)$")
     ax.hist(ts, n, normed=True)
 
+
+def amplitudes(a):
+    r"""Plot fingerprint amplitudes.
+
+    Parameters
+    ----------
+    a : (M,) ndarray
+        Fingerprint amplitudes
+
+    """
+    fig=plt.figure()
+    ax=fig.add_subplot(111)
+    ax.set_xlabel(r"$i$")
+    ax.set_ylabel(r"$\gamma_i$")
+    ax.plot(np.arange(len(a)), a)
