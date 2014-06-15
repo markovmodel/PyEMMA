@@ -168,3 +168,36 @@ def pcca(centers, crisp):
             col=my_colors[member[i]]            
             patch=plt.Rectangle((x, y), dx, dy, color=col)
             ax.add_patch(patch)                     
+
+def timescale_histogram(ts, n=100):
+    r"""Histogram of implied time scales.
+
+    Parameters
+    ----------
+    ts : (M, ) ndarray
+        Sample of implied time scales
+    n : int (optional)
+        Number of histogram bins
+
+    """
+    fig=plt.figure()
+    ax=fig.add_subplot(111)
+    ax.set_xlabel(r"$t_i$")
+    ax.set_ylabel(r"$p(t_i)$")
+    ax.hist(ts, n, normed=True)
+
+
+def amplitudes(a):
+    r"""Plot fingerprint amplitudes.
+
+    Parameters
+    ----------
+    a : (M,) ndarray
+        Fingerprint amplitudes
+
+    """
+    fig=plt.figure()
+    ax=fig.add_subplot(111)
+    ax.set_xlabel(r"$i$")
+    ax.set_ylabel(r"$\gamma_i$")
+    ax.plot(np.arange(len(a)), a)

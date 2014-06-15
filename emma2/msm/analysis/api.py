@@ -10,8 +10,10 @@ Emma2 MSM Analysis API
 
 __docformat__ = "restructuredtext en"
 
+import warnings
+
 import numpy as np
-from scipy.sparse import issparse
+from scipy.sparse import issparse, csr_matrix
 from scipy.sparse.sputils import isdense
 
 import dense.assessment
@@ -33,7 +35,7 @@ import sparse.mean_first_passage_time
 
 __all__=['is_transition_matrix',
          'is_rate_matrix',
-         'is_ergodic',
+         'is_connected',
          'is_reversible',
          'stationary_distribution',
          'eigenvalues',
@@ -61,7 +63,8 @@ __all__=['is_transition_matrix',
          'timescale_sensitivity',
          'eigenvector_sensitivity',
          'mfpt_sensitivity',
-         'committor_sensitivity']
+         'committor_sensitivity',
+         'expectation_sensitivity']
 # shortcuts added later:
 # ['statdist', 'is_tmatrix', 'statdist_sensitivity']
 
@@ -149,31 +152,8 @@ def is_connected(T, directed=True):
     if issparse(T):
         return sparse.assessment.is_connected(T, directed=directed)
     elif isdense(T):
-        T=T.tocsr()
+        T=csr_matrix(T)
         return sparse.assessment.is_connected(T, directed=directed)
-    else:
-        raise _type_not_supported
-
-# DONE: Martin 
-def is_ergodic(T, tol=1e-15):
-    r"""True if T is connected (irreducible) and aperiodic.
-    
-    Parameters
-    ----------
-    T : ndarray or scipy.sparse matrix
-        Transition matrix
-    tol : float
-        tolerance to check with
-    
-    Returns
-    -------
-    Truth value : bool
-        True, if T is ergodic
-        False, otherwise
-    """
-    if issparse(T) or isdense(T):
-        # T has to be sparse, and will be converted in sparse impl
-        return sparse.assessment.is_ergodic(T, tol)
     else:
         raise _type_not_supported
 
@@ -299,6 +279,7 @@ def timescales(T, tau=1, k=None, ncv=None):
         not None then the shape of `ts` is (k,).
     
     """
+    # TODO: parameter ncv is unused.
     if issparse(T):
         return sparse.decomposition.timescales(T, tau=tau, k=k)
     elif isdense(T):
@@ -650,6 +631,8 @@ def correlation(P, obs1, obs2=None, tau=1, times=[1], pi=None):
     -------
     
     """
+    # TODO: use parameter pi or delete it
+    # TODO: same for paramter times.
     return dense.fingerprints.fingerprint_correlation(P, obs1, obs2, tau)
 
 
@@ -796,7 +779,13 @@ def tpt(T, A, B, mu=None, qminus=None, qplus=None):
     --------
     committor
     
-    """    
+    """
+    
+    if len(A) == 0 or len(B) == 0:
+        raise ValueError('set A or B is empty')
+    n = T.shape[0]
+    if len(A) > n or len(B) > n or max(A) > n or max(B) > n:
+        raise ValueError('set A or B defines more states, than given transition matrix.')
     if not is_transition_matrix(T):
         raise ValueError('given matrix T is not a transition matrix')   
     if issparse(T):
@@ -976,8 +965,7 @@ def tpt_rate(T, A, B, mu=None, qminus=None, qplus=None):
 ################################################################################
 
 def _showSparseConversionWarning():
-    import warnings
-    warnings.warn('converting input to dense, since sensitivity is '
+    warnings.warn('Converting input to dense, since sensitivity is '
                   'currently only impled for dense types.', UserWarning)
 
 # TODO: Implement sparse in Python directly
@@ -1155,6 +1143,25 @@ def committor_sensitivity(T, A, B, i, forward=True):
 
 # TODO: Implement in Python directly
 def expectation_sensitivity(T, a):
-    r"""computes the sensitivity of the expectation value of a
+    r"""Sensitivity of expectation value of observable A=(a_i).
+
+    Parameters
+    ----------
+    T : (M, M) ndarray
+        Transition matrix
+    a : (M,) ndarray
+        Observable, a[i] is the value of the observable at state i.
+
+    Returns
+    -------
+    S : (M, M) ndarray
+        Sensitivity matrix of the expectation value.
+    
     """
-    raise NotImplementedError('Not implemented.')
+    if issparse(T):
+        _showSparseConversionWarning()
+        return dense.sensitivity.expectation_sensitivity(T.toarray(), a)
+    elif isdense(T):
+        return dense.sensitivity.expectation_sensitivity(T, a)
+    else:
+        raise _type_not_supported

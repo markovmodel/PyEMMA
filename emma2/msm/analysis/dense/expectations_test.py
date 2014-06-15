@@ -24,7 +24,6 @@ class TestExpectedCounts(unittest.TestCase):
         """Compute stationary distribution"""
         self.mu=L[:, 0]/np.sum(L[:, 0])
         
-        pass
     def tearDown(self):
         pass
 

@@ -5,7 +5,6 @@ Created on Jan 5, 2014
 '''
 
 import emma2.util.pystallone as stallone
-import util
 
 class CoordinateTransform(object):
     """
