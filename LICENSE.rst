@@ -1,4 +1,5 @@
-Copyright (c) <YEAR>, <OWNER> All rights reserved.
+Copyright (c) 2014, Computational Molecular Biology Group, 
+   FU Berlin, 14195 Berlin, Germany.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions

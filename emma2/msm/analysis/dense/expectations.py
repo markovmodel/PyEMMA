@@ -162,7 +162,7 @@ def ec_matrix_vector(p0, T, n):
         p_k=1.0*p0
         """Sum of vectors after (k=0) propagations"""
         p_sum=1.0*p_k           
-        for k in np.arange(n-1):
+        for k in xrange(n-1):
             """Propagate one step p_{k} -> p_{k+1}"""
             p_k=np.dot(p_k,T)      
             """Update sum"""

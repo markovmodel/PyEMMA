@@ -9,8 +9,6 @@ from scipy.sparse.dia import dia_matrix
 
 import assessment
 
-
-
 def normalize_rows(A):
     """Normalize rows of sparse marix"""
     A=A.tocsr()
@@ -140,6 +138,40 @@ class TestReversible(unittest.TestCase):
     def test_is_reversible(self):
         self.assertTrue(assessment.is_reversible(self.T, tol=self.tol), \
                         'matrix should be reversible')
+
+class TestIsConnected(unittest.TestCase):
+        
+    def setUp(self):
+        C1=1.0*np.array([[1, 4, 3], [3, 2, 4], [4, 5, 1]])
+        C2=1.0*np.array([[0, 1], [1, 0]])
+        C3=1.0*np.array([[7]])
+
+        C=scipy.sparse.block_diag((C1, C2, C3))
+        
+        C=C.toarray()
+        """Forward transition block 1 -> block 2"""
+        C[2, 3]=1
+        """Forward transition block 2 -> block 3"""
+        C[4, 5]=1
+
+        self.T_connected=scipy.sparse.csr_matrix(C1/C1.sum(axis=1)[:,np.newaxis])
+        self.T_not_connected=scipy.sparse.csr_matrix(C/C.sum(axis=1)[:,np.newaxis])        
+
+    def tearDown(self):
+        pass
+
+    def test_connected_count_matrix(self):
+        """Directed"""
+        is_connected=assessment.is_connected(self.T_not_connected)
+        self.assertFalse(is_connected)
+     
+        is_connected=assessment.is_connected(self.T_connected)
+        self.assertTrue(is_connected)     
+
+        """Undirected"""
+        is_connected=assessment.is_connected(self.T_not_connected, directed=False)
+        self.assertTrue(is_connected)
+
 
 if __name__=="__main__":
     import cProfile as profiler

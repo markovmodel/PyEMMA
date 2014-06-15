@@ -6,7 +6,40 @@ Created on 29.11.2013
 
 import numpy as np
 
-def time_correlation_direct(P, mu, obs1, obs2=None, time=1, start_values=None,
+from decomposition import rdl_decomposition
+
+def time_correlation_by_diagonalization(P, pi, obs1, obs2=None, time=1,
+                                        rdl=None, return_rdl=False):
+    """
+    calculates time correlation. Raises P to power 'times' by diagonalization.
+    If rdl tuple (R, D, L) is given, it will be used for
+    further calculation.
+    """
+    if rdl is None:
+        R, D, L = rdl_decomposition(P)
+        D = np.real(D)
+    else:
+        R = rdl[0]
+        D = rdl[1]
+        L = rdl[2]
+    
+    d_times = np.diag(D, 0) ** time
+    diag_inds = np.diag_indices_from(D)
+    D_time = np.zeros(D.shape)
+    D_time[diag_inds] = d_times
+    P_time = np.dot(np.dot(R, D_time), L)
+    
+    # multiply element-wise obs1 and pi. this is obs1' diag(pi)
+    l = np.multiply(obs1, pi)
+    m = np.dot(P_time, obs2)
+    result = np.dot(l, m)
+    if return_rdl:
+        return result, (R, D, L)
+    else:
+        return result
+
+
+def time_correlation_direct_by_mtx_vec_prod(P, mu, obs1, obs2=None, time=1, start_values=None,
                             return_P_k_obs=False):
     r"""Compute time-correlation of obs1, or time-cross-correlation with obs2.
     
@@ -61,7 +94,6 @@ def time_correlation_direct(P, mu, obs1, obs2=None, time=1, start_values=None,
         r = xrange(t_diff)
     else:
         if time >= 2:
-            
             P_i_obs = np.dot(P, np.dot(P, obs2)) # vector <P, <P, obs2> := P^2 * obs
             r = xrange(time - 2)
         elif time == 1:
@@ -107,18 +139,26 @@ def time_correlations_direct(P, pi, obs1, obs2=None, times=[1]):
     n_t = len(times)
     times = np.sort(times) # sort it to use caching of previously computed correlations
     f = np.zeros(n_t)
-    if n_t < 2:
+    
+    # maximum time > number of rows?
+    if times[-1] > P.shape[0]:
+        use_diagonalization = True
+    
+    if use_diagonalization:
+        rdl = None
         for i in xrange(n_t):
-            f[i] = time_correlation_direct(P, pi, obs1, obs2, times[i]) 
+            f[i], rdl = time_correlation_by_diagonalization(P, pi, obs1, obs2, times[i],
+                                                            rdl, return_rdl=True)
     else:
-        f[0], start_values = time_correlation_direct(P, pi, obs1, obs2, times[0],
-                                      return_P_k_obs=True)
-        for i in xrange(1, n_t):
-            f[i], start_values = time_correlation_direct(P, pi, obs1, obs2, times[i],
-                                                    start_values, return_P_k_obs=True)
+        start_values = None
+        for i in xrange(n_t):
+            f[i], start_values = \
+                time_correlation_direct_by_mtx_vec_prod(P, pi, obs1, obs2,
+                                                        times[i], start_values, True) 
     return f
 
-def time_relaxation_direct(P, p0, obs, time=1, start_values=None, return_pP_k=False):
+def time_relaxation_direct_by_mtx_vec_prod(P, p0, obs, time=1, start_values=None,
+                                           return_pP_k=False):
     r"""Compute time-relaxations of obs with respect of given initial distribution.
     
     relaxation(k) = p0 P^k obs
@@ -134,6 +174,7 @@ def time_relaxation_direct(P, p0, obs, time=1, start_values=None, return_pP_k=Fa
     time : int or array like
         time point at which the (auto)correlation will be evaluated.
     
+    start_values = (time, 
     Returns
     -------
     relaxation : float 
@@ -174,7 +215,27 @@ def time_relaxation_direct(P, p0, obs, time=1, start_values=None, return_pP_k=Fa
         return l, (time, pk_i)
     else:
         return l
-
+    
+def time_relaxation_direct_by_diagonalization(P, p0, obs, time, rdl=None, return_rdl=False):
+    if rdl is None:
+        R, D, L = rdl_decomposition(P)
+        D = np.real(D)
+    else:
+        R = rdl[0]
+        D = rdl[1]
+        L = rdl[2]
+    
+    d_times = np.diag(D, 0) ** time
+    diag_inds = np.diag_indices_from(D)
+    D_time = np.zeros(D.shape)
+    D_time[diag_inds] = d_times
+    P_time = np.dot(np.dot(R, D_time), L)
+    
+    result = np.dot(np.dot(p0, P_time), obs)
+    if return_rdl:
+        return result, (R, D, L)
+    else:
+        return result
 
 def time_relaxations_direct(P, p0, obs, times = [1]):
     r"""Compute time-relaxations of obs with respect of given initial distribution.
@@ -200,12 +261,18 @@ def time_relaxations_direct(P, p0, obs, times = [1]):
     times = np.sort(times)
     f = np.empty(n_t)
     
-    if n_t < 2:
+    # maximum time > number of rows?
+    if times[-1] > P.shape[0]:
+        use_diagonalization = True
+    
+    if use_diagonalization:
+        rdl = None
         for i in xrange(n_t):
-            f[i] = time_relaxation_direct(P, p0, obs, times[i])
+            f[i], rdl = time_relaxation_direct_by_diagonalization(
+                                        P, p0, obs, times[i], rdl, True)
     else:
-        f[0], start_values = time_relaxation_direct(P, p0, obs, times[0], return_pP_k=True)
-        for i in xrange(1, n_t):
-            f[i], start_values = time_relaxation_direct(P, p0, obs, times[i],
-                                                    start_values, return_pP_k=True)
+        start_values = None
+        for i in xrange(n_t):
+            f[i], start_values = time_relaxation_direct_by_mtx_vec_prod(
+                                        P, p0, obs, times[i], start_values, True)
     return f
