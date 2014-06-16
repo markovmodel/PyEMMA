@@ -24,7 +24,6 @@ performs this algo [Ref]_.
 import os
 import sys
 import numpy
-import warnings
 
 __docformat__ = "restructuredtext en"
 __all__ = ['correlation', 'Amuse']
@@ -146,17 +145,20 @@ class Amuse:
             amuse.mean = amuse.mean[1:]
             amuse.n = amuse.n - 1
     
-        amuse.pca_values, amuse.pca_weights = numpy.linalg.eig(corr)
-        # normalize weights by dividing by the standard deviation of the pcs 
-        if numpy.all(amuse.pca_values > 0):
-            log.debug('normalize weights by dividing by the standard deviation of the pcs')
-            for i, l in enumerate(amuse.pca_values):
-                amuse.pca_weights[:, i] = amuse.pca_weights[:, i] / numpy.sqrt(l)
-        else:
-            warnings.warn('some pca weights are zero')
+        amuse.pca_values, amuse.pca_weights = numpy.linalg.eigh(corr)
+        # normalize weights by dividing by the standard deviation of the pcs
+        for i,l in enumerate(amuse.pca_values):
+            if l == 0.0:
+                print >> sys.stderr, "Warning: variance of PC #%d is zero. Will"\
+                 "ignore its contribution to the ICs." % i
+                # remove contribution of this PC by setting the weights to zero
+                amuse.pca_weights[:,i] *= 0.0
+            else:
+                amuse.pca_weights[:,i] /= numpy.sqrt(l)
+
 
         pc_tcorr = numpy.dot(numpy.dot(numpy.transpose(amuse.pca_weights), tcorr), amuse.pca_weights)
-        amuse.tica_values, amuse.intermediate_weights = numpy.linalg.eig(pc_tcorr)
+        amuse.tica_values, amuse.intermediate_weights = numpy.linalg.eigh(pc_tcorr)
         amuse.tica_weights = numpy.dot(amuse.pca_weights, amuse.intermediate_weights)
 
         # sort eigenvalues und eigenvectors
