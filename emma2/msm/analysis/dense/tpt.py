@@ -9,8 +9,8 @@ import numpy as np
 from decomposition import stationary_distribution_from_backward_iteration as statdist
 from committor import forward_committor, backward_committor
 
-class TPT:
-    def __init__(self, T, A, B, mu=None, qminus=None, qplus=None):
+class TPT(object):
+    def __init__(self, T, A, B, mu=None, qminus=None, qplus=None, name_A=None, name_B=None):
         r""" A multi-purpose TPT-object.
 
         The TPT-object provides methods for Transition Path analysis 
@@ -30,6 +30,10 @@ class TPT:
             Backward committor for A->B reaction
         qplus : (M,) ndarray (optional)
             Forward committor for A-> B reaction
+        name_A : string
+            optional name for set A
+        name_b : string
+            optional name for set B
          
         Notes
         -----
@@ -44,6 +48,10 @@ class TPT:
         self.T=T
         self.A=A
         self.B=B
+        if name_A:
+            self.name_A = name_A
+        if name_B:
+            self.name_B = name_B
 
         """Precompute quantities required for TPT-analysis (if necessary)"""
         if mu is None:
@@ -232,6 +240,19 @@ class TPT:
             
         """
         return self.mu
+    
+    def __getattr__(self, name):
+        """
+        if user have not given a name for set A/B, the string repr of the set
+        is returned. Note that this method is only called for not defined attributes.
+        """
+        if name == 'name_A':
+            return repr(self.A)
+        if name == 'name_B':
+            return repr(self.B)
+        else:
+            # Default behavior
+            raise AttributeError("no attribute named '%s'" % name)
     
 
 def tpt_flux(T, A, B, mu=None, qminus=None, qplus=None):
