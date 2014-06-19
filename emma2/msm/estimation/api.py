@@ -274,10 +274,10 @@ def prior_neighbor(C, alpha = 0.001):
     """
 
     if isdense(C):
-        B=sparse.prior.prior_neighbour(csr_matrix(C), alpha=alpha)
+        B=sparse.prior.prior_neighbor(csr_matrix(C), alpha=alpha)
         return B.toarray()
     else:
-        return sparse.prior.prior_neighbour(C, alpha=alpha)    
+        return sparse.prior.prior_neighbor(C, alpha=alpha)
 
 # DONE: Frank, Ben
 def prior_const(C, alpha = 0.001):
