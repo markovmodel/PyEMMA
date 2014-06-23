@@ -203,7 +203,7 @@ def transform_file(infile, transformation, outfile, output_precision = (10,10)):
         If the output supports fixed precision (e.g. ASCII-file), the precision
         is used as specified here.
     """
-    if isinstance(transformation, CoordinateTransform):
+    if getattr(transformation, 'jtransform', False): # has jtransform function
         coor.fixOutputPrecision(output_precision[0],output_precision[1])
         coor.transform_file(infile, transformation.jtransform(), outfile)
         coor.fixOutputPrecision()
