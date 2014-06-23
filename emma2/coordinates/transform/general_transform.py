@@ -11,8 +11,6 @@ class CoordinateTransform(object):
     Wrapper class to stallone coordinate transform
     """
     
-    _jcoordinatetransform = None
-    
     def __init__(self, jcoordinatetransform):
         self._jcoordinatetransform = jcoordinatetransform
     
