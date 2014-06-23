@@ -11,17 +11,17 @@ from runipy.notebook_runner import NotebookRunner
 from IPython.nbformat.current import read
 from IPython.nbformat.v3.nbbase import new_code_cell
 
+# point to ipython directory in emma2
 ipy_dir = os.path.abspath(os.path.dirname(__file__) + '/..')
 
 def case_generator(filename):
     def test(self):
-        # TODO: is it possible to execute new kernel for each nb?
         payload = open(filename)
         nb = read(payload, 'json')
         # turn off colors, so we can properly read exceptions
         cell = new_code_cell(input='%colors NoColor', prompt_number=0)
         nb.worksheets[0].cells.insert(0,cell)
-        runner = NotebookRunner(nb, working_dir='..')
+        runner = NotebookRunner(nb, working_dir=ipy_dir)
         try:
             runner.run_notebook(skip_exceptions=False)
         except Exception as e:
@@ -33,15 +33,11 @@ class TestNotebooks(unittest.TestCase):
     def setUpClass(cls):
         super(TestNotebooks, cls).setUpClass()
         for p, d, filenames in os.walk(ipy_dir):
-           #break
             for f in filenames:
                 if f.endswith('.ipynb') and f.rfind('-checkpoint') == -1:
                     test_name = 'test_%s' % os.path.splitext(f)[0]
                     test = case_generator(os.path.join(p, f))
                     setattr(cls, test_name, test)
-                    
-        #setattr(cls, 'test_coor', case_generator('../ipython/coordinates.ipynb'))
-        print dir(cls)
 
     def testDummy(self):
         """
