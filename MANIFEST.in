@@ -1,5 +1,13 @@
 include setup.py
+# libraries
 recursive-include lib *
-graft doc
+# versioneer
 include versioneer.py
 include emma2/_version.py
+# documentation
+graft doc
+prune doc/build
+prune doc/source/generated
+
+# ipython notebooks
+graft ipython
