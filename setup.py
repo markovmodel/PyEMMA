@@ -54,7 +54,11 @@ class np_build(build_ext):
     def initialize_options(self):
         build_ext.initialize_options(self)
         # https://stackoverflow.com/questions/21605927/why-doesnt-setup-requires-work-properly-for-numpy
-        #__builtins__.__NUMPY_SETUP__ = False
+        try:
+            __builtins__.__NUMPY_SETUP__ = False
+        except AttributeError:
+            # this may happen, if numpy requirement is already fulfilled.
+            pass
         from numpy import get_include
         self.include_dirs = get_include()
 
