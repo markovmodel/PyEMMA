@@ -19,8 +19,13 @@ def case_generator(filename):
         payload = open(filename)
         nb = read(payload, 'json')
         # turn off colors, so we can properly read exceptions
-        cell = new_code_cell(input='%colors NoColor', prompt_number=0)
-        nb.worksheets[0].cells.insert(0, cell)
+        cell_nc = new_code_cell(input='%colors NoColor', prompt_number=0)
+        nb.worksheets[0].cells.insert(0, cell_nc)
+        
+        # workaround for matplotlib backend
+        cell_mpl = new_code_cell(input="import matplotlib; matplotlib.use('Agg')", prompt_number=1)
+        nb.worksheets[0].cells.insert(1, cell_mpl)
+        
         # set working dir to notebook path
         wd = os.path.abspath(os.path.dirname(filename))
         runner = NotebookRunner(nb, working_dir=wd)
