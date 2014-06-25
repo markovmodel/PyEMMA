@@ -1,5 +1,4 @@
 include setup.py
-include ez_setup.py
 recursive-include lib *
 graft doc
 include versioneer.py
