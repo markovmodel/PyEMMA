@@ -12,7 +12,7 @@ from IPython.nbformat.current import read
 from IPython.nbformat.v3.nbbase import new_code_cell
 
 # point to ipython directory in emma2
-ipy_dir = os.path.abspath(os.path.dirname(__file__) + '/..')
+ipy_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
 def case_generator(filename):
     def test(self):
@@ -20,8 +20,10 @@ def case_generator(filename):
         nb = read(payload, 'json')
         # turn off colors, so we can properly read exceptions
         cell = new_code_cell(input='%colors NoColor', prompt_number=0)
-        nb.worksheets[0].cells.insert(0,cell)
-        runner = NotebookRunner(nb, working_dir=ipy_dir)
+        nb.worksheets[0].cells.insert(0, cell)
+        # set working dir to notebook path
+        wd = os.path.abspath(os.path.dirname(filename))
+        runner = NotebookRunner(nb, working_dir=wd)
         try:
             runner.run_notebook(skip_exceptions=False)
         except Exception as e:
