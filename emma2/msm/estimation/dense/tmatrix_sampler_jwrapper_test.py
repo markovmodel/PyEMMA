@@ -62,7 +62,8 @@ class TestJavaTransitionMatrixSampler(unittest.TestCase):
     def testSamplerNonRev(self):
         sampler_nonrev = ITransitionMatrixSampler(self.C, reversible=False)
         assertSampler2x2(sampler_nonrev, self.C, self.nsample, self.errtol)
-    
+   
+    @unittest.SkipTest
     def testSamplerRevPiFix(self):
         mu = np.array([0.62921595, 0.37078405])
         sampler_rev_pi = ITransitionMatrixSampler(self.C, reversible=True, mu=mu)
