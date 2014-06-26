@@ -10,6 +10,7 @@ import os
 from runipy.notebook_runner import NotebookRunner
 from IPython.nbformat.current import read
 from IPython.nbformat.v3.nbbase import new_code_cell
+import sys
 
 # point to ipython directory in emma2
 ipy_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -29,10 +30,12 @@ def case_generator(filename):
         # set working dir to notebook path
         wd = os.path.abspath(os.path.dirname(filename))
         runner = NotebookRunner(nb, working_dir=wd)
-        try:
-            runner.run_notebook(skip_exceptions=False)
-        except Exception as e:
-            self.fail('Notebook %s threw an exception (%s)' % (filename, e))
+        #try:
+        runner.run_notebook(skip_exceptions=False)
+        #except Exception as e:
+        #    exc_type, exc_obj, exc_tb = sys.exc_info()
+        #    self.fail('Notebook %s threw an exception of type %s:\n(%s)' %
+        #             (filename, exc_type, e))
     return test
 
 class TestNotebooks(unittest.TestCase):
