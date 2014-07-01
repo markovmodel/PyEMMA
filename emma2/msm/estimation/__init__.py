@@ -33,7 +33,7 @@ Estimation
    :toctree: generated/
 
    transition_matrix - Estimate transition matrix
-   log_likelihood  
+   log_likelihood
 
 Sampling
 ========
