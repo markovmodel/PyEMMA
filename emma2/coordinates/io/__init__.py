@@ -1,16 +1,22 @@
 r"""
 =============================================================
-io - coordinates io functions (:mod:`emma2.coordinates.io`)
+io - MD trajectory io functions (:mod:`emma2.coordinates.io`)
 =============================================================
 
 .. currentmodule:: emma2.coordinates.io
 
+MD trajectory io
+================
+
 .. autosummary::
    :toctree: generated/
+
+   reader - return reader object for MD trajectory
+   read_traj - load full trajectory into memory
+   writer - return writer object for MD trajectory
+   write_traj - write full MD trajectory to file
    
 """
-from __future__ import division, print_function, absolute_import
 
 from .api import *
 
-__all__=[s for s in dir() if not s.startswith('_')]
