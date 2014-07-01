@@ -1,14 +1,24 @@
 # -*- coding: utf-8 -*-
-
 r"""
-====
+==========================================================================
+TICA - time independent component analysis (:mod:`emma2.coordinates.tica`)
+==========================================================================
+
+.. currentmodule:: emma2.coordinates.tica
+
 TICA
 ====
+
+.. autosummary::
+   :toctree: generated/
+
+   correlation
+   Amuse
+
 
 performs this algo [Ref]_.
 
 .. TODO: describe method. See http://msmbuilder.org/theory/tICA.html
-
 
 .. date: Created on 19.11.2013
 
@@ -32,7 +42,18 @@ from emma2.util.log import getLogger
 log = getLogger()
 
 def correlation(cov, var):
-    '''Calculate covariance matrix from correlation matrix.'''
+    r"""Calculate covariance matrix from correlation matrix.
+
+    Parameters
+    ----------
+    cov :
+    var :
+
+    Returns
+    -------
+    corr :     
+
+    """
     
     n = cov.shape[0]
     corr = numpy.empty([n, n])
