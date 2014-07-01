@@ -16,14 +16,22 @@ Installation
    Configuration
 
 
-Usage
-=====
+Documentation
+=============
 
 .. toctree::
    :maxdepth: 3
 
    api
+
+Tutorials
+=========
+
+.. toctree::
+   :maxdepth: 2
+
    ipython
+
    
 Development
 ===========
