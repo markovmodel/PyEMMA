@@ -5,7 +5,7 @@ to analyze trajectories generated from any kind of simulation
 
 It provides an API for estimation and analyzing MSM and various utilities to
 process input data (clustering, coordinate transformations etc). For documentation
-of the API, please have a look at the sphinx docs (:ref:`ref_api`).
+of the API, please have a look at the :ref:`ref_api`.
 
 
 To install this software and additional dependencies refer to the 
