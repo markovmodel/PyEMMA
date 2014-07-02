@@ -1,7 +1,7 @@
 r"""This module provides functions for the computation of forward and
 backward comittors using sparse linear algebra.
 
-.. moduleauthor:: B.Trendelkamp-Schroer <benjamin.trendelkampschroer@gmail.com>
+.. moduleauthor:: B.Trendelkamp-Schroer <benjamin DOT trendelkamp-schroer AT fu-berlin DOT de>
 
 """
 import numpy as np
