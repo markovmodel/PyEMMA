@@ -10,9 +10,6 @@ Created on Dec 30, 2013
 
 """
 
-from emma2.util.pystallone import JavaException
-from emma2.util.log import getLogger
-
 __docformat__ = "restructuredtext en"
 
 import numpy as np
