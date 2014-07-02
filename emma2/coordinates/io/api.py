@@ -4,10 +4,6 @@ r"""
 Emma2 coordinates.io API
 ========================
 
-Created on Dec 30, 2013
-
-@author: noe
-
 """
 
 __docformat__ = "restructuredtext en"
@@ -21,6 +17,14 @@ from datawriter import DataWriter
 
 """pystallone imports"""
 from emma2.util.pystallone import API as sapi
+
+__author__ = "Martin Scherer, Frank Noe"
+__copyright__ = "Copyright 2014, Computational Molecular Biology Group, FU-Berlin"
+__credits__ = ["Martin Scherer", "Frank Noe"]
+__license__ = "FreeBSD"
+__version__ = "2.0.0"
+__maintainer__ = "Martin Scherer"
+__email__="m.scherer AT fu-berlin DOT de"
 
 __all__ = ['reader',
            'read_traj',
