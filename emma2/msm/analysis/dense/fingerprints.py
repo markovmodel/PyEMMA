@@ -32,7 +32,6 @@ def fingerprint_correlation(P, obs1, obs2=None, tau=1):
     
     Returns
     -------
-    (timescales, amplitudes)
     timescales : ndarray, shape=(n-1)
         timescales of the relaxation processes of P
     amplitudes : ndarray, shape=(n-1)
