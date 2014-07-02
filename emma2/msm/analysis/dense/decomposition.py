@@ -4,7 +4,7 @@ analysis of stochastic matrices
 Below are the dense implementations for functions specified in msm.api. 
 Dense matrices are represented by numpy.ndarrays throughout this module.
 
-.. moduleauthor:: B.Trendelkamp-Schroer <benjamin.trendelkampschroer@gmail.com>
+.. moduleauthor:: B.Trendelkamp-Schroer <benjamin DOT trendelkamp-schroer AT fu-berlin DOT de>
 
 """
 

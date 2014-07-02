@@ -1,7 +1,7 @@
 r"""This module contains function for the Transition Path Theory (TPT)
 analysis of Markov models.
 
-.. moduleauthor:: B.Trendelkamp-Schroer <benjamin.trendelkampschroer@gmail.com>
+.. moduleauthor:: B.Trendelkamp-Schroer <benjamin DOT trendelkamp-schroer AT fu-berlin DOT de>
 
 """
 import numpy as np

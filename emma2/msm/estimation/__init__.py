@@ -5,7 +5,7 @@ estimation - MSM estimation from data (:mod:`emma2.msm.estimation`)
 ===================================================================
 
 .. currentmodule:: emma2.msm.estimation
-.. moduleauthor:: B.Trendelkamp-Schroer <benjamin.trendelkampschroer@gmail.com>
+.. moduleauthor:: B.Trendelkamp-Schroer <benjamin DOT trendelkamp-schroer AT fu-berlin DOT de>
 
 Countmatrix
 ===========
