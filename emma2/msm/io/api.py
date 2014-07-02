@@ -4,8 +4,6 @@ r"""
 Emma2 MSM io API
 ================
 
-.. moduleauthor:: B.Trendelkamp-Schroer <benjamin.trendelkampschroer@gmail.com>
-
 """
 
 __docformat__ = "restructuredtext en"
@@ -16,6 +14,14 @@ from scipy.sparse.sputils import isdense
 import trajectory.trajectory as trajectory
 import matrix.matrix as matrix
 
+__author__ = "Benjamin Trendelkamp-Schroer, Martin Scherer, Frank Noe"
+__copyright__ = "Copyright 2014, Computational Molecular Biology Group, FU-Berlin"
+__credits__ = ["Benjamin Trendelkamp-Schroer", "Martin Scherer", "Frank Noe"]
+__license__ = "FreeBSD"
+__version__ = "2.0.0"
+__maintainer__ = "Martin Scherer"
+__email__="m.scherer AT fu-berlin DOT de"
+
 __all__=['read_discrete_trajectory',
          'write_discrete_trajectory',
          'load_discrete_trajectory',
@@ -25,6 +31,7 @@ __all__=['read_discrete_trajectory',
          'save_matrix',
          'load_matrix',
          ]
+
 ################################################################################
 # Discrete trajectory IO
 ################################################################################

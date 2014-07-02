@@ -4,8 +4,6 @@ r"""
 Emma2 MSM Estimation API
 ========================
 
-.. moduleauthor:: B.Trendelkamp-Schroer <benjamin.trendelkampschroer@gmail.com>
-
 """
 
 __docformat__ = "restructuredtext en"
@@ -28,6 +26,14 @@ import dense.transition_matrix
 
 import emma2.util.pystallone as stallone
 from emma2.util.log import getLogger
+
+__author__ = "Benjamin Trendelkamp-Schroer, Martin Scherer, Frank Noe"
+__copyright__ = "Copyright 2014, Computational Molecular Biology Group, FU-Berlin"
+__credits__ = ["Benjamin Trendelkamp-Schroer", "Martin Scherer", "Frank Noe"]
+__license__ = "FreeBSD"
+__version__ = "2.0.0"
+__maintainer__ = "Martin Scherer"
+__email__="m.scherer AT fu-berlin DOT de"
 
 __all__=['count_matrix',
          'cmatrix', 
