@@ -554,7 +554,7 @@ def fingerprint_correlation(P, obs1, obs2=None, tau=1, k=None, ncv=None):
     """
     if issparse(T):
         return sparse.fingerprints.fingerprint_correlation(P, obs1, obs2, tau, k, ncv)
-    elif is dense(T):
+    elif isdense(T):
         return dense.fingerprints.fingerprint_correlation(P, obs1, obs2, tau)
     else:
         _type_not_supported   
