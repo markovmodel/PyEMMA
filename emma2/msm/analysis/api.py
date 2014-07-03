@@ -558,9 +558,9 @@ def fingerprint_correlation(P, obs1, obs2=None, tau=1, k=None, ncv=None):
         fingerprint amplitdues of the relaxation processes
     
     """
-    if issparse(T):
+    if issparse(P):
         return sparse.fingerprints.fingerprint_correlation(P, obs1, obs2, tau, k, ncv)
-    elif isdense(T):
+    elif isdense(P):
         return dense.fingerprints.fingerprint_correlation(P, obs1, obs2, tau)
     else:
         _type_not_supported   
@@ -601,10 +601,10 @@ def fingerprint_relaxation(P, p0, obs, tau=1, k=None, ncv=None):
         fingerprint amplitdues of the relaxation processes
     
     """
-    if issparse(T):
+    if issparse(P):
         return sparse.fingerprints.fingerprint_relaxation(P, p0, obs, tau, k, ncv)
-    elif isdense(T):
-        return dense.fingerprints.fingerprint_relaxation(P, p0, obs, tai, k, ncv)
+    elif isdense(P):
+        return dense.fingerprints.fingerprint_relaxation(P, p0, obs, tau, k, ncv)
     else:
         _type_not_supported   
 

@@ -38,6 +38,7 @@ def case_generator(filename):
         #             (filename, exc_type, e))
     return test
 
+@unittest.SkipTest
 class TestNotebooks(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
