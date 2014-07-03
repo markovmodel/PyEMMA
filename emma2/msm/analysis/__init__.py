@@ -5,7 +5,6 @@ analysis - MSM analysis functions (:mod:`emma2.msm.analysis`)
 =============================================================
 
 .. currentmodule:: emma2.msm.analysis
-.. moduleauthor:: B.Trendelkamp-Schroer <benjamin DOT trendelkamp-schroer AT fu-berlin DOT de>
 
 This module contains functions to analyze a created Markov model, which is
 specified with a transition matrix T.
@@ -36,25 +35,42 @@ numpy-arrays and the ARPACK bindings for scipy sparse matrices.
    rdl_decomposition - Full decomposition into eigenvalues and eigenvectors
    timescales - Implied timescales from eigenvalues
 
-Expectations
-============
+Expected counts
+=================
 
 .. autosummary::
    :toctree: generated/
 
-   expectation - Equilibrium expectation value of an observable
    expected_counts - Count matrix expected for given initial distribution
    expected_counts_stationary - Count matrix expected for equilibrium distribution
 
-Passage times, committors, TPT, PCCA
-=====================================
+Passage times
+=============
 
 .. autosummary::
    :toctree: generated/
 
    mfpt - Mean first-passage time
+
+Committors, TPT
+===============
+
+.. autosummary::
+   :toctree: generated/
+
    committor - Forward and backward commitor
-   tpt - Transition paths and fluxes
+   tpt_flux - Flux network for reaction
+   tpt_netflux - Netflux network
+   tpt_totalflux - Total flux for reaction
+   tpt_rate - Reaction rate
+   tpt - Transition path theory object
+
+PCCA
+====
+
+.. autosummary::
+   :toctree: generated/
+
    pcca - Perron cluster center analysis
 
 Fingerprints
@@ -66,6 +82,7 @@ Fingerprints
    fingerprint_correlation
    fingerprint_relaxation
    evaluate_fingerprint
+   expectation - Equilibrium expectation value of an observable
    correlation
    relaxation
 
