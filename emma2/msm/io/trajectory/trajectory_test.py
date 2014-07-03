@@ -13,7 +13,7 @@ import trajectory
 from os.path import abspath, join
 from os import pardir
 
-testpath = abspath(join(abspath(__file__), pardir)) + '/test/'
+testpath = abspath(join(abspath(__file__), pardir)) + '/testfiles/'
 
 class TestReadDiscreteTrajectory(unittest.TestCase):
     
