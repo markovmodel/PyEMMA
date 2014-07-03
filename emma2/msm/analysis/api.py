@@ -604,7 +604,7 @@ def fingerprint_relaxation(P, p0, obs, tau=1, k=None, ncv=None):
     if issparse(P):
         return sparse.fingerprints.fingerprint_relaxation(P, p0, obs, tau, k, ncv)
     elif isdense(P):
-        return dense.fingerprints.fingerprint_relaxation(P, p0, obs, tau, k, ncv)
+        return dense.fingerprints.fingerprint_relaxation(P, p0, obs, tau)
     else:
         _type_not_supported   
 
