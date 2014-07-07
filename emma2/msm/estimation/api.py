@@ -23,6 +23,7 @@ import sparse.transition_matrix
 import sparse.prior
 
 import dense.transition_matrix
+import dense.covariance
 
 import emma2.util.pystallone as stallone
 from emma2.util.log import getLogger
@@ -46,6 +47,7 @@ __all__=['count_matrix',
          'prior_const',
          'prior_rev',
          'transition_matrix',
+         'tmatrix_cov',
          'log_likelihood',
          'tmatrix_sampler']
 
@@ -465,7 +467,7 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
 tmatrix = transition_matrix
 __all__.append('tmatrix')
 
-# DONE: FN+Jan 
+# DONE: Ben 
 def tmatrix_cov(C, k=None):
     r"""Nonreversible covariance matrix of transition matrix
     
@@ -481,10 +483,10 @@ def tmatrix_cov(C, k=None):
     cov : 
         
     """ 
-    if isdense(C):
-        C=csr_matrix(C)
-    return sparse.transition_matrix.tmatrix_cov(C, k)
-
+    if issparse(C):
+        warnings.warn("Covariance matrix will be dense for sparse input")
+        C=C.toarray()
+    return dense.covariance.tmatrix_cov(C, row=k)
 
 # DONE: FN+Jan Implement in Python directly
 def log_likelihood(C, T):
