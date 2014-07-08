@@ -156,7 +156,13 @@ def error_perturbation(C, S):
     S : (M, M) ndarray or (K, M, M) ndarray
         Sensitivity matrix (for scalar observable) or sensitivity
         tensor for vector observable
-
+        
+    Returns
+    -------
+    X : float or (K, K) ndarray
+        error-perturbation (for scalar observables) or covariance matrix
+        (for vector-valued observable)
+        
     """
     if len(S.shape)==2: #Scalar observable
         return error_perturbation_single(C, S)
