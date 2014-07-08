@@ -1,4 +1,5 @@
 import unittest
+import warnings
 
 import numpy as np
 import scipy.sparse
@@ -102,6 +103,18 @@ class TestErrorPerturbation(unittest.TestCase):
 
         Xn=error_perturbation(self.C, self.S2)
         self.assertTrue(np.allclose(Xn, self.X))   
+
+    def test_error_perturbation_sparse(self):
+        Csparse=scipy.sparse.csr_matrix(self.C)
+
+        with warnings.catch_warnings(record=True) as w:
+            xn=error_perturbation(Csparse,self.S1)
+            self.assertTrue(np.allclose(xn, self.x))
+
+        with warnings.catch_warnings(record=True) as w:
+            Xn=error_perturbation(Csparse,self.S2)
+            self.assertTrue(np.allclose(Xn, self.X))
+        
         
 if __name__=="__main__":
     unittest.main()
