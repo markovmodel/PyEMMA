@@ -9,6 +9,11 @@ import numpy as np
 def tmatrix_cov(C, row=None):
     r"""Covariance tensor for the non-reversible transition matrix ensemble
 
+    Normally the covariance tensor cov(p_ij, p_kl) would carry four indices
+    (i,j,k,l). In the non-reversible case rows are independent so that
+    cov(p_ij, p_kl)=0 for i not equal to k. Therefore the function will only 
+    return cov(p_ij, p_ik).    
+
     Parameters
     ----------
     C : (M, M) ndarray
@@ -74,13 +79,91 @@ def dirichlet_covariance(alpha):
     
     return cov
 
-def error_perturbation(C, sensitivity):
-    error = 0.0;
+def error_perturbation_single(C, S, R=None):
+    r"""Error-perturbation arising from a given sensitivity
+
+    Parameters
+    ----------
+    C : (M, M) ndarray
+        Count matrix
+    S : (M, M) ndarray
+        Sensitivity matrix
+    R : (M, M) ndarray (optional)
+        Sensitivity matrix
+
+    Returns
+    -------
+    var : float
+         Variance (covariance) of observable(s)
+
+    """
+    cov=tmatrix_cov(C) # (M, M, M)
+    if R is None:
+        R=S
+    X=S[:,:,np.newaxis]*cov*R[:,np.newaxis,:]
+    return X.sum()
+
+def error_perturbation_var(C, S):
+    r"""Error-perturbation arising from a given sensitivity
+
+    Parameters
+    ----------
+    C : (M, M) ndarray
+        Count matrix
+    S : (K, M, M) ndarray
+        Sensitivity tensor
+
+    """
+    K=S.shape[0]
+    cov=tmatrix_cov(C)
+    for i in range(K):
+        R=S[i,:,:]
+        X[i]=(R[:,:,np.newaxis]*cov*R[:,np.newaxis,:]).sum()
     
-    n = C.shape[0]
-    
-    for k in range(0,n):
-        cov = tmatrix_cov(C, k)
-        error += numpy.dot(numpy.dot(sensitivity[k],cov),sensitivity[k])
-    return error
+def error_perturbation_cov(C, S):
+    r"""Error-perturbation arising from a given sensitivity
+
+    Parameters
+    ----------
+    C : (M, M) ndarray
+        Count matrix
+    S : (K, M, M) ndarray
+        Sensitivity tensor
+
+    Returns
+    -------
+    X : (K, K) ndarray
+        Covariance matrix for given sensitivity
+
+    """
+    K=S.shape[0]
+    X=np.zeros((K, K))
+    cov=tmatrix_cov(C)
+    for i in range(K):
+        for j in range(K):
+            Q=S[i, :, :]
+            R=S[j, :, :]
+            X[i, j]=(Q[:,:,np.newaxis]*cov*R[:,np.newaxis,:]).sum()
+    return X
+        
+def error_perturbation(C, S):
+    r"""Error perturbation for given sensitivity matrix.
+
+    Parameters
+    ----------
+    C : (M, M) ndarray
+        Count matrix
+    S : (M, M) ndarray or (K, M, M) ndarray
+        Sensitivity matrix (for scalar observable) or sensitivity
+        tensor for vector observable
+
+    """
+    if len(S.shape)==2: #Scalar observable
+        return error_perturbation_single(C, S)
+    elif len(S.shape)==3: #Vector observable
+        return error_perturbation_cov(C, S)
+    else:
+        raise ValueError("Sensitivity matrix S has to be a 2d or 3d array")    
+
+
 
