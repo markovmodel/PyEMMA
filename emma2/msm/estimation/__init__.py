@@ -5,7 +5,6 @@ estimation - MSM estimation from data (:mod:`emma2.msm.estimation`)
 ===================================================================
 
 .. currentmodule:: emma2.msm.estimation
-.. moduleauthor:: B.Trendelkamp-Schroer <benjamin.trendelkampschroer@gmail.com>
 
 Countmatrix
 ===========
@@ -33,7 +32,7 @@ Estimation
    :toctree: generated/
 
    transition_matrix - Estimate transition matrix
-   log_likelihood  
+   log_likelihood
 
 Sampling
 ========

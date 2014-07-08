@@ -4,8 +4,6 @@ r"""
 Emma2 MSM Analysis API
 ======================
 
-.. moduleauthor:: B.Trendelkamp-Schroer <benjamin.trendelkampschroer@gmail.com>
-
 """
 
 __docformat__ = "restructuredtext en"
@@ -31,7 +29,16 @@ import sparse.decomposition
 import sparse.expectations
 import sparse.committor
 import sparse.tpt
+import sparse.fingerprints
 import sparse.mean_first_passage_time
+
+__author__ = "Benjamin Trendelkamp-Schroer, Martin Scherer, Frank Noe"
+__copyright__ = "Copyright 2014, Computational Molecular Biology Group, FU-Berlin"
+__credits__ = ["Benjamin Trendelkamp-Schroer", "Martin Scherer", "Frank Noe"]
+__license__ = "FreeBSD"
+__version__ = "2.0.0"
+__maintainer__ = "Martin Scherer"
+__email__="m.scherer AT fu-berlin DOT de"
 
 __all__=['is_transition_matrix',
          'is_rate_matrix',
@@ -268,7 +275,7 @@ def timescales(T, tau=1, k=None, ncv=None):
         constructed.
     k : int (optional)
         Compute the first `k` implied time scales.
-    ncv : int (optional)
+    ncv : int (optional, for sparse T only)
         The number of Lanczos vectors generated, `ncv` must be greater than k;
         it is recommended that ncv > 2*k
         
@@ -279,9 +286,8 @@ def timescales(T, tau=1, k=None, ncv=None):
         not None then the shape of `ts` is (k,).
     
     """
-    # TODO: parameter ncv is unused.
     if issparse(T):
-        return sparse.decomposition.timescales(T, tau=tau, k=k)
+        return sparse.decomposition.timescales(T, tau=tau, k=k, ncv=ncv)
     elif isdense(T):
         return dense.decomposition.timescales(T, tau=tau, k=k)
     else:
@@ -518,8 +524,8 @@ def expected_counts_stationary(T, n, mu=None):
 # Fingerprints
 ################################################################################
 
-# DONE: Martin+Frank: Implement in Python directly
-def fingerprint_correlation(P, obs1, obs2=None, tau=1):
+# DONE: Martin+Frank+Ben: Implement in Python directly
+def fingerprint_correlation(P, obs1, obs2=None, tau=1, k=None, ncv=None):
     r"""Compute dynamical fingerprint crosscorrelation.
     
     The dynamical fingerprint autocorrelation is the timescale
@@ -537,6 +543,11 @@ def fingerprint_correlation(P, obs1, obs2=None, tau=1):
         If none, obs2=obs1, i.e. the autocorrelation is used
     tau : lag time of the the transition matrix. Used for 
         computing the timescales returned
+    k : int (optional)
+        Number of amplitudes
+    ncv : int (optional)
+        The number of Lanczos vectors generated, `ncv` must be greater than k;
+        it is recommended that ncv > 2*k       
     
     Returns
     -------
@@ -547,11 +558,17 @@ def fingerprint_correlation(P, obs1, obs2=None, tau=1):
         fingerprint amplitdues of the relaxation processes
     
     """
-    return dense.fingerprints.fingerprint_correlation(P, obs1, obs2, tau)
+    if issparse(P):
+        return sparse.fingerprints.fingerprint_correlation(P, obs1, obs2, tau, k, ncv)
+    elif isdense(P):
+        return dense.fingerprints.fingerprint_correlation(P, obs1, obs2, tau)
+    else:
+        _type_not_supported   
 
 
-# DONE: Martin+Frank: Implement in Python directly
-def fingerprint_relaxation(P, p0, obs, tau=1):
+
+# DONE: Martin+Frank+Ben: Implement in Python directly
+def fingerprint_relaxation(P, p0, obs, tau=1, k=None, ncv=None):
     r"""Compute dynamical fingerprint crosscorrelation.
     
     The dynamical fingerprint autocorrelation is the timescale
@@ -569,6 +586,11 @@ def fingerprint_relaxation(P, p0, obs, tau=1):
         If none, obs2=obs1, i.e. the autocorrelation is used
     tau : lag time of the the transition matrix. Used for 
         computing the timescales returned
+    k : int (optional)
+        Number of amplitudes
+    ncv : int (optional)
+        The number of Lanczos vectors generated, `ncv` must be greater than k;
+        it is recommended that ncv > 2*k       
     
     Returns
     -------
@@ -579,7 +601,12 @@ def fingerprint_relaxation(P, p0, obs, tau=1):
         fingerprint amplitdues of the relaxation processes
     
     """
-    return dense.fingerprints.fingerprint_relaxation(P, p0, obs, tau)
+    if issparse(P):
+        return sparse.fingerprints.fingerprint_relaxation(P, p0, obs, tau, k, ncv)
+    elif isdense(P):
+        return dense.fingerprints.fingerprint_relaxation(P, p0, obs, tau)
+    else:
+        _type_not_supported   
 
 # DONE: Frank
 def evaluate_fingerprint(timescales, amplitudes, times=[1]):
@@ -606,7 +633,7 @@ def evaluate_fingerprint(timescales, amplitudes, times=[1]):
 
 
 # DONE: Martin+Frank: Implement in Python directly
-def correlation(P, obs1, obs2=None, tau=1, times=[1], pi=None):
+def correlation(P, obs1, obs2=None, tau=1):
     r"""Compute time-correlation of obs1, or time-cross-correlation with obs2.
     
     The dynamical fingerprint crosscorrelation is the timescale
@@ -622,17 +649,16 @@ def correlation(P, obs1, obs2=None, tau=1, times=[1], pi=None):
     obs2 : ndarray, shape=(n)
         Vector representing observable 2 on discrete states. If not given,
         the autocorrelation of obs1 will be computed
-    times : array-like, shape(n_t), type=int or float
-        Vector of time points at which the (auto)correlation will be evaluated
-    pi : ndarray, shape=(n)
-        stationary distribution. If given, it will not be recomputed (much faster!)
     
     Returns
     -------
+    (timescales, amplitudes)
+    timescales : ndarray, shape=(n-1)
+        timescales of the relaxation processes of P
+    amplitudes : ndarray, shape=(n-1)
+        fingerprint amplitdues of the relaxation processes
     
     """
-    # TODO: use parameter pi or delete it
-    # TODO: same for paramter times.
     return dense.fingerprints.fingerprint_correlation(P, obs1, obs2, tau)
 
 
@@ -968,7 +994,6 @@ def _showSparseConversionWarning():
     warnings.warn('Converting input to dense, since sensitivity is '
                   'currently only impled for dense types.', UserWarning)
 
-# TODO: Implement sparse in Python directly
 def eigenvalue_sensitivity(T, k):
     r"""Sensitivity matrix of a specified eigenvalue.
     
@@ -993,7 +1018,6 @@ def eigenvalue_sensitivity(T, k):
     else:
         raise _type_not_supported
 
-# TODO: Implement sparse in Python directly
 def timescale_sensitivity(T, k):
     r"""Sensitivity matrix of a specified time-scale.
     
@@ -1018,7 +1042,6 @@ def timescale_sensitivity(T, k):
     else:
         raise _type_not_supported
 
-# TODO: Implement sparse in Python directly
 def eigenvector_sensitivity(T, k, j, right=True):
     r"""Sensitivity matrix of a selected eigenvector element.
     
@@ -1078,7 +1101,6 @@ def stationary_distribution_sensitivity(T, j):
 statdist_sensitivity=stationary_distribution_sensitivity
 __all__.append('statdist_sensitivity')
 
-# TODO: Implement sparse in Python directly
 def mfpt_sensitivity(T, target, i):
     r"""Sensitivity matrix of the mean first-passage time from specified state.
     
@@ -1141,7 +1163,6 @@ def committor_sensitivity(T, A, B, i, forward=True):
     else:
         raise _type_not_supported
 
-# TODO: Implement in Python directly
 def expectation_sensitivity(T, a):
     r"""Sensitivity of expectation value of observable A=(a_i).
 

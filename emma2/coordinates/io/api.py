@@ -1,40 +1,59 @@
-r'''
-Created on Dec 30, 2013
+r"""
 
-@author: noe
+========================
+Emma2 coordinates.io API
+========================
 
-'''
+"""
+
 __docformat__ = "restructuredtext en"
 
-# python imports
+"""python package imports"""
 import numpy as np
-# emma imports
+
+"""emma intra package imports"""
 from datareader import DataReader
 from datawriter import DataWriter
-# stallone imports
+
+"""pystallone imports"""
 from emma2.util.pystallone import API as sapi
 
-__all__ = ['reader', 'read_traj', 'writer', 'write_traj']
+__author__ = "Martin Scherer, Frank Noe"
+__copyright__ = "Copyright 2014, Computational Molecular Biology Group, FU-Berlin"
+__credits__ = ["Martin Scherer", "Frank Noe"]
+__license__ = "FreeBSD"
+__version__ = "2.0.0"
+__maintainer__ = "Martin Scherer"
+__email__="m.scherer AT fu-berlin DOT de"
 
+__all__ = ['reader',
+           'read_traj',
+           'writer',
+           'write_traj']
 
-###################################################################################################
+################################################################################
 # Molecular IO
-###################################################################################################
-
+################################################################################
 
 # DONE: Map to stallone (Frank)
 def reader(filename):
-    """
-    Opens a trajectory reader to a given trajectory file
+    r"""Opens a trajectory reader to a given trajectory file
     
     Supports xtc and dcd. For these file types, trajectory frames are presented
     as Nx3 arrays. 
     Supports ascii where coordinates are separated by white spaces. For this file
     type, trajectory frames are presented as one-dimensional arrays
+
+    Parameters
+    ----------
+    filename : str
+        The name of the trajectory file
     
     Returns
     -------
-    A DataReader object with access to the specified file
+    DataReader :  
+        Object with access to the specified file
+
     """
     return DataReader(sapi.dataNew.reader(filename))
 
@@ -49,18 +68,23 @@ def reader(filename):
 
 # DONE: Map to stallone (Frank)
 def read_traj(filename, select = None, frames = None):
-    """
-    Loads the given trajectory completely into memory
+    r"""Load the given trajectory completely into memory
     
     Supports xtc and dcd. For these file types, trajectory frames are presented
     as Nx3 arrays. 
     Supports ascii where coordinates are separated by white spaces. For this file
     type, trajectory frames are presented as one-dimensional arrays
+
+    Parameters
+    ----------
+    filename : str
+        The trajectory filename
     
     Returns
     -------
     traj : array
-        array of size (F,N,3) for a trajectory with F frames and N atoms
+        array of size (L,N,3) for a trajectory with L frames and N atoms
+
     """
     reader = DataReader(sapi.dataNew.reader(filename))
     return reader.load(select=select, frames=frames)
@@ -68,8 +92,7 @@ def read_traj(filename, select = None, frames = None):
 
 # DONE: Map to stallone (Frank)
 def writer(filename, nframes=None, natoms=None):
-    """
-    Opens a trajectory writer to a given trajectory file
+    r"""Opens a trajectory writer to a given trajectory file
     
     Supports dcd. For this file type, trajectory frames will be received
     as Nx3 arrays. 
@@ -83,6 +106,12 @@ def writer(filename, nframes=None, natoms=None):
     natoms : int
         number of atoms for the writer. Must be given for molecular coordinate
         writers (e.g. dcd) 
+
+    Returns
+    -------
+    DataWriter : object
+       Writer object for MD trajectory    
+
     """
     if (str(filename).lower().endswith('dcd')):
         if (nframes is None) or (natoms is None):
@@ -94,8 +123,7 @@ def writer(filename, nframes=None, natoms=None):
 
 # DONE: Map to stallone (Frank)
 def write_traj(filename, traj):
-    """
-    Opens a trajectory writer to a given trajectory file
+    r"""Write complete trajectory to file.
     
     Supports xtc and dcd. For these file types, trajectory frames will be received
     as (N,3) arrays. 
@@ -104,8 +132,9 @@ def write_traj(filename, traj):
     ----------
     filename : string
         file name
-    traj : numpy array with shape (F,N,3) or (F,d)
-        array containing the full trajectory to be written
+    traj :  ndarray with shape (F,N,3) or (F,d)
+        Array containing the full trajectory
+    
     """
     # number of frames to write
     nframes = np.shape(traj)[0]

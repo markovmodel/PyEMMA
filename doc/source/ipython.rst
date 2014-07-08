@@ -1,7 +1,29 @@
-IPython Notebook Examples
-=========================
+==========================
+IPython Notebook Tutorials
+==========================
 
 These IPython (http://ipython.org) notebooks show the usage of the EMMA2 API in
-action.
+action and also describe the workflow of Markov model building.
 
-.. include:: ipynb-list.rst
+Trajectory IO and transformation
+================================
+.. toctree::
+
+   generated/coordinates
+   generated/clustering
+
+MSM estimation and validation
+=============================
+
+.. toctree::
+   generated/estimation
+   generated/analysis
+   generated/fingerprints
+   generated/tpt
+   generated/sampling
+   
+Java/Python-Bridge
+==================
+
+.. toctree::
+   generated/JavaDirectMemoryAccess

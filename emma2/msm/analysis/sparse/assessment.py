@@ -106,7 +106,7 @@ def is_reversible(T, mu=None, tol=1e-15):
     T = T.tocsr()
     
     if mu is None:
-        from decomposition import stationary_distribution_from_eigenvector as statdist
+        from decomposition import stationary_distribution_from_backward_iteration as statdist
         mu = statdist(T)
     
     Mu = diags(mu, 0)
