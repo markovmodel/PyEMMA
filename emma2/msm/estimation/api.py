@@ -543,7 +543,7 @@ def error_perturbation(C, sensitivity):
 
     if issparse(C):
         warnings.warn("Error-perturbation will be dense for sparse input")
-        C.toarray()
+        C=C.toarray()
     return dense.covariance.error_perturbation(C, sensitivity)
 
 def _showSparseConversionWarning():
