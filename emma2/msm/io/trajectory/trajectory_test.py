@@ -1,6 +1,6 @@
 r"""This module contains unit tests for the trajectory module
 
-.. moduleauthor:: B.Trendelkamp-Schroer <benjamin.trendelkampschroer@gmail.com>
+.. moduleauthor:: B.Trendelkamp-Schroer <benjamin DOT trendelkamp-schroer AT fu-berlin DOT de>
 
 """
 import os
@@ -13,7 +13,7 @@ import trajectory
 from os.path import abspath, join
 from os import pardir
 
-testpath = abspath(join(abspath(__file__), pardir)) + '/test/'
+testpath = abspath(join(abspath(__file__), pardir)) + '/testfiles/'
 
 class TestReadDiscreteTrajectory(unittest.TestCase):
     

@@ -1,6 +1,6 @@
 r"""This module provides functions for computation of prior count matrices
 
-.. moduleauthor:: B.Trendelkamp-Schroer <benjamin.trendelkampschroer@gmail.com>
+.. moduleauthor:: B.Trendelkamp-Schroer <benjamin DOT trendelkamp-schroer AT fu-berlin DOT de>
 
 """
 

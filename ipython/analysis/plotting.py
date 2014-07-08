@@ -38,8 +38,8 @@ def stationary_distribution(centers, pi, levels=None, norm=LogNorm(),\
     X, Y=np.meshgrid(xcenters, ycenters)
     Z=np.abs(griddata(centers, pi, (X, Y), method=method, fill_value=fill_value))
     if levels is None:
-         levels=10**(np.linspace(-5.0, -1.0, 20))
-    V=np.asarray(levels)    
+        levels=10**(np.linspace(-5.0, -1.0, 20))
+    V=np.asarray(levels)
     fig=plt.figure()
     ax=fig.add_subplot(111)
     ax.set_xlim(-180.0, 180.0)
@@ -53,7 +53,8 @@ def stationary_distribution(centers, pi, levels=None, norm=LogNorm(),\
     plt.grid()
 
 def free_energy(centers, A, levels=None, norm=None,\
-                                fmt='%.1f', method='linear', fill_value=np.nan):
+                fmt='%.1f', method='linear', fill_value=np.nan,
+                ax = None):
     r"""Make contourplot of alanine-dipeptide free energy.
 
     The scattered data is interpolated onto a regular grid 
@@ -66,16 +67,17 @@ def free_energy(centers, A, levels=None, norm=None,\
     A : (N, ) ndarray,
         Free energy.
 
-    
-    """  
+    ax : optional matplotlib axis to plot to
+    """
     X, Y=np.meshgrid(xcenters, ycenters)
     Z=griddata(centers, A, (X, Y), method=method, fill_value=fill_value)
     Z=Z-Z.min()
     if levels is None:
-         levels=np.linspace(0.0, 50.0, 10)
-    V=np.asarray(levels)    
-    fig=plt.figure()
-    ax=fig.add_subplot(111)
+        levels=np.linspace(0.0, 50.0, 10)
+    V=np.asarray(levels)
+    if ax is None:
+        fig=plt.figure()
+        ax=fig.add_subplot(111)
     ax.set_xlim(-180.0, 180.0)
     ax.set_ylim(-180.0, 180.0)
     ax.set_xticks(np.linspace(-180.0, 180.0, 11))
@@ -85,6 +87,11 @@ def free_energy(centers, A, levels=None, norm=None,\
     cs=ax.contour(X, Y, Z, V, norm=norm)
     plt.clabel(cs, inline=1, fmt=fmt)
     plt.grid()
+
+# committor has same plot routine, but with other defaults
+committor = lambda *args, **kwargs: \
+   free_energy(*args, fill_value=0, method='cubic', **kwargs)
+
 
 def eigenvector(centers, ev, levels=None, norm=None,\
                     fmt='%.e', method='linear', fill_value=np.nan):

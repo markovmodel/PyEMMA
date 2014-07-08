@@ -4,11 +4,10 @@ Created on Jun 6, 2014
 @author: marscher
 '''
 from emma2.util.log import getLogger
-from emma2.util.pystallone import API as API, ndarray_to_stallone_array,\
-            JavaException, stallone_array_to_ndarray
+from emma2.util.pystallone import ndarray_to_stallone_array,\
+            JavaException, stallone_array_to_ndarray, stallone
 
 import numpy as np
-import warnings
 from scipy.sparse.base import issparse
 
 __all__ = ['ITransitionMatrixSampler']
@@ -52,24 +51,34 @@ class ITransitionMatrixSampler(object):
         
         try:
             C = ndarray_to_stallone_array(counts)
-            
-            if reversible:
-                if mu is not None:
-                    mu = ndarray_to_stallone_array(mu)
-                    self.sampler = API.msmNew.createTransitionMatrixSamplerRev(C, mu)
-                else:
-                    self.sampler = API.msmNew.createTransitionMatrixSamplerRev(C)
-            else:
-                if mu:
-                    warnings.warn("given stationary distribution ignored") 
-                self.sampler = API.msmNew.createTransitionMatrixSamplerNonrev(C)
-                
+            jpackage = stallone.mc.sampling
+            # convert types to java
             if Tinit is not None:
                 Tinit = ndarray_to_stallone_array(Tinit)
-                self.sampler.init(C, Tinit)
-        except JavaException:
+            if mu is not None:
+                mu = ndarray_to_stallone_array(mu)
+                
+            if reversible:
+                if mu: # fixed pi
+                    if Tinit:
+                        self.sampler = jpackage.TransitionMatrixSamplerRevFixPi(C, Tinit, mu)
+                    else:
+                        self.sampler = jpackage.TransitionMatrixSamplerRevFixPi(C, mu)
+                else: # sample reversible matrix, with arbitrary pi
+                    if Tinit:
+                        self.sampler = jpackage.TransitionMatrixSamplerRev(C, Tinit)
+                    else:
+                        self.sampler = jpackage.TransitionMatrixSamplerRev(C)
+            else: # sample non rev
+                if Tinit:
+                    self.sampler = jpackage.TransitionMatrixSamplerNonrev(C, Tinit)
+                else:
+                    self.sampler = jpackage.TransitionMatrixSamplerNonrev(C)
+                
+        except JavaException as je:
             log = getLogger()
-            log.exception("Error during creation of tmatrix sampling wrapper")
+            log.exception("Error during creation of tmatrix sampling wrapper:"
+                          " stack\n%s" %je.stacktrace())
             raise
     
     def sample(self, steps):

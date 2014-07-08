@@ -4,8 +4,6 @@ r"""
 Emma2 MSM io API
 ================
 
-.. moduleauthor:: B.Trendelkamp-Schroer <benjamin.trendelkampschroer@gmail.com>
-
 """
 
 __docformat__ = "restructuredtext en"
@@ -16,16 +14,24 @@ from scipy.sparse.sputils import isdense
 import trajectory.trajectory as trajectory
 import matrix.matrix as matrix
 
+__author__ = "Benjamin Trendelkamp-Schroer, Martin Scherer, Frank Noe"
+__copyright__ = "Copyright 2014, Computational Molecular Biology Group, FU-Berlin"
+__credits__ = ["Benjamin Trendelkamp-Schroer", "Martin Scherer", "Frank Noe"]
+__license__ = "FreeBSD"
+__version__ = "2.0.0"
+__maintainer__ = "Martin Scherer"
+__email__="m.scherer AT fu-berlin DOT de"
+
 __all__=['read_discrete_trajectory',
          'write_discrete_trajectory',
          'load_discrete_trajectory',
          'save_discrete_trajectory',
          'read_matrix',
          'write_matrix',
-         'write_matrix_ascii',
-         'write_matrix_binary',
+         'save_matrix',
          'load_matrix',
          ]
+
 ################################################################################
 # Discrete trajectory IO
 ################################################################################
@@ -199,15 +205,7 @@ def read_matrix(filename, mode='default', dtype=float, comments='#'):
             return matrix.read_matrix_dense(filename, dtype=dtype, comments=comments)
     
 
-def write_matrix(filename, A, mode='default', format='ascii'):
-    if format == 'ascii':
-        write_matrix_ascii(filename, A, mode)
-    elif format == 'binary':
-        write_matrix_binary(filename, A, mode)
-    else:
-        raise ValueError('format "%s" invalid. Should be either ascii or binary')
-
-def write_matrix_ascii(filename, A, mode='default', fmt='%.18e', header='', comments='#'):
+def write_matrix(filename, A, mode='default', fmt='%.18e', header='', comments='#'):
     r"""Write matrix to ascii file 
     
     (M, N) dense matrices are stored as ascii file with M rows
@@ -272,7 +270,7 @@ def write_matrix_ascii(filename, A, mode='default', fmt='%.18e', header='', comm
 # binary
 ################################################################################
 
-def write_matrix_binary(filename, A, mode='default'):
+def save_matrix(filename, A, mode='default'):
     r"""Save matrix as binary file.
     
     (M, N) dense matrices are stored as ndarrays 

@@ -17,8 +17,8 @@ class PCA(CoordinateTransform):
        
     def __init__(self, jpca):
         CoordinateTransform.__init__(self,jpca)
-        self.self_evec = None
-        self._ndim = None
+        self._evec = None
+        self.ndim = None
     
     def mean(self):
         """
@@ -59,7 +59,7 @@ class PCA(CoordinateTransform):
         reduction will be made, i.e. the output data is transformed but
         has the same dimension as the input data.
         """
-        self._ndim = d
+        self.ndim = d
         self.jtransform().setDimension(d)
     
     def transform(self, x):
@@ -68,7 +68,7 @@ class PCA(CoordinateTransform):
         if set_dimension has been used) of the input vector x to the 
         coordinate system defined by the covariance matrix eigenvectors.
         """
-        return util.project(x.flatten(), self.eigenvectors(), self._ndim)
+        return util.project(x.flatten(), self.eigenvectors(), self.ndim)
     
     def __has_efficient_transform(self):
         """
@@ -80,6 +80,7 @@ class PCA_AMUSE(PCA):
     
     def __init__(self, amuse):
         self.amuse = amuse
+        self.ndim = None
         
     def mean(self):
         return self.amuse.mean
@@ -97,10 +98,19 @@ class PCA_AMUSE(PCA):
         return self.amuse.pca_weights
     
     def set_dimension(self, d):
-        self.d = d
+        self.ndim = d
         
     def transform(self, x):
-        return util.project(x.flatten(), self.eigenvectors(), self.d)
+        return util.project(x.flatten(), self.eigenvectors(), self.ndim)
+    
+    def jtransform(self):
+        if self.ndim is not None:
+            A = self.eigenvectors()[:, 0 : self.ndim]
+        else:
+            A = self.eigenvectors()
+        A = stallone.ndarray_to_stallone_array(A.T)
+        return stallone.API.coorNew.linear_operator(A)
+
 
 class TICA(PCA):
     """

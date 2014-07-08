@@ -4,9 +4,6 @@ r"""
 Clustering Coordinates API
 ================================
 
-Created on Dec 30, 2013
-
-@author: noe
 """
 
 __docformat__ = "restructuredtext en"
@@ -25,11 +22,19 @@ cluster = stallone.API.cluster
 #
 Clustering = clustering.Clustering
 
-__all__ = ['kmeans', 'regspace', 'kregspace', 'assign'] 
+__author__ = "Martin Scherer, Frank Noe"
+__copyright__ = "Copyright 2014, Computational Molecular Biology Group, FU-Berlin"
+__credits__ = ["Martin Scherer", "Frank Noe"]
+__license__ = "FreeBSD"
+__version__ = "2.0.0"
+__maintainer__ = "Martin Scherer"
+__email__="m.scherer AT fu-berlin DOT de"
+
+__all__ = ['kmeans', 'regspace', 'assign']
 
 def kmeans(infiles, k, maxiter = 100):
-    """
-    Performs k-means in the input files using k clusters. Uses Euclidean metric
+    r"""Performs k-means in the input files using k clusters. Uses
+    Euclidean metric
     
     Parameters
     ----------
@@ -40,7 +45,8 @@ def kmeans(infiles, k, maxiter = 100):
     
     Returns
     -------
-    A clustering object
+    Clustering : A clustering object
+    
     """
     if not isinstance(infiles, basestring):
         arr = jarray(infiles)
@@ -50,19 +56,21 @@ def kmeans(infiles, k, maxiter = 100):
 
 
 def regspace(infiles, mindist, metric='Euclidean'):
-    """
-    Performs regular space clustering on the input files using the given
-    minimal distance. Regspace clustering defines the first data point
-    to be the first cluster center. The next cluster center is defined
-    by the next data point whose minimal distance of all existing data
-    points is at least mindist, and so on. The number of clusters is
-    thus a function of mindist and the data and is hard to predict. If
-    you want to have approximately uniformly spaced cluster centers with
-    a controllable number of cluster centers, use kregspace.
+    r"""Regular space clustering.
+    
+    Performs regular space clustering on the input files using the
+    given minimal distance. Regspace clustering defines the first data
+    point to be the first cluster center. The next cluster center is
+    defined by the next data point whose minimal distance of all
+    existing data points is at least mindist, and so on. The number of
+    clusters is thus a function of mindist and the data and is hard to
+    predict. If you want to have approximately uniformly spaced
+    cluster centers with a controllable number of cluster centers, use
+    kregspace.
     
     Returns
     -------
-    A clustering object
+    Clyustering : A clustering object
     
     Citation
     --------
@@ -70,6 +78,7 @@ def regspace(infiles, mindist, metric='Euclidean'):
     Ch. Schütte and F. Noe: 
     Markov models of molecular kinetics: Generation and Validation. 
     J. Chem. Phys. 134, 174105  (2011).
+    
     """
     if not isinstance(infiles, basestring):
         arr = jarray(infiles)
@@ -97,11 +106,11 @@ def kregspace(infiles, k):
 
 
 def assign(infiles, clustering, outfiles=None, return_discretization=True):
-    """
-    Assigns all input trajectories to discrete trajectories using the specified discretizer.
+    r"""Assigns all input trajectories to discrete trajectories using
+    the specified discretizer.
     
-    Parameters:
-    -----------
+    Parameters
+    ----------
     infiles : string or list of strings
         trajectory file names
     clustering : Clustering or an IDiscretization instance
@@ -110,6 +119,7 @@ def assign(infiles, clustering, outfiles=None, return_discretization=True):
         discrete trajectory file names. Will only be written if requested
     return_discretization : bool
         if true (default), will return the discrete trajectories.
+        
     """
     # check input
     if (isinstance(clustering, Clustering)):

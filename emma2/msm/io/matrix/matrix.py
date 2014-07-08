@@ -1,6 +1,6 @@
 r"""Implementation of IO for dense and sparse matrices
 
-.. moduleauthor:: B.Trendelkamp-Schroer <benjamin.trendelkampschroer@gmail.com>
+.. moduleauthor:: B.Trendelkamp-Schroer <benjamin DOT trendelkamp-schroer AT fu-berlin DOT de>
 
 """
 

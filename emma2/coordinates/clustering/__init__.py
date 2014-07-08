@@ -1,16 +1,21 @@
 r"""
-======================================================================
-Clustering api (java algorithms) (:mod:`emma2.coordinates.clustering`)
-======================================================================
+======================================================================================
+clustering - java algorithms for data clustering (:mod:`emma2.coordinates.clustering`)
+======================================================================================
 
 .. currentmodule:: emma2.coordinates.clustering
 
+clustering
+==========
+
 .. autosummary::
    :toctree: generated/
-"""
 
-from __future__ import division, print_function, absolute_import
+   kmeans
+   regspace
+   assign   
+
+"""
 
 from .api import *
 
-__all__=[s for s in dir() if not s.startswith('_')]

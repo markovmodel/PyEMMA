@@ -4,8 +4,6 @@ r"""
 Emma2 MSM Estimation API
 ========================
 
-.. moduleauthor:: B.Trendelkamp-Schroer <benjamin.trendelkampschroer@gmail.com>
-
 """
 
 __docformat__ = "restructuredtext en"
@@ -25,9 +23,18 @@ import sparse.transition_matrix
 import sparse.prior
 
 import dense.transition_matrix
+import dense.covariance
 
 import emma2.util.pystallone as stallone
 from emma2.util.log import getLogger
+
+__author__ = "Benjamin Trendelkamp-Schroer, Martin Scherer, Frank Noe"
+__copyright__ = "Copyright 2014, Computational Molecular Biology Group, FU-Berlin"
+__credits__ = ["Benjamin Trendelkamp-Schroer", "Martin Scherer", "Frank Noe"]
+__license__ = "FreeBSD"
+__version__ = "2.0.0"
+__maintainer__ = "Martin Scherer"
+__email__="m.scherer AT fu-berlin DOT de"
 
 __all__=['count_matrix',
          'cmatrix', 
@@ -40,6 +47,7 @@ __all__=['count_matrix',
          'prior_const',
          'prior_rev',
          'transition_matrix',
+         'tmatrix_cov',
          'log_likelihood',
          'tmatrix_sampler']
 
@@ -274,10 +282,10 @@ def prior_neighbor(C, alpha = 0.001):
     """
 
     if isdense(C):
-        B=sparse.prior.prior_neighbour(csr_matrix(C), alpha=alpha)
+        B=sparse.prior.prior_neighbor(csr_matrix(C), alpha=alpha)
         return B.toarray()
     else:
-        return sparse.prior.prior_neighbour(C, alpha=alpha)    
+        return sparse.prior.prior_neighbor(C, alpha=alpha)
 
 # DONE: Frank, Ben
 def prior_const(C, alpha = 0.001):
@@ -459,7 +467,7 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
 tmatrix = transition_matrix
 __all__.append('tmatrix')
 
-# DONE: FN+Jan 
+# DONE: Ben 
 def tmatrix_cov(C, k=None):
     r"""Nonreversible covariance matrix of transition matrix
     
@@ -475,10 +483,10 @@ def tmatrix_cov(C, k=None):
     cov : 
         
     """ 
-    if isdense(C):
-        C=csr_matrix(C)
-    return sparse.transition_matrix.tmatrix_cov(C, k)
-
+    if issparse(C):
+        warnings.warn("Covariance matrix will be dense for sparse input")
+        C=C.toarray()
+    return dense.covariance.tmatrix_cov(C, row=k)
 
 # DONE: FN+Jan Implement in Python directly
 def log_likelihood(C, T):

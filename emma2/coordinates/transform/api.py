@@ -1,10 +1,14 @@
-'''
+r"""
+
+=========================
+coordinates.transform API
+=========================
+
 Created on Dec 30, 2013
 
 @author: noe
-'''
-from emma2.util.pystallone import JavaException
-from emma2.util.log import getLogger
+
+"""
 
 __docformat__ = "restructuredtext en"
 
@@ -24,14 +28,30 @@ PCA = linear_transform.PCA
 TICA = linear_transform.TICA
 
 
+__author__ = "Martin Scherer, Frank Noe"
+__copyright__ = "Copyright 2014, Computational Molecular Biology Group, FU-Berlin"
+__credits__ = ["Martin Scherer", "Frank Noe"]
+__license__ = "FreeBSD"
+__version__ = "2.0.0"
+__maintainer__ = "Martin Scherer"
+__email__="m.scherer AT fu-berlin DOT de"
 
-###################################################################################################
+__all__=['createtransform_selection',
+         'createtransform_distances',
+         'createtransform_angles',
+         'createtransform_dihedrals',
+         'createtransform_minrmsd',
+         'pca',
+         'tica',
+         'transform_file', 
+         'transform_trajectory']
+
+################################################################################
 # Compute Order parameters from coordinates
-###################################################################################################
+################################################################################
 
 def createtransform_selection(selection):
-    """
-    Creates a transform that will select the given set of atoms
+    r"""Creates a transform that will select the given set of atoms.
     
     Parameters
     ----------
@@ -44,14 +64,15 @@ def createtransform_selection(selection):
     return T
 
 def createtransform_distances(selection, selection2=None):
-    """
-    Creates a transform that computes intramolecular distances between the selected atoms
+    r"""Creates a transform that computes intramolecular distances
+    between the selected atoms.
     
-    By default, the distances between all atoms in the given selection will be computed. 
-    When one selection (N integers or N tuples of integers) is given, the N(N+1)/2 distances 
-    dij with i<j will be computed as a vector
-    (containing the flattened lower triangle of the symmetric distance matrix). 
-    When selection2 (M integers or M tuples of integers) is also given, the full NxM distance matrix 
+    By default, the distances between all atoms in the given selection
+    will be computed.  When one selection (N integers or N tuples of
+    integers) is given, the N(N+1)/2 distances dij with i<j will be
+    computed as a vector (containing the flattened lower triangle of
+    the symmetric distance matrix).  When selection2 (M integers or M
+    tuples of integers) is also given, the full NxM distance matrix
     will be computed
     
     Parameters
@@ -74,8 +95,8 @@ def createtransform_distances(selection, selection2=None):
 
 
 def createtransform_angles(selection):
-    """
-    Creates a transform that will compute the angles (in degrees) between the given list of triplets
+    r"""Creates a transform that will compute the angles (in degrees)
+    between the given list of triplets
     
     Parameters
     ----------
@@ -89,8 +110,8 @@ def createtransform_angles(selection):
 
 
 def createtransform_dihedrals(selection):
-    """
-    Creates a transform that will compute the dihedrals (in degrees) between the given list of triplets
+    r"""Creates a transform that will compute the dihedrals (in
+    degrees) between the given list of triplets
     
     Parameters
     ----------
@@ -138,8 +159,7 @@ def createtransform_minrmsd(X):
 ###################################################################################################
 
 def pca(input, ndim = None):
-    """
-    Returns a PCA transformation object for the given input
+    r"""Returns a PCA transformation object for the given input
     
     The object's main method is transform(trajectory)
     
@@ -151,6 +171,7 @@ def pca(input, ndim = None):
         filename (pointing to a trajectory)
         multiple (F x N x d) arrays (trajectories)
         multiple filenames (pointing to trajectories)
+        
     """
     # use amuse, until stallone pca impl is fixed
     from emma2.coordinates.tica import Amuse
@@ -167,17 +188,23 @@ def pca(input, ndim = None):
 #                 % (je.message(), je.stacktrace()))
 
 def tica(input, lag = 1, ndim = None):
-    """
-    Returns a TICA transformation object for the given input
+    r"""Returns a TICA transformation object for the given input
     
     The object's main method is transform(trajectory)
-    
+
+    Parameters
+    -----------
+    input :
+
+    Returns
+    -------    
     crds : array(s) or filename(s)
         One of:
         (F x N x d) array (trajectory)
         filename (pointing to a trajectory)
         multiple (F x N x d) arrays (trajectories)
         multiple filenames (pointing to trajectories)
+
     """
     datainput = dataNew.dataInput(input)
     T = coorNew.tica(datainput, lag)
@@ -187,9 +214,8 @@ def tica(input, lag = 1, ndim = None):
 
 
 def transform_file(infile, transformation, outfile, output_precision = (10,10)):
-    """
-    Applies a transformation to each data set of the infile and writes the
-    result to the outfile
+    r"""Applies a transformation to each data set of the infile and
+    writes the result to the outfile
     
     Parameters
     ----------
@@ -202,8 +228,9 @@ def transform_file(infile, transformation, outfile, output_precision = (10,10)):
     output_precision = (10,10) : tuple
         If the output supports fixed precision (e.g. ASCII-file), the precision
         is used as specified here.
+        
     """
-    if isinstance(transformation, CoordinateTransform):
+    if getattr(transformation, 'jtransform', False): # has jtransform function
         coor.fixOutputPrecision(output_precision[0],output_precision[1])
         coor.transform_file(infile, transformation.jtransform(), outfile)
         coor.fixOutputPrecision()
@@ -212,10 +239,12 @@ def transform_file(infile, transformation, outfile, output_precision = (10,10)):
 
 
 def transform_trajectory(traj, transformation):
-    """
+    r"""
+
     Parameters
     ----------
     traj : trajectory
+    
     """
     if not isinstance(transformation, CoordinateTransform):
         raise AttributeError("transformation is not an instance of CoordinateTransform")
