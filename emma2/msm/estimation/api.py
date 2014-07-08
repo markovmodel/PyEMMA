@@ -521,29 +521,30 @@ def log_likelihood(C, T):
         return np.dot(C[nz], np.log(T[nz]))
 
 
-# TODO: this function can be mixed dense/sparse, so maybe we should
-# change the place for this function.
+# DONE: Ben
 def error_perturbation(C, sensitivity):
-    r"""Compute error perturbation.
-    
+    r"""Error perturbation for given sensitivity matrix.
+
     Parameters
     ----------
-    C : count matrix 
-    sensitivity : sensitivity matrix or tensor of
-        size (m x n x n) where m is the dimension of the target
-        quantity and (n x n) is the size of the transition matrix.
-        The sensitivity matrix should be evaluated at an appropriate
-        maximum likelihood or mean of the transition matrix estimated
-        from C.
-
+    C : (M, M) ndarray
+        Count matrix
+    S : (M, M) ndarray or (K, M, M) ndarray
+        Sensitivity matrix (for scalar observable) or sensitivity
+        tensor for vector observable
+        
     Returns
     -------
-    cov : (m x m) covariance matrix of the target quantity
-    
+    X : float or (K, K) ndarray
+        error-perturbation (for scalar observables) or covariance matrix
+        (for vector-valued observable)
+        
     """
-    if isdense(C):
-        C=csr_matrix(C)
-    return sparse.transition_matrix.error_perturbation(C, sensitivity)
+
+    if issparse(C):
+        warnings.warn("Error-perturbation will be dense for sparse input")
+        C.toarray()
+    return dense.covariance.error_perturbation(C, sensitivity)
 
 def _showSparseConversionWarning():
     warnings.warn('Converting input to dense, since method is '
