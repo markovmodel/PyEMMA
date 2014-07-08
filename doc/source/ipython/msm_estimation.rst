@@ -484,3 +484,6 @@ connected.
 
 Next - analyze errors, uncertainties
 
+.. code:: python
+
+    

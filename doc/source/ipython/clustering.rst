@@ -29,17 +29,12 @@
 
 .. parsed-literal::
 
-    2014-02-02 14:24:56,684 emma2.util.pystallone DEBUG    init with options: "['-Xms64m', '-Xmx2000m', '-Djava.class.path=/Users/noe/Library/Enthought/Canopy_64bit/User/lib/python2.7/site-packages/Emma2-2.0-py2.7-macosx-10.6-x86_64.egg/emma2/util/../../lib/stallone/stallone-1.0-SNAPSHOT-jar-with-dependencies.jar/']"
-    2014-02-02 14:24:56,696 emma2.util.pystallone DEBUG    default vm path: /System/Library/Frameworks/JavaVM.framework/JavaVM
-
-
-.. parsed-literal::
-
     Populating the interactive namespace from numpy and matplotlib
 
 
 k-means clustering
 ------------------
+
 
 .. code:: python
 
@@ -59,7 +54,7 @@ k-means clustering
 
 .. parsed-literal::
 
-    [<matplotlib.lines.Line2D at 0x11b3bb490>]
+    [<matplotlib.lines.Line2D at 0x10e02aed0>]
 
 
 
@@ -69,6 +64,7 @@ k-means clustering
 
 regspace clustering
 -------------------
+
 
 .. code:: python
 
@@ -85,7 +81,7 @@ regspace clustering
 
 .. parsed-literal::
 
-    [<matplotlib.lines.Line2D at 0x11baf79d0>]
+    [<matplotlib.lines.Line2D at 0x10d75d8d0>]
 
 
 
@@ -95,6 +91,7 @@ regspace clustering
 
 Cluster Assignment
 ------------------
+
 
 .. code:: python
 
@@ -107,7 +104,7 @@ Cluster Assignment
 
 .. parsed-literal::
 
-    [<matplotlib.lines.Line2D at 0x11be70550>]
+    [<matplotlib.lines.Line2D at 0x11c5c3810>]
 
 
 
@@ -115,4 +112,9 @@ Cluster Assignment
 .. image:: clustering_files/clustering_10_1.png
 
 
+.. code:: python
 
+    
+.. code:: python
+
+    

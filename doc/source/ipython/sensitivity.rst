@@ -21,6 +21,7 @@ estimated quantities.
 Use ipythons magic % commands to activate plotting within notebook cells
 ------------------------------------------------------------------------
 
+
 .. code:: python
 
     %matplotlib inline
@@ -31,6 +32,7 @@ Imports are ordered as
 1. standard library imports
 2. third party imports
 3. local application/library specific imports
+
 
 .. code:: python
 
@@ -94,6 +96,7 @@ emma2.msm.analysis.stationary\_distribution method.
 Stationary Distribution
 -----------------------
 
+
 .. code:: python
 
     pi=stationary_distribution(T)
@@ -115,6 +118,7 @@ Interpolation on the level of free energies is probably a better idea.
 
 Eigenvectors
 ------------
+
 
 We compute the right eigenvectors corresponding to the 4 largest
 eigenvalues.
@@ -234,6 +238,7 @@ optional keyword tau. The default value is tau=1.
 PCCA
 ----
 
+
 Ufortunately we seem to have a bug in the current implementation. So
 that pcca(T, 5) will produce a nasty stack trace. In stead we load the
 membership computed by a MATLAB script to visualize the result that
@@ -331,3 +336,6 @@ Further functions are
 We are happy for your feedback and suggestions. Please feel free to
 contact our mailing list at emma@lists.fu-berlin.de
 
+.. code:: python
+
+    

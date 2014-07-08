@@ -1,0 +1,7 @@
+T is a reversible matrix:  False
+because its correlation matrix 
+[[ 0.225   0.025   0.      0.    ]
+ [ 0.025   0.2225  0.0025  0.    ]
+ [ 0.      0.0025  0.235   0.0125]
+ [ 0.      0.      0.0125  0.2375]]
+is symmetric to within numerical error of  2.40998608955e-16

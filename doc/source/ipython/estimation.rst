@@ -2,6 +2,7 @@
 Emma2 - Estimation of a Markov model for Alanine-Dipeptide (already discretized trajectory)
 ===========================================================================================
 
+
 .. code:: python
 
     from emma2.msm.io import read_dtraj
@@ -10,14 +11,16 @@ Emma2 - Estimation of a Markov model for Alanine-Dipeptide (already discretized 
 Read discretized trajectory, :math:`dt=1ps`, :math:`T = 1000ns`
 ---------------------------------------------------------------
 
+
 .. code:: python
 
-    dtraj = read_dtraj('data/dihedral_dt1ps_T1000ns_1.disctraj')
+    dtraj = read_dtraj('resources/dihedral_dt1ps_T1000ns_1.disctraj')
 .. code:: python
 
     dtraj
 Count matrix at lagtime :math:`\tau = 6 ps`
 -------------------------------------------
+
 
 .. code:: python
 
@@ -28,11 +31,13 @@ Count matrix at lagtime :math:`\tau = 6 ps`
 Efficient construction and storage using sparse coordinate list (COO) format
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+
 .. code:: python
 
     C, C60, C_slide, C_slide2
 Count matrix of largest connected component
 -------------------------------------------
+
 
 .. code:: python
 
@@ -40,14 +45,17 @@ Count matrix of largest connected component
 Extremely fast computation of connected component using scipy.csgraph library
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+
 .. code:: python
 
     C_cc
 Maximum likelihood transition matrix
 ------------------------------------
 
+
 support for unconstrained (nonreversible) as well as constrained (reversible) maximum likelihood optimization
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 
 .. code:: python
 

@@ -2,6 +2,10 @@
 Tutorial: Coordinate IO and transformation
 ==========================================
 
+Blabla
+
+:math:`x = \int_y f(y) dy`
+
 .. code:: python
 
     ##########################################
@@ -31,13 +35,13 @@ Tutorial: Coordinate IO and transformation
 
 .. parsed-literal::
 
-    2014-02-02 13:05:17,587 emma2.util.pystallone DEBUG    init with options: "['-Xms64m', '-Xmx2000m', '-Djava.class.path=/Users/noe/Library/Enthought/Canopy_64bit/User/lib/python2.7/site-packages/Emma2-2.0-py2.7-macosx-10.6-x86_64.egg/emma2/util/../../lib/stallone/stallone-1.0-SNAPSHOT-jar-with-dependencies.jar/']"
-    2014-02-02 13:05:17,588 emma2.util.pystallone DEBUG    default vm path: /System/Library/Frameworks/JavaVM.framework/JavaVM
+    Populating the interactive namespace from numpy and matplotlib
 
 
 .. parsed-literal::
 
-    Populating the interactive namespace from numpy and matplotlib
+    WARNING: pylab import has clobbered these variables: ['mean']
+    `%pylab --no-import-all` prevents importing * from pylab and numpy
 
 
 Reading and writing coordinates
@@ -49,15 +53,19 @@ Supports reading from dcds and xtcs, as well as writing to dcds
 
     # Read Coordinates and print first frame
     reader = coorio.reader("./resources/Trypsin_Ca_dt1ns.dcd")
+    print reader.size()
     X0 = reader.get(0)
     print shape(X0)
-    print X0[0:2]
+    print X0[0:4]
 
 .. parsed-literal::
 
+    1000
     (223, 3)
-    [[  1.41799927  15.82899761  13.82300091]
-     [  4.63500071  17.88100052  14.60400105]]
+    [[  2.14200139  15.05400085  13.5700016 ]
+     [  4.11900043  18.71600342  15.07800007]
+     [  6.10699749  21.63800049  12.51100159]
+     [  3.07000113  19.77000046   9.00699806]]
 
 
 .. code:: python
@@ -73,12 +81,24 @@ Supports reading from dcds and xtcs, as well as writing to dcds
 
 .. code:: python
 
+    print trajCA[0,0:4]
+
+.. parsed-literal::
+
+    [[  2.14200139  15.05400085  13.5700016 ]
+     [  4.11900043  18.71600342  15.07800007]
+     [  6.10699749  21.63800049  12.51100159]
+     [  3.07000113  19.77000046   9.00699806]]
+
+
+.. code:: python
+
     # check performance
     %timeit reader.load()
 
 .. parsed-literal::
 
-    1 loops, best of 3: 355 ms per loop
+    1 loops, best of 3: 357 ms per loop
 
 
 .. code:: python
@@ -168,6 +188,7 @@ circumvented somehow
 Example: Converting dcd files to inner coordinates
 --------------------------------------------------
 
+
 .. code:: python
 
     # we define a coordinate transform
@@ -187,16 +208,16 @@ Example: Converting dcd files to inner coordinates
 
 .. parsed-literal::
 
-    array([[  0.        ,   3.89483959,   6.76740704,   6.04940977],
-           [  3.89483959,   0.        ,   3.89322406,   5.57087888],
-           [  6.76740704,   3.89322406,   0.        ,   3.8473847 ],
-           [  6.04940977,   5.57087888,   3.8473847 ,   0.        ],
-           [  8.36291853,   8.81598837,   7.24059729,   3.85176863],
-           [  9.8628023 ,  11.42134722,  10.73583039,   7.30271815],
-           [ 10.88543338,  13.22971694,  12.87659444,   9.08907283],
-           [ 14.20248929,  16.40501459,  15.86021981,  12.18621322],
-           [ 17.4326806 ,  19.93961741,  19.55374657,  15.82268574],
-           [ 18.32460717,  21.26139268,  21.23672663,  17.43523416]])
+    array([[  0.        ,   4.42638084,   7.7583327 ,   6.62743065],
+           [  4.42638084,   0.        ,   4.36802935,   6.25046996],
+           [  7.7583327 ,   4.36802935,   0.        ,   4.99908109],
+           [  6.62743065,   6.25046996,   4.99908109,   0.        ],
+           [  9.4730669 ,   8.46684791,   7.2295973 ,   4.74989563],
+           [  9.94134796,  10.46378398,  10.8614857 ,   7.61380931],
+           [ 11.28466722,  12.84710488,  12.90407465,   8.39772646],
+           [ 15.12288536,  16.08321504,  16.21434571,  12.55268884],
+           [ 17.81510191,  19.43892995,  19.91524109,  15.90903928],
+           [ 18.61893415,  21.0618861 ,  21.89735747,  17.45178493]])
 
 
 
@@ -212,16 +233,16 @@ Example: Converting dcd files to inner coordinates
 
 .. parsed-literal::
 
-    [[  0.     3.89   6.77   6.05]
-     [  3.89   0.     3.89   5.57]
-     [  6.77   3.89   0.     3.85]
-     [  6.05   5.57   3.85   0.  ]
-     [  8.36   8.82   7.24   3.85]
-     [  9.86  11.42  10.74   7.3 ]
-     [ 10.89  13.23  12.88   9.09]
-     [ 14.2   16.41  15.86  12.19]
-     [ 17.43  19.94  19.55  15.82]
-     [ 18.32  21.26  21.24  17.44]]
+    [[  0.     4.43   7.76   6.63]
+     [  4.43   0.     4.37   6.25]
+     [  7.76   4.37   0.     5.  ]
+     [  6.63   6.25   5.     0.  ]
+     [  9.47   8.47   7.23   4.75]
+     [  9.94  10.46  10.86   7.61]
+     [ 11.28  12.85  12.9    8.4 ]
+     [ 15.12  16.08  16.21  12.55]
+     [ 17.82  19.44  19.92  15.91]
+     [ 18.62  21.06  21.9   17.45]]
 
 
 .. code:: python
@@ -234,7 +255,7 @@ Example: Converting dcd files to inner coordinates
 
 .. parsed-literal::
 
-    array([  92.05670224,  140.2513967 ,  141.83900055,  112.21317265])
+    array([  83.42304353,   95.69762282,  110.59752966,  101.70707066])
 
 
 
@@ -248,7 +269,7 @@ Example: Converting dcd files to inner coordinates
 
 .. parsed-literal::
 
-    array([ 115.44973935, -122.38561194,  -71.41519912, -147.097981  ])
+    array([  98.14959127, -133.14783449,  -63.41224959, -129.11232329])
 
 
 
@@ -280,19 +301,19 @@ Example: Converting dcd files to inner coordinates
 
 .. parsed-literal::
 
-    array([[   5.79648138,  115.44973935, -122.38561194, ...,   46.67044757,
-              54.15632816,   49.77017596],
-           [   4.81344747,  137.06825955, -122.78206478, ...,   46.04156477,
-              45.77561761,   55.52262629],
-           [  -7.06218365,  147.41632028, -122.40270235, ...,   51.40851078,
-              53.50367969,   48.65770885],
+    array([[  23.7407777 ,   98.14959127, -133.14783449, ...,   34.07858563,
+              50.11135759,   40.95220397],
+           [  16.77464408,  108.04372915, -133.07509846, ...,   37.87805828,
+              36.81456897,   50.77995268],
+           [   0.84647355,  127.02355369, -124.06285148, ...,   41.27550278,
+              46.09259913,   41.44081048],
            ..., 
-           [  -0.41515509,  112.05424834, -112.76015713, ...,   45.88988206,
-              93.87037102,   -3.04815753],
-           [   8.40559218,  135.22588281, -136.0495758 , ...,   49.82805661,
-              82.28013065,   22.55718028],
-           [  -9.24265537,  120.45431041, -103.49853275, ...,   97.93863591,
-             153.37465415,    9.21164237]])
+           [   9.50800587,   99.00293579, -127.25956962, ...,   35.68802949,
+              81.9393266 ,   -3.17814515],
+           [  21.15672999,  107.7474879 , -139.95899332, ...,   41.88499296,
+              74.87716638,    9.61164   ],
+           [  17.79014494,  100.08219122, -119.21720831, ...,   73.44323794,
+             143.40233089,   16.6579599 ]])
 
 
 
@@ -324,18 +345,19 @@ embarassing. We should really clean this up!
 
 .. parsed-literal::
 
-    <matplotlib.text.Text at 0x11a8f6790>
+    <matplotlib.text.Text at 0x1262c5e10>
 
 
 
 
-.. image:: coordinates_files/coordinates_25_1.png
+.. image:: coordinates_files/coordinates_26_1.png
 
 
 That's fast. All file-based operations seem fine!
 
 PCA
 ---
+
 
 .. code:: python
 
@@ -353,12 +375,12 @@ PCA
 
 .. parsed-literal::
 
-    <matplotlib.text.Text at 0x1244dd6d0>
+    <matplotlib.text.Text at 0x1255f3cd0>
 
 
 
 
-.. image:: coordinates_files/coordinates_29_1.png
+.. image:: coordinates_files/coordinates_30_1.png
 
 
 .. code:: python
@@ -384,12 +406,12 @@ PCA
 
 .. parsed-literal::
 
-    [<matplotlib.lines.Line2D at 0x12629aa90>]
+    [<matplotlib.lines.Line2D at 0x127e2e050>]
 
 
 
 
-.. image:: coordinates_files/coordinates_31_1.png
+.. image:: coordinates_files/coordinates_32_1.png
 
 
 .. code:: python
@@ -398,6 +420,7 @@ PCA
     coortrans.transform_file("./resources/Trypsin_Ca_dt1ns.dcd",pca,"./resources/Trypsin_pc12.dat")
 TICA
 ----
+
 
 .. code:: python
 
@@ -417,7 +440,7 @@ TICA
 
 
 
-.. image:: coordinates_files/coordinates_35_1.png
+.. image:: coordinates_files/coordinates_36_1.png
 
 
 .. code:: python
@@ -442,7 +465,7 @@ TICA
 
 
 
-.. image:: coordinates_files/coordinates_37_1.png
+.. image:: coordinates_files/coordinates_38_1.png
 
 
 PCA in memory
@@ -477,7 +500,7 @@ performance leak somewhere in the Java code.
 
 
 
-.. image:: coordinates_files/coordinates_42_1.png
+.. image:: coordinates_files/coordinates_43_1.png
 
 
 .. code:: python
@@ -499,6 +522,9 @@ performance leak somewhere in the Java code.
 
 
 
-.. image:: coordinates_files/coordinates_44_1.png
+.. image:: coordinates_files/coordinates_45_1.png
 
 
+.. code:: python
+
+    

@@ -21,6 +21,7 @@ estimated quantities.
 Use ipythons magic % commands to activate plotting within notebook cells
 ------------------------------------------------------------------------
 
+
 .. code:: python
 
     %matplotlib inline
@@ -30,6 +31,7 @@ Imports are ordered as
 1. standard library imports
 2. third party imports
 3. local application/library specific imports
+
 
 .. code:: python
 
@@ -128,6 +130,8 @@ The plot shows the separation of the dihedral plane into a low
 -  The barrier between the low energy and the high energy region is
    approximately :math:`23 \frac{kJ}{mol}`.
 
+
+
 .. code:: python
 
     plotting.free_energy(centers, A, levels=np.linspace(0.0, 30.0, 10), method='cubic', fill_value=A.max())
@@ -138,6 +142,7 @@ The plot shows the separation of the dihedral plane into a low
 
 Eigenvectors
 ------------
+
 
 We compute the right eigenvectors corresponding to the 4 largest
 eigenvalues.
@@ -222,13 +227,8 @@ eigenvalue.
 
     plotting.eigenvalues(eigvals)
 
-.. parsed-literal::
 
-    /home/mi/trendelkamp/.local/lib/python2.7/site-packages/numpy/core/numeric.py:320: ComplexWarning: Casting complex values to real discards the imaginary part
-
-
-
-.. image:: analysis_files/analysis_40_1.png
+.. image:: analysis_files/analysis_40_0.png
 
 
 Implied time scales
@@ -257,17 +257,13 @@ optional keyword tau. The default value is tau=1.
 PCCA
 ----
 
-Ufortunately we seem to have a bug in the current implementation. So
-that pcca(T, 5) will produce a nasty stack trace. In stead we load the
-membership computed by a MATLAB script to visualize the result that
-should have been produced.
 
 .. code:: python
 
-    membership=np.loadtxt('membership.dat')
+    membership=pcca(T, 5)
 .. code:: python
 
-    membership_crisp=np.where(membership>0.75)
+    membership_crisp=np.where(membership>0.4)
 PCCA gives accurate memberships for the high probability region.
 Assigning correct memberships for the low probability states,
 :math:`\phi>0`, is problematic.
@@ -277,7 +273,7 @@ Assigning correct memberships for the low probability states,
     plotting.pcca(centers, membership_crisp)
 
 
-.. image:: analysis_files/analysis_49_0.png
+.. image:: analysis_files/analysis_48_0.png
 
 
 Summary
@@ -309,3 +305,6 @@ Further functions are
 We are happy for your feedback and suggestions. Please feel free to
 contact our mailing list at emma@lists.fu-berlin.de
 
+.. code:: python
+
+    
