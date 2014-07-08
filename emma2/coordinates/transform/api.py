@@ -28,9 +28,9 @@ PCA = linear_transform.PCA
 TICA = linear_transform.TICA
 
 
-__author__ = "Martin Scherer, Frank Noe"
+__author__ = "Martin Scherer, Fabian Paul, Frank Noe"
 __copyright__ = "Copyright 2014, Computational Molecular Biology Group, FU-Berlin"
-__credits__ = ["Martin Scherer", "Frank Noe"]
+__credits__ = ["Martin Scherer", "Fabian Paul", "Frank Noe"]
 __license__ = "FreeBSD"
 __version__ = "2.0.0"
 __maintainer__ = "Martin Scherer"
