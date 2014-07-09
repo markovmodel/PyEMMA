@@ -46,7 +46,4 @@ filter with gitk, which is somehow painful).
 Example for docstrings
 ----------------------
 
-.. toctree::
-   :maxdepth: 2
-
-   example_package
+See :doc:`Sandbox` for further information about ReST markup in docstrings.
