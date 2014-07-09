@@ -42,8 +42,8 @@ __all__=['read_discrete_trajectory',
 
 # DONE: Implement in Python directly
 def read_discrete_trajectory(filename):
-    """Read discrete trajectory from ascii file. 
-
+    r"""Read discrete trajectory from ascii file. 
+    
     The discrete trajectory file containing a single column with
     integer entries is read into an array of integers.
 
@@ -96,7 +96,7 @@ __all__.append('write_dtraj')
 # DONE: Implement in Python directly
 def load_discrete_trajectory(filename):
     r"""Read discrete trajectory form binary file.
-
+    
     The binary file is a one dimensional numpy array
     of integers stored in numpy .npy format.
 
@@ -122,7 +122,7 @@ __all__.append('load_dtraj')
 # DONE : Implement in Python directly
 def save_discrete_trajectory(filename, dtraj):
     r"""Write discrete trajectory to binary file.
-
+    
     The discrete trajectory is stored as ndarray of integers 
     in numpy .npy format.
 
@@ -155,12 +155,10 @@ __all__.append('save_dtraj')
 def read_matrix(filename, mode='default', dtype=float, comments='#'):
     r"""Read matrix from ascii file.
     
-    (M, N) dense matrices are read from ascii files
-    with M rows and N columns.
-    
-    Sparse matrices are read from ascii files in 
-    coordinate list (COO) format and converted
-    to sparse matrices in (COO) format.
+    (M, N) dense matrices are read from ascii files with M rows and N
+    columns. Sparse matrices are read from ascii files in coordinate
+    list (COO) format and converted to sparse matrices in (COO)
+    format.
     
     Parameters
     ----------
@@ -208,13 +206,11 @@ def read_matrix(filename, mode='default', dtype=float, comments='#'):
 def write_matrix(filename, A, mode='default', fmt='%.18e', header='', comments='#'):
     r"""Write matrix to ascii file.
     
-    (M, N) dense matrices are stored as ascii file with M rows
-    and N columns.
-    
-    Sparse matrices are converted to coordinate list (COO)
-    format. The coordinate list [...,(row, col, value),...]
-    is then stored as a dense (K, 3) ndarray. K is the number
-    of nonzero entries in the sparse matrix.   
+    (M, N) dense matrices are stored as ascii file with M rows and N
+    columns. Sparse matrices are converted to coordinate list (COO)
+    format. The coordinate list [...,(row, col, value),...]  is then
+    stored as a dense (K, 3) ndarray. K is the number of nonzero
+    entries in the sparse matrix.
     
     Parameters
     ----------
@@ -273,13 +269,11 @@ def write_matrix(filename, A, mode='default', fmt='%.18e', header='', comments='
 def save_matrix(filename, A, mode='default'):
     r"""Save matrix as binary file.
     
-    (M, N) dense matrices are stored as ndarrays 
-    in numpy .npy binary format
-    
-    Sparse matrices are converted to coordinate list (COO)
-    format. The coordinate list [...,(row, col, value),...]
-    is then stored as a (K, 3) ndarray in numpy .npy binary format.
-    K is the number of nonzero entries in the sparse matrix.   
+    (M, N) dense matrices are stored as ndarrays in numpy .npy binary
+    format. Sparse matrices are converted to coordinate list (COO)
+    format. The coordinate list [...,(row, col, value),...]  is then
+    stored as a (K, 3) ndarray in numpy .npy binary format.  K is the
+    number of nonzero entries in the sparse matrix.
     
     Parameters
     ----------
@@ -325,13 +319,10 @@ def save_matrix(filename, A, mode='default'):
 def load_matrix(filename, mode='default'):
     r"""Read matrix from binary file.
     
-    (M, N) dense matrices are read as ndarray 
-    from binary numpy .npy files.
-    
-    Sparse matrices are read as ndarray representing
-    a coordinate list [...,(row, col, value),...]
-    from binary numpy .npy files and returned as
-    sparse matrices in (COO) format.
+    (M, N) dense matrices are read as ndarray from binary numpy .npy
+    files. Sparse matrices are read as ndarray representing a
+    coordinate list [...,(row, col, value),...]  from binary numpy
+    .npy files and returned as sparse matrices in (COO) format.
     
     Parameters
     ----------
