@@ -153,7 +153,7 @@ __all__.append('save_dtraj')
 ################################################################################
 
 def read_matrix(filename, mode='default', dtype=float, comments='#'):
-    r"""Read matrix from ascii file
+    r"""Read matrix from ascii file.
     
     (M, N) dense matrices are read from ascii files
     with M rows and N columns.
@@ -206,7 +206,7 @@ def read_matrix(filename, mode='default', dtype=float, comments='#'):
     
 
 def write_matrix(filename, A, mode='default', fmt='%.18e', header='', comments='#'):
-    r"""Write matrix to ascii file 
+    r"""Write matrix to ascii file.
     
     (M, N) dense matrices are stored as ascii file with M rows
     and N columns.
@@ -323,7 +323,7 @@ def save_matrix(filename, A, mode='default'):
 
 
 def load_matrix(filename, mode='default'):
-    r"""Read matrix from binary file
+    r"""Read matrix from binary file.
     
     (M, N) dense matrices are read as ndarray 
     from binary numpy .npy files.
