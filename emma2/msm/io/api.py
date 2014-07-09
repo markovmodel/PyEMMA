@@ -291,15 +291,8 @@ def save_matrix(filename, A, mode='default'):
         ========== ===================================================
          mode
         ========== ===================================================
-        'default'   Use the type of A to determine the format
-        
-                    ============== ==================================
-                     extension
-                    ============== ==================================
-                     name.xxx      the file is read as dense matrix
-                     name.coo.xxx  the file is read as sparse matrix
-                    ============== ==================================
-                    
+        'default'   Use the type of A to determine the format\
+                    name.xxx (dense), name.coo.xxx (sparse)      
         'dense'     Enforce conversion to a dense representation\
                     and store the corresponding ndarray
         'sparse'    Convert to sparse matrix in COO-format\
@@ -349,15 +342,8 @@ def load_matrix(filename, mode='default'):
         ========== ====================================================
          mode
         ========== ====================================================
-        'default'   Use the filename to determine the matrix format
-        
-                    ============== ==================================
-                     extension        
-                    ============== ==================================
-                     name.npy       the file is read as dense matrix
-                     name.coo.npy   the file is read as sparse matrix
-                    ============== ==================================
-        
+        'default'   Use the filename to determine the matrix format\
+                    name.npy (dense), name.coo.npy (sparse)       
         'dense'     Read file as dense matrix 
         'sparse'    Read file as sparse matrix in COO-format
         ========== ====================================================
