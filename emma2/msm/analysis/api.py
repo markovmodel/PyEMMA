@@ -49,7 +49,6 @@ __all__=['is_transition_matrix',
          'timescales',
          'eigenvectors',
          'rdl_decomposition',
-         'expectation',
          'expected_counts',
          'expected_counts_stationary',
          'mfpt',
@@ -60,6 +59,7 @@ __all__=['is_transition_matrix',
          'tpt_totalflux',
          'tpt_rate',
          'pcca',
+         'expectation',
          'fingerprint_correlation',
          'fingerprint_relaxation',
          'evaluate_fingerprint',
@@ -694,7 +694,7 @@ def relaxation(P, p0, obs, tau=1, times=[1], pi=None):
 # PCCA
 ################################################################################
 
-# DONE: Implement in Python directly
+# DONE: Jan
 def pcca(T, n):
     r"""returns an ndarray(m,n) with n membership functions of length m in columns to be in
     correspondence with the column structure of right and left eigenvectors
