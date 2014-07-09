@@ -8,7 +8,7 @@ import os
 import numpy as np
 
 import filetransform
-from emma2.coordinates.tica import Amuse
+from emma2.coordinates.transform.tica import Amuse
 
 class Transform_TICA(filetransform.FileTransform):
 
