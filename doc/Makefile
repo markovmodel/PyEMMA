@@ -27,6 +27,7 @@ all: html
 help:
 	@echo "Please use \`make <target>' where <target> is one of"
 	@echo "  html      to make standalone HTML files"
+	@echo "  latex     to make LaTeX files, you can set PAPER=a4 or PAPER=letter"
 
 clean:
 	-rm -rf build/* source/generated
@@ -56,3 +57,7 @@ ipython-rst: source/generated
 	@$(foreach n,$(notebooks), echo "   generated/$n" >> $(F);)
 
 	@echo "Conversion finished."
+
+latex:
+	mkdir -p build/latex build/doctrees
+	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) build/latex $(FILES)
