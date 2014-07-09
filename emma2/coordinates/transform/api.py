@@ -239,11 +239,12 @@ def transform_file(infile, transformation, outfile, output_precision = (10,10)):
 
 
 def transform_trajectory(traj, transformation):
-    r"""
-
+    r"""Transform a trajectory.
+    
     Parameters
     ----------
-    traj : trajectory
+    traj : str
+        filename    
     
     """
     if not isinstance(transformation, CoordinateTransform):
