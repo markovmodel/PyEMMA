@@ -10,7 +10,7 @@ underlying solution for a problem is choosen.
 
 .. toctree::
    :maxdepth: 1
-
+   
    msm.io
    msm.estimation
    msm.analysis

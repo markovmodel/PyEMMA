@@ -36,6 +36,8 @@ Tutorials
 Development
 ===========
 .. toctree::
+   :maxdepth: 2
+
    DevelopersGuide
    TESTING
 

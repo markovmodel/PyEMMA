@@ -1,7 +1,8 @@
 
-
-Sandbox
-=======
+ReST Sandbox
+============
+This sandbox demonstrates various features of the rest markup language that you can 
+(and should) use when documenting code.
 
 Format testing
 --------------
