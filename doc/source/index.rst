@@ -11,6 +11,8 @@ Installation
 ============
 
 .. toctree::
+   :maxdepth: 2
+
    INSTALL
    INSTALL_MACOSX
    Configuration
@@ -20,7 +22,7 @@ Documentation
 =============
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
 
    api
 
