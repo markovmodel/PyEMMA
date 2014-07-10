@@ -6,7 +6,10 @@ Created on 28.10.2013
 import numpy as np
 from scipy.sparse import dia_matrix
 
-__all__ = ['allclose_sparse', 'diags']
+__all__ = ['allclose_sparse',
+           'diags',
+           'isclose',
+          ]
 
 def allclose_sparse(A, B, rtol=1e-5, atol=1e-9):
     """
@@ -167,3 +170,42 @@ matrix([[ 0., 1., 0., 0.],
             raise
 
     return dia_matrix((data_arr, offsets), shape=(m, n)).asformat(format)
+
+
+# numpy.isclose introduced in np 1.7, so provide a workaround 
+if not 'isclose' in dir(np):
+    def isclose(a, b, rtol=1e-05, atol=1e-08, equal_nan=False):
+        abs = (np.abs(a - b) <= atol)
+        rel = ((np.abs(a - b) / np.abs(a)) >= rtol)
+        
+        def within_tol(x, y, atol, rtol):
+            result = less_equal(abs(x-y), atol + rtol * abs(y))
+            if np.isscalar(a) and np.isscalar(b):
+                result = bool(result)
+            return result
+
+        x = np.array(a, copy=False, subok=True, ndmin=1)
+        y = np.array(b, copy=False, subok=True, ndmin=1)
+        xfin = np.isfinite(x)
+        yfin = np.isfinite(y)
+        if all(xfin) and all(yfin):
+            return within_tol(x, y, atol, rtol)
+        else:
+            finite = xfin & yfin
+            cond = np.zeros_like(finite, subok=True)
+            # Because we're using boolean indexing, x & y must be the same shape.
+            # Ideally, we'd just do x, y = broadcast_arrays(x, y). It's in
+            # lib.stride_tricks, though, so we can't import it here.
+            x = x * np.ones_like(cond)
+            y = y * np.ones_like(cond)
+            # Avoid subtraction with infinite/nan values...
+            cond[finite] = within_tol(x[finite], y[finite], atol, rtol)
+            # Check for equality of infinite values...
+            cond[~finite] = (x[~finite] == y[~finite])
+            if equal_nan:
+                # Make NaN == NaN
+                cond[isnan(x) & isnan(y)] = True
+            return cond
+
+        # monkey patch it into numpy namespace
+        np.__dict__['isclose'] = iscloser
