@@ -13,7 +13,7 @@ import scipy.linalg
 import scipy.sparse
 import scipy.sparse.linalg
 
-from emma2.util.numeric import diags
+from emma2.util.numeric import diags, choice
 from emma2.msm.analysis import expected_counts, expected_counts_stationary
 
 ################################################################################
@@ -112,7 +112,7 @@ def random_orthonormal_sparse_vectors(d, k):
     v[i]=k^{-1/2} for i in {i_1,...,i_k} and zero elsewhere.
 
     """
-    indices=np.random.choice(d, replace=False, size=(k*k))
+    indices=choice(d, replace=False, size=(k*k))
     indptr=np.arange(0, k*(k+1), k)
     values=1.0/np.sqrt(k)*np.ones(k*k)
     return scipy.sparse.csc_matrix((values, indices, indptr))  

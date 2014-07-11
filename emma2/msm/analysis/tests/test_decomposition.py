@@ -3,8 +3,6 @@ r"""Unit test for decomposition functions in api.py
 .. moduleauthor:: Benjamin Trendelkamp-Schroer<benjamin DOT trendelkamp-schorer AT fu-berlin DOT de>
 
 """
-import sys
-
 import unittest
 import warnings
 
@@ -18,6 +16,7 @@ import scipy.sparse.linalg
 from scipy.linalg import eig, eigh, eigvals, eigvalsh, qr, solve
 
 from emma2.util.exceptions import SpectralWarning
+from emma2.util.numeric import choice
 
 from emma2.msm.analysis import stationary_distribution, eigenvalues, eigenvectors, rdl_decomposition, timescales
 
@@ -326,30 +325,10 @@ def random_orthonormal_sparse_vectors(d, k):
     v[i]=k^{-1/2} for i in {i_1,...,i_k} and zero elsewhere.
 
     """
-    indices=np.random.choice(d, replace=False, size=(k*k))
+    indices=choice(d, replace=False, size=(k*k))
     indptr=np.arange(0, k*(k+1), k)
     values=1.0/np.sqrt(k)*np.ones(k*k)
     return scipy.sparse.csc_matrix((values, indices, indptr))    
-
-
-def random_linearly_independent_vectors(d, k):
-    r"""Generate a set of linear independent vectors
-    
-    The algorithm picks k random points uniformly distributed
-    on the d-sphere. They will form a set of linear independent
-    vectors with probability one for k<=d.
-
-    """
-    if k>d:
-        raise ValueError("Can not pick more linear independent vectors"+\
-                             " than the full dimension of the vector space")
-    else:
-        """Pick k-vectors with gaussian distributed entries"""
-        G=np.random.randn(d, k)
-        """Normalize to length=1 to get uniform distribution on the d-sphere"""
-        length=np.sqrt(np.sum(G**2, axis=0))
-        X=G/length[np.newaxis, :]
-        return X
 
 class TestDecompositionSparse(unittest.TestCase):
     
