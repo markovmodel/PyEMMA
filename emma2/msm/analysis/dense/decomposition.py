@@ -256,8 +256,12 @@ def rdl_decomposition(T, k=None, norm='standard'):
         """Compute overlap"""
         ov=np.diag(np.dot(np.transpose(L), R))
 
-        """Renormalize the left eigenvectors to ensure L'R=Id"""
-        L=L/ov[np.newaxis, :]
+        """Renormalize left-and right eigenvectors to ensure L'R=Id"""
+        R=R/np.sqrt(ov[np.newaxis, :])
+        L=L/np.sqrt(ov[np.newaxis, :])
+
+        # """Renormalize the left eigenvectors to ensure L'R=Id"""
+        # L=L/ov[np.newaxis, :]
 
         if k is None:
             return R, D, np.transpose(L)
