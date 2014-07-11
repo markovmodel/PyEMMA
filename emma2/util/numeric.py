@@ -175,20 +175,17 @@ matrix([[ 0., 1., 0., 0.],
 # numpy.isclose introduced in np 1.7, so provide a workaround 
 if not 'isclose' in dir(np):
     def isclose(a, b, rtol=1e-05, atol=1e-08, equal_nan=False):
-        abs = (np.abs(a - b) <= atol)
-        rel = ((np.abs(a - b) / np.abs(a)) >= rtol)
-        
         def within_tol(x, y, atol, rtol):
-            result = np.less_equal(abs(x-y), atol + rtol * abs(y))
+            result = np.less_equal(np.abs(x-y), atol + rtol * np.abs(y))
             if np.isscalar(a) and np.isscalar(b):
-                result = bool(result)
+                result = np.bool(result)
             return result
 
         x = np.array(a, copy=False, subok=True, ndmin=1)
         y = np.array(b, copy=False, subok=True, ndmin=1)
         xfin = np.isfinite(x)
         yfin = np.isfinite(y)
-        if all(xfin) and all(yfin):
+        if np.all(xfin) and np.all(yfin):
             return within_tol(x, y, atol, rtol)
         else:
             finite = xfin & yfin
