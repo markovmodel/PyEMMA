@@ -9,9 +9,11 @@ Dense matrices are represented by numpy.ndarrays throughout this module.
 """
 
 import numpy as np
+import warnings
+
 from scipy.linalg import eig, eigvals, solve, lu_factor, lu_solve
 from emma2.util.exceptions import SpectralWarning, ImaginaryEigenValueWarning
-import warnings
+from emma2.util.numeric import isclose
 
 def backward_iteration(A, mu, x0, tol=1e-14, maxiter=100):
     r"""Find eigenvector to approximate eigenvalue via backward iteration.
@@ -319,7 +321,7 @@ def timescales_from_eigenvalues(eval, tau=1):
                       'for implied time scale computation', ImaginaryEigenValueWarning)
 
     """Check for multiple eigenvalues of magnitude one"""
-    ind_abs_one=np.isclose(np.abs(eval), 1.0)
+    ind_abs_one=isclose(np.abs(eval), 1.0)
     if sum(ind_abs_one)>1:
         warnings.warn('Multiple eigenvalues with magnitude one.', SpectralWarning)
 
