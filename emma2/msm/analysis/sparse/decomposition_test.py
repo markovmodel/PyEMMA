@@ -11,9 +11,11 @@ import scipy.linalg
 import scipy.sparse
 import scipy.sparse.linalg
 
-from emma2.util.exceptions import SpectralWarning
 import decomposition
 import warnings
+
+from emma2.util.exceptions import SpectralWarning
+from emma2.util.numeric import choice
 
 def random_orthonormal_sparse_vectors(d, k):
     r"""Generate a random set of k orthonormal sparse vectors 
@@ -25,7 +27,7 @@ def random_orthonormal_sparse_vectors(d, k):
     v[i]=k^{-1/2} for i in {i_1,...,i_k} and zero elsewhere.
 
     """
-    indices=np.random.choice(d, replace=False, size=(k*k))
+    indices=choice(d, replace=False, size=(k*k))
     indptr=np.arange(0, k*(k+1), k)
     values=1.0/np.sqrt(k)*np.ones(k*k)
     return scipy.sparse.csc_matrix((values, indices, indptr))    
