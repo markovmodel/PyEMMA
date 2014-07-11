@@ -179,7 +179,7 @@ if not 'isclose' in dir(np):
         rel = ((np.abs(a - b) / np.abs(a)) >= rtol)
         
         def within_tol(x, y, atol, rtol):
-            result = less_equal(abs(x-y), atol + rtol * abs(y))
+            result = np.less_equal(abs(x-y), atol + rtol * abs(y))
             if np.isscalar(a) and np.isscalar(b):
                 result = bool(result)
             return result
@@ -204,8 +204,9 @@ if not 'isclose' in dir(np):
             cond[~finite] = (x[~finite] == y[~finite])
             if equal_nan:
                 # Make NaN == NaN
-                cond[isnan(x) & isnan(y)] = True
+                cond[np.isnan(x) & np.isnan(y)] = True
             return cond
 
-        # monkey patch it into numpy namespace
-        np.__dict__['isclose'] = iscloser
+else: # numpy.isclose available
+    isclose = np.isclose
+    isclose.__doc__ = np.isclose.__doc__
