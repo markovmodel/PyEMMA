@@ -235,26 +235,27 @@ def rdl_decomposition(T, k=None, norm='standard', ncv=None):
 
     elif norm=='reversible':
         v, R=scipy.sparse.linalg.eigs(T, k=k, which='LM', ncv=ncv)
-        r, L=scipy.sparse.linalg.eigs(T.transpose(), k=1, which='LM', ncv=ncv)
-        nu=L[:, 0]
-
+        mu=stationary_distribution_from_backward_iteration(T)
+        
+        """Diagonal matrix with eigenvalues"""
+        D=np.diag(v)
+        
         """Sort right eigenvectors"""
         ind=np.argsort(np.abs(v))[::-1]
         v=v[ind]
         R=R[:,ind]
-
-        mu=nu/np.sum(nu)
-        L=mu[:, np.newaxis]*R        
-
-        L[:, 0]=mu
-        ov=np.diag(np.dot(np.transpose(L), R))
-        R=R/ov[np.newaxis, :]
-
-        """Diagonal matrix with eigenvalues"""
-        D=np.diag(v)
-
-        return R, D, np.transpose(L)        
         
+        """Compute left eigenvectors from right ones"""
+        L=mu[:, np.newaxis]*R        
+        
+        """Compute overlap"""
+        s=np.diag(np.dot(np.transpose(L), R))
+        
+        """Renormalize left-and right eigenvectors to ensure L'R=Id"""
+        R=R/np.sqrt(s[np.newaxis, :])
+        L=L/np.sqrt(s[np.newaxis, :])           
+        
+        return R, D, np.transpose(L)              
     else:
         raise ValueError("Keyword 'norm' has to be either 'standard' or 'reversible'")
         
