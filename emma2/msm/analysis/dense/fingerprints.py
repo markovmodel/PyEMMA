@@ -11,6 +11,10 @@ import numpy as np
 from decomposition import rdl_decomposition, timescales_from_eigenvalues
 from decomposition import stationary_distribution_from_backward_iteration as statdist
 
+################################################################################
+# Fingerprints
+################################################################################
+
 def fingerprint_correlation(P, obs1, obs2=None, k=None, tau=1):
     r"""Dynamical fingerprint for equilibrium correlation experiment.
 
@@ -117,6 +121,10 @@ def fingerprint(P, obs1, obs2=None, p0=None, k=None, tau=1):
         amplitudes=np.dot(p0*obs1, R)*np.dot(L, obs2)
     return timescales, amplitudes
 
+################################################################################
+# Expectation
+################################################################################
+
 def expectation(P, obs):
     r"""Equilibrium expectation of given observable.
     
@@ -135,6 +143,10 @@ def expectation(P, obs):
     """
     pi=statdist(P)
     return np.dot(pi, obs)
+
+################################################################################
+# Correlation
+################################################################################
 
 def correlation(P, obs1, obs2=None, k=None, times=[1]):
     r"""Time-correlation for equilibrium experiment.
@@ -255,6 +267,10 @@ def correlation_matvec(P, obs1, obs2=None, times=[1]):
     correlations=correlations[ind]
 
     return correlations        
+
+################################################################################
+# Relaxation
+################################################################################
 
 def relaxation(P, p0, obs, k=None, times=[1]):
     r"""Relaxation experiment.
@@ -377,6 +393,9 @@ def relaxation_matvec(P, p0, obs, times=[1]):
 
     return relaxations    
 
+################################################################################
+# Helper functions
+################################################################################
         
 def propagate(A, x, N):
     r"""Use matrix A to propagate vector x.
