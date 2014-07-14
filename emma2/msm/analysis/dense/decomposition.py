@@ -231,8 +231,7 @@ def rdl_decomposition(T, k=None, norm='standard'):
         
         """l1- normalization of L[:, 0]"""
         R[:, 0]=R[:, 0]*np.sum(L[:, 0])
-        L[:, 0]=L[:, 0]/np.sum(L[:, 0])
-        
+        L[:, 0]=L[:, 0]/np.sum(L[:, 0])        
 
         if k is None:
             return R, D, np.transpose(L)
@@ -247,21 +246,15 @@ def rdl_decomposition(T, k=None, norm='standard'):
         nu=solve(A, b)
         mu=nu/np.sum(nu)
 
-        """Make the first right eigenvector the constant one vector"""
-        R[:, 0]=R[:, 0]*np.sum(nu)
-
         """Use mu to connect L and R"""
         L=mu[:, np.newaxis]*R
 
         """Compute overlap"""
-        ov=np.diag(np.dot(np.transpose(L), R))
+        s=np.diag(np.dot(np.transpose(L), R))
 
         """Renormalize left-and right eigenvectors to ensure L'R=Id"""
-        R=R/np.sqrt(ov[np.newaxis, :])
-        L=L/np.sqrt(ov[np.newaxis, :])
-
-        # """Renormalize the left eigenvectors to ensure L'R=Id"""
-        # L=L/ov[np.newaxis, :]
+        R=R/np.sqrt(s[np.newaxis, :])
+        L=L/np.sqrt(s[np.newaxis, :])
 
         if k is None:
             return R, D, np.transpose(L)
