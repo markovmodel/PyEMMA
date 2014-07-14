@@ -145,8 +145,36 @@ class TestFingerprint(unittest.TestCase):
         amp=np.dot(self.p0*self.obs1, self.R[:,0:k])*np.dot(self.L[0:k,:], self.obs2)
         tsn, ampn=fingerprint(self.T, self.obs1, obs2=self.obs2, p0=self.p0, k=k)
         self.assertTrue(np.allclose(tsn, self.ts[0:k]))
-        self.assertTrue(np.allclose(ampn, amp))        
+        self.assertTrue(np.allclose(ampn, amp))  
+
+################################################################################
+# Expectation
+################################################################################       
+
+class TestExpectation(unittest.TestCase):
+    def setUp(self):
+        p=np.zeros(10)
+        q=np.zeros(10)
+        p[0:-1]=0.5
+        q[1:]=0.5
+        p[4]=0.01
+        q[6]=0.1
+
+        self.bdc=BirthDeathChain(q, p)
         
+        self.mu = self.bdc.stationary_distribution()
+        self.T = self.bdc.transition_matrix()
+
+        obs1 = np.zeros(10)
+        obs1[0] = 1
+        obs1[1] = 1
+
+        self.obs1=obs1
+
+    def test_expectation(self):
+        exp=np.dot(self.mu, self.obs1)
+        expn=expectation(self.T, self.obs1)
+        self.assertTrue(np.allclose(exp, expn))
 
 ################################################################################
 # Correlation
