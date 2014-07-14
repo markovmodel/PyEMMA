@@ -4,6 +4,7 @@ r"""Test package for the decomposition module
 
 """
 import unittest
+import warnings
 
 import numpy as np
 import scipy
@@ -13,7 +14,10 @@ import scipy.sparse.linalg
 
 from emma2.util.exceptions import SpectralWarning
 import decomposition
-import warnings
+
+from committor_test import BirthDeathChain
+
+
 
 def random_orthonormal_sparse_vectors(d, k):
     r"""Generate a random set of k orthonormal sparse vectors 
@@ -191,87 +195,45 @@ class TestDecomposition(unittest.TestCase):
         """Assert that off-diagonal elements are zero"""
         self.assertTrue(np.allclose(A, 0.0))        
 
-        """Reversible"""
-        # vn, Ln, Rn=decomposition.rdl_decomposition(self.T_sparse, k=self.k, norm='reversible')
-        Rn, Dn, Ln=decomposition.rdl_decomposition(self.T_sparse, k=self.k, norm='reversible')
-        vn=np.diagonal(Dn)
-        Ln=np.transpose(Ln)
-
-        """Eigenvalues"""
-        self.assertTrue(np.allclose(self.v_sparse, vn))
-
-        """Computed left eigenvectors Ln"""
-        R_dense=self.R_sparse.toarray()
-        A=np.dot(np.transpose(Ln), R_dense)
-        ind_diag=np.diag_indices(self.k)
-        A[ind_diag]=0.0
-
-        """Assert that off-diagonal elements are zero"""
-        self.assertTrue(np.allclose(A, 0.0))
-
-        """Computed right eigenvectors Rn"""
-        L_dense=self.L_sparse.toarray()        
-        A=np.dot(np.transpose(L_dense), Rn)
-        ind_diag=np.diag_indices(self.k)
-        A[ind_diag]=0.0
-
-        """Assert that off-diagonal elements are zero"""
-        self.assertTrue(np.allclose(A, 0.0))
-
-        """Check the same for self.k/4 eigenvectors wih ncv=k"""
+        """reversible"""
         
-        """Standard norm"""
-        Rn, Dn, Ln=decomposition.rdl_decomposition(self.T_sparse, k=self.k/4, ncv=self.k)
-        vn=np.diagonal(Dn)
-        Ln=np.transpose(Ln)
+        """Use reversible birth-death-chain for test"""
+        k=3
+
+        p=np.zeros(10)
+        q=np.zeros(10)
+        p[0:-1]=0.5
+        q[1:]=0.5
+        p[4]=0.01
+        q[6]=0.1
         
+        bdc=BirthDeathChain(q, p)
+        
+        mu = bdc.stationary_distribution()
+        T = bdc.transition_matrix_sparse()
+
+        """Eigenvalues to check against"""
+        v=scipy.linalg.eigvals(T.toarray())
+        ind=np.argsort(np.abs(v))[::-1]
+        v=v[ind]
+
+        Rn, Dn, Ln=decomposition.rdl_decomposition(T, k=k, norm='reversible')
+
         """Eigenvalues"""
-        self.assertTrue(np.allclose(self.v_sparse[0:self.k/4], vn))
-
-        """Computed left eigenvectors Ln"""
-        R_dense=self.R_sparse.toarray()[:,0:self.k/4]
-        A=np.dot(np.transpose(Ln), R_dense)
-        ind_diag=np.diag_indices(self.k/4)
-        A[ind_diag]=0.0
-
-        """Assert that off-diagonal elements are zero"""
-        self.assertTrue(np.allclose(A, 0.0))
-
-        """Computed right eigenvectors Rn"""
-        L_dense=self.L_sparse.toarray()[:,0:self.k/4]        
-        A=np.dot(np.transpose(L_dense), Rn)
-        ind_diag=np.diag_indices(self.k/4)
-        A[ind_diag]=0.0
-
-        """Assert that off-diagonal elements are zero"""
-        self.assertTrue(np.allclose(A, 0.0))        
-
-        """Reversible"""
-        Rn, Dn, Ln=decomposition.rdl_decomposition(self.T_sparse, k=self.k/4,\
-                                                       norm='reversible', ncv=self.k)
         vn=np.diagonal(Dn)
-        Ln=np.transpose(Ln)
+        self.assertTrue(np.allclose(v[0:k], vn))
 
-        """Eigenvalues"""
-        self.assertTrue(np.allclose(self.v_sparse[0:self.k/4], vn))
+        """Orthogonality of numerical eigenvectors"""
+        Xn=np.dot(Ln, Rn)
+        self.assertTrue(np.allclose(Xn, np.eye(k)))
 
-        """Computed left eigenvectors Ln"""
-        R_dense=self.R_sparse.toarray()[:,0:self.k/4]
-        A=np.dot(np.transpose(Ln), R_dense)
-        ind_diag=np.diag_indices(self.k/4)
-        A[ind_diag]=0.0
-
-        """Assert that off-diagonal elements are zero"""
-        self.assertTrue(np.allclose(A, 0.0))
-
-        """Computed right eigenvectors Rn"""
-        L_dense=self.L_sparse.toarray()[:,0:self.k/4]        
-        A=np.dot(np.transpose(L_dense), Rn)
-        ind_diag=np.diag_indices(self.k/4)
-        A[ind_diag]=0.0
-
-        """Assert that off-diagonal elements are zero"""
-        self.assertTrue(np.allclose(A, 0.0))
+        """Check that left eigenvectors can be generated from right ones"""
+        self.assertTrue(np.allclose(Ln.transpose(), mu[:,np.newaxis]*Rn))
+        
+        """Eigenvectors"""
+        self.assertTrue(np.allclose(np.dot(T.toarray(), Rn), np.dot(Rn, Dn)))
+        self.assertTrue(np.allclose(np.dot(Ln, T.toarray()), np.dot(Dn, Ln)))
+        
 
 class TestTimescales(unittest.TestCase):
 
