@@ -14,6 +14,8 @@ from scipy.linalg import eig, eigh, eigvals, eigvalsh, qr, solve
 from emma2.util.exceptions import SpectralWarning
 import decomposition
 
+from committor_test import BirthDeathChain
+
 def random_orthorgonal_matrix(d):
     r"""Compute a random orthorgonal matrix.
 
@@ -183,6 +185,7 @@ class TestDecomposition(unittest.TestCase):
         self.assertTrue(np.allclose(X, 0.0))
 
     def test_rdl_decomposition(self):
+        """Standard norm"""
         Rn, Dn, Ln=decomposition.rdl_decomposition(self.A)
         vn=np.diagonal(Dn)
 
@@ -191,7 +194,6 @@ class TestDecomposition(unittest.TestCase):
 
         """Eigenvectors"""
         ind_diag=np.diag_indices(self.dim)
-        
         X=np.dot(np.transpose(self.L), Rn)
         X[ind_diag]=0.0
         self.assertTrue(np.allclose(X, 0.0))
@@ -209,6 +211,43 @@ class TestDecomposition(unittest.TestCase):
         """They are however 'good' left eigenvectors for A"""
         X=np.dot(Ln, self.A)
         self.assertTrue(np.allclose(X, vn[:, np.newaxis]*Ln))
+
+        """Reversible"""
+
+        """Use reversible birth-death-chain for test"""
+        p=np.zeros(10)
+        q=np.zeros(10)
+        p[0:-1]=0.5
+        q[1:]=0.5
+        p[4]=0.01
+        q[6]=0.1
+        
+        bdc=BirthDeathChain(q, p)
+        
+        mu = bdc.stationary_distribution()
+        T = bdc.transition_matrix()
+
+        """Eigenvalues to check against"""
+        v=eigvals(T)
+        ind=np.argsort(np.abs(v))[::-1]
+        v=v[ind]
+
+        Rn, Dn, Ln=decomposition.rdl_decomposition(T, norm='reversible')
+
+        """Eigenvalues"""
+        vn=np.diagonal(Dn)
+        self.assertTrue(np.allclose(v, vn))
+
+        """Orthogonality of numerical eigenvectors"""
+        Xn=np.dot(Ln, Rn)
+        self.assertTrue(np.allclose(Xn, np.eye(T.shape[0])))
+
+        """Check that left eigenvectors can be generated from right ones"""
+        self.assertTrue(np.allclose(Ln.transpose(), mu[:,np.newaxis]*Rn))
+        
+        """Eigenvectors"""
+        self.assertTrue(np.allclose(np.dot(T, Rn), np.dot(Rn, Dn)))
+        self.assertTrue(np.allclose(np.dot(Ln, T), np.dot(Dn, Ln)))
 
     def test_timescales(self):
         ts_n=decomposition.timescales(self.A)
