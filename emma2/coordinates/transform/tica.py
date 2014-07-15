@@ -117,7 +117,8 @@ class Amuse:
             files = [files]
         
         ''' import correlation covariance C extension module '''
-        from emma2.coordinates import cocovar
+        from emma2.coordinates.transform import cocovar
+
         
         # calculate mean
         if mean == None:
@@ -226,10 +227,6 @@ class Amuse:
         if not keep_n:
             keep_n = self.n  # keep all
             
-        # this is a workaround for writing comma floating point values, instead of
-        # 'expected' dotted ones. This is due to a german locale, which is exported
-        # in environment. So we set it to 'C' to force dotted floats.
-        os.environ['LANG'] = 'C'
         ''' import correlation covariance C extension module '''
-        from emma2.coordinates import cocovar
+        from emma2.coordinates.transform import cocovar
         cocovar.project(fin, fout, self.mean, weights, keep_n, self.time_column)
