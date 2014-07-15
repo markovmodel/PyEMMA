@@ -5,7 +5,6 @@ r"""
 """
 import coordinates
 import msm
-import pmm
 import util
 
 from ._version import get_versions
