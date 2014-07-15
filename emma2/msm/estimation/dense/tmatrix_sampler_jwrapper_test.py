@@ -54,20 +54,34 @@ class TestJavaTransitionMatrixSampler(unittest.TestCase):
                            [1, 10]])
         self.errtol = 1e-2
         self.nsample = 100000
-        
+
+    # @unittest.SkipTest        
     def testSamplerRev(self):
         sampler_rev = ITransitionMatrixSampler(self.C, reversible=True)
         assertSampler2x2(sampler_rev, self.C, self.nsample, self.errtol)
-   
+
+    # @unittest.SkipTest
     def testSamplerNonRev(self):
         sampler_nonrev = ITransitionMatrixSampler(self.C, reversible=False)
         assertSampler2x2(sampler_nonrev, self.C, self.nsample, self.errtol)
    
-    @unittest.SkipTest
+    # @unittest.SkipTest
     def testSamplerRevPiFix(self):
-        mu = np.array([0.62921595, 0.37078405])
-        sampler_rev_pi = ITransitionMatrixSampler(self.C, reversible=True, mu=mu)
-        assertSampler2x2(sampler_rev_pi, self.C, self.nsample, self.errtol)
+        """Mean transition matrix"""
+        mP=(self.C+1.0)/(self.C+1.0).sum(axis=1)[:,np.newaxis]
+      
+        """Stationary distribution of mean-transition matrix"""
+        mu=np.array([6.0/19, 13.0/19])        
+        sampler_rev_pi = ITransitionMatrixSampler(self.C, reversible=True, mu=mu, Tinit=mP)
+        # sampler_rev_pi = ITransitionMatrixSampler(self.C, reversible=True)
+        T=np.zeros((self.nsample, 2, 2))
+        for i in range(self.nsample):
+            T[i,:,:]=sampler_rev_pi.sample(10)
+        
+        mT=np.mean(T, axis=0)
+        dT=np.sqrt(np.var(T, axis=0))
+        self.assertTrue(np.all(np.abs(mT-mP)<dT))
+
 
 if __name__ == "__main__":
     unittest.main()
