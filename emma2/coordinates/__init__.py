@@ -13,7 +13,6 @@ Submodules
 
 """
 
-from . import tica
 from . import transform
 from . import io
 from . import clustering

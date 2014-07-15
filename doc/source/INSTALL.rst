@@ -6,38 +6,28 @@ Installation
 
 To install the Emma2 Python package, you need a few Python package dependencies
 like NumPy. With recent versions of setuptools, these will be installed automatically. 
-The software is being developed and tested on Python-2.7.
+The software is being developed and tested on Python-2.7. The following instructions
+are system independant. For MacOSX please have a look at :ref:`ref-install-mac`.
+
 
 Setuptools
 ==========
-It is recommended to upgrade to latest setuptools with the provided 
-script 'ez_setup.py'. Invoke it like that to upgrade:
+It is recommended to upgrade to latest setuptools for a smooth installation 
+process. Invoke easy_install or pip to upgrade:
 
 ::
+    easy_install --upgrade setuptools
+   
+or
 
-    python ez_setup.py [--user]
+::
+    pip install --upgrade setuptools
 
 
 Java/Python Bridge
 ==================
 For the Java/Python bridge provided by **Jpype** you need to install a recent
-Java Development Kit (JDK). If the setup fails during the installation of Jpype,
-e.g with an error like 'No JDK found.', please have look at the install notes here
-http://jpype.readthedocs.org/en/latest/install.html
-
-Install 
-On Debian/Ubuntu:
-
-::
-
-    apt-get install openjdk-7-jdk
-    
-
-On MacOs obtain a copy from Oracle:
-http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html
-
-Please have a look at :ref:`ref-install-mac`.
-
+Java Runtime (>= 1.6), which is already provided by most platforms.
 
 Dependencies
 ============
