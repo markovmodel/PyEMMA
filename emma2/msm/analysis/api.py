@@ -524,7 +524,7 @@ def expected_counts_stationary(T, n, mu=None):
 ################################################################################
 
 # DONE: Martin+Frank+Ben: Implement in Python directly
-def fingerprint_correlation(P, obs1, obs2=None, tau=1, k=None, ncv=None):
+def fingerprint_correlation(T, obs1, obs2=None, tau=1, k=None, ncv=None):
     r"""Dynamical fingerprint for equilibrium correlation experiment.
 
     The dynamical fingerprint is given by the implied time-scale
@@ -532,7 +532,7 @@ def fingerprint_correlation(P, obs1, obs2=None, tau=1, k=None, ncv=None):
 
     Parameters
     ----------
-    P : (M, M) ndarray or scipy.sparse matrix
+    T : (M, M) ndarray or scipy.sparse matrix
         Transition matrix
     obs1 : (M,) ndarray
         Observable, represented as vector on state space
@@ -556,14 +556,14 @@ def fingerprint_correlation(P, obs1, obs2=None, tau=1, k=None, ncv=None):
     """
 
     if issparse(P):
-        return sparse.fingerprints.fingerprint_correlation(P, obs1, obs2, tau=tau, k=k, ncv=ncv)
+        return sparse.fingerprints.fingerprint_correlation(T, obs1, obs2, tau=tau, k=k, ncv=ncv)
     elif isdense(P):
-        return dense.fingerprints.fingerprint_correlation(P, obs1, obs2, tau=tau, k=k)
+        return dense.fingerprints.fingerprint_correlation(T, obs1, obs2, tau=tau, k=k)
     else:
         _type_not_supported   
 
 # DONE: Martin+Frank+Ben: Implement in Python directly
-def fingerprint_relaxation(P, p0, obs, tau=1, k=None, ncv=None):
+def fingerprint_relaxation(T, p0, obs, tau=1, k=None, ncv=None):
     r"""Dynamical fingerprint for relaxation experiment.
 
     The dynamical fingerprint is given by the implied time-scale
@@ -571,7 +571,7 @@ def fingerprint_relaxation(P, p0, obs, tau=1, k=None, ncv=None):
 
     Parameters
     ----------
-    P : (M, M) ndarray or scipy.sparse matrix
+    T : (M, M) ndarray or scipy.sparse matrix
         Transition matrix
     obs1 : (M,) ndarray
         Observable, represented as vector on state space
@@ -594,19 +594,19 @@ def fingerprint_relaxation(P, p0, obs, tau=1, k=None, ncv=None):
         
     """
     if issparse(P):
-        return sparse.fingerprints.fingerprint_relaxation(P, p0, obs, tau=tau, k=k, ncv=ncv)
+        return sparse.fingerprints.fingerprint_relaxation(T, p0, obs, tau=tau, k=k, ncv=ncv)
     elif isdense(P):
-        return dense.fingerprints.fingerprint_relaxation(P, p0, obs, tau=tau, k=k)
+        return dense.fingerprints.fingerprint_relaxation(T, p0, obs, tau=tau, k=k)
     else:
         _type_not_supported 
 
 # DONE: Martin+Frank+Ben: Implement in Python directly
-def correlation(P, obs1, obs2=None, times=[1], k=None, ncv=None):
+def correlation(T, obs1, obs2=None, times=[1], k=None, ncv=None):
     r"""Time-correlation for equilibrium experiment.
     
     Parameters
     ----------
-    P : (M, M) ndarray or scipy.sparse matrix
+    T : (M, M) ndarray or scipy.sparse matrix
         Transition matrix
     obs1 : (M,) ndarray
         Observable, represented as vector on state space
@@ -627,15 +627,15 @@ def correlation(P, obs1, obs2=None, times=[1], k=None, ncv=None):
         
     """
     if issparse(P):
-        return sparse.fingerprints.correlation(P, obs1, obs2=obs2, times=times, k=k, ncv=ncv)
+        return sparse.fingerprints.correlation(T, obs1, obs2=obs2, times=times, k=k, ncv=ncv)
     elif isdense(P):
-        return dense.fingerprints.correlation(P, obs1, obs2=obs2, times=times, k=k)
+        return dense.fingerprints.correlation(T, obs1, obs2=obs2, times=times, k=k)
     else:
         _type_not_supported 
 
 
 # DONE: Martin+Frank+Ben: Implement in Python directly
-def relaxation(P, p0, obs, times=[1], k=None, ncv=None):
+def relaxation(T, p0, obs, times=[1], k=None, ncv=None):
     r"""Relaxation experiment.
 
     The relaxation experiment describes the time-evolution
@@ -644,7 +644,7 @@ def relaxation(P, p0, obs, times=[1], k=None, ncv=None):
 
     Parameters
     ----------
-    P : (M, M) ndarray
+    T : (M, M) ndarray or scipy.sparse matrix
         Transition matrix
     p0 : (M,) ndarray (optional)
         Initial distribution for a relaxation experiment
