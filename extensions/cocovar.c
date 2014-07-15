@@ -8,6 +8,8 @@
 #include <string.h>
 #include <ctype.h>
 
+#include <locale.h>
+
 #define D(obj,i) (((double*)((obj)->data))[i])
 
 // TODO: move dcd reader impl to stallone (java)
@@ -747,6 +749,9 @@ static PyObject *project(PyObject *self, PyObject *args) {
 		goto error;
 	}
 
+	// set locale to c, to get proper formatted floating point numbers.
+	setlocale(LC_NUMERIC, "C");
+
 	/* iterate over input */
 	while (1) {
 		if (ferror(input.stream)) {
@@ -830,4 +835,6 @@ static PyMethodDef cocoMethods[] =
 PyMODINIT_FUNC initcocovar(void) {
 	(void) Py_InitModule("cocovar", cocoMethods);
 	import_array();
+
+
 }
