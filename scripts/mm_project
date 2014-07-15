@@ -9,7 +9,7 @@ Created on 19.11.2013
 import argparse
 import sys
 
-from emma2.coordinates.tica import Amuse, rename, log_loop
+from emma2.coordinates.transform.tica import Amuse, rename, log_loop
 
 def handleArgs():
     parser = argparse.ArgumentParser(description='Subtract mean and project using a matrix.')
