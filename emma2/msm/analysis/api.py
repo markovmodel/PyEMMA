@@ -62,7 +62,6 @@ __all__=['is_transition_matrix',
          'expectation',
          'fingerprint_correlation',
          'fingerprint_relaxation',
-         'evaluate_fingerprint',
          'correlation',
          'relaxation',
          'stationary_distribution_sensitivity',
@@ -526,169 +525,153 @@ def expected_counts_stationary(T, n, mu=None):
 
 # DONE: Martin+Frank+Ben: Implement in Python directly
 def fingerprint_correlation(P, obs1, obs2=None, tau=1, k=None, ncv=None):
-    r"""Compute dynamical fingerprint crosscorrelation.
-    
-    The dynamical fingerprint autocorrelation is the timescale
-    amplitude spectrum of the autocorrelation of the given observables 
-    under the action of the dynamics P
-    
+    r"""Dynamical fingerprint for equilibrium correlation experiment.
+
+    The dynamical fingerprint is given by the implied time-scale
+    spectrum together with the corresponding amplitudes.
+
     Parameters
     ----------
-    P : ndarray, shape=(n, n) or scipy.sparse matrix
+    P : (M, M) ndarray or scipy.sparse matrix
         Transition matrix
-    obs1 : ndarray, shape=(n,)
-        Vector representing observable 1 on discrete states
-    obs2 : ndarray, shape=(n,)
-        Vector representing observable 2 on discrete states. 
-        If none, obs2=obs1, i.e. the autocorrelation is used
-    tau : lag time of the the transition matrix. Used for 
-        computing the timescales returned
+    obs1 : (M,) ndarray
+        Observable, represented as vector on state space
+    obs2 : (M,) ndarray (optional)
+        Second observable, for cross-correlations    
     k : int (optional)
-        Number of amplitudes
+        Number of time-scales and amplitudes to compute
+    tau : int (optional)
+        Lag time of given transition matrix, for correct time-scales
     ncv : int (optional)
         The number of Lanczos vectors generated, `ncv` must be greater than k;
         it is recommended that ncv > 2*k       
-    
+
     Returns
     -------
-    (timescales, amplitudes)
-    timescales : ndarray, shape=(n-1)
-        timescales of the relaxation processes of P
-    amplitudes : ndarray, shape=(n-1)
-        fingerprint amplitdues of the relaxation processes
-    
+    timescales : (N,) ndarray
+        Time-scales of the transition matrix
+    amplitudes : (N,) ndarray
+        Amplitudes for the correlation experiment
+
     """
+
     if issparse(P):
-        return sparse.fingerprints.fingerprint_correlation(P, obs1, obs2, tau, k, ncv)
+        return sparse.fingerprints.fingerprint_correlation(P, obs1, obs2, tau=tau, k=k, ncv=ncv)
     elif isdense(P):
-        return dense.fingerprints.fingerprint_correlation(P, obs1, obs2, tau)
+        return dense.fingerprints.fingerprint_correlation(P, obs1, obs2, tau=tau, k=k)
     else:
         _type_not_supported   
-
-
 
 # DONE: Martin+Frank+Ben: Implement in Python directly
 def fingerprint_relaxation(P, p0, obs, tau=1, k=None, ncv=None):
-    r"""Compute dynamical fingerprint crosscorrelation.
-    
-    The dynamical fingerprint autocorrelation is the timescale
-    amplitude spectrum of the autocorrelation of the given observables 
-    under the action of the dynamics P
-    
+    r"""Dynamical fingerprint for relaxation experiment.
+
+    The dynamical fingerprint is given by the implied time-scale
+    spectrum together with the corresponding amplitudes.
+
     Parameters
     ----------
-    P : ndarray, shape=(n, n) or scipy.sparse matrix
+    P : (M, M) ndarray or scipy.sparse matrix
         Transition matrix
-    p0 : ndarray, shape=(n)
-        starting distribution
-    obs : ndarray, shape=(n)
-        Vector representing observable 2 on discrete states. 
-        If none, obs2=obs1, i.e. the autocorrelation is used
-    tau : lag time of the the transition matrix. Used for 
-        computing the timescales returned
+    obs1 : (M,) ndarray
+        Observable, represented as vector on state space
+    obs2 : (M,) ndarray (optional)
+        Second observable, for cross-correlations    
     k : int (optional)
-        Number of amplitudes
+        Number of time-scales and amplitudes to compute
+    tau : int (optional)
+        Lag time of given transition matrix, for correct time-scales
     ncv : int (optional)
         The number of Lanczos vectors generated, `ncv` must be greater than k;
         it is recommended that ncv > 2*k       
-    
+
     Returns
     -------
-    (timescales, amplitudes)
-    timescales : ndarray, shape=(n-1)
-        timescales of the relaxation processes of P
-    amplitudes : ndarray, shape=(n-1)
-        fingerprint amplitdues of the relaxation processes
-    
+    timescales : (N,) ndarray
+        Time-scales of the transition matrix
+    amplitudes : (N,) ndarray
+        Amplitudes for the relaxation experiment
+        
     """
     if issparse(P):
-        return sparse.fingerprints.fingerprint_relaxation(P, p0, obs, tau, k, ncv)
+        return sparse.fingerprints.fingerprint_relaxation(P, p0, obs, tau=tau, k=k, ncv=ncv)
     elif isdense(P):
-        return dense.fingerprints.fingerprint_relaxation(P, p0, obs, tau)
+        return dense.fingerprints.fingerprint_relaxation(P, p0, obs, tau=tau, k=k)
     else:
-        _type_not_supported   
+        _type_not_supported 
 
-# DONE: Frank
-def evaluate_fingerprint(timescales, amplitudes, times=[1]):
-    r"""Compute time-correlation of obs1, or time-cross-correlation with obs2.
-    
-    The time-correlation at time=k is computed by the matrix-vector expression: 
-    cor(k) = obs1' diag(pi) P^k obs2
-    
+# DONE: Martin+Frank+Ben: Implement in Python directly
+def correlation(P, obs1, obs2=None, times=[1], k=None, ncv=None):
+    r"""Time-correlation for equilibrium experiment.
     
     Parameters
     ----------
-    timescales : ndarray, shape=(n)
-        vectors with timescales
-    amplitudes : ndarray, shape=(n)
-        vector with amplitudes
-    times : array-like, shape=(n_t)
-        times to evaluate the fingerprint at
-    
-    Returns
-    -------
-    
-    """
-    return dense.fingerprints.evaluate_fingerprint(timescales, amplitudes, times)
-
-
-# DONE: Martin+Frank: Implement in Python directly
-def correlation(P, obs1, obs2=None, tau=1):
-    r"""Compute time-correlation of obs1, or time-cross-correlation with obs2.
-    
-    The dynamical fingerprint crosscorrelation is the timescale
-    amplitude spectrum of the crosscorrelation of the given observables 
-    under the action of the dynamics P. The correlation is computed as
-    
-    Parameters
-    ----------
-    P : ndarray, shape=(n, n) or scipy.sparse matrix
+    P : (M, M) ndarray or scipy.sparse matrix
         Transition matrix
-    obs1 : ndarray, shape=(n)
-        Vector representing observable 1 on discrete states
-    obs2 : ndarray, shape=(n)
-        Vector representing observable 2 on discrete states. If not given,
-        the autocorrelation of obs1 will be computed
-    
+    obs1 : (M,) ndarray
+        Observable, represented as vector on state space
+    obs2 : (M,) ndarray (optional)
+        Second observable, for cross-correlations
+    times : list of int (optional)
+        List of times (in tau) at which to compute correlation
+    k : int (optional)
+        Number of eigenvalues and eigenvectors to use for computation
+    ncv : int (optional)
+        The number of Lanczos vectors generated, `ncv` must be greater than k;
+        it is recommended that ncv > 2*k       
+
     Returns
     -------
-    (timescales, amplitudes)
-    timescales : ndarray, shape=(n-1)
-        timescales of the relaxation processes of P
-    amplitudes : ndarray, shape=(n-1)
-        fingerprint amplitdues of the relaxation processes
-    
+    correlations : ndarray
+        Correlation values at given times
+        
     """
-    return dense.fingerprints.fingerprint_correlation(P, obs1, obs2, tau)
+    if issparse(P):
+        return sparse.fingerprints.correlation(P, obs1, obs2=obs2, times=times, k=k, ncv=ncv)
+    elif isdense(P):
+        return dense.fingerprints.correlation(P, obs1, obs2=obs2, times=times, k=k)
+    else:
+        _type_not_supported 
 
 
-# DONE: Martin+Frank: Implement in Python directly
-def relaxation(P, p0, obs, tau=1, times=[1], pi=None):
-    r"""Compute time-correlation of obs1, or time-cross-correlation with obs2.
-    
-    The dynamical fingerprint crosscorrelation is the timescale
-    amplitude spectrum of the crosscorrelation of the given observables 
-    under the action of the dynamics P. The correlation is computed as
-    
+# DONE: Martin+Frank+Ben: Implement in Python directly
+def relaxation(P, p0, obs, times=[1], k=None, ncv=None):
+    r"""Relaxation experiment.
+
+    The relaxation experiment describes the time-evolution
+    of an expectation value starting in a non-equilibrium
+    situation.
+
     Parameters
     ----------
-    P : ndarray, shape=(n, n) or scipy.sparse matrix
+    P : (M, M) ndarray
         Transition matrix
-    obs1 : ndarray, shape=(n)
-        Vector representing observable 1 on discrete states
-    obs2 : ndarray, shape=(n)
-        Vector representing observable 2 on discrete states. If not given,
-        the autocorrelation of obs1 will be computed
-    times : array-like, shape(n_t), type=int or float
-        Vector of time points at which the (auto)correlation will be evaluated
-    pi : ndarray, shape=(n)
-        stationary distribution. If given, it will not be recomputed (much faster!)
-    
+    p0 : (M,) ndarray (optional)
+        Initial distribution for a relaxation experiment
+    obs : (M,) ndarray
+        Observable, represented as vector on state space
+    times : list of int (optional)
+        List of times at which to compute expectation
+    k : int (optional)
+        Number of eigenvalues and eigenvectors to use for computation
+    ncv : int (optional)
+        The number of Lanczos vectors generated, `ncv` must be greater than k;
+        it is recommended that ncv > 2*k       
+
     Returns
     -------
-    
+    res : ndarray
+        Array of expectation value at given times
+
     """
-    return dense.fingerprints.relaxation(P, p0, obs, tau, times, pi)
+    if issparse(P):
+        return sparse.fingerprints.relaxation(P, p0, obs, k=k, times=times)
+    elif isdense(P):
+        return dense.fingerprints.relaxation(P, p0, obs, k=k, times=times)
+    else:
+        _type_not_supported 
+    
+    
 
 ################################################################################
 # PCCA
