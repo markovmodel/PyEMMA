@@ -15,7 +15,7 @@ from decomposition import stationary_distribution_from_backward_iteration as sta
 # Fingerprints
 ################################################################################
 
-def fingerprint_correlation(P, obs1, obs2=None, k=None, tau=1):
+def fingerprint_correlation(P, obs1, obs2=None, tau=1, k=None):
     r"""Dynamical fingerprint for equilibrium correlation experiment.
 
     The dynamical fingerprint is given by the implied time-scale
@@ -29,10 +29,10 @@ def fingerprint_correlation(P, obs1, obs2=None, k=None, tau=1):
         Observable, represented as vector on state space
     obs2 : (M,) ndarray (optional)
         Second observable, for cross-correlations    
-    k : int (optional)
-        Number of time-scales and amplitudes to compute
     tau : int (optional)
         Lag time of given transition matrix, for correct time-scales
+    k : int (optional)
+        Number of time-scales and amplitudes to compute
 
     Returns
     -------
@@ -44,7 +44,7 @@ def fingerprint_correlation(P, obs1, obs2=None, k=None, tau=1):
     """
     return fingerprint(P, obs1, obs2=obs2, k=k, tau=tau)
 
-def fingerprint_relaxation(P, p0, obs, k=None, tau=1):
+def fingerprint_relaxation(P, p0, obs, tau=1, k=None):
     r"""Dynamical fingerprint for relaxation experiment.
 
     The dynamical fingerprint is given by the implied time-scale
@@ -58,10 +58,10 @@ def fingerprint_relaxation(P, p0, obs, k=None, tau=1):
         Observable, represented as vector on state space
     obs2 : (M,) ndarray (optional)
         Second observable, for cross-correlations    
-    k : int (optional)
-        Number of time-scales and amplitudes to compute
     tau : int (optional)
         Lag time of given transition matrix, for correct time-scales
+    k : int (optional)
+        Number of time-scales and amplitudes to compute
 
     Returns
     -------
@@ -74,7 +74,7 @@ def fingerprint_relaxation(P, p0, obs, k=None, tau=1):
     one_vec=np.ones(P.shape[0])
     return fingerprint(P, one_vec, obs2=obs, p0=p0, k=k, tau=tau)
 
-def fingerprint(P, obs1, obs2=None, p0=None, k=None, tau=1):
+def fingerprint(P, obs1, obs2=None, p0=None, tau=1, k=None):
     r"""Dynamical fingerprint for equilibrium or relaxation experiment
 
     The dynamical fingerprint is given by the implied time-scale
@@ -90,10 +90,10 @@ def fingerprint(P, obs1, obs2=None, p0=None, k=None, tau=1):
         Second observable, for cross-correlations
     p0 : (M,) ndarray (optional)
         Initial distribution for a relaxation experiment
-    k : int (optional)
-        Number of time-scales and amplitudes to compute
     tau : int (optional)
         Lag time of given transition matrix, for correct time-scales
+    k : int (optional)
+        Number of time-scales and amplitudes to compute
 
     Returns
     -------
@@ -148,7 +148,7 @@ def expectation(P, obs):
 # Correlation
 ################################################################################
 
-def correlation(P, obs1, obs2=None, k=None, times=[1]):
+def correlation(P, obs1, obs2=None, times=[1], k=None):
     r"""Time-correlation for equilibrium experiment.
     
     Parameters
@@ -159,10 +159,10 @@ def correlation(P, obs1, obs2=None, k=None, times=[1]):
         Observable, represented as vector on state space
     obs2 : (M,) ndarray (optional)
         Second observable, for cross-correlations
-    k : int (optional)
-        Number of time-scales and amplitudes to use for computation
     times : list of int (optional)
         List of times (in tau) at which to compute correlation
+    k : int (optional)
+        Number of eigenvectors and eigenvalues to use for computation
 
     Returns
     -------
@@ -175,9 +175,9 @@ def correlation(P, obs1, obs2=None, k=None, times=[1]):
     if T<M:
         return correlation_matvec(P, obs1, obs2=obs2, times=times)
     else:
-        return correlation_decomp(P, obs1, obs2=obs2, k=k, times=times)
+        return correlation_decomp(P, obs1, obs2=obs2, times=times, k=k)
 
-def correlation_decomp(P, obs1, obs2=None, k=None, times=[1]):
+def correlation_decomp(P, obs1, obs2=None, times=[1], k=None):
     r"""Time-correlation for equilibrium experiment - via decomposition.
     
     Parameters
@@ -188,10 +188,10 @@ def correlation_decomp(P, obs1, obs2=None, k=None, times=[1]):
         Observable, represented as vector on state space
     obs2 : (M,) ndarray (optional)
         Second observable, for cross-correlations
-    k : int (optional)
-        Number of time-scales and amplitudes to use for computation
     times : list of int (optional)
         List of times (in tau) at which to compute correlation
+    k : int (optional)
+        Number of eigenvalues and eigenvectors to use for computation
 
     Returns
     -------
@@ -272,7 +272,7 @@ def correlation_matvec(P, obs1, obs2=None, times=[1]):
 # Relaxation
 ################################################################################
 
-def relaxation(P, p0, obs, k=None, times=[1]):
+def relaxation(P, p0, obs, times=[1], k=None):
     r"""Relaxation experiment.
 
     The relaxation experiment describes the time-evolution
@@ -287,10 +287,10 @@ def relaxation(P, p0, obs, k=None, times=[1]):
         Initial distribution for a relaxation experiment
     obs : (M,) ndarray
         Observable, represented as vector on state space
-    k : int (optional)
-        Number of time-scales and amplitudes to compute
     times : list of int (optional)
         List of times at which to compute expectation
+    k : int (optional)
+        Number of eigenvalues and eigenvectors to use for computation
 
     Returns
     -------
@@ -303,9 +303,9 @@ def relaxation(P, p0, obs, k=None, times=[1]):
     if T<M:
         return relaxation_matvec(P, p0, obs, times=times)
     else:
-        return relaxation_decomp(P, p0, obs, k=k, times=times)    
+        return relaxation_decomp(P, p0, obs, times=times, k=k)    
 
-def relaxation_decomp(P, p0, obs, k=None, times=[1]):
+def relaxation_decomp(P, p0, obs, times=[1], k=None):
     r"""Relaxation experiment.
 
     The relaxation experiment describes the time-evolution
@@ -320,10 +320,10 @@ def relaxation_decomp(P, p0, obs, k=None, times=[1]):
         Initial distribution for a relaxation experiment
     obs : (M,) ndarray
         Observable, represented as vector on state space
-    k : int (optional)
-        Number of eigenvalues for decomposition
     times : list of int (optional)
         List of times at which to compute expectation
+    k : int (optional)
+        Number of eigenvalues and eigenvectors to use for computation
 
     Returns
     -------
