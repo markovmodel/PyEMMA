@@ -15,6 +15,7 @@ from committor_test import BirthDeathChain
 from fingerprints import fingerprint, fingerprint_correlation, fingerprint_relaxation
 from fingerprints import correlation_decomp, correlation_matvec, correlation
 from fingerprints import relaxation_decomp, relaxation_matvec, relaxation
+from fingerprints import expectation
 from fingerprints import propagate
 
 ################################################################################
