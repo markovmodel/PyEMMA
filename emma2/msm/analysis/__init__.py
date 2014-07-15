@@ -81,7 +81,6 @@ Fingerprints
 
    fingerprint_correlation
    fingerprint_relaxation
-   evaluate_fingerprint
    expectation - Equilibrium expectation value of an observable
    correlation
    relaxation
