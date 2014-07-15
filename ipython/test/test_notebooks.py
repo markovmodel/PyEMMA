@@ -10,12 +10,14 @@ import os
 from runipy.notebook_runner import NotebookRunner
 from IPython.nbformat.current import read
 from IPython.nbformat.v3.nbbase import new_code_cell
-import sys
 
 # point to ipython directory in emma2
 ipy_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
 def case_generator(filename):
+    
+    # currently there is some bug in parallel execution of ipython, so we disable all tests by now.
+    @unittest.SkipTest
     def test(self):
         payload = open(filename)
         nb = read(payload, 'json')
@@ -38,7 +40,6 @@ def case_generator(filename):
         #             (filename, exc_type, e))
     return test
 
-@unittest.SkipTest
 class TestNotebooks(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

@@ -174,7 +174,7 @@ def pca(input, ndim = None):
         
     """
     # use amuse, until stallone pca impl is fixed
-    from emma2.coordinates.tica import Amuse
+    from emma2.coordinates.transform.tica import Amuse
     amuse = Amuse.compute(input, 1)
     return linear_transform.PCA_AMUSE(amuse)
 #     try:
