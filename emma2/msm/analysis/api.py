@@ -1095,11 +1095,42 @@ def relaxation(T, p0, obs, times=[1], k=None, ncv=None):
     res : ndarray
         Array of expectation value at given times
 
+    References
+    ----------
+    .. [1] Noe, F, S Doose, I Daidone, M Loellmann, M Sauer, J D
+        Chodera and J Smith. 2010. Dynamical fingerprints for probing
+        individual relaxation processes in biomolecular dynamics with
+        simulations and kinetic experiments. PNAS 108 (12): 4822-4827.
+
+    Notes
+    -----
+
+    **Relaxation**
+
+    A relaxation experiment looks at the time dependent expectation
+    value of an observable for a system out of equilibrium
+
+    .. math:: \mathbb{E}_{w_{0}}[a(x, t)]=\sum_x w_0(x) a(x, t)=\sum_x w_0(x) \sum_y p^t(x, y) a(y).
+
+    Examples
+    --------
+
+    >>> from emma2.msm.analysis import correlation
+
+    >>> T=np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
+    >>> p0=np.array([1.0, 0.0, 0.0])
+    >>> a=np.array([1.0, 1.0, 0.0])
+    >>> times=np.array([1, 5, 10, 20])
+
+    >>> rel=relaxation(P, p0, times=times)
+    >>> rel
+    array([ 1.        ,  0.8407    ,  0.71979377,  0.60624287])
+    
     """
     if issparse(T):
-        return sparse.fingerprints.relaxation(P, p0, obs, k=k, times=times)
+        return sparse.fingerprints.relaxation(T, p0, obs, k=k, times=times)
     elif isdense(T):
-        return dense.fingerprints.relaxation(P, p0, obs, k=k, times=times)
+        return dense.fingerprints.relaxation(T, p0, obs, k=k, times=times)
     else:
         _type_not_supported 
     
