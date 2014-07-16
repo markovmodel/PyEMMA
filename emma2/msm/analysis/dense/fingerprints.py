@@ -171,7 +171,7 @@ def correlation(P, obs1, obs2=None, times=[1], k=None):
         
     """
     M=P.shape[0]
-    T=np.asarry(times).max()
+    T=np.asarray(times).max()
     if T<M:
         return correlation_matvec(P, obs1, obs2=obs2, times=times)
     else:
@@ -301,7 +301,7 @@ def relaxation(P, p0, obs, times=[1], k=None):
         
     """
     M=P.shape[0]
-    T=np.asarry(times).max()
+    T=np.asarray(times).max()
     if T<M:
         return relaxation_matvec(P, p0, obs, times=times)
     else:
