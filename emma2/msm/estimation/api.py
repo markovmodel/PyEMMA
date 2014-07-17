@@ -1,4 +1,3 @@
-from emma2.msm.estimation.dense.tmatrix_sampler_jwrapper import ITransitionMatrixSampler
 r"""
 ========================
 Emma2 MSM Estimation API
@@ -27,6 +26,7 @@ import dense.covariance
 
 import emma2.util.pystallone as stallone
 from emma2.util.log import getLogger
+from emma2.msm.estimation.dense.tmatrix_sampler_jwrapper import ITransitionMatrixSampler
 
 __author__ = "Benjamin Trendelkamp-Schroer, Martin Scherer, Frank Noe"
 __copyright__ = "Copyright 2014, Computational Molecular Biology Group, FU-Berlin"
@@ -57,7 +57,7 @@ __all__=['count_matrix',
 
 # DONE: Benjamin 
 def count_matrix(dtraj, lag, sliding=True):
-    r"""Generate a count matrix from given list(s) of integers.
+    r"""Generate a count matrix from given microstate trajectory.
     
     Parameters
     ----------
@@ -73,6 +73,68 @@ def count_matrix(dtraj, lag, sliding=True):
     -------
     C : scipy.sparse.coo_matrix
         The count matrix at given lag in coordinate list format.
+
+    Notes
+    -----
+    Transition counts can be obtained from microstate trajectory using
+    two methods. Couning at lag and slidingwindow counting.
+
+    **Lag**
+    
+    This approach will skip all points in the trajectory that are
+    seperated form the last point by less than the given lagtime
+    :math:`\tau`.
+
+    Transition counts :math:`c_{ij}(\tau)` are generated according to
+
+    .. math:: c_{ij}(\tau)=\sum_{k=0}^{\left \lfloor \frac{N}{\tau} \right \rfloor -2}\chi_{i}(X_{k\tau})\chi_{j}(X_{(k+1)\tau}).
+
+    :math:`\chi_{i}(x)` is the indicator function of :math:`i`, i.e
+    :math:`\chi_{i}(x)=1` for :math:`x=i` and :math:`\chi_{i}(x)=0` for
+    :math:`x \neq i`.
+
+    **Sliding**
+
+    The sliding approach slides along the trajectory and counts all
+    transitions sperated by the lagtime :math:`\tau`.
+
+    Transition counts :math:`c_{ij}(\tau)` are generated according to
+
+    .. math:: c_{ij}(\tau)=\sum_{k=0}^{N-\tau-1} \chi_{i}(X_{k}) \chi_{j}(X_{k+\tau}).
+
+    References
+    ----------
+    .. [1] Prinz, J H, H Wu, M Sarich, B Keller, M Senne, M Held, J D
+        Chodera, C Schuette and F Noe. 2011. Markov models of
+        molecular kinetics: Generation and validation. J Chem Phys
+        134: 174105
+
+    Examples
+    --------
+    
+    >>> from emma2.msm.estimation import count_matrix
+
+    >>> dtraj=np.array([0, 0, 1, 0, 1, 1, 0])
+    >>> tau=2
+    
+    Use the sliding approach first
+
+    >>> C_sliding=count_matrix(dtraj, tau)
+
+    The generated matrix is a sparse matrix in COO-format. For
+    convenient printing we convert it to a dense ndarray.
+
+    >>> C_sliding.toarray()
+    array([[ 1.,  2.],
+           [ 1.,  1.]])
+
+    Let us compare to the count-matrix we obtain using the lag
+    approach
+    
+    >>> C_lag=count_matrix(dtraj, tau, sliding=False)
+    >>> C_lag.toarray()
+    array([[ 0.,  1.],
+           [ 1.,  1.]])
     
     """
     if type(dtraj) is list:
@@ -82,7 +144,7 @@ def count_matrix(dtraj, lag, sliding=True):
 
 # DONE: Benjamin 
 def cmatrix(dtraj, lag, sliding=True):
-    r"""Generate a count matrix in from given list(s) of integers.
+    r"""Generate a count matrix in from given microstate trajectory.
     
     Parameters
     ----------
@@ -98,6 +160,14 @@ def cmatrix(dtraj, lag, sliding=True):
     -------
     C : scipy.sparse.coo_matrix
         The countmatrix at given lag in coordinate list format.
+
+    See also
+    --------
+    count_matrix
+    
+    Notes
+    -----
+    This is a shortcut for a call to count_matrix.
         
     """
     return count_matrix(dtraj, lag, sliding=sliding)
@@ -120,7 +190,9 @@ cmatrix_cores=count_matrix_cores
 
 # DONE: Ben Implement in Python directly
 def connected_sets(C, directed=True):
-    r"""Connected components for a directed graph with edge-weights
+    r"""Compute connected sets of microstates.
+
+    Connected components for a directed graph with edge-weights
     given by the count matrix.
     
     Parameters
@@ -139,10 +211,34 @@ def connected_sets(C, directed=True):
         according to the size of the individual components. The
         largest connected set is the first entry in the list, lcc=cc[0].
     
+    Notes
+    -----    
+    Viewing the count matrix as the adjacency matrix of a (directed) graph
+    the connected components are given by the connected components of that
+    graph. Connected components of a graph can be efficiently computed
+    using Tarjan's algorithm.
+
+    References
+    ----------
+    .. [1] Tarjan, R E. 1972. Depth-first search and linear graph
+        algorithms. SIAM Journal on Computing 1 (2): 146-160.
+
+    Examples
+    --------
+    
+    >>> from emma2.msm.estimation import connected_sets
+
+    >>> C=np.array([10, 1, 0], [2, 0, 3], [0, 0, 4]])
+    >>> cc_directed=connected_sets(C)
+    >>> cc_directed
+    [array([0, 1]), array([2])]
+
+    >>> cc_undirected=connected_sets(C, directed=False)
+    >>> cc_undirected
+    [array([0, 1, 2])]
+    
     """
     if isdense(C):
-        # this should not be necessary because sparse.connectivity in principle works with dense matrices.
-        # however there seems to be a bug for 2x2 matrices, therefore we use this detour
         return sparse.connectivity.connected_sets(csr_matrix(C), directed=directed)
     else:
         return sparse.connectivity.connected_sets(C, directed=directed)
@@ -164,25 +260,46 @@ def largest_connected_set(C, directed=True):
     -------
     lcc : array of integers
         The largest connected component of the directed graph.
+
+    See also
+    --------
+    connected_sets
+
+    Notes
+    -----
+    Viewing the count matrix as the adjacency matrix of a (directed)
+    graph the largest connected set is the largest connected set of
+    nodes of the corresponding graph. The largest connected set of a graph
+    can be efficiently computed using Tarjan's algorithm.
+
+    References
+    ----------
+    .. [1] Tarjan, R E. 1972. Depth-first search and linear graph
+        algorithms. SIAM Journal on Computing 1 (2): 146-160.
+
+    Examples
+    --------
+    
+    >>> from emma2.msm.estimation import largest_connected_set
+
+    >>> C=np.array([10, 1, 0], [2, 0, 3], [0, 0, 4]])
+    >>> lcc_directed=largest_connected_set(C)
+    >>> lcc_directed
+    array([0, 1])
+
+    >>> lcc_undirected=largest_connected_set(C, directed=False)
+    >>> lcc_undirected
+    array([0, 1, 2])
     
     """
     if isdense(C):
-        # this should not be necessary because sparse.connectivity in principle works with dense matrices.
-        # however there seems to be a bug for 2x2 matrices, therefore we use this detour
         return sparse.connectivity.largest_connected_set(csr_matrix(C), directed=directed)
     else:
         return sparse.connectivity.largest_connected_set(C, directed=directed)
 
 # DONE: Ben 
 def largest_connected_submatrix(C, directed=True):
-    r"""Compute the count matrix on the largest connected set.
-    
-    The input count matrix is used as a weight matrix for the
-    construction of a directed graph. The largest connected set of the
-    constructed graph is computed. Vertices belonging to the largest
-    connected component are used to generate a completely connected
-    subgraph. The weight matrix of the subgraph is the desired
-    completely connected count matrix.
+    r"""Compute the count matrix on the largest connected set.   
     
     Parameters
     ----------
@@ -191,28 +308,59 @@ def largest_connected_submatrix(C, directed=True):
     directed : bool, optional
        Whether to compute connected components for a directed or
        undirected graph. Default is True.       
-    
+       
     Returns
     -------
     C_cc : scipy.sparse matrix
         Count matrix of largest completely 
         connected set of vertices (states)
+        
+    See also
+    --------
+    largest_connected_set
+
+    Notes
+    -----
+    Viewing the count matrix as the adjacency matrix of a (directed)
+    graph the larest connected submatrix is the adjacency matrix of
+    the largest connected set of the corresponding graph. The largest
+    connected submatrix can be efficiently computed using Tarjan's algorithm.
+
+    References
+    ----------
+    .. [1] Tarjan, R E. 1972. Depth-first search and linear graph
+        algorithms. SIAM Journal on Computing 1 (2): 146-160.
+
+    Examples
+    --------
     
+    >>> from emma2.msm.estimation import largest_connected_submatrix
+
+    >>> C=np.array([10, 1, 0], [2, 0, 3], [0, 0, 4]])
+
+    >>> C_cc_directed=largest_connected_submatrix(C)
+    >>> C_cc_directed
+    array([[10,  1],
+           [ 2,  0]])
+
+    >>> C_cc_undirected=largest_connected_submatrix(C, directed=False)
+    >>> C_cc_undirected
+    array([[10,  1,  0],
+           [ 2,  0,  3],
+           [ 0,  0,  4]])
+           
     """
     if isdense(C):
-        # this should not be necessary because sparse.connectivity in principle works with dense matrices.
-        # however there seems to be a bug for 2x2 matrices, therefore we use this detour
         return sparse.connectivity.largest_connected_submatrix(csr_matrix(C), directed=directed).toarray()
     else:
         return sparse.connectivity.largest_connected_submatrix(C, directed=directed)
 
-# shortcut
 connected_cmatrix=largest_connected_submatrix
 __all__.append('connected_cmatrix')
 
 # DONE: Jan
 def is_connected(C, directed=True):
-    """Check if C is a countmatrix for a completely connected process.
+    """Check connectivity of the given matrix.
     
     Parameters
     ----------
@@ -221,17 +369,41 @@ def is_connected(C, directed=True):
     directed : bool, optional
        Whether to compute connected components for a directed or
        undirected graph. Default is True.       
-    
+       
     Returns
     -------
     is_connected: bool
-        True if C is countmatrix for a completely connected process
-        False otherwise.
+        True if C is connected, False otherwise.
+        
+    See also
+    --------
+    largest_connected_submatrix
+    
+    Notes
+    -----
+    A count matrix is connected if the graph having the count matrix
+    as adjacency matrix has a single connected component. Connectivity
+    of a graph can be efficiently checked using Tarjan's algorithm.
+    
+    References
+    ----------
+    .. [1] Tarjan, R E. 1972. Depth-first search and linear graph
+        algorithms. SIAM Journal on Computing 1 (2): 146-160.
+        
+    Examples
+    --------
+    
+    >>> from emma2.msm.estimation import is_connected
+    
+    >>> C=np.array([10, 1, 0], [2, 0, 3], [0, 0, 4]])
+    >>> is_connected(C)
+    False
+    
+    >>> is_connected(C)
+    True    
     
     """
     if isdense(C):
-        # this should not be necessary because sparse.connectivity in principle works with dense matrices.
-        # however there seems to be a bug for 2x2 matrices, therefore we use this detour
         return sparse.connectivity.is_connected(csr_matrix(C), directed=directed)
     else:
         return sparse.connectivity.is_connected(C, directed=directed)
@@ -261,11 +433,7 @@ def mapping(set):
 
 # DONE: Frank, Ben
 def prior_neighbor(C, alpha = 0.001):
-    r"""Neighbor prior of strength alpha for the given count matrix.
-    
-    Prior is defined by 
-        b_ij = alpha  if Z_ij+Z_ji > 0
-        b_ij = 0      else
+    r"""Neighbor prior for the given count matrix.    
     
     Parameters
     ----------
@@ -278,7 +446,27 @@ def prior_neighbor(C, alpha = 0.001):
     -------
     B : (M, M) ndarray or scipy.sparse matrix
         Prior count matrix
-        
+
+    Notes
+    ------
+    The neighbor prior :math:`b_{ij}` is defined as
+
+    .. math:: b_{ij}=\left \{ \begin{array}{rl} 
+                     \alpha & c_{ij}+c_{ji}>0 \\
+                     0      & \text{else}
+                     \end{array} \right .
+
+    Examples
+    --------
+    >>> from emma2.msm.estimation import prior_neighbor
+    
+    >>> C=np.array([10, 1, 0], [2, 0, 3], [0, 1, 4]])
+    >>> B=prior_neighbor(C)
+    >>> B
+    array([[ 0.001,  0.001,  0.   ],
+           [ 0.001,  0.   ,  0.001],
+           [ 0.   ,  0.001,  0.001]])
+           
     """
 
     if isdense(C):
