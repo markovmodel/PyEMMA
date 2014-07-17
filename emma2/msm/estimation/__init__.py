@@ -13,6 +13,7 @@ Countmatrix
    :toctree: generated/
 
    count_matrix - estimate count matrix from discrete trajectories
+   cmatrix - estimate count matrix from discrete trajectories
 
 Connectivity
 ============
@@ -41,6 +42,15 @@ Sampling
    :toctree: generated/
 
    tmatrix_sampler - Random sample from transition matrix posterior
+
+Priors
+======
+
+.. autosummary::
+   :toctree: generated/
+   
+   prior_neighbor
+
 
 """
 
