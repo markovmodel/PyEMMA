@@ -83,22 +83,40 @@ _type_not_supported = \
 
 # DONE : Martin, Ben
 def is_transition_matrix(T, tol=1e-15):
-    r"""
-    True if T is a transition matrix
+    r"""Check if the given matrix is a transition matrix.
     
     Parameters
     ----------
-    T : numpy.ndarray, shape(d, d) or scipy.sparse matrix
+    T : (M, M) ndarray or scipy.sparse matrix
         Matrix to check
-    tol : float
-        tolerance to check with
+    tol : float (optional)
+        Floating point tolerance to check with
     
     Returns
     -------
-    Truth value: bool
-        True, if T is positive and normed
-        False, otherwise
-    
+    is_transition_matrix : bool
+        True, if T is a valid transition matrix, False otherwise
+
+    Notes
+    -----
+    A valid transition matrix :math:`P=(p_{ij})` has non-negative
+    elements, :math:`p_{ij} \geq 0`, and elements of each row sum up
+    to one, :math:`\sum_j p_{ij} = 1`. Matrices wit this property are
+    also called stochastic matrices.
+
+    Examples
+    --------
+  
+    >>> from emma2.msm.analysis import is_transition_matrix
+
+    >>> A=np.array([[0.4, 0.5, 0.3], [0.2, 0.4, 0.4], [-1, 1, 1]])
+    >>> is_transition_matrix(A)
+    False
+
+    >>> T=np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
+    >>> is_transition_matrix(T)
+    True
+        
     """
     if issparse(T):
         return sparse.assessment.is_transition_matrix(T, tol)
@@ -113,20 +131,40 @@ __all__.append('is_tmatrix')
 
 # DONE: Martin, Ben
 def is_rate_matrix(K, tol=1e-15):
-    r"""True if K is a rate matrix
+    r"""Check if the given matrix is a rate matrix.
     
     Parameters
     ----------
-    K : ndarray or scipy.sparse matrix
-        Rate matrix
-    tol : float
-        tolerance to check with
+    K : (M, M) ndarray or scipy.sparse matrix
+        Matrix to check
+    tol : float (optional)
+        Floating point tolerance to check with
 
     Returns
     -------
-    Truth value: bool
-        True, if K is a rate matrix
-        False, otherwise
+    is_rate_matrix : bool
+        True, if K is a valid rate matrix, False otherwise
+
+    Notes
+    -----
+    A valid rate matrix :math:`K=(k_{ij})` has non-positive off
+    diagonal elements, :math:`k_{ij} \leq 0`, for :math:`i \neq j`,
+    and elements of each row sum up to zero, :math:`\sum_{j}
+    k_{ij}=0`.
+
+    Examples
+    --------
+    
+    >>> from emma2.msm.analysis import is_rate_matrix
+
+    >>> A=np.array([[0.5, -0.5, -0.2], [-0.3, 0.6, -0.3], [-0.2, 0.2, 0.0]])
+    >>> is_rate_matrix(A)
+    False
+
+    >>> K=np.array([[0.3, -0.2, -0.1], [-0.5, 0.5, 0.0], [-0.1, -0.1, 0.2]])
+    >>> is_rate_matrix(K)
+    True
+        
     """
     if issparse(K):
         return sparse.assessment.is_rate_matrix(K, tol)
@@ -137,23 +175,63 @@ def is_rate_matrix(K, tol=1e-15):
 
 #Done: Ben
 def is_connected(T, directed=True):
-    r"""Check connectivity of the transition matrix.
-
+    r"""Check connectivity of the given matrix.
+    
     Return true, if the input matrix is completely connected,
     effectively checking if the number of connected components equals one.
     
     Parameters
     ----------
-    T : scipy.sparse matrix 
-        Transition matrix
-    directed : bool, optional
-       Whether to compute connected components for a directed  or
-       undirected graph. Default is True.       
-
+    T : (M, M) ndarray or scipy.sparse matrix 
+        Matrix to check
+    directed : bool (optional)
+       If True respect direction of transitions, if False do not
+       distinguish between forward and backward transitions
+       
     Returns
     -------
-    connected : boolean, returning true only if T is connected.        
+    is_connected : bool
+        True, if T is connected, False otherwise
 
+    Notes
+    -----
+    A transition matrix :math:`T=(t_{ij})` is connected if for any pair
+    of states :math:`(i, j)` one can reach state :math:`j` from state
+    :math:`i` in a finite number of steps.
+
+    In more precise terms: For any pair of states :math:`(i, j)` there
+    exists a number :math:`N=N(i, j)`, so that the probability of
+    going from state :math:`i` to state :math:`j` in :math:`N` steps
+    is positive, :math:`\mathbb{P}(X_{N}=j|X_{0}=i)>0`.
+
+    A transition matrix with this property is also called irreducible. 
+
+    Viewing the transition matrix as the adjency matrix of a
+    (directed) graph the transition matrix is irreducible if and only
+    if the corresponding graph has a single connected
+    component. Connectivity of a graph can be efficiently checked
+    using Tarjan's algorithm.
+        
+    References
+    ----------
+    .. [1] Hoel, P G and S C Port and C J Stone. 1972. Introduction to
+        Stochastic Processes.
+    .. [2] Tarjan, R E. 1972. Depth-first search and linear graph
+        algorithms. SIAM Journal on Computing 1 (2): 146-160.
+
+    Examples
+    --------
+    
+    >>> from emma2.msm.analysis import is_connected
+
+    >>> A=np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.0, 1.0]])
+    >>> is_connected(A)
+    False
+
+    >>> T=np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
+    >>> is_connected(T)
+    True
+    
     """
     if issparse(T):
         return sparse.assessment.is_connected(T, directed=directed)
@@ -165,20 +243,52 @@ def is_connected(T, directed=True):
 
 # DONE: Martin
 def is_reversible(T, mu=None, tol=1e-15):
-    r"""True if T is a transition matrix
+    r"""Check reversibility of the given transition matrix.
     
     Parameters
     ----------
-    T : ndarray or scipy.sparse matrix
+    T : (M, M) ndarray or scipy.sparse matrix
         Transition matrix
-    mu : ndarray
-        tests with respect to this stationary distribution
+    mu : (M,) ndarray (optional) 
+         Test reversibility with respect to this vector
+    tol : float (optional)
+        Floating point tolerance to check with
     
     Returns
     -------
-    Truth value : bool
-        True, if T is reversible
-        False, otherwise
+    is_reversible : bool
+        True, if T is reversible, False otherwise
+
+    Notes
+    -----
+    A transition matrix :math:`T=(t_{ij})` is reversible with respect
+    to a probability vector :math:`\mu=(\mu_i)` if the follwing holds,
+
+    .. math:: \mu_i \, t_{ij}= \mu_j \, t_{ji}.
+
+    In this case :math:`\mu` is the stationary vector for :math:`T`,
+    so that :math:`\mu^T T = \mu^T`.
+
+    If the stationary vector is unknown it is computed from :math:`T`
+    before reversibility is checked.
+
+    A reversible transition matrix has purely real eigenvalues. The
+    left eigenvectors :math:`(l_i)` can be computed from right
+    eigenvectors :math:`(r_i)` via :math:`l_i=\mu_i r_i`.
+
+    Examples
+    --------
+    
+    >>> from emma2.msm.analysis import is_reversible
+
+    >>> P=np.array([[0.8, 0.1, 0.1], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
+    >>> is_reversible(P)
+    False
+
+    >>> T=np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
+    is_reversible(T)
+    True
+        
     """
     if issparse(T):
         return sparse.assessment.is_reversible(T, mu, tol)
@@ -194,20 +304,34 @@ def is_reversible(T, mu=None, tol=1e-15):
 
 # DONE: Ben
 def stationary_distribution(T):
-    r"""Compute stationary distribution of stochastic matrix T.
-    
-    The stationary distribution is the left eigenvector corresponding
-    to the non-degenerate eigenvalue :math:`\lambda=1`.
-    
+    r"""Compute stationary distribution of stochastic matrix T.    
+   
     Parameters
     ----------
-    T : numpy array, shape(d,d) or scipy.sparse matrix
-        Transition matrix (stochastic matrix).
+    T : (M, M) ndarray or scipy.sparse matrix
+        Transition matrix
     
     Returns
     -------
-    mu : numpy array, shape(d,)      
+    mu : (M,) ndarray      
         Vector of stationary probabilities.
+
+    Notes
+    -----
+    The stationary distribution :math:`\mu` is the left eigenvector
+    corresponding to the non-degenerate eigenvalue :math:`\lambda=1`,
+
+    .. math:: \mu^T T =\mu^T.
+
+    Examples
+    --------
+    
+    >>> from emma2.msm.analysis import stationary_distribution
+    
+    >>> T=np.array([[0.9, 0.1, 0.0], [0.4, 0.2, 0.4], [0.0, 0.1, 0.9]])
+    >>> mu=stationary_distribution(T)
+    >>> mu
+    array([0.44444444, 0.11111111, 0.44444444])
     
     """
     # is this a transition matrix?
@@ -251,6 +375,20 @@ def eigenvalues(T, k=None, ncv=None):
     w : (M,) ndarray
         Eigenvalues of `T`. If `k` is specified, `w` has
         shape (k,)
+
+    Notes
+    -----
+    Eigenvalues are returned in order of decreasing magnitude.
+
+    Examples
+    --------
+    
+    >>> from emma2.msm.analysis import eigenvalues
+
+    >>> T=np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
+    >>> w=eigenvalues(T)
+    >>> w
+    array([1.0+0.j, 0.9+0.j, -0.1+0.j]) 
     
     """
     if issparse(T):
@@ -283,6 +421,22 @@ def timescales(T, tau=1, k=None, ncv=None):
     ts : (M,) ndarray
         The implied time scales of the transition matrix.  If `k` is
         not None then the shape of `ts` is (k,).
+
+    Notes
+    -----
+    The implied time scale :math:`t_i` is defined as
+
+    .. math:: t_i=-\frac{\tau}{\log \lvert \lambda_i \rvert}
+
+    Examples
+    --------
+    
+    >>> from emma2.msm.analysis import timescales
+
+    >>> T=np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
+    >>> ts=timescales(T)
+    >>> ts
+    array([        inf,  9.49122158,  0.43429448])
     
     """
     if issparse(T):
@@ -295,9 +449,6 @@ def timescales(T, tau=1, k=None, ncv=None):
 # DONE: Ben
 def eigenvectors(T, k=None, right=True, ncv=None):
     r"""Compute eigenvectors of given transition matrix.
-    
-    Eigenvectors are computed using the scipy interface 
-    to the corresponding LAPACK/ARPACK routines.    
     
     Parameters
     ----------
@@ -316,15 +467,21 @@ def eigenvectors(T, k=None, right=True, ncv=None):
         The eigenvectors of T ordered with decreasing absolute value of
         the corresponding eigenvalue. If k is None then n=d, if k is
         int then n=k.
-    
+
+    See also
+    --------
+    rdl_decomposition    
 
     Notes
-    ------
+    -----
+    Eigenvectors are computed using the scipy interface 
+    to the corresponding LAPACK/ARPACK routines.    
+
     The returned eigenvectors :math:`v_i` are normalized such that 
 
     ..  math::
 
-        \langle v_i, v_j \rangle = \delta_{i,j}
+        \langle v_i, v_i \rangle = 1
 
     This is the case for right eigenvectors :math:`r_i` as well as
     for left eigenvectors :math:`l_i`. 
@@ -332,10 +489,21 @@ def eigenvectors(T, k=None, right=True, ncv=None):
     If you desire orthonormal left and right eigenvectors please use the
     rdl_decomposition method.
 
-    See also
+    Examples
     --------
-    rdl_decomposition
 
+    >>> from emma2.msm.analysis import eigenvalues
+
+    >>> T=np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
+    >>> R=eigenvalues(T)
+    
+    Matrix with right eigenvectors as columns
+    
+    >>> R
+    array([[  5.77350269e-01,   7.07106781e-01,   9.90147543e-02],
+           [  5.77350269e-01,  -5.50368425e-16,  -9.90147543e-01],
+           [  5.77350269e-01,  -7.07106781e-01,   9.90147543e-02]])
+           
     """
     if issparse(T):
         return sparse.decomposition.eigenvectors(T, k=k, right=right, ncv=ncv)
@@ -384,8 +552,37 @@ def rdl_decomposition(T, k=None, norm='standard', ncv=None):
     L : (M, M) ndarray
         The normalized (with respect to `R`) left eigenvectors, such that the 
         row ``L[i, :]`` is the left eigenvector corresponding to the eigenvalue
-        ``w[i]``, ``dot(L[i, :], T)``=``w[i]*L[i, :]``    
-
+        ``w[i]``, ``dot(L[i, :], T)``=``w[i]*L[i, :]``
+        
+    Examples
+    --------
+    
+    >>> from emma2.msm.analysis import rdl_decomposition
+    
+    >>> T=np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
+    >>> R, D, L=rdl_decomposition(T)
+    
+    Matrix with right eigenvectors as columns
+    
+    >>> R
+    array([[  1.00000000e+00,   7.07106781e-01,   9.90147543e-02],
+           [  1.00000000e+00,  -5.50368425e-16,  -9.90147543e-01],
+           [  1.00000000e+00,  -7.07106781e-01,   9.90147543e-02]])
+           
+    Diagonal matrix with eigenvalues
+    
+    >>> D
+    array([[ 1.0+0.j,  0.0+0.j,  0.0+0.j],
+           [ 0.0+0.j,  0.9+0.j,  0.0+0.j],
+           [ 0.0+0.j,  0.0+0.j, -0.1+0.j]])
+           
+    Matrix with left eigenvectors as rows
+    
+    >>> L
+    array([[  4.54545455e-01,   9.09090909e-02,   4.54545455e-01],
+           [  7.07106781e-01,   2.80317573e-17,  -7.07106781e-01],
+           [  4.59068406e-01,  -9.18136813e-01,   4.59068406e-01]])    
+           
     """    
     if issparse(T):
         return sparse.decomposition.rdl_decomposition(T, k=k, norm=norm, ncv=ncv)
@@ -396,7 +593,7 @@ def rdl_decomposition(T, k=None, norm='standard', ncv=None):
 
 # DONE: Ben
 def mfpt(T, target):
-    r"""Compute vector of mean first passage times to target state.
+    r"""Mean first passage time to target state.
     
     Parameters
     ----------
@@ -409,7 +606,34 @@ def mfpt(T, target):
     -------
     m_t : ndarray, shape=(n,)
          Vector of mean first passage times to target state t.
+
+    Notes
+    -----
+    The mean first passage time :math:`\mathbf{E}_x[T_y]` is the expected
+    htting time of state :math:`y` starting in state :math:`x`.
+
+
+    For a fixed target state :math:`y` it is given by
+
+    .. math :: \mathbb{E}_x[T_y] = \left \{  \begin{array}{cc}
+                                             0 & x=y \\
+                                             1+\sum_{z} T_{x,z} \mathbb{E}_z[T_y] & x \neq y
+                                             \end{array}  \right.
+    References
+    ----------
+    .. [1] Hoel, P G and S C Port and C J Stone. 1972. Introduction to
+        Stochastic Processes.
+        
+    Examples
+    --------
     
+    >>> from emma2.msm.analysis import mfpt
+
+    >>> T=np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
+    >>> m_t=mfpt(T)
+    >>> m_t
+    array([  0.,  12.,  22.])
+
     """
     if issparse(T):
         return sparse.mean_first_passage_time.mfpt(T, target)
@@ -422,99 +646,102 @@ def mfpt(T, target):
 # Expectations
 ################################################################################
 
-
-# DONE: frank
-def expectation(T, a, mu=None):
-    r"""Equilibrium expectation value of a given observable.
-
-    The expectation value of an observable a is defined as follows
-    
-    .. math::
-
-        <a> = \sum_i \pi_i a_i
-    
-    Parameters
-    ----------
-    T : (M, M) ndarray or scipy.sparse matrix
-        Transition matrix
-    a : (M,) ndarray
-        Observable vector
-    mu : (M,) ndarray (optional)
-        The stationary distribution of T.  If given, the stationary
-        distribution will not be recalculated (saving lots of time)
-    
-    Returns
-    -------
-    val: float
-        The expectation value fo the given observable:  <a> = <pi,a> = sum_i pi_i a_i
-        <a> = <pi,a> = sum_i pi_i a_i
-    """
-    if not mu:
-        mu = stationary_distribution(T)
-    return np.dot(mu,a)
-
 # DONE: Ben
-def expected_counts(p0, T, n):
-    r"""Compute expected transition counts for Markov chain with n steps. 
-    
-    Expected counts are given by
-    
-    .. math::
-    
-        E[C^{(n)}]=\sum_{k=0}^{n-1} \text{diag}(p^{T} T^{k}) T
+def expected_counts(T, p0, N):
+    r"""Compute expected transition counts for Markov chain with n steps.    
     
     Parameters
     ----------
-    p0 : (M,) ndarray
-        Initial (probability) vector
     T : (M, M) ndarray or sparse matrix
         Transition matrix
-    n : int
+    p0 : (M,) ndarray
+        Initial (probability) vector
+    N : int
         Number of steps to take
     
     Returns
     --------
     EC : (M, M) ndarray or sparse matrix
-        Expected value for transition counts after n steps
+        Expected value for transition counts after N steps
+
+    Notes
+    -----
+    Expected counts can be computed via the following expression
     
+    .. math::
+    
+        \mathbb{E}[C^{(N)}]=\sum_{k=0}^{N-1} \text{diag}(p^{T} T^{k}) T
+
+    Examples
+    --------
+    >>> from emma2.msm.analysis import expected_counts
+
+    >>> T=np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
+    >>> p0=np.array([1.0, 0.0, 0.0])
+    >>> N=100
+    >>> EC=expected_counts(T, p0, N)
+
+    >>> EC
+    array([[ 45.44616147,   5.0495735 ,   0.        ],
+           [  4.50413223,   0.        ,   4.50413223],
+           [  0.        ,   4.04960006,  36.44640052]])
+        
     """
     if issparse(T):
-        return sparse.expectations.expected_counts(p0, T, n)
+        return sparse.expectations.expected_counts(p0, T, N)
     elif isdense(T):
-        return dense.expectations.expected_counts(p0, T, n)
+        return dense.expectations.expected_counts(p0, T, N)
     else:
         _type_not_supported
 
 # DONE: Ben
-def expected_counts_stationary(T, n, mu=None):
-    r"""Expected transition counts for Markov chain in equilibrium. 
-    
-    Since mu is stationary for T we have 
-    
-    .. math::
-    
-        E(C^{(N)})=N diag(mu)*T.
+def expected_counts_stationary(T, N, mu=None):
+    r"""Expected transition counts for Markov chain in equilibrium.    
     
     Parameters
     ----------
     T : (M, M) ndarray or sparse matrix
         Transition matrix.
-    n : int
+    N : int
         Number of steps for chain.
     mu : (M,) ndarray (optional)
         Stationary distribution for T. If mu is not specified it will be
-        computed via diagonalization of T.
+        computed from T.
     
     Returns
     -------
     EC : (M, M) ndarray or sparse matrix
         Expected value for transition counts after N steps.         
+
+    Notes
+    -----
+    Since :math:`\mu` is stationary for :math:`T` we have 
+    
+    .. math::
+    
+        \mathbb{E}[C^{(N)}]=N D_{\mu}T.
+
+    :math:`D_{\mu}` is a diagonal matrix. Elements on the diagonal are
+    given by the stationary vector :math:`\mu`
+        
+    Examples
+    --------
+    >>> from emma2.msm.analysis import expected_counts
+    
+    >>> T=np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
+    >>> N=100
+    >>> EC=expected_counts_stationary(T, N)
+    
+    >>> EC
+    array([[ 40.90909091,   4.54545455,   0.        ],
+           [  4.54545455,   0.        ,   4.54545455],
+           [  0.        ,   4.54545455,  40.90909091]])       
     
     """
     if issparse(T):
-        return sparse.expectations.expected_counts_stationary(T, n, mu=mu)
+        return sparse.expectations.expected_counts_stationary(T, N, mu=mu)
     elif isdense(T):
-        return dense.expectations.expected_counts_stationary(T, n, mu=mu)
+        return dense.expectations.expected_counts_stationary(T, N, mu=mu)
     else:
         _type_not_supported   
 
@@ -524,15 +751,12 @@ def expected_counts_stationary(T, n, mu=None):
 ################################################################################
 
 # DONE: Martin+Frank+Ben: Implement in Python directly
-def fingerprint_correlation(P, obs1, obs2=None, tau=1, k=None, ncv=None):
+def fingerprint_correlation(T, obs1, obs2=None, tau=1, k=None, ncv=None):
     r"""Dynamical fingerprint for equilibrium correlation experiment.
-
-    The dynamical fingerprint is given by the implied time-scale
-    spectrum together with the corresponding amplitudes.
 
     Parameters
     ----------
-    P : (M, M) ndarray or scipy.sparse matrix
+    T : (M, M) ndarray or scipy.sparse matrix
         Transition matrix
     obs1 : (M,) ndarray
         Observable, represented as vector on state space
@@ -553,17 +777,85 @@ def fingerprint_correlation(P, obs1, obs2=None, tau=1, k=None, ncv=None):
     amplitudes : (N,) ndarray
         Amplitudes for the correlation experiment
 
+    See also
+    --------
+    correlation, fingerprint_relaxation
+
+    References
+    ----------
+    .. [1] Noe, F, S Doose, I Daidone, M Loellmann, M Sauer, J D
+        Chodera and J Smith. 2010. Dynamical fingerprints for probing
+        individual relaxation processes in biomolecular dynamics with
+        simulations and kinetic experiments. PNAS 108 (12): 4822-4827.    
+
+    Notes
+    -----
+    Fingerprints are a combination of time-scale and amplitude spectrum for 
+    a equilibrium correlation or a non-equilibrium relaxation experiment.
+
+    **Auto-correlation**
+
+    The auto-correlation of an observable :math:`a(x)` for a system in
+    equilibrium is
+
+    .. math:: \mathbb{E}_{\mu}[a(x,0)a(x,t)]=\sum_x \mu(x) a(x, 0) a(x, t)
+
+    :math:`a(x,0)=a(x)` is the observable at time :math:`t=0`.  It can
+    be propagated forward in time using the t-step transition matrix
+    :math:`p^{t}(x, y)`. 
+
+    The propagated observable at time :math:`t` is :math:`a(x,
+    t)=\sum_y p^t(x, y)a(y, 0)`.
+
+    Using the eigenvlaues and eigenvectors of the transition matrix the autocorrelation
+    can be written as
+
+    .. math:: \mathbb{E}_{\mu}[a(x,0)a(x,t)]=\sum_i \lambda_i^t \langle a, r_i\rangle_{\mu} \langle l_i, a \rangle.
+
+    The fingerprint amplitudes :math:`\gamma_i` are given by
+
+    .. math:: \gamma_i=\langle a, r_i\rangle_{\mu} \langle l_i, a \rangle.
+
+    And the fingerprint time scales :math:`t_i` are given by 
+
+    .. math:: t_i=-\frac{\tau}{\log \lvert \lambda_i \rvert}.
+
+    **Cross-correlation**
+
+    The cross-correlation of two observables :math:`a(x)`, :math:`b(x)` is similarly given 
+
+    .. math:: \mathbb{E}_{\mu}[a(x,0)b(x,t)]=\sum_x \mu(x) a(x, 0) b(x, t)
+
+    The fingerprint amplitudes :math:`\gamma_i` are similarly given in terms of the eigenvectors
+
+    .. math:: \gamma_i=\langle a, r_i\rangle_{\mu} \langle l_i, b \rangle.
+
+    Examples
+    --------
+    
+    >>> from emma2.msm.analysis import fingerprint_correlation
+
+    >>> T=np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
+    >>> a=np.array([1.0, 0.0, 0.0])
+    >>> ts, amp=fingerprint_correlation(T, a)
+
+    >>> ts
+    array([        inf,  9.49122158,  0.43429448])
+    
+    >>> amp
+    array([ 0.20661157,  0.22727273,  0.02066116])
+    
     """
 
-    if issparse(P):
-        return sparse.fingerprints.fingerprint_correlation(P, obs1, obs2, tau=tau, k=k, ncv=ncv)
-    elif isdense(P):
-        return dense.fingerprints.fingerprint_correlation(P, obs1, obs2, tau=tau, k=k)
+    if issparse(T):
+        return sparse.fingerprints.fingerprint_correlation(T, obs1, obs2=obs2, tau=tau, k=k, ncv=ncv)
+    elif isdense(T):
+        return dense.fingerprints.fingerprint_correlation(T, obs1, obs2, tau=tau, k=k)
     else:
         _type_not_supported   
 
 # DONE: Martin+Frank+Ben: Implement in Python directly
-def fingerprint_relaxation(P, p0, obs, tau=1, k=None, ncv=None):
+def fingerprint_relaxation(T, p0, obs, tau=1, k=None, ncv=None):
     r"""Dynamical fingerprint for relaxation experiment.
 
     The dynamical fingerprint is given by the implied time-scale
@@ -571,7 +863,7 @@ def fingerprint_relaxation(P, p0, obs, tau=1, k=None, ncv=None):
 
     Parameters
     ----------
-    P : (M, M) ndarray or scipy.sparse matrix
+    T : (M, M) ndarray or scipy.sparse matrix
         Transition matrix
     obs1 : (M,) ndarray
         Observable, represented as vector on state space
@@ -591,22 +883,113 @@ def fingerprint_relaxation(P, p0, obs, tau=1, k=None, ncv=None):
         Time-scales of the transition matrix
     amplitudes : (N,) ndarray
         Amplitudes for the relaxation experiment
+
+    See also
+    --------
+    relaxation, fingerprint_correlation
+
+    References
+    ----------
+    .. [1] Noe, F, S Doose, I Daidone, M Loellmann, M Sauer, J D
+        Chodera and J Smith. 2010. Dynamical fingerprints for probing
+        individual relaxation processes in biomolecular dynamics with
+        simulations and kinetic experiments. PNAS 108 (12): 4822-4827.    
+        
+    Notes
+    -----
+    Fingerprints are a combination of time-scale and amplitude spectrum for 
+    a equilibrium correlation or a non-equilibrium relaxation experiment.
+
+    **Relaxation**
+
+    A relaxation experiment looks at the time dependent expectation
+    value of an observable for a system out of equilibrium
+
+    .. math:: \mathbb{E}_{w_{0}}[a(x, t)]=\sum_x w_0(x) a(x, t)=\sum_x w_0(x) \sum_y p^t(x, y) a(y).
+
+    The fingerprint amplitudes :math:`\gamma_i` are given by
+
+    .. math:: \gamma_i=\langle w_0, r_i\rangle \langle l_i, a \rangle.
+
+    And the fingerprint time scales :math:`t_i` are given by 
+
+    .. math:: t_i=-\frac{\tau}{\log \lvert \lambda_i \rvert}.
+
+    Examples
+    --------
+    
+    >>> from emma2.msm.analysis import fingerprint_relaxation
+
+    >>> T=np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
+    >>> p0=np.array([1.0, 0.0, 0.0])
+    >>> a=np.array([1.0, 0.0, 0.0])
+    >>> ts, amp=fingerprint_relaxation(T, p0, a)
+
+    >>> ts
+    array([        inf,  9.49122158,  0.43429448])
+
+    >>> amp
+    array([ 0.45454545,  0.5       ,  0.04545455])    
         
     """
-    if issparse(P):
-        return sparse.fingerprints.fingerprint_relaxation(P, p0, obs, tau=tau, k=k, ncv=ncv)
-    elif isdense(P):
-        return dense.fingerprints.fingerprint_relaxation(P, p0, obs, tau=tau, k=k)
+    if issparse(T):
+        return sparse.fingerprints.fingerprint_relaxation(T, p0, obs, tau=tau, k=k, ncv=ncv)
+    elif isdense(T):
+        return dense.fingerprints.fingerprint_relaxation(T, p0, obs, tau=tau, k=k)
     else:
         _type_not_supported 
 
+# DONE: Frank, Ben
+def expectation(T, a, mu=None):
+    r"""Equilibrium expectation value of a given observable.
+
+    Parameters
+    ----------
+    T : (M, M) ndarray or scipy.sparse matrix
+        Transition matrix
+    a : (M,) ndarray
+        Observable vector
+    mu : (M,) ndarray (optional)
+        The stationary distribution of T.  If given, the stationary
+        distribution will not be recalculated (saving lots of time)
+    
+    Returns
+    -------
+    val: float
+        Equilibrium expectation value fo the given observable
+
+    Notes
+    -----
+    The equilibrium expectation value of an observable a is defined as follows
+    
+    .. math::
+
+        \mathbb{E}_{\mu}[a] = \sum_i \mu_i a_i
+       
+    :math:`\mu=(\mu_i)` is the stationary vector of the transition matrix :math:`T`.
+
+    Examples
+    --------
+    
+    >>> from emma2.msm.analysis import expectation
+
+    >>> T=np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
+    >>> a=np.array([1.0, 0.0, 1.0])
+    >>> m_a=expectation(T, a)
+    0.90909090909090917       
+    
+    """
+    if not mu:
+        mu=stationary_distribution(T)
+    return np.dot(mu,a)
+
 # DONE: Martin+Frank+Ben: Implement in Python directly
-def correlation(P, obs1, obs2=None, times=[1], k=None, ncv=None):
+def correlation(T, obs1, obs2=None, times=[1], k=None, ncv=None):
     r"""Time-correlation for equilibrium experiment.
     
     Parameters
     ----------
-    P : (M, M) ndarray or scipy.sparse matrix
+    T : (M, M) ndarray or scipy.sparse matrix
         Transition matrix
     obs1 : (M,) ndarray
         Observable, represented as vector on state space
@@ -624,18 +1007,67 @@ def correlation(P, obs1, obs2=None, times=[1], k=None, ncv=None):
     -------
     correlations : ndarray
         Correlation values at given times
+
+    References
+    ----------
+    .. [1] Noe, F, S Doose, I Daidone, M Loellmann, M Sauer, J D
+        Chodera and J Smith. 2010. Dynamical fingerprints for probing
+        individual relaxation processes in biomolecular dynamics with
+        simulations and kinetic experiments. PNAS 108 (12): 4822-4827.    
+
+    Notes
+    -----
         
+    **Auto-correlation**
+
+    The auto-correlation of an observable :math:`a(x)` for a system in
+    equilibrium is
+
+    .. math:: \mathbb{E}_{\mu}[a(x,0)a(x,t)]=\sum_x \mu(x) a(x, 0) a(x, t)
+
+    :math:`a(x,0)=a(x)` is the observable at time :math:`t=0`.  It can
+    be propagated forward in time using the t-step transition matrix
+    :math:`p^{t}(x, y)`. 
+
+    The propagated observable at time :math:`t` is :math:`a(x,
+    t)=\sum_y p^t(x, y)a(y, 0)`.
+
+    Using the eigenvlaues and eigenvectors of the transition matrix
+    the autocorrelation can be written as
+
+    .. math:: \mathbb{E}_{\mu}[a(x,0)a(x,t)]=\sum_i \lambda_i^t \langle a, r_i\rangle_{\mu} \langle l_i, a \rangle.
+
+    **Cross-correlation**
+
+    The cross-correlation of two observables :math:`a(x)`,
+    :math:`b(x)` is similarly given
+
+    .. math:: \mathbb{E}_{\mu}[a(x,0)b(x,t)]=\sum_x \mu(x) a(x, 0) b(x, t)
+
+    Examples
+    --------
+    
+    >>> from emma2.msm.analysis import correlation
+
+    >>> T=np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
+    >>> a=np.array([1.0, 0.0, 0.0])
+    >>> times=np.array([1, 5, 10, 20])
+
+    >>> corr=correlation(T, a, times=times)
+    >>> corr
+    array([ 0.40909091,  0.34081364,  0.28585667,  0.23424263])
+    
     """
-    if issparse(P):
-        return sparse.fingerprints.correlation(P, obs1, obs2=obs2, times=times, k=k, ncv=ncv)
-    elif isdense(P):
-        return dense.fingerprints.correlation(P, obs1, obs2=obs2, times=times, k=k)
+    if issparse(T):
+        return sparse.fingerprints.correlation(T, obs1, obs2=obs2, times=times, k=k, ncv=ncv)
+    elif isdense(T):
+        return dense.fingerprints.correlation(T, obs1, obs2=obs2, times=times, k=k)
     else:
         _type_not_supported 
 
 
 # DONE: Martin+Frank+Ben: Implement in Python directly
-def relaxation(P, p0, obs, times=[1], k=None, ncv=None):
+def relaxation(T, p0, obs, times=[1], k=None, ncv=None):
     r"""Relaxation experiment.
 
     The relaxation experiment describes the time-evolution
@@ -644,7 +1076,7 @@ def relaxation(P, p0, obs, times=[1], k=None, ncv=None):
 
     Parameters
     ----------
-    P : (M, M) ndarray
+    T : (M, M) ndarray or scipy.sparse matrix
         Transition matrix
     p0 : (M,) ndarray (optional)
         Initial distribution for a relaxation experiment
@@ -663,11 +1095,42 @@ def relaxation(P, p0, obs, times=[1], k=None, ncv=None):
     res : ndarray
         Array of expectation value at given times
 
+    References
+    ----------
+    .. [1] Noe, F, S Doose, I Daidone, M Loellmann, M Sauer, J D
+        Chodera and J Smith. 2010. Dynamical fingerprints for probing
+        individual relaxation processes in biomolecular dynamics with
+        simulations and kinetic experiments. PNAS 108 (12): 4822-4827.
+
+    Notes
+    -----
+
+    **Relaxation**
+
+    A relaxation experiment looks at the time dependent expectation
+    value of an observable for a system out of equilibrium
+
+    .. math:: \mathbb{E}_{w_{0}}[a(x, t)]=\sum_x w_0(x) a(x, t)=\sum_x w_0(x) \sum_y p^t(x, y) a(y).
+
+    Examples
+    --------
+
+    >>> from emma2.msm.analysis import correlation
+
+    >>> T=np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
+    >>> p0=np.array([1.0, 0.0, 0.0])
+    >>> a=np.array([1.0, 1.0, 0.0])
+    >>> times=np.array([1, 5, 10, 20])
+
+    >>> rel=relaxation(P, p0, times=times)
+    >>> rel
+    array([ 1.        ,  0.8407    ,  0.71979377,  0.60624287])
+    
     """
-    if issparse(P):
-        return sparse.fingerprints.relaxation(P, p0, obs, k=k, times=times)
-    elif isdense(P):
-        return dense.fingerprints.relaxation(P, p0, obs, k=k, times=times)
+    if issparse(T):
+        return sparse.fingerprints.relaxation(T, p0, obs, k=k, times=times)
+    elif isdense(T):
+        return dense.fingerprints.relaxation(T, p0, obs, k=k, times=times)
     else:
         _type_not_supported 
     

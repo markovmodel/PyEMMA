@@ -164,7 +164,7 @@ def correlation(P, obs1, obs2=None, times=[1], k=None, ncv=None):
         
     """
     M=P.shape[0]
-    T=times.max()
+    T=np.asarray(times).max()
     if T<M:
         return correlation_matvec(P, obs1, obs2=obs2, times=times)
     else:
@@ -208,7 +208,9 @@ def correlation_decomp(P, obs1, obs2=None, times=[1], k=None, ncv=None):
     times=np.asarray(times)
     ev_t=ev[np.newaxis,:]**times[:,np.newaxis]
     """Compute result"""
-    res=np.dot(ev_t, amplitudes)    
+    res=np.dot(ev_t, amplitudes)
+    """Truncate imgainary part - should be zero anyways"""
+    res=res.real
     return res       
 
 def correlation_matvec(P, obs1, obs2=None, times=[1]):
@@ -299,7 +301,7 @@ def relaxation(P, p0, obs, times=[1], k=None, ncv=None):
         
     """
     M=P.shape[0]
-    T=times.max()
+    T=np.asarray(times).max()
     if T<M:
         return relaxation_matvec(P, p0, obs, times=times)
     else:
@@ -343,7 +345,9 @@ def relaxation_decomp(P, p0, obs, times=[1], k=None, ncv=None):
     times=np.asarray(times)
     ev_t=ev[np.newaxis,:]**times[:,np.newaxis]
     """Compute result"""
-    res=np.dot(ev_t, amplitudes)   
+    res=np.dot(ev_t, amplitudes)
+    """Truncate imgainary part - is zero anyways"""
+    res=res.real
     return res       
 
 def relaxation_matvec(P, p0, obs, times=[1]):
