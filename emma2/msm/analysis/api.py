@@ -177,9 +177,6 @@ def is_rate_matrix(K, tol=1e-15):
 def is_connected(T, directed=True):
     r"""Check connectivity of the given matrix.
     
-    Return true, if the input matrix is completely connected,
-    effectively checking if the number of connected components equals one.
-    
     Parameters
     ----------
     T : (M, M) ndarray or scipy.sparse matrix 
