@@ -1142,17 +1142,35 @@ def relaxation(T, p0, obs, times=[1], k=None, ncv=None):
 
 # DONE: Jan
 def pcca(T, n):
-    r"""returns an ndarray(m,n) with n membership functions of length m in columns to be in
-    correspondence with the column structure of right and left eigenvectors
+    r"""Find meta-stable Perron-clusters.
     
     Parameters
     ----------
-    T : transition matrix
-    n : number of metastable processes
+    T : (M, M) ndarray or scipy.sparse matrix
+        Transition matrix
+    n : int
+        Number of Perron-clusters
     
     Returns
     -------
-    m : memberships
+    clusters : (M, n) ndarray
+        Membership vectors. clusters[i, :] contains the membership vector
+        for the i-th Perron-cluster.
+
+    Notes
+    -----
+    Perron cluster center analysis assigns each microstate a vector of
+    membership probabilities. This assignement is performed using the
+    right eigenvectors of the transition matrix. Membership
+    probabilities are computed via numerical optimization of the
+    entries of a membership matrix.
+
+    References
+    ----------
+    .. [1] Roeblitz, S and M Weber. 2013. Fuzzy spectral clustering by
+        PCCA+: application to Markov state models and data
+        classification. Advances in Data Analysis and Classification 7
+        (2): 147-179
     
     """
     if issparse(T):
@@ -1187,6 +1205,79 @@ def committor(T, A, B, forward=True):
     -------
     q : (M,) ndarray
         Vector of comittor probabilities.
+
+    Notes
+    -----
+    Committor functions are used to characterize microstates in terms
+    of their probability to being visited during a reaction/transition
+    between two disjoint regions of state space A, B. 
+
+    **Forward committor**
+
+    The forward committor :math:`q^{(+)}_i` is defined as the probability
+    that the process starting in `i` will reach `B` first, rather than `A`.
+
+    Using the first hitting time of a set :math:`S`,
+
+    .. math:: T_{S}=\inf\{t \geq 0 | X_t \in S \}
+
+    the forward committor :math:`q^{(+)}_i` can be fromally defined as
+
+    .. math:: q^{(+)}_i=\mathbb{P}_{i}(T_{A}<T_{B}).
+
+    The forward committor solves to the following boundary value problem
+
+    .. math::  \begin{array}{rl} \sum_j L_{ij} q^{(+)}_{j}=0 & i \in X \setminus{(A \cup B)} \\
+                q_{i}^{(+)}=0 & i \in A \\
+                q_{i}^{(+)}=1 & i \in B
+                \end{array}
+
+    :math:`L=T-I` denotes the generator matrix.
+
+    **Backward committor**
+
+    The backward committor is defined as the probability that the process
+    starting in :math:`x` came from :math:`A` rather than from :math:`B`.
+
+    Using the last exit time of a set :math:`S`,
+
+    .. math:: t_{S}=\sup\{t \geq 0 | X_t \notin S \}
+
+    the backward committor can be formally defined as 
+
+    .. math:: q^{(-)}_i=\mathbb{P}_{i}(t_{A}<t_{B}).
+
+    The backward comittor solves another boundary value problem
+
+    .. math::  \begin{array}{rl}
+                \sum_j K_{ij} q^{(-)}_{j}=0 & i \in X \setminus{(A \cup B)} \\
+                q_{i}^{(-)}=1 & i \in A \\
+                q_{i}^{(-)}=0 & i \in B
+                \end{array}
+
+    :math:`K=(D_{\pi}L)^{T}` denotes the adjoint generator matrix.
+
+    References
+    ----------
+    .. [1] Metzner, P, C Schuette and E Vanden-Eijnden. 2009.
+        Transition Path Theory for Markov Jump Processes. 
+        Multiscale Model Simul 7 (3): 1192-1219.
+
+    Examples
+    --------
+
+    >>> from emma2.msm.analysis import committor
+    >>> T=np.array([[0.89, 0.1, 0.01], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
+    >>> A=[0]
+    >>> B=[2]
+
+    >>> u_plus=committor(T, A, B)
+    >>> u_plus
+    array([ 0. ,  0.5,  1. ])
+    
+    >>> u_minus=committor(T, A, B, forward=False)
+    >>> u_minus
+    array([ 1.        ,  0.45454545,  0.        ])
     
     """
     if issparse(T):
@@ -1250,6 +1341,12 @@ def tpt(T, A, B, mu=None, qminus=None, qplus=None):
     See also
     --------
     committor
+
+    References
+    ----------
+    .. [1] Metzner, P, C Schuette and E Vanden-Eijnden. 2009.
+        Transition Path Theory for Markov Jump Processes. 
+        Multiscale Model Simul 7 (3): 1192-1219.
     
     """
     
@@ -1289,17 +1386,30 @@ def tpt_flux(T, A, B, mu=None, qminus=None, qplus=None):
     -------
     flux : (M, M) ndarray or scipy.sparse matrix
         Matrix of flux values between pairs of states.
-        
+
+    See also
+    --------
+    committor, tpt
+            
     Notes
     -----
     Computation of the flux network relies on transition path theory
     (TPT). The central object used in transition path theory is the
     forward and backward comittor function.
-    
-    See also
-    --------
-    committor, tpt
-    
+
+    The TPT-flux is defined as 
+
+    .. math:: f_{ij}=\left \{ \begin{array}{rl}
+                          \pi_i q_i^{(-)} p_{ij} q_j^{(+)} & i \neq j \\
+                          0                                & i=j\
+                          \end{array} \right .
+        
+    References
+    ----------
+    .. [1] Metzner, P, C Schuette and E Vanden-Eijnden. 2009.
+        Transition Path Theory for Markov Jump Processes. 
+        Multiscale Model Simul 7 (3): 1192-1219.
+            
     """    
     if issparse(T):
         return sparse.tpt.tpt_flux(T, A, B, mu=mu, qminus=qminus, qplus=qplus)
@@ -1331,16 +1441,29 @@ def tpt_netflux(T, A, B, mu=None, qminus=None, qplus=None):
     netflux : (M, M) ndarray or scipy.sparse matrix
         Matrix of netflux values between pairs of states.
 
+    See also
+    --------
+    committor, tpt_flux
+
     Notes
     -----
     Computation of the netflux network relies on transition path theory
     (TPT). The central object used in transition path theory is the
     forward and backward comittor function.
 
-    See also
-    --------
-    committor, tpt
+    The netflux or effective current is defined as
 
+    .. math:: f_{ij}^{+}=\max{f_{ij}-f_{ji}, 0}
+
+    :math:`f_{ij}` is the flux for the transition from :math:`A` to
+    :math:`B`.
+    
+    References
+    ----------
+    .. [1] Metzner, P, C Schuette and E Vanden-Eijnden. 2009.
+        Transition Path Theory for Markov Jump Processes. 
+        Multiscale Model Simul 7 (3): 1192-1219.            
+        
     """    
     if issparse(T):
         return sparse.tpt.tpt_netflux(T, A, B, mu=mu, qminus=qminus, qplus=qplus)
@@ -1372,15 +1495,28 @@ def tpt_totalflux(T, A, B, mu=None, qminus=None, qplus=None):
     F : float
         The total flux between reactant and product
 
+    See also
+    --------
+    committor, tpt_flux
+    
     Notes
     -----
     Computation of the total flux network relies on transition path
     theory (TPT). The central object used in transition path theory is
     the forward and backward comittor function.
-
-    See also
-    --------
-    committor, tpt
+    
+    The total flux is defined as the total outflow from :math:`A`,
+    
+    .. math:: F=\sum_{i \in A, j \notin A} f_{ij}
+    
+    :math:`f_{ij}` is the flux for the transition from :math:`A` to
+    :math:`B`.
+    
+    References
+    ----------
+    .. [1] Metzner, P, C Schuette and E Vanden-Eijnden. 2009.
+        Transition Path Theory for Markov Jump Processes. 
+        Multiscale Model Simul 7 (3): 1192-1219.               
 
     """  
     if issparse(T):
@@ -1413,15 +1549,29 @@ def tpt_rate(T, A, B, mu=None, qminus=None, qplus=None):
     kAB : float
         The reaction rate (per time step of the Markov chain)
 
+    See also
+    --------
+    committor, tpt_totalflux, tpt_flux
+
     Notes
     -----
     Computation of the rate relies on transition path theory
     (TPT). The central object used in transition path theory is the
     forward and backward comittor function.
 
-    See also
-    --------
-    committor, tpt
+    The transition rate, i.e. the total number of reaction events per
+    time step, is defined as
+
+    .. math:: k_{AB}=\frac{1}{F}
+
+    :math:`F` is the total flux for the transition from :math:`A` to
+    :math:`B`.
+
+    References
+    ----------
+    .. [1] Metzner, P, C Schuette and E Vanden-Eijnden. 2009.
+        Transition Path Theory for Markov Jump Processes. 
+        Multiscale Model Simul 7 (3): 1192-1219.               
 
     """
     if issparse(T):
