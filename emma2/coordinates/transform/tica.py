@@ -184,11 +184,11 @@ class Amuse:
         amuse.tica_weights = numpy.dot(amuse.pca_weights, amuse.intermediate_weights)
 
         # sort eigenvalues und eigenvectors
-        sort_perm = amuse.pca_values.argsort()[::-1]
+        sort_perm = numpy.argsort(numpy.abs(amuse.pca_values))[::-1]
         amuse.pca_values = amuse.pca_values[sort_perm]
         amuse.pca_weights = amuse.pca_weights[:, sort_perm]
 
-        sort_perm = amuse.tica_values.argsort()[::-1]
+        sort_perm = numpy.argsort(numpy.abs(amuse.tica_values))[::-1]
         amuse.tica_values = amuse.tica_values[sort_perm]
         amuse.tica_weights = amuse.tica_weights[:, sort_perm]
 

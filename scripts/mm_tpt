@@ -28,11 +28,11 @@ def handleArgs():
     
     # coarse sets
     # TODO: impl
-    parser.add_argument('-coarsesets')
-    parser.add_argument('-ocoarseforwardcommittor')
-    parser.add_argument('-ocoarsebackwardcommittor')
-    parser.add_argument('-ocoarseflux')
-    parser.add_argument('-ocoarsenetflux')
+#     parser.add_argument('-coarsesets')
+#     parser.add_argument('-ocoarseforwardcommittor')
+#     parser.add_argument('-ocoarsebackwardcommittor')
+#     parser.add_argument('-ocoarseflux')
+#     parser.add_argument('-ocoarsenetflux')
     
     return parser.parse_args()
 
