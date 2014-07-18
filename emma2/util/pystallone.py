@@ -19,6 +19,8 @@ Created on 15.10.2013
 @author: marscher
 '''
 from .log import getLogger as _getLogger
+import warnings
+from emma2.util.exceptions import PrecisionWarning
 _log = _getLogger(__name__)
 
 from jpype import \
@@ -32,6 +34,8 @@ import numpy as _np
 import sys as _sys
 
 _64bit = _sys.maxsize > 2**32
+
+_supported_types = [_np.int32, _np.int64, _np.float32, _np.float64]
 
 """ stallone java package. Should be used to access all classes in the stallone library."""
 stallone = None
@@ -120,6 +124,9 @@ def ndarray_to_stallone_array(pyarray, copy=True):
         scipy.sparse types will be currently converted to dense, before passing
         them to the java side!
     """
+    if pyarray.dtype not in _supported_types:
+        raise TypeError('Given type %s not mapped in stallone library' % pyarray.dtype)
+    
     from scipy.sparse.base import issparse
     if issparse(pyarray):
         _log.warning("converting sparse object to dense for stallone.")
@@ -129,7 +136,19 @@ def ndarray_to_stallone_array(pyarray, copy=True):
     dtype = pyarray.dtype
     factory = None
     cast_func = None
-    
+    """
+    stallone does currently support only wrappers for int32 and float64
+    """ 
+    if dtype == _np.float32:
+        warnings.warn("Upcasting floats to doubles!", PrecisionWarning)
+        pyarray = pyarray.astype(_np.float64)
+    if dtype == _np.int64:
+        warnings.warn("Downcasting long to 32 bit integer!"
+                      "You will loose precision by doing so!", PrecisionWarning)
+        pyarray = pyarray.astype(_np.int32)
+        
+    # Pass memory to jpype and create a java array.
+    # Also set corresponding factory method in stallone to wrap the array.
     if dtype == _np.float32 or dtype == _np.float64:
         factory = API.doublesNew
         cast_func = JDouble
@@ -137,15 +156,13 @@ def ndarray_to_stallone_array(pyarray, copy=True):
             # TODO: add impl for int if ready in stallone.
             if not pyarray.flags.c_contiguous:
                 raise RuntimeError('Can only pass contiguous memory to Java!')
-            jbuff = _nio.convertToDirectBuffer(pyarray)
+            jbuff = _nio.convertToDirectBuffer(pyarray).asDoubleBuffer()
             rows = shape[0]
             cols = 1 if len(shape) == 1 else shape[1]
             return factory.arrayFrom(jbuff, rows, cols)
     elif dtype == _np.int32 or dtype == _np.int64:
         factory = API.intsNew
         cast_func = JInt
-    else:
-        raise TypeError('unsupported datatype:', dtype)
 
     if len(shape) == 1:
         # create a JArray wrapper
