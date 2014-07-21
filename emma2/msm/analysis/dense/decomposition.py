@@ -127,7 +127,11 @@ def eigenvalues(T, k=None):
         n is the length of the given tuple of eigenvalue indices.
 
     """
-    evals = np.sort(eigvals(T))[::-1]
+    evals=eigvals(T)
+    """Sort by decreasing absolute value"""
+    ind=np.argsort(np.abs(evals))[::-1]
+    evals=evals[ind]
+
     if isinstance(k, (list, set, tuple)):
         try:
             return [evals[n] for n in k]
@@ -248,6 +252,9 @@ def rdl_decomposition(T, k=None, norm='standard'):
         nu=solve(A, b)
         mu=nu/np.sum(nu)
 
+        """Ensure that R[:,0] is positive"""
+        R[:,0]=R[:,0]/np.sign(R[0,0])
+
         """Use mu to connect L and R"""
         L=mu[:, np.newaxis]*R
 
@@ -313,9 +320,9 @@ def timescales_from_eigenvalues(eval, tau=1):
     """
     
     """Check for dominant eigenvalues with large imaginary part"""
+
     if not np.allclose(eval.imag, 0.0):
-        warnings.warn('Using eigenvalues with non-zero imaginary part '
-                      'for implied time scale computation', ImaginaryEigenValueWarning)
+        warnings.warn('Using eigenvalues with non-zero imaginary part', ImaginaryEigenValueWarning)
 
     """Check for multiple eigenvalues of magnitude one"""
     ind_abs_one=isclose(np.abs(eval), 1.0)
