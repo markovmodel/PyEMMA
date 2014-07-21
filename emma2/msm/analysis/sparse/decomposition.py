@@ -238,14 +238,17 @@ def rdl_decomposition(T, k=None, norm='standard', ncv=None):
     elif norm=='reversible':
         v, R=scipy.sparse.linalg.eigs(T, k=k, which='LM', ncv=ncv)
         mu=stationary_distribution_from_backward_iteration(T)
-        
-        """Diagonal matrix with eigenvalues"""
-        D=np.diag(v)
-        
+
         """Sort right eigenvectors"""
         ind=np.argsort(np.abs(v))[::-1]
         v=v[ind]
         R=R[:,ind]
+
+        """Ensure that R[:,0] is positive"""
+        R[:,0]=R[:,0]/np.sign(R[0,0])
+        
+        """Diagonal matrix with eigenvalues"""
+        D=np.diag(v)      
         
         """Compute left eigenvectors from right ones"""
         L=mu[:, np.newaxis]*R        
