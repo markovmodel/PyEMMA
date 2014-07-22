@@ -42,17 +42,18 @@ class TestExpectedCountsDense(unittest.TestCase):
         T=self.T
 
         N=20
-        EC_n=expected_counts(p0, T, N)
+        EC_n=expected_counts(T, p0, N)
 
         """
         If p0 is the stationary vector the computation can
         be carried out by a simple multiplication
         """        
         EC_true=N*self.mu[:,np.newaxis]*T
+
         self.assertTrue(np.allclose(EC_true, EC_n))
 
         N=2000
-        EC_n=expected_counts(p0, T, N)
+        EC_n=expected_counts(T, p0, N)
 
         """
         If p0 is the stationary vector the computation can
@@ -63,7 +64,7 @@ class TestExpectedCountsDense(unittest.TestCase):
 
         """Zero length chain"""
         N=0
-        EC_n=expected_counts(p0, T, N)
+        EC_n=expected_counts(T, p0, N)
         EC_true=np.zeros(T.shape)
         self.assertTrue(np.allclose(EC_true, EC_n))
 
@@ -182,7 +183,7 @@ class TestExpectedCountsSparse(unittest.TestCase):
         T=self.T_sparse        
         p0=self.mu_sparse
 
-        EC_n=expected_counts(p0, T, N)
+        EC_n=expected_counts(T, p0, N)
 
         D_mu=diags(self.mu_sparse, 0)
         EC_true=N*D_mu.dot(T)
