@@ -114,6 +114,105 @@ def count_matrix_cores(dtraj, cores, lag, sliding=True):
 cmatrix_cores=count_matrix_cores
 
 
+
+################################################################################
+# Bootstrapping data
+################################################################################
+
+def bootstrap_trajectories(trajs, correlation_length):
+    """
+    Generates a randomly resampled count matrix given the input coordinates.
+
+    This function can be called multiple times in order to generate randomly
+    resampled realizations of count matrices. For each of these realizations 
+    you can estimate a transition matrix, and from each of them computing the 
+    observables of your interest. The standard deviation of such a sample of 
+    the observable is a model for the standard error.
+
+    Implements a moving block bootstrapping procedure [1]_ for generation of 
+    randomly resampled count matrixes from discrete trajectories. The time scale
+    determines the size of trajectory blocks that will remain contiguous. 
+    For a single trajectory N with timescale T, we will sample floor(N/T) 
+    subtrajectories of length T using starting time t. t is a uniform random
+    number in [0, N-T-1]. 
+    When multiple trajectories are available, N is the total number of timesteps
+    over all trajectories, and the starting points are uniformly generated over all
+    trajectory timesteps that are N-T-1 steps before a trajectory end.
+    Note that like all error models for correlated time series data, Bootstrapping 
+    just gives you a model for the error given a number of assumptions [2]_. The most 
+    critical decisions are: (1) is this approach meaningful at all (only if the 
+    trajectories are statistically independent realizations), and (2) select
+    an appropriate timescale of the correlation length (see below).
+    Note that transition matrix sampling from the Dirichlet distribution is a 
+    much better option from a theoretical point of view, but may also be 
+    computationally more demanding.
+    
+    Parameters
+    ----------
+    trajs : array-like or array-like of array-like
+        single or multiple trajectories. Every trajectory is assumed to be
+        a statistically independent realization. Note that this is often not true and 
+        is a weakness with the present bootstrapping approach.
+            
+    correlation_length : int
+        Correlation length (also known as the or statistical inefficiency) of the data.
+        If set to < 1 or > L, where L is the longest trajectory length, the 
+        bootstrapping will use individual trajectories.
+        We suggest to select the largest implied timescale or relaxation timescale as a 
+        conservative estimate of the correlation length. If this timescale is unknown, 
+        it's suggested to use full trajectories (set timescale to < 1) or come up with 
+        a rough estimate. For computing the error on specific observables, one may use 
+        shorter timescales, because the relevant correlation length is the integral of 
+        the autocorrelation function of the observables of interest [3]_. The slowest 
+        implied timescale is an upper bound for that correlation length, and therefore 
+        a conservative estimate [4]_.
+    
+    [1] H. R. Künsch. The jackknife and the bootstrap for general stationary 
+        observations,
+        Ann. Stat. 3, 1217-41 (1989). 
+    [2] B. Efron. Bootstrap methods: Another look at the jackknife. 
+        Ann. Statist. 7 1–26 (1979).
+    [3] T.W. Anderson. The Statistical Analysis of Time Series
+        Wiley, New York (1971).
+    [4] F. Noé and F. Nüske: A variational approach to modeling slow processes 
+        in stochastic dynamical systems. 
+        SIAM Multiscale Model. Simul., 11 . pp. 635-655 (2013).
+    """
+    return dense.bootstrapping.bootstrap_trajectories(trajs, correlation_length)
+
+
+def bootstrap_counts(dtrajs, correlation_length, lagtime):
+    """
+    Generates a randomly resampled count matrix given the input coordinates.
+
+    This function can be called multiple times in order to generate randomly
+    resampled realizations of count matrices. For each of these realizations 
+    you can estimate a transition matrix, and from each of them computing the 
+    observables of your interest. The standard deviation of such a sample of 
+    the observable is a model for the standard error.
+    
+    Parameters:
+    -----------
+    dtrajs : array-like or array-like of array-like
+        single or multiple discrete trajectories. Every trajectory is assumed to be
+        a statistically independent realization. Note that this is often not true and 
+        is a weakness with the present bootstrapping approach.
+            
+    correlation_length : int
+        Correlation length (also known as the or statistical inefficiency) of the data.
+        If set to < 1 or > L, where L is the longest trajectory length, the 
+        bootstrapping will use individual trajectories.
+
+    lagtime : int
+        the lag time at which the count matrix will be evaluated
+
+    See also
+    --------
+    bootstrap_subtrajectories for general notes on bootstrapping
+    """
+    return dense.bootstrapping.bootstrap_counts(dtrajs, correlation_length, lagtime)
+
+
 ################################################################################
 # Connectivity
 ################################################################################
@@ -428,24 +527,11 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
     
     if reversible:
         if mu is None:
-            try:
-                if sparse_mode:
-                    # currently no sparse impl, so we abuse dense impl (may be inefficient)
-                    return csr_matrix(dense.transition_matrix.estimate_transition_matrix_reversible(C.toarray(),**kwargs))
-                    ## Call to stallone. Currently deactivated because our impl is newer:
-                    # Cs = stallone.ndarray_to_stallone_array(1.0*C.toarray())
-                    ## T is of type stallone.IDoubleArray, so wrap it in an ndarray
-                    # return csr_matrix(stallone.stallone_array_to_ndarray(stallone.API.msm.estimateTrev(Cs)))
-                else:
-                    return dense.transition_matrix.estimate_transition_matrix_reversible(C,**kwargs)
-                    ## Call to stallone. Currently deactivated because our impl is newer:
-                    # Cs = stallone.ndarray_to_stallone_array(1.0*C)
-                    # T is of type stallone.IDoubleArray, so wrap it in an ndarray
-                    # return stallone.stallone_array_to_ndarray(stallone.API.msm.estimateTrev(Cs))
-            except stallone.JavaException as je:
-                log = getLogger()
-                log.exception('Error during reversible tmatrix estimatation', je)
-                raise
+            if sparse_mode:
+                # currently no sparse impl, so we abuse dense impl (may be inefficient)
+                return csr_matrix(dense.transition_matrix.estimate_transition_matrix_reversible(C.toarray(),**kwargs))
+            else:
+                return dense.transition_matrix.estimate_transition_matrix_reversible(C,**kwargs)
         else:
             if sparse_mode:
                 # Sparse, reversible, fixed pi (currently using dense with sparse conversion)
