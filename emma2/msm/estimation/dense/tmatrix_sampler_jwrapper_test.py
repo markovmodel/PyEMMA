@@ -55,12 +55,12 @@ class TestJavaTransitionMatrixSampler(unittest.TestCase):
         self.errtol = 1e-2
         self.nsample = 100000
 
-    # @unittest.SkipTest        
+    @unittest.SkipTest        
     def testSamplerRev(self):
         sampler_rev = ITransitionMatrixSampler(self.C, reversible=True)
         assertSampler2x2(sampler_rev, self.C, self.nsample, self.errtol)
 
-    # @unittest.SkipTest
+    @unittest.SkipTest
     def testSamplerNonRev(self):
         sampler_nonrev = ITransitionMatrixSampler(self.C, reversible=False)
         assertSampler2x2(sampler_nonrev, self.C, self.nsample, self.errtol)
