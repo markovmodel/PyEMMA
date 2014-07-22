@@ -41,10 +41,12 @@ __maintainer__ = "Martin Scherer"
 __email__="m.scherer AT fu-berlin DOT de"
 
 __all__=['is_transition_matrix',
+         'is_tmatrix',
          'is_rate_matrix',
          'is_connected',
          'is_reversible',
          'stationary_distribution',
+         'statdist',
          'eigenvalues',
          'timescales',
          'eigenvectors',
@@ -125,9 +127,27 @@ def is_transition_matrix(T, tol=1e-15):
     else:
         raise _type_not_supported
 
-is_tmatrix=is_transition_matrix
-__all__.append('is_tmatrix')
+def is_tmatrix(T, tol=1e-15):
+    r"""Check if the given matrix is a transition matrix.
+    
+    Parameters
+    ----------
+    T : (M, M) ndarray or scipy.sparse matrix
+        Matrix to check
+    tol : float (optional)
+        Floating point tolerance to check with
+    
+    Returns
+    -------
+    is_transition_matrix : bool
+        True, if T is a valid transition matrix, False otherwise
 
+    See also
+    --------
+    is_transition_matrix
+    
+    """
+    return is_transition_matrix(T, tol=tol)
 
 # DONE: Martin, Ben
 def is_rate_matrix(K, tol=1e-15):
@@ -349,11 +369,27 @@ def stationary_distribution(T):
     else: 
         raise _type_not_supported
 
-statdist=stationary_distribution
-__all__.append('statdist')
+def statdist(T):
+    r"""Compute stationary distribution of stochastic matrix T.    
+   
+    Parameters
+    ----------
+    T : (M, M) ndarray or scipy.sparse matrix
+        Transition matrix
+    
+    Returns
+    -------
+    mu : (M,) ndarray      
+        Vector of stationary probabilities.
+        
+    See also
+    --------
+    stationary_distribution
+    
+    """
+    return stationary_distribution(T)
 
-
-# DONE: Martin
+# DONE: Martin, Ben
 def eigenvalues(T, k=None, ncv=None):
     r"""Find eigenvalues of the transition matrix.
     
