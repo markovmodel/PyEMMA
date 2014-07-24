@@ -546,6 +546,7 @@ static PyObject *run(PyObject *self, PyObject *args) {
 			&do_mean, &do_var, &do_cov, &do_tcov, &lag))
 		goto error;
 
+	setlocale(LC_NUMERIC, "C");
 	/* open date file and get record size */
 	input = reader_by_fname(fname);
 	n = input.init(&input, fname);
@@ -713,6 +714,9 @@ static PyObject *project(PyObject *self, PyObject *args) {
 		goto error;
 	}
 
+	// set locale to c, to get proper formatted floating point numbers.
+	setlocale(LC_NUMERIC, "C");
+
 	/* open input file and get record size */
 	input = reader_by_fname(fin);
 	n = input.init(&input, fin);
@@ -747,10 +751,7 @@ static PyObject *project(PyObject *self, PyObject *args) {
 	if (!out) {
 		PyErr_SetFromErrno(PyExc_IOError);
 		goto error;
-	}
-
-	// set locale to c, to get proper formatted floating point numbers.
-	setlocale(LC_NUMERIC, "C");
+	}	
 
 	/* iterate over input */
 	while (1) {
