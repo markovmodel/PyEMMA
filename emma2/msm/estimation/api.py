@@ -59,7 +59,7 @@ __all__=['count_matrix',
 ################################################################################
 
 # DONE: Benjamin 
-def count_matrix(dtraj, lag, sliding=True):
+def count_matrix(dtraj, lag, sliding=True, sparse_return=True):
     r"""Generate a count matrix from given microstate trajectory.
     
     Parameters
@@ -71,6 +71,8 @@ def count_matrix(dtraj, lag, sliding=True):
     sliding : bool, optional
         If true the sliding window approach 
         is used for transition counting.
+    sparse_return : bool (optional)
+        Whether to return a dense or a sparse matrix.
     
     Returns
     -------
@@ -141,12 +143,12 @@ def count_matrix(dtraj, lag, sliding=True):
     
     """
     if type(dtraj) is list:
-        return sparse.count_matrix.count_matrix_mult(dtraj, lag, sliding=sliding)
+        return sparse.count_matrix.count_matrix_mult(dtraj, lag, sliding=sliding, sparse=sparse_return)
     else:
-        return sparse.count_matrix.count_matrix(dtraj, lag, sliding=sliding)
+        return sparse.count_matrix.count_matrix(dtraj, lag, sliding=sliding, sparse=sparse_return)
 
 # DONE: Benjamin 
-def cmatrix(dtraj, lag, sliding=True):
+def cmatrix(dtraj, lag, sliding=True, sparse_return=True):
     r"""Generate a count matrix in from given microstate trajectory.
     
     Parameters
@@ -158,6 +160,8 @@ def cmatrix(dtraj, lag, sliding=True):
     sliding : bool, optional
         If true the sliding window approach 
         is used for transition counting.
+    sparse_return : bool (optional)
+        Whether to return a dense or a sparse matrix.
     
     Returns
     -------
@@ -173,7 +177,7 @@ def cmatrix(dtraj, lag, sliding=True):
     This is a shortcut for a call to count_matrix.
         
     """
-    return count_matrix(dtraj, lag, sliding=sliding)
+    return count_matrix(dtraj, lag, sliding=sliding, sparse_return=True)
 
 # TODO: Implement in Python directly
 def count_matrix_cores(dtraj, cores, lag, sliding=True):

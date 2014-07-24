@@ -11,7 +11,7 @@ import scipy.sparse
 # count_matrix
 ################################################################################
 
-def count_matrix_mult(dtrajs, lag, sliding=True):
+def count_matrix_mult(dtrajs, lag, sliding=True, sparse=True):
     r"""Generate a count matrix from a given list of discrete trajectories.    
 
     Parameters
@@ -23,6 +23,8 @@ def count_matrix_mult(dtrajs, lag, sliding=True):
     sliding : bool, optional
         If true the sliding window approach 
         is used for transition counting.
+    sparse : bool (optional)
+        Whether to return a dense or a sparse matrix.
         
     Returns
     -------
@@ -41,11 +43,11 @@ def count_matrix_mult(dtrajs, lag, sliding=True):
     ndim=nmax+1        
     """If ndim<4000 use bincount else use coo"""
     if ndim<4000:
-        return count_matrix_bincount_mult(dtrajs, lag, sliding=sliding, ndim=ndim)
+        return count_matrix_bincount_mult(dtrajs, lag, sliding=sliding, ndim=ndim, sparse=sparse)
     else:
-        return count_matrix_coo_mult(dtrajs, lag, sliding=sliding)     
+        return count_matrix_coo_mult(dtrajs, lag, sliding=sliding, sparse=sparse)     
 
-def count_matrix(dtraj, lag, sliding=True):
+def count_matrix(dtraj, lag, sliding=True, sparse=True):
     r"""Generate a count matrix from a given list of integers.
 
     Parameters
@@ -57,6 +59,8 @@ def count_matrix(dtraj, lag, sliding=True):
     sliding : bool, optional
         If true the sliding window approach 
         is used for transition counting.
+    sparse : bool (optional)
+        Whether to return a dense or a sparse matrix.
 
     Returns
     -------
@@ -74,9 +78,9 @@ def count_matrix(dtraj, lag, sliding=True):
 
     """If ndim<4000 use bincount else use coo"""
     if ndim<4000:
-        return count_matrix_bincount(dtraj, lag, sliding=sliding, ndim=ndim)
+        return count_matrix_bincount(dtraj, lag, sliding=sliding, ndim=ndim, sparse=sparse)
     else:
-        return count_matrix_coo(dtraj, lag, sliding=sliding)
+        return count_matrix_coo(dtraj, lag, sliding=sliding, sparse=sparse)
         
     
 
@@ -84,7 +88,7 @@ def count_matrix(dtraj, lag, sliding=True):
 # coo
 ################################################################################
 
-def count_matrix_coo(dtraj, lag, sliding=True):
+def count_matrix_coo(dtraj, lag, sliding=True, sparse=True):
     r"""Generate a count matrix from a given list of integers.
 
     The generated count matrix is a sparse matrix in coordinate 
@@ -99,6 +103,8 @@ def count_matrix_coo(dtraj, lag, sliding=True):
     sliding : bool, optional
         If true the sliding window approach 
         is used for transition counting.
+    sparse : bool (optional)
+        Whether to return a dense or a sparse matrix.
 
     Returns
     -------
@@ -129,9 +135,13 @@ def count_matrix_coo(dtraj, lag, sliding=True):
     C=C.tocsr()
     if C.shape[0] != C.shape[1]:
         C=make_square_coo_matrix(C)
-    return C
 
-def count_matrix_coo_mult(dtrajs, lag, sliding=True):
+    if sparse:
+        return C.tocsr()
+    else:
+        return C.toarray()
+
+def count_matrix_coo_mult(dtrajs, lag, sliding=True, sparse=True):
     r"""Generate a count matrix from a given list of discrete trajectories.
 
     The generated count matrix is a sparse matrix in coordinate 
@@ -146,6 +156,8 @@ def count_matrix_coo_mult(dtrajs, lag, sliding=True):
     sliding : bool, optional
         If true the sliding window approach 
         is used for transition counting.
+    sparse : bool (optional)
+        Whether to return a dense or a sparse matrix.
 
     Returns
     -------
@@ -157,7 +169,12 @@ def count_matrix_coo_mult(dtrajs, lag, sliding=True):
     for dtraj in dtrajs:
         Zi = count_matrix_coo(dtraj, lag, sliding)
         Z = add_coo_matrix(Z, Zi)
-    return make_square_coo_matrix(Z).tocsr()
+    C=make_square_coo_matrix(Z)
+
+    if sparse:
+        return C.tocsr()
+    else:
+        return C.toarray()
 
 def make_square_coo_matrix(A):
     r"""Reshape a COO sparse matrix to a square matrix.
