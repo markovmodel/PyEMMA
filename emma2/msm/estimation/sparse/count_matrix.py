@@ -26,7 +26,7 @@ def count_matrix_mult(dtrajs, lag, sliding=True):
         
     Returns
     -------
-    C : scipy.sparse.coo_matrix
+    C : scipy.sparse.csr_matrix
         The countmatrix at given lag in coordinate list format.
        
     """
@@ -60,7 +60,7 @@ def count_matrix(dtraj, lag, sliding=True):
 
     Returns
     -------
-    C : scipy.sparse.coo_matrix
+    C : scipy.sparse.csr_matrix
         The countmatrix at given lag in coordinate list format
 
     """
@@ -102,7 +102,7 @@ def count_matrix_coo(dtraj, lag, sliding=True):
 
     Returns
     -------
-    C : scipy.sparse.coo_matrix
+    C : scipy.sparse.csr_matrix
         The countmatrix at given lag in coordinate list format.
     
     """
@@ -126,7 +126,7 @@ def count_matrix_coo(dtraj, lag, sliding=True):
         data=np.ones(N)
         C=scipy.sparse.coo_matrix((data, (row, col)))
 
-    C=C.tocsr().tocoo()
+    C=C.tocsr()
     if C.shape[0] != C.shape[1]:
         C=make_square_coo_matrix(C)
     return C
@@ -149,7 +149,7 @@ def count_matrix_coo_mult(dtrajs, lag, sliding=True):
 
     Returns
     -------
-    C : scipy.sparse.coo_matrix
+    C : scipy.sparse.csr_matrix
         The countmatrix at given lag in coordinate list format.
     
     """
@@ -157,7 +157,7 @@ def count_matrix_coo_mult(dtrajs, lag, sliding=True):
     for dtraj in dtrajs:
         Zi = count_matrix_coo(dtraj, lag, sliding)
         Z = add_coo_matrix(Z, Zi)
-    return make_square_coo_matrix(Z)
+    return make_square_coo_matrix(Z).tocsr()
 
 def make_square_coo_matrix(A):
     r"""Reshape a COO sparse matrix to a square matrix.
@@ -234,7 +234,7 @@ def count_matrix_bincount(dtraj, lag, sliding=True, sparse=True, ndim=None):
 
     Returns
     -------
-    C : (M, M) ndarray or scipy.sparse.coo_matrix
+    C : (M, M) ndarray or scipy.sparse.csr_matrix
         The countmatrix at given lag in coordinate list format.
 
     Notes
@@ -265,7 +265,7 @@ def count_matrix_bincount(dtraj, lag, sliding=True, sparse=True, ndim=None):
         ds=ndim*dtraj[0:-lag:lag]+dtraj[lag::lag]
     C=np.bincount(ds, minlength=ndim*ndim).reshape((ndim, ndim))
     if sparse:
-        return scipy.sparse.coo_matrix(C)
+        return scipy.sparse.csr_matrix(C)
     else:
         return C
 
@@ -287,7 +287,7 @@ def count_matrix_bincount_mult(dtrajs, lag, sliding=True, sparse=True, ndim=None
         
     Returns
     -------
-    C : scipy.sparse.coo_matrix
+    C : scipy.sparse.csr_matrix
         The countmatrix at given lag in coordinate list format.
         
     """
@@ -307,7 +307,7 @@ def count_matrix_bincount_mult(dtrajs, lag, sliding=True, sparse=True, ndim=None
     for dtraj in dtrajs:
         C+=count_matrix_bincount(dtraj, lag, sliding=sliding, sparse=False, ndim=ndim)
     if sparse:
-        return scipy.sparse.coo_matrix(C)
+        return scipy.sparse.csr_matrix(C)
     else:
         return C                   
 
