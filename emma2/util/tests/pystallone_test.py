@@ -76,7 +76,7 @@ class TestPyStallone(unittest.TestCase):
         b = st.stallone_array_to_ndarray(a)
         
         self.compareNP(self.a, b)
-
+    @unittest.expectedFailure # until jpype 0.5.5.3 release
     def testJArr2ND_int1d(self):
         self.a = np.random.randint(1, size=self.n).astype(np.int32)
         jarr = st.JArray(st.JInt)(self.a)
@@ -85,7 +85,7 @@ class TestPyStallone(unittest.TestCase):
         b = st.stallone_array_to_ndarray(a)
 
         self.compareNP(self.a, b)
-    
+    @unittest.expectedFailure # until jpype 0.5.5.3 release
     def testJArr2ND_int2d(self):
         self.a = np.random.randint(1, size=self.n).reshape((10, self.n/10)).astype(np.int32)
         #self.a = self.a.reshape((10, self.n / 10))
