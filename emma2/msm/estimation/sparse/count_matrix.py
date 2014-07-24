@@ -35,7 +35,6 @@ def count_matrix_mult(dtrajs, lag, sliding=True):
         Z = add_coo_matrix(Z, Zi)
     return make_square_coo_matrix(Z)
 
-
 def count_matrix(dtraj, lag, sliding=True):
     r"""Generate a count matrix from a given list of integers.
 
@@ -79,9 +78,9 @@ def count_matrix(dtraj, lag, sliding=True):
         C=scipy.sparse.coo_matrix((data, (row, col)))
 
     C=C.tocsr().tocoo()
-    C=make_square_coo_matrix(C)
+    if C.shape[0] != C.shape[1]:
+        C=make_square_coo_matrix(C)
     return C
-
 
 def make_square_coo_matrix(A):
     r"""Reshape a COO sparse matrix to a square matrix.
