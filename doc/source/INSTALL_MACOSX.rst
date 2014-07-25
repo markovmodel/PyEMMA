@@ -36,6 +36,7 @@ installed. Note that you may need admin privilegdes to do so.
    update your PATH to point to the installation of new python
 3. If you set a JAVA_HOME environment variable to point to your JDK and use
 
+::
     sudo to install jpype
 
 (inclusive in step 5), make sure to use sudo -E to preserve the JAVA_HOME variable!
@@ -46,18 +47,16 @@ installed. Note that you may need admin privilegdes to do so.
 Building from Source
 ====================
 If you are a developer or want to have optimized builds for your platform, you
-may want to build it from source.
+may want to build it from source. This also involves building scipy and numpy
+from source.
 
 Prequisites
 ^^^^^^^^^^^
  * C/C++ compiler
- * Java Development Kit (at least 1.6)
+ * Fortran compiler
 
-1. Obtain a C/C++ compiler:
-   There is one bundled with Xcode, but you need an Apple Developer ID for that.
-   Try: https://github.com/kennethreitz/osx-gcc-installer/ if you do not want such
-   an ID nor have one. 
-2. obtain a Java JDK (>= 1.6) from http://oracle.com
+You may find this .. _information: http://www.scipy.org/scipylib/building/macosx.htm 
+useful to obtain the neccessary building tools.
 
 Building/Installing
 ^^^^^^^^^^^^^^^^^^^

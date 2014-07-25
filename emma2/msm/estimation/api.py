@@ -1,4 +1,3 @@
-from emma2.msm.estimation.dense.tmatrix_sampler_jwrapper import ITransitionMatrixSampler
 r"""
 ========================
 Emma2 MSM Estimation API
@@ -28,6 +27,7 @@ import dense.covariance
 
 import emma2.util.pystallone as stallone
 from emma2.util.log import getLogger
+from emma2.msm.estimation.dense.tmatrix_sampler_jwrapper import ITransitionMatrixSampler
 
 __author__ = "Benjamin Trendelkamp-Schroer, Martin Scherer, Frank Noe"
 __copyright__ = "Copyright 2014, Computational Molecular Biology Group, FU-Berlin"
@@ -45,13 +45,16 @@ __all__=['bootstrap_trajectories',
          'error_perturbation',
          'largest_connected_set',
          'largest_connected_submatrix',
+         'connected_cmatrix',
          'is_connected',
          'prior_neighbor',
          'prior_const',
          'prior_rev',
          'transition_matrix',
-         'tmatrix_cov',
+         'tmatrix',
          'log_likelihood',
+         'tmatrix_cov',
+         'error_perturbation',
          'tmatrix_sampler']
 
 ################################################################################
@@ -61,8 +64,8 @@ __all__=['bootstrap_trajectories',
 
 
 # DONE: Benjamin 
-def count_matrix(dtraj, lag, sliding=True):
-    r"""Generate a count matrix from given list(s) of integers.
+def count_matrix(dtraj, lag, sliding=True, sparse_return=True):
+    r"""Generate a count matrix from given microstate trajectory.
     
     Parameters
     ----------
@@ -73,21 +76,85 @@ def count_matrix(dtraj, lag, sliding=True):
     sliding : bool, optional
         If true the sliding window approach 
         is used for transition counting.
+    sparse_return : bool (optional)
+        Whether to return a dense or a sparse matrix.
     
     Returns
     -------
     C : scipy.sparse.coo_matrix
         The count matrix at given lag in coordinate list format.
+
+    Notes
+    -----
+    Transition counts can be obtained from microstate trajectory using
+    two methods. Couning at lag and slidingwindow counting.
+
+    **Lag**
+    
+    This approach will skip all points in the trajectory that are
+    seperated form the last point by less than the given lagtime
+    :math:`\tau`.
+
+    Transition counts :math:`c_{ij}(\tau)` are generated according to
+
+    .. math:: c_{ij}(\tau)=\sum_{k=0}^{\left \lfloor \frac{N}{\tau} \right \rfloor -2}\chi_{i}(X_{k\tau})\chi_{j}(X_{(k+1)\tau}).
+
+    :math:`\chi_{i}(x)` is the indicator function of :math:`i`, i.e
+    :math:`\chi_{i}(x)=1` for :math:`x=i` and :math:`\chi_{i}(x)=0` for
+    :math:`x \neq i`.
+
+    **Sliding**
+
+    The sliding approach slides along the trajectory and counts all
+    transitions sperated by the lagtime :math:`\tau`.
+
+    Transition counts :math:`c_{ij}(\tau)` are generated according to
+
+    .. math:: c_{ij}(\tau)=\sum_{k=0}^{N-\tau-1} \chi_{i}(X_{k}) \chi_{j}(X_{k+\tau}).
+
+    References
+    ----------
+    .. [1] Prinz, J H, H Wu, M Sarich, B Keller, M Senne, M Held, J D
+        Chodera, C Schuette and F Noe. 2011. Markov models of
+        molecular kinetics: Generation and validation. J Chem Phys
+        134: 174105
+
+    Examples
+    --------
+    
+    >>> from emma2.msm.estimation import count_matrix
+
+    >>> dtraj=np.array([0, 0, 1, 0, 1, 1, 0])
+    >>> tau=2
+    
+    Use the sliding approach first
+
+    >>> C_sliding=count_matrix(dtraj, tau)
+
+    The generated matrix is a sparse matrix in COO-format. For
+    convenient printing we convert it to a dense ndarray.
+
+    >>> C_sliding.toarray()
+    array([[ 1.,  2.],
+           [ 1.,  1.]])
+
+    Let us compare to the count-matrix we obtain using the lag
+    approach
+    
+    >>> C_lag=count_matrix(dtraj, tau, sliding=False)
+    >>> C_lag.toarray()
+    array([[ 0.,  1.],
+           [ 1.,  1.]])
     
     """
     if type(dtraj) is list:
-        return sparse.count_matrix.count_matrix_mult(dtraj, lag, sliding=sliding)
+        return sparse.count_matrix.count_matrix_mult(dtraj, lag, sliding=sliding, sparse=sparse_return)
     else:
-        return sparse.count_matrix.count_matrix(dtraj, lag, sliding=sliding)
+        return sparse.count_matrix.count_matrix(dtraj, lag, sliding=sliding, sparse=sparse_return)
 
 # DONE: Benjamin 
-def cmatrix(dtraj, lag, sliding=True):
-    r"""Generate a count matrix in from given list(s) of integers.
+def cmatrix(dtraj, lag, sliding=True, sparse_return=True):
+    r"""Generate a count matrix in from given microstate trajectory.
     
     Parameters
     ----------
@@ -98,14 +165,24 @@ def cmatrix(dtraj, lag, sliding=True):
     sliding : bool, optional
         If true the sliding window approach 
         is used for transition counting.
+    sparse_return : bool (optional)
+        Whether to return a dense or a sparse matrix.
     
     Returns
     -------
     C : scipy.sparse.coo_matrix
         The countmatrix at given lag in coordinate list format.
+
+    See also
+    --------
+    count_matrix
+    
+    Notes
+    -----
+    This is a shortcut for a call to count_matrix.
         
     """
-    return count_matrix(dtraj, lag, sliding=sliding)
+    return count_matrix(dtraj, lag, sliding=sliding, sparse_return=True)
 
 # # TODO: Implement in Python directly
 # def count_matrix_cores(dtraj, cores, lag, sliding=True):
@@ -227,7 +304,9 @@ def bootstrap_counts(dtrajs, lagtime):
 
 # DONE: Ben Implement in Python directly
 def connected_sets(C, directed=True):
-    r"""Connected components for a directed graph with edge-weights
+    r"""Compute connected sets of microstates.
+
+    Connected components for a directed graph with edge-weights
     given by the count matrix.
     
     Parameters
@@ -246,10 +325,34 @@ def connected_sets(C, directed=True):
         according to the size of the individual components. The
         largest connected set is the first entry in the list, lcc=cc[0].
     
+    Notes
+    -----    
+    Viewing the count matrix as the adjacency matrix of a (directed) graph
+    the connected components are given by the connected components of that
+    graph. Connected components of a graph can be efficiently computed
+    using Tarjan's algorithm.
+
+    References
+    ----------
+    .. [1] Tarjan, R E. 1972. Depth-first search and linear graph
+        algorithms. SIAM Journal on Computing 1 (2): 146-160.
+
+    Examples
+    --------
+    
+    >>> from emma2.msm.estimation import connected_sets
+
+    >>> C=np.array([10, 1, 0], [2, 0, 3], [0, 0, 4]])
+    >>> cc_directed=connected_sets(C)
+    >>> cc_directed
+    [array([0, 1]), array([2])]
+
+    >>> cc_undirected=connected_sets(C, directed=False)
+    >>> cc_undirected
+    [array([0, 1, 2])]
+    
     """
     if isdense(C):
-        # this should not be necessary because sparse.connectivity in principle works with dense matrices.
-        # however there seems to be a bug for 2x2 matrices, therefore we use this detour
         return sparse.connectivity.connected_sets(csr_matrix(C), directed=directed)
     else:
         return sparse.connectivity.connected_sets(C, directed=directed)
@@ -271,25 +374,46 @@ def largest_connected_set(C, directed=True):
     -------
     lcc : array of integers
         The largest connected component of the directed graph.
+
+    See also
+    --------
+    connected_sets
+
+    Notes
+    -----
+    Viewing the count matrix as the adjacency matrix of a (directed)
+    graph the largest connected set is the largest connected set of
+    nodes of the corresponding graph. The largest connected set of a graph
+    can be efficiently computed using Tarjan's algorithm.
+
+    References
+    ----------
+    .. [1] Tarjan, R E. 1972. Depth-first search and linear graph
+        algorithms. SIAM Journal on Computing 1 (2): 146-160.
+
+    Examples
+    --------
+    
+    >>> from emma2.msm.estimation import largest_connected_set
+
+    >>> C=np.array([10, 1, 0], [2, 0, 3], [0, 0, 4]])
+    >>> lcc_directed=largest_connected_set(C)
+    >>> lcc_directed
+    array([0, 1])
+
+    >>> lcc_undirected=largest_connected_set(C, directed=False)
+    >>> lcc_undirected
+    array([0, 1, 2])
     
     """
     if isdense(C):
-        # this should not be necessary because sparse.connectivity in principle works with dense matrices.
-        # however there seems to be a bug for 2x2 matrices, therefore we use this detour
         return sparse.connectivity.largest_connected_set(csr_matrix(C), directed=directed)
     else:
         return sparse.connectivity.largest_connected_set(C, directed=directed)
 
 # DONE: Ben 
 def largest_connected_submatrix(C, directed=True):
-    r"""Compute the count matrix on the largest connected set.
-    
-    The input count matrix is used as a weight matrix for the
-    construction of a directed graph. The largest connected set of the
-    constructed graph is computed. Vertices belonging to the largest
-    connected component are used to generate a completely connected
-    subgraph. The weight matrix of the subgraph is the desired
-    completely connected count matrix.
+    r"""Compute the count matrix on the largest connected set.   
     
     Parameters
     ----------
@@ -298,28 +422,55 @@ def largest_connected_submatrix(C, directed=True):
     directed : bool, optional
        Whether to compute connected components for a directed or
        undirected graph. Default is True.       
-    
+       
     Returns
     -------
     C_cc : scipy.sparse matrix
         Count matrix of largest completely 
         connected set of vertices (states)
+        
+    See also
+    --------
+    largest_connected_set
+
+    Notes
+    -----
+    Viewing the count matrix as the adjacency matrix of a (directed)
+    graph the larest connected submatrix is the adjacency matrix of
+    the largest connected set of the corresponding graph. The largest
+    connected submatrix can be efficiently computed using Tarjan's algorithm.
+
+    References
+    ----------
+    .. [1] Tarjan, R E. 1972. Depth-first search and linear graph
+        algorithms. SIAM Journal on Computing 1 (2): 146-160.
+
+    Examples
+    --------
     
+    >>> from emma2.msm.estimation import largest_connected_submatrix
+
+    >>> C=np.array([10, 1, 0], [2, 0, 3], [0, 0, 4]])
+
+    >>> C_cc_directed=largest_connected_submatrix(C)
+    >>> C_cc_directed
+    array([[10,  1],
+           [ 2,  0]])
+
+    >>> C_cc_undirected=largest_connected_submatrix(C, directed=False)
+    >>> C_cc_undirected
+    array([[10,  1,  0],
+           [ 2,  0,  3],
+           [ 0,  0,  4]])
+           
     """
     if isdense(C):
-        # this should not be necessary because sparse.connectivity in principle works with dense matrices.
-        # however there seems to be a bug for 2x2 matrices, therefore we use this detour
         return sparse.connectivity.largest_connected_submatrix(csr_matrix(C), directed=directed).toarray()
     else:
         return sparse.connectivity.largest_connected_submatrix(C, directed=directed)
 
-# shortcut
-connected_cmatrix=largest_connected_submatrix
-__all__.append('connected_cmatrix')
-
-# DONE: Jan
-def is_connected(C, directed=True):
-    """Check if C is a countmatrix for a completely connected process.
+def connected_cmatrix(C, directed=True):
+    r"""Compute the count matrix on the largest connected set.   
     
     Parameters
     ----------
@@ -328,17 +479,88 @@ def is_connected(C, directed=True):
     directed : bool, optional
        Whether to compute connected components for a directed or
        undirected graph. Default is True.       
+       
+    Returns
+    -------
+    C_cc : scipy.sparse matrix
+        Count matrix of largest completely 
+        connected set of vertices (states)
+        
+    See also
+    --------
+    largest_connected_submatrix
+
+    Notes
+    -----
+    Shortcut for largest_connected_submatrix.
+
+    Examples
+    --------
     
+    >>> from emma2.msm.estimation import largest_connected_submatrix
+
+    >>> C=np.array([10, 1, 0], [2, 0, 3], [0, 0, 4]])
+
+    >>> C_cc_directed=largest_connected_submatrix(C)
+    >>> C_cc_directed
+    array([[10,  1],
+           [ 2,  0]])
+
+    >>> C_cc_undirected=largest_connected_submatrix(C, directed=False)
+    >>> C_cc_undirected
+    array([[10,  1,  0],
+           [ 2,  0,  3],
+           [ 0,  0,  4]])
+           
+    """
+    return largest_connected_submatrix(C, directed=directed)
+
+# DONE: Jan
+def is_connected(C, directed=True):
+    """Check connectivity of the given matrix.
+    
+    Parameters
+    ----------
+    C : scipy.sparse matrix 
+        Count matrix specifying edge weights.
+    directed : bool, optional
+       Whether to compute connected components for a directed or
+       undirected graph. Default is True.       
+       
     Returns
     -------
     is_connected: bool
-        True if C is countmatrix for a completely connected process
-        False otherwise.
+        True if C is connected, False otherwise.
+        
+    See also
+    --------
+    largest_connected_submatrix
+    
+    Notes
+    -----
+    A count matrix is connected if the graph having the count matrix
+    as adjacency matrix has a single connected component. Connectivity
+    of a graph can be efficiently checked using Tarjan's algorithm.
+    
+    References
+    ----------
+    .. [1] Tarjan, R E. 1972. Depth-first search and linear graph
+        algorithms. SIAM Journal on Computing 1 (2): 146-160.
+        
+    Examples
+    --------
+    
+    >>> from emma2.msm.estimation import is_connected
+    
+    >>> C=np.array([10, 1, 0], [2, 0, 3], [0, 0, 4]])
+    >>> is_connected(C)
+    False
+    
+    >>> is_connected(C)
+    True    
     
     """
     if isdense(C):
-        # this should not be necessary because sparse.connectivity in principle works with dense matrices.
-        # however there seems to be a bug for 2x2 matrices, therefore we use this detour
         return sparse.connectivity.is_connected(csr_matrix(C), directed=directed)
     else:
         return sparse.connectivity.is_connected(C, directed=directed)
@@ -368,11 +590,7 @@ def mapping(set):
 
 # DONE: Frank, Ben
 def prior_neighbor(C, alpha = 0.001):
-    r"""Neighbor prior of strength alpha for the given count matrix.
-    
-    Prior is defined by 
-        b_ij = alpha  if Z_ij+Z_ji > 0
-        b_ij = 0      else
+    r"""Neighbor prior for the given count matrix.    
     
     Parameters
     ----------
@@ -385,7 +603,27 @@ def prior_neighbor(C, alpha = 0.001):
     -------
     B : (M, M) ndarray or scipy.sparse matrix
         Prior count matrix
-        
+
+    Notes
+    ------
+    The neighbor prior :math:`b_{ij}` is defined as
+
+    .. math:: b_{ij}=\left \{ \begin{array}{rl} 
+                     \alpha & c_{ij}+c_{ji}>0 \\
+                     0      & \text{else}
+                     \end{array} \right .
+
+    Examples
+    --------
+    >>> from emma2.msm.estimation import prior_neighbor
+    
+    >>> C=np.array([10, 1, 0], [2, 0, 3], [0, 1, 4]])
+    >>> B=prior_neighbor(C)
+    >>> B
+    array([[ 0.001,  0.001,  0.   ],
+           [ 0.001,  0.   ,  0.001],
+           [ 0.   ,  0.001,  0.001]])
+           
     """
 
     if isdense(C):
@@ -396,11 +634,7 @@ def prior_neighbor(C, alpha = 0.001):
 
 # DONE: Frank, Ben
 def prior_const(C, alpha = 0.001):
-    """Constant prior of strength alpha.
-
-    Prior is defined via
-
-        b_ij=alpha for all i,j
+    r"""Constant prior for given count matrix.
     
     Parameters
     ----------
@@ -412,8 +646,26 @@ def prior_const(C, alpha = 0.001):
     Returns
     -------
     B : (M, M) ndarray 
-        Prior count matrix    
-        
+        Prior count matrix 
+
+    Notes
+    -----
+    The prior is defined as 
+
+    .. math:: \begin{array}{rl} b_{ij}= \alpha & \forall i, j \end{array}
+
+    Examples
+    --------
+
+    >>> from emma2.msm.estimation import prior_const
+    
+    >>> C=np.array([10, 1, 0], [2, 0, 3], [0, 1, 4]])
+    >>> B=prior_const(C)
+    >>> B
+    array([[ 0.001,  0.001,  0.001],
+           [ 0.001,  0.001,  0.001],
+           [ 0.001,  0.001,  0.001]])
+           
     """
     if isdense(C):
         return sparse.prior.prior_const(C, alpha=alpha)
@@ -433,12 +685,6 @@ def prior_rev(C, alpha=-1.0):
     b_ij= alpha if i<=j
     b_ij=0         else
 
-    The reversible prior adds -1 to the upper triagular part of
-    the given count matrix. This prior respects the fact that
-    for a reversible transition matrix the degrees of freedom
-    correspond essentially to the upper, respectively the lower
-    triangular part of the matrix.
-
     Parameters
     ----------
     C : (M, M) ndarray or scipy.sparse matrix
@@ -449,8 +695,34 @@ def prior_rev(C, alpha=-1.0):
     Returns
     -------
     B : (M, M) ndarray
-        Matrix of prior counts        
-    
+        Matrix of prior counts     
+
+    Notes
+    -----
+    The reversible prior is a matrix with -1 on the upper triangle.
+    Adding this prior respects the fact that
+    for a reversible transition matrix the degrees of freedom
+    correspond essentially to the upper triangular part of the matrix.
+
+    The prior is defined as
+
+    .. math:: b_{ij} = \left \{ \begin{array}{rl}
+                       \alpha & i \leq j \\
+                       0      & \text{elsewhere}
+                       \end{array} \right .
+                       
+    Examples
+    --------
+
+    >>> from emma2.msm.estimation import prior_rev
+
+    >>> C=np.array([10, 1, 0], [2, 0, 3], [0, 1, 4]])
+    >>> B=prior_const(C)
+    >>> B
+    array([[-1., -1., -1.],
+           [ 0., -1., -1.],
+           [ 0.,  0., -1.]])
+           
     """
     if isdense(C):
         return sparse.prior.prior_rev(C, alpha=alpha)
@@ -466,13 +738,9 @@ def prior_rev(C, alpha=-1.0):
 # DONE: Frank implemented dense (Nonreversible + reversible with fixed pi)
 # DONE: Jan Implement in Python directly (Nonreversible)
 # Done: Martin Map to Stallone (Reversible)
+# Done: Ben (Fix docstrings)
 def transition_matrix(C, reversible=False, mu=None, **kwargs):
-    """
-    Estimate the transition matrix from the given countmatrix.
-    
-    The transition matrix is a maximum likelihood estimate (MLE)
-    of the probability distribution of transition matrices
-    with parameters given by the count matrix.
+    r"""Estimate the transition matrix from the given countmatrix.   
     
     Parameters
     ----------
@@ -486,7 +754,7 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
     mu : array_like
         The stationary distribution of the MLE transition matrix.
     **kwargs: Optional algorithm-specific parameters. See below for special cases
-    Xinit = None : ndarray (n,n)
+    Xinit : (M, M) ndarray 
         Optional parameter with reversible = True.
         initial value for the matrix of absolute transition probabilities. Unless set otherwise,
         will use X = diag(pi) t, where T is a nonreversible transition matrix estimated from C,
@@ -509,7 +777,7 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
     
     Returns
     -------
-    P : numpy ndarray, shape=(n, n) or scipy.sparse matrix
+    P : (M, M) ndarray or scipy.sparse matrix
        The MLE transition matrix. P has the same data type (dense or sparse) 
        as the input matrix C.
     The reversible estimator returns by default only P, but may also return
@@ -524,6 +792,51 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
     (pi_changes) : ndarray (k)
         history of likelihood history. Has the length of the number of iterations needed. 
         Only returned if return_conv = True
+
+    Notes
+    -----
+    The transition matrix is a maximum likelihood estimate (MLE) of
+    the probability distribution of transition matrices with
+    parameters given by the count matrix.
+
+    References
+    ----------
+    .. [1] Prinz, J H, H Wu, M Sarich, B Keller, M Senne, M Held, J D
+        Chodera, C Schuette and F Noe. 2011. Markov models of
+        molecular kinetics: Generation and validation. J Chem Phys
+        134: 174105
+
+    Examples
+    --------
+
+    >>> from emma2.msm.estimation import transition_matrix
+
+    >>> C=np.array([10, 1, 1], [2, 0, 3], [0, 1, 4]])
+
+    Non-reversible estimate
+
+    >>> T_nrev=transition_matrix(C)
+    >>> T_nrev
+    array([[ 0.83333333,  0.08333333,  0.08333333],
+           [ 0.33333333,  0.16666667,  0.5       ],
+           [ 0.        ,  0.2       ,  0.8       ]])
+
+    Reversible estimate
+
+    >>> T_rev=transition_matrix(C)
+    >>> T_rev
+    array([[ 0.83333333,  0.10385552,  0.06281115],
+           [ 0.29228896,  0.16666667,  0.54104437],
+           [ 0.04925323,  0.15074676,  0.80000001]])
+
+    Reversible estimate with given stationary vector
+
+    >>> mu=np.array([0.7, 0.01, 0.29])
+    >>> T_mu=transition_matrix(C, reversible=True, mu=mu)
+    >>> T_mu    
+    array([[ 0.94841372,  0.00534691,  0.04623938],
+           [ 0.37428347,  0.12715063,  0.4985659 ],
+           [ 0.11161229,  0.01719193,  0.87119578]])
     
     """
     if (issparse(C)):
@@ -558,46 +871,93 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
         else:
             raise NotImplementedError('nonreversible mle with fixed stationary distribution not implemented.')
 
-tmatrix = transition_matrix
-__all__.append('tmatrix')
-
-# DONE: Ben 
-def tmatrix_cov(C, k=None):
-    r"""Nonreversible covariance matrix of transition matrix
+def tmatrix(C, reversible=False, mu=None, **kwargs):
+    r"""Estimate the transition matrix from the given countmatrix.   
     
     Parameters
     ----------
-    C : scipy.sparse matrix
+    C : numpy ndarray or scipy.sparse matrix
         Count matrix
-    k : int (optional)
-        If set, only the covariance matrix for this row is returned
-       
+    reversible : bool (optional)
+        If True restrict the ensemble of transition matrices
+        to those having a detailed balance symmetry otherwise
+        the likelihood optimization is carried out over the whole
+        space of stochastic matrices.
+    mu : array_like
+        The stationary distribution of the MLE transition matrix.
+        
     Returns
     -------
-    cov : 
-        
-    """ 
-    if issparse(C):
-        warnings.warn("Covariance matrix will be dense for sparse input")
-        C=C.toarray()
-    return dense.covariance.tmatrix_cov(C, row=k)
+    P : (M, M) ndarray or scipy.sparse matrix
+       The MLE transition matrix.
+       
+    See also
+    --------
+    transition_matrix
+    
+    Notes
+    -----
+    Shortcut for transition_matrix.
+    
+    """
+    return transition_matrix(C, reversible=reversible, mu=mu, **kwargs)
 
-# DONE: FN+Jan Implement in Python directly
+# DONE: FN+Jan+Ben Implement in Python directly
 def log_likelihood(C, T):
     r"""Log-likelihood of the count matrix given a transition matrix.
 
     Parameters
     ----------
-    C : scipy.sparse matrix
+    C : (M, M) ndarray or scipy.sparse matrix
         Count matrix
-    T : scipy.sparse matrix
+    T : (M, M) ndarray orscipy.sparse matrix
         Transition matrix
-
+        
     Returns
     -------
     logL : float
-        Log-likelihood of the count matrix           
-    
+        Log-likelihood of the count matrix
+
+    Notes
+    -----
+        
+    The likelihood of a set of observed transition counts
+    :math:`C=(c_{ij})` for a given matrix of transition counts
+    :math:`T=(t_{ij})` is given by 
+
+    .. math:: L(C|P)=\prod_{i=1}^{M} \left( \prod_{j=1}^{M} p_{ij}^{c_{ij}} \right)
+
+    The log-likelihood is given by
+
+    .. math:: l(C|P)=\sum_{i,j=1}^{M}c_{ij} \log p_{ij}.
+
+    The likelihood describes the probability of making an observation
+    :math:`C` for a given model :math:`P`.
+
+    Examples
+    --------
+
+    >>> from emma2.msm.estimation import log_likelihood
+
+    >>> T=np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
+
+    >>> C=np.array([[58, 7, 0], [6, 0, 4], [0, 3, 21]])
+    >>> logL=log_likelihood(C, T)
+    >>> logL
+    -38.280803472508182    
+
+    >>> C=np.array([[58, 20, 0], [6, 0, 4], [0, 3, 21]])
+    >>> logL=log_likelihood(C, T)
+    >>> logL
+    -68.214409681430766
+
+    References
+    ----------
+    .. [1] Prinz, J H, H Wu, M Sarich, B Keller, M Senne, M Held, J D
+        Chodera, C Schuette and F Noe. 2011. Markov models of
+        molecular kinetics: Generation and validation. J Chem Phys
+        134: 174105     
+        
     """
     if issparse(C) and issparse(T):
         return sparse.likelihood.log_likelihood(C, T)
@@ -614,30 +974,96 @@ def log_likelihood(C, T):
         nz = np.nonzero(T)
         return np.dot(C[nz], np.log(T[nz]))
 
-
-# TODO: this function can be mixed dense/sparse, so maybe we should
-# change the place for this function.
-def error_perturbation(C, sensitivity):
-    r"""Compute error perturbation.
+# DONE: Ben 
+def tmatrix_cov(C, k=None):
+    r"""Covariance tensor for non-reversible transition matrix posterior.
     
     Parameters
     ----------
-    C : count matrix 
-    sensitivity : sensitivity matrix or tensor of
-        size (m x n x n) where m is the dimension of the target
-        quantity and (n x n) is the size of the transition matrix.
-        The sensitivity matrix should be evaluated at an appropriate
-        maximum likelihood or mean of the transition matrix estimated
-        from C.
-
+    C : (M, M) ndarray or scipy.sparse matrix
+        Count matrix
+    k : int (optional)
+        Return only covariance matrix for entires in the k-th row of
+        the transition matrix
+       
     Returns
     -------
-    cov : (m x m) covariance matrix of the target quantity
+    cov : (M, M, M) ndarray
+        Covariance tensor for transition matrix posterior
+
+    Notes
+    -----
+    The posterior of non-reversible transition matrices is 
+
+    .. math:: \mathbb{P}(T|C) \propto \prod_{i=1}^{M} \left( \prod_{j=1}^{M} p_{ij}^{c_{ij}} \right)
+
+    Each row in the transition matrix is distributed according to a
+    Dirichlet distribution with parameters given by the observed
+    transition counts :math:`c_{ij}`.
+
+    The covariance tensor
+    :math:`\text{cov}[p_{ij},p_{kl}]=\Sigma_{i,j,k,l}` is zero
+    whenever :math:`i \neq k` so that only :math:`\Sigma_{i,j,i,l}` is
+    returned.
+        
+    """ 
+    if issparse(C):
+        warnings.warn("Covariance matrix will be dense for sparse input")
+        C=C.toarray()
+    return dense.covariance.tmatrix_cov(C, row=k)
+
+# DONE: Ben
+def error_perturbation(C, S):
+    r"""Error perturbation for given sensitivity matrix.
+
+    Parameters
+    ----------
+    C : (M, M) ndarray
+        Count matrix
+    S : (M, M) ndarray or (K, M, M) ndarray
+        Sensitivity matrix (for scalar observable) or sensitivity
+        tensor for vector observable
+        
+    Returns
+    -------
+    X : float or (K, K) ndarray
+        error-perturbation (for scalar observables) or covariance matrix
+        (for vector-valued observable)
+
+    Notes
+    -----
+
+    **Scalar observable**
+
+    The sensitivity matrix :math:`S=(s_{ij})` of a scalar observable
+    :math:`f(T)` is defined as
+
+    .. math:: S= \left(\left. \frac{\partial f(T)}{\partial t_{ij}} \right \rvert_{T_0} \right)
+
+    evaluated at a suitable transition matrix :math:`T_0`.
+
+    The sensitivity is the variance of the observable 
+
+    .. math:: \mathbb{V}(f)=\sum_{i,j,k,l} s_{ij} \text{cov}[t_{ij}, t_{kl}] s_{kl}
+
+    **Vector valued observable**
+
+    The sensitivity tensor :math:`S=(s_{ijk})` for a vector
+    valued observable :math:`(f_1(T),\dots,f_K(T))` is defined as
+
+    .. math:: S= \left( \left. \frac{\partial f_i(T)}{\partial t_{jk}} \right\rvert_{T_0} \right)
+    evaluated at a suitable transition matrix :math:`T_0`.
+
+    The sensitivity is the covariance matrix for the observable 
+
+    .. math:: \text{cov}[f_{\alpha}(T),f_{\beta}(T)]=\sum_{i,j,k,l} s_{\alpha i j} \text{cov}[t_{ij}, t_{kl}] s_{\beta kl}
     
     """
-    if isdense(C):
-        C=csr_matrix(C)
-    return sparse.transition_matrix.error_perturbation(C, sensitivity)
+
+    if issparse(C):
+        warnings.warn("Error-perturbation will be dense for sparse input")
+        C=C.toarray()
+    return dense.covariance.error_perturbation(C, S)
 
 def _showSparseConversionWarning():
     warnings.warn('Converting input to dense, since method is '
@@ -649,7 +1075,7 @@ def tmatrix_sampler(C, reversible=False, mu=None, T0=None):
     
     Parameters
     ----------
-    C : ndarray, shape=(n, n) or scipy.sparse matrix
+    C : (M, M) ndarray or scipy.sparse matrix
         Count matrix
     reversible : bool
         If true sample from the ensemble of transition matrices
@@ -664,6 +1090,37 @@ def tmatrix_sampler(C, reversible=False, mu=None, T0=None):
     Returns
     -------
     sampler : A :py:class:dense.ITransitionMatrixSampler object.
+
+    Notes
+    -----
+    The transition matrix sampler generates transition matrices from
+    the posterior distribution. The posterior distribution is given as
+    a product of Dirichlet distributions
+
+    .. math:: \mathbb{P}(T|C) \propto \prod_{i=1}^{M} \left( \prod_{j=1}^{M} p_{ij}^{c_{ij}} \right)
+
+    The method can generate samples from the posterior under the follwing two constraints
+    
+    **Reversible sampling**
+
+    Using a MCMC sampler outlined in .. [1] it is ensured that samples
+    from the posterior are reversible, i.e. there is a probability
+    vector :math:`(\mu_i)` such that :math:`\mu_i t_{ij} = \mu_j
+    t_{ji}` holds for all :math:`i,j`.
+
+    **Reversible sampling with fixed stationary vector**
+
+    Using a MCMC sampler outlined in .. [2] it is ensured that samples
+    from the posterior fulfill detailed balance with respect to a given 
+    probability vector :math:`(\mu_i)`.
+
+    References
+    ----------
+    .. [1] Noe, F. 2008. Probability distributions of molecular observables
+        computed from Markov state models. J Chem Phys 128: 244103.
+    .. [2] Trendelkamp-Schroer, B and F Noe. 2013. Efficient Bayesian estimation
+        of Markov model transition matrices with given stationary distribution.
+        J Chem Phys 138: 164113.
     
     """
     if issparse(C):

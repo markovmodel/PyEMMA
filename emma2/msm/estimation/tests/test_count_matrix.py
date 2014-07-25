@@ -48,7 +48,7 @@ class TestCountMatrix(unittest.TestCase):
         self.B3_sliding=np.array([[2, 1], [0, 1]])
 
         """Larger test cases"""
-        self.S_long=np.loadtxt(testpath + 'dtraj.dat')
+        self.S_long=np.loadtxt(testpath + 'dtraj.dat').astype(int)
         self.C1_lag=np.loadtxt(testpath + 'C_1_lag.dat')
         self.C7_lag=np.loadtxt(testpath + 'C_7_lag.dat')
         self.C13_lag=np.loadtxt(testpath + 'C_13_lag.dat')
