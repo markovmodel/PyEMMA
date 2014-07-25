@@ -26,4 +26,4 @@ Java/Python-Bridge
 ==================
 
 .. toctree::
-   generated/JavaDirectMemoryAccess
+   generated/JavaPythonBridge

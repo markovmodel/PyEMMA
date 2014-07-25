@@ -215,6 +215,9 @@ def ec_geometric_series(p0, T, n):
         T_sum=np.dot(np.dot(R, D_sum), np.conjugate(np.transpose(L)))
         p_sum=np.dot(p0, T_sum)
         EC=p_sum[:,np.newaxis]*T
+        """Truncate imginary part - which is zero, but we want real
+        return values"""
+        EC=EC.real
         return EC
         
 

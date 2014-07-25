@@ -1,0 +1,6 @@
+This directory contains the Stallone library as Java jar file and JNI headers
+to build Jpype on the fly, when the setup of this package is invoked.
+
+To obtain the source code of Stallone have a look at:
+
+https://bitbucket.org/cmb_fu/stallone

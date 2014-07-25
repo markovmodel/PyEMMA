@@ -40,8 +40,8 @@ versioneer.tag_prefix = '' # tags are like 1.2.0
 versioneer.parentdir_prefix = 'emma2-' # dirname like 'myproject-1.2.0'
 
 
-cocovar_module = Extension('emma2.coordinates.cocovar',
-                            sources = ['extensions/cocovar.c'])
+cocovar_module = Extension('emma2.coordinates.transform.cocovar',
+                            sources = ['emma2/coordinates/transform/cocovar.c'])
 
 from distutils.command.build_ext import build_ext
 class np_build(build_ext):

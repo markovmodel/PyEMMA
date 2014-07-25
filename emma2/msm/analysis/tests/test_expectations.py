@@ -13,7 +13,7 @@ import scipy.linalg
 import scipy.sparse
 import scipy.sparse.linalg
 
-from emma2.util.numeric import diags
+from emma2.util.numeric import diags, choice
 from emma2.msm.analysis import expected_counts, expected_counts_stationary
 
 ################################################################################
@@ -42,17 +42,18 @@ class TestExpectedCountsDense(unittest.TestCase):
         T=self.T
 
         N=20
-        EC_n=expected_counts(p0, T, N)
+        EC_n=expected_counts(T, p0, N)
 
         """
         If p0 is the stationary vector the computation can
         be carried out by a simple multiplication
         """        
         EC_true=N*self.mu[:,np.newaxis]*T
+
         self.assertTrue(np.allclose(EC_true, EC_n))
 
         N=2000
-        EC_n=expected_counts(p0, T, N)
+        EC_n=expected_counts(T, p0, N)
 
         """
         If p0 is the stationary vector the computation can
@@ -63,7 +64,7 @@ class TestExpectedCountsDense(unittest.TestCase):
 
         """Zero length chain"""
         N=0
-        EC_n=expected_counts(p0, T, N)
+        EC_n=expected_counts(T, p0, N)
         EC_true=np.zeros(T.shape)
         self.assertTrue(np.allclose(EC_true, EC_n))
 
@@ -112,7 +113,7 @@ def random_orthonormal_sparse_vectors(d, k):
     v[i]=k^{-1/2} for i in {i_1,...,i_k} and zero elsewhere.
 
     """
-    indices=np.random.choice(d, replace=False, size=(k*k))
+    indices=choice(d, replace=False, size=(k*k))
     indptr=np.arange(0, k*(k+1), k)
     values=1.0/np.sqrt(k)*np.ones(k*k)
     return scipy.sparse.csc_matrix((values, indices, indptr))  
@@ -182,7 +183,7 @@ class TestExpectedCountsSparse(unittest.TestCase):
         T=self.T_sparse        
         p0=self.mu_sparse
 
-        EC_n=expected_counts(p0, T, N)
+        EC_n=expected_counts(T, p0, N)
 
         D_mu=diags(self.mu_sparse, 0)
         EC_true=N*D_mu.dot(T)

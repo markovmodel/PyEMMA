@@ -9,9 +9,11 @@ Dense matrices are represented by numpy.ndarrays throughout this module.
 """
 
 import numpy as np
+import warnings
+
 from scipy.linalg import eig, eigvals, solve, lu_factor, lu_solve
 from emma2.util.exceptions import SpectralWarning, ImaginaryEigenValueWarning
-import warnings
+from emma2.util.numeric import isclose
 
 def backward_iteration(A, mu, x0, tol=1e-14, maxiter=100):
     r"""Find eigenvector to approximate eigenvalue via backward iteration.
@@ -125,7 +127,11 @@ def eigenvalues(T, k=None):
         n is the length of the given tuple of eigenvalue indices.
 
     """
-    evals = np.sort(eigvals(T))[::-1]
+    evals=eigvals(T)
+    """Sort by decreasing absolute value"""
+    ind=np.argsort(np.abs(evals))[::-1]
+    evals=evals[ind]
+
     if isinstance(k, (list, set, tuple)):
         try:
             return [evals[n] for n in k]
@@ -231,8 +237,7 @@ def rdl_decomposition(T, k=None, norm='standard'):
         
         """l1- normalization of L[:, 0]"""
         R[:, 0]=R[:, 0]*np.sum(L[:, 0])
-        L[:, 0]=L[:, 0]/np.sum(L[:, 0])
-        
+        L[:, 0]=L[:, 0]/np.sum(L[:, 0])        
 
         if k is None:
             return R, D, np.transpose(L)
@@ -247,17 +252,18 @@ def rdl_decomposition(T, k=None, norm='standard'):
         nu=solve(A, b)
         mu=nu/np.sum(nu)
 
-        """Make the first right eigenvector the constant one vector"""
-        R[:, 0]=R[:, 0]*np.sum(nu)
+        """Ensure that R[:,0] is positive"""
+        R[:,0]=R[:,0]/np.sign(R[0,0])
 
         """Use mu to connect L and R"""
         L=mu[:, np.newaxis]*R
 
         """Compute overlap"""
-        ov=np.diag(np.dot(np.transpose(L), R))
+        s=np.diag(np.dot(np.transpose(L), R))
 
-        """Renormalize the left eigenvectors to ensure L'R=Id"""
-        L=L/ov[np.newaxis, :]
+        """Renormalize left-and right eigenvectors to ensure L'R=Id"""
+        R=R/np.sqrt(s[np.newaxis, :])
+        L=L/np.sqrt(s[np.newaxis, :])
 
         if k is None:
             return R, D, np.transpose(L)
@@ -314,12 +320,12 @@ def timescales_from_eigenvalues(eval, tau=1):
     """
     
     """Check for dominant eigenvalues with large imaginary part"""
+
     if not np.allclose(eval.imag, 0.0):
-        warnings.warn('Using eigenvalues with non-zero imaginary part '
-                      'for implied time scale computation', ImaginaryEigenValueWarning)
+        warnings.warn('Using eigenvalues with non-zero imaginary part', ImaginaryEigenValueWarning)
 
     """Check for multiple eigenvalues of magnitude one"""
-    ind_abs_one=np.isclose(np.abs(eval), 1.0)
+    ind_abs_one=isclose(np.abs(eval), 1.0)
     if sum(ind_abs_one)>1:
         warnings.warn('Multiple eigenvalues with magnitude one.', SpectralWarning)
 
