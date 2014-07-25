@@ -119,9 +119,9 @@ def bootstrap_counts(dtrajs, lagtime):
     lengths = determine_lengths(dtrajs)
     Lmax = np.max(lengths)
     Ltot = np.sum(lengths)
-    if (lagtime > Lmax):
+    if (lagtime >= Lmax):
         raise ValueError('Cannot estimate count matrix: lag time '
-                         +str(lagtime)+' is longer than the longest trajectory length'+str(Lmax))
+                         +str(lagtime)+' is longer than the longest trajectory length '+str(Lmax))
     nsample = int(Ltot / lagtime)
 
     # determine number of states n
