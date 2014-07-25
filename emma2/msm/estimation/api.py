@@ -22,6 +22,7 @@ import sparse.likelihood
 import sparse.transition_matrix
 import sparse.prior
 
+import dense.bootstrapping
 import dense.transition_matrix
 import dense.covariance
 
@@ -36,7 +37,9 @@ __version__ = "2.0.0"
 __maintainer__ = "Martin Scherer"
 __email__="m.scherer AT fu-berlin DOT de"
 
-__all__=['count_matrix',
+__all__=['bootstrap_trajectories',
+         'bootstrap_counts',
+         'count_matrix',
          'cmatrix', 
          'connected_sets',
          'error_perturbation',
@@ -54,6 +57,8 @@ __all__=['count_matrix',
 ################################################################################
 # Count matrix
 ################################################################################
+
+
 
 # DONE: Benjamin 
 def count_matrix(dtraj, lag, sliding=True):
@@ -102,16 +107,16 @@ def cmatrix(dtraj, lag, sliding=True):
     """
     return count_matrix(dtraj, lag, sliding=sliding)
 
-# TODO: Implement in Python directly
-def count_matrix_cores(dtraj, cores, lag, sliding=True):
-    r"""Generate a countmatrix for the milestoning process on the
-    given core sets.
-    
-    """
-    raise NotImplementedError('Not implemented.')
-
-# shortcut
-cmatrix_cores=count_matrix_cores
+# # TODO: Implement in Python directly
+# def count_matrix_cores(dtraj, cores, lag, sliding=True):
+#     r"""Generate a countmatrix for the milestoning process on the
+#     given core sets.
+#     
+#     """
+#     raise NotImplementedError('Not implemented.')
+# 
+# # shortcut
+# cmatrix_cores=count_matrix_cores
 
 
 
@@ -121,23 +126,26 @@ cmatrix_cores=count_matrix_cores
 
 def bootstrap_trajectories(trajs, correlation_length):
     """
-    Generates a randomly resampled count matrix given the input coordinates.
+    Generates a randomly resampled trajectory segments
 
     This function can be called multiple times in order to generate randomly
-    resampled realizations of count matrices. For each of these realizations 
-    you can estimate a transition matrix, and from each of them computing the 
-    observables of your interest. The standard deviation of such a sample of 
+    resampled trajectory data. In order to compute error bars on your observable
+    of interest, call this function to generate resampled trajectories, and 
+    put them into your estimator. The standard deviation of such a sample of 
     the observable is a model for the standard error.
 
     Implements a moving block bootstrapping procedure [1]_ for generation of 
-    randomly resampled count matrixes from discrete trajectories. The time scale
+    randomly resampled count matrixes from discrete trajectories. The corrlation length
     determines the size of trajectory blocks that will remain contiguous. 
-    For a single trajectory N with timescale T, we will sample floor(N/T) 
-    subtrajectories of length T using starting time t. t is a uniform random
-    number in [0, N-T-1]. 
+    For a single trajectory N with correlation length t_corr < N, 
+    we will sample floor(N/t_corr) subtrajectories of length t_corr using starting time t. 
+    t is a uniform random number in [0, N-t_corr-1]. 
     When multiple trajectories are available, N is the total number of timesteps
-    over all trajectories, and the starting points are uniformly generated over all
-    trajectory timesteps that are N-T-1 steps before a trajectory end.
+    over all trajectories, the algorithm will generate resampled data with a total number
+    of N (or slightly larger) time steps. Each trajectory of length n_i has a probability 
+    of n_i to be selected. Trajectories of length n_i <= t_corr are returned completely.
+    For longer trajectories, segments of length t_corr are randomly generated.
+
     Note that like all error models for correlated time series data, Bootstrapping 
     just gives you a model for the error given a number of assumptions [2]_. The most 
     critical decisions are: (1) is this approach meaningful at all (only if the 
@@ -157,7 +165,7 @@ def bootstrap_trajectories(trajs, correlation_length):
     correlation_length : int
         Correlation length (also known as the or statistical inefficiency) of the data.
         If set to < 1 or > L, where L is the longest trajectory length, the 
-        bootstrapping will use individual trajectories.
+        bootstrapping will sample full trajectories.
         We suggest to select the largest implied timescale or relaxation timescale as a 
         conservative estimate of the correlation length. If this timescale is unknown, 
         it's suggested to use full trajectories (set timescale to < 1) or come up with 
@@ -181,7 +189,7 @@ def bootstrap_trajectories(trajs, correlation_length):
     return dense.bootstrapping.bootstrap_trajectories(trajs, correlation_length)
 
 
-def bootstrap_counts(dtrajs, correlation_length, lagtime):
+def bootstrap_counts(dtrajs, lagtime):
     """
     Generates a randomly resampled count matrix given the input coordinates.
 
@@ -191,6 +199,11 @@ def bootstrap_counts(dtrajs, correlation_length, lagtime):
     observables of your interest. The standard deviation of such a sample of 
     the observable is a model for the standard error.
     
+    The bootstrap will be generated by sampling N/lagtime counts at time
+    tuples (t, t+lagtime), where t is uniformly sampled over all trajectory
+    time frames in [0,n_i-lagtime]. Here, n_i is the length of trajectory i
+    and N = sum_i n_i is the total number of frames.
+    
     Parameters:
     -----------
     dtrajs : array-like or array-like of array-like
@@ -198,19 +211,14 @@ def bootstrap_counts(dtrajs, correlation_length, lagtime):
         a statistically independent realization. Note that this is often not true and 
         is a weakness with the present bootstrapping approach.
             
-    correlation_length : int
-        Correlation length (also known as the or statistical inefficiency) of the data.
-        If set to < 1 or > L, where L is the longest trajectory length, the 
-        bootstrapping will use individual trajectories.
-
     lagtime : int
         the lag time at which the count matrix will be evaluated
 
     See also
     --------
-    bootstrap_subtrajectories for general notes on bootstrapping
+    bootstrap_trajectories for general notes on bootstrapping
     """
-    return dense.bootstrapping.bootstrap_counts(dtrajs, correlation_length, lagtime)
+    return dense.bootstrapping.bootstrap_counts(dtrajs, lagtime)
 
 
 ################################################################################

@@ -139,6 +139,21 @@ def createtransform_minrmsd(X):
     return T
 
 
+def createtransform_concat(*args):
+    """
+    
+    """
+
+
+def createtransform_select_slow(transform, N, lag=1):
+    """
+    Selects the slowest degrees of freedom from the given transform.
+    
+    Examples:
+    ---------
+    
+    """
+
 
 # def custom_evaluate(crd, f):
 #     """
