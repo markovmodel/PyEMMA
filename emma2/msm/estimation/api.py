@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 r"""
 ========================
 Emma2 MSM Estimation API
@@ -252,14 +253,14 @@ def bootstrap_trajectories(trajs, correlation_length):
         implied timescale is an upper bound for that correlation length, and therefore 
         a conservative estimate [4]_.
     
-    [1] H. R. Künsch. The jackknife and the bootstrap for general stationary 
+    [1] H. R. Kuensch. The jackknife and the bootstrap for general stationary 
         observations,
         Ann. Stat. 3, 1217-41 (1989). 
     [2] B. Efron. Bootstrap methods: Another look at the jackknife. 
         Ann. Statist. 7 1–26 (1979).
     [3] T.W. Anderson. The Statistical Analysis of Time Series
         Wiley, New York (1971).
-    [4] F. Noé and F. Nüske: A variational approach to modeling slow processes 
+    [4] F. Noe and F. Nueske: A variational approach to modeling slow processes 
         in stochastic dynamical systems. 
         SIAM Multiscale Model. Simul., 11 . pp. 635-655 (2013).
     """
