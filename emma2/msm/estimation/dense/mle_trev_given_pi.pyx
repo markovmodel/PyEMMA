@@ -2,7 +2,7 @@ import numpy
 cimport numpy
 
 cdef extern from "_mle_trev_given_pi.h":
-  int _mle_trev_given_pi_sparse(double * const T, const long long * const C, const double * const mu, const int n, double maxerr, const int maxiter, const double eps)
+  int _mle_trev_given_pi_dense(double * const T, const long long * const C, const double * const mu, const int n, double maxerr, const int maxiter, const double eps)
 
 def mle_trev_given_pi(
   C,
@@ -23,7 +23,7 @@ def mle_trev_given_pi(
 
   cdef numpy.ndarray[double, ndim=2, mode="c"] T = numpy.zeros_like(c_C,dtype=numpy.double,order='C')
   
-  err = _mle_trev_given_pi_sparse(
+  err = _mle_trev_given_pi_dense(
         <double*> numpy.PyArray_DATA(T),
         <long long*> numpy.PyArray_DATA(c_C),
         <double*> numpy.PyArray_DATA(c_mu),

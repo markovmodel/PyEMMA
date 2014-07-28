@@ -44,10 +44,15 @@ cocovar_module = Extension('emma2.coordinates.transform.cocovar',
                             sources = ['emma2/coordinates/transform/cocovar.c'])
 
 # see also http://docs.cython.org/src/reference/compilation.html#distributing-cython-modules
-mle_trev_given_pi_module = Extension('emma2.msm.estimation.sparse.mle_trev_given_pi', 
-                                     sources=['emma2/msm/estimation/sparse/mle_trev_given_pi.pyx', 'emma2/msm/estimation/sparse/_mle_trev_given_pi.c'],
-                                     extra_compile_args = ['-fopenmp','-march=native'],
-                                     libraries = ['gomp'])
+mle_trev_given_pi_dense_module = Extension('emma2.msm.estimation.dense.mle_trev_given_pi', 
+                                           sources=['emma2/msm/estimation/dense/mle_trev_given_pi.pyx', 'emma2/msm/estimation/dense/_mle_trev_given_pi.c'],
+                                           extra_compile_args = ['-fopenmp','-march=native'],
+                                           libraries = ['gomp'])
+
+mle_trev_given_pi_sparse_module = Extension('emma2.msm.estimation.sparse.mle_trev_given_pi', 
+                                            sources=['emma2/msm/estimation/sparse/mle_trev_given_pi.pyx', 'emma2/msm/estimation/sparse/_mle_trev_given_pi.c'],
+                                            extra_compile_args = ['-march=native'])
+
 
 from distutils.command.build_ext import build_ext
 class np_build(build_ext):
@@ -147,7 +152,7 @@ metadata = dict(
                       sdist = versioneer.cmd_sdist,
                       ),
       #ext_modules = cythonize([cocovar_module,mle_trev_given_pi_module]),
-      ext_modules = [cocovar_module]+cythonize([mle_trev_given_pi_module]),
+      ext_modules = [cocovar_module]+cythonize([mle_trev_given_pi_dense_module,mle_trev_given_pi_sparse_module]),
       setup_requires = ['numpy >= 1.6.0'],
       tests_require = [],
       # runtime dependencies
