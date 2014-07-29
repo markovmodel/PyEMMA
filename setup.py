@@ -161,8 +161,9 @@ metadata = dict(
       tests_require = [],
       # runtime dependencies
       install_requires = ['numpy >= 1.6.0',
-                         'scipy >= 0.11',
-                         'JPype1 >= 0.5.5'],
+                          'scipy >= 0.11',
+                          'JPype1 >= 0.5.5',
+                          'cython >= 0.20.1'],
 )
 
 setup(**metadata)
