@@ -863,7 +863,7 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
                 # Sparse, reversible, fixed pi (currently using dense with sparse conversion)
                 try:
                     import sparse.mle_trev_given_pi
-                    return csr_matrix(sparse.mle_trev_given_pi.mle_trev_given_pi(C,mu,**kwargs))
+                    return sparse.mle_trev_given_pi.mle_trev_given_pi(C, mu,**kwargs)
                 except ImportError:
                     return csr_matrix(dense.transition_matrix.transition_matrix_reversible_fixpi(C.toarray(), mu,**kwargs))
             else:
