@@ -20,7 +20,7 @@ class Test_mle_trev_given_pi(unittest.TestCase):
             pi /= sum(pi)   
 
             T_cython_dense = mtrgpd(C,pi,eps=self.eps)
-            T_cython_sparse = mtrgps(C,pi,eps=self.eps).toarray()
+            T_cython_sparse = mtrgps(scipy.sparse.csr_matrix(C),pi,eps=self.eps).toarray()
 
             Cf  = C.astype(float)
             for i in xrange(n):
