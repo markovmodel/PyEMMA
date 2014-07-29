@@ -9,12 +9,12 @@ def mle_trev_given_pi(
   mu,
   double maxerr = 1.0E-12,
   int maxiter = 1000000,
-  double eps = 1.0E-6
+  double eps = 0.0
   ):
 
   assert maxerr>0, 'maxerr must be positive'
   assert maxiter>0, 'maxiter must be positive'
-  assert eps>0, 'eps must be positive'
+  assert eps>=0, 'eps must be non-negative'
 
   cdef numpy.ndarray[long long, ndim=2, mode="c"] c_C = C.astype(numpy.int64,order='C',copy=False)
   cdef numpy.ndarray[double, ndim=1, mode="c"] c_mu = mu.astype(numpy.double,order='C',copy=False)
@@ -36,7 +36,7 @@ def mle_trev_given_pi(
   
   
   if err==-1:
-    raise Exception('Out of memeory.')
+    raise Exception('Out of memory.')
   elif err==-2:
     raise Exception('The update of the Lagrange multipliers produced zero or NaN.')
   elif err==-3:
@@ -45,6 +45,8 @@ def mle_trev_given_pi(
     raise Exception('Some element of pi is zero.')
   elif err==-5:
     raise Exception('Didn\'t converge.')
+  elif err==-6:
+    raise Exception('Count matrix has zero diagonal elements. Can\'t guarantee convergence of algorithm. Suggestion: set regularization parameter eps to some small value e.g. 1E-6.')
     
      
   return T

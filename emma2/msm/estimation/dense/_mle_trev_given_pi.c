@@ -32,6 +32,13 @@ int _mle_trev_given_pi_dense(double * const T, const long long * const C, const 
     if(mu[i]==0) { err=4; goto error; }
   }
   
+  /* check C */
+  if(eps==0) {
+    for(i=0; i<n; i++) {
+      if(C(i,i) == 0) { err=6; goto error; }
+    }
+  }
+  
   /* initialise lambdas */
   for(i=0; i<n; i++) {
     lam_new[i] = 0.0;
