@@ -6,6 +6,18 @@ cimport numpy
 cdef extern from "_mle_trev_given_pi.h":
   int _mle_trev_given_pi_sparse(double * const T_data, const double * const CCt_data, const long long * const i_indices, const long long * const j_indices, const int len_CCt,  const double * const mu, const int len_mu, double maxerr, const int maxiter)
 
+def check_diagonal(A):
+  r"""Check matrix with non-negative entries for zero elements on diagonal.
+
+  Parameters
+  ----------
+  A : (M, M) scipy.sparse matrix
+      Input matrix
+      
+  """
+  a_ii=A.diagonal()
+  return numpy.all(a_ii>0.0)
+
 def mle_trev_given_pi(
   C,
   mu,
@@ -18,23 +30,36 @@ def mle_trev_given_pi(
   assert maxiter>0, 'maxiter must be positive'
   assert eps>=0, 'eps must be non-negative'
 
-  CCt_csr = scipy.sparse.csr_matrix(C+numpy.transpose(C),dtype=numpy.double)
-  # set lower trianglular part to zero
-  #tril_indices = numpy.tril_indices(CCt_csr.shape[0],k=-1)
-  #triu_indices = numpy.triu_indices(CCt_csr.shape[0],k=1)
-  #CCt_csr[tril_indices] = 0.0
-  #CCt_csr.eliminate_zeros()
+  CCt_csr = C+C.T
+  """Convert to csr-format"""
+  CCt_csr=CCt_csr.tocsr()
+  """Ensure that entries are of type double"""
+  CCT_csr=CCt_csr.astype(numpy.double)
+
   cdef numpy.ndarray[double, ndim=1, mode="c"] c_mu = mu.astype(numpy.double,order='C',copy=False)
   
-  assert CCt_csr.shape[0]==CCt_csr.shape[1]==c_mu.shape[0], 'Dimensions of C and mu don\'t agree.'
+  assert CCt_csr.shape[0]==CCt_csr.shape[1]==c_mu.shape[0], 'Dimensions of C and mu don\'t agree.'  
+  # """add regularization"""
+  # CCt_ii=CCt_csr.diagonal()
+  # """Check for zero elements"""
   
-  # add regularization
-  for i in xrange(CCt_csr.shape[0]):
-    if CCt_csr[i,i] == 0:
-      if eps==0:
-        raise Exception('Count matrix has zero diagonal elements. Can\'t guarantee convergence of algorithm. Suggestion: set regularization parameter eps to some small value e.g. 1E-6.')
-      else:
-        CCt_csr[i,i] = eps
+  if not check_diagonal(CCt_csr) and eps==0.0:
+    raise Exception('Count matrix has zero diagonal elements. Can\'t guarantee convergence of algorithm. Suggestion: set regularization parameter eps to some small value e.g. 1E-6.')
+  
+  """Add regularization"""
+  c_ii=CCt_csr.diagonal()
+  ind=(c_ii==0.0)
+  prior=numpy.zeros(len(c_ii))
+  prior[ind]=eps
+
+  CCt_csr=CCt_csr+scipy.sparse.diags(prior, 0)  
+  
+  # for i in xrange(CCt_csr.shape[0]):
+  #   if CCt_csr[i,i] == 0:
+  #     if eps==0:
+  #       raise Exception('Count matrix has zero diagonal elements. Can\'t guarantee convergence of algorithm. Suggestion: set regularization parameter eps to some small value e.g. 1E-6.')
+  #     else:
+  #       CCt_csr[i,i] = eps
 
   # convert to coo format 
   CCt_coo = CCt_csr.tocoo()
