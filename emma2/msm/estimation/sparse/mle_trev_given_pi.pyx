@@ -1,8 +1,10 @@
 import numpy
+import scipy
+import scipy.sparse
 cimport numpy
 
 cdef extern from "_mle_trev_given_pi.h":
-  int _mle_trev_given_pi_sparse(double * const T, const long long * const C, const double * const mu, const int n, double maxerr, const int maxiter, const double eps)
+  int _mle_trev_given_pi_sparse(double * const T_data, const double * const CCt_data, const long long * const i_indices, const long long * const j_indices, const int len_CCt,  const double * const mu, const int len_mu, double maxerr, const int maxiter)
 
 def mle_trev_given_pi(
   C,
@@ -16,21 +18,44 @@ def mle_trev_given_pi(
   assert maxiter>0, 'maxiter must be positive'
   assert eps>=0, 'eps must be non-negative'
 
-  cdef numpy.ndarray[long long, ndim=2, mode="c"] c_C = C.astype(numpy.int64,order='C',copy=False)
+  CCt_csr = scipy.sparse.csr_matrix(C+numpy.transpose(C),dtype=numpy.double)
+  # set lower trianglular part to zero
+  #tril_indices = numpy.tril_indices(CCt_csr.shape[0],k=-1)
+  #triu_indices = numpy.triu_indices(CCt_csr.shape[0],k=1)
+  #CCt_csr[tril_indices] = 0.0
+  #CCt_csr.eliminate_zeros()
   cdef numpy.ndarray[double, ndim=1, mode="c"] c_mu = mu.astype(numpy.double,order='C',copy=False)
+  
+  assert CCt_csr.shape[0]==CCt_csr.shape[1]==c_mu.shape[0], 'Dimensions of C and mu don\'t agree.'
+  
+  # add regularization
+  for i in xrange(CCt_csr.shape[0]):
+    if CCt_csr[i,i] == 0:
+      if eps==0:
+        raise Exception('Count matrix has zero diagonal elements. Can\'t guarantee convergence of algorithm. Suggestion: set regularization parameter eps to some small value e.g. 1E-6.')
+      else:
+        CCt_csr[i,i] = eps
 
-  assert c_C.shape[0]==c_C.shape[1]==c_mu.shape[0], 'Dimensions of C and mu don\'t agree.'
-
-  cdef numpy.ndarray[double, ndim=2, mode="c"] T = numpy.zeros_like(c_C,dtype=numpy.double,order='C')
+  # convert to coo format 
+  CCt_coo = CCt_csr.tocoo()
+  n_data = CCt_coo.nnz
+  cdef numpy.ndarray[double, ndim=1, mode="c"] CCt_data =  CCt_coo.data.astype(numpy.double,order='C',copy=False)
+  cdef numpy.ndarray[long long, ndim=1, mode="c"] i_indices = CCt_coo.row.astype(numpy.int64,order='C',copy=True)
+  cdef numpy.ndarray[long long, ndim=1, mode="c"] j_indices = CCt_coo.col.astype(numpy.int64,order='C',copy=True)
+  
+  # prepare data array of T in coo format
+  cdef numpy.ndarray[double, ndim=1, mode="c"] T_data = numpy.zeros(n_data,dtype=numpy.double,order='C')
   
   err = _mle_trev_given_pi_sparse(
-        <double*> numpy.PyArray_DATA(T),
-        <long long*> numpy.PyArray_DATA(c_C),
+        <double*> numpy.PyArray_DATA(T_data),
+        <double*> numpy.PyArray_DATA(CCt_data),
+        <long long*> numpy.PyArray_DATA(i_indices),
+        <long long*> numpy.PyArray_DATA(j_indices),
+        n_data,
         <double*> numpy.PyArray_DATA(c_mu),
-        c_C.shape[0],
+        CCt_csr.shape[0],
         maxerr,
-        maxiter,
-        eps)
+        maxiter)
         
   # TODO: add self test: check if stationary distribution is ok
   
@@ -47,5 +72,5 @@ def mle_trev_given_pi(
   elif err==-6:
     raise Exception('Count matrix has zero diagonal elements. Can\'t guarantee convergence of algorithm. Suggestion: set regularization parameter eps to some small value e.g. 1E-6.')
 
-  return T
-
+  # T matrix has the same shape and positions of nonzero elements as the regularized C matrix
+  return scipy.sparse.coo_matrix((T_data,(i_indices,j_indices)),shape=CCt_csr.shape)
