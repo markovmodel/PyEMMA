@@ -44,10 +44,14 @@ cocovar_module = Extension('emma2.coordinates.transform.cocovar',
                             sources = ['emma2/coordinates/transform/cocovar.c'])
 
 # see also http://docs.cython.org/src/reference/compilation.html#distributing-cython-modules
+# mle_trev_given_pi_dense_module = Extension('emma2.msm.estimation.dense.mle_trev_given_pi', 
+#                                            sources=['emma2/msm/estimation/dense/mle_trev_given_pi.pyx', 'emma2/msm/estimation/dense/_mle_trev_given_pi.c'],
+#                                            extra_compile_args = ['-fopenmp','-march=native'],
+#                                            libraries = ['gomp'])
+
 mle_trev_given_pi_dense_module = Extension('emma2.msm.estimation.dense.mle_trev_given_pi', 
                                            sources=['emma2/msm/estimation/dense/mle_trev_given_pi.pyx', 'emma2/msm/estimation/dense/_mle_trev_given_pi.c'],
-                                           extra_compile_args = ['-fopenmp','-march=native'],
-                                           libraries = ['gomp'])
+                                           extra_compile_args = ['-march=native'])
 
 mle_trev_given_pi_sparse_module = Extension('emma2.msm.estimation.sparse.mle_trev_given_pi', 
                                             sources=['emma2/msm/estimation/sparse/mle_trev_given_pi.pyx', 'emma2/msm/estimation/sparse/_mle_trev_given_pi.c'],
