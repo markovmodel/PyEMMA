@@ -55,6 +55,8 @@ int _mle_trev_given_pi_dense(double * const T, const long long * const C, const 
     temp = lam;
     lam = lam_new;
     lam_new = temp;
+    
+    err = 0;
 
 #pragma omp parallel for private(i)
     for(k=0; k<n; k++) {
