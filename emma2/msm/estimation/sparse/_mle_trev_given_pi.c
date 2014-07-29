@@ -59,13 +59,15 @@ int _mle_trev_given_pi_sparse(double * const T, const long long * const C, const
   Csparse= (struct coo*)malloc(Csparse_len*sizeof(struct coo));
   if(!Csparse) { err=1; goto error; }
   t = 0;
-  assert(eps!=0.0);
   for(i=0; i<n; i++) {
     for(j=0; j<=i; j++) {
       if(C(i,j)+C(j,i)!=0 || i==j) {
         Csparse[t].i = i;
         Csparse[t].j = j;
-        if(C(i,j)+C(j,i)==0.0) Csparse[t].d=eps; 
+        if(C(i,j)+C(j,i)==0.0) { 
+          Csparse[t].d=eps; 
+          if(eps==0) { err=6; goto error; }
+        }
         else Csparse[t].d = C(i,j)+C(j,i); 
         assert(Csparse[t].d!=0);
         t++;
