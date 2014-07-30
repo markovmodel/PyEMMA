@@ -755,6 +755,10 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
     mu : array_like
         The stationary distribution of the MLE transition matrix.
     **kwargs: Optional algorithm-specific parameters. See below for special cases
+    eps = 1E-6 : float
+        Optional parameter with reversible = True and mu!=None.
+        Regularization parameter for the interior point method. This value is added
+        to the diagonal elements of C that are zero.
     Xinit : (M, M) ndarray 
         Optional parameter with reversible = True.
         initial value for the matrix of absolute transition probabilities. Unless set otherwise,
@@ -857,10 +861,18 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
         else:
             if sparse_mode:
                 # Sparse, reversible, fixed pi (currently using dense with sparse conversion)
-                return csr_matrix(dense.transition_matrix.transition_matrix_reversible_fixpi(C.toarray(), mu,**kwargs))
+                try:
+                    import sparse.mle_trev_given_pi
+                    return sparse.mle_trev_given_pi.mle_trev_given_pi(C, mu,**kwargs)
+                except ImportError:
+                    return csr_matrix(dense.transition_matrix.transition_matrix_reversible_fixpi(C.toarray(), mu,**kwargs))
             else:
                 # Dense,  reversible, fixed pi
-                return dense.transition_matrix.transition_matrix_reversible_fixpi(C, mu,**kwargs)
+                try:
+                    import dense.mle_trev_given_pi
+                    return dense.mle_trev_given_pi.mle_trev_given_pi(C,mu,**kwargs)
+                except ImportError:
+                    return dense.transition_matrix.transition_matrix_reversible_fixpi(C, mu,**kwargs)
     else: # nonreversible estimation
         if mu is None:
             if sparse_mode:
