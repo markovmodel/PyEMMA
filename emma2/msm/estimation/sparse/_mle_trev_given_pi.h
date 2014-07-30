@@ -1,0 +1,1 @@
+int _mle_trev_given_pi_sparse(double * const T_data, const double * const CCt_data, const long long * const i_indices, const long long * const j_indices, const int len_CCt,  const double * const mu, const int len_mu, double maxerr, const int maxiter);
