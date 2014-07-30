@@ -8,11 +8,14 @@ import sys
 import os
 from glob import glob
 
-try:
-    from Cython.Build import cythonize
-    USE_CYTHON=True
-except ImportError:
-    USE_CYTHON=False
+# try:
+#     from Cython.Build import cythonize
+#     USE_CYTHON=True
+# except ImportError:
+#     USE_CYTHON=False
+
+from Cython.Build import cythonize
+USE_CYTHON=True
 
 # define minimum requirements for our setup script.
 __requires__ = 'setuptools >= 3.0.0'
@@ -191,7 +194,8 @@ metadata = dict(
       # runtime dependencies
       install_requires = ['numpy >= 1.6.0',
                           'scipy >= 0.11',
-                          'JPype1 >= 0.5.5'],
+                          'JPype1 >= 0.5.5',
+                          'cython >=0.20.2'],
 )
 
 setup(**metadata)
