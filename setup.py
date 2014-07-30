@@ -59,12 +59,24 @@ if USE_CYTHON:
 else:
     ext='.c'
 
+# mle_trev_given_pi_dense_module = Extension('emma2.msm.estimation.dense.mle_trev_given_pi', 
+#                                            sources=['emma2/msm/estimation/dense/mle_trev_given_pi'+ext, 
+#                                                     'emma2/msm/estimation/dense/_mle_trev_given_pi.c', 
+#                                                     'emma2/msm/estimation/dense/_mle_trev_given_pi.h'],
+#                                            extra_compile_args = ['-march=native'])
+
+# mle_trev_given_pi_sparse_module = Extension('emma2.msm.estimation.sparse.mle_trev_given_pi', 
+#                                             sources=['emma2/msm/estimation/sparse/mle_trev_given_pi'+ext,
+#                                                      'emma2/msm/estimation/sparse/_mle_trev_given_pi.c',
+#                                                      'emma2/msm/estimation/sparse/_mle_trev_given_pi.h'],
+#                                             extra_compile_args = ['-march=native'])
+
 mle_trev_given_pi_dense_module = Extension('emma2.msm.estimation.dense.mle_trev_given_pi', 
-                                           sources=['emma2/msm/estimation/dense/mle_trev_given_pi'+ext, 'emma2/msm/estimation/dense/_mle_trev_given_pi.c'],
+                                           sources=['emma2/msm/estimation/dense/mle_trev_given_pi'+ext],
                                            extra_compile_args = ['-march=native'])
 
 mle_trev_given_pi_sparse_module = Extension('emma2.msm.estimation.sparse.mle_trev_given_pi', 
-                                            sources=['emma2/msm/estimation/sparse/mle_trev_given_pi'+ext, 'emma2/msm/estimation/sparse/_mle_trev_given_pi.c'],
+                                            sources=['emma2/msm/estimation/sparse/mle_trev_given_pi'+ext],
                                             extra_compile_args = ['-march=native'])
 
 if USE_CYTHON:
