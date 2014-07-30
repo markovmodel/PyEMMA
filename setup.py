@@ -73,10 +73,12 @@ else:
 
 mle_trev_given_pi_dense_module = Extension('emma2.msm.estimation.dense.mle_trev_given_pi', 
                                            sources=['emma2/msm/estimation/dense/mle_trev_given_pi'+ext],
+                                           include_dirs=['emma2/msm/estmiation/dense/'],
                                            extra_compile_args = ['-march=native'])
 
 mle_trev_given_pi_sparse_module = Extension('emma2.msm.estimation.sparse.mle_trev_given_pi', 
                                             sources=['emma2/msm/estimation/sparse/mle_trev_given_pi'+ext],
+                                            include_dirs=['emma2/msm/estmiation/sparse/'],
                                             extra_compile_args = ['-march=native'])
 
 if USE_CYTHON:
