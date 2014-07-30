@@ -7,7 +7,12 @@
 import sys
 import os
 from glob import glob
-from Cython.Build import cythonize
+
+try:
+    from Cython.Build import cythonize
+    USE_CYTHON=True
+except ImportError:
+    USE_CYTHON=False
 
 # define minimum requirements for our setup script.
 __requires__ = 'setuptools >= 3.0.0'
@@ -49,14 +54,23 @@ cocovar_module = Extension('emma2.coordinates.transform.cocovar',
 #                                            extra_compile_args = ['-fopenmp','-march=native'],
 #                                            libraries = ['gomp'])
 
+if USE_CYTHON:
+    ext='.pyx'
+else:
+    ext='.c'
+
 mle_trev_given_pi_dense_module = Extension('emma2.msm.estimation.dense.mle_trev_given_pi', 
-                                           sources=['emma2/msm/estimation/dense/mle_trev_given_pi.pyx', 'emma2/msm/estimation/dense/_mle_trev_given_pi.c'],
+                                           sources=['emma2/msm/estimation/dense/mle_trev_given_pi'+ext, 'emma2/msm/estimation/dense/_mle_trev_given_pi.c'],
                                            extra_compile_args = ['-march=native'])
 
 mle_trev_given_pi_sparse_module = Extension('emma2.msm.estimation.sparse.mle_trev_given_pi', 
-                                            sources=['emma2/msm/estimation/sparse/mle_trev_given_pi.pyx', 'emma2/msm/estimation/sparse/_mle_trev_given_pi.c'],
+                                            sources=['emma2/msm/estimation/sparse/mle_trev_given_pi'+ext, 'emma2/msm/estimation/sparse/_mle_trev_given_pi.c'],
                                             extra_compile_args = ['-march=native'])
 
+if USE_CYTHON:
+    mle_trev_given_pi_module=cythonize([mle_trev_given_pi_dense_module, mle_trev_given_pi_sparse_module])
+else:
+    mle_trev_given_pi_module=[mle_trev_given_pi_dense_module, mle_trev_given_pi_sparse_module]
 
 from distutils.command.build_ext import build_ext
 class np_build(build_ext):
@@ -156,14 +170,14 @@ metadata = dict(
                       sdist = versioneer.cmd_sdist,
                       ),
       #ext_modules = cythonize([cocovar_module,mle_trev_given_pi_module]),
-      ext_modules = [cocovar_module]+cythonize([mle_trev_given_pi_dense_module,mle_trev_given_pi_sparse_module]),
+      #ext_modules = [cocovar_module]+cythonize([mle_trev_given_pi_dense_module,mle_trev_given_pi_sparse_module]),
+      ext_modules=[cocovar_module]+mle_trev_given_pi_module,
       setup_requires = ['numpy >= 1.6.0'],
       tests_require = [],
       # runtime dependencies
       install_requires = ['numpy >= 1.6.0',
                           'scipy >= 0.11',
-                          'JPype1 >= 0.5.5',
-                          'cython >= 0.20.1'],
+                          'JPype1 >= 0.5.5'],
 )
 
 setup(**metadata)
