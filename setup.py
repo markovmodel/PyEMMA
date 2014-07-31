@@ -14,8 +14,7 @@ try:
 except ImportError:
     USE_CYTHON=False
 
-# from Cython.Build import cythonize
-# USE_CYTHON=True
+USE_CYTHON=True
 
 # define minimum requirements for our setup script.
 __requires__ = 'setuptools >= 3.0.0'
@@ -51,37 +50,19 @@ versioneer.parentdir_prefix = 'emma2-' # dirname like 'myproject-1.2.0'
 cocovar_module = Extension('emma2.coordinates.transform.cocovar',
                             sources = ['emma2/coordinates/transform/cocovar.c'])
 
-# see also http://docs.cython.org/src/reference/compilation.html#distributing-cython-modules
-# mle_trev_given_pi_dense_module = Extension('emma2.msm.estimation.dense.mle_trev_given_pi', 
-#                                            sources=['emma2/msm/estimation/dense/mle_trev_given_pi.pyx', 'emma2/msm/estimation/dense/_mle_trev_given_pi.c'],
-#                                            extra_compile_args = ['-fopenmp','-march=native'],
-#                                            libraries = ['gomp'])
-
 if USE_CYTHON:
     ext='.pyx'
 else:
     ext='.c'
 
-# mle_trev_given_pi_dense_module = Extension('emma2.msm.estimation.dense.mle_trev_given_pi', 
-#                                            sources=['emma2/msm/estimation/dense/mle_trev_given_pi'+ext, 
-#                                                     'emma2/msm/estimation/dense/_mle_trev_given_pi.c', 
-#                                                     'emma2/msm/estimation/dense/_mle_trev_given_pi.h'],
-#                                            extra_compile_args = ['-march=native'])
-
-# mle_trev_given_pi_sparse_module = Extension('emma2.msm.estimation.sparse.mle_trev_given_pi', 
-#                                             sources=['emma2/msm/estimation/sparse/mle_trev_given_pi'+ext,
-#                                                      'emma2/msm/estimation/sparse/_mle_trev_given_pi.c',
-#                                                      'emma2/msm/estimation/sparse/_mle_trev_given_pi.h'],
-#                                             extra_compile_args = ['-march=native'])
-
 mle_trev_given_pi_dense_module = Extension('emma2.msm.estimation.dense.mle_trev_given_pi', 
-                                           sources=['emma2/msm/estimation/dense/mle_trev_given_pi'+ext],
-                                           include_dirs=['emma2/msm/estimation/dense'],
+                                           sources=['emma2/msm/estimation/dense/mle_trev_given_pi'+ext,
+                                                    'emma2/msm/estimation/dense/_mle_trev_given_pi.c'],
                                            extra_compile_args = ['-march=native'])
 
 mle_trev_given_pi_sparse_module = Extension('emma2.msm.estimation.sparse.mle_trev_given_pi', 
-                                            sources=['emma2/msm/estimation/sparse/mle_trev_given_pi'+ext],
-                                            include_dirs=['emma2/msm/estimation/sparse'],
+                                            sources=['emma2/msm/estimation/sparse/mle_trev_given_pi'+ext,
+                                                     'emma2/msm/estimation/sparse/_mle_trev_given_pi.c'],
                                             extra_compile_args = ['-march=native'])
 
 if USE_CYTHON:
