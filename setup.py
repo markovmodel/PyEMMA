@@ -169,7 +169,7 @@ metadata = dict(
       #ext_modules = [cocovar_module]+cythonize([mle_trev_given_pi_dense_module,mle_trev_given_pi_sparse_module]),
       ext_modules = [cocovar_module,
                      mle_trev_given_pi_module,
-                    ]
+                    ],
       setup_requires = ['numpy >= 1.6.0'],
       tests_require = [],
       # runtime dependencies
