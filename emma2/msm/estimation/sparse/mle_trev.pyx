@@ -1,3 +1,8 @@
+r"""Cython implementation of iterative likelihood maximization.
+
+.. moduleauthor:: F. Paul <fabian DOT paul AT fu-berlin DOT de>
+
+"""
 import numpy
 import scipy
 import scipy.sparse
