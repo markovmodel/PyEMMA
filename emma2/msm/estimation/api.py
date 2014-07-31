@@ -21,10 +21,12 @@ import sparse.connectivity
 import sparse.likelihood
 import sparse.transition_matrix
 import sparse.prior
+import sparse.mle_trev_given_pi
 
 import dense.bootstrapping
 import dense.transition_matrix
 import dense.covariance
+import dense.mle_trev_given_pi
 
 import emma2.util.pystallone as stallone
 from emma2.util.log import getLogger
@@ -861,18 +863,9 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
         else:
             if sparse_mode:
                 # Sparse, reversible, fixed pi (currently using dense with sparse conversion)
-                try:
-                    import sparse.mle_trev_given_pi
-                    return sparse.mle_trev_given_pi.mle_trev_given_pi(C, mu,**kwargs)
-                except ImportError:
-                    return csr_matrix(dense.transition_matrix.transition_matrix_reversible_fixpi(C.toarray(), mu,**kwargs))
+                return sparse.mle_trev_given_pi.mle_trev_given_pi(C, mu,**kwargs)               
             else:
-                # Dense,  reversible, fixed pi
-                try:
-                    import dense.mle_trev_given_pi
-                    return dense.mle_trev_given_pi.mle_trev_given_pi(C,mu,**kwargs)
-                except ImportError:
-                    return dense.transition_matrix.transition_matrix_reversible_fixpi(C, mu,**kwargs)
+                return dense.mle_trev_given_pi.mle_trev_given_pi(C,mu,**kwargs)                
     else: # nonreversible estimation
         if mu is None:
             if sparse_mode:
