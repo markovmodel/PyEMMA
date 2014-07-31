@@ -39,6 +39,8 @@ def mle_trev(C, double maxerr = 1.0E-12, int maxiter = 1000000):
   
   if err==-1:
     raise Exception('Out of memory.')
+  elif err==-2:
+    raise Exception('The update of the stationary distribution produced zero or NaN.')
   elif err==-3:
     raise Exception('Some row and corresponding column of C have zero counts.')
   elif err==-5:

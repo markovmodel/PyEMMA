@@ -62,11 +62,16 @@ mle_trev_given_pi_sparse_module = Extension('emma2.msm.estimation.sparse.mle_tre
                                             sources=['emma2/msm/estimation/sparse/mle_trev_given_pi'+ext,
                                                      'emma2/msm/estimation/sparse/_mle_trev_given_pi.c'],
                                             extra_compile_args = ['-march=native'])
+                                            
+mle_trev_sparse_module = Extension('emma2.msm.estimation.sparse.mle_trev', 
+                                   sources=['emma2/msm/estimation/sparse/mle_trev'+ext,
+                                            'emma2/msm/estimation/sparse/_mle_trev.c'],
+                                   extra_compile_args = ['-march=native'])
 
 if USE_CYTHON:
-    mle_trev_given_pi_module=cythonize([mle_trev_given_pi_dense_module, mle_trev_given_pi_sparse_module])
+    mle_trev_given_pi_module=cythonize([mle_trev_given_pi_dense_module, mle_trev_given_pi_sparse_module, mle_trev_sparse_module])
 else:
-    mle_trev_given_pi_module=[mle_trev_given_pi_dense_module, mle_trev_given_pi_sparse_module]
+    mle_trev_given_pi_module=[mle_trev_given_pi_dense_module, mle_trev_given_pi_sparse_module, mle_trev_sparse_module]
 
 from distutils.command.build_ext import build_ext
 class np_build(build_ext):

@@ -18,18 +18,24 @@ int _mle_trev_sparse(double * const T_data, const long long * const CCt_data, co
 {
   double d_sq;
   int i, j, t, err, iteration;
-  double *x, *x_new, *x_sum, *temp;
-  double CCt_ij, x_norm;
+  double *x, *x_new, *sum_x, *temp;
+  long long CCt_ij;
+  double x_norm;
 
   err = 0;
 
   x = (double*)malloc(len_CCt*sizeof(double));
   x_new= (double*)malloc(len_CCt*sizeof(double));
-  x_sum= (double*)malloc(dim*sizeof(double));
-  if(!(x&&x_new&&x_sum)) { err=1; goto error; }
+  sum_x= (double*)malloc(dim*sizeof(double));
+  if(!(x&&x_new&&sum_x)) { err=1; goto error; }
+  
+  /* ckeck C */
+  for(i = 0; i<dim; i++) if(sum_C[i]==0) { err=3; goto error; }
   
   /* initialize x */
-  for(t = 0; t<len_CCt; t++) x_new[t] = 0.5*CCt_data[t];
+  x_norm = 0;
+  for(t = 0; t<len_CCt; t++) x_norm += CCt_data[t];
+  for(t = 0; t<len_CCt; t++) x_new[t]= CCt_data[t]/x_norm;
 
   /* iterate */
   iteration = 0;
@@ -40,13 +46,12 @@ int _mle_trev_sparse(double * const T_data, const long long * const CCt_data, co
     x_new = temp;
     
     /* update x_sum */
-    for(i = 0; i<dim; i++) x_sum[i] = 0;
+    for(i = 0; i<dim; i++) sum_x[i] = 0;
     for(t = 0; t<len_CCt; t++) { 
-      i = i_indices[t];
       j = j_indices[t];
-      x_sum[i] += x[t];
-      if(i!=j) x_sum[j] += x[t];
+      sum_x[j] += x[t];
     }  
+    for(i = 0; i<dim; i++) if(sum_x[i]==0 || isnan(sum_x[i])) { err=2; goto error; }
 
     /* update x */
     x_norm = 0;
@@ -54,14 +59,13 @@ int _mle_trev_sparse(double * const T_data, const long long * const CCt_data, co
       i = i_indices[t];
       j = j_indices[t];
       CCt_ij = CCt_data[t];
-      assert(CCt_ij!=0);
-      x[t] = CCt_ij / ( sum_C[i]/x_sum[i] + sum_C[j]/x_sum[j] );
+      x_new[t] = CCt_ij / ( sum_C[i]/sum_x[i] + sum_C[j]/sum_x[j] );
       x_norm += x[t];
     }
     
     /* normalize x */
     for(t=0; t<len_CCt; t++) {
-      x[t]/=x_norm;
+      x_new[t]/=x_norm;
     }
 
     iteration += 1;
@@ -74,17 +78,17 @@ int _mle_trev_sparse(double * const T_data, const long long * const CCt_data, co
   for(t=0; t<len_CCt; t++) {
       i = i_indices[t];
       j = j_indices[t];
-      T_data[t] = x[t] / x_sum[i];
+      T_data[t] = x[t] / sum_x[i];
   }
 
   free(x);
   free(x_new);
-  free(x_sum);
+  free(sum_x);
   return 0;
   
 error:
   free(x);
   free(x_new);
-  free(x_sum);
+  free(sum_x);
   return -err;
 }
