@@ -77,6 +77,7 @@ class np_build(build_ext):
     So add them here!
     """
     def initialize_options(self):
+        self.include_dirs = []
         build_ext.initialize_options(self)
         # https://stackoverflow.com/questions/21605927/why-doesnt-setup-requires-work-properly-for-numpy
         try:
