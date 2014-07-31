@@ -47,4 +47,4 @@ def mle_trev(C, double maxerr = 1.0E-12, int maxiter = 1000000):
     raise Exception('Didn\'t converge.')
 
   # T matrix has the same shape and positions of nonzero elements as CCt
-  return scipy.sparse.coo_matrix((T_data,(i_indices,j_indices)),shape=CCt.shape)
+  return scipy.sparse.csr_matrix((T_data,(i_indices,j_indices)),shape=CCt.shape)
