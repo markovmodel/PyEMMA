@@ -77,7 +77,7 @@ class np_build(build_ext):
     So add them here!
     """
     def initialize_options(self):
-        self.include_dirs = []
+        #self.include_dirs = [] # gets overwritten by super init
         build_ext.initialize_options(self)
         # https://stackoverflow.com/questions/21605927/why-doesnt-setup-requires-work-properly-for-numpy
         try:
@@ -86,6 +86,9 @@ class np_build(build_ext):
             # this may happen, if numpy requirement is already fulfilled.
             pass
         from numpy import get_include
+     
+        self.include_dirs = []
+        self.include_dirs.append('.')
         self.include_dirs.append(get_include())
 
 
