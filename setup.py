@@ -139,7 +139,7 @@ class DiscoverTest(test):
 
 # HACK for JPype installation:
 # we do not want the user to have JDK, so we provide jni.h here.
-if not os.environ.get('JAVA_HOME', None):
+if True: #not os.environ.get('JAVA_HOME', None):
     fake_jdk = True
     os.environ['JAVA_HOME'] = os.path.abspath('lib/stallone/')
 
