@@ -85,7 +85,7 @@ class np_build(build_ext):
             # this may happen, if numpy requirement is already fulfilled.
             pass
         from numpy import get_include
-        self.include_dirs = get_include()
+        self.include_dirs.append(get_include())
 
 
 from setuptools.command.test import test
@@ -167,7 +167,9 @@ metadata = dict(
                       ),
       #ext_modules = cythonize([cocovar_module,mle_trev_given_pi_module]),
       #ext_modules = [cocovar_module]+cythonize([mle_trev_given_pi_dense_module,mle_trev_given_pi_sparse_module]),
-      ext_modules=[cocovar_module]+mle_trev_given_pi_module,
+      ext_modules = [cocovar_module,
+                     mle_trev_given_pi_module,
+                    ]
       setup_requires = ['numpy >= 1.6.0'],
       tests_require = [],
       # runtime dependencies
