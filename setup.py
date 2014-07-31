@@ -14,8 +14,6 @@ try:
 except ImportError:
     USE_CYTHON=False
 
-USE_CYTHON=True
-
 # define minimum requirements for our setup script.
 __requires__ = 'setuptools >= 3.0.0'
 
