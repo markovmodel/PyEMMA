@@ -8,14 +8,14 @@ import sys
 import os
 from glob import glob
 
-# try:
-#     from Cython.Build import cythonize
-#     USE_CYTHON=True
-# except ImportError:
-#     USE_CYTHON=False
+try:
+    from Cython.Build import cythonize
+    USE_CYTHON=True
+except ImportError:
+    USE_CYTHON=False
 
-from Cython.Build import cythonize
-USE_CYTHON=True
+# from Cython.Build import cythonize
+# USE_CYTHON=True
 
 # define minimum requirements for our setup script.
 __requires__ = 'setuptools >= 3.0.0'
@@ -76,12 +76,12 @@ else:
 
 mle_trev_given_pi_dense_module = Extension('emma2.msm.estimation.dense.mle_trev_given_pi', 
                                            sources=['emma2/msm/estimation/dense/mle_trev_given_pi'+ext],
-                                           include_dirs=['emma2/msm/estmiation/dense/'],
+                                           include_dirs=['emma2/msm/estimation/dense/'],
                                            extra_compile_args = ['-march=native'])
 
 mle_trev_given_pi_sparse_module = Extension('emma2.msm.estimation.sparse.mle_trev_given_pi', 
                                             sources=['emma2/msm/estimation/sparse/mle_trev_given_pi'+ext],
-                                            include_dirs=['emma2/msm/estmiation/sparse/'],
+                                            include_dirs=['emma2/msm/estimation/sparse/'],
                                             extra_compile_args = ['-march=native'])
 
 if USE_CYTHON:
@@ -194,8 +194,7 @@ metadata = dict(
       # runtime dependencies
       install_requires = ['numpy >= 1.6.0',
                           'scipy >= 0.11',
-                          'JPype1 >= 0.5.5',
-                          'cython >=0.20.2'],
+                          'JPype1 >= 0.5.5'],
 )
 
 setup(**metadata)
