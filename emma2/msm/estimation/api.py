@@ -22,6 +22,7 @@ import sparse.likelihood
 import sparse.transition_matrix
 import sparse.prior
 import sparse.mle_trev_given_pi
+import sparse.mle_trev
 
 import dense.bootstrapping
 import dense.transition_matrix
@@ -34,7 +35,7 @@ from emma2.msm.estimation.dense.tmatrix_sampler_jwrapper import ITransitionMatri
 
 __author__ = "Benjamin Trendelkamp-Schroer, Martin Scherer, Frank Noe"
 __copyright__ = "Copyright 2014, Computational Molecular Biology Group, FU-Berlin"
-__credits__ = ["Benjamin Trendelkamp-Schroer", "Martin Scherer", "Frank Noe"]
+__credits__ = ["Benjamin Trendelkamp-Schroer", "Martin Scherer", "Fabian Paul", "Frank Noe"]
 __license__ = "FreeBSD"
 __version__ = "2.0.0"
 __maintainer__ = "Martin Scherer"
@@ -857,7 +858,8 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
         if mu is None:
             if sparse_mode:
                 # currently no sparse impl, so we abuse dense impl (may be inefficient)
-                return csr_matrix(dense.transition_matrix.estimate_transition_matrix_reversible(C.toarray(),**kwargs))
+                # return csr_matrix(dense.transition_matrix.estimate_transition_matrix_reversible(C.toarray(),**kwargs))
+                return sparse.mle_trev(C, **kwargs)
             else:
                 return dense.transition_matrix.estimate_transition_matrix_reversible(C,**kwargs)
         else:
