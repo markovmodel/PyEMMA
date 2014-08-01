@@ -56,11 +56,13 @@ else:
 mle_trev_given_pi_dense_module = Extension('emma2.msm.estimation.dense.mle_trev_given_pi', 
                                            sources=['emma2/msm/estimation/dense/mle_trev_given_pi'+ext,
                                                     'emma2/msm/estimation/dense/_mle_trev_given_pi.c'],
+                                           include_dirs = [os.path.abspath('emma2/msm/estimation/dense')],
                                            extra_compile_args = ['-march=native'])
 
 mle_trev_given_pi_sparse_module = Extension('emma2.msm.estimation.sparse.mle_trev_given_pi', 
                                             sources=['emma2/msm/estimation/sparse/mle_trev_given_pi'+ext,
                                                      'emma2/msm/estimation/sparse/_mle_trev_given_pi.c'],
+                                            include_dirs = [os.path.abspath('emma2/msm/estimation/dense')],
                                             extra_compile_args = ['-march=native'])
                                             
 mle_trev_sparse_module = Extension('emma2.msm.estimation.sparse.mle_trev', 
@@ -82,6 +84,7 @@ class np_build(build_ext):
     So add them here!
     """
     def initialize_options(self):
+        #self.include_dirs = [] # gets overwritten by super init
         build_ext.initialize_options(self)
         # https://stackoverflow.com/questions/21605927/why-doesnt-setup-requires-work-properly-for-numpy
         try:
@@ -90,7 +93,10 @@ class np_build(build_ext):
             # this may happen, if numpy requirement is already fulfilled.
             pass
         from numpy import get_include
-        self.include_dirs = get_include()
+     
+        self.include_dirs = []
+        self.include_dirs.append('.')
+        self.include_dirs.append(get_include())
 
 
 from setuptools.command.test import test
@@ -172,7 +178,7 @@ metadata = dict(
                       ),
       #ext_modules = cythonize([cocovar_module,mle_trev_given_pi_module]),
       #ext_modules = [cocovar_module]+cythonize([mle_trev_given_pi_dense_module,mle_trev_given_pi_sparse_module]),
-      ext_modules=[cocovar_module]+mle_trev_given_pi_module,
+      ext_modules = [cocovar_module] + mle_trev_given_pi_module,
       setup_requires = ['numpy >= 1.6.0'],
       tests_require = [],
       # runtime dependencies
