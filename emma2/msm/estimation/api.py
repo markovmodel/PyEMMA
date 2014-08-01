@@ -859,7 +859,7 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
             if sparse_mode:
                 # currently no sparse impl, so we abuse dense impl (may be inefficient)
                 # return csr_matrix(dense.transition_matrix.estimate_transition_matrix_reversible(C.toarray(),**kwargs))
-                return sparse.mle_trev(C, **kwargs)
+                return sparse.mle_trev.mle_trev(C, **kwargs)
             else:
                 return dense.transition_matrix.estimate_transition_matrix_reversible(C,**kwargs)
         else:
