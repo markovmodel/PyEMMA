@@ -11,3 +11,8 @@ prune doc/source/generated
 
 # ipython notebooks
 graft ipython
+
+# headers
+include emma2/msm/estimation/dense/*.h
+include emma2/msm/estimation/sparse/*.h
+
