@@ -1,5 +1,6 @@
 import numpy
 cimport numpy
+import emma2.msm.estimation
 
 cdef extern from "_mle_trev_given_pi.h":
   int _mle_trev_given_pi_dense(double * const T, const long long * const C, const double * const mu, const int n, double maxerr, const int maxiter, const double eps)
@@ -15,6 +16,7 @@ def mle_trev_given_pi(
   assert maxerr>0, 'maxerr must be positive'
   assert maxiter>0, 'maxiter must be positive'
   assert eps>=0, 'eps must be non-negative'
+  assert emma2.msm.estimation.is_connected(C,directed=False), 'C must be (weakly) connected'
 
   cdef numpy.ndarray[long long, ndim=2, mode="c"] c_C = C.astype(numpy.int64,order='C',copy=False)
   cdef numpy.ndarray[double, ndim=1, mode="c"] c_mu = mu.astype(numpy.double,order='C',copy=False)
