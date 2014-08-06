@@ -7,6 +7,7 @@ import numpy
 import scipy
 import scipy.sparse
 cimport numpy
+import emma2.msm.estimation
 
 cdef extern from "_mle_trev.h":
   int _mle_trev_sparse(double * const T_data, const long long * const CCt_data, const long long * const i_indices, const long long * const j_indices, const int len_CCt, const long long * const sum_C, const int dim, const double maxerr, const int maxiter)
@@ -15,7 +16,8 @@ def mle_trev(C, double maxerr = 1.0E-12, int maxiter = 1000000):
 
   assert maxerr>0, 'maxerr must be positive'
   assert maxiter>0, 'maxiter must be positive'
-  assert C.shape[0]==C.shape[1], 'C must be a square matrix.'  
+  assert C.shape[0]==C.shape[1], 'C must be a square matrix.'
+  assert emma2.msm.estimation.is_connected(C,directed=True), 'C must be strongly connected'
   
   C_sum_py = C.sum(axis=1).A1
   cdef numpy.ndarray[long long, ndim=1, mode="c"] C_sum = C_sum_py.astype(numpy.int64,order='C',copy=False)
