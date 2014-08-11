@@ -1,5 +1,5 @@
 /* moduleauthor:: F. Paul <fabian DOT paul AT fu-berlin DOT de> */
-#include <malloc.h>
+#include <stdlib.h>
 #include <math.h>
 #undef NDEBUG
 #include <assert.h>
