@@ -1,12 +1,12 @@
 r"""This module contains function for the Transition Path Theory (TPT)
 analysis of Markov models.
 
-.. moduleauthor:: B.Trendelkamp-Schroer <benjamin DOT trendelkamp-schroer AT fu-berlin DOT de>
+__moduleauthor__ = "Benjamin Trendelkamp-Schroer, Frank Noe"
 
 """
 import numpy as np
 
-from scipy.sparse import diags, coo_matrix
+from scipy.sparse import diags, coo_matrix, csr_matrix
 
 
 def remove_negative_entries(A):
@@ -42,7 +42,13 @@ def remove_negative_entries(A):
     return Aplus
 
 
-def grossflux(T, pi, qminus, qplus):
+# ======================================================================
+# Flux matrix operations
+# ======================================================================
+
+
+
+def flux_matrix(T, pi, qminus, qplus, netflux=True):
     r"""Compute the flux.
     
     Parameters
@@ -55,6 +61,9 @@ def grossflux(T, pi, qminus, qplus):
         Backward comittor
     qplus : (M,) ndarray
         Forward committor
+    netflux : boolean
+        True: net flux matrix will be computed  
+        False: gross flux matrix will be computed
     
     Returns
     -------
@@ -68,14 +77,20 @@ def grossflux(T, pi, qminus, qplus):
     flux=D1.dot(T.dot(D2))
     
     """Remove self-fluxes"""
-    flux=flux-diags(flux.diagonal(), 0)        
-    return flux
+    flux=flux-diags(flux.diagonal(), 0)
+    
+    """Return net or gross flux"""
+    if netflux:
+        return to_netflux(flux)
+    else:
+        return flux
 
 
-def netflux(flux):
+def to_netflux(flux):
     r"""Compute the netflux.
     
     f_ij^{+}=max{0, f_ij-f_ji}
+    for all pairs i,j
     
     Parameters
     ----------
@@ -95,7 +110,40 @@ def netflux(flux):
     return netflux
 
 
-def totalflux(flux, A):
+def coarsegrain(F, sets):
+    r"""Coarse-grains the flux to the given sets
+    
+    $fc_{i,j} = \sum_{i \in I,j \in J} f_{i,j}$
+    Note that if you coarse-grain a net flux, it does not necessarily have a net
+    flux property anymore. If want to make sure you get a netflux, 
+    use to_netflux(coarsegrain(F,sets)).
+    
+    Parameters
+    ----------
+    F : (n, n) ndarray
+        Matrix of flux values between pairs of states.
+    sets : list of array-like of ints
+        The sets of states onto which the flux is coarse-grained.
+    
+    """
+    nnew = len(sets)
+    Fin = F.tocsr()
+    Fc = csr_matrix((nnew,nnew))
+    for i in range(0,nnew-1):
+        for j in range(i,nnew):
+            I = list(sets[i])
+            J = list(sets[j])
+            Fc[i,j] = (Fin[I,:][:,J]).sum()
+            Fc[j,i] = (Fin[J,:][:,I]).sum()
+    return Fc
+
+
+# ======================================================================
+# Total flux, rate and mfpt for the A->B reaction
+# ======================================================================
+
+
+def total_flux(flux, A):
     r"""Compute the total flux between reactant and product.
     
     Parameters
@@ -125,27 +173,5 @@ def totalflux(flux, A):
     F=W.sum()
     return F
 
-
-def rate(F, pi, qminus):
-    r"""Transition rate for reaction A to B.
-    
-    Parameters
-    ----------
-    F : float
-        The total flux between reactant and product
-    pi : (M,) ndarray
-        Stationary distribution
-    qminus : (M,) ndarray
-        Backward comittor
-    
-    Returns
-    -------
-    kAB : float
-        The reaction rate (per time step of the
-        Markov chain)
-    
-    """
-    kAB=F/(pi*qminus).sum()
-    return kAB                       
 
 

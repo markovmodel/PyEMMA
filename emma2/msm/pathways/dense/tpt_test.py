@@ -7,9 +7,6 @@ r"""Unit test for the TPT-module
 import unittest
 import numpy as np
 
-from scipy.sparse import csr_matrix
-
-import committor
 import tpt
 
 class BirthDeathChain():
@@ -238,24 +235,7 @@ class BirthDeathChain():
         qminus=self.committor_backward(a, b)
         kAB=F/(pi*qminus).sum()
         return kAB
-
-
-class TestRemoveNegativeEntries(unittest.TestCase):
-    def setUp(self):
-        self.A=np.random.randn(10,10)
-        self.Aplus=1.0*self.A
-        neg=(self.Aplus<0.0)
-        self.Aplus[neg]=0.0
-
-
-    def test_remove_negative_entries(self):
-        A = csr_matrix(self.A)
-        Aplus = self.Aplus
-
-        Aplusn = tpt.remove_negative_entries(A)
-        self.assertTrue(np.allclose(Aplusn.toarray(), Aplus))
-
-
+        
 class TestTPT(unittest.TestCase):
     def setUp(self):
         p=np.zeros(10)
@@ -264,17 +244,14 @@ class TestTPT(unittest.TestCase):
         q[1:]=0.5
         p[4]=0.01
         q[6]=0.1
-            
+
         self.A=[0,1]
         self.B=[8,9]
         self.a=1
         self.b=8
-            
-        self.bdc=BirthDeathChain(q, p)
-        T_dense=self.bdc.transition_matrix()
-        T_sparse=csr_matrix(T_dense)
-        self.T=T_sparse
 
+        self.bdc=BirthDeathChain(q, p)
+        self.T=self.bdc.transition_matrix()
 
         """Use precomputed mu, qminus, qplus"""        
         self.mu = self.bdc.stationary_distribution()
@@ -282,18 +259,18 @@ class TestTPT(unittest.TestCase):
         self.qminus = self.bdc.committor_backward(self.a, self.b)
         #self.qminus = committor.backward_committor(self.T, self.A, self.B, mu=self.mu)
         #self.qplus = committor.forward_committor(self.T, self.A, self.B)
-        self.fluxn = tpt.grossflux(self.T, self.mu, self.qminus, self.qplus)
-        self.netfluxn = tpt.netflux(self.fluxn)
-        self.Fn = tpt.totalflux(self.fluxn, self.A)
+        self.fluxn = tpt.flux_matrix(self.T, self.mu, self.qminus, self.qplus, netflux=False)
+        self.netfluxn = tpt.to_netflux(self.fluxn)
+        self.Fn = tpt.total_flux(self.fluxn, self.A)
         self.kn = tpt.rate(self.Fn, self.mu, self.qminus)
 
     def test_flux(self):
         flux=self.bdc.flux(self.a, self.b)        
-        self.assertTrue(np.allclose(self.fluxn.toarray(), flux))
+        self.assertTrue(np.allclose(self.fluxn, flux))
 
     def test_netflux(self):
         netflux=self.bdc.netflux(self.a, self.b)
-        self.assertTrue(np.allclose(self.netfluxn.toarray(), netflux))
+        self.assertTrue(np.allclose(self.netfluxn, netflux))
 
     def test_totalflux(self):
         F=self.bdc.totalflux(self.a, self.b)
