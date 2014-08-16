@@ -6,6 +6,8 @@ __moduleauthor__ = "Benjamin Trendelkamp-Schroer, Frank Noe"
 """
 import numpy as np
 
+import pathway_decomposition
+
 # ======================================================================
 # Flux matrix operations
 # ======================================================================
@@ -321,7 +323,7 @@ def pathways(F, A, B, qplus, fraction = 1.0, totalflux = None):
     stopflux = Decimal(min(1.0,fraction) * totalflux)
     
     # decompose
-    decomp = pathways.PathwayDecomposition(F, qplus, A, B)
+    decomp = pathway_decomposition.PathwayDecomposition(F, qplus, A, B)
     
     # add path by path until we have enough, or until there is no path left
     while(cumflux < stopflux):
