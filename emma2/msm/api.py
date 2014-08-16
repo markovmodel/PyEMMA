@@ -4,7 +4,7 @@ Created on Aug 15, 2014
 __moduleauthor__ = "Frank Noe"
 '''
 
-import flux 
+from flux import tpt as fluxtpt 
 
 def dtrajs(files):
     pass
@@ -19,4 +19,4 @@ def cktest(dtrajs, lagtimes, connected=True, reversible=True):
     pass
 
 # TPT
-tpt = flux.tpt
+tpt = fluxtpt

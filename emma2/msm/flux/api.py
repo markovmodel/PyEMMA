@@ -7,7 +7,6 @@ __moduleauthor__ = "Benjamin Trendelkamp-Schroer, Frank Noe"
 from scipy.sparse import issparse
 from scipy.sparse.sputils import isdense
 
-import emma2.msm.analysis as msmana
 import sparse
 import dense
 
@@ -72,6 +71,7 @@ def tpt(T, A, B, mu=None, qminus=None, qplus=None, rate_matrix=False):
         Proc. Natl. Acad. Sci. USA, 106, 19011-19016 (2009)
     
     """
+    import emma2.msm.analysis as msmana
 
     if len(A) == 0 or len(B) == 0:
         raise ValueError('set A or B is empty')
@@ -469,6 +469,6 @@ def pathways(F, A, B, qplus, fraction = 1.0, totalflux = None):
         RuntimeWarning('Sparse pathway decomposition is not implemented. Using dense pathway implementation.' 
                         +'Sorry, but this might lead to poor performance or memory overflow.')
         Fdense = F.toarray()
-    return dense.tpt.pathways(Fdense, A, B, qplus, faction=fraction, totalflux=totalflux)
+    return dense.tpt.pathways(Fdense, A, B, qplus, fraction=fraction, totalflux=totalflux)
 
 
