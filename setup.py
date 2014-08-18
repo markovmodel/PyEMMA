@@ -148,30 +148,12 @@ class DiscoverTest(test):
         self.test_suite = True
 
     def run_tests(self):
-        # need to reset fake jdk for runtime.
-        if fake_jdk:
-            os.environ.pop('JAVA_HOME', None)
         self.discover_and_run_tests()
-        
-        
-from distutils.command import clean
 
-
-class myclean(clean):
-    def run(self):
-        self.run()
-
-
-# HACK for JPype installation:
-# we do not want the user to have JDK, so we provide jni.h here.
-if True:  # not os.environ.get('JAVA_HOME', None):
-    fake_jdk = True
-    os.environ['JAVA_HOME'] = os.path.abspath('lib/stallone/')
-
-data_files = []
 
 # installation destination of ipython notebooks for users
 # TODO: maybe give user opportunity to specify install location
+data_files = []
 if os.getenv('INSTALL_IPYTHON', False) or 'install' in sys.argv:
     dest = os.path.join(os.path.expanduser('~'), 'emma2-ipython')
 
@@ -201,9 +183,10 @@ metadata = dict(
     author_email='',  # TODO: add this
     # packages are found if their folder contains an __init__.py,
     packages=find_packages(),
-    # install default emma.cfg and stallone jar into package.
+    # install default emma.cfg into package.
     package_data={
-        'emma2': ['emma2.cfg', 'stallone-1.0-SNAPSHOT-jar-with-dependencies.jar']},
+        'emma2': ['emma2.cfg']
+        },
     data_files=data_files,
     scripts=[s for s in glob('scripts/*') if s.find('mm_') != -1],
     cmdclass=dict(build_ext=np_build,
@@ -219,7 +202,7 @@ metadata = dict(
     # runtime dependencies
     install_requires=['numpy >= 1.6.0',
                       'scipy >= 0.11',
-                      'JPype1 >= 0.5.5'],
+                      'pystallone >= 1.0'],
 )
 
 setup(**metadata)
