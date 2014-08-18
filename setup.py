@@ -8,6 +8,11 @@ import sys
 import os
 from glob import glob
 
+try:
+    from Cython.Build import cythonize
+    USE_CYTHON=True
+except ImportError:
+    USE_CYTHON=False
 
 # define minimum requirements for our setup script.
 __requires__ = 'setuptools >= 3.0.0'
@@ -43,6 +48,33 @@ versioneer.parentdir_prefix = 'emma2-' # dirname like 'myproject-1.2.0'
 cocovar_module = Extension('emma2.coordinates.transform.cocovar',
                             sources = ['emma2/coordinates/transform/cocovar.c'])
 
+if USE_CYTHON:
+    ext='.pyx'
+else:
+    ext='.c'
+
+mle_trev_given_pi_dense_module = Extension('emma2.msm.estimation.dense.mle_trev_given_pi', 
+                                           sources=['emma2/msm/estimation/dense/mle_trev_given_pi'+ext,
+                                                    'emma2/msm/estimation/dense/_mle_trev_given_pi.c'],
+                                           include_dirs = [os.path.abspath('emma2/msm/estimation/dense')],
+                                           extra_compile_args = ['-march=native'])
+
+mle_trev_given_pi_sparse_module = Extension('emma2.msm.estimation.sparse.mle_trev_given_pi', 
+                                            sources=['emma2/msm/estimation/sparse/mle_trev_given_pi'+ext,
+                                                     'emma2/msm/estimation/sparse/_mle_trev_given_pi.c'],
+                                            include_dirs = [os.path.abspath('emma2/msm/estimation/dense')],
+                                            extra_compile_args = ['-march=native'])
+                                            
+mle_trev_sparse_module = Extension('emma2.msm.estimation.sparse.mle_trev', 
+                                   sources=['emma2/msm/estimation/sparse/mle_trev'+ext,
+                                            'emma2/msm/estimation/sparse/_mle_trev.c'],
+                                   extra_compile_args = ['-march=native'])
+
+if USE_CYTHON:
+    mle_trev_given_pi_module=cythonize([mle_trev_given_pi_dense_module, mle_trev_given_pi_sparse_module, mle_trev_sparse_module])
+else:
+    mle_trev_given_pi_module=[mle_trev_given_pi_dense_module, mle_trev_given_pi_sparse_module, mle_trev_sparse_module]
+
 from distutils.command.build_ext import build_ext
 class np_build(build_ext):
     """
@@ -52,6 +84,7 @@ class np_build(build_ext):
     So add them here!
     """
     def initialize_options(self):
+        #self.include_dirs = [] # gets overwritten by super init
         build_ext.initialize_options(self)
         # https://stackoverflow.com/questions/21605927/why-doesnt-setup-requires-work-properly-for-numpy
         try:
@@ -60,7 +93,10 @@ class np_build(build_ext):
             # this may happen, if numpy requirement is already fulfilled.
             pass
         from numpy import get_include
-        self.include_dirs = get_include()
+     
+        self.include_dirs = []
+        self.include_dirs.append('.')
+        self.include_dirs.append(get_include())
 
 
 from setuptools.command.test import test
@@ -93,7 +129,7 @@ class DiscoverTest(test):
 
 # HACK for JPype installation:
 # we do not want the user to have JDK, so we provide jni.h here.
-if not os.environ.get('JAVA_HOME', None):
+if True: #not os.environ.get('JAVA_HOME', None):
     fake_jdk = True
     os.environ['JAVA_HOME'] = os.path.abspath('lib/stallone/')
 
@@ -140,13 +176,15 @@ metadata = dict(
                       build = versioneer.cmd_build,
                       sdist = versioneer.cmd_sdist,
                       ),
-      ext_modules = [cocovar_module],
+      #ext_modules = cythonize([cocovar_module,mle_trev_given_pi_module]),
+      #ext_modules = [cocovar_module]+cythonize([mle_trev_given_pi_dense_module,mle_trev_given_pi_sparse_module]),
+      ext_modules = [cocovar_module] + mle_trev_given_pi_module,
       setup_requires = ['numpy >= 1.6.0'],
       tests_require = [],
       # runtime dependencies
       install_requires = ['numpy >= 1.6.0',
-                         'scipy >= 0.11',
-                         'JPype1 >= 0.5.5'],
+                          'scipy >= 0.11',
+                          'JPype1 >= 0.5.5'],
 )
 
 setup(**metadata)

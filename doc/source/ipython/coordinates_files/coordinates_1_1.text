@@ -1,0 +1,2 @@
+WARNING: pylab import has clobbered these variables: ['mean']
+`%pylab --no-import-all` prevents importing * from pylab and numpy

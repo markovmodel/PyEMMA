@@ -1,0 +1,2 @@
+2014-02-05 16:47:07,549 emma2.util.pystallone DEBUG    init with options: "['-Xms64m', '-Xmx2000m', '-Djava.class.path=/Users/jan-hendrikprinz/anaconda/lib/python2.7/site-packages/Emma2-2.0-py2.7-macosx-10.5-x86_64.egg/emma2/util/../../lib/stallone/stallone-1.0-SNAPSHOT-jar-with-dependencies.jar/']"
+2014-02-05 16:47:07,552 emma2.util.pystallone DEBUG    default vm path: /System/Library/Frameworks/JavaVM.framework/JavaVM
