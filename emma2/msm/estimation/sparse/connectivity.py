@@ -50,7 +50,7 @@ def connected_sets(C, directed=True):
 
     """Cumulative sum of count gives start and end indices of
     components"""
-    csum=np.zeros(len(count)+1)
+    csum=np.zeros(len(count)+1, dtype=int)
     csum[1:]=np.cumsum(count)
 
     """Generate list containing components, sort each component by
