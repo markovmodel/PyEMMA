@@ -44,7 +44,7 @@ def backward_iteration(A, mu, x0, tol=1e-14, maxiter=100):
     """Local variables for inverse iteration"""
     y=1.0*y0
     r=1.0*r0
-    for iter in range(maxiter):
+    for i in range(maxiter):
         x=lu_solve(lupiv, y)
         r=1.0/np.linalg.norm(x)
         y=x*r
@@ -169,7 +169,7 @@ def eigenvectors(T, k=None, right=True):
         """ Sorted eigenvalues and left and right eigenvectors. """
         perm=np.argsort(np.abs(val))[::-1]
 
-        eigval=val[perm]
+        #eigval=val[perm]
         eigvec=R[:,perm]        
 
     else:
@@ -178,7 +178,7 @@ def eigenvectors(T, k=None, right=True):
         """ Sorted eigenvalues and left and right eigenvectors. """
         perm=np.argsort(np.abs(val))[::-1]
 
-        eigval=val[perm]
+        #eigval=val[perm]
         eigvec=L[:,perm]
 
     """ Return eigenvectors """
@@ -304,12 +304,12 @@ def timescales(T, tau=1, k=None):
     return timescales_from_eigenvalues(values, tau)
 
 
-def timescales_from_eigenvalues(eval, tau=1):
+def timescales_from_eigenvalues(evals, tau=1):
     r"""Compute implied time scales from given eigenvalues
     
     Parameters
     ----------
-    eval : eigenvalues
+    evals : eigenvalues
     tau : lag time
 
     Returns
@@ -321,23 +321,23 @@ def timescales_from_eigenvalues(eval, tau=1):
     
     """Check for dominant eigenvalues with large imaginary part"""
 
-    if not np.allclose(eval.imag, 0.0):
+    if not np.allclose(evals.imag, 0.0):
         warnings.warn('Using eigenvalues with non-zero imaginary part', ImaginaryEigenValueWarning)
 
     """Check for multiple eigenvalues of magnitude one"""
-    ind_abs_one=isclose(np.abs(eval), 1.0)
+    ind_abs_one=isclose(np.abs(evals), 1.0)
     if sum(ind_abs_one)>1:
         warnings.warn('Multiple eigenvalues with magnitude one.', SpectralWarning)
 
     """Compute implied time scales"""
-    ts=np.zeros(len(eval))
+    ts=np.zeros(len(evals))
 
     """Eigenvalues of magnitude one imply infinite timescale"""
     ts[ind_abs_one]=np.inf
 
     """All other eigenvalues give rise to finite timescales"""
     ts[np.logical_not(ind_abs_one)]=\
-        -1.0*tau/np.log(np.abs(eval[np.logical_not(ind_abs_one)]))
+        -1.0*tau/np.log(np.abs(evals[np.logical_not(ind_abs_one)]))
     return ts
     
 
