@@ -66,7 +66,7 @@ def main():
     try:
         dim = centers.dimension()
         clusterNew = API.clusterNew
-        if  args.metric == 'euclidian':
+        if  args.metric == 'euclidean':
             jmetric = API.clusterNew.metric(clusterNew.METRIC_EUCLIDEAN, dim)
         elif args.metric == 'minrmsd': 
             jmetric = API.clusterNew.metric(clusterNew.METRIC_MINRMSD, dim/3)
