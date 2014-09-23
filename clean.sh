@@ -8,3 +8,5 @@ rm temp -rf
 # delete python byte codes
 find -name *.pyc -exec rm {} +
 find -name *.log -exec rm {} +
+# delete shared objects (linux)
+find -name *.so -exec rm {} +
