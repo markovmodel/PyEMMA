@@ -7,12 +7,19 @@
 import sys
 import os
 from glob import glob
+from distutils.version import StrictVersion
 
 try:
+    import Cython
     from Cython.Build import cythonize
     USE_CYTHON = True
 except ImportError:
     USE_CYTHON = False
+
+if USE_CYTHON:
+    if StrictVersion(Cython.__version__) < StrictVersion('0.20'):
+        print "Your cython version is too old. Setup will treat this as if there is no cython installation and use pre-cythonized files."
+        USE_CYTHON=False
 
 # define minimum requirements for our setup script.
 __requires__ = 'setuptools >= 3.0.0'
