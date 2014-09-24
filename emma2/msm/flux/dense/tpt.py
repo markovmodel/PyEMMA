@@ -183,7 +183,7 @@ def coarsegrain(F, sets):
     nnew = len(sets)
     Fc = np.zeros((nnew,nnew))
     for i in range(0,nnew-1):
-        for j in range(i,nnew):
+        for j in range(i+1,nnew):
             I = list(sets[i])
             J = list(sets[j])
             Fc[i,j] = np.sum(F[I,:][:,J])
