@@ -86,12 +86,12 @@ mle_trev_sparse_module = \
                        'emma2/msm/estimation/sparse/_mle_trev.c'],
               extra_compile_args=['-march=native'])
 
-mle_trev_given_pi_module = [mle_trev_given_pi_dense_module,
+mle_trev_module = [mle_trev_given_pi_dense_module,
                             mle_trev_given_pi_sparse_module,
                             mle_trev_sparse_module]
 
 if USE_CYTHON:
-    mle_trev_given_pi_module = cythonize(mle_trev_given_pi_module)
+    mle_trev_module = cythonize(mle_trev_module)
 
 
 from distutils.command.build_ext import build_ext
@@ -196,7 +196,7 @@ metadata = dict(
                   build=versioneer.cmd_build,
                   sdist=versioneer.cmd_sdist,
                   ),
-    ext_modules=[cocovar_module] + mle_trev_given_pi_module,
+    ext_modules=[cocovar_module] + mle_trev_module,
     setup_requires=['numpy >= 1.6.0'],
     tests_require=[],
     # runtime dependencies
