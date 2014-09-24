@@ -9,7 +9,7 @@ import numpy as np
 
 from scipy.sparse import csr_matrix
 
-import emma2.msm.pathways as pathways
+import emma2.msm.flux as flux
 
 ################################################################################
 # Dense
@@ -34,13 +34,13 @@ class TestTPTDense(unittest.TestCase):
         self.T=self.bdc.transition_matrix()
 
         """Compute mu, qminus, qplus in constructor"""
-        self.tpt = pathways.tpt(self.T, self.A, self.B)
+        self.tpt = flux.tpt(self.T, self.A, self.B)
 
         """Use precomputed mu, qminus, qplus"""        
         self.mu=self.bdc.stationary_distribution()
         self.qminus=self.bdc.committor_backward(self.a, self.b)
         self.qplus=self.bdc.committor_forward(self.a, self.b)
-        self.tpt_fast=pathways.tpt(self.T, self.A, self.B,\
+        self.tpt_fast=flux.tpt(self.T, self.A, self.B,\
                               mu=self.mu, qminus=self.qminus,\
                               qplus=self.qplus)
 
@@ -131,10 +131,10 @@ class TestTptFunctionsDense(unittest.TestCase):
         self.qplus=self.bdc.committor_forward(self.a, self.b)
         
         # present results
-        self.fluxn = pathways.flux_matrix(self.T, self.mu, self.qminus, self.qplus, netflux=False)
-        self.netfluxn = pathways.flux_matrix(self.T, self.mu, self.qminus, self.qplus, netflux=True)
-        self.totalfluxn=pathways.total_flux(self.netfluxn, self.A)
-        self.raten=pathways.rate(self.totalfluxn, self.mu, self.qminus)
+        self.fluxn = flux.flux_matrix(self.T, self.mu, self.qminus, self.qplus, netflux=False)
+        self.netfluxn = flux.flux_matrix(self.T, self.mu, self.qminus, self.qplus, netflux=True)
+        self.totalfluxn=flux.total_flux(self.netfluxn, self.A)
+        self.raten=flux.rate(self.totalfluxn, self.mu, self.qminus)
     
     def test_tpt_flux(self):
         flux=self.bdc.flux(self.a, self.b)        
@@ -178,13 +178,13 @@ class TestTPTSparse(unittest.TestCase):
         self.T=T_sparse
 
         """Compute mu, qminus, qplus in constructor"""
-        self.tpt=pathways.tpt(self.T, self.A, self.B)
+        self.tpt=flux.tpt(self.T, self.A, self.B)
 
         """Use precomputed mu, qminus, qplus"""        
         self.mu=self.bdc.stationary_distribution()
         self.qminus=self.bdc.committor_backward(self.a, self.b)
         self.qplus=self.bdc.committor_forward(self.a, self.b)
-        self.tpt_fast=pathways.tpt(self.T, self.A, self.B,\
+        self.tpt_fast=flux.tpt(self.T, self.A, self.B,\
                               mu=self.mu, qminus=self.qminus,\
                               qplus=self.qplus)
 
@@ -276,10 +276,10 @@ class TestTptFunctionsSparse(unittest.TestCase):
         self.qplus=self.bdc.committor_forward(self.a, self.b)
 
         # present results
-        self.fluxn = pathways.flux_matrix(self.T, self.mu, self.qminus, self.qplus, netflux=False)
-        self.netfluxn = pathways.flux_matrix(self.T, self.mu, self.qminus, self.qplus, netflux=True)
-        self.totalfluxn=pathways.total_flux(self.netfluxn, self.A)
-        self.raten=pathways.rate(self.totalfluxn, self.mu, self.qminus)
+        self.fluxn = flux.flux_matrix(self.T, self.mu, self.qminus, self.qplus, netflux=False)
+        self.netfluxn = flux.flux_matrix(self.T, self.mu, self.qminus, self.qplus, netflux=True)
+        self.totalfluxn=flux.total_flux(self.netfluxn, self.A)
+        self.raten=flux.rate(self.totalfluxn, self.mu, self.qminus)
     
     def test_tpt_flux(self):
         flux=self.bdc.flux(self.a, self.b)

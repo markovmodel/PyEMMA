@@ -312,7 +312,7 @@ class ReactiveFlux(object):
         nnew = len(tpt_sets)
         
         # coarse-grain fluxHere we should branch between sparse and dense implementations, but currently there is only a 
-        F_coarse = tptapi.coarsegrain(self._flux, tpt_sets)
+        F_coarse = tptapi.coarsegrain(self._gross_flux, tpt_sets)
         Fnet_coarse = tptapi.to_netflux(F_coarse)
         
         # coarse-grain stationary probability and committors - this can be done all dense
