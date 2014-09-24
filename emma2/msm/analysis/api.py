@@ -1486,7 +1486,7 @@ def tpt_netflux(T, A, B, mu=None, qminus=None, qplus=None):
 
     The netflux or effective current is defined as
 
-    .. math:: f_{ij}^{+}=\max{f_{ij}-f_{ji}, 0}
+    .. math:: f_{ij}^{+}=\max \{ f_{ij}-f_{ji}, 0 \}
 
     :math:`f_{ij}` is the flux for the transition from :math:`A` to
     :math:`B`.
