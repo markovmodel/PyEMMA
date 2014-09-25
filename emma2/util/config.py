@@ -58,6 +58,10 @@ class AttribStore(dict):
         self[name] = value
 
 def readConfiguration():
+    """
+    TODO: consider using json to support arbitray python objects in ini file (if this getting more complex)
+    """
+    
     global configParser, used_filenames
         
     # use these files to extend/overwrite the config.
