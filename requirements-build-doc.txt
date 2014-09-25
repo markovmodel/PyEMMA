@@ -1,7 +1,6 @@
-# this uses simply all dependencies defined in setup.py
-.
 # additional for building the sphinx doc and ipython notebook rst conversion
 matplotlib>=1.3.1
 sphinx>=1.2.1
 ipython>=2.1.0
 numpydoc>=0.4
+runipy>=0.1.1
