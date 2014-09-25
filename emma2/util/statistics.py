@@ -31,6 +31,7 @@ def confidence_interval(data, alpha):
     # sort data
     sdata = np.sort(data)
     # index of the mean
+    # FIXME: this function has been introduced in numpy 1.7, but we want to be compatible with 1.6
     im = np.searchsorted(sdata, m)
     if (im == 0 or im == len(sdata)):
         pm = im
