@@ -630,21 +630,20 @@ def mfpt(T, target):
     
     Parameters
     ----------
-    T : ndarray, shape=(n,n) 
-        Transition matrix.
+    T : (M, M) ndarray
+        Transition matrix
     target : int
-        Target state for mfpt calculation.
+        Target state for mfpt calculation
     
     Returns
     -------
-    m_t : ndarray, shape=(n,)
-         Vector of mean first passage times to target state t.
+    m_t : (M, ) ndarray
+         Vector of mean first passage times
 
     Notes
     -----
     The mean first passage time :math:`\mathbf{E}_x[T_y]` is the expected
     htting time of state :math:`y` starting in state :math:`x`.
-
 
     For a fixed target state :math:`y` it is given by
 
@@ -666,7 +665,7 @@ def mfpt(T, target):
     >>> m_t=mfpt(T)
     >>> m_t
     array([  0.,  12.,  22.])
-
+    
     """
     if issparse(T):
         return sparse.mean_first_passage_time.mfpt(T, target)
