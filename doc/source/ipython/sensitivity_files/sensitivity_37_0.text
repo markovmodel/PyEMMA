@@ -1,2 +1,0 @@
-/Users/jan-hendrikprinz/anaconda/lib/python2.7/site-packages/numpy/core/numeric.py:320: ComplexWarning: Casting complex values to real discards the imaginary part
-  return array(a, dtype, copy=False, order=order)
