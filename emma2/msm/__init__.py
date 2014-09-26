@@ -13,7 +13,6 @@ Submodules
    :toctree: generated/
 
 """
-from .api import *
 from . import analysis
 from . import estimation
 from . import io
