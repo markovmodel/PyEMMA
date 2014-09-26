@@ -11,9 +11,5 @@ of the API, please have a look at the :ref:`ref_api`.
 To install this software and additional dependencies refer to the 
 :ref:`Installation Guide <ref_install>`.
 
-For support/bug reports/sugguestions/complains please visit:
-
-
-.. TODO: enter public url of your repo.
-
-http://github.com/
+For support/bug reports/sugguestions/complains please visit us at 
+`GitHub <http://github.com/cmb-fu/emma/>`_
