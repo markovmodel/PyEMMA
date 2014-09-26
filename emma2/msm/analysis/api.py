@@ -651,6 +651,7 @@ def mfpt(T, target):
                                              0 & x=y \\
                                              1+\sum_{z} T_{x,z} \mathbb{E}_z[T_y] & x \neq y
                                              \end{array}  \right.
+                                             
     References
     ----------
     .. [1] Hoel, P G and S C Port and C J Stone. 1972. Introduction to
