@@ -23,7 +23,7 @@ If you have Anaconda up and running, you install Emma via:
 
 ::
 
-    pip install emma [--user]
+    pip install emma2 [--user]
     
     
 The *--user* argument is optional and tells pip to install into your home folder,
@@ -66,11 +66,9 @@ and run it to build Emma itself and all of its dependencies from source.
 
 1. Obtain a clone via
 
-.. TODO:: provide clone url for git after publishing.
-
 ::
 
-   git clone http://.../emma2.git
+   git clone https://github.com/cmb-fu/emma.git
 
 2. install emma2 via
 
