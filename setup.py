@@ -1,38 +1,69 @@
 #!/usr/bin/env python
 """
-################################################################################
-    EMMA2 Setup
-################################################################################
+EMMA: Emma's Markov Model Algorithms
+
+EMMA is a collection of algorithms implemented mostly in
+`NumPy <http://www.numpy.org/>`_ and `SciPy <http://www.scipy.org>`_
+to analyze trajectories generated from any kind of simulation
+(e.g. molecular trajectories) via Markov state models (MSM).
+
+TODO: extend.
 """
+
+DOCLINES = __doc__.split("\n")
+
 import sys
 import os
+import warnings
 from glob import glob
-from distutils.version import StrictVersion
-
-try:
-    import Cython
-    from Cython.Build import cythonize
-    USE_CYTHON = True
-except ImportError:
-    USE_CYTHON = False
-
-if USE_CYTHON:
-    if StrictVersion(Cython.__version__) < StrictVersion('0.20'):
-        print "Your cython version is too old. Setup will treat this as if there is no cython installation and use pre-cythonized files."
-        USE_CYTHON=False
 
 # define minimum requirements for our setup script.
 __requires__ = 'setuptools >= 3.0.0'
 
+CLASSIFIERS = """\
+Development Status :: 4 - Beta
+Environment :: Console
+Intended Audience :: Science/Research
+License :: OSI Approved :: BSD License
+Natural Language :: English
+Operating System :: MacOS :: MacOS X
+Operating System :: POSIX :: Linux
+Programming Language :: Python :: 2.6
+Programming Language :: Python :: 2.7
+Topic :: Scientific/Engineering :: Bio-Informatics
+Topic :: Scientific/Engineering :: Chemistry
+Topic :: Scientific/Engineering :: Mathematics
+Topic :: Scientific/Engineering :: Physics
+
+"""
+
 
 def getSetuptoolsError():
-    bootstrap_setuptools = 'python2.7 -c \"import urllib2;\n\
+    bootstrap_setuptools = """\
+python2.7 -c "import urllib2;
 url=\'https://bitbucket.org/pypa/setuptools/raw/bootstrap/ez_setup.py\';\n\
-exec urllib2.urlopen(url).read()\"'
-
+exec urllib2.urlopen(url).read()\""""
     cmd = ((80 * '=') + '\n' + bootstrap_setuptools + '\n' + (80 * '='))
     s = 'You can use the following command to upgrade/install it:\n%s' % cmd
     return s
+
+USE_CYTHON = False
+try:
+    import Cython
+    from Cython.Build import cythonize
+    from distutils.version import StrictVersion
+
+    if StrictVersion(Cython.__version__) < StrictVersion('0.20'):
+        warnings.warn("Your cython version is too old. Setup will treat this"
+                      " as if there is no cython installation and "
+                      "use pre-cythonized files.")
+    else:
+        USE_CYTHON = True
+except ImportError:
+    pass
+
+# define minimum requirements for our setup script.
+__requires__ = 'setuptools >= 3.0.0'
 
 try:
     from setuptools import setup, Extension, find_packages
@@ -87,14 +118,14 @@ mle_trev_sparse_module = \
               extra_compile_args=['-march=native'])
 
 mle_trev_module = [mle_trev_given_pi_dense_module,
-                            mle_trev_given_pi_sparse_module,
-                            mle_trev_sparse_module]
+                   mle_trev_given_pi_sparse_module,
+                   mle_trev_sparse_module]
 
 if USE_CYTHON:
     mle_trev_module = cythonize(mle_trev_module)
 
 
-from distutils.command.build_ext import build_ext
+from setuptools.command.build_ext import build_ext
 
 
 class np_build(build_ext):
@@ -118,37 +149,24 @@ class np_build(build_ext):
         from numpy import get_include
 
         self.include_dirs = []
+        # FIXME: this makes no sense does it?
         self.include_dirs.append('.')
         self.include_dirs.append(get_include())
 
 
-from setuptools.command.test import test
+def ipython_notebooks_mapping(dest):
+    """
+    returns a mapping for each file in ipython directory:
+    [ (dest/$dir, [$file]) ] for each $dir and $file in this dir.
+    """
+    result = []
+    for root, dirs, files in os.walk('ipython'):
+        ipynb = []
+        for f in files:
+            ipynb.append(os.path.join(root, f))
+        result.append((os.path.join(dest, root), ipynb))
 
-
-class DiscoverTest(test):
-
-    def discover_and_run_tests(self):
-        import unittest
-        # get setup.py directory
-        setup_file = sys.modules['__main__'].__file__
-        setup_dir = os.path.abspath(os.path.dirname(setup_file))
-        # use the default shared TestLoader instance
-        test_loader = unittest.defaultTestLoader
-        # use the basic test runner that outputs to sys.stderr
-        test_runner = unittest.TextTestRunner(verbosity=2)
-        # automatically discover all tests
-        search_path = os.path.join(setup_dir, 'emma2')
-        test_suite = test_loader.discover(search_path, pattern='*_test.py')
-        # run the test suite
-        test_runner.run(test_suite)
-
-    def finalize_options(self):
-        test.finalize_options(self)
-        self.test_args = []
-        self.test_suite = True
-
-    def run_tests(self):
-        self.discover_and_run_tests()
+    return result
 
 
 # installation destination of ipython notebooks for users
@@ -156,31 +174,20 @@ class DiscoverTest(test):
 data_files = []
 if os.getenv('INSTALL_IPYTHON', False) or 'install' in sys.argv:
     dest = os.path.join(os.path.expanduser('~'), 'emma2-ipython')
-
-    def ipython_notebooks_mapping(dest):
-        """
-        returns a mapping for each file in ipython directory:
-        [ (dest/$dir, [$file]) ] for each $dir and $file in this dir.
-        """
-        result = []
-        for root, dirs, files in os.walk('ipython'):
-            ipynb = []
-            for f in files:
-                ipynb.append(os.path.join(root, f))
-            result.append((os.path.join(dest, root), ipynb))
-
-        return result
-
     m = ipython_notebooks_mapping(dest)
     data_files.extend(m)
 
 metadata = dict(
     name='Emma2',
-    version=versioneer.get_version(),
-    description='EMMA 2',
-    url='http://compmolbio.biocomputing-berlin.de/index.php',
+    maintainer='Martin K. Scherer',
+    maintainer_email='m.scherer@fu-berlin.de',
     author='The Emma2 team',
-    author_email='',  # TODO: add this
+    # TODO: add this
+    author_email='',
+    url='http://compmolbio.biocomputing-berlin.de/index.php',
+    description=DOCLINES[0],
+    long_description="\n".join(DOCLINES[2:]),
+    version=versioneer.get_version(),
     # packages are found if their folder contains an __init__.py,
     packages=find_packages(),
     # install default emma.cfg into package.
@@ -190,7 +197,6 @@ metadata = dict(
     data_files=data_files,
     scripts=[s for s in glob('scripts/*') if s.find('mm_') != -1],
     cmdclass=dict(build_ext=np_build,
-                  test=DiscoverTest,
                   version=versioneer.cmd_version,
                   versioneer=versioneer.cmd_update_files,
                   build=versioneer.cmd_build,
@@ -199,6 +205,7 @@ metadata = dict(
     ext_modules=[cocovar_module] + mle_trev_module,
     setup_requires=['numpy >= 1.6.0'],
     tests_require=[],
+    test_suite='nose.collector',
     # runtime dependencies
     install_requires=['numpy >= 1.6.0',
                       'scipy >= 0.11',
