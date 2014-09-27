@@ -40,12 +40,21 @@ the development branch.
       git branch impl_fancy_feature # create new branch
       git checkout impl_fancy_feature # switch to new branch
 
-2. work on the newly created branch
-... work, create/edit files, commit them to "impl_..." branch
+2. work on the newly created branch:
 
-TEST IT! :-)
+::
 
-3. reintegrate your work with the development branch
+      touch fancy_feat.py
+      git commit fancy_feat.py -m"Just created source for fancy_feature"
+
+3. TEST IT! :-)
+
+::
+
+      touch fancy_feat_test.py
+      git commit fancy_feat_test.py -m"This is the unit test for fancy_feat"
+
+4. reintegrate your work with the development branch
 
 ::
 
@@ -63,4 +72,5 @@ Conclusions:
 * Working branches do not interfere with other ones.
 * The development branch contains all tested implemented features
 * The development branch is used to test for interference of features
-* The master branch contains all tested features and is most stable
+* The master branch contains all tested features and represents the
+  set of features that are suitable for public usage

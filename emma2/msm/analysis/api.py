@@ -630,21 +630,20 @@ def mfpt(T, target):
     
     Parameters
     ----------
-    T : ndarray, shape=(n,n) 
-        Transition matrix.
+    T : (M, M) ndarray
+        Transition matrix
     target : int
-        Target state for mfpt calculation.
+        Target state for mfpt calculation
     
     Returns
     -------
-    m_t : ndarray, shape=(n,)
-         Vector of mean first passage times to target state t.
+    m_t : (M, ) ndarray
+         Vector of mean first passage times
 
     Notes
     -----
     The mean first passage time :math:`\mathbf{E}_x[T_y]` is the expected
     htting time of state :math:`y` starting in state :math:`x`.
-
 
     For a fixed target state :math:`y` it is given by
 
@@ -652,6 +651,7 @@ def mfpt(T, target):
                                              0 & x=y \\
                                              1+\sum_{z} T_{x,z} \mathbb{E}_z[T_y] & x \neq y
                                              \end{array}  \right.
+                                             
     References
     ----------
     .. [1] Hoel, P G and S C Port and C J Stone. 1972. Introduction to
@@ -666,7 +666,7 @@ def mfpt(T, target):
     >>> m_t=mfpt(T)
     >>> m_t
     array([  0.,  12.,  22.])
-
+    
     """
     if issparse(T):
         return sparse.mean_first_passage_time.mfpt(T, target)
@@ -1486,7 +1486,7 @@ def tpt_netflux(T, A, B, mu=None, qminus=None, qplus=None):
 
     The netflux or effective current is defined as
 
-    .. math:: f_{ij}^{+}=\max{f_{ij}-f_{ji}, 0}
+    .. math:: f_{ij}^{+}=\max \{ f_{ij}-f_{ji}, 0 \}
 
     :math:`f_{ij}` is the flux for the transition from :math:`A` to
     :math:`B`.
