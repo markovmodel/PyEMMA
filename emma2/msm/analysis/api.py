@@ -16,11 +16,12 @@ from scipy.sparse.sputils import isdense
 
 import dense.assessment
 import dense.committor
-import dense.tpt
+#import dense.tpt
 import dense.fingerprints
 import dense.decomposition
 import dense.expectations
 import dense.pcca
+#import dense.pathways
 import dense.sensitivity
 import dense.mean_first_passage_time
 
@@ -28,7 +29,7 @@ import sparse.assessment
 import sparse.decomposition
 import sparse.expectations
 import sparse.committor
-import sparse.tpt
+#import sparse.tpt
 import sparse.fingerprints
 import sparse.mean_first_passage_time
 
@@ -55,11 +56,12 @@ __all__=['is_transition_matrix',
          'expected_counts_stationary',
          'mfpt',
          'committor',
-         'tpt',
-         'tpt_flux',
-         'tpt_netflux',
-         'tpt_totalflux',
-         'tpt_rate',
+#         'tpt',
+#         'tpt_grossflux',
+#         'tpt_netflux',
+#         'tpt_totalflux',
+#         'tpt_rate',
+#         'tpt_decomposition',
          'pcca',
          'expectation',
          'fingerprint_correlation',
@@ -645,6 +647,7 @@ def mfpt(T, target):
     The mean first passage time :math:`\mathbf{E}_x[T_y]` is the expected
     htting time of state :math:`y` starting in state :math:`x`.
 
+
     For a fixed target state :math:`y` it is given by
 
     .. math :: \mathbb{E}_x[T_y] = \left \{  \begin{array}{cc}
@@ -1219,8 +1222,15 @@ def pcca(T, n):
 ################################################################################
 
 # DONE: Ben
-def committor(T, A, B, forward=True):
+def committor(T, A, B, forward=True, mu=None):
     r"""Compute the committor between sets of microstates.
+    
+    The committor assigns to each microstate a probability that being
+    at this state, the set B will be hit next, rather than set A
+    (forward committor), or that the set A has been hit previously
+    rather than set B (backward committor). See [1] for a
+    detailed mathematical description. The present implementation 
+    uses the equations given in [2].
     
     Parameters
     ----------
@@ -1292,9 +1302,12 @@ def committor(T, A, B, forward=True):
 
     References
     ----------
-    .. [1] Metzner, P, C Schuette and E Vanden-Eijnden. 2009.
+    .. [1] P. Metzner, C. Schuette and E. Vanden-Eijnden.
         Transition Path Theory for Markov Jump Processes. 
-        Multiscale Model Simul 7 (3): 1192-1219.
+        Multiscale Model Simul 7: 1192-1219 (2009).
+    .. [2] F. Noe, C. Schuette, E. Vanden-Eijnden, L. Reich and T.Weikl 
+        Constructing the Full Ensemble of Folding Pathways from Short Off-Equilibrium Simulations. 
+        Proc. Natl. Acad. Sci. USA, 106: 19011-19016 (2009).
 
     Examples
     --------
@@ -1318,7 +1331,7 @@ def committor(T, A, B, forward=True):
             return sparse.committor.forward_committor(T, A, B)
         else:
             """ if P is time reversible backward commitor is equal 1 - q+"""
-            if is_reversible(T):
+            if is_reversible(T, mu=mu):
                 return 1.0-sparse.committor.forward_committor(T, A, B)
                 
             else:
@@ -1329,7 +1342,7 @@ def committor(T, A, B, forward=True):
             return dense.committor.forward_committor(T, A, B)
         else:
             """ if P is time reversible backward commitor is equal 1 - q+"""
-            if is_reversible(T):
+            if is_reversible(T, mu=mu):
                 return 1.0-dense.committor.forward_committor(T, A, B)
             else:
                 return dense.committor.backward_committor(T, A, B)
@@ -1339,280 +1352,6 @@ def committor(T, A, B, forward=True):
     
     return committor
 
-# DONE: Ben
-def tpt(T, A, B, mu=None, qminus=None, qplus=None):
-    r""" A multi-purpose TPT-object.
-    
-    The TPT-object provides methods for Transition Path analysis 
-    of transition matrices.
-
-    Parameters
-    ----------
-    T : (M, M) ndarray or scipy.sparse matrix
-        Transition matrix
-    A : array_like
-        List of integer state labels for set A
-    B : array_like
-        List of integer state labels for set B
-    mu : (M,) ndarray (optional)
-        Stationary vector
-    qminus : (M,) ndarray (optional)
-        Backward committor for A->B reaction
-    qplus : (M,) ndarray (optional)
-        Forward committor for A-> B reaction
-        
-    Returns
-    -------
-    tpt: emma2.msm.analysis.dense/sparse.tpt.TPT object
-        A python object for Transition Path analysis
-        
-    Notes
-    -----
-    The central object used in transition path theory is
-    the forward and backward comittor function.
-
-    See also
-    --------
-    committor
-
-    References
-    ----------
-    .. [1] Metzner, P, C Schuette and E Vanden-Eijnden. 2009.
-        Transition Path Theory for Markov Jump Processes. 
-        Multiscale Model Simul 7 (3): 1192-1219.
-    
-    """
-    
-    if len(A) == 0 or len(B) == 0:
-        raise ValueError('set A or B is empty')
-    n = T.shape[0]
-    if len(A) > n or len(B) > n or max(A) > n or max(B) > n:
-        raise ValueError('set A or B defines more states, than given transition matrix.')
-    if not is_transition_matrix(T):
-        raise ValueError('given matrix T is not a transition matrix')   
-    if issparse(T):
-        return sparse.tpt.TPT(T, A, B)
-    elif isdense(T):
-        return dense.tpt.TPT(T, A, B)
-    else:
-        raise _type_not_supported                
-
-def tpt_flux(T, A, B, mu=None, qminus=None, qplus=None):
-    r"""Flux network for the reaction A -> B.
-    
-    Parameters
-    ----------
-    T : (M, M) ndarray or scipy.sparse matrix
-        Transition matrix
-    A : array_like
-        List of integer state labels for set A
-    B : array_like
-        List of integer state labels for set B
-    mu : (M,) ndarray (optional)
-        Stationary vector
-    qminus : (M,) ndarray (optional)
-        Backward committor for A->B reaction
-    qplus : (M,) ndarray (optional)
-        Forward committor for A-> B reaction
-        
-    Returns
-    -------
-    flux : (M, M) ndarray or scipy.sparse matrix
-        Matrix of flux values between pairs of states.
-
-    See also
-    --------
-    committor, tpt
-            
-    Notes
-    -----
-    Computation of the flux network relies on transition path theory
-    (TPT). The central object used in transition path theory is the
-    forward and backward comittor function.
-
-    The TPT-flux is defined as 
-
-    .. math:: f_{ij}=\left \{ \begin{array}{rl}
-                          \pi_i q_i^{(-)} p_{ij} q_j^{(+)} & i \neq j \\
-                          0                                & i=j\
-                          \end{array} \right .
-        
-    References
-    ----------
-    .. [1] Metzner, P, C Schuette and E Vanden-Eijnden. 2009.
-        Transition Path Theory for Markov Jump Processes. 
-        Multiscale Model Simul 7 (3): 1192-1219.
-            
-    """    
-    if issparse(T):
-        return sparse.tpt.tpt_flux(T, A, B, mu=mu, qminus=qminus, qplus=qplus)
-    elif isdense(T):
-        return dense.tpt.tpt_flux(T, A, B, mu=mu, qminus=qminus, qplus=qplus)
-    else:
-        raise _type_not_supported      
-
-def tpt_netflux(T, A, B, mu=None, qminus=None, qplus=None):
-    r"""Netflux network for the reaction A -> B.
-    
-    Parameters
-    ----------
-    T : (M, M) ndarray or scipy.sparse matrix
-        Transition matrix
-    A : array_like
-        List of integer state labels for set A
-    B : array_like
-        List of integer state labels for set B
-    mu : (M,) ndarray (optional)
-        Stationary vector
-    qminus : (M,) ndarray (optional)
-        Backward committor for A->B reaction
-    qplus : (M,) ndarray (optional)
-        Forward committor for A-> B reaction
-
-    Returns
-    -------
-    netflux : (M, M) ndarray or scipy.sparse matrix
-        Matrix of netflux values between pairs of states.
-
-    See also
-    --------
-    committor, tpt_flux
-
-    Notes
-    -----
-    Computation of the netflux network relies on transition path theory
-    (TPT). The central object used in transition path theory is the
-    forward and backward comittor function.
-
-    The netflux or effective current is defined as
-
-    .. math:: f_{ij}^{+}=\max \{ f_{ij}-f_{ji}, 0 \}
-
-    :math:`f_{ij}` is the flux for the transition from :math:`A` to
-    :math:`B`.
-    
-    References
-    ----------
-    .. [1] Metzner, P, C Schuette and E Vanden-Eijnden. 2009.
-        Transition Path Theory for Markov Jump Processes. 
-        Multiscale Model Simul 7 (3): 1192-1219.            
-        
-    """    
-    if issparse(T):
-        return sparse.tpt.tpt_netflux(T, A, B, mu=mu, qminus=qminus, qplus=qplus)
-    elif isdense(T):
-        return dense.tpt.tpt_netflux(T, A, B, mu=mu, qminus=qminus, qplus=qplus)
-    else:
-        raise _type_not_supported
-
-def tpt_totalflux(T, A, B, mu=None, qminus=None, qplus=None):
-    r"""Total flux for the reaction A -> B.
-    
-    Parameters
-    ----------
-    T : (M, M) ndarray or scipy.sparse matrix
-        Transition matrix
-    A : array_like
-        List of integer state labels for set A
-    B : array_like
-        List of integer state labels for set B
-    mu : (M,) ndarray (optional)
-        Stationary vector
-    qminus : (M,) ndarray (optional)
-        Backward committor for A->B reaction
-    qplus : (M,) ndarray (optional)
-        Forward committor for A-> B reaction
-
-    Returns
-    -------
-    F : float
-        The total flux between reactant and product
-
-    See also
-    --------
-    committor, tpt_flux
-    
-    Notes
-    -----
-    Computation of the total flux network relies on transition path
-    theory (TPT). The central object used in transition path theory is
-    the forward and backward comittor function.
-    
-    The total flux is defined as the total outflow from :math:`A`,
-    
-    .. math:: F=\sum_{i \in A, j \notin A} f_{ij}
-    
-    :math:`f_{ij}` is the flux for the transition from :math:`A` to
-    :math:`B`.
-    
-    References
-    ----------
-    .. [1] Metzner, P, C Schuette and E Vanden-Eijnden. 2009.
-        Transition Path Theory for Markov Jump Processes. 
-        Multiscale Model Simul 7 (3): 1192-1219.               
-
-    """  
-    if issparse(T):
-        return sparse.tpt.tpt_totalflux(T, A, B, mu=mu, qminus=qminus, qplus=qplus)
-    elif isdense(T):
-        return dense.tpt.tpt_totalflux(T, A, B, mu=mu, qminus=qminus, qplus=qplus)
-    else:
-        raise _type_not_supported  
-
-def tpt_rate(T, A, B, mu=None, qminus=None, qplus=None):
-    r"""Rate of the reaction A -> B.
-    
-    Parameters
-    ----------
-    T : (M, M) ndarray or scipy.sparse matrix
-        Transition matrix
-    A : array_like
-        List of integer state labels for set A
-    B : array_like
-        List of integer state labels for set B
-    mu : (M,) ndarray (optional)
-        Stationary vector
-    qminus : (M,) ndarray (optional)
-        Backward committor for A->B reaction
-    qplus : (M,) ndarray (optional)
-        Forward committor for A-> B reaction
-
-    Returns
-    -------
-    kAB : float
-        The reaction rate (per time step of the Markov chain)
-
-    See also
-    --------
-    committor, tpt_totalflux, tpt_flux
-
-    Notes
-    -----
-    Computation of the rate relies on transition path theory
-    (TPT). The central object used in transition path theory is the
-    forward and backward comittor function.
-
-    The transition rate, i.e. the total number of reaction events per
-    time step, is defined as
-
-    .. math:: k_{AB}=\frac{1}{F}
-
-    :math:`F` is the total flux for the transition from :math:`A` to
-    :math:`B`.
-
-    References
-    ----------
-    .. [1] Metzner, P, C Schuette and E Vanden-Eijnden. 2009.
-        Transition Path Theory for Markov Jump Processes. 
-        Multiscale Model Simul 7 (3): 1192-1219.               
-
-    """
-    if issparse(T):
-        return sparse.tpt.tpt_rate(T, A, B, mu=mu, qminus=qminus, qplus=qplus)
-    elif isdense(T):
-        return dense.tpt.tpt_rate(T, A, B, mu=mu, qminus=qminus, qplus=qplus)
-    else:
-        raise _type_not_supported          
 
 
 ################################################################################
