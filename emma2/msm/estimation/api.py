@@ -865,9 +865,9 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
         else:
             if sparse_mode:
                 # Sparse, reversible, fixed pi (currently using dense with sparse conversion)
-                return sparse.mle_trev_given_pi.mle_trev_given_pi(C, mu,**kwargs)               
+                return sparse.mle_trev_given_pi.mle_trev_given_pi(C, mu,**kwargs)
             else:
-                return dense.mle_trev_given_pi.mle_trev_given_pi(C,mu,**kwargs)                
+                return dense.mle_trev_given_pi.mle_trev_given_pi(C,mu,**kwargs)
     else: # nonreversible estimation
         if mu is None:
             if sparse_mode:

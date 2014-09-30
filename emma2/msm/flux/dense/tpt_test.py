@@ -7,8 +7,7 @@ r"""Unit test for the TPT-module
 import unittest
 import numpy as np
 
-import committor
-from tpt import TPT, tpt_flux, tpt_netflux, tpt_totalflux, tpt_rate
+import tpt
 
 class BirthDeathChain():
     """Birth and death chain class
@@ -254,142 +253,33 @@ class TestTPT(unittest.TestCase):
         self.bdc=BirthDeathChain(q, p)
         self.T=self.bdc.transition_matrix()
 
-        """Compute mu, qminus, qplus in constructor"""
-        self.tpt=TPT(self.T, self.A, self.B)
-
         """Use precomputed mu, qminus, qplus"""        
-        self.mu=self.bdc.stationary_distribution()
-        self.qminus=self.bdc.committor_backward(self.a, self.b)
-        self.qplus=self.bdc.committor_forward(self.a, self.b)
-        self.tpt_fast=TPT(self.T, self.A, self.B,\
-                              mu=self.mu, qminus=self.qminus,\
-                              qplus=self.qplus)
+        self.mu = self.bdc.stationary_distribution()
+        self.qplus = self.bdc.committor_forward(self.a, self.b)
+        self.qminus = self.bdc.committor_backward(self.a, self.b)
+        #self.qminus = committor.backward_committor(self.T, self.A, self.B, mu=self.mu)
+        #self.qplus = committor.forward_committor(self.T, self.A, self.B)
+        self.fluxn = tpt.flux_matrix(self.T, self.mu, self.qminus, self.qplus, netflux=False)
+        self.netfluxn = tpt.to_netflux(self.fluxn)
+        self.Fn = tpt.total_flux(self.fluxn, self.A)
+        self.kn = tpt.rate(self.Fn, self.mu, self.qminus)
 
     def test_flux(self):
         flux=self.bdc.flux(self.a, self.b)        
-        
-        fluxn=self.tpt.get_flux()
-        self.assertTrue(np.allclose(fluxn, flux))
-
-        fluxn=self.tpt_fast.get_flux()
-        self.assertTrue(np.allclose(fluxn, flux))
+        self.assertTrue(np.allclose(self.fluxn, flux))
 
     def test_netflux(self):
         netflux=self.bdc.netflux(self.a, self.b)
-        
-        netfluxn=self.tpt.get_netflux()
-        self.assertTrue(np.allclose(netfluxn, netflux))
-
-        netfluxn=self.tpt_fast.get_netflux()
-        self.assertTrue(np.allclose(netfluxn, netflux))        
+        self.assertTrue(np.allclose(self.netfluxn, netflux))
 
     def test_totalflux(self):
         F=self.bdc.totalflux(self.a, self.b)
-
-        Fn=self.tpt.get_totalflux()
-        self.assertTrue(np.allclose(Fn, F))
-
-        Fn=self.tpt_fast.get_totalflux()
-        self.assertTrue(np.allclose(Fn, F))
+        self.assertTrue(np.allclose(self.Fn, F))
 
     def test_rate(self):
         k=self.bdc.rate(self.a, self.b)
-        
-        kn=self.tpt.get_rate()
-        self.assertTrue(np.allclose(kn, k))
-
-        kn=self.tpt_fast.get_rate()
-        self.assertTrue(np.allclose(kn, k))
-
-    def test_backward_committor(self):
-        qminus=self.qminus
-
-        qminusn=self.tpt.get_backward_committor()
-        self.assertTrue(np.allclose(qminusn, qminus))
-
-        qminusn=self.tpt_fast.get_backward_committor()
-        self.assertTrue(np.allclose(qminusn, qminus))
-
-    def test_forward_committor(self):
-        qplus=self.qplus
-
-        qplusn=self.tpt.get_forward_committor()
-        self.assertTrue(np.allclose(qplusn, qplus))
-
-        qplusn=self.tpt_fast.get_forward_committor()
-        self.assertTrue(np.allclose(qplusn, qplus))
-
-    def test_stationary_distribution(self):
-        mu=self.mu
-        
-        mun=self.tpt.get_stationary_distribution()
-        self.assertTrue(np.allclose(mun, mu))
-
-        mun=self.tpt_fast.get_stationary_distribution()
-        self.assertTrue(np.allclose(mun, mu))
-
-
-class TestTptFunctions(unittest.TestCase):
-    def setUp(self):
-        p=np.zeros(10)
-        q=np.zeros(10)
-        p[0:-1]=0.5
-        q[1:]=0.5
-        p[4]=0.01
-        q[6]=0.1
-
-        self.A=[0,1]
-        self.B=[8,9]
-        self.a=1
-        self.b=8
-
-        self.bdc=BirthDeathChain(q, p)
-        self.T=self.bdc.transition_matrix()    
-
-        self.mu=self.bdc.stationary_distribution()
-        self.qminus=self.bdc.committor_backward(self.a, self.b)
-        self.qplus=self.bdc.committor_forward(self.a, self.b)
-    
-    def test_tpt_flux(self):
-        flux=self.bdc.flux(self.a, self.b)        
-        
-        fluxn=tpt_flux(self.T, self.A, self.B)
-        self.assertTrue(np.allclose(fluxn, flux))
-
-        fluxn=tpt_flux(self.T, self.A, self.B, mu=self.mu,\
-                           qminus=self.qminus, qplus=self.qplus)
-        self.assertTrue(np.allclose(fluxn, flux))
-
-    def test_tpt_netflux(self):
-        netflux=self.bdc.netflux(self.a, self.b)
-
-        netfluxn=tpt_netflux(self.T, self.A, self.B)
-        self.assertTrue(np.allclose(netfluxn, netflux))
-
-        netfluxn=tpt_netflux(self.T, self.A, self.B, mu=self.mu,\
-                           qminus=self.qminus, qplus=self.qplus)
-        self.assertTrue(np.allclose(netfluxn, netflux))
-
-    def test_tpt_totalflux(self):
-        totalflux=self.bdc.totalflux(self.a, self.b)
-
-        totalfluxn=tpt_totalflux(self.T, self.A, self.B)
-        self.assertTrue(np.allclose(totalfluxn, totalflux))
-
-        totalfluxn=tpt_totalflux(self.T, self.A, self.B, mu=self.mu,\
-                           qminus=self.qminus, qplus=self.qplus)
-        self.assertTrue(np.allclose(totalfluxn, totalflux))
-
-    def test_tpt_rate(self):
-        rate=self.bdc.rate(self.a, self.b)
-
-        raten=tpt_rate(self.T, self.A, self.B)
-        self.assertTrue(np.allclose(raten, rate))
-
-        raten=tpt_rate(self.T, self.A, self.B, mu=self.mu,\
-                           qminus=self.qminus, qplus=self.qplus)
-        self.assertTrue(np.allclose(raten, rate))        
-
+        self.assertTrue(np.allclose(self.kn, k))
 
 if __name__ == "__main__":
     unittest.main()
+
