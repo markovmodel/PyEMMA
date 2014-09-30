@@ -1,6 +1,8 @@
-include setup.py
-# libraries
-recursive-include lib *
+README.rst
+LICENSE.rst
+
+# include test modules
+include emma2/*/test/*.py
 # versioneer
 include versioneer.py
 include emma2/_version.py
@@ -11,7 +13,8 @@ prune doc/source/generated
 
 # ipython notebooks
 graft ipython
-
+#prune */*/.ipynb_checkpoints # dnw
+#global exclude __pycache__ # dnw
 # headers
 include emma2/msm/estimation/dense/*.h
 include emma2/msm/estimation/sparse/*.h
