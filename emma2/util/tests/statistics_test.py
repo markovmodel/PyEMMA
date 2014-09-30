@@ -4,19 +4,11 @@ Created on Jul 25, 2014
 @author: noe
 '''
 import unittest
-import scipy.stats
-import statistics
+from emma2.util import statistics
 import numpy as np
 
-class Test(unittest.TestCase):
 
-
-    def setUp(self):
-        pass
-
-
-    def tearDown(self):
-        pass
+class TestStatistics(unittest.TestCase):
 
     def assertConfidence(self, sample, alpha, precision):
         alpha = 0.5
@@ -29,7 +21,6 @@ class Test(unittest.TestCase):
 
         assert(alpha - (n_in/len(sample)) < precision)
 
-
     def test_confidence_interval(self):
         # exponential distribution
         self.assertConfidence(np.random.exponential(size=10000), 0.5, 0.01)
@@ -39,8 +30,6 @@ class Test(unittest.TestCase):
         self.assertConfidence(np.random.normal(size=10000), 0.5, 0.01)
         self.assertConfidence(np.random.normal(size=10000), 0.8, 0.01)
         self.assertConfidence(np.random.normal(size=10000), 0.95, 0.01)
-        
 
 if __name__ == "__main__":
-    #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()
