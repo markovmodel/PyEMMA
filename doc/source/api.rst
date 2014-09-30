@@ -14,6 +14,8 @@ underlying solution for a problem is choosen.
    msm.io
    msm.estimation
    msm.analysis
+   msm.flux
+   msm.generation
 
    
 Coordinates
