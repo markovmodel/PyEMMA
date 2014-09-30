@@ -15,5 +15,7 @@ Submodules
 """
 from . import analysis
 from . import estimation
+from . import generation
 from . import io
-
+from . import flux
+from .api import *
