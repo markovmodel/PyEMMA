@@ -1,0 +1,41 @@
+* jpype release 0.5.6 (opt out numpy feature)
+* update pystallone to ref jp 0.5.6
+* (pystallone) recover code to handle python lists as array
+
+* pre cythonized files blow up repo (ugly merge conflicts) - if we just require
+  cython in a source install and ship binary packages for users too stupid to 
+  provide a sane env, we can just preserve the use of complicated workarounds.
+  -> require a stable appveyor build for win
+  -> require a stable build for travis (first available when travis provides more mac builders)
+
+  provide binaries:
+    for emma, pystallone, jpype:
+    conda pipbuild and upload to binstar
+
+* add cythonized c files to .gitattributes and mark them as binary, keeps pain low while merging with git.
+
+* remove output cells of ipython notebooks and unify their history (we do not want to track output).
+
+
+* machbarkeit modular system?
+    * module system (msm package, autobuilder etc) mit eigener versions nr, 
+      setup.py, folder.
+
+* direct mem access from py to j does not work as expected. 
+
+
+docu:
+-----
+* recheck install guide
+* fix annotations of frank
+
+
+final steps:
+* packaging (provide wheels)
+* move repo to github
+
+future:
+-------
+* pytables (hdf) project format?
+* pymol/vmd vis support (abstraction layer?)
+
