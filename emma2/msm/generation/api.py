@@ -8,23 +8,30 @@ import math
 import numpy as np
 import emma2.util.pystallone as stallone
 
+__all__=['transition_matrix_metropolis_1d',
+         'generate_traj']
 
-def transition_matrix_metropolis_1d(E,d=1):
-    """
-    Generates a transition matrix describing the Metropolis chain jumping 
-    between neighbors in a discrete 1D energy landscape
+def transition_matrix_metropolis_1d(E,d=1.0):
+    r"""Transition matrix describing the Metropolis chain jumping
+    between neighbors in a discrete 1D energy landscape.
     
     Parameters
     ----------
-    E : ndarray (n)
-        energies in units of kT
-    d : diffusivity (0,1]. 
-        Transition probabilities are computed as p_i,i+1 = 0.5 * d * min(1.0, exp(-(E_i+1 - E_i)))
+    E : (M,) ndarray
+        Energies in units of kT
+    d : float (optional)
+        Diffusivity of the chain, d in (0, 1]
         
     Returns
     -------
-    P : ndarray (n,n)
-        transition matrix of the Markov chain
+    P : (M, M) ndarray
+        Transition matrix of the Markov chain
+
+    Notes
+    -----
+    Transition probabilities are computed as p_i,i+1 = 0.5 * d *
+    min(1.0, exp(-(E_i+1 - E_i))).
+        
     """
     # check input
     if (d <= 0 or d > 1):
@@ -46,11 +53,11 @@ def transition_matrix_metropolis_1d(E,d=1):
 
 def generate_traj(T, s, N, dt=1):
     r"""Generates a realization of the Markov chain with transition
-    matrix T
+    matrix T.
     
     Parameters
     ----------
-    T : ndarray
+    T : (M, M) ndarray
         transition matrix
     s : int
         starting state
@@ -63,7 +70,7 @@ def generate_traj(T, s, N, dt=1):
     -------
     traj_sliced : (N/dt, ) ndarray
         A discrete trajectory of length will be N/dt
-    
+        
     """
     Tstall = stallone.ndarray_to_stallone_array(T)
     mc = stallone.API.msmNew.markovChain(Tstall)
