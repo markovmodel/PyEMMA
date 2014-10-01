@@ -1,5 +1,5 @@
-README.rst
-LICENSE.rst
+inlucde README.rst
+include LICENSE.rst
 
 # include test modules
 include emma2/*/test/*.py
