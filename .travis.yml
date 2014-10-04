@@ -1,0 +1,35 @@
+language: python
+python:
+- "2.6"
+- "2.7"
+
+env:
+- TOXENV=py26-numpy16-scipy10
+- TOXENV=py26-numpy16-scipy14
+- TOXENV=py26-numpy19-scipy10
+- TOXENV=py26-numpy19-scipy14
+- TOXENV=py27-numpy16-scipy10
+- TOXENV=py27-numpy16-scipy14
+- TOXENV=py27-numpy19-scipy10
+- TOXENV=py27-numpy19-scipy14
+
+before_install:
+- sudo apt-get install -qq openjdk-7-jre
+- pip install tox wheel
+
+script: tox -e $TOX_ENV
+
+after_success:
+# link tox output to dist, so travis deploy can find it.
+- mkdir -p dist; ln -s .tox/distshare/* dist/
+# convert eggs to wheels 
+- python -m wheel convert dist/*
+
+deploy:
+  provider: pypi
+  user:
+    secure: TeTyLrHulxk9MUrLFUccvAONM2Xc1e7+Tl1eNI+FSvxn9Gh/wIPSD7ZNH+n5tgs7BXt+53OIrIfU10nLMJP7cEZJVhwmdWNm0ONIhlRsH1+UJ8e1huPb3IFxdw5UJkiTjEfKulNp3p5q+EWaS7952MwWuehDds8bk0o6TVobvXI=
+  password:
+    secure: hHDQxBuoB6SGVIBiQNuCIc128VK1qwJm23PJNXzPmpzBEA5K6PTC6uwfC6ZZ4GpCoFvynD+VPyiJv+wGbBOJWd6sTvyCAiChzPNFaHho9rXaqWlhIL99qR2I4K5bv1m9jYFVGvT8HtgaVnXxsjCrm5dai+8ICTFqkZETqiSyqzo=
+  on:
+    tags: true
