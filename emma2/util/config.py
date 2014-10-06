@@ -1,11 +1,11 @@
 r'''
-Configuration files
-===================
+Runtime Configuration
+=====================
 
-To configure the runtime behaviour like logging system or parameters for the 
-Java/Python bridge, the configuration module reads several config files to build its final
-set of settings. It searches for the file 'emma2.cfg' in several locations with
-different priorities:
+To configure the runtime behavior like logging system or parameters for the
+Java/Python bridge, the configuration module reads several config files to build
+its final set of settings. It searches for the file 'emma2.cfg' in several
+locations with different priorities:
 
 1. $CWD/emma2.cfg
 2. /etc/emma2.cfg
@@ -13,20 +13,20 @@ different priorities:
 4. $PYTHONPATH/Emma2/emma2.cfg (always taken as default configuration file)
 
 The default values are stored in later file to ensure these values are always
-defined. This is preferred over hardcoding them somewhere in the python code.
+defined. This is preferred over hardcoding them somewhere in the Python code.
 
 
 Default configuration file
 --------------------------
 
-Default settings are stored in a provided emma2.cfg file, which is included in the
-python package:
+Default settings are stored in a provided emma2.cfg file, which is included in
+the Python package:
 
 .. literalinclude:: ../../emma2/emma2.cfg
     :language: ini
 
 
-.. codeauthor:: Martin Scherer <m.scherer@fu-berlin.de>
+.. codeauthor:: Martin Scherer <m.scherer at fu-berlin.de>
 
 Members of module
 -----------------
