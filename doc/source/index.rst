@@ -3,10 +3,20 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+======================================
 EMMA -> Emma's Markov Model Algorithms
 ======================================
 
-.. include:: intro.rst
+This software is a collection of algorithms implemented mostly in
+`NumPy <http://www.numpy.org/>`_ and `SciPy <http://www.scipy.org>`_ to analyze
+trajectories generated from any kind of simulation (e.g. molecular
+trajectories) via Markov state models (MSM). It provides an API for estimation
+and analyzing MSM and various utilities to process input data (clustering,
+coordinate transformations etc). For documentation of the API, please have a
+look at the :ref:`ref_api`. To install this software and additional
+dependencies refer to the :ref:`Installation Guide <ref_install>`. For
+support/bug reports/sugguestions/complains please visit us at
+`GitHub <http://github.com/cmb-fu/emma/>`_
 
 Installation
 ============
@@ -15,7 +25,6 @@ Installation
    :maxdepth: 2
 
    INSTALL
-   INSTALL_MACOSX
    Configuration
 
 
@@ -25,7 +34,7 @@ Documentation
 .. toctree::
    :maxdepth: 2
 
-   api
+   api/index
 
 Tutorials
 =========
@@ -35,19 +44,13 @@ Tutorials
 
    ipython
 
-   
+
 Development
 ===========
 .. toctree::
    :maxdepth: 2
 
    DevelopersGuide
-   TESTING
-
-
-TODO-List in Docu
-=================
-.. todolist::
 
 
 Indices and tables
@@ -56,7 +59,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
-
-.. TODO: ipython rst conversion is not supported on RTD (readthedocs),
-    so shall we commit converted rst with images to repo or have our own build process(travis).
