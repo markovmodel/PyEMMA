@@ -16,12 +16,10 @@ from scipy.sparse.sputils import isdense
 
 import dense.assessment
 import dense.committor
-#import dense.tpt
 import dense.fingerprints
 import dense.decomposition
 import dense.expectations
 import dense.pcca
-#import dense.pathways
 import dense.sensitivity
 import dense.mean_first_passage_time
 
@@ -29,7 +27,6 @@ import sparse.assessment
 import sparse.decomposition
 import sparse.expectations
 import sparse.committor
-#import sparse.tpt
 import sparse.fingerprints
 import sparse.mean_first_passage_time
 
