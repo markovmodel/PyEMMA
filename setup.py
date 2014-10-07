@@ -62,9 +62,6 @@ try:
 except ImportError:
     pass
 
-# define minimum requirements for our setup script.
-__requires__ = 'setuptools >= 3.0.0'
-
 try:
     from setuptools import setup, Extension, find_packages
 except ImportError as ie:
@@ -149,8 +146,6 @@ class np_build(build_ext):
         from numpy import get_include
 
         self.include_dirs = []
-        # FIXME: this makes no sense does it?
-        self.include_dirs.append('.')
         self.include_dirs.append(get_include())
 
 
@@ -174,8 +169,7 @@ def ipython_notebooks_mapping(dest):
 data_files = []
 if os.getenv('INSTALL_IPYTHON', False) or 'install' in sys.argv:
     dest = os.path.join(os.path.expanduser('~'), 'emma2-ipython')
-    m = ipython_notebooks_mapping(dest)
-    data_files.extend(m)
+    data_files.extend(ipython_notebooks_mapping(dest))
 
 metadata = dict(
     name='Emma2',
@@ -203,13 +197,13 @@ metadata = dict(
                   sdist=versioneer.cmd_sdist,
                   ),
     ext_modules=[cocovar_module] + mle_trev_module,
-    setup_requires=['numpy >= 1.6.0'],
-    tests_require=[],
+    setup_requires=['numpy>=1.6.0'],
+    tests_require=['nose'],
     test_suite='nose.collector',
     # runtime dependencies
-    install_requires=['numpy >= 1.6.0',
-                      'scipy >= 0.11',
-                      'pystallone == 1.0-SNAPSHOT.2'],
+    install_requires=['numpy>= 1.6.0',
+                      'scipy>=0.11',
+                      'pystallone>=1.0-SNAPSHOT.2'],
 )
 
 setup(**metadata)
