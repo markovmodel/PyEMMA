@@ -18,6 +18,7 @@ MSM estimation and validation
 .. toctree::
    generated/estimation
    generated/analysis
+   generated/its
    generated/fingerprints
    generated/tpt
    generated/sampling
