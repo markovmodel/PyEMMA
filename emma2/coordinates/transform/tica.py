@@ -15,20 +15,20 @@ TICA
    correlation
    Amuse
 
+References
+----------
+Identification of slow molecular order parameters for Markov model construction
+Pérez-Hernández, Guillermo and Paul, Fabian and Giorgino, Toni and De Fabritiis,
+Gianni and Noé, Frank, The Journal of Chemical Physics, 139, 015102 (2013),
+DOI:http://dx.doi.org/10.1063/1.4811489
 
-performs this algo [Ref]_.
+
 
 .. TODO: describe method. See http://msmbuilder.org/theory/tICA.html
 
 .. date: Created on 19.11.2013
 
 .. moduleauthor:: Fabian Paul <fabian.paul@mpikg.mpg.de>, marscher
-
-.. [Ref] Identification of slow molecular order parameters for Markov model construction
-    Pérez-Hernández, Guillermo and Paul, Fabian and Giorgino, Toni and De Fabritiis,
-    Gianni and Noé, Frank, The Journal of Chemical Physics, 139, 015102 (2013),
-    DOI:http://dx.doi.org/10.1063/1.4811489
-
 """
 
 import os
@@ -40,6 +40,7 @@ __all__ = ['correlation', 'Amuse']
 
 from emma2.util.log import getLogger
 log = getLogger()
+
 
 def correlation(cov, var):
     r"""Calculate covariance matrix from correlation matrix.

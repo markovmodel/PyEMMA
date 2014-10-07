@@ -54,25 +54,13 @@ Passage times
 
    mfpt - Mean first-passage time
 
-Committors, TPT
-===============
+Committors and PCCA
+===================
 
 .. autosummary::
    :toctree: generated/
 
-   committor - Forward and backward commitor
-   tpt_flux - Flux network for reaction
-   tpt_netflux - Netflux network
-   tpt_totalflux - Total flux for reaction
-   tpt_rate - Reaction rate
-   tpt - Transition path theory object
-
-PCCA
-====
-
-.. autosummary::
-   :toctree: generated/
-
+   committor - Forward and backward committor
    pcca - Perron cluster center analysis
 
 Fingerprints
