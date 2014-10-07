@@ -4,3 +4,4 @@ sphinx>=1.2.1
 ipython>=2.1.0
 numpydoc>=0.4
 runipy>=0.1.1
+sphinx_rtd_theme
