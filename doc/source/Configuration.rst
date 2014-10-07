@@ -1,8 +1,3 @@
-Configuration
-=============
-
-Here we give a description of the runtime behaviour configuration of the software.
-
 .. automodule:: emma2.util.config
    :members:
    :exclude-members: AttribStore

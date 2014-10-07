@@ -16,12 +16,10 @@ from scipy.sparse.sputils import isdense
 
 import dense.assessment
 import dense.committor
-#import dense.tpt
 import dense.fingerprints
 import dense.decomposition
 import dense.expectations
 import dense.pcca
-#import dense.pathways
 import dense.sensitivity
 import dense.mean_first_passage_time
 
@@ -29,7 +27,6 @@ import sparse.assessment
 import sparse.decomposition
 import sparse.expectations
 import sparse.committor
-#import sparse.tpt
 import sparse.fingerprints
 import sparse.mean_first_passage_time
 
@@ -56,12 +53,6 @@ __all__=['is_transition_matrix',
          'expected_counts_stationary',
          'mfpt',
          'committor',
-#         'tpt',
-#         'tpt_grossflux',
-#         'tpt_netflux',
-#         'tpt_totalflux',
-#         'tpt_rate',
-#         'tpt_decomposition',
          'pcca',
          'expectation',
          'fingerprint_correlation',
@@ -632,15 +623,15 @@ def mfpt(T, target):
     
     Parameters
     ----------
-    T : (M, M) ndarray
-        Transition matrix
+    T : ndarray, shape=(n,n) 
+        Transition matrix.
     target : int
-        Target state for mfpt calculation
-    
+        Target state for mfpt calculation.
+
     Returns
     -------
-    m_t : (M, ) ndarray
-         Vector of mean first passage times
+    m_t : ndarray, shape=(n,)
+         Vector of mean first passage times to target state t.
 
     Notes
     -----
@@ -659,17 +650,17 @@ def mfpt(T, target):
     ----------
     .. [1] Hoel, P G and S C Port and C J Stone. 1972. Introduction to
         Stochastic Processes.
-        
+
     Examples
     --------
-    
+
     >>> from emma2.msm.analysis import mfpt
 
     >>> T=np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
     >>> m_t=mfpt(T)
     >>> m_t
     array([  0.,  12.,  22.])
-    
+
     """
     if issparse(T):
         return sparse.mean_first_passage_time.mfpt(T, target)
