@@ -1,1 +1,3 @@
 emma2/_version.py export-subst
+mle_trev_given_pi.c binary
+mle_trev.c binary
