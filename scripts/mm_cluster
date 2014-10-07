@@ -3,7 +3,7 @@
 usage = """
 ================================================================================
 clusters the simulation (MD) data to microstate generators. These generators are
-structures or points in state space that shall subsequently be used 
+structures or points in state space that shall subsequently be used
 to discretize the trajectories using a Voronoi (nearest-neighbor) partition.
 ================================================================================
 \n\n
@@ -23,36 +23,40 @@ log = getLogger()
 algorithms = ['kmeans', 'regspace', 'kregspace']
 metrics = ['rmsd', 'euclidean']
 
+
 def handleArgs():
     parser = argparse.ArgumentParser(usage=usage)
-    parser.add_argument('-i', '--input', nargs='+', dest='input', help='input filename or filename pattern', required=True)
+    parser.add_argument('-i', '--input', nargs='+', dest='input',
+                        help='input filename or filename pattern', required=True)
     parser.add_argument('-iformat', help='format of input files (deprecated)',
-                         choices=[], default='auto')
+                        choices=[], default='auto')
     parser.add_argument('-istepwidth', type=int, default=1)
     parser.add_argument('-algorithm', choices=algorithms, required=True)
     parser.add_argument('-metric', choices=metrics, default='euclidian')
-    parser.add_argument('-o', '--output', dest='output', default='centers.dat', help='')
-    parser.add_argument('--overwrite', action='store_true', help='overwrite existing output files.')
+    parser.add_argument('-o', '--output', dest='output', default='centers.dat')
+    parser.add_argument('--overwrite', action='store_true',
+                        help='overwrite existing output files.')
     # algorithm dependent arguments
     parser.add_argument('-clustercenters', '-k', dest='k', type=int)
     parser.add_argument('-dmin', type=float)
     parser.add_argument('-spacing', type=int)
     parser.add_argument('-maxiterations', type=int, default=1000)
-    parser.add_argument('-timecolumn', action="store_true", help='this is happily ignored at the moment.')
-    
+    parser.add_argument('-timecolumn', action="store_true",
+                        help='this is happily ignored at the moment.')
+
     args = parser.parse_args()
-    
 
     # do some sanity checks on input
-    if args.algorithm == 'kmeans': # or args.algorithm == 'kcenter':
+    if args.algorithm == 'kmeans':
         if args.k is None:
-            parser.error('kmeans and kcenter need parameter -clustercenters')
-        if int(args.k) <= 0:
+            parser.error('kmeans need parameter -clustercenters')
+
+        if args.k <= 0:
             parser.error('k has to be positive.')
-            
+
     if args.algorithm == 'regspace' and args.dmin is None:
         parser.error('regularspatial needs parameter -dmin')
-        
+
 #     if args.algorithm == 'regulartemporal' and args.spacing is None:
 #         parser.error('regulartemporal needs parameter -spacing')
 
@@ -74,10 +78,11 @@ def handleArgs():
             parser.error("output file can not be written: '%s'" % args.output)
     return args
 
+
 def main():
     args = handleArgs()
     log.info(args)
-    
+
     try:
         if args.algorithm == 'kmeans':
             clustering = kmeans(args.input, args.k, args.maxiterations)
@@ -85,14 +90,14 @@ def main():
             clustering = regspace(args.input, args.dmin, args.metric)
         elif args.algorithm == 'kregspace':
             clustering = kregspace(args.input, args.k)
-        
+
         # save cluster centers to file
-        writer = API.dataNew.writerASCII(args.output,' ', '\n')
+        writer = API.dataNew.writerASCII(args.output, ' ', '\n')
         writer.addAll(clustering._jclustering.getClusterCenters())
         writer.close()
     except JavaException as je:
-        log.exception('Java exception occured! message: %s\nstacktrace:\n%s' 
-                % (je.message(), je.stacktrace()))
+        log.exception('Java exception occured! message: %s\nstacktrace:\n%s'
+                      % (je.message(), je.stacktrace()))
         return 1
     except Exception:
         log.exception('something went wrong...')

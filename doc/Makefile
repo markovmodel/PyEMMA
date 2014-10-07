@@ -30,7 +30,7 @@ help:
 	@echo "  latex     to make LaTeX files, you can set PAPER=a4 or PAPER=letter"
 
 clean:
-	-rm -rf build/* source/generated
+	-rm -rf build/* source/generated source/api/generated
 
 html:
 	mkdir -p build/html build/doctrees
@@ -44,17 +44,17 @@ source/generated:
 ipython-rst: source/generated
 	# find all ipython notebooks (without their checkpoints)
 	@$(eval notebooks:= $$(shell cd source/generated && \
-						find ../../../ipython/ -name \*.ipynb \
-							-and -not -name \*-checkpoint.ipynb))
+                               find ../../../ipython/ -name \*.ipynb \
+                                    -and -not -name \*-checkpoint.ipynb))
 	# convert notebooks to rst
 	cd source/generated; ipython nbconvert --to rst $(notebooks)
 	# strip directory part and extensions
-	@$(eval notebooks=$$(notdir $(notebooks)))
-	@$(eval notebooks=$$(basename $(notebooks)))
+	#@$(eval notebooks=$$(notdir $(notebooks)))
+	#@$(eval notebooks=$$(basename $(notebooks)))
 	# write header
-	@echo $(HEADER) > $(F)
+	#@echo $(HEADER) > $(F)
 	# put every notebook as a link in index file
-	@$(foreach n,$(notebooks), echo "   generated/$n" >> $(F);)
+	#@$(foreach n,$(notebooks), echo "   $n" >> $(F);)
 
 	@echo "Conversion finished."
 
