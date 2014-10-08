@@ -22,12 +22,6 @@
 * direct mem access from py to j does not work as expected. 
 
 
-docu:
------
-* recheck install guide
-* fix annotations of frank
-
-
 final steps:
 * packaging (provide wheels)
 * move repo to github
