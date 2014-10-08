@@ -1,10 +1,10 @@
 """
 This module wraps the initialization process of the pystallone package. As soon
-as the module gets imported a global Java Virtual Machine (jvm) instance is 
-being created. The parameters for the jvm are red from a emma2.cfg file (see 
+as the module gets imported a global Java Virtual Machine (jvm) instance is
+being created. The parameters for the jvm are red from a emma2.cfg file (see
 emma2.util.config for more details).
 
- 
+
 The API variable is the main entry point into the Stallone API factory.
 
 Examples
@@ -28,24 +28,28 @@ package externalized on 8.8.2014
 """
 from __future__ import absolute_import
 from pystallone import startJVM
+from .log import getLogger as _getLogger
+_log = _getLogger()
+
 
 def _get_jvm_args():
     """
     reads in the configuration values for the java virtual machine and 
     returns a list containing them all.
     """
-    from .config import configParser
-    initHeap = '-Xms%s' % configParser.get('Java', 'initHeap')
-    maxHeap = '-Xmx%s' % configParser.get('Java', 'maxHeap')
-    optionalArgs = configParser.get('Java', 'optionalArgs').split()
-    optional_cp = configParser.get('Java', 'classpath')
+    from emma2.util.config import conf_values
+    java_conf = conf_values['Java']
+    initHeap = '-Xms%s' % java_conf.initheap
+    maxHeap = '-Xmx%s' % java_conf.maxheap
+    # optargs may contain lots of options separated by whitespaces, need a list
+    optionalArgs = java_conf.optionalargs.split()
+    optional_cp = "-Djava.class.path=%s" % java_conf.classpath
     return [initHeap, maxHeap, optional_cp] + optionalArgs
 
 try:
-    startJVM(None, _get_jvm_args())
+    args = _get_jvm_args()
+    startJVM(None, args)
 except:
-    from .log import getLogger
-    _log = getLogger()
     _log.exception("jvm startup failed")
     raise
 
