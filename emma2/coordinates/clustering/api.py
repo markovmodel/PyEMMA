@@ -103,7 +103,7 @@ def kregspace(infiles, k):
     Performs regular space clustering on the input files with (approximately)
     fixed number of clusters
     """
-
+    raise NotImplementedError
 
 def assign(infiles, clustering, outfiles=None, return_discretization=True):
     r"""Assigns all input trajectories to discrete trajectories using
