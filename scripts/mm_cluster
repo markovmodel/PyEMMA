@@ -14,13 +14,13 @@ import os
 import argparse
 
 from emma2.util.pystallone import JavaException, API
-from emma2.coordinates.clustering.api import kmeans, regspace, kregspace
+from emma2.coordinates.clustering import kmeans, regspace
 from emma2.util.files import handleInputFileArg
 from emma2.util.log import getLogger
 
 log = getLogger()
 # these are currently supported in emma2.coordinates.clustering
-algorithms = ['kmeans', 'regspace', 'kregspace']
+algorithms = ['kmeans', 'regspace']
 metrics = ['rmsd', 'euclidean']
 
 
@@ -88,8 +88,6 @@ def main():
             clustering = kmeans(args.input, args.k, args.maxiterations)
         elif args.algorithm == 'regspace':
             clustering = regspace(args.input, args.dmin, args.metric)
-        elif args.algorithm == 'kregspace':
-            clustering = kregspace(args.input, args.k)
 
         # save cluster centers to file
         writer = API.dataNew.writerASCII(args.output, ' ', '\n')
