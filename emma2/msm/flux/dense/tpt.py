@@ -328,7 +328,7 @@ def pathways(F, A, B, qplus, fraction = 1.0, totalflux = None):
     # add path by path until we have enough, or until there is no path left
     while(cumflux < stopflux):
         p = decomp.nextPathway()
-        if (p != None):
+        if (p is not None):
             f = decomp.getCurrentFlux()
             if (fraction < 1.0 and cumflux + f > stopflux):
                 break
