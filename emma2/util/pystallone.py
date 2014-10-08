@@ -37,9 +37,9 @@ def _get_jvm_args():
     from .config import configParser
     initHeap = '-Xms%s' % configParser.get('Java', 'initHeap')
     maxHeap = '-Xmx%s' % configParser.get('Java', 'maxHeap')
-    optionalArgs = configParser.get('Java', 'optionalArgs')
+    optionalArgs = configParser.get('Java', 'optionalArgs').split()
     optional_cp = configParser.get('Java', 'classpath')
-    return [initHeap, maxHeap, optionalArgs, optional_cp]
+    return [initHeap, maxHeap, optional_cp] + optionalArgs
 
 try:
     startJVM(None, _get_jvm_args())
