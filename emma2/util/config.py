@@ -25,6 +25,13 @@ the Python package:
 .. literalinclude:: ../../emma2/emma2.cfg
     :language: ini
 
+To access the config at runtime eg. the logging section 
+
+.. code-block:: python
+
+    from emma2.util.config import config
+    print config.Logging.level
+
 
 .. codeauthor:: Martin Scherer <m.scherer at fu-berlin.de>
 
@@ -47,6 +54,11 @@ configParser = None
 used_filenames = []
 """ these filenames have been tried to red to obtain basic configuration values."""
 
+conf_values = None
+""" holds all value pairs of a conf_values file section in a dict under its section name
+eg. { 'Java' : { 'initheap' : '32m', ... }, ... }
+"""
+
 
 class AttribStore(dict):
     """ store arbitrary attributes in this dictionary like class."""
@@ -64,14 +76,14 @@ def readConfiguration():
     TODO: consider using json to support arbitray python objects in ini file (if this getting more complex)
     """
 
-    global configParser, used_filenames
-        
-    # use these files to extend/overwrite the config.
+    global configParser, conf_values, used_filenames
+
+    # use these files to extend/overwrite the conf_values.
     # Last red file always overwrites existing values!
     cfg = 'emma2.cfg'
-    filenames = [cfg, # config in current dir
-                '/etc/' + cfg, # config in global installation
-                os.path.join(os.path.expanduser('~' + os.path.sep), cfg), # config in user dir
+    filenames = [cfg, # conf_values in current dir
+                 '/etc/' + cfg, # conf_values in global installation
+                 os.path.join(os.path.expanduser('~' + os.path.sep), cfg), # config in user dir
                 ]
 
     # read defaults from default_emma2_conf first.
@@ -93,5 +105,12 @@ def readConfiguration():
 
     """ this is a list of used configuration filenames during parsing the configuration"""
     used_filenames = configParser.read(filenames)
+
+    # store values in dictionaries for easy access
+    conf_values = AttribStore()
+    for section in configParser.sections():
+        conf_values[section] = AttribStore()
+        for item in configParser.items(section):
+            conf_values[section][item[0]] = item[1]
 
 readConfiguration()

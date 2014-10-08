@@ -6,7 +6,6 @@ Created on 15.10.2013
 __all__ = ['getLogger', 'enabled']
 
 import logging
-from .config import configParser as config, AttribStore
 
 enabled = False
 
@@ -16,24 +15,18 @@ class dummyLogger:
         pass
     def __getattr__(self, name):
         return self.dummy
-    
+
 dummyInstance = None
+
 
 def setupLogging():
     """
-        parses emma2 configuration file and creates a logger config from that 
+    parses emma2 configuration file and creates a logger conf_values from that
     """
     global enabled, dummyInstance
-    
-    section = 'Logging'
-    args = AttribStore()
-    args.enabled = config.getboolean(section, 'enabled')
-    args.toconsole = config.getboolean(section, 'toconsole')
-    args.tofile = config.getboolean(section, 'tofile')
-    args.file = config.get(section, 'file')
-    args.level = config.get(section, 'level')
-    args.format = config.get(section, 'format')
-    
+    from emma2.util.config import conf_values
+    args = conf_values['Logging']
+
     if args.enabled:
         if args.tofile and args.file:
             filename = args.file
@@ -41,10 +34,10 @@ def setupLogging():
             filename = None
         try:
             logging.basicConfig(level=args.level,
-                    format=args.format,
-                    datefmt='%d-%m-%y %H:%M:%S',
-                    filename=filename,
-                    filemode='a')
+                                format=args.format,
+                                datefmt='%d-%m-%y %H:%M:%S',
+                                filename=filename,
+                                filemode='a')
         except IOError as ie:
             import warnings
             warnings.warn('logging could not be initialized, because of %s' % ie)
@@ -57,8 +50,9 @@ def setupLogging():
             logging.getLogger('').addHandler(ch)
     else:
         dummyInstance = dummyLogger()
-    
+
     enabled = args.enabled
+
 
 def getLogger(name = None):
     if not enabled:
@@ -71,9 +65,9 @@ def getLogger(name = None):
         pos = path.rfind('emma2')
         if pos == -1:
             pos = path.rfind('scripts/')
-            
+
         name = path[pos:]
-        
+
         #logging.getLogger().debug('getLogger set name to %s; path was %s' % (name, path))
     return logging.getLogger(name)
 
