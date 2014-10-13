@@ -18,7 +18,7 @@ import warnings
 from glob import glob
 
 # define minimum requirements for our setup script.
-__requires__ = 'setuptools >= 3.0.0'
+__requires__ = 'setuptools >= 3.7.0'
 
 CLASSIFIERS = """\
 Development Status :: 4 - Beta
