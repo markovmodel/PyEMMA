@@ -49,3 +49,13 @@ def detect_openmp():
         hasopenmp = hasfunction(compiler, 'omp_get_num_threads')
         needs_gomp = hasopenmp
     return hasopenmp, needs_gomp
+
+
+def getSetuptoolsError():
+    bootstrap_setuptools = """\
+python2.7 -c "import urllib2;
+url=\'https://bootstrap.pypa.io/ez_setup.py\';\n
+exec urllib2.urlopen(url).read()\""""
+    cmd = ((80 * '=') + '\n' + bootstrap_setuptools + '\n' + (80 * '='))
+    s = 'You can use the following command to upgrade/install it:\n%s' % cmd
+    return s

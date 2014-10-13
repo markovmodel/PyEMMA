@@ -11,14 +11,14 @@ TODO: extend.
 """
 
 DOCLINES = __doc__.split("\n")
+__requires__ = 'setuptools>=2.2'
 
 import sys
 import os
 import warnings
-from glob import glob
+import versioneer
 
-# define minimum requirements for our setup script.
-__requires__ = 'setuptools >= 3.7.0'
+from glob import glob
 
 CLASSIFIERS = """\
 Development Status :: 4 - Beta
@@ -36,22 +36,11 @@ Topic :: Scientific/Engineering :: Mathematics
 Topic :: Scientific/Engineering :: Physics
 
 """
-
-
-def getSetuptoolsError():
-    bootstrap_setuptools = """\
-python2.7 -c "import urllib2;
-url=\'https://bootstrap.pypa.io/ez_setup.py\';\n
-exec urllib2.urlopen(url).read()\""""
-    cmd = ((80 * '=') + '\n' + bootstrap_setuptools + '\n' + (80 * '='))
-    s = 'You can use the following command to upgrade/install it:\n%s' % cmd
-    return s
-
-
+from setup_util import getSetuptoolsError
 try:
     from setuptools import setup, Extension, find_packages
+    from pkg_resources import VersionConflict
 except ImportError as ie:
-    print "Sorry, we require %s\n" % __requires__
     print getSetuptoolsError()
     sys.exit(23)
 # this should catch pkg_resources.DistributionNotFound, which is not
@@ -62,8 +51,6 @@ except:
     print getSetuptoolsError()
     sys.exit(24)
 
-
-import versioneer
 versioneer.VCS = 'git'
 versioneer.versionfile_source = 'emma2/_version.py'
 versioneer.versionfile_build = 'emma2/_version.py'
@@ -89,6 +76,7 @@ def extensions():
     except ImportError:
         pass
 
+    # this should be obsolete with usage of setuptools; test it
     if USE_CYTHON:
         ext = '.pyx'
     else:
@@ -142,31 +130,6 @@ def extensions():
 
     return exts
 
-from setuptools.command.build_ext import build_ext
-
-
-class np_build(build_ext):
-    """
-    Sets numpy include path for extensions. Its ensured, that numpy exists
-    at runtime. Note that this workaround seems to disable the ability to
-    add additional include dirs via the setup(include_dirs=['...'] option.
-    So add them here!
-    """
-    def initialize_options(self):
-        # self.include_dirs = [] # gets overwritten by super init
-        build_ext.initialize_options(self)
-        # https://stackoverflow.com/questions/21605927/why-doesnt-setup-requires-work-properly-for-numpy
-        try:
-            __builtins__.__NUMPY_SETUP__ = False
-        except AttributeError:
-            # this may happen, if numpy requirement is already fulfilled.
-            pass
-        from numpy import get_include
-
-        self.include_dirs = []
-        self.include_dirs.append(get_include())
-
-
 def ipython_notebooks_mapping(dest):
     """
     returns a mapping for each file in ipython directory:
@@ -189,12 +152,36 @@ if os.getenv('INSTALL_IPYTHON', False) or 'install' in sys.argv:
     dest = os.path.join(os.path.expanduser('~'), 'emma2-ipython')
     data_files.extend(ipython_notebooks_mapping(dest))
 
-cmdclass = dict(build_ext=np_build,
-                version=versioneer.cmd_version,
-                versioneer=versioneer.cmd_update_files,
-                build=versioneer.cmd_build,
-                sdist=versioneer.cmd_sdist,
-                )
+def get_cmdclass():
+    from setuptools.command.build_ext import build_ext
+    class np_build(build_ext):
+        """
+        Sets numpy include path for extensions. Its ensured, that numpy exists
+        at runtime. Note that this workaround seems to disable the ability to
+        add additional include dirs via the setup(include_dirs=['...'] option.
+        So add them here!
+        """
+        def initialize_options(self):
+            # self.include_dirs = [] # gets overwritten by super init
+            build_ext.initialize_options(self)
+            # https://stackoverflow.com/questions/21605927/why-doesnt-setup-requires-work-properly-for-numpy
+            try:
+                __builtins__.__NUMPY_SETUP__ = False
+            except AttributeError:
+                # this may happen, if numpy requirement is already fulfilled.
+                pass
+            from numpy import get_include
+
+            self.include_dirs = []
+            self.include_dirs.append(get_include())
+
+    cmdclass = dict(build_ext=np_build,
+                    version=versioneer.cmd_version,
+                    versioneer=versioneer.cmd_update_files,
+                    build=versioneer.cmd_build,
+                    sdist=versioneer.cmd_sdist,
+                    )
+    return cmdclass
 
 metadata = dict(
     name='Emma2',
@@ -212,16 +199,14 @@ metadata = dict(
     # packages are found if their folder contains an __init__.py,
     packages=find_packages(),
     # install default emma.cfg into package.
-    package_data={
-        'emma2': ['emma2.cfg']
-        },
+    package_data=dict(emma2=['emma2.cfg']),
     data_files=data_files,
     scripts=[s for s in glob('scripts/*') if s.find('mm_') != -1],
-    cmdclass=cmdclass,
+    cmdclass=get_cmdclass(),
     tests_require=['nose'],
     test_suite='nose.collector',
     # runtime dependencies
-    install_requires=['numpy>= 1.6.0',
+    install_requires=['numpy>=1.6.0',
                       'scipy>=0.11',
                       'pystallone>=1.0-SNAPSHOT.2'],
 )
@@ -231,6 +216,14 @@ if not (len(sys.argv) >= 2 and ('--help' in sys.argv[1:] or
                         'clean'))):
     # only require numpy and extensions in case of building/installing
     metadata['ext_modules'] = extensions()
-    metadata['setup_requires'] = ['numpy>=1.6.0']
+    # setuptools>=2.2 can handle setup_requires
+    metadata['setup_requires'] = ['numpy>=1.6.0', 'setuptools>3.6']
 
-setup(**metadata)
+try:
+    setup(**metadata)
+except VersionConflict as ve:
+    print ve
+    print "You need to manually upgrade your 'setuptools' installation!"
+    " Please use these instructions to perform an upgrade and/or consult\n"
+    " https://pypi.python.org/pypi/setuptools#installation-instructions"
+    print getSetuptoolsError()
