@@ -487,19 +487,21 @@ PyArrayObject* unpack_or_make(PyObject *dict, char *name, int dim1, int dim2) {
 
 void update_mean(const double *record, PyArrayObject* mean, int n) {
 	int i;
+	#pragma omp parallel for private(i)
 	for (i = 0; i < n; i++)
 		D(mean,i) += record[i];
 }
 
 void update_var(const double *record, PyArrayObject* var, int n) {
 	int i;
+	#pragma omp parallel for private(i)
 	for (i = 0; i < n; i++)
 		D(var,i) += record[i] * record[i];
 }
 
 void update_cov(const double *record, PyArrayObject* cov, int n) {
 	int i, j;
-
+	#pragma omp parallel for private(i,j)
 	for (i = 0; i < n; i++) {
 		for (j = i; j < n; j++) {
 			D(cov,i*n+j) += record[i] * record[j];
@@ -513,6 +515,7 @@ void update_tcov(const double *record, PyArrayObject* tcov,
 
 	if (m >= lag) {
 		D(samples,0) += 1;
+		#pragma omp parallel for private(i,j)
 		for (i = 0; i < n; i++) {
 			for (j = 0; j < n; j++) {
 				D(tcov,i*n+j) += record[j]
@@ -520,6 +523,7 @@ void update_tcov(const double *record, PyArrayObject* tcov,
 			}
 		}
 	}
+	#pragma omp parallel for private(i)
 	for (i = 0; i < n; i++)
 		shift[(m % lag) * n + i] = record[i];
 }
@@ -639,6 +643,7 @@ static PyObject *run(PyObject *self, PyObject *args) {
 
 	/* fill lower half of covariance matrix */
 	if (do_cov) {
+		#pragma omp parallel for private(i,j)
 		for (i = 0; i < n; i++)
 			for (j = i + 1; j < n; j++)
 				D(cov,j*n+i) = D(cov,i*n+j);
@@ -768,10 +773,12 @@ static PyObject *project(PyObject *self, PyObject *args) {
 			goto error;
 		}
 
+		#pragma omp parallel for private(i)
 		for (i = 0; i < m; i++)
 			record[i] = record[i + time_column] - D(mean,i);
 		for (j = 0; j < max; j++) {
 			sum = 0;
+			#pragma omp parallel for reduction(+:sum)
 			for (i = 0; i < m; i++)
 				sum += record[i] * D(W,m*i+j);
 			fprintf(out, "%f", sum);
