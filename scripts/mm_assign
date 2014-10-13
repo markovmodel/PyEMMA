@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
-from jpype._jexception import JavaException
-usage="""
+"""
 ================================================================================
 assigns the simulation data (-i) to microstates (-ic) that have been previously
 generated/ or user supplied. The assignment is done such that each frame of the
@@ -17,7 +16,7 @@ from emma2.util.files import paths_from_patterns
 from emma2.util.log import getLogger
 from emma2.coordinates.clustering import assign
 
-from emma2.util.pystallone import API, JString
+from emma2.util.pystallone import API, JString, JavaException
 
 log = getLogger()
 
@@ -25,7 +24,7 @@ metrics = ['rmsd', 'euclidean']
 
 
 def handleArgs():
-    parser = argparse.ArgumentParser(usage=usage)
+    parser = argparse.ArgumentParser(usage=__doc__)
     parser.add_argument('-i', dest='trajs', required=True, nargs='+',
                         help='list of trajectories to assign to clusters')
     parser.add_argument('-istepwidth', type=int, default=1, help='')
@@ -45,6 +44,9 @@ def handleArgs():
     if trajs == []:
         parser.error('given trajectory pattern "%s" does not match any files' % args.trajs)
     args.trajs = trajs
+
+    if not os.access(args.output, os.W_OK):
+        raise RuntimeError("Argument given by -o '%s' is not writeable!" % args.output)
 
     return args
 
@@ -78,12 +80,11 @@ def main():
     # construct output file names for discrete trajectories
     outfiles = []
     for t in args.trajs:
-        log.debug('creating dtraj name from "%s"' % t)
-        if args.output:
-            # strip path from traj
-            t = os.path.basename(t)
-        base, ext = os.path.splitext(t)
-        outfiles.append(base + ".dtraj")
+        base = os.path.basename(t)
+        base, ext = os.path.splitext(base)
+        outfile = os.path.join(args.output, base + ".dtraj")
+        log.debug("map %s -> %s" % (t, outfile))
+        outfiles.append(outfile)
 
     # assign to dtrajs
     try:
