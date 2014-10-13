@@ -20,7 +20,7 @@ from emma2.util.pystallone import API, JString, JavaException
 
 log = getLogger()
 
-metrics = ['rmsd', 'euclidean']
+metrics = ['minrmsd', 'euclidean']
 
 
 def handleArgs():
