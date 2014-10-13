@@ -8,18 +8,17 @@
 
   provide binaries:
     for emma, pystallone, jpype:
-    conda pipbuild and upload to binstar
-
-* add cythonized c files to .gitattributes and mark them as binary, keeps pain low while merging with git.
+    write conda recipes for all
+  
+*  pypi stallone: issue with source install (and old setuptools?)
 
 * remove output cells of ipython notebooks and unify their history (we do not want to track output).
 
+* handle omp! (tica_omp) 
 
 * machbarkeit modular system?
     * module system (msm package, autobuilder etc) mit eigener versions nr, 
       setup.py, folder.
-
-* direct mem access from py to j does not work as expected. 
 
 
 final steps:
