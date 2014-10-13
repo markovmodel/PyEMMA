@@ -41,7 +41,7 @@ Topic :: Scientific/Engineering :: Physics
 def getSetuptoolsError():
     bootstrap_setuptools = """\
 python2.7 -c "import urllib2;
-url=\'https://bitbucket.org/pypa/setuptools/raw/bootstrap/ez_setup.py\';\n\
+url=\'https://bootstrap.pypa.io/ez_setup.py\';\n
 exec urllib2.urlopen(url).read()\""""
     cmd = ((80 * '=') + '\n' + bootstrap_setuptools + '\n' + (80 * '='))
     s = 'You can use the following command to upgrade/install it:\n%s' % cmd
