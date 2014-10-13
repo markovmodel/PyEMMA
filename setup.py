@@ -47,20 +47,6 @@ exec urllib2.urlopen(url).read()\""""
     s = 'You can use the following command to upgrade/install it:\n%s' % cmd
     return s
 
-USE_CYTHON = False
-try:
-    import Cython
-    from Cython.Build import cythonize
-    from distutils.version import StrictVersion
-
-    if StrictVersion(Cython.__version__) < StrictVersion('0.20'):
-        warnings.warn("Your cython version is too old. Setup will treat this"
-                      " as if there is no cython installation and "
-                      "use pre-cythonized files.")
-    else:
-        USE_CYTHON = True
-except ImportError:
-    pass
 
 try:
     from setuptools import setup, Extension, find_packages
@@ -76,6 +62,7 @@ except:
     print getSetuptoolsError()
     sys.exit(24)
 
+
 import versioneer
 versioneer.VCS = 'git'
 versioneer.versionfile_source = 'emma2/_version.py'
@@ -86,54 +73,69 @@ versioneer.parentdir_prefix = 'emma2-'  # dirname like 'myproject-1.2.0'
 ###############################################################################
 # Extensions
 ###############################################################################
-cocovar_module = Extension('emma2.coordinates.transform.cocovar',
-                           sources=['emma2/coordinates/transform/cocovar.c'])
+def extensions():
+    USE_CYTHON = False
+    try:
+        import Cython
+        from Cython.Build import cythonize
+        from distutils.version import StrictVersion
 
-if USE_CYTHON:
-    ext = '.pyx'
-else:
-    ext = '.c'
+        if StrictVersion(Cython.__version__) < StrictVersion('0.20'):
+            warnings.warn("Your cython version is too old. Setup will treat this"
+                          " as if there is no cython installation and "
+                          "use pre-cythonized files.")
+        else:
+            USE_CYTHON = True
+    except ImportError:
+        pass
 
-mle_trev_given_pi_dense_module = \
-    Extension('emma2.msm.estimation.dense.mle_trev_given_pi',
-              sources=['emma2/msm/estimation/dense/mle_trev_given_pi' + ext,
-                       'emma2/msm/estimation/dense/_mle_trev_given_pi.c'],
-              include_dirs=[os.path.abspath('emma2/msm/estimation/dense')],
-              extra_compile_args=['-march=native'])
+    cocovar_module = Extension('emma2.coordinates.transform.cocovar',
+                               sources=['emma2/coordinates/transform/cocovar.c'])
 
-mle_trev_given_pi_sparse_module = \
-    Extension('emma2.msm.estimation.sparse.mle_trev_given_pi',
-              sources=['emma2/msm/estimation/sparse/mle_trev_given_pi' + ext,
-                       'emma2/msm/estimation/sparse/_mle_trev_given_pi.c'],
-              include_dirs=[os.path.abspath('emma2/msm/estimation/dense')],
-              extra_compile_args=['-march=native'])
+    if USE_CYTHON:
+        ext = '.pyx'
+    else:
+        ext = '.c'
 
-mle_trev_sparse_module = \
-    Extension('emma2.msm.estimation.sparse.mle_trev',
-              sources=['emma2/msm/estimation/sparse/mle_trev' + ext,
-                       'emma2/msm/estimation/sparse/_mle_trev.c'],
-              extra_compile_args=['-march=native'])
+    mle_trev_given_pi_dense_module = \
+        Extension('emma2.msm.estimation.dense.mle_trev_given_pi',
+                  sources=['emma2/msm/estimation/dense/mle_trev_given_pi' + ext,
+                           'emma2/msm/estimation/dense/_mle_trev_given_pi.c'],
+                  include_dirs=[os.path.abspath('emma2/msm/estimation/dense')],
+                  extra_compile_args=['-march=native'])
 
-mle_trev_module = [mle_trev_given_pi_dense_module,
-                   mle_trev_given_pi_sparse_module,
-                   mle_trev_sparse_module]
+    mle_trev_given_pi_sparse_module = \
+        Extension('emma2.msm.estimation.sparse.mle_trev_given_pi',
+                  sources=['emma2/msm/estimation/sparse/mle_trev_given_pi' + ext,
+                           'emma2/msm/estimation/sparse/_mle_trev_given_pi.c'],
+                  include_dirs=[os.path.abspath('emma2/msm/estimation/dense')],
+                  extra_compile_args=['-march=native'])
 
-if USE_CYTHON:
-    mle_trev_module = cythonize(mle_trev_module)
+    mle_trev_sparse_module = \
+        Extension('emma2.msm.estimation.sparse.mle_trev',
+                  sources=['emma2/msm/estimation/sparse/mle_trev' + ext,
+                           'emma2/msm/estimation/sparse/_mle_trev.c'],
+                  extra_compile_args=['-march=native'])
 
+    mle_trev_module = [mle_trev_given_pi_dense_module,
+                       mle_trev_given_pi_sparse_module,
+                       mle_trev_sparse_module]
+
+    if USE_CYTHON:
+        mle_trev_module = cythonize(mle_trev_module)
+
+    return [cocovar_module] + mle_trev_module
 
 from setuptools.command.build_ext import build_ext
 
 
 class np_build(build_ext):
-
     """
     Sets numpy include path for extensions. Its ensured, that numpy exists
     at runtime. Note that this workaround seems to disable the ability to
     add additional include dirs via the setup(include_dirs=['...'] option.
     So add them here!
     """
-
     def initialize_options(self):
         # self.include_dirs = [] # gets overwritten by super init
         build_ext.initialize_options(self)
@@ -171,6 +173,13 @@ if os.getenv('INSTALL_IPYTHON', False) or 'install' in sys.argv:
     dest = os.path.join(os.path.expanduser('~'), 'emma2-ipython')
     data_files.extend(ipython_notebooks_mapping(dest))
 
+cmdclass = dict(build_ext=np_build,
+                  version=versioneer.cmd_version,
+                  versioneer=versioneer.cmd_update_files,
+                  build=versioneer.cmd_build,
+                  sdist=versioneer.cmd_sdist,
+                  )
+
 metadata = dict(
     name='Emma2',
     maintainer='Martin K. Scherer',
@@ -182,6 +191,8 @@ metadata = dict(
     description=DOCLINES[0],
     long_description="\n".join(DOCLINES[2:]),
     version=versioneer.get_version(),
+    platforms=["Windows", "Linux", "Solaris", "Mac OS-X", "Unix"],
+    classifiers=[c for c in CLASSIFIERS.split('\n') if c],
     # packages are found if their folder contains an __init__.py,
     packages=find_packages(),
     # install default emma.cfg into package.
@@ -190,14 +201,7 @@ metadata = dict(
         },
     data_files=data_files,
     scripts=[s for s in glob('scripts/*') if s.find('mm_') != -1],
-    cmdclass=dict(build_ext=np_build,
-                  version=versioneer.cmd_version,
-                  versioneer=versioneer.cmd_update_files,
-                  build=versioneer.cmd_build,
-                  sdist=versioneer.cmd_sdist,
-                  ),
-    ext_modules=[cocovar_module] + mle_trev_module,
-    setup_requires=['numpy>=1.6.0'],
+    cmdclass=cmdclass,
     tests_require=['nose'],
     test_suite='nose.collector',
     # runtime dependencies
@@ -205,5 +209,12 @@ metadata = dict(
                       'scipy>=0.11',
                       'pystallone>=1.0-SNAPSHOT.2'],
 )
+
+if not (len(sys.argv) >= 2 and ('--help' in sys.argv[1:] or
+        sys.argv[1] in ('--help-commands', 'egg_info', '--version',
+                        'clean'))):
+    # only require numpy and extensions in case of building/installing
+    metadata['ext_modules'] = extensions()
+    metadata['setup_requires'] = ['numpy>=1.6.0']
 
 setup(**metadata)
