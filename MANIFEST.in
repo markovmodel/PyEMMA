@@ -1,11 +1,12 @@
-include README.rst
 include LICENSE.rst
 
 # include test modules
-include emma2/*/test/*.py
+recursive-include emma2 */test?/*
 # versioneer
 include versioneer.py
 include emma2/_version.py
+# setup stuff
+include setup_util.py
 # documentation
 graft doc
 prune doc/build
