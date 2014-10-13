@@ -97,11 +97,6 @@ def extensions():
     # setup OpenMP support
     from setup_util import detect_openmp
     openmp_enabled, needs_gomp = detect_openmp()
-    omp_compiler_args = []
-    if openmp_enabled:
-        omp_compiler_args.append('-fopenmp')
-    omp_libraries = '-lgomp' if needs_gomp else []
-    omp_defines = [('USE_OPENMP', None)] if openmp_enabled else []
 
     # define extensions
     cocovar_module = Extension('emma2.coordinates.transform.cocovar',
@@ -136,10 +131,14 @@ def extensions():
 
     exts = [cocovar_module] + mle_trev_module
 
-    for e in exts:
-        e.extra_compile_args.extend(omp_compiler_args)
-        e.extra_link_args.append(omp_libraries)
-        e.define_macros.extend(omp_defines)
+    if openmp_enabled:
+        omp_compiler_args = ['-fopenmp']
+        omp_libraries = ['-lgomp'] if needs_gomp else []
+        omp_defines = [('USE_OPENMP', None)]
+        for e in exts:
+            e.extra_compile_args += omp_compiler_args
+            e.extra_link_args += omp_libraries
+            e.define_macros += omp_defines
 
     return exts
 
