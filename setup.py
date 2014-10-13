@@ -89,13 +89,23 @@ def extensions():
     except ImportError:
         pass
 
-    cocovar_module = Extension('emma2.coordinates.transform.cocovar',
-                               sources=['emma2/coordinates/transform/cocovar.c'])
-
     if USE_CYTHON:
         ext = '.pyx'
     else:
         ext = '.c'
+
+    # setup OpenMP support
+    from setup_util import detect_openmp
+    openmp_enabled, needs_gomp = detect_openmp()
+    omp_compiler_args = []
+    if openmp_enabled:
+        omp_compiler_args.append('-fopenmp')
+    omp_libraries = '-lgomp' if needs_gomp else []
+    omp_defines = [('USE_OPENMP', None)] if openmp_enabled else []
+
+    # define extensions
+    cocovar_module = Extension('emma2.coordinates.transform.cocovar',
+                               sources=['emma2/coordinates/transform/cocovar.c'])
 
     mle_trev_given_pi_dense_module = \
         Extension('emma2.msm.estimation.dense.mle_trev_given_pi',
@@ -124,7 +134,14 @@ def extensions():
     if USE_CYTHON:
         mle_trev_module = cythonize(mle_trev_module)
 
-    return [cocovar_module] + mle_trev_module
+    exts = [cocovar_module] + mle_trev_module
+
+    for e in exts:
+        e.extra_compile_args.extend(omp_compiler_args)
+        e.extra_link_args.append(omp_libraries)
+        e.define_macros.extend(omp_defines)
+
+    return exts
 
 from setuptools.command.build_ext import build_ext
 
@@ -174,11 +191,11 @@ if os.getenv('INSTALL_IPYTHON', False) or 'install' in sys.argv:
     data_files.extend(ipython_notebooks_mapping(dest))
 
 cmdclass = dict(build_ext=np_build,
-                  version=versioneer.cmd_version,
-                  versioneer=versioneer.cmd_update_files,
-                  build=versioneer.cmd_build,
-                  sdist=versioneer.cmd_sdist,
-                  )
+                version=versioneer.cmd_version,
+                versioneer=versioneer.cmd_update_files,
+                build=versioneer.cmd_build,
+                sdist=versioneer.cmd_sdist,
+                )
 
 metadata = dict(
     name='Emma2',
