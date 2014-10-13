@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
-usage = """
+"""
 ================================================================================
 clusters the simulation (MD) data to microstate generators. These generators are
 structures or points in state space that shall subsequently be used
@@ -21,11 +21,11 @@ from emma2.util.log import getLogger
 log = getLogger()
 # these are currently supported in emma2.coordinates.clustering
 algorithms = ['kmeans', 'regspace']
-metrics = ['rmsd', 'euclidean']
+metrics = ['minrmsd', 'euclidean']
 
 
 def handleArgs():
-    parser = argparse.ArgumentParser(usage=usage)
+    parser = argparse.ArgumentParser(usage=__doc__)
     parser.add_argument('-i', '--input', nargs='+', dest='input',
                         help='input filename or filename pattern', required=True)
     parser.add_argument('-iformat', help='format of input files (deprecated)',
