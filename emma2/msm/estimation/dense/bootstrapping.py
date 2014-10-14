@@ -140,10 +140,11 @@ def bootstrap_counts(dtrajs, lagtime):
     ones = np.ones((nsample))
     ncur = 0
     for i in range(len(n_from_traj)):
-        (r,c) = bootstrap_counts_singletraj(dtrajs[i], lagtime, n_from_traj[i])
-        rows[ncur:ncur + n_from_traj[i]] = r
-        cols[ncur:ncur + n_from_traj[i]] = c
-        ncur += n_from_traj[i]
+        if n_from_traj[i] > 0:
+            (r,c) = bootstrap_counts_singletraj(dtrajs[i], lagtime, n_from_traj[i])
+            rows[ncur:ncur + n_from_traj[i]] = r
+            cols[ncur:ncur + n_from_traj[i]] = c
+            ncur += n_from_traj[i]
     # sum over counts
     Csparse = scipy.sparse.coo_matrix((ones, (rows,cols)), shape=(n,n))
     
