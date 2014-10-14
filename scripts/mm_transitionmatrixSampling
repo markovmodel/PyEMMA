@@ -8,10 +8,10 @@ Estimation of transition matrices
 import argparse
 import sys
 
-from emma2.msm.estimation.api import count_matrix, transition_matrix
-from emma2.msm.io import write_matrix_ascii, load_matrix
-from emma2.util.files import read_dtrajs_from_pattern
-from emma2.util.log import getLogger
+from pyemma.msm.estimation.api import count_matrix, transition_matrix
+from pyemma.msm.io import write_matrix_ascii, load_matrix
+from pyemma.util.files import read_dtrajs_from_pattern
+from pyemma.util.log import getLogger
 
 log = getLogger()
 

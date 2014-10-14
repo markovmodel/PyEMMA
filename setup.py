@@ -15,7 +15,6 @@ __requires__ = 'setuptools>=2.2'
 
 import sys
 import os
-import warnings
 import versioneer
 
 from glob import glob
@@ -52,10 +51,10 @@ except:
     sys.exit(24)
 
 versioneer.VCS = 'git'
-versioneer.versionfile_source = 'emma2/_version.py'
-versioneer.versionfile_build = 'emma2/_version.py'
+versioneer.versionfile_source = 'pyemma/_version.py'
+versioneer.versionfile_build = 'pyemma/_version.py'
 versioneer.tag_prefix = ''  # tags are like 1.2.0
-versioneer.parentdir_prefix = 'emma2-'  # dirname like 'myproject-1.2.0'
+versioneer.parentdir_prefix = 'pyemma-'  # dirname like 'myproject-1.2.0'
 
 ###############################################################################
 # Extensions
@@ -87,27 +86,27 @@ def extensions():
     openmp_enabled, needs_gomp = detect_openmp()
 
     # define extensions
-    cocovar_module = Extension('emma2.coordinates.transform.cocovar',
-                               sources=['emma2/coordinates/transform/cocovar.c'])
+    cocovar_module = Extension('pyemma.coordinates.transform.cocovar',
+                               sources=['pyemma/coordinates/transform/cocovar.c'])
 
     mle_trev_given_pi_dense_module = \
-        Extension('emma2.msm.estimation.dense.mle_trev_given_pi',
-                  sources=['emma2/msm/estimation/dense/mle_trev_given_pi' + ext,
-                           'emma2/msm/estimation/dense/_mle_trev_given_pi.c'],
-                  include_dirs=[os.path.abspath('emma2/msm/estimation/dense')],
+        Extension('pyemma.msm.estimation.dense.mle_trev_given_pi',
+                  sources=['pyemma/msm/estimation/dense/mle_trev_given_pi' + ext,
+                           'pyemma/msm/estimation/dense/_mle_trev_given_pi.c'],
+                  include_dirs=[os.path.abspath('pyemma/msm/estimation/dense')],
                   extra_compile_args=['-march=native'])
 
     mle_trev_given_pi_sparse_module = \
-        Extension('emma2.msm.estimation.sparse.mle_trev_given_pi',
-                  sources=['emma2/msm/estimation/sparse/mle_trev_given_pi' + ext,
-                           'emma2/msm/estimation/sparse/_mle_trev_given_pi.c'],
-                  include_dirs=[os.path.abspath('emma2/msm/estimation/dense')],
+        Extension('pyemma.msm.estimation.sparse.mle_trev_given_pi',
+                  sources=['pyemma/msm/estimation/sparse/mle_trev_given_pi' + ext,
+                           'pyemma/msm/estimation/sparse/_mle_trev_given_pi.c'],
+                  include_dirs=[os.path.abspath('pyemma/msm/estimation/dense')],
                   extra_compile_args=['-march=native'])
 
     mle_trev_sparse_module = \
-        Extension('emma2.msm.estimation.sparse.mle_trev',
-                  sources=['emma2/msm/estimation/sparse/mle_trev' + ext,
-                           'emma2/msm/estimation/sparse/_mle_trev.c'],
+        Extension('pyemma.msm.estimation.sparse.mle_trev',
+                  sources=['pyemma/msm/estimation/sparse/mle_trev' + ext,
+                           'pyemma/msm/estimation/sparse/_mle_trev.c'],
                   extra_compile_args=['-march=native'])
 
     mle_trev_module = [mle_trev_given_pi_dense_module,
@@ -149,7 +148,7 @@ def ipython_notebooks_mapping(dest):
 # TODO: maybe give user opportunity to specify install location
 data_files = []
 if os.getenv('INSTALL_IPYTHON', False) or 'install' in sys.argv:
-    dest = os.path.join(os.path.expanduser('~'), 'emma2-ipython')
+    dest = os.path.join(os.path.expanduser('~'), 'pyemma-ipython')
     data_files.extend(ipython_notebooks_mapping(dest))
 
 def get_cmdclass():
@@ -184,10 +183,10 @@ def get_cmdclass():
     return cmdclass
 
 metadata = dict(
-    name='Emma2',
+    name='pyEMMA',
     maintainer='Martin K. Scherer',
     maintainer_email='m.scherer@fu-berlin.de',
-    author='The Emma2 team',
+    author='The Emma team',
     # TODO: add this
     author_email='',
     url='http://compmolbio.biocomputing-berlin.de/index.php',
@@ -199,7 +198,7 @@ metadata = dict(
     # packages are found if their folder contains an __init__.py,
     packages=find_packages(),
     # install default emma.cfg into package.
-    package_data=dict(emma2=['emma2.cfg']),
+    package_data=dict(pyemma=['pyemma.cfg']),
     data_files=data_files,
     scripts=[s for s in glob('scripts/*') if s.find('mm_') != -1],
     cmdclass=get_cmdclass(),

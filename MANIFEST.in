@@ -1,10 +1,10 @@
 include LICENSE.rst
 
 # include test modules
-recursive-include emma2 */test?/*
+recursive-include pyemma */test?/*
 # versioneer
 include versioneer.py
-include emma2/_version.py
+include pyemma/_version.py
 # setup stuff
 include setup_util.py
 # documentation
@@ -16,6 +16,6 @@ graft ipython
 #prune */*/.ipynb_checkpoints # dnw
 #global exclude __pycache__ # dnw
 # headers
-include emma2/msm/estimation/dense/*.h
-include emma2/msm/estimation/sparse/*.h
+include pyemma/msm/estimation/dense/*.h
+include pyemma/msm/estimation/sparse/*.h
 
