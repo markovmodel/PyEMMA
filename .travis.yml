@@ -20,7 +20,7 @@ before_install:
 - bash mc.sh -b
 - conda create -q --yes -n ci python=$TRAVIS_PYTHON_VERSION $deps
 - source activate ci
-
+- python -c "import scipy; print scipy.__version__; print scipy.__numpy_version__"
 script:
 - python setup.py install
 - python setup.py nosetests
