@@ -16,10 +16,12 @@ env:
 before_install:
 - sudo apt-get update -qq
 - sudo apt-get install -qq openjdk-7-jre
+- deactivate # travis python venv
 - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O mc.sh
 - bash mc.sh -b
 - conda create -q --yes -n ci python=$TRAVIS_PYTHON_VERSION $deps
 - source activate ci
+- which python
 - python -c "import scipy; print scipy.__version__; print scipy.__numpy_version__"
 script:
 - python setup.py install
