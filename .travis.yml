@@ -5,9 +5,10 @@ python:
 
 env:
  - deps="scipy=0.11 numpy=1.7"
- - deps="numpy=0.12 numpy=1.8" 
- - deps="numpy=0.13 numpy=1.8" 
- - deps="numpy=0.14 numpy=1.9" 
+# - deps="numpy=0.12 numpy=1.8" 
+# - deps="numpy=0.13 numpy=1.8" 
+# - deps="numpy=0.14 numpy=1.9" 
+# - deps="scipy=0.11 numpy=1.6"
 
 before_install:
 - sudo apt-get update -qq
@@ -15,14 +16,12 @@ before_install:
 - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O mc.sh
 - bash mc.sh -b
 - export PATH=$HOME/miniconda/bin:$PATH 
-- conda create --yes -n ci python=$TRAVIS_PYTHON_VERSION $deps
+- conda create -q --yes -n ci python=$TRAVIS_PYTHON_VERSION $deps
+
 script:
 - python setup.py install
 - python setup.py nosetests
 
-after_success:
-  - pip install wheel 
-  - python setup.py bdist_wheel sdist
 deploy:
   provider: pypi
   user:
