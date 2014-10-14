@@ -11,7 +11,7 @@ from runipy.notebook_runner import NotebookRunner
 from IPython.nbformat.current import read
 from IPython.nbformat.v3.nbbase import new_code_cell
 
-# point to ipython directory in emma2
+# point to ipython directory in pyemma
 ipy_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
 def case_generator(filename):

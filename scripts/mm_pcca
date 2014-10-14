@@ -11,9 +11,9 @@ import os
 import sys
 import argparse
 
-from emma2.msm.io import read_matrix, write_matrix
-from emma2.msm.analysis import is_transition_matrix, pcca
-from emma2.util.log import getLogger
+from pyemma.msm.io import read_matrix, write_matrix
+from pyemma.msm.analysis import is_transition_matrix, pcca
+from pyemma.util.log import getLogger
 
 log = getLogger()
 
@@ -56,7 +56,7 @@ def main():
         log.exception('error during writing of PCCA memberships.')
         return 1
     
-    # TODO: add fuzzy assignment to clusters if supported by emma2 pcca impl
+    # TODO: add fuzzy assignment to clusters if supported by pyemma pcca impl
     
     # TODO: add output sets
     
