@@ -15,7 +15,7 @@ before_install:
 - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O mc.sh
 - bash mc.sh -b
 - export PATH=$HOME/miniconda/bin:$PATH 
-- conda create --yes -n ci python={$TRAVIS_PYTHON_VERSION} ${deps}
+- conda create --yes -n ci python=$TRAVIS_PYTHON_VERSION $deps
 script:
 - python setup.py install
 - python setup.py nosetests
