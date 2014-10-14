@@ -4,7 +4,10 @@ python:
  - 2.7
 
 env:
- - deps="scipy=0.11 numpy=1.7"
+  global:
+    - PATH=$HOME/miniconda/bin:$HOME/miniconda/envs/ci/bin/:$PATH
+  matrix:
+    - deps="scipy=0.11 numpy=1.7"
 # - deps="numpy=0.12 numpy=1.8" 
 # - deps="numpy=0.13 numpy=1.8" 
 # - deps="numpy=0.14 numpy=1.9" 
@@ -15,8 +18,9 @@ before_install:
 - sudo apt-get install -qq openjdk-7-jre
 - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O mc.sh
 - bash mc.sh -b
-- export PATH=$HOME/miniconda/bin:$PATH 
+#- export PATH=$HOME/miniconda/bin:$PATH 
 - conda create -q --yes -n ci python=$TRAVIS_PYTHON_VERSION $deps
+#- export PATH="$HOME/miniconda/envs/ci/bin/:$PATH"
 
 script:
 - python setup.py install
