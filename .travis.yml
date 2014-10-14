@@ -6,6 +6,7 @@ python:
 env:
   global:
     - PATH=$HOME/miniconda/bin:$HOME/miniconda/envs/ci/bin/:$PATH
+    - common_py_deps=pip nose
   matrix:
     - deps="scipy=0.11 numpy=1.7"
 # - deps="numpy=0.12 numpy=1.8" 
@@ -19,9 +20,8 @@ before_install:
 - deactivate # travis python venv
 - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O mc.sh
 - bash mc.sh -b
-- conda create -q --yes -n ci python=$TRAVIS_PYTHON_VERSION $deps pip
+- conda create -q --yes -n ci python=$TRAVIS_PYTHON_VERSION $deps $common_py_deps
 - source activate ci
-- which python
 - python -c "import scipy; print scipy.__version__; print scipy.__numpy_version__"
 script:
 - python setup.py install
