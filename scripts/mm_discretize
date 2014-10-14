@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
-from emma2.coordinates.clustering.api import kmeans, regspace, kregspace, assign
+from pyemma.coordinates.clustering.api import kmeans, regspace, kregspace, assign
 usage = """
 ================================================================================
 clusters the simulation (MD) data to microstate generators. These generators are
@@ -14,12 +14,12 @@ import argparse
 import sys
 import os
 
-from emma2.util.files import handleInputFileArg
-from emma2.util.log import getLogger
-from emma2.util.pystallone import JavaException, API
+from pyemma.util.files import handleInputFileArg
+from pyemma.util.log import getLogger
+from pyemma.util.pystallone import JavaException, API
 
 log = getLogger()
-# these are currently supported in emma2.coordinates.clustering
+# these are currently supported in pyemma.coordinates.clustering
 algorithms = ['kmeans', 'regspace', 'kregspace']
 metrics = ['rmsd', 'euclidean']
 
