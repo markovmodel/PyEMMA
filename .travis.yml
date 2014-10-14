@@ -11,7 +11,7 @@ env:
 before_install:
 - sudo apt-get update -qq
 - sudo apt-get install -qq openjdk-7-jre
-- wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -o mc.sh
+- wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O mc.sh
 - bash mc.sh -b
 - export PATH=$HOME/miniconda/bin:$PATH 
 - conda create --yes -n ${python} python={python} ${numpy}
