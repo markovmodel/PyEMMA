@@ -14,16 +14,19 @@
 
 * remove output cells of ipython notebooks and unify their history (we do not want to track output).
 
-* handle omp! (tica_omp) 
-
 * machbarkeit modular system?
     * module system (msm package, autobuilder etc) mit eigener versions nr, 
       setup.py, folder.
 
+* monkey patch scipy (0.11) eye method to have default argument for second param!
+   scipy.sparse.eye(m, n, k=0, dtype='d', format=None)[source] ==>
+   scipy.sparse.eye(m, n=None, k=0, dtype='d', format=None)[source]¶
 
 final steps:
 * packaging (provide wheels)
 * move repo to github
+* split ipynbs into own repo
+
 
 future:
 -------
