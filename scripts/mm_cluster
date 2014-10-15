@@ -13,13 +13,13 @@ import sys
 import os
 import argparse
 
-from emma2.util.pystallone import JavaException, API
-from emma2.coordinates.clustering import kmeans, regspace
-from emma2.util.files import handleInputFileArg
-from emma2.util.log import getLogger
+from pyemma.util.pystallone import JavaException, API
+from pyemma.coordinates.clustering import kmeans, regspace
+from pyemma.util.files import handleInputFileArg
+from pyemma.util.log import getLogger
 
 log = getLogger()
-# these are currently supported in emma2.coordinates.clustering
+# these are currently supported in pyemma.coordinates.clustering
 algorithms = ['kmeans', 'regspace']
 metrics = ['minrmsd', 'euclidean']
 

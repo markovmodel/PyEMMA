@@ -17,7 +17,7 @@ def log_loop(iterable):
 def acf(trajs, acffname, stride=1, max_lag=None, subtract_mean=True, normalize=True, mean=None):
     if subtract_mean and mean == None:
         # compute mean over all trajectories
-        from emma2.coordinates.transform import cocovar
+        from pyemma.coordinates.transform import cocovar
         stats = {}
         print 'computing mean'
         for fname in log_loop(trajs):
