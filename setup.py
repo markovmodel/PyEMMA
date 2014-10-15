@@ -180,7 +180,7 @@ metadata = dict(
     # install default emma.cfg into package.
     package_data=dict(pyemma=['pyemma.cfg']),
     data_files=data_files,
-    scripts=[s for s in glob('scripts/*') if s.find('mm_') != -1],
+    scripts=glob('scripts/mm_*'),
     cmdclass=get_cmdclass(),
     tests_require=['nose'],
     test_suite='nose.collector',
