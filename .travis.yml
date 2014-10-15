@@ -1,29 +1,31 @@
 language: python
 python:
-- "2.7"
+# - 2.6
+ - 2.7
 
 env:
-- TOXENV=py26-numpy16-scipy10
-- TOXENV=py26-numpy16-scipy14
-- TOXENV=py26-numpy19-scipy10
-- TOXENV=py26-numpy19-scipy14
-- TOXENV=py27-numpy16-scipy10
-- TOXENV=py27-numpy16-scipy14
-- TOXENV=py27-numpy19-scipy10
-- TOXENV=py27-numpy19-scipy14
+  global:
+    - PATH=$HOME/miniconda/bin:$HOME/miniconda/envs/ci/bin/:$PATH
+    - common_py_deps="pip nose"
+  matrix:
+    - deps="scipy=0.11 numpy=1.7"
+# - deps="numpy=0.12 numpy=1.8" 
+# - deps="numpy=0.13 numpy=1.8" 
+# - deps="numpy=0.14 numpy=1.9" 
+# - deps="scipy=0.11 numpy=1.6"
 
 before_install:
 - sudo apt-get update -qq
 - sudo apt-get install -qq openjdk-7-jre
-- pip install tox wheel
-
-script: tox -e $TOX_ENV
-
-after_success:
-# link tox output to dist, so travis deploy can find it.
-- mkdir -p dist; ln -s .tox/distshare/* dist/
-# convert eggs to wheels 
-- python -m wheel convert dist/*
+- deactivate # travis python venv
+- wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O mc.sh
+- bash mc.sh -b
+- conda create -q --yes -n ci python=$TRAVIS_PYTHON_VERSION $deps $common_py_deps
+- source activate ci
+- python -c "import scipy; print scipy.__version__; print scipy.__numpy_version__"
+script:
+- python setup.py install
+- python setup.py test 
 
 deploy:
   provider: pypi
