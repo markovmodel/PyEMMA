@@ -16,10 +16,10 @@ import argparse
 
 import numpy as np
 
-from emma2.msm.io import read_matrix, write_matrix
-from emma2.msm.analysis import is_transition_matrix
-from emma2.util.log import getLogger
-from emma2.msm.analysis.api import stationary_distribution, rdl_decomposition,\
+from pyemma.msm.io import read_matrix, write_matrix
+from pyemma.msm.analysis import is_transition_matrix
+from pyemma.util.log import getLogger
+from pyemma.msm.analysis.api import stationary_distribution, rdl_decomposition,\
     eigenvectors
 
 log = getLogger()

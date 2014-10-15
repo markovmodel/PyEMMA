@@ -8,7 +8,7 @@ import argparse
 import numpy
 import sys
 
-from emma2.coordinates.transform.tica import Amuse
+from pyemma.coordinates.transform.tica import Amuse
 
 def handleArgs():
     parser = argparse.ArgumentParser(description='Calculate covariance matrices and weight matrices for PCA and TICA.')

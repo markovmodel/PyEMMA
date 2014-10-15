@@ -12,11 +12,11 @@ import argparse
 import os
 import sys
 
-from emma2.util.files import paths_from_patterns
-from emma2.util.log import getLogger
-from emma2.coordinates.clustering import assign
+from pyemma.util.files import paths_from_patterns
+from pyemma.util.log import getLogger
+from pyemma.coordinates.clustering import assign
 
-from emma2.util.pystallone import API, JString, JavaException
+from pyemma.util.pystallone import API, JString, JavaException
 
 log = getLogger()
 

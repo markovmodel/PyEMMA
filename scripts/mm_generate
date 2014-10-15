@@ -5,7 +5,7 @@
 import argparse
 import sys
 
-from emma2.msm.generation import trajectory_generator
+from pyemma.msm.generation import trajectory_generator
 
 def handleArgs():
 # -o <filename>\n" 
