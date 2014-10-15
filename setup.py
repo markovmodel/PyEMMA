@@ -60,26 +60,7 @@ versioneer.parentdir_prefix = 'pyemma-'  # dirname like 'myproject-1.2.0'
 # Extensions
 ###############################################################################
 def extensions():
-    USE_CYTHON = False
-    try:
-        import Cython
-        from Cython.Build import cythonize
-        from distutils.version import StrictVersion
-
-        if StrictVersion(Cython.__version__) < StrictVersion('0.20'):
-            warnings.warn("Your cython version is too old. Setup will treat this"
-                          " as if there is no cython installation and "
-                          "use pre-cythonized files.")
-        else:
-            USE_CYTHON = True
-    except ImportError:
-        pass
-
-    # this should be obsolete with usage of setuptools; test it
-    if USE_CYTHON:
-        ext = '.pyx'
-    else:
-        ext = '.c'
+    from Cython.Build import cythonize
 
     # setup OpenMP support
     from setup_util import detect_openmp
@@ -91,21 +72,21 @@ def extensions():
 
     mle_trev_given_pi_dense_module = \
         Extension('pyemma.msm.estimation.dense.mle_trev_given_pi',
-                  sources=['pyemma/msm/estimation/dense/mle_trev_given_pi' + ext,
+                  sources=['pyemma/msm/estimation/dense/mle_trev_given_pi.pyx',
                            'pyemma/msm/estimation/dense/_mle_trev_given_pi.c'],
                   include_dirs=[os.path.abspath('pyemma/msm/estimation/dense')],
                   extra_compile_args=['-march=native'])
 
     mle_trev_given_pi_sparse_module = \
         Extension('pyemma.msm.estimation.sparse.mle_trev_given_pi',
-                  sources=['pyemma/msm/estimation/sparse/mle_trev_given_pi' + ext,
+                  sources=['pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx',
                            'pyemma/msm/estimation/sparse/_mle_trev_given_pi.c'],
                   include_dirs=[os.path.abspath('pyemma/msm/estimation/dense')],
                   extra_compile_args=['-march=native'])
 
     mle_trev_sparse_module = \
         Extension('pyemma.msm.estimation.sparse.mle_trev',
-                  sources=['pyemma/msm/estimation/sparse/mle_trev' + ext,
+                  sources=['pyemma/msm/estimation/sparse/mle_trev.pyx',
                            'pyemma/msm/estimation/sparse/_mle_trev.c'],
                   extra_compile_args=['-march=native'])
 
@@ -113,8 +94,7 @@ def extensions():
                        mle_trev_given_pi_sparse_module,
                        mle_trev_sparse_module]
 
-    if USE_CYTHON:
-        mle_trev_module = cythonize(mle_trev_module)
+    mle_trev_module = cythonize(mle_trev_module)
 
     exts = [cocovar_module] + mle_trev_module
 
@@ -216,7 +196,9 @@ if not (len(sys.argv) >= 2 and ('--help' in sys.argv[1:] or
     # only require numpy and extensions in case of building/installing
     metadata['ext_modules'] = extensions()
     # setuptools>=2.2 can handle setup_requires
-    metadata['setup_requires'] = ['numpy>=1.6.0', 'setuptools>3.6']
+    metadata['setup_requires'] = ['numpy>=1.6.0',
+                                  'setuptools>3.6',
+                                  'cython>0.20']
 
 try:
     setup(**metadata)
