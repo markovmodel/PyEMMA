@@ -39,7 +39,7 @@ def backward_iteration(A, mu, x0, tol=1e-15, maxiter=100):
         Eigenvector to approximate eigenvalue mu
 
     """
-    T=A-mu*eye(A.shape[0])
+    T=A-mu*eye(A.shape[0], A.shape[0])
     T=T.tocsc()
     """Prefactor T and return a function for solution"""
     solve=factorized(T)
@@ -135,7 +135,7 @@ def eigenvalues(T, k=None, ncv=None):
         v=scipy.sparse.linalg.eigs(T, k=k, which='LM', return_eigenvectors=False, ncv=ncv)
         ind=np.argsort(np.abs(v))[::-1]
         return v[ind]
-    
+
 def eigenvectors(T, k=None, right=True, ncv=None):
     r"""Compute eigenvectors of given transition matrix.
 
@@ -153,14 +153,14 @@ def eigenvectors(T, k=None, right=True, ncv=None):
         The number of Lanczos vectors generated, `ncv` must be greater than k;
         it is recommended that ncv > 2*k
 
-        
+
     Returns
     -------
     eigvec : numpy.ndarray, shape=(d, n)
         The eigenvectors of T ordered with decreasing absolute value of
         the corresponding eigenvalue. If k is None then n=d, if k is
         int then n=k otherwise n is the length of the given indices array.
-        
+
     """
     if k is None:
         raise ValueError("Number of eigenvectors required for decomposition of sparse matrix")
@@ -169,14 +169,14 @@ def eigenvectors(T, k=None, right=True, ncv=None):
             val, vecs=scipy.sparse.linalg.eigs(T, k=k, which='LM', ncv=ncv)
             ind=np.argsort(np.abs(val))[::-1]
             return vecs[:,ind]
-        else:            
+        else:
             val, vecs=scipy.sparse.linalg.eigs(T.transpose(), k=k, which='LM', ncv=ncv)
             ind=np.argsort(np.abs(val))[::-1]
-            return vecs[:, ind]        
+            return vecs[:, ind]
 
 def rdl_decomposition(T, k=None, norm='standard', ncv=None):
     r"""Compute the decomposition into left and right eigenvectors.
-    
+
     Parameters
     ----------
     T : sparse matrix 
@@ -191,7 +191,7 @@ def rdl_decomposition(T, k=None, norm='standard', ncv=None):
     ncv : int (optional)
         The number of Lanczos vectors generated, `ncv` must be greater than k;
         it is recommended that ncv > 2*k
-        
+
     Returns
     -------
     R : (M, M) ndarray
@@ -200,12 +200,12 @@ def rdl_decomposition(T, k=None, norm='standard', ncv=None):
         ``w[i]``, ``dot(T,R[:,i])``=``w[i]*R[:,i]``
     D : (M, M) ndarray
         A diagonal matrix containing the eigenvalues, each repeated
-        according to its multiplicity    
+        according to its multiplicity
     L : (M, M) ndarray
         The normalized (with respect to `R`) left eigenvectors, such that the 
         row ``L[i, :]`` is the left eigenvector corresponding to the eigenvalue
-        ``w[i]``, ``dot(L[i, :], T)``=``w[i]*L[i, :]``    
-      
+        ``w[i]``, ``dot(L[i, :], T)``=``w[i]*L[i, :]``
+
     """
     if k is None:
         raise ValueError("Number of eigenvectors required for decomposition of sparse matrix")
@@ -221,11 +221,11 @@ def rdl_decomposition(T, k=None, norm='standard', ncv=None):
         """Sort left eigenvectors"""
         ind=np.argsort(np.abs(r))[::-1]
         r=r[ind]
-        L=L[:,ind]        
-        
+        L=L[:,ind]
+
         """l1-normalization of L[:, 0]"""
         L[:, 0]=L[:, 0]/np.sum(L[:, 0])
-        
+
         """Standard normalization L'R=Id"""
         ov=np.diag(np.dot(np.transpose(L), R))
         R=R/ov[np.newaxis, :]
@@ -246,16 +246,16 @@ def rdl_decomposition(T, k=None, norm='standard', ncv=None):
 
         """Ensure that R[:,0] is positive"""
         R[:,0]=R[:,0]/np.sign(R[0,0])
-        
+
         """Diagonal matrix with eigenvalues"""
-        D=np.diag(v)      
-        
+        D=np.diag(v)
+
         """Compute left eigenvectors from right ones"""
-        L=mu[:, np.newaxis]*R        
-        
+        L=mu[:, np.newaxis]*R
+
         """Compute overlap"""
         s=np.diag(np.dot(np.transpose(L), R))
-        
+
         """Renormalize left-and right eigenvectors to ensure L'R=Id"""
         R=R/np.sqrt(s[np.newaxis, :])
         L=L/np.sqrt(s[np.newaxis, :])           

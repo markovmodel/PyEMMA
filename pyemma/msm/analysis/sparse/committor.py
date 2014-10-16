@@ -29,7 +29,7 @@ def forward_committor(T, A, B):
     Returns
     -------
     u : (M, ) ndarray
-        Vector of forward committor probabilities    
+        Vector of forward committor probabilities
 
     Notes
     -----
@@ -43,7 +43,7 @@ def forward_committor(T, A, B):
                       u_{i}=1    for i \in B        (III)
 
     with generator matrix L=(P-I).
-                          
+
     """
     X=set(range(T.shape[0]))
     A=set(A)
@@ -52,9 +52,9 @@ def forward_committor(T, A, B):
     notAB=X.difference(A).difference(B)
     if len(AB)>0:
         raise ValueError("Sets A and B have to be disjoint")
-    L=T-eye(T.shape[0])
-    
-    """Assemble left hand-side W for linear system"""    
+    L=T-eye(T.shape[0], T.shape[0])
+
+    """Assemble left hand-side W for linear system"""
     """Equation (I)"""
     W=1.0*L
 
@@ -112,7 +112,7 @@ def backward_committor(T, A, B):
                                   u_{i}=0    for i \in B        (III)
 
     with adjoint of the generator matrix K=(D_pi(P-I))'.
-                          
+
     """
     X=set(range(T.shape[0]))
     A=set(A)
@@ -122,7 +122,7 @@ def backward_committor(T, A, B):
     if len(AB)>0:
         raise ValueError("Sets A and B have to be disjoint")
     pi=statdist(T)
-    L=T-eye(T.shape[0])
+    L=T-eye(T.shape[0], T.shape[0])
     D=diags([pi,], [0,])
     K=(D.dot(L)).T
 
