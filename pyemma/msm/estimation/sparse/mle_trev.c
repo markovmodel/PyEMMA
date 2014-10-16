@@ -344,8 +344,8 @@ void __Pyx_call_destructor(T* x) {
 #define _USE_MATH_DEFINES
 #endif
 #include <math.h>
-#define __PYX_HAVE__emma2__msm__estimation__sparse__mle_trev
-#define __PYX_HAVE_API__emma2__msm__estimation__sparse__mle_trev
+#define __PYX_HAVE__pyemma__msm__estimation__sparse__mle_trev
+#define __PYX_HAVE_API__pyemma__msm__estimation__sparse__mle_trev
 #include "string.h"
 #include "stdio.h"
 #include "stdlib.h"
@@ -1169,18 +1169,18 @@ static PyTypeObject *__pyx_ptype_5numpy_ndarray = 0;
 static PyTypeObject *__pyx_ptype_5numpy_ufunc = 0;
 static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *, char *, char *, int *); /*proto*/
 
-/* Module declarations from 'emma2.msm.estimation.sparse.mle_trev' */
+/* Module declarations from 'pyemma.msm.estimation.sparse.mle_trev' */
 static __Pyx_TypeInfo __Pyx_TypeInfo_PY_LONG_LONG = { "long long", NULL, sizeof(PY_LONG_LONG), { 0 }, 0, IS_UNSIGNED(PY_LONG_LONG) ? 'U' : 'I', IS_UNSIGNED(PY_LONG_LONG), 0 };
 static __Pyx_TypeInfo __Pyx_TypeInfo_double = { "double", NULL, sizeof(double), { 0 }, 0, 'R', 0, 0 };
-#define __Pyx_MODULE_NAME "emma2.msm.estimation.sparse.mle_trev"
-int __pyx_module_is_main_emma2__msm__estimation__sparse__mle_trev = 0;
+#define __Pyx_MODULE_NAME "pyemma.msm.estimation.sparse.mle_trev"
+int __pyx_module_is_main_pyemma__msm__estimation__sparse__mle_trev = 0;
 
-/* Implementation of 'emma2.msm.estimation.sparse.mle_trev' */
+/* Implementation of 'pyemma.msm.estimation.sparse.mle_trev' */
 static PyObject *__pyx_builtin_Exception;
 static PyObject *__pyx_builtin_ValueError;
 static PyObject *__pyx_builtin_range;
 static PyObject *__pyx_builtin_RuntimeError;
-static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_8mle_trev_mle_trev(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_C, double __pyx_v_maxerr, int __pyx_v_maxiter); /* proto */
+static PyObject *__pyx_pf_5pyemma_3msm_10estimation_6sparse_8mle_trev_mle_trev(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_C, double __pyx_v_maxerr, int __pyx_v_maxiter); /* proto */
 static int __pyx_pf_5numpy_7ndarray___getbuffer__(PyArrayObject *__pyx_v_self, Py_buffer *__pyx_v_info, int __pyx_v_flags); /* proto */
 static void __pyx_pf_5numpy_7ndarray_2__releasebuffer__(PyArrayObject *__pyx_v_self, Py_buffer *__pyx_v_info); /* proto */
 static char __pyx_k_B[] = "B";
@@ -1217,7 +1217,7 @@ static char __pyx_k_main[] = "__main__";
 static char __pyx_k_test[] = "__test__";
 static char __pyx_k_C_sum[] = "C_sum";
 static char __pyx_k_dtype[] = "dtype";
-static char __pyx_k_emma2[] = "emma2";
+static char __pyx_k_pyemma[] = "pyemma";
 static char __pyx_k_int64[] = "int64";
 static char __pyx_k_numpy[] = "numpy";
 static char __pyx_k_order[] = "order";
@@ -1252,14 +1252,14 @@ static char __pyx_k_Out_of_memory[] = "Out of memory.";
 static char __pyx_k_pyx_getbuffer[] = "__pyx_getbuffer";
 static char __pyx_k_Didn_t_converge[] = "Didn't converge.";
 static char __pyx_k_pyx_releasebuffer[] = "__pyx_releasebuffer";
-static char __pyx_k_emma2_msm_estimation[] = "emma2.msm.estimation";
+static char __pyx_k_pyemma_msm_estimation[] = "pyemma.msm.estimation";
 static char __pyx_k_maxerr_must_be_positive[] = "maxerr must be positive";
 static char __pyx_k_maxiter_must_be_positive[] = "maxiter must be positive";
 static char __pyx_k_C_must_be_a_square_matrix[] = "C must be a square matrix.";
 static char __pyx_k_ndarray_is_not_C_contiguous[] = "ndarray is not C contiguous";
 static char __pyx_k_C_must_be_strongly_connected[] = "C must be strongly connected";
-static char __pyx_k_emma2_msm_estimation_sparse_mle[] = "emma2.msm.estimation.sparse.mle_trev";
-static char __pyx_k_home_mi_trendelkamp_work_git_em[] = "/home/mi/trendelkamp/work/git/emma2/emma2/msm/estimation/sparse/mle_trev.pyx";
+static char __pyx_k_pyemma_msm_estimation_sparse_mle[] = "pyemma.msm.estimation.sparse.mle_trev";
+static char __pyx_k_home_mi_trendelkamp_work_git_em[] = "/home/mi/trendelkamp/work/git/pyemma/pyemma/msm/estimation/sparse/mle_trev.pyx";
 static char __pyx_k_unknown_dtype_code_in_numpy_pxd[] = "unknown dtype code in numpy.pxd (%d)";
 static char __pyx_k_Cython_implementation_of_iterati[] = "Cython implementation of iterative likelihood maximization.\n\n.. moduleauthor:: F. Paul <fabian DOT paul AT fu-berlin DOT de>\n\n";
 static char __pyx_k_Format_string_allocated_too_shor[] = "Format string allocated too short, see comment in numpy.pxd";
@@ -1298,9 +1298,9 @@ static PyObject *__pyx_n_s_data;
 static PyObject *__pyx_n_s_directed;
 static PyObject *__pyx_n_s_double;
 static PyObject *__pyx_n_s_dtype;
-static PyObject *__pyx_n_s_emma2;
-static PyObject *__pyx_n_s_emma2_msm_estimation;
-static PyObject *__pyx_n_s_emma2_msm_estimation_sparse_mle;
+static PyObject *__pyx_n_s_pyemma;
+static PyObject *__pyx_n_s_pyemma_msm_estimation;
+static PyObject *__pyx_n_s_pyemma_msm_estimation_sparse_mle;
 static PyObject *__pyx_n_s_err;
 static PyObject *__pyx_n_s_estimation;
 static PyObject *__pyx_kp_s_home_mi_trendelkamp_work_git_em;
@@ -1349,7 +1349,7 @@ static PyObject *__pyx_tuple__10;
 static PyObject *__pyx_tuple__11;
 static PyObject *__pyx_codeobj__12;
 
-/* "emma2/msm/estimation/sparse/mle_trev.pyx":15
+/* "pyemma/msm/estimation/sparse/mle_trev.pyx":15
  *   int _mle_trev_sparse(double * const T_data, const long long * const CCt_data, const long long * const i_indices, const long long * const j_indices, const int len_CCt, const long long * const sum_C, const int dim, const double maxerr, const int maxiter)
  * 
  * def mle_trev(C, double maxerr = 1.0E-12, int maxiter = 1000000):             # <<<<<<<<<<<<<<
@@ -1358,9 +1358,9 @@ static PyObject *__pyx_codeobj__12;
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_5emma2_3msm_10estimation_6sparse_8mle_trev_1mle_trev(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_mdef_5emma2_3msm_10estimation_6sparse_8mle_trev_1mle_trev = {__Pyx_NAMESTR("mle_trev"), (PyCFunction)__pyx_pw_5emma2_3msm_10estimation_6sparse_8mle_trev_1mle_trev, METH_VARARGS|METH_KEYWORDS, __Pyx_DOCSTR(0)};
-static PyObject *__pyx_pw_5emma2_3msm_10estimation_6sparse_8mle_trev_1mle_trev(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_5pyemma_3msm_10estimation_6sparse_8mle_trev_1mle_trev(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_5pyemma_3msm_10estimation_6sparse_8mle_trev_1mle_trev = {__Pyx_NAMESTR("mle_trev"), (PyCFunction)__pyx_pw_5pyemma_3msm_10estimation_6sparse_8mle_trev_1mle_trev, METH_VARARGS|METH_KEYWORDS, __Pyx_DOCSTR(0)};
+static PyObject *__pyx_pw_5pyemma_3msm_10estimation_6sparse_8mle_trev_1mle_trev(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_C = 0;
   double __pyx_v_maxerr;
   int __pyx_v_maxiter;
@@ -1427,18 +1427,18 @@ static PyObject *__pyx_pw_5emma2_3msm_10estimation_6sparse_8mle_trev_1mle_trev(P
   __pyx_L5_argtuple_error:;
   __Pyx_RaiseArgtupleInvalid("mle_trev", 0, 1, 3, PyTuple_GET_SIZE(__pyx_args)); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 15; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
   __pyx_L3_error:;
-  __Pyx_AddTraceback("emma2.msm.estimation.sparse.mle_trev.mle_trev", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("pyemma.msm.estimation.sparse.mle_trev.mle_trev", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_5emma2_3msm_10estimation_6sparse_8mle_trev_mle_trev(__pyx_self, __pyx_v_C, __pyx_v_maxerr, __pyx_v_maxiter);
+  __pyx_r = __pyx_pf_5pyemma_3msm_10estimation_6sparse_8mle_trev_mle_trev(__pyx_self, __pyx_v_C, __pyx_v_maxerr, __pyx_v_maxiter);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_8mle_trev_mle_trev(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_C, double __pyx_v_maxerr, int __pyx_v_maxiter) {
+static PyObject *__pyx_pf_5pyemma_3msm_10estimation_6sparse_8mle_trev_mle_trev(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_C, double __pyx_v_maxerr, int __pyx_v_maxiter) {
   PyObject *__pyx_v_C_sum_py = NULL;
   PyArrayObject *__pyx_v_C_sum = 0;
   PyObject *__pyx_v_CCt = NULL;
@@ -1499,7 +1499,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_8mle_trev_mle_trev(CY
   __pyx_pybuffernd_T_data.data = NULL;
   __pyx_pybuffernd_T_data.rcbuffer = &__pyx_pybuffer_T_data;
 
-  /* "emma2/msm/estimation/sparse/mle_trev.pyx":17
+  /* "pyemma/msm/estimation/sparse/mle_trev.pyx":17
  * def mle_trev(C, double maxerr = 1.0E-12, int maxiter = 1000000):
  * 
  *   assert maxerr>0, 'maxerr must be positive'             # <<<<<<<<<<<<<<
@@ -1515,12 +1515,12 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_8mle_trev_mle_trev(CY
   }
   #endif
 
-  /* "emma2/msm/estimation/sparse/mle_trev.pyx":18
+  /* "pyemma/msm/estimation/sparse/mle_trev.pyx":18
  * 
  *   assert maxerr>0, 'maxerr must be positive'
  *   assert maxiter>0, 'maxiter must be positive'             # <<<<<<<<<<<<<<
  *   assert C.shape[0]==C.shape[1], 'C must be a square matrix.'
- *   assert emma2.msm.estimation.is_connected(C,directed=True), 'C must be strongly connected'
+ *   assert pyemma.msm.estimation.is_connected(C,directed=True), 'C must be strongly connected'
  */
   #ifndef CYTHON_WITHOUT_ASSERTIONS
   if (unlikely(!Py_OptimizeFlag)) {
@@ -1531,11 +1531,11 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_8mle_trev_mle_trev(CY
   }
   #endif
 
-  /* "emma2/msm/estimation/sparse/mle_trev.pyx":19
+  /* "pyemma/msm/estimation/sparse/mle_trev.pyx":19
  *   assert maxerr>0, 'maxerr must be positive'
  *   assert maxiter>0, 'maxiter must be positive'
  *   assert C.shape[0]==C.shape[1], 'C must be a square matrix.'             # <<<<<<<<<<<<<<
- *   assert emma2.msm.estimation.is_connected(C,directed=True), 'C must be strongly connected'
+ *   assert pyemma.msm.estimation.is_connected(C,directed=True), 'C must be strongly connected'
  * 
  */
   #ifndef CYTHON_WITHOUT_ASSERTIONS
@@ -1562,16 +1562,16 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_8mle_trev_mle_trev(CY
   }
   #endif
 
-  /* "emma2/msm/estimation/sparse/mle_trev.pyx":20
+  /* "pyemma/msm/estimation/sparse/mle_trev.pyx":20
  *   assert maxiter>0, 'maxiter must be positive'
  *   assert C.shape[0]==C.shape[1], 'C must be a square matrix.'
- *   assert emma2.msm.estimation.is_connected(C,directed=True), 'C must be strongly connected'             # <<<<<<<<<<<<<<
+ *   assert pyemma.msm.estimation.is_connected(C,directed=True), 'C must be strongly connected'             # <<<<<<<<<<<<<<
  * 
  *   C_sum_py = C.sum(axis=1).A1
  */
   #ifndef CYTHON_WITHOUT_ASSERTIONS
   if (unlikely(!Py_OptimizeFlag)) {
-    __pyx_t_1 = __Pyx_GetModuleGlobalName(__pyx_n_s_emma2); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 20; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = __Pyx_GetModuleGlobalName(__pyx_n_s_pyemma); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 20; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_1);
     __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_msm); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 20; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_3);
@@ -1604,8 +1604,8 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_8mle_trev_mle_trev(CY
   }
   #endif
 
-  /* "emma2/msm/estimation/sparse/mle_trev.pyx":22
- *   assert emma2.msm.estimation.is_connected(C,directed=True), 'C must be strongly connected'
+  /* "pyemma/msm/estimation/sparse/mle_trev.pyx":22
+ *   assert pyemma.msm.estimation.is_connected(C,directed=True), 'C must be strongly connected'
  * 
  *   C_sum_py = C.sum(axis=1).A1             # <<<<<<<<<<<<<<
  *   cdef numpy.ndarray[long long, ndim=1, mode="c"] C_sum = C_sum_py.astype(numpy.int64,order='C',copy=False)
@@ -1626,7 +1626,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_8mle_trev_mle_trev(CY
   __pyx_v_C_sum_py = __pyx_t_2;
   __pyx_t_2 = 0;
 
-  /* "emma2/msm/estimation/sparse/mle_trev.pyx":23
+  /* "pyemma/msm/estimation/sparse/mle_trev.pyx":23
  * 
  *   C_sum_py = C.sum(axis=1).A1
  *   cdef numpy.ndarray[long long, ndim=1, mode="c"] C_sum = C_sum_py.astype(numpy.int64,order='C',copy=False)             # <<<<<<<<<<<<<<
@@ -1668,7 +1668,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_8mle_trev_mle_trev(CY
   __pyx_v_C_sum = ((PyArrayObject *)__pyx_t_3);
   __pyx_t_3 = 0;
 
-  /* "emma2/msm/estimation/sparse/mle_trev.pyx":25
+  /* "pyemma/msm/estimation/sparse/mle_trev.pyx":25
  *   cdef numpy.ndarray[long long, ndim=1, mode="c"] C_sum = C_sum_py.astype(numpy.int64,order='C',copy=False)
  * 
  *   CCt = C+C.T             # <<<<<<<<<<<<<<
@@ -1683,7 +1683,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_8mle_trev_mle_trev(CY
   __pyx_v_CCt = __pyx_t_5;
   __pyx_t_5 = 0;
 
-  /* "emma2/msm/estimation/sparse/mle_trev.pyx":27
+  /* "pyemma/msm/estimation/sparse/mle_trev.pyx":27
  *   CCt = C+C.T
  *   # convert CCt to coo format
  *   CCt_coo = CCt.tocoo()             # <<<<<<<<<<<<<<
@@ -1698,7 +1698,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_8mle_trev_mle_trev(CY
   __pyx_v_CCt_coo = __pyx_t_3;
   __pyx_t_3 = 0;
 
-  /* "emma2/msm/estimation/sparse/mle_trev.pyx":28
+  /* "pyemma/msm/estimation/sparse/mle_trev.pyx":28
  *   # convert CCt to coo format
  *   CCt_coo = CCt.tocoo()
  *   n_data = CCt_coo.nnz             # <<<<<<<<<<<<<<
@@ -1710,7 +1710,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_8mle_trev_mle_trev(CY
   __pyx_v_n_data = __pyx_t_3;
   __pyx_t_3 = 0;
 
-  /* "emma2/msm/estimation/sparse/mle_trev.pyx":29
+  /* "pyemma/msm/estimation/sparse/mle_trev.pyx":29
  *   CCt_coo = CCt.tocoo()
  *   n_data = CCt_coo.nnz
  *   cdef numpy.ndarray[long long, ndim=1, mode="c"] CCt_data =  CCt_coo.data.astype(numpy.int64,order='C',copy=False)             # <<<<<<<<<<<<<<
@@ -1755,7 +1755,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_8mle_trev_mle_trev(CY
   __pyx_v_CCt_data = ((PyArrayObject *)__pyx_t_2);
   __pyx_t_2 = 0;
 
-  /* "emma2/msm/estimation/sparse/mle_trev.pyx":30
+  /* "pyemma/msm/estimation/sparse/mle_trev.pyx":30
  *   n_data = CCt_coo.nnz
  *   cdef numpy.ndarray[long long, ndim=1, mode="c"] CCt_data =  CCt_coo.data.astype(numpy.int64,order='C',copy=False)
  *   cdef numpy.ndarray[long long, ndim=1, mode="c"] i_indices = CCt_coo.row.astype(numpy.int64,order='C',copy=True)             # <<<<<<<<<<<<<<
@@ -1800,7 +1800,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_8mle_trev_mle_trev(CY
   __pyx_v_i_indices = ((PyArrayObject *)__pyx_t_5);
   __pyx_t_5 = 0;
 
-  /* "emma2/msm/estimation/sparse/mle_trev.pyx":31
+  /* "pyemma/msm/estimation/sparse/mle_trev.pyx":31
  *   cdef numpy.ndarray[long long, ndim=1, mode="c"] CCt_data =  CCt_coo.data.astype(numpy.int64,order='C',copy=False)
  *   cdef numpy.ndarray[long long, ndim=1, mode="c"] i_indices = CCt_coo.row.astype(numpy.int64,order='C',copy=True)
  *   cdef numpy.ndarray[long long, ndim=1, mode="c"] j_indices = CCt_coo.col.astype(numpy.int64,order='C',copy=True)             # <<<<<<<<<<<<<<
@@ -1845,7 +1845,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_8mle_trev_mle_trev(CY
   __pyx_v_j_indices = ((PyArrayObject *)__pyx_t_1);
   __pyx_t_1 = 0;
 
-  /* "emma2/msm/estimation/sparse/mle_trev.pyx":34
+  /* "pyemma/msm/estimation/sparse/mle_trev.pyx":34
  * 
  *   # prepare data array of T in coo format
  *   cdef numpy.ndarray[double, ndim=1, mode="c"] T_data = numpy.zeros(n_data,dtype=numpy.double,order='C')             # <<<<<<<<<<<<<<
@@ -1891,7 +1891,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_8mle_trev_mle_trev(CY
   __pyx_v_T_data = ((PyArrayObject *)__pyx_t_10);
   __pyx_t_10 = 0;
 
-  /* "emma2/msm/estimation/sparse/mle_trev.pyx":41
+  /* "pyemma/msm/estimation/sparse/mle_trev.pyx":41
  *         <long long*> numpy.PyArray_DATA(i_indices),
  *         <long long*> numpy.PyArray_DATA(j_indices),
  *         n_data,             # <<<<<<<<<<<<<<
@@ -1900,7 +1900,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_8mle_trev_mle_trev(CY
  */
   __pyx_t_12 = __Pyx_PyInt_As_int(__pyx_v_n_data); if (unlikely((__pyx_t_12 == (int)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 41; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
 
-  /* "emma2/msm/estimation/sparse/mle_trev.pyx":43
+  /* "pyemma/msm/estimation/sparse/mle_trev.pyx":43
  *         n_data,
  *         <long long*> numpy.PyArray_DATA(C_sum),
  *         CCt.shape[0],             # <<<<<<<<<<<<<<
@@ -1915,7 +1915,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_8mle_trev_mle_trev(CY
   __pyx_t_13 = __Pyx_PyInt_As_int(__pyx_t_5); if (unlikely((__pyx_t_13 == (int)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 43; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
 
-  /* "emma2/msm/estimation/sparse/mle_trev.pyx":36
+  /* "pyemma/msm/estimation/sparse/mle_trev.pyx":36
  *   cdef numpy.ndarray[double, ndim=1, mode="c"] T_data = numpy.zeros(n_data,dtype=numpy.double,order='C')
  * 
  *   err = _mle_trev_sparse(             # <<<<<<<<<<<<<<
@@ -1924,7 +1924,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_8mle_trev_mle_trev(CY
  */
   __pyx_v_err = _mle_trev_sparse(((double *)PyArray_DATA(((PyArrayObject *)__pyx_v_T_data))), ((PY_LONG_LONG *)PyArray_DATA(((PyArrayObject *)__pyx_v_CCt_data))), ((PY_LONG_LONG *)PyArray_DATA(((PyArrayObject *)__pyx_v_i_indices))), ((PY_LONG_LONG *)PyArray_DATA(((PyArrayObject *)__pyx_v_j_indices))), __pyx_t_12, ((PY_LONG_LONG *)PyArray_DATA(((PyArrayObject *)__pyx_v_C_sum))), __pyx_t_13, __pyx_v_maxerr, __pyx_v_maxiter);
 
-  /* "emma2/msm/estimation/sparse/mle_trev.pyx":53
+  /* "pyemma/msm/estimation/sparse/mle_trev.pyx":53
  *   elif err==-3:
  *     raise Exception('Some row and corresponding column of C have zero counts.')
  *   elif err==-5:             # <<<<<<<<<<<<<<
@@ -1933,7 +1933,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_8mle_trev_mle_trev(CY
  */
   switch (__pyx_v_err) {
 
-    /* "emma2/msm/estimation/sparse/mle_trev.pyx":47
+    /* "pyemma/msm/estimation/sparse/mle_trev.pyx":47
  *         maxiter)
  * 
  *   if err==-1:             # <<<<<<<<<<<<<<
@@ -1942,7 +1942,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_8mle_trev_mle_trev(CY
  */
     case -1:
 
-    /* "emma2/msm/estimation/sparse/mle_trev.pyx":48
+    /* "pyemma/msm/estimation/sparse/mle_trev.pyx":48
  * 
  *   if err==-1:
  *     raise Exception('Out of memory.')             # <<<<<<<<<<<<<<
@@ -1956,7 +1956,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_8mle_trev_mle_trev(CY
     {__pyx_filename = __pyx_f[0]; __pyx_lineno = 48; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     break;
 
-    /* "emma2/msm/estimation/sparse/mle_trev.pyx":49
+    /* "pyemma/msm/estimation/sparse/mle_trev.pyx":49
  *   if err==-1:
  *     raise Exception('Out of memory.')
  *   elif err==-2:             # <<<<<<<<<<<<<<
@@ -1965,7 +1965,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_8mle_trev_mle_trev(CY
  */
     case -2:
 
-    /* "emma2/msm/estimation/sparse/mle_trev.pyx":50
+    /* "pyemma/msm/estimation/sparse/mle_trev.pyx":50
  *     raise Exception('Out of memory.')
  *   elif err==-2:
  *     raise Exception('The update of the stationary distribution produced zero or NaN.')             # <<<<<<<<<<<<<<
@@ -1979,7 +1979,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_8mle_trev_mle_trev(CY
     {__pyx_filename = __pyx_f[0]; __pyx_lineno = 50; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     break;
 
-    /* "emma2/msm/estimation/sparse/mle_trev.pyx":51
+    /* "pyemma/msm/estimation/sparse/mle_trev.pyx":51
  *   elif err==-2:
  *     raise Exception('The update of the stationary distribution produced zero or NaN.')
  *   elif err==-3:             # <<<<<<<<<<<<<<
@@ -1988,7 +1988,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_8mle_trev_mle_trev(CY
  */
     case -3:
 
-    /* "emma2/msm/estimation/sparse/mle_trev.pyx":52
+    /* "pyemma/msm/estimation/sparse/mle_trev.pyx":52
  *     raise Exception('The update of the stationary distribution produced zero or NaN.')
  *   elif err==-3:
  *     raise Exception('Some row and corresponding column of C have zero counts.')             # <<<<<<<<<<<<<<
@@ -2002,7 +2002,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_8mle_trev_mle_trev(CY
     {__pyx_filename = __pyx_f[0]; __pyx_lineno = 52; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     break;
 
-    /* "emma2/msm/estimation/sparse/mle_trev.pyx":53
+    /* "pyemma/msm/estimation/sparse/mle_trev.pyx":53
  *   elif err==-3:
  *     raise Exception('Some row and corresponding column of C have zero counts.')
  *   elif err==-5:             # <<<<<<<<<<<<<<
@@ -2011,7 +2011,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_8mle_trev_mle_trev(CY
  */
     case -5:
 
-    /* "emma2/msm/estimation/sparse/mle_trev.pyx":54
+    /* "pyemma/msm/estimation/sparse/mle_trev.pyx":54
  *     raise Exception('Some row and corresponding column of C have zero counts.')
  *   elif err==-5:
  *     raise Exception('Didn\'t converge.')             # <<<<<<<<<<<<<<
@@ -2027,7 +2027,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_8mle_trev_mle_trev(CY
     default: break;
   }
 
-  /* "emma2/msm/estimation/sparse/mle_trev.pyx":57
+  /* "pyemma/msm/estimation/sparse/mle_trev.pyx":57
  * 
  *   # T matrix has the same shape and positions of nonzero elements as CCt
  *   return scipy.sparse.csr_matrix((T_data,(i_indices,j_indices)),shape=CCt.shape)             # <<<<<<<<<<<<<<
@@ -2077,7 +2077,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_8mle_trev_mle_trev(CY
   __pyx_t_2 = 0;
   goto __pyx_L0;
 
-  /* "emma2/msm/estimation/sparse/mle_trev.pyx":15
+  /* "pyemma/msm/estimation/sparse/mle_trev.pyx":15
  *   int _mle_trev_sparse(double * const T_data, const long long * const CCt_data, const long long * const i_indices, const long long * const j_indices, const int len_CCt, const long long * const sum_C, const int dim, const double maxerr, const int maxiter)
  * 
  * def mle_trev(C, double maxerr = 1.0E-12, int maxiter = 1000000):             # <<<<<<<<<<<<<<
@@ -2100,7 +2100,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_8mle_trev_mle_trev(CY
     __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_i_indices.rcbuffer->pybuffer);
     __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_j_indices.rcbuffer->pybuffer);
   __Pyx_ErrRestore(__pyx_type, __pyx_value, __pyx_tb);}
-  __Pyx_AddTraceback("emma2.msm.estimation.sparse.mle_trev.mle_trev", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("pyemma.msm.estimation.sparse.mle_trev.mle_trev", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   goto __pyx_L2;
   __pyx_L0:;
@@ -4159,9 +4159,9 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_directed, __pyx_k_directed, sizeof(__pyx_k_directed), 0, 0, 1, 1},
   {&__pyx_n_s_double, __pyx_k_double, sizeof(__pyx_k_double), 0, 0, 1, 1},
   {&__pyx_n_s_dtype, __pyx_k_dtype, sizeof(__pyx_k_dtype), 0, 0, 1, 1},
-  {&__pyx_n_s_emma2, __pyx_k_emma2, sizeof(__pyx_k_emma2), 0, 0, 1, 1},
-  {&__pyx_n_s_emma2_msm_estimation, __pyx_k_emma2_msm_estimation, sizeof(__pyx_k_emma2_msm_estimation), 0, 0, 1, 1},
-  {&__pyx_n_s_emma2_msm_estimation_sparse_mle, __pyx_k_emma2_msm_estimation_sparse_mle, sizeof(__pyx_k_emma2_msm_estimation_sparse_mle), 0, 0, 1, 1},
+  {&__pyx_n_s_pyemma, __pyx_k_pyemma, sizeof(__pyx_k_pyemma), 0, 0, 1, 1},
+  {&__pyx_n_s_pyemma_msm_estimation, __pyx_k_pyemma_msm_estimation, sizeof(__pyx_k_pyemma_msm_estimation), 0, 0, 1, 1},
+  {&__pyx_n_s_pyemma_msm_estimation_sparse_mle, __pyx_k_pyemma_msm_estimation_sparse_mle, sizeof(__pyx_k_pyemma_msm_estimation_sparse_mle), 0, 0, 1, 1},
   {&__pyx_n_s_err, __pyx_k_err, sizeof(__pyx_k_err), 0, 0, 1, 1},
   {&__pyx_n_s_estimation, __pyx_k_estimation, sizeof(__pyx_k_estimation), 0, 0, 1, 1},
   {&__pyx_kp_s_home_mi_trendelkamp_work_git_em, __pyx_k_home_mi_trendelkamp_work_git_em, sizeof(__pyx_k_home_mi_trendelkamp_work_git_em), 0, 0, 1, 0},
@@ -4212,7 +4212,7 @@ static int __Pyx_InitCachedConstants(void) {
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__Pyx_InitCachedConstants", 0);
 
-  /* "emma2/msm/estimation/sparse/mle_trev.pyx":48
+  /* "pyemma/msm/estimation/sparse/mle_trev.pyx":48
  * 
  *   if err==-1:
  *     raise Exception('Out of memory.')             # <<<<<<<<<<<<<<
@@ -4223,7 +4223,7 @@ static int __Pyx_InitCachedConstants(void) {
   __Pyx_GOTREF(__pyx_tuple_);
   __Pyx_GIVEREF(__pyx_tuple_);
 
-  /* "emma2/msm/estimation/sparse/mle_trev.pyx":50
+  /* "pyemma/msm/estimation/sparse/mle_trev.pyx":50
  *     raise Exception('Out of memory.')
  *   elif err==-2:
  *     raise Exception('The update of the stationary distribution produced zero or NaN.')             # <<<<<<<<<<<<<<
@@ -4234,7 +4234,7 @@ static int __Pyx_InitCachedConstants(void) {
   __Pyx_GOTREF(__pyx_tuple__2);
   __Pyx_GIVEREF(__pyx_tuple__2);
 
-  /* "emma2/msm/estimation/sparse/mle_trev.pyx":52
+  /* "pyemma/msm/estimation/sparse/mle_trev.pyx":52
  *     raise Exception('The update of the stationary distribution produced zero or NaN.')
  *   elif err==-3:
  *     raise Exception('Some row and corresponding column of C have zero counts.')             # <<<<<<<<<<<<<<
@@ -4245,7 +4245,7 @@ static int __Pyx_InitCachedConstants(void) {
   __Pyx_GOTREF(__pyx_tuple__3);
   __Pyx_GIVEREF(__pyx_tuple__3);
 
-  /* "emma2/msm/estimation/sparse/mle_trev.pyx":54
+  /* "pyemma/msm/estimation/sparse/mle_trev.pyx":54
  *     raise Exception('Some row and corresponding column of C have zero counts.')
  *   elif err==-5:
  *     raise Exception('Didn\'t converge.')             # <<<<<<<<<<<<<<
@@ -4322,7 +4322,7 @@ static int __Pyx_InitCachedConstants(void) {
   __Pyx_GOTREF(__pyx_tuple__10);
   __Pyx_GIVEREF(__pyx_tuple__10);
 
-  /* "emma2/msm/estimation/sparse/mle_trev.pyx":15
+  /* "pyemma/msm/estimation/sparse/mle_trev.pyx":15
  *   int _mle_trev_sparse(double * const T_data, const long long * const CCt_data, const long long * const i_indices, const long long * const j_indices, const int len_CCt, const long long * const sum_C, const int dim, const double maxerr, const int maxiter)
  * 
  * def mle_trev(C, double maxerr = 1.0E-12, int maxiter = 1000000):             # <<<<<<<<<<<<<<
@@ -4409,14 +4409,14 @@ PyMODINIT_FUNC PyInit_mle_trev(void)
   #if PY_MAJOR_VERSION < 3 && (__PYX_DEFAULT_STRING_ENCODING_IS_ASCII || __PYX_DEFAULT_STRING_ENCODING_IS_DEFAULT)
   if (__Pyx_init_sys_getdefaultencoding_params() < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   #endif
-  if (__pyx_module_is_main_emma2__msm__estimation__sparse__mle_trev) {
+  if (__pyx_module_is_main_pyemma__msm__estimation__sparse__mle_trev) {
     if (__Pyx_SetAttrString(__pyx_m, "__name__", __pyx_n_s_main) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
   }
   #if PY_MAJOR_VERSION >= 3
   {
     PyObject *modules = PyImport_GetModuleDict(); if (unlikely(!modules)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (!PyDict_GetItemString(modules, "emma2.msm.estimation.sparse.mle_trev")) {
-      if (unlikely(PyDict_SetItemString(modules, "emma2.msm.estimation.sparse.mle_trev", __pyx_m) < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (!PyDict_GetItemString(modules, "pyemma.msm.estimation.sparse.mle_trev")) {
+      if (unlikely(PyDict_SetItemString(modules, "pyemma.msm.estimation.sparse.mle_trev", __pyx_m) < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     }
   }
   #endif
@@ -4445,7 +4445,7 @@ PyMODINIT_FUNC PyInit_mle_trev(void)
   /*--- Function import code ---*/
   /*--- Execution code ---*/
 
-  /* "emma2/msm/estimation/sparse/mle_trev.pyx":6
+  /* "pyemma/msm/estimation/sparse/mle_trev.pyx":6
  * 
  * """
  * import numpy             # <<<<<<<<<<<<<<
@@ -4457,7 +4457,7 @@ PyMODINIT_FUNC PyInit_mle_trev(void)
   if (PyDict_SetItem(__pyx_d, __pyx_n_s_numpy, __pyx_t_1) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 6; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "emma2/msm/estimation/sparse/mle_trev.pyx":7
+  /* "pyemma/msm/estimation/sparse/mle_trev.pyx":7
  * """
  * import numpy
  * import scipy             # <<<<<<<<<<<<<<
@@ -4469,43 +4469,43 @@ PyMODINIT_FUNC PyInit_mle_trev(void)
   if (PyDict_SetItem(__pyx_d, __pyx_n_s_scipy, __pyx_t_1) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 7; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "emma2/msm/estimation/sparse/mle_trev.pyx":8
+  /* "pyemma/msm/estimation/sparse/mle_trev.pyx":8
  * import numpy
  * import scipy
  * import scipy.sparse             # <<<<<<<<<<<<<<
  * cimport numpy
- * import emma2.msm.estimation
+ * import pyemma.msm.estimation
  */
   __pyx_t_1 = __Pyx_Import(__pyx_n_s_scipy_sparse, 0, -1); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 8; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   if (PyDict_SetItem(__pyx_d, __pyx_n_s_scipy, __pyx_t_1) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 8; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "emma2/msm/estimation/sparse/mle_trev.pyx":10
+  /* "pyemma/msm/estimation/sparse/mle_trev.pyx":10
  * import scipy.sparse
  * cimport numpy
- * import emma2.msm.estimation             # <<<<<<<<<<<<<<
+ * import pyemma.msm.estimation             # <<<<<<<<<<<<<<
  * 
  * cdef extern from "_mle_trev.h":
  */
-  __pyx_t_1 = __Pyx_Import(__pyx_n_s_emma2_msm_estimation, 0, -1); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 10; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = __Pyx_Import(__pyx_n_s_pyemma_msm_estimation, 0, -1); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 10; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_emma2, __pyx_t_1) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 10; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_pyemma, __pyx_t_1) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 10; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "emma2/msm/estimation/sparse/mle_trev.pyx":15
+  /* "pyemma/msm/estimation/sparse/mle_trev.pyx":15
  *   int _mle_trev_sparse(double * const T_data, const long long * const CCt_data, const long long * const i_indices, const long long * const j_indices, const int len_CCt, const long long * const sum_C, const int dim, const double maxerr, const int maxiter)
  * 
  * def mle_trev(C, double maxerr = 1.0E-12, int maxiter = 1000000):             # <<<<<<<<<<<<<<
  * 
  *   assert maxerr>0, 'maxerr must be positive'
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_5emma2_3msm_10estimation_6sparse_8mle_trev_1mle_trev, NULL, __pyx_n_s_emma2_msm_estimation_sparse_mle); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 15; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_5pyemma_3msm_10estimation_6sparse_8mle_trev_1mle_trev, NULL, __pyx_n_s_pyemma_msm_estimation_sparse_mle); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 15; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   if (PyDict_SetItem(__pyx_d, __pyx_n_s_mle_trev, __pyx_t_1) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 15; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "emma2/msm/estimation/sparse/mle_trev.pyx":1
+  /* "pyemma/msm/estimation/sparse/mle_trev.pyx":1
  * r"""Cython implementation of iterative likelihood maximization.             # <<<<<<<<<<<<<<
  * 
  * .. moduleauthor:: F. Paul <fabian DOT paul AT fu-berlin DOT de>
@@ -4526,10 +4526,10 @@ PyMODINIT_FUNC PyInit_mle_trev(void)
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
   if (__pyx_m) {
-    __Pyx_AddTraceback("init emma2.msm.estimation.sparse.mle_trev", __pyx_clineno, __pyx_lineno, __pyx_filename);
+    __Pyx_AddTraceback("init pyemma.msm.estimation.sparse.mle_trev", __pyx_clineno, __pyx_lineno, __pyx_filename);
     Py_DECREF(__pyx_m); __pyx_m = 0;
   } else if (!PyErr_Occurred()) {
-    PyErr_SetString(PyExc_ImportError, "init emma2.msm.estimation.sparse.mle_trev");
+    PyErr_SetString(PyExc_ImportError, "init pyemma.msm.estimation.sparse.mle_trev");
   }
   __pyx_L0:;
   __Pyx_RefNannyFinishContext();

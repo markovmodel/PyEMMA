@@ -9,13 +9,23 @@ static double distsq(const int n, const double *const a, const double *const b)
 {
   double d = 0.0;
   int i;
+#pragma omp parallel for reduction(+:d)
   for(i=0; i<n; i++) {
-    d += (a[i]-b[i])*(a[i]-b[i]);
+    d = d + (a[i]-b[i])*(a[i]-b[i]);
   }
   return d;
 }
 
-int _mle_trev_given_pi_sparse(double * const T_data, const double * const CCt_data, const long long * const i_indices, const long long * const j_indices, const int len_CCt,  const double * const mu, const int len_mu, double maxerr, const int maxiter)
+int _mle_trev_given_pi_sparse(
+		double * const T_data,
+		const double * const CCt_data,
+		const long long * const i_indices,
+		const long long * const j_indices,
+		const int len_CCt,
+		const double * const mu,
+		const int len_mu,
+		double maxerr,
+		const int maxiter)
 {
   double d_sq;
   int i, j, t, err, iteration;
