@@ -1,4 +1,4 @@
-.. automodule:: emma2.coordinates.transform.tica
+.. automodule:: pyemma.coordinates.transform.tica
 
 .. toctree::
    :maxdepth: 1

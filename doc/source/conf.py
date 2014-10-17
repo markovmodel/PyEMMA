@@ -312,7 +312,7 @@ if on_rtd:
     MOCK_MODULES = \
     [
      'jpype',
-     #'emma2.coordinates.transform.cocovar',
+     #'pyemma.coordinates.transform.cocovar',
      'pyemma.msm.estimation.dense.mle_trev_given_pi',
      'pyemma.msm.estimation.sparse.mle_trev_given_pi',
      'numpy', 'scipy',

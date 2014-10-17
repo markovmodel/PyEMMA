@@ -1,4 +1,4 @@
-.. automodule:: emma2.msm.io
+.. automodule:: pyemma.msm.io
 
 .. toctree::
    :maxdepth: 1

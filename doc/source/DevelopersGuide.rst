@@ -22,7 +22,7 @@ mainly belongs to that api package.
 
 Eg.: ::
 
-      emma2.msm.api.analysis => [msm/analysis]
+      pyemma.msm.api.analysis => [msm/analysis]
 
 This has two opportunitíes:
 

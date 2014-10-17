@@ -165,7 +165,7 @@ Recommended for users:
 
 ::
 
-   pip install emma2
+   pip install pyemma
 
 Recommended method for developers using GIT:
 
@@ -175,7 +175,7 @@ Recommended method for developers using GIT:
 
    git clone https://github.com/cmb-fu/emma.git
 
-2. install emma2 via
+2. install pyemma via
 
 ::
 
