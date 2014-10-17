@@ -17,6 +17,9 @@ class TestTransitionMatrixNonReversibleSparse(unittest.TestCase):
         
         self.T1=scipy.sparse.csr_matrix([[0.25, 0.75], [0.75, 0.25]])
         self.T2=scipy.sparse.csr_matrix([[0, 1], [0.5, 0.5]])
+
+        self.pi1=np.array([0.25, 0.25])
+        self.pi2=np.array([1.0/3, 2.0/3])
         
         """Zero row sum throws an error"""
         self.C0=scipy.sparse.csr_matrix([[0, 0], [3, 1]])
@@ -25,12 +28,27 @@ class TestTransitionMatrixNonReversibleSparse(unittest.TestCase):
         pass
 
     def test_transition_matrix(self):
-        """Small test cases"""
+        """Non-reversible"""
         T=transition_matrix(self.C1).toarray()
         self.assertTrue(np.allclose(T, self.T1.toarray()))
         
-        T=transition_matrix(self.C1).toarray()
-        self.assertTrue(np.allclose(T, self.T1.toarray()))        
+        T=transition_matrix(self.C2).toarray()
+        self.assertTrue(np.allclose(T, self.T2.toarray()))   
+
+        """Reversible"""
+        T=transition_matrix(self.C1, rversible=True).toarray()
+        self.assertTrue(np.allclose(T, self.T1.toarray()))
+
+        T=transition_matrix(self.C2, reversible=True).toarray()
+        self.assertTrue(np.allclose(T, self.T2.toarray()))   
+
+        """Reversible with fixed pi"""
+        T=transition_matrix(self.C1, rversible=True, pi=self.pi1).toarray()
+        self.assertTrue(np.allclose(T, self.T1.toarray()))
+        
+        T=transition_matrix(self.C2, rversible=True, pi=self.pi2).toarray()
+        self.assertTrue(np.allclose(T, self.T2.toarray()))       
+        
 
 class TestCovariance(unittest.TestCase):
     
