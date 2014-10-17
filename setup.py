@@ -86,7 +86,6 @@ def extensions():
     from setup_util import detect_openmp
     openmp_enabled, needs_gomp = detect_openmp()
 
-    # define extensions
 
     mle_trev_given_pi_dense_module = \
         Extension('pyemma.msm.estimation.dense.mle_trev_given_pi',
