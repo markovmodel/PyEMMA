@@ -87,8 +87,6 @@ def extensions():
     openmp_enabled, needs_gomp = detect_openmp()
 
     # define extensions
-    cocovar_module = Extension('pyemma.coordinates.transform.cocovar',
-                               sources=['pyemma/coordinates/transform/cocovar.c'])
 
     mle_trev_given_pi_dense_module = \
         Extension('pyemma.msm.estimation.dense.mle_trev_given_pi',
@@ -117,7 +115,7 @@ def extensions():
     if USE_CYTHON:
         mle_trev_module = cythonize(mle_trev_module)
 
-    exts = [cocovar_module] + mle_trev_module
+    exts = mle_trev_module
 
     if openmp_enabled:
         omp_compiler_args = ['-fopenmp']
