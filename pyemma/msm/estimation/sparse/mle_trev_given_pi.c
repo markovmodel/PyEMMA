@@ -344,8 +344,8 @@ void __Pyx_call_destructor(T* x) {
 #define _USE_MATH_DEFINES
 #endif
 #include <math.h>
-#define __PYX_HAVE__emma2__msm__estimation__sparse__mle_trev_given_pi
-#define __PYX_HAVE_API__emma2__msm__estimation__sparse__mle_trev_given_pi
+#define __PYX_HAVE__pyemma__msm__estimation__sparse__mle_trev_given_pi
+#define __PYX_HAVE_API__pyemma__msm__estimation__sparse__mle_trev_given_pi
 #include "string.h"
 #include "stdio.h"
 #include "stdlib.h"
@@ -1171,19 +1171,19 @@ static PyTypeObject *__pyx_ptype_5numpy_ndarray = 0;
 static PyTypeObject *__pyx_ptype_5numpy_ufunc = 0;
 static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *, char *, char *, int *); /*proto*/
 
-/* Module declarations from 'emma2.msm.estimation.sparse.mle_trev_given_pi' */
+/* Module declarations from 'pyemma.msm.estimation.sparse.mle_trev_given_pi' */
 static __Pyx_TypeInfo __Pyx_TypeInfo_double = { "double", NULL, sizeof(double), { 0 }, 0, 'R', 0, 0 };
 static __Pyx_TypeInfo __Pyx_TypeInfo_PY_LONG_LONG = { "long long", NULL, sizeof(PY_LONG_LONG), { 0 }, 0, IS_UNSIGNED(PY_LONG_LONG) ? 'U' : 'I', IS_UNSIGNED(PY_LONG_LONG), 0 };
-#define __Pyx_MODULE_NAME "emma2.msm.estimation.sparse.mle_trev_given_pi"
-int __pyx_module_is_main_emma2__msm__estimation__sparse__mle_trev_given_pi = 0;
+#define __Pyx_MODULE_NAME "pyemma.msm.estimation.sparse.mle_trev_given_pi"
+int __pyx_module_is_main_pyemma__msm__estimation__sparse__mle_trev_given_pi = 0;
 
-/* Implementation of 'emma2.msm.estimation.sparse.mle_trev_given_pi' */
+/* Implementation of 'pyemma.msm.estimation.sparse.mle_trev_given_pi' */
 static PyObject *__pyx_builtin_Exception;
 static PyObject *__pyx_builtin_ValueError;
 static PyObject *__pyx_builtin_range;
 static PyObject *__pyx_builtin_RuntimeError;
-static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_check_diagonal(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_A); /* proto */
-static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2mle_trev_given_pi(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_C, PyObject *__pyx_v_mu, double __pyx_v_maxerr, int __pyx_v_maxiter, double __pyx_v_eps); /* proto */
+static PyObject *__pyx_pf_5pyemma_3msm_10estimation_6sparse_17mle_trev_given_pi_check_diagonal(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_A); /* proto */
+static PyObject *__pyx_pf_5pyemma_3msm_10estimation_6sparse_17mle_trev_given_pi_2mle_trev_given_pi(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_C, PyObject *__pyx_v_mu, double __pyx_v_maxerr, int __pyx_v_maxiter, double __pyx_v_eps); /* proto */
 static int __pyx_pf_5numpy_7ndarray___getbuffer__(PyArrayObject *__pyx_v_self, Py_buffer *__pyx_v_info, int __pyx_v_flags); /* proto */
 static void __pyx_pf_5numpy_7ndarray_2__releasebuffer__(PyArrayObject *__pyx_v_self, Py_buffer *__pyx_v_info); /* proto */
 static char __pyx_k_A[] = "A";
@@ -1224,7 +1224,7 @@ static char __pyx_k_main[] = "__main__";
 static char __pyx_k_test[] = "__test__";
 static char __pyx_k_diags[] = "diags";
 static char __pyx_k_dtype[] = "dtype";
-static char __pyx_k_emma2[] = "emma2";
+static char __pyx_k_pyemma[] = "pyemma";
 static char __pyx_k_int64[] = "int64";
 static char __pyx_k_numpy[] = "numpy";
 static char __pyx_k_order[] = "order";
@@ -1264,15 +1264,15 @@ static char __pyx_k_check_diagonal[] = "check_diagonal";
 static char __pyx_k_Didn_t_converge[] = "Didn't converge.";
 static char __pyx_k_mle_trev_given_pi[] = "mle_trev_given_pi";
 static char __pyx_k_pyx_releasebuffer[] = "__pyx_releasebuffer";
-static char __pyx_k_emma2_msm_estimation[] = "emma2.msm.estimation";
+static char __pyx_k_pyemma_msm_estimation[] = "pyemma.msm.estimation";
 static char __pyx_k_maxerr_must_be_positive[] = "maxerr must be positive";
 static char __pyx_k_eps_must_be_non_negative[] = "eps must be non-negative";
 static char __pyx_k_maxiter_must_be_positive[] = "maxiter must be positive";
 static char __pyx_k_C_must_be_weakly_connected[] = "C must be (weakly) connected";
 static char __pyx_k_Some_element_of_pi_is_zero[] = "Some element of pi is zero.";
 static char __pyx_k_ndarray_is_not_C_contiguous[] = "ndarray is not C contiguous";
-static char __pyx_k_emma2_msm_estimation_sparse_mle[] = "emma2.msm.estimation.sparse.mle_trev_given_pi";
-static char __pyx_k_home_mi_trendelkamp_work_git_em[] = "/home/mi/trendelkamp/work/git/emma2/emma2/msm/estimation/sparse/mle_trev_given_pi.pyx";
+static char __pyx_k_pyemma_msm_estimation_sparse_mle[] = "pyemma.msm.estimation.sparse.mle_trev_given_pi";
+static char __pyx_k_home_mi_trendelkamp_work_git_em[] = "/home/mi/trendelkamp/work/git/pyemma/pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx";
 static char __pyx_k_unknown_dtype_code_in_numpy_pxd[] = "unknown dtype code in numpy.pxd (%d)";
 static char __pyx_k_Count_matrix_has_zero_diagonal_e[] = "Count matrix has zero diagonal elements. Can't guarantee convergence of algorithm. Suggestion: set regularization parameter eps to some small value e.g. 1E-6.";
 static char __pyx_k_Cython_implementation_of_iterati[] = "Cython implementation of iterative likelihood maximization.\n\n.. moduleauthor:: F. Paul <fabian DOT paul AT fu-berlin DOT de>\n\n";
@@ -1320,9 +1320,9 @@ static PyObject *__pyx_n_s_diags;
 static PyObject *__pyx_n_s_directed;
 static PyObject *__pyx_n_s_double;
 static PyObject *__pyx_n_s_dtype;
-static PyObject *__pyx_n_s_emma2;
-static PyObject *__pyx_n_s_emma2_msm_estimation;
-static PyObject *__pyx_n_s_emma2_msm_estimation_sparse_mle;
+static PyObject *__pyx_n_s_pyemma;
+static PyObject *__pyx_n_s_pyemma_msm_estimation;
+static PyObject *__pyx_n_s_pyemma_msm_estimation_sparse_mle;
 static PyObject *__pyx_n_s_eps;
 static PyObject *__pyx_kp_s_eps_must_be_non_negative;
 static PyObject *__pyx_n_s_err;
@@ -1382,7 +1382,7 @@ static PyObject *__pyx_tuple__16;
 static PyObject *__pyx_codeobj__15;
 static PyObject *__pyx_codeobj__17;
 
-/* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":15
+/* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":15
  *   int _mle_trev_given_pi_sparse(double * const T_data, const double * const CCt_data, const long long * const i_indices, const long long * const j_indices, const int len_CCt,  const double * const mu, const int len_mu, double maxerr, const int maxiter)
  * 
  * def check_diagonal(A):             # <<<<<<<<<<<<<<
@@ -1391,21 +1391,21 @@ static PyObject *__pyx_codeobj__17;
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_1check_diagonal(PyObject *__pyx_self, PyObject *__pyx_v_A); /*proto*/
-static char __pyx_doc_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_check_diagonal[] = "Check matrix with non-negative entries for zero elements on diagonal.\n\n  Parameters\n  ----------\n  A : (M, M) scipy.sparse matrix\n      Input matrix\n      \n  ";
-static PyMethodDef __pyx_mdef_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_1check_diagonal = {__Pyx_NAMESTR("check_diagonal"), (PyCFunction)__pyx_pw_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_1check_diagonal, METH_O, __Pyx_DOCSTR(__pyx_doc_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_check_diagonal)};
-static PyObject *__pyx_pw_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_1check_diagonal(PyObject *__pyx_self, PyObject *__pyx_v_A) {
+static PyObject *__pyx_pw_5pyemma_3msm_10estimation_6sparse_17mle_trev_given_pi_1check_diagonal(PyObject *__pyx_self, PyObject *__pyx_v_A); /*proto*/
+static char __pyx_doc_5pyemma_3msm_10estimation_6sparse_17mle_trev_given_pi_check_diagonal[] = "Check matrix with non-negative entries for zero elements on diagonal.\n\n  Parameters\n  ----------\n  A : (M, M) scipy.sparse matrix\n      Input matrix\n      \n  ";
+static PyMethodDef __pyx_mdef_5pyemma_3msm_10estimation_6sparse_17mle_trev_given_pi_1check_diagonal = {__Pyx_NAMESTR("check_diagonal"), (PyCFunction)__pyx_pw_5pyemma_3msm_10estimation_6sparse_17mle_trev_given_pi_1check_diagonal, METH_O, __Pyx_DOCSTR(__pyx_doc_5pyemma_3msm_10estimation_6sparse_17mle_trev_given_pi_check_diagonal)};
+static PyObject *__pyx_pw_5pyemma_3msm_10estimation_6sparse_17mle_trev_given_pi_1check_diagonal(PyObject *__pyx_self, PyObject *__pyx_v_A) {
   PyObject *__pyx_r = 0;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("check_diagonal (wrapper)", 0);
-  __pyx_r = __pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_check_diagonal(__pyx_self, ((PyObject *)__pyx_v_A));
+  __pyx_r = __pyx_pf_5pyemma_3msm_10estimation_6sparse_17mle_trev_given_pi_check_diagonal(__pyx_self, ((PyObject *)__pyx_v_A));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_check_diagonal(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_A) {
+static PyObject *__pyx_pf_5pyemma_3msm_10estimation_6sparse_17mle_trev_given_pi_check_diagonal(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_A) {
   PyObject *__pyx_v_a_ii = NULL;
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
@@ -1417,7 +1417,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_c
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("check_diagonal", 0);
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":24
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":24
  * 
  *   """
  *   a_ii=A.diagonal()             # <<<<<<<<<<<<<<
@@ -1432,7 +1432,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_c
   __pyx_v_a_ii = __pyx_t_2;
   __pyx_t_2 = 0;
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":25
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":25
  *   """
  *   a_ii=A.diagonal()
  *   return numpy.all(a_ii>0.0)             # <<<<<<<<<<<<<<
@@ -1459,7 +1459,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_c
   __pyx_t_2 = 0;
   goto __pyx_L0;
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":15
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":15
  *   int _mle_trev_given_pi_sparse(double * const T_data, const double * const CCt_data, const long long * const i_indices, const long long * const j_indices, const int len_CCt,  const double * const mu, const int len_mu, double maxerr, const int maxiter)
  * 
  * def check_diagonal(A):             # <<<<<<<<<<<<<<
@@ -1472,7 +1472,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_c
   __Pyx_XDECREF(__pyx_t_1);
   __Pyx_XDECREF(__pyx_t_2);
   __Pyx_XDECREF(__pyx_t_3);
-  __Pyx_AddTraceback("emma2.msm.estimation.sparse.mle_trev_given_pi.check_diagonal", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("pyemma.msm.estimation.sparse.mle_trev_given_pi.check_diagonal", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_a_ii);
@@ -1481,7 +1481,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_c
   return __pyx_r;
 }
 
-/* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":27
+/* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":27
  *   return numpy.all(a_ii>0.0)
  * 
  * def mle_trev_given_pi(             # <<<<<<<<<<<<<<
@@ -1490,9 +1490,9 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_c
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_3mle_trev_given_pi(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_mdef_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_3mle_trev_given_pi = {__Pyx_NAMESTR("mle_trev_given_pi"), (PyCFunction)__pyx_pw_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_3mle_trev_given_pi, METH_VARARGS|METH_KEYWORDS, __Pyx_DOCSTR(0)};
-static PyObject *__pyx_pw_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_3mle_trev_given_pi(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_5pyemma_3msm_10estimation_6sparse_17mle_trev_given_pi_3mle_trev_given_pi(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_5pyemma_3msm_10estimation_6sparse_17mle_trev_given_pi_3mle_trev_given_pi = {__Pyx_NAMESTR("mle_trev_given_pi"), (PyCFunction)__pyx_pw_5pyemma_3msm_10estimation_6sparse_17mle_trev_given_pi_3mle_trev_given_pi, METH_VARARGS|METH_KEYWORDS, __Pyx_DOCSTR(0)};
+static PyObject *__pyx_pw_5pyemma_3msm_10estimation_6sparse_17mle_trev_given_pi_3mle_trev_given_pi(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_C = 0;
   PyObject *__pyx_v_mu = 0;
   double __pyx_v_maxerr;
@@ -1581,18 +1581,18 @@ static PyObject *__pyx_pw_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_3
   __pyx_L5_argtuple_error:;
   __Pyx_RaiseArgtupleInvalid("mle_trev_given_pi", 0, 2, 5, PyTuple_GET_SIZE(__pyx_args)); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 27; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
   __pyx_L3_error:;
-  __Pyx_AddTraceback("emma2.msm.estimation.sparse.mle_trev_given_pi.mle_trev_given_pi", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("pyemma.msm.estimation.sparse.mle_trev_given_pi.mle_trev_given_pi", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2mle_trev_given_pi(__pyx_self, __pyx_v_C, __pyx_v_mu, __pyx_v_maxerr, __pyx_v_maxiter, __pyx_v_eps);
+  __pyx_r = __pyx_pf_5pyemma_3msm_10estimation_6sparse_17mle_trev_given_pi_2mle_trev_given_pi(__pyx_self, __pyx_v_C, __pyx_v_mu, __pyx_v_maxerr, __pyx_v_maxiter, __pyx_v_eps);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2mle_trev_given_pi(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_C, PyObject *__pyx_v_mu, double __pyx_v_maxerr, int __pyx_v_maxiter, double __pyx_v_eps) {
+static PyObject *__pyx_pf_5pyemma_3msm_10estimation_6sparse_17mle_trev_given_pi_2mle_trev_given_pi(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_C, PyObject *__pyx_v_mu, double __pyx_v_maxerr, int __pyx_v_maxiter, double __pyx_v_eps) {
   PyObject *__pyx_v_CCt_csr = NULL;
   CYTHON_UNUSED PyObject *__pyx_v_CCT_csr = NULL;
   PyArrayObject *__pyx_v_c_mu = 0;
@@ -1659,7 +1659,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2
   __pyx_pybuffernd_T_data.data = NULL;
   __pyx_pybuffernd_T_data.rcbuffer = &__pyx_pybuffer_T_data;
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":35
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":35
  *   ):
  * 
  *   assert maxerr>0, 'maxerr must be positive'             # <<<<<<<<<<<<<<
@@ -1675,12 +1675,12 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2
   }
   #endif
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":36
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":36
  * 
  *   assert maxerr>0, 'maxerr must be positive'
  *   assert maxiter>0, 'maxiter must be positive'             # <<<<<<<<<<<<<<
  *   assert eps>=0, 'eps must be non-negative'
- *   assert emma2.msm.estimation.is_connected(C,directed=False), 'C must be (weakly) connected'
+ *   assert pyemma.msm.estimation.is_connected(C,directed=False), 'C must be (weakly) connected'
  */
   #ifndef CYTHON_WITHOUT_ASSERTIONS
   if (unlikely(!Py_OptimizeFlag)) {
@@ -1691,11 +1691,11 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2
   }
   #endif
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":37
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":37
  *   assert maxerr>0, 'maxerr must be positive'
  *   assert maxiter>0, 'maxiter must be positive'
  *   assert eps>=0, 'eps must be non-negative'             # <<<<<<<<<<<<<<
- *   assert emma2.msm.estimation.is_connected(C,directed=False), 'C must be (weakly) connected'
+ *   assert pyemma.msm.estimation.is_connected(C,directed=False), 'C must be (weakly) connected'
  * 
  */
   #ifndef CYTHON_WITHOUT_ASSERTIONS
@@ -1707,16 +1707,16 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2
   }
   #endif
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":38
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":38
  *   assert maxiter>0, 'maxiter must be positive'
  *   assert eps>=0, 'eps must be non-negative'
- *   assert emma2.msm.estimation.is_connected(C,directed=False), 'C must be (weakly) connected'             # <<<<<<<<<<<<<<
+ *   assert pyemma.msm.estimation.is_connected(C,directed=False), 'C must be (weakly) connected'             # <<<<<<<<<<<<<<
  * 
  *   CCt_csr = C+C.T
  */
   #ifndef CYTHON_WITHOUT_ASSERTIONS
   if (unlikely(!Py_OptimizeFlag)) {
-    __pyx_t_1 = __Pyx_GetModuleGlobalName(__pyx_n_s_emma2); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 38; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = __Pyx_GetModuleGlobalName(__pyx_n_s_pyemma); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 38; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_1);
     __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_msm); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 38; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_2);
@@ -1749,8 +1749,8 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2
   }
   #endif
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":40
- *   assert emma2.msm.estimation.is_connected(C,directed=False), 'C must be (weakly) connected'
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":40
+ *   assert pyemma.msm.estimation.is_connected(C,directed=False), 'C must be (weakly) connected'
  * 
  *   CCt_csr = C+C.T             # <<<<<<<<<<<<<<
  *   """Convert to csr-format"""
@@ -1764,7 +1764,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2
   __pyx_v_CCt_csr = __pyx_t_3;
   __pyx_t_3 = 0;
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":42
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":42
  *   CCt_csr = C+C.T
  *   """Convert to csr-format"""
  *   CCt_csr=CCt_csr.tocsr()             # <<<<<<<<<<<<<<
@@ -1779,7 +1779,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2
   __Pyx_DECREF_SET(__pyx_v_CCt_csr, __pyx_t_4);
   __pyx_t_4 = 0;
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":44
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":44
  *   CCt_csr=CCt_csr.tocsr()
  *   """Ensure that entries are of type double"""
  *   CCT_csr=CCt_csr.astype(numpy.double)             # <<<<<<<<<<<<<<
@@ -1805,7 +1805,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2
   __pyx_v_CCT_csr = __pyx_t_1;
   __pyx_t_1 = 0;
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":46
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":46
  *   CCT_csr=CCt_csr.astype(numpy.double)
  * 
  *   cdef numpy.ndarray[double, ndim=1, mode="c"] c_mu = mu.astype(numpy.double,order='C',copy=False)             # <<<<<<<<<<<<<<
@@ -1847,7 +1847,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2
   __pyx_v_c_mu = ((PyArrayObject *)__pyx_t_2);
   __pyx_t_2 = 0;
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":48
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":48
  *   cdef numpy.ndarray[double, ndim=1, mode="c"] c_mu = mu.astype(numpy.double,order='C',copy=False)
  * 
  *   assert CCt_csr.shape[0]==CCt_csr.shape[1]==c_mu.shape[0], 'Dimensions of C and mu don\'t agree.'             # <<<<<<<<<<<<<<
@@ -1885,7 +1885,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2
   }
   #endif
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":53
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":53
  *   # """Check for zero elements"""
  * 
  *   if not check_diagonal(CCt_csr) and eps==0.0:             # <<<<<<<<<<<<<<
@@ -1914,7 +1914,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2
   }
   if (__pyx_t_8) {
 
-    /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":54
+    /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":54
  * 
  *   if not check_diagonal(CCt_csr) and eps==0.0:
  *     raise Exception('Count matrix has zero diagonal elements. Can\'t guarantee convergence of algorithm. Suggestion: set regularization parameter eps to some small value e.g. 1E-6.')             # <<<<<<<<<<<<<<
@@ -1928,7 +1928,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2
     {__pyx_filename = __pyx_f[0]; __pyx_lineno = 54; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   }
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":57
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":57
  * 
  *   """Add regularization"""
  *   c_ii=CCt_csr.diagonal()             # <<<<<<<<<<<<<<
@@ -1943,7 +1943,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2
   __pyx_v_c_ii = __pyx_t_3;
   __pyx_t_3 = 0;
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":58
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":58
  *   """Add regularization"""
  *   c_ii=CCt_csr.diagonal()
  *   ind=(c_ii==0.0)             # <<<<<<<<<<<<<<
@@ -1954,7 +1954,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2
   __pyx_v_ind = __pyx_t_3;
   __pyx_t_3 = 0;
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":59
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":59
  *   c_ii=CCt_csr.diagonal()
  *   ind=(c_ii==0.0)
  *   prior=numpy.zeros(len(c_ii))             # <<<<<<<<<<<<<<
@@ -1981,7 +1981,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2
   __pyx_v_prior = __pyx_t_3;
   __pyx_t_3 = 0;
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":60
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":60
  *   ind=(c_ii==0.0)
  *   prior=numpy.zeros(len(c_ii))
  *   prior[ind]=eps             # <<<<<<<<<<<<<<
@@ -1993,7 +1993,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2
   if (unlikely(PyObject_SetItem(__pyx_v_prior, __pyx_v_ind, __pyx_t_3) < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 60; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":62
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":62
  *   prior[ind]=eps
  * 
  *   CCt_csr=CCt_csr+scipy.sparse.diags(prior, 0)             # <<<<<<<<<<<<<<
@@ -2026,7 +2026,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2
   __Pyx_DECREF_SET(__pyx_v_CCt_csr, __pyx_t_2);
   __pyx_t_2 = 0;
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":72
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":72
  * 
  *   # convert to coo format
  *   CCt_coo = CCt_csr.tocoo()             # <<<<<<<<<<<<<<
@@ -2041,7 +2041,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2
   __pyx_v_CCt_coo = __pyx_t_4;
   __pyx_t_4 = 0;
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":73
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":73
  *   # convert to coo format
  *   CCt_coo = CCt_csr.tocoo()
  *   n_data = CCt_coo.nnz             # <<<<<<<<<<<<<<
@@ -2053,7 +2053,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2
   __pyx_v_n_data = __pyx_t_4;
   __pyx_t_4 = 0;
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":74
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":74
  *   CCt_coo = CCt_csr.tocoo()
  *   n_data = CCt_coo.nnz
  *   cdef numpy.ndarray[double, ndim=1, mode="c"] CCt_data =  CCt_coo.data.astype(numpy.double,order='C',copy=False)             # <<<<<<<<<<<<<<
@@ -2098,7 +2098,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2
   __pyx_v_CCt_data = ((PyArrayObject *)__pyx_t_1);
   __pyx_t_1 = 0;
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":75
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":75
  *   n_data = CCt_coo.nnz
  *   cdef numpy.ndarray[double, ndim=1, mode="c"] CCt_data =  CCt_coo.data.astype(numpy.double,order='C',copy=False)
  *   cdef numpy.ndarray[long long, ndim=1, mode="c"] i_indices = CCt_coo.row.astype(numpy.int64,order='C',copy=True)             # <<<<<<<<<<<<<<
@@ -2143,7 +2143,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2
   __pyx_v_i_indices = ((PyArrayObject *)__pyx_t_2);
   __pyx_t_2 = 0;
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":76
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":76
  *   cdef numpy.ndarray[double, ndim=1, mode="c"] CCt_data =  CCt_coo.data.astype(numpy.double,order='C',copy=False)
  *   cdef numpy.ndarray[long long, ndim=1, mode="c"] i_indices = CCt_coo.row.astype(numpy.int64,order='C',copy=True)
  *   cdef numpy.ndarray[long long, ndim=1, mode="c"] j_indices = CCt_coo.col.astype(numpy.int64,order='C',copy=True)             # <<<<<<<<<<<<<<
@@ -2188,7 +2188,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2
   __pyx_v_j_indices = ((PyArrayObject *)__pyx_t_3);
   __pyx_t_3 = 0;
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":79
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":79
  * 
  *   # prepare data array of T in coo format
  *   cdef numpy.ndarray[double, ndim=1, mode="c"] T_data = numpy.zeros(n_data,dtype=numpy.double,order='C')             # <<<<<<<<<<<<<<
@@ -2234,7 +2234,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2
   __pyx_v_T_data = ((PyArrayObject *)__pyx_t_13);
   __pyx_t_13 = 0;
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":86
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":86
  *         <long long*> numpy.PyArray_DATA(i_indices),
  *         <long long*> numpy.PyArray_DATA(j_indices),
  *         n_data,             # <<<<<<<<<<<<<<
@@ -2243,7 +2243,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2
  */
   __pyx_t_15 = __Pyx_PyInt_As_int(__pyx_v_n_data); if (unlikely((__pyx_t_15 == (int)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 86; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":88
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":88
  *         n_data,
  *         <double*> numpy.PyArray_DATA(c_mu),
  *         CCt_csr.shape[0],             # <<<<<<<<<<<<<<
@@ -2258,7 +2258,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2
   __pyx_t_16 = __Pyx_PyInt_As_int(__pyx_t_2); if (unlikely((__pyx_t_16 == (int)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 88; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":81
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":81
  *   cdef numpy.ndarray[double, ndim=1, mode="c"] T_data = numpy.zeros(n_data,dtype=numpy.double,order='C')
  * 
  *   err = _mle_trev_given_pi_sparse(             # <<<<<<<<<<<<<<
@@ -2267,7 +2267,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2
  */
   __pyx_v_err = _mle_trev_given_pi_sparse(((double *)PyArray_DATA(((PyArrayObject *)__pyx_v_T_data))), ((double *)PyArray_DATA(((PyArrayObject *)__pyx_v_CCt_data))), ((PY_LONG_LONG *)PyArray_DATA(((PyArrayObject *)__pyx_v_i_indices))), ((PY_LONG_LONG *)PyArray_DATA(((PyArrayObject *)__pyx_v_j_indices))), __pyx_t_15, ((double *)PyArray_DATA(((PyArrayObject *)__pyx_v_c_mu))), __pyx_t_16, __pyx_v_maxerr, __pyx_v_maxiter);
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":104
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":104
  *   elif err==-5:
  *     raise Exception('Didn\'t converge.')
  *   elif err==-6:             # <<<<<<<<<<<<<<
@@ -2276,7 +2276,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2
  */
   switch (__pyx_v_err) {
 
-    /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":94
+    /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":94
  *   # TODO: add self test: check if stationary distribution is ok
  * 
  *   if err==-1:             # <<<<<<<<<<<<<<
@@ -2285,7 +2285,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2
  */
     case -1:
 
-    /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":95
+    /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":95
  * 
  *   if err==-1:
  *     raise Exception('Out of memory.')             # <<<<<<<<<<<<<<
@@ -2299,7 +2299,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2
     {__pyx_filename = __pyx_f[0]; __pyx_lineno = 95; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     break;
 
-    /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":96
+    /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":96
  *   if err==-1:
  *     raise Exception('Out of memory.')
  *   elif err==-2:             # <<<<<<<<<<<<<<
@@ -2308,7 +2308,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2
  */
     case -2:
 
-    /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":97
+    /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":97
  *     raise Exception('Out of memory.')
  *   elif err==-2:
  *     raise Exception('The update of the Lagrange multipliers produced zero or NaN.')             # <<<<<<<<<<<<<<
@@ -2322,7 +2322,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2
     {__pyx_filename = __pyx_f[0]; __pyx_lineno = 97; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     break;
 
-    /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":98
+    /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":98
  *   elif err==-2:
  *     raise Exception('The update of the Lagrange multipliers produced zero or NaN.')
  *   elif err==-3:             # <<<<<<<<<<<<<<
@@ -2331,7 +2331,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2
  */
     case -3:
 
-    /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":99
+    /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":99
  *     raise Exception('The update of the Lagrange multipliers produced zero or NaN.')
  *   elif err==-3:
  *     raise Exception('Some row and corresponding column of C have zero counts.')             # <<<<<<<<<<<<<<
@@ -2345,7 +2345,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2
     {__pyx_filename = __pyx_f[0]; __pyx_lineno = 99; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     break;
 
-    /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":100
+    /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":100
  *   elif err==-3:
  *     raise Exception('Some row and corresponding column of C have zero counts.')
  *   elif err==-4:             # <<<<<<<<<<<<<<
@@ -2354,7 +2354,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2
  */
     case -4:
 
-    /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":101
+    /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":101
  *     raise Exception('Some row and corresponding column of C have zero counts.')
  *   elif err==-4:
  *     raise Exception('Some element of pi is zero.')             # <<<<<<<<<<<<<<
@@ -2368,7 +2368,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2
     {__pyx_filename = __pyx_f[0]; __pyx_lineno = 101; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     break;
 
-    /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":102
+    /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":102
  *   elif err==-4:
  *     raise Exception('Some element of pi is zero.')
  *   elif err==-5:             # <<<<<<<<<<<<<<
@@ -2377,7 +2377,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2
  */
     case -5:
 
-    /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":103
+    /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":103
  *     raise Exception('Some element of pi is zero.')
  *   elif err==-5:
  *     raise Exception('Didn\'t converge.')             # <<<<<<<<<<<<<<
@@ -2391,7 +2391,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2
     {__pyx_filename = __pyx_f[0]; __pyx_lineno = 103; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     break;
 
-    /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":104
+    /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":104
  *   elif err==-5:
  *     raise Exception('Didn\'t converge.')
  *   elif err==-6:             # <<<<<<<<<<<<<<
@@ -2400,7 +2400,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2
  */
     case -6:
 
-    /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":105
+    /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":105
  *     raise Exception('Didn\'t converge.')
  *   elif err==-6:
  *     raise Exception('Count matrix has zero diagonal elements. Can\'t guarantee convergence of algorithm. Suggestion: set regularization parameter eps to some small value e.g. 1E-6.')             # <<<<<<<<<<<<<<
@@ -2416,7 +2416,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2
     default: break;
   }
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":108
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":108
  * 
  *   # T matrix has the same shape and positions of nonzero elements as the regularized C matrix
  *   return scipy.sparse.csr_matrix((T_data,(i_indices,j_indices)),shape=CCt_csr.shape)             # <<<<<<<<<<<<<<
@@ -2466,7 +2466,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":27
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":27
  *   return numpy.all(a_ii>0.0)
  * 
  * def mle_trev_given_pi(             # <<<<<<<<<<<<<<
@@ -2489,7 +2489,7 @@ static PyObject *__pyx_pf_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_2
     __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_i_indices.rcbuffer->pybuffer);
     __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_j_indices.rcbuffer->pybuffer);
   __Pyx_ErrRestore(__pyx_type, __pyx_value, __pyx_tb);}
-  __Pyx_AddTraceback("emma2.msm.estimation.sparse.mle_trev_given_pi.mle_trev_given_pi", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("pyemma.msm.estimation.sparse.mle_trev_given_pi.mle_trev_given_pi", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   goto __pyx_L2;
   __pyx_L0:;
@@ -4558,9 +4558,9 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_directed, __pyx_k_directed, sizeof(__pyx_k_directed), 0, 0, 1, 1},
   {&__pyx_n_s_double, __pyx_k_double, sizeof(__pyx_k_double), 0, 0, 1, 1},
   {&__pyx_n_s_dtype, __pyx_k_dtype, sizeof(__pyx_k_dtype), 0, 0, 1, 1},
-  {&__pyx_n_s_emma2, __pyx_k_emma2, sizeof(__pyx_k_emma2), 0, 0, 1, 1},
-  {&__pyx_n_s_emma2_msm_estimation, __pyx_k_emma2_msm_estimation, sizeof(__pyx_k_emma2_msm_estimation), 0, 0, 1, 1},
-  {&__pyx_n_s_emma2_msm_estimation_sparse_mle, __pyx_k_emma2_msm_estimation_sparse_mle, sizeof(__pyx_k_emma2_msm_estimation_sparse_mle), 0, 0, 1, 1},
+  {&__pyx_n_s_pyemma, __pyx_k_pyemma, sizeof(__pyx_k_pyemma), 0, 0, 1, 1},
+  {&__pyx_n_s_pyemma_msm_estimation, __pyx_k_pyemma_msm_estimation, sizeof(__pyx_k_pyemma_msm_estimation), 0, 0, 1, 1},
+  {&__pyx_n_s_pyemma_msm_estimation_sparse_mle, __pyx_k_pyemma_msm_estimation_sparse_mle, sizeof(__pyx_k_pyemma_msm_estimation_sparse_mle), 0, 0, 1, 1},
   {&__pyx_n_s_eps, __pyx_k_eps, sizeof(__pyx_k_eps), 0, 0, 1, 1},
   {&__pyx_kp_s_eps_must_be_non_negative, __pyx_k_eps_must_be_non_negative, sizeof(__pyx_k_eps_must_be_non_negative), 0, 0, 1, 0},
   {&__pyx_n_s_err, __pyx_k_err, sizeof(__pyx_k_err), 0, 0, 1, 1},
@@ -4616,7 +4616,7 @@ static int __Pyx_InitCachedConstants(void) {
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__Pyx_InitCachedConstants", 0);
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":54
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":54
  * 
  *   if not check_diagonal(CCt_csr) and eps==0.0:
  *     raise Exception('Count matrix has zero diagonal elements. Can\'t guarantee convergence of algorithm. Suggestion: set regularization parameter eps to some small value e.g. 1E-6.')             # <<<<<<<<<<<<<<
@@ -4627,7 +4627,7 @@ static int __Pyx_InitCachedConstants(void) {
   __Pyx_GOTREF(__pyx_tuple_);
   __Pyx_GIVEREF(__pyx_tuple_);
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":95
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":95
  * 
  *   if err==-1:
  *     raise Exception('Out of memory.')             # <<<<<<<<<<<<<<
@@ -4638,7 +4638,7 @@ static int __Pyx_InitCachedConstants(void) {
   __Pyx_GOTREF(__pyx_tuple__2);
   __Pyx_GIVEREF(__pyx_tuple__2);
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":97
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":97
  *     raise Exception('Out of memory.')
  *   elif err==-2:
  *     raise Exception('The update of the Lagrange multipliers produced zero or NaN.')             # <<<<<<<<<<<<<<
@@ -4649,7 +4649,7 @@ static int __Pyx_InitCachedConstants(void) {
   __Pyx_GOTREF(__pyx_tuple__3);
   __Pyx_GIVEREF(__pyx_tuple__3);
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":99
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":99
  *     raise Exception('The update of the Lagrange multipliers produced zero or NaN.')
  *   elif err==-3:
  *     raise Exception('Some row and corresponding column of C have zero counts.')             # <<<<<<<<<<<<<<
@@ -4660,7 +4660,7 @@ static int __Pyx_InitCachedConstants(void) {
   __Pyx_GOTREF(__pyx_tuple__4);
   __Pyx_GIVEREF(__pyx_tuple__4);
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":101
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":101
  *     raise Exception('Some row and corresponding column of C have zero counts.')
  *   elif err==-4:
  *     raise Exception('Some element of pi is zero.')             # <<<<<<<<<<<<<<
@@ -4671,7 +4671,7 @@ static int __Pyx_InitCachedConstants(void) {
   __Pyx_GOTREF(__pyx_tuple__5);
   __Pyx_GIVEREF(__pyx_tuple__5);
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":103
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":103
  *     raise Exception('Some element of pi is zero.')
  *   elif err==-5:
  *     raise Exception('Didn\'t converge.')             # <<<<<<<<<<<<<<
@@ -4682,7 +4682,7 @@ static int __Pyx_InitCachedConstants(void) {
   __Pyx_GOTREF(__pyx_tuple__6);
   __Pyx_GIVEREF(__pyx_tuple__6);
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":105
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":105
  *     raise Exception('Didn\'t converge.')
  *   elif err==-6:
  *     raise Exception('Count matrix has zero diagonal elements. Can\'t guarantee convergence of algorithm. Suggestion: set regularization parameter eps to some small value e.g. 1E-6.')             # <<<<<<<<<<<<<<
@@ -4759,7 +4759,7 @@ static int __Pyx_InitCachedConstants(void) {
   __Pyx_GOTREF(__pyx_tuple__13);
   __Pyx_GIVEREF(__pyx_tuple__13);
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":15
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":15
  *   int _mle_trev_given_pi_sparse(double * const T_data, const double * const CCt_data, const long long * const i_indices, const long long * const j_indices, const int len_CCt,  const double * const mu, const int len_mu, double maxerr, const int maxiter)
  * 
  * def check_diagonal(A):             # <<<<<<<<<<<<<<
@@ -4771,7 +4771,7 @@ static int __Pyx_InitCachedConstants(void) {
   __Pyx_GIVEREF(__pyx_tuple__14);
   __pyx_codeobj__15 = (PyObject*)__Pyx_PyCode_New(1, 0, 2, 0, 0, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__14, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_home_mi_trendelkamp_work_git_em, __pyx_n_s_check_diagonal, 15, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__15)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 15; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":27
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":27
  *   return numpy.all(a_ii>0.0)
  * 
  * def mle_trev_given_pi(             # <<<<<<<<<<<<<<
@@ -4859,14 +4859,14 @@ PyMODINIT_FUNC PyInit_mle_trev_given_pi(void)
   #if PY_MAJOR_VERSION < 3 && (__PYX_DEFAULT_STRING_ENCODING_IS_ASCII || __PYX_DEFAULT_STRING_ENCODING_IS_DEFAULT)
   if (__Pyx_init_sys_getdefaultencoding_params() < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   #endif
-  if (__pyx_module_is_main_emma2__msm__estimation__sparse__mle_trev_given_pi) {
+  if (__pyx_module_is_main_pyemma__msm__estimation__sparse__mle_trev_given_pi) {
     if (__Pyx_SetAttrString(__pyx_m, "__name__", __pyx_n_s_main) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
   }
   #if PY_MAJOR_VERSION >= 3
   {
     PyObject *modules = PyImport_GetModuleDict(); if (unlikely(!modules)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (!PyDict_GetItemString(modules, "emma2.msm.estimation.sparse.mle_trev_given_pi")) {
-      if (unlikely(PyDict_SetItemString(modules, "emma2.msm.estimation.sparse.mle_trev_given_pi", __pyx_m) < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (!PyDict_GetItemString(modules, "pyemma.msm.estimation.sparse.mle_trev_given_pi")) {
+      if (unlikely(PyDict_SetItemString(modules, "pyemma.msm.estimation.sparse.mle_trev_given_pi", __pyx_m) < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     }
   }
   #endif
@@ -4895,7 +4895,7 @@ PyMODINIT_FUNC PyInit_mle_trev_given_pi(void)
   /*--- Function import code ---*/
   /*--- Execution code ---*/
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":6
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":6
  * 
  * """
  * import numpy             # <<<<<<<<<<<<<<
@@ -4907,7 +4907,7 @@ PyMODINIT_FUNC PyInit_mle_trev_given_pi(void)
   if (PyDict_SetItem(__pyx_d, __pyx_n_s_numpy, __pyx_t_1) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 6; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":7
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":7
  * """
  * import numpy
  * import scipy             # <<<<<<<<<<<<<<
@@ -4919,55 +4919,55 @@ PyMODINIT_FUNC PyInit_mle_trev_given_pi(void)
   if (PyDict_SetItem(__pyx_d, __pyx_n_s_scipy, __pyx_t_1) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 7; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":8
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":8
  * import numpy
  * import scipy
  * import scipy.sparse             # <<<<<<<<<<<<<<
  * cimport numpy
- * import emma2.msm.estimation
+ * import pyemma.msm.estimation
  */
   __pyx_t_1 = __Pyx_Import(__pyx_n_s_scipy_sparse, 0, -1); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 8; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   if (PyDict_SetItem(__pyx_d, __pyx_n_s_scipy, __pyx_t_1) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 8; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":10
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":10
  * import scipy.sparse
  * cimport numpy
- * import emma2.msm.estimation             # <<<<<<<<<<<<<<
+ * import pyemma.msm.estimation             # <<<<<<<<<<<<<<
  * 
  * cdef extern from "_mle_trev_given_pi.h":
  */
-  __pyx_t_1 = __Pyx_Import(__pyx_n_s_emma2_msm_estimation, 0, -1); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 10; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = __Pyx_Import(__pyx_n_s_pyemma_msm_estimation, 0, -1); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 10; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_emma2, __pyx_t_1) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 10; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_pyemma, __pyx_t_1) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 10; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":15
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":15
  *   int _mle_trev_given_pi_sparse(double * const T_data, const double * const CCt_data, const long long * const i_indices, const long long * const j_indices, const int len_CCt,  const double * const mu, const int len_mu, double maxerr, const int maxiter)
  * 
  * def check_diagonal(A):             # <<<<<<<<<<<<<<
  *   r"""Check matrix with non-negative entries for zero elements on diagonal.
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_1check_diagonal, NULL, __pyx_n_s_emma2_msm_estimation_sparse_mle); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 15; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_5pyemma_3msm_10estimation_6sparse_17mle_trev_given_pi_1check_diagonal, NULL, __pyx_n_s_pyemma_msm_estimation_sparse_mle); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 15; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   if (PyDict_SetItem(__pyx_d, __pyx_n_s_check_diagonal, __pyx_t_1) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 15; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":27
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":27
  *   return numpy.all(a_ii>0.0)
  * 
  * def mle_trev_given_pi(             # <<<<<<<<<<<<<<
  *   C,
  *   mu,
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_5emma2_3msm_10estimation_6sparse_17mle_trev_given_pi_3mle_trev_given_pi, NULL, __pyx_n_s_emma2_msm_estimation_sparse_mle); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 27; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_5pyemma_3msm_10estimation_6sparse_17mle_trev_given_pi_3mle_trev_given_pi, NULL, __pyx_n_s_pyemma_msm_estimation_sparse_mle); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 27; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   if (PyDict_SetItem(__pyx_d, __pyx_n_s_mle_trev_given_pi, __pyx_t_1) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 27; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "emma2/msm/estimation/sparse/mle_trev_given_pi.pyx":1
+  /* "pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx":1
  * r"""Cython implementation of iterative likelihood maximization.             # <<<<<<<<<<<<<<
  * 
  * .. moduleauthor:: F. Paul <fabian DOT paul AT fu-berlin DOT de>
@@ -4988,10 +4988,10 @@ PyMODINIT_FUNC PyInit_mle_trev_given_pi(void)
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
   if (__pyx_m) {
-    __Pyx_AddTraceback("init emma2.msm.estimation.sparse.mle_trev_given_pi", __pyx_clineno, __pyx_lineno, __pyx_filename);
+    __Pyx_AddTraceback("init pyemma.msm.estimation.sparse.mle_trev_given_pi", __pyx_clineno, __pyx_lineno, __pyx_filename);
     Py_DECREF(__pyx_m); __pyx_m = 0;
   } else if (!PyErr_Occurred()) {
-    PyErr_SetString(PyExc_ImportError, "init emma2.msm.estimation.sparse.mle_trev_given_pi");
+    PyErr_SetString(PyExc_ImportError, "init pyemma.msm.estimation.sparse.mle_trev_given_pi");
   }
   __pyx_L0:;
   __Pyx_RefNannyFinishContext();

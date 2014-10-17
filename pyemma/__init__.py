@@ -3,7 +3,6 @@ r"""
     Emma2 - Emma's Markov Model Algorithms
 ==========================================
 """
-from . import coordinates
 from . import msm
 from . import util
 
