@@ -2,10 +2,16 @@ import unittest
 import numpy as np
 import scipy
 import scipy.sparse
+
+from os.path import abspath, join
+from os import pardir
+
 from pyemma.msm.estimation.dense.mle_trev_given_pi import mle_trev_given_pi as mtrgpd
 from pyemma.msm.estimation.sparse.mle_trev_given_pi import mle_trev_given_pi as mtrgps
 from pyemma.msm.estimation.dense.transition_matrix import transition_matrix_reversible_fixpi as tmrfp
 from pyemma.msm.estimation import tmatrix as apicall
+
+testpath = abspath(join(abspath(__file__), pardir)) + '/testfiles/'
 
 class Test_mle_trev_given_pi(unittest.TestCase):
     
@@ -13,8 +19,8 @@ class Test_mle_trev_given_pi(unittest.TestCase):
         self.eps = 1.0E-6
     
     def test_mle_trev_given_pi(self):
-        C=np.loadtxt('testfiles/C_1_lag.dat')
-        pi=np.loadtxt('testfiles/pi.dat')
+        C=np.loadtxt(testpath+'C_1_lag.dat')
+        pi=np.loadtxt(testpath+'pi.dat')
 
         T_cython_dense = mtrgpd(C,pi,eps=self.eps)
         T_cython_sparse = mtrgps(scipy.sparse.csr_matrix(C),pi,eps=self.eps).toarray()

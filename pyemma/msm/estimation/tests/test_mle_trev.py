@@ -2,14 +2,20 @@ import unittest
 import numpy as np
 import scipy
 import scipy.sparse
+
+from os.path import abspath, join
+from os import pardir
+
 from pyemma.msm.estimation.sparse.mle_trev import mle_trev as mtrs
 from pyemma.msm.estimation.dense.transition_matrix import estimate_transition_matrix_reversible as etmr
 from pyemma.msm.estimation import is_connected
 from pyemma.msm.estimation import tmatrix as apicall
 
+testpath = abspath(join(abspath(__file__), pardir)) + '/testfiles/'
+
 class Test_mle_trev(unittest.TestCase):
     def test_mle_trev(self):
-        C=np.loadtxt('testfiles/C_1_lag.dat')
+        C=np.loadtxt(testpath+'C_1_lag.dat')
         
         T_cython_sparse = mtrs(scipy.sparse.csr_matrix(C)).toarray()
             
