@@ -416,7 +416,7 @@ def largest_connected_set(C, directed=True):
         return sparse.connectivity.largest_connected_set(C, directed=directed)
 
 # DONE: Ben 
-def largest_connected_submatrix(C, directed=True):
+def largest_connected_submatrix(C, directed=True, lcc=None):
     r"""Compute the count matrix on the largest connected set.   
     
     Parameters
@@ -425,7 +425,9 @@ def largest_connected_submatrix(C, directed=True):
         Count matrix specifying edge weights.
     directed : bool, optional
        Whether to compute connected components for a directed or
-       undirected graph. Default is True.       
+       undirected graph. Default is True
+    lcc : (M,) ndarray, optional
+       The largest connected set             
        
     Returns
     -------
@@ -469,11 +471,11 @@ def largest_connected_submatrix(C, directed=True):
            
     """
     if isdense(C):
-        return sparse.connectivity.largest_connected_submatrix(csr_matrix(C), directed=directed).toarray()
+        return sparse.connectivity.largest_connected_submatrix(csr_matrix(C), directed=directed, lcc=lcc).toarray()
     else:
-        return sparse.connectivity.largest_connected_submatrix(C, directed=directed)
+        return sparse.connectivity.largest_connected_submatrix(C, directed=directed, lcc=lcc)
 
-def connected_cmatrix(C, directed=True):
+def connected_cmatrix(C, directed=True, lcc=None):
     r"""Compute the count matrix on the largest connected set.   
     
     Parameters
@@ -517,7 +519,7 @@ def connected_cmatrix(C, directed=True):
            [ 0,  0,  4]])
            
     """
-    return largest_connected_submatrix(C, directed=directed)
+    return largest_connected_submatrix(C, directed=directed, lcc=lcc)
 
 # DONE: Jan
 def is_connected(C, directed=True):
