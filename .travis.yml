@@ -7,6 +7,7 @@ env:
   global:
     - PATH=$HOME/miniconda/bin:$HOME/miniconda/envs/ci/bin/:$PATH
     - common_py_deps="pip nose"
+    - doc_deps="ipython sphinx matplotlib numpydoc pyzmq"
   matrix:
     - deps="scipy=0.11 numpy=1.7"
 #    - deps="scipy=0.11 numpy=1.7 cython"
@@ -17,22 +18,32 @@ env:
 
 before_install:
 - deactivate # travis python venv
-- wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O mc.sh
+- wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O mc.sh -o /dev/null
 - bash mc.sh -b
 - conda create -q --yes -n ci python=$TRAVIS_PYTHON_VERSION $deps $common_py_deps
 - source activate ci
 - python -c "import scipy; print scipy.__version__; print scipy.__numpy_version__"
-script:
+
+install:
 - python setup.py install
-- python setup.py test 
+
+script:
+- echo "skipped" 
+#python setup.py test 
+
+after_success:
+- tools/ci/make_docs.sh
 
 deploy:
   provider: pypi
+  distributions: "sdist bdist_egg bdist_wheel upload_docs"
+  skip_cleanup: true
+  docs_dir: doc/build/html
   user:
     secure: TeTyLrHulxk9MUrLFUccvAONM2Xc1e7+Tl1eNI+FSvxn9Gh/wIPSD7ZNH+n5tgs7BXt+53OIrIfU10nLMJP7cEZJVhwmdWNm0ONIhlRsH1+UJ8e1huPb3IFxdw5UJkiTjEfKulNp3p5q+EWaS7952MwWuehDds8bk0o6TVobvXI=
   password:
     secure: hHDQxBuoB6SGVIBiQNuCIc128VK1qwJm23PJNXzPmpzBEA5K6PTC6uwfC6ZZ4GpCoFvynD+VPyiJv+wGbBOJWd6sTvyCAiChzPNFaHho9rXaqWlhIL99qR2I4K5bv1m9jYFVGvT8HtgaVnXxsjCrm5dai+8ICTFqkZETqiSyqzo=
   on:
-    tags: true
+    #tags: true
     # temporary workaround for travis issue #1675
     all_branches: true

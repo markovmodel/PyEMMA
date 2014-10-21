@@ -1,2 +1,0 @@
-# this uses simply all dependencies defined in setup.py
-.
