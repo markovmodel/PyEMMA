@@ -10,6 +10,7 @@ __all__=['its',
 import estimation.dense.hidden_markov_model as hmm
 
 from ui.timescales import ImpliedTimescales
+from ui.msm import MSM
 
 def its(dtrajs, lags = None, nits=10, reversible = True, connected = True):
     r"""Calculates the implied timescales for a series of lag times.
@@ -45,10 +46,38 @@ def its(dtrajs, lags = None, nits=10, reversible = True, connected = True):
     timescales=itsobj.get_timescales()
     return lagtimes, timescales
 
-# def msm(dtrajs, lag = 1, reversible = True, connected = True):
-#     """
-#     """
-#     #
+def msm(dtrajs, lag, reversible=True, sliding=True, compute=True):
+    r"""Estimate Markov state model (MSM) from discrete trajectories.
+    
+    Parameters
+    ----------
+    dtrajs : list
+        discrete trajectories
+    lag : int
+        lagtime for the MSM estimation
+    reversible : bool (optional)
+        If true compute reversible MSM, else non-reversible MSM
+    sliding : bool (optional)
+        If true use the sliding approach to counting, else
+        use the lagsampling approach
+    compute : bool (optional)
+        If true estimate the MSM when creating the MSM object
+
+    Returns
+    -------
+    msmobj : pyemma.msm.ui.msm.MSM object
+        A python object containing the MSM and important quantities
+        derived from it
+        
+    Notes
+    -----
+    You can postpone the estimation of the MSM using compute=False and
+    initiate the estimation procedure by manually calling the MSM.compute()
+    method.       
+    
+    """
+    msmobj=MSM(dtrajs, lag, reversible=reversible, sliding=sliding, compute=compute)
+    return msmobj   
 
 # def cktest(dtrajs, msm, nsets = 2, sets = None):
 #     """

@@ -7,6 +7,29 @@ from pyemma.msm.analysis import statdist, timescales
 
 class MSM(object):    
     def __init__(self, dtrajs, lag, reversible=True, sliding=True, compute=True):
+        r"""Estimate Markov state model (MSM) from discrete trajectories.
+
+        Parameters
+        ----------
+        dtrajs : list
+            discrete trajectories
+        lag : int
+            lagtime for the MSM estimation
+        reversible : bool (optional)
+            If true compute reversible MSM, else non-reversible MSM
+        sliding : bool (optional)
+            If true use the sliding approach to counting, else
+            use the lagsampling approach
+        conpute : bool (optional)
+            If true estimate the MSM when creating the MSM object.
+
+        Notes
+        -----
+        You can postpone the estimation of the MSM using compute=False and
+        initiate the estimation procedure by manually calling the MSM.compute()
+        method.       
+        
+        """
         self.dtrajs = dtrajs
         self.lagtime = lag
 
@@ -51,7 +74,7 @@ class MSM(object):
         self.computed=True
     
     def _assert_computed(self):
-        assert self.computed, "MSM hasn't been computed yet, make sure to call ._compute()"
+        assert self.computed, "MSM hasn't been computed yet, make sure to call MSM.compute()"
 
     @property
     def count_matrix(self):
