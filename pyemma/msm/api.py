@@ -1,14 +1,8 @@
 r"""User-API for the pyemma.msm package
 
-__moduleauthor__ = "Benjamin Trendelkamp-Schroer, Frank Noe, Martin Scherer"
-
 """
 
-__all__=['its',
-         'msm',
-         'cktest',
-         'tpt',
-         'hmsm']
+__docformat__ = "restructuredtext en"
 
 from flux import tpt as tpt_factory
 
@@ -16,6 +10,20 @@ from ui.timescales import ImpliedTimescales
 from ui.msm import MSM
 from ui.chapman_kolmogorov import chapman_kolmogorov
 from estimation.dense import hidden_markov_model as hmm
+
+__author__ = "Benjamin Trendelkamp-Schroer, Martin Scherer, Frank Noe"
+__copyright__ = "Copyright 2014, Computational Molecular Biology Group, FU-Berlin"
+__credits__ = ["Benjamin Trendelkamp-Schroer", "Martin Scherer", "Frank Noe"]
+__license__ = "FreeBSD"
+__version__ = "2.0.0"
+__maintainer__ = "Martin Scherer"
+__email__="m.scherer AT fu-berlin DOT de"
+
+__all__=['its',
+         'msm',
+         'cktest',
+         'tpt',
+         'hmsm']
 
 def its(dtrajs, lags = None, nits=10, reversible = True, connected = True):
     r"""Calculates the implied timescales for a series of lag times.
