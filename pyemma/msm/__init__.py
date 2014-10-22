@@ -6,8 +6,8 @@ msm - Markov state models (:mod:`pyemma.msm`)
 
 .. currentmodule:: pyemma.msm
 
-Submodules
-----------
+User-API
+--------
 
 .. autosummary::
    :toctree: generated/
