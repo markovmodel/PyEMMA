@@ -1,16 +1,21 @@
-'''
-Created on Sep 9, 2014
+r"""User-API for the pyemma.msm package
 
-@author: noe
-'''
+__moduleauthor__ = "Benjamin Trendelkamp-Schroer, Frank Noe, Martin Scherer"
+
+"""
 
 __all__=['its',
+         'msm',
+         'cktest',
+         'tpt',
          'hmsm']
 
-import estimation.dense.hidden_markov_model as hmm
+from flux import tpt as tpt_factory
 
 from ui.timescales import ImpliedTimescales
 from ui.msm import MSM
+from ui.chapman_kolmogorov import chapman_kolmogorov
+from estimation.dense import hidden_markov_model as hmm
 
 def its(dtrajs, lags = None, nits=10, reversible = True, connected = True):
     r"""Calculates the implied timescales for a series of lag times.
@@ -55,12 +60,12 @@ def msm(dtrajs, lag, reversible=True, sliding=True, compute=True):
         discrete trajectories
     lag : int
         lagtime for the MSM estimation
-    reversible : bool (optional)
+    reversible : bool, optional
         If true compute reversible MSM, else non-reversible MSM
-    sliding : bool (optional)
+    sliding : bool, optional
         If true use the sliding approach to counting, else
         use the lagsampling approach
-    compute : bool (optional)
+    compute : bool, optional
         If true estimate the MSM when creating the MSM object
 
     Returns
@@ -79,15 +84,97 @@ def msm(dtrajs, lag, reversible=True, sliding=True, compute=True):
     msmobj=MSM(dtrajs, lag, reversible=reversible, sliding=sliding, compute=compute)
     return msmobj   
 
-# def cktest(dtrajs, msm, nsets = 2, sets = None):
-#     """
-#     """
-#     #
+def cktest(dtrajs, lag, K, nsets=2, sets=None):
+    r"""Perform Chapman-Kolmogorov tests for given data.
 
-# def tpt():
-#     """
-#     """
-#     #
+    Parameters
+    ----------
+    dtrajs : list
+        discrete trajectories
+    lag : int
+        lagtime for the MSM estimation
+    K : int 
+        number of time points for the test
+    nsets : int, optional
+        number of PCCA sets on which to perform the test
+    sets : list, optional
+        List of user defined sets for the test
+
+    Returns
+    -------
+    p_MSM : (K, n_sets) ndarray
+        p_MSM[k, l] is the probability of making a transition from
+        set l to set l after k*lag steps for the MSM computed at 1*lag
+    p_MD : (K, n_sets) ndarray
+        p_MD[k, l] is the probability of making a transition from
+        set l to set l after k*lag steps as estimated from the given data
+    eps_MD : (K, n_sets)
+        eps_MD[k, l] is an estimate for the statistical error of p_MD[k, l]   
+
+    References
+    ----------
+    .. [1] Prinz, J H, H Wu, M Sarich, B Keller, M Senne, M Held, J D
+        Chodera, C Schuette and F Noe. 2011. Markov models of
+        molecular kinetics: Generation and validation. J Chem Phys
+        134: 174105
+        
+    """
+    return chapman_kolmogorov(dtrajs, lag, K, nsets=nsets, sets=sets)
+
+def tpt(dtrajs, lag, A, B, reversible=True, sliding=True):
+    r""" Computes the A->B reactive flux using transition path theory (TPT)  
+    
+    Parameters
+    ----------
+    dtrajs : list
+        discrete trajectories
+    lag : int
+        lagtime for the MSM estimation
+    A : array_like
+        List of integer state labels for set A
+    B : array_like
+        List of integer state labels for set B
+    reversible : bool, optional
+        If true compute reversible MSM, else non-reversible MSM
+    sliding : bool, optional
+        If true use the sliding approach to counting, else
+        use the lagsampling approach
+
+    Returns
+    -------
+    tptobj : pyemma.msm.flux.ReactiveFlux object
+        A python object containing the reactive A->B flux network
+        and several additional quantities, such as stationary probability,
+        committors and set definitions.
+
+    Notes
+    -----
+    The central object used in transition path theory is
+    the forward and backward comittor function. 
+
+    TPT (originally introduced in [1]) for continous systems has a
+    discrete version outlined in [2]. Here, we use the transition
+    matrix formulation described in [3].
+
+    References
+    ----------
+    .. [1] W. E and E. Vanden-Eijnden.
+        Towards a theory of transition paths. 
+        J. Stat. Phys. 123: 503-523 (2006)
+    .. [2] P. Metzner, C. Schuette and E. Vanden-Eijnden.
+        Transition Path Theory for Markov Jump Processes. 
+        Multiscale Model Simul 7: 1192-1219 (2009)
+    .. [3] F. Noe, Ch. Schuette, E. Vanden-Eijnden, L. Reich and
+        T. Weikl: Constructing the Full Ensemble of Folding Pathways
+        from Short Off-Equilibrium Simulations.
+        Proc. Natl. Acad. Sci. USA, 106, 19011-19016 (2009)
+        
+    """
+    msmobj=MSM(dtrajs, lag, reversible=reversible, sliding=sliding)
+    T=msmobj.transition_matrix
+    mu=msmobj.stationary_distribution
+    tptobj=tpt_factory(T, A, B, mu=mu)
+    return tptobj   
 
 def hmsm(dtrajs, nstate, lag = 1, conv = 0.01, maxiter = None, timeshift = None):
     """
