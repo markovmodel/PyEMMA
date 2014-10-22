@@ -285,7 +285,7 @@ def bootstrap_counts(dtrajs, lagtime):
     time frames in [0,n_i-lagtime]. Here, n_i is the length of trajectory i
     and N = sum_i n_i is the total number of frames.
     
-    Parameters:
+    Parameters
     -----------
     dtrajs : array-like or array-like of array-like
         single or multiple discrete trajectories. Every trajectory is assumed to be

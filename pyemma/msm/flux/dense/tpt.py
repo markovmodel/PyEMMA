@@ -281,7 +281,7 @@ def pathways(F, A, B, qplus, fraction = 1.0, totalflux = None):
     r"""
     Performs a pathway decomposition of the net flux.
     
-    Parameters:
+    Parameters
     -----------
     F : (n, n) ndarray
         Matrix of flux values between pairs of states.

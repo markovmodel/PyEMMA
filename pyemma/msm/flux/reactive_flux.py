@@ -138,7 +138,7 @@ class ReactiveFlux(object):
         r"""
         Performs a pathway decomposition of the net flux.
         
-        Parameters:
+        Parameters
         -----------
         fraction = 1.0 : float
             The fraction of the total flux for which pathways will be computed.
@@ -168,7 +168,7 @@ class ReactiveFlux(object):
         r"""
         Sums up the flux from the pathways given
         
-        Parameters:
+        Parameters
         -----------
         paths : list of int-arrays
         list of pathways

@@ -169,7 +169,7 @@ class ImpliedTimescales:
         """
         Returns the implied timescale estimates
         
-        Parameters:
+        Parameters
         -----------
         process : int or None (default)
             index in [0:n-1] referring to the process whose timescale will be returned.
@@ -200,7 +200,7 @@ class ImpliedTimescales:
         Returns the sample means of implied timescales. Need to generate the samples first,
         e.g. by calling bootstrap
         
-        Parameters:
+        Parameters
         -----------
         process : int or None (default)
             index in [0:n-1] referring to the process whose timescale will be returned.
@@ -228,7 +228,7 @@ class ImpliedTimescales:
         Returns the sample means of implied timescales. Need to generate the samples first,
         e.g. by calling bootstrap
         
-        Parameters:
+        Parameters
         -----------
         process : int or None (default)
             index in [0:n-1] referring to the process whose timescale will be returned.
