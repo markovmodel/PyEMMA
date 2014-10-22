@@ -21,3 +21,4 @@ Untitled*.ipynb
 /pyemma/msm/estimation/sparse/mle_trev.c
 /pyemma/msm/estimation/sparse/mle_trev_given_pi.c
 MANIFEST # generated from MANIFEST.in
+doc/source/api/generated/
