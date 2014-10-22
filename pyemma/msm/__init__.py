@@ -1,8 +1,8 @@
 r"""
 
-============================================
+=============================================
 msm - Markov state models (:mod:`pyemma.msm`)
-============================================
+=============================================
 
 .. currentmodule:: pyemma.msm
 
@@ -11,6 +11,12 @@ User-API
 
 .. autosummary::
    :toctree: generated/
+
+   its
+   msm
+   tpt
+   cktest
+   hmsm   
 
 """
 
