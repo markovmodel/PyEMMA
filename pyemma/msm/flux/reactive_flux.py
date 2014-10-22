@@ -1,8 +1,3 @@
-'''
-Created on Aug 13, 2014
-
-@author: noe
-'''
 r"""This module contains function for the Transition Path Theory (TPT)
 analysis of Markov models.
 
@@ -10,9 +5,7 @@ __moduleauthor__ = "Benjamin Trendelkamp-Schroer, Frank Noe"
 
 """
 import numpy as np
-
 import api as tptapi
-
 
 class ReactiveFlux(object):
     def __init__(self, A, B, flux,
