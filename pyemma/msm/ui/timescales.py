@@ -4,10 +4,13 @@ Created on Jul 26, 2014
 @author: noe
 '''
 
+__all__=['ImpliedTimescales']
+
 import numpy as np
-import pyemma.msm.estimation as msmest
-import pyemma.msm.analysis as msmana
-import pyemma.util.statistics as emmastats
+
+from pyemma.msm.estimation import cmatrix, connected_cmatrix, tmatrix, bootstrap_counts
+from pyemma.msm.analysis import timescales
+from pyemma.util.statistics import confidence_interval
 
 #TODO: connectivity is currently not used. Introduce different connectivity modes (lag, minimal, set)
 #TODO: if not connected, might add infinity timescales.
@@ -24,9 +27,9 @@ class ImpliedTimescales:
         """
         Calculates the implied timescales for a series of lag times
         
-        Parameters
+        dtrajs
         ----------
-        dtrajs : array-like or list of array-likes
+        Parameters : array-like or list of array-likes
             discrete trajectories
         lags = None : array-like with integers
             integer lag times at which the implied timescales will be calculated
@@ -82,12 +85,12 @@ class ImpliedTimescales:
         Estimate timescales from the given count matrix.
         """
         # connected set
-        C = (msmest.connected_cmatrix(C)).toarray()
+        C = (connected_cmatrix(C)).toarray()
         if (len(C) > 1):
             # estimate transition matrix
-            T = msmest.tmatrix(C, reversible=self._reversible)
+            T = tmatrix(C, reversible=self._reversible)
             # timescales
-            ts = msmana.timescales(T, tau, k=min(self._nits, len(T))+1)[1:]
+            ts = timescales(T, tau, k=min(self._nits, len(T))+1)[1:]
             return ts
         else:
             return None # no timescales available
@@ -102,7 +105,7 @@ class ImpliedTimescales:
         for i in range(len(self._lags)):
             tau = self._lags[i]
             # estimate count matrix
-            C = msmest.cmatrix(self._dtrajs, tau)
+            C = cmatrix(self._dtrajs, tau)
             # estimate timescales
             ts = self.__C_to_ts__(C, tau)
             if (ts is None):
@@ -126,7 +129,7 @@ class ImpliedTimescales:
             sampledWell = True
             for k in range(nsample):
                 # sample count matrix
-                C = msmest.bootstrap_counts(self._dtrajs, tau)
+                C = bootstrap_counts(self._dtrajs, tau)
                 # estimate timescales
                 ts = self.__C_to_ts__(C, tau)
                 # only use ts if we get all requested timescales
@@ -276,7 +279,7 @@ class ImpliedTimescales:
             R = np.zeros((len(self._lags), self._nits))
             for i in range(len(self._lags)):
                 for j in range(self._nits):
-                    conf = emmastats.confidence_interval(self._its_samples[i,j], alpha)
+                    conf = confidence_interval(self._its_samples[i,j], alpha)
                     L[i,j] = conf[1]
                     R[i,j] = conf[2]
             return (L,R)
@@ -284,7 +287,7 @@ class ImpliedTimescales:
             L = np.zeros(len(self._lags))
             R = np.zeros(len(self._lags))
             for i in range(len(self._lags)):
-                conf = emmastats.confidence_interval(self._its_samples[i,process], alpha)
+                conf = confidence_interval(self._its_samples[i,process], alpha)
                 L[i] = conf[1]
                 R[i] = conf[2]
             return (L,R)
