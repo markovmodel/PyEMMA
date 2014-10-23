@@ -185,8 +185,7 @@ metadata = dict(
     maintainer='Martin K. Scherer',
     maintainer_email='m.scherer@fu-berlin.de',
     author='The Emma team',
-    # TODO: add this
-    author_email='',
+    author_email='info@emma-project.org',
     url='http://compmolbio.biocomputing-berlin.de/index.php',
     description=DOCLINES[0],
     long_description="\n".join(DOCLINES[2:]),
