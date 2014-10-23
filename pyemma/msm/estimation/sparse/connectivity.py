@@ -81,7 +81,7 @@ def largest_connected_set(C, directed=True):
     """
     return connected_sets(C, directed=directed)[0]
 
-def largest_connected_submatrix(C, directed=True):
+def largest_connected_submatrix(C, directed=True, lcc=None):
     r"""Compute the count matrix of the largest connected set.
 
     The input count matrix is used as a weight matrix for the
@@ -94,8 +94,13 @@ def largest_connected_submatrix(C, directed=True):
     Parameters
     ----------
     C : scipy.sparse matrix or numpy ndarray 
-        Count matrix specifying edge weights.
-
+        Count matrix specifying edge weights
+    directed : bool, optional
+       Whether to compute connected components for a directed or
+       undirected graph. Default is True
+    lcc : (M,) ndarray, optional
+       The largest connected set
+       
     Returns
     -------
     C_cc : scipy.sparse matrix
@@ -103,7 +108,8 @@ def largest_connected_submatrix(C, directed=True):
         connected set of vertices (states)
 
     """
-    lcc=largest_connected_set(C, directed=directed)
+    if lcc is None:
+        lcc=largest_connected_set(C, directed=directed)
     
     """Row slicing"""
     if scipy.sparse.issparse(C):

@@ -249,9 +249,17 @@ class TestConnectedCountMatrixSparse(unittest.TestCase):
         C_cc=largest_connected_submatrix(self.C)
         self.assertTrue(np.allclose(C_cc.toarray(), self.C_cc_directed))
 
+        """Directed with user specified lcc"""
+        C_cc=largest_connected_submatrix(self.C, lcc=np.array([0, 1]))
+        self.assertTrue(np.allclose(C_cc.toarray(), self.C_cc_directed[0:2,0:2]))
+
         """Undirected"""
         C_cc=largest_connected_submatrix(self.C, directed=False)
         self.assertTrue(np.allclose(C_cc.toarray(), self.C_cc_undirected))
+
+        """Undirected with user specified lcc"""
+        C_cc=largest_connected_submatrix(self.C, lcc=np.array([0, 1]), directed=False)
+        self.assertTrue(np.allclose(C_cc.toarray(), self.C_cc_undirected[0:2,0:2]))
         
 class TestIsConnectedSparse(unittest.TestCase):
         
