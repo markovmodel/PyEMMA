@@ -36,13 +36,13 @@ after_success:
 
 deploy:
   provider: pypi
-  distributions: "sdist bdist_egg bdist_wheel upload_docs"
+  distributions: "sdist upload_docs"
   skip_cleanup: true
   docs_dir: doc/build/html
   user:
-    secure: TeTyLrHulxk9MUrLFUccvAONM2Xc1e7+Tl1eNI+FSvxn9Gh/wIPSD7ZNH+n5tgs7BXt+53OIrIfU10nLMJP7cEZJVhwmdWNm0ONIhlRsH1+UJ8e1huPb3IFxdw5UJkiTjEfKulNp3p5q+EWaS7952MwWuehDds8bk0o6TVobvXI=
+    secure: "DJtsbUhAc/bkUOt8LBxZPzxUonZBQEWsxqKzqVoKoj+SgsILWwsijn0ENHYO61na36r3iBiMNW7JrSkBk/Z8BmRtW27mE2eZJ7ztzuDVu/MKlR47e1QTuDfFM/DqtmjuXEBPDmP/V8B9MMTuM05ov1GCa1q1tvcu5dtWeYRM78I="
   password:
-    secure: hHDQxBuoB6SGVIBiQNuCIc128VK1qwJm23PJNXzPmpzBEA5K6PTC6uwfC6ZZ4GpCoFvynD+VPyiJv+wGbBOJWd6sTvyCAiChzPNFaHho9rXaqWlhIL99qR2I4K5bv1m9jYFVGvT8HtgaVnXxsjCrm5dai+8ICTFqkZETqiSyqzo=
+    secure: "FFbvO0jJFG7Ib1JNPm5TFgmEKNUdJ/2+n+1RP2bLAAi2ZY/i+1T+2uiXq1aiYJlpj5wirKEXNBL/K60gRj20LWlvmFIaO2RgNKCg9ZbkC5LoF5OCAEt9z8RHMWKvAqJU8DNuLwfBISpI8Lll8Zz+/NhhwRU7dk15NWWOgGRQONg="
   on:
     #tags: true
     # temporary workaround for travis issue #1675
