@@ -1,7 +1,4 @@
 function deploy() {
-    if (-not ($env:APPVEYOR_REPO_TAG)) { # no new tag
-        #return
-    }
     # install tools
     pip install wheel twine
     
@@ -10,4 +7,11 @@ function deploy() {
     
     # upload to pypi with twine
     twine upload -i $env:myuser -p $env:mypass dist/*
+}
+
+new_tag = ($env:APPVEYOR_REPO_TAG -eq true)
+new_tag = true # temporarily enable for all commits
+
+if (new_tag) {
+	deploy
 }

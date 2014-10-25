@@ -1,16 +1,16 @@
 #!/bin/bash
-set -x
 function install_deps {
-	sudo apt-get install -qq pandoc
-	#conda install -q --yes conda-build # for pipbuild rtdtheme
-	# most of doc requirements installed with conda (faster); install remaining with pip (compiling...)
-	#conda pipbuild sphinx_rtd_theme
+	sudo apt-get install -qq pandoc # texlive-latex-base
 	conda install -q --yes $doc_deps
 	pip install -r requirements-build-doc.txt wheel
 }
 
 function build_doc {
-	pushd doc; make ipython-rst html
+	cd doc; make ipython-rst html
+	# workaround for docs dir => move doc to build/docs afterwards
+	# travis (currently )expects docs in build/docs (should contain index.html?) 
+	mv build/html ../build/docs
+	ls -alhR ../build/docs
 }
 
 # TODO: build docs only for python 2.7 and for normal commits (not pull requests) 
