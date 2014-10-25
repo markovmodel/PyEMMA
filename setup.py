@@ -1,15 +1,13 @@
 #!/usr/bin/env python
-"""
-EMMA: Emma's Markov Model Algorithms
+"""EMMA: Emma's Markov Model Algorithms
 
-EMMA is a collection of algorithms implemented mostly in
+EMMA is an open source collection of algorithms implemented mostly in
 `NumPy <http://www.numpy.org/>`_ and `SciPy <http://www.scipy.org>`_
 to analyze trajectories generated from any kind of simulation
 (e.g. molecular trajectories) via Markov state models (MSM).
 
-TODO: extend.
 """
-
+# TODO: extend docstring
 DOCLINES = __doc__.split("\n")
 __requires__ = 'setuptools>=2.2'
 
@@ -23,11 +21,12 @@ from glob import glob
 CLASSIFIERS = """\
 Development Status :: 4 - Beta
 Environment :: Console
+Environment :: MacOS X
 Intended Audience :: Science/Research
 License :: OSI Approved :: BSD License
 Natural Language :: English
 Operating System :: MacOS :: MacOS X
-Operating System :: POSIX :: Linux
+Operating System :: POSIX
 Programming Language :: Python :: 2.6
 Programming Language :: Python :: 2.7
 Topic :: Scientific/Engineering :: Bio-Informatics
@@ -187,11 +186,13 @@ metadata = dict(
     author='The Emma team',
     author_email='info@emma-project.org',
     url='http://compmolbio.biocomputing-berlin.de/index.php',
+    license='FreeBSD',
     description=DOCLINES[0],
-    long_description="\n".join(DOCLINES[2:]),
+    long_description=open('README.rst').read(), #\n".join(DOCLINES[2:]),
     version=versioneer.get_version(),
     platforms=["Windows", "Linux", "Solaris", "Mac OS-X", "Unix"],
     classifiers=[c for c in CLASSIFIERS.split('\n') if c],
+    keywords='Markov State Model Algorithms',
     # packages are found if their folder contains an __init__.py,
     packages=find_packages(),
     # install default emma.cfg into package.
@@ -207,6 +208,11 @@ metadata = dict(
                       'pystallone>=1.0.0b3'],
 )
 
+# this is only metadata and not used by setuptools
+metadata['requires'] = ['numpy', 'scipy', 'pystallone']
+
+
+# installing?
 if not (len(sys.argv) >= 2 and ('--help' in sys.argv[1:] or
         sys.argv[1] in ('--help-commands', 'egg_info', '--version',
                         'clean'))):
@@ -214,6 +220,10 @@ if not (len(sys.argv) >= 2 and ('--help' in sys.argv[1:] or
     metadata['ext_modules'] = extensions()
     # setuptools>=2.2 can handle setup_requires
     metadata['setup_requires'] = ['numpy>=1.6.0', 'setuptools>3.6']
+    
+    # add argparse to runtime deps if python version is 2.6
+    if sys.version_info[:2] == (2, 6):
+        metadata['install_requires'] += ['argparse']
 
 try:
     setup(**metadata)
