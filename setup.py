@@ -91,20 +91,20 @@ def extensions():
                   sources=['pyemma/msm/estimation/dense/mle_trev_given_pi' + ext,
                            'pyemma/msm/estimation/dense/_mle_trev_given_pi.c'],
                   include_dirs=[os.path.abspath('pyemma/msm/estimation/dense')],
-                  extra_compile_args=['-march=native'])
+                  extra_compile_args=[])
 
     mle_trev_given_pi_sparse_module = \
         Extension('pyemma.msm.estimation.sparse.mle_trev_given_pi',
                   sources=['pyemma/msm/estimation/sparse/mle_trev_given_pi' + ext,
                            'pyemma/msm/estimation/sparse/_mle_trev_given_pi.c'],
                   include_dirs=[os.path.abspath('pyemma/msm/estimation/dense')],
-                  extra_compile_args=['-march=native'])
+                  extra_compile_args=[])
 
     mle_trev_sparse_module = \
         Extension('pyemma.msm.estimation.sparse.mle_trev',
                   sources=['pyemma/msm/estimation/sparse/mle_trev' + ext,
                            'pyemma/msm/estimation/sparse/_mle_trev.c'],
-                  extra_compile_args=['-march=native'])
+                  extra_compile_args=[])
 
     mle_trev_module = [mle_trev_given_pi_dense_module,
                        mle_trev_given_pi_sparse_module,
