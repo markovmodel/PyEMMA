@@ -45,7 +45,7 @@ deploy:
   password:
     secure: "FFbvO0jJFG7Ib1JNPm5TFgmEKNUdJ/2+n+1RP2bLAAi2ZY/i+1T+2uiXq1aiYJlpj5wirKEXNBL/K60gRj20LWlvmFIaO2RgNKCg9ZbkC5LoF5OCAEt9z8RHMWKvAqJU8DNuLwfBISpI8Lll8Zz+/NhhwRU7dk15NWWOgGRQONg="
   on:
-    #tags: true
+    tags: true
     # TODO: should only deploy for tagged master release as soon as stable
     # temporary workaround for travis issue #1675
     all_branches: true
