@@ -22,9 +22,9 @@ function upload($file) {
 
 function run {
     cd $env:APPVEYOR_BUILD_FOLDER
-    $stylesheet =  "tools/ci/transform_xunit_to_appveyor.xsl"
+    $stylesheet =  "tools/ci/appveyor/transform_xunit_to_appveyor.xsl"
     $input = "nosetests.xml"
-    $output = "test/transformed.xml"
+    $output = "transformed.xml"
     
     nosetests pyemma --all-modules --with-xunit
     $success = $?
