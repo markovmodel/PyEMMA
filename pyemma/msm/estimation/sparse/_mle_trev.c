@@ -5,6 +5,15 @@
 #include <assert.h>
 #include "_mle_trev.h"
 
+#ifdef _MSC_VER
+#undef isnan
+int isnan(double var)
+{
+    volatile double d = var;
+    return d != d;
+}
+#endif
+
 static double distsq(const int n, const double *const a, const double *const b)
 {
   double d = 0.0;

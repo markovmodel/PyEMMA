@@ -1,6 +1,16 @@
 /* moduleauthor:: F. Paul <fabian DOT paul AT fu-berlin DOT de> */
 #include <stdlib.h>
 #include <math.h>
+
+#ifdef _MSC_VER
+#undef isnan
+int isnan(double var)
+{
+    volatile double d = var;
+    return d != d;
+}
+#endif
+
 #undef NDEBUG
 #include <assert.h>
 #include "_mle_trev_given_pi.h"
@@ -9,6 +19,7 @@ static double distsq(const int n, const double *const a, const double *const b)
 {
   double d = 0.0;
   int i;
+#pragma omp parallel for reduction(+:d)
   for(i=0; i<n; i++) {
     d += (a[i]-b[i])*(a[i]-b[i]);
   }

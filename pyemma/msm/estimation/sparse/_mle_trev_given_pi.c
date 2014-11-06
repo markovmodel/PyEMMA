@@ -1,6 +1,16 @@
 /* moduleauthor:: F. Paul <fabian DOT paul AT fu-berlin DOT de> */
 #include <stdlib.h>
 #include <math.h>
+
+#ifdef _MSC_VER
+#undef isnan
+int isnan(double var)
+{
+    volatile double d = var;
+    return d != d;
+}
+#endif
+
 #undef NDEBUG
 #include <assert.h>
 #include "_mle_trev_given_pi.h"
