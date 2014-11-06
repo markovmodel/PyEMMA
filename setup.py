@@ -53,8 +53,8 @@ except:
 versioneer.VCS = 'git'
 versioneer.versionfile_source = 'pyemma/_version.py'
 versioneer.versionfile_build = 'pyemma/_version.py'
-versioneer.tag_prefix = ''  # tags are like 1.2.0
-versioneer.parentdir_prefix = 'pyemma-'  # dirname like 'myproject-1.2.0'
+versioneer.tag_prefix = 'v'  # tags are like v1.2.0
+versioneer.parentdir_prefix = 'pyemma-'
 
 ###############################################################################
 # Extensions
