@@ -3,6 +3,9 @@ include LICENSE.txt
 
 # include test modules
 recursive-include pyemma */test?/*
+# exclude compiled bytecode
+global-exclude *.pyc
+
 # versioneer
 include versioneer.py
 include pyemma/_version.py
