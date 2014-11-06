@@ -29,7 +29,6 @@ import dense.transition_matrix
 import dense.covariance
 import dense.mle_trev_given_pi
 
-import pyemma.util.pystallone as stallone
 from pyemma.util.log import getLogger
 from pyemma.msm.estimation.dense.tmatrix_sampler_jwrapper import ITransitionMatrixSampler
 
@@ -847,20 +846,18 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
     array([[ 0.94841372,  0.00534691,  0.04623938],
            [ 0.37428347,  0.12715063,  0.4985659 ],
            [ 0.11161229,  0.01719193,  0.87119578]])
-    
+
     """
-    if (issparse(C)):
+    if issparse(C):
         sparse_mode = True
-    elif (isdense(C)):
+    elif isdense(C):
         sparse_mode = False
     else:
         raise NotImplementedError('C has an unknown type.')
-    
+
     if reversible:
         if mu is None:
             if sparse_mode:
-                # currently no sparse impl, so we abuse dense impl (may be inefficient)
-                # return csr_matrix(dense.transition_matrix.estimate_transition_matrix_reversible(C.toarray(),**kwargs))
                 return sparse.mle_trev.mle_trev(C, **kwargs)
             else:
                 return dense.transition_matrix.estimate_transition_matrix_reversible(C,**kwargs)
