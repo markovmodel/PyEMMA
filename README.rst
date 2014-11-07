@@ -27,5 +27,5 @@ doc/source/INSTALL.rst
 Support
 -------
 For support/bug reports/sugguestions/complains please file an issue on GitHub.
-http://github.com/cmb-fu/emma
+http://github.com/markovmodel/PyEMMA
 
