@@ -314,16 +314,16 @@ def is_reversible(T, mu=None, tol=1e-15):
 
 # DONE: Ben
 def stationary_distribution(T):
-    r"""Compute stationary distribution of stochastic matrix T.    
-   
+    r"""Compute stationary distribution of stochastic matrix T.
+
     Parameters
     ----------
     T : (M, M) ndarray or scipy.sparse matrix
         Transition matrix
-    
+
     Returns
     -------
-    mu : (M,) ndarray      
+    mu : (M,) ndarray
         Vector of stationary probabilities.
 
     Notes
@@ -335,57 +335,57 @@ def stationary_distribution(T):
 
     Examples
     --------
-    
+
     >>> from pyemma.msm.analysis import stationary_distribution
-    
+
     >>> T=np.array([[0.9, 0.1, 0.0], [0.4, 0.2, 0.4], [0.0, 0.1, 0.9]])
     >>> mu=stationary_distribution(T)
     >>> mu
     array([0.44444444, 0.11111111, 0.44444444])
-    
+
     """
     # is this a transition matrix?
     if not is_transition_matrix(T):
-        raise ValueError("Input matrix is not a transition matrix." 
+        raise ValueError("Input matrix is not a transition matrix."
                          "Cannot compute stationary distribution")
     # is the stationary distribution unique?
     if not is_connected(T):
-        raise ValueError("Input matrix is not connected."
-                         "Therefore it has no unique stationary"
-                         "distribution.\n Separate disconnected components"
+        raise ValueError("Input matrix is not connected. "
+                         "Therefore it has no unique stationary "
+                         "distribution. Separate disconnected components "
                          "and handle them separately")
     # we're good to go...
     if issparse(T):
         return sparse.decomposition.stationary_distribution_from_backward_iteration(T)
     elif isdense(T):
         return dense.decomposition.stationary_distribution_from_backward_iteration(T)
-    else: 
+    else:
         raise _type_not_supported
 
 def statdist(T):
-    r"""Compute stationary distribution of stochastic matrix T.    
-   
+    r"""Compute stationary distribution of stochastic matrix T.
+
     Parameters
     ----------
     T : (M, M) ndarray or scipy.sparse matrix
         Transition matrix
-    
+
     Returns
     -------
-    mu : (M,) ndarray      
+    mu : (M,) ndarray
         Vector of stationary probabilities.
-        
+
     See also
     --------
     stationary_distribution
-    
+
     """
     return stationary_distribution(T)
 
 # DONE: Martin, Ben
 def eigenvalues(T, k=None, ncv=None):
     r"""Find eigenvalues of the transition matrix.
-    
+
     Parameters
     ----------
     T : (M, M) ndarray or sparse matrix
@@ -408,14 +408,14 @@ def eigenvalues(T, k=None, ncv=None):
 
     Examples
     --------
-    
+
     >>> from pyemma.msm.analysis import eigenvalues
 
     >>> T=np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
     >>> w=eigenvalues(T)
     >>> w
     array([1.0+0.j, 0.9+0.j, -0.1+0.j]) 
-    
+
     """
     if issparse(T):
         return sparse.decomposition.eigenvalues(T, k, ncv=ncv)
@@ -427,7 +427,7 @@ def eigenvalues(T, k=None, ncv=None):
 # DONE: Ben
 def timescales(T, tau=1, k=None, ncv=None):
     r"""Compute implied time scales of given transition matrix.
-    
+
     Parameters
     ----------
     T : (M, M) ndarray or scipy.sparse matrix
@@ -441,7 +441,7 @@ def timescales(T, tau=1, k=None, ncv=None):
     ncv : int (optional, for sparse T only)
         The number of Lanczos vectors generated, `ncv` must be greater than k;
         it is recommended that ncv > 2*k
-        
+
     Returns
     -------
     ts : (M,) ndarray
