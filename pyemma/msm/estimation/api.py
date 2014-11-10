@@ -205,35 +205,7 @@ def cmatrix(dtraj, lag, sliding=True, sparse_return=True):
 ################################################################################
 
 def bootstrap_trajectories(trajs, correlation_length):
-    """
-    Generates a randomly resampled trajectory segments
-
-    This function can be called multiple times in order to generate randomly
-    resampled trajectory data. In order to compute error bars on your observable
-    of interest, call this function to generate resampled trajectories, and 
-    put them into your estimator. The standard deviation of such a sample of 
-    the observable is a model for the standard error.
-
-    Implements a moving block bootstrapping procedure [1]_ for generation of 
-    randomly resampled count matrixes from discrete trajectories. The corrlation length
-    determines the size of trajectory blocks that will remain contiguous. 
-    For a single trajectory N with correlation length t_corr < N, 
-    we will sample floor(N/t_corr) subtrajectories of length t_corr using starting time t. 
-    t is a uniform random number in [0, N-t_corr-1]. 
-    When multiple trajectories are available, N is the total number of timesteps
-    over all trajectories, the algorithm will generate resampled data with a total number
-    of N (or slightly larger) time steps. Each trajectory of length n_i has a probability 
-    of n_i to be selected. Trajectories of length n_i <= t_corr are returned completely.
-    For longer trajectories, segments of length t_corr are randomly generated.
-
-    Note that like all error models for correlated time series data, Bootstrapping 
-    just gives you a model for the error given a number of assumptions [2]_. The most 
-    critical decisions are: (1) is this approach meaningful at all (only if the 
-    trajectories are statistically independent realizations), and (2) select
-    an appropriate timescale of the correlation length (see below).
-    Note that transition matrix sampling from the Dirichlet distribution is a 
-    much better option from a theoretical point of view, but may also be 
-    computationally more demanding.
+    r"""Generates a randomly resampled trajectory segments.
     
     Parameters
     ----------
@@ -251,10 +223,41 @@ def bootstrap_trajectories(trajs, correlation_length):
         it's suggested to use full trajectories (set timescale to < 1) or come up with 
         a rough estimate. For computing the error on specific observables, one may use 
         shorter timescales, because the relevant correlation length is the integral of 
-        the autocorrelation function of the observables of interest [3]_. The slowest 
+        the autocorrelation function of the observables of interest [3]. The slowest 
         implied timescale is an upper bound for that correlation length, and therefore 
-        a conservative estimate [4]_.
-    
+        a conservative estimate [4].
+
+    Notes
+    -----
+    This function can be called multiple times in order to generate randomly
+    resampled trajectory data. In order to compute error bars on your observable
+    of interest, call this function to generate resampled trajectories, and 
+    put them into your estimator. The standard deviation of such a sample of 
+    the observable is a model for the standard error.
+
+    Implements a moving block bootstrapping procedure [1] for generation of 
+    randomly resampled count matrixes from discrete trajectories. The corrlation length
+    determines the size of trajectory blocks that will remain contiguous. 
+    For a single trajectory N with correlation length t_corr < N, 
+    we will sample floor(N/t_corr) subtrajectories of length t_corr using starting time t. 
+    t is a uniform random number in [0, N-t_corr-1]. 
+    When multiple trajectories are available, N is the total number of timesteps
+    over all trajectories, the algorithm will generate resampled data with a total number
+    of N (or slightly larger) time steps. Each trajectory of length n_i has a probability 
+    of n_i to be selected. Trajectories of length n_i <= t_corr are returned completely.
+    For longer trajectories, segments of length t_corr are randomly generated.
+
+    Note that like all error models for correlated time series data, Bootstrapping 
+    just gives you a model for the error given a number of assumptions [2]. The most 
+    critical decisions are: (1) is this approach meaningful at all (only if the 
+    trajectories are statistically independent realizations), and (2) select
+    an appropriate timescale of the correlation length (see below).
+    Note that transition matrix sampling from the Dirichlet distribution is a 
+    much better option from a theoretical point of view, but may also be 
+    computationally more demanding.
+
+    References
+    ----------
     [1] H. R. Kuensch. The jackknife and the bootstrap for general stationary 
         observations,
         Ann. Stat. 3, 1217-41 (1989). 
@@ -264,15 +267,27 @@ def bootstrap_trajectories(trajs, correlation_length):
         Wiley, New York (1971).
     [4] F. Noe and F. Nueske: A variational approach to modeling slow processes 
         in stochastic dynamical systems. 
-        SIAM Multiscale Model. Simul., 11 . pp. 635-655 (2013).
+        SIAM Multiscale Model. Simul., 11 . pp. 635-655 (2013)
+        
     """
     return dense.bootstrapping.bootstrap_trajectories(trajs, correlation_length)
 
 
 def bootstrap_counts(dtrajs, lagtime):
-    """
-    Generates a randomly resampled count matrix given the input coordinates.
+    r"""Generates a randomly resampled count matrix given the input coordinates.
+    
+    Parameters
+    -----------
+    dtrajs : array-like or array-like of array-like
+        single or multiple discrete trajectories. Every trajectory is assumed to be
+        a statistically independent realization. Note that this is often not true and 
+        is a weakness with the present bootstrapping approach.
+            
+    lagtime : int
+        the lag time at which the count matrix will be evaluated
 
+    Notes
+    -----
     This function can be called multiple times in order to generate randomly
     resampled realizations of count matrices. For each of these realizations 
     you can estimate a transition matrix, and from each of them computing the 
@@ -283,20 +298,11 @@ def bootstrap_counts(dtrajs, lagtime):
     tuples (t, t+lagtime), where t is uniformly sampled over all trajectory
     time frames in [0,n_i-lagtime]. Here, n_i is the length of trajectory i
     and N = sum_i n_i is the total number of frames.
-    
-    Parameters:
-    -----------
-    dtrajs : array-like or array-like of array-like
-        single or multiple discrete trajectories. Every trajectory is assumed to be
-        a statistically independent realization. Note that this is often not true and 
-        is a weakness with the present bootstrapping approach.
-            
-    lagtime : int
-        the lag time at which the count matrix will be evaluated
 
     See also
     --------
     bootstrap_trajectories for general notes on bootstrapping
+    
     """
     return dense.bootstrapping.bootstrap_counts(dtrajs, lagtime)
 

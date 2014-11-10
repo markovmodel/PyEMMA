@@ -1,8 +1,3 @@
-'''
-Created on Aug 13, 2014
-
-@author: noe
-'''
 r"""This module contains function for the Transition Path Theory (TPT)
 analysis of Markov models.
 
@@ -10,9 +5,7 @@ __moduleauthor__ = "Benjamin Trendelkamp-Schroer, Frank Noe"
 
 """
 import numpy as np
-
 import api as tptapi
-
 
 class ReactiveFlux(object):
     def __init__(self, A, B, flux,
@@ -145,7 +138,7 @@ class ReactiveFlux(object):
         r"""
         Performs a pathway decomposition of the net flux.
         
-        Parameters:
+        Parameters
         -----------
         fraction = 1.0 : float
             The fraction of the total flux for which pathways will be computed.
@@ -175,7 +168,7 @@ class ReactiveFlux(object):
         r"""
         Sums up the flux from the pathways given
         
-        Parameters:
+        Parameters
         -----------
         paths : list of int-arrays
         list of pathways
