@@ -23,6 +23,7 @@ before_install:
 - conda create -q --yes -n ci python=$TRAVIS_PYTHON_VERSION $deps $common_py_deps
 - source activate ci
 - python -c "import scipy; print scipy.__version__; print scipy.__numpy_version__"
+- conda list
 
 install:
 - python setup.py install
