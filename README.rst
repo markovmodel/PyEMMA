@@ -21,7 +21,7 @@ IPython notebooks.
 Installation
 ------------
 To install it refer to the installation guide
-`online <http://pythonhosted.org/pyEMMA/INSTALL.html>`__ or or offline in file
+`online <http://pythonhosted.org/pyEMMA/INSTALL.html>`__ or offline in file
 doc/source/INSTALL.rst
 
 Support
