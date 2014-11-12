@@ -206,6 +206,7 @@ metadata = dict(
     install_requires=['numpy>=1.6.0',
                       'scipy>=0.11',
                       'pystallone>=1.0.0b3'],
+    zip_safe=False,
 )
 
 # this is only metadata and not used by setuptools
