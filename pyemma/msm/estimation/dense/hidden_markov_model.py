@@ -5,14 +5,15 @@ Created on Sep 9, 2014
 '''
 
 import numpy as np
-import jpype
 import pyemma.util.pystallone as stallone
 
-class HiddenMSM:
+
+class HiddenMSM(object):
+
     """
     Implements a discrete Hidden Markov state model of conformational kinetics.
     For details, see [1].
-    
+
     [1]_ Noe, F. and Wu, H. and Prinz, J.-H. and Plattner, N. (2013) 
     Projected and Hidden Markov Models for calculating kinetics and metastable states of complex molecules. 
     J. Chem. Phys., 139 . p. 184114
@@ -20,8 +21,8 @@ class HiddenMSM:
 
     # the estimated HMM
     hmm = None
-    
-    def __init__(self, dtrajs, nstate, lag = 1, conv = 0.01, maxiter = None, timeshift = None):
+
+    def __init__(self, dtrajs, nstate, lag=1, conv=0.01, maxiter=None, timeshift=None):
         """
         dtrajs : int-array or list of int-arrays
             discrete trajectory or list of discrete trajectories
@@ -55,33 +56,36 @@ class HiddenMSM:
         # make a Java List
         for dtraj in dtrajs:
             sdtrajs.append(stallone.ndarray_to_stallone_array(dtraj))
-        jlist = jpype.java.util.Arrays.asList(sdtrajs)
+        jlist = stallone.java.util.Arrays.asList(sdtrajs)
         # prepare run parameters
-        timeshift = max(lag/10, 1); # by default, use 10 shifts per lag, but at least 1
+        # by default, use 10 shifts per lag, but at least 1
+        timeshift = max(lag / 10, 1)
         if (maxiter is None):
-            maxiter = 100 * nstate * nstate; # by default use 100 nstate^2
+            maxiter = 100 * nstate * nstate  # by default use 100 nstate^2
         # convergence when likelihood increases by no more than dlconv
-        dectol = -conv;
-        # do not set initial values for hidden transition matrix or output probabilities (will be obtained by PCCA+)
-        TCinit = None;
-        chiInit = None;
+        dectol = -conv
+        # do not set initial values for hidden transition matrix or output
+        # probabilities (will be obtained by PCCA+)
+        TCinit = None
+        chiInit = None
         # run estimation
-        self.hmm = stallone.API.hmm.pmm(jlist, nstate, lag, timeshift, maxiter, dectol, TCinit, chiInit)
-    
+        self.hmm = stallone.API.hmm.pmm(
+            jlist, nstate, lag, timeshift, maxiter, dectol, TCinit, chiInit)
+
     @property
     def likelihood_history(self):
         """
         Returns the list of likelihood values encountered during the optimization
         """
         return np.array(self.hmm.getLogLikelihoodHistory())
-    
+
     @property
     def niter(self):
         """
         Returns the number of EM optimization steps made
         """
         return np.shape(self.likelihood_history)[0]
-    
+
     @property
     def transition_matrix(self):
         """
@@ -95,4 +99,4 @@ class HiddenMSM:
         Returns the output probability matrix B, with b_ij 
         containing the probability that hidden state i will output to observable state j
         """
-        return stallone.stallone_array_to_ndarray(self.hmm.getOutputParameters())    
+        return stallone.stallone_array_to_ndarray(self.hmm.getOutputParameters())
