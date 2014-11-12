@@ -35,6 +35,7 @@ after_success:
 - tools/ci/travis/make_docs.sh
 
 deploy:
+  edge: true # testing bleeding edge git deployment code
   provider: pypi
   distributions: "sdist upload_docs"
   skip_cleanup: true
@@ -46,7 +47,9 @@ deploy:
   password:
     secure: "F3I26Mx0vbiIrSf/MsE8OGNV4xr82Wx4AWItHcXEq+pwBreNyCg/KVQInJ90lSh2RmvGAMmzw6rQ4EFaHYrFuAekilM/4tkRBGF/pSrEG7KSL2ysyoJIqTRncJCs1USyNYWodmXjRTQjLyJKoZufpNZ4u6Da1pVQDZqbsL0LtZo="
   on:
+    python: 2.7 # only upload docs and sdist for py27
     tags: true
     # TODO: should only deploy for tagged master release as soon as stable
     # temporary workaround for travis issue #1675
     all_branches: true
+
