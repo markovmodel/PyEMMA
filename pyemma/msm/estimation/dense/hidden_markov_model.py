@@ -19,9 +19,6 @@ class HiddenMSM(object):
     J. Chem. Phys., 139 . p. 184114
     """
 
-    # the estimated HMM
-    hmm = None
-
     def __init__(self, dtrajs, nstate, lag=1, conv=0.01, maxiter=None, timeshift=None):
         """
         dtrajs : int-array or list of int-arrays
