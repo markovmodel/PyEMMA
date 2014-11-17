@@ -2,8 +2,12 @@ r"""Implement a MSM class that builds a Markov state models from
 microstate trajectories automatically computes important properties
 and provides them for later access."""
 
+__docformat__ = "restructuredtext en"
+
 from pyemma.msm.estimation import cmatrix, largest_connected_set, connected_cmatrix, tmatrix
 from pyemma.msm.analysis import statdist, timescales
+
+__all__=['MSM']
 
 class MSM(object):    
     def __init__(self, dtrajs, lag, reversible=True, sliding=True, compute=True):

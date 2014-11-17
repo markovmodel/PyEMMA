@@ -47,17 +47,16 @@ def its(dtrajs, lags = None, nits=10, reversible = True, connected = True):
 
     Returns
     -------
-    lagtimes : list
-        List of lagtimes for which timescales were computed
-    timescales : (L, K) ndarray
-        The array of implied time-scales. L is the number of lagtimes and
-        K is the number of the computed time-scale.
-        
+    itsobj : pyemma.msm.ui.ImpliedTimescales object
+
+    See also
+    --------
+    pyemma.msm.ui.ImpliedTimescales
+    
     """
     itsobj=ImpliedTimescales(dtrajs, lags=lags, nits=nits, reversible=reversible, connected=connected)
-    lagtimes=itsobj.get_lagtimes()
-    timescales=itsobj.get_timescales()
-    return lagtimes, timescales
+    return itsobj
+
 
 def msm(dtrajs, lag, reversible=True, sliding=True, compute=True):
     r"""Estimate Markov state model (MSM) from discrete trajectories.
@@ -78,7 +77,7 @@ def msm(dtrajs, lag, reversible=True, sliding=True, compute=True):
 
     Returns
     -------
-    msmobj : pyemma.msm.ui.msm.MSM object
+    msmobj : pyemma.msm.ui.MSM object
         A python object containing the MSM and important quantities
         derived from it
         
@@ -86,7 +85,11 @@ def msm(dtrajs, lag, reversible=True, sliding=True, compute=True):
     -----
     You can postpone the estimation of the MSM using compute=False and
     initiate the estimation procedure by manually calling the MSM.compute()
-    method.       
+    method.
+
+    See also
+    --------
+    pyemma.msm.ui.MSM
     
     """
     msmobj=MSM(dtrajs, lag, reversible=reversible, sliding=sliding, compute=compute)
@@ -163,6 +166,10 @@ def tpt(dtrajs, lag, A, B, reversible=True, sliding=True):
     TPT (originally introduced in [1]) for continous systems has a
     discrete version outlined in [2]. Here, we use the transition
     matrix formulation described in [3].
+
+    See also
+    --------
+    pyemma.msm.flux.ReactiveFlux
 
     References
     ----------

@@ -48,6 +48,15 @@ Sampling
 
    tmatrix_sampler - Random sample from transition matrix posterior
 
+Bootstrap
+=========
+
+.. autosummary::
+   :toctree: generated/
+
+   bootstrap_counts
+   bootstrap_trajectories
+
 Priors
 ======
 

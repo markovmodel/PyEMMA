@@ -68,7 +68,7 @@ def tpt(T, A, B, mu=None, qminus=None, qplus=None, rate_matrix=False):
 
     See also
     --------
-    committor
+    pyemma.msm.analysis.committor, ReactiveFlux
 
     References
     ----------
