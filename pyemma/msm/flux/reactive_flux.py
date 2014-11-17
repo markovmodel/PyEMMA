@@ -7,13 +7,13 @@ __moduleauthor__ = "Benjamin Trendelkamp-Schroer, Frank Noe"
 import numpy as np
 import api as tptapi
 
+__all__=['ReactiveFlux']
+
 class ReactiveFlux(object):
     def __init__(self, A, B, flux,
                  mu=None, qminus=None, qplus=None, gross_flux=None):
-        r""" Reactive flux object.
-
-        Reactive flux contains a flux network from educt states (A) to product states (B).
-
+        r"""Reactive flux object.
+        
         Parameters
         ----------
         A : array_like
@@ -30,11 +30,15 @@ class ReactiveFlux(object):
             Forward committor for A-> B reaction
         gross_flux : (n,n) ndarray or scipy sparse matrix
             gross flux of A->B pathways, if available
+
+        Notes
+        -----
+        Reactive flux contains a flux network from educt states (A) to product states (B).
         
         See also
         --------
-        msm.analysis.tpt to construct this object from a transition matrix.
-         
+        pyemma.msm.tpt
+        
         """
         # set data
         self._A = A
@@ -51,25 +55,29 @@ class ReactiveFlux(object):
 
     @property
     def nstates(self):
-        r"""Returns the number of states
+        r"""Returns the number of states.
+        
         """
         return np.shape(self._flux)[0]
 
     @property
     def A(self):
-        r"""Returns the set of reactant (source) states
+        r"""Returns the set of reactant (source) states.
+        
         """
         return self._A
 
     @property
     def B(self):
         r"""Returns the set of product (target) states
+        
         """
         return self._B
 
     @property
     def I(self):
         r"""Returns the set of intermediate states
+        
         """
         return list(set(range(self.nstates))-set(self._A)-set(self._B))
 
@@ -135,8 +143,7 @@ class ReactiveFlux(object):
 
 
     def pathways(self, fraction = 1.0):
-        r"""
-        Performs a pathway decomposition of the net flux.
+        r"""Performs a pathway decomposition of the net flux.
         
         Parameters
         -----------
@@ -165,8 +172,7 @@ class ReactiveFlux(object):
 
 
     def _pathways_to_flux(self, paths, pathfluxes, n=None):
-        r"""
-        Sums up the flux from the pathways given
+        r"""Sums up the flux from the pathways given
         
         Parameters
         -----------
@@ -201,8 +207,9 @@ class ReactiveFlux(object):
 
 
     def major_flux(self, fraction = 0.9):
-        r"""
-        Returns the main pathway part of the net flux comprising at most the requested fraction of the full flux.
+        r"""Returns the main pathway part of the net flux comprising
+        at most the requested fraction of the full flux.
+        
         """
         (paths,pathfluxes) = self.pathways(fraction = fraction)
         return self._pathways_to_flux(paths, pathfluxes, n=self.nstates)
@@ -210,15 +217,7 @@ class ReactiveFlux(object):
 
     # this will be a private function in tpt. only Parameter left will be the sets to be distinguished
     def _compute_coarse_sets(self, user_sets):
-        r"""
-        Computes the sets to coarse-grain the tpt flux to. Given the sets that the
-        user wants to distinguish, the algorithm will create additional sets if necessary:
-           * If states are missing in user_sets, they will be put into a
-            separate set
-           * If sets in user_sets are crossing the boundary between A, B and the
-             intermediates, they will be split at these boundaries. Thus each
-             set in user_sets can remain intact or be split into two or three
-             subsets
+        r"""Computes the sets to coarse-grain the tpt flux to.
         
         Parameters
         ----------
@@ -235,7 +234,19 @@ class ReactiveFlux(object):
         sets : list of int-iterables
             sets to compute tpt on. These sets still respect the boundary between
             A, B and the intermediate tpt states.
-            
+
+        Notes
+        -----
+        Given the sets that the user wants to distinguish, the
+        algorithm will create additional sets if necessary
+
+           * If states are missing in user_sets, they will be put into a
+            separate set
+           * If sets in user_sets are crossing the boundary between A, B and the
+             intermediates, they will be split at these boundaries. Thus each
+             set in user_sets can remain intact or be split into two or three
+             subsets
+             
         """
         # set-ify everything
         setA = set(self.A)
@@ -276,11 +287,8 @@ class ReactiveFlux(object):
 
 
     def coarse_grain(self, user_sets):
-        """
-        Coarse-grains the flux onto user-defined sets. All user-specified sets
-        will be split (if necessary) to preserve the boundary between A, B and
-        the intermediate states.
-    
+        r"""Coarse-grains the flux onto user-defined sets. 
+        
         Parameters
         ----------
         user_sets : list of int-iterables
@@ -299,6 +307,13 @@ class ReactiveFlux(object):
             tpt contains a new tpt object for the coarse-grained flux. All its
             quantities (gross_flux, net_flux, A, B, committor, backward_committor)
             are coarse-grained to sets.
+
+        Notes
+        -----
+        All user-specified sets will be split (if necessary) to
+        preserve the boundary between A, B and the intermediate
+        states.
+        
         """
         # coarse-grain sets
         (tpt_sets,Aindexes,Bindexes) = self._compute_coarse_sets(user_sets)

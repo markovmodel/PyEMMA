@@ -58,7 +58,9 @@ __all__=['bootstrap_trajectories',
          'log_likelihood',
          'tmatrix_cov',
          'error_perturbation',
-         'tmatrix_sampler']
+         'tmatrix_sampler',
+         'bootstrap_counts',
+         'bootstrap_trajectories']
 
 ################################################################################
 # Count matrix
@@ -258,16 +260,15 @@ def bootstrap_trajectories(trajs, correlation_length):
 
     References
     ----------
-    [1] H. R. Kuensch. The jackknife and the bootstrap for general stationary 
-        observations,
-        Ann. Stat. 3, 1217-41 (1989). 
-    [2] B. Efron. Bootstrap methods: Another look at the jackknife. 
-        Ann. Statist. 7 1–26 (1979).
-    [3] T.W. Anderson. The Statistical Analysis of Time Series
+    .. [1] H. R. Kuensch. The jackknife and the bootstrap for general
+        stationary observations, Ann. Stat. 3, 1217-41 (1989).
+    .. [2] B. Efron. Bootstrap methods: Another look at the jackknife.
+        Ann. Statist. 7 1-26 (1979).
+    .. [3] T.W. Anderson. The Statistical Analysis of Time Series
         Wiley, New York (1971).
-    [4] F. Noe and F. Nueske: A variational approach to modeling slow processes 
-        in stochastic dynamical systems. 
-        SIAM Multiscale Model. Simul., 11 . pp. 635-655 (2013)
+    .. [4] F. Noe and F. Nueske: A variational approach to modeling
+        slow processes in stochastic dynamical systems.  SIAM
+        Multiscale Model. Simul., 11 . pp. 635-655 (2013)
         
     """
     return dense.bootstrapping.bootstrap_trajectories(trajs, correlation_length)
@@ -277,7 +278,7 @@ def bootstrap_counts(dtrajs, lagtime):
     r"""Generates a randomly resampled count matrix given the input coordinates.
     
     Parameters
-    -----------
+    ----------
     dtrajs : array-like or array-like of array-like
         single or multiple discrete trajectories. Every trajectory is assumed to be
         a statistically independent realization. Note that this is often not true and 
@@ -301,7 +302,7 @@ def bootstrap_counts(dtrajs, lagtime):
 
     See also
     --------
-    bootstrap_trajectories for general notes on bootstrapping
+    bootstrap_trajectories
     
     """
     return dense.bootstrapping.bootstrap_counts(dtrajs, lagtime)

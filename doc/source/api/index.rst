@@ -17,3 +17,4 @@ underlying solution for a problem is choosen.
    msm.analysis
    msm.flux
    msm.generation
+   msm.ui

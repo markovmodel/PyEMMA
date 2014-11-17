@@ -3,6 +3,7 @@ Created on Jul 26, 2014
 
 @author: noe
 '''
+__docformat__ = "restructuredtext en"
 
 __all__=['ImpliedTimescales']
 
@@ -15,7 +16,7 @@ from pyemma.util.statistics import confidence_interval
 #TODO: connectivity is currently not used. Introduce different connectivity modes (lag, minimal, set)
 #TODO: if not connected, might add infinity timescales.
 #TODO: Timescales should be assigned by similar eigenvectors rather than by order
-class ImpliedTimescales:
+class ImpliedTimescales(object):
     
     # estimated its. 2D-array with indexing: lagtime, its
     _its = None
@@ -24,12 +25,11 @@ class ImpliedTimescales:
     
     
     def __init__(self, dtrajs, lags = None, nits = 10, connected = True, reversible = True):
-        """
-        Calculates the implied timescales for a series of lag times
+        r"""Calculates the implied timescales for a series of lag times.
         
-        dtrajs
+        Parameters
         ----------
-        Parameters : array-like or list of array-likes
+        dtrajs : array-like or list of array-likes
             discrete trajectories
         lags = None : array-like with integers
             integer lag times at which the implied timescales will be calculated
@@ -64,8 +64,7 @@ class ImpliedTimescales:
 
                 
     def __generate_lags__(self, maxlag, multiplier):
-        """
-        Generate a set of lag times starting from 1 to maxlag, 
+        r"""Generate a set of lag times starting from 1 to maxlag, 
         using the given multiplier between successive lags
         
         """
@@ -81,8 +80,8 @@ class ImpliedTimescales:
 
 
     def __C_to_ts__(self, C, tau):
-        """
-        Estimate timescales from the given count matrix.
+        r"""Estimate timescales from the given count matrix.
+        
         """
         # connected set
         C = (connected_cmatrix(C)).toarray()
@@ -97,8 +96,8 @@ class ImpliedTimescales:
         
     
     def __estimate__(self):
-        """
-        Estimates ITS at set of lagtimes
+        r"""Estimates ITS at set of lagtimes
+        
         """
         # initialize
         self._its = np.zeros((len(self._lags), self._nits))
@@ -119,8 +118,8 @@ class ImpliedTimescales:
 
     
     def bootstrap(self, nsample=10):
-        """
-        Samples ITS using bootstrapping
+        r"""Samples ITS using bootstrapping
+        
         """
         # initialize
         self._its_samples = np.zeros((len(self._lags), self._nits, nsample))
@@ -148,39 +147,35 @@ class ImpliedTimescales:
     
 
     def get_lagtimes(self):
-        """
-        Returns:
-        --------
-        The list of lag times for which timescales were computed
+        r"""Return the list of lag times for which timescales were computed.
+        
         """
         return self._lags
 
 
     def number_of_timescales(self):
-        """
-        Returns:
-        --------
-        The number of itemscales
+        r"""Return the number of timescales.
+        
         """
         return self._nits
 
 
     def get_timescales(self, process = None):
-        """
-        Returns the implied timescale estimates
+        r"""Returns the implied timescale estimates
         
         Parameters
-        -----------
+        ----------
         process : int or None (default)
             index in [0:n-1] referring to the process whose timescale will be returned.
             By default, process = None and all computed process timescales will be returned.
             
-        Returns:
+        Returns
         --------
         if process is None, will return a (l x k) array, where l is the number of lag times 
         and k is the number of computed timescales.
         if process is an integer, will return a (l) array with the selected process time scale
         for every lag time
+        
         """
         if (process is None):
             return self._its
@@ -188,30 +183,31 @@ class ImpliedTimescales:
             return self._its[:,process]
 
     def samples_available(self):
-        """
-        Returns True if samples are available and thus sample means, standard errors and
-        confidence intervals can be obtained
+        r"""Returns True if samples are available and thus sample
+        means, standard errors and confidence intervals can be
+        obtained
+        
         """
         return (self._its_samples != None)
 
 
     def get_sample_mean(self, process = None):
-        """
-        Returns the sample means of implied timescales. Need to generate the samples first,
-        e.g. by calling bootstrap
+        r"""Returns the sample means of implied timescales. Need to
+        generate the samples first, e.g. by calling bootstrap
         
         Parameters
-        -----------
+        ----------
         process : int or None (default)
             index in [0:n-1] referring to the process whose timescale will be returned.
             By default, process = None and all computed process timescales will be returned.
             
-        Returns:
-        --------
+        Returns
+        -------
         if process is None, will return a (l x k) array, where l is the number of lag times 
         and k is the number of computed timescales.
         if process is an integer, will return a (l) array with the selected process time scale
         for every lag time
+        
         """
         if (self._its_samples is None):
             raise RuntimeError('Cannot compute sample mean, because no samples were generated '+
@@ -224,9 +220,8 @@ class ImpliedTimescales:
 
 
     def get_sample_std(self, process = None):
-        """
-        Returns the sample means of implied timescales. Need to generate the samples first,
-        e.g. by calling bootstrap
+        r"""Returns the sample means of implied timescales. Need to
+        generate the samples first, e.g. by calling bootstrap
         
         Parameters
         -----------
@@ -234,12 +229,13 @@ class ImpliedTimescales:
             index in [0:n-1] referring to the process whose timescale will be returned.
             By default, process = None and all computed process timescales will be returned.
             
-        Returns:
-        --------
+        Returns
+        -------
         if process is None, will return a (l x k) array, where l is the number of lag times 
         and k is the number of computed timescales.
         if process is an integer, will return a (l) array with the selected process time scale
         for every lag time
+        
         """
         if (self._its_samples is None):
             raise RuntimeError('Cannot compute sample mean, because no samples were generated '+
@@ -252,8 +248,7 @@ class ImpliedTimescales:
 
 
     def get_sample_conf(self, alpha = 0.6827, process = None):
-        """
-        Returns the confidence interval that contains alpha % of the sample data
+        r"""Returns the confidence interval that contains alpha % of the sample data
         
         Use:
         alpha = 0.6827 for 1-sigma confidence interval
@@ -267,8 +262,9 @@ class ImpliedTimescales:
             lower and upper timescales bounding the confidence interval
         if process is None, will return two (l x k) arrays, where l is the number of lag times 
         and k is the number of computed timescales.
-        if process is an integer, will return two (l)-arrays with the selected process time scale
-        for every lag time
+        if process is an integer, will return two (l)-arrays with the
+        selected process time scale for every lag time
+        
         """
         if (self._its_samples is None):
             raise RuntimeError('Cannot compute sample mean, because no samples were generated '+

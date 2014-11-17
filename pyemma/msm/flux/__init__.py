@@ -15,7 +15,8 @@ TPT-object
 .. autosummary::
    :toctree: generated/
 
-   tpt - ReactiveFlux object
+   tpt
+   ReactiveFlux
 
 Reactive flux
 =============
@@ -51,3 +52,5 @@ Pathway decomposition
 
 """
 from .api import *
+from .reactive_flux import *
+
