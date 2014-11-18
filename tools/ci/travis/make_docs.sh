@@ -13,9 +13,8 @@ function build_doc {
 	ls -alhR ../build/docs
 }
 
-# TODO: build docs only for python 2.7 and for normal commits (not pull requests) 
-echo $TRAVIS_PYTHON_VERSION
-if [[ $TRAVIS_PYTHON_VERSION = "2.7" ]]; then
+# build docs only for python 2.7 and for normal commits (not pull requests) 
+if [[ $TRAVIS_PYTHON_VERSION = "2.7" ]] && [[ "${TRAVIS_PULL_REQUEST}" = "false" ]]; then
 	install_deps
 	build_doc
 fi
