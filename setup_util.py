@@ -59,3 +59,17 @@ exec urllib2.urlopen(url).read()\""""
     cmd = ((80 * '=') + '\n' + bootstrap_setuptools + '\n' + (80 * '='))
     s = 'You can use the following command to upgrade/install it:\n%s' % cmd
     return s
+
+
+class lazy_cythonize(list):
+    """evaluates extension list lazyly.
+    pattern taken from http://tinyurl.com/qb8478q"""
+    def __init__(self, callback):
+        self._list, self.callback = None, callback
+    def c_list(self):
+        if self._list is None: self._list = self.callback()
+        return self._list
+    def __iter__(self):
+        for e in self.c_list(): yield e
+    def __getitem__(self, ii): return self.c_list()[ii]
+    def __len__(self): return len(self.c_list())
