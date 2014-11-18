@@ -27,7 +27,7 @@ __all__=['its',
 
 def its(dtrajs, lags = None, nits=10, reversible = True, connected = True):
     r"""Calculates the implied timescales for a series of lag times.
-        
+
     Parameters
     ----------
     dtrajs : array-like or list of array-likes
@@ -47,20 +47,20 @@ def its(dtrajs, lags = None, nits=10, reversible = True, connected = True):
 
     Returns
     -------
-    itsobj : pyemma.msm.ui.ImpliedTimescales object
+    itsobj : :class:`pyemma.msm.ui.ImpliedTimescales` object
 
     See also
     --------
     pyemma.msm.ui.ImpliedTimescales
-    
+
     """
-    itsobj=ImpliedTimescales(dtrajs, lags=lags, nits=nits, reversible=reversible, connected=connected)
+    itsobj = ImpliedTimescales(dtrajs, lags=lags, nits=nits, reversible=reversible, connected=connected)
     return itsobj
 
 
 def msm(dtrajs, lag, reversible=True, sliding=True, compute=True):
     r"""Estimate Markov state model (MSM) from discrete trajectories.
-    
+
     Parameters
     ----------
     dtrajs : list
@@ -77,10 +77,10 @@ def msm(dtrajs, lag, reversible=True, sliding=True, compute=True):
 
     Returns
     -------
-    msmobj : pyemma.msm.ui.MSM object
+    msmobj : :class:`pyemma.msm.ui.MSM` object
         A python object containing the MSM and important quantities
         derived from it
-        
+
     Notes
     -----
     You can postpone the estimation of the MSM using compute=False and
@@ -90,10 +90,11 @@ def msm(dtrajs, lag, reversible=True, sliding=True, compute=True):
     See also
     --------
     pyemma.msm.ui.MSM
-    
+
     """
-    msmobj=MSM(dtrajs, lag, reversible=reversible, sliding=sliding, compute=compute)
-    return msmobj   
+    msmobj = MSM(dtrajs, lag, reversible=reversible, sliding=sliding, compute=compute)
+    return msmobj
+
 
 def cktest(dtrajs, lag, K, nsets=2, sets=None):
     r"""Perform Chapman-Kolmogorov tests for given data.
@@ -128,13 +129,13 @@ def cktest(dtrajs, lag, K, nsets=2, sets=None):
         Chodera, C Schuette and F Noe. 2011. Markov models of
         molecular kinetics: Generation and validation. J Chem Phys
         134: 174105
-        
     """
     return chapman_kolmogorov(dtrajs, lag, K, nsets=nsets, sets=sets)
 
+
 def tpt(dtrajs, lag, A, B, reversible=True, sliding=True):
     r""" Computes the A->B reactive flux using transition path theory (TPT)  
-    
+
     Parameters
     ----------
     dtrajs : list
@@ -153,7 +154,7 @@ def tpt(dtrajs, lag, A, B, reversible=True, sliding=True):
 
     Returns
     -------
-    tptobj : pyemma.msm.flux.ReactiveFlux object
+    tptobj : :class:`pyemma.msm.flux.ReactiveFlux` object
         A python object containing the reactive A->B flux network
         and several additional quantities, such as stationary probability,
         committors and set definitions.
@@ -161,9 +162,9 @@ def tpt(dtrajs, lag, A, B, reversible=True, sliding=True):
     Notes
     -----
     The central object used in transition path theory is
-    the forward and backward comittor function. 
+    the forward and backward comittor function.
 
-    TPT (originally introduced in [1]) for continous systems has a
+    TPT (originally introduced in [1]) for continuous systems has a
     discrete version outlined in [2]. Here, we use the transition
     matrix formulation described in [3].
 
@@ -183,24 +184,25 @@ def tpt(dtrajs, lag, A, B, reversible=True, sliding=True):
         T. Weikl: Constructing the Full Ensemble of Folding Pathways
         from Short Off-Equilibrium Simulations.
         Proc. Natl. Acad. Sci. USA, 106, 19011-19016 (2009)
-        
-    """
-    msmobj=MSM(dtrajs, lag, reversible=reversible, sliding=sliding)
-    T=msmobj.transition_matrix
-    mu=msmobj.stationary_distribution
-    tptobj=tpt_factory(T, A, B, mu=mu)
-    return tptobj   
 
-def hmsm(dtrajs, nstate, lag = 1, conv = 0.01, maxiter = None, timeshift = None):
+    """
+    msmobj = MSM(dtrajs, lag, reversible=reversible, sliding=sliding)
+    T = msmobj.transition_matrix
+    mu = msmobj.stationary_distribution
+    tptobj = tpt_factory(T, A, B, mu=mu)
+    return tptobj
+
+
+def hmsm(dtrajs, nstate, lag=1, conv=0.01, maxiter=None, timeshift=None):
     """
     Implements a discrete Hidden Markov state model of conformational
     kinetics.  For details, see [1].
-    
+
     [1]_ Noe, F. and Wu, H. and Prinz, J.-H. and Plattner, N. (2013)
     Projected and Hidden Markov Models for calculating kinetics and
     metastable states of complex molecules.  J. Chem. Phys., 139
     . p. 184114
-    
+
     Parameters
     ----------
     dtrajs : int-array or list of int-arrays
@@ -231,8 +233,13 @@ def hmsm(dtrajs, nstate, lag = 1, conv = 0.01, maxiter = None, timeshift = None)
         > 1 data will be subsampled. Setting timeshift greater than
         tau will have no effect, because at least the first
         subtrajectory will be used.
-        
+
+    Returns
+    -------
+    hmsm obj : :class:`pyemma.msm.estimation.dense.hidden_markov.model.HiddenMSM`
+       instance.
+
     """
     # initialize
-    return hmm.HiddenMSM(dtrajs, nstate, lag = lag, conv = conv, maxiter = maxiter, timeshift = timeshift)
+    return hmm.HiddenMSM(dtrajs, nstate, lag=lag, conv=conv, maxiter=maxiter, timeshift=timeshift)
 
