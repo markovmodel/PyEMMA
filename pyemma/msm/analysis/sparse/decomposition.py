@@ -97,9 +97,9 @@ def stationary_distribution_from_eigenvector(T, ncv=None):
         The number of Lanczos vectors generated, `ncv` must be greater than k;
         it is recommended that ncv > 2*k
 
-    Returns:
-    --------
-    mu : numpy array, shape(d,)      
+    Returns
+    -------
+    mu : numpy array, shape(d,)
         Vector of stationary probabilities.
 
     """

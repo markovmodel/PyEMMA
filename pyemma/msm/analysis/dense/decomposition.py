@@ -79,7 +79,7 @@ def stationary_distribution_from_backward_iteration(P, eps=1e-15):
 
 def stationary_distribution_from_eigenvector(T):
     r"""Compute stationary distribution of stochastic matrix T. 
-      
+
     The stationary distribution is the left eigenvector corresponding to the 
     non-degenerate eigenvalue :math: `\lambda=1`.
 
@@ -88,13 +88,13 @@ def stationary_distribution_from_eigenvector(T):
     T : numpy array, shape(d,d)
         Transition matrix (stochastic matrix).
 
-    Returns:
-    --------
-    mu : numpy array, shape(d,)      
+    Returns
+    -------
+    mu : numpy array, shape(d,)
         Vector of stationary probabilities.
 
     """
-    val, L  = eig(T, left=True, right=False)
+    val, L = eig(T, left=True, right=False)
 
     """ Sorted eigenvalues and left and right eigenvectors. """
     perm=np.argsort(val)[::-1]

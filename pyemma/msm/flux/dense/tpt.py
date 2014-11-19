@@ -300,31 +300,31 @@ def pathways(F, A, B, qplus, fraction = 1.0, totalflux = None):
         useful for large flux networks which often contain a few major and
         a lot of minor paths. In such networks, the algorithm would spend a
         very long time in the last few percent of pathways
-    
-    Returns:
-    --------
-    (paths,pathfluxes) : (list of int-arrays, double-array)
+
+    Returns
+    -------
+    (paths, pathfluxes) : (list of int-arrays, double-array)
         paths in the order of decreasing flux. Each path is given as an 
         int-array of state indexes, ordered by increasing forward committor 
         values. The first index of each path will be a state in A,
-        the last index a state in B. 
+        the last index a state in B.
         The corresponding figure in the pathfluxes-array is the flux carried 
         by that path. The pathfluxes-array sums to the requested fraction of 
         the total A->B flux.
     """
     from decimal import Decimal
-    
+
     # empty lists
     paths = []
     pathfluxes = []
     cumflux = Decimal(0.0) # start with zero accumulated flux
     if (totalflux is None):
         totalflux = total_flux(F, A)
-    stopflux = Decimal(min(1.0,fraction) * totalflux)
-    
+    stopflux = Decimal(min(1.0, fraction) * totalflux)
+
     # decompose
     decomp = pathway_decomposition.PathwayDecomposition(F, qplus, A, B)
-    
+
     # add path by path until we have enough, or until there is no path left
     while(cumflux < stopflux):
         p = decomp.nextPathway()
@@ -338,7 +338,7 @@ def pathways(F, A, B, qplus, fraction = 1.0, totalflux = None):
                 cumflux += f
         else:
             break
-    
+
     # and return
     return (paths, np.array(pathfluxes))
 
