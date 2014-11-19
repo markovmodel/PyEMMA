@@ -10,7 +10,6 @@
 #
 # All configuration values have a default; values that are commented out
 # serve to show the default.
-
 import sys
 import os
 
@@ -20,8 +19,11 @@ needs_sphinx = '1.2'
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-sys.path.append(os.path.abspath('../..'))
-import pyemma # seems to be necessary...
+
+# import pyemma from relative path to ensure, we do not use an installed version.
+import imp
+m = imp.find_module('pyemma', ['../..'])
+pyemma = imp.load_module('pyemma', *m)
 
 # -- General configuration -----------------------------------------------
 # Add any Sphinx extension module names here, as strings. They can be extensions
