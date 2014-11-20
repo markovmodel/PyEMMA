@@ -66,8 +66,12 @@ class HiddenMSM(object):
         TCinit = None
         chiInit = None
         # run estimation
-        self.hmm = stallone.API.hmm.pmm(
-            jlist, nstate, lag, timeshift, maxiter, dectol, TCinit, chiInit)
+        try:
+            self.hmm = stallone.API.hmm.pmm(jlist, nstate, lag, timeshift,
+                                            maxiter, dectol, TCinit, chiInit)
+        except stallone.JavaException as je:
+            raise RuntimeError('An error occurred during HMM estimation.'
+                               ' Stack trace %s:\n' % je.stacktrace())
 
     @property
     def likelihood_history(self):
