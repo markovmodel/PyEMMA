@@ -123,29 +123,6 @@ def extensions():
 
     return exts
 
-def ipython_notebooks_mapping(dest):
-    """
-    returns a mapping for each file in ipython directory:
-    [ (dest/$dir, [$file]) ] for each $dir and $file in this dir.
-    """
-    result = []
-    for root, dirs, files in os.walk('ipython'):
-        ipynb = []
-        for f in files:
-            ipynb.append(os.path.join(root, f))
-        result.append((os.path.join(dest, root), ipynb))
-
-    return result
-
-
-# installation destination of ipython notebooks for users
-# TODO: maybe give user opportunity to specify install location
-data_files = []
-if os.getenv('INSTALL_IPYTHON', False) or 'install' in sys.argv:
-    dest = os.path.join(os.path.expanduser('~'), 'pyemma-ipython')
-    # TODO: check if dest exists and handle this case properly
-    data_files.extend(ipython_notebooks_mapping(dest))
-
 def get_cmdclass():
 
     from setuptools.command.build_ext import build_ext
@@ -210,7 +187,6 @@ metadata = dict(
     packages=find_packages(),
     # install default emma.cfg into package.
     package_data=dict(pyemma=['pyemma.cfg']),
-    data_files=data_files,
     scripts=glob('scripts/mm_*'),
     cmdclass=get_cmdclass(),
     tests_require=['nose'],
@@ -246,6 +222,10 @@ else:
     # add argparse to runtime deps if python version is 2.6
     if sys.version_info[:2] == (2, 6):
         metadata['install_requires'] += ['argparse']
+
+    # include ipython notebooks. Will be installed directly in site-packages
+    metadata['packages'] += ['pyemma-ipython']
+    #metadata['include_package_data'] = True
 
 try:
     setup(**metadata)

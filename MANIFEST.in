@@ -16,8 +16,8 @@ graft doc
 prune doc/build
 prune doc/source/generated
 # ipython notebooks
-graft ipython
-recursive-exclude ipython .ipynb_checkpoints
+graft pyemma-ipython
+recursive-exclude pyemma-ipython .ipynb_checkpoints
 
 # exclude git related files
 recursive-exclude * git .git*
