@@ -77,7 +77,7 @@ _type_not_supported = \
 ################################################################################
 
 # DONE : Martin, Ben
-def is_transition_matrix(T, tol=1e-15):
+def is_transition_matrix(T, tol=1e-12):
     r"""Check if the given matrix is a transition matrix.
     
     Parameters
@@ -120,7 +120,7 @@ def is_transition_matrix(T, tol=1e-15):
     else:
         raise _type_not_supported
 
-def is_tmatrix(T, tol=1e-15):
+def is_tmatrix(T, tol=1e-12):
     r"""Check if the given matrix is a transition matrix.
     
     Parameters
@@ -143,7 +143,7 @@ def is_tmatrix(T, tol=1e-15):
     return is_transition_matrix(T, tol=tol)
 
 # DONE: Martin, Ben
-def is_rate_matrix(K, tol=1e-15):
+def is_rate_matrix(K, tol=1e-12):
     r"""Check if the given matrix is a rate matrix.
     
     Parameters
@@ -252,7 +252,7 @@ def is_connected(T, directed=True):
         raise _type_not_supported
 
 # DONE: Martin
-def is_reversible(T, mu=None, tol=1e-15):
+def is_reversible(T, mu=None, tol=1e-12):
     r"""Check reversibility of the given transition matrix.
     
     Parameters
