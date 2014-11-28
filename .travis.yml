@@ -6,7 +6,7 @@ python:
 env:
   global:
     - PATH=$HOME/miniconda/bin:$HOME/miniconda/envs/ci/bin/:$PATH
-    - common_py_deps="pip nose cython"
+    - common_py_deps="pip nose cython jpype1"
     - doc_deps="ipython sphinx matplotlib numpydoc pyzmq"
   matrix:
     - deps="scipy=0.11 numpy=1.7"
@@ -17,10 +17,13 @@ env:
 # - deps="scipy=0.11 numpy=1.6"
 
 before_install:
+# before we invoke setup.py, install $common_deps with conda and let the rest
+# (currently only pystallone) be resolved by setuptools.
 - deactivate # travis python venv
 - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O mc.sh -o /dev/null
 - bash mc.sh -b
-- conda create -q --yes -n ci python=$TRAVIS_PYTHON_VERSION $deps $common_py_deps
+- conda create -q --yes -n ci -c https://conda.binstar.org/marscher 
+        python=$TRAVIS_PYTHON_VERSION $deps $common_py_deps 
 - source activate ci
 - python -c "import scipy; print scipy.__version__; print scipy.__numpy_version__"
 - conda list
