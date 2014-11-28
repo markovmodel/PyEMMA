@@ -21,9 +21,9 @@ Author: Martin Scherer <m.scherer@fu-berlin.de>
     <message>
       <xsl:value-of select="@message" />
     </message>
-    <stackt-trace>
+    <stack-trace>
       <xsl:value-of select="." />
-    </stackt-trace>
+    </stack-trace>
   </xsl:template>
   
   <!-- use classnames as key -->
