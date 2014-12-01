@@ -325,7 +325,7 @@ def timescales_from_eigenvalues(evals, tau=1):
         warnings.warn('Using eigenvalues with non-zero imaginary part', ImaginaryEigenValueWarning)
 
     """Check for multiple eigenvalues of magnitude one"""
-    ind_abs_one=isclose(np.abs(evals), 1.0)
+    ind_abs_one=isclose(np.abs(evals), 1.0, rtol=1e-15, atol=1e-15)
     if sum(ind_abs_one)>1:
         warnings.warn('Multiple eigenvalues with magnitude one.', SpectralWarning)
 
