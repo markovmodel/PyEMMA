@@ -65,7 +65,7 @@ class TestFingerprintDense(unittest.TestCase):
         """k=None, tau=1"""
         acorr_amp=np.dot(self.mu*self.obs1, self.R)*np.dot(self.L,self.obs1)
         tsn, acorr_ampn=fingerprint_correlation(self.T, self.obs1)
-        self.assertTrue(np.allclose(tsn, self.ts))
+        self.assertTrue(np.allclose(tsn, self.ts), "Actual %s, desired %s" %(tsn, self.ts))
         self.assertTrue(np.allclose(acorr_ampn, acorr_amp))
 
         """k=None, tau=7.5"""
