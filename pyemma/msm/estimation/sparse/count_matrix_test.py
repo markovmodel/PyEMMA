@@ -26,7 +26,7 @@ class TestCountMatrix(unittest.TestCase):
         self.S_short=np.array([0, 0, 1, 0, 1, 1, 0])
         self.B1_lag=np.array([[1, 2], [2, 1]])
         self.B2_lag=np.array([[0, 1], [1, 1]])
-        self.B3_lag=np.array([[2]])
+        self.B3_lag=np.array([[2, 0], [0, 0]])
 
         self.B1_sliding=np.array([[1, 2], [2, 1]])
         self.B2_sliding=np.array([[1, 2], [1, 1]])
@@ -89,6 +89,13 @@ class TestCountMatrix(unittest.TestCase):
         with self.assertRaises(ValueError):
             C=count_matrix(self.S_short, 10)
 
+    def test_nstates_keyword(self):
+        C=count_matrix(self.S_short, 1, nstates=10)
+        self.assertTrue(C.shape==(10, 10))
+
+        with self.assertRaises(ValueError):
+            C=count_matrix(self.S_short, 1, nstates=1)
+
 class TestCountMatrixtMult(unittest.TestCase):
     def setUp(self):
         M=10
@@ -100,7 +107,7 @@ class TestCountMatrixtMult(unittest.TestCase):
         
         self.B1_lag=M*np.array([[1, 2], [2, 1]])
         self.B2_lag=M*np.array([[0, 1], [1, 1]])
-        self.B3_lag=M*np.array([[2]])
+        self.B3_lag=M*np.array([[2, 0], [0, 0]])
 
         self.B1_sliding=M*np.array([[1, 2], [2, 1]])
         self.B2_sliding=M*np.array([[1, 2], [1, 1]])
@@ -121,7 +128,7 @@ class TestCountMatrixtMult(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def test_count_matrix_bincount_mult(self):
+    def test_count_matrix_mult(self):
         """Small test cases"""
         C=count_matrix_mult(self.dtrajs_short, 1, sliding=False).toarray()
         self.assertTrue(np.allclose(C, self.B1_lag))
@@ -164,6 +171,14 @@ class TestCountMatrixtMult(unittest.TestCase):
         with self.assertRaises(ValueError):
             C=count_matrix_mult(self.dtrajs_short , 10)
 
+    def test_nstates_keyword(self):
+        C=count_matrix_mult(self.dtrajs_short, 1, sliding=False, nstates=10)
+        self.assertTrue(C.shape==(10, 10))
+
+        with self.assertRaises(ValueError):
+            C=count_matrix_mult(self.dtrajs_short, 1, sliding=False, nstates=1)
+            
+
 
 ################################################################################
 # coo
@@ -190,6 +205,10 @@ class TestCountMatrixCooMult(unittest.TestCase):
         C=count_matrix_coo_mult([self.S1,self.S2], 2, sliding=True).toarray()
         self.assertTrue(np.allclose(C, self.B2_sliding))
 
+    def test_nstates_keyword(self):
+        C=count_matrix_coo_mult([self.S1,self.S2], 1, sliding=True, nstates=10).toarray()
+        self.assertTrue(C.shape==(10, 10))
+
 
 class TestCountMatrixCoo(unittest.TestCase):
     
@@ -198,7 +217,7 @@ class TestCountMatrixCoo(unittest.TestCase):
         self.S_short=np.array([0, 0, 1, 0, 1, 1, 0])
         self.B1_lag=np.array([[1, 2], [2, 1]])
         self.B2_lag=np.array([[0, 1], [1, 1]])
-        self.B3_lag=np.array([[2]])
+        self.B3_lag=np.array([[2, 0], [0, 0]])
 
         self.B1_sliding=np.array([[1, 2], [2, 1]])
         self.B2_sliding=np.array([[1, 2], [1, 1]])
@@ -260,6 +279,10 @@ class TestCountMatrixCoo(unittest.TestCase):
         """Test raising of value error if lag greater than trajectory length"""
         with self.assertRaises(ValueError):
             C=count_matrix_coo(self.S_short, 10)
+            
+    def test_nstates_keyword(self):
+        C=count_matrix_coo(self.S_short, 1, nstates=10)
+        self.assertTrue(C.shape==(10, 10))
 
 class TestAddCooMatrix(unittest.TestCase):
 
@@ -311,7 +334,7 @@ class TestCountMatrixBincount(unittest.TestCase):
         self.S_short=np.array([0, 0, 1, 0, 1, 1, 0])
         self.B1_lag=np.array([[1, 2], [2, 1]])
         self.B2_lag=np.array([[0, 1], [1, 1]])
-        self.B3_lag=np.array([[2]])
+        self.B3_lag=np.array([[2, 0], [0, 0]])
 
         self.B1_sliding=np.array([[1, 2], [2, 1]])
         self.B2_sliding=np.array([[1, 2], [1, 1]])
@@ -374,6 +397,11 @@ class TestCountMatrixBincount(unittest.TestCase):
         with self.assertRaises(ValueError):
             C=count_matrix_bincount(self.S_short, 10)
 
+    def test_nstates_keyword(self):
+        C=count_matrix_bincount(self.S_short, 1, nstates=10)
+        self.assertTrue(C.shape==(10, 10))
+        
+
 class TestCountMatrixBincountMult(unittest.TestCase):
     def setUp(self):
         M=10
@@ -385,7 +413,7 @@ class TestCountMatrixBincountMult(unittest.TestCase):
         
         self.B1_lag=M*np.array([[1, 2], [2, 1]])
         self.B2_lag=M*np.array([[0, 1], [1, 1]])
-        self.B3_lag=M*np.array([[2]])
+        self.B3_lag=M*np.array([[2, 0], [0, 0]])
 
         self.B1_sliding=M*np.array([[1, 2], [2, 1]])
         self.B2_sliding=M*np.array([[1, 2], [1, 1]])
@@ -447,7 +475,11 @@ class TestCountMatrixBincountMult(unittest.TestCase):
 
         """Test raising of value error if lag greater than trajectory length"""
         with self.assertRaises(ValueError):
-            C=count_matrix_bincount_mult(self.dtrajs_short , 10)        
+            C=count_matrix_bincount_mult(self.dtrajs_short , 10)
+
+    def test_nstates_keyword(self):
+        C=count_matrix_bincount_mult(self.dtrajs_short, 1, sliding=False, nstates=10).toarray()
+        self.assertTrue(C.shape==(10, 10))        
     
 if __name__=="__main__":
     unittest.main()
