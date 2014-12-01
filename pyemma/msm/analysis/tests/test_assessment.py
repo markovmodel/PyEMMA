@@ -60,6 +60,11 @@ class TestAssessmentDense(unittest.TestCase):
     def test_is_transition_matrix(self):
         self.assertTrue(is_transition_matrix(self.T))
 
+        """Larger test-case to prevent too restrictive tolerance settings"""
+        X=np.random.random((2000, 2000))
+        Tlarge=X/X.sum(axis=1)[:,np.newaxis]
+        self.assertTrue(is_transition_matrix(Tlarge))
+
     def test_is_connected(self):
         self.assertTrue(is_connected(self.T))
         self.assertTrue(is_connected(self.T, directed=False))

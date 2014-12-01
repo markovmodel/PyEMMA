@@ -8,7 +8,7 @@ import scipy.sparse
 from os.path import abspath, join
 from os import pardir
 
-from pyemma.msm.estimation import count_matrix
+from pyemma.msm.estimation import count_matrix, cmatrix
 
 testpath = abspath(join(abspath(__file__), pardir)) + '/testfiles/'
 
@@ -33,6 +33,13 @@ class TestCountMatrixMult(unittest.TestCase):
         C=count_matrix([self.S1,self.S2], 2, sliding=True).toarray()
         self.assertTrue(np.allclose(C, self.B2_sliding))
 
+    def test_nstates_keyword(self):
+        C=count_matrix([self.S1,self.S2], 1, sliding=True, nstates=10)
+        self.assertTrue(C.shape==(10, 10))
+
+        with self.assertRaises(ValueError):
+            C=count_matrix([self.S1,self.S2], 1, sliding=True, nstates=1) 
+
 
 class TestCountMatrix(unittest.TestCase):
     
@@ -41,7 +48,7 @@ class TestCountMatrix(unittest.TestCase):
         self.S_short=np.array([0, 0, 1, 0, 1, 1, 0])
         self.B1_lag=np.array([[1, 2], [2, 1]])
         self.B2_lag=np.array([[0, 1], [1, 1]])
-        self.B3_lag=np.array([[2]])
+        self.B3_lag=np.array([[2, 0], [0, 0]])
 
         self.B1_sliding=np.array([[1, 2], [2, 1]])
         self.B2_sliding=np.array([[1, 2], [1, 1]])
@@ -103,6 +110,13 @@ class TestCountMatrix(unittest.TestCase):
         """Test raising of value error if lag greater than trajectory length"""
         with self.assertRaises(ValueError):
             C=count_matrix(self.S_short, 10)
+
+    def test_nstates_keyword(self):
+        C=count_matrix(self.S_short, 1, nstates=10)
+        self.assertTrue(C.shape==(10, 10))
+
+        with self.assertRaises(ValueError):
+            C=count_matrix(self.S_short, 1, nstates=1)
 
     
 if __name__=="__main__":
