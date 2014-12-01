@@ -346,7 +346,7 @@ class TestFingerprintSparse(unittest.TestCase):
         """k=4, tau=7.5"""
         tau=self.tau
         tsn, corr_ampn=fingerprint_correlation(self.T, self.obs1, obs2=self.obs2, k=k, tau=tau)
-        self.assertTrue(np.allclose(tsn, tau*self.ts))
+        self.assertTrue(np.allclose(tsn, tau*self.ts), "Actual %s, desired %s" %(tsn, self.ts))
         self.assertTrue(np.allclose(corr_ampn, corr_amp))
 
     def test_fingerprint_relaxation(self):
