@@ -69,7 +69,7 @@ __all__=['bootstrap_trajectories',
 
 
 # DONE: Benjamin 
-def count_matrix(dtraj, lag, sliding=True, sparse_return=True):
+def count_matrix(dtraj, lag, sliding=True, sparse_return=True, nstates=None):
     r"""Generate a count matrix from given microstate trajectory.
     
     Parameters
@@ -83,6 +83,8 @@ def count_matrix(dtraj, lag, sliding=True, sparse_return=True):
         is used for transition counting.
     sparse_return : bool (optional)
         Whether to return a dense or a sparse matrix.
+    nstates : int, optional
+        Enforce a count-matrix with shape=(nstates, nstates)
     
     Returns
     -------
@@ -153,12 +155,12 @@ def count_matrix(dtraj, lag, sliding=True, sparse_return=True):
     
     """
     if type(dtraj) is list:
-        return sparse.count_matrix.count_matrix_mult(dtraj, lag, sliding=sliding, sparse=sparse_return)
+        return sparse.count_matrix.count_matrix_mult(dtraj, lag, sliding=sliding, sparse=sparse_return, nstates=nstates)
     else:
-        return sparse.count_matrix.count_matrix(dtraj, lag, sliding=sliding, sparse=sparse_return)
+        return sparse.count_matrix.count_matrix(dtraj, lag, sliding=sliding, sparse=sparse_return, nstates=nstates)
 
 # DONE: Benjamin 
-def cmatrix(dtraj, lag, sliding=True, sparse_return=True):
+def cmatrix(dtraj, lag, sliding=True, sparse_return=True, nstates=None):
     r"""Generate a count matrix in from given microstate trajectory.
     
     Parameters
@@ -171,7 +173,9 @@ def cmatrix(dtraj, lag, sliding=True, sparse_return=True):
         If true the sliding window approach 
         is used for transition counting.
     sparse_return : bool (optional)
-        Whether to return a dense or a sparse matrix.
+        Whether to return a dense or a sparse matrix
+    nstates : int, optional
+        Enforce a count-matrix with shape=(nstates, nstates)
     
     Returns
     -------
@@ -187,7 +191,7 @@ def cmatrix(dtraj, lag, sliding=True, sparse_return=True):
     This is a shortcut for a call to count_matrix.
         
     """
-    return count_matrix(dtraj, lag, sliding=sliding, sparse_return=True)
+    return count_matrix(dtraj, lag, sliding=sliding, sparse_return=True, nstates=nstates)
 
 # # TODO: Implement in Python directly
 # def count_matrix_cores(dtraj, cores, lag, sliding=True):
