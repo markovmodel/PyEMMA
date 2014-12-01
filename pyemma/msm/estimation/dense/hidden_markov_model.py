@@ -46,6 +46,7 @@ class HiddenMSM(object):
             timeshift greater than tau will have no effect, because at least the first subtrajectory will be 
             used.
         """
+        lag = int(lag)
         # format input data
         if (type(dtrajs) is np.ndarray):
             dtrajs = [dtrajs]
@@ -76,7 +77,7 @@ class HiddenMSM(object):
     @property
     def likelihood_history(self):
         """
-        Returns the list of likelihood values encountered during the optimization
+        Returns the list of log likelihood values encountered during the optimization
         """
         return np.array(self.hmm.getLogLikelihoodHistory())
 
@@ -97,7 +98,7 @@ class HiddenMSM(object):
     @property
     def output_matrix(self):
         """
-        Returns the output probability matrix B, with b_ij 
+        Returns the output probability matrix B, with b_ij
         containing the probability that hidden state i will output to observable state j
         """
         return stallone.stallone_array_to_ndarray(self.hmm.getOutputParameters())
