@@ -1,5 +1,18 @@
 .. _ref_api:
 
+Coordinates
+===========
+The *coordinates* package implements common transformations used in
+Markov state modeling, like RMSD, TICA etc.
+
+.. toctree::
+   :maxdepth: 1
+   
+   coordinates.io
+   coordinates.transform
+   coordinates.clustering
+   coordinates.tica
+
 Markov State Models
 ===================
 The *msm* package provides functions to estimate, analyze and generate
