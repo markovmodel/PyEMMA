@@ -7,6 +7,7 @@ Created on Jan 5, 2014
 import numpy as np
 import pyemma.util.pystallone as stallone
 
+
 class Clustering(object):
     """
     Wrapper to stallone clustering

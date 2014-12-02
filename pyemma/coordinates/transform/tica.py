@@ -166,7 +166,7 @@ class Amuse(object):
             amuse.var = amuse.var[1:]
             amuse.mean = amuse.mean[1:]
             amuse.n = amuse.n - 1
-    
+
         amuse.pca_values, amuse.pca_weights = numpy.linalg.eigh(corr)
         # normalize weights by dividing by the standard deviation of the pcs
         for i,l in enumerate(amuse.pca_values):
