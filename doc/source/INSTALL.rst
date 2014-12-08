@@ -173,7 +173,7 @@ Recommended method for developers using GIT:
 
 ::
 
-   git clone https://github.com/cmb-fu/emma.git
+   git clone https://github.com/markovmodel/PyEMMA.git
 
 2. install pyemma via
 
