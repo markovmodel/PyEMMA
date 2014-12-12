@@ -32,13 +32,12 @@ pyemma = imp.load_module('pyemma', *m)
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
-    'sphinx.ext.todo',
+    #'sphinx.ext.todo',
     'numpydoc',
     'sphinx.ext.pngmath',
-    'sphinx.ext.intersphinx',
-    'sphinx.ext.coverage',
-    'sphinx.ext.viewcode'
-    #'sphinxcontrib.spelling',
+    #'sphinx.ext.intersphinx',
+    #'sphinx.ext.coverage',
+    #'sphinx.ext.viewcode'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
