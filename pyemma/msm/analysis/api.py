@@ -617,55 +617,75 @@ def rdl_decomposition(T, k=None, norm='standard', ncv=None):
     else: 
         raise _type_not_supported
 
-# DONE: Ben
-def mfpt(T, target):
-    r"""Mean first passage time to target state.
+# DONE: Ben, Chris
+def mfpt(T, target, origin=None, mu=None):
+    r"""Mean first passage times (from a set of starting states - optional)
+    to a set of target states.
     
     Parameters
     ----------
-    T : ndarray, shape=(n,n) 
+    T : ndarray or scipy.sparse matrix, shape=(n,n)
         Transition matrix.
-    target : int
-        Target state for mfpt calculation.
-
+    target : int or list of int
+        Target states for mfpt calculation.
+    origin : int or list of int (optional)
+        Set of starting states.
+    mu : (n,) ndarray (optional)
+        The stationary distribution of the transition matrix T.
+    
     Returns
     -------
-    m_t : ndarray, shape=(n,)
-         Vector of mean first passage times to target state t.
-
+    m_t : ndarray, shape=(n,) or shape(1,)
+        Mean first passage time or vector of mean first passage times.
+    
     Notes
     -----
-    The mean first passage time :math:`\mathbf{E}_x[T_y]` is the expected
-    htting time of state :math:`y` starting in state :math:`x`.
-
-
+    The mean first passage time :math:`\mathbf{E}_x[T_Y]` is the expected
+    hitting time of one state :math:`y` in :math:`Y` when starting in state :math:`x`.
+    
     For a fixed target state :math:`y` it is given by
-
+    
     .. math :: \mathbb{E}_x[T_y] = \left \{  \begin{array}{cc}
                                              0 & x=y \\
                                              1+\sum_{z} T_{x,z} \mathbb{E}_z[T_y] & x \neq y
                                              \end{array}  \right.
-                                             
+    
+    For a set of target states :math:`Y` it is given by
+    
+    .. math :: \mathbb{E}_x[T_Y] = \left \{  \begin{array}{cc}
+                                             0 & x \in Y \\
+                                             1+\sum_{z} T_{x,z} \mathbb{E}_z[T_Y] & x \notin Y
+                                             \end{array}  \right.
+    
+    The mean first passage time between sets, :math:`\mathbf{E}_X[T_Y]`, is given by
+    
+    .. math :: \mathbb{E}_X[T_Y] = \sum_{x \in X}
+                \frac{\mu_x \mathbb{E}_x[T_Y]}{\sum_{z \in X} \mu_z}
+    
     References
     ----------
     .. [1] Hoel, P G and S C Port and C J Stone. 1972. Introduction to
         Stochastic Processes.
-
+    
     Examples
     --------
-
+    
     >>> from pyemma.msm.analysis import mfpt
-
+    
     >>> T=np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
-    >>> m_t=mfpt(T)
+    >>> m_t=mfpt(T,0)
     >>> m_t
     array([  0.,  12.,  22.])
-
+    
     """
     if issparse(T):
-        return sparse.mean_first_passage_time.mfpt(T, target)
+        if origin is None:
+            return sparse.mean_first_passage_time.mfpt(T, target)
+        return sparse.mean_first_passage_time.mfpt_between_sets(T,target,origin,mu=mu)
     elif isdense(T):
-        return dense.mean_first_passage_time.mfpt(T, target)
+        if origin is None:
+            return dense.mean_first_passage_time.mfpt(T, target)
+        return dense.mean_first_passage_time.mfpt_between_sets(T,target,origin,mu=mu)
     else:
         raise _type_not_supported
 
