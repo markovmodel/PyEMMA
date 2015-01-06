@@ -6,6 +6,7 @@ r"""Unit tests for the committor module
 
 import unittest
 import numpy as np
+from pyemma.util.numeric import assert_allclose
 
 import committor
 
@@ -172,13 +173,13 @@ class TestCommittor(unittest.TestCase):
         P=self.bdc.transition_matrix()
         un=committor.forward_committor(P, [0, 1], [8, 9])
         u=self.bdc.committor_forward(1, 8)              
-        self.assertTrue(np.allclose(un, u))
+        assert_allclose(un, u)
 
     def test_backward_comittor(self):
         P=self.bdc.transition_matrix()
         un=committor.backward_committor(P, [0, 1], [8, 9])
         u=self.bdc.committor_backward(1, 8)        
-        self.assertTrue(np.allclose(un, u))
+        assert_allclose(un, u)
 
         
 

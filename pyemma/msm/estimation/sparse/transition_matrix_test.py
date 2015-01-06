@@ -1,6 +1,7 @@
 import unittest
 
 import numpy as np
+from pyemma.util.numeric import assert_allclose
 import scipy.sparse
 
 import transition_matrix
@@ -26,10 +27,10 @@ class TestTransitionMatrixNonReversible(unittest.TestCase):
     def test_count_matrix(self):
         """Small test cases"""
         T=transition_matrix.transition_matrix_non_reversible(self.C1).toarray()
-        self.assertTrue(np.allclose(T, self.T1.toarray()))
+        assert_allclose(T, self.T1.toarray())
         
         T=transition_matrix.transition_matrix_non_reversible(self.C1).toarray()
-        self.assertTrue(np.allclose(T, self.T1.toarray()))      
+        assert_allclose(T, self.T1.toarray())      
 
         
 if __name__=="__main__":

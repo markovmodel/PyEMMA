@@ -6,6 +6,7 @@ r"""Unit tests for the committor API-function
 
 import unittest
 import numpy as np
+from pyemma.util.numeric import assert_allclose
 
 from pyemma.msm.analysis import committor
 
@@ -29,13 +30,13 @@ class TestCommittorDense(unittest.TestCase):
         P=self.bdc.transition_matrix()
         un=committor(P, [0, 1], [8, 9], forward=True)
         u=self.bdc.committor_forward(1, 8)              
-        self.assertTrue(np.allclose(un, u))
+        assert_allclose(un, u)
 
     def test_backward_comittor(self):
         P=self.bdc.transition_matrix()
         un=committor(P, [0, 1], [8, 9], forward=False)
         u=self.bdc.committor_backward(1, 8)        
-        self.assertTrue(np.allclose(un, u))
+        assert_allclose(un, u)
         
 class TestCommittorSparse(unittest.TestCase):
     def setUp(self):
@@ -55,13 +56,13 @@ class TestCommittorSparse(unittest.TestCase):
         P=self.bdc.transition_matrix_sparse()
         un=committor(P, range(10), range(90,100), forward=True)
         u=self.bdc.committor_forward(9, 90)               
-        self.assertTrue(np.allclose(un, u))
+        assert_allclose(un, u)
 
     def test_backward_comittor(self):
         P=self.bdc.transition_matrix_sparse()
         un=committor(P, range(10), range(90,100), forward=False)
         u=self.bdc.committor_backward(9, 90)               
-        self.assertTrue(np.allclose(un, u))
+        assert_allclose(un, u)
 
 if __name__ == "__main__":
     unittest.main()

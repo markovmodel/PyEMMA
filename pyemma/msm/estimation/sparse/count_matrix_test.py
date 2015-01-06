@@ -6,6 +6,7 @@ from os.path import abspath, join
 from os import pardir
 
 import numpy as np
+from pyemma.util.numeric import assert_allclose
 import scipy.sparse
 
 from count_matrix import count_matrix, count_matrix_mult
@@ -49,41 +50,41 @@ class TestCountMatrix(unittest.TestCase):
     def test_count_matrix(self):
         """Small test cases"""
         C=count_matrix(self.S_short, 1, sliding=False).toarray()
-        self.assertTrue(np.allclose(C, self.B1_lag))
+        assert_allclose(C, self.B1_lag)
 
         C=count_matrix(self.S_short, 2, sliding=False).toarray()
-        self.assertTrue(np.allclose(C, self.B2_lag))
+        assert_allclose(C, self.B2_lag)
 
         C=count_matrix(self.S_short, 3, sliding=False).toarray()
-        self.assertTrue(np.allclose(C, self.B3_lag))
+        assert_allclose(C, self.B3_lag)
 
         C=count_matrix(self.S_short, 1).toarray()
-        self.assertTrue(np.allclose(C, self.B1_sliding))
+        assert_allclose(C, self.B1_sliding)
 
         C=count_matrix(self.S_short, 2).toarray()
-        self.assertTrue(np.allclose(C, self.B2_sliding))
+        assert_allclose(C, self.B2_sliding)
 
         C=count_matrix(self.S_short, 3).toarray()
-        self.assertTrue(np.allclose(C, self.B3_sliding))
+        assert_allclose(C, self.B3_sliding)
 
         """Larger test cases"""
         C=count_matrix(self.S_long, 1, sliding=False).toarray()
-        self.assertTrue(np.allclose(C, self.C1_lag))
+        assert_allclose(C, self.C1_lag)
 
         C=count_matrix(self.S_long, 7, sliding=False).toarray()
-        self.assertTrue(np.allclose(C, self.C7_lag))
+        assert_allclose(C, self.C7_lag)
 
         C=count_matrix(self.S_long, 13, sliding=False).toarray()
-        self.assertTrue(np.allclose(C, self.C13_lag))
+        assert_allclose(C, self.C13_lag)
 
         C=count_matrix(self.S_long, 1).toarray()
-        self.assertTrue(np.allclose(C, self.C1_sliding))
+        assert_allclose(C, self.C1_sliding)
 
         C=count_matrix(self.S_long, 7).toarray()
-        self.assertTrue(np.allclose(C, self.C7_sliding))
+        assert_allclose(C, self.C7_sliding)
 
         C=count_matrix(self.S_long, 13).toarray()
-        self.assertTrue(np.allclose(C, self.C13_sliding))
+        assert_allclose(C, self.C13_sliding)
 
         """Test raising of value error if lag greater than trajectory length"""
         with self.assertRaises(ValueError):
@@ -131,41 +132,41 @@ class TestCountMatrixtMult(unittest.TestCase):
     def test_count_matrix_mult(self):
         """Small test cases"""
         C=count_matrix_mult(self.dtrajs_short, 1, sliding=False).toarray()
-        self.assertTrue(np.allclose(C, self.B1_lag))
+        assert_allclose(C, self.B1_lag)
 
         C=count_matrix_mult(self.dtrajs_short, 2, sliding=False).toarray()
-        self.assertTrue(np.allclose(C, self.B2_lag))
+        assert_allclose(C, self.B2_lag)
 
         C=count_matrix_mult(self.dtrajs_short, 3, sliding=False).toarray()
-        self.assertTrue(np.allclose(C, self.B3_lag))
+        assert_allclose(C, self.B3_lag)
 
         C=count_matrix_mult(self.dtrajs_short , 1).toarray()
-        self.assertTrue(np.allclose(C, self.B1_sliding))
+        assert_allclose(C, self.B1_sliding)
 
         C=count_matrix_mult(self.dtrajs_short , 2).toarray()
-        self.assertTrue(np.allclose(C, self.B2_sliding))
+        assert_allclose(C, self.B2_sliding)
 
         C=count_matrix_mult(self.dtrajs_short , 3).toarray()
-        self.assertTrue(np.allclose(C, self.B3_sliding))
+        assert_allclose(C, self.B3_sliding)
 
         """Larger test cases"""
         C=count_matrix_mult(self.dtrajs_long, 1, sliding=False).toarray()
-        self.assertTrue(np.allclose(C, self.C1_lag))
+        assert_allclose(C, self.C1_lag)
 
         C=count_matrix_mult(self.dtrajs_long, 7, sliding=False).toarray()
-        self.assertTrue(np.allclose(C, self.C7_lag))
+        assert_allclose(C, self.C7_lag)
 
         C=count_matrix_mult(self.dtrajs_long, 13, sliding=False).toarray()
-        self.assertTrue(np.allclose(C, self.C13_lag))
+        assert_allclose(C, self.C13_lag)
 
         C=count_matrix_mult(self.dtrajs_long, 1).toarray()
-        self.assertTrue(np.allclose(C, self.C1_sliding))
+        assert_allclose(C, self.C1_sliding)
 
         C=count_matrix_mult(self.dtrajs_long, 7).toarray()
-        self.assertTrue(np.allclose(C, self.C7_sliding))
+        assert_allclose(C, self.C7_sliding)
 
         C=count_matrix_mult(self.dtrajs_long, 13).toarray()
-        self.assertTrue(np.allclose(C, self.C13_sliding))
+        assert_allclose(C, self.C13_sliding)
 
         """Test raising of value error if lag greater than trajectory length"""
         with self.assertRaises(ValueError):
@@ -200,10 +201,10 @@ class TestCountMatrixCooMult(unittest.TestCase):
     def test_count_matrix(self):
         """Small test cases"""
         C=count_matrix_coo_mult([self.S1,self.S2], 1, sliding=True).toarray()
-        self.assertTrue(np.allclose(C, self.B1_sliding))
+        assert_allclose(C, self.B1_sliding)
 
         C=count_matrix_coo_mult([self.S1,self.S2], 2, sliding=True).toarray()
-        self.assertTrue(np.allclose(C, self.B2_sliding))
+        assert_allclose(C, self.B2_sliding)
 
     def test_nstates_keyword(self):
         C=count_matrix_coo_mult([self.S1,self.S2], 1, sliding=True, nstates=10).toarray()
@@ -240,41 +241,41 @@ class TestCountMatrixCoo(unittest.TestCase):
     def test_count_matrix(self):
         """Small test cases"""
         C=count_matrix_coo(self.S_short, 1, sliding=False).toarray()
-        self.assertTrue(np.allclose(C, self.B1_lag))
+        assert_allclose(C, self.B1_lag)
 
         C=count_matrix_coo(self.S_short, 2, sliding=False).toarray()
-        self.assertTrue(np.allclose(C, self.B2_lag))
+        assert_allclose(C, self.B2_lag)
 
         C=count_matrix_coo(self.S_short, 3, sliding=False).toarray()
-        self.assertTrue(np.allclose(C, self.B3_lag))
+        assert_allclose(C, self.B3_lag)
 
         C=count_matrix_coo(self.S_short, 1).toarray()
-        self.assertTrue(np.allclose(C, self.B1_sliding))
+        assert_allclose(C, self.B1_sliding)
 
         C=count_matrix_coo(self.S_short, 2).toarray()
-        self.assertTrue(np.allclose(C, self.B2_sliding))
+        assert_allclose(C, self.B2_sliding)
 
         C=count_matrix_coo(self.S_short, 3).toarray()
-        self.assertTrue(np.allclose(C, self.B3_sliding))
+        assert_allclose(C, self.B3_sliding)
 
         """Larger test cases"""
         C=count_matrix_coo(self.S_long, 1, sliding=False).toarray()
-        self.assertTrue(np.allclose(C, self.C1_lag))
+        assert_allclose(C, self.C1_lag)
 
         C=count_matrix_coo(self.S_long, 7, sliding=False).toarray()
-        self.assertTrue(np.allclose(C, self.C7_lag))
+        assert_allclose(C, self.C7_lag)
 
         C=count_matrix_coo(self.S_long, 13, sliding=False).toarray()
-        self.assertTrue(np.allclose(C, self.C13_lag))
+        assert_allclose(C, self.C13_lag)
 
         C=count_matrix_coo(self.S_long, 1).toarray()
-        self.assertTrue(np.allclose(C, self.C1_sliding))
+        assert_allclose(C, self.C1_sliding)
 
         C=count_matrix_coo(self.S_long, 7).toarray()
-        self.assertTrue(np.allclose(C, self.C7_sliding))
+        assert_allclose(C, self.C7_sliding)
 
         C=count_matrix_coo(self.S_long, 13).toarray()
-        self.assertTrue(np.allclose(C, self.C13_sliding))
+        assert_allclose(C, self.C13_sliding)
 
         """Test raising of value error if lag greater than trajectory length"""
         with self.assertRaises(ValueError):
@@ -300,7 +301,7 @@ class TestAddCooMatrix(unittest.TestCase):
 
     def test_add_coo_matrix(self):
         C_test=add_coo_matrix(self.A, self.B)
-        self.assertTrue(np.allclose(C_test.toarray(), self.C.toarray()))
+        assert_allclose(C_test.toarray(), self.C.toarray())
 
 
 class TestMakeSquareCooMatrix(unittest.TestCase):
@@ -319,10 +320,10 @@ class TestMakeSquareCooMatrix(unittest.TestCase):
 
     def test_make_square_coo_matrix(self):
         A_test=make_square_coo_matrix(self.A)
-        self.assertTrue(np.allclose(A_test.toarray(), self.An_square))
+        assert_allclose(A_test.toarray(), self.An_square)
         
         B_test=make_square_coo_matrix(self.B)
-        self.assertTrue(np.allclose(B_test.toarray(), self.Bn_square))      
+        assert_allclose(B_test.toarray(), self.Bn_square)      
 
 ################################################################################
 # bincount
@@ -357,41 +358,41 @@ class TestCountMatrixBincount(unittest.TestCase):
     def test_count_matrix_bincount(self):
         """Small test cases"""
         C=count_matrix_bincount(self.S_short, 1, sliding=False).toarray()
-        self.assertTrue(np.allclose(C, self.B1_lag))
+        assert_allclose(C, self.B1_lag)
 
         C=count_matrix_bincount(self.S_short, 2, sliding=False).toarray()
-        self.assertTrue(np.allclose(C, self.B2_lag))
+        assert_allclose(C, self.B2_lag)
 
         C=count_matrix_bincount(self.S_short, 3, sliding=False).toarray()
-        self.assertTrue(np.allclose(C, self.B3_lag))
+        assert_allclose(C, self.B3_lag)
 
         C=count_matrix_bincount(self.S_short, 1).toarray()
-        self.assertTrue(np.allclose(C, self.B1_sliding))
+        assert_allclose(C, self.B1_sliding)
 
         C=count_matrix_bincount(self.S_short, 2).toarray()
-        self.assertTrue(np.allclose(C, self.B2_sliding))
+        assert_allclose(C, self.B2_sliding)
 
         C=count_matrix_bincount(self.S_short, 3).toarray()
-        self.assertTrue(np.allclose(C, self.B3_sliding))
+        assert_allclose(C, self.B3_sliding)
 
         """Larger test cases"""
         C=count_matrix_bincount(self.S_long, 1, sliding=False).toarray()
-        self.assertTrue(np.allclose(C, self.C1_lag))
+        assert_allclose(C, self.C1_lag)
 
         C=count_matrix_bincount(self.S_long, 7, sliding=False).toarray()
-        self.assertTrue(np.allclose(C, self.C7_lag))
+        assert_allclose(C, self.C7_lag)
 
         C=count_matrix_bincount(self.S_long, 13, sliding=False).toarray()
-        self.assertTrue(np.allclose(C, self.C13_lag))
+        assert_allclose(C, self.C13_lag)
 
         C=count_matrix_bincount(self.S_long, 1).toarray()
-        self.assertTrue(np.allclose(C, self.C1_sliding))
+        assert_allclose(C, self.C1_sliding)
 
         C=count_matrix_bincount(self.S_long, 7).toarray()
-        self.assertTrue(np.allclose(C, self.C7_sliding))
+        assert_allclose(C, self.C7_sliding)
 
         C=count_matrix_bincount(self.S_long, 13).toarray()
-        self.assertTrue(np.allclose(C, self.C13_sliding))
+        assert_allclose(C, self.C13_sliding)
 
         """Test raising of value error if lag greater than trajectory length"""
         with self.assertRaises(ValueError):
@@ -437,41 +438,41 @@ class TestCountMatrixBincountMult(unittest.TestCase):
     def test_count_matrix_bincount_mult(self):
         """Small test cases"""
         C=count_matrix_bincount_mult(self.dtrajs_short, 1, sliding=False).toarray()
-        self.assertTrue(np.allclose(C, self.B1_lag))
+        assert_allclose(C, self.B1_lag)
 
         C=count_matrix_bincount_mult(self.dtrajs_short, 2, sliding=False).toarray()
-        self.assertTrue(np.allclose(C, self.B2_lag))
+        assert_allclose(C, self.B2_lag)
 
         C=count_matrix_bincount_mult(self.dtrajs_short, 3, sliding=False).toarray()
-        self.assertTrue(np.allclose(C, self.B3_lag))
+        assert_allclose(C, self.B3_lag)
 
         C=count_matrix_bincount_mult(self.dtrajs_short , 1).toarray()
-        self.assertTrue(np.allclose(C, self.B1_sliding))
+        assert_allclose(C, self.B1_sliding)
 
         C=count_matrix_bincount_mult(self.dtrajs_short , 2).toarray()
-        self.assertTrue(np.allclose(C, self.B2_sliding))
+        assert_allclose(C, self.B2_sliding)
 
         C=count_matrix_bincount_mult(self.dtrajs_short , 3).toarray()
-        self.assertTrue(np.allclose(C, self.B3_sliding))
+        assert_allclose(C, self.B3_sliding)
 
         """Larger test cases"""
         C=count_matrix_bincount_mult(self.dtrajs_long, 1, sliding=False).toarray()
-        self.assertTrue(np.allclose(C, self.C1_lag))
+        assert_allclose(C, self.C1_lag)
 
         C=count_matrix_bincount_mult(self.dtrajs_long, 7, sliding=False).toarray()
-        self.assertTrue(np.allclose(C, self.C7_lag))
+        assert_allclose(C, self.C7_lag)
 
         C=count_matrix_bincount_mult(self.dtrajs_long, 13, sliding=False).toarray()
-        self.assertTrue(np.allclose(C, self.C13_lag))
+        assert_allclose(C, self.C13_lag)
 
         C=count_matrix_bincount_mult(self.dtrajs_long, 1).toarray()
-        self.assertTrue(np.allclose(C, self.C1_sliding))
+        assert_allclose(C, self.C1_sliding)
 
         C=count_matrix_bincount_mult(self.dtrajs_long, 7).toarray()
-        self.assertTrue(np.allclose(C, self.C7_sliding))
+        assert_allclose(C, self.C7_sliding)
 
         C=count_matrix_bincount_mult(self.dtrajs_long, 13).toarray()
-        self.assertTrue(np.allclose(C, self.C13_sliding))
+        assert_allclose(C, self.C13_sliding)
 
         """Test raising of value error if lag greater than trajectory length"""
         with self.assertRaises(ValueError):

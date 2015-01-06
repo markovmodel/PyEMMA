@@ -7,6 +7,7 @@ import unittest
 import warnings
 
 import numpy as np
+from pyemma.util.numeric import assert_allclose
 
 from scipy.linalg import eig, eigvals
 from scipy.sparse import csr_matrix
@@ -42,7 +43,7 @@ class TestDecompositionDense(unittest.TestCase):
         P=self.bdc.transition_matrix()
         mu=self.bdc.stationary_distribution()
         mun=stationary_distribution(P)
-        self.assertTrue(np.allclose(mu, mun))
+        assert_allclose(mu, mun)
 
     def test_eigenvalues(self):
         P=self.bdc.transition_matrix()
@@ -52,11 +53,11 @@ class TestDecompositionDense(unittest.TestCase):
         
         """k=None"""
         evn=eigenvalues(P)
-        self.assertTrue(np.allclose(ev, evn))
+        assert_allclose(ev, evn)
         
         """k is not None"""
         evn=eigenvalues(P, k=self.k)
-        self.assertTrue(np.allclose(ev[0:self.k], evn))
+        assert_allclose(ev[0:self.k], evn)
 
     def test_eigenvectors(self):
         P=self.bdc.transition_matrix()
@@ -67,17 +68,17 @@ class TestDecompositionDense(unittest.TestCase):
 
         """k=None"""
         Rn=eigenvectors(P)
-        self.assertTrue(np.allclose(R, Rn))
+        assert_allclose(R, Rn)
 
         Ln=eigenvectors(P, right=False)
-        self.assertTrue(np.allclose(L, Ln))
+        assert_allclose(L, Ln)
 
         """k is not None"""
         Rn=eigenvectors(P, k=self.k)
-        self.assertTrue(np.allclose(R[:,0:self.k], Rn))
+        assert_allclose(R[:,0:self.k], Rn)
 
         Ln=eigenvectors(P, right=False, k=self.k)
-        self.assertTrue(np.allclose(L[:,0:self.k], Ln))
+        assert_allclose(L[:,0:self.k], Ln)
 
     def test_rdl_decomposition(self):
         P=self.bdc.transition_matrix()
@@ -89,25 +90,25 @@ class TestDecompositionDense(unittest.TestCase):
         Rn, Dn, Ln=rdl_decomposition(P)        
         Xn=np.dot(Ln, Rn)
         """Right-eigenvectors"""
-        self.assertTrue(np.allclose(np.dot(P, Rn), np.dot(Rn, Dn)))
+        assert_allclose(np.dot(P, Rn), np.dot(Rn, Dn))
         """Left-eigenvectors"""
-        self.assertTrue(np.allclose(np.dot(Ln, P), np.dot(Dn, Ln)))
+        assert_allclose(np.dot(Ln, P), np.dot(Dn, Ln))
         """Orthonormality"""
-        self.assertTrue(np.allclose(Xn, np.eye(self.dim)))
+        assert_allclose(Xn, np.eye(self.dim))
         """Probability vector"""
-        self.assertTrue(np.allclose(np.sum(Ln[0,:]), 1.0))
+        assert_allclose(np.sum(Ln[0,:]), 1.0)
 
         """k is not None"""
         Rn, Dn, Ln=rdl_decomposition(P, k=self.k)        
         Xn=np.dot(Ln, Rn)               
         """Right-eigenvectors"""
-        self.assertTrue(np.allclose(np.dot(P, Rn), np.dot(Rn, Dn)))
+        assert_allclose(np.dot(P, Rn), np.dot(Rn, Dn))
         """Left-eigenvectors"""
-        self.assertTrue(np.allclose(np.dot(Ln, P), np.dot(Dn, Ln)))
+        assert_allclose(np.dot(Ln, P), np.dot(Dn, Ln))
         """Orthonormality"""
-        self.assertTrue(np.allclose(Xn, np.eye(self.k)))
+        assert_allclose(Xn, np.eye(self.k))
         """Probability vector"""
-        self.assertTrue(np.allclose(np.sum(Ln[0,:]), 1.0))
+        assert_allclose(np.sum(Ln[0,:]), 1.0)
 
         """Reversible"""
 
@@ -115,29 +116,29 @@ class TestDecompositionDense(unittest.TestCase):
         Rn, Dn, Ln=rdl_decomposition(P, norm='reversible')        
         Xn=np.dot(Ln, Rn)
         """Right-eigenvectors"""
-        self.assertTrue(np.allclose(np.dot(P, Rn), np.dot(Rn, Dn)))
+        assert_allclose(np.dot(P, Rn), np.dot(Rn, Dn))
         """Left-eigenvectors"""
-        self.assertTrue(np.allclose(np.dot(Ln, P), np.dot(Dn, Ln)))
+        assert_allclose(np.dot(Ln, P), np.dot(Dn, Ln))
         """Orthonormality"""
-        self.assertTrue(np.allclose(Xn, np.eye(self.dim)))
+        assert_allclose(Xn, np.eye(self.dim))
         """Probability vector"""
-        self.assertTrue(np.allclose(np.sum(Ln[0,:]), 1.0))   
+        assert_allclose(np.sum(Ln[0,:]), 1.0)   
         """Reversibility"""
-        self.assertTrue(np.allclose(Ln.transpose(), mu[:,np.newaxis]*Rn))
+        assert_allclose(Ln.transpose(), mu[:,np.newaxis]*Rn)
 
         """k is not None"""
         Rn, Dn, Ln=rdl_decomposition(P, norm='reversible', k=self.k)        
         Xn=np.dot(Ln, Rn)
         """Right-eigenvectors"""
-        self.assertTrue(np.allclose(np.dot(P, Rn), np.dot(Rn, Dn)))
+        assert_allclose(np.dot(P, Rn), np.dot(Rn, Dn))
         """Left-eigenvectors"""
-        self.assertTrue(np.allclose(np.dot(Ln, P), np.dot(Dn, Ln)))
+        assert_allclose(np.dot(Ln, P), np.dot(Dn, Ln))
         """Orthonormality"""
-        self.assertTrue(np.allclose(Xn, np.eye(self.k)))
+        assert_allclose(Xn, np.eye(self.k))
         """Probability vector"""
-        self.assertTrue(np.allclose(np.sum(Ln[0,:]), 1.0))   
+        assert_allclose(np.sum(Ln[0,:]), 1.0)   
         """Reversibility"""
-        self.assertTrue(np.allclose(Ln.transpose(), mu[:,np.newaxis]*Rn))
+        assert_allclose(Ln.transpose(), mu[:,np.newaxis]*Rn)
 
     def test_timescales(self):
         P=self.bdc.transition_matrix()
@@ -148,22 +149,22 @@ class TestDecompositionDense(unittest.TestCase):
 
         """k=None"""
         tsn=timescales(P)
-        self.assertTrue(np.allclose(ts[1:], tsn[1:]))
+        assert_allclose(ts[1:], tsn[1:])
 
         """k is not None"""
         tsn=timescales(P, k=self.k)
-        self.assertTrue(np.allclose(ts[1:self.k], tsn[1:]))
+        assert_allclose(ts[1:self.k], tsn[1:])
         
 
         """tau=7"""
         
         """k=None"""
         tsn=timescales(P, tau=7)
-        self.assertTrue(np.allclose(7*ts[1:], tsn[1:]))
+        assert_allclose(7*ts[1:], tsn[1:])
 
         """k is not None"""
         tsn=timescales(P, k=self.k, tau=7)
-        self.assertTrue(np.allclose(7*ts[1:self.k], tsn[1:]))
+        assert_allclose(7*ts[1:self.k], tsn[1:])
 
 class TestTimescalesDense(unittest.TestCase):
     
@@ -180,7 +181,7 @@ class TestTimescalesDense(unittest.TestCase):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             tsn=timescales(self.W)
-            self.assertTrue(np.allclose(tsn, ts))
+            assert_allclose(tsn, ts)
             assert issubclass(w[-1].category, SpectralWarning)
 
     def test_timescales_2(self):
@@ -190,7 +191,7 @@ class TestTimescalesDense(unittest.TestCase):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             tsn=timescales(0.5*self.T+0.5*self.P)
-            self.assertTrue(np.allclose(tsn, ts))
+            assert_allclose(tsn, ts)
             assert issubclass(w[-1].category, ImaginaryEigenValueWarning)        
 
 ################################################################################
@@ -219,7 +220,7 @@ class TestDecompositionSparse(unittest.TestCase):
         P=self.bdc.transition_matrix_sparse()
         mu=self.bdc.stationary_distribution()
         mun=stationary_distribution(P)
-        self.assertTrue(np.allclose(mu, mun))
+        assert_allclose(mu, mun)
 
     def test_eigenvalues(self):
         P=self.bdc.transition_matrix_sparse()
@@ -234,11 +235,11 @@ class TestDecompositionSparse(unittest.TestCase):
         
         """k is not None"""
         evn=eigenvalues(P, k=self.k)
-        self.assertTrue(np.allclose(ev[0:self.k], evn))
+        assert_allclose(ev[0:self.k], evn)
 
         """k is not None and ncv is not None"""
         evn=eigenvalues(P, k=self.k, ncv=self.ncv)
-        self.assertTrue(np.allclose(ev[0:self.k], evn))
+        assert_allclose(ev[0:self.k], evn)
 
     def test_eigenvectors(self):
         P_dense=self.bdc.transition_matrix()
@@ -259,17 +260,17 @@ class TestDecompositionSparse(unittest.TestCase):
 
         """k is not None"""
         Rn=eigenvectors(P, k=self.k)        
-        self.assertTrue(np.allclose(vals[np.newaxis,:]*Rn, P.dot(Rn)))
+        assert_allclose(vals[np.newaxis,:]*Rn, P.dot(Rn))
 
         Ln=eigenvectors(P, right=False, k=self.k)
-        self.assertTrue(np.allclose(P.transpose().dot(Ln), vals[np.newaxis,:]*Ln))
+        assert_allclose(P.transpose().dot(Ln), vals[np.newaxis,:]*Ln)
 
         """k is not None and ncv is not None"""
         Rn=eigenvectors(P, k=self.k, ncv=self.ncv)        
-        self.assertTrue(np.allclose(vals[np.newaxis,:]*Rn, P.dot(Rn)))
+        assert_allclose(vals[np.newaxis,:]*Rn, P.dot(Rn))
 
         Ln=eigenvectors(P, right=False, k=self.k, ncv=self.ncv)
-        self.assertTrue(np.allclose(P.transpose().dot(Ln), vals[np.newaxis,:]*Ln))
+        assert_allclose(P.transpose().dot(Ln), vals[np.newaxis,:]*Ln)
 
     def test_rdl_decomposition(self):
         P=self.bdc.transition_matrix_sparse()
@@ -285,25 +286,25 @@ class TestDecompositionSparse(unittest.TestCase):
         Rn, Dn, Ln=rdl_decomposition(P, k=self.k)        
         Xn=np.dot(Ln, Rn)
         """Right-eigenvectors"""
-        self.assertTrue(np.allclose(P.dot(Rn), np.dot(Rn, Dn)))    
+        assert_allclose(P.dot(Rn), np.dot(Rn, Dn))    
         """Left-eigenvectors"""
-        self.assertTrue(np.allclose(P.transpose().dot(Ln.transpose()).transpose(), np.dot(Dn, Ln)))               
+        assert_allclose(P.transpose().dot(Ln.transpose()).transpose(), np.dot(Dn, Ln))               
         """Orthonormality"""
-        self.assertTrue(np.allclose(Xn, np.eye(self.k)))
+        assert_allclose(Xn, np.eye(self.k))
         """Probability vector"""
-        self.assertTrue(np.allclose(np.sum(Ln[0,:]), 1.0))
+        assert_allclose(np.sum(Ln[0,:]), 1.0)
 
         """k is not None, ncv is not None"""
         Rn, Dn, Ln=rdl_decomposition(P, k=self.k, ncv=self.ncv)        
         Xn=np.dot(Ln, Rn)
         """Right-eigenvectors"""
-        self.assertTrue(np.allclose(P.dot(Rn), np.dot(Rn, Dn)))    
+        assert_allclose(P.dot(Rn), np.dot(Rn, Dn))    
         """Left-eigenvectors"""
-        self.assertTrue(np.allclose(P.transpose().dot(Ln.transpose()).transpose(), np.dot(Dn, Ln)))               
+        assert_allclose(P.transpose().dot(Ln.transpose()).transpose(), np.dot(Dn, Ln))               
         """Orthonormality"""
-        self.assertTrue(np.allclose(Xn, np.eye(self.k)))
+        assert_allclose(Xn, np.eye(self.k))
         """Probability vector"""
-        self.assertTrue(np.allclose(np.sum(Ln[0,:]), 1.0))
+        assert_allclose(np.sum(Ln[0,:]), 1.0)
 
         """Reversible"""
 
@@ -315,29 +316,29 @@ class TestDecompositionSparse(unittest.TestCase):
         Rn, Dn, Ln=rdl_decomposition(P, k=self.k, norm='reversible')        
         Xn=np.dot(Ln, Rn)
         """Right-eigenvectors"""
-        self.assertTrue(np.allclose(P.dot(Rn), np.dot(Rn, Dn)))    
+        assert_allclose(P.dot(Rn), np.dot(Rn, Dn))    
         """Left-eigenvectors"""
-        self.assertTrue(np.allclose(P.transpose().dot(Ln.transpose()).transpose(), np.dot(Dn, Ln)))               
+        assert_allclose(P.transpose().dot(Ln.transpose()).transpose(), np.dot(Dn, Ln))               
         """Orthonormality"""
-        self.assertTrue(np.allclose(Xn, np.eye(self.k)))
+        assert_allclose(Xn, np.eye(self.k))
         """Probability vector"""
-        self.assertTrue(np.allclose(np.sum(Ln[0,:]), 1.0))
+        assert_allclose(np.sum(Ln[0,:]), 1.0)
         """Reversibility"""
-        self.assertTrue(np.allclose(Ln.transpose(), mu[:,np.newaxis]*Rn))
+        assert_allclose(Ln.transpose(), mu[:,np.newaxis]*Rn)
 
         """k is not None ncv is not None"""
         Rn, Dn, Ln=rdl_decomposition(P, k=self.k, norm='reversible', ncv=self.ncv)        
         Xn=np.dot(Ln, Rn)
         """Right-eigenvectors"""
-        self.assertTrue(np.allclose(P.dot(Rn), np.dot(Rn, Dn)))    
+        assert_allclose(P.dot(Rn), np.dot(Rn, Dn))    
         """Left-eigenvectors"""
-        self.assertTrue(np.allclose(P.transpose().dot(Ln.transpose()).transpose(), np.dot(Dn, Ln)))               
+        assert_allclose(P.transpose().dot(Ln.transpose()).transpose(), np.dot(Dn, Ln))               
         """Orthonormality"""
-        self.assertTrue(np.allclose(Xn, np.eye(self.k)))
+        assert_allclose(Xn, np.eye(self.k))
         """Probability vector"""
-        self.assertTrue(np.allclose(np.sum(Ln[0,:]), 1.0))
+        assert_allclose(np.sum(Ln[0,:]), 1.0)
         """Reversibility"""
-        self.assertTrue(np.allclose(Ln.transpose(), mu[:,np.newaxis]*Rn))
+        assert_allclose(Ln.transpose(), mu[:,np.newaxis]*Rn)
 
     def test_timescales(self):
         P_dense=self.bdc.transition_matrix()
@@ -353,18 +354,18 @@ class TestDecompositionSparse(unittest.TestCase):
 
         """k is not None"""
         tsn=timescales(P, k=self.k)
-        self.assertTrue(np.allclose(ts[1:self.k], tsn[1:]))
+        assert_allclose(ts[1:self.k], tsn[1:])
 
         """k is not None, ncv is not None"""
         tsn=timescales(P, k=self.k, ncv=self.ncv)
-        self.assertTrue(np.allclose(ts[1:self.k], tsn[1:]))
+        assert_allclose(ts[1:self.k], tsn[1:])
         
 
         """tau=7"""      
 
         """k is not None"""
         tsn=timescales(P, k=self.k, tau=7)
-        self.assertTrue(np.allclose(7*ts[1:self.k], tsn[1:]))
+        assert_allclose(7*ts[1:self.k], tsn[1:])
         
         
 if __name__=="__main__":

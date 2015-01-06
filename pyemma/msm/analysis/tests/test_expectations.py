@@ -6,6 +6,7 @@ r"""This module provides unit tests for the expectations function in API
 
 import unittest
 import numpy as np
+from pyemma.util.numeric import assert_allclose
 from scipy.linalg import eig
 
 import scipy
@@ -50,7 +51,7 @@ class TestExpectedCountsDense(unittest.TestCase):
         """        
         EC_true=N*self.mu[:,np.newaxis]*T
 
-        self.assertTrue(np.allclose(EC_true, EC_n))
+        assert_allclose(EC_true, EC_n)
 
         N=2000
         EC_n=expected_counts(T, p0, N)
@@ -60,13 +61,13 @@ class TestExpectedCountsDense(unittest.TestCase):
         be carried out by a simple multiplication
         """        
         EC_true=N*self.mu[:,np.newaxis]*T
-        self.assertTrue(np.allclose(EC_true, EC_n))
+        assert_allclose(EC_true, EC_n)
 
         """Zero length chain"""
         N=0
         EC_n=expected_counts(T, p0, N)
         EC_true=np.zeros(T.shape)
-        self.assertTrue(np.allclose(EC_true, EC_n))
+        assert_allclose(EC_true, EC_n)
 
 class TestExpectedCountsStationaryDense(unittest.TestCase):
     def setUp(self):
@@ -92,12 +93,12 @@ class TestExpectedCountsStationaryDense(unittest.TestCase):
         """Compute mu on the fly"""
         EC_n=expected_counts_stationary(T, N)
         EC_true=N*self.mu[:,np.newaxis]*T
-        self.assertTrue(np.allclose(EC_true, EC_n))
+        assert_allclose(EC_true, EC_n)
 
         """Use precomputed mu"""
         EC_n=expected_counts_stationary(T, N, mu=self.mu)
         EC_true=N*self.mu[:,np.newaxis]*T
-        self.assertTrue(np.allclose(EC_true, EC_n))
+        assert_allclose(EC_true, EC_n)
 
 ################################################################################
 # Sparse

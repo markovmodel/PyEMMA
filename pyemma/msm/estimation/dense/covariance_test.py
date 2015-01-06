@@ -6,6 +6,7 @@ r"""Unit tests for the covariance module
 import unittest
 
 import numpy as np
+from pyemma.util.numeric import assert_allclose
 
 from covariance import tmatrix_cov, dirichlet_covariance, error_perturbation
 
@@ -33,10 +34,10 @@ class TestCovariance(unittest.TestCase):
 
     def test_tmatrix_cov(self):
         cov=tmatrix_cov(self.C)
-        self.assertTrue(np.allclose(cov, self.cov))
+        assert_allclose(cov, self.cov)
 
         cov=tmatrix_cov(self.C, row=1)
-        self.assertTrue(np.allclose(cov, self.cov[1, :, :]))
+        assert_allclose(cov, self.cov[1, :, :])
 
 class TestDirichletCovariance(unittest.TestCase):
     def setUp(self):
@@ -51,10 +52,10 @@ class TestDirichletCovariance(unittest.TestCase):
 
     def test_dirichlet_covariance(self):
         cov=dirichlet_covariance(self.alpha1)
-        self.assertTrue(np.allclose(cov, self.cov1))
+        assert_allclose(cov, self.cov1)
 
         cov=dirichlet_covariance(self.alpha2)
-        self.assertTrue(np.allclose(cov, self.cov2))
+        assert_allclose(cov, self.cov2)
         
 class TestErrorPerturbation(unittest.TestCase):
     def setUp(self):
@@ -94,10 +95,10 @@ class TestErrorPerturbation(unittest.TestCase):
 
     def test_error_perturbation(self):
         xn=error_perturbation(self.C, self.S1)
-        self.assertTrue(np.allclose(xn, self.x))
+        assert_allclose(xn, self.x)
 
         Xn=error_perturbation(self.C, self.S2)
-        self.assertTrue(np.allclose(Xn, self.X))
+        assert_allclose(Xn, self.X)
 
         
 

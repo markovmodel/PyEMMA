@@ -6,6 +6,7 @@ r"""Unit test for the TPT-functions of the analysis API
 
 import unittest
 import numpy as np
+from pyemma.util.numeric import assert_allclose
 
 from scipy.sparse import csr_matrix
 
@@ -48,64 +49,64 @@ class TestTPTDense(unittest.TestCase):
         flux=self.bdc.flux(self.a, self.b)        
         
         fluxn=self.tpt.gross_flux
-        self.assertTrue(np.allclose(fluxn, flux))
+        assert_allclose(fluxn, flux)
 
         fluxn=self.tpt_fast.gross_flux
-        self.assertTrue(np.allclose(fluxn, flux))
+        assert_allclose(fluxn, flux)
 
     def test_netflux(self):
         netflux=self.bdc.netflux(self.a, self.b)
         
         netfluxn=self.tpt.net_flux
-        self.assertTrue(np.allclose(netfluxn, netflux))
+        assert_allclose(netfluxn, netflux)
 
         netfluxn=self.tpt_fast.net_flux
-        self.assertTrue(np.allclose(netfluxn, netflux))        
+        assert_allclose(netfluxn, netflux)        
 
     def test_totalflux(self):
         F=self.bdc.totalflux(self.a, self.b)
 
         Fn=self.tpt.total_flux
-        self.assertTrue(np.allclose(Fn, F))
+        assert_allclose(Fn, F)
 
         Fn=self.tpt_fast.total_flux
-        self.assertTrue(np.allclose(Fn, F))
+        assert_allclose(Fn, F)
 
     def test_rate(self):
         k=self.bdc.rate(self.a, self.b)
         
         kn=self.tpt.rate
-        self.assertTrue(np.allclose(kn, k))
+        assert_allclose(kn, k)
 
         kn=self.tpt_fast.rate
-        self.assertTrue(np.allclose(kn, k))
+        assert_allclose(kn, k)
 
     def test_backward_committor(self):
         qminus=self.qminus
 
         qminusn=self.tpt.backward_committor
-        self.assertTrue(np.allclose(qminusn, qminus))
+        assert_allclose(qminusn, qminus)
 
         qminusn=self.tpt_fast.backward_committor
-        self.assertTrue(np.allclose(qminusn, qminus))
+        assert_allclose(qminusn, qminus)
 
     def test_forward_committor(self):
         qplus=self.qplus
 
         qplusn=self.tpt.forward_committor
-        self.assertTrue(np.allclose(qplusn, qplus))
+        assert_allclose(qplusn, qplus)
 
         qplusn=self.tpt_fast.forward_committor
-        self.assertTrue(np.allclose(qplusn, qplus))
+        assert_allclose(qplusn, qplus)
 
     def test_stationary_distribution(self):
         mu=self.mu
         
         mun=self.tpt.stationary_distribution
-        self.assertTrue(np.allclose(mun, mu))
+        assert_allclose(mun, mu)
 
         mun=self.tpt_fast.stationary_distribution
-        self.assertTrue(np.allclose(mun, mu))
+        assert_allclose(mun, mu)
 
 
 class TestTptFunctionsDense(unittest.TestCase):
@@ -138,19 +139,19 @@ class TestTptFunctionsDense(unittest.TestCase):
     
     def test_tpt_flux(self):
         flux=self.bdc.flux(self.a, self.b)        
-        self.assertTrue(np.allclose(self.fluxn, flux))
+        assert_allclose(self.fluxn, flux)
 
     def test_tpt_netflux(self):
         netflux=self.bdc.netflux(self.a, self.b)
-        self.assertTrue(np.allclose(self.netfluxn, netflux))
+        assert_allclose(self.netfluxn, netflux)
 
     def test_tpt_totalflux(self):
         totalflux=self.bdc.totalflux(self.a, self.b)
-        self.assertTrue(np.allclose(self.totalfluxn, totalflux))
+        assert_allclose(self.totalfluxn, totalflux)
 
     def test_tpt_rate(self):
         rate=self.bdc.rate(self.a, self.b)
-        self.assertTrue(np.allclose(self.raten, rate))
+        assert_allclose(self.raten, rate)
 
 
 ################################################################################
@@ -192,64 +193,64 @@ class TestTPTSparse(unittest.TestCase):
         flux=self.bdc.flux(self.a, self.b)        
 
         fluxn=self.tpt.gross_flux
-        self.assertTrue(np.allclose(fluxn.toarray(), flux))
+        assert_allclose(fluxn.toarray(), flux)
 
         fluxn=self.tpt_fast.gross_flux
-        self.assertTrue(np.allclose(fluxn.toarray(), flux))
+        assert_allclose(fluxn.toarray(), flux)
 
     def test_netflux(self):
         netflux=self.bdc.netflux(self.a, self.b)
         
         netfluxn=self.tpt.net_flux
-        self.assertTrue(np.allclose(netfluxn.toarray(), netflux))
+        assert_allclose(netfluxn.toarray(), netflux)
 
         netfluxn=self.tpt_fast.net_flux
-        self.assertTrue(np.allclose(netfluxn.toarray(), netflux))        
+        assert_allclose(netfluxn.toarray(), netflux)        
 
     def test_totalflux(self):
         F=self.bdc.totalflux(self.a, self.b)
 
         Fn=self.tpt.total_flux
-        self.assertTrue(np.allclose(Fn, F))
+        assert_allclose(Fn, F)
 
         Fn=self.tpt_fast.total_flux
-        self.assertTrue(np.allclose(Fn, F))
+        assert_allclose(Fn, F)
 
     def test_rate(self):
         k=self.bdc.rate(self.a, self.b)
         
         kn=self.tpt.rate
-        self.assertTrue(np.allclose(kn, k))
+        assert_allclose(kn, k)
 
         kn=self.tpt_fast.rate
-        self.assertTrue(np.allclose(kn, k))
+        assert_allclose(kn, k)
 
     def test_backward_committor(self):
         qminus=self.qminus
 
         qminusn=self.tpt.backward_committor
-        self.assertTrue(np.allclose(qminusn, qminus))
+        assert_allclose(qminusn, qminus)
 
         qminusn=self.tpt_fast.backward_committor
-        self.assertTrue(np.allclose(qminusn, qminus))
+        assert_allclose(qminusn, qminus)
 
     def test_forward_committor(self):
         qplus=self.qplus
 
         qplusn=self.tpt.forward_committor
-        self.assertTrue(np.allclose(qplusn, qplus))
+        assert_allclose(qplusn, qplus)
 
         qplusn=self.tpt_fast.forward_committor
-        self.assertTrue(np.allclose(qplusn, qplus))
+        assert_allclose(qplusn, qplus)
 
     def test_stationary_distribution(self):
         mu=self.mu
         
         mun=self.tpt.stationary_distribution
-        self.assertTrue(np.allclose(mun, mu))
+        assert_allclose(mun, mu)
 
         mun=self.tpt_fast.stationary_distribution
-        self.assertTrue(np.allclose(mun, mu))
+        assert_allclose(mun, mu)
 
 class TestTptFunctionsSparse(unittest.TestCase):
     def setUp(self):
@@ -283,19 +284,19 @@ class TestTptFunctionsSparse(unittest.TestCase):
     
     def test_tpt_flux(self):
         flux=self.bdc.flux(self.a, self.b)
-        self.assertTrue(np.allclose(self.fluxn.toarray(), flux))
+        assert_allclose(self.fluxn.toarray(), flux)
 
     def test_tpt_netflux(self):
         netflux=self.bdc.netflux(self.a, self.b)
-        self.assertTrue(np.allclose(self.netfluxn.toarray(), netflux))
+        assert_allclose(self.netfluxn.toarray(), netflux)
 
     def test_tpt_totalflux(self):
         totalflux=self.bdc.totalflux(self.a, self.b)
-        self.assertTrue(np.allclose(self.totalfluxn, totalflux))
+        assert_allclose(self.totalfluxn, totalflux)
 
     def test_tpt_rate(self):
         rate=self.bdc.rate(self.a, self.b)
-        self.assertTrue(np.allclose(self.raten, rate))
+        assert_allclose(self.raten, rate)
 
 
 if __name__ == "__main__":

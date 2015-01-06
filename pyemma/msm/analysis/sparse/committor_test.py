@@ -5,6 +5,7 @@ r"""Unit tests for the committor module
 """
 import unittest
 import numpy as np
+from pyemma.util.numeric import assert_allclose
 
 from scipy.sparse import diags
 
@@ -188,13 +189,13 @@ class TestCommittor(unittest.TestCase):
         P=self.bdc.transition_matrix_sparse()
         un=committor.forward_committor(P, range(10), range(90,100))
         u=self.bdc.committor_forward(9, 90)               
-        self.assertTrue(np.allclose(un, u))
+        assert_allclose(un, u)
 
     def test_backward_comittor(self):
         P=self.bdc.transition_matrix_sparse()
         un=committor.backward_committor(P, range(10), range(90,100))
         u=self.bdc.committor_backward(9, 90)               
-        self.assertTrue(np.allclose(un, u))
+        assert_allclose(un, u)
 
 if __name__ == "__main__":
     unittest.main()

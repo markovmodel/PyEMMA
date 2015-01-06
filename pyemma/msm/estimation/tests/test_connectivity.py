@@ -7,6 +7,7 @@ r"""Unit tests for the connectivity API functions
 import unittest
 
 import numpy as np
+from pyemma.util.numeric import assert_allclose
 import scipy.sparse
 
 from pyemma.msm.estimation import connected_sets, largest_connected_set, largest_connected_submatrix, is_connected
@@ -110,11 +111,11 @@ class TestConnectedCountMatrixDense(unittest.TestCase):
     def test_connected_count_matrix(self):
         """Directed"""
         C_cc=largest_connected_submatrix(self.C)
-        self.assertTrue(np.allclose(C_cc, self.C_cc_directed))
+        assert_allclose(C_cc, self.C_cc_directed)
 
         """Undirected"""
         C_cc=largest_connected_submatrix(self.C, directed=False)
-        self.assertTrue(np.allclose(C_cc, self.C_cc_undirected))
+        assert_allclose(C_cc, self.C_cc_undirected)
         
 class TestIsConnectedDense(unittest.TestCase):
         
@@ -247,19 +248,19 @@ class TestConnectedCountMatrixSparse(unittest.TestCase):
     def test_connected_count_matrix(self):
         """Directed"""
         C_cc=largest_connected_submatrix(self.C)
-        self.assertTrue(np.allclose(C_cc.toarray(), self.C_cc_directed))
+        assert_allclose(C_cc.toarray(), self.C_cc_directed)
 
         """Directed with user specified lcc"""
         C_cc=largest_connected_submatrix(self.C, lcc=np.array([0, 1]))
-        self.assertTrue(np.allclose(C_cc.toarray(), self.C_cc_directed[0:2,0:2]))
+        assert_allclose(C_cc.toarray(), self.C_cc_directed[0:2,0:2])
 
         """Undirected"""
         C_cc=largest_connected_submatrix(self.C, directed=False)
-        self.assertTrue(np.allclose(C_cc.toarray(), self.C_cc_undirected))
+        assert_allclose(C_cc.toarray(), self.C_cc_undirected)
 
         """Undirected with user specified lcc"""
         C_cc=largest_connected_submatrix(self.C, lcc=np.array([0, 1]), directed=False)
-        self.assertTrue(np.allclose(C_cc.toarray(), self.C_cc_undirected[0:2,0:2]))
+        assert_allclose(C_cc.toarray(), self.C_cc_undirected[0:2,0:2])
         
 class TestIsConnectedSparse(unittest.TestCase):
         

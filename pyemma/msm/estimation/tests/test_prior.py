@@ -7,6 +7,7 @@ import unittest
 import warnings
 
 import numpy as np
+from pyemma.util.numeric import assert_allclose
 
 from scipy.sparse import csr_matrix
 
@@ -35,24 +36,24 @@ class TestPriorDense(unittest.TestCase):
 
     def test_prior_neighbor(self):
         Bn=prior_neighbor(self.C)
-        self.assertTrue(np.allclose(Bn, self.alpha_def*self.B_neighbor))
+        assert_allclose(Bn, self.alpha_def*self.B_neighbor)
 
         Bn=prior_neighbor(self.C, alpha=self.alpha)
-        self.assertTrue(np.allclose(Bn, self.alpha*self.B_neighbor))
+        assert_allclose(Bn, self.alpha*self.B_neighbor)
 
     def test_prior_const(self):
         Bn=prior_const(self.C)
-        self.assertTrue(np.allclose(Bn, self.alpha_def*self.B_const))
+        assert_allclose(Bn, self.alpha_def*self.B_const)
 
         Bn=prior_const(self.C, alpha=self.alpha)
-        self.assertTrue(np.allclose(Bn, self.alpha*self.B_const))
+        assert_allclose(Bn, self.alpha*self.B_const)
 
     def test_prior_rev(self):
         Bn=prior_rev(self.C)
-        self.assertTrue(np.allclose(Bn, -1.0*self.B_rev))
+        assert_allclose(Bn, -1.0*self.B_rev)
 
         Bn=prior_rev(self.C, alpha=self.alpha)
-        self.assertTrue(np.allclose(Bn, self.alpha*self.B_rev))
+        assert_allclose(Bn, self.alpha*self.B_rev)
 
 class TestPriorSparse(unittest.TestCase):
     
@@ -84,20 +85,20 @@ class TestPriorSparse(unittest.TestCase):
     def test_prior_const(self):
         with warnings.catch_warnings(record=True) as w:
             Bn=prior_const(self.C)
-            self.assertTrue(np.allclose(Bn, self.alpha_def*self.B_const))
+            assert_allclose(Bn, self.alpha_def*self.B_const)
 
         with warnings.catch_warnings(record=True) as w:
             Bn=prior_const(self.C, alpha=self.alpha)
-            self.assertTrue(np.allclose(Bn, self.alpha*self.B_const))
+            assert_allclose(Bn, self.alpha*self.B_const)
 
     def test_prior_rev(self):
         with warnings.catch_warnings(record=True) as w:
             Bn=prior_rev(self.C)
-            self.assertTrue(np.allclose(Bn, -1.0*self.B_rev))
+            assert_allclose(Bn, -1.0*self.B_rev)
 
         with warnings.catch_warnings(record=True) as w:
             Bn=prior_rev(self.C, alpha=self.alpha)
-            self.assertTrue(np.allclose(Bn, self.alpha*self.B_rev))
+            assert_allclose(Bn, self.alpha*self.B_rev)
         
 
 if __name__=="__main__":
