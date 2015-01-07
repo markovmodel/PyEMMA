@@ -6,6 +6,7 @@ r"""This module provides unit tests for the expectations module
 
 import unittest
 import numpy as np
+from pyemma.util.numeric import assert_allclose
 from scipy.linalg import eig
 
 import expectations
@@ -39,7 +40,7 @@ class TestExpectedCounts(unittest.TestCase):
         be carried out by a simple multiplication
         """        
         EC_true=N*self.mu[:,np.newaxis]*T
-        self.assertTrue(np.allclose(EC_true, EC_n))
+        assert_allclose(EC_true, EC_n)
 
         N=2000
         EC_n=expectations.expected_counts(p0, T, N)
@@ -49,13 +50,13 @@ class TestExpectedCounts(unittest.TestCase):
         be carried out by a simple multiplication
         """        
         EC_true=N*self.mu[:,np.newaxis]*T
-        self.assertTrue(np.allclose(EC_true, EC_n))
+        assert_allclose(EC_true, EC_n)
 
         """Zero length chain"""
         N=0
         EC_n=expectations.expected_counts(p0, T, N)
         EC_true=np.zeros(T.shape)
-        self.assertTrue(np.allclose(EC_true, EC_n))
+        assert_allclose(EC_true, EC_n)
 
 class TestExpectedCountsStationary(unittest.TestCase):
     def setUp(self):
@@ -81,12 +82,12 @@ class TestExpectedCountsStationary(unittest.TestCase):
         """Compute mu on the fly"""
         EC_n=expectations.expected_counts_stationary(T, N)
         EC_true=N*self.mu[:,np.newaxis]*T
-        self.assertTrue(np.allclose(EC_true, EC_n))
+        assert_allclose(EC_true, EC_n)
 
         """Use precomputed mu"""
         EC_n=expectations.expected_counts_stationary(T, N, mu=self.mu)
         EC_true=N*self.mu[:,np.newaxis]*T
-        self.assertTrue(np.allclose(EC_true, EC_n))
+        assert_allclose(EC_true, EC_n)
     
         
 
@@ -120,13 +121,13 @@ class TestEcMatrixVector(unittest.TestCase):
         be carried out by a simple multiplication
         """        
         EC_true=N*self.mu[:,np.newaxis]*T
-        self.assertTrue(np.allclose(EC_true, EC_n))
+        assert_allclose(EC_true, EC_n)
 
         """Zero length chain"""
         N=0
         EC_n=expectations.ec_matrix_vector(p0, T, N)
         EC_true=np.zeros(T.shape)
-        self.assertTrue(np.allclose(EC_true, EC_n))
+        assert_allclose(EC_true, EC_n)
 
 class TestEcGeometricSeries(unittest.TestCase):
     def setUp(self):
@@ -158,13 +159,13 @@ class TestEcGeometricSeries(unittest.TestCase):
         be carried out by a simple multiplication
         """        
         EC_true=N*self.mu[:,np.newaxis]*T
-        self.assertTrue(np.allclose(EC_true, EC_n))
+        assert_allclose(EC_true, EC_n)
 
         """Zero length chain"""
         N=0
         EC_n=expectations.ec_geometric_series(p0, T, N)
         EC_true=np.zeros(T.shape)
-        self.assertTrue(np.allclose(EC_true, EC_n))
+        assert_allclose(EC_true, EC_n)
 
 class TestGeometricSeries(unittest.TestCase):
     def setUp(self):
@@ -186,10 +187,10 @@ class TestGeometricSeries(unittest.TestCase):
 
     def test_geometric_series(self):
         x=expectations.geometric_series(self.q, self.n)     
-        self.assertTrue(np.allclose(x, self.s))
+        assert_allclose(x, self.s)
 
         x=expectations.geometric_series(self.q_array, self.n)        
-        self.assertTrue(np.allclose(x, self.s_array))
+        assert_allclose(x, self.s_array)
 
         """Assert ValueError for negative n"""
         with self.assertRaises(ValueError):

@@ -8,6 +8,7 @@ import numpy as np
 from scipy.sparse import dia_matrix
 
 __all__ = ['allclose_sparse',
+           'assert_allclose',
            'diags',
            'isclose',
            'choice',
@@ -393,3 +394,11 @@ except ImportError:
             return res
 
         return a[idx]
+
+
+def assert_allclose(actual, desired, rtol=1.e-5, atol=1.e-8,
+                    err_msg='', verbose=True):
+    r"""wrapper for numpy.testing.allclose with default tolerances of
+    numpy.allclose. Needed since testing method has different values."""
+    from numpy.testing import assert_allclose
+    return assert_allclose(actual, desired, rtol, atol, err_msg, verbose)

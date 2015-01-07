@@ -6,6 +6,7 @@ r"""Unit tests for the mean first passage time module
 import unittest
 
 import numpy as np
+from pyemma.util.numeric import assert_allclose
 import scipy.sparse
 
 from mean_first_passage_time import mfpt
@@ -34,13 +35,13 @@ class TestMfpt(unittest.TestCase):
 
     def test_mfpt(self):
         x=mfpt(self.P, 0)
-        self.assertTrue(np.allclose(x, self.m0))
+        assert_allclose(x, self.m0)
 
         x=mfpt(self.P, 1)
-        self.assertTrue(np.allclose(x, self.m1))
+        assert_allclose(x, self.m1)
 
         x=mfpt(self.P, 2)
-        self.assertTrue(np.allclose(x, self.m2))
+        assert_allclose(x, self.m2)
         
 if __name__=="__main__":
     unittest.main()

@@ -6,6 +6,7 @@ r"""Unit test for the TPT-module
 
 import unittest
 import numpy as np
+from pyemma.util.numeric import assert_allclose
 
 from scipy.sparse import csr_matrix
 
@@ -252,7 +253,7 @@ class TestRemoveNegativeEntries(unittest.TestCase):
         Aplus = self.Aplus
 
         Aplusn = tpt.remove_negative_entries(A)
-        self.assertTrue(np.allclose(Aplusn.toarray(), Aplus))
+        assert_allclose(Aplusn.toarray(), Aplus)
 
 
 class TestTPT(unittest.TestCase):
@@ -288,19 +289,19 @@ class TestTPT(unittest.TestCase):
 
     def test_flux(self):
         flux=self.bdc.flux(self.a, self.b)        
-        self.assertTrue(np.allclose(self.fluxn.toarray(), flux))
+        assert_allclose(self.fluxn.toarray(), flux)
 
     def test_netflux(self):
         netflux=self.bdc.netflux(self.a, self.b)
-        self.assertTrue(np.allclose(self.netfluxn.toarray(), netflux))
+        assert_allclose(self.netfluxn.toarray(), netflux)
 
     #def test_totalflux(self):
     #    F=self.bdc.totalflux(self.a, self.b)
-    #    self.assertTrue(np.allclose(self.Fn, F))
+    #    assert_allclose(self.Fn, F)
 
     #def test_rate(self):
     #    k=self.bdc.rate(self.a, self.b)
-    #    self.assertTrue(np.allclose(self.kn, k))
+    #    assert_allclose(self.kn, k)
 
 if __name__ == "__main__":
     unittest.main()

@@ -6,6 +6,7 @@ r"""Unit test for the prior module
 import unittest
 
 import numpy as np
+from pyemma.util.numeric import assert_allclose
 
 from scipy.sparse import csr_matrix
 
@@ -42,17 +43,17 @@ class TestPrior(unittest.TestCase):
 
     def test_prior_const(self):
         Bn=prior.prior_const(self.C)
-        self.assertTrue(np.allclose(Bn, self.alpha_def*self.B_const))
+        assert_allclose(Bn, self.alpha_def*self.B_const)
 
         Bn=prior.prior_const(self.C, alpha=self.alpha)
-        self.assertTrue(np.allclose(Bn, self.alpha*self.B_const))
+        assert_allclose(Bn, self.alpha*self.B_const)
 
     def test_prior_rev(self):
         Bn=prior.prior_rev(self.C)
-        self.assertTrue(np.allclose(Bn, -1.0*self.B_rev))
+        assert_allclose(Bn, -1.0*self.B_rev)
 
         Bn=prior.prior_rev(self.C, alpha=self.alpha)
-        self.assertTrue(np.allclose(Bn, self.alpha*self.B_rev))
+        assert_allclose(Bn, self.alpha*self.B_rev)
         
 
 if __name__=="__main__":
