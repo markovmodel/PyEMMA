@@ -197,12 +197,11 @@ def hmsm(dtrajs, nstate, lag=1, conv=0.01, maxiter=None, timeshift=None,
          TCinit = None, chiInit = None):
     """
     Implements a discrete Hidden Markov state model of conformational
-    kinetics.  For details, see [1].
+    kinetics.  For details, see [1]_.
 
-    [1]_ Noe, F. and Wu, H. and Prinz, J.-H. and Plattner, N. (2013)
+    .. [1] Noe, F. and Wu, H. and Prinz, J.-H. and Plattner, N. (2013)
     Projected and Hidden Markov Models for calculating kinetics and
-    metastable states of complex molecules.  J. Chem. Phys., 139
-    . p. 184114
+    metastable states of complex molecules.  J. Chem. Phys., 139. p. 184114
 
     Parameters
     ----------
@@ -235,11 +234,13 @@ def hmsm(dtrajs, nstate, lag=1, conv=0.01, maxiter=None, timeshift=None,
         tau will have no effect, because at least the first
         subtrajectory will be used.
     TCinit : ndarray (m,m)
-        initial hidden transition matrix. If set to None, will generate a guess using PCCA+ from a Markov
-        model of the discrete trajectories estimated at the given lag time.
+        initial hidden transition matrix. If set to None, will generate a guess
+        using PCCA+ from a Markov model of the discrete trajectories estimated
+        at the given lag time.
     chiInit : ndarray (m,n)
-        initial observation probability matrix. If set to None, will generate a guess using PCCA+ from a
-        Markov model of the discrete trajectories estimated at the given lag time.
+        initial observation probability matrix. If set to None, will generate
+        a guess using PCCA+ from a Markov model of the discrete trajectories
+        estimated at the given lag time.
 
     Returns
     -------
@@ -248,6 +249,7 @@ def hmsm(dtrajs, nstate, lag=1, conv=0.01, maxiter=None, timeshift=None,
 
     """
     # initialize
-    return hmm.HiddenMSM(dtrajs, nstate, lag=lag, conv=conv, maxiter=maxiter, timeshift=timeshift,
-                         TCinit = TCinit, chiInit = chiInit)
+    return hmm.HiddenMSM(dtrajs, nstate, lag=lag, conv=conv, maxiter=maxiter,
+                         timeshift=timeshift,
+                         TCinit=TCinit, chiInit=chiInit)
 

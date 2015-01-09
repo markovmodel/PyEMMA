@@ -7,10 +7,12 @@ __docformat__ = "restructuredtext en"
 from pyemma.msm.estimation import cmatrix, largest_connected_set, connected_cmatrix, tmatrix
 from pyemma.msm.analysis import statdist, timescales
 
-__all__=['MSM']
+__all__ = ['MSM']
 
-class MSM(object):    
-    def __init__(self, dtrajs, lag, reversible=True, sliding=True, compute=True):
+
+class MSM(object):
+    def __init__(self, dtrajs, lag, reversible=True, sliding=True, compute=True,
+                 estimate_on_lcc=True):
         r"""Estimate Markov state model (MSM) from discrete trajectories.
 
         Parameters
@@ -26,19 +28,21 @@ class MSM(object):
             use the lagsampling approach
         conpute : bool (optional)
             If true estimate the MSM when creating the MSM object.
+        estimate_on_lcc : bool (optional)
+            If true estimate the MSM on largest connected input subset.
 
         Notes
         -----
         You can postpone the estimation of the MSM using compute=False and
         initiate the estimation procedure by manually calling the MSM.compute()
-        method.       
-        
+        method.
+
         """
         self.dtrajs = dtrajs
         self.lagtime = lag
 
-        self.reversible=reversible
-        self.sliding=sliding
+        self.reversible = reversible
+        self.sliding = sliding
 
         """Empty attributes that will be computed later"""
 
@@ -51,18 +55,20 @@ class MSM(object):
         """Count matrix on largest set"""
         self.Ccc = None
 
-        """Tranistion matrix"""
+        """Transition matrix"""
         self.T = None
 
         """Stationary distribution"""
         self.mu = None
 
-        self.computed=False
+        self.computed = False
+
+        self.estimate_on_lcc = estimate_on_lcc
 
         if compute:
-            self.compute()        
+            self.compute()
 
-    def compute(self):       
+    def compute(self):
         """Compute count matrix"""
         self.C = cmatrix(self.dtrajs, self.lagtime, sliding=self.sliding)
 
@@ -73,10 +79,13 @@ class MSM(object):
         self.Ccc = connected_cmatrix(self.C)
 
         """Estimate transition matrix"""
-        self.T = tmatrix(self.Ccc, reversible=self.reversible)
+        if self.estimate_on_lcc:
+            self.T = tmatrix(self.Ccc, reversible=self.reversible)
+        else:
+            self.T = tmatrix(self.C, reversible=self.reversible)
 
-        self.computed=True
-    
+        self.computed = True
+
     def _assert_computed(self):
         assert self.computed, "MSM hasn't been computed yet, make sure to call MSM.compute()"
 
@@ -91,7 +100,7 @@ class MSM(object):
         return self.C
 
     @property
-    def largest_connected_set(self):
+    def estimate_on_lcc(self):
         self._assert_computed()
         return self.lcc
 
@@ -104,19 +113,12 @@ class MSM(object):
     def stationary_distribution(self):
         self._assert_computed()
         if self.mu is None:
-            self.mu=statdist(self.T)
+            self.mu = statdist(self.T)
         return self.mu
 
     def get_timescales(self, k):
-        ts=timescales(self.T, k=k, tau=self.lagtime)
+        ts = timescales(self.T, k=k, tau=self.lagtime)
         return ts
-        
-
-
-    
-
-    
-        
 
 
 
