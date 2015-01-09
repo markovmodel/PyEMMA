@@ -44,7 +44,7 @@ source/generated:
 ipython-rst: source/generated
 	# find all ipython notebooks (without their checkpoints)
 	@$(eval notebooks:= $$(shell cd source/generated && \
-                               find ../../../ipython/ -name \*.ipynb \
+                               find ../../../pyemma-ipython/ -name \*.ipynb \
                                     -and -not -name \*-checkpoint.ipynb))
 	# convert notebooks to rst
 	cd source/generated; ipython nbconvert --to rst $(notebooks)
