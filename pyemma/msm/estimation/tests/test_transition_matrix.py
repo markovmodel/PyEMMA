@@ -2,6 +2,7 @@ import unittest
 import warnings
 
 import numpy as np
+from pyemma.util.numeric import assert_allclose
 import scipy.sparse
 
 from pyemma.msm.estimation import transition_matrix, tmatrix_cov, error_perturbation
@@ -30,24 +31,24 @@ class TestTransitionMatrixNonReversibleSparse(unittest.TestCase):
     def test_transition_matrix(self):
         """Non-reversible"""
         T=transition_matrix(self.C1).toarray()
-        self.assertTrue(np.allclose(T, self.T1.toarray()))
+        assert_allclose(T, self.T1.toarray())
         
         T=transition_matrix(self.C2).toarray()
-        self.assertTrue(np.allclose(T, self.T2.toarray()))   
+        assert_allclose(T, self.T2.toarray())   
 
         """Reversible"""
         T=transition_matrix(self.C1, rversible=True).toarray()
-        self.assertTrue(np.allclose(T, self.T1.toarray()))
+        assert_allclose(T, self.T1.toarray())
 
         T=transition_matrix(self.C2, reversible=True).toarray()
-        self.assertTrue(np.allclose(T, self.T2.toarray()))   
+        assert_allclose(T, self.T2.toarray())   
 
         """Reversible with fixed pi"""
         T=transition_matrix(self.C1, rversible=True, pi=self.pi1).toarray()
-        self.assertTrue(np.allclose(T, self.T1.toarray()))
+        assert_allclose(T, self.T1.toarray())
         
         T=transition_matrix(self.C2, rversible=True, pi=self.pi2).toarray()
-        self.assertTrue(np.allclose(T, self.T2.toarray()))       
+        assert_allclose(T, self.T2.toarray())       
         
 
 class TestCovariance(unittest.TestCase):
@@ -74,10 +75,10 @@ class TestCovariance(unittest.TestCase):
 
     def test_tmatrix_cov(self):
         cov=tmatrix_cov(self.C)
-        self.assertTrue(np.allclose(cov, self.cov))
+        assert_allclose(cov, self.cov)
 
         cov=tmatrix_cov(self.C, k=1)
-        self.assertTrue(np.allclose(cov, self.cov[1, :, :]))
+        assert_allclose(cov, self.cov[1, :, :])
 
 class TestErrorPerturbation(unittest.TestCase):
     def setUp(self):
@@ -117,21 +118,21 @@ class TestErrorPerturbation(unittest.TestCase):
 
     def test_error_perturbation(self):
         xn=error_perturbation(self.C, self.S1)
-        self.assertTrue(np.allclose(xn, self.x))
+        assert_allclose(xn, self.x)
 
         Xn=error_perturbation(self.C, self.S2)
-        self.assertTrue(np.allclose(Xn, self.X))   
+        assert_allclose(Xn, self.X)   
 
     def test_error_perturbation_sparse(self):
         Csparse=scipy.sparse.csr_matrix(self.C)
 
         with warnings.catch_warnings(record=True) as w:
             xn=error_perturbation(Csparse,self.S1)
-            self.assertTrue(np.allclose(xn, self.x))
+            assert_allclose(xn, self.x)
 
         with warnings.catch_warnings(record=True) as w:
             Xn=error_perturbation(Csparse,self.S2)
-            self.assertTrue(np.allclose(Xn, self.X))
+            assert_allclose(Xn, self.X)
         
         
 if __name__=="__main__":

@@ -6,6 +6,7 @@ Created on Aug 14, 2014
 
 import unittest
 import numpy as np
+from pyemma.util.numeric import assert_allclose
 
 import api as msmapi
 import pyemma.msm.analysis as msmana
@@ -120,29 +121,29 @@ class TestReactiveFluxFunctions(unittest.TestCase):
         self.assertEqual(self.tpt1.B, self.B)
     
     def test_flux(self):
-        self.assertTrue(np.allclose(self.tpt1.flux, self.ref_netflux, rtol=1e-02, atol=1e-07))
+        assert_allclose(self.tpt1.flux, self.ref_netflux, rtol=1e-02, atol=1e-07)
     
     def test_netflux(self):
-        self.assertTrue(np.allclose(self.tpt1.net_flux, self.ref_netflux, rtol=1e-02, atol=1e-07))
+        assert_allclose(self.tpt1.net_flux, self.ref_netflux, rtol=1e-02, atol=1e-07)
     
     def test_grossflux(self):
-        self.assertTrue(np.allclose(self.tpt1.gross_flux, self.ref_grossflux, rtol=1e-02, atol=1e-07))
+        assert_allclose(self.tpt1.gross_flux, self.ref_grossflux, rtol=1e-02, atol=1e-07)
     
     def test_committor(self):
-        self.assertTrue(np.allclose(self.tpt1.committor, self.ref_committor, rtol=1e-02, atol=1e-07))
+        assert_allclose(self.tpt1.committor, self.ref_committor, rtol=1e-02, atol=1e-07)
     
     def test_forwardcommittor(self):
-        self.assertTrue(np.allclose(self.tpt1.forward_committor, self.ref_committor, rtol=1e-02, atol=1e-07))
+        assert_allclose(self.tpt1.forward_committor, self.ref_committor, rtol=1e-02, atol=1e-07)
     
     def test_backwardcommittor(self):
-        self.assertTrue(np.allclose(self.tpt1.backward_committor, self.ref_backwardcommittor, rtol=1e-02, atol=1e-07))
+        assert_allclose(self.tpt1.backward_committor, self.ref_backwardcommittor, rtol=1e-02, atol=1e-07)
     
     def test_total_flux(self):
-        self.assertTrue(np.allclose(self.tpt1.total_flux, self.ref_totalflux, rtol=1e-02, atol=1e-07))
+        assert_allclose(self.tpt1.total_flux, self.ref_totalflux, rtol=1e-02, atol=1e-07)
     
     def test_rate(self):
-        self.assertTrue(np.allclose(self.tpt1.rate, self.ref_kAB, rtol=1e-02, atol=1e-07))
-        self.assertTrue(np.allclose(1.0/self.tpt1.rate, self.ref_mfptAB, rtol=1e-02, atol=1e-07))
+        assert_allclose(self.tpt1.rate, self.ref_kAB, rtol=1e-02, atol=1e-07)
+        assert_allclose(1.0/self.tpt1.rate, self.ref_mfptAB, rtol=1e-02, atol=1e-07)
     
     def test_pathways(self):
         # all paths
@@ -150,19 +151,19 @@ class TestReactiveFluxFunctions(unittest.TestCase):
         self.assertEqual(len(paths), len(self.ref_paths))
         for i in range(len(paths)):
             self.assertTrue(np.all(np.array(paths[i]) == np.array(self.ref_paths[i])))
-        self.assertTrue(np.allclose(pathfluxes, self.ref_pathfluxes, rtol=1e-02, atol=1e-07))
+        assert_allclose(pathfluxes, self.ref_pathfluxes, rtol=1e-02, atol=1e-07)
         # major paths
         (paths,pathfluxes) = self.tpt1.pathways(fraction = 0.99)
         self.assertEqual(len(paths), len(self.ref_paths_99percent))
         for i in range(len(paths)):
             self.assertTrue(np.all(np.array(paths[i]) == np.array(self.ref_paths_99percent[i])))
-        self.assertTrue(np.allclose(pathfluxes, self.ref_pathfluxes_99percent, rtol=1e-02, atol=1e-07))
+        assert_allclose(pathfluxes, self.ref_pathfluxes_99percent, rtol=1e-02, atol=1e-07)
     
     def test_major_flux(self):
         # all flux
-        self.assertTrue(np.allclose(self.tpt1.major_flux(fraction=1.0), self.ref_netflux, rtol=1e-02, atol=1e-07))
+        assert_allclose(self.tpt1.major_flux(fraction=1.0), self.ref_netflux, rtol=1e-02, atol=1e-07)
         # 0.99 flux
-        self.assertTrue(np.allclose(self.tpt1.major_flux(fraction=0.99), self.ref_majorflux_99percent, rtol=1e-02, atol=1e-07))
+        assert_allclose(self.tpt1.major_flux(fraction=0.99), self.ref_majorflux_99percent, rtol=1e-02, atol=1e-07)
     
     def test_coarse_grain(self):
         (tpt_sets,cgRF) = self.tpt2.coarse_grain(self.coarsesets2)
@@ -170,13 +171,13 @@ class TestReactiveFluxFunctions(unittest.TestCase):
         self.assertEqual(cgRF.A, self.ref2_cgA)
         self.assertEqual(cgRF.I, self.ref2_cgI)
         self.assertEqual(cgRF.B, self.ref2_cgB)
-        self.assertTrue(np.allclose(cgRF.stationary_distribution, self.ref2_cgpstat))
-        self.assertTrue(np.allclose(cgRF.committor, self.ref2_cgcommittor))
-        self.assertTrue(np.allclose(cgRF.forward_committor, self.ref2_cgcommittor))
-        self.assertTrue(np.allclose(cgRF.backward_committor, self.ref2_cgbackwardcommittor))
-        self.assertTrue(np.allclose(cgRF.flux, self.ref2_cgnetflux))
-        self.assertTrue(np.allclose(cgRF.net_flux, self.ref2_cgnetflux))
-        self.assertTrue(np.allclose(cgRF.gross_flux, self.ref2_cggrossflux))
+        assert_allclose(cgRF.stationary_distribution, self.ref2_cgpstat)
+        assert_allclose(cgRF.committor, self.ref2_cgcommittor)
+        assert_allclose(cgRF.forward_committor, self.ref2_cgcommittor)
+        assert_allclose(cgRF.backward_committor, self.ref2_cgbackwardcommittor)
+        assert_allclose(cgRF.flux, self.ref2_cgnetflux)
+        assert_allclose(cgRF.net_flux, self.ref2_cgnetflux)
+        assert_allclose(cgRF.gross_flux, self.ref2_cggrossflux)
 
 
 if __name__ == "__main__":

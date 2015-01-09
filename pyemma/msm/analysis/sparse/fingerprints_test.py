@@ -7,6 +7,7 @@ r"""Unit test for the fingerprint module
 import unittest
 
 import numpy as np
+from pyemma.util.numeric import assert_allclose
 
 from decomposition import rdl_decomposition, timescales
 
@@ -65,14 +66,14 @@ class TestFingerprint(unittest.TestCase):
         k=self.k
         acorr_amp=np.dot(self.mu*self.obs1, self.R)*np.dot(self.L,self.obs1)
         tsn, acorr_ampn=fingerprint_correlation(self.T, self.obs1, k=k)
-        self.assertTrue(np.allclose(tsn, self.ts))
-        self.assertTrue(np.allclose(acorr_ampn, acorr_amp))
+        assert_allclose(tsn, self.ts)
+        assert_allclose(acorr_ampn, acorr_amp)
 
         """k=4, tau=7.5"""
         tau=self.tau
         tsn, acorr_ampn=fingerprint_correlation(self.T, self.obs1, k=k, tau=tau)
-        self.assertTrue(np.allclose(tsn, tau*self.ts))
-        self.assertTrue(np.allclose(acorr_ampn, acorr_amp))
+        assert_allclose(tsn, tau*self.ts)
+        assert_allclose(acorr_ampn, acorr_amp)
 
         """Cross-correlation"""
 
@@ -80,29 +81,29 @@ class TestFingerprint(unittest.TestCase):
         k=self.k
         corr_amp=np.dot(self.mu*self.obs1, self.R)*np.dot(self.L,self.obs2)
         tsn, corr_ampn=fingerprint_correlation(self.T, self.obs1, obs2=self.obs2, k=k)
-        self.assertTrue(np.allclose(tsn, self.ts))
-        self.assertTrue(np.allclose(corr_ampn, corr_amp))
+        assert_allclose(tsn, self.ts)
+        assert_allclose(corr_ampn, corr_amp)
 
         """k=4, tau=7.5"""
         tau=self.tau
         tsn, corr_ampn=fingerprint_correlation(self.T, self.obs1, obs2=self.obs2, k=k, tau=tau)
-        self.assertTrue(np.allclose(tsn, tau*self.ts))
-        self.assertTrue(np.allclose(corr_ampn, corr_amp))
+        assert_allclose(tsn, tau*self.ts)
+        assert_allclose(corr_ampn, corr_amp)
 
     def test_fingerprint_relaxation(self):
         one_vec=np.ones(self.T.shape[0])
 
         relax_amp=np.dot(self.p0, self.R)*np.dot(self.L, self.obs1)
         tsn, relax_ampn=fingerprint_relaxation(self.T, self.p0, self.obs1, k=self.k)        
-        self.assertTrue(np.allclose(tsn, self.ts))
-        self.assertTrue(np.allclose(relax_ampn, relax_amp))        
+        assert_allclose(tsn, self.ts)
+        assert_allclose(relax_ampn, relax_amp)        
 
     def test_fingerprint(self):
         k=self.k
         amp=np.dot(self.p0*self.obs1, self.R)*np.dot(self.L, self.obs2)
         tsn, ampn=fingerprint(self.T, self.obs1, obs2=self.obs2, p0=self.p0, k=k)
-        self.assertTrue(np.allclose(tsn, self.ts))
-        self.assertTrue(np.allclose(ampn, amp))       
+        assert_allclose(tsn, self.ts)
+        assert_allclose(ampn, amp)       
 
 ################################################################################
 # Correlation
@@ -149,7 +150,7 @@ class TestCorrelation(unittest.TestCase):
         acorr_amp=np.dot(self.mu*self.obs1, self.R)*np.dot(self.L, self.obs1)
         acorr=np.dot(self.ev_t, acorr_amp)
         acorrn=correlation_decomp(self.T, self.obs1, k=self.k, times=self.times)
-        self.assertTrue(np.allclose(acorrn, acorr))
+        assert_allclose(acorrn, acorr)
 
         """Cross-correlation"""
 
@@ -157,7 +158,7 @@ class TestCorrelation(unittest.TestCase):
         corr_amp=np.dot(self.mu*self.obs1, self.R)*np.dot(self.L, self.obs2)
         corr=np.dot(self.ev_t, corr_amp)    
         corrn=correlation_decomp(self.T, self.obs1, obs2=self.obs2, k=self.k, times=self.times)
-        self.assertTrue(np.allclose(corrn, corr))        
+        assert_allclose(corrn, corr)        
 
     def test_correlation_matvec(self):
         """Auto-correlation"""
@@ -168,7 +169,7 @@ class TestCorrelation(unittest.TestCase):
             P_t=np.linalg.matrix_power(P, times[i])
             acorr[i]=np.dot(self.mu*self.obs1, np.dot(P_t, self.obs1))              
         acorrn=correlation_matvec(self.T, self.obs1, times=self.times)
-        self.assertTrue(np.allclose(acorrn, acorr))
+        assert_allclose(acorrn, acorr)
     
         """Cross-correlation"""
         corr=np.zeros(len(times))
@@ -176,21 +177,21 @@ class TestCorrelation(unittest.TestCase):
             P_t=np.linalg.matrix_power(P, times[i])
             corr[i]=np.dot(self.mu*self.obs1, np.dot(P_t, self.obs2))        
         corrn=correlation_matvec(self.T, self.obs1, obs2=self.obs2, times=self.times)
-        self.assertTrue(np.allclose(corrn, corr))
+        assert_allclose(corrn, corr)
 
     def test_correlation(self):
         """Auto-correlation"""
         acorr_amp=np.dot(self.mu*self.obs1, self.R)*np.dot(self.L, self.obs1)
         acorr=np.dot(self.ev_t, acorr_amp)
         acorrn=correlation(self.T, self.obs1, k=self.k, times=self.times)
-        self.assertTrue(np.allclose(acorrn, acorr))
+        assert_allclose(acorrn, acorr)
 
   
         """Cross-correlation"""
         corr_amp=np.dot(self.mu*self.obs1, self.R)*np.dot(self.L, self.obs2)
         corr=np.dot(self.ev_t, corr_amp)    
         corrn=correlation(self.T, self.obs1, obs2=self.obs2, k=self.k, times=self.times)
-        self.assertTrue(np.allclose(corrn, corr))
+        assert_allclose(corrn, corr)
 
 
 ################################################################################
@@ -239,7 +240,7 @@ class TestRelaxation(unittest.TestCase):
         relax_amp=np.dot(self.p0, self.R)*np.dot(self.L, self.obs)
         relax=np.dot(self.ev_t, relax_amp)        
         relaxn=relaxation_decomp(self.T, self.p0, self.obs, k=self.k, times=self.times)        
-        self.assertTrue(np.allclose(relaxn, relax))               
+        assert_allclose(relaxn, relax)               
 
     def test_relaxation_matvec(self):  
         times=self.times
@@ -249,13 +250,13 @@ class TestRelaxation(unittest.TestCase):
             P_t=np.linalg.matrix_power(P, times[i])
             relax[i]=np.dot(self.p0, np.dot(P_t, self.obs))              
         relaxn=relaxation_matvec(self.T, self.p0, self.obs, times=self.times)
-        self.assertTrue(np.allclose(relaxn, relax))      
+        assert_allclose(relaxn, relax)      
 
     def test_relaxation(self):        
         relax_amp=np.dot(self.p0, self.R)*np.dot(self.L, self.obs)
         relax=np.dot(self.ev_t, relax_amp)        
         relaxn=relaxation(self.T, self.p0, self.obs, k=self.k, times=self.times)        
-        self.assertTrue(np.allclose(relaxn, relax))               
+        assert_allclose(relaxn, relax)               
 
 if __name__ == "__main__":
     unittest.main()

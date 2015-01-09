@@ -7,6 +7,7 @@ r"""Unit tests for the connectivity module
 import unittest
 
 import numpy as np
+from pyemma.util.numeric import assert_allclose
 import scipy.sparse
 
 import connectivity
@@ -105,19 +106,19 @@ class TestConnectedCountMatrix(unittest.TestCase):
     def test_connected_count_matrix(self):
         """Directed"""
         C_cc=connectivity.largest_connected_submatrix(self.C)
-        self.assertTrue(np.allclose(C_cc.toarray(), self.C_cc_directed))
+        assert_allclose(C_cc.toarray(), self.C_cc_directed)
 
         """Directed with user specified lcc"""
         C_cc=connectivity.largest_connected_submatrix(self.C, lcc=np.array([0, 1]))
-        self.assertTrue(np.allclose(C_cc.toarray(), self.C_cc_directed[0:2,0:2]))
+        assert_allclose(C_cc.toarray(), self.C_cc_directed[0:2,0:2])
 
         """Undirected"""
         C_cc=connectivity.largest_connected_submatrix(self.C, directed=False)
-        self.assertTrue(np.allclose(C_cc.toarray(), self.C_cc_undirected))
+        assert_allclose(C_cc.toarray(), self.C_cc_undirected)
 
         """Undirected with user specified lcc"""
         C_cc=connectivity.largest_connected_submatrix(self.C, lcc=np.array([0, 1]), directed=False)
-        self.assertTrue(np.allclose(C_cc.toarray(), self.C_cc_undirected[0:2,0:2]))
+        assert_allclose(C_cc.toarray(), self.C_cc_undirected[0:2,0:2])
         
 class TestIsConnected(unittest.TestCase):
         

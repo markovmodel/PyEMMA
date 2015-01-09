@@ -193,7 +193,8 @@ def tpt(dtrajs, lag, A, B, reversible=True, sliding=True):
     return tptobj
 
 
-def hmsm(dtrajs, nstate, lag=1, conv=0.01, maxiter=None, timeshift=None):
+def hmsm(dtrajs, nstate, lag=1, conv=0.01, maxiter=None, timeshift=None,
+         TCinit = None, chiInit = None):
     """
     Implements a discrete Hidden Markov state model of conformational
     kinetics.  For details, see [1].
@@ -233,6 +234,12 @@ def hmsm(dtrajs, nstate, lag=1, conv=0.01, maxiter=None, timeshift=None):
         > 1 data will be subsampled. Setting timeshift greater than
         tau will have no effect, because at least the first
         subtrajectory will be used.
+    TCinit : ndarray (m,m)
+        initial hidden transition matrix. If set to None, will generate a guess using PCCA+ from a Markov
+        model of the discrete trajectories estimated at the given lag time.
+    chiInit : ndarray (m,n)
+        initial observation probability matrix. If set to None, will generate a guess using PCCA+ from a
+        Markov model of the discrete trajectories estimated at the given lag time.
 
     Returns
     -------
@@ -241,5 +248,6 @@ def hmsm(dtrajs, nstate, lag=1, conv=0.01, maxiter=None, timeshift=None):
 
     """
     # initialize
-    return hmm.HiddenMSM(dtrajs, nstate, lag=lag, conv=conv, maxiter=maxiter, timeshift=timeshift)
+    return hmm.HiddenMSM(dtrajs, nstate, lag=lag, conv=conv, maxiter=maxiter, timeshift=timeshift,
+                         TCinit = TCinit, chiInit = chiInit)
 

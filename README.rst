@@ -20,7 +20,15 @@ IPython notebooks.
 
 Installation
 ------------
-To install it refer to the installation guide
+With pip::
+ 
+     pip install pyemma
+
+with conda::
+
+     conda install -c https://conda.binstar.org/omnia pyemma
+
+For a complete guide to installation, please have a look at the version 
 `online <http://pythonhosted.org/pyEMMA/INSTALL.html>`__ or offline in file
 doc/source/INSTALL.rst
 

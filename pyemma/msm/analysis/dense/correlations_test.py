@@ -5,6 +5,7 @@ Created on Jun 3, 2014
 '''
 import unittest
 import numpy as np
+from pyemma.util.numeric import assert_allclose
 
 from committor_test import BirthDeathChain
 
@@ -128,7 +129,7 @@ class TestCorrelations(unittest.TestCase):
         
         result = correlations.time_relaxations_direct(self.T, p0, obs, times)
         
-        self.assertTrue(np.allclose(expected, result))
+        assert_allclose(expected, result)
 
 if __name__ == "__main__":
     unittest.main()

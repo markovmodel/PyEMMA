@@ -11,6 +11,7 @@ sensitivity matrices against numerical differentiation results.
 
 import unittest
 import numpy as np
+from pyemma.util.numeric import assert_allclose
 
 from pyemma.msm.analysis import timescale_sensitivity, eigenvalue_sensitivity, mfpt_sensitivity,\
     committor_sensitivity, eigenvector_sensitivity,\
@@ -118,46 +119,46 @@ class TestSensitivitiesDense(unittest.TestCase):
 
     def test_eigenvalue_sensitivity(self):
                 
-        self.assertTrue(np.allclose(eigenvalue_sensitivity(self.T,0), self.S0))      
-        self.assertTrue(np.allclose(eigenvalue_sensitivity(self.T,1), self.S1))      
+        assert_allclose(eigenvalue_sensitivity(self.T,0), self.S0)      
+        assert_allclose(eigenvalue_sensitivity(self.T,1), self.S1)      
         
     def test_timescale_sensitivity(self):
                     
-        self.assertTrue(np.allclose(timescale_sensitivity(self.T,1), self.TS1))   
+        assert_allclose(timescale_sensitivity(self.T,1), self.TS1)   
         
     def test_forward_committor_sensitivity(self):
             
-        self.assertTrue(np.allclose(committor_sensitivity(self.T4, [0], [3], 0, forward=True), self.S4zero))      
-        self.assertTrue(np.allclose(committor_sensitivity(self.T4, [0], [3], 1, forward=True), self.qS41))      
-        self.assertTrue(np.allclose(committor_sensitivity(self.T4, [0], [3], 2, forward=True), self.qS42))      
-        self.assertTrue(np.allclose(committor_sensitivity(self.T4, [0], [3], 3, forward=True), self.S4zero))      
+        assert_allclose(committor_sensitivity(self.T4, [0], [3], 0, forward=True), self.S4zero)      
+        assert_allclose(committor_sensitivity(self.T4, [0], [3], 1, forward=True), self.qS41)      
+        assert_allclose(committor_sensitivity(self.T4, [0], [3], 2, forward=True), self.qS42)      
+        assert_allclose(committor_sensitivity(self.T4, [0], [3], 3, forward=True), self.S4zero)      
 
     def test_backward_committor_sensitivity(self):
         
-        self.assertTrue(np.allclose(committor_sensitivity(self.T4, [0], [3], 1, forward=False), self.qSI41))      
+        assert_allclose(committor_sensitivity(self.T4, [0], [3], 1, forward=False), self.qSI41)      
                 
     def test_mfpt_sensitivity(self):
         
-        self.assertTrue(np.allclose(mfpt_sensitivity(self.T4, 0, 0), self.S4zero))    
-        self.assertTrue(np.allclose(mfpt_sensitivity(self.T4, 0, 1), self.mS01))      
-        self.assertTrue(np.allclose(mfpt_sensitivity(self.T4, 0, 2), self.mS02))      
-        self.assertTrue(np.allclose(mfpt_sensitivity(self.T4, 3, 2), self.mS32))  
+        assert_allclose(mfpt_sensitivity(self.T4, 0, 0), self.S4zero)    
+        assert_allclose(mfpt_sensitivity(self.T4, 0, 1), self.mS01)      
+        assert_allclose(mfpt_sensitivity(self.T4, 0, 2), self.mS02)      
+        assert_allclose(mfpt_sensitivity(self.T4, 3, 2), self.mS32)  
         
     def test_eigenvector_sensitivity(self):
-        self.assertTrue(np.allclose(eigenvector_sensitivity(self.T4, 1 , 1), self.mV11, atol=1e-5))      
-        self.assertTrue(np.allclose(eigenvector_sensitivity(self.T4, 2 , 2), self.mV22, atol=1e-5))      
-        self.assertTrue(np.allclose(eigenvector_sensitivity(self.T4, 0 , 3), self.mV03, atol=1e-5))  
+        assert_allclose(eigenvector_sensitivity(self.T4, 1 , 1), self.mV11, atol=1e-5)      
+        assert_allclose(eigenvector_sensitivity(self.T4, 2 , 2), self.mV22, atol=1e-5)      
+        assert_allclose(eigenvector_sensitivity(self.T4, 0 , 3), self.mV03, atol=1e-5)  
                 
-        self.assertTrue(np.allclose(eigenvector_sensitivity(self.T4, 0 , 1, right=False), self.mV01left, atol=1e-5))   
+        assert_allclose(eigenvector_sensitivity(self.T4, 0 , 1, right=False), self.mV01left, atol=1e-5)   
                  
     def test_stationary_sensitivity(self):    
-        self.assertTrue(np.allclose(stationary_distribution_sensitivity(self.T4, 1), self.pS1, atol=1e-5))      
+        assert_allclose(stationary_distribution_sensitivity(self.T4, 1), self.pS1, atol=1e-5)      
 
     def test_expectation_sensitivity(self):
         a=np.array([0.0, 3.0, 0.0, 0.0])
         S=3.0*self.pS1
         Sn=expectation_sensitivity(self.T4, a)
-        self.assertTrue(np.allclose(Sn, S))              
+        assert_allclose(Sn, S)              
         
 
 if __name__=="__main__":

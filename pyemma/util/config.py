@@ -44,24 +44,25 @@ __docformat__ = "restructuredtext en"
 
 import ConfigParser
 import os
-import pkg_resources
 
 __all__ = ['configParser', 'used_filenames', 'AttribStore']
 
 configParser = None
-""" instance of `ConfigParser.SafeConfigParser` to have always valid config values."""
+"""instance of `ConfigParser.SafeConfigParser` to have always valid config values."""
 
 used_filenames = []
-""" these filenames have been tried to red to obtain basic configuration values."""
+"""these filenames have been tried to red to obtain basic configuration values."""
 
 conf_values = None
-""" holds all value pairs of a conf_values file section in a dict under its section name
+"""holds all value pairs of a conf_values file section in a dict under its section name
 eg. { 'Java' : { 'initheap' : '32m', ... }, ... }
 """
 
 
 class AttribStore(dict):
+
     """ store arbitrary attributes in this dictionary like class."""
+
     def __getattr__(self, name):
         """ return attribute with given name or raise."""
         return self[name]
@@ -75,16 +76,20 @@ def readConfiguration():
     """
     TODO: consider using json to support arbitray python objects in ini file (if this getting more complex)
     """
+    import pkg_resources
+    import sys
 
     global configParser, conf_values, used_filenames
 
     # use these files to extend/overwrite the conf_values.
     # Last red file always overwrites existing values!
     cfg = 'pyemma.cfg'
-    filenames = [cfg, # conf_values in current dir
-                 '/etc/' + cfg, # conf_values in global installation
-                 os.path.join(os.path.expanduser('~' + os.path.sep), cfg), # config in user dir
-                ]
+    filenames = [
+        cfg,  # conf_values in current dir
+        '/etc/' + cfg,  # conf_values in global installation
+        os.path.join(os.path.expanduser(
+                     '~' + os.path.sep), cfg),  # config in user dir
+    ]
 
     # read defaults from default_pyemma_conf first.
     defParser = ConfigParser.RawConfigParser()
@@ -93,8 +98,33 @@ def readConfiguration():
         with open(default_pyemma_conf) as f:
             defParser.readfp(f, default_pyemma_conf)
     except EnvironmentError as e:
-        raise RuntimeError("FATAL ERROR: could not read default configuration file %s\n%s"
-                           % (default_pyemma_conf, e))
+        raise RuntimeError("FATAL ERROR: could not read default configuration"
+                           " file %s\n%s" % (default_pyemma_conf, e))
+
+    # handle case of different max heap sizes on 32/64 bit
+    is64bit = sys.maxsize > 2 ** 32
+    if is64bit:
+        maxheap = 2000
+    else:
+        maxheap = 1280
+
+    # if we have psutil, try to maximize memory usage.
+    try:
+        import psutil
+        # available virtual memory in mb
+        max_avail = psutil.virtual_memory().available / 1024**2
+
+        maxheap = max(maxheap, max_avail)
+    except ImportError:
+        pass
+
+    if maxheap < 1024:
+        import warnings
+        warnings.warn('Less than 1 GB of free memory. Underlying Java virtual'
+                      ' machine capped to %s mb. Working with trajectories on'
+                      ' Java side may cause memory problems.' % maxheap)
+
+    defParser.set('Java', 'maxHeap', '%sm' % maxheap)
 
     # store values of defParser in configParser with sections
     configParser = ConfigParser.SafeConfigParser()
@@ -103,7 +133,7 @@ def readConfiguration():
         for item in defParser.items(section):
             configParser.set(section, item[0], item[1])
 
-    """ this is a list of used configuration filenames during parsing the configuration"""
+    # this is a list of used configuration filenames during parsing the conf
     used_filenames = configParser.read(filenames)
 
     # store values in dictionaries for easy access

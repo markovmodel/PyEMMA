@@ -1,5 +1,6 @@
 import unittest
 import numpy as np
+from pyemma.util.numeric import assert_allclose
 import scipy
 import scipy.sparse
 
@@ -32,10 +33,10 @@ class Test_mle_trev_given_pi(unittest.TestCase):
         # print T_python
         # print T_api_sparse
 
-        self.assertTrue(np.allclose(T_cython_dense,T_python))
-        self.assertTrue(np.allclose(T_cython_sparse,T_python))
-        self.assertTrue(np.allclose(T_api_sparse,T_python))
-        self.assertTrue(np.allclose(T_api_dense,T_python))
+        assert_allclose(T_cython_dense, T_python)
+        assert_allclose(T_cython_sparse, T_python)
+        assert_allclose(T_api_sparse, T_python)
+        assert_allclose(T_api_dense, T_python)
 
 if __name__ == '__main__':
     unittest.main()

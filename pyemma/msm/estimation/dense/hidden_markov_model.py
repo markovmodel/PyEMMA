@@ -19,7 +19,8 @@ class HiddenMSM(object):
     J. Chem. Phys., 139 . p. 184114
     """
 
-    def __init__(self, dtrajs, nstate, lag=1, conv=0.01, maxiter=None, timeshift=None):
+    def __init__(self, dtrajs, nstate, lag=1, conv=0.01, maxiter=None, timeshift=None,
+                 TCinit = None, chiInit = None):
         """
         dtrajs : int-array or list of int-arrays
             discrete trajectory or list of discrete trajectories
@@ -45,6 +46,12 @@ class HiddenMSM(object):
             Basicly, when timeshift = 1, all data will be used, while for > 1 data will be subsampled. Setting
             timeshift greater than tau will have no effect, because at least the first subtrajectory will be 
             used.
+        TCinit : ndarray (m,m)
+            initial hidden transition matrix. If set to None, will generate a guess using PCCA+ from a Markov
+            model of the discrete trajectories estimated at the given lag time.
+        chiInit : ndarray (m,n)
+            initial observation probability matrix. If set to None, will generate a guess using PCCA+ from a
+            Markov model of the discrete trajectories estimated at the given lag time.
         """
         lag = int(lag)
         # format input data
@@ -62,10 +69,11 @@ class HiddenMSM(object):
             maxiter = 100 * nstate * nstate  # by default use 100 nstate^2
         # convergence when likelihood increases by no more than dlconv
         dectol = -conv
-        # do not set initial values for hidden transition matrix or output
-        # probabilities (will be obtained by PCCA+)
-        TCinit = None
-        chiInit = None
+        # convert initial values
+        if TCinit != None:
+            TCinit = stallone.ndarray_to_stallone_array(TCinit)
+        if chiInit != None:
+            chiInit = stallone.ndarray_to_stallone_array(chiInit)
         # run estimation
         try:
             self.hmm = stallone.API.hmm.pmm(jlist, nstate, lag, timeshift,
