@@ -109,7 +109,10 @@ def extensions():
     if USE_CYTHON: # if we have cython available now, cythonize module
         mle_trev_module = cythonize(mle_trev_module)
 
-    exts = mle_trev_module
+    # 
+    cocovar = Extension('pyemma.coordinates.transform.cocovar',
+                        sources=['pyemma/coordinates/transform/cocovar.c'])
+    exts = mle_trev_module + [cocovar]
 
     if openmp_enabled:
         warnings.warn('enabled openmp')
