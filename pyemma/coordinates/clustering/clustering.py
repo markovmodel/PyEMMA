@@ -9,8 +9,8 @@ import pyemma.util.pystallone as stallone
 
 
 class Clustering(object):
-    """
-    Wrapper to stallone clustering
+    r"""Wrapper to stallone clustering.
+    
     """
 
     def __init__(self, jclustering):
@@ -20,8 +20,8 @@ class Clustering(object):
         return self._jclustering
 
     def nclusters(self):
-        """
-        Returns the number of clusters
+        r"""Returns the number of clusters.
+        
         """
         return self._jclustering.getNumberOfClusters()
 
@@ -33,8 +33,8 @@ class Clustering(object):
         return stallone.stallone_array_to_ndarray(jclustercenters)
 
     def clustercenters(self):
-        """
-        returns the cluster centers
+        r"""Returns the cluster centers.
+        
         """
         x0 = self.clustercenter(0)
         nc = self.nclusters()
@@ -44,20 +44,20 @@ class Clustering(object):
         return centers
 
     def clusters(self):
-        """
-        returns the cluster indexes of the input data set
+        r"""Returns the cluster indexes of the input data set.
+        
         """
         jindexes = self._jclustering.getClusterIndexes()
         return stallone.stallone_array_to_ndarray(jindexes)
 
     def assign(self, X):
-        """
-        assigns point X to a cluster and returns its index
+        r"""Assigns point X to a cluster and returns its index.
 
         Parameters
         ----------
         X : numpy ndarray
             coordinate set to be assigned
+            
         """
         jX = stallone.ndarray_to_stallone_array(X)
         return self._jclustering.assign(jX)
