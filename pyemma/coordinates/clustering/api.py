@@ -75,7 +75,7 @@ def regspace(infiles, mindist, metric='Euclidean'):
     References
     ----------
     J.-H. Prinz, H. Wu, M. Sarich, B. Keller, M. Senne, M. Held, J.D. Chodera,
-    Ch. Schütte and F. Noe:
+    Ch. Schuette and F. Noe:
     Markov models of molecular kinetics: Generation and Validation.
     J. Chem. Phys. 134, 174105  (2011).
     """
