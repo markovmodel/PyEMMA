@@ -37,3 +37,10 @@ Support
 For support/bug reports/sugguestions/complains please file an issue on GitHub.
 http://github.com/markovmodel/PyEMMA
 
+Authors
+-------
+- Martin Scherer <m.scherer@fu-berlin.de>
+- Benjamin Trendelkamp-Schroer <benjamin.trendelkamp-schroer@fu-berlin.de>
+- Fabian Paul <fab@physik.tu-berlin.de>
+- Christoph Wehmeyer <christoph.wehmeyer@fu-berlin.de>
+- Frank Noé <frank.noe@fu-berlin.de>
