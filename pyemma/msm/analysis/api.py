@@ -53,6 +53,7 @@ __all__=['is_transition_matrix',
          'expected_counts_stationary',
          'mfpt',
          'committor',
+         'hitting_probability',
          'pcca',
          'expectation',
          'fingerprint_correlation',
@@ -689,6 +690,168 @@ def mfpt(T, target, origin=None, mu=None):
     else:
         raise _type_not_supported
 
+
+def hitting_probability(P, target):
+    """
+    Computes the hitting probabilities for all states to the target states.
+    
+    The hitting probability of state i to set A is defined as the minimal, 
+    non-negative solution of:
+    
+    .. math::
+        h_i^A &= 1                    \:\:\:\:  i\in A \\
+        h_i^A &= \sum_j p_{ij} h_i^A  \:\:\:\:  i \notin A
+    
+    Returns
+    =======
+    h : ndarray(n)
+        a vector with hitting probabilities
+    """
+    if issparse(P):
+        _showSparseConversionWarning() # currently no sparse implementation!
+        return dense.hitting_probability.hitting_probability(P.toarray(),target)
+    elif isdense(P):
+        return dense.hitting_probability.hitting_probability(P,target)
+    else:
+        raise _type_not_supported
+
+
+################################################################################
+# Transition path theory
+################################################################################
+
+# DONE: Ben
+def committor(T, A, B, forward=True, mu=None):
+    r"""Compute the committor between sets of microstates.
+    
+    The committor assigns to each microstate a probability that being
+    at this state, the set B will be hit next, rather than set A
+    (forward committor), or that the set A has been hit previously
+    rather than set B (backward committor). See [1] for a
+    detailed mathematical description. The present implementation 
+    uses the equations given in [2].
+    
+    Parameters
+    ----------
+    T : (M, M) ndarray or scipy.sparse matrix
+        Transition matrix
+    A : array_like
+        List of integer state labels for set A
+    B : array_like
+        List of integer state labels for set B
+    forward : bool
+        If True compute the forward committor, else
+        compute the backward committor.
+    
+    Returns
+    -------
+    q : (M,) ndarray
+        Vector of comittor probabilities.
+
+    Notes
+    -----
+    Committor functions are used to characterize microstates in terms
+    of their probability to being visited during a reaction/transition
+    between two disjoint regions of state space A, B. 
+
+    **Forward committor**
+
+    The forward committor :math:`q^{(+)}_i` is defined as the probability
+    that the process starting in `i` will reach `B` first, rather than `A`.
+
+    Using the first hitting time of a set :math:`S`,
+
+    .. math:: T_{S}=\inf\{t \geq 0 | X_t \in S \}
+
+    the forward committor :math:`q^{(+)}_i` can be fromally defined as
+
+    .. math:: q^{(+)}_i=\mathbb{P}_{i}(T_{A}<T_{B}).
+
+    The forward committor solves to the following boundary value problem
+
+    .. math::  \begin{array}{rl} \sum_j L_{ij} q^{(+)}_{j}=0 & i \in X \setminus{(A \cup B)} \\
+                q_{i}^{(+)}=0 & i \in A \\
+                q_{i}^{(+)}=1 & i \in B
+                \end{array}
+
+    :math:`L=T-I` denotes the generator matrix.
+
+    **Backward committor**
+
+    The backward committor is defined as the probability that the process
+    starting in :math:`x` came from :math:`A` rather than from :math:`B`.
+
+    Using the last exit time of a set :math:`S`,
+
+    .. math:: t_{S}=\sup\{t \geq 0 | X_t \notin S \}
+
+    the backward committor can be formally defined as 
+
+    .. math:: q^{(-)}_i=\mathbb{P}_{i}(t_{A}<t_{B}).
+
+    The backward comittor solves another boundary value problem
+
+    .. math::  \begin{array}{rl}
+                \sum_j K_{ij} q^{(-)}_{j}=0 & i \in X \setminus{(A \cup B)} \\
+                q_{i}^{(-)}=1 & i \in A \\
+                q_{i}^{(-)}=0 & i \in B
+                \end{array}
+
+    :math:`K=(D_{\pi}L)^{T}` denotes the adjoint generator matrix.
+
+    References
+    ----------
+    .. [1] P. Metzner, C. Schuette and E. Vanden-Eijnden.
+        Transition Path Theory for Markov Jump Processes. 
+        Multiscale Model Simul 7: 1192-1219 (2009).
+    .. [2] F. Noe, C. Schuette, E. Vanden-Eijnden, L. Reich and T.Weikl 
+        Constructing the Full Ensemble of Folding Pathways from Short Off-Equilibrium Simulations. 
+        Proc. Natl. Acad. Sci. USA, 106: 19011-19016 (2009).
+
+    Examples
+    --------
+
+    >>> from pyemma.msm.analysis import committor
+    >>> T=np.array([[0.89, 0.1, 0.01], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
+    >>> A=[0]
+    >>> B=[2]
+
+    >>> u_plus=committor(T, A, B)
+    >>> u_plus
+    array([ 0. ,  0.5,  1. ])
+    
+    >>> u_minus=committor(T, A, B, forward=False)
+    >>> u_minus
+    array([ 1.        ,  0.45454545,  0.        ])
+    
+    """
+    if issparse(T):
+        if forward:
+            return sparse.committor.forward_committor(T, A, B)
+        else:
+            """ if P is time reversible backward commitor is equal 1 - q+"""
+            if is_reversible(T, mu=mu):
+                return 1.0-sparse.committor.forward_committor(T, A, B)
+                
+            else:
+                return sparse.committor.backward_committor(T, A, B)
+
+    elif isdense(T):
+        if forward:
+            return dense.committor.forward_committor(T, A, B)
+        else:
+            """ if P is time reversible backward commitor is equal 1 - q+"""
+            if is_reversible(T, mu=mu):
+                return 1.0-dense.committor.forward_committor(T, A, B)
+            else:
+                return dense.committor.backward_committor(T, A, B)
+
+    else:
+        raise _type_not_supported
+    
+    return committor
+
+
 ################################################################################
 # Expectations
 ################################################################################
@@ -1226,143 +1389,6 @@ def pcca(T, n):
         return dense.pcca.pcca(T, n)
     else:
         _type_not_supported
-
-
-################################################################################
-# Transition path theory
-################################################################################
-
-# DONE: Ben
-def committor(T, A, B, forward=True, mu=None):
-    r"""Compute the committor between sets of microstates.
-    
-    The committor assigns to each microstate a probability that being
-    at this state, the set B will be hit next, rather than set A
-    (forward committor), or that the set A has been hit previously
-    rather than set B (backward committor). See [1] for a
-    detailed mathematical description. The present implementation 
-    uses the equations given in [2].
-    
-    Parameters
-    ----------
-    T : (M, M) ndarray or scipy.sparse matrix
-        Transition matrix
-    A : array_like
-        List of integer state labels for set A
-    B : array_like
-        List of integer state labels for set B
-    forward : bool
-        If True compute the forward committor, else
-        compute the backward committor.
-    
-    Returns
-    -------
-    q : (M,) ndarray
-        Vector of comittor probabilities.
-
-    Notes
-    -----
-    Committor functions are used to characterize microstates in terms
-    of their probability to being visited during a reaction/transition
-    between two disjoint regions of state space A, B. 
-
-    **Forward committor**
-
-    The forward committor :math:`q^{(+)}_i` is defined as the probability
-    that the process starting in `i` will reach `B` first, rather than `A`.
-
-    Using the first hitting time of a set :math:`S`,
-
-    .. math:: T_{S}=\inf\{t \geq 0 | X_t \in S \}
-
-    the forward committor :math:`q^{(+)}_i` can be fromally defined as
-
-    .. math:: q^{(+)}_i=\mathbb{P}_{i}(T_{A}<T_{B}).
-
-    The forward committor solves to the following boundary value problem
-
-    .. math::  \begin{array}{rl} \sum_j L_{ij} q^{(+)}_{j}=0 & i \in X \setminus{(A \cup B)} \\
-                q_{i}^{(+)}=0 & i \in A \\
-                q_{i}^{(+)}=1 & i \in B
-                \end{array}
-
-    :math:`L=T-I` denotes the generator matrix.
-
-    **Backward committor**
-
-    The backward committor is defined as the probability that the process
-    starting in :math:`x` came from :math:`A` rather than from :math:`B`.
-
-    Using the last exit time of a set :math:`S`,
-
-    .. math:: t_{S}=\sup\{t \geq 0 | X_t \notin S \}
-
-    the backward committor can be formally defined as 
-
-    .. math:: q^{(-)}_i=\mathbb{P}_{i}(t_{A}<t_{B}).
-
-    The backward comittor solves another boundary value problem
-
-    .. math::  \begin{array}{rl}
-                \sum_j K_{ij} q^{(-)}_{j}=0 & i \in X \setminus{(A \cup B)} \\
-                q_{i}^{(-)}=1 & i \in A \\
-                q_{i}^{(-)}=0 & i \in B
-                \end{array}
-
-    :math:`K=(D_{\pi}L)^{T}` denotes the adjoint generator matrix.
-
-    References
-    ----------
-    .. [1] P. Metzner, C. Schuette and E. Vanden-Eijnden.
-        Transition Path Theory for Markov Jump Processes. 
-        Multiscale Model Simul 7: 1192-1219 (2009).
-    .. [2] F. Noe, C. Schuette, E. Vanden-Eijnden, L. Reich and T.Weikl 
-        Constructing the Full Ensemble of Folding Pathways from Short Off-Equilibrium Simulations. 
-        Proc. Natl. Acad. Sci. USA, 106: 19011-19016 (2009).
-
-    Examples
-    --------
-
-    >>> from pyemma.msm.analysis import committor
-    >>> T=np.array([[0.89, 0.1, 0.01], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
-    >>> A=[0]
-    >>> B=[2]
-
-    >>> u_plus=committor(T, A, B)
-    >>> u_plus
-    array([ 0. ,  0.5,  1. ])
-    
-    >>> u_minus=committor(T, A, B, forward=False)
-    >>> u_minus
-    array([ 1.        ,  0.45454545,  0.        ])
-    
-    """
-    if issparse(T):
-        if forward:
-            return sparse.committor.forward_committor(T, A, B)
-        else:
-            """ if P is time reversible backward commitor is equal 1 - q+"""
-            if is_reversible(T, mu=mu):
-                return 1.0-sparse.committor.forward_committor(T, A, B)
-                
-            else:
-                return sparse.committor.backward_committor(T, A, B)
-
-    elif isdense(T):
-        if forward:
-            return dense.committor.forward_committor(T, A, B)
-        else:
-            """ if P is time reversible backward commitor is equal 1 - q+"""
-            if is_reversible(T, mu=mu):
-                return 1.0-dense.committor.forward_committor(T, A, B)
-            else:
-                return dense.committor.backward_committor(T, A, B)
-
-    else:
-        raise _type_not_supported
-    
-    return committor
-
 
 
 ################################################################################
