@@ -11,6 +11,7 @@ __all__ = ['MSM']
 
 
 class MSM(object):
+
     def __init__(self, dtrajs, lag, reversible=True, sliding=True, compute=True,
                  estimate_on_lcc=True):
         r"""Estimate Markov state model (MSM) from discrete trajectories.
@@ -94,13 +95,13 @@ class MSM(object):
         self._assert_computed()
         return self.Ccc
 
-    @property 
+    @property
     def count_matrix_full(self):
         self._assert_computed()
         return self.C
 
     @property
-    def estimate_on_lcc(self):
+    def largest_connected_set(self):
         self._assert_computed()
         return self.lcc
 
@@ -119,9 +120,3 @@ class MSM(object):
     def get_timescales(self, k):
         ts = timescales(self.T, k=k, tau=self.lagtime)
         return ts
-
-
-
-
-
-
