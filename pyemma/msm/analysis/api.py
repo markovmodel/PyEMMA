@@ -1393,6 +1393,29 @@ def pcca(T, n):
         _type_not_supported
 
 
+def coarsegrain(P, n):
+    """
+    Coarse-grains transition matrix P to n sets using PCCA
+    
+    Coarse-grains transition matrix P such that the dominant eigenvalues are preserved, using:
+    
+    ..math:
+        \tilde{P} = M^T P M (M^T M)^{-1}
+    
+    See: 
+    F. Noe, H. Wu, J.-H. Prinz and N. Plattner:
+    Projected and hidden Markov models for calculating kinetics and metastable states of complex molecules
+    J. Chem. Phys. 139, 184114 (2013)
+    """
+    if issparse(P):
+        _showSparseConversionWarning()
+        return dense.pcca.coarsegrain(P.toarray(), n)
+    elif isdense(P):
+        return dense.pcca.coarsegrain(P, n)
+    else:
+        _type_not_supported
+
+
 ################################################################################
 # Sensitivities
 ################################################################################
