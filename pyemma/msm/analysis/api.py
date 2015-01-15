@@ -22,6 +22,7 @@ import dense.expectations
 import dense.pcca
 import dense.sensitivity
 import dense.mean_first_passage_time
+import dense.hitting_probability
 
 import sparse.assessment
 import sparse.decomposition
@@ -1350,7 +1351,7 @@ def relaxation(T, p0, obs, times=[1], k=None, ncv=None):
 # PCCA
 ################################################################################
 
-# DONE: Jan
+# DONE: Jan, Frank
 def pcca(T, n):
     r"""Find meta-stable Perron-clusters.
     
@@ -1384,7 +1385,8 @@ def pcca(T, n):
     
     """
     if issparse(T):
-        raise NotImplementedError('PCCA is not implemented for sparse matrices.')
+        _showSparseConversionWarning()
+        return dense.pcca.pcca(T.toarray(), n)
     elif isdense(T):
         return dense.pcca.pcca(T, n)
     else:
