@@ -1,4 +1,3 @@
-from mdtraj.core.trajectory import Trajectory
 __author__ = 'noe'
 
 import mdtraj
@@ -43,7 +42,6 @@ class FeatureReader:
         self.chunksize = 10000
         self.in_memory = False
         self.Y = None
-        Trajectory
         # basic statistics
         for traj in trajectories:
             print "determing length of traj '%s'..." % traj
