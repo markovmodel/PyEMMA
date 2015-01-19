@@ -3,29 +3,12 @@ __author__ = 'noe'
 import mdtraj
 import numpy as np
 
+
 class FeatureReader:
+
     """
     Reads features from MD data
     """
-
-    # files
-    trajfiles = []
-    topfile = None
-    featurizer = None
-
-    # lengths
-    lengths = []
-    totlength = 0
-
-    # iteration
-    mditer = None
-    curr_itraj = 0
-
-    # cache size
-    chunksize = 10000
-    in_memory = False
-    Y = None
-
 
     def __init__(self, trajectories, topologyfile, featurizer):
         """
@@ -38,10 +21,23 @@ class FeatureReader:
             structure file (e.g. pdb)
 
         """
-        # init
+        # files
         self.trajfiles = trajectories
         self.topfile = topologyfile
         self.featurizer = featurizer
+
+        # lengths
+        self.lengths = []
+        self.totlength = 0
+
+        # iteration
+        self.mditer = None
+        self.curr_itraj = 0
+
+        # cache size
+        self.chunksize = 10000
+        self.in_memory = False
+        self.Y = None
 
         # basic statistics
         for traj in trajectories:
@@ -52,14 +48,11 @@ class FeatureReader:
         # load first trajectory
         self.curr_traj = mdtraj.open(trajectories[0])
 
-
     def describe(self):
-        return "Feature reader, features = ",self.featurizer.describe()
-
+        return "Feature reader, features = ", self.featurizer.describe()
 
     def set_chunksize(self, size):
         self.chunksize = size
-
 
     def operate_in_memory(self):
         """
@@ -68,10 +61,8 @@ class FeatureReader:
         """
         self.in_memory = True
 
-
     def parametrize(self):
         pass
-
 
     def number_of_trajectories(self):
         """
@@ -81,7 +72,6 @@ class FeatureReader:
             number of trajectories
         """
         return len(self.trajfiles)
-
 
     def trajectory_length(self, itraj):
         """
@@ -95,14 +85,11 @@ class FeatureReader:
         """
         return self.lengths[itraj]
 
-
     def trajectory_lengths(self):
         return self.lengths
 
-
     def n_frames_total(self):
         return self.totlength
-
 
     def dimension(self):
         """
@@ -112,7 +99,6 @@ class FeatureReader:
         """
         return self.featurizer.dimension()
 
-
     def get_memory_per_frame(self):
         """
         Returns the memory requirements per frame, in bytes
@@ -120,7 +106,6 @@ class FeatureReader:
         :return:
         """
         return 4 * self.dimension()
-
 
     def get_constant_memory(self):
         """
@@ -130,7 +115,6 @@ class FeatureReader:
         """
         return 0
 
-
     def get(self, itraj, t):
         """
         Returns
@@ -139,11 +123,11 @@ class FeatureReader:
         :return:
         """
         if (itraj != self.curr_itraj):
-            self.curr_traj = mdtraj.load(self.trajfiles[itraj], top=self.topfile)
+            self.curr_traj = mdtraj.load(
+                self.trajfiles[itraj], top=self.topfile)
             self.curr_itraj = itraj
         frame = self.curr_traj.slice(t)
         return self.featurizer.map(frame)
-
 
     def reset(self):
         """
@@ -151,8 +135,9 @@ class FeatureReader:
         :return:
         """
         self.curr_itraj = 0
-        self.mditer = mdtraj.iterload(self.trajfiles[0], chunk=self.chunksize, top=self.topfile)
-
+        if len(self.trajfiles) >= 1:
+            self.mditer = mdtraj.iterload(self.trajfiles[0],
+                                          chunk=self.chunksize, top=self.topfile)
 
     # TODO: enable iterating over lagged pairs of chunks!
     def next_chunk(self):
@@ -163,10 +148,11 @@ class FeatureReader:
         """
         chunk = self.mditer.next()
 
-        if np.max(chunk.time) >= self.trajectory_length(self.curr_itraj)-1:
+        if np.max(chunk.time) >= self.trajectory_length(self.curr_itraj) - 1:
             self.mditer.close()
-            if self.curr_itraj < len(self.trajfiles)-1:
+            if self.curr_itraj < len(self.trajfiles) - 1:
                 self.curr_itraj += 1
-                self.mditer = mdtraj.iterload(self.trajfiles[self.curr_itraj], chunk=self.chunksize, top=self.topfile)
+                self.mditer = mdtraj.iterload(
+                    self.trajfiles[self.curr_itraj], chunk=self.chunksize, top=self.topfile)
 
         return self.featurizer.map(chunk)

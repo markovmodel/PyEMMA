@@ -3,23 +3,12 @@ __author__ = 'noe'
 import numpy as np
 from transformer import Transformer
 
+
 class PCA(Transformer):
-    """
 
     """
 
-    data_producer = None
-    output_dimension = 1
-
-    # matrices
-    N = 0.0
-    mu = None
-    C = None
-    param_finished = False
-    v = None
-    R = None
-    # read
-    chunksize = 10000
+    """
 
     def __init__(self, data_producer, output_dimension):
         """
@@ -35,9 +24,16 @@ class PCA(Transformer):
         self.data_producer = data_producer
         self.output_dimension = output_dimension
 
+        # matrices
+        self.N = 0.0
+        self.mu = None
+        self.C = None
+        self.param_finished = False
+        self.v = None
+        self.R = None
 
     def describe(self):
-        return "PCA, output dimension = ",self.output_dimension
+        return "PCA, output dimension = ", self.output_dimension
 
     def dimension(self):
         """
@@ -47,7 +43,6 @@ class PCA(Transformer):
         """
         return self.output_dimension
 
-
     def get_constant_memory(self):
         """
         Returns the constant memory requirements, in bytes
@@ -55,8 +50,7 @@ class PCA(Transformer):
         :return:
         """
         # memory for mu, C, v, R
-        return 2 * self.data_producer.dimension() * (self.data_producer.dimension()+1)
-
+        return 2 * self.data_producer.dimension() * (self.data_producer.dimension() + 1)
 
     def add_chunk(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
         """
@@ -79,7 +73,7 @@ class PCA(Transformer):
             time-lagged data (if available)
         :return:
         """
-        print "itraj = ",itraj, "t = ",t, "last_chunk_in_traj = ",last_chunk_in_traj, "last_chunk = ",last_chunk,"ipass = ",ipass
+        print "itraj = ", itraj, "t = ", t, "last_chunk_in_traj = ", last_chunk_in_traj, "last_chunk = ", last_chunk, "ipass = ", ipass
         # pass 1
         if ipass == 0:
             if first_chunk:
@@ -91,28 +85,25 @@ class PCA(Transformer):
         # pass 2
         if ipass == 1:
             if first_chunk:
-                self.C  = np.zeros((self.data_producer.dimension(),self.data_producer.dimension()))
+                self.C = np.zeros(
+                    (self.data_producer.dimension(), self.data_producer.dimension()))
             Xm = X - self.mu
             self.C += np.dot(Xm.T, Xm)
             if last_chunk:
                 self.C /= self.N
                 # diagonalize
-                (v,R) = np.linalg.eig(self.C)
+                (v, R) = np.linalg.eig(self.C)
                 # sort
                 I = np.argsort(v)[::-1]
                 self.v = v[I]
-                self.R = R[I,:]
+                self.R = R[I, :]
                 # parametrization finished
                 self.param_finished = True
                 print "parametrization finished!"
 
-
     def parametrization_finished(self):
         return self.param_finished
 
-
     def map(self, X):
-        Y = np.dot(X, self.R[:,0:self.output_dimension])
+        Y = np.dot(X, self.R[:, 0:self.output_dimension])
         return Y
-
-

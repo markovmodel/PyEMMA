@@ -3,26 +3,12 @@ __author__ = 'noe'
 import mdtraj
 import numpy as np
 
+
 class Featurizer:
-    """
 
     """
 
-    topology = None
-
-    use_distances = False
-    distance_indexes = []
-
-    use_contacts = False
-    contact_indexes = []
-
-    use_angles = False
-    angle_indexes = []
-
-    use_backbone_torsions = False
-
-    dim = 0
-
+    """
 
     def __init__(self, topfile):
         """
@@ -31,18 +17,27 @@ class Featurizer:
         """
         self.topology = (mdtraj.load(topfile)).topology
 
+        self.use_distances = False
+        self.distance_indexes = []
+
+        self.use_contacts = False
+        self.contact_indexes = []
+
+        self.use_angles = False
+        self.angle_indexes = []
+
+        self.use_backbone_torsions = False
+
+        self.dim = 0
 
     def describe(self):
-        return "distances = ",self.use_distances," contacts = ",self.use_contacts," angles = ",self.use_angles," backbone torsions = ",self.use_backbone_torsions
-
+        return "distances = ", self.use_distances, " contacts = ", self.use_contacts, " angles = ", self.use_angles, " backbone torsions = ", self.use_backbone_torsions
 
     def selCa(self):
         return self.topology.select("name CA")
 
-
     def selHeavy(self):
         return self.topology.select("mass >= 2")
-
 
     def distances(self, atom_pairs):
         """
@@ -55,7 +50,6 @@ class Featurizer:
         self.distance_indexes = atom_pairs
         self.dim += np.shape(atom_pairs)[0]
 
-
     def pairs(self, sel):
         """
         Creates all pairs between indexes, except for 1 and 2-neighbors
@@ -63,16 +57,15 @@ class Featurizer:
         :return:
         """
         nsel = np.shape(sel)[0]
-        npair = ((nsel-2) * (nsel-3)) / 2
+        npair = ((nsel - 2) * (nsel - 3)) / 2
         pairs = np.zeros((npair, 2))
         s = 0
-        for i in range(0, nsel-3):
-            d = nsel-3-i
-            pairs[s:s+d,0] = sel[i]
-            pairs[s:s+d,1] = sel[i+3:nsel]
+        for i in range(0, nsel - 3):
+            d = nsel - 3 - i
+            pairs[s:s + d, 0] = sel[i]
+            pairs[s:s + d, 1] = sel[i + 3:nsel]
             s += d
         return pairs
-
 
     def contacts(self, atom_pairs):
         """
@@ -83,7 +76,6 @@ class Featurizer:
         self.use_contacts = True
         self.contact_indexes = atom_pairs
         self.dim += np.shape(atom_pairs)[0]
-
 
     def angles(self, indexes):
         """
@@ -96,7 +88,6 @@ class Featurizer:
         self.angle_indexes = indexes
         self.dim += np.shape(indexes)[0]
 
-
     def backbone_torsions(self):
         """
         Adds all backbone torsions
@@ -104,12 +95,10 @@ class Featurizer:
         :return:
         """
         self.use_backbone_torsions = True
-        self.dim += 2*mdtraj.n_residues
-
+        self.dim += 2 * mdtraj.n_residues
 
     def dimension(self):
         return self.dim
-
 
     def map(self, traj):
         """

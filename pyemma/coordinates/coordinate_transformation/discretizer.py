@@ -8,9 +8,8 @@ from uniform_time_clustering import UniformTimeClustering
 import psutil
 import numpy as np
 
-class Discretizer:
 
-    transformers = []
+class Discretizer(object):
 
     def __init__(self, trajfiles, topfile):
         """

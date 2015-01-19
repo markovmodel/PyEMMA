@@ -2,10 +2,12 @@ __author__ = 'noe'
 
 import numpy as np
 
-class Transformer:
+
+class Transformer(object):
 
     def set_chunksize(self, size):
         self.chunksize = size
+        self.lag = 0
 
     def operate_in_memory(self):
         """
@@ -22,7 +24,7 @@ class Transformer:
         Returns 0 by default
         :return:
         """
-        return 0
+        return self.lag
 
 
     def number_of_trajectories(self):
