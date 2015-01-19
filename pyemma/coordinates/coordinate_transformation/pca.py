@@ -25,7 +25,7 @@ class PCA(Transformer):
         self.output_dimension = output_dimension
 
         # matrices
-        self.N = 0.0
+        self.N = 0
         self.mu = None
         self.C = None
         self.param_finished = False
