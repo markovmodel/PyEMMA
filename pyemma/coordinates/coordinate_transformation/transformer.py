@@ -89,14 +89,20 @@ class Transformer(object):
                 t = 0
                 while not last_chunk_in_traj:
                     # iterate over times within trajectory
-                    if lag == 0:
-                        X = self.data_producer.next_chunk()
-                        Y = None
-                    else:
-                        (X,Y) = self.data_producer.next_chunk(lag=lag)
+                    try:
+                        if lag == 0:
+                            X = self.data_producer.next_chunk()
+                            Y = None
+                        else:
+                            (X,Y) = self.data_producer.next_chunk(lag=lag)
+                    except StopIteration:
+                        last_chunk_in_traj = True
                     L = np.shape(X)[0]
                     # last chunk in traj?
-                    last_chunk_in_traj = (t + lag + L >= self.trajectory_length(itraj))
+                    # FIXME: this calc seems to be wrong, as next_chunk is being called outside of bounds.
+                    #print "t + lag + L => %s + %s + %L = %s" % (str(t), str(lag), str(L), str(t+lag+L))
+                    #print "len traj:" ,self.trajectory_length(itraj)
+                    #last_chunk_in_traj = (t + lag + L >= self.trajectory_length(itraj))
                     # last chunk?
                     last_chunk = (last_chunk_in_traj and itraj >= self.number_of_trajectories()-1)
                     # first chunk
