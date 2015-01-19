@@ -56,10 +56,11 @@ class Discretizer:
 
         # starting from the back of the pipeline, store outputs if possible
         for trans in reversed(self.transformers):
-            if Mfree > 4*trans.dimension():
-                Mfree -= 4*trans.dimension()
+            mem_req_trans = trans.n_frames_total() * trans.get_memory_per_frame()
+            if Mfree > mem_req_trans:
+                Mfree -= mem_req_trans
                 trans.operate_in_memory()
-                print "operate in main memory: ",trans.describe()
+                print "spending ", mem_req_trans, " bytes to operate in main memory: ",trans.describe()
 
 
     def run(self):

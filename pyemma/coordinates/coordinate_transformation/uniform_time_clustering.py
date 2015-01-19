@@ -9,7 +9,7 @@ class UniformTimeClustering(Transformer):
     # number of clusters
     k = 2
     # cluster centers
-    Y = None
+    clustercenters = None
     # discrete trajectories
     dtrajs = []
     # param finished?
@@ -18,7 +18,7 @@ class UniformTimeClustering(Transformer):
     def __init__(self, data_producer, k):
         self.data_producer = data_producer
         self.k = k
-        self.Y = np.zeros((self.k, self.data_producer.dimension()), dtype=np.float32)
+        self.clustercenters = np.zeros((self.k, self.data_producer.dimension()), dtype=np.float32)
         self.stride = self.data_producer.n_frames_total() / self.k
         self.nextt = self.stride/2
         self.tprev = 0
@@ -41,7 +41,7 @@ class UniformTimeClustering(Transformer):
         :return:
         """
         # 4 bytes per frame for an integer index
-        return 4
+        return 0
 
 
     def get_constant_memory(self):
@@ -50,8 +50,8 @@ class UniformTimeClustering(Transformer):
 
         :return:
         """
-        # memory for cluster centers
-        return self.k * 4 * self.data_producer.dimension()
+        # memory for cluster centers and discrete trajectories
+        return self.k * 4 * self.data_producer.dimension() + 4 * self.data_producer.n_frames_total()
 
 
     def add_chunk(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
@@ -81,7 +81,7 @@ class UniformTimeClustering(Transformer):
             maxt = self.tprev + t + L
             while (self.nextt < maxt):
                 i = self.nextt - self.tprev - t
-                self.Y[self.n] = X[i]
+                self.clustercenters[self.n] = X[i]
                 self.n += 1
                 self.nextt += self.stride
             if last_chunk_in_traj:
@@ -94,17 +94,18 @@ class UniformTimeClustering(Transformer):
                 self.dtrajs[itraj][i+t] = self.map(X[i])
             if last_chunk:
                 self.param_finished = True
-        if last_chunk:
-            ipass += 1
 
 
+    def map_to_memory(self):
+        # nothing to do, because memory-mapping of the discrete trajectories is done in parametrize
+        pass
 
     def parametrization_finished(self):
         return self.param_finished
 
 
     def map(self, x):
-        d = self.data_producer.distances(x, self.Y)
+        d = self.data_producer.distances(x, self.clustercenters)
         return np.argmin(d)
 
 

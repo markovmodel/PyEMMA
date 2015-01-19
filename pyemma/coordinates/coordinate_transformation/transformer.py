@@ -13,6 +13,9 @@ class Transformer:
         :return:
         """
         self.in_memory = True
+        # output data
+        self.Y = [np.zeros((self.trajectory_length(itraj), self.dimension())) for itraj in range(0,self.number_of_trajectories())]
+
 
     def get_lag(self):
         """
@@ -72,6 +75,7 @@ class Transformer:
     def parametrize(self):
         ipass = 0
         lag = self.get_lag()
+        # parametrize
         while not self.parametrization_finished():
             first_chunk = True
             self.data_producer.reset()
@@ -104,20 +108,74 @@ class Transformer:
                 # increment trajectory
                 itraj += 1
             ipass += 1
+        if self.in_memory:
+            self.map_to_memory()
+
+
+    def map_to_memory(self):
+        # if operating in main memory, do all the mapping now
+        self.data_producer.reset()
+        # iterate over trajectories
+        last_chunk = False
+        itraj = 0
+        while not last_chunk:
+            last_chunk_in_traj = False
+            t = 0
+            while not last_chunk_in_traj:
+                X = self.data_producer.next_chunk()
+                L = np.shape(X)[0]
+                # last chunk in traj?
+                last_chunk_in_traj = (t + L >= self.trajectory_length(itraj))
+                # last chunk?
+                last_chunk = (last_chunk_in_traj and itraj >= self.number_of_trajectories()-1)
+                # write
+                self.Y[itraj][t:t+L] = self.map(X)
+                # increment time
+                t += L
+            # increment trajectory
+            itraj += 1
 
 
 
     def reset(self):
-        self.data_producer.reset()
+        if self.in_memory:
+            # operate in memory, implement iterator here
+            self.itraj = 0
+            self.t = 0
+        else:
+            # operate in pipeline
+            self.data_producer.reset()
 
 
     def next_chunk(self, lag = 0):
-        if lag == 0:
-            X = self.data_producer.next_chunk()
-            return self.map(X)
+        if self.in_memory:
+            if self.itraj >= self.number_of_trajectories():
+                return None
+            # operate in memory, implement iterator here
+            if lag == 0:
+                Y = self.Y[self.itraj][self.t:min(self.t+self.chunksize,self.trajectory_length(self.itraj))]
+                # increment counters
+                self.t += self.chunksize
+                if self.t >= self.trajectory_length(self.itraj):
+                    self.itraj += 1
+                    self.t = 0
+                return Y
+            else:
+                Y0 = self.Y[self.itraj][self.t:min(self.t+self.chunksize,self.trajectory_length(self.itraj))]
+                Ytau = self.Y[self.itraj][self.t+lag:min(self.t+self.chunksize+lag,self.trajectory_length(self.itraj))]
+                # increment counters
+                self.t += self.chunksize
+                if self.t >= self.trajectory_length(self.itraj):
+                    self.itraj += 1
+                return (Y0,Ytau)
         else:
-            (X,Y) = self.data_producer.next_chunk(lag = lag)
-            return (self.map(X),self.map(Y))
+            # operate in pipeline
+            if lag == 0:
+                X = self.data_producer.next_chunk()
+                return self.map(X)
+            else:
+                (X0,Xtau) = self.data_producer.next_chunk(lag = lag)
+                return (self.map(X0),self.map(Xtau))
 
 
     def distance(self, x, y):
@@ -136,4 +194,4 @@ class Transformer:
         :param y: ndarray (Nxn)
         :return:
         """
-        np.linalg.norm(Y - x, 2, axis=1)
+        return np.linalg.norm(Y - x, 2, axis=1)
