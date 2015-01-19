@@ -134,14 +134,6 @@ class TestPCCA(unittest.TestCase):
                         [ 0.,  1.]])
         assert_allclose(chi, sol)
 
-    def test_pcca_1_sparse(self):
-        P = sparse.csr_matrix([[1, 0],
-                               [0, 1]])
-        chi = pcca(P, 2)
-        sol = np.array([[ 1.,  0.],
-                        [ 0.,  1.]])
-        assert_allclose(chi, sol)
-
     def test_pcca_2(self):
         P = np.array([[0.0, 1.0, 0.0],
                       [0.0, 0.999, 0.001],
