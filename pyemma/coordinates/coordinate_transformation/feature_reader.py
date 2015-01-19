@@ -1,3 +1,4 @@
+from mdtraj.core.trajectory import Trajectory
 __author__ = 'noe'
 
 import mdtraj
@@ -38,11 +39,13 @@ class FeatureReader:
         self.chunksize = 10000
         self.in_memory = False
         self.Y = None
-
+        Trajectory
         # basic statistics
         for traj in trajectories:
-            t = mdtraj.open(traj)
-            self.lengths.append(len(t))
+            sum_frames = sum(t.n_frames for t in
+                             mdtraj.iterload(traj, top=self.topfile,
+                                             chunk=self.chunksize))
+            self.lengths.append(sum_frames)
         self.totlength = np.sum(self.lengths)
 
         # load first trajectory
