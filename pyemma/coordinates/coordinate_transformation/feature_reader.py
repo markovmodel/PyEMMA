@@ -33,6 +33,10 @@ class FeatureReader:
 
         # iteration
         self.mditer = None
+        # current lag time
+        self.curr_lag = 0
+        # time lagged iterator
+        self.mditer2 = None
         self.curr_itraj = 0
 
         # cache size
@@ -42,10 +46,14 @@ class FeatureReader:
         Trajectory
         # basic statistics
         for traj in trajectories:
+            print "determing length of traj '%s'..." % traj
             sum_frames = sum(t.n_frames for t in
                              mdtraj.iterload(traj, top=self.topfile,
                                              chunk=self.chunksize))
+            print "finished"
             self.lengths.append(sum_frames)
+
+        print "len of trajectories:", self.lengths
         self.totlength = np.sum(self.lengths)
 
         # load first trajectory
@@ -142,8 +150,24 @@ class FeatureReader:
             self.mditer = mdtraj.iterload(self.trajfiles[0],
                                           chunk=self.chunksize, top=self.topfile)
 
+            if self.curr_lag > 0:
+                self.mditer2 = mdtraj.iterload(self.trajfiles[0],
+                                               chunk=self.chunksize, top=self.topfile)
+                # forward iterator
+                def consume(iterator, n):
+                    '''Advance the iterator n-steps ahead. If n is none, consume entirely.'''
+                    import collections
+                    import itertools
+                    collections.deque(itertools.islice(iterator, n), maxlen=0)
+
+                # for
+                try:
+                    consume(self.mditer2, self.curr_lag)
+                except StopIteration:
+                    raise RuntimeError("lag time might be bigger than trajectory length!")
+
     # TODO: enable iterating over lagged pairs of chunks!
-    def next_chunk(self):
+    def next_chunk(self, lag=0):
         """
         gets the next chunk
 
@@ -151,11 +175,18 @@ class FeatureReader:
         """
         chunk = self.mditer.next()
 
+        if lag > 0:
+            # lag time changed
+            self.curr_lag = lag
+
         if np.max(chunk.time) >= self.trajectory_length(self.curr_itraj) - 1:
             self.mditer.close()
             if self.curr_itraj < len(self.trajfiles) - 1:
                 self.curr_itraj += 1
                 self.mditer = mdtraj.iterload(
                     self.trajfiles[self.curr_itraj], chunk=self.chunksize, top=self.topfile)
-
-        return self.featurizer.map(chunk)
+        if self.curr_lag == 0:
+            return self.featurizer.map(chunk)
+        else:
+            chunk2 = self.mditer2.next()
+            return self.featurizer.map(chunk, chunk2)
