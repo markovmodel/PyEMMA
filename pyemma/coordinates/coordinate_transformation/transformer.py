@@ -5,6 +5,9 @@ import numpy as np
 
 class Transformer(object):
 
+    # param finished?
+    param_finished = False
+
     def set_chunksize(self, size):
         self.chunksize = size
         self.lag = 0
@@ -118,6 +121,16 @@ class Transformer(object):
             ipass += 1
         if self.in_memory:
             self.map_to_memory()
+
+
+    def parametrization_finished(self):
+        """
+        Returns whether the parametrization is finished
+
+        :return: True if parametrization is finished
+        """
+        return self.param_finished
+
 
 
     def map_to_memory(self):

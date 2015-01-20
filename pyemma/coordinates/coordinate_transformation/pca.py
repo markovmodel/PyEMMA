@@ -101,9 +101,6 @@ class PCA(Transformer):
                 self.param_finished = True
                 print "parametrization finished!"
 
-    def parametrization_finished(self):
-        return self.param_finished
-
     def map(self, X):
         Y = np.dot(X, self.R[:, 0:self.output_dimension])
         return Y

@@ -12,8 +12,6 @@ class UniformTimeClustering(Transformer):
     clustercenters = None
     # discrete trajectories
     dtrajs = []
-    # param finished?
-    param_finished = False
 
     def __init__(self, data_producer, k):
         self.data_producer = data_producer
@@ -99,9 +97,6 @@ class UniformTimeClustering(Transformer):
     def map_to_memory(self):
         # nothing to do, because memory-mapping of the discrete trajectories is done in parametrize
         pass
-
-    def parametrization_finished(self):
-        return self.param_finished
 
 
     def map(self, x):
