@@ -75,6 +75,7 @@ class FeatureReader:
     def parametrize(self):
         if self.in_memory:
             self.map_to_memory()
+        self.param_finished = True
 
     def number_of_trajectories(self):
         """
@@ -149,6 +150,14 @@ class FeatureReader:
                 t += L
             # increment trajectory
             itraj += 1
+
+    def parametrization_finished(self):
+        """
+        Returns whether the parametrization is finished
+
+        :return: True if parametrization is finished
+        """
+        return self.param_finished
 
 
     def reset(self):
