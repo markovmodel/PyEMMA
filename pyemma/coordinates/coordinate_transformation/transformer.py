@@ -7,7 +7,6 @@ class Transformer(object):
 
     def set_chunksize(self, size):
         self.chunksize = size
-        self.lag = 0
 
     def operate_in_memory(self):
         """
@@ -18,13 +17,12 @@ class Transformer(object):
         # output data
         self.Y = [np.zeros((self.trajectory_length(itraj), self.dimension())) for itraj in range(0,self.number_of_trajectories())]
 
-
     def get_lag(self):
         """
         Returns 0 by default
         :return:
         """
-        return self.lag
+        return 0
 
 
     def number_of_trajectories(self):
@@ -88,28 +86,20 @@ class Transformer(object):
                 last_chunk_in_traj = False
                 t = 0
                 while not last_chunk_in_traj:
+                    print t
                     # iterate over times within trajectory
-                    try:
-                        if lag == 0:
-                            X = self.data_producer.next_chunk()
-                            Y = None
-                        else:
-                            (X,Y) = self.data_producer.next_chunk(lag=lag)
-                    except StopIteration:
-                        last_chunk_in_traj = True
+                    if lag == 0:
+                        X = self.data_producer.next_chunk()
+                        Y = None
+                    else:
+                        X, Y = self.data_producer.next_chunk(lag=lag)
                     L = np.shape(X)[0]
                     # last chunk in traj?
-                    # FIXME: this calc seems to be wrong, as next_chunk is being called outside of bounds.
-                    #print "t + lag + L => %s + %s + %L = %s" % (str(t), str(lag), str(L), str(t+lag+L))
-                    #print "len traj:" ,self.trajectory_length(itraj)
-                    #last_chunk_in_traj = (t + lag + L >= self.trajectory_length(itraj))
+                    last_chunk_in_traj = (t + lag + L >= self.trajectory_length(itraj))
                     # last chunk?
                     last_chunk = (last_chunk_in_traj and itraj >= self.number_of_trajectories()-1)
                     # first chunk
-                    if Y is None:
-                        self.add_chunk(X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass)
-                    else:
-                        self.add_chunk(X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=Y)
+                    self.add_chunk(X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=Y)
                     first_chunk = False
                     # increment time
                     t += L

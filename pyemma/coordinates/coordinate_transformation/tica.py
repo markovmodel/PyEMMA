@@ -22,6 +22,7 @@ class TICA(Transformer):
         self.data_producer = data_producer
         self.lag = lag
         self.output_dim = output_dimension
+        # covariances
         self.cov = None
         self.cov_tau = None
         # mean
@@ -32,13 +33,12 @@ class TICA(Transformer):
 
         self.parameterized = False
 
+    def get_lag(self):
+        return self.lag
+
     def describe(self):
         return "TICA, lag = %s output dimension = %s" \
-            % (self.lag, self.output_dimension)
-
-    def get_lag(self):
-        # FIXME: this is 0!!! however it has been set to another value...
-        return self.lag
+            % (self.lag, self.output_dimension())
 
     def dimension(self):
         """
@@ -142,4 +142,5 @@ class TICA(Transformer):
 
     def map(self, X):
         X_meanfree = X - self.mu
-        return np.dot(self.U, X_meanfree)
+        Y = np.dot(X_meanfree, self.U[:, 0:self.output_dim])
+        return Y

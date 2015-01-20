@@ -70,7 +70,7 @@ class Discretizer(object):
             mem_req_trans = trans.n_frames_total() * trans.get_memory_per_frame()
             if Mfree > mem_req_trans:
                 Mfree -= mem_req_trans
-                trans.operate_in_memory()
+                #trans.operate_in_memory()
                 print "spending ", mem_req_trans, " bytes to operate in main memory: ",trans.describe()
 
 

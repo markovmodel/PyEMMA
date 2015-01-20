@@ -36,6 +36,7 @@ class FeatureReader:
         self.curr_lag = 0
         # time lagged iterator
         self.mditer2 = None
+        self.mditer2_pos = 0
         self.curr_itraj = 0
 
         # cache size
@@ -70,7 +71,8 @@ class FeatureReader:
         """
         self.in_memory = True
         # output data
-        self.Y = [np.zeros((self.trajectory_length(itraj), self.dimension())) for itraj in range(0,self.number_of_trajectories())]
+        self.Y = [np.zeros((self.trajectory_length(itraj), self.dimension()))
+                  for itraj in range(0, self.number_of_trajectories())]
 
     def parametrize(self):
         if self.in_memory:
@@ -127,7 +129,6 @@ class FeatureReader:
         """
         return 0
 
-
     def map_to_memory(self):
         self.reset()
         # iterate over trajectories
@@ -142,14 +143,34 @@ class FeatureReader:
                 # last chunk in traj?
                 last_chunk_in_traj = (t + L >= self.trajectory_length(itraj))
                 # last chunk?
-                last_chunk = (last_chunk_in_traj and itraj >= self.number_of_trajectories()-1)
+                last_chunk = (
+                    last_chunk_in_traj and itraj >= self.number_of_trajectories() - 1)
                 # write
-                self.Y[itraj][t:t+L] = y
+                self.Y[itraj][t:t + L] = y
                 # increment time
                 t += L
             # increment trajectory
             itraj += 1
 
+    def _open_time_lagged(self):
+        self.mditer2 = mdtraj.iterload(self.trajfiles[0],
+                                       chunk=self.chunksize, top=self.topfile)
+        # forward iterator
+
+        def consume(iterator, n):
+            '''Advance the iterator n-steps ahead. If n is none, consume entirely.'''
+            import collections
+            import itertools
+            #collections.deque(itertools.islice(iterator, n), maxlen=0)
+            next(itertools.islice(iterator, 0, n))
+
+        # for
+        try:
+            print "forwarding mditer2 by ", self.curr_lag
+            consume(self.mditer2, self.curr_lag)
+        except StopIteration:
+            raise RuntimeError(
+                "lag time might be bigger than trajectory length!")
 
     def reset(self):
         """
@@ -162,20 +183,7 @@ class FeatureReader:
                                           chunk=self.chunksize, top=self.topfile)
 
             if self.curr_lag > 0:
-                self.mditer2 = mdtraj.iterload(self.trajfiles[0],
-                                               chunk=self.chunksize, top=self.topfile)
-                # forward iterator
-                def consume(iterator, n):
-                    '''Advance the iterator n-steps ahead. If n is none, consume entirely.'''
-                    import collections
-                    import itertools
-                    collections.deque(itertools.islice(iterator, n), maxlen=0)
-
-                # for
-                try:
-                    consume(self.mditer2, self.curr_lag)
-                except StopIteration:
-                    raise RuntimeError("lag time might be bigger than trajectory length!")
+                self._open_time_lagged()
 
     # TODO: enable iterating over lagged pairs of chunks!
     def next_chunk(self, lag=0):
@@ -186,9 +194,28 @@ class FeatureReader:
         """
         chunk = self.mditer.next()
 
-        if lag > 0:
+        # if lagged:
+        # 1. ensure mditer2 is initialized
+        #   if not:
+        # 2. ensure it can be further iterated
+        #  if not: pad data? raise exception?
+        # 3.
+        if lag > 0 and self.curr_lag == 0:
+            print "reopening mditer2"
             # lag time changed
             self.curr_lag = lag
+            self._open_time_lagged()
+
+        mditer2_finished= False
+        if lag > 0:
+            try:
+                #assert self.mditer2
+                chunk2 = self.mditer2.next()
+                self.mditer2_pos += 1
+            except StopIteration:
+                # no more data available in mditer2
+                print "mditer2 stopped at %s" % self.mditer2_pos
+                mditer2_finished=True
 
         if np.max(chunk.time) >= self.trajectory_length(self.curr_itraj) - 1:
             self.mditer.close()
@@ -199,5 +226,9 @@ class FeatureReader:
         if self.curr_lag == 0:
             return self.featurizer.map(chunk)
         else:
-            chunk2 = self.mditer2.next()
-            return self.featurizer.map(chunk, chunk2)
+            X = self.featurizer.map(chunk)
+            if not mditer2_finished:
+                Y = self.featurizer.map(chunk2)
+            else:
+                Y = None
+            return X, Y
