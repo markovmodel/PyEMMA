@@ -28,33 +28,36 @@ def setupLogging():
     args = conf_values['Logging']
 
     if args.enabled:
-        if args.tofile and args.file:
-            filename = args.file
-        else:
-            filename = None
         try:
             logging.basicConfig(level=args.level,
                                 format=args.format,
-                                datefmt='%d-%m-%y %H:%M:%S',
-                                filename=filename,
-                                filemode='a')
+                                datefmt='%d-%m-%y %H:%M:%S')
         except IOError as ie:
             import warnings
             warnings.warn('logging could not be initialized, because of %s' % ie)
             return
         """ in case we want to log to both file and stream, add a separate handler"""
+        formatter = logging.Formatter(args.format)
+
+        if args.tofile:
+            # set delay to True, to prevent creation of empty log files
+            fh = logging.FileHandler(args.file, mode='a', delay=True)
+            fh.setFormatter(formatter)
+            fh.setLevel(args.level)
+            logging.getLogger('').addHandler(fh)
         if args.toconsole and args.tofile:
-            ch = logging.StreamHandler()
+            # since we have used basicConfig (without file args),
+            # a StreamHandler is already used. Set our arguments.
+            ch = logging.getLogger('').handlers[0]
             ch.setLevel(args.level)
-            ch.setFormatter(logging.Formatter(args.format))
-            logging.getLogger('').addHandler(ch)
+            ch.setFormatter(formatter)
     else:
         dummyInstance = dummyLogger()
 
     enabled = args.enabled
 
 
-def getLogger(name = None):
+def getLogger(name=None):
     if not enabled:
         return dummyInstance
     """ if name is not given, return a logger with name of the calling module."""
