@@ -67,10 +67,13 @@ class FeatureReader:
         :return:
         """
         self.in_memory = True
+        # output data
+        self.Y = [np.zeros((self.trajectory_length(itraj), self.dimension())) for itraj in range(0,self.number_of_trajectories())]
 
 
     def parametrize(self):
-        pass
+        if self.in_memory:
+            self.map_to_memory()
 
 
     def number_of_trajectories(self):
@@ -131,18 +134,27 @@ class FeatureReader:
         return 0
 
 
-    def get(self, itraj, t):
-        """
-        Returns
-        :param itraj:
-        :param t:
-        :return:
-        """
-        if (itraj != self.curr_itraj):
-            self.curr_traj = mdtraj.load(self.trajfiles[itraj], top=self.topfile)
-            self.curr_itraj = itraj
-        frame = self.curr_traj.slice(t)
-        return self.featurizer.map(frame)
+    def map_to_memory(self):
+        self.reset()
+        # iterate over trajectories
+        last_chunk = False
+        itraj = 0
+        while not last_chunk:
+            last_chunk_in_traj = False
+            t = 0
+            while not last_chunk_in_traj:
+                y = self.next_chunk()
+                L = np.shape(y)[0]
+                # last chunk in traj?
+                last_chunk_in_traj = (t + L >= self.trajectory_length(itraj))
+                # last chunk?
+                last_chunk = (last_chunk_in_traj and itraj >= self.number_of_trajectories()-1)
+                # write
+                self.Y[itraj][t:t+L] = y
+                # increment time
+                t += L
+            # increment trajectory
+            itraj += 1
 
 
     def reset(self):
