@@ -13,7 +13,7 @@ class TICA(Transformer):
     classdocs
     '''
 
-    def __init__(self, data_producer, lag, output_dimension, symetrize=True):
+    def __init__(self, data_producer, lag, output_dimension, symmetrize=True):
         '''
         Constructor
         '''
@@ -22,6 +22,9 @@ class TICA(Transformer):
         self.data_producer = data_producer
         self.lag = lag
         self.output_dim = output_dimension
+
+        self.symmetrize = symmetrize
+
         # covariances
         self.cov = None
         self.cov_tau = None
@@ -55,6 +58,9 @@ class TICA(Transformer):
         # TODO: change me
         return self.data_producer.dimension() ** 2
 
+    def in_memory(self):
+        return False
+
     def parametrization_finished(self):
         return self.parameterized
 
@@ -81,14 +87,18 @@ class TICA(Transformer):
         if ipass == 0:
             if first_chunk:
                 self.mu = np.zeros(self.data_producer.dimension())
-                self.mu += np.sum(X, axis=0)
-                self.N += np.shape(X)[0]
+
+            self.mu += np.sum(X, axis=0)
+            self.N += np.shape(X)[0]
+
             if last_chunk:
                 self.mu /= self.N
+                print "mean:\n", self.mu
 
         if ipass == 1:
             if first_chunk:
                 dim = self.data_producer.dimension()
+                assert dim > 0, "zero dimension from data producer"
                 self.cov = np.zeros((dim, dim))
                 self.cov_tau = np.zeros_like(self.cov)
 
@@ -110,6 +120,8 @@ class TICA(Transformer):
                 self.parameterized = True
 
     def _diagonalize(self):
+
+        print "covariance:\n", self.cov
         # diagonalize covariance matrices
         sigma2PC, W = np.linalg.eig(self.cov)
         sigmaPC = np.array(np.sqrt(sigma2PC), ndmin=2)
