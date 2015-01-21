@@ -54,6 +54,9 @@ class FeatureReader:
     def describe(self):
         return "Feature reader, features = ", self.featurizer.describe()
 
+    def set_chunksize(self, size):
+        self.chunksize = size
+
     def operate_in_memory(self):
         """
         If called, the output will be stored in memory
@@ -63,6 +66,10 @@ class FeatureReader:
         # output data
         self.Y = [np.zeros((self.trajectory_length(itraj), self.dimension()))
                   for itraj in range(0, self.number_of_trajectories())]
+
+    def parametrize(self):
+        if self.in_memory:
+            self.map_to_memory()
 
     def number_of_trajectories(self):
         """
