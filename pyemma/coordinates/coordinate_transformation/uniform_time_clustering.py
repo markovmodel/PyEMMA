@@ -81,6 +81,7 @@ class UniformTimeClustering(Transformer):
             maxt = self.tprev + t + L
             while (self.nextt < maxt):
                 i = self.nextt - self.tprev - t
+                # FIXME: n out of bounds
                 self.clustercenters[self.n] = X[i]
                 self.n += 1
                 self.nextt += self.stride
