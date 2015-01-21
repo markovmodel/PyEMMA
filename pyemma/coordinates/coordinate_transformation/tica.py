@@ -58,9 +58,6 @@ class TICA(Transformer):
         # TODO: change me
         return self.data_producer.dimension() ** 2
 
-    def in_memory(self):
-        return False
-
     def parametrization_finished(self):
         return self.parameterized
 
