@@ -51,14 +51,8 @@ class FeatureReader:
 
         self.totlength = np.sum(self.lengths)
 
-        # load first trajectory
-        #self.curr_traj = mdtraj.open(trajectories[0])
-
     def describe(self):
         return "Feature reader, features = ", self.featurizer.describe()
-
-    def set_chunksize(self, size):
-        self.chunksize = size
 
     def operate_in_memory(self):
         """
@@ -69,10 +63,6 @@ class FeatureReader:
         # output data
         self.Y = [np.zeros((self.trajectory_length(itraj), self.dimension()))
                   for itraj in range(0, self.number_of_trajectories())]
-
-    def parametrize(self):
-        if self.in_memory:
-            self.map_to_memory()
 
     def number_of_trajectories(self):
         """
@@ -169,20 +159,13 @@ class FeatureReader:
     def next_chunk(self, lag=0):
         """
         gets the next chunk. If lag > 0, we open another iterator with same chunk
-        size and advance it by one. Currently the restriction lag <= chunk_size
-        applies, since we're opening 2 chunks at the same time and create
-        a time lagged array of equal shape combined out of these two chunks.
-        c_t, c_{t+1}, lagged
-        lagged[:-lag] = c_t[lag:]
-        lagged[-lag:] = c_{t+1}[0:lag]
+        size and advance it by one, as soon as this method is called with a lag > 0.
 
         :return: a feature mapped vector X, or X,Y if lag > 0
         """
         chunk = self.mditer.next()
 
         if lag > 0:
-            assert self.chunksize >= lag, \
-                "in current impl we only allow chunksizes bigger than lag time"
             advanced_once = True
             if self.curr_lag == 0:
                 # lag time changed
