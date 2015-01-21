@@ -46,9 +46,11 @@ class Featurizer:
         :param atom_pairs:
         :return:
         """
+        assert len(atom_pairs) > 0
         self.use_distances = True
         self.distance_indexes = atom_pairs
         self.dim += np.shape(atom_pairs)[0]
+        assert self.dim > 0
 
     def pairs(self, sel):
         """
@@ -65,6 +67,8 @@ class Featurizer:
             pairs[s:s + d, 0] = sel[i]
             pairs[s:s + d, 1] = sel[i + 3:nsel]
             s += d
+
+        assert len(pairs) > 0
         return pairs
 
     def contacts(self, atom_pairs):
@@ -103,7 +107,7 @@ class Featurizer:
     def map(self, traj):
         """
         Computes the features for the given trajectory
-
+        TODO: why enforce single precision?
         :return:
         """
         Y = None
