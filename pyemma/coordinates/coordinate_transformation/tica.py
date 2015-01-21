@@ -82,6 +82,7 @@ class TICA(Transformer):
         :return:
        """
         if ipass == 0:
+            # TODO: use a more advanced algo for mean calculation
             if first_chunk:
                 self.mu = np.zeros(self.data_producer.dimension())
 
