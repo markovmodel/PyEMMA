@@ -44,14 +44,11 @@ class FeatureReader:
         self.Y = None
         # basic statistics
         for traj in trajectories:
-            print "determining length of traj '%s'..." % traj
             sum_frames = sum(t.n_frames for t in
                              mdtraj.iterload(traj, top=self.topfile,
                                              chunk=self.chunksize))
-            print "finished"
             self.lengths.append(sum_frames)
 
-        print "len of trajectories:", self.lengths
         self.totlength = np.sum(self.lengths)
 
         # load first trajectory

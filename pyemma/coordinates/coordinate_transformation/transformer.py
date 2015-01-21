@@ -86,7 +86,6 @@ class Transformer(object):
                 last_chunk_in_traj = False
                 t = 0
                 while not last_chunk_in_traj:
-                    print t
                     # iterate over times within trajectory
                     if lag == 0:
                         X = self.data_producer.next_chunk()
