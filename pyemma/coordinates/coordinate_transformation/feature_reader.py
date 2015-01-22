@@ -1,13 +1,13 @@
 __author__ = 'noe'
 
 import mdtraj
-import logging
 import numpy as np
 
 from mdtraj.core.trajectory import Trajectory
 
 
-class FeatureReader:
+
+class FeatureReader(object):
 
     """
     Reads features from MD data
@@ -60,17 +60,6 @@ class FeatureReader:
         :return:
         """
         return "Feature reader, features = ", self.featurizer.describe()
-
-
-    def set_chunksize(self, size):
-        """
-        Sets the size of data chunks that are read to memory at one time.
-
-        :param size:
-        :return:
-        """
-        self.chunksize = size
-
 
     def operate_in_memory(self):
         """
@@ -194,7 +183,8 @@ class FeatureReader:
 
 
     def _open_time_lagged(self):
-        print "reopening mditer2 with chunk size %s " % self.chunksize
+        if self.mditer2 is not None:
+            self.mditer2.close()
         self.mditer2 = mdtraj.iterload(self.trajfiles[0],
                                        chunk=self.chunksize, top=self.topfile)
 
@@ -218,7 +208,7 @@ class FeatureReader:
         gets the next chunk. If lag > 0, we open another iterator with same chunk
         size and advance it by one, as soon as this method is called with a lag > 0.
 
-        :return: a feature mapped vector X, or X,Y if lag > 0
+        :return: a feature mapped vector X, or X, Y if lag > 0
         """
         chunk = self.mditer.next()
 
@@ -251,7 +241,6 @@ class FeatureReader:
 
         if np.max(chunk.time) >= self.trajectory_length(self.curr_itraj) - 1:
             if self.curr_itraj < len(self.trajfiles) - 1:
-                logging.debug("max chunk time reached for this traj, opening next")
                 self.mditer.close()
                 self.curr_itraj += 1
                 self.mditer = mdtraj.iterload(

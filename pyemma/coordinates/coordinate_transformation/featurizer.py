@@ -4,7 +4,7 @@ import mdtraj
 import numpy as np
 
 
-class Featurizer:
+class Featurizer(object):
 
     """
 
@@ -12,8 +12,12 @@ class Featurizer:
 
     def __init__(self, topfile):
         """
+        Parameters
+        ----------
 
-        :return:
+        topfile : str
+            a topology file (pdb etc.)
+
         """
         self.topology = (mdtraj.load(topfile)).topology
 
@@ -34,7 +38,9 @@ class Featurizer:
         self.dim = 0
 
     def describe(self):
-        return "distances = ", self.use_distances, " contacts = ", self.use_contacts, " angles = ", self.use_angles, " backbone torsions = ", self.use_backbone_torsions
+        return "Featurizer[distances = ", self.use_distances, " contacts = ", \
+            self.use_contacts, " angles = ", self.use_angles, \
+            " backbone torsions = ", self.use_backbone_torsions
 
     def selCa(self):
         return self.topology.select("name CA")

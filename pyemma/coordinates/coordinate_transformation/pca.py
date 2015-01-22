@@ -1,6 +1,5 @@
 __author__ = 'noe'
 
-import logging
 import numpy as np
 from transformer import Transformer
 
@@ -31,6 +30,7 @@ class PCA(Transformer):
             structure file (e.g. pdb)
 
         """
+		super(PCA).__init__(self)
         self.output_dimension = output_dimension
 
 

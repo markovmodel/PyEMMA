@@ -1,82 +1,110 @@
 __author__ = 'noe'
 
+from pyemma.util.log import getLogger
+
 import numpy as np
+
+
+log = getLogger('Transformer')
 
 
 class Transformer(object):
 
-    # param finished?
-    param_finished = False
-    # data_producer
-    data_producer = None
+    """
 
-    def set_data_producer(self, data_producer):
-        """
-        Sets the data producer for this transformation
+    Parameters
+    ----------
+    chunksize : int (optional)
+        the chunksize used to batch process underlying data
+    lag : int (optional)
+        if you want to process time lagged data, set this to a value > 0.
+    """
 
-        :param data_producer:
-        :return:
-        """
-        self.data_producer = data_producer
+    def __init__(self, chunksize=-1, lag=0):
+        self._chunksize = int(chunksize)
+        self._lag = int(lag)
+        self._in_memory = False
 
+    @property
+    def chunksize(self):
+        return self._chunksize
 
-    def set_chunksize(self, size):
-        self.chunksize = size
+    @chunksize.setter
+    def chunksize(self, size):
+        assert size > 0
+        self._chunksize = int(size)
 
+    @property
+    def in_memory(self):
+        return self._in_memory
 
     def operate_in_memory(self):
         """
         If called, the output will be stored in memory
-        :return:
         """
-        self.in_memory = True
+        self._in_memory = True
         # output data
-        self.Y = [np.zeros((self.trajectory_length(itraj), self.dimension())) for itraj in range(0,self.number_of_trajectories())]
+        self.Y = [np.zeros((self.trajectory_length(itraj), self.dimension()))
+                  for itraj in range(0, self.number_of_trajectories())]
 
-
-    def get_lag(self):
+    @property
+    def lag(self):
         """
-        Returns 0 by default
-        :return:
+        Returns
+        -------
+        lag time, at which a second time lagged data source will be processed.
         """
-        return 0
+        return self._lag
 
+    @lag.setter
+    def lag(self, lag):
+        self._lag = int(lag)
 
     def number_of_trajectories(self):
         """
-        Returns the number of trajectories
+        Returns the number of trajectories.
 
-        :return:
-            number of trajectories
+        Returns
+        -------
+            int : number of trajectories
         """
         return self.data_producer.number_of_trajectories()
 
 
     def trajectory_length(self, itraj):
         """
-        Returns the length of trajectory
+        Returns the length of trajectory with given index.
 
-        :param itraj:
+        Parameters
+        ----------
+        itraj : int
             trajectory index
 
-        :return:
-            length of trajectory
+        Returns
+        -------
+        int : length of trajectory
         """
         return self.data_producer.trajectory_length(itraj)
 
 
     def trajectory_lengths(self):
         """
-        Returns the length of each trajectory
+        Returns the length of each trajectory.
 
-        :return:
-            length of each trajectory
+        Returns
+        -------
+        int : length of each trajectory
         """
         return self.data_producer.trajectory_lengths()
 
-
-
     def n_frames_total(self):
+        """
+        Returns total number of frames.
+
+        Returns
+        -------
+        int : n_frames_total
+        """
         return self.data_producer.n_frames_total()
 
 
@@ -88,6 +116,8 @@ class Transformer(object):
         """
         return 4 * self.dimension()
 
+    def describe(self):
+        return self.__str__()
 
     def parametrize(self):
         # check if ready
@@ -98,7 +128,7 @@ class Transformer(object):
         # feed data, until finished
         add_data_finished = False
         ipass = 0
-        lag = self.get_lag()
+        lag = self.lag
         # parametrize
         while add_data_finished != True:
             first_chunk = True
@@ -184,6 +214,9 @@ class Transformer(object):
 
 
     def reset(self):
+        """
+        reset data position
+        """
         if self.in_memory:
             # operate in memory, implement iterator here
             self.itraj = 0
@@ -192,8 +225,21 @@ class Transformer(object):
             # operate in pipeline
             self.data_producer.reset()
 
+    def next_chunk(self, lag=0):
+        """
+        transforms next available chunk from either in memory data or internal
+        data_producer
 
-    def next_chunk(self, lag = 0):
+        Parameters
+        ----------
+        lag  : int
+            time delay of second data source.
+
+        Returns
+        -------
+        X, (Y if lag > 0) : array_like
+            mapped (transformed) data
+        """
         if self.in_memory:
             if self.itraj >= self.number_of_trajectories():
                 return None
@@ -213,16 +259,15 @@ class Transformer(object):
                 self.t += self.chunksize
                 if self.t >= self.trajectory_length(self.itraj):
                     self.itraj += 1
-                return (Y0,Ytau)
+                return (Y0, Ytau)
         else:
             # operate in pipeline
             if lag == 0:
                 X = self.data_producer.next_chunk()
                 return self.map(X)
             else:
-                (X0,Xtau) = self.data_producer.next_chunk(lag = lag)
-                return (self.map(X0),self.map(Xtau))
-
+                (X0, Xtau) = self.data_producer.next_chunk(lag=lag)
+                return (self.map(X0), self.map(Xtau))
 
     def distance(self, x, y):
         """

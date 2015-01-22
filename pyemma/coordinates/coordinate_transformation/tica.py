@@ -3,9 +3,11 @@ Created on 19.01.2015
 
 @author: marscher
 '''
-import logging
 import numpy as np
 from transformer import Transformer
+from pyemma.util.log import getLogger
+
+log = getLogger('TICA')
 
 
 class TICA(Transformer):
@@ -48,9 +50,6 @@ class TICA(Transformer):
         self.N = 0
 
 
-    def get_lag(self):
-        return self.lag
-
     def describe(self):
         return "TICA, lag = %s output dimension = %s" \
             % (self.lag, self.output_dimension())
@@ -68,7 +67,7 @@ class TICA(Transformer):
 
     def get_constant_memory(self):
         # TODO: change me
-        return self.data_producer.dimension() ** 2
+        return 2*self.data_producer.dimension() ** 2
 
 
     def param_init(self):
@@ -111,10 +110,7 @@ class TICA(Transformer):
         :param Y:
             time-lagged data (if available)
         :return:
-        """
-        logging.info("itraj = "+str(itraj)+". t = "+str(t)+". last_chunk_in_traj = "+str(last_chunk_in_traj)
-                     +" last_chunk = "+str(last_chunk)+" ipass = "+str(ipass))
-
+       """
         if ipass == 0:
             # TODO: use a more advanced algo for mean calculation
 

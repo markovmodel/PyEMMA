@@ -1,20 +1,20 @@
 __author__ = 'noe'
 
-import logging
-import numpy as np
 from transformer import Transformer
+import numpy as np
+
 
 class UniformTimeClustering(Transformer):
 
-    # number of clusters
-    k = 2
-    # cluster centers
-    clustercenters = None
-    # discrete trajectories
-    dtrajs = []
-
-    def __init__(self, k):
+    def __init__(self, k=2):
+        self.data_producer = data_producer
         self.k = k
+        self.clustercenters = np.zeros((self.k, self.data_producer.dimension()), dtype=np.float32)
+        self.stride = self.data_producer.n_frames_total() / self.k
+        self.nextt = self.stride/2
+        self.tprev = 0
+        self.ipass = 0
+        self.n = 0
 
 
     def describe(self):
@@ -101,7 +101,7 @@ class UniformTimeClustering(Transformer):
             # discretize all
             if t == 0:
                 self.dtrajs.append(np.zeros(self.data_producer.trajectory_length(itraj)))
-            for i in range(0,L):
+            for i in xrange(L):
                 self.dtrajs[itraj][i+t] = self.map(X[i])
             if last_chunk:
                 return True # done!
