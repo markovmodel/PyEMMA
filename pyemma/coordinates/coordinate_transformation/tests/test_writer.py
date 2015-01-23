@@ -12,6 +12,7 @@ from coordinates.coordinate_transformation.featurizer import Featurizer
 from coordinates.coordinate_transformation.tica import TICA
 from coordinates.coordinate_transformation.writer import WriterCSV
 import numpy as np
+import tempfile
 
 
 class TestWriterCSV(unittest.TestCase):
@@ -27,7 +28,7 @@ class TestWriterCSV(unittest.TestCase):
         # feature reader
         self.reader = FeatureReader(trajfiles, topfile, self.featurizer)
 
-        self.output_file = 'test_writer_csv.dat'
+        self.output_file = tempfile.mktemp('', 'test_writer_csv')
 
     def tearDown(self):
         # print "delete output"
@@ -51,7 +52,7 @@ class TestWriterCSV(unittest.TestCase):
 
         self.reader.operate_in_memory()
         self.D.run()
-        
+
         # open file and compare to reader.Y
         output = np.loadtxt(self.output_file)
         np.testing.assert_allclose(output, self.reader.Y[0])
