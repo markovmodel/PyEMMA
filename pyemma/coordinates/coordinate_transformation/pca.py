@@ -5,8 +5,17 @@ from transformer import Transformer
 
 
 class PCA(Transformer):
-
     """
+    Principal component analysis.
+
+    Given a sequence of multivariate data X_t, computes the mean-free covariance matrix
+    C = (X-mu)^T (X-mu)
+    and solves the eigenvalue problem
+    C r_i = sigma_i r_i,
+    where r_i are the principal compontns and sigma_i are their respective variances.
+
+    When used as a dimension reduction method, the input data is projected onto the
+    dominant principal components.
 
     """
 
@@ -54,6 +63,9 @@ class PCA(Transformer):
 
     def add_chunk(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
         """
+        Chunk-based parametrization of PCA. Iterates through all data twice. In the first pass, the
+        data means are estimated, in the second pass the covariance matrix is estimated.
+        Finally, the eigenvalue problem is solved to determine the principal compoennts.
 
         :param X:
             coordinates. axis 0: time, axes 1-..: coordinates
@@ -102,5 +114,11 @@ class PCA(Transformer):
                 print "parametrization finished!"
 
     def map(self, X):
+        """
+        Projects the data onto the dominant principal components.
+
+        :param X: the input data
+        :return: the projected data
+        """
         Y = np.dot(X, self.R[:, 0:self.output_dimension])
         return Y

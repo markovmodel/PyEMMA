@@ -8,10 +8,23 @@ from transformer import Transformer
 
 
 class TICA(Transformer):
+    """
+    Time-lagged independent component analysis (TICA)
 
-    '''
-    classdocs
-    '''
+    Given a sequence of multivariate data X_t, computes the mean-free covariance and
+    time-lagged covariance matrix:
+    C_0 =   (X_t - mu)^T (X_t - mu)
+    C_tau = (X_t - mu)^T (X_t+tau - mu)
+    and solves the eigenvalue problem
+    C_tau r_i = C_0 lambda_i r_i,
+    where r_i are the independent compontns and lambda are their respective normalized
+    time-autocorrelations. The eigenvalues are related to the relaxation timescale by
+    t_i = -tau / ln |lambda_i|
+
+    When used as a dimension reduction method, the input data is projected onto the
+    dominant independent components.
+
+    """
 
     def __init__(self, data_producer, lag, output_dimension, symmetrize=True):
         '''
