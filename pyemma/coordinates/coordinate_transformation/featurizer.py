@@ -20,6 +20,9 @@ class Featurizer:
         self.use_distances = False
         self.distance_indexes = []
 
+        self.use_inv_distances = False
+        self.inv_distance_indexes = []
+
         self.use_contacts = False
         self.contact_indexes = []
 
@@ -39,6 +42,7 @@ class Featurizer:
     def selHeavy(self):
         return self.topology.select("mass >= 2")
 
+
     def distances(self, atom_pairs):
         """
         Adds the set of distances to the feature list
@@ -46,9 +50,26 @@ class Featurizer:
         :param atom_pairs:
         :return:
         """
+        assert len(atom_pairs) > 0
         self.use_distances = True
         self.distance_indexes = atom_pairs
         self.dim += np.shape(atom_pairs)[0]
+        assert self.dim > 0
+
+
+    def inverse_distances(self, atom_pairs):
+        """
+        Adds the set of inverse distances to the feature list
+
+        :param atom_pairs:
+        :return:
+        """
+        assert len(atom_pairs) > 0
+        self.use_inv_distances = True
+        self.inv_distance_indexes = atom_pairs
+        self.dim += np.shape(atom_pairs)[0]
+        assert self.dim > 0
+
 
     def pairs(self, sel):
         """
@@ -65,6 +86,8 @@ class Featurizer:
             pairs[s:s + d, 0] = sel[i]
             pairs[s:s + d, 1] = sel[i + 3:nsel]
             s += d
+
+        assert len(pairs) > 0
         return pairs
 
     def contacts(self, atom_pairs):
@@ -103,15 +126,22 @@ class Featurizer:
     def map(self, traj):
         """
         Computes the features for the given trajectory
-
+        TODO: why enforce single precision?
         :return:
         """
         Y = None
 
+        # distances
         if (self.use_distances):
             y = mdtraj.compute_distances(traj, self.distance_indexes)
             Y = y.astype(np.float32)
 
+        # inverse distances
+        if (self.use_inv_distances):
+            y = 1.0 / mdtraj.compute_distances(traj, self.inv_distance_indexes)
+            Y = y.astype(np.float32)
+
+        # contacts
         if (self.use_contacts):
             y = mdtraj.compute_contacts(traj, self.contact_indexes)
             y = y.astype(np.float32)
@@ -120,6 +150,7 @@ class Featurizer:
             else:
                 Y = np.concatenate((Y, y), axis=1)
 
+        # angles
         if (self.use_angles):
             y = mdtraj.compute_angles(traj, self.angle_indexes)
             y = y.astype(np.float32)
@@ -128,6 +159,7 @@ class Featurizer:
             else:
                 Y = np.concatenate((Y, y), axis=1)
 
+        # backbone torsions
         if (self.use_backbone_torsions):
             y1 = mdtraj.compute_phi(traj)
             y1 = y1.astype(np.float32)

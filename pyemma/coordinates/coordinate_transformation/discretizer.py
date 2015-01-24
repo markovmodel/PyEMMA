@@ -1,9 +1,9 @@
-from coordinates.coordinate_transformation.tica import TICA
 __author__ = 'noe'
 
 from featurizer import Featurizer
 from feature_reader import FeatureReader
 from pca import PCA
+from tica import TICA
 from uniform_time_clustering import UniformTimeClustering
 
 import psutil
@@ -19,12 +19,12 @@ class Discretizer(object):
         """
         # create featurizer
         featurizer = Featurizer(topfile)
-        # TODO: move this to a testing function
         # TODO: where to build chain? User has to provide list of T objects?
+        # TODO: @marscher revert my changes here
         #sel = featurizer.selCa()
-        sel= [0, 320, 1500]
-        pairs = featurizer.pairs(sel)
-        featurizer.distances(pairs)
+        sel = np.array([(0,20), (200, 320), (1300,1500)])
+        #pairs = featurizer.pairs(sel)
+        featurizer.distances(sel)
         # feature reader
         reader = FeatureReader(trajfiles, topfile, featurizer)
 
@@ -36,9 +36,7 @@ class Discretizer(object):
         self.transformers.append(pca)
         # number of states and clustering type should be an input
         utc = UniformTimeClustering(pca, 100)
-        self.transformers.append(utc)
-
-        # ---------------- 
+        #self.transformers.append(utc)
 
         # determine memory requirements
         M = psutil.virtual_memory()[1]  # available RAM
@@ -54,7 +52,9 @@ class Discretizer(object):
         chunksize = (M - const_mem) / mem_per_frame
         if chunksize < 0:
             raise MemoryError('Not enough memory for desired transformation chain!')
+
         # is this chunksize sufficient to store full trajectories?
+        # TODO: ensure chunksize does not leave a last single frame at the end to avoid trouble
         chunksize = min(chunksize, np.max(reader.trajectory_lengths()))
         print "resulting chunk size: ", chunksize
         # set chunksize

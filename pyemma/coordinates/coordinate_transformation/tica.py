@@ -13,7 +13,7 @@ class TICA(Transformer):
     classdocs
     '''
 
-    def __init__(self, data_producer, lag, output_dimension, symetrize=True):
+    def __init__(self, data_producer, lag, output_dimension, symmetrize=True):
         '''
         Constructor
         '''
@@ -22,6 +22,10 @@ class TICA(Transformer):
         self.data_producer = data_producer
         self.lag = lag
         self.output_dim = output_dimension
+
+        self.symmetrize = symmetrize
+
+        # covariances
         self.cov = None
         self.cov_tau = None
         # mean
@@ -32,13 +36,12 @@ class TICA(Transformer):
 
         self.parameterized = False
 
+    def get_lag(self):
+        return self.lag
+
     def describe(self):
         return "TICA, lag = %s output dimension = %s" \
-            % (self.lag, self.output_dimension)
-
-    def get_lag(self):
-        # FIXME: this is 0!!! however it has been set to another value...
-        return self.lag
+            % (self.lag, self.output_dimension())
 
     def dimension(self):
         """
@@ -60,6 +63,11 @@ class TICA(Transformer):
 
     def add_chunk(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
         """
+        Chunk-based parametrization of TICA. Iterates through all data twice. In the first pass, the
+        data means are estimated, in the second pass the covariance and time-lagged covariance
+        matrices are estimated. Finally, the generalized eigenvalue problem is solved to determine
+        the independent compoennts.
+
         :param X:
             coordinates. axis 0: time, axes 1-..: coordinates
         :param itraj:
@@ -79,16 +87,21 @@ class TICA(Transformer):
         :return:
        """
         if ipass == 0:
+            # TODO: use a more advanced algo for mean calculation
             if first_chunk:
                 self.mu = np.zeros(self.data_producer.dimension())
-                self.mu += np.sum(X, axis=0)
-                self.N += np.shape(X)[0]
+
+            self.mu += np.sum(X, axis=0)
+            self.N += np.shape(X)[0]
+
             if last_chunk:
                 self.mu /= self.N
+                print "mean:\n", self.mu
 
         if ipass == 1:
             if first_chunk:
                 dim = self.data_producer.dimension()
+                assert dim > 0, "zero dimension from data producer"
                 self.cov = np.zeros((dim, dim))
                 self.cov_tau = np.zeros_like(self.cov)
 
@@ -109,7 +122,15 @@ class TICA(Transformer):
                 self.U, self.lambdas = self._diagonalize()
                 self.parameterized = True
 
+
     def _diagonalize(self):
+        """
+        Solves the generalized eigenproblem to determine the independent components.
+
+        :return:
+        """
+
+        print "covariance:\n", self.cov
         # diagonalize covariance matrices
         sigma2PC, W = np.linalg.eig(self.cov)
         sigmaPC = np.array(np.sqrt(sigma2PC), ndmin=2)
@@ -141,5 +162,12 @@ class TICA(Transformer):
         return U, lambdas
 
     def map(self, X):
+        """
+        Projects the data onto the dominant independent components.
+
+        :param X: the input data
+        :return: the projected data
+        """
         X_meanfree = X - self.mu
-        return np.dot(self.U, X_meanfree)
+        Y = np.dot(X_meanfree, self.U[:, 0:self.output_dim])
+        return Y
