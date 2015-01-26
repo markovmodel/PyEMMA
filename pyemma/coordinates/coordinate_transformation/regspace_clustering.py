@@ -32,9 +32,7 @@ class RegularSpaceClustering(Transformer):
 
         self._dmin = dmin
         self.data_producer = data_source
-        #self._clustercenters = np.zeros((self.k, self.data_producer.dimension))
-
-        self.param_finished = False
+        self._param_finished = False
 
         self._dtrajs = []
 
@@ -96,7 +94,7 @@ class RegularSpaceClustering(Transformer):
             for i in xrange(L):
                 self._dtrajs[itraj][i + t] = self.map(X[i])
             if last_chunk:
-                self.param_finished = True
+                self._param_finished = True
         else:
             raise RuntimeError('Should never get here!'
                                ' Forgot to set self.param_finished?')

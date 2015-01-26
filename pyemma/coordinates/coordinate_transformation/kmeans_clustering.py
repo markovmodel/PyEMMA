@@ -6,7 +6,7 @@ Created on 22.01.2015
 import numpy as np
 from sklearn.cluster import MiniBatchKMeans
 
-from coordinates.coordinate_transformation.transformer import Transformer
+from transformer import Transformer
 
 
 class KmeansClustering(Transformer):
@@ -20,6 +20,7 @@ class KmeansClustering(Transformer):
         Constructor
         '''
         super(KmeansClustering, self).__init__()
+
         self.data_producer = data_producer
 
         self.algo = MiniBatchKMeans(n_clusters,
@@ -42,14 +43,12 @@ class KmeansClustering(Transformer):
                 self.dtrajs[itraj][i + t] = self.map(X[i])
 
             if last_chunk:
-                self.param_finished = True
-
-    def parametrization_finished(self):
-        return self.param_finished
+                self._param_finished = True
 
     def map(self, X):
         d = self.algo.transform(X)
         return np.argmin(d)
 
-    def get_discrete_trajectories(self):
+    @property
+    def discrete_trajectories(self):
         return self.dtrajs
