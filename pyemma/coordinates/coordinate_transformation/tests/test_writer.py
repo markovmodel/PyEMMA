@@ -4,15 +4,15 @@ Created on 22.01.2015
 @author: marscher
 '''
 import os
+import tempfile
 import unittest
 
-from coordinates.coordinate_transformation.discretizer import Discretizer
-from coordinates.coordinate_transformation.feature_reader import FeatureReader
-from coordinates.coordinate_transformation.featurizer import Featurizer
-from coordinates.coordinate_transformation.tica import TICA
-from coordinates.coordinate_transformation.writer import WriterCSV
+from pyemma.coordinates.coordinate_transformation.discretizer import Discretizer
+from pyemma.coordinates.coordinate_transformation.feature_reader import FeatureReader
+from pyemma.coordinates.coordinate_transformation.featurizer import Featurizer
+from pyemma.coordinates.coordinate_transformation.tica import TICA
+from pyemma.coordinates.coordinate_transformation.writer import WriterCSV
 import numpy as np
-import tempfile
 
 
 class TestWriterCSV(unittest.TestCase):

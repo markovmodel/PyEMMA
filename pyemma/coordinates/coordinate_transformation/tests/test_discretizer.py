@@ -7,10 +7,10 @@ import unittest
 
 from pyemma.coordinates.transform.tica_amuse import Amuse
 
-from coordinates.coordinate_transformation.discretizer import Discretizer
-from coordinates.coordinate_transformation.feature_reader import FeatureReader
-from coordinates.coordinate_transformation.featurizer import Featurizer
-from coordinates.coordinate_transformation.tica import TICA
+from pyemma.coordinates.coordinate_transformation.discretizer import Discretizer
+from pyemma.coordinates.coordinate_transformation.feature_reader import FeatureReader
+from pyemma.coordinates.coordinate_transformation.featurizer import Featurizer
+from pyemma.coordinates.coordinate_transformation.tica import TICA
 import numpy as np
 
 
@@ -51,9 +51,9 @@ class TestDiscretizer(unittest.TestCase):
         # reset norming factor
         tica.N = 0
 
+        self.D.chunksize = chunk
         for t in self.D.transformers:
             t.parameterized = False
-            t.chunksize = chunk
 
         self.D.run()
 
