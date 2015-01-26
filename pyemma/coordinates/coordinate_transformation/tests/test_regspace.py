@@ -6,7 +6,7 @@ Created on 26.01.2015
 import itertools
 import unittest
 
-from coordinates.coordinate_transformation.regspace_clustering import RegularSpaceClustering
+from pyemma.coordinates.coordinate_transformation.regspace_clustering import RegularSpaceClustering
 import numpy as np
 
 
@@ -46,7 +46,6 @@ class TestRegSpaceClustering(unittest.TestCase):
 
     def setUp(self):
         source = RandomDataSource()
-        print "n  trajs: ", source.number_of_trajectories()
         self.dmin = 0.7
         self.clustering = RegularSpaceClustering(source, dmin=self.dmin)
 

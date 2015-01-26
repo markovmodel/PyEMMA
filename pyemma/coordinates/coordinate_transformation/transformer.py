@@ -58,6 +58,7 @@ class Transformer(object):
 
     @lag.setter
     def lag(self, lag):
+        assert lag >= 0, "lag time has to be positive."
         self._lag = int(lag)
 
     def number_of_trajectories(self):
@@ -69,7 +70,6 @@ class Transformer(object):
             int : number of trajectories
         """
         return self.data_producer.number_of_trajectories()
-
 
     def trajectory_length(self, itraj):
         """
@@ -85,7 +85,6 @@ class Transformer(object):
         int : length of trajectory
         """
         return self.data_producer.trajectory_length(itraj)
-
 
     def trajectory_lengths(self):
         """
