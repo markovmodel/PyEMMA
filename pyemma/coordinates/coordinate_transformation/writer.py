@@ -23,18 +23,17 @@ class WriterCSV(Transformer):
         Constructor
         '''
         super(WriterCSV, self).__init__()
-        self.data_producer = source
-        self.filename = filename
 
+        self.data_producer = source
+        # filename should be obtained from source trajectory filename,
+        # eg suffix it to given filename
+        self.filename = filename
         self.last_frame = False
 
-        # have one group per input file!
+        self.reset()
 
-        try:
-            self.fh = open(self.filename, 'w')
-        except IOError:
-            log.critical('could not open file "%s" for writing.')
-            raise
+    def describe(self):
+        return "[Writer filename='%s']" % self.filename
 
     def get_constant_memory(self):
         return 0
@@ -45,20 +44,25 @@ class WriterCSV(Transformer):
     def parametrization_finished(self):
         return self.last_frame
 
-    def add_chunk(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
-        log.debug('ipass %i' % ipass)
-        if last_chunk:
-            log.info("closing file")
-            # self.fh.close()
-            self.last_frame = True
-
-        # Transformer.add_chunk(
-        # self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk,
-        # ipass, Y=Y)
-
-    def map(self, X):
-        log.debug('called map. last_frame = %s' % self.last_frame)
-        np.savetxt(self.fh, X)
-        if self.last_frame:
+    def reset(self):
+        try:
             self.fh.close()
-        return X
+            log.debug('closed file')
+        except IOError:
+            log.exception('during close')
+        except AttributeError:
+            pass
+
+        try:
+            self.fh = open(self.filename, 'w')
+        except IOError:
+            log.exception('could not open file "%s" for writing.')
+            raise
+
+    def add_chunk(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
+        print type(X)
+        np.savetxt(self.fh, X)
+        if last_chunk:
+            log.debug("closing file")
+            self.fh.close()
+            self.last_frame = True
