@@ -6,8 +6,10 @@ from pca import PCA
 from tica import TICA
 from uniform_time_clustering import UniformTimeClustering
 
+import logging
 import psutil
 import numpy as np
+import sys
 
 
 class Discretizer(object):
@@ -17,14 +19,18 @@ class Discretizer(object):
 
         :return:
         """
+        # init logging
+        logger = logging.getLogger()
+        logger.setLevel(logging.INFO)
+
         # create featurizer
         featurizer = Featurizer(topfile)
         # TODO: where to build chain? User has to provide list of T objects?
         # TODO: @marscher revert my changes here
-        #sel = featurizer.selCa()
-        sel = np.array([(0,20), (200, 320), (1300,1500)])
-        #pairs = featurizer.pairs(sel)
-        featurizer.distances(sel)
+        sel = featurizer.selCa()
+        #sel = np.array([(0,20), (200, 320), (1300,1500)])
+        pairs = featurizer.pairs(sel)
+        featurizer.distances(pairs)
         # feature reader
         reader = FeatureReader(trajfiles, topfile, featurizer)
 
@@ -32,11 +38,14 @@ class Discretizer(object):
 
         self.transformers.append(reader)
         # pca output dimension and transformation type should be an input!
-        pca = TICA(reader, lag=10, output_dimension=2)#PCA(reader, 2)
+        pca = PCA(2)#PCA(reader, 2)
+        pca.set_data_producer(reader)
+        #pca = TICA(reader, lag=10, output_dimension=2)#PCA(reader, 2)
         self.transformers.append(pca)
         # number of states and clustering type should be an input
-        utc = UniformTimeClustering(pca, 100)
-        #self.transformers.append(utc)
+        utc = UniformTimeClustering(100)
+        utc.set_data_producer(pca)
+        self.transformers.append(utc)
 
         # determine memory requirements
         M = psutil.virtual_memory()[1]  # available RAM
