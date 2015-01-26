@@ -184,7 +184,7 @@ class FeatureReader:
             itraj += 1
 
 
-    def parametrization_finished(self):
+    def parametrized(self):
         """
         Returns whether the parametrization is finished
 

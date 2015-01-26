@@ -134,7 +134,12 @@ class Transformer(object):
         # memory mode? Then map all results
         if self.in_memory:
             self.map_to_memory()
+        # done!
+        self.param_finished = True
 
+
+    def parametrized(self):
+        return self.param_finished
 
     def param_init(self):
         """
