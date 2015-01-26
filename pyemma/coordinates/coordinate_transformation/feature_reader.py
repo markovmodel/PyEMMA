@@ -41,7 +41,7 @@ class FeatureReader(object):
         self.mditer2 = None
 
         # cache size
-        self.chunksize = 10000
+        self.chunksize = 1000
         self.in_memory = False
         self.Y = None
         # basic statistics
@@ -52,6 +52,8 @@ class FeatureReader(object):
             self.lengths.append(sum_frames)
 
         self.totlength = np.sum(self.lengths)
+
+        #self._param_finished = False
 
     def describe(self):
         """
@@ -213,6 +215,9 @@ class FeatureReader(object):
         chunk = self.mditer.next()
 
         if lag > 0:
+            assert lag < self.chunksize, "chunksize has to be bigger than lag for this impl."
+            # TODO: to circumvent this, eg. for very large lagtimes, we have to
+            # get more chunks.
             advanced_once = True
             if self.curr_lag == 0:
                 # lag time changed
@@ -230,13 +235,28 @@ class FeatureReader(object):
             except StopIteration:
                 # no more data available in mditer2, so we have to take data from
                 # last_chunk and padd it with zeros!
-                lagged_xyz = np.zeros_like(chunk.xyz)
-                lagged_xyz[0:-lag] = chunk.xyz[lag:]
-            else:
-                # build time lagged Trajectory from current and advanced chunk
+                log.debug("no more data in mditer2")
                 lagged_xyz = np.empty_like(chunk.xyz)
                 lagged_xyz[:-lag] = chunk.xyz[lag:]
-                lagged_xyz[-lag:] = adv_chunk.xyz[0:lag]
+                lagged_xyz[-lag:] = 0
+            else:
+                # build time lagged Trajectory from current and advanced chunk
+                # print chunk.xyz.shape,adv_chunk.xyz.shape
+                # if adv_chunk has less frames than chunk
+                s1 = chunk.xyz.shape
+                s2 = adv_chunk.xyz.shape
+                min_shape = min((s1, s2))
+                lagged_xyz = np.zeros(min_shape)
+                if min_shape[0] == 1:
+                    log.error(
+                        'only one frame left. Choose different chunksize')
+                    pass
+                elif s1 == s2:
+                    lagged_xyz[:-lag] = chunk.xyz[lag:]
+                    lagged_xyz[-lag:] = adv_chunk.xyz[:lag]
+                else:
+                    print "chunk: %s; adv_chunk: %s" % (s1, s2)
+                    # TODO: handle case one chunk shorter than other!
             chunk_lagged = Trajectory(lagged_xyz, chunk.topology)
 
         if np.max(chunk.time) >= self.trajectory_length(self.curr_itraj) - 1:
