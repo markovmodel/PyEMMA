@@ -47,12 +47,13 @@ class Discretizer(object):
             raise MemoryError('Not enough memory for desired transformation chain!')
 
         # is this chunksize sufficient to store full trajectories?
-        # TODO: ensure chunksize does not leave a last single frame at the end to avoid trouble
-        chunksize = min(chunksize, np.max(reader.trajectory_lengths()))
-        print "resulting chunk size: ", chunksize
-        # set chunksize
-        for trans in self.transformers:
-            trans.chunksize = chunksize
+        # TODO: ensure chunksize does not leave a last single frame at the end
+        # to avoid trouble
+        chunksize = min(
+            chunksize, np.max(self.transformers[0].trajectory_lengths()))
+        chunksize=1000
+        log.info("resulting chunk size: %i " % chunksize)
+        self.chunksize = chunksize
 
         # any memory unused? if yes, we can store results
         Mfree = M - const_mem - chunksize * mem_per_frame
@@ -64,10 +65,21 @@ class Discretizer(object):
                 trans.get_memory_per_frame()
             if Mfree > mem_req_trans:
                 Mfree -= mem_req_trans
-                trans.operate_in_memory()
+                # trans.operate_in_memory()
                 log.info(
                     ("spending ", mem_req_trans,
                      " bytes to operate in main memory: ", trans.describe()))
+
+    @property
+    def chunksize(self):
+        return self._chunksize
+
+    @chunksize.setter
+    def chunksize(self, size):
+        assert size >= 1, "illegal chunksize: %i" % size
+        self._chunksize = size
+        for trans in self.transformers:
+            trans.chunksize = size
 
     def run(self):
         # parametrize from the beginning to the end
