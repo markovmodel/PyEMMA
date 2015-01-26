@@ -107,7 +107,6 @@ class Transformer(object):
         """
         return self.data_producer.n_frames_total()
 
-
     def get_memory_per_frame(self):
         """
         Returns the memory requirements per frame, in bytes
@@ -212,7 +211,6 @@ class Transformer(object):
             # increment trajectory
             itraj += 1
 
-
     def reset(self):
         """
         reset data position
@@ -268,17 +266,19 @@ class Transformer(object):
             else:
                 (X0, Xtau) = self.data_producer.next_chunk(lag=lag)
                 return (self.map(X0), self.map(Xtau))
-
-    def distance(self, x, y):
+    
+	@staticmethod
+    def distance(x, y):
         """
 
         :param x:
         :param y:
         :return:
         """
-        return np.linalg.norm(x-y, 2)
+        return np.linalg.norm(x - y, 2)
 
-    def distances(self, x, Y):
+    @staticmethod
+    def distances(x, Y):
         """
 
         :param x: ndarray (n)
