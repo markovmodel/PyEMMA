@@ -22,7 +22,8 @@ def map_return_input(traj):
 class MemoryStorage(Transformer):
 
     def __init__(self, source, chunksize=100, lag=0):
-        Transformer.__init__(self)
+        Transformer.__init__(self, chunksize, lag)
+
         self.lagged_chunks = []
         self.final = None
         self.data_producer = source
@@ -77,8 +78,8 @@ class TestFeatureReader(unittest.TestCase):
                 reader = FeatureReader(trajfiles, self.topfile, f)
 
                 m = MemoryStorage(reader, lag=lag)
-
-                for t in [f, reader, m]:
+                chain = [f, reader, m]
+                for t in chain:
                     t.chunksize = chunksize
 
                 m.parametrize()
