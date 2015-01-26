@@ -3,6 +3,7 @@ Created on 19.01.2015
 
 @author: marscher
 '''
+import logging
 import numpy as np
 from transformer import Transformer
 
@@ -76,6 +77,7 @@ class TICA(Transformer):
 
         :return:
         """
+        logging.info("Running TICA")
         self.N = 0
         # create mean array and covariance matrices
         self.mu = np.zeros(self.data_producer.dimension())
@@ -110,8 +112,8 @@ class TICA(Transformer):
             time-lagged data (if available)
         :return:
         """
-        logging.getLogger(__name__).debug("itraj = ", itraj, "t = ", t, "last_chunk_in_traj = ", last_chunk_in_traj,
-                                          "last_chunk = ", last_chunk, "ipass = ", ipass)
+        logging.info("itraj = "+str(itraj)+". t = "+str(t)+". last_chunk_in_traj = "+str(last_chunk_in_traj)
+                     +" last_chunk = "+str(last_chunk)+" ipass = "+str(ipass))
 
         if ipass == 0:
             # TODO: use a more advanced algo for mean calculation

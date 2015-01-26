@@ -1,7 +1,8 @@
 __author__ = 'noe'
 
-from transformer import Transformer
+import logging
 import numpy as np
+from transformer import Transformer
 
 class UniformTimeClustering(Transformer):
 
@@ -50,6 +51,7 @@ class UniformTimeClustering(Transformer):
 
         :return:
         """
+        logging.info("Running uniform time clustering")
         # initialize cluster centers
         self.clustercenters = np.zeros((self.k, self.data_producer.dimension()), dtype=np.float32)
         # initialize time counters
@@ -81,8 +83,8 @@ class UniformTimeClustering(Transformer):
             time-lagged data (if available)
         :return:
         """
-        logging.getLogger(__name__).debug("itraj = ", itraj, "t = ", t, "last_chunk_in_traj = ", last_chunk_in_traj,
-                                          "last_chunk = ", last_chunk, "ipass = ", ipass)
+        logging.info("itraj = "+str(itraj)+". t = "+str(t)+". last_chunk_in_traj = "+str(last_chunk_in_traj)
+                     +" last_chunk = "+str(last_chunk)+" ipass = "+str(ipass))
 
         L = np.shape(X)[0]
         if ipass == 0:
@@ -102,7 +104,9 @@ class UniformTimeClustering(Transformer):
             for i in range(0,L):
                 self.dtrajs[itraj][i+t] = self.map(X[i])
             if last_chunk:
-                self.param_finished = True
+                return True # done!
+
+        return False # not done yet.
 
 
     def map_to_memory(self):

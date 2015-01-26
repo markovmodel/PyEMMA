@@ -100,7 +100,7 @@ class Transformer(object):
         ipass = 0
         lag = self.get_lag()
         # parametrize
-        while not add_data_finished:
+        while add_data_finished != True:
             first_chunk = True
             self.data_producer.reset()
             # iterate over trajectories

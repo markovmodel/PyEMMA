@@ -1,6 +1,7 @@
 __author__ = 'noe'
 
 import mdtraj
+import logging
 import numpy as np
 
 from mdtraj.core.trajectory import Trajectory
@@ -250,7 +251,7 @@ class FeatureReader:
 
         if np.max(chunk.time) >= self.trajectory_length(self.curr_itraj) - 1:
             if self.curr_itraj < len(self.trajfiles) - 1:
-                print "max chunk time reached for this traj, opening next"
+                logging.debug("max chunk time reached for this traj, opening next")
                 self.mditer.close()
                 self.curr_itraj += 1
                 self.mditer = mdtraj.iterload(

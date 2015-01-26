@@ -1,5 +1,6 @@
 __author__ = 'noe'
 
+import logging
 import numpy as np
 from transformer import Transformer
 
@@ -60,6 +61,7 @@ class PCA(Transformer):
 
         :return:
         """
+        logging.info("Running PCA")
         self.N = 0
         # create mean array and covariance matrix
         self.mu = np.zeros((self.data_producer.dimension()))
@@ -90,8 +92,8 @@ class PCA(Transformer):
             time-lagged data (if available)
         :return:
         """
-        logging.getLogger(__name__).debug("itraj = ", itraj, "t = ", t, "last_chunk_in_traj = ", last_chunk_in_traj,
-                                          "last_chunk = ", last_chunk, "ipass = ", ipass)
+        logging.info("itraj = "+str(itraj)+". t = "+str(t)+". last_chunk_in_traj = "+str(last_chunk_in_traj)
+                     +" last_chunk = "+str(last_chunk)+" ipass = "+str(ipass))
 
         # pass 1: means
         if ipass == 0:
