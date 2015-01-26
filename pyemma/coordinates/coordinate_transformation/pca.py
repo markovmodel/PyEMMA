@@ -12,34 +12,26 @@ class PCA(Transformer):
     C = (X-mu)^T (X-mu)
     and solves the eigenvalue problem
     C r_i = sigma_i r_i,
-    where r_i are the principal compontns and sigma_i are their respective variances.
+    where r_i are the principal components and sigma_i are their respective variances.
 
     When used as a dimension reduction method, the input data is projected onto the
     dominant principal components.
 
     """
 
-    def __init__(self, data_producer, output_dimension):
+    def __init__(self, output_dimension):
         """
-        Constructs a feature reader
+        Constructs a PCA transformation
 
-        :param trajectories:
-            list of trajectory files
+        :param output_dimension:
+            number of principal components to project onto
 
         :param structurefile:
             structure file (e.g. pdb)
 
         """
-        self.data_producer = data_producer
         self.output_dimension = output_dimension
 
-        # matrices
-        self.N = 0
-        self.mu = None
-        self.C = None
-        self.param_finished = False
-        self.v = None
-        self.R = None
 
     def describe(self):
         return "PCA, output dimension = ", self.output_dimension
@@ -61,7 +53,20 @@ class PCA(Transformer):
         # memory for mu, C, v, R
         return 2 * self.data_producer.dimension() * (self.data_producer.dimension() + 1)
 
-    def add_chunk(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
+
+    def param_init(self):
+        """
+        Initializes the parametrization.
+
+        :return:
+        """
+        self.N = 0
+        # create mean array and covariance matrix
+        self.mu = np.zeros((self.data_producer.dimension()))
+        self.C = np.zeros((self.data_producer.dimension(), self.data_producer.dimension()))
+
+
+    def param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
         """
         Chunk-based parametrization of PCA. Iterates through all data twice. In the first pass, the
         data means are estimated, in the second pass the covariance matrix is estimated.
@@ -85,33 +90,41 @@ class PCA(Transformer):
             time-lagged data (if available)
         :return:
         """
-        print "itraj = ", itraj, "t = ", t, "last_chunk_in_traj = ", last_chunk_in_traj, "last_chunk = ", last_chunk, "ipass = ", ipass
-        # pass 1
+        logging.getLogger(__name__).debug("itraj = ", itraj, "t = ", t, "last_chunk_in_traj = ", last_chunk_in_traj,
+                                          "last_chunk = ", last_chunk, "ipass = ", ipass)
+
+        # pass 1: means
         if ipass == 0:
-            if first_chunk:
-                self.mu = np.zeros((self.data_producer.dimension()))
             self.mu += np.sum(X, axis=0)
             self.N += np.shape(X)[0]
             if last_chunk:
                 self.mu /= self.N
-        # pass 2
+
+        # pass 2: covariances
         if ipass == 1:
-            if first_chunk:
-                self.C = np.zeros(
-                    (self.data_producer.dimension(), self.data_producer.dimension()))
             Xm = X - self.mu
             self.C += np.dot(Xm.T, Xm)
             if last_chunk:
                 self.C /= self.N
-                # diagonalize
-                (v, R) = np.linalg.eig(self.C)
-                # sort
-                I = np.argsort(v)[::-1]
-                self.v = v[I]
-                self.R = R[I, :]
-                # parametrization finished
-                self.param_finished = True
-                print "parametrization finished!"
+                return True # finished!
+
+        # by default, continue
+        return False
+
+
+    def param_finish(self):
+        """
+        Finalizes the parametrization.
+
+        :return:
+        """
+        # diagonalize
+        (v, R) = np.linalg.eig(self.C)
+        # sort
+        I = np.argsort(v)[::-1]
+        self.v = v[I]
+        self.R = R[I, :]
+
 
     def map(self, X):
         """

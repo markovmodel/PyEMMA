@@ -5,7 +5,6 @@ import numpy as np
 
 class UniformTimeClustering(Transformer):
 
-    data_producer = None
     # number of clusters
     k = 2
     # cluster centers
@@ -13,15 +12,8 @@ class UniformTimeClustering(Transformer):
     # discrete trajectories
     dtrajs = []
 
-    def __init__(self, data_producer, k):
-        self.data_producer = data_producer
+    def __init__(self, k):
         self.k = k
-        self.clustercenters = np.zeros((self.k, self.data_producer.dimension()), dtype=np.float32)
-        self.stride = self.data_producer.n_frames_total() / self.k
-        self.nextt = self.stride/2
-        self.tprev = 0
-        self.ipass = 0
-        self.n = 0
 
 
     def describe(self):
@@ -52,7 +44,23 @@ class UniformTimeClustering(Transformer):
         return self.k * 4 * self.data_producer.dimension() + 4 * self.data_producer.n_frames_total()
 
 
-    def add_chunk(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
+    def param_init(self):
+        """
+        Initializes the parametrization.
+
+        :return:
+        """
+        # initialize cluster centers
+        self.clustercenters = np.zeros((self.k, self.data_producer.dimension()), dtype=np.float32)
+        # initialize time counters
+        self.tprev = 0
+        self.ipass = 0
+        self.n = 0
+        self.stride = self.data_producer.n_frames_total() / self.k
+        self.nextt = self.stride/2
+
+
+    def param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
         """
 
         :param X:
@@ -73,7 +81,9 @@ class UniformTimeClustering(Transformer):
             time-lagged data (if available)
         :return:
         """
-        print "itraj = ",itraj, "t = ",t, "last_chunk_in_traj = ",last_chunk_in_traj, "last_chunk = ",last_chunk,"ipass = ",ipass
+        logging.getLogger(__name__).debug("itraj = ", itraj, "t = ", t, "last_chunk_in_traj = ", last_chunk_in_traj,
+                                          "last_chunk = ", last_chunk, "ipass = ", ipass)
+
         L = np.shape(X)[0]
         if ipass == 0:
             maxt = self.tprev + t + L

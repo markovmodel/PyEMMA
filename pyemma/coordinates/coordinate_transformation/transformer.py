@@ -7,6 +7,18 @@ class Transformer(object):
 
     # param finished?
     param_finished = False
+    # data_producer
+    data_producer = None
+
+    def set_data_producer(self, data_producer):
+        """
+        Sets the data producer for this transformation
+
+        :param data_producer:
+        :return:
+        """
+        self.data_producer = data_producer
+
 
     def set_chunksize(self, size):
         self.chunksize = size
@@ -78,10 +90,17 @@ class Transformer(object):
 
 
     def parametrize(self):
+        # check if ready
+        if self.data_producer is None:
+            raise RuntimeError('Called parametrize while data producer is not yet set. Call set_data_producer first!')
+        # init
+        self.param_init()
+        # feed data, until finished
+        add_data_finished = False
         ipass = 0
         lag = self.get_lag()
         # parametrize
-        while not self.parametrization_finished():
+        while not add_data_finished:
             first_chunk = True
             self.data_producer.reset()
             # iterate over trajectories
@@ -103,25 +122,37 @@ class Transformer(object):
                     # last chunk?
                     last_chunk = (last_chunk_in_traj and itraj >= self.number_of_trajectories()-1)
                     # first chunk
-                    self.add_chunk(X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=Y)
+                    add_data_finished = self.param_add_data(X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=Y)
                     first_chunk = False
                     # increment time
                     t += L
                 # increment trajectory
                 itraj += 1
             ipass += 1
+        # finish parametrization
+        self.param_finish()
+        # memory mode? Then map all results
         if self.in_memory:
             self.map_to_memory()
 
 
-    def parametrization_finished(self):
+    def param_init(self):
         """
-        Returns whether the parametrization is finished
+        Initializes the parametrization.
 
-        :return: True if parametrization is finished
+        :return:
         """
-        return self.param_finished
+        # create mean array and covariance matrix
+        pass
 
+
+    def param_finish(self):
+        """
+        Finalizes the parametrization.
+
+        :return:
+        """
+        pass
 
     def map_to_memory(self):
         # if operating in main memory, do all the mapping now
