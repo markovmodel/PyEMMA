@@ -41,7 +41,8 @@ class WriterCSV(Transformer):
     def dimension(self):
         return self.data_producer.dimension()
 
-    def parametrization_finished(self):
+    @property
+    def parametrized(self):
         return self.last_frame
 
     def reset(self):
