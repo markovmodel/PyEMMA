@@ -31,7 +31,7 @@ class TestDiscretizer(unittest.TestCase):
         reader = FeatureReader(trajfiles, topfile, featurizer)
 
         transformers.append(reader)
-        tica = TICA(reader, lag=10, output_dimension=2)
+        tica = TICA(reader, lag=10, output_dim=2)
         transformers.append(tica)
 
         self.D = Discretizer(transformers)

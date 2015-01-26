@@ -6,6 +6,7 @@ Created on 19.01.2015
 import numpy as np
 from transformer import Transformer
 from pyemma.util.log import getLogger
+import warnings
 
 log = getLogger('TICA')
 
@@ -26,6 +27,17 @@ class TICA(Transformer):
 
     When used as a dimension reduction method, the input data is projected onto the
     dominant independent components.
+
+    Parameters
+    ----------
+    data_producer : instance of Transformer
+        a data source
+    lag : int
+        lag time
+    output_dim : int
+        how many significant TICS to use to reduce dimension of input data
+    symmetrize: boolean
+        shall time lagged covariance matrix be symmetrized by 0.5*C_lagged.T?
 
     """
 
@@ -51,7 +63,7 @@ class TICA(Transformer):
 
 
     def describe(self):
-        return "TICA, lag = %s output dimension = %s" \
+        return "[TICA, lag = %i; output dimension = %i]" \
             % (self.lag, self.output_dimension())
 
     def dimension(self):
@@ -122,12 +134,18 @@ class TICA(Transformer):
                 print "mean:\n", self.mu
 
         if ipass == 1:
+            if first_chunk:
+                dim = self.data_producer.dimension()
+                assert dim > 0, "zero dimension from data producer"
+                self.cov = np.zeros((dim, dim))
+                self.cov_tau = np.zeros_like(self.cov)
 
             assert Y is not None, "time lagged input missing"
 
             X_meanfree = X - self.mu
             Y_meanfree = Y - self.mu
             self.cov += np.dot(X_meanfree.T, X_meanfree)
+            # FIXME: minor deviation to amuse algo for cov_tau, might be norming factor
             self.cov_tau += np.dot(X_meanfree.T, Y_meanfree)
 
             if last_chunk:
