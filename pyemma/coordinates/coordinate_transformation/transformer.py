@@ -24,6 +24,15 @@ class Transformer(object):
         self._chunksize = int(chunksize)
         self._lag = int(lag)
         self._in_memory = False
+        self._dataproducer = None
+
+    @property
+    def data_producer(self):
+        return self._dataproducer
+
+    @data_producer.setter
+    def data_producer(self, dp):
+        self._dataproducer = dp
 
     @property
     def chunksize(self):
@@ -45,7 +54,7 @@ class Transformer(object):
         self._in_memory = True
         # output data
         self.Y = [np.zeros((self.trajectory_length(itraj), self.dimension()))
-                  for itraj in range(0, self.number_of_trajectories())]
+                  for itraj in xrange(self.number_of_trajectories())]
 
     @property
     def lag(self):
@@ -120,7 +129,8 @@ class Transformer(object):
     def parametrize(self):
         # check if ready
         if self.data_producer is None:
-            raise RuntimeError('Called parametrize while data producer is not yet set. Call set_data_producer first!')
+            raise RuntimeError('Called parametrize while data producer is not'
+                               ' yet set. Ensure "data_producer" attribute is set!')
         # init
         self.param_init()
         # feed data, until finished
@@ -128,7 +138,7 @@ class Transformer(object):
         ipass = 0
         lag = self.lag
         # parametrize
-        while add_data_finished != True:
+        while not add_data_finished:
             first_chunk = True
             self.data_producer.reset()
             # iterate over trajectories
@@ -148,9 +158,10 @@ class Transformer(object):
                     # last chunk in traj?
                     last_chunk_in_traj = (t + lag + L >= self.trajectory_length(itraj))
                     # last chunk?
-                    last_chunk = (last_chunk_in_traj and itraj >= self.number_of_trajectories()-1)
+                    last_chunk = (last_chunk_in_traj and itraj >= self.number_of_trajectories() - 1)
                     # first chunk
-                    add_data_finished = self.param_add_data(X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=Y)
+                    add_data_finished = self.param_add_data(
+                        X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=Y)
                     first_chunk = False
                     # increment time
                     t += L
@@ -163,11 +174,11 @@ class Transformer(object):
         if self.in_memory:
             self.map_to_memory()
         # done!
-        self.param_finished = True
+        self._param_finished = True
 
-
+    @property
     def parametrized(self):
-        return self.param_finished
+        return self._param_finished
 
     def param_init(self):
         """
@@ -177,7 +188,6 @@ class Transformer(object):
         """
         # create mean array and covariance matrix
         pass
-
 
     def param_finish(self):
         """
@@ -202,9 +212,10 @@ class Transformer(object):
                 # last chunk in traj?
                 last_chunk_in_traj = (t + L >= self.trajectory_length(itraj))
                 # last chunk?
-                last_chunk = (last_chunk_in_traj and itraj >= self.number_of_trajectories()-1)
+                last_chunk = (
+                    last_chunk_in_traj and itraj >= self.number_of_trajectories() - 1)
                 # write
-                self.Y[itraj][t:t+L] = self.map(X)
+                self.Y[itraj][t:t + L] = self.map(X)
                 # increment time
                 t += L
             # increment trajectory
@@ -242,7 +253,8 @@ class Transformer(object):
                 return None
             # operate in memory, implement iterator here
             if lag == 0:
-                Y = self.Y[self.itraj][self.t:min(self.t+self.chunksize,self.trajectory_length(self.itraj))]
+                Y = self.Y[self.itraj][
+                    self.t:min(self.t + self.chunksize, self.trajectory_length(self.itraj))]
                 # increment counters
                 self.t += self.chunksize
                 if self.t >= self.trajectory_length(self.itraj):
@@ -250,8 +262,10 @@ class Transformer(object):
                     self.t = 0
                 return Y
             else:
-                Y0 = self.Y[self.itraj][self.t:min(self.t+self.chunksize,self.trajectory_length(self.itraj))]
-                Ytau = self.Y[self.itraj][self.t+lag:min(self.t+self.chunksize+lag,self.trajectory_length(self.itraj))]
+                Y0 = self.Y[self.itraj][
+                    self.t:min(self.t + self.chunksize, self.trajectory_length(self.itraj))]
+                Ytau = self.Y[self.itraj][
+                    self.t + lag:min(self.t + self.chunksize + lag, self.trajectory_length(self.itraj))]
                 # increment counters
                 self.t += self.chunksize
                 if self.t >= self.trajectory_length(self.itraj):
@@ -265,8 +279,8 @@ class Transformer(object):
             else:
                 (X0, Xtau) = self.data_producer.next_chunk(lag=lag)
                 return (self.map(X0), self.map(Xtau))
-    
-	@staticmethod
+
+    @staticmethod
     def distance(x, y):
         """
 
