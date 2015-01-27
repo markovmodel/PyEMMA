@@ -18,13 +18,12 @@ class WriterCSV(Transformer):
     shall write to csv files
     '''
 
-    def __init__(self, filename, source):
+    def __init__(self, filename):
         '''
         Constructor
         '''
         super(WriterCSV, self).__init__()
 
-        self.data_producer = source
         # filename should be obtained from source trajectory filename,
         # eg suffix it to given filename
         self.filename = filename
@@ -41,10 +40,6 @@ class WriterCSV(Transformer):
     def dimension(self):
         return self.data_producer.dimension()
 
-    @property
-    def parametrized(self):
-        return self.last_frame
-
     def reset(self):
         try:
             self.fh.close()
@@ -60,10 +55,9 @@ class WriterCSV(Transformer):
             log.exception('could not open file "%s" for writing.')
             raise
 
-    def add_chunk(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
-        print type(X)
+    def param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
         np.savetxt(self.fh, X)
         if last_chunk:
             log.debug("closing file")
             self.fh.close()
-            self.last_frame = True
+            return True # finished

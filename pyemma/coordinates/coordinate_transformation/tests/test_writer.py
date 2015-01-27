@@ -35,23 +35,32 @@ class TestWriterCSV(unittest.TestCase):
         os.unlink(self.output_file)
 
     def testWriter(self):
-        self.writer = WriterCSV(self.output_file, self.reader)
-        self.D = Discretizer([self.reader, self.writer])
+        self.writer = WriterCSV(self.output_file)
+        self.writer.data_producer = self.reader
+        chain = [self.reader, self.writer]
 
         self.reader.operate_in_memory()
-        self.D.run()
+
+        for c in chain:
+            c.chunkshape=50000
+            c.parametrize()
 
         # open file and compare to reader.Y
         output = np.loadtxt(self.output_file)
         np.testing.assert_allclose(output, self.reader.Y[0])
 
     def testTicaWriter(self):
-        self.writer = WriterCSV(self.output_file, self.reader)
-        tica = TICA(self.reader, 10, 2)
-        self.D = Discretizer([self.reader, tica, self.writer])
+        self.writer = WriterCSV(self.output_file)
+        self.writer.data_producer = self.reader
+
+        tica = TICA(lag=10, output_dimension=2)
+        tica.data_producer = self.reader
+        chain = [self.reader, tica, self.writer]
 
         self.reader.operate_in_memory()
-        self.D.run()
+        for c in chain:
+            c.chunkshape=50000
+            c.parametrize()
 
         # open file and compare to reader.Y
         output = np.loadtxt(self.output_file)
