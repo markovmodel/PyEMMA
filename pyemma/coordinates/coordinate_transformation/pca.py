@@ -2,11 +2,13 @@ __author__ = 'noe'
 
 import numpy as np
 from transformer import Transformer
+from pyemma.util.log import getLogger
+
+log = getLogger('PCA')
 
 
 class PCA(Transformer):
-    """
-    Principal component analysis.
+    r"""Principal component analysis.
 
     Given a sequence of multivariate data X_t, computes the mean-free covariance matrix
     C = (X-mu)^T (X-mu)
@@ -30,9 +32,8 @@ class PCA(Transformer):
             structure file (e.g. pdb)
 
         """
-		super(PCA).__init__(self)
+        super(PCA, self).__init__(self)
         self.output_dimension = output_dimension
-
 
     def describe(self):
         return "PCA, output dimension = ", self.output_dimension
@@ -61,7 +62,7 @@ class PCA(Transformer):
 
         :return:
         """
-        logging.info("Running PCA")
+        log.info("Running PCA")
         self.N = 0
         # create mean array and covariance matrix
         self.mu = np.zeros((self.data_producer.dimension()))
@@ -92,7 +93,7 @@ class PCA(Transformer):
             time-lagged data (if available)
         :return:
         """
-        logging.info("itraj = "+str(itraj)+". t = "+str(t)+". last_chunk_in_traj = "+str(last_chunk_in_traj)
+        log.info("itraj = "+str(itraj)+". t = "+str(t)+". last_chunk_in_traj = "+str(last_chunk_in_traj)
                      +" last_chunk = "+str(last_chunk)+" ipass = "+str(ipass))
 
         # pass 1: means
