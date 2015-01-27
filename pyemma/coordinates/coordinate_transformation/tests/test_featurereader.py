@@ -21,15 +21,14 @@ def map_return_input(traj):
 
 class MemoryStorage(Transformer):
 
-    def __init__(self, source, chunksize=100, lag=0):
+    def __init__(self, chunksize=100, lag=0):
         Transformer.__init__(self, chunksize, lag)
 
         self.lagged_chunks = []
         self.final = None
-        self.data_producer = source
         self._param_finished = False
 
-    def add_chunk(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
+    def param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
         self.lagged_chunks.append(Y)
         # print t
         if last_chunk:
@@ -77,7 +76,8 @@ class TestFeatureReader(unittest.TestCase):
 
                 reader = FeatureReader(trajfiles, self.topfile, f)
 
-                m = MemoryStorage(reader, lag=lag)
+                m = MemoryStorage(lag=lag)
+                m.data_producer = reader
                 chain = [f, reader, m]
                 for t in chain:
                     t.chunksize = chunksize

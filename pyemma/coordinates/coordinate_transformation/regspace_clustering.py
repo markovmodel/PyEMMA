@@ -27,13 +27,10 @@ class RegularSpaceClustering(Transformer):
 
     """
 
-    def __init__(self, data_source, dmin):
+    def __init__(self, dmin):
         super(RegularSpaceClustering, self).__init__()
 
         self._dmin = dmin
-        self.data_producer = data_source
-        self._param_finished = False
-
         self._dtrajs = []
 
         # TODO: determine if list or np array is more efficient.
@@ -62,7 +59,9 @@ class RegularSpaceClustering(Transformer):
                 dists[ii] = np.linalg.norm(X[jj] - center, 2)
         return dists
 
-    def add_chunk(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
+    #def add_chunk(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
+    def param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
+
         """
         first pass: calculate centroids
         second pass: assign data to discrete trajectories
@@ -94,13 +93,12 @@ class RegularSpaceClustering(Transformer):
             for i in xrange(L):
                 self._dtrajs[itraj][i + t] = self.map(X[i])
             if last_chunk:
-                self._param_finished = True
-        else:
-            raise RuntimeError('Should never get here!'
-                               ' Forgot to set self.param_finished?')
+                return True  # finished!
+
+        return False
 
     def map(self, x):
-        """gets index of closest cluster. 
+        """gets index of closest cluster.
         TODO: If X is a chunk [shape = (n, d)], return an array with all indices.
         """
         dists = self.data_producer.distances(x, self._centroids)

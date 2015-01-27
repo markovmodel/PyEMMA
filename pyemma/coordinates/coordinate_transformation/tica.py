@@ -6,7 +6,6 @@ Created on 19.01.2015
 import numpy as np
 from transformer import Transformer
 from pyemma.util.log import getLogger
-import warnings
 
 log = getLogger('TICA')
 
@@ -30,8 +29,6 @@ class TICA(Transformer):
 
     Parameters
     ----------
-    data_producer : instance of Transformer
-        a data source
     lag : int
         lag time
     output_dim : int
@@ -61,7 +58,6 @@ class TICA(Transformer):
         self.lambdas = None
         self.N = 0
 
-
     def describe(self):
         return "[TICA, lag = %i; output dimension = %i]" \
             % (self.lag, self.output_dimension())
@@ -88,7 +84,7 @@ class TICA(Transformer):
 
         :return:
         """
-        logging.info("Running TICA")
+        log.info("Running TICA")
         self.N = 0
         # create mean array and covariance matrices
         self.mu = np.zeros(self.data_producer.dimension())
@@ -98,7 +94,8 @@ class TICA(Transformer):
         self.cov_tau = np.zeros_like(self.cov)
 
 
-    def add_chunk(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
+    #def add_chunk(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
+    def param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
         """
         Chunk-based parametrization of TICA. Iterates through all data twice. In the first pass, the
         data means are estimated, in the second pass the covariance and time-lagged covariance
@@ -131,16 +128,13 @@ class TICA(Transformer):
 
             if last_chunk:
                 self.mu /= self.N
-                print "mean:\n", self.mu
+                log.info("mean:\n%s" % self.mu)
 
         if ipass == 1:
             if first_chunk:
                 dim = self.data_producer.dimension()
-                assert dim > 0, "zero dimension from data producer"
                 self.cov = np.zeros((dim, dim))
                 self.cov_tau = np.zeros_like(self.cov)
-
-            assert Y is not None, "time lagged input missing"
 
             X_meanfree = X - self.mu
             Y_meanfree = Y - self.mu
@@ -157,15 +151,13 @@ class TICA(Transformer):
 
 
     def param_finish(self):
-        """
-        Finalizes the parametrization.
-
-        :return:
+        """ Finalizes the parametrization.
         """
         if self.symmetrize:
-            self.cov_tau = (self.cov_tau + self.cov_tau.T) / 2.
+            self.cov_tau += self.cov_tau.T
+            self.cov_tau /= 2.
 
-        print "covariance:\n", self.cov
+        log.info("covariance:\n%s" % self.cov)
         # diagonalize covariance matrices
         sigma2PC, W = np.linalg.eig(self.cov)
         sigmaPC = np.array(np.sqrt(sigma2PC), ndmin=2)
@@ -192,12 +184,10 @@ class TICA(Transformer):
 
         # Compute U
         self.U = np.dot(
-            W, np.dot(np.diag(1 / sigmaPC.squeeze()), V_tau))
-
+            W, np.dot(np.diag(1.0 / sigmaPC.squeeze()), V_tau))
 
     def map(self, X):
-        """
-        Projects the data onto the dominant independent components.
+        """Projects the data onto the dominant independent components.
 
         :param X: the input data
         :return: the projected data

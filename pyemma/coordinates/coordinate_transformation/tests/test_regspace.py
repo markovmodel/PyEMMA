@@ -45,9 +45,9 @@ class RandomDataSource:
 class TestRegSpaceClustering(unittest.TestCase):
 
     def setUp(self):
-        source = RandomDataSource()
         self.dmin = 0.7
-        self.clustering = RegularSpaceClustering(source, dmin=self.dmin)
+        self.clustering = RegularSpaceClustering(dmin=self.dmin)
+        self.clustering.data_producer = RandomDataSource()
 
     def testAlgo(self):
         self.clustering.parametrize()

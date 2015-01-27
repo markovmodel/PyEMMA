@@ -29,9 +29,11 @@ class TestDiscretizer(unittest.TestCase):
         featurizer.distances(sel)
         # feature reader
         reader = FeatureReader(trajfiles, topfile, featurizer)
-
         transformers.append(reader)
-        tica = TICA(reader, lag=10, output_dim=2)
+
+        tica = TICA(lag=10, output_dimension=2)
+        tica.dataproducer = reader
+
         transformers.append(tica)
 
         self.D = Discretizer(transformers)
