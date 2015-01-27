@@ -28,7 +28,7 @@ class KmeansClustering(Transformer):
                                     batch_size=self.chunksize)
 
         self.dtrajs = []
-        self.param_finished = False
+        self._param_finished = False
 
     def add_chunk(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
         L = np.shape(X)[0]
