@@ -4,7 +4,9 @@ import mdtraj
 import numpy as np
 
 from mdtraj.core.trajectory import Trajectory
+from pyemma.util.log import getLogger
 
+log = getLogger('FeatureReader')
 
 
 class FeatureReader(object):
