@@ -22,7 +22,7 @@ before_install:
 - deactivate # travis python venv
 - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O mc.sh -o /dev/null
 - bash mc.sh -b
-- conda create -q --yes -n ci -c https://binstar.org/omnia/
+- conda create -q --yes -n ci -c https://conda.binstar.org/omnia/
         python=$TRAVIS_PYTHON_VERSION $deps $common_py_deps 
 - source activate ci
 - python -c "import scipy; print scipy.__version__; print scipy.__numpy_version__"
