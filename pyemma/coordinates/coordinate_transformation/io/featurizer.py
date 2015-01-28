@@ -88,10 +88,10 @@ class MDFeaturizer(object):
         if (self.use_backbone_torsions):
             phis = self._list_phis()
             for ires in phis:
-                labels.append("PHI: "+self.topology.residue(ires).name+" "+str(ires)
+                labels.append("PHI: "+self.topology.residue(ires).name+" "+str(ires))
             psis = self._list_psis()
             for ires in psis:
-                labels.append("PSI: "+self.topology.residue(ires).name+" "+str(ires)
+                labels.append("PSI: "+self.topology.residue(ires).name+" "+str(ires))
 
 
     def select(self, selstring):
@@ -162,8 +162,7 @@ class MDFeaturizer(object):
         # phi: C-1, N, CA, C
         phis = []
         for ires in range(1, self.topology.n_residues):
-            if self._has_atom(ires-1, "C") and self._has_atom(ires, "N")
-                and self._has_atom(ires, "CA") and self._has_atom(ires, "C"):
+            if self._has_atom(ires-1, "C") and self._has_atom(ires, "N") and self._has_atom(ires, "CA") and self._has_atom(ires, "C"):
                 phis.append(ires)
         return phis
 
@@ -172,8 +171,7 @@ class MDFeaturizer(object):
         # psi: N, CA, C, N+1
         psis = []
         for ires in range(0, self.topology.n_residues-1):
-            if self._has_atom(ires, "N") and self._has_atom(ires, "CA")
-                and self._has_atom(ires, "C") and self._has_atom(ires+1, "N"):
+            if self._has_atom(ires, "N") and self._has_atom(ires, "CA") and self._has_atom(ires, "C") and self._has_atom(ires+1, "N"):
                 psis.append(ires)
         return psis
 

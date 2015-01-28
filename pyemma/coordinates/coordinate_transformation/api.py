@@ -1,5 +1,6 @@
 __author__ = 'noe'
 
+from discretizer import Discretizer
 # io
 from io.feature_reader import FeatureReader
 from io.data_in_memory import DataInMemory
@@ -28,7 +29,7 @@ def discretizer(reader,
 
 #=====================================================================================================================
 #
-# FEATURE READER
+# READERS
 #
 #=====================================================================================================================
 
@@ -40,7 +41,7 @@ def feature_reader(trajfiles, topfile):
     :param topfile:
     :return:
     """
-    return FeatureReader(trajectories, topologyfile)
+    return FeatureReader(trajfiles, topfile)
 
 
 def memory_reader(data):
