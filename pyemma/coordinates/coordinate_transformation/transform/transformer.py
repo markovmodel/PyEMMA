@@ -6,6 +6,7 @@ import numpy as np
 
 
 log = getLogger('Transformer')
+__all__ = ['Transformer']
 
 
 class Transformer(object):

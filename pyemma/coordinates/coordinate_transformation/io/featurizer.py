@@ -3,6 +3,8 @@ __author__ = 'noe'
 import mdtraj
 import numpy as np
 
+__all__ = ['Featurizer']
+
 
 class Featurizer(object):
 

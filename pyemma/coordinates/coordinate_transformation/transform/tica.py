@@ -8,6 +8,8 @@ from pyemma.coordinates.coordinate_transformation.transform.transformer import T
 from pyemma.util.log import getLogger
 
 log = getLogger('TICA')
+__all__ = ['TICA']
+
 
 
 class TICA(Transformer):

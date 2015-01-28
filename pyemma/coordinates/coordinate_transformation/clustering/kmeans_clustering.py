@@ -7,6 +7,8 @@ import numpy as np
 from sklearn.cluster import MiniBatchKMeans
 from pyemma.coordinates.coordinate_transformation.transform.transformer import Transformer
 
+__all__ = ['KmeansClustering']
+
 
 class KmeansClustering(Transformer):
 

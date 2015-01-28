@@ -11,6 +11,7 @@ import numpy as np
 
 
 log = getLogger('RegSpaceClustering')
+__all__ = ['RegularSpaceClustering']
 
 
 class RegularSpaceClustering(Transformer):

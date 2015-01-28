@@ -6,6 +6,7 @@ import numpy as np
 
 
 log = getLogger('UniformTimeClustering')
+__all__ = ['UniformTimeClustering']
 
 
 class UniformTimeClustering(Transformer):

@@ -8,6 +8,7 @@ from pyemma.util.log import getLogger
 
 log = getLogger('FeatureReader')
 
+__all__ = ['FeatureReader']
 
 class FeatureReader(object):
 

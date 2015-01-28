@@ -9,7 +9,8 @@ from pyemma.coordinates.coordinate_transformation.clustering.uniform_time_cluste
 import logging
 import psutil
 import numpy as np
-import sys
+
+__all__ = ['Discretizer']
 
 
 class Discretizer(object):

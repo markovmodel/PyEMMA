@@ -9,7 +9,8 @@ import numpy as np
 from pyemma.coordinates.coordinate_transformation.transform.transformer import Transformer
 
 
-log = getLogger('Writer')
+log = getLogger('WriterCSV')
+__all__ = ['WriterCSV']
 
 
 class WriterCSV(Transformer):
