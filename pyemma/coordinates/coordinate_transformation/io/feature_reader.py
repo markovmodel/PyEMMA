@@ -5,6 +5,7 @@ import numpy as np
 
 from mdtraj.core.trajectory import Trajectory
 from pyemma.util.log import getLogger
+from featurizer import MDFeaturizer
 
 log = getLogger('FeatureReader')
 
@@ -16,7 +17,7 @@ class FeatureReader(object):
     Reads features from MD data
     """
 
-    def __init__(self, trajectories, topologyfile, featurizer):
+    def __init__(self, trajectories, topologyfile):
         """
         Constructs a feature reader
 
@@ -30,7 +31,9 @@ class FeatureReader(object):
         # files
         self.trajfiles = trajectories
         self.topfile = topologyfile
-        self.featurizer = featurizer
+
+        # featurizer
+        self.feature = MDFeaturizer(topologyfile)
 
         # lengths
         self.lengths = []
@@ -50,8 +53,7 @@ class FeatureReader(object):
         # basic statistics
         for traj in trajectories:
             sum_frames = sum(t.n_frames for t in
-                             mdtraj.iterload(traj, top=self.topfile,
-                                             chunk=self.chunksize))
+                             mdtraj.iterload(traj, top=self.topfile, chunk=self.chunksize))
             self.lengths.append(sum_frames)
 
         self.totlength = np.sum(self.lengths)
@@ -77,6 +79,7 @@ class FeatureReader(object):
         self.Y = [np.zeros((self.trajectory_length(itraj), self.dimension()))
                   for itraj in range(0, self.number_of_trajectories())]
 
+
     def parametrize(self):
         """
         Parametrizes this transformer
@@ -87,6 +90,7 @@ class FeatureReader(object):
             self.map_to_memory()
         self.param_finished = True
 
+
     def number_of_trajectories(self):
         """
         Returns the number of trajectories
@@ -95,6 +99,7 @@ class FeatureReader(object):
             number of trajectories
         """
         return len(self.trajfiles)
+
 
     def trajectory_length(self, itraj):
         """
@@ -108,6 +113,7 @@ class FeatureReader(object):
         """
         return self.lengths[itraj]
 
+
     def trajectory_lengths(self):
         """
         Returns the trajectory lengths in a list
@@ -115,12 +121,14 @@ class FeatureReader(object):
         """
         return self.lengths
 
+
     def n_frames_total(self):
         """
         Returns the total number of frames, summed over all trajectories
         :return:
         """
         return self.totlength
+
 
     def dimension(self):
         """
@@ -130,6 +138,7 @@ class FeatureReader(object):
         """
         return self.featurizer.dimension()
 
+
     def get_memory_per_frame(self):
         """
         Returns the memory requirements per frame, in bytes
@@ -138,6 +147,7 @@ class FeatureReader(object):
         """
         return 4 * self.dimension()
 
+
     def get_constant_memory(self):
         """
         Returns the constant memory requirements, in bytes
@@ -145,6 +155,7 @@ class FeatureReader(object):
         :return:
         """
         return 0
+
 
     def map_to_memory(self):
         self.reset()
@@ -169,11 +180,13 @@ class FeatureReader(object):
             # increment trajectory
             itraj += 1
 
+
     def _open_time_lagged(self):
         if self.mditer2 is not None:
             self.mditer2.close()
         self.mditer2 = mdtraj.iterload(self.trajfiles[0],
                                        chunk=self.chunksize, top=self.topfile)
+
 
     def reset(self):
         """
@@ -187,6 +200,7 @@ class FeatureReader(object):
 
             if self.curr_lag > 0:
                 self._open_time_lagged()
+
 
     def next_chunk(self, lag=0):
         """
