@@ -175,8 +175,7 @@ def get_cmdclass():
 
 def script_entry_points():
     import pkgutil
-    import pyemma.cli as cli
-    path = os.path.dirname(cli.__file__)
+    path = os.path.join('pyemma', 'cli')
     names = [name for _, name, _ in pkgutil.iter_modules([path])]
     s = ['%s = pyemma.cli.%s:main' % (script, script) for script in names]
     entry_points = {
