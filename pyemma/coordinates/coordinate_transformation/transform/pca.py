@@ -33,7 +33,7 @@ class PCA(Transformer):
             structure file (e.g. pdb)
 
         """
-        super(PCA, self).__init__(self)
+        super(PCA, self).__init__()
         self.output_dimension = output_dimension
 
     def describe(self):
