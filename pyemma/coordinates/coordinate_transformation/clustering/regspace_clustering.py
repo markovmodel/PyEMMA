@@ -55,13 +55,11 @@ class RegularSpaceClustering(Transformer):
         d = X.shape[0]
         for ii, center in enumerate(self._centroids):
             for jj in xrange(d):
-                #assert center.shape == X[jj].shape
                 dists[ii] = np.linalg.norm(X[jj] - center, 2)
+
         return dists
 
-    #def add_chunk(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
     def param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
-
         """
         first pass: calculate centroids
         second pass: assign data to discrete trajectories
