@@ -172,6 +172,20 @@ def get_cmdclass():
                     )
     return cmdclass
 
+
+def script_entry_points():
+    import pkgutil
+    import pyemma.cli as cli
+    path = os.path.dirname(cli.__file__)
+    names = [name for _, name, _ in pkgutil.iter_modules([path])]
+    s = ['%s = pyemma.cli.%s:main' % (script, script) for script in names]
+    entry_points = {
+        'console_scripts': s
+    }
+
+    return entry_points
+
+
 metadata = dict(
     name='pyEMMA',
     maintainer='Martin K. Scherer',
@@ -190,7 +204,7 @@ metadata = dict(
     packages=find_packages(),
     # install default emma.cfg into package.
     package_data=dict(pyemma=['pyemma.cfg']),
-    scripts=glob('scripts/mm_*'),
+    entry_points=script_entry_points(),
     cmdclass=get_cmdclass(),
     tests_require=['nose'],
     test_suite='nose.collector',
@@ -213,15 +227,15 @@ if len(sys.argv) == 1 or (len(sys.argv) >= 2 and ('--help' in sys.argv[1:] or
 else:
     # setuptools>=2.2 can handle setup_requires
     metadata['setup_requires'] = ['numpy>=1.6.0', 'setuptools>3.6']
-    
+
     # when on git, we require cython
     if os.path.exists('.git'):
         warnings.warn('using git, require cython')
         metadata['setup_requires'] += ['cython>=0.20']
-    
+
     # only require numpy and extensions in case of building/installing
     metadata['ext_modules'] = lazy_cythonize(extensions)
-    
+
     # add argparse to runtime deps if python version is 2.6
     if sys.version_info[:2] == (2, 6):
         metadata['install_requires'] += ['argparse']
