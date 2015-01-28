@@ -168,14 +168,6 @@ class FeatureReader(object):
             # increment trajectory
             itraj += 1
 
-    def parametrized(self):
-        """
-        Returns whether the parametrization is finished
-
-        :return: True if parametrization is finished
-        """
-        return self.param_finished
-
     def _open_time_lagged(self):
         if self.mditer2 is not None:
             self.mditer2.close()
