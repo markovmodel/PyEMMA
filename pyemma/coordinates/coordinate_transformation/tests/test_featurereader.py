@@ -3,16 +3,25 @@ Created on 23.01.2015
 
 @author: marscher
 '''
+import pkg_resources
 import tempfile
 import unittest
 
+from pyemma.util.log import getLogger
 import mdtraj
-import pkg_resources
 
-import numpy as np
-from pyemma.coordinates.coordinate_transformation.transform.transformer import Transformer
-from pyemma.coordinates.coordinate_transformation.io.featurizer import Featurizer
 from pyemma.coordinates.coordinate_transformation.io.feature_reader import FeatureReader
+from pyemma.coordinates.coordinate_transformation.io.featurizer import Featurizer
+from pyemma.coordinates.coordinate_transformation.transform.transformer import Transformer
+import numpy as np
+
+
+import signal
+import traceback
+
+signal.signal(signal.SIGUSR1, lambda sig, stack: traceback.print_stack(stack))
+
+log = getLogger('TestFeatureReader')
 
 
 def map_return_input(traj):
@@ -49,7 +58,7 @@ class TestFeatureReader(unittest.TestCase):
         cls.trajfile = tempfile.mktemp('.xtc')
         xyz = np.arange(1000 * 2 * 3).reshape((1000, 2, 3))
         cls.topfile = pkg_resources.resource_filename(
-            'test_featurereader', 'data/test.pdb')
+            'pyemma.coordinates.coordinate_transformation.tests.test_featurereader', 'data/test.pdb')
         t = mdtraj.load(cls.topfile)
         t.xyz = xyz
         t.time = np.arange(1000)
@@ -70,7 +79,7 @@ class TestFeatureReader(unittest.TestCase):
             for chunksize in chunksizes:
                 if chunksize <= lag:
                     continue
-                print "lag: %s; chunksize: %s " % (lag, chunksize)
+                log.info("lag: %s; chunksize: %s " % (lag, chunksize))
                 f = Featurizer(self.topfile)
                 f.map = map_return_input
 
@@ -81,8 +90,9 @@ class TestFeatureReader(unittest.TestCase):
                 chain = [f, reader, m]
                 for t in chain:
                     t.chunksize = chunksize
-
+                log.debug('set chunksize')
                 m.parametrize()
+                log.debug('called parameterize')
 
                 frist_lagged_chunk = m.lagged_chunks[0]
                 self.assertEqual(frist_lagged_chunk.shape[0], chunksize)
