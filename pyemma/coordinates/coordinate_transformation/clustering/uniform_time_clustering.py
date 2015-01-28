@@ -1,13 +1,16 @@
 __author__ = 'noe'
+from pyemma.util.log import getLogger
 
-from transformer import Transformer
+from pyemma.coordinates.coordinate_transformation.transform.transformer import Transformer
 import numpy as np
+
+
+log = getLogger('UniformTimeClustering')
 
 
 class UniformTimeClustering(Transformer):
 
     def __init__(self, k=2):
-        self.data_producer = data_producer
         self.k = k
         self.clustercenters = np.zeros((self.k, self.data_producer.dimension()), dtype=np.float32)
         self.stride = self.data_producer.n_frames_total() / self.k
@@ -51,7 +54,7 @@ class UniformTimeClustering(Transformer):
 
         :return:
         """
-        logging.info("Running uniform time clustering")
+        log.info("Running uniform time clustering")
         # initialize cluster centers
         self.clustercenters = np.zeros((self.k, self.data_producer.dimension()), dtype=np.float32)
         # initialize time counters
@@ -83,7 +86,7 @@ class UniformTimeClustering(Transformer):
             time-lagged data (if available)
         :return:
         """
-        logging.info("itraj = "+str(itraj)+". t = "+str(t)+". last_chunk_in_traj = "+str(last_chunk_in_traj)
+        log.info("itraj = "+str(itraj)+". t = "+str(t)+". last_chunk_in_traj = "+str(last_chunk_in_traj)
                      +" last_chunk = "+str(last_chunk)+" ipass = "+str(ipass))
 
         L = np.shape(X)[0]

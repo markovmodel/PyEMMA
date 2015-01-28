@@ -6,7 +6,7 @@ Created on 26.01.2015
 
 from pyemma.util.log import getLogger
 
-from transformer import Transformer
+from pyemma.coordinates.coordinate_transformation.transform.transformer import Transformer
 import numpy as np
 
 

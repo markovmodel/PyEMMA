@@ -55,7 +55,7 @@ class FeatureReader(object):
 
         self.totlength = np.sum(self.lengths)
 
-        #self._param_finished = False
+        self.param_finished = False
 
     def describe(self):
         """
@@ -86,7 +86,6 @@ class FeatureReader(object):
             self.map_to_memory()
         self.param_finished = True
 
-
     def number_of_trajectories(self):
         """
         Returns the number of trajectories
@@ -95,7 +94,6 @@ class FeatureReader(object):
             number of trajectories
         """
         return len(self.trajfiles)
-
 
     def trajectory_length(self, itraj):
         """
@@ -109,7 +107,6 @@ class FeatureReader(object):
         """
         return self.lengths[itraj]
 
-
     def trajectory_lengths(self):
         """
         Returns the trajectory lengths in a list
@@ -117,14 +114,12 @@ class FeatureReader(object):
         """
         return self.lengths
 
-
     def n_frames_total(self):
         """
         Returns the total number of frames, summed over all trajectories
         :return:
         """
         return self.totlength
-
 
     def dimension(self):
         """
@@ -134,7 +129,6 @@ class FeatureReader(object):
         """
         return self.featurizer.dimension()
 
-
     def get_memory_per_frame(self):
         """
         Returns the memory requirements per frame, in bytes
@@ -143,7 +137,6 @@ class FeatureReader(object):
         """
         return 4 * self.dimension()
 
-
     def get_constant_memory(self):
         """
         Returns the constant memory requirements, in bytes
@@ -151,7 +144,6 @@ class FeatureReader(object):
         :return:
         """
         return 0
-
 
     def map_to_memory(self):
         self.reset()
@@ -176,7 +168,6 @@ class FeatureReader(object):
             # increment trajectory
             itraj += 1
 
-
     def parametrized(self):
         """
         Returns whether the parametrization is finished
@@ -185,13 +176,11 @@ class FeatureReader(object):
         """
         return self.param_finished
 
-
     def _open_time_lagged(self):
         if self.mditer2 is not None:
             self.mditer2.close()
         self.mditer2 = mdtraj.iterload(self.trajfiles[0],
                                        chunk=self.chunksize, top=self.topfile)
-
 
     def reset(self):
         """
@@ -205,7 +194,6 @@ class FeatureReader(object):
 
             if self.curr_lag > 0:
                 self._open_time_lagged()
-
 
     def next_chunk(self, lag=0):
         """
@@ -257,17 +245,19 @@ class FeatureReader(object):
                     lagged_xyz[:-lag] = chunk.xyz[lag:]
                     lagged_xyz[-lag:] = adv_chunk.xyz[:lag]
                 else:
-                    print "chunk: %s; adv_chunk: %s" % (s1, s2)
+                    log.debug("chunk: %s; adv_chunk: %s" % (s1, s2))
                     # TODO: handle case one chunk shorter than other!
             chunk_lagged = Trajectory(lagged_xyz, chunk.topology)
 
-        if np.max(chunk.time) >= self.trajectory_length(self.curr_itraj) - 1:
-            if self.curr_itraj < len(self.trajfiles) - 1:
-                self.mditer.close()
-                self.curr_itraj += 1
-                self.mditer = mdtraj.iterload(
-                    self.trajfiles[self.curr_itraj], chunk=self.chunksize, top=self.topfile)
-                # we open self.mditer2 only if requested due lag parameter!
+        if np.max(chunk.time) >= self.trajectory_length(self.curr_itraj) - 1 and \
+                self.curr_itraj < len(self.trajfiles) - 1:
+            log.info('closing current trajectory "%s"'
+                     % self.trajfiles[self.curr_itraj])
+            self.mditer.close()
+            self.curr_itraj += 1
+            self.mditer = mdtraj.iterload(
+                self.trajfiles[self.curr_itraj], chunk=self.chunksize, top=self.topfile)
+            # we open self.mditer2 only if requested due lag parameter!
 
         # map data
         if lag == 0:

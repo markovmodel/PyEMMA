@@ -5,8 +5,7 @@ Created on 22.01.2015
 '''
 import numpy as np
 from sklearn.cluster import MiniBatchKMeans
-
-from transformer import Transformer
+from pyemma.coordinates.coordinate_transformation.transform.transformer import Transformer
 
 
 class KmeansClustering(Transformer):
