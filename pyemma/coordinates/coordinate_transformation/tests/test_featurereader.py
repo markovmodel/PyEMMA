@@ -16,11 +16,6 @@ from pyemma.coordinates.coordinate_transformation.transform.transformer import T
 import numpy as np
 
 
-import signal
-import traceback
-
-signal.signal(signal.SIGUSR1, lambda sig, stack: traceback.print_stack(stack))
-
 log = getLogger('TestFeatureReader')
 
 
@@ -34,18 +29,12 @@ class MemoryStorage(Transformer):
         Transformer.__init__(self, chunksize, lag)
 
         self.lagged_chunks = []
-        self.final = None
-        self._param_finished = False
 
     def param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
         self.lagged_chunks.append(Y)
         # print t
         if last_chunk:
-            # TODO: fix shape
-            new_shape = ()
-            # .reshape((2, 1000, 2, 3))
-            self.final = np.array(self.lagged_chunks)
-            self._param_finished = True
+            return True
 
 
 class TestFeatureReader(unittest.TestCase):
@@ -79,7 +68,6 @@ class TestFeatureReader(unittest.TestCase):
             for chunksize in chunksizes:
                 if chunksize <= lag:
                     continue
-                log.info("lag: %s; chunksize: %s " % (lag, chunksize))
                 f = Featurizer(self.topfile)
                 f.map = map_return_input
 
@@ -90,9 +78,7 @@ class TestFeatureReader(unittest.TestCase):
                 chain = [f, reader, m]
                 for t in chain:
                     t.chunksize = chunksize
-                log.debug('set chunksize')
                 m.parametrize()
-                log.debug('called parameterize')
 
                 frist_lagged_chunk = m.lagged_chunks[0]
                 self.assertEqual(frist_lagged_chunk.shape[0], chunksize)
