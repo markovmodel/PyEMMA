@@ -1,10 +1,8 @@
 __author__ = 'noe'
 
-from pyemma.coordinates.coordinate_transformation.io.featurizer import Featurizer
 from pyemma.coordinates.coordinate_transformation.io.feature_reader import FeatureReader
-from pyemma.coordinates.coordinate_transformation.transform.pca import PCA
-from pyemma.coordinates.coordinate_transformation.transform.tica import TICA
-from pyemma.coordinates.coordinate_transformation.clustering.uniform_time_clustering import UniformTimeClustering
+from pyemma.coordinates.coordinate_transformation.transform.transformer import Transformer
+
 
 import logging
 import psutil
@@ -15,50 +13,60 @@ __all__ = ['Discretizer']
 
 class Discretizer(object):
 
-    def __init__(self, trajfiles, topfile):
+    def __init__(self, reader, transform=None, cluster=None):
         """
 
+        :param reader:
+        :param transform:
+        :param cluster:
         :return:
         """
+        # check input
+        assert isinstance(reader, FeatureReader), 'reader is not of the correct type'
+        if (transform != None):
+            assert isinstance(transform, Transformer), 'transform is not of the correct type'
+        if cluster is None:
+            raise ValueError('Must specify a clustering algorithm !')
+        else:
+            assert isinstance(cluster, Transformer), 'cluster is not of the correct type'
+
         # init logging
         logger = logging.getLogger()
         logger.setLevel(logging.INFO)
 
-        # create featurizer
-        featurizer = Featurizer(topfile)
-        # TODO: where to build chain? User has to provide list of T objects?
-        # TODO: @marscher revert my changes here
-        sel = featurizer.selCa()
-        #sel = np.array([(0,20), (200, 320), (1300,1500)])
-        pairs = featurizer.pairs(sel)
-        featurizer.distances(pairs)
-        # feature reader
-        reader = FeatureReader(trajfiles, topfile, featurizer)
+        # ------------------------------------------------------------------------------------------
+        # PIPELINE CONSTRUCTION
 
         self.transformers = []
 
+        # add reader first
         self.transformers.append(reader)
-        # pca output dimension and transformation type should be an input!
-        pca = PCA(2)#PCA(reader, 2)
-        pca.set_data_producer(reader)
-        #pca = TICA(reader, lag=10, output_dimension=2)#PCA(reader, 2)
-        self.transformers.append(pca)
-        # number of states and clustering type should be an input
-        utc = UniformTimeClustering(100)
-        utc.set_data_producer(pca)
-        self.transformers.append(utc)
+        last = reader
 
-        # determine memory requirements
+        # add transform if any
+        if transform != None:
+            self.transformers.append(transform)
+            transform.set_data_producer(last)
+            last = transform
+
+        # add clustering
+        self.transformers.append(cluster)
+        cluster.set_data_producer(last)
+
+
+        # ------------------------------------------------------------------------------------------
+        # MEMORY MANAGEMENT
+
         M = psutil.virtual_memory()[1]  # available RAM
-        print "available RAM: ", M
+        logger.info("available RAM: "+str(M))
         const_mem = long(0)
         mem_per_frame = long(0)
         for trans in self.transformers:
             mem_per_frame += trans.get_memory_per_frame()
             const_mem += trans.get_constant_memory()
-        print "per-frame memory requirements: ", mem_per_frame
+        logger.info("per-frame memory requirements: "+str(mem_per_frame))
         # maximum allowed chunk size
-        print "const mem: ", const_mem
+        logger.info("const mem: "+str(const_mem))
         chunksize = (M - const_mem) / mem_per_frame
         if chunksize < 0:
             raise MemoryError('Not enough memory for desired transformation chain!')
@@ -66,14 +74,14 @@ class Discretizer(object):
         # is this chunksize sufficient to store full trajectories?
         # TODO: ensure chunksize does not leave a last single frame at the end to avoid trouble
         chunksize = min(chunksize, np.max(reader.trajectory_lengths()))
-        print "resulting chunk size: ", chunksize
+        logger.info("resulting chunk size: "+str(chunksize))
         # set chunksize
         for trans in self.transformers:
             trans.set_chunksize(chunksize)
 
         # any memory unused? if yes, we can store results
         Mfree = M - const_mem - chunksize * mem_per_frame
-        print "free memory: ", Mfree
+        logger.info("free memory: "+str(Mfree))
 
         # starting from the back of the pipeline, store outputs if possible
         for trans in reversed(self.transformers):
@@ -81,11 +89,10 @@ class Discretizer(object):
             if Mfree > mem_req_trans:
                 Mfree -= mem_req_trans
                 trans.operate_in_memory()
-                print "spending ", mem_req_trans, " bytes to operate in main memory: ",trans.describe()
+                logger.info("spending "+str(mem_req_trans)+" bytes to operate in main memory: "+str(trans.describe()))
 
-
-    def run(self):
-        # parametrize from the beginning to the end
+        # ------------------------------------------------------------------------------------------
+        # PARAMETRIZE PIPELINE
         for trans in self.transformers:
             trans.parametrize()
 
