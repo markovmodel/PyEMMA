@@ -1,10 +1,10 @@
 __author__ = 'noe'
 
-from featurizer import Featurizer
-from feature_reader import FeatureReader
-from pca import PCA
-from tica import TICA
-from uniform_time_clustering import UniformTimeClustering
+from pyemma.coordinates.coordinate_transformation.io.featurizer import Featurizer
+from pyemma.coordinates.coordinate_transformation.io.feature_reader import FeatureReader
+from pyemma.coordinates.coordinate_transformation.transform.pca import PCA
+from pyemma.coordinates.coordinate_transformation.transform.tica import TICA
+from pyemma.coordinates.coordinate_transformation.clustering.uniform_time_clustering import UniformTimeClustering
 
 import logging
 import psutil

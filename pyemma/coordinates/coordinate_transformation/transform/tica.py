@@ -4,7 +4,7 @@ Created on 19.01.2015
 @author: marscher
 '''
 import numpy as np
-from transformer import Transformer
+from pyemma.coordinates.coordinate_transformation.transform.transformer import Transformer
 from pyemma.util.log import getLogger
 
 log = getLogger('TICA')
