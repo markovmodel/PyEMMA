@@ -20,9 +20,9 @@ class Transformer(object):
         if you want to process time lagged data, set this to a value > 0.
     """
 
-    def __init__(self, chunksize=-1, lag=0):
-        self._chunksize = int(chunksize)
-        self._lag = int(lag)
+    def __init__(self, chunksize=100, lag=0):
+        self.chunksize = chunksize
+        self.lag = lag
         self._in_memory = False
         self._dataproducer = None
 
