@@ -8,9 +8,9 @@ import unittest
 from pyemma.coordinates.transform.tica_amuse import Amuse
 
 from pyemma.coordinates.coordinate_transformation.discretizer import Discretizer
-from pyemma.coordinates.coordinate_transformation.feature_reader import FeatureReader
-from pyemma.coordinates.coordinate_transformation.featurizer import Featurizer
-from pyemma.coordinates.coordinate_transformation.tica import TICA
+from pyemma.coordinates.coordinate_transformation.io.feature_reader import FeatureReader
+from pyemma.coordinates.coordinate_transformation.io.featurizer import Featurizer
+from pyemma.coordinates.coordinate_transformation.transform.tica import TICA
 import numpy as np
 
 
@@ -18,6 +18,7 @@ class TestDiscretizer(unittest.TestCase):
 
     def setUp(self):
         """ recreate Discretizer for each test case"""
+        # TODO: fix test data
         trajfiles = ['/home/marscher/kchan/traj01_sliced.xtc']
         topfile = '/home/marscher/kchan/Traj_Structure.pdb'
 

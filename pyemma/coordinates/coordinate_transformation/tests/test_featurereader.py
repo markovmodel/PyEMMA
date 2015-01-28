@@ -9,10 +9,10 @@ import unittest
 import mdtraj
 import pkg_resources
 
-from pyemma.coordinates.coordinate_transformation.feature_reader import FeatureReader
-from pyemma.coordinates.coordinate_transformation.featurizer import Featurizer
-from pyemma.coordinates.coordinate_transformation.transformer import Transformer
 import numpy as np
+from pyemma.coordinates.coordinate_transformation.transform.transformer import Transformer
+from pyemma.coordinates.coordinate_transformation.io.featurizer import Featurizer
+from pyemma.coordinates.coordinate_transformation.io.feature_reader import FeatureReader
 
 
 def map_return_input(traj):

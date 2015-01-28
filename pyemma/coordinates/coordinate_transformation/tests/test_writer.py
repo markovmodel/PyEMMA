@@ -7,17 +7,17 @@ import os
 import tempfile
 import unittest
 
-from pyemma.coordinates.coordinate_transformation.discretizer import Discretizer
-from pyemma.coordinates.coordinate_transformation.feature_reader import FeatureReader
-from pyemma.coordinates.coordinate_transformation.featurizer import Featurizer
-from pyemma.coordinates.coordinate_transformation.tica import TICA
-from pyemma.coordinates.coordinate_transformation.writer import WriterCSV
+from pyemma.coordinates.coordinate_transformation.io.feature_reader import FeatureReader
+from pyemma.coordinates.coordinate_transformation.io.featurizer import Featurizer
+from pyemma.coordinates.coordinate_transformation.io.writer import WriterCSV
+from pyemma.coordinates.coordinate_transformation.transform.tica import TICA
 import numpy as np
 
 
 class TestWriterCSV(unittest.TestCase):
 
     def setUp(self):
+        # TODO: fix test data
         trajfiles = ['/home/marscher/kchan/traj01_sliced.xtc']
         topfile = '/home/marscher/kchan/Traj_Structure.pdb'
 

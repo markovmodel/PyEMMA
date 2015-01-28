@@ -6,8 +6,8 @@ Created on 26.01.2015
 import itertools
 import unittest
 
-from pyemma.coordinates.coordinate_transformation.regspace_clustering import RegularSpaceClustering
 import numpy as np
+from pyemma.coordinates.coordinate_transformation.clustering.regspace_clustering import RegularSpaceClustering
 
 
 #import matplotlib.pyplot as plt
