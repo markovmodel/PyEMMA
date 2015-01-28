@@ -1,0 +1,39 @@
+package:
+  name: pyemma
+  version: !!str 1.0.1
+
+source:
+   path: .
+build:
+  preserve_egg_dir: True
+  script: python setup.py install
+
+requirements:
+  build:
+    - python
+    - setuptools
+# not needed actually, since we're deploying pre-cythonized sources
+    - cython >=0.20
+    - numpy >=1.6.0
+    - scipy >=0.11
+    - pystallone >=1.0.0b3
+
+  run:
+    - python
+    - setuptools
+    - numpy >=1.6.0
+    - scipy >=0.11
+    - pystallone >=1.0.0b3
+    - argparse # [py26]
+
+test:
+  imports:
+    - pyemma
+  commands:
+    - mm_cluster -h
+about:
+  home: http://github.com/markovmodel/PyEMMA
+  license: BSD 2-Clause License
+  summary: "EMMA: Emma's Markov Model Algorithms"
+
+
