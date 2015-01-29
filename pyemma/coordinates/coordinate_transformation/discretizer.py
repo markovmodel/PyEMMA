@@ -46,12 +46,12 @@ class Discretizer(object):
         # add transform if any
         if transform != None:
             self.transformers.append(transform)
-            transform.set_data_producer(last)
+            transform.data_producer = last
             last = transform
 
         # add clustering
         self.transformers.append(cluster)
-        cluster.set_data_producer(last)
+        cluster.data_producer = last
 
 
         # ------------------------------------------------------------------------------------------
@@ -77,7 +77,7 @@ class Discretizer(object):
         logger.info("resulting chunk size: "+str(chunksize))
         # set chunksize
         for trans in self.transformers:
-            trans.set_chunksize(chunksize)
+            trans.chunksize = chunksize
 
         # any memory unused? if yes, we can store results
         Mfree = M - const_mem - chunksize * mem_per_frame

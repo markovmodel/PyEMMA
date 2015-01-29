@@ -12,13 +12,9 @@ __all__ = ['UniformTimeClustering']
 class UniformTimeClustering(Transformer):
 
     def __init__(self, k=2):
+        super(UniformTimeClustering, self).__init__()
         self.k = k
-        self.clustercenters = np.zeros((self.k, self.data_producer.dimension()), dtype=np.float32)
-        self.stride = self.data_producer.n_frames_total() / self.k
-        self.nextt = self.stride/2
-        self.tprev = 0
-        self.ipass = 0
-        self.n = 0
+        self.dtrajs = []
 
 
     def describe(self):

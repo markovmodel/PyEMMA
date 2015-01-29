@@ -66,7 +66,7 @@ class FeatureReader(object):
 
         :return:
         """
-        return "Feature reader, features = ", self.featurizer.describe()
+        return "Feature reader, features = ", self.feature.describe()
 
     def operate_in_memory(self):
         """
@@ -136,7 +136,7 @@ class FeatureReader(object):
 
         :return:
         """
-        return self.featurizer.dimension()
+        return self.feature.dimension()
 
 
     def get_memory_per_frame(self):
@@ -268,8 +268,8 @@ class FeatureReader(object):
 
         # map data
         if lag == 0:
-            return self.featurizer.map(chunk)
+            return self.feature.map(chunk)
         else:
-            X = self.featurizer.map(chunk)
-            Y = self.featurizer.map(chunk_lagged)
+            X = self.feature.map(chunk)
+            Y = self.feature.map(chunk_lagged)
             return X, Y

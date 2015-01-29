@@ -23,7 +23,7 @@ class Transformer(object):
 
     def __init__(self, chunksize=100, lag=0):
         self.chunksize = chunksize
-        self.lag = lag
+        self._lag = lag
         self._in_memory = False
         self._dataproducer = None
 
@@ -137,7 +137,7 @@ class Transformer(object):
         # feed data, until finished
         add_data_finished = False
         ipass = 0
-        lag = self.lag
+        lag = self._lag
         # parametrize
         while not add_data_finished:
             first_chunk = True
