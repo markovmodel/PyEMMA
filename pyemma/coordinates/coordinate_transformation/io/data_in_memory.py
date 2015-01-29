@@ -6,7 +6,7 @@ class DataInMemory:
     """
     multi-dimensional multi-trajectory data fully stored in memory
     """
-
+    # FIXME: if defined like this, those attributes are static! they should go to ctor
     # data
     data = []
     ntraj = 0
