@@ -11,7 +11,7 @@ from pyemma.util.log import getLogger
 import mdtraj
 
 from pyemma.coordinates.coordinate_transformation.io.feature_reader import FeatureReader
-from pyemma.coordinates.coordinate_transformation.io.featurizer import Featurizer
+from pyemma.coordinates.coordinate_transformation.io.featurizer import MDFeaturizer
 from pyemma.coordinates.coordinate_transformation.transform.transformer import Transformer
 import numpy as np
 
@@ -68,7 +68,7 @@ class TestFeatureReader(unittest.TestCase):
             for chunksize in chunksizes:
                 if chunksize <= lag:
                     continue
-                f = Featurizer(self.topfile)
+                f = MDFeaturizer(self.topfile)
                 f.map = map_return_input
 
                 reader = FeatureReader(trajfiles, self.topfile, f)
