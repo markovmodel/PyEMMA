@@ -9,7 +9,7 @@ from pyemma.coordinates.transform.tica_amuse import Amuse
 
 from pyemma.coordinates.coordinate_transformation.discretizer import Discretizer
 from pyemma.coordinates.coordinate_transformation.io.feature_reader import FeatureReader
-from pyemma.coordinates.coordinate_transformation.io.featurizer import Featurizer
+from pyemma.coordinates.coordinate_transformation.io.featurizer import MDFeaturizer
 from pyemma.coordinates.coordinate_transformation.transform.tica import TICA
 import numpy as np
 
@@ -26,7 +26,7 @@ class TestDiscretizer(unittest.TestCase):
         transformers = []
 
         # create featurizer
-        featurizer = Featurizer(topfile)
+        featurizer = MDFeaturizer(topfile)
         sel = np.array([(0, 20), (200, 320), (1300, 1500)])
         featurizer.distances(sel)
         # feature reader

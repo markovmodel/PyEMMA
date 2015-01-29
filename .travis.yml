@@ -6,7 +6,7 @@ python:
 env:
   global:
     - PATH=$HOME/miniconda/bin:$HOME/miniconda/envs/ci/bin/:$PATH
-    - common_py_deps="pip nose cython jpype1 mdtraj"
+    - common_py_deps="pip nose cython jpype1 mdtraj sklearn"
     - doc_deps="ipython sphinx matplotlib numpydoc pyzmq"
 #  matrix:
     - deps="scipy=0.15 numpy=1.9"

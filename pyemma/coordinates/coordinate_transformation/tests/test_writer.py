@@ -8,7 +8,7 @@ import tempfile
 import unittest
 
 from pyemma.coordinates.coordinate_transformation.io.feature_reader import FeatureReader
-from pyemma.coordinates.coordinate_transformation.io.featurizer import Featurizer
+from pyemma.coordinates.coordinate_transformation.io.featurizer import MDFeaturizer
 from pyemma.coordinates.coordinate_transformation.io.writer import WriterCSV
 from pyemma.coordinates.coordinate_transformation.transform.tica import TICA
 import numpy as np
@@ -22,7 +22,7 @@ class TestWriterCSV(unittest.TestCase):
         topfile = '/home/marscher/kchan/Traj_Structure.pdb'
 
         # create featurizer
-        self.featurizer = Featurizer(topfile)
+        self.featurizer = MDFeaturizer(topfile)
         sel = np.array([(0, 20), (200, 320), (1300, 1500)])
         self.featurizer.distances(sel)
         # feature reader
