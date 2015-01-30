@@ -9,7 +9,6 @@ from pyemma.util.log import getLogger
 from pyemma.coordinates.coordinate_transformation.transform.transformer import Transformer
 import numpy as np
 
-
 log = getLogger('RegSpaceClustering')
 __all__ = ['RegularSpaceClustering']
 
@@ -25,72 +24,67 @@ class RegularSpaceClustering(Transformer):
     Parameters
     ----------
     dmin : float
+        minimum distance a new centroid has to have to all other centroids.
 
     """
 
     def __init__(self, dmin):
         super(RegularSpaceClustering, self).__init__()
 
-        self._dmin = dmin
-        self._dtrajs = []
+        self.dmin = dmin
+        self.dtrajs = []
 
         # TODO: determine if list or np array is more efficient.
-        self._centroids = []
+        self.centroids = []
 
     def describe(self):
-        return "[RegularSpaceClustering dmin=%i]" % self._dmin
-
-    @property
-    def dmin(self):
-        return self._dmin
+        return "[RegularSpaceClustering dmin=%i]" % self.dmin
 
     def map_to_memory(self):
         # nothing to do, because memory-mapping of the discrete trajectories is
         # done in parametrize
         pass
 
-    def _distances(self, X):
-        """ calculate distance for each frame in X to current list of centroids"""
-        dists = np.empty(len(self._centroids))
-        # TODO: optimize
-        d = X.shape[0]
-        for ii, center in enumerate(self._centroids):
-            for jj in xrange(d):
-                dists[ii] = np.linalg.norm(X[jj] - center, 2)
-
-        return dists
-
     def param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
         """
         first pass: calculate centroids
+         1. choose first datapoint as centroid
+         2. for all X: calc distances to all centroids
+         3. add new centroid, if min(distance to all other centroids) >= dmin
         second pass: assign data to discrete trajectories
-#         1. choose first datapoint as centroid
-#         2. for all X: calc distances to all centroids
-#         3. assign 
         """
+        log.debug("t=%i; itraj=%i" % (t, itraj))
         if ipass == 0:
             # add first point as first centroid
             if first_chunk:
-                self._centroids.append(X[0])
+                self.centroids.append(X[0])
+                log.info("Run regspace clustering with dmin=%f;"
+                         " First centroid=%s" % (self.dmin, X[0]))
 
-            dists = self._distances(X)
-            minIndex = np.argmin(dists)
+            for x in X:
+                dist = np.fromiter((np.linalg.norm(x - c, 2)
+                                    for c in self.centroids), dtype=np.float32)
 
-            # minimal distance of current batch bigger than minimal distance?
-            if dists[minIndex] > self._dmin:
-                log.debug("dist= %f" % dists[minIndex])
-                #log.debug('adding new centroid %s' % X[minIndex])
-                self._centroids.append(X[minIndex])
+                minIndex = np.argmin(dist)
+                if dist[minIndex] >= self.dmin:
+                    self.centroids.append(x)
+
+            if last_chunk:
+                assert len(self.centroids) >= 1
+                # create numpy array from centroids list
+                self.centroids = np.array(self.centroids)
+                log.debug("shape of centroids: %s" % str(self.centroids.shape))
+                log.info("number of centroids: %i" % len(self.centroids))
 
         elif ipass == 1:
             # discretize all
             if t == 0:
-                self._dtrajs.append(
+                self.dtrajs.append(
                     np.empty(self.data_producer.trajectory_length(itraj)))
             L = np.shape(X)[0]
             # TODO: optimize: assign one chunk at once
             for i in xrange(L):
-                self._dtrajs[itraj][i + t] = self.map(X[i])
+                self.dtrajs[itraj][i + t] = self.map(X[i])
             if last_chunk:
                 return True  # finished!
 
@@ -98,11 +92,6 @@ class RegularSpaceClustering(Transformer):
 
     def map(self, x):
         """gets index of closest cluster.
-        TODO: If X is a chunk [shape = (n, d)], return an array with all indices.
         """
-        dists = self.data_producer.distances(x, self._centroids)
+        dists = self.data_producer.distances(x, self.centroids)
         return np.argmin(dists)
-
-    @property
-    def dtrajs(self):
-        return self._dtrajs

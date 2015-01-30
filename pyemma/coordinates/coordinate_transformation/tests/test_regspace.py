@@ -5,19 +5,21 @@ Created on 26.01.2015
 '''
 import itertools
 import unittest
+import logging
 
+from pyemma.coordinates.coordinate_transformation.clustering.regspace_clustering import RegularSpaceClustering, log
 import numpy as np
-from pyemma.coordinates.coordinate_transformation.clustering.regspace_clustering import RegularSpaceClustering
 
-
-#import matplotlib.pyplot as plt
-
+log.setLevel(logging.ERROR)
 
 class RandomDataSource:
 
-    def __init__(self, chunksize=100):
-        self.n_samples = 100
-        self.data = np.random.random((self.n_samples, chunksize, 2))
+    def __init__(self, chunksize=1000, a=None, b=None):
+        self.n_samples = 5
+        self.data = np.random.random((self.n_samples, chunksize, 3))
+        if a is not None and b is not None:
+            self.data *= (b - a)
+            self.data += a
         self.i = -1
 
     def next_chunk(self, lag=0):
@@ -43,19 +45,22 @@ class RandomDataSource:
 
 
 class TestRegSpaceClustering(unittest.TestCase):
+    
+    @classmethod
+    def setUpClass(cls):
+        super(TestRegSpaceClustering, cls).setUpClass()
+        np.random.seed(0)
 
     def setUp(self):
-        self.dmin = 0.7
+        self.dmin = 0.3
         self.clustering = RegularSpaceClustering(dmin=self.dmin)
         self.clustering.data_producer = RandomDataSource()
 
     def testAlgo(self):
         self.clustering.parametrize()
 
-        # plt.plot(self.clustering._centroids)
-
         # assert distance for each centroid is at least dmin
-        for c in itertools.combinations(self.clustering._centroids, 2):
+        for c in itertools.combinations(self.clustering.centroids, 2):
             if np.allclose(c[0], c[1]):  # skip equal pairs
                 continue
 
@@ -67,12 +72,18 @@ class TestRegSpaceClustering(unittest.TestCase):
     def testAssignment(self):
         self.clustering.parametrize()
 
+        assert len(self.clustering.centroids) > 1
+
         # num states == num centroids?
-        assert len(np.unique(self.clustering.dtrajs)) == len(
-            self.clustering._centroids)
-        
-        #for each
-        
+        self.assertEqual(len(np.unique(self.clustering.dtrajs)),  len(
+            self.clustering.centroids), "number of unique states in dtrajs"
+            " should be equal.")
+
+    def testSpreadData(self):
+        self.clustering.data_producer = RandomDataSource(a=-2, b=2)
+        self.clustering.dmin = 2
+        self.clustering.parametrize()
+
 
 if __name__ == "__main__":
     unittest.main()
