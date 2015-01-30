@@ -3,31 +3,34 @@ Created on 19.01.2015
 
 @author: marscher
 '''
-import numpy as np
 from pyemma.coordinates.coordinate_transformation.transform.transformer import Transformer
+from pyemma.util.linalg import eig_corr
 from pyemma.util.log import getLogger
+import numpy as np
+
 
 log = getLogger('TICA')
 __all__ = ['TICA']
 
 
-
 class TICA(Transformer):
+
     """
     Time-lagged independent component analysis (TICA)
 
-    Given a sequence of multivariate data X_t, computes the mean-free covariance and
-    time-lagged covariance matrix:
+    Given a sequence of multivariate data X_t, computes the mean-free 
+    covariance and time-lagged covariance matrix:
     C_0 =   (X_t - mu)^T (X_t - mu)
     C_tau = (X_t - mu)^T (X_t+tau - mu)
     and solves the eigenvalue problem
     C_tau r_i = C_0 lambda_i r_i,
-    where r_i are the independent compontns and lambda are their respective normalized
-    time-autocorrelations. The eigenvalues are related to the relaxation timescale by
+    where r_i are the independent compontns and lambda are their respective
+    normalized time-autocorrelations. The eigenvalues are related to the
+    relaxation timescale by
     t_i = -tau / ln |lambda_i|
 
-    When used as a dimension reduction method, the input data is projected onto the
-    dominant independent components.
+    When used as a dimension reduction method, the input data is projected
+    onto the dominant independent components.
 
     Parameters
     ----------
@@ -35,21 +38,19 @@ class TICA(Transformer):
         lag time
     output_dim : int
         how many significant TICS to use to reduce dimension of input data
-    symmetrize: boolean
-        shall time lagged covariance matrix be symmetrized by 0.5*C_lagged.T?
+    epsilon : float
+        eigenvalue norm cutoff. Eigenvalues of C0 with norms <= epsilon will be
+        cut off. The remaining number of Eigenvalues define the size
+        of the output.
 
     """
 
-    def __init__(self, lag, output_dimension, symmetrize=True):
-        '''
-        Constructor
-        '''
+    def __init__(self, lag, output_dimension, epsilon=1e-6):
         super(TICA, self).__init__()
 
         self.lag = lag
         self.output_dim = output_dimension
-
-        self.symmetrize = symmetrize
+        self.epsilon = epsilon
 
         # covariances
         self.cov = None
@@ -77,8 +78,7 @@ class TICA(Transformer):
 
     def get_constant_memory(self):
         # TODO: change me
-        return 2*self.data_producer.dimension() ** 2
-
+        return 2 * self.data_producer.dimension() ** 2
 
     def param_init(self):
         """
@@ -95,8 +95,8 @@ class TICA(Transformer):
         self.cov = np.zeros((dim, dim))
         self.cov_tau = np.zeros_like(self.cov)
 
-
-    #def add_chunk(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
+    # def add_chunk(self, X, itraj, t, first_chunk, last_chunk_in_traj,
+    # last_chunk, ipass, Y=None):
     def param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
         """
         Chunk-based parametrization of TICA. Iterates through all data twice. In the first pass, the
@@ -141,52 +141,29 @@ class TICA(Transformer):
             X_meanfree = X - self.mu
             Y_meanfree = Y - self.mu
             self.cov += np.dot(X_meanfree.T, X_meanfree)
-            # FIXME: minor deviation to amuse algo for cov_tau, might be norming factor
+            # FIXME: minor deviation to amuse algo for cov_tau, might be
+            # norming factor
             self.cov_tau += np.dot(X_meanfree.T, Y_meanfree)
 
             if last_chunk:
                 self.cov /= self.N
                 self.cov_tau /= self.N
-                return True # finished!
+                return True  # finished!
 
-        return False # not finished yet.
-
+        return False  # not finished yet.
 
     def param_finish(self):
         """ Finalizes the parametrization.
         """
-        if self.symmetrize:
-            self.cov_tau += self.cov_tau.T
-            self.cov_tau /= 2.
+        # symmetrize covariance matrices
+        self.cov += self.cov.T
+        self.cov /= 2.0
 
-        log.info("covariance:\n%s" % self.cov)
-        # diagonalize covariance matrices
-        sigma2PC, W = np.linalg.eig(self.cov)
-        sigmaPC = np.array(np.sqrt(sigma2PC), ndmin=2)
+        self.cov_tau += self.cov_tau.T
+        self.cov_tau /= 2.
 
-        CovtauPC = np.empty_like(self.cov_tau)
-        CorrtauPC = np.empty_like(CovtauPC)
-
-        # Rotate the CovtauIP to the basis of PCs
-        CovtauPC = np.dot(W.T, np.dot(self.cov_tau, W))
-
-        # Symmetrize CovtauPC
-        CovtauPC = (CovtauPC + CovtauPC.T) / 2.
-
-        # Transform lagged covariance of PCs in lagged correlation of PCs
-        CorrtauPC = CovtauPC / sigmaPC.T.dot(sigmaPC)
-
-        # Diagonalize CorrtauPC
-        lambdas, V_tau = np.linalg.eig(CorrtauPC)
-
-        # Sort according to absolute value of lambda_tau
-        abs_order_descend = np.argsort(np.abs(lambdas))[::-1]
-        self.lambdas = lambdas[abs_order_descend]
-        V_tau = V_tau[:, abs_order_descend]
-
-        # Compute U
-        self.U = np.dot(
-            W, np.dot(np.diag(1.0 / sigmaPC.squeeze()), V_tau))
+        self.eigenvalues, self.eigenvectors = \
+            eig_corr(self.cov, self.cov_tau, self.epsilon)
 
     def map(self, X):
         """Projects the data onto the dominant independent components.
@@ -195,5 +172,5 @@ class TICA(Transformer):
         :return: the projected data
         """
         X_meanfree = X - self.mu
-        Y = np.dot(X_meanfree, self.U[:, 0:self.output_dim])
+        Y = np.dot(X_meanfree, self.eigenvectors[:, 0:self.output_dim])
         return Y
