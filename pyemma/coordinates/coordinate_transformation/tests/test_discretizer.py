@@ -5,16 +5,16 @@ Created on 19.01.2015
 '''
 import unittest
 
-from pyemma.coordinates.transform.tica_amuse import Amuse
-
+from pyemma.coordinates.coordinate_transformation.clustering.uniform_time_clustering import UniformTimeClustering
 from pyemma.coordinates.coordinate_transformation.discretizer import Discretizer
 from pyemma.coordinates.coordinate_transformation.io.feature_reader import FeatureReader
 from pyemma.coordinates.coordinate_transformation.io.featurizer import MDFeaturizer
 from pyemma.coordinates.coordinate_transformation.transform.tica import TICA
+from pyemma.coordinates.transform.tica_amuse import Amuse
 import numpy as np
 
 
-@unittest.skip('changed interface')
+#@unittest.skip('changed interface')
 class TestDiscretizer(unittest.TestCase):
 
     def setUp(self):
@@ -23,22 +23,19 @@ class TestDiscretizer(unittest.TestCase):
         trajfiles = ['/home/marscher/kchan/traj01_sliced.xtc']
         topfile = '/home/marscher/kchan/Traj_Structure.pdb'
 
-        transformers = []
-
         # create featurizer
         featurizer = MDFeaturizer(topfile)
         sel = np.array([(0, 20), (200, 320), (1300, 1500)])
         featurizer.distances(sel)
         # feature reader
-        reader = FeatureReader(trajfiles, topfile, featurizer)
-        transformers.append(reader)
+        reader = FeatureReader(trajfiles, topfile)
 
-        tica = TICA(lag=10, output_dimension=2)
-        tica.dataproducer = reader
+        self.tica = TICA(lag=10, output_dimension=2)
+        self.tica.dataproducer = reader
 
-        transformers.append(tica)
+        clustering = UniformTimeClustering(k=2)
 
-        self.D = Discretizer(transformers)
+        self.D = Discretizer(reader, transform=self.tica, cluster=clustering)
 
     def testChunksizeResultsTica(self):
         chunk = 31
