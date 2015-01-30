@@ -1,13 +1,15 @@
 __author__ = 'noe'
 
+import psutil
+
 from pyemma.coordinates.coordinate_transformation.io.feature_reader import FeatureReader
 from pyemma.coordinates.coordinate_transformation.transform.transformer import Transformer
-
-
-import logging
-import psutil
+from pyemma.util.log import getLogger
+from logging import INFO
 import numpy as np
 
+
+logger = getLogger('Discretizer')
 __all__ = ['Discretizer']
 
 
@@ -23,16 +25,15 @@ class Discretizer(object):
         """
         # check input
         assert isinstance(reader, FeatureReader), 'reader is not of the correct type'
-        if (transform != None):
+        if (transform is not None):
             assert isinstance(transform, Transformer), 'transform is not of the correct type'
         if cluster is None:
             raise ValueError('Must specify a clustering algorithm !')
         else:
             assert isinstance(cluster, Transformer), 'cluster is not of the correct type'
 
-        # init logging
-        logger = logging.getLogger()
-        logger.setLevel(logging.INFO)
+        # TODO: remove dbg statement later
+        logger.setLevel(INFO)
 
         # ------------------------------------------------------------------------------------------
         # PIPELINE CONSTRUCTION
@@ -44,7 +45,7 @@ class Discretizer(object):
         last = reader
 
         # add transform if any
-        if transform != None:
+        if transform is not None:
             self.transformers.append(transform)
             transform.data_producer = last
             last = transform
