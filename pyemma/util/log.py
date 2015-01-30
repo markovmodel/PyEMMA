@@ -3,16 +3,23 @@ Created on 15.10.2013
 
 @author: marscher
 '''
-__all__ = ['getLogger', 'enabled']
+__all__ = ['getLogger', 'enabled', 'CRITICAL', 'DEBUG', 'FATAL', 'INFO', 'NOTSET',
+           'WARN', 'WARNING']
 
 import logging
 
+from logging import CRITICAL, FATAL, ERROR, WARNING, WARN, INFO, DEBUG, NOTSET
+
 enabled = False
 
-""" set up a dummy logger if logging is disabled"""
+
 class dummyLogger:
+
+    """ set up a dummy logger if logging is disabled"""
+
     def dummy(self, kwargs):
         pass
+
     def __getattr__(self, name):
         return self.dummy
 
@@ -34,9 +41,10 @@ def setupLogging():
                                 datefmt='%d-%m-%y %H:%M:%S')
         except IOError as ie:
             import warnings
-            warnings.warn('logging could not be initialized, because of %s' % ie)
+            warnings.warn(
+                'logging could not be initialized, because of %s' % ie)
             return
-        """ in case we want to log to both file and stream, add a separate handler"""
+        # in case we want to log to both file and stream, add a separate handler
         formatter = logging.Formatter(args.format)
 
         if args.tofile:
@@ -60,7 +68,7 @@ def setupLogging():
 def getLogger(name=None):
     if not enabled:
         return dummyInstance
-    """ if name is not given, return a logger with name of the calling module."""
+    # if name is not given, return a logger with name of the calling module.
     if not name:
         import traceback
         t = traceback.extract_stack(limit=2)
@@ -71,7 +79,6 @@ def getLogger(name=None):
 
         name = path[pos:]
 
-        #logging.getLogger().debug('getLogger set name to %s; path was %s' % (name, path))
     return logging.getLogger(name)
 
 
