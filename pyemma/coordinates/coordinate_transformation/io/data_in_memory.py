@@ -6,21 +6,6 @@ class DataInMemory:
     """
     multi-dimensional multi-trajectory data fully stored in memory
     """
-    # FIXME: if defined like this, those attributes are static! they should go to ctor
-    # data
-    data = []
-    ntraj = 0
-    ndim = 0
-    lengths = []
-
-    # chunking, lagging
-    chunksize = 0
-    lag = 0
-
-    # count
-    itraj = 0
-    t = 0
-
     def __init__(self, _data):
         """
 
@@ -41,6 +26,11 @@ class DataInMemory:
             self.lengths = [np.shape(_data[i])[0] for i in range(len(_data))]
         else:
             raise ValueError('input data is neither an ndarray nor a list of ndarrays')
+
+        self.t = 0
+        # chunking, lagging
+        self.chunksize = 0
+        self.lag = 0
 
 
     def number_of_trajectories(self):
