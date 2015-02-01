@@ -83,18 +83,21 @@ def pca(data = None, dim = 2):
 
 def tica(data = None, lag = 10, dim = 2, symmetrize = True):
     """
-    Constructs a PCA object
+    Constructs a TICA object
 
     :param data:
-        ndarray with the data, if available. When given, the PCA is immediately parametrized
-    :param dim:
-        the number of dimensions to project onto
+        ndarray with the data, if available. When given, the TICA is immediately parametrized
     :param lag:
         the lag time, in multiples of the input time step
+    :param dim:
+        the number of dimensions to project onto
+    :param symmetrize:
+        if true, the time-lagged covariance matrix will by symmetrized
 
     :return:
-        a PCA transformation object
+        a TICA transformation object
     """
+    # TODO: I think we currently must enforce symmetrization because we have no other established ways of computing TICA meaninfully. Therefore better remove this flag.
     res = TICA(lag, dim, symmetrize=symmetrize)
     if data != None:
         inp = DataInMemory(data)
@@ -114,8 +117,13 @@ def kmeans(data = None, k=100, max_iter=1000):
     Constructs a k-means clustering
 
     :param data:
+        input data, if available in memory
     :param k:
+        the number of cluster centers
+
     :return:
+        A KmeansClustering object
+
     """
     res = KmeansClustering(n_clusters=k, max_iter=max_iter)
     if data != None:
@@ -130,8 +138,13 @@ def uniform_time(data = None, k = 100):
     Constructs a uniform time clustering
 
     :param data:
+        input data, if available in memory
     :param k:
+        the number of cluster centers
+
     :return:
+        A UniformTimeClustering object
+
     """
     res = UniformTimeClustering(k)
     if data != None:
@@ -143,11 +156,16 @@ def uniform_time(data = None, k = 100):
 
 def regspace(dmin, data = None):
     """
-    Constructs a uniform time clustering
+    Constructs a regular space clustering
 
     :param data:
-    :param k:
+        input data, if available in memory
+    :param dmin:
+        the minimal distance between cluster centers
+
     :return:
+        A RegularSpaceClustering object
+
     """
     res = RegularSpaceClustering(dmin)
     if data != None:
