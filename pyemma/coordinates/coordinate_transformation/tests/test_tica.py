@@ -4,15 +4,15 @@ Created on 02.02.2015
 @author: marscher
 '''
 import unittest
+import numpy as np
 
 from pyemma.coordinates.coordinate_transformation.io.data_in_memory import DataInMemory
 from pyemma.coordinates.coordinate_transformation.transform.tica import TICA
-import numpy as np
 
 
 class TestTICA(unittest.TestCase):
 
-    def testName(self):
+    def test(self):
         np.random.seed(0)
 
         tica = TICA(lag=50, output_dimension=1)
@@ -21,9 +21,6 @@ class TestTICA(unittest.TestCase):
         tica.data_producer = ds
 
         tica.parametrize()
-        # print tica.cov_tau
-        # print tica.eigenvalues
-        # print tica.eigenvectors
 
         Y = tica.map(data)
 
@@ -56,6 +53,32 @@ class TestTICA(unittest.TestCase):
 
         assert tica.eigenvectors.dtype == np.float64
         assert tica.eigenvalues.dtype == np.float64
+
+    def testChunksizeResultsTica(self):
+        chunk = 31
+
+        X = np.random.randn(100, 2)
+        X = np.hstack((X, np.zeros((100, 1))))
+
+        d = DataInMemory(X)
+
+        tica = TICA(lag=1, output_dimension=1)
+        tica.data_producer = d
+        tica.parametrize()
+
+        cov = tica.cov.copy()
+        mean = tica.mu.copy()
+
+        # ------- run again with new chunksize -------
+        d = DataInMemory(X)
+        d.chunksize = chunk
+        tica = TICA(lag=1, output_dimension=1)
+        tica.data_producer = d
+
+        tica.parametrize()
+
+        np.testing.assert_allclose(tica.mu, mean)
+        np.testing.assert_allclose(tica.cov, cov)
 
 if __name__ == "__main__":
     unittest.main()
