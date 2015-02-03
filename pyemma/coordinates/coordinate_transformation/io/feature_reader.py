@@ -167,6 +167,8 @@ class FeatureReader(object):
             t = 0
             while not last_chunk_in_traj:
                 y = self.next_chunk()
+                assert y is not None
+                log.debug( np.shape(y))
                 L = np.shape(y)[0]
                 # last chunk in traj?
                 last_chunk_in_traj = (t + L >= self.trajectory_length(itraj))
@@ -231,30 +233,22 @@ class FeatureReader(object):
                     adv_chunk = self.mditer2.next()
             except StopIteration:
                 # no more data available in mditer2, so we have to take data from
-                # last_chunk and padd it with zeros!
-                log.debug("no more data in mditer2")
-                lagged_xyz = np.empty_like(chunk.xyz)
+                # current chunk and padd it with zeros!
+                log.debug("No more data in mditer2. Padding with zeros")
+                log.debug("data avail: %i" % chunk.xyz.shape[0])
+                lagged_xyz = np.zeros_like(chunk.xyz)
                 lagged_xyz[:-lag] = chunk.xyz[lag:]
-                lagged_xyz[-lag:] = 0
+                chunk_lagged = Trajectory(lagged_xyz, chunk.topology)
+                #log.debug("lagged_xyz:\n%s" % lagged_xyz)
             else:
                 # build time lagged Trajectory from current and advanced chunk
-                # print chunk.xyz.shape,adv_chunk.xyz.shape
                 # if adv_chunk has less frames than chunk
-                s1 = chunk.xyz.shape
-                s2 = adv_chunk.xyz.shape
-                min_shape = min((s1, s2))
-                lagged_xyz = np.zeros(min_shape)
-                if min_shape[0] == 1:
-                    log.error(
-                        'only one frame left. Choose different chunksize')
-                    pass
-                elif s1 == s2:
-                    lagged_xyz[:-lag] = chunk.xyz[lag:]
-                    lagged_xyz[-lag:] = adv_chunk.xyz[:lag]
-                else:
-                    log.debug("chunk: %s; adv_chunk: %s" % (s1, s2))
-                    # TODO: handle case one chunk shorter than other!
-            chunk_lagged = Trajectory(lagged_xyz, chunk.topology)
+
+                # concatenate chunk and advance chunk
+                # TODO:optimize, since this copies more memory around than needed
+                merged = chunk + adv_chunk
+                # skip "lag" number of frames and truncate to chunksize
+                chunk_lagged = merged[lag:][:self.chunksize]
 
         if np.max(chunk.time) >= self.trajectory_length(self.curr_itraj) - 1 and \
                 self.curr_itraj < len(self.trajfiles) - 1:
@@ -273,3 +267,11 @@ class FeatureReader(object):
             X = self.feature.map(chunk)
             Y = self.feature.map(chunk_lagged)
             return X, Y
+
+    def __del__(self):
+        """destructor to close file handles"""
+        try:
+            self.mditer.close()
+            self.mditer2.close()
+        except AttributeError, IOError:
+            pass
