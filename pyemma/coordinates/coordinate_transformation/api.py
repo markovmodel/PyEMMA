@@ -81,7 +81,7 @@ def pca(data = None, dim = 2):
     return res
 
 
-def tica(data = None, lag = 10, dim = 2, symmetrize = True):
+def tica(data=None, lag=10, dim=2):
     """
     Constructs a TICA object
 
@@ -91,14 +91,10 @@ def tica(data = None, lag = 10, dim = 2, symmetrize = True):
         the lag time, in multiples of the input time step
     :param dim:
         the number of dimensions to project onto
-    :param symmetrize:
-        if true, the time-lagged covariance matrix will by symmetrized
-
     :return:
         a TICA transformation object
     """
-    # TODO: I think we currently must enforce symmetrization because we have no other established ways of computing TICA meaninfully. Therefore better remove this flag.
-    res = TICA(lag, dim, symmetrize=symmetrize)
+    res = TICA(lag, dim)
     if data is not None:
         inp = DataInMemory(data)
         res.set_data_producer(inp)
