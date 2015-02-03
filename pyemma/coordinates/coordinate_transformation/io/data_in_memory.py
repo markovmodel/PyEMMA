@@ -138,7 +138,7 @@ class DataInMemory(object):
                 X = self.data[self.itraj][self.t:min(self.t+self.chunksize,self.lengths[self.itraj])-lag]
                 Y = self.data[self.itraj][self.t+lag:min(self.t+self.chunksize,self.lengths[self.itraj])]
                 self.t += self.chunksize
-                if self.t + lag >= self.lengths(self.itraj):
+                if self.t + lag >= self.lengths[self.itraj]:
                     self.itraj += 1
                 return (X, Y)
 
