@@ -16,15 +16,19 @@ __all__ = ['RegularSpaceClustering']
 class RegularSpaceClustering(Transformer):
 
     """Clusters data objects in such a way, that cluster centers are at least in
-    distance of dmin to eachother according to the given metric.
+    distance of dmin to each other according to the given metric.
     The assignment of data objects to cluster centers is performed by
     Voronoi paritioning. That means, that a data object is assigned to
-    that clusters center, which has the least distance.
+    that clusters center, which has the least distance [1] Senne et al.
 
     Parameters
     ----------
     dmin : float
         minimum distance a new centroid has to have to all other centroids.
+
+     References
+    ----------
+    .. [1] Senne, Martin, et al. J. Chem Theory Comput. 8.7 (2012): 2223-2238
 
     """
 
@@ -69,13 +73,6 @@ class RegularSpaceClustering(Transformer):
                 if dist[minIndex] >= self.dmin:
                     self.centroids.append(x)
 
-            if last_chunk:
-                assert len(self.centroids) >= 1
-                # create numpy array from centroids list
-                self.centroids = np.array(self.centroids)
-                log.debug("shape of centroids: %s" % str(self.centroids.shape))
-                log.info("number of centroids: %i" % len(self.centroids))
-
         elif ipass == 1:
             # discretize all
             if t == 0:
@@ -89,6 +86,13 @@ class RegularSpaceClustering(Transformer):
                 return True  # finished!
 
         return False
+
+    def param_finish(self):
+        assert len(self.centroids) >= 1
+        # create numpy array from centroids list
+        self.centroids = np.array(self.centroids)
+        log.debug("shape of centroids: %s" % str(self.centroids.shape))
+        log.info("number of centroids: %i" % len(self.centroids))
 
     def map(self, x):
         """gets index of closest cluster.
