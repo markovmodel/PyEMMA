@@ -17,6 +17,7 @@ from clustering.regspace_clustering import RegularSpaceClustering
 Proposed API for the new coordinates package
 """
 
+__all__ = ['discretizer', 'tica','pca','kmeans','regspace','uniform_time']
 
 def discretizer(reader,
                 transform = None,
@@ -61,7 +62,7 @@ def memory_reader(data):
 #=====================================================================================================================
 
 
-def pca(data = None, dim = 2):
+def pca(data=None, dim=2):
     """
     Constructs a PCA object
 
@@ -76,7 +77,7 @@ def pca(data = None, dim = 2):
     res = PCA(dim)
     if data is not None:
         inp = DataInMemory(data)
-        res.set_data_producer(inp)
+        res.data_producer = inp
         res.parametrize()
     return res
 
@@ -97,7 +98,7 @@ def tica(data=None, lag=10, dim=2):
     res = TICA(lag, dim)
     if data is not None:
         inp = DataInMemory(data)
-        res.set_data_producer(inp)
+        res.data_producer = inp
         res.parametrize()
     return res
 
@@ -124,7 +125,7 @@ def kmeans(data = None, k=100, max_iter=1000):
     res = KmeansClustering(n_clusters=k, max_iter=max_iter)
     if data is not None:
         inp = DataInMemory(data)
-        res.set_data_producer(inp)
+        res.data_producer = inp
         res.parametrize()
     return res
 
@@ -145,7 +146,7 @@ def uniform_time(data=None, k=100):
     res = UniformTimeClustering(k)
     if data is not None:
         inp = DataInMemory(data)
-        res.set_data_producer(inp)
+        res.data_producer = inp
         res.parametrize()
     return res
 
@@ -166,6 +167,6 @@ def regspace(dmin, data=None):
     res = RegularSpaceClustering(dmin)
     if data is not None:
         inp = DataInMemory(data)
-        res.set_data_producer(inp)
+        res.data_producer = inp
         res.parametrize()
     return res
