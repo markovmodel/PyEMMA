@@ -62,6 +62,8 @@ class TICA(Transformer):
         self.U = None
         self.lambdas = None
         self.N = 0
+        self.eigenvalues = None
+        self.eigenvectors = None
 
     def describe(self):
         return "[TICA, lag = %i; output dimension = %i]" \
@@ -80,7 +82,8 @@ class TICA(Transformer):
 
     def get_constant_memory(self):
         # TODO: change me
-        return 2 * self.data_producer.dimension() ** 2
+        dim = self.data_producer.dimension()
+        return ((2 * dim ** 2) + dim) * 8
 
     def param_init(self):
         """
@@ -97,14 +100,12 @@ class TICA(Transformer):
         self.cov = np.zeros((dim, dim))
         self.cov_tau = np.zeros_like(self.cov)
 
-    # def add_chunk(self, X, itraj, t, first_chunk, last_chunk_in_traj,
-    # last_chunk, ipass, Y=None):
     def param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
         """
-        Chunk-based parametrization of TICA. Iterates through all data twice. In the first pass, the
+        Chunk-based parameterization of TICA. Iterates through all data twice. In the first pass, the
         data means are estimated, in the second pass the covariance and time-lagged covariance
         matrices are estimated. Finally, the generalized eigenvalue problem is solved to determine
-        the independent compoennts.
+        the independent components.
 
         :param X:
             coordinates. axis 0: time, axes 1-..: coordinates
@@ -125,8 +126,6 @@ class TICA(Transformer):
         :return:
        """
         if ipass == 0:
-            # TODO: use a more advanced algo for mean calculation
-
             self.mu += np.sum(X, axis=0)
             self.N += np.shape(X)[0]
 
@@ -135,11 +134,6 @@ class TICA(Transformer):
                 log.info("mean:\n%s" % self.mu)
 
         if ipass == 1:
-            if first_chunk:
-                dim = self.data_producer.dimension()
-                self.cov = np.zeros((dim, dim))
-                self.cov_tau = np.zeros_like(self.cov)
-
             X_meanfree = X - self.mu
             Y_meanfree = Y - self.mu
             self.cov += np.dot(X_meanfree.T, X_meanfree)
@@ -162,7 +156,7 @@ class TICA(Transformer):
         self.cov /= 2.0
 
         self.cov_tau += self.cov_tau.T
-        self.cov_tau /= 2.
+        self.cov_tau /= 2.0
 
         self.eigenvalues, self.eigenvectors = \
             eig_corr(self.cov, self.cov_tau, self.epsilon)
