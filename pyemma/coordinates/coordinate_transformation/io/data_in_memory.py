@@ -2,7 +2,8 @@ __author__ = 'noe'
 
 import numpy as np
 
-class DataInMemory:
+
+class DataInMemory(object):
     """
     multi-dimensional multi-trajectory data fully stored in memory
     """
@@ -30,7 +31,6 @@ class DataInMemory:
         self.t = 0
         # chunking, lagging
         self.chunksize = 0
-        self.lag = 0
 
 
     def number_of_trajectories(self):
@@ -106,7 +106,7 @@ class DataInMemory:
         self.t = 0
 
 
-    def next_chunk(self):
+    def next_chunk(self, lag=0):
         """
 
         :param lag:
@@ -114,32 +114,33 @@ class DataInMemory:
         """
         # finished?
         if self.itraj >= self.ntraj:
-            return None
+            raise StopIteration
         # complete trajectory mode
         if self.chunksize == 0:
-            if self.lag == 0:
+            if lag == 0:
                 X = self.data[self.itraj]
                 self.itraj += 1
                 return X
             else:
-                X = self.data[self.itraj][0:self.lengths[self.itraj]-self.lag]
-                Y = self.data[self.itraj][self.lag:self.lengths[self.itraj]]
+                assert lag < self.lengths[self.itraj]
+                X = self.data[self.itraj][0:self.lengths[self.itraj]-lag]
+                Y = self.data[self.itraj][lag:self.lengths[self.itraj]]
                 self.itraj += 1
-                return (X,Y)
+                return (X, Y)
         else:
-            if self.lag == 0:
+            if lag == 0:
                 X = self.data[self.itraj][self.t:min(self.t+self.chunksize,self.lengths[self.itraj])]
                 self.t += self.chunksize
                 if self.t >= self.lengths(self.itraj):
                     self.itraj += 1
                 return X
             else:
-                X = self.data[self.itraj][self.t:min(self.t+self.chunksize,self.lengths[self.itraj])-self.lag]
-                Y = self.data[self.itraj][self.t+self.lag:min(self.t+self.chunksize,self.lengths[self.itraj])]
+                X = self.data[self.itraj][self.t:min(self.t+self.chunksize,self.lengths[self.itraj])-lag]
+                Y = self.data[self.itraj][self.t+lag:min(self.t+self.chunksize,self.lengths[self.itraj])]
                 self.t += self.chunksize
-                if self.t + self.lag >= self.lengths(self.itraj):
+                if self.t + lag >= self.lengths(self.itraj):
                     self.itraj += 1
-                return (X,Y)
+                return (X, Y)
 
 
 
