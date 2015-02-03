@@ -3,69 +3,101 @@ Created on 19.01.2015
 
 @author: marscher
 '''
+import itertools
+import os
+import tempfile
 import unittest
+import mdtraj
+import numpy as np
+
+from mdtraj.core.trajectory import Trajectory
+from mdtraj.core.element import hydrogen, oxygen
+from mdtraj.core.topology import Topology
 
 from pyemma.coordinates.coordinate_transformation.clustering.uniform_time_clustering import UniformTimeClustering
 from pyemma.coordinates.coordinate_transformation.discretizer import Discretizer
 from pyemma.coordinates.coordinate_transformation.io.feature_reader import FeatureReader
-from pyemma.coordinates.coordinate_transformation.io.featurizer import MDFeaturizer
-from pyemma.coordinates.coordinate_transformation.transform.tica import TICA
-from pyemma.coordinates.transform.tica_amuse import Amuse
-import numpy as np
+from pyemma.coordinates.coordinate_transformation.transform.pca import PCA
 
 
-#@unittest.skip('changed interface')
+def create_water_topology_on_disc(n):
+    topfile = tempfile.mkstemp('.pdb')[1]
+    top = Topology()
+    chain = top.add_chain()
+
+    for i in xrange(n):
+        res = top.add_residue('r%i' % i, chain)
+        h1 = top.add_atom('H', hydrogen, res)
+        o = top.add_atom('O', oxygen, res)
+        h2 = top.add_atom('H', hydrogen, res)
+        top.add_bond(h1, o)
+        top.add_bond(h2, o)
+
+    xyz = np.zeros((n * 3, 3))
+    Trajectory(xyz, top).save_pdb(topfile)
+    return topfile
+
+
+def create_traj_on_disc(topfile, n_frames, n_atoms):
+    fn = tempfile.mktemp('.xtc')
+    xyz = np.random.random((n_frames, n_atoms, 3))
+    t = mdtraj.load(topfile)
+    t.xyz = xyz
+    t.time = np.arange(n_frames)
+    t.save(fn)
+    return fn
+
+
 class TestDiscretizer(unittest.TestCase):
 
-    def setUp(self):
-        """ recreate Discretizer for each test case"""
-        # TODO: fix test data
-        trajfiles = ['/home/marscher/kchan/traj01_sliced.xtc']
-        topfile = '/home/marscher/kchan/Traj_Structure.pdb'
+    @classmethod
+    def setUpClass(cls):
+        c = super(TestDiscretizer, cls).setUpClass()
+        # create a fake trajectory which has 2 atoms and coordinates are just a range
+        # over all frames.
+        cls.n_frames = 1000
+        cls.n_residues = 30
+        cls.topfile = create_water_topology_on_disc(cls.n_residues)
 
-        # create featurizer
-        featurizer = MDFeaturizer(topfile)
-        sel = np.array([(0, 20), (200, 320), (1300, 1500)])
-        featurizer.distances(sel)
-        # feature reader
-        reader = FeatureReader(trajfiles, topfile)
+        # create some trajectories
+        t1 = create_traj_on_disc(
+            cls.topfile, cls.n_frames, cls.n_residues * 3)
 
-        self.tica = TICA(lag=10, output_dimension=2)
-        self.tica.dataproducer = reader
+        t2 = create_traj_on_disc(
+            cls.topfile, cls.n_frames, cls.n_residues * 3)
 
-        clustering = UniformTimeClustering(k=2)
+        cls.trajfiles = [t1, t2]
 
-        self.D = Discretizer(reader, transform=self.tica, cluster=clustering)
+        return c
 
-    def testChunksizeResultsTica(self):
-        chunk = 31
-        eps = 1e-3
+    @classmethod
+    def tearDownClass(cls):
+        """delete temporary files"""
+        os.unlink(cls.topfile)
+        for f in cls.trajfiles:
+            os.unlink(f)
 
-        self.D.run()
+    def test(self):
+        reader = FeatureReader(self.trajfiles, self.topfile)
+        # select all possible distances
+        pairs = np.array(
+            [x for x in itertools.combinations(range(self.n_residues), 2)])
 
-        # store mean and cov
-        tica = self.D.transformers[-1]
-        assert isinstance(tica, TICA)
-        cov = tica.cov.copy()
-        mean = tica.mu.copy()
-        # ------- run again -------
-        # reset norming factor
-        tica.N = 0
+        reader.feature.distances(pairs)
 
-        self.D.chunksize = chunk
-        for t in self.D.transformers:
-            t.parameterized = False
+        tica = PCA(output_dimension=2)
 
-        self.D.run()
+        n_clusters = 2
+        clustering = UniformTimeClustering(k=n_clusters)
 
-        np.testing.assert_allclose(tica.mu, mean, atol=eps)
-        np.testing.assert_allclose(tica.cov, cov, atol=eps)
+        D = Discretizer(reader, transform=tica, cluster=clustering)
 
-    @unittest.skip("not impled")
-    def compareWithAmuse(self):
-        # TODO: compare
-        amuse = Amuse.compute(self.files, lag=10)
-        print amuse.mean
+        self.assertEqual(len(clustering.dtrajs), len(self.trajfiles))
+
+        for dtraj in clustering.dtrajs:
+            unique = np.unique(dtraj)
+            self.assertEqual(unique.shape[0], n_clusters)
+
 
 if __name__ == "__main__":
     unittest.main()
