@@ -6,66 +6,31 @@ Created on 22.01.2015
 import os
 import tempfile
 import unittest
-
-from pyemma.coordinates.coordinate_transformation.io.feature_reader import FeatureReader
-from pyemma.coordinates.coordinate_transformation.io.featurizer import MDFeaturizer
-from pyemma.coordinates.coordinate_transformation.io.writer import WriterCSV
-from pyemma.coordinates.coordinate_transformation.transform.tica import TICA
 import numpy as np
+
+from pyemma.coordinates.coordinate_transformation.io.writer import WriterCSV
+from pyemma.coordinates.coordinate_transformation.io.data_in_memory import DataInMemory
 
 
 class TestWriterCSV(unittest.TestCase):
 
     def setUp(self):
-        # TODO: fix test data
-        trajfiles = ['/home/marscher/kchan/traj01_sliced.xtc']
-        topfile = '/home/marscher/kchan/Traj_Structure.pdb'
-
-        # create featurizer
-        self.featurizer = MDFeaturizer(topfile)
-        sel = np.array([(0, 20), (200, 320), (1300, 1500)])
-        self.featurizer.distances(sel)
-        # feature reader
-        self.reader = FeatureReader(trajfiles, topfile, self.featurizer)
-
         self.output_file = tempfile.mktemp('', 'test_writer_csv')
 
     def tearDown(self):
-        # print "delete output"
         os.unlink(self.output_file)
 
     def testWriter(self):
-        self.writer = WriterCSV(self.output_file)
-        self.writer.data_producer = self.reader
-        chain = [self.reader, self.writer]
+        writer = WriterCSV(self.output_file)
+        data = np.random.random((100, 3))
+        dm = DataInMemory(data)
+        writer.data_producer = dm
 
-        self.reader.operate_in_memory()
+        writer.parametrize()
 
-        for c in chain:
-            c.chunkshape=50000
-            c.parametrize()
-
-        # open file and compare to reader.Y
+        # open file and compare data
         output = np.loadtxt(self.output_file)
-        np.testing.assert_allclose(output, self.reader.Y[0])
-
-    def testTicaWriter(self):
-        self.writer = WriterCSV(self.output_file)
-        self.writer.data_producer = self.reader
-
-        tica = TICA(lag=10, output_dimension=2)
-        tica.data_producer = self.reader
-        chain = [self.reader, tica, self.writer]
-
-        self.reader.operate_in_memory()
-        for c in chain:
-            c.chunkshape=50000
-            c.parametrize()
-
-        # open file and compare to reader.Y
-        output = np.loadtxt(self.output_file)
-        np.testing.assert_allclose(output, self.reader.Y[0])
+        np.testing.assert_allclose(output, data)
 
 if __name__ == "__main__":
-    #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()
