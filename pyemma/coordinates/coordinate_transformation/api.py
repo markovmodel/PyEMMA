@@ -74,7 +74,7 @@ def pca(data = None, dim = 2):
         a PCA transformation object
     """
     res = PCA(dim)
-    if data != None:
+    if data is not None:
         inp = DataInMemory(data)
         res.set_data_producer(inp)
         res.parametrize()
@@ -99,7 +99,7 @@ def tica(data = None, lag = 10, dim = 2, symmetrize = True):
     """
     # TODO: I think we currently must enforce symmetrization because we have no other established ways of computing TICA meaninfully. Therefore better remove this flag.
     res = TICA(lag, dim, symmetrize=symmetrize)
-    if data != None:
+    if data is not None:
         inp = DataInMemory(data)
         res.set_data_producer(inp)
         res.parametrize()
@@ -126,14 +126,14 @@ def kmeans(data = None, k=100, max_iter=1000):
 
     """
     res = KmeansClustering(n_clusters=k, max_iter=max_iter)
-    if data != None:
+    if data is not None:
         inp = DataInMemory(data)
         res.set_data_producer(inp)
         res.parametrize()
     return res
 
 
-def uniform_time(data = None, k = 100):
+def uniform_time(data=None, k=100):
     """
     Constructs a uniform time clustering
 
@@ -147,14 +147,14 @@ def uniform_time(data = None, k = 100):
 
     """
     res = UniformTimeClustering(k)
-    if data != None:
+    if data is not None:
         inp = DataInMemory(data)
         res.set_data_producer(inp)
         res.parametrize()
     return res
 
 
-def regspace(dmin, data = None):
+def regspace(dmin, data=None):
     """
     Constructs a regular space clustering
 
@@ -168,7 +168,7 @@ def regspace(dmin, data = None):
 
     """
     res = RegularSpaceClustering(dmin)
-    if data != None:
+    if data is not None:
         inp = DataInMemory(data)
         res.set_data_producer(inp)
         res.parametrize()
