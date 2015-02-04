@@ -1,12 +1,18 @@
 __author__ = 'noe'
 
 import numpy as np
+from pyemma.util.log import getLogger
+from pyemma.coordinates.coordinate_transformation.transform.transformer import Transformer
+
+logger = getLogger('DataInMemory')
 
 
 class DataInMemory(object):
+
     """
     multi-dimensional multi-trajectory data fully stored in memory
     """
+
     def __init__(self, _data):
         """
 
@@ -20,18 +26,19 @@ class DataInMemory(object):
             self.ntraj = 1
             self.ndim = np.shape(_data)[1]
             self.lengths = [np.shape(_data)[0]]
-        elif isinstance(_data, (list)):
-            self.data = [_data]
+        elif isinstance(_data, list):
+            self.data = _data
             self.ntraj = len(_data)
+            # TODO: ensure all trajs have same dim
             self.ndim = np.shape(_data[0])[1]
             self.lengths = [np.shape(_data[i])[0] for i in range(len(_data))]
         else:
-            raise ValueError('input data is neither an ndarray nor a list of ndarrays')
+            raise ValueError('input data is neither an ndarray '
+                             'nor a list of ndarrays!')
 
         self.t = 0
-        # chunking, lagging
+        self.itraj = 0
         self.chunksize = 0
-
 
     def number_of_trajectories(self):
         """
@@ -41,7 +48,6 @@ class DataInMemory(object):
             number of trajectories
         """
         return self.ntraj
-
 
     def trajectory_length(self, itraj):
         """
@@ -55,7 +61,6 @@ class DataInMemory(object):
         """
         return self.lengths[itraj]
 
-
     def trajectory_lengths(self):
         """
         Returns the length of each trajectory
@@ -64,8 +69,6 @@ class DataInMemory(object):
             length of each trajectory
         """
         return self.lengths
-
-
 
     def n_frames_total(self):
         """
@@ -76,7 +79,6 @@ class DataInMemory(object):
         """
         return np.sum(self.lengths)
 
-
     def dimension(self):
         """
         Returns the number of output dimensions
@@ -85,26 +87,16 @@ class DataInMemory(object):
         """
         return self.ndim
 
-
-    def set_chunksize(self, size):
-        """
-        Sets the size of data chunks that are read to memory at one time.
-
-        :param size:
-        :return:
-        """
-        self.chunksize = size
-
-
     def reset(self):
         """
         Resets the data producer
 
         :return:
         """
+        logger.debug("reset()")
+
         self.itraj = 0
         self.t = 0
-
 
     def next_chunk(self, lag=0):
         """
@@ -112,35 +104,39 @@ class DataInMemory(object):
         :param lag:
         :return:
         """
-        # finished?
+        # finished once with all trajectories? so reset the pointer to allow
+        # multi-pass
         if self.itraj >= self.ntraj:
-            raise StopIteration
+            self.reset()
+
+        traj_len = self.lengths[self.itraj]
+        traj = self.data[self.itraj]
+
         # complete trajectory mode
         if self.chunksize == 0:
             if lag == 0:
-                X = self.data[self.itraj]
+                X = traj
                 self.itraj += 1
                 return X
             else:
-                assert lag < self.lengths[self.itraj]
-                X = self.data[self.itraj][0:self.lengths[self.itraj]-lag]
-                Y = self.data[self.itraj][lag:self.lengths[self.itraj]]
+                assert lag < traj_len
+                X = traj[0:traj_len - lag]
+                Y = traj[lag:traj_len]
                 self.itraj += 1
                 return (X, Y)
         else:
+            chunksize_bounds = min(self.t + self.chunksize, traj_len)
             if lag == 0:
-                X = self.data[self.itraj][self.t:min(self.t+self.chunksize,self.lengths[self.itraj])]
+                X = traj[self.t:chunksize_bounds]
                 self.t += self.chunksize
-                if self.t >= self.lengths(self.itraj):
+                if self.t >= traj_len:
                     self.itraj += 1
                 return X
             else:
-                X = self.data[self.itraj][self.t:min(self.t+self.chunksize,self.lengths[self.itraj])-lag]
-                Y = self.data[self.itraj][self.t+lag:min(self.t+self.chunksize,self.lengths[self.itraj])]
+                X = traj[self.t: chunksize_bounds - lag]
+                Y = traj[self.t + lag: chunksize_bounds]
+
                 self.t += self.chunksize
-                if self.t + lag >= self.lengths[self.itraj]:
+                if self.t + lag >= traj_len:
                     self.itraj += 1
                 return (X, Y)
-
-
-
