@@ -130,8 +130,9 @@ class Transformer(object):
     def parametrize(self):
         # check if ready
         if self.data_producer is None:
-            raise RuntimeError('Called parametrize while data producer is not'
-                               ' yet set. Ensure "data_producer" attribute is set!')
+            raise RuntimeError('Called parametrize of %s while data producer is not'
+                               ' yet set. Ensure "data_producer" attribute is set!'
+                               % self.describe())
         # init
         self.param_init()
         # feed data, until finished
@@ -247,23 +248,23 @@ class Transformer(object):
             if self.itraj >= self.number_of_trajectories():
                 return None
             # operate in memory, implement iterator here
+            traj_len = self.trajectory_length(self.itraj)
             if lag == 0:
                 Y = self.Y[self.itraj][
-                    self.t:min(self.t + self.chunksize, self.trajectory_length(self.itraj))]
+                    self.t:min(self.t + self.chunksize, traj_len)]
                 # increment counters
                 self.t += self.chunksize
-                if self.t >= self.trajectory_length(self.itraj):
+                if self.t >= traj_len:
                     self.itraj += 1
                     self.t = 0
                 return Y
             else:
-                Y0 = self.Y[self.itraj][
-                    self.t:min(self.t + self.chunksize, self.trajectory_length(self.itraj))]
+                Y0 = self.Y[self.itraj][self.t:min(self.t + self.chunksize, traj_len)]
                 Ytau = self.Y[self.itraj][
-                    self.t + lag:min(self.t + self.chunksize + lag, self.trajectory_length(self.itraj))]
+                    self.t + lag:min(self.t + self.chunksize + lag, traj_len)]
                 # increment counters
                 self.t += self.chunksize
-                if self.t >= self.trajectory_length(self.itraj):
+                if self.t >= traj_len:
                     self.itraj += 1
                 return (Y0, Ytau)
         else:
