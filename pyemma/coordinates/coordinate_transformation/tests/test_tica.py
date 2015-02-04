@@ -55,10 +55,10 @@ class TestTICA(unittest.TestCase):
         assert tica.eigenvalues.dtype == np.float64
 
     def testChunksizeResultsTica(self):
-        chunk = 31
+        chunk = 2
+        np.random.seed(0)
 
-        X = np.random.randn(100, 2)
-        X = np.hstack((X, np.zeros((100, 1))))
+        X = np.random.randn(100, 3)
 
         d = DataInMemory(X)
 
