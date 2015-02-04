@@ -7,6 +7,7 @@ from pyemma.coordinates.coordinate_transformation.transform.transformer import T
 from pyemma.util.linalg import eig_corr
 from pyemma.util.log import getLogger
 import numpy as np
+#from pyemma.coordinates.coordinate_transformation.exts.stable_sum import kahan_sum
 
 
 log = getLogger('TICA')
@@ -59,8 +60,6 @@ class TICA(Transformer):
         self.cov_tau = None
         # mean
         self.mu = None
-        self.U = None
-        self.lambdas = None
         self.N = 0
         self.eigenvalues = None
         self.eigenvectors = None
@@ -91,7 +90,6 @@ class TICA(Transformer):
 
         :return:
         """
-        log.info("Running TICA")
         self.N = 0
         # create mean array and covariance matrices
         self.mu = np.zeros(self.data_producer.dimension())
@@ -99,6 +97,8 @@ class TICA(Transformer):
         assert dim > 0, "zero dimension from data producer"
         self.cov = np.zeros((dim, dim))
         self.cov_tau = np.zeros_like(self.cov)
+
+        log.info("Running TICA shape cov=(%i,%i)" % (dim, dim))
 
     def param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
         """
@@ -124,12 +124,16 @@ class TICA(Transformer):
         :param Y:
             time-lagged data (if available)
         :return:
-       """
+        """
         if ipass == 0:
+            # TODO: use stable sum here, since different chunksizes leads to different results
             self.mu += np.sum(X, axis=0)
+            log.debug("X.shape = %s" % str(X.shape))
             self.N += np.shape(X)[0]
 
             if last_chunk:
+                log.debug("mean before norm: %s" % self.mu)
+                log.debug("norming mean by %f" % self.N)
                 self.mu /= self.N
                 log.info("mean:\n%s" % self.mu)
 
@@ -137,13 +141,9 @@ class TICA(Transformer):
             X_meanfree = X - self.mu
             Y_meanfree = Y - self.mu
             self.cov += np.dot(X_meanfree.T, X_meanfree)
-            # FIXME: minor deviation to amuse algo for cov_tau, might be
-            # norming factor
             self.cov_tau += np.dot(X_meanfree.T, Y_meanfree)
 
             if last_chunk:
-                self.cov /= self.N
-                self.cov_tau /= self.N
                 return True  # finished!
 
         return False  # not finished yet.
@@ -151,11 +151,15 @@ class TICA(Transformer):
     def param_finish(self):
         """ Finalizes the parametrization.
         """
+        # norm
+        self.cov /= self.N
+        self.cov_tau /= self.N - self.lag - 1
+
         # symmetrize covariance matrices
-        self.cov += self.cov.T
+        self.cov = self.cov + self.cov.T
         self.cov /= 2.0
 
-        self.cov_tau += self.cov_tau.T
+        self.cov_tau = self.cov_tau + self.cov_tau.T
         self.cov_tau /= 2.0
 
         self.eigenvalues, self.eigenvectors = \
