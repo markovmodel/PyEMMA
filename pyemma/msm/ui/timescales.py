@@ -52,7 +52,7 @@ class ImpliedTimescales(object):
            # We we were only parsed an array
            dtrajs=[dtrajs]
         lengths = np.zeros(len(dtrajs))
-        print lengths
+
         n = 0
         for i in range(len(dtrajs)):
             lengths[i] = len(dtrajs[i])
