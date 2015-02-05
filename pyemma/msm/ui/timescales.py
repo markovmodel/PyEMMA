@@ -46,7 +46,13 @@ class ImpliedTimescales(object):
         self._connected = connected
         self._reversible = reversible
         # maximum trajectory length and number of states
+
+        # Check if input was array or list of arrays
+        if np.ndim(dtrajs) < 2:
+           # We we were only parsed an array
+           dtrajs=[dtrajs]
         lengths = np.zeros(len(dtrajs))
+        print lengths
         n = 0
         for i in range(len(dtrajs)):
             lengths[i] = len(dtrajs[i])
