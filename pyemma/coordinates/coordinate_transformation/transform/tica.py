@@ -7,8 +7,6 @@ from pyemma.coordinates.coordinate_transformation.transform.transformer import T
 from pyemma.util.linalg import eig_corr
 from pyemma.util.log import getLogger
 import numpy as np
-#from pyemma.coordinates.coordinate_transformation.exts.stable_sum import kahan_sum
-
 
 log = getLogger('TICA')
 __all__ = ['TICA']
@@ -98,7 +96,7 @@ class TICA(Transformer):
         self.cov = np.zeros((dim, dim))
         self.cov_tau = np.zeros_like(self.cov)
 
-        log.info("Running TICA shape cov=(%i,%i)" % (dim, dim))
+        log.info("Running TICA lag=%i; shape cov=(%i, %i)" % (self.lag, dim, dim))
 
     def param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
         """
@@ -128,18 +126,16 @@ class TICA(Transformer):
         if ipass == 0:
             # TODO: use stable sum here, since different chunksizes leads to different results
             self.mu += np.sum(X, axis=0)
-            log.debug("X.shape = %s" % str(X.shape))
             self.N += np.shape(X)[0]
 
             if last_chunk:
-                log.debug("mean before norm: %s" % self.mu)
-                log.debug("norming mean by %f" % self.N)
                 self.mu /= self.N
-                log.info("mean:\n%s" % self.mu)
+                log.info("calculated mean:\n%s" % self.mu)
 
         if ipass == 1:
             X_meanfree = X - self.mu
             Y_meanfree = Y - self.mu
+            print X_meanfree.shape, Y_meanfree.shape
             self.cov += np.dot(X_meanfree.T, X_meanfree)
             self.cov_tau += np.dot(X_meanfree.T, Y_meanfree)
 
@@ -152,7 +148,7 @@ class TICA(Transformer):
         """ Finalizes the parametrization.
         """
         # norm
-        self.cov /= self.N
+        self.cov /= self.N - 1
         self.cov_tau /= self.N - self.lag - 1
 
         # symmetrize covariance matrices

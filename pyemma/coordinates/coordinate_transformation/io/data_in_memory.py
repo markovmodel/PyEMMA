@@ -88,13 +88,8 @@ class DataInMemory(object):
         return self.ndim
 
     def reset(self):
+        """Resets the data producer
         """
-        Resets the data producer
-
-        :return:
-        """
-        logger.debug("reset()")
-
         self.itraj = 0
         self.t = 0
 
@@ -125,6 +120,8 @@ class DataInMemory(object):
                 self.itraj += 1
                 return (X, Y)
         else:
+            logger.debug("t=%i" % self.t)
+            # FIXME: if chunksize < traj_len, this selects wrong bounds
             chunksize_bounds = min(self.t + self.chunksize, traj_len)
             if lag == 0:
                 X = traj[self.t:chunksize_bounds]
@@ -134,9 +131,9 @@ class DataInMemory(object):
                 return X
             else:
                 X = traj[self.t: chunksize_bounds - lag]
+                logger.debug("Y=traj[%i+%i : %i]" % (self.t, lag, chunksize_bounds))
                 Y = traj[self.t + lag: chunksize_bounds]
-
-                self.t += self.chunksize
+                self.t += np.shape(X)[0]
                 if self.t + lag >= traj_len:
                     self.itraj += 1
                 return (X, Y)

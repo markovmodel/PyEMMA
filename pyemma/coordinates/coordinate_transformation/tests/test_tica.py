@@ -8,6 +8,9 @@ import numpy as np
 
 from pyemma.coordinates.coordinate_transformation.io.data_in_memory import DataInMemory
 from pyemma.coordinates.coordinate_transformation.transform.tica import TICA
+from pyemma.util.log import getLogger
+
+logger = getLogger('TestTICA')
 
 
 class TestTICA(unittest.TestCase):
@@ -55,14 +58,15 @@ class TestTICA(unittest.TestCase):
         assert tica.eigenvalues.dtype == np.float64
 
     def testChunksizeResultsTica(self):
-        chunk = 2
+        chunk = 40
+        lag = 100
         np.random.seed(0)
+        X = np.random.randn(23000, 3)
 
-        X = np.random.randn(100, 3)
-
+        # un-chunked
         d = DataInMemory(X)
 
-        tica = TICA(lag=1, output_dimension=1)
+        tica = TICA(lag=lag, output_dimension=1)
         tica.data_producer = d
         tica.parametrize()
 
@@ -72,7 +76,7 @@ class TestTICA(unittest.TestCase):
         # ------- run again with new chunksize -------
         d = DataInMemory(X)
         d.chunksize = chunk
-        tica = TICA(lag=1, output_dimension=1)
+        tica = TICA(lag=lag, output_dimension=1)
         tica.data_producer = d
 
         tica.parametrize()
