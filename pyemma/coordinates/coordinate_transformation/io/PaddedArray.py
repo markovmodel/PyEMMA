@@ -37,9 +37,6 @@ class PaddedArray(np.ndarray):
         return obj
 
     def __array_finalize__(self, obj):
-        print 'In __array_finalize__:'
-        print '   self is %s' % repr(self)
-        print '   obj is %s' % repr(obj)
         if obj is None:
             return
 
