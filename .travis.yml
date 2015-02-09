@@ -15,6 +15,8 @@ env:
 # - deps="numpy=0.13 numpy=1.8" 
 # - deps="numpy=0.14 numpy=1.9" 
 # - deps="scipy=0.11 numpy=1.6"
+  matrix:
+    secure: "byk9bmnGvP3qDfpYvPKX4909KeS6pJQtfW+GkSsuHy4vnp++gu2IsXC/CJeCB0r7hpoRp7Z+XlOtYmJLvb585LZmGaqIs5LKs1DimJniAg5anpywOnaXodspeFcz6UWtLlIAQQS3SvP9SXvvrlIiF8IwXqWfEewtoGbpiCj3dEo="
 
 before_install:
 # before we invoke setup.py, install $common_deps with conda and let the rest
@@ -40,7 +42,7 @@ after_success:
 deploy:
   edge: true # testing bleeding edge git deployment code
   provider: pypi
-  distributions: "sdist upload_docs"
+  distributions: "sdist"
   skip_cleanup: true
 # docs_dir is ignored by travis (despite the issue filed against this feature, maybe its not yet active?
 #  docs_dir: doc/build/html

@@ -13,8 +13,20 @@ function build_doc {
 	ls -alhR ../build/docs
 }
 
+function deploy_doc {
+	echo "[distutils]
+index-servers = pypi
+
+[pypi]
+username:marscher
+password:${pypi_pass}" > ~/.pypirc
+
+	python setup.py upload_docs
+}
+
 # build docs only for python 2.7 and for normal commits (not pull requests) 
 if [[ $TRAVIS_PYTHON_VERSION = "2.7" ]] && [[ "${TRAVIS_PULL_REQUEST}" = "false" ]]; then
 	install_deps
 	build_doc
+	deploy_doc
 fi
