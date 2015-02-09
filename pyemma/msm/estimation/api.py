@@ -66,8 +66,6 @@ __all__=['bootstrap_trajectories',
 # Count matrix
 ################################################################################
 
-
-
 # DONE: Benjamin 
 def count_matrix(dtraj, lag, sliding=True, sparse_return=True, nstates=None):
     r"""Generate a count matrix from given microstate trajectory.
@@ -903,12 +901,50 @@ def tmatrix(C, reversible=False, mu=None, **kwargs):
         space of stochastic matrices.
     mu : array_like
         The stationary distribution of the MLE transition matrix.
-        
+    **kwargs: Optional algorithm-specific parameters. See below for special cases
+    eps = 1E-6 : float
+        Optional parameter with reversible = True and mu!=None.
+        Regularization parameter for the interior point method. This value is added
+        to the diagonal elements of C that are zero.
+    Xinit : (M, M) ndarray 
+        Optional parameter with reversible = True.
+        initial value for the matrix of absolute transition probabilities. Unless set otherwise,
+        will use X = diag(pi) t, where T is a nonreversible transition matrix estimated from C,
+        i.e. T_ij = c_ij / sum_k c_ik, and pi is its stationary distribution.
+    maxiter = 1000000 : int
+        Optional parameter with reversible = True.
+        maximum number of iterations before the method exits
+    maxerr = 1e-8 : float
+        Optional parameter with reversible = True.
+        convergence tolerance. This specifies the maximum change of the Euclidean norm of relative
+        stationary probabilities (x_i = sum_k x_ik). The relative stationary probability changes
+        e_i = (x_i^(1) - x_i^(2))/(x_i^(1) + x_i^(2)) are used in order to track changes in small
+        probabilities. The Euclidean norm of the change vector, |e_i|_2, is compared to convtol.
+    return_statdist = False : Boolean
+        Optional parameter with reversible = True.
+        If set to true, the stationary distribution is also returned
+    return_conv = False : Boolean
+        Optional parameter with reversible = True.
+        If set to true, the likelihood history and the pi_change history is returned.
+    
     Returns
     -------
     P : (M, M) ndarray or scipy.sparse matrix
-       The MLE transition matrix.
-       
+       The MLE transition matrix. P has the same data type (dense or sparse) 
+       as the input matrix C.
+    The reversible estimator returns by default only P, but may also return
+    (P,pi) or (P,lhist,pi_changes) or (P,pi,lhist,pi_changes) depending on the return settings
+    P : ndarray (n,n)
+        transition matrix. This is the only return for return_statdist = False, return_conv = False
+    (pi) : ndarray (n)
+        stationary distribution. Only returned if return_statdist = True
+    (lhist) : ndarray (k)
+        likelihood history. Has the length of the number of iterations needed. 
+        Only returned if return_conv = True
+    (pi_changes) : ndarray (k)
+        history of likelihood history. Has the length of the number of iterations needed. 
+        Only returned if return_conv = True      
+        
     See also
     --------
     transition_matrix
