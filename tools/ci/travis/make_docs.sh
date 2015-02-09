@@ -6,11 +6,11 @@ function install_deps {
 }
 
 function build_doc {
-	cd doc; make ipython-rst html
+	pushd doc; make ipython-rst html
 	# workaround for docs dir => move doc to build/docs afterwards
 	# travis (currently )expects docs in build/docs (should contain index.html?) 
 	mv build/html ../build/docs
-	ls -alhR ../build/docs
+	popd
 }
 
 function deploy_doc {
