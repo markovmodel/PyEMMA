@@ -49,6 +49,27 @@ class RegularSpaceClustering(Transformer):
         # done in parametrize
         pass
 
+    def dimension(self):
+        return 1
+
+    def get_memory_per_frame(self):
+        """
+        Returns the memory requirements per frame, in bytes
+
+        :return:
+        """
+        # 4 bytes per frame for an integer index
+        return 4
+
+    def get_constant_memory(self):
+        """
+        Returns the constant memory requirements, in bytes
+
+        :return:
+        """
+        # memory for cluster centers and discrete trajectories
+        return 4 * self.data_producer.dimension() + 4 * self.data_producer.n_frames_total()
+
     def param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
         """
         first pass: calculate centroids
@@ -64,7 +85,8 @@ class RegularSpaceClustering(Transformer):
                 self.centroids.append(X[0])
                 log.info("Run regspace clustering with dmin=%f;"
                          " First centroid=%s" % (self.dmin, X[0]))
-
+            # TODO: optimize with cython, support different metrics
+            # see mixtape.libdistance
             for x in X:
                 dist = np.fromiter((np.linalg.norm(x - c, 2)
                                     for c in self.centroids), dtype=np.float32)
