@@ -9,7 +9,8 @@ import argparse
 
 from pyemma.msm.io.api import read_matrix, write_matrix
 from pyemma.util.log import getLogger
-from pyemma.msm.analysis.api import tpt, is_transition_matrix
+from pyemma.msm.analysis.api import is_transition_matrix
+from pyemma.msm.flux.api import tpt
 
 log = getLogger()
 
