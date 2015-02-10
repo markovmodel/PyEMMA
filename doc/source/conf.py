@@ -286,6 +286,7 @@ autosummary_generate += glob.glob("api/*.rst")
 
 # see https://github.com/numpy/numpydoc/issues/5
 numpydoc_class_members_toctree = False
+numpydoc_show_class_members = False
 
 # intersphinx for linking to other api's
 intersphinx_mapping = {
