@@ -3,7 +3,7 @@ Created on 19.01.2015
 
 @author: marscher
 '''
-from pyemma.coordinates.coordinate_transformation.transform.transformer import Transformer
+from .transformer import Transformer
 from pyemma.util.linalg import eig_corr
 from pyemma.util.log import getLogger
 import numpy as np
@@ -124,18 +124,19 @@ class TICA(Transformer):
         :return:
         """
         if ipass == 0:
-            # TODO: use stable sum here, since different chunksizes leads to different results
+            # TODO: maybe use stable sum here, since small chunksizes accumulate more errors
             self.mu += np.sum(X, axis=0)
             self.N += np.shape(X)[0]
 
             if last_chunk:
+                log.debug("mean before norming:\n%s" % self.mu)
+                log.debug("norming mean by %i" % self.N)
                 self.mu /= self.N
                 log.info("calculated mean:\n%s" % self.mu)
 
         if ipass == 1:
             X_meanfree = X - self.mu
             Y_meanfree = Y - self.mu
-            print X_meanfree.shape, Y_meanfree.shape
             self.cov += np.dot(X_meanfree.T, X_meanfree)
             self.cov_tau += np.dot(X_meanfree.T, Y_meanfree)
 
