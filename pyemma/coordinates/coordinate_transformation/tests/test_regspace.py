@@ -9,8 +9,10 @@ import logging
 
 from pyemma.coordinates.coordinate_transformation.clustering.regspace_clustering import RegularSpaceClustering, log
 import numpy as np
+import cProfile
 
 log.setLevel(logging.ERROR)
+
 
 class RandomDataSource:
 
@@ -45,7 +47,7 @@ class RandomDataSource:
 
 
 class TestRegSpaceClustering(unittest.TestCase):
-    
+
     @classmethod
     def setUpClass(cls):
         super(TestRegSpaceClustering, cls).setUpClass()
@@ -55,6 +57,20 @@ class TestRegSpaceClustering(unittest.TestCase):
         self.dmin = 0.3
         self.clustering = RegularSpaceClustering(dmin=self.dmin)
         self.clustering.data_producer = RandomDataSource()
+        self.pr = cProfile.Profile()
+        self.pr.enable()
+        print "*" * 80
+
+
+    def tearDown(self):
+        from pstats import Stats
+        p = Stats(self.pr)
+        p.strip_dirs()
+
+        p.sort_stats('cumtime')
+        p.print_stats()
+
+        print "*" * 80
 
     def testAlgo(self):
         self.clustering.parametrize()
