@@ -14,10 +14,10 @@ from mdtraj.core.trajectory import Trajectory
 from mdtraj.core.element import hydrogen, oxygen
 from mdtraj.core.topology import Topology
 
-from pyemma.coordinates.coordinate_transformation.clustering.uniform_time_clustering import UniformTimeClustering
-from pyemma.coordinates.coordinate_transformation.discretizer import Discretizer
-from pyemma.coordinates.coordinate_transformation.io.feature_reader import FeatureReader
-from pyemma.coordinates.coordinate_transformation.transform.pca import PCA
+from ..clustering.uniform_time_clustering import UniformTimeClustering
+from ..discretizer import Discretizer
+from ..io.feature_reader import FeatureReader
+from ..transform.pca import PCA
 
 
 def create_water_topology_on_disc(n):

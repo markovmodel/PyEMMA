@@ -1,7 +1,7 @@
 __author__ = 'noe'
 from pyemma.util.log import getLogger
 
-from pyemma.coordinates.coordinate_transformation.transform.transformer import Transformer
+from ..transform.transformer import Transformer
 import numpy as np
 
 
