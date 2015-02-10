@@ -29,9 +29,15 @@ class DataInMemory(object):
             self.data = _data
             self.ntraj = len(_data)
             # ensure all trajs have same dim
-            ndims = np.fromiter(([np.shape(_data[i])[1] for i in xrange(len(_data))]), dtype=int)
-            assert np.all( ndims == np.shape(_data[0][1])), "input data has different dimensions"
+            ndims = np.fromiter(([np.shape(_data[i])[1] 
+                                  for i in xrange(len(_data))]), dtype=int)
+            ndim_eq = ndims == np.shape(_data[0][1])
+            if not np.all(ndim_eq):
+                raise ValueError("input data has different dimensions!"
+                                 " Indices not matching: %s"
+                                 % np.where(ndim_eq == False))
             self.ndim = ndims[0]
+
             self.lengths = [np.shape(_data[i])[0] for i in range(len(_data))]
         else:
             raise ValueError('input data is neither an ndarray '
