@@ -12,6 +12,9 @@ class MDFeaturizer(object):
     TODO: This class is currently not easily extensible, because all features need to be explicitly implemented and
     changes need to be made in both describe() and map(). It would be better to have a feature list that can be added
     to. Moreover, it would be good to have own feature-implementations that can be added.
+    
+    MS: a feature might consists out of a tuple (callback function -> eg. mdtraj feature calculation and arguments).
+    These are maintained in a list, so we easily iterate over this list in map()
 
     """
 
@@ -162,7 +165,8 @@ class MDFeaturizer(object):
         # phi: C-1, N, CA, C
         phis = []
         for ires in range(1, self.topology.n_residues):
-            if self._has_atom(ires-1, "C") and self._has_atom(ires, "N") and self._has_atom(ires, "CA") and self._has_atom(ires, "C"):
+            if (self._has_atom(ires-1, "C") and self._has_atom(ires, "N") and
+                self._has_atom(ires, "CA") and self._has_atom(ires, "C")):
                 phis.append(ires)
         return phis
 
@@ -171,7 +175,8 @@ class MDFeaturizer(object):
         # psi: N, CA, C, N+1
         psis = []
         for ires in range(0, self.topology.n_residues-1):
-            if self._has_atom(ires, "N") and self._has_atom(ires, "CA") and self._has_atom(ires, "C") and self._has_atom(ires+1, "N"):
+            if (self._has_atom(ires, "N") and self._has_atom(ires, "CA") and
+                self._has_atom(ires, "C") and self._has_atom(ires+1, "N")):
                 psis.append(ires)
         return psis
 
@@ -246,7 +251,7 @@ class MDFeaturizer(object):
         :return:
         """
         self.use_backbone_torsions = True
-        self.dim += 2 * mdtraj.n_residues
+        self.dim += 2 * self.topology.n_residues
 
 
     def dimension(self):
