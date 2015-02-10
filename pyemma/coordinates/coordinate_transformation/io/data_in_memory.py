@@ -2,7 +2,6 @@ __author__ = 'noe'
 
 import numpy as np
 from pyemma.util.log import getLogger
-from pyemma.coordinates.coordinate_transformation.transform.transformer import Transformer
 
 logger = getLogger('DataInMemory')
 
@@ -114,26 +113,34 @@ class DataInMemory(object):
                 self.itraj += 1
                 return X
             else:
-                assert lag < traj_len
-                X = traj[0:traj_len - lag]
+                X = traj[: -lag]
                 Y = traj[lag:traj_len]
                 self.itraj += 1
                 return (X, Y)
         else:
-            logger.debug("t=%i" % self.t)
-            # FIXME: if chunksize < traj_len, this selects wrong bounds
+            #logger.debug("t=%i" % self.t)
+            # FIXME: if t + chunksize < traj_len, this selects wrong bounds. eg [100:40], which is empty
             chunksize_bounds = min(self.t + self.chunksize, traj_len)
             if lag == 0:
                 X = traj[self.t:chunksize_bounds]
-                self.t += self.chunksize
+                self.t += np.shape(X)[0]
                 if self.t >= traj_len:
                     self.itraj += 1
                 return X
             else:
                 X = traj[self.t: chunksize_bounds - lag]
-                logger.debug("Y=traj[%i+%i : %i]" % (self.t, lag, chunksize_bounds))
+                assert np.shape(X)[0] > 0
+                #logger.debug("Y=traj[%i+%i : %i]" %
+                #             (self.t, lag, chunksize_bounds))
+                # if we do not have enough data anymore for chunked, padd it with zeros
                 Y = traj[self.t + lag: chunksize_bounds]
+#                 if np.shape(Y)[0] == 0:
+#                     assert False
+#                     Y = PaddedArray(np.zeros_like(X), X.shape)
+
+                assert np.shape(X) == np.shape(Y), "%s != %s" % (str(np.shape(X)), str(np.shape(Y)))
                 self.t += np.shape(X)[0]
+                assert np.shape(Y)[0] > 0
                 if self.t + lag >= traj_len:
                     self.itraj += 1
                 return (X, Y)
