@@ -17,22 +17,29 @@ from clustering.regspace_clustering import RegularSpaceClustering
 Proposed API for the new coordinates package
 """
 
-__all__ = ['discretizer', 'tica','pca','kmeans','regspace','uniform_time']
+__all__ = ['discretizer',
+           'tica',
+           'pca',
+           'kmeans',
+           'regspace',
+           'uniform_time',
+           ]
+
 
 def discretizer(reader,
-                transform = None,
-                cluster = KmeansClustering(n_clusters=100)):
+                transform=None,
+                cluster=KmeansClustering(n_clusters=100)):
     """
     Constructs a discretizer
     :return:
     """
     return Discretizer(reader, transform, cluster)
 
-#=====================================================================================================================
+#===============================================================================
 #
 # READERS
 #
-#=====================================================================================================================
+#==============================================================================
 
 def feature_reader(trajfiles, topfile):
     """
@@ -86,14 +93,19 @@ def tica(data=None, lag=10, dim=2):
     """
     Constructs a TICA object
 
-    :param data:
-        ndarray with the data, if available. When given, the TICA is immediately parametrized
-    :param lag:
+    Parameters
+    ----------
+    data : ndarray
+        array with the data, if available. When given, the TICA transformation
+        is immediately parametrized.
+    lag : int
         the lag time, in multiples of the input time step
-    :param dim:
+    dim : int
         the number of dimensions to project onto
-    :return:
-        a TICA transformation object
+
+    Returns
+    -------
+    tica : a TICA transformation object
     """
     res = TICA(lag, dim)
     if data is not None:
@@ -109,17 +121,20 @@ def tica(data=None, lag=10, dim=2):
 #
 #=====================================================================================================================
 
-def kmeans(data = None, k=100, max_iter=1000):
+def kmeans(data=None, k=100, max_iter=1000):
     """
     Constructs a k-means clustering
 
-    :param data:
+    Parameters
+    ----------
+    data: ndarray
         input data, if available in memory
-    :param k:
+    k: int
         the number of cluster centers
 
-    :return:
-        A KmeansClustering object
+    Returns
+    -------
+    kmeans : A KmeansClustering object
 
     """
     res = KmeansClustering(n_clusters=k, max_iter=max_iter)
