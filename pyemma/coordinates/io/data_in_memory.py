@@ -28,8 +28,10 @@ class DataInMemory(object):
         elif isinstance(_data, list):
             self.data = _data
             self.ntraj = len(_data)
-            # TODO: ensure all trajs have same dim
-            self.ndim = np.shape(_data[0])[1]
+            # ensure all trajs have same dim
+            ndims = np.fromiter(([np.shape(_data[i])[1] for i in xrange(len(_data))]), dtype=int)
+            assert np.all( ndims == np.shape(_data[0][1])), "input data has different dimensions"
+            self.ndim = ndims[0]
             self.lengths = [np.shape(_data[i])[0] for i in range(len(_data))]
         else:
             raise ValueError('input data is neither an ndarray '
