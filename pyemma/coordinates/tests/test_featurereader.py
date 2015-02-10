@@ -10,9 +10,9 @@ import unittest
 from pyemma.util.log import getLogger
 import mdtraj
 
-from pyemma.coordinates.coordinate_transformation.io.feature_reader import FeatureReader
-from pyemma.coordinates.coordinate_transformation.io.featurizer import MDFeaturizer
-from pyemma.coordinates.coordinate_transformation.transform.transformer import Transformer
+from pyemma.coordinates.io.feature_reader import FeatureReader
+from pyemma.coordinates.io.featurizer import MDFeaturizer
+from pyemma.coordinates.transform.transformer import Transformer
 import numpy as np
 import os
 
@@ -49,7 +49,7 @@ class TestFeatureReader(unittest.TestCase):
         cls.n_frames = 1000
         cls.xyz = np.arange(cls.n_frames * 2 * 3).reshape((cls.n_frames, 2, 3))
         cls.topfile = pkg_resources.resource_filename(
-            'pyemma.coordinates.coordinate_transformation.tests.test_featurereader', 'data/test.pdb')
+            'pyemma.coordinates.tests.test_featurereader', 'data/test.pdb')
         t = mdtraj.load(cls.topfile)
         t.xyz = cls.xyz
         t.time = np.arange(cls.n_frames)

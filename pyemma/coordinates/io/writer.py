@@ -6,7 +6,7 @@ Created on 22.01.2015
 from pyemma.util.log import getLogger
 
 import numpy as np
-from pyemma.coordinates.coordinate_transformation.transform.transformer import Transformer
+from pyemma.coordinates.transform.transformer import Transformer
 
 
 log = getLogger('WriterCSV')

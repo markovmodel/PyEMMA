@@ -1,3 +1,4 @@
+
 __author__ = 'noe'
 
 from discretizer import Discretizer
@@ -8,10 +9,9 @@ from io.data_in_memory import DataInMemory
 from transform.pca import PCA
 from transform.tica import TICA
 # clustering
-from clustering.uniform_time_clustering import UniformTimeClustering
-from clustering.kmeans_clustering import KmeansClustering
-from clustering.regspace_clustering import RegularSpaceClustering
-
+from clustering.kmeans import KmeansClustering
+from clustering.uniform_time import UniformTimeClustering
+from clustering.regspace import RegularSpaceClustering
 
 """
 Proposed API for the new coordinates package

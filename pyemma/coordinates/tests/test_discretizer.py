@@ -14,7 +14,7 @@ from mdtraj.core.trajectory import Trajectory
 from mdtraj.core.element import hydrogen, oxygen
 from mdtraj.core.topology import Topology
 
-from ..clustering.uniform_time_clustering import UniformTimeClustering
+from pyemma.coordinates.clustering.uniform_time import UniformTimeClustering
 from ..discretizer import Discretizer
 from ..io.feature_reader import FeatureReader
 from ..transform.pca import PCA

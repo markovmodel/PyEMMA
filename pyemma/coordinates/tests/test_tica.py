@@ -6,8 +6,8 @@ Created on 02.02.2015
 import unittest
 import numpy as np
 
-from pyemma.coordinates.coordinate_transformation.io.data_in_memory import DataInMemory
-from pyemma.coordinates.coordinate_transformation.transform.tica import TICA
+from pyemma.coordinates.io.data_in_memory import DataInMemory
+from pyemma.coordinates.transform.tica import TICA
 from pyemma.util.log import getLogger
 
 logger = getLogger('TestTICA')

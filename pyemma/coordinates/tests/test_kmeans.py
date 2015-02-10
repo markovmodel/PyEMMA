@@ -4,7 +4,7 @@ Created on 28.01.2015
 @author: marscher
 '''
 import unittest
-from pyemma.coordinates.coordinate_transformation.clustering.kmeans_clustering import KmeansClustering
+from pyemma.coordinates.clustering.kmeans import KmeansClustering
 from test_regspace import RandomDataSource
 
 

@@ -8,8 +8,8 @@ import tempfile
 import unittest
 import numpy as np
 
-from pyemma.coordinates.coordinate_transformation.io.writer import WriterCSV
-from pyemma.coordinates.coordinate_transformation.io.data_in_memory import DataInMemory
+from pyemma.coordinates.io.writer import WriterCSV
+from pyemma.coordinates.io.data_in_memory import DataInMemory
 
 
 class TestWriterCSV(unittest.TestCase):

@@ -7,7 +7,7 @@ import itertools
 import unittest
 import logging
 
-from pyemma.coordinates.coordinate_transformation.clustering.regspace_clustering import RegularSpaceClustering, log
+from pyemma.coordinates.clustering.regspace import RegularSpaceClustering, log
 import numpy as np
 import cProfile
 

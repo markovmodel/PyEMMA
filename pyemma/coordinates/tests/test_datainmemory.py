@@ -5,7 +5,7 @@ Created on 04.02.2015
 '''
 import unittest
 
-from pyemma.coordinates.coordinate_transformation.io.data_in_memory import DataInMemory
+from pyemma.coordinates.io.data_in_memory import DataInMemory
 from pyemma.util.log import getLogger
 import numpy as np
 
