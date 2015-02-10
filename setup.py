@@ -72,7 +72,6 @@ def extensions():
     2. src dist install (have pre-converted c files and pyx files)
      a) cython present -> fine
      b) no cython -> use .c files
-     
     """
     USE_CYTHON = False
     try:
@@ -84,6 +83,8 @@ def extensions():
     # setup OpenMP support
     from setup_util import detect_openmp
     openmp_enabled, needs_gomp = detect_openmp()
+
+    exts = []
 
     mle_trev_given_pi_dense_module = \
         Extension('pyemma.msm.estimation.dense.mle_trev_given_pi',
@@ -102,17 +103,21 @@ def extensions():
                   sources=['pyemma/msm/estimation/sparse/mle_trev.pyx',
                            'pyemma/msm/estimation/sparse/_mle_trev.c'])
 
-    mle_trev_module = [mle_trev_given_pi_dense_module,
-                       mle_trev_given_pi_sparse_module,
-                       mle_trev_sparse_module]
+    exts += [mle_trev_given_pi_dense_module,
+             mle_trev_given_pi_sparse_module,
+             mle_trev_sparse_module]
 
+#     kahan_sum = Extension('pyemma.coordinates.coordinate_transformation.exts.stable_sum',
+#                           sources=['pyemma/coordinates/coordinate_transformation/exts/stable_sum.pyx'],
+#                           extra_compile_args = ['-g'])
+#     
+#     update_mean = Extension('pyemma.coordinates.coordinate_transformation.exts.fmath_wrapper',
+#                           sources=['pyemma/coordinates/coordinate_transformation/exts/fmath_wrapper.pyx'],)
+# 
+#     #exts += [kahan_sum]
+#     exts += [update_mean]
     if USE_CYTHON: # if we have cython available now, cythonize module
-        mle_trev_module = cythonize(mle_trev_module)
-
-    # 
-    cocovar = Extension('pyemma.coordinates.transform.cocovar',
-                        sources=['pyemma/coordinates/transform/cocovar.c'])
-    exts = mle_trev_module + [cocovar]
+        exts = cythonize(exts)
 
     if openmp_enabled:
         warnings.warn('enabled openmp')
