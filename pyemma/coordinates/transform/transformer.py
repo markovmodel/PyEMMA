@@ -29,6 +29,7 @@ class Transformer(object):
 
     @property
     def data_producer(self):
+        """where does this transformer gets its data from"""
         return self._dataproducer
 
     @data_producer.setter
@@ -37,6 +38,7 @@ class Transformer(object):
 
     @property
     def chunksize(self):
+        """chunksize defines how much data is being processed at once."""
         return self._chunksize
 
     @chunksize.setter
@@ -46,6 +48,7 @@ class Transformer(object):
 
     @property
     def in_memory(self):
+        """are results stored in memory?"""
         return self._in_memory
 
     def operate_in_memory(self):
@@ -59,10 +62,7 @@ class Transformer(object):
 
     @property
     def lag(self):
-        """
-        Returns
-        -------
-        lag time, at which a second time lagged data source will be processed.
+        """lag time, at which a second time lagged data source will be processed.
         """
         return self._lag
 

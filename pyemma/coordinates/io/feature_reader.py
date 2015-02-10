@@ -11,23 +11,24 @@ log = getLogger('FeatureReader')
 
 __all__ = ['FeatureReader']
 
+
 class FeatureReader(object):
 
     """
     Reads features from MD data
+
+    Parameters
+    ----------
+    trajectories: list of strings
+        paths to trajectory files
+
+    topologyfile: string
+        path to topology file (e.g. pdb)
+
     """
 
     def __init__(self, trajectories, topologyfile):
-        """
-        Constructs a feature reader
 
-        :param trajectories:
-            list of trajectory files
-
-        :param structurefile:
-            structure file (e.g. pdb)
-
-        """
         # files
         self.trajfiles = trajectories
         self.topfile = topologyfile

@@ -10,14 +10,14 @@ def _sort_by_norm(evals, evecs):
 
     Parameters
     ----------
-    :param evals: ndarray(n)
+    evals: ndarray(n)
         eigenvalues
-    :param evecs: ndarray(n,n)
+    evecs: ndarray(n,n)
         eigenvectors in a column matrix
 
-    Returns:
-    --------
-    :return:
+    Returns
+    -------
+    (evals, evecs) : ndarray(m), ndarray(n,m)
         the sorted eigenvalues and eigenvectors
 
     """
@@ -36,8 +36,8 @@ def eig_corr(C0, Ct, epsilon=1e-6):
     """
     Solve the generalized eigenvalues problem with correlation matrices C0 and Ct
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     C0 : ndarray (n,n)
         time-instantaneous correlation matrix. Must be symmetric positive definite
     Ct : ndarray (n,n)
@@ -47,8 +47,8 @@ def eig_corr(C0, Ct, epsilon=1e-6):
         cut off. The remaining number of Eigenvalues define the size of
         the output.
 
-    Returns:
-    --------
+    Returns
+    -------
     l : ndarray (m)
         The first m generalized eigenvalues, sorted by descending norm
     R : ndarray (n,m)

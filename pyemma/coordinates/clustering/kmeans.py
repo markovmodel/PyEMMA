@@ -12,14 +12,18 @@ __all__ = ['KmeansClustering']
 
 class KmeansClustering(Transformer):
 
-    '''
-    classdocs
-    '''
+    r"""
+    Kmeans clustering
+
+    Parameters
+    ----------
+    n_clusters : int
+        amount of cluster centers
+    max_iter : int 
+        how many iterations per chunk?
+    """
 
     def __init__(self, n_clusters, max_iter=1000):
-        '''
-        Constructor
-        '''
         super(KmeansClustering, self).__init__()
 
         self.algo = MiniBatchKMeans(n_clusters,

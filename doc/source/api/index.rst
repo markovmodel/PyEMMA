@@ -2,8 +2,9 @@
 
 Coordinates
 ===========
-The *coordinates* package implements common transformations used in
-Markov state modeling, like RMSD, TICA etc.
+The *coordinates* package contains tools to select features from MD-trajectories
+to assign them to a discrete state space, which will be later used in Markov
+modeling.
 
 .. toctree::
    :maxdepth: 1
@@ -11,7 +12,6 @@ Markov state modeling, like RMSD, TICA etc.
    coordinates.io
    coordinates.transform
    coordinates.clustering
-   coordinates.tica
 
 Markov State Models
 ===================

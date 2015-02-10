@@ -11,6 +11,14 @@ __all__ = ['UniformTimeClustering']
 
 class UniformTimeClustering(Transformer):
 
+    """
+    Uniform time clustering
+
+    Parameters
+    ----------
+    k : int
+    """
+
     def __init__(self, k=2):
         super(UniformTimeClustering, self).__init__()
         self.k = k

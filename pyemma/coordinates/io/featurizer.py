@@ -7,7 +7,6 @@ __all__ = ['Featurizer']
 
 
 class MDFeaturizer(object):
-
     """
     TODO: This class is currently not easily extensible, because all features need to be explicitly implemented and
     changes need to be made in both describe() and map(). It would be better to have a feature list that can be added
@@ -16,17 +15,15 @@ class MDFeaturizer(object):
     MS: a feature might consists out of a tuple (callback function -> eg. mdtraj feature calculation and arguments).
     These are maintained in a list, so we easily iterate over this list in map()
 
+    Parameters
+    ----------
+
+    topfile : str
+        a path to a topology file (pdb etc.)
     """
 
     def __init__(self, topfile):
-        """
-        Parameters
-        ----------
 
-        topfile : str
-            a topology file (pdb etc.)
-
-        """
         self.topology = (mdtraj.load(topfile)).topology
 
         self.use_distances = False
