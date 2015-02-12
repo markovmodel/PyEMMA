@@ -3,18 +3,130 @@ __author__ = 'noe'
 import mdtraj
 import numpy as np
 
-__all__ = ['Featurizer']
+__all__ = ['MDFeaturizer']
+
+
+def _describe_atom(topology, index):
+    """
+    Returns a string describing the given atom
+
+    :param topology:
+    :param index:
+    :return:
+    """
+    at = topology.atom(index)
+    return "%s %i %s %i" % (at.residue.name, at.residue.index, at.name, at.index)
+
+
+class CustomFeature(object):
+
+    """
+    A CustomFeature is the base class for all self defined features. You shall
+    calculate your quantities in map method and return it as an ndarray.
+
+    If you simply want to call a function with arguments, you do not need to derive.
+
+    Parameters
+    ----------
+    func : function
+        will be invoked with given args and kwargs on mapping traj
+    args : list of positional args (optional)
+    kwargs : named arguments
+    """
+
+    def __init__(self, func=None, *args, **kwargs):
+        self._func = func
+        self._args = args
+        self._kwargs = kwargs
+
+    def describe(self):
+        return "override me to get proper description!"
+
+    def map(self, traj):
+        feature = self._func(traj, self._args, self._kwargs)
+        assert isinstance(feature, np.ndarray)
+        return feature
+
+
+class DistanceFeature:
+
+    def __init__(self, top, distance_indexes):
+        self.top = top
+        self.distance_indexes = distance_indexes
+        self.prefix_label = "DIST:"
+
+    def describe(self):
+        labels = []
+        for pair in self.distance_indexes:
+            labels.append("%s%s - %s" % (self.prefix_label,
+                                         _describe_atom(self.top, pair[0]),
+                                         _describe_atom(self.top, pair[1])))
+        return labels
+
+    def map(self, traj):
+        return mdtraj.compute_distances(traj, self.distance_indexes)
+
+
+class InverseDistanceFeature(DistanceFeature):
+
+    def __init__(self, top, distance_indexes):
+        DistanceFeature.__init__(self, top, distance_indexes)
+        self.prefix_label = "INVDIST:"
+
+    def map(self, traj):
+        return 1.0 / mdtraj.compute_distances(traj, self.distance_indexes)
+
+
+class BackboneTorsionFeature:
+
+    def __init__(self, topology):
+        self.topology = topology
+
+    def _has_atom(self, res_index, name):
+        for atom in self.topology.atoms():
+            if atom.name.lower() == name.lower():
+                return True
+        return False
+
+    def _list_phis(self):
+        # phi: C-1, N, CA, C
+        phis = []
+        for ires in range(1, self.topology.n_residues):
+            if (self._has_atom(ires - 1, "C") and self._has_atom(ires, "N") and
+                    self._has_atom(ires, "CA") and self._has_atom(ires, "C")):
+                phis.append(ires)
+        return phis
+
+    def _list_psis(self):
+        # psi: N, CA, C, N+1
+        psis = []
+        for ires in range(0, self.topology.n_residues - 1):
+            if (self._has_atom(ires, "N") and self._has_atom(ires, "CA") and
+                    self._has_atom(ires, "C") and self._has_atom(ires + 1, "N")):
+                psis.append(ires)
+        return psis
+
+    def describe(self):
+        labels = []
+        phis = self._list_phis()
+        for ires in phis:
+            labels.append("PHI: %s %i" %
+                          (self.topology.residue(ires).name, ires))
+        psis = self._list_psis()
+        for ires in psis:
+            labels.append("PSI: %s %i" %
+                          (self.topology.residue(ires).name, ires))
+        return labels
+
+    def map(self, traj):
+        y1 = mdtraj.compute_phi(traj).astype(np.float32)
+        y2 = mdtraj.compute_psi(traj).astype(np.float32)
+        return np.hstack((y1, y2))
 
 
 class MDFeaturizer(object):
-    """
-    TODO: This class is currently not easily extensible, because all features need to be explicitly implemented and
-    changes need to be made in both describe() and map(). It would be better to have a feature list that can be added
-    to. Moreover, it would be good to have own feature-implementations that can be added.
-    
-    MS: a feature might consists out of a tuple (callback function -> eg. mdtraj feature calculation and arguments).
-    These are maintained in a list, so we easily iterate over this list in map()
 
+    """
     Parameters
     ----------
 
@@ -23,76 +135,29 @@ class MDFeaturizer(object):
     """
 
     def __init__(self, topfile):
-
         self.topology = (mdtraj.load(topfile)).topology
 
-        self.use_distances = False
         self.distance_indexes = []
-
-        self.use_inv_distances = False
         self.inv_distance_indexes = []
-
-        self.use_contacts = False
         self.contact_indexes = []
-
-        self.use_angles = False
         self.angle_indexes = []
 
-        self.use_backbone_torsions = False
-
+        self.active_features = []
         self.dim = 0
-
-
-    def _describe_atom(self, index):
-        """
-        Returns a string describing the given atom
-
-        :param index:
-        :return:
-        """
-        at = self.topology.atom(index)
-        return at.residue.name+" "+str(at.residue.index)+" "+at.name+" "+str(at.index)
-
 
     def describe(self):
         """
-        Returns a list of strings, one for each feature selected, with human-readable descriptions of the features.
+        Returns a list of strings, one for each feature selected,
+        with human-readable descriptions of the features.
 
         :return:
         """
         labels = []
 
-        # distances
-        if (self.use_distances):
-            for pair in self.distance_indexes:
-                labels.append("DIST: "+self._describe_atom(pair[0])+" - "+self._describe_atom(pair[1]))
+        for f in self.active_features:
+            labels.append(f.describe())
 
-        # inverse distances
-        if (self.use_inv_distances):
-            for pair in self.inv_distance_indexes:
-                labels.append("INVDIST: "+self._describe_atom(pair[0])+" - "+self._describe_atom(pair[1]))
-
-        # contacts
-        if (self.use_contacts):
-            for pair in self.contact_indexes:
-                labels.append("CONTACT: "+self._describe_atom(pair[0])+" - "+self._describe_atom(pair[1]))
-
-        # angles
-        if (self.use_angles):
-            for triple in self.angle_indexes:
-                labels.append("ANGLE: "+self._describe_atom(triple[0])
-                              +" - "+self._describe_atom(triple[1])
-                              +" - "+self._describe_atom(triple[2]))
-
-        # backbone torsions
-        if (self.use_backbone_torsions):
-            phis = self._list_phis()
-            for ires in phis:
-                labels.append("PHI: "+self.topology.residue(ires).name+" "+str(ires))
-            psis = self._list_psis()
-            for ires in psis:
-                labels.append("PSI: "+self.topology.residue(ires).name+" "+str(ires))
-
+        return labels
 
     def select(self, selstring):
         """
@@ -103,7 +168,6 @@ class MDFeaturizer(object):
         """
         return self.topology.select(selstring)
 
-
     def select_Ca(self):
         """
         Selects Ca atoms
@@ -111,7 +175,6 @@ class MDFeaturizer(object):
         :return:
         """
         return self.topology.select("name CA")
-
 
     def select_Backbone(self):
         """
@@ -121,7 +184,6 @@ class MDFeaturizer(object):
         """
         return self.topology.select("name C CA N")
 
-
     def select_Heavy(self):
         """
         Selects all heavy atoms
@@ -129,7 +191,6 @@ class MDFeaturizer(object):
         :return:
         """
         return self.topology.select("mass >= 2")
-
 
     def pairs(self, sel):
         """
@@ -147,160 +208,117 @@ class MDFeaturizer(object):
             pairs[s:s + d, 1] = sel[i + 3:nsel]
             s += d
 
-        assert len(pairs) > 0
         return pairs
-
-
-    def _has_atom(self, res_index, name):
-        for atom in self.topology.atoms():
-            if atom.name.lower() == name.lower():
-                return True
-        return False
-
-
-    def _list_phis(self):
-        # phi: C-1, N, CA, C
-        phis = []
-        for ires in range(1, self.topology.n_residues):
-            if (self._has_atom(ires-1, "C") and self._has_atom(ires, "N") and
-                self._has_atom(ires, "CA") and self._has_atom(ires, "C")):
-                phis.append(ires)
-        return phis
-
-
-    def _list_psis(self):
-        # psi: N, CA, C, N+1
-        psis = []
-        for ires in range(0, self.topology.n_residues-1):
-            if (self._has_atom(ires, "N") and self._has_atom(ires, "CA") and
-                self._has_atom(ires, "C") and self._has_atom(ires+1, "N")):
-                psis.append(ires)
-        return psis
-
 
     def distances(self, atom_pairs):
         """
         Adds the set of distances to the feature list
-
         :param atom_pairs:
-        :return:
         """
-        assert len(atom_pairs) > 0
-        self.use_distances = True
-        self.distance_indexes = atom_pairs
+        f = DistanceFeature(mdtraj.compute_distances, atom_pairs=atom_pairs)
+        self.active_features.append(f)
         self.dim += np.shape(atom_pairs)[0]
-        assert self.dim > 0
-
 
     def distancesCa(self):
         """
         Adds the set of Ca-distances to the feature list
-
-        :param atom_pairs:
-        :return:
         """
-        self.use_distances = True
         self.distance_indexes = self.pairs(self.select_Ca())
-        self.dim += np.shape(self.distance_indexes)[0]
 
+        f = DistanceFeature(
+            mdtraj.compute_distances, atom_pairs=self.distance_indexes)
+        self.active_features.append(f)
+        self.dim += np.shape(self.distance_indexes)[0]
 
     def inverse_distances(self, atom_pairs):
         """
         Adds the set of inverse distances to the feature list
 
         :param atom_pairs:
-        :return:
         """
-        assert len(atom_pairs) > 0
-        self.use_inv_distances = True
         self.inv_distance_indexes = atom_pairs
-        self.dim += np.shape(atom_pairs)[0]
-        assert self.dim > 0
 
+        f = InverseDistanceFeature(atom_pairs=self.inv_distance_indexes)
+        self.active_features.append(f)
+        self.dim += np.shape(self.distance_indexes)[0]
 
     def contacts(self, atom_pairs):
         """
         Adds the set of contacts to the feature list
         :param atom_pairs:
-        :return:
         """
-        self.use_contacts = True
-        self.contact_indexes = atom_pairs
-        self.dim += np.shape(atom_pairs)[0]
+        f = CustomFeature(mdtraj.compute_contacts, atom_pairs=atom_pairs)
 
+        def describe():
+            labels = []
+            for pair in self.contact_indexes:
+                labels.append("CONTACT: %s - %s" % (_describe_atom(self.topology, pair[0]),
+                                                    _describe_atom(self.topology, pair[1])))
+            return labels
+        f.describe = describe
+        f.topology = self.topology
+
+        self.dim += np.shape(atom_pairs)[0]
+        self.active_features.append(f)
 
     def angles(self, indexes):
         """
         Adds the list of angles to the feature list
 
         :param indexes:
-        :return:
         """
-        self.use_angles = True
+        f = CustomFeature(mdtraj.compute_angles, indexes=indexes)
+
+        def describe():
+            labels = []
+            for triple in self.angle_indexes:
+                labels.append("ANGLE: %s - %s - %s " %
+                              (_describe_atom(self.topology, triple[0]),
+                               _describe_atom(self.topology, triple[1]),
+                               _describe_atom(self.topology, triple[2])))
+
+            return labels
+
+        f.describe = describe
+        f.topology = self.topology
+
+        self.active_features.append(f)
         self.angle_indexes = indexes
         self.dim += np.shape(indexes)[0]
-
 
     def backbone_torsions(self):
         """
         Adds all backbone torsions
-
-        :return:
         """
-        self.use_backbone_torsions = True
+        f = BackboneTorsionFeature()
+        self.active_features.append(f)
         self.dim += 2 * self.topology.n_residues
 
+    def add_custom_feature(self, feature, output_dimension):
+        """
+        Parameters
+        ----------
+        feature : object
+            an object with interface like CustomFeature (map, describe methods)
+        output_dimension : int
+            a mapped feature coming from has this dimension.
+        """
+        assert output_dimension > 0, "tried to add empty feature"
+        self.active_features.append(feature)
+        self.dim += output_dimension
 
     def dimension(self):
         return self.dim
 
-
     def map(self, traj):
         """
         Computes the features for the given trajectory
-        TODO: why enforce single precision? - FN: Because this is the most memory-consuming part of the pipeline and single precision is way (!) more than enough. In fact np.float16 might be enough
         :return:
         """
-        Y = None
 
-        # distances
-        if (self.use_distances):
-            y = mdtraj.compute_distances(traj, self.distance_indexes)
-            Y = y.astype(np.float32)
+        feature_vec = []
 
-        # inverse distances
-        if (self.use_inv_distances):
-            y = 1.0 / mdtraj.compute_distances(traj, self.inv_distance_indexes)
-            Y = y.astype(np.float32)
+        for f in self.active_features:
+            feature_vec.append(f.map(traj).astype(np.float32))
 
-        # contacts
-        if (self.use_contacts):
-            y = mdtraj.compute_contacts(traj, self.contact_indexes)
-            y = y.astype(np.float32)
-            if Y is None:
-                Y = y
-            else:
-                Y = np.concatenate((Y, y), axis=1)
-
-        # angles
-        if (self.use_angles):
-            y = mdtraj.compute_angles(traj, self.angle_indexes)
-            y = y.astype(np.float32)
-            if Y is None:
-                Y = y
-            else:
-                Y = np.concatenate((Y, y), axis=1)
-
-        # backbone torsions
-        if (self.use_backbone_torsions):
-            y1 = mdtraj.compute_phi(traj)
-            y1 = y1.astype(np.float32)
-            y2 = mdtraj.compute_psi(traj)
-            y2 = y2.astype(np.float32)
-            if Y is None:
-                Y = y1
-            else:
-                Y = np.concatenate((Y, y1), axis=1)
-            Y = np.concatenate((Y, y2), axis=1)
-
-        return Y
+        return np.hstack(feature_vec)
