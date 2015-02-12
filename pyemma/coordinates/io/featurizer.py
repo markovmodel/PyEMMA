@@ -304,6 +304,9 @@ class MDFeaturizer(object):
             a mapped feature coming from has this dimension.
         """
         assert output_dimension > 0, "tried to add empty feature"
+        assert hasattr(feature, 'map'), "no map method in given feature"
+        assert hasattr(feature, 'describe')
+
         self.active_features.append(feature)
         self.dim += output_dimension
 
