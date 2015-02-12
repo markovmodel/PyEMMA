@@ -71,7 +71,7 @@ class PathwayDecomposition(object):
         """
         Returns
         -------
-        next path way : ndarray (dtype=int)
+        next path way : ndarray (dtype=int) or None, if there is no next pathway
         """
         p = self.PD.nextPathway() # returns int[]
         if p is None:
