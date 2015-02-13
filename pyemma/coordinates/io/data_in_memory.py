@@ -18,18 +18,20 @@ class DataInMemory(object):
         :param data:
             ndarray of shape (nframe, ndim) or
             list of ndarrays, each of shape (nframe_i, ndim)
-        :return:
         """
         if isinstance(_data, np.ndarray):
             self.data = [_data]
             self.ntraj = 1
-            self.ndim = np.shape(_data)[1]
+            if _data.ndim == 1:
+                self.ndim = np.shape(_data)[0]
+            else:
+                self.ndim = np.shape(_data)[1]
             self.lengths = [np.shape(_data)[0]]
         elif isinstance(_data, list):
             self.data = _data
             self.ntraj = len(_data)
             # ensure all trajs have same dim
-            ndims = np.fromiter(([np.shape(_data[i])[1] 
+            ndims = np.fromiter(([np.shape(_data[i])[1]
                                   for i in xrange(len(_data))]), dtype=int)
             ndim_eq = ndims == np.shape(_data[0][1])
             if not np.all(ndim_eq):
