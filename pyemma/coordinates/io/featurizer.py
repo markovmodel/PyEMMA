@@ -83,7 +83,7 @@ class BackboneTorsionFeature:
         self.topology = topology
 
     def _has_atom(self, res_index, name):
-        for atom in self.topology.atoms():
+        for atom in self.topology.atoms:
             if atom.name.lower() == name.lower():
                 return True
         return False
@@ -119,8 +119,8 @@ class BackboneTorsionFeature:
         return labels
 
     def map(self, traj):
-        y1 = mdtraj.compute_phi(traj).astype(np.float32)
-        y2 = mdtraj.compute_psi(traj).astype(np.float32)
+        y1 = mdtraj.compute_phi(traj)[1].astype(np.float32)
+        y2 = mdtraj.compute_psi(traj)[1].astype(np.float32)
         return np.hstack((y1, y2))
 
 
@@ -291,7 +291,7 @@ class MDFeaturizer(object):
         """
         Adds all backbone torsions
         """
-        f = BackboneTorsionFeature()
+        f = BackboneTorsionFeature(self.topology)
         self.active_features.append(f)
         self.dim += 2 * self.topology.n_residues
 
