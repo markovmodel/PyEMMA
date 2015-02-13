@@ -215,7 +215,9 @@ class MDFeaturizer(object):
         Adds the set of distances to the feature list
         :param atom_pairs:
         """
-        f = DistanceFeature(mdtraj.compute_distances, atom_pairs=atom_pairs)
+        # TODO: shall we instead append here?
+        self.distance_indexes = atom_pairs
+        f = DistanceFeature(self.topology, distance_indexes=atom_pairs)
         self.active_features.append(f)
         self.dim += np.shape(atom_pairs)[0]
 
@@ -225,8 +227,7 @@ class MDFeaturizer(object):
         """
         self.distance_indexes = self.pairs(self.select_Ca())
 
-        f = DistanceFeature(
-            mdtraj.compute_distances, atom_pairs=self.distance_indexes)
+        f = DistanceFeature(self.topology, atom_pairs=self.distance_indexes)
         self.active_features.append(f)
         self.dim += np.shape(self.distance_indexes)[0]
 
