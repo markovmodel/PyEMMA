@@ -97,6 +97,9 @@ class TICA(Transformer):
         self.mu = np.zeros(self.data_producer.dimension())
         dim = self.data_producer.dimension()
         assert dim > 0, "zero dimension from data producer"
+        assert self.output_dimension() <= dim, \
+                ("requested more output dimensions (%i) than dimension"
+                " of input data (%i)" % (self.output_dimension(), dim))
         self.cov = np.zeros((dim, dim))
         self.cov_tau = np.zeros_like(self.cov)
 
