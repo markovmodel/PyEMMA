@@ -60,6 +60,8 @@ class FeatureReader(object):
         self.totlength = np.sum(self.lengths)
 
         self.param_finished = False
+        
+        self.t = 0
 
     def describe(self):
         """
@@ -198,6 +200,7 @@ class FeatureReader(object):
         """
         self.curr_itraj = 0
         if len(self.trajfiles) >= 1:
+            self.t = 0
             self.mditer = mdtraj.iterload(self.trajfiles[0],
                                           chunk=self.chunksize, top=self.topfile)
 
@@ -250,12 +253,15 @@ class FeatureReader(object):
                 merged = chunk + adv_chunk
                 # skip "lag" number of frames and truncate to chunksize
                 chunk_lagged = merged[lag:][:self.chunksize]
+        self.t += chunk.xyz.shape[0]
 
-        if np.max(chunk.time) >= self.trajectory_length(self.curr_itraj) - 1 and \
+        if self.t >= self.trajectory_length(self.curr_itraj) - 1 and \
                 self.curr_itraj < len(self.trajfiles) - 1:
+            print "opening next traj"
             log.info('closing current trajectory "%s"'
                      % self.trajfiles[self.curr_itraj])
             self.mditer.close()
+            self.t = 0
             self.curr_itraj += 1
             self.mditer = mdtraj.iterload(
                 self.trajfiles[self.curr_itraj], chunk=self.chunksize, top=self.topfile)
