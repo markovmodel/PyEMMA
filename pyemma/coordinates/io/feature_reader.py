@@ -244,11 +244,16 @@ class FeatureReader(object):
 
             # build time lagged Trajectory by concatenating
             # last adv chunk and advance chunk
+            i = lag - (self.chunksize * self.skip_n)
+            padding_length = max(0, chunk.xyz.shape[0] \
+                                    -(self.last_advanced_chunk.xyz.shape[0]-i) \
+                                    - adv_chunk.xyz.shape[0])
+            padding = np.zeros((padding_length,chunk.xyz.shape[1],chunk.xyz.shape[2]))
             merged = Trajectory(np.concatenate(
                                 (self.last_advanced_chunk.xyz,
-                                 adv_chunk.xyz)), chunk.topology)
+                                 adv_chunk.xyz, padding)), chunk.topology)
+            # assert merged.xyz.shape[0] >= chunk.xyz.shape[0]
             # skip "lag" number of frames and truncate to chunksize
-            i = lag - (self.chunksize * self.skip_n)
             chunk_lagged = merged[i:][:chunk.xyz.shape[0]]
             
             # remember last advanced chunk
