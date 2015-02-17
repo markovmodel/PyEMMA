@@ -1,4 +1,6 @@
-
+"""
+API for coordinates package
+"""
 __author__ = 'noe'
 
 from discretizer import Discretizer
@@ -13,11 +15,8 @@ from clustering.kmeans import KmeansClustering
 from clustering.uniform_time import UniformTimeClustering
 from clustering.regspace import RegularSpaceClustering
 
-"""
-Proposed API for the new coordinates package
-"""
-
 __all__ = ['discretizer',
+           'feature_reader',
            'tica',
            'pca',
            'kmeans',
@@ -31,15 +30,38 @@ def discretizer(reader,
                 cluster=KmeansClustering(n_clusters=100)):
     """
     Constructs a discretizer
-    :return:
+
+
+    Parameters
+    ----------
+
+    reader : instance of FeatureReader
+        get input data from a FeatureReader
+
+    transform : instance of Transformer
+        an optional transform like PCA/TICA etc.
+
+    cluster : instance of Transformer
+        a cluster algorithm to discretize transformed data
+
+
+    Examples
+    --------
+
+    >>> reader = feature_reader(['traj01.xtc'], 'topology.pdb')
+    >>> transform = pca(dim=2)
+    >>> cluster = uniform_time(n_clusters=100)
+    >>> disc = discretizer(reader, transform, cluster)
+
     """
     return Discretizer(reader, transform, cluster)
 
-#===============================================================================
+#==============================================================================
 #
 # READERS
 #
 #==============================================================================
+
 
 def feature_reader(trajfiles, topfile):
     """
@@ -62,11 +84,11 @@ def memory_reader(data):
     return DataInMemory(data)
 
 
-#=====================================================================================================================
+#=========================================================================
 #
 # TRANSFORMATION ALGORITHMS
 #
-#=====================================================================================================================
+#=========================================================================
 
 
 def pca(data=None, dim=2):
@@ -115,11 +137,11 @@ def tica(data=None, lag=10, dim=2):
     return res
 
 
-#=====================================================================================================================
+#=========================================================================
 #
 # CLUSTERING ALGORITHMS
 #
-#=====================================================================================================================
+#=========================================================================
 
 def kmeans(data=None, k=100, max_iter=1000):
     """
