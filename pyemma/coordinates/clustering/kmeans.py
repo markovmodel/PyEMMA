@@ -29,6 +29,7 @@ class KmeansClustering(Transformer):
 
     def __init__(self, n_clusters, max_iter=1000):
         super(KmeansClustering, self).__init__()
+        self.n_clusters = n_clusters
         # TODO: if we do not set a random_state here (eg. a forced seed) we get slightly different cluster centers each run
         self.algo = MiniBatchKMeans(n_clusters,
                                     max_iter=max_iter,
@@ -47,6 +48,9 @@ class KmeansClustering(Transformer):
 #     def chunksize(self, cs):
 #         self._chunksize = cs
 #         self.algo.set_params(batchsize=cs)
+
+    def describe(self):
+        return "[Kmeans, k=%i]" % self.n_clusters
 
     def dimension(self):
         return 1
