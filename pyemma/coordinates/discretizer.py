@@ -47,7 +47,7 @@ class Discretizer(object):
             assert isinstance(cluster, Transformer), \
                 'cluster is not of the correct type'
 
-        if reader.feature.dimension() == 0:
+        if reader.featurizer.dimension == 0:
             logger.warning("no features selected!")
 
         self.transformers = []
