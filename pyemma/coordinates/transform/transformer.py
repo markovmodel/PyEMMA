@@ -147,7 +147,6 @@ class Transformer(object):
             last_chunk = False
             itraj = 0
             lag = self._lag
-            log.debug("lag=%i" % lag)
             while not last_chunk:
                 last_chunk_in_traj = False
                 t = 0
@@ -158,7 +157,7 @@ class Transformer(object):
                         Y = None
                     else:
                         if self.trajectory_length(itraj) <= lag:
-                            logger.error("trajectory nr %i to short, skipping it" % self.itraj)
+                            log.error("trajectory nr %i to short, skipping it" % self.itraj)
                             break
                         X, Y = self.data_producer.next_chunk(lag=lag)
                     L = np.shape(X)[0]
