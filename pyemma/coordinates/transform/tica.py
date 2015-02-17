@@ -53,7 +53,8 @@ class TICA(Transformer):
     def __init__(self, lag, output_dimension, epsilon=1e-6):
         super(TICA, self).__init__()
 
-        self.lag = lag
+        # store lag time to set it appropriatly in second pass of parametrize
+        self.__lag = lag
         self.output_dim = output_dimension
         self.epsilon = epsilon
 
@@ -97,6 +98,9 @@ class TICA(Transformer):
         self.mu = np.zeros(self.data_producer.dimension())
         dim = self.data_producer.dimension()
         assert dim > 0, "zero dimension from data producer"
+        assert self.output_dimension() <= dim, \
+                ("requested more output dimensions (%i) than dimension"
+                " of input data (%i)" % (self.output_dimension(), dim))
         self.cov = np.zeros((dim, dim))
         self.cov_tau = np.zeros_like(self.cov)
 
@@ -137,6 +141,10 @@ class TICA(Transformer):
                 log.debug("norming mean by %i" % self.N)
                 self.mu /= self.N
                 log.info("calculated mean:\n%s" % self.mu)
+
+                # now we request real lagged data, since we are finished
+                # with first pass
+                self.lag = self.__lag
 
         if ipass == 1:
             X_meanfree = X - self.mu

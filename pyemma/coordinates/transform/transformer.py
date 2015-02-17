@@ -138,7 +138,7 @@ class Transformer(object):
         # feed data, until finished
         add_data_finished = False
         ipass = 0
-        lag = self._lag
+
         # parametrize
         while not add_data_finished:
             first_chunk = True
@@ -146,6 +146,8 @@ class Transformer(object):
             # iterate over trajectories
             last_chunk = False
             itraj = 0
+            lag = self._lag
+            log.debug("lag=%i" % lag)
             while not last_chunk:
                 last_chunk_in_traj = False
                 t = 0
@@ -155,6 +157,9 @@ class Transformer(object):
                         X = self.data_producer.next_chunk()
                         Y = None
                     else:
+                        if self.trajectory_length(itraj) <= lag:
+                            logger.error("trajectory nr %i to short, skipping it" % self.itraj)
+                            break
                         X, Y = self.data_producer.next_chunk(lag=lag)
                     L = np.shape(X)[0]
                     # last chunk in traj?
@@ -275,6 +280,27 @@ class Transformer(object):
             else:
                 (X0, Xtau) = self.data_producer.next_chunk(lag=lag)
                 return (self.map(X0), self.map(Xtau))
+
+    def __iter__(self):
+        self.reset()
+        self.last_chunk = False
+        self.itraj = 0
+        self.t = 0
+        return self
+
+    def next(self):
+        # iterate over trajectories
+        if self.itraj >= self.number_of_trajectories():
+            raise StopIteration
+
+        X = self.data_producer.next_chunk()
+        L = np.shape(X)[0]
+        self.t += L
+        last_itraj = self.itraj
+        if self.t >= self.trajectory_length(self.itraj):
+            self.itraj += 1
+            self.t = 0
+        return (last_itraj, self.map(X))
 
     @staticmethod
     def distance(x, y):
