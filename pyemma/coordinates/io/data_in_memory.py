@@ -154,3 +154,23 @@ class DataInMemory(object):
                 if self.t + lag >= traj_len:
                     self.itraj += 1
                 return (X, Y)
+
+    @staticmethod
+    def distance(x, y):
+        """
+
+        :param x:
+        :param y:
+        :return:
+        """
+        return np.linalg.norm(x - y, 2)
+
+    @staticmethod
+    def distances(x, Y):
+        """
+
+        :param x: ndarray (n)
+        :param y: ndarray (Nxn)
+        :return:
+        """
+        return np.linalg.norm(Y - x, 2, axis=1)
