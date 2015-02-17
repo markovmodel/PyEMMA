@@ -91,8 +91,9 @@ class TestDiscretizer(unittest.TestCase):
         clustering = UniformTimeClustering(k=n_clusters)
 
         D = Discretizer(reader, transform=tica, cluster=clustering)
+        D.run()
 
-        self.assertEqual(len(clustering.dtrajs), len(self.trajfiles))
+        self.assertEqual(len(D.dtrajs), len(self.trajfiles))
 
         for dtraj in clustering.dtrajs:
             unique = np.unique(dtraj)
