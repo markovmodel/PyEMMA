@@ -26,7 +26,7 @@ class DataInMemory(object):
                 self.ndim = np.shape(_data)[0]
             else:
                 self.ndim = np.shape(_data)[1]
-            self.lengths = [np.shape(_data)[0]]
+            self._lengths = [np.shape(_data)[0]]
         elif isinstance(_data, list):
             self.data = _data
             self.ntraj = len(_data)
@@ -40,7 +40,7 @@ class DataInMemory(object):
                                  % np.where(ndim_eq == False))
             self.ndim = ndims[0]
 
-            self.lengths = [np.shape(_data[i])[0] for i in range(len(_data))]
+            self._lengths = [np.shape(_data[i])[0] for i in range(len(_data))]
         else:
             raise ValueError('input data is neither an ndarray '
                              'nor a list of ndarrays!')
@@ -68,7 +68,7 @@ class DataInMemory(object):
         :return:
             length of trajectory
         """
-        return self.lengths[itraj]
+        return self._lengths[itraj]
 
     def trajectory_lengths(self):
         """
@@ -77,7 +77,7 @@ class DataInMemory(object):
         :return:
             length of each trajectory
         """
-        return self.lengths
+        return self._lengths
 
     def n_frames_total(self):
         """
@@ -86,7 +86,7 @@ class DataInMemory(object):
         :return:
             the total number of frames, over all trajectories
         """
-        return np.sum(self.lengths)
+        return np.sum(self._lengths)
 
     def dimension(self):
         """
@@ -113,7 +113,7 @@ class DataInMemory(object):
         if self.itraj >= self.ntraj:
             self.reset()
 
-        traj_len = self.lengths[self.itraj]
+        traj_len = self._lengths[self.itraj]
         traj = self.data[self.itraj]
 
         # complete trajectory mode
