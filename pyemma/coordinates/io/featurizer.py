@@ -3,7 +3,9 @@ __author__ = 'noe'
 import mdtraj
 import numpy as np
 
-__all__ = ['MDFeaturizer']
+__all__ = ['MDFeaturizer',
+           'CustomFeature',
+           ]
 
 
 def _describe_atom(topology, index):
@@ -143,7 +145,7 @@ class MDFeaturizer(object):
         self.angle_indexes = []
 
         self.active_features = []
-        self.dim = 0
+        self._dim = 0
 
     def describe(self):
         """
@@ -192,7 +194,8 @@ class MDFeaturizer(object):
         """
         return self.topology.select("mass >= 2")
 
-    def pairs(self, sel):
+    @staticmethod
+    def pairs(sel):
         """
         Creates all pairs between indexes, except for 1 and 2-neighbors
 
@@ -219,7 +222,7 @@ class MDFeaturizer(object):
         self.distance_indexes = atom_pairs
         f = DistanceFeature(self.topology, distance_indexes=atom_pairs)
         self.active_features.append(f)
-        self.dim += np.shape(atom_pairs)[0]
+        self._dim += np.shape(atom_pairs)[0]
 
     def distancesCa(self):
         """
@@ -229,7 +232,7 @@ class MDFeaturizer(object):
 
         f = DistanceFeature(self.topology, atom_pairs=self.distance_indexes)
         self.active_features.append(f)
-        self.dim += np.shape(self.distance_indexes)[0]
+        self._dim += np.shape(self.distance_indexes)[0]
 
     def inverse_distances(self, atom_pairs):
         """
@@ -241,7 +244,7 @@ class MDFeaturizer(object):
 
         f = InverseDistanceFeature(atom_pairs=self.inv_distance_indexes)
         self.active_features.append(f)
-        self.dim += np.shape(self.distance_indexes)[0]
+        self._dim += np.shape(self.distance_indexes)[0]
 
     def contacts(self, atom_pairs):
         """
@@ -259,7 +262,7 @@ class MDFeaturizer(object):
         f.describe = describe
         f.topology = self.topology
 
-        self.dim += np.shape(atom_pairs)[0]
+        self._dim += np.shape(atom_pairs)[0]
         self.active_features.append(f)
 
     def angles(self, indexes):
@@ -285,7 +288,7 @@ class MDFeaturizer(object):
 
         self.active_features.append(f)
         self.angle_indexes = indexes
-        self.dim += np.shape(indexes)[0]
+        self._dim += np.shape(indexes)[0]
 
     def backbone_torsions(self):
         """
@@ -293,7 +296,7 @@ class MDFeaturizer(object):
         """
         f = BackboneTorsionFeature(self.topology)
         self.active_features.append(f)
-        self.dim += 2 * self.topology.n_residues
+        self._dim += 2 * self.topology.n_residues
 
     def add_custom_feature(self, feature, output_dimension):
         """
@@ -309,16 +312,20 @@ class MDFeaturizer(object):
         assert hasattr(feature, 'describe')
 
         self.active_features.append(feature)
-        self.dim += output_dimension
+        self._dim += output_dimension
 
+    @property
     def dimension(self):
-        return self.dim
+        return self._dim
 
     def map(self, traj):
         """
         Computes the features for the given trajectory
         :return:
         """
+        # if there are no features selected, return given trajectory
+        if self._dim == 0:
+            return traj
 
         feature_vec = []
 
