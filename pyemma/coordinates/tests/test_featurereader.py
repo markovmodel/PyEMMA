@@ -20,10 +20,6 @@ import os
 log = getLogger('TestFeatureReader')
 
 
-def map_return_input(traj):
-    return traj.xyz
-
-
 class MemoryStorage(Transformer):
     """stores added data in memory (list of ndarrays) """
 
@@ -33,7 +29,7 @@ class MemoryStorage(Transformer):
         self.lagged_chunks = []
 
     def param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
-        self.lagged_chunks.append(Y)
+        self.lagged_chunks.append(Y.xyz)
         if last_chunk:
             return True
 
@@ -78,7 +74,7 @@ class TestFeatureReader(unittest.TestCase):
                     continue
                 log.info("chunksize=%i\tlag=%i" % (chunksize, lag))
                 f = MDFeaturizer(self.topfile)
-                f.map = map_return_input
+                #f.map = map_return_input
 
                 reader = FeatureReader(trajfiles, self.topfile)
                 reader.feature = f
@@ -109,6 +105,7 @@ class TestFeatureReader(unittest.TestCase):
                 # padded to maintain chunksize
 
                 last_chunk = m.lagged_chunks[-1]
+                print last_chunk
                 # when is last_chunk padded?
                 # if 
                 # how many zeros are going to be used?

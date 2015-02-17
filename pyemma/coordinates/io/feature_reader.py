@@ -34,11 +34,11 @@ class FeatureReader(object):
         self.topfile = topologyfile
 
         # featurizer
-        self.feature = MDFeaturizer(topologyfile)
+        self.featurizer = MDFeaturizer(topologyfile)
 
-        # lengths
-        self.lengths = []
-        self.totlength = 0
+        # _lengths
+        self._lengths = []
+        self._totlength = 0
 
         # iteration
         self.mditer = None
@@ -55,9 +55,9 @@ class FeatureReader(object):
         for traj in trajectories:
             sum_frames = sum(t.n_frames for t in
                              mdtraj.iterload(traj, top=self.topfile, chunk=self.chunksize))
-            self.lengths.append(sum_frames)
+            self._lengths.append(sum_frames)
 
-        self.totlength = np.sum(self.lengths)
+        self._totlength = np.sum(self._lengths)
 
         self.param_finished = False
 
@@ -69,7 +69,7 @@ class FeatureReader(object):
 
         :return:
         """
-        return "Feature reader, features = ", self.feature.describe()
+        return "Feature reader, features = ", self.featurizer.describe()
 
     def operate_in_memory(self):
         """
@@ -105,27 +105,28 @@ class FeatureReader(object):
         """
         Returns the length of trajectory
 
-        :param itraj:
-            trajectory index
+        Parameters
+        ----------
+        itraj : int
 
         :return:
             length of trajectory
         """
-        return self.lengths[itraj]
+        return self._lengths[itraj]
 
     def trajectory_lengths(self):
         """
-        Returns the trajectory lengths in a list
+        Returns the trajectory _lengths in a list
         :return:
         """
-        return self.lengths
+        return self._lengths
 
     def n_frames_total(self):
         """
         Returns the total number of frames, summed over all trajectories
         :return:
         """
-        return self.totlength
+        return self._totlength
 
     def dimension(self):
         """
@@ -133,7 +134,7 @@ class FeatureReader(object):
 
         :return:
         """
-        return self.feature.dimension()
+        return self.featurizer.dimension()
 
     def get_memory_per_frame(self):
         """
@@ -162,7 +163,6 @@ class FeatureReader(object):
             while not last_chunk_in_traj:
                 y = self.next_chunk()
                 assert y is not None
-                log.debug(np.shape(y))
                 L = np.shape(y)[0]
                 # last chunk in traj?
                 last_chunk_in_traj = (t + L >= self.trajectory_length(itraj))
@@ -176,12 +176,14 @@ class FeatureReader(object):
             # increment trajectory
             itraj += 1
 
+    def _create_iter(self, filename):
+        return mdtraj.iterload(filename, chunk=self.chunksize, top=self.topfile)
+
     def _open_time_lagged(self):
         log.debug("open time lagged iterator for traj %i" % self.curr_itraj)
         if self.mditer2 is not None:
             self.mditer2.close()
-        self.mditer2 = mdtraj.iterload(self.trajfiles[self.curr_itraj],
-                                       chunk=self.chunksize, top=self.topfile)
+        self.mditer2 = self._create_iter(self.trajfiles[self.curr_itraj])
         self.skip_n = int(np.floor(1.0 * self.curr_lag / self.chunksize))
         log.debug("trying to skip %i frames in advanced iterator" %
                   self.skip_n)
@@ -199,8 +201,7 @@ class FeatureReader(object):
         self.curr_lag = 0
         if len(self.trajfiles) >= 1:
             self.t = 0
-            self.mditer = mdtraj.iterload(self.trajfiles[0],
-                                          chunk=self.chunksize, top=self.topfile)
+            self.mditer = self._create_iter(self.trajfiles[0])
 
     def next_chunk(self, lag=0):
         """
@@ -260,15 +261,14 @@ class FeatureReader(object):
             self.mditer.close()
             self.t = 0
             self.curr_itraj += 1
-            self.mditer = mdtraj.iterload(
-                self.trajfiles[self.curr_itraj], chunk=self.chunksize, top=self.topfile)
+            self.mditer = self._create_iter(self.trajfiles[self.curr_itraj])
             # we open self.mditer2 only if requested due lag parameter!
             self.curr_lag = 0
 
         # map data
         if lag == 0:
-            return self.feature.map(chunk)
+            return self.featurizer.map(chunk)
         else:
-            X = self.feature.map(chunk)
-            Y = self.feature.map(chunk_lagged)
+            X = self.featurizer.map(chunk)
+            Y = self.featurizer.map(chunk_lagged)
             return X, Y

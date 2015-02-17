@@ -83,7 +83,7 @@ class TestDiscretizer(unittest.TestCase):
         pairs = np.array(
             [x for x in itertools.combinations(range(self.n_residues), 2)])
 
-        reader.feature.distances(pairs)
+        reader.featurizer.distances(pairs)
 
         tica = PCA(output_dimension=2)
 
