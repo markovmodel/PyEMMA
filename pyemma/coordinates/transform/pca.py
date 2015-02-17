@@ -9,15 +9,17 @@ __all__ = ['PCA']
 
 
 class PCA(Transformer):
+
     r"""Principal component analysis.
 
-    Given a sequence of multivariate data X_t, computes the mean-free covariance matrix
+    Given a sequence of multivariate data math:`X_t`,
+    computes the mean-free covariance matrix.
 
     .. math:: C = (X-\mu)^T (X-\mu)
     and solves the eigenvalue problem
 
     .. math:: C r_i = \sigma_i r_i,
-    where :math:`r_i` are the principal components and :math:`\sigma_i` are 
+    where :math:`r_i` are the principal components and :math:`\sigma_i` are
     their respective variances.
 
     When used as a dimension reduction method, the input data is projected onto
@@ -34,7 +36,7 @@ class PCA(Transformer):
         self.output_dimension = output_dimension
 
     def describe(self):
-        return "PCA, output dimension = ", self.output_dimension
+        return "[PCA, output dimension = %i]" % self.output_dimension
 
     def dimension(self):
         """
@@ -51,8 +53,25 @@ class PCA(Transformer):
         :return:
         """
         # memory for mu, C, v, R
-        return 2 * self.data_producer.dimension() * (self.data_producer.dimension() + 1)
+        dim = self.data_producer.dimension()
 
+        cov_elements = dim ** 2
+        mu_elements = dim
+
+        v_elements = dim
+        R_elements = cov_elements
+
+        return 8 * (cov_elements + mu_elements + v_elements + R_elements)
+
+    def get_memory_per_frame(self):
+        # memory for temporaries
+        dim = self.data_producer.dimension()
+
+        x_meanfree_elements = self.chunksize * dim
+
+        dot_prod_elements = dim
+
+        return 8 * (x_meanfree_elements + dot_prod_elements)
 
     def param_init(self):
         """
@@ -63,11 +82,12 @@ class PCA(Transformer):
         log.info("Running PCA")
         self.N = 0
         # create mean array and covariance matrix
-        self.mu = np.zeros((self.data_producer.dimension()))
-        self.C = np.zeros((self.data_producer.dimension(), self.data_producer.dimension()))
+        dim = self.data_producer.dimension()
+        self.mu = np.zeros(dim)
+        self.C = np.zeros((dim, dim))
 
-
-    def param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
+    def param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
+                       last_chunk, ipass, Y=None):
         """
         Chunk-based parametrization of PCA. Iterates through all data twice. In the first pass, the
         data means are estimated, in the second pass the covariance matrix is estimated.
@@ -91,8 +111,8 @@ class PCA(Transformer):
             time-lagged data (if available)
         :return:
         """
-        log.info("itraj = "+str(itraj)+". t = "+str(t)+". last_chunk_in_traj = "+str(last_chunk_in_traj)
-                     +" last_chunk = "+str(last_chunk)+" ipass = "+str(ipass))
+        log.debug("itraj = " + str(itraj) + ". t = " + str(t) + ". last_chunk_in_traj = " + str(last_chunk_in_traj)
+                  + " last_chunk = " + str(last_chunk) + " ipass = " + str(ipass))
 
         # pass 1: means
         if ipass == 0:
@@ -107,15 +127,14 @@ class PCA(Transformer):
             self.C += np.dot(Xm.T, Xm)
             if last_chunk:
                 self.C /= self.N
-                return True # finished!
+                return True  # finished!
 
         # by default, continue
         return False
 
-
     def param_finish(self):
         """
-        Finalizes the parametrization.
+        Finalizes the parameterization.
 
         :return:
         """
@@ -125,7 +144,6 @@ class PCA(Transformer):
         I = np.argsort(v)[::-1]
         self.v = v[I]
         self.R = R[I, :]
-
 
     def map(self, X):
         """
