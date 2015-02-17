@@ -60,7 +60,7 @@ class FeatureReader(object):
         self.totlength = np.sum(self.lengths)
 
         self.param_finished = False
-        
+
         self.t = 0
 
     def describe(self):
@@ -82,7 +82,6 @@ class FeatureReader(object):
         self.Y = [np.zeros((self.trajectory_length(itraj), self.dimension()))
                   for itraj in range(0, self.number_of_trajectories())]
 
-
     def parametrize(self):
         """
         Parametrizes this transformer
@@ -93,7 +92,6 @@ class FeatureReader(object):
             self.map_to_memory()
         self.param_finished = True
 
-
     def number_of_trajectories(self):
         """
         Returns the number of trajectories
@@ -102,7 +100,6 @@ class FeatureReader(object):
             number of trajectories
         """
         return len(self.trajfiles)
-
 
     def trajectory_length(self, itraj):
         """
@@ -116,7 +113,6 @@ class FeatureReader(object):
         """
         return self.lengths[itraj]
 
-
     def trajectory_lengths(self):
         """
         Returns the trajectory lengths in a list
@@ -124,14 +120,12 @@ class FeatureReader(object):
         """
         return self.lengths
 
-
     def n_frames_total(self):
         """
         Returns the total number of frames, summed over all trajectories
         :return:
         """
         return self.totlength
-
 
     def dimension(self):
         """
@@ -141,7 +135,6 @@ class FeatureReader(object):
         """
         return self.feature.dimension()
 
-
     def get_memory_per_frame(self):
         """
         Returns the memory requirements per frame, in bytes
@@ -150,7 +143,6 @@ class FeatureReader(object):
         """
         return 4 * self.dimension()
 
-
     def get_constant_memory(self):
         """
         Returns the constant memory requirements, in bytes
@@ -158,7 +150,6 @@ class FeatureReader(object):
         :return:
         """
         return 0
-
 
     def map_to_memory(self):
         self.reset()
@@ -171,7 +162,7 @@ class FeatureReader(object):
             while not last_chunk_in_traj:
                 y = self.next_chunk()
                 assert y is not None
-                log.debug( np.shape(y))
+                log.debug(np.shape(y))
                 L = np.shape(y)[0]
                 # last chunk in traj?
                 last_chunk_in_traj = (t + L >= self.trajectory_length(itraj))
@@ -185,15 +176,15 @@ class FeatureReader(object):
             # increment trajectory
             itraj += 1
 
-
     def _open_time_lagged(self):
         log.debug("open time lagged iterator for traj %i" % self.curr_itraj)
         if self.mditer2 is not None:
             self.mditer2.close()
         self.mditer2 = mdtraj.iterload(self.trajfiles[self.curr_itraj],
                                        chunk=self.chunksize, top=self.topfile)
-        self.skip_n = int(np.floor(1.0*self.curr_lag / self.chunksize))
-        log.debug("trying to skip %i frames in advanced iterator" % self.skip_n)
+        self.skip_n = int(np.floor(1.0 * self.curr_lag / self.chunksize))
+        log.debug("trying to skip %i frames in advanced iterator" %
+                  self.skip_n)
         for i in xrange(self.skip_n):
             try:
                 self.mditer2.next()
@@ -228,9 +219,11 @@ class FeatureReader(object):
                 try:
                     self.last_advanced_chunk = self.mditer2.next()
                 except StopIteration:
-                    log.debug("No more data in mditer2 during last_adv_chunk assignment. Padding with zeros")
+                    log.debug(
+                        "No more data in mditer2 during last_adv_chunk assignment. Padding with zeros")
                     lagged_xyz = np.zeros_like(chunk.xyz)
-                    self.last_advanced_chunk = Tracetory(lagged_xyz, chunk.topology)
+                    self.last_advanced_chunk = Trajectory(
+                        lagged_xyz, chunk.topology)
             try:
                 adv_chunk = self.mditer2.next()
             except StopIteration:
@@ -240,7 +233,6 @@ class FeatureReader(object):
                           " Data avail: %i" % chunk.xyz.shape[0])
                 lagged_xyz = np.zeros_like(chunk.xyz)
                 adv_chunk = Trajectory(lagged_xyz, chunk.topology)
-
 
             # build time lagged Trajectory by concatenating
             # last adv chunk and advance chunk
@@ -255,16 +247,16 @@ class FeatureReader(object):
             # assert merged.xyz.shape[0] >= chunk.xyz.shape[0]
             # skip "lag" number of frames and truncate to chunksize
             chunk_lagged = merged[i:][:chunk.xyz.shape[0]]
-            
+
             # remember last advanced chunk
             self.last_advanced_chunk = adv_chunk
 
         self.t += chunk.xyz.shape[0]
-        
-        if self.t >= self.trajectory_length(self.curr_itraj) and \
-                self.curr_itraj < len(self.trajfiles) - 1:
+
+        if (self.t >= self.trajectory_length(self.curr_itraj) and
+                self.curr_itraj < len(self.trajfiles) - 1):
             log.debug('closing current trajectory "%s"'
-                     % self.trajfiles[self.curr_itraj])
+                      % self.trajfiles[self.curr_itraj])
             self.mditer.close()
             self.t = 0
             self.curr_itraj += 1
