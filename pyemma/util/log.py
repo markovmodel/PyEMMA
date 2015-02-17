@@ -7,6 +7,7 @@ __all__ = ['getLogger', 'enabled', 'CRITICAL', 'DEBUG', 'FATAL', 'INFO', 'NOTSET
            'WARN', 'WARNING']
 
 import logging
+reload(logging)
 
 from logging import CRITICAL, FATAL, ERROR, WARNING, WARN, INFO, DEBUG, NOTSET
 
