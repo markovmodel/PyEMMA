@@ -82,10 +82,25 @@ class TICA(Transformer):
     def output_dimension(self):
         return self.output_dim
 
-    def get_constant_memory(self):
-        # TODO: change me
+    def get_memory_per_frame(self):
+        # temporaries
         dim = self.data_producer.dimension()
-        return ((2 * dim ** 2) + dim) * 8
+
+        mean_free_vectors = 2 * dim * self.chunksize
+        dot_product = 2 * dim * self.chunksize
+
+        return 8 * (mean_free_vectors + dot_product)
+
+    def get_constant_memory(self):
+        dim = self.data_producer.dimension()
+
+        # memory for covariance matrices (lagged, non-lagged)
+        cov_elements = 2 * dim ** 2
+        mu_elements = dim
+
+        # TODO: shall memory req of diagonalize method go here?
+
+        return 8 * (cov_elements + mu_elements)
 
     def param_init(self):
         """
@@ -93,20 +108,24 @@ class TICA(Transformer):
 
         :return:
         """
-        self.N = 0
-        # create mean array and covariance matrices
-        self.mu = np.zeros(self.data_producer.dimension())
         dim = self.data_producer.dimension()
         assert dim > 0, "zero dimension from data producer"
         assert self.output_dimension() <= dim, \
-                ("requested more output dimensions (%i) than dimension"
-                " of input data (%i)" % (self.output_dimension(), dim))
+            ("requested more output dimensions (%i) than dimension"
+             " of input data (%i)" % (self.output_dimension(), dim))
+
+        self.N = 0
+        # create mean array and covariance matrices
+        self.mu = np.zeros(dim)
+
         self.cov = np.zeros((dim, dim))
         self.cov_tau = np.zeros_like(self.cov)
 
-        log.info("Running TICA lag=%i; shape cov=(%i, %i)" % (self.lag, dim, dim))
+        log.info("Running TICA lag=%i; shape cov=(%i, %i)" %
+                 (self.lag, dim, dim))
 
-    def param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
+    def param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
+                       last_chunk, ipass, Y=None):
         """
         Chunk-based parameterization of TICA. Iterates through all data twice. In the first pass, the
         data means are estimated, in the second pass the covariance and time-lagged covariance
@@ -132,7 +151,8 @@ class TICA(Transformer):
         :return:
         """
         if ipass == 0:
-            # TODO: maybe use stable sum here, since small chunksizes accumulate more errors
+            # TODO: maybe use stable sum here, since small chunksizes
+            # accumulate more errors
             self.mu += np.sum(X, axis=0)
             self.N += np.shape(X)[0]
 
@@ -158,8 +178,7 @@ class TICA(Transformer):
         return False  # not finished yet.
 
     def param_finish(self):
-        """ Finalizes the parametrization.
-        """
+        """ Finalizes the parameterization."""
         # norm
         self.cov /= self.N - 1
         self.cov_tau /= self.N - self.lag - 1
@@ -171,6 +190,7 @@ class TICA(Transformer):
         self.cov_tau = self.cov_tau + self.cov_tau.T
         self.cov_tau /= 2.0
 
+        # diagonalize with low rank approximation
         self.eigenvalues, self.eigenvectors = \
             eig_corr(self.cov, self.cov_tau, self.epsilon)
 
