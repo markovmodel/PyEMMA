@@ -188,19 +188,21 @@ def uniform_time(data=None, k=100):
     return res
 
 
-def regspace(dmin, data=None):
+def regspace(data=None, dmin=-1):
     """
     Constructs a regular space clustering
 
-    :param data:
-        input data, if available in memory
     :param dmin:
         the minimal distance between cluster centers
+    :param data:
+        input data, if available in memory
 
     :return:
         A RegularSpaceClustering object
 
     """
+    if dmin == -1:
+        raise ValueError("provide a minimum distance for clustering")
     res = RegularSpaceClustering(dmin)
     if data is not None:
         inp = DataInMemory(data)
