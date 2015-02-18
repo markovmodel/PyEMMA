@@ -3,8 +3,10 @@ __author__ = 'noe'
 import psutil
 import numpy as np
 
-from io.feature_reader import FeatureReader
-from transform.transformer import Transformer
+from pyemma.coordinates.transform.transformer import Transformer
+from pyemma.coordinates.io.reader import ChunkedReader
+from pyemma.coordinates.util.chaining import build_chain
+
 from pyemma.util.log import getLogger
 
 
@@ -36,7 +38,7 @@ class Discretizer(object):
 
     def __init__(self, reader, transform=None, cluster=None):
         # check input
-        assert isinstance(reader, FeatureReader), \
+        assert isinstance(reader, ChunkedReader), \
             'reader is not of the correct type'
         if (transform is not None):
             assert isinstance(transform, Transformer), \
@@ -50,25 +52,19 @@ class Discretizer(object):
         if reader.featurizer.dimension == 0:
             logger.warning("no features selected!")
 
-        self.transformers = []
+        self.transformers = [reader]
 
-        # add reader first
-        self.transformers.append(reader)
-        last = reader
-
-        # add transform if any
         if transform is not None:
             self.transformers.append(transform)
-            transform.data_producer = last
-            last = transform
 
-        # add clustering
         self.transformers.append(cluster)
-        cluster.data_producer = last
+
+        self._parameterized = False
+        self._chunksize = None
+
+        build_chain(self.transformers)
 
         self._estimate_chunksize_from_mem_requirement(reader)
-        self._parameterized = False
-        self._chunksize = 100
 
     def run(self):
         """
@@ -94,6 +90,7 @@ class Discretizer(object):
     @chunksize.setter
     def chunksize(self, cs):
         self._chunksize = cs
+        # update transformers to use new chunksize
         for trans in self.transformers:
             trans.chunksize = cs
 
@@ -103,7 +100,7 @@ class Discretizer(object):
         chunksize accordingly
         """
 
-        M = psutil.virtual_memory()[1]  # available RAM
+        M = psutil.virtual_memory()[1]  # available RAM in bytes
         logger.info("available RAM: %i" % M)
         const_mem = long(0)
         mem_per_frame = long(0)
