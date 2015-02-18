@@ -43,7 +43,7 @@ class Transformer(object):
 
     @chunksize.setter
     def chunksize(self, size):
-        assert size > 0
+        assert size >= 0, "chunksize has to be positive"
         self._chunksize = int(size)
 
     @property
