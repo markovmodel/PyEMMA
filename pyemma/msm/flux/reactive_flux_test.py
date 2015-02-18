@@ -146,6 +146,7 @@ class TestReactiveFluxFunctions(unittest.TestCase):
         assert_allclose(1.0/self.tpt1.rate, self.ref_mfptAB, rtol=1e-02, atol=1e-07)
     
     def test_pathways(self):
+        print msmana.is_reversible(self.P)
         # all paths
         (paths,pathfluxes) = self.tpt1.pathways()
         self.assertEqual(len(paths), len(self.ref_paths))
@@ -179,6 +180,5 @@ class TestReactiveFluxFunctions(unittest.TestCase):
         assert_allclose(cgRF.net_flux, self.ref2_cgnetflux)
         assert_allclose(cgRF.gross_flux, self.ref2_cggrossflux)
 
-
-if __name__ == "__main__":
-    unittest.main()
+# if __name__ == "__main__":
+#     unittest.main()

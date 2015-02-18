@@ -142,7 +142,7 @@ class ReactiveFlux(object):
         return 1.0/self._kAB
 
 
-    def pathways(self, fraction = 1.0):
+    def pathways(self, fraction = 1.0, maxiter=1000):
         r"""Performs a pathway decomposition of the net flux.
         
         Parameters
@@ -168,7 +168,9 @@ class ReactiveFlux(object):
             by that path. The pathfluxes-array sums to the requested fraction of 
             the total A->B flux.
         """
-        return tptapi.pathways(self.net_flux, self.A, self.B, self.forward_committor, fraction = fraction, totalflux = self.total_flux)
+        print self._A, self._B
+        print self.net_flux
+        return tptapi.pathways(self.net_flux, self._A, self._B, fraction = fraction, maxiter=maxiter)
 
 
     def _pathways_to_flux(self, paths, pathfluxes, n=None):
