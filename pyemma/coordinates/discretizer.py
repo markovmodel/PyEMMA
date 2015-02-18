@@ -36,7 +36,7 @@ class Discretizer(object):
         used to assign input data to discrete states/ discrete trajectories.
     """
 
-    def __init__(self, reader, transform=None, cluster=None):
+    def __init__(self, reader, transform=None, cluster=None, chunksize=None):
         # check input
         assert isinstance(reader, ChunkedReader), \
             'reader is not of the correct type'
@@ -59,12 +59,14 @@ class Discretizer(object):
 
         self.transformers.append(cluster)
 
+        if chunksize is not None:
+            build_chain(self.transformers, chunksize)
+        else:
+            self._chunksize = None
+            build_chain(self.transformers)
+            self._estimate_chunksize_from_mem_requirement(reader)
+
         self._parameterized = False
-        self._chunksize = None
-
-        build_chain(self.transformers)
-
-        self._estimate_chunksize_from_mem_requirement(reader)
 
     def run(self):
         """
