@@ -2,7 +2,88 @@ import numpy as np
 import os
 import mdtraj as md
 
-__all__ = ['regroup_RAM','regroup_DISK','PCCA_disctrajs']
+__all__ = ['regroup_RAM',
+           'regroup_DISK',
+           'PCCA_disctrajs',
+           'from_lcc_labels',
+           'to_lcc_labels']
+
+class MapToConnectedStateLabels():
+    
+    
+    def __init__(self, lcc):
+        r"""Mapping from original labels to lcc-indices.
+        
+        Parameters
+        ----------
+        lcc : (M, ) ndarray
+            Largest connected set of microstates (original labels)
+            
+        """
+        self.lcc=lcc
+        self.new_labels=np.arange(len(self.lcc))
+        self.dictmap=dict(zip(self.lcc, self.new_labels))
+    
+    def map(self, A):
+        r"""Map subset of microstates to subset of connected
+        microstates.
+
+        Parameters
+        ----------
+        A : list of int
+            Subset of microstate labels
+
+        Returns
+        -------
+        A_cc : list of int
+            Corresponding subset of mircrostate labels
+            in largest connected set lcc. 
+
+        """
+        if not set(A).issubset(set(self.lcc)):
+            raise ValueError("A is not a subset of the set of "+\
+                                 "completely connected states.")
+        else:
+            return [self.dictmap[i] for i in A]
+
+def from_lcc_labels(states_in_lcc, lcc):
+    r"""Recover original labels of microstate after they have been
+    relabeled by restricting them to the largest connected set.
+    
+    Parameters
+    ----------
+    states_in_lcc : array-like
+         Array of microstates after relabeling (new labels)
+    lcc : (M, ) ndarray
+         Largest connected set of microstates (original labels)
+         
+    Returns
+    -------
+    states : array-like
+        Array of microstates with original label
+        
+    """
+    return lcc[states_in_lcc]
+
+def to_lcc_labels(states, lcc):
+    r"""Relabel microstates replacing the original label by the
+    corresponding index in the largest connected set.
+    
+    Parameters
+    ----------
+    states : array-like
+         Original microstate labels (original labels)
+    lcc : (M, ) ndarray
+         Largest connected set of microstates (original label)
+         
+    Returns
+    -------
+    states_in_lcc : array-like
+         Relabeled microstates
+    
+    """
+    mymap = MapToConnectedStateLabels(lcc)
+    return mymap.map(states)
 
 def regroup_RAM(trajs,disctrajs):
     '''Regroups MD trajectories into clusters according to discretised trajectories.
