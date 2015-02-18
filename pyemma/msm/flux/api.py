@@ -8,6 +8,7 @@ import sparse
 
 from scipy.sparse.base import issparse
 from scipy.sparse.sputils import isdense
+from scipy.sparse import csr_matrix
 
 __all__=['tpt',
          'flux_matrix',
@@ -451,58 +452,59 @@ def mfpt(totflux, pi, qminus):
 
 
 
-# ======================================================================
-# Pathway functions
-# ======================================================================
+###############################################################################
+# Pathway decomposition
+###############################################################################
 
-def pathways(F, A, B, qplus, fraction = 1.0, totalflux = None):
-    r"""Pathway decomposition of the net flux.
-    
+def pathways(F, A, B, fraction=1.0, maxiter=1000):
+    r"""Decompose flux network into dominant reaction paths.
+
     Parameters
     ----------
-    F : (M, M) ndarray
-        Matrix of flux values between pairs of states.
-    A : array-like of ints
-        A states (source, educt states)
-    B : array-like of ints
-        B states (sinks, product states)
-    qplus : (M,) ndarray
-        Forward committor
-    fraction = float (optional)
-        The fraction of the total flux for which pathways will be
-        computed.  When set larger than 1.0, will use 1.0. When set <=
-        0.0, no pathways will be computed and two empty lists will be
-        returned.  For example, when set to fraction = 0.9, the
-        pathway decomposition will stop when 90% of the flux have been
-        accumulated. This is very useful for large flux networks which
-        often contain a few major and a lot of minor paths. In such
-        networks, the algorithm would spend a very long time in the
-        last few percent of pathways
-    
+    F : (M, M) scipy.sparse matrix
+        The flux network (matrix of netflux values)
+    A : array_like
+        The set of starting states
+    B : array_like
+        The set of end states
+    fraction : float, optional
+        Fraction of total flux to assemble in pathway decomposition
+    maxiter : int, optional
+        Maximum number of pathways for decomposition
+        
     Returns
     -------
-    (paths,pathfluxes) : (list of int-arrays, double-array)
-        paths in the order of decreasing flux. Each path is given as an 
-        int-array of state indexes, ordered by increasing forward committor 
-        values. The first index of each path will be a state in A,
-        the last index a state in B. 
-        The corresponding figure in the pathfluxes-array is the flux carried 
-        by that path. The pathfluxes-array sums to the requested fraction of 
-        the total A->B flux.
-    
+    paths : list
+        List of dominant reaction pathways
+    capacities: list
+        List of capacities corresponding to each reactions pathway in paths
+
+    Notes
+    -----
+    The default value for fraction is 1.0, i.e. all dominant reaction
+    pathways for the flux network are computed. For large netorks the
+    number of possible reaction paths can increase rapidly so that it
+    becomes prohibitevely expensive to compute all possible reaction
+    paths. To prevent this from happening maxiter sets the maximum
+    number of reaction pathways that will be computed. 
+
+    For large flux networks it might be necessary to decrease fraction
+    or to increase maxiter. It is advisable to begin with a small
+    value for fraction and monitor the number of pathways returned
+    when increasing the value of fraction.
+
     References
     ----------
     .. [1] P. Metzner, C. Schuette and E. Vanden-Eijnden.
         Transition Path Theory for Markov Jump Processes. 
-        Multiscale Model Simul 7: 1192-1219 (2009)
-    
+        Multiscale Model Simul 7: 1192-1219 (2009)    
+        
     """
-    # initialize decomposition object
-    Fdense = F
-    if (issparse(F)):
-        RuntimeWarning('Sparse pathway decomposition is not implemented. Using dense pathway implementation.' 
-                        +'Sorry, but this might lead to poor performance or memory overflow.')
-        Fdense = F.toarray()
-    return dense.tpt.pathways(Fdense, A, B, qplus, fraction=fraction, totalflux=totalflux)
+    if issparse(F):
+        return sparse.pathways.pathways(F, A, B, fraction=fraction, maxiter=maxiter)
+    elif isdense(F):
+        return sparse.pathways.pathways(csr_matrix(F), A, B, fraction=fraction, maxiter=maxiter)
+    else: 
+        raise _type_not_supported
 
 
