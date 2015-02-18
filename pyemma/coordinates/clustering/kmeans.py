@@ -34,7 +34,6 @@ class KmeansClustering(Transformer):
         self.algo = MiniBatchKMeans(n_clusters,
                                     max_iter=max_iter,
                                     batch_size=self.chunksize,
-                                    verbose=True,
                                     )
 
         self.dtrajs = []
