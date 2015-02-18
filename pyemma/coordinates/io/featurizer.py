@@ -314,7 +314,6 @@ class MDFeaturizer(object):
         self.active_features.append(feature)
         self._dim += output_dimension
 
-    @property
     def dimension(self):
         return self._dim
 

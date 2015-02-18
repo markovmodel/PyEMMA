@@ -4,6 +4,7 @@ import mdtraj
 import numpy as np
 
 from mdtraj.core.trajectory import Trajectory
+from pyemma.coordinates.io.reader import ChunkedReader
 from pyemma.util.log import getLogger
 from featurizer import MDFeaturizer
 
@@ -12,7 +13,7 @@ log = getLogger('FeatureReader')
 __all__ = ['FeatureReader']
 
 
-class FeatureReader(object):
+class FeatureReader(ChunkedReader):
 
     """
     Reads features from MD data
@@ -28,6 +29,8 @@ class FeatureReader(object):
     """
 
     def __init__(self, trajectories, topologyfile):
+        # init with chunksize 100
+        ChunkedReader.__init__(self, 100)
 
         # files
         self.trajfiles = trajectories
@@ -48,13 +51,11 @@ class FeatureReader(object):
         self.mditer2 = None
 
         # cache size
-        self.chunksize = 1000
         self.in_memory = False
         self.Y = None
         # basic statistics
         for traj in trajectories:
-            sum_frames = sum(t.n_frames for t in
-                             mdtraj.iterload(traj, top=self.topfile, chunk=self.chunksize))
+            sum_frames = sum(t.n_frames for t in self._create_iter(traj))
             self._lengths.append(sum_frames)
 
         self._totlength = np.sum(self._lengths)
@@ -80,7 +81,7 @@ class FeatureReader(object):
         self.in_memory = True
         # output data
         self.Y = [np.zeros((self.trajectory_length(itraj), self.dimension()))
-                  for itraj in range(0, self.number_of_trajectories())]
+                  for itraj in xrange(self.number_of_trajectories())]
 
     def parametrize(self):
         """
@@ -187,7 +188,7 @@ class FeatureReader(object):
         self.skip_n = int(np.floor(1.0 * self.curr_lag / self.chunksize))
         log.debug("trying to skip %i frames in advanced iterator" %
                   self.skip_n)
-        for i in xrange(self.skip_n):
+        for _ in xrange(self.skip_n):
             try:
                 self.mditer2.next()
             except StopIteration:
@@ -238,10 +239,11 @@ class FeatureReader(object):
             # build time lagged Trajectory by concatenating
             # last adv chunk and advance chunk
             i = lag - (self.chunksize * self.skip_n)
-            padding_length = max(0, chunk.xyz.shape[0] \
-                                    -(self.last_advanced_chunk.xyz.shape[0]-i) \
-                                    - adv_chunk.xyz.shape[0])
-            padding = np.zeros((padding_length,chunk.xyz.shape[1],chunk.xyz.shape[2]))
+            padding_length = max(0, chunk.xyz.shape[0]
+                                 - (self.last_advanced_chunk.xyz.shape[0] - i)
+                                 - adv_chunk.xyz.shape[0])
+            padding = np.zeros(
+                (padding_length, chunk.xyz.shape[1], chunk.xyz.shape[2]))
             merged = Trajectory(np.concatenate(
                                 (self.last_advanced_chunk.xyz,
                                  adv_chunk.xyz, padding)), chunk.topology)

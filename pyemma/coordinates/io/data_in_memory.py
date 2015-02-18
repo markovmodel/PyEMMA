@@ -1,12 +1,13 @@
 __author__ = 'noe'
 
 import numpy as np
+from pyemma.coordinates.io.reader import ChunkedReader
 from pyemma.util.log import getLogger
 
 logger = getLogger('DataInMemory')
 
 
-class DataInMemory(object):
+class DataInMemory(ChunkedReader):
 
     """
     multi-dimensional multi-trajectory data fully stored in memory
@@ -19,6 +20,8 @@ class DataInMemory(object):
             ndarray of shape (nframe, ndim) or
             list of ndarrays, each of shape (nframe_i, ndim)
         """
+        ChunkedReader.__init__(self)
+
         if isinstance(_data, np.ndarray):
             self.data = [_data]
             self.ntraj = 1
