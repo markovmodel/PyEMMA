@@ -3,8 +3,10 @@ __author__ = 'noe'
 import psutil
 import numpy as np
 
+from pyemma.coordinates.clustering.interface import AbstractClustering
 from pyemma.coordinates.transform.transformer import Transformer
 from pyemma.coordinates.io.reader import ChunkedReader
+from pyemma.coordinates.io.feature_reader import FeatureReader
 from pyemma.coordinates.util.chaining import build_chain
 
 from pyemma.util.log import getLogger
@@ -49,8 +51,9 @@ class Discretizer(object):
             assert isinstance(cluster, Transformer), \
                 'cluster is not of the correct type'
 
-        if reader.featurizer.dimension == 0:
-            logger.warning("no features selected!")
+        if hasattr(reader, 'featurizer'):  # reader is a FeatureReader
+            if reader.featurizer.dimension == 0:
+                logger.warning("no features selected!")
 
         self.transformers = [reader]
 
@@ -96,11 +99,44 @@ class Discretizer(object):
         for trans in self.transformers:
             trans.chunksize = cs
 
+    def save_dtrajs(self, prefix='', output_format='ascii', extension='.dtraj'):
+        """saves calculated discrete trajectories. Filenames are taken from
+        given reader. If data comes from memory dtrajs are written to a default
+        filename.
+
+
+        Parameters
+        ----------
+        prefix : str
+            prepend prefix to filenames.
+
+        output_format : str
+            if format is 'ascii' dtrajs will be written as csv files, otherwise
+            they will be written as NumPy .npy files.
+
+        extension : str
+            file extension to append (eg. '.itraj')
+        """
+
+        clustering = self.transformers[-1]
+        reader = self.transformers[0]
+
+        assert isinstance(clustering, AbstractClustering)
+
+        trajfiles = None
+        if isinstance(reader, FeatureReader):
+            trajfiles = reader.trajfiles
+
+        clustering.save_dtrajs(trajfiles, prefix, output_format, extension)
+
     def _estimate_chunksize_from_mem_requirement(self, reader):
         """
         estimate memory requirement from chain of transformers and sets a
         chunksize accordingly
         """
+        if not hasattr(reader, 'get_memory_per_frame'):
+            self.chunksize = 0
+            return
 
         M = psutil.virtual_memory()[1]  # available RAM in bytes
         logger.info("available RAM: %i" % M)
