@@ -5,15 +5,15 @@ Created on 26.01.2015
 '''
 
 from pyemma.util.log import getLogger
+from pyemma.coordinates.clustering.interface import AbstractClustering
 
-from ..transform.transformer import Transformer
 import numpy as np
 
 log = getLogger('RegSpaceClustering')
 __all__ = ['RegularSpaceClustering']
 
 
-class RegularSpaceClustering(Transformer):
+class RegularSpaceClustering(AbstractClustering):
 
     """Clusters data objects in such a way, that cluster centers are at least in
     distance of dmin to each other according to the given metric.
@@ -36,9 +36,6 @@ class RegularSpaceClustering(Transformer):
         super(RegularSpaceClustering, self).__init__()
 
         self.dmin = dmin
-        self.dtrajs = []
-
-        # TODO: determine if list or np array is more efficient.
         self.centroids = []
 
     def describe(self):
@@ -72,10 +69,10 @@ class RegularSpaceClustering(Transformer):
 
     def param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
         """
-        first pass: calculate centroids
+        first pass: calculate clustercenters
          1. choose first datapoint as centroid
-         2. for all X: calc distances to all centroids
-         3. add new centroid, if min(distance to all other centroids) >= dmin
+         2. for all X: calc distances to all clustercenters
+         3. add new centroid, if min(distance to all other clustercenters) >= dmin
         second pass: assign data to discrete trajectories
         """
         log.debug("t=%i; itraj=%i" % (t, itraj))
@@ -98,6 +95,11 @@ class RegularSpaceClustering(Transformer):
         elif ipass == 1:
             # discretize all
             if t == 0:
+                assert len(self.centroids) >= 1
+                # create numpy array from clustercenters list
+                self.clustercenters = np.array(self.centroids)
+                log.debug("shape of clustercenters: %s" % str(self.clustercenters.shape))
+                log.info("number of clustercenters: %i" % len(self.clustercenters))
                 self.dtrajs.append(
                     np.empty(self.data_producer.trajectory_length(itraj)))
             L = np.shape(X)[0]
@@ -109,15 +111,5 @@ class RegularSpaceClustering(Transformer):
 
         return False
 
-    def param_finish(self):
-        assert len(self.centroids) >= 1
-        # create numpy array from centroids list
-        self.centroids = np.array(self.centroids)
-        log.debug("shape of centroids: %s" % str(self.centroids.shape))
-        log.info("number of centroids: %i" % len(self.centroids))
-
-    def map(self, x):
-        """gets index of closest cluster.
-        """
-        dists = self.data_producer.distances(x, self.centroids)
-        return np.argmin(dists)
+#     def param_finish(self):
+#         pass

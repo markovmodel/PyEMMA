@@ -1,15 +1,15 @@
 __author__ = 'noe'
+
 from pyemma.util.log import getLogger
+from pyemma.coordinates.clustering.interface import AbstractClustering
 
-from ..transform.transformer import Transformer
 import numpy as np
-
 
 log = getLogger('UniformTimeClustering')
 __all__ = ['UniformTimeClustering']
 
 
-class UniformTimeClustering(Transformer):
+class UniformTimeClustering(AbstractClustering):
 
     """
     Uniform time clustering
@@ -22,16 +22,12 @@ class UniformTimeClustering(Transformer):
     def __init__(self, k=2):
         super(UniformTimeClustering, self).__init__()
         self.k = k
-        self.dtrajs = []
-
 
     def describe(self):
-        return "Uniform time clustering, k = ",self.k
-
+        return "[Uniform time clustering, k = %i]" % self.k
 
     def dimension(self):
         return 1
-
 
     def get_memory_per_frame(self):
         """
@@ -42,7 +38,6 @@ class UniformTimeClustering(Transformer):
         # 4 bytes per frame for an integer index
         return 0
 
-
     def get_constant_memory(self):
         """
         Returns the constant memory requirements, in bytes
@@ -52,7 +47,6 @@ class UniformTimeClustering(Transformer):
         # memory for cluster centers and discrete trajectories
         return self.k * 4 * self.data_producer.dimension() + 4 * self.data_producer.n_frames_total()
 
-
     def param_init(self):
         """
         Initializes the parametrization.
@@ -61,14 +55,14 @@ class UniformTimeClustering(Transformer):
         """
         log.info("Running uniform time clustering")
         # initialize cluster centers
-        self.clustercenters = np.zeros((self.k, self.data_producer.dimension()), dtype=np.float32)
+        self.clustercenters = np.zeros(
+            (self.k, self.data_producer.dimension()), dtype=np.float32)
         # initialize time counters
         self.tprev = 0
         self.ipass = 0
         self.n = 0
         self.stride = self.data_producer.n_frames_total() / self.k
-        self.nextt = self.stride/2
-
+        self.nextt = self.stride / 2
 
     def param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
         """
@@ -91,8 +85,8 @@ class UniformTimeClustering(Transformer):
             time-lagged data (if available)
         :return:
         """
-        log.info("itraj = "+str(itraj)+". t = "+str(t)+". last_chunk_in_traj = "+str(last_chunk_in_traj)
-                     +" last_chunk = "+str(last_chunk)+" ipass = "+str(ipass))
+        log.debug("itraj = " + str(itraj) + ". t = " + str(t) + ". last_chunk_in_traj = " + str(last_chunk_in_traj)
+                  + " last_chunk = " + str(last_chunk) + " ipass = " + str(ipass))
 
         L = np.shape(X)[0]
         if ipass == 0:
@@ -108,24 +102,19 @@ class UniformTimeClustering(Transformer):
         if ipass == 1:
             # discretize all
             if t == 0:
-                self.dtrajs.append(np.zeros(self.data_producer.trajectory_length(itraj)))
+                self.dtrajs.append(
+                    np.zeros(self.data_producer.trajectory_length(itraj)))
             for i in xrange(L):
-                self.dtrajs[itraj][i+t] = self.map(X[i])
+                self.dtrajs[itraj][i + t] = self.map(X[i])
             if last_chunk:
-                return True # done!
+                return True  # done!
 
-        return False # not done yet.
-
+        return False  # not done yet.
 
     def map_to_memory(self):
-        # nothing to do, because memory-mapping of the discrete trajectories is done in parametrize
+        # nothing to do, because memory-mapping of the discrete trajectories is
+        # done in parametrize
         pass
-
-
-    def map(self, x):
-        d = self.data_producer.distances(x, self.clustercenters)
-        return np.argmin(d)
-
 
     def get_discrete_trajectories(self):
         return self.dtrajs

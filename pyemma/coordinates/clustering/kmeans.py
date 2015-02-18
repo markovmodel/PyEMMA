@@ -5,16 +5,16 @@ Created on 22.01.2015
 '''
 import numpy as np
 from sklearn.cluster import MiniBatchKMeans
-from ..transform.transformer import Transformer
 
 from pyemma.util.log import getLogger
+from pyemma.coordinates.clustering.interface import AbstractClustering
 
 log = getLogger('KmeansClustering')
 
 __all__ = ['KmeansClustering']
 
 
-class KmeansClustering(Transformer):
+class KmeansClustering(AbstractClustering):
 
     r"""
     Kmeans clustering
@@ -38,16 +38,6 @@ class KmeansClustering(Transformer):
 
         self.dtrajs = []
 
-# TODO: make changes to chunksize/batchsize possible
-#     @property
-#     def chunksize(self):
-#         return self._chunksize
-# 
-#     @chunksize.setter
-#     def chunksize(self, cs):
-#         self._chunksize = cs
-#         self.algo.set_params(batchsize=cs)
-
     def describe(self):
         return "[Kmeans, k=%i]" % self.n_clusters
 
@@ -62,7 +52,6 @@ class KmeansClustering(Transformer):
 
     def _ensure2d(self, X):
         X = X.reshape((-1, 1))
-        log.debug("new shape: %s" % str(X.shape))
         return X
 
     def param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
@@ -82,6 +71,9 @@ class KmeansClustering(Transformer):
 
             if last_chunk:
                 return True
+
+    def param_finish(self):
+        self.clustercenters = self.algo.cluster_centers_
 
     def map(self, X):
         if X.ndim == 1:
