@@ -4,11 +4,13 @@ Created on 18.02.2015
 @author: marscher
 '''
 
+
 class ChunkedReader(object):
+
     """
     A chunked reader shall implement chunked data access from some data source.
     Therefore it has to implement the following methods:
-    
+
     next_chunk(lag=0)
     """
 
@@ -17,3 +19,7 @@ class ChunkedReader(object):
         Constructor
         '''
         self.chunksize = chunksize
+
+    def parametrize(self):
+        # its there to be compatible with Transformer interface
+        pass
