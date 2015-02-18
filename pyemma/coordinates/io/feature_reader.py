@@ -60,8 +60,6 @@ class FeatureReader(ChunkedReader):
 
         self._totlength = np.sum(self._lengths)
 
-        self.param_finished = False
-
         self.t = 0
 
     def describe(self):
@@ -91,7 +89,6 @@ class FeatureReader(ChunkedReader):
         """
         if self.in_memory:
             self.map_to_memory()
-        self.param_finished = True
 
     def number_of_trajectories(self):
         """
