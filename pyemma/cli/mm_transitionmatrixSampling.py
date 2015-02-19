@@ -9,7 +9,7 @@ import argparse
 import sys
 
 from pyemma.msm.estimation.api import count_matrix, transition_matrix
-from pyemma.msm.io import write_matrix_ascii, load_matrix
+from pyemma.msm.io import write_matrix, load_matrix
 from pyemma.util.files import read_dtrajs_from_pattern
 from pyemma.util.log import getLogger
 
@@ -80,7 +80,7 @@ def main():
     if args.outputcountmatrix:
         log.info('write count matrix to %s' % args.outputcountmatrix)
         try:
-            write_matrix_ascii(args.outputcountmatrix, cmatrix)
+            write_matrix(args.outputcountmatrix, cmatrix)
         except Exception as e:
             log.exception('Exception during writing of count matrix', e)
             return 1
@@ -89,7 +89,7 @@ def main():
         log.info('write transition matrix to %s ' %
                  args.outputtransitionmatrix)
         try:
-            write_matrix_ascii(args.outputtransitionmatrix, T)
+            write_matrix(args.outputtransitionmatrix, T)
         except Exception:
             log.exception('Exception during writing of transition matrix')
             return 1

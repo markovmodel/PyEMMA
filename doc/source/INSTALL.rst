@@ -4,7 +4,14 @@
 Installation
 ============
 
-To install the Emma Python package, you need a few Python package dependencies
+Recommended way
+===============
+
+Use the `Anaconda`_ scientific Python stack to easily install PyEMMA software and
+its dependencies.
+
+
+To install the PyEMMA Python package, you need a few Python package dependencies
 like **NumPy** and **SciPy**.
 
 No matter whether you choose the binary or source install method these will be
@@ -104,13 +111,16 @@ It is recommended to use the binary **Anaconda** Python distribution, as it is
 easy to install the difficult to build packages NumPy and SciPy under MacOSX
 and Windows.
 
-Get it from http://docs.continuum.io/anaconda/
+Get it a minimal distribution for Python **2.7** for your operating system from
+http://conda.pydata.org/miniconda.html
 
-After setting it up, you can install Emma via the conda package manager.
+After setting it up, you can install Emma via the conda package manager from the
+`Omnia MD <http://www.omnia.md/>`_ software channel.
 
 ::
 
-   conda install emma
+   conda config --add channels http://conda.binstar.org/omnia
+   conda install pyemma
 
 Python Package Index (PyPI)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -181,4 +191,6 @@ Recommended method for developers using GIT:
 
    python setup.py develop [--user]
 
-
+The develop install has the advantage that if only python scripts are being changed
+eg. via an pull or a local edit, you do not have to reinstall anything, because
+the setup command simply created a link to your working copy.

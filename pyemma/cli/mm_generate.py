@@ -4,41 +4,47 @@
 """
 import argparse
 import sys
+import os
+from pyemma.util.log import getLogger
+from pyemma.msm.generation import generate_traj
+import pyemma
 
-from pyemma.msm.generation import trajectory_generator
+log = getLogger('mm_generate')
+
 
 def handleArgs():
-# -o <filename>\n" 
-# "[-sigma <double>:{0.6}]\n"
-# + "[-dt <double>:{0.1}]\n" 
-# "[-randomseed <int>]\n" 
-#" -steps <int>\n" +
-# " -potdef <filename>\n" 
-# " -start <int> <int>\n";
-            
     parser = argparse.ArgumentParser()
-    
-    parser.add_argument('-o', '--output', dest='output', required=True, help='output filename of trajectory.')
-    parser.add_argument('-sigma', default=0.6)
-    parser.add_argument('-dt', default=0.1)
-    parser.add_argument('-randomseed', type=int)
+    parser.add_argument('-T', type=str, help='path to transition matrix.')
+    parser.add_argument('-o', '--output', dest='output',
+                        required=True, help='output filename of trajectory.')
+    parser.add_argument('-dt', type=int, default=1)
     parser.add_argument('-steps', type=int)
-    parser.add_argument('-potdef')
-    parser.add_argument('-start')
-    
+    parser.add_argument('-start_state', type=int)
+
     args = parser.parse_args()
-    
-    # perfom sanity checks
-    
+
     return args
 
 
 def main():
     args = handleArgs()
-    
-    trajectory_generator(T, start, stop)
-    
-    raise NotImplementedError
+
+    try:
+        _, ext = os.path.splitext(args.T)
+        if ext == '.npy':
+            pyemma.msm.io.load_matrix(args.T)
+        else:
+            T = pyemma.msm.io.read_matrix(args.T)
+    except IOError:
+        log.error('error during reading transition matrix file %s' % args.T)
+
+    traj = generate_traj(T, args.start_state, args.steps, args.dt)
+
+    try:
+        pyemma.msm.io.save_matrix(args.output, traj)
+    except IOError:
+        log.exception("error during saving resulting trajectory to %s"
+                      % args.output)
 
 if __name__ == '__main__':
     sys.exit(main())

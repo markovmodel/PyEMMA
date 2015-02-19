@@ -8,8 +8,9 @@ env:
     - PATH=$HOME/miniconda/bin:$HOME/miniconda/envs/ci/bin/:$PATH
     - common_py_deps="pip nose cython jpype1 mdtraj scikit-learn"
     - doc_deps="ipython sphinx matplotlib numpydoc pyzmq"
-#  matrix:
-    - deps="scipy=0.15 numpy=1.9"
+    - deps="scipy=0.11 numpy=1.7"
+  matrix:
+    secure: "byk9bmnGvP3qDfpYvPKX4909KeS6pJQtfW+GkSsuHy4vnp++gu2IsXC/CJeCB0r7hpoRp7Z+XlOtYmJLvb585LZmGaqIs5LKs1DimJniAg5anpywOnaXodspeFcz6UWtLlIAQQS3SvP9SXvvrlIiF8IwXqWfEewtoGbpiCj3dEo="
 #    - deps="scipy=0.11 numpy=1.7 cython"
 # - deps="numpy=0.12 numpy=1.8" 
 # - deps="numpy=0.13 numpy=1.8" 
@@ -22,7 +23,7 @@ before_install:
 - deactivate # travis python venv
 - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O mc.sh -o /dev/null
 - bash mc.sh -b
-- conda create -q --yes -n ci -c https://conda.binstar.org/omnia/
+- conda create -q --yes -n ci -c https://conda.binstar.org/marscher 
         python=$TRAVIS_PYTHON_VERSION $deps $common_py_deps 
 - source activate ci
 - python -c "import scipy; print scipy.__version__; print scipy.__numpy_version__"
@@ -40,7 +41,7 @@ after_success:
 deploy:
   edge: true # testing bleeding edge git deployment code
   provider: pypi
-  distributions: "sdist upload_docs"
+  distributions: "sdist"
   skip_cleanup: true
 # docs_dir is ignored by travis (despite the issue filed against this feature, maybe its not yet active?
 #  docs_dir: doc/build/html

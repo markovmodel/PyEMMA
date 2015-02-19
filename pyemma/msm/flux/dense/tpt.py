@@ -6,8 +6,6 @@ __moduleauthor__ = "Benjamin Trendelkamp-Schroer, Frank Noe"
 """
 import numpy as np
 
-import pathway_decomposition
-
 # ======================================================================
 # Flux matrix operations
 # ======================================================================
@@ -270,75 +268,3 @@ def mfpt(totflux, pi, qminus):
     
     """
     return 1.0 / rate(totflux, pi, qminus)
-
-
-
-# ======================================================================
-# Pathway functions
-# ======================================================================
-
-def pathways(F, A, B, qplus, fraction = 1.0, totalflux = None):
-    r"""
-    Performs a pathway decomposition of the net flux.
-    
-    Parameters
-    -----------
-    F : (n, n) ndarray
-        Matrix of flux values between pairs of states.
-    A : array-like of ints
-        A states (source, educt states)
-    B : array-like of ints
-        B states (sinks, product states)
-    qplus : (n) ndarray
-        Forward committor
-    fraction = 1.0 : float
-        The fraction of the total flux for which pathways will be computed.
-        When set larger than 1.0, will use 1.0. When set <= 0.0, no
-        pathways will be computed and two empty lists will be returned.
-        For example, when set to fraction = 0.9, the pathway decomposition 
-        will stop when 90% of the flux have been accumulated. This is very
-        useful for large flux networks which often contain a few major and
-        a lot of minor paths. In such networks, the algorithm would spend a
-        very long time in the last few percent of pathways
-
-    Returns
-    -------
-    (paths, pathfluxes) : (list of int-arrays, double-array)
-        paths in the order of decreasing flux. Each path is given as an 
-        int-array of state indexes, ordered by increasing forward committor 
-        values. The first index of each path will be a state in A,
-        the last index a state in B.
-        The corresponding figure in the pathfluxes-array is the flux carried 
-        by that path. The pathfluxes-array sums to the requested fraction of 
-        the total A->B flux.
-    """
-    from decimal import Decimal
-
-    # empty lists
-    paths = []
-    pathfluxes = []
-    cumflux = Decimal(0.0) # start with zero accumulated flux
-    if (totalflux is None):
-        totalflux = total_flux(F, A)
-    stopflux = Decimal(min(1.0, fraction) * totalflux)
-
-    # decompose
-    decomp = pathway_decomposition.PathwayDecomposition(F, qplus, A, B)
-
-    # add path by path until we have enough, or until there is no path left
-    while(cumflux < stopflux):
-        p = decomp.nextPathway()
-        if (p is not None):
-            f = decomp.getCurrentFlux()
-            if (fraction < 1.0 and cumflux + f > stopflux):
-                break
-            else:
-                paths.append(p)
-                pathfluxes.append(float(f))
-                cumflux += f
-        else:
-            break
-
-    # and return
-    return (paths, np.array(pathfluxes))
-

@@ -34,7 +34,8 @@ extensions = [
     'sphinx.ext.autosummary',
     #'sphinx.ext.todo',
     'numpydoc',
-    'sphinx.ext.pngmath',
+    #'sphinx.ext.pngmath',
+    'sphinx.ext.mathjax',
     #'sphinx.ext.intersphinx',
     #'sphinx.ext.coverage',
     #'sphinx.ext.viewcode'
@@ -101,6 +102,10 @@ pygments_style = 'sphinx'
 # A list of ignored prefixes for module index sorting.
 #modindex_common_prefix = []
 
+
+# -- options for mathjax
+mathjax_path = ("http://cdn.mathjax.org/mathjax/latest/MathJax.js?"
+                "config=TeX-AMS-MML_HTMLorMML")
 
 # -- Options for HTML output ---------------------------------------------
 
