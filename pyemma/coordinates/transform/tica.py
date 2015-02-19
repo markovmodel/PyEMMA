@@ -17,22 +17,22 @@ class TICA(Transformer):
     r"""
     Time-lagged independent component analysis (TICA)
 
-    Given a sequence of multivariate data X_t, computes the mean-free
+    Given a sequence of multivariate data :math:`X_t`, computes the mean-free
     covariance and time-lagged covariance matrix:
 
     .. math::
 
-        C_0 =   (X_t - \mu)^T (X_t - \mu) \
-        C_{\tau} = (X_t - \mu)^T (X_t+\tau - \mu)
+        C_0 &=   (X_t - \mu)^T (X_t - \mu) \\
+        C_{\tau} &= (X_t - \mu)^T (X_t+\tau - \mu)
     and solves the eigenvalue problem
 
-    .. math:: C_{tau} r_i = C_0 \lambda_i r_i
+    .. math:: C_{\tau} r_i = C_0 \lambda_i r_i
 
     where :math:`r_i` are the independent components and :math:`\lambda_i` are
     their respective normalized time-autocorrelations. The eigenvalues are
     related to the relaxation timescale by
 
-    .. math:: t_i = -\tau / ln |\lambda_i|
+    .. math:: t_i = -\tau / \ln |\lambda_i|
 
     When used as a dimension reduction method, the input data is projected
     onto the dominant independent components.

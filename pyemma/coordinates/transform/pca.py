@@ -12,10 +12,10 @@ class PCA(Transformer):
 
     r"""Principal component analysis.
 
-    Given a sequence of multivariate data math:`X_t`,
+    Given a sequence of multivariate data :math:`X_t`,
     computes the mean-free covariance matrix.
 
-    .. math:: C = (X-\mu)^T (X-\mu)
+    .. math:: C = (X - \mu)^T (X - \mu)
     and solves the eigenvalue problem
 
     .. math:: C r_i = \sigma_i r_i,
