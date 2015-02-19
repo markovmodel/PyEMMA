@@ -1,28 +1,31 @@
 import numpy as np
 import os
 import mdtraj as md
+from mdtraj.formats import XTCTrajectoryFile
 
 __all__ = ['regroup_RAM','regroup_DISK','PCCA_disctrajs']
 
+
 def regroup_RAM(trajs,disctrajs):
-    '''Regroups MD trajectories into clusters according to discretised trajectories.
-    
-       Parameters
-       ----------
-       trajs : list of `mdtraj.Trajectory`s
-       disctrajs : list of array-likes
-               len(disctrajs[i])==trajs[i].n_frames for all i
-    
-       Returns
-       -------
-       cluster : list of `mdtraj.Trajectory`s or `None`, len(cluster)=np.max(trajs)+1
-           each element cluster[i] is either `None` if i wasn't found in disctrajs or
-           is a new trajectory that holds all frames that were assigned to cluster i.
-           
-        Note
-        ----
-        This function is RAM intensive.
-    '''
+    r"""Regroups MD trajectories into clusters according to discretised trajectories.
+
+    Parameters
+    ----------
+    trajs : list of `mdtraj.Trajectory`s
+    disctrajs : list of array-likes
+        len(disctrajs[i])==trajs[i].n_frames for all i
+
+    Returns
+    -------
+    cluster : list of `mdtraj.Trajectory`s or `None`, len(cluster)=np.max(trajs)+1
+       each element cluster[i] is either `None` if i wasn't found in disctrajs or
+       is a new trajectory that holds all frames that were assigned to cluster i.
+
+    Notes
+    -----
+    This function is RAM intensive.
+
+    """
 
     # handle single element invocation
     if not isinstance(trajs,list):
@@ -49,28 +52,28 @@ def regroup_RAM(trajs,disctrajs):
     return cluster
 
 def regroup_DISK(trajs,topology_file,disctrajs,path,stride=1):
-    '''Regroups MD trajectories into clusters according to discretised trajectories.
-    
-       Parameters
-       ----------
-       trajs : list of strings 
-           xtc/dcd/... trajectory file names
-       topology_file : string
-           name of topology file that matches `trajs`
-       disctrajs : list of array-likes
-           discretized trajectories
-       path : string
-           file system path to directory where cluster trajectories are written
-       stride : int
-           stride of disctrajs with respect to the (original) trajs
-            
-       Returns
-       -------
-       cluster : list of file names or `None`, len(cluster)=np.max(trajs)+1
-           each element cluster[i] is either `None` if i wasn't found in disctrajs or
-           is a the file name of a new trajectory that holds all frames that were 
-           assigned to cluster i.
-    '''    
+    """Regroups MD trajectories into clusters according to discretised trajectories.
+
+    Parameters
+    ----------
+    trajs : list of strings 
+        xtc/dcd/... trajectory file names
+    topology_file : string
+        name of topology file that matches `trajs`
+    disctrajs : list of array-likes
+        discretized trajectories
+    path : string
+        file system path to directory where cluster trajectories are written
+    stride : int
+        stride of disctrajs with respect to the (original) trajs
+
+    Returns
+    -------
+    cluster : list of file names or `None`, len(cluster)=np.max(trajs)+1
+        each element cluster[i] is either `None` if i wasn't found in disctrajs or
+        is a the file name of a new trajectory that holds all frames that were 
+        assigned to cluster i.
+    """
     # handle single element invocation
     if not isinstance(trajs,list):
         trajs = [trajs]
@@ -84,7 +87,7 @@ def regroup_DISK(trajs,topology_file,disctrajs,path,stride=1):
 
     for i in states:
         cluster[i] = path+os.sep+('%d.xtc'%i)
-        writer[i] = md.formats.XTCTrajectoryFile(cluster[i],'w',force_overwrite=True)
+        writer[i] = XTCTrajectoryFile(cluster[i],'w',force_overwrite=True)
 
     for disctraj,traj in zip(disctrajs,trajs):
         reader = md.iterload(traj,top=topology_file,stride=stride)
@@ -100,27 +103,27 @@ def regroup_DISK(trajs,topology_file,disctrajs,path,stride=1):
     for i in states:
         writer[i].close()
         
-    return cluster 
+    return cluster
     
    
 def PCCA_disctrajs(disctrajs,connected_set,memberships):
-    '''Compute disctrajs coarse-grained to the PCCA sets.
-   
-       Parameters
-       ----------
-       disctrajs : list of array-likes
-           discretzed trajectories
-       connected_set : (N) ndarray 
-           connected set as returned by `pyemma.msm.estimation.largest_connected_set`
-       memberships : (N,M) ndarray
-           PCCA memberships as returned by `pyemma.msm.analysis.pcca`
-          
-       Returns
-       -------
-       cgdisctraj : list of array likes in the same shape as parameter `disctrajs`
-       If disctaj[i][j] was assigned to PCCA set k, then cgdisctraj[i][j]==k.
-       If disctaj[i][j] isn't in the connected set, cgdisctraj[i][j]==maxint.
-    '''
+    r"""Compute disctrajs coarse-grained to the PCCA sets.
+
+    Parameters
+    ---------
+    disctrajs : list of array-likes
+        discretzed trajectories
+    connected_set : (N) ndarray 
+        connected set as returned by `pyemma.msm.estimation.largest_connected_set`
+    memberships : (N,M) ndarray
+        PCCA memberships as returned by `pyemma.msm.analysis.pcca`
+
+    Returns
+    -------
+    cgdisctraj : list of array likes in the same shape as parameter `disctrajs`
+    If disctaj[i][j] was assigned to PCCA set k, then cgdisctraj[i][j]==k.
+    If disctaj[i][j] isn't in the connected set, cgdisctraj[i][j]==-1.
+    """
 
     if not isinstance(disctrajs,list):
         disctrajs = [disctrajs]
