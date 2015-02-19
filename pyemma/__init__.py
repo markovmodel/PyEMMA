@@ -1,7 +1,7 @@
 r"""
-==========================================
-    Emma2 - Emma's Markov Model Algorithms
-==========================================
+=======================================
+PyEMMA - Emma's Markov Model Algorithms
+=======================================
 """
 from . import coordinates
 from . import msm

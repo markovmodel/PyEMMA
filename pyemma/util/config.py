@@ -10,7 +10,7 @@ locations with different priorities:
 1. $CWD/pyemma.cfg
 2. /etc/pyemma.cfg
 3. ~/pyemma.cfg
-4. $PYTHONPATH/Emma2/pyemma.cfg (always taken as default configuration file)
+4. $PYTHONPATH/pyemma/pyemma.cfg (always taken as default configuration file)
 
 The default values are stored in later file to ensure these values are always
 defined. This is preferred over hardcoding them somewhere in the Python code.
