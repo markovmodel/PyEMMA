@@ -216,6 +216,8 @@ metadata = dict(
     install_requires=['numpy>=1.6.0',
                       'scipy>=0.11',
                       'pystallone>=1.0.0b3',
+                      'mdtraj',
+                      'scikit-learn',
                       'psutil'],
     zip_safe=False,
 )
