@@ -3,6 +3,7 @@ __author__ = 'noe'
 import numpy as np
 from .transformer import Transformer
 from pyemma.util.log import getLogger
+from pyemma.util.annotators import doc_inherit
 
 log = getLogger('PCA')
 __all__ = ['PCA']
@@ -38,6 +39,7 @@ class PCA(Transformer):
         super(PCA, self).__init__()
         self.output_dimension = output_dimension
 
+    @doc_inherit
     def describe(self):
         return "[PCA, output dimension = %i]" % self.output_dimension
 
@@ -49,12 +51,9 @@ class PCA(Transformer):
         """
         return self.output_dimension
 
+    @doc_inherit
     def get_constant_memory(self):
-        """
-        Returns the constant memory requirements, in bytes
-
-        :return:
-        """
+        """Returns the constant memory requirements, in bytes."""
         # memory for mu, C, v, R
         dim = self.data_producer.dimension()
 
@@ -66,6 +65,7 @@ class PCA(Transformer):
 
         return 8 * (cov_elements + mu_elements + v_elements + R_elements)
 
+    @doc_inherit
     def get_memory_per_frame(self):
         # memory for temporaries
         dim = self.data_producer.dimension()
@@ -76,12 +76,8 @@ class PCA(Transformer):
 
         return 8 * (x_meanfree_elements + dot_prod_elements)
 
+    @doc_inherit
     def param_init(self):
-        """
-        Initializes the parametrization.
-
-        :return:
-        """
         log.info("Running PCA")
         self.N = 0
         # create mean array and covariance matrix
@@ -135,13 +131,8 @@ class PCA(Transformer):
         # by default, continue
         return False
 
+    @doc_inherit
     def param_finish(self):
-        """
-        Finalizes the parameterization.
-
-        :return:
-        """
-        # diagonalize
         (v, R) = np.linalg.eig(self.C)
         # sort
         I = np.argsort(v)[::-1]

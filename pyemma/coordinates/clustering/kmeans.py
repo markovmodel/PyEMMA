@@ -7,6 +7,7 @@ import numpy as np
 from sklearn.cluster import MiniBatchKMeans
 
 from pyemma.util.log import getLogger
+from pyemma.util.annotators import doc_inherit
 from pyemma.coordinates.clustering.interface import AbstractClustering
 
 log = getLogger('KmeansClustering')
@@ -25,6 +26,7 @@ class KmeansClustering(AbstractClustering):
         amount of cluster centers
     max_iter : int 
         how many iterations per chunk?
+
     """
 
     def __init__(self, n_clusters, max_iter=1000):
@@ -38,15 +40,18 @@ class KmeansClustering(AbstractClustering):
 
         self.dtrajs = []
 
+    @doc_inherit
     def describe(self):
         return "[Kmeans, k=%i]" % self.n_clusters
 
     def dimension(self):
         return 1
 
+    @doc_inherit
     def get_memory_per_frame(self):
         return 1
 
+    @doc_inherit
     def get_constant_memory(self):
         return 1
 
@@ -72,9 +77,11 @@ class KmeansClustering(AbstractClustering):
             if last_chunk:
                 return True
 
+    @doc_inherit
     def param_finish(self):
         self.clustercenters = self.algo.cluster_centers_
 
+    @doc_inherit
     def map(self, X):
         if X.ndim == 1:
             X = self._ensure2d(X)

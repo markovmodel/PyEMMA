@@ -119,15 +119,20 @@ class Transformer(object):
     def get_memory_per_frame(self):
         """
         Returns the memory requirements per frame, in bytes
-
-        :return:
         """
         return 4 * self.dimension()
 
+    def get_constant_memory(self):
+        """Returns the constant memory requirements, in bytes."""
+        return 0
+
     def describe(self):
+        """ get a representation of this Transformer"""
         return self.__str__()
 
     def parametrize(self):
+        r""" parameterize this Transformer
+        """
         # check if ready
         if self.data_producer is None:
             raise RuntimeError('Called parametrize of %s while data producer is not'
@@ -157,14 +162,17 @@ class Transformer(object):
                         Y = None
                     else:
                         if self.trajectory_length(itraj) <= lag:
-                            log.error("trajectory nr %i to short, skipping it" % self.itraj)
+                            log.error(
+                                "trajectory nr %i to short, skipping it" % self.itraj)
                             break
                         X, Y = self.data_producer.next_chunk(lag=lag)
                     L = np.shape(X)[0]
                     # last chunk in traj?
-                    last_chunk_in_traj = (t + lag + L >= self.trajectory_length(itraj))
+                    last_chunk_in_traj = (
+                        t + lag + L >= self.trajectory_length(itraj))
                     # last chunk?
-                    last_chunk = (last_chunk_in_traj and itraj >= self.number_of_trajectories() - 1)
+                    last_chunk = (
+                        last_chunk_in_traj and itraj >= self.number_of_trajectories() - 1)
                     # first chunk
                     add_data_finished = self.param_add_data(
                         X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=Y)
@@ -183,8 +191,6 @@ class Transformer(object):
     def param_init(self):
         """
         Initializes the parametrization.
-
-        :return:
         """
         # create mean array and covariance matrix
         pass
@@ -192,12 +198,11 @@ class Transformer(object):
     def param_finish(self):
         """
         Finalizes the parametrization.
-
-        :return:
         """
         pass
 
     def map_to_memory(self):
+        """maps results to memory. Will be stored in attribute :attr:`Y`."""
         # if operating in main memory, do all the mapping now
         self.data_producer.reset()
         # iterate over trajectories
@@ -222,9 +227,7 @@ class Transformer(object):
             itraj += 1
 
     def reset(self):
-        """
-        reset data position
-        """
+        """reset data position"""
         if self.in_memory:
             # operate in memory, implement iterator here
             self.itraj = 0
@@ -263,7 +266,8 @@ class Transformer(object):
                     self.t = 0
                 return Y
             else:
-                Y0 = self.Y[self.itraj][self.t:min(self.t + self.chunksize, traj_len)]
+                Y0 = self.Y[self.itraj][
+                    self.t:min(self.t + self.chunksize, traj_len)]
                 Ytau = self.Y[self.itraj][
                     self.t + lag:min(self.t + self.chunksize + lag, traj_len)]
                 # increment counters
@@ -288,6 +292,16 @@ class Transformer(object):
         return self
 
     def next(self):
+        """ enable iteration over transformed data.
+
+        Returns
+        -------
+        (itraj, X) : (int, ndarray(n, m)
+            itraj corresponds to input sequence number (eg. trajectory index)
+            and X is the transformed data, n = chunksize or n < chunksize at end
+            of input.
+
+        """
         # iterate over trajectories
         if self.itraj >= self.number_of_trajectories():
             raise StopIteration
@@ -303,20 +317,32 @@ class Transformer(object):
 
     @staticmethod
     def distance(x, y):
-        """
+        """ stub for calculating the euclidian norm between x and y.
 
-        :param x:
-        :param y:
-        :return:
+        Parameters
+        ----------
+        x : ndarray(n)
+        y : ndarray(n)
+
+        Returns
+        -------
+        d : float
+            euclidean distance
         """
         return np.linalg.norm(x - y, 2)
 
     @staticmethod
     def distances(x, Y):
-        """
+        """ stub for calculating the euclidian norm between x and a set of points Y.
 
-        :param x: ndarray (n)
-        :param y: ndarray (Nxn)
-        :return:
+        Parameters
+        ----------
+        x : ndarray(n)
+        Y : ndarray(m, n)
+
+        Returns
+        -------
+        distances : ndarray(m)
+            euclidean distances between points in Y to x
         """
         return np.linalg.norm(Y - x, 2, axis=1)

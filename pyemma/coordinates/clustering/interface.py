@@ -22,7 +22,7 @@ class AbstractClustering(Transformer):
         self.dtrajs = []
 
     def map(self, x):
-        """ default impl of assignment """
+        """get closest index of point in :attr:`clustercenters` to x."""
         d = self.data_producer.distances(x, self.clustercenters)
         return np.argmin(d)
 

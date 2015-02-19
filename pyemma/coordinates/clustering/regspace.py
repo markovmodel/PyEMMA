@@ -5,6 +5,7 @@ Created on 26.01.2015
 '''
 
 from pyemma.util.log import getLogger
+from pyemma.util.annotators import doc_inherit
 from pyemma.coordinates.clustering.interface import AbstractClustering
 
 import numpy as np
@@ -38,9 +39,11 @@ class RegularSpaceClustering(AbstractClustering):
         self.dmin = dmin
         self.centroids = []
 
+    @doc_inherit
     def describe(self):
         return "[RegularSpaceClustering dmin=%i]" % self.dmin
 
+    @doc_inherit
     def map_to_memory(self):
         # nothing to do, because memory-mapping of the discrete trajectories is
         # done in parametrize
@@ -49,21 +52,13 @@ class RegularSpaceClustering(AbstractClustering):
     def dimension(self):
         return 1
 
+    @doc_inherit
     def get_memory_per_frame(self):
-        """
-        Returns the memory requirements per frame, in bytes
-
-        :return:
-        """
         # 4 bytes per frame for an integer index
         return 4
 
+    @doc_inherit
     def get_constant_memory(self):
-        """
-        Returns the constant memory requirements, in bytes
-
-        :return:
-        """
         # memory for cluster centers and discrete trajectories
         return 4 * self.data_producer.dimension() + 4 * self.data_producer.n_frames_total()
 
@@ -98,8 +93,10 @@ class RegularSpaceClustering(AbstractClustering):
                 assert len(self.centroids) >= 1
                 # create numpy array from clustercenters list
                 self.clustercenters = np.array(self.centroids)
-                log.debug("shape of clustercenters: %s" % str(self.clustercenters.shape))
-                log.info("number of clustercenters: %i" % len(self.clustercenters))
+                log.debug("shape of clustercenters: %s" %
+                          str(self.clustercenters.shape))
+                log.info("number of clustercenters: %i" %
+                         len(self.clustercenters))
                 self.dtrajs.append(
                     np.empty(self.data_producer.trajectory_length(itraj)))
             L = np.shape(X)[0]
@@ -110,6 +107,3 @@ class RegularSpaceClustering(AbstractClustering):
                 return True  # finished!
 
         return False
-
-#     def param_finish(self):
-#         pass

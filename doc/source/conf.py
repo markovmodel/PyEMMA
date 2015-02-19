@@ -41,6 +41,17 @@ extensions = [
     #'sphinx.ext.viewcode'
 ]
 
+# for edit on github button
+html_context = {
+    'github_user': 'markovmodel',
+    'display_github': True,
+    'github_repo': 'PyEMMA',
+    'github_version': 'devel',
+    'conf_py_path': '/doc/',
+    'html_logo': 'logo-200px.png',
+    'base_url': 'http://pythonhosted.org/pyEMMA'
+}
+
 # Add any paths that contain templates here, relative to this directory.
 #templates_path = ['_templates']
 
@@ -286,8 +297,9 @@ texinfo_documents = [
 # -----------------------------------------------------------------------------
 
 import glob
-autosummary_generate = glob.glob("*.rst")
-autosummary_generate += glob.glob("api/*.rst")
+
+autosummary_generate = True
+autodoc_default_flags = ['members', 'inherited-members']
 
 # see https://github.com/numpy/numpydoc/issues/5
 numpydoc_class_members_toctree = False
@@ -299,8 +311,8 @@ intersphinx_mapping = {
     'http://docs.scipy.org/doc/numpy': None,
     'http://docs.scipy.org/doc/scipy/reference/': None,
     'http://matplotlib.sourceforge.net/': None,
+    'http://mdtraj.org/latest/': None,
 }
-#autodoc_default_flags = []
 
 # todo list extension
 todo_include_todos = True

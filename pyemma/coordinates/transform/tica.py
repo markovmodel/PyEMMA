@@ -6,6 +6,8 @@ Created on 19.01.2015
 from .transformer import Transformer
 from pyemma.util.linalg import eig_corr
 from pyemma.util.log import getLogger
+from pyemma.util.annotators import doc_inherit
+
 import numpy as np
 
 log = getLogger('TICA')
@@ -41,7 +43,7 @@ class TICA(Transformer):
     ----------
     lag : int
         lag time
-    output_dim : int
+    output_dimension : int
         how many significant TICS to use to reduce dimension of input data
     epsilon : float
         eigenvalue norm cutoff. Eigenvalues of C0 with norms <= epsilon will be
@@ -55,7 +57,7 @@ class TICA(Transformer):
 
         # store lag time to set it appropriatly in second pass of parametrize
         self.__lag = lag
-        self.output_dim = output_dimension
+        self.output_dimension = output_dimension
         self.epsilon = epsilon
 
         # covariances
@@ -67,21 +69,16 @@ class TICA(Transformer):
         self.eigenvalues = None
         self.eigenvectors = None
 
+    @doc_inherit
     def describe(self):
         return "[TICA, lag = %i; output dimension = %i]" \
-            % (self.lag, self.output_dimension())
+            % (self.lag, self.output_dimension)
 
     def dimension(self):
-        """
-        Returns the number of output dimensions
+        """ output dimension"""
+        return self.output_dimension
 
-        :return:
-        """
-        return self.output_dim
-
-    def output_dimension(self):
-        return self.output_dim
-
+    @doc_inherit
     def get_memory_per_frame(self):
         # temporaries
         dim = self.data_producer.dimension()
@@ -91,6 +88,7 @@ class TICA(Transformer):
 
         return 8 * (mean_free_vectors + dot_product)
 
+    @doc_inherit
     def get_constant_memory(self):
         dim = self.data_producer.dimension()
 
@@ -102,17 +100,13 @@ class TICA(Transformer):
 
         return 8 * (cov_elements + mu_elements)
 
+    @doc_inherit
     def param_init(self):
-        """
-        Initializes the parametrization.
-
-        :return:
-        """
         dim = self.data_producer.dimension()
         assert dim > 0, "zero dimension from data producer"
-        assert self.output_dimension() <= dim, \
+        assert self.output_dimension <= dim, \
             ("requested more output dimensions (%i) than dimension"
-             " of input data (%i)" % (self.output_dimension(), dim))
+             " of input data (%i)" % (self.output_dimension, dim))
 
         self.N = 0
         # create mean array and covariance matrices
@@ -177,8 +171,8 @@ class TICA(Transformer):
 
         return False  # not finished yet.
 
+    @doc_inherit
     def param_finish(self):
-        """ Finalizes the parameterization."""
         # norm
         self.cov /= self.N - 1
         self.cov_tau /= self.N - self.lag - 1
@@ -197,9 +191,16 @@ class TICA(Transformer):
     def map(self, X):
         """Projects the data onto the dominant independent components.
 
-        :param X: the input data
-        :return: the projected data
+        Parameters
+        ----------
+        X : ndarray(n, m)
+            the input data
+
+        Returns
+        -------
+        Y : ndarray(n,)
+            the projected data
         """
         X_meanfree = X - self.mu
-        Y = np.dot(X_meanfree, self.eigenvectors[:, 0:self.output_dim])
+        Y = np.dot(X_meanfree, self.eigenvectors[:, 0:self.output_dimension])
         return Y
