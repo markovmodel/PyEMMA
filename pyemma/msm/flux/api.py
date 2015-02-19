@@ -1,14 +1,26 @@
-'''
-Created on Aug 15, 2014
+r"""
+==================
+Emma2 MSM Flux API
+==================
 
-__moduleauthor__ = "Benjamin Trendelkamp-Schroer, Frank Noe"
-'''
-import dense
-import sparse
+"""
+
+__docformat__ = "restructuredtext en"
 
 from scipy.sparse.base import issparse
 from scipy.sparse.sputils import isdense
 from scipy.sparse import csr_matrix
+
+import dense
+import sparse
+
+__author__ = "Benjamin Trendelkamp-Schroer, Martin Scherer, Frank Noe"
+__copyright__ = "Copyright 2014, Computational Molecular Biology Group, FU-Berlin"
+__credits__ = ["Benjamin Trendelkamp-Schroer", "Martin Scherer", "Frank Noe"]
+__license__ = "FreeBSD"
+__version__ = "2.0.0"
+__maintainer__ = "Martin Scherer"
+__email__="m.scherer AT fu-berlin DOT de"
 
 __all__=['tpt',
          'flux_matrix',

@@ -1,3 +1,8 @@
+r"""Decomposition of a netflux network into its dominant reaction pathways
+
+.. moduleauthor:: B.Trendelkamp-Schroer <benjamin DOT trendelkamp-schroer AT fu-berlin DOT de>
+
+"""
 import warnings
 import numpy as np
 import scipy.sparse.csgraph as csgraph
@@ -220,7 +225,13 @@ def pathways(F, A, B, fraction=1.0, maxiter=1000):
         List of dominant reaction pathways
     capacities: list
         List of capacities corresponding to each reactions pathway in paths
-        
+
+    References
+    ----------
+    .. [1] P. Metzner, C. Schuette and E. Vanden-Eijnden.
+        Transition Path Theory for Markov Jump Processes. 
+        Multiscale Model Simul 7: 1192-1219 (2009)    
+                
     """
     F, a, b = add_endstates(F, A, B)
     A = [a,]
