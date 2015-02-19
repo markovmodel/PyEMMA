@@ -28,12 +28,26 @@ class CustomFeature(object):
 
     If you simply want to call a function with arguments, you do not need to derive.
 
+
     Parameters
     ----------
     func : function
         will be invoked with given args and kwargs on mapping traj
     args : list of positional args (optional)
     kwargs : named arguments
+
+    Examples
+    --------
+    We use a FeatureReader to read md-trajectories and add a CustomFeature to
+    transform coordinates:
+
+    >>> reader = FeatureReader(...)
+    >>> my_feature = CustomFeature(lambda x: 1.0 / x**2)
+    >>> reader.featurizer.add_custom_feature(my_feature, output_dimension=3)
+
+    Now a pipeline using this reader will apply the math:`1 / x^2` transform on
+    every frame being red.
+
     """
 
     def __init__(self, func=None, *args, **kwargs):
@@ -128,7 +142,8 @@ class BackboneTorsionFeature:
 
 class MDFeaturizer(object):
 
-    """
+    """extracts features from MD trajectories.
+
     Parameters
     ----------
 
@@ -269,7 +284,9 @@ class MDFeaturizer(object):
         """
         Adds the list of angles to the feature list
 
-        :param indexes:
+        Parameters
+        ----------
+        indexes : np.ndarray, shape=(num_pairs, 2), dtype=int
         """
         f = CustomFeature(mdtraj.compute_angles, indexes=indexes)
 
@@ -315,6 +332,7 @@ class MDFeaturizer(object):
         self._dim += output_dimension
 
     def dimension(self):
+        """ current dimension due to selected features """
         return self._dim
 
     def map(self, traj):
