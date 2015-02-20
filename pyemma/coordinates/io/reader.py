@@ -14,12 +14,6 @@ class ChunkedReader(object):
     next_chunk(lag=0)
     """
 
-    def __init__(self, chunksize=0):
-        '''
-        Constructor
-        '''
+    def __init__(self, chunksize=0, lag=0):
         self.chunksize = chunksize
-
-    def parametrize(self):
-        # its there to be compatible with Transformer interface
-        pass
+        self.lag = 0
