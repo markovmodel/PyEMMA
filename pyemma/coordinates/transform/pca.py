@@ -137,7 +137,7 @@ class PCA(Transformer):
         # sort
         I = np.argsort(v)[::-1]
         self.v = v[I]
-        self.R = R[I, :]
+        self.R = R[:,I]
 
     def map(self, X):
         """
