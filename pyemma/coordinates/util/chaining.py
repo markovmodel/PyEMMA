@@ -12,7 +12,7 @@ def build_chain(transformers, chunksize=None):
     """
 
     for i in xrange(1, len(transformers)):
-        transformers[i - 1].data_source = transformers[i]
+        transformers[i].data_producer = transformers[i - 1]
 
     if chunksize is not None:
         for t in transformers:

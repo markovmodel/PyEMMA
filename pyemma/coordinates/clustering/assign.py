@@ -32,6 +32,7 @@ class AssignCenters(AbstractClustering):
     """
 
     def __init__(self, clustercenters):
+        super(AssignCenters, self).__init__()
 
         if isinstance(clustercenters, str):
             self.clustercenters = read_matrix(clustercenters)
@@ -39,3 +40,15 @@ class AssignCenters(AbstractClustering):
         assert isinstance(self.clustercenters, np.ndarray)
 
         self.clustercenters = clustercenters
+
+    def param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
+                       last_chunk, ipass, Y=None):
+        # discretize all
+        if t == 0:
+            n = self.data_producer.trajectory_length(itraj)
+            self.dtrajs.append(np.empty(n))
+        assignment = self.map(X)
+        self.dtrajs[itraj][:] = assignment
+
+        if last_chunk:
+            return True
