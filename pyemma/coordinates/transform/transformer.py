@@ -131,7 +131,7 @@ class Transformer(object):
         return self.__str__()
 
     def parametrize(self):
-        r""" parameterize this Transformer
+        r""" parametrize this Transformer
         """
         # check if ready
         if self.data_producer is None:
