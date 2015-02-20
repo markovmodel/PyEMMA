@@ -8,7 +8,7 @@ env:
     - PATH=$HOME/miniconda/bin:$HOME/miniconda/envs/ci/bin/:$PATH
     - common_py_deps="pip nose cython jpype1 mdtraj scikit-learn"
     - doc_deps="ipython sphinx matplotlib numpydoc pyzmq"
-    - deps="scipy=0.11 numpy"
+    - deps="scipy numpy"
   matrix:
     secure: "byk9bmnGvP3qDfpYvPKX4909KeS6pJQtfW+GkSsuHy4vnp++gu2IsXC/CJeCB0r7hpoRp7Z+XlOtYmJLvb585LZmGaqIs5LKs1DimJniAg5anpywOnaXodspeFcz6UWtLlIAQQS3SvP9SXvvrlIiF8IwXqWfEewtoGbpiCj3dEo="
 #    - deps="scipy=0.11 numpy=1.7 cython"
