@@ -70,7 +70,7 @@ class Discretizer(object):
             build_chain(self.transformers)
             self._estimate_chunksize_from_mem_requirement(reader)
 
-        self._parameterized = False
+        self._parametrized = False
 
     def run(self):
         """
@@ -79,12 +79,12 @@ class Discretizer(object):
         for trans in self.transformers:
             trans.parametrize()
 
-        self._parameterized = True
+        self._parametrized = True
 
     @property
     def dtrajs(self):
         """ get discrete trajectories """
-        if not self._parameterized:
+        if not self._parametrized:
             logger.info("not yet parametrized, running now.")
             self.run()
         return self.transformers[-1].dtrajs
