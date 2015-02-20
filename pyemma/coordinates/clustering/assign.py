@@ -37,15 +37,15 @@ class AssignCenters(AbstractClustering):
         if isinstance(clustercenters, str):
             self.clustercenters = read_matrix(clustercenters)
 
-        assert isinstance(self.clustercenters, np.ndarray)
-
         self.clustercenters = clustercenters
+        assert isinstance(self.clustercenters, np.ndarray)
 
     def param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
                        last_chunk, ipass, Y=None):
         # discretize all
         if t == 0:
             n = self.data_producer.trajectory_length(itraj)
+            self.dtrajs.append(np.empty(n))
         L = np.shape(X)[0]
         # TODO: optimize: assign one chunk at once
         for i in xrange(L):
