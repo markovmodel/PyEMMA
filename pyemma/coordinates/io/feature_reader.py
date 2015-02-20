@@ -66,7 +66,6 @@ class FeatureReader(ChunkedReader):
         self._totlength = np.sum(self._lengths)
 
         self.t = 0
-        self.itraj = 0
 
     def describe(self):
         """
@@ -281,9 +280,6 @@ class FeatureReader(ChunkedReader):
 
     def __iter__(self):
         self.reset()
-        self.last_chunk = False
-        self.itraj = 0
-        self.t = 0
         return self
 
     def next(self):
@@ -298,14 +294,12 @@ class FeatureReader(ChunkedReader):
 
         """
         # iterate over trajectories
-        if self.itraj >= self.number_of_trajectories():
+        if self.curr_itraj >= self.number_of_trajectories():
             raise StopIteration
+        X = self.next_chunk() # next chunk already maps output
 
-        X = self.next_chunk()
-        L = np.shape(X)[0]
-        self.t += L
-        last_itraj = self.itraj
-        if self.t >= self.trajectory_length(self.itraj):
-            self.itraj += 1
+        last_itraj = self.curr_itraj
+        if self.t >= self.trajectory_length(self.curr_itraj):
+            self.curr_itraj += 1
             self.t = 0
-        return (last_itraj, self.map(X))
+        return (last_itraj, X)
