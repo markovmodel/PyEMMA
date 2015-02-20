@@ -38,8 +38,6 @@ class KmeansClustering(AbstractClustering):
                                     batch_size=self.chunksize,
                                     )
 
-        self.dtrajs = []
-
     @doc_inherit
     def describe(self):
         return "[Kmeans, k=%i]" % self.n_clusters
