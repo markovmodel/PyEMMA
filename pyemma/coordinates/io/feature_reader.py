@@ -241,7 +241,6 @@ class FeatureReader(ChunkedReader):
             # build time lagged Trajectory by concatenating
             # last adv chunk and advance chunk
             i = lag - (self.chunksize * self.skip_n)
-            assert i == 0 
             padding_length = max(0, chunk.xyz.shape[0]
                                  - (self.last_advanced_chunk.xyz.shape[0] - i)
                                  - adv_chunk.xyz.shape[0])
@@ -296,10 +295,20 @@ class FeatureReader(ChunkedReader):
         # iterate over trajectories
         if self.curr_itraj >= self.number_of_trajectories():
             raise StopIteration
-        X = self.next_chunk() # next chunk already maps output
+
+        # next chunk already maps output
+        if self.lag == 0:
+            X = self.next_chunk()
+        else:
+            X, Y = self.next_chunk(self.lag)
 
         last_itraj = self.curr_itraj
+        # note: t is incremented in next_chunk
         if self.t >= self.trajectory_length(self.curr_itraj):
             self.curr_itraj += 1
             self.t = 0
-        return (last_itraj, X)
+
+        if self.lag == 0:
+            return (last_itraj, X)
+
+        return (last_itraj, X, Y)
