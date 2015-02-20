@@ -29,6 +29,15 @@ class FeatureReader(ChunkedReader):
     topologyfile: string
         path to topology file (e.g. pdb)
 
+    Examples
+    --------
+    Iterator access:
+
+    >>> reader = FeatureReader('mytraj.xtc', 'my_structure.pdb')
+    >>> chunks = []
+    >>> for itraj, X in reader:
+    >>>     chunks.append(X)
+
     """
 
     def __init__(self, trajectories, topologyfile):
@@ -190,10 +199,13 @@ class FeatureReader(ChunkedReader):
         self.skip_n = int(np.floor(1.0 * self.curr_lag / self.chunksize))
         log.debug("trying to skip %i frames in advanced iterator" %
                   self.skip_n)
+        i = 0
         for _ in xrange(self.skip_n):
             try:
                 self.mditer2.next()
+                i += 1
             except StopIteration:
+                log.debug("was able to increment %i times" % i)
                 break
 
     def reset(self):
@@ -217,7 +229,7 @@ class FeatureReader(ChunkedReader):
 
         if lag > 0:
             if self.curr_lag == 0:
-                # lag time changed
+                # lag time changed, so open lagged iterator
                 self.curr_lag = lag
                 self._open_time_lagged()
                 try:
