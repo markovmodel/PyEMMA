@@ -45,7 +45,7 @@ class CustomFeature(object):
     >>> my_feature = CustomFeature(lambda x: 1.0 / x**2)
     >>> reader.featurizer.add_custom_feature(my_feature, output_dimension=3)
 
-    Now a pipeline using this reader will apply the math:`1 / x^2` transform on
+    Now a pipeline using this reader will apply the :math:`1 / x^2` transform on
     every frame being red.
 
     """
