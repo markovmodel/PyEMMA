@@ -70,7 +70,7 @@ class KmeansClustering(AbstractClustering):
             # discretize all
             if t == 0:
                 n = self.data_producer.trajectory_length(itraj)
-                self.dtrajs.append(np.empty(n))
+                self.dtrajs.append(np.empty(n, dtype=int))
             assignment = self.algo.predict(X)
             self.dtrajs[itraj][:] = assignment
 

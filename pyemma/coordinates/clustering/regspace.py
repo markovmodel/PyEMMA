@@ -97,8 +97,8 @@ class RegularSpaceClustering(AbstractClustering):
                           str(self.clustercenters.shape))
                 log.info("number of clustercenters: %i" %
                          len(self.clustercenters))
-                self.dtrajs.append(
-                    np.empty(self.data_producer.trajectory_length(itraj)))
+                n = self.data_producer.trajectory_length(itraj)
+                self.dtrajs.append(np.empty(n, dtype=int))
             L = np.shape(X)[0]
             # TODO: optimize: assign one chunk at once
             for i in xrange(L):

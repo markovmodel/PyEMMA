@@ -45,7 +45,7 @@ class AssignCenters(AbstractClustering):
         # discretize all
         if t == 0:
             n = self.data_producer.trajectory_length(itraj)
-            self.dtrajs.append(np.empty(n))
+            self.dtrajs.append(np.empty(n, dtype=int))
         L = np.shape(X)[0]
         # TODO: optimize: assign one chunk at once
         for i in xrange(L):

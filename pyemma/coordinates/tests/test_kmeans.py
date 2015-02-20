@@ -19,6 +19,8 @@ class TestKmeans(unittest.TestCase):
     def testName(self):
         self.kmeans.parametrize()
 
+        assert self.kmeans.dtrajs[0].dtype == int
+
 
 if __name__ == "__main__":
     unittest.main()

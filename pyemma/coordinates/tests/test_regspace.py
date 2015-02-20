@@ -75,6 +75,8 @@ class TestRegSpaceClustering(unittest.TestCase):
     def testAlgo(self):
         self.clustering.parametrize()
 
+        assert self.clustering.dtrajs[0].dtype == int
+
         # assert distance for each centroid is at least dmin
         for c in itertools.combinations(self.clustering.centroids, 2):
             if np.allclose(c[0], c[1]):  # skip equal pairs
