@@ -57,20 +57,21 @@ class TestRegSpaceClustering(unittest.TestCase):
         self.dmin = 0.3
         self.clustering = RegularSpaceClustering(dmin=self.dmin)
         self.clustering.data_producer = RandomDataSource()
-        self.pr = cProfile.Profile()
-        self.pr.enable()
-        print "*" * 80
+        #self.pr = cProfile.Profile()
+        #self.pr.enable()
+        #print "*" * 80
 
 
     def tearDown(self):
-        from pstats import Stats
-        p = Stats(self.pr)
-        p.strip_dirs()
-
-        p.sort_stats('cumtime')
-        p.print_stats()
-
-        print "*" * 80
+        pass
+#         from pstats import Stats
+#         p = Stats(self.pr)
+#         p.strip_dirs()
+# 
+#         p.sort_stats('cumtime')
+#         p.print_stats()
+# 
+#         print "*" * 80
 
     def testAlgo(self):
         self.clustering.parametrize()
@@ -78,7 +79,7 @@ class TestRegSpaceClustering(unittest.TestCase):
         assert self.clustering.dtrajs[0].dtype == int
 
         # assert distance for each centroid is at least dmin
-        for c in itertools.combinations(self.clustering.centroids, 2):
+        for c in itertools.combinations(self.clustering.clustercenters, 2):
             if np.allclose(c[0], c[1]):  # skip equal pairs
                 continue
 
@@ -90,11 +91,11 @@ class TestRegSpaceClustering(unittest.TestCase):
     def testAssignment(self):
         self.clustering.parametrize()
 
-        assert len(self.clustering.centroids) > 1
+        assert len(self.clustering.clustercenters) > 1
 
-        # num states == num centroids?
+        # num states == num _clustercenters?
         self.assertEqual(len(np.unique(self.clustering.dtrajs)),  len(
-            self.clustering.centroids), "number of unique states in dtrajs"
+            self.clustering.clustercenters), "number of unique states in dtrajs"
             " should be equal.")
 
     def testSpreadData(self):

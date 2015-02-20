@@ -25,7 +25,7 @@ class RegularSpaceClustering(AbstractClustering):
     Parameters
     ----------
     dmin : float
-        minimum distance a new centroid has to have to all other centroids.
+        minimum distance between all clusters.
 
      References
     ----------
@@ -37,7 +37,8 @@ class RegularSpaceClustering(AbstractClustering):
         super(RegularSpaceClustering, self).__init__()
 
         self.dmin = dmin
-        self.centroids = []
+        # temporary list to store cluster centers
+        self._clustercenters = []
 
     @doc_inherit
     def describe(self):
@@ -74,25 +75,26 @@ class RegularSpaceClustering(AbstractClustering):
         if ipass == 0:
             # add first point as first centroid
             if first_chunk:
-                self.centroids.append(X[0])
+                self._clustercenters.append(X[0])
                 log.info("Run regspace clustering with dmin=%f;"
                          " First centroid=%s" % (self.dmin, X[0]))
             # TODO: optimize with cython, support different metrics
             # see mixtape.libdistance
             for x in X:
                 dist = np.fromiter((np.linalg.norm(x - c, 2)
-                                    for c in self.centroids), dtype=np.float32)
+                                    for c in self._clustercenters), dtype=np.float32)
 
                 minIndex = np.argmin(dist)
                 if dist[minIndex] >= self.dmin:
-                    self.centroids.append(x)
+                    self._clustercenters.append(x)
 
         elif ipass == 1:
             # discretize all
             if t == 0:
-                assert len(self.centroids) >= 1
+                assert len(self._clustercenters) >= 1
                 # create numpy array from clustercenters list
-                self.clustercenters = np.array(self.centroids)
+                self.clustercenters = np.array(self._clustercenters)
+                del self._clustercenters  # delete temporary
                 log.debug("shape of clustercenters: %s" %
                           str(self.clustercenters.shape))
                 log.info("number of clustercenters: %i" %
