@@ -64,6 +64,7 @@ class Discretizer(object):
 
         if chunksize is not None:
             build_chain(self.transformers, chunksize)
+            self._chunksize = chunksize
         else:
             self._chunksize = None
             build_chain(self.transformers)
