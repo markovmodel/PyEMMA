@@ -133,7 +133,7 @@ class PCA(Transformer):
 
     @doc_inherit
     def param_finish(self):
-        (v, R) = np.linalg.eig(self.C)
+        (v, R) = np.linalg.eigh(self.C)
         # sort
         I = np.argsort(v)[::-1]
         self.v = v[I]
