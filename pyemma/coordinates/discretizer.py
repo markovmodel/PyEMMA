@@ -7,7 +7,7 @@ from pyemma.coordinates.clustering.interface import AbstractClustering
 from pyemma.coordinates.transform.transformer import Transformer
 from pyemma.coordinates.io.reader import ChunkedReader
 from pyemma.coordinates.io.feature_reader import FeatureReader
-from pyemma.coordinates.util.stat.chaining import build_chain
+from pyemma.coordinates.util.chaining import build_chain
 
 from pyemma.util.log import getLogger
 
