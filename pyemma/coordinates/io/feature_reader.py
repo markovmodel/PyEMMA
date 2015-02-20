@@ -16,7 +16,10 @@ __all__ = ['FeatureReader']
 class FeatureReader(ChunkedReader):
 
     """
-    Reads features from MD data
+    Reads features from MD data.
+
+    To select a feature, access the :attr:`featurizer` and call a feature
+    selecting method (e.g) distances.
 
     Parameters
     ----------
@@ -33,6 +36,8 @@ class FeatureReader(ChunkedReader):
         ChunkedReader.__init__(self, 100)
 
         # files
+        if isinstance(trajectories, str):
+            trajectories = [trajectories]
         self.trajfiles = trajectories
         self.topfile = topologyfile
 
@@ -61,6 +66,7 @@ class FeatureReader(ChunkedReader):
         self._totlength = np.sum(self._lengths)
 
         self.t = 0
+        self.itraj = 0
 
     def describe(self):
         """
@@ -78,7 +84,7 @@ class FeatureReader(ChunkedReader):
         """
         self.in_memory = True
         # output data
-        self.Y = [np.zeros((self.trajectory_length(itraj), self.dimension()))
+        self.Y = [np.empty((self.trajectory_length(itraj), self.dimension()))
                   for itraj in xrange(self.number_of_trajectories())]
 
     def parametrize(self):
@@ -236,6 +242,7 @@ class FeatureReader(ChunkedReader):
             # build time lagged Trajectory by concatenating
             # last adv chunk and advance chunk
             i = lag - (self.chunksize * self.skip_n)
+            assert i == 0 
             padding_length = max(0, chunk.xyz.shape[0]
                                  - (self.last_advanced_chunk.xyz.shape[0] - i)
                                  - adv_chunk.xyz.shape[0])
@@ -271,3 +278,34 @@ class FeatureReader(ChunkedReader):
             X = self.featurizer.map(chunk)
             Y = self.featurizer.map(chunk_lagged)
             return X, Y
+
+    def __iter__(self):
+        self.reset()
+        self.last_chunk = False
+        self.itraj = 0
+        self.t = 0
+        return self
+
+    def next(self):
+        """ enable iteration over transformed data.
+
+        Returns
+        -------
+        (itraj, X) : (int, ndarray(n, m)
+            itraj corresponds to input sequence number (eg. trajectory index)
+            and X is the transformed data, n = chunksize or n < chunksize at end
+            of input.
+
+        """
+        # iterate over trajectories
+        if self.itraj >= self.number_of_trajectories():
+            raise StopIteration
+
+        X = self.next_chunk()
+        L = np.shape(X)[0]
+        self.t += L
+        last_itraj = self.itraj
+        if self.t >= self.trajectory_length(self.itraj):
+            self.itraj += 1
+            self.t = 0
+        return (last_itraj, self.map(X))
