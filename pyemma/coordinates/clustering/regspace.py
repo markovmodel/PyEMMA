@@ -91,10 +91,11 @@ class RegularSpaceClustering(AbstractClustering):
         elif ipass == 1:
             # discretize all
             if t == 0:
-                assert len(self._clustercenters) >= 1
-                # create numpy array from clustercenters list
-                self.clustercenters = np.array(self._clustercenters)
-                del self._clustercenters  # delete temporary
+                if itraj == 0:
+                    assert len(self._clustercenters) >= 1
+                    # create numpy array from clustercenters list
+                    self.clustercenters = np.array(self._clustercenters)
+                    del self._clustercenters  # delete temporary
                 log.debug("shape of clustercenters: %s" %
                           str(self.clustercenters.shape))
                 log.info("number of clustercenters: %i" %
