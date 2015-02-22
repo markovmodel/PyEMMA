@@ -270,7 +270,7 @@ class FeatureReader(ChunkedReader):
 
         self.t += chunk.xyz.shape[0]
 
-        if (self.t >= self.trajectory_length(self.curr_itraj) and
+        if (self.t + lag >= self.trajectory_length(self.curr_itraj) and
                 self.curr_itraj < len(self.trajfiles) - 1):
             log.debug('closing current trajectory "%s"'
                       % self.trajfiles[self.curr_itraj])
