@@ -25,12 +25,20 @@ the Python package:
 .. literalinclude:: ../../pyemma/pyemma.cfg
     :language: ini
 
-To access the config at runtime eg. the logging section 
+To access the config at runtime eg. the logging section:
 
 .. code-block:: python
 
     from pyemma.util.config import config
     print config.Logging.level
+
+Notes
+-----
+All values are being stored as strings, so to compare eg. if a value is True,
+compare for 
+.. code-block:: python
+    if config['section].my_bool == 'True':
+        pass
 
 
 .. codeauthor:: Martin Scherer <m.scherer at fu-berlin.de>
@@ -112,7 +120,7 @@ def readConfiguration():
     try:
         import psutil
         # available virtual memory in mb
-        max_avail = psutil.virtual_memory().available / 1024**2
+        max_avail = psutil.virtual_memory().available / 1024 ** 2
 
         maxheap = max(maxheap, max_avail)
     except ImportError:

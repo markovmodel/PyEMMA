@@ -35,7 +35,11 @@ def setupLogging():
     from pyemma.util.config import conf_values
     args = conf_values['Logging']
 
-    if args.enabled:
+    enabled = args.enabled == 'True'
+    toconsole = args.toconsole == 'True'
+    tofile = args.tofile == 'True'
+
+    if enabled:
         try:
             logging.basicConfig(level=args.level,
                                 format=args.format,
@@ -47,23 +51,31 @@ def setupLogging():
             return
         # in case we want to log to both file and stream, add a separate handler
         formatter = logging.Formatter(args.format)
+        root_logger = logging.getLogger('')
+        root_handlers = root_logger.handlers
 
-        if args.tofile:
+        if toconsole:
+            ch = root_handlers[0]
+            ch.setLevel(args.level)
+            ch.setFormatter(formatter)
+        else: # remove first handler (which should be streamhandler)
+            assert len(root_handlers) == 1
+            streamhandler = root_handlers.pop()
+            assert isinstance(streamhandler, logging.StreamHandler)
+        if tofile:
             # set delay to True, to prevent creation of empty log files
             fh = logging.FileHandler(args.file, mode='a', delay=True)
             fh.setFormatter(formatter)
             fh.setLevel(args.level)
-            logging.getLogger('').addHandler(fh)
-        if args.toconsole and args.tofile:
-            # since we have used basicConfig (without file args),
-            # a StreamHandler is already used. Set our arguments.
-            ch = logging.getLogger('').handlers[0]
-            ch.setLevel(args.level)
-            ch.setFormatter(formatter)
+            root_logger.addHandler(fh)
+
+        # if user enabled logging, but disallowed file and console logging, disable
+        # logging completely.
+        if not tofile and not toconsole:
+            enabled = False
+            dummyInstance = dummyLogger()
     else:
         dummyInstance = dummyLogger()
-
-    enabled = args.enabled
 
 
 def getLogger(name=None):
