@@ -94,7 +94,7 @@ class RegularSpaceClustering(AbstractClustering):
                 assert len(self._clustercenters) >= 1
                 # create numpy array from clustercenters list
                 self.clustercenters = np.array(self._clustercenters)
-                del self._clustercenters  # delete temporary
+
                 log.debug("shape of clustercenters: %s" %
                           str(self.clustercenters.shape))
                 log.info("number of clustercenters: %i" %
@@ -109,3 +109,6 @@ class RegularSpaceClustering(AbstractClustering):
                 return True  # finished!
 
         return False
+
+    def param_finish(self):
+        del self._clustercenters  # delete temporary
