@@ -29,6 +29,7 @@ package externalized on 8.8.2014
 from __future__ import absolute_import
 from pystallone import startJVM
 from .log import getLogger as _getLogger
+from pyemma.util.config import conf_values as _conf_values
 _log = _getLogger()
 
 
@@ -37,8 +38,7 @@ def _get_jvm_args():
     reads in the configuration values for the java virtual machine and 
     returns a list containing them all.
     """
-    from pyemma.util.config import conf_values
-    java_conf = conf_values['Java']
+    java_conf = _conf_values['Java']
     initHeap = '-Xms%s' % java_conf.initheap
     maxHeap = '-Xmx%s' % java_conf.maxheap
     # optargs may contain lots of options separated by whitespaces, need a list
@@ -46,12 +46,14 @@ def _get_jvm_args():
     optional_cp = "-Djava.class.path=%s" % java_conf.classpath
     return [initHeap, maxHeap, optional_cp] + optionalArgs
 
-try:
-    args = _get_jvm_args()
-    startJVM(None, args)
-except:
-    _log.exception("jvm startup failed")
-    raise
+if _conf_values['Java'].startup == 'True':
+    #_log.debug("try to startup java")
+    try:
+        args = _get_jvm_args()
+        startJVM(None, args)
+    except:
+        _log.exception("jvm startup failed")
+        raise
 
 # after we have successfully started the jvm, we import the rest of the symbols.
 from pystallone import *
