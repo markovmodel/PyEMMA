@@ -344,6 +344,7 @@ class MDFeaturizer(object):
         if self._dim == 0:
             return traj
 
+        # otherwise build feature vector.
         feature_vec = []
 
         for f in self.active_features:

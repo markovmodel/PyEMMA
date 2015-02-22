@@ -141,6 +141,7 @@ class DataInMemory(ChunkedReader):
                     self.itraj += 1
                 return X
             else:
+                logger.warning("chunked lagged access not debugged!")
                 X = traj[self.t: chunksize_bounds - lag]
                 assert np.shape(X)[0] > 0
                 #logger.debug("Y=traj[%i+%i : %i]" %
