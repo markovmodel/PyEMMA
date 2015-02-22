@@ -12,6 +12,4 @@ Submodules
    :toctree: generated/
 
 """
-from . import transform
-from . import io
-from . import clustering
+from .api import *

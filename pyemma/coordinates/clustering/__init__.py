@@ -1,20 +1,20 @@
 r"""
-=======================================================================================
-clustering - java algorithms for data clustering (:mod:`pyemma.coordinates.clustering`)
-=======================================================================================
+===============================================================================
+clustering - Algorithms (:mod:`pyemma.coordinates.clustering`)
+===============================================================================
 
-.. currentmodule:: pyemma.coordinates.clustering
-
-clustering
-==========
+.. currentmodule: pyemma.coordinates.clustering
 
 .. autosummary::
-   :toctree: generated/
+    :toctree: generated/
 
-   kmeans
-   regspace
-   assign
-
+    AssignCenters
+    KmeansClustering
+    RegularSpaceClustering
+    UniformTimeClustering
 """
 
-from .api import *
+from .assign import AssignCenters
+from .kmeans import KmeansClustering
+from .regspace import RegularSpaceClustering
+from .uniform_time import UniformTimeClustering
