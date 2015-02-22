@@ -33,7 +33,7 @@ install:
 - python setup.py install
 
 script:
-- echo "[Java]\nstartup=True" > ~/pyemma.cfg
+- printf "[Java]\nstartup=True" > ~/pyemma.cfg
 - cat ~/pyemma.cfg
 - python setup.py test 
 
