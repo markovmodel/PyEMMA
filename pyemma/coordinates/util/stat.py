@@ -39,8 +39,22 @@ def subsample(transform, dimensions, stride=1):
     '''
     trajs = [np.zeros((0, len(dimensions)))
              for _ in xrange(transform.number_of_trajectories())]
+    last_i = -1    
     for i, chunk in transform:
-        trajs[i] = np.concatenate((trajs[i], chunk[::stride, dimensions]))
+        if i != last_i:
+             t_0 = 0
+             t_next = 0
+             last_i = i
+        size = chunk.shape[0]
+        if t_next-t_0 < size:        
+            block =  chunk[t_next-t_0::stride, dimensions]
+            trajs[i] = np.concatenate((trajs[i], block))
+            n_out = (size - (t_next-t_0) - 1)//stride + 1
+            assert block.shape[0] == n_out
+        else:
+            n_out = 0
+        t_0 += size
+        t_next += stride*n_out
     return trajs
 
 
