@@ -162,9 +162,13 @@ class TICA(Transformer):
 
         if ipass == 1:
             X_meanfree = X - self.mu
-            Y_meanfree = Y - self.mu
             self.cov += np.dot(X_meanfree.T, X_meanfree)
-            self.cov_tau += np.dot(X_meanfree.T, Y_meanfree)
+            fake_data = max(t+X.shape[0]-self.trajectory_length(itraj)+self.lag,0)
+            end = X.shape[0]-fake_data
+            if end > 0:
+                X_meanfree = X[0:end] - self.mu
+                Y_meanfree = Y[0:end] - self.mu
+                self.cov_tau += np.dot(X_meanfree.T, Y_meanfree)
 
             if last_chunk:
                 return True  # finished!
@@ -175,7 +179,7 @@ class TICA(Transformer):
     def param_finish(self):
         # norm
         self.cov /= self.N - 1
-        self.cov_tau /= self.N - self.lag - 1
+        self.cov_tau /= self.N - self.lag*self.number_of_trajectories() - 1
 
         # symmetrize covariance matrices
         self.cov = self.cov + self.cov.T

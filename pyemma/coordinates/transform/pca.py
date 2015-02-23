@@ -146,5 +146,6 @@ class PCA(Transformer):
         :param X: the input data
         :return: the projected data
         """
-        Y = np.dot(X, self.R[:, 0:self.output_dimension])
+        X_meanfree = X - self.mu
+        Y = np.dot(X_meanfree, self.R[:, 0:self.output_dimension])
         return Y
