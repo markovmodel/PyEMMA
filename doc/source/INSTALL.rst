@@ -119,7 +119,7 @@ After setting it up, you can install Emma via the conda package manager from the
 
 ::
 
-   conda config --add channels http://conda.binstar.org/omnia
+   conda config --add channels https://conda.binstar.org/omnia
    conda install pyemma
 
 Python Package Index (PyPI)
