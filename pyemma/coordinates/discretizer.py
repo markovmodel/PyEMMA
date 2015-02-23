@@ -36,9 +36,11 @@ class Discretizer(object):
         the Transformer will be used to e.g reduce dimensionality of inputs.
     cluster : a clustering object
         used to assign input data to discrete states/ discrete trajectories.
+    chunksize : int 
+        how many frames shall be processed at once.
     """
 
-    def __init__(self, reader, transform=None, cluster=None, chunksize=None):
+    def __init__(self, reader, transform=None, cluster=None, chunksize=100):
         # check input
         assert isinstance(reader, ChunkedReader), \
             'reader is not of the correct type'
