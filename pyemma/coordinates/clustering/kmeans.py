@@ -32,7 +32,8 @@ class KmeansClustering(AbstractClustering):
     def __init__(self, n_clusters, max_iter=1000):
         super(KmeansClustering, self).__init__()
         self.n_clusters = n_clusters
-        # TODO: if we do not set a random_state here (eg. a forced seed) we get slightly different cluster centers each run
+        # TODO: if we do not set a random_state here (eg. a forced seed) we get
+        # slightly different cluster centers each run
         self.algo = MiniBatchKMeans(n_clusters,
                                     max_iter=max_iter,
                                     batch_size=self.chunksize,
@@ -70,7 +71,7 @@ class KmeansClustering(AbstractClustering):
                 n = self.data_producer.trajectory_length(itraj)
                 self.dtrajs.append(np.empty(n, dtype=int))
             assignment = self.algo.predict(X)
-            self.dtrajs[itraj][:] = assignment
+            self.dtrajs[itraj][t: t + assignment.shape[0]] = assignment
 
             if last_chunk:
                 return True
