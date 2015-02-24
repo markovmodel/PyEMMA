@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from pyemma.util.annotators import shortcut
 r"""
 =========================
 PyEMMA MSM Estimation API
@@ -43,7 +44,6 @@ __email__="m.scherer AT fu-berlin DOT de"
 __all__=['bootstrap_trajectories',
          'bootstrap_counts',
          'count_matrix',
-         'cmatrix', 
          'connected_sets',
          'error_perturbation',
          'largest_connected_set',
@@ -54,7 +54,6 @@ __all__=['bootstrap_trajectories',
          'prior_const',
          'prior_rev',
          'transition_matrix',
-         'tmatrix',
          'log_likelihood',
          'tmatrix_cov',
          'error_perturbation',
@@ -62,11 +61,15 @@ __all__=['bootstrap_trajectories',
          'bootstrap_counts',
          'bootstrap_trajectories']
 
+# shortcuts being added:
+# ['cmatrix', 'tmatrix']
+
 ################################################################################
 # Count matrix
 ################################################################################
 
 # DONE: Benjamin 
+@shortcut('cmatrix')
 def count_matrix(dtraj, lag, sliding=True, sparse_return=True, nstates=None):
     r"""Generate a count matrix from given microstate trajectory.
     
@@ -156,40 +159,6 @@ def count_matrix(dtraj, lag, sliding=True, sparse_return=True, nstates=None):
         return sparse.count_matrix.count_matrix_mult(dtraj, lag, sliding=sliding, sparse=sparse_return, nstates=nstates)
     else:
         return sparse.count_matrix.count_matrix(dtraj, lag, sliding=sliding, sparse=sparse_return, nstates=nstates)
-
-# DONE: Benjamin 
-def cmatrix(dtraj, lag, sliding=True, sparse_return=True, nstates=None):
-    r"""Generate a count matrix in from given microstate trajectory.
-    
-    Parameters
-    ----------
-    dtraj : array_like or list of array_like
-        Discretized trajectory or list of discretized trajectories
-    lag : int
-        Lagtime in trajectory steps
-    sliding : bool, optional
-        If true the sliding window approach 
-        is used for transition counting.
-    sparse_return : bool (optional)
-        Whether to return a dense or a sparse matrix
-    nstates : int, optional
-        Enforce a count-matrix with shape=(nstates, nstates)
-    
-    Returns
-    -------
-    C : scipy.sparse.coo_matrix
-        The countmatrix at given lag in coordinate list format.
-
-    See also
-    --------
-    count_matrix
-    
-    Notes
-    -----
-    This is a shortcut for a call to count_matrix.
-        
-    """
-    return count_matrix(dtraj, lag, sliding=sliding, sparse_return=True, nstates=nstates)
 
 # # TODO: Implement in Python directly
 # def count_matrix_cores(dtraj, cores, lag, sliding=True):
@@ -369,7 +338,7 @@ def connected_sets(C, directed=True):
     else:
         return sparse.connectivity.connected_sets(C, directed=directed)
 
-# DONE: Ben 
+# DONE: Ben
 def largest_connected_set(C, directed=True):
     r"""Largest connected component for a directed graph with edge-weights
     given by the count matrix.
@@ -424,6 +393,7 @@ def largest_connected_set(C, directed=True):
         return sparse.connectivity.largest_connected_set(C, directed=directed)
 
 # DONE: Ben 
+@shortcut('connected_cmatrix')
 def largest_connected_submatrix(C, directed=True, lcc=None):
     r"""Compute the count matrix on the largest connected set.   
     
@@ -482,52 +452,6 @@ def largest_connected_submatrix(C, directed=True, lcc=None):
         return sparse.connectivity.largest_connected_submatrix(csr_matrix(C), directed=directed, lcc=lcc).toarray()
     else:
         return sparse.connectivity.largest_connected_submatrix(C, directed=directed, lcc=lcc)
-
-def connected_cmatrix(C, directed=True, lcc=None):
-    r"""Compute the count matrix on the largest connected set.   
-    
-    Parameters
-    ----------
-    C : scipy.sparse matrix 
-        Count matrix specifying edge weights.
-    directed : bool, optional
-       Whether to compute connected components for a directed or
-       undirected graph. Default is True.       
-       
-    Returns
-    -------
-    C_cc : scipy.sparse matrix
-        Count matrix of largest completely 
-        connected set of vertices (states)
-        
-    See also
-    --------
-    largest_connected_submatrix
-
-    Notes
-    -----
-    Shortcut for largest_connected_submatrix.
-
-    Examples
-    --------
-    
-    >>> from pyemma.msm.estimation import largest_connected_submatrix
-
-    >>> C=np.array([10, 1, 0], [2, 0, 3], [0, 0, 4]])
-
-    >>> C_cc_directed=largest_connected_submatrix(C)
-    >>> C_cc_directed
-    array([[10,  1],
-           [ 2,  0]])
-
-    >>> C_cc_undirected=largest_connected_submatrix(C, directed=False)
-    >>> C_cc_undirected
-    array([[10,  1,  0],
-           [ 2,  0,  3],
-           [ 0,  0,  4]])
-           
-    """
-    return largest_connected_submatrix(C, directed=directed, lcc=lcc)
 
 # DONE: Jan
 def is_connected(C, directed=True):
@@ -687,8 +611,6 @@ def prior_const(C, alpha = 0.001):
         warnings.warn("Prior will be a dense matrix for sparse input")
         return sparse.prior.prior_const(C, alpha=alpha)
 
-__all__.append('prior_const')
-
 # DONE: Ben
 def prior_rev(C, alpha=-1.0):
     r"""Prior counts for sampling of reversible transition
@@ -753,6 +675,7 @@ def prior_rev(C, alpha=-1.0):
 # DONE: Jan Implement in Python directly (Nonreversible)
 # Done: Martin Map to Stallone (Reversible)
 # Done: Ben (Fix docstrings)
+@shortcut('tmatrix')
 def transition_matrix(C, reversible=False, mu=None, **kwargs):
     r"""Estimate the transition matrix from the given countmatrix.   
     
@@ -886,75 +809,6 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
                 return dense.transition_matrix.transition_matrix_non_reversible(C)
         else:
             raise NotImplementedError('nonreversible mle with fixed stationary distribution not implemented.')
-
-def tmatrix(C, reversible=False, mu=None, **kwargs):
-    r"""Estimate the transition matrix from the given countmatrix.   
-    
-    Parameters
-    ----------
-    C : numpy ndarray or scipy.sparse matrix
-        Count matrix
-    reversible : bool (optional)
-        If True restrict the ensemble of transition matrices
-        to those having a detailed balance symmetry otherwise
-        the likelihood optimization is carried out over the whole
-        space of stochastic matrices.
-    mu : array_like
-        The stationary distribution of the MLE transition matrix.
-    **kwargs: Optional algorithm-specific parameters. See below for special cases
-    eps = 1E-6 : float
-        Optional parameter with reversible = True and mu!=None.
-        Regularization parameter for the interior point method. This value is added
-        to the diagonal elements of C that are zero.
-    Xinit : (M, M) ndarray 
-        Optional parameter with reversible = True.
-        initial value for the matrix of absolute transition probabilities. Unless set otherwise,
-        will use X = diag(pi) t, where T is a nonreversible transition matrix estimated from C,
-        i.e. T_ij = c_ij / sum_k c_ik, and pi is its stationary distribution.
-    maxiter = 1000000 : int
-        Optional parameter with reversible = True.
-        maximum number of iterations before the method exits
-    maxerr = 1e-8 : float
-        Optional parameter with reversible = True.
-        convergence tolerance. This specifies the maximum change of the Euclidean norm of relative
-        stationary probabilities (x_i = sum_k x_ik). The relative stationary probability changes
-        e_i = (x_i^(1) - x_i^(2))/(x_i^(1) + x_i^(2)) are used in order to track changes in small
-        probabilities. The Euclidean norm of the change vector, |e_i|_2, is compared to convtol.
-    return_statdist = False : Boolean
-        Optional parameter with reversible = True.
-        If set to true, the stationary distribution is also returned
-    return_conv = False : Boolean
-        Optional parameter with reversible = True.
-        If set to true, the likelihood history and the pi_change history is returned.
-    
-    Returns
-    -------
-    P : (M, M) ndarray or scipy.sparse matrix
-       The MLE transition matrix. P has the same data type (dense or sparse) 
-       as the input matrix C.
-    The reversible estimator returns by default only P, but may also return
-    (P,pi) or (P,lhist,pi_changes) or (P,pi,lhist,pi_changes) depending on the return settings
-    P : ndarray (n,n)
-        transition matrix. This is the only return for return_statdist = False, return_conv = False
-    (pi) : ndarray (n)
-        stationary distribution. Only returned if return_statdist = True
-    (lhist) : ndarray (k)
-        likelihood history. Has the length of the number of iterations needed. 
-        Only returned if return_conv = True
-    (pi_changes) : ndarray (k)
-        history of likelihood history. Has the length of the number of iterations needed. 
-        Only returned if return_conv = True      
-        
-    See also
-    --------
-    transition_matrix
-    
-    Notes
-    -----
-    Shortcut for transition_matrix.
-    
-    """
-    return transition_matrix(C, reversible=reversible, mu=mu, **kwargs)
 
 # DONE: FN+Jan+Ben Implement in Python directly
 def log_likelihood(C, T):

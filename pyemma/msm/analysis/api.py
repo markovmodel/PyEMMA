@@ -14,6 +14,8 @@ import numpy as np
 from scipy.sparse import issparse, csr_matrix
 from scipy.sparse.sputils import isdense
 
+from pyemma.util.annotators import shortcut
+
 import dense.assessment
 import dense.committor
 import dense.fingerprints
@@ -40,12 +42,10 @@ __maintainer__ = "Martin Scherer"
 __email__="m.scherer AT fu-berlin DOT de"
 
 __all__=['is_transition_matrix',
-         'is_tmatrix',
          'is_rate_matrix',
          'is_connected',
          'is_reversible',
          'stationary_distribution',
-         'statdist',
          'eigenvalues',
          'timescales',
          'eigenvectors',
@@ -79,6 +79,7 @@ _type_not_supported = \
 ################################################################################
 
 # DONE : Martin, Ben
+@shortcut('is_tmatrix')
 def is_transition_matrix(T, tol=1e-12):
     r"""Check if the given matrix is a transition matrix.
     
@@ -121,28 +122,6 @@ def is_transition_matrix(T, tol=1e-12):
         return dense.assessment.is_transition_matrix(T, tol)
     else:
         raise _type_not_supported
-
-def is_tmatrix(T, tol=1e-12):
-    r"""Check if the given matrix is a transition matrix.
-    
-    Parameters
-    ----------
-    T : (M, M) ndarray or scipy.sparse matrix
-        Matrix to check
-    tol : float (optional)
-        Floating point tolerance to check with
-    
-    Returns
-    -------
-    is_transition_matrix : bool
-        True, if T is a valid transition matrix, False otherwise
-
-    See also
-    --------
-    is_transition_matrix
-    
-    """
-    return is_transition_matrix(T, tol=tol)
 
 # DONE: Martin, Ben
 def is_rate_matrix(K, tol=1e-12):
@@ -315,6 +294,7 @@ def is_reversible(T, mu=None, tol=1e-12):
 ################################################################################
 
 # DONE: Ben
+@shortcut('statdist')
 def stationary_distribution(T):
     r"""Compute stationary distribution of stochastic matrix T.
 
@@ -363,26 +343,6 @@ def stationary_distribution(T):
         return dense.decomposition.stationary_distribution_from_backward_iteration(T)
     else:
         raise _type_not_supported
-
-def statdist(T):
-    r"""Compute stationary distribution of stochastic matrix T.
-
-    Parameters
-    ----------
-    T : (M, M) ndarray or scipy.sparse matrix
-        Transition matrix
-
-    Returns
-    -------
-    mu : (M,) ndarray
-        Vector of stationary probabilities.
-
-    See also
-    --------
-    stationary_distribution
-
-    """
-    return stationary_distribution(T)
 
 # DONE: Martin, Ben
 def eigenvalues(T, k=None, ncv=None):
@@ -1501,6 +1461,7 @@ def eigenvector_sensitivity(T, k, j, right=True):
         raise _type_not_supported
 
 # DONE: Implement in Python directly
+@shortcut('statdist_sensitivity')
 def stationary_distribution_sensitivity(T, j):
     r"""Sensitivity matrix of a stationary distribution element.
     
@@ -1527,9 +1488,6 @@ def stationary_distribution_sensitivity(T, j):
         return dense.sensitivity.stationary_distribution_sensitivity(T, j)
     else:
         raise _type_not_supported
-
-statdist_sensitivity=stationary_distribution_sensitivity
-__all__.append('statdist_sensitivity')
 
 def mfpt_sensitivity(T, target, i):
     r"""Sensitivity matrix of the mean first-passage time from specified state.
