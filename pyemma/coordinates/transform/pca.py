@@ -37,11 +37,13 @@ class PCA(Transformer):
 
     def __init__(self, output_dimension):
         super(PCA, self).__init__()
-        self.output_dimension = output_dimension
+        self._output_dimension = output_dimension
+        self._dot_prod_tmp = None
+        self.Y = None
 
     @doc_inherit
     def describe(self):
-        return "[PCA, output dimension = %i]" % self.output_dimension
+        return "[PCA, output dimension = %i]" % self._output_dimension
 
     def dimension(self):
         """
@@ -49,7 +51,7 @@ class PCA(Transformer):
 
         :return:
         """
-        return self.output_dimension
+        return self._output_dimension
 
     @doc_inherit
     def get_constant_memory(self):
@@ -78,10 +80,11 @@ class PCA(Transformer):
 
     @doc_inherit
     def param_init(self):
-        log.info("Running PCA")
         self.N = 0
         # create mean array and covariance matrix
         dim = self.data_producer.dimension()
+        log.info("Running PCA on %i dimensional input" % dim)
+        assert dim > 0, "Incoming data of PCA has 0 dimension!"
         self.mu = np.zeros(dim)
         self.C = np.zeros((dim, dim))
 
@@ -110,22 +113,28 @@ class PCA(Transformer):
             time-lagged data (if available)
         :return:
         """
-        log.debug("itraj = " + str(itraj) + ". t = " + str(t) + ". last_chunk_in_traj = " + str(last_chunk_in_traj)
-                  + " last_chunk = " + str(last_chunk) + " ipass = " + str(ipass))
-
         # pass 1: means
         if ipass == 0:
-            self.mu += np.sum(X, axis=0)
+            if t == 0:
+                log.debug("start to calculate mean")
+                self._sum_tmp = np.empty(X.shape[1])
+            np.sum(X, axis=0, out=self._sum_tmp)
+            self.mu += self._sum_tmp
             self.N += np.shape(X)[0]
             if last_chunk:
                 self.mu /= self.N
 
         # pass 2: covariances
         if ipass == 1:
+            if t == 0:
+                log.debug("start calculate covariance")
+                self._dot_prod_tmp = np.empty_like(self.C)
             Xm = X - self.mu
-            self.C += np.dot(Xm.T, Xm)
+            np.dot(Xm.T, Xm, self._dot_prod_tmp)
+            self.C += self._dot_prod_tmp
             if last_chunk:
                 self.C /= self.N
+                log.debug("finished")
                 return True  # finished!
 
         # by default, continue
@@ -137,7 +146,7 @@ class PCA(Transformer):
         # sort
         I = np.argsort(v)[::-1]
         self.v = v[I]
-        self.R = R[:,I]
+        self.R = R[:, I]
 
     def map(self, X):
         """
@@ -147,5 +156,5 @@ class PCA(Transformer):
         :return: the projected data
         """
         X_meanfree = X - self.mu
-        Y = np.dot(X_meanfree, self.R[:, 0:self.output_dimension])
+        Y = np.dot(X_meanfree, self.R[:, 0:self._output_dimension])
         return Y
