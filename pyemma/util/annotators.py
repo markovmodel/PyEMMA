@@ -11,12 +11,13 @@ class Foo(object):
 class Bar(Foo):
     @doc_inherit
     def foo(self):
-        pass 
+        pass
 
 Now, Bar.foo.__doc__ == Bar().foo.__doc__ == Foo.foo.__doc__ == "Frobber"
 """
 
 from functools import wraps
+import inspect
 
 __all__ = ['doc_inherit']
 
@@ -69,3 +70,31 @@ class DocInherit(object):
         return func
 
 doc_inherit = DocInherit
+
+
+def shortcut(name):
+    """ add an shortcut (alias) to a decorated function.
+
+    The alias function will have the same docstring and will be appended to
+    the module __all__ variable, where the original function is defined.
+
+    Examples
+    --------
+    In some module you have defined a function
+    >>>@shortcut('is_tmatrix')
+    >>>def is_transition_matrix(args):
+    >>>    pass
+    Now you are able to call the function under its short name
+    >>> is_tmatrix(args)
+
+    """
+    # extract callers frame
+    frame = inspect.stack()[1][0]
+    # get caller module of decorator
+
+    def wrap(f):
+        # docstrings are also being copied
+        frame.f_globals[name] = f
+        frame.f_globals['__all__'].append(name)
+        return f
+    return wrap
