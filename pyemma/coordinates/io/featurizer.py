@@ -1,7 +1,14 @@
 __author__ = 'noe'
 
 import mdtraj
+from mdtraj.geometry.dihedral import _get_indices_phi, \
+    _get_indices_psi, compute_dihedrals
+
 import numpy as np
+
+from pyemma.util.log import getLogger
+
+log = getLogger('Featurizer')
 
 __all__ = ['MDFeaturizer',
            'CustomFeature',
@@ -98,45 +105,34 @@ class BackboneTorsionFeature:
     def __init__(self, topology):
         self.topology = topology
 
-    def _has_atom(self, res_index, name):
-        for atom in self.topology.atoms:
-            if atom.name.lower() == name.lower():
-                return True
-        return False
+        # this is needed for get_indices functions, since they expect a Trajectory,
+        # not a Topology
+        class fake_traj():
+            def __init__(self, top):
+                self.top = top
 
-    def _list_phis(self):
-        # phi: C-1, N, CA, C
-        phis = []
-        for ires in range(1, self.topology.n_residues):
-            if (self._has_atom(ires - 1, "C") and self._has_atom(ires, "N") and
-                    self._has_atom(ires, "CA") and self._has_atom(ires, "C")):
-                phis.append(ires)
-        return phis
+        ft = fake_traj(topology)
+        _, indices = _get_indices_phi(ft)
+        self._phi_inds = indices
 
-    def _list_psis(self):
-        # psi: N, CA, C, N+1
-        psis = []
-        for ires in range(0, self.topology.n_residues - 1):
-            if (self._has_atom(ires, "N") and self._has_atom(ires, "CA") and
-                    self._has_atom(ires, "C") and self._has_atom(ires + 1, "N")):
-                psis.append(ires)
-        return psis
+        _, indices = _get_indices_psi(ft)
+        self._psi_inds = indices
+
+        self.dim = len(self._phi_inds) + len(self._psi_inds)
 
     def describe(self):
         labels = []
-        phis = self._list_phis()
-        for ires in phis:
+        for ires in self._phi_inds:
             labels.append("PHI: %s %i" %
                           (self.topology.residue(ires).name, ires))
-        psis = self._list_psis()
-        for ires in psis:
+        for ires in self._psi_inds:
             labels.append("PSI: %s %i" %
                           (self.topology.residue(ires).name, ires))
         return labels
 
     def map(self, traj):
-        y1 = mdtraj.compute_phi(traj)[1].astype(np.float32)
-        y2 = mdtraj.compute_psi(traj)[1].astype(np.float32)
+        y1 = compute_dihedrals(traj, self._phi_inds).astype(np.float32)
+        y2 = compute_dihedrals(traj, self._psi_inds).astype(np.float32)
         return np.hstack((y1, y2))
 
 
@@ -199,7 +195,8 @@ class MDFeaturizer(object):
 
         :return:
         """
-        return self.topology.select("name C CA N")
+        # FIXME: this string raises
+        return self.topology.select("backbone name C[A] N")
 
     def select_Heavy(self):
         """
@@ -233,6 +230,7 @@ class MDFeaturizer(object):
         Adds the set of distances to the feature list
         :param atom_pairs:
         """
+        #assert atom_pairs.shape ==...
         # TODO: shall we instead append here?
         self.distance_indexes = atom_pairs
         f = DistanceFeature(self.topology, distance_indexes=atom_pairs)
@@ -266,6 +264,8 @@ class MDFeaturizer(object):
         Adds the set of contacts to the feature list
         :param atom_pairs:
         """
+        #assert atom_pairs.shape == ...
+        #assert in_bounds , ... 
         f = CustomFeature(mdtraj.compute_contacts, atom_pairs=atom_pairs)
 
         def describe():
@@ -286,8 +286,11 @@ class MDFeaturizer(object):
 
         Parameters
         ----------
-        indexes : np.ndarray, shape=(num_pairs, 2), dtype=int
+        indexes : np.ndarray, shape=(num_pairs, 3), dtype=int
+            an array with triplets of atom indices
         """
+        #assert indexes.shape == 
+
         f = CustomFeature(mdtraj.compute_angles, indexes=indexes)
 
         def describe():
@@ -313,7 +316,8 @@ class MDFeaturizer(object):
         """
         f = BackboneTorsionFeature(self.topology)
         self.active_features.append(f)
-        self._dim += 2 * self.topology.n_residues
+        log.debug("adding %i torsions angles" % f.dim)
+        self._dim += f.dim
 
     def add_custom_feature(self, feature, output_dimension):
         """
@@ -342,12 +346,17 @@ class MDFeaturizer(object):
         """
         # if there are no features selected, return given trajectory
         if self._dim == 0:
-            return traj
+            raise ValueError("You have no features selected.")
+
+        # TODO: define preprocessing step (RMSD etc.)
 
         # otherwise build feature vector.
         feature_vec = []
 
-        for f in self.active_features:
+        # only iterate over unique
+        # TODO: implement __hash__ and __eq__, see
+        # https://stackoverflow.com/questions/2038010/sets-of-instances
+        for f in set(self.active_features):
             feature_vec.append(f.map(traj).astype(np.float32))
 
         return np.hstack(feature_vec)
