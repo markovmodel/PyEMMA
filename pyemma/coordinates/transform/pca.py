@@ -133,7 +133,7 @@ class PCA(Transformer):
             np.dot(Xm.T, Xm, self._dot_prod_tmp)
             self.C += self._dot_prod_tmp
             if last_chunk:
-                self.C /= self.N
+                self.C /= self.N - 1
                 log.debug("finished")
                 return True  # finished!
 
