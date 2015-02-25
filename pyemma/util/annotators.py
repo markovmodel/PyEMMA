@@ -95,6 +95,7 @@ def shortcut(name):
     def wrap(f):
         # docstrings are also being copied
         frame.f_globals[name] = f
-        frame.f_globals['__all__'].append(name)
+        if frame.f_globals.has_key('__all__'):
+            frame.f_globals['__all__'].append(name)
         return f
     return wrap
