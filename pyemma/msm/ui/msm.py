@@ -20,8 +20,9 @@ class MSM(object):
 
         Parameters
         ----------
-        dtrajs : list
-            discrete trajectories
+        dtrajs : list containing ndarrays(dtype=int) or ndarray(n, dtype=int)
+            discrete trajectories, stored as integer ndarrays (arbitrary size)
+            or a single ndarray for only one trajectory.
         lag : int
             lagtime for the MSM estimation
         reversible : bool (optional)
@@ -41,17 +42,6 @@ class MSM(object):
         method.
 
         """
-        # have nested lists?
-        if any(isinstance(i, list) for i in dtrajs):
-            dtrajs = [np.array(d, dtype=int) for d in dtrajs]
-        else: # single list
-            if isinstance(dtrajs, list):
-                dtrajs = [np.array(dtrajs, dtype=int)]
-            # TODO: cmatrix impl determines if input is list and treats everything else as single dtraj!
-            if isinstance(dtrajs, np.ndarray) and dtrajs.ndim > 1:
-                # wrap dtraj in a list again
-                dtrajs = [d for d in dtrajs]
-
         self.dtrajs = dtrajs
         self.lagtime = lag
 

@@ -152,6 +152,23 @@ def count_matrix(dtraj, lag, sliding=True, sparse_return=True, nstates=None):
            [ 1.,  1.]])
     
     """
+    # convert dtraj input, if it contains out of nested python lists to 
+    # a list of int ndarrays.
+    # Otherwise if its already a list of integers/floats, convert to a single
+    # int ndarray.
+
+    # nested list?
+    if any(isinstance(i, list) for i in dtraj):
+        dtraj = [np.array(d, dtype=int) for d in dtraj]
+    else: # single list or ndarray
+        if isinstance(dtraj, list):
+            for d in dtraj:
+                if not isinstance(d, np.ndarray):
+                    dtraj = np.array(dtraj, dtype=int)
+                    break
+        elif isinstance(dtraj, np.ndarray) and dtraj.ndim > 1:
+            raise TypeError("Input should be list of integer ndarrays")
+
     if type(dtraj) is list:
         return sparse.count_matrix.count_matrix_mult(dtraj, lag, sliding=sliding, sparse=sparse_return, nstates=nstates)
     else:
