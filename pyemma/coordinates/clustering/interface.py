@@ -26,7 +26,9 @@ class AbstractClustering(Transformer):
         d = self.data_producer.distances(x, self.clustercenters)
         return np.argmin(d)
 
-    def save_dtrajs(self, trajfiles=None, prefix='', output_format='ascii',
+    def save_dtrajs(self, trajfiles=None, prefix='',
+                    output_dir='.',
+                    output_format='ascii',
                     extension='.dtraj'):
         """saves calculated discrete trajectories. Filenames are taken from
         given reader. If data comes from memory dtrajs are written to a default
@@ -39,6 +41,9 @@ class AbstractClustering(Transformer):
             names of input trajectory files, will be used generate output files.
         prefix : str
             prepend prefix to filenames.
+
+        output_dir : str
+            save files to this directory.
 
         output_format : str
             if format is 'ascii' dtrajs will be written as csv files, otherwise
@@ -64,12 +69,13 @@ class AbstractClustering(Transformer):
             for f in trajfiles:
                 p, n = path.split(f)  # path and file
                 basename, _ = path.splitext(n)
-                name = path.join(p, prefix + '_' + basename + extension)
+                name = "%s_%s%s" % (prefix, basename, extension)
+                name = path.join(p, name)
                 output_files.append(name)
         else:
             for i in xrange(len(dtrajs)):
                 if prefix is not '':
-                    name = prefix + '_' + i + extension
+                    name = "%s_%i%s" % (prefix, i, extension)
                 else:
                     name = i + extension
                 output_files.append(name)
@@ -77,11 +83,14 @@ class AbstractClustering(Transformer):
         assert len(dtrajs) == len(output_files)
 
         for filename, dtraj in zip(output_files, dtrajs):
+            dest = path.join(output_dir, filename)
+            log.debug('writing dtraj to "%s"' % dest)
             try:
-                if path.exists(filename):
+                if path.exists(dest):
                     # TODO: decide what to do if file already exists.
+                    log.warn('overwriting existing dtraj "%s"')
                     pass
-                write_dtraj(filename, dtraj)
+                write_dtraj(dest, dtraj)
             except IOError:
                 self.logger.exception(
-                    "Exception during writing dtraj to '%s'" % filename)
+                    'Exception during writing dtraj to "%s"' % dest)
