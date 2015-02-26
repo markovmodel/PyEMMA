@@ -159,6 +159,10 @@ class DataInMemory(ChunkedReader):
                     self.itraj += 1
                 return (X, Y)
 
+    def parametrize(self):
+        # nothing to do here, its just there for interface reasons
+        pass
+
     @staticmethod
     def distance(x, y):
         """
