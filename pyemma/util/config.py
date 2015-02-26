@@ -35,7 +35,8 @@ To access the config at runtime eg. the logging section:
 Notes
 -----
 All values are being stored as strings, so to compare eg. if a value is True,
-compare for 
+compare for
+
 .. code-block:: python
     if config['section].my_bool == 'True':
         pass
