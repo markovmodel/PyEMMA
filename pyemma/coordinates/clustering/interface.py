@@ -78,7 +78,7 @@ class AbstractClustering(Transformer):
 
         for filename, dtraj in zip(output_files, dtrajs):
             try:
-                if path.exists(output_files):
+                if path.exists(filename):
                     # TODO: decide what to do if file already exists.
                     pass
                 write_dtraj(filename, dtraj)
