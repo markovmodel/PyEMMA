@@ -23,4 +23,5 @@ def build_chain(transformers, chunksize=None):
 
 def run_chain(chain):
     for c in chain:
-        c.parametrize()
+        if hasattr(c, 'parametrize'):
+            c.parametrize()
