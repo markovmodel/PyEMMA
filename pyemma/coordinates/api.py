@@ -113,21 +113,29 @@ def pca(data=None, dim=2):
 
 def tica(data=None, lag=10, dim=2):
     """
-    Constructs a TICA object
+    Time-lagged independent component analysis (TICA). When data is given, the transform is immediately computed.
+    Otherwise, an empty TICA object is returned.
 
     Parameters
     ----------
-    data : ndarray
+    data : ndarray, optional, default = None
         array with the data, if available. When given, the TICA transformation
-        is immediately parametrized.
-    lag : int
+        is immediately computed and can be used to transform data.
+    lag : int, optional, default = 10
         the lag time, in multiples of the input time step
-    dim : int
+    dim : int, optional, default = 2
         the number of dimensions to project onto
 
     Returns
     -------
     tica : a TICA transformation object
+
+    References
+    ----------
+    .. [1] Perez-Hernandez G, F Paul, T Giorgino, G De Fabritiis and F Noe. 2013.
+    Identification of slow molecular order parameters for Markov model construction
+    J. Chem. Phys. 139, 015102. doi: 10.1063/1.4811489
+
     """
     res = TICA(lag, dim)
     if data is not None:

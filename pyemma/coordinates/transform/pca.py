@@ -145,8 +145,8 @@ class PCA(Transformer):
         (v, R) = np.linalg.eigh(self.C)
         # sort
         I = np.argsort(v)[::-1]
-        self.v = v[I]
-        self.R = R[:, I]
+        self.eigenvalues = v[I]
+        self.eigenvectors = R[:, I]
 
     def map(self, X):
         """
@@ -156,5 +156,5 @@ class PCA(Transformer):
         :return: the projected data
         """
         X_meanfree = X - self.mu
-        Y = np.dot(X_meanfree, self.R[:, 0:self._output_dimension])
+        Y = np.dot(X_meanfree, self.eigenvectors[:, 0:self._output_dimension])
         return Y
