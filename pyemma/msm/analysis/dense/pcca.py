@@ -7,6 +7,7 @@ https://github.com/CMD-at-ZIB/ZIBMolPy/blob/master/ZIBMolPy_package/ZIBMolPy/alg
 
 
 import numpy as np
+import math
 
 def pcca_connected_isa(evec, n_clusters):
     """
@@ -141,7 +142,8 @@ def opt_soft(eigvectors, rot_matrix, n_clusters):
     eigvectors = eigvectors[:,:n_clusters]
 
     # crop first row and first column from rot_matrix
-    rot_crop_matrix = rot_matrix[1:,1:]
+    #rot_crop_matrix = rot_matrix[1:,1:]
+    rot_crop_matrix = rot_matrix[1:][:,1:]
 
     (x, y) = rot_crop_matrix.shape
 
@@ -157,7 +159,7 @@ def opt_soft(eigvectors, rot_matrix, n_clusters):
 
         result = 0
         for i in range(0, n_clusters):
-            for j in range(1, n_clusters):
+            for j in range(0, n_clusters):
                 result += np.power(rot_matrix[j,i], 2) / rot_matrix[0,i]
         return -result
 
@@ -244,10 +246,19 @@ def pcca_connected(P, n, return_rot = False):
     if (n_components > 1):
         raise ValueError("Transition matrix is disconnected. Cannot use pcca_connected.")
 
+    from pyemma.msm.analysis import stationary_distribution
+    pi = stationary_distribution(P)
+
     # right eigenvectors, ordered
     from pyemma.msm.analysis import eigenvectors
     evecs = eigenvectors(P,n)
-    
+
+    # orthonormalize
+    for i in range(n):
+        evecs[:,i] /= math.sqrt(np.dot(evecs[:,i]*pi,evecs[:,i]))
+    # make first eigenvector positive
+    evecs[:,0] = np.abs(evecs[:,0])
+
     # Is there a significant complex component?
     if not np.alltrue(np.isreal(evecs)):
         raise Warning("The given transition matrix has complex eigenvectors, so it doesn't exactly fulfill detailed balance "
@@ -259,14 +270,15 @@ def pcca_connected(P, n, return_rot = False):
 
     # optimize the rotation matrix with PCCA++. 
     rot_matrix = opt_soft(evecs, rot_matrix, n)
-    #print "optimized rot matrix: \n",rot_matrix
 
     # These memberships should be nonnegative
     memberships = np.dot(evecs[:,:], rot_matrix)
-    
+
     # We might still have numerical errors. Force memberships to be in [0,1]
+    #print "memberships unnormalized: ",memberships
     memberships = np.maximum(0.0, memberships)
     memberships = np.minimum(1.0, memberships)
+    #print "memberships unnormalized: ",memberships
     for i in range(0,np.shape(memberships)[0]):
         memberships[i] /= np.sum(memberships[i])
 
