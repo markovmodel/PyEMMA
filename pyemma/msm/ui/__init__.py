@@ -25,3 +25,4 @@ ITS-object
 """
 from .msm import *
 from .timescales import *
+from .chapman_kolmogorov import *

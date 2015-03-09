@@ -5,7 +5,6 @@ modified from ZIBMolPy which can also be found on Github:
 https://github.com/CMD-at-ZIB/ZIBMolPy/blob/master/ZIBMolPy_package/ZIBMolPy/algorithms.py
 '''
 
-
 import numpy as np
 
 def pcca_connected_isa(evec, n_clusters):

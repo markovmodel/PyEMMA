@@ -1,10 +1,13 @@
 r"""Chapman-Kolmogorov test"""
-
 import numpy as np
+
+from warnings import warn
 
 from pyemma.msm.estimation import cmatrix, connected_cmatrix, largest_connected_set, tmatrix
 from pyemma.msm.analysis import statdist
 from pyemma.msm.analysis import pcca
+
+__all__=['cktest']
 
 class MapToConnectedStateLabels():
     def __init__(self, lcc):
@@ -59,7 +62,7 @@ def pcca_sets(P, n, lcc):
         sets.append(lcc[pcca_ind==i])
     return sets
 
-def chapman_kolmogorov(dtrajs, lag, K, nsets=2, sets=None):
+def cktest(dtrajs, lag, K, nsets=2, sets=None):
     r"""Perform Chapman-Kolmogorov tests for given data.
 
     Parameters
@@ -107,7 +110,8 @@ def chapman_kolmogorov(dtrajs, lag, K, nsets=2, sets=None):
     p_MSM = np.zeros((K, nsets))
     eps_MD = np.zeros((K, nsets))
     
-    for k in range(1, K):        
+    for k in range(1, K, 10):  
+        print k
         C_k = cmatrix(dtrajs, (k+1)*lag, sliding=True)
         lcc_k = largest_connected_set(C_k)
 
@@ -127,7 +131,22 @@ def chapman_kolmogorov(dtrajs, lag, K, nsets=2, sets=None):
         C=Ccc_k.toarray()
         for l in range(len(sets)):            
             w=np.zeros(len(lcc))
-            inds = lccmap.map(sets[l])
+            """There is a problem here - the initial sets will probably be bigger than the lcc at time k*\tau"""
+            
+            """Intersect the set with the lcc to avoid having sets 'bigger' than the lcc"""
+            set_l = sets[l]
+            set_l_new = np.intersect1d(lcc, set_l)
+            
+            # inds = lccmap.map(sets[l])
+            inds = np.asarray(lccmap.map(set_l_new))
+            if inds.size==0:
+                warn("""Set %d has empty intersection with
+                               the largest connected set at the
+                               current lagtime %d tau.  The
+                               probability to stay in the set is set
+                               to zero""" %(l, k), RuntimeWarning)                
+                prob_MD = 0.0
+                prob_MSM = 0.0
             nu = mu[inds]
             nu /= nu.sum()
             w[inds] = nu

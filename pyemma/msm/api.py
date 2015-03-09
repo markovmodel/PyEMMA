@@ -5,11 +5,10 @@ r"""User-API for the pyemma.msm package
 __docformat__ = "restructuredtext en"
 
 from flux import tpt as tpt_factory
-
-from ui.timescales import ImpliedTimescales
-from ui.msm import MSM
-from ui.chapman_kolmogorov import chapman_kolmogorov
-from estimation.dense import hidden_markov_model as hmm
+from ui import ImpliedTimescales
+from ui import MSM
+from ui import chapman_kolmogorov
+from estimation.dense.hidden_markov_model import HiddenMSM
 
 __author__ = "Benjamin Trendelkamp-Schroer, Martin Scherer, Frank Noe"
 __copyright__ = "Copyright 2014, Computational Molecular Biology Group, FU-Berlin"
@@ -249,7 +248,7 @@ def hmsm(dtrajs, nstate, lag=1, conv=0.01, maxiter=None, timeshift=None,
 
     """
     # initialize
-    return hmm.HiddenMSM(dtrajs, nstate, lag=lag, conv=conv, maxiter=maxiter,
+    return HiddenMSM(dtrajs, nstate, lag=lag, conv=conv, maxiter=maxiter,
                          timeshift=timeshift,
                          TCinit=TCinit, chiInit=chiInit)
 
