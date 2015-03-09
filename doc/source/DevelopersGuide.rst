@@ -9,10 +9,6 @@ Dev Workflow
 ------------
 Have a look at :doc:`DEVELOPMENT`.
 
-Python imports
---------------
-Relative imports (eg. you are in package A and import other modules from A)
-should be avoided due to pylint
 
 Commit messages
 ---------------
@@ -35,4 +31,20 @@ fast).
 
 Else you would have to look at the diff introduced by each commit (or filter
 with gitk, which is somehow painful).
+
+
+Testing
+-------
+We use Pythons unittest module to write implement test cases for every algorithm.
+
+To run all tests invoke: ::
+
+    python setup.py test
+
+or directly invoke nosetests in pyemma working copy: ::
+
+    nosetests $PYEMMA_DIR
+
+despite running all tests (which is encouraged if you are changing core features),
+you can run individual tests by directly invoking them with python interpreter.
 
