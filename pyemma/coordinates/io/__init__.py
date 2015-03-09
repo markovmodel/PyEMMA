@@ -1,21 +1,29 @@
 r"""
-==============================================================
-io - MD trajectory io functions (:mod:`pyemma.coordinates.io`)
-==============================================================
+===============================================================================
+io - IO Utilities (:mod:`pyemma.coordinates.io`)
+===============================================================================
 
-.. currentmodule:: pyemma.coordinates.io
+.. currentmodule: pyemma.coordinates.io
 
-MD trajectory io
+Order parameters
 ================
 
 .. autosummary::
-   :toctree: generated/
+    :toctree: generated/
 
-   reader - return reader object for MD trajectory
-   read_traj - load full trajectory into memory
-   writer - return writer object for MD trajectory
-   write_traj - write full MD trajectory to file
+    MDFeaturizer - selects and computes features from MD trajectories
+    CustomFeature -
+
+Reader
+======
+
+.. autosummary::
+    :toctree: generated/
+
+    FeatureReader - reads features via featurizer
+    DataInMemory - used if data is already available in mem
 
 """
-
-from .api import *
+from feature_reader import FeatureReader
+from featurizer import MDFeaturizer, CustomFeature
+from data_in_memory import DataInMemory

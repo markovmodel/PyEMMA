@@ -119,7 +119,47 @@ class TestCountMatrix(unittest.TestCase):
         with self.assertRaises(ValueError):
             C=count_matrix(self.S_short, 1, nstates=1)
 
-    
+
+class TestArguments(unittest.TestCase):
+
+    def testInputList(self):
+        dtrajs = [0, 1, 2, 0, 0, 1, 2, 1, 0]
+        count_matrix(dtrajs, 1)
+
+    def testInput1Array(self):
+        dtrajs = np.array([0, 1, 2, 0, 0, 1, 2, 1, 0])
+        count_matrix(dtrajs, 1)
+
+    def testInputNestedLists(self):
+        dtrajs = [[0, 1, 2, 0, 0, 1, 2, 1, 0],
+                  [0, 1, 0, 1, 1, 1, 1, 0, 2]]
+        count_matrix(dtrajs, 1)
+
+    def testInputNestedListsDiffSize(self):
+        dtrajs = [[0, 1, 2, 0, 0, 1, 2, 1, 0],
+                  [0, 1, 0, 1, 1, 1, 1, 0, 2, 1, 2, 1]]
+        count_matrix(dtrajs, 1)
+
+    def testInputArray(self):
+        dtrajs = np.array([0, 1, 2, 0, 0, 1, 2, 1, 0])
+        count_matrix(dtrajs, 1)
+
+    def testInputArrays(self):
+        """ this is not supported, has to be list of ndarrays """
+        dtrajs = np.array([[0, 1, 2, 0, 0, 1, 2, 1, 0],
+                           [0, 1, 2, 0, 0, 1, 2, 1, 1]])
+
+        with self.assertRaises(TypeError):
+            count_matrix(dtrajs, 1)
+
+    def testInputFloat(self):
+        dtraj_with_floats = [0.0, 1, 0, 2, 3, 1, 0.0]
+        dtraj_int = [0, 1, 0, 2, 3, 1, 0]
+        C_f = count_matrix(dtraj_with_floats, 1)
+        C_i = count_matrix(dtraj_int, 1)
+
+        np.testing.assert_array_equal(C_f.toarray(), C_i.toarray())
+
 if __name__=="__main__":
     unittest.main()
 

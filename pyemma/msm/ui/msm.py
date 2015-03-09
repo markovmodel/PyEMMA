@@ -4,6 +4,8 @@ and provides them for later access."""
 
 __docformat__ = "restructuredtext en"
 
+import numpy as np
+
 from pyemma.msm.estimation import cmatrix, largest_connected_set, connected_cmatrix, tmatrix
 from pyemma.msm.analysis import statdist, timescales
 
@@ -18,8 +20,9 @@ class MSM(object):
 
         Parameters
         ----------
-        dtrajs : list
-            discrete trajectories
+        dtrajs : list containing ndarrays(dtype=int) or ndarray(n, dtype=int)
+            discrete trajectories, stored as integer ndarrays (arbitrary size)
+            or a single ndarray for only one trajectory.
         lag : int
             lagtime for the MSM estimation
         reversible : bool (optional)
