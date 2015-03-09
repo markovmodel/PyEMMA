@@ -101,7 +101,8 @@ class TestPCCA(unittest.TestCase):
         assert_allclose(chi, sol)
 
     def test_pcca_large(self):
-        P = np.loadtxt('./pyemma/msm/analysis/tests/P_rev_251x251.dat')
+        import os
+        P = np.loadtxt(os.path.split(__file__)[0]+'/../tests/P_rev_251x251.dat')
         # n=2
         chi = pcca(P, 2)
         assert(np.alltrue(chi >= 0))
