@@ -3,7 +3,7 @@ import numpy as np
 
 from pyemma.coordinates.acf import acf
 
-class TestTICA(unittest.TestCase):
+class TestACF(unittest.TestCase):
     def test(self):
         # generate some data
         data = np.random.rand(100,3)
