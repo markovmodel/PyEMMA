@@ -8,68 +8,73 @@ PyEMMA MSM Estimation API
 
 __docformat__ = "restructuredtext en"
 
-import warnings
+import warnings as _warnings
 
-import numpy as np
+import numpy as _np
 
-from scipy.sparse import csr_matrix
-from scipy.sparse import issparse
-from scipy.sparse.sputils import isdense
+from scipy.sparse import csr_matrix as _csr_matrix
+from scipy.sparse import issparse as _issparse
+from scipy.sparse.sputils import isdense as _isdense
 
-import sparse.count_matrix
-import sparse.connectivity
-import sparse.likelihood
-import sparse.transition_matrix
-import sparse.prior
-import sparse.mle_trev_given_pi
-import sparse.mle_trev
+import sparse.count_matrix as _s_cmatrix
+import sparse.connectivity as _s_connectivity
+import sparse.likelihood as _s_likelihood
+import sparse.transition_matrix as _s_tmatrix
+import sparse.prior as _s_prior
+import sparse.mle_trev_given_pi as _s_mle_trev_given_pi
+import sparse.mle_trev as _s_mle_trev
 
-import dense.bootstrapping
-import dense.transition_matrix
-import dense.covariance
-import dense.mle_trev_given_pi
+import dense.bootstrapping as _d_bootstrapping
+import dense.transition_matrix as _d_tmatrix
+import dense.covariance as _d_cov
+import dense.mle_trev_given_pi as _d_mle_trev_given_pi
 
-from pyemma.util.log import getLogger
+from pyemma.util.log import getLogger as _getLogger
+log = _getLogger('MSM-Estimation')
+
 from pyemma.msm.estimation.dense.tmatrix_sampler_jwrapper import ITransitionMatrixSampler
 
 __author__ = "Benjamin Trendelkamp-Schroer, Martin Scherer, Frank Noe"
 __copyright__ = "Copyright 2014, Computational Molecular Biology Group, FU-Berlin"
-__credits__ = ["Benjamin Trendelkamp-Schroer", "Martin Scherer", "Fabian Paul", "Frank Noe"]
+__credits__ = ["Benjamin Trendelkamp-Schroer",
+               "Martin Scherer", "Fabian Paul", "Frank Noe"]
 __license__ = "FreeBSD"
 __version__ = "2.0.0"
 __maintainer__ = "Martin Scherer"
-__email__="m.scherer AT fu-berlin DOT de"
+__email__ = "m.scherer AT fu-berlin DOT de"
 
-__all__=['bootstrap_trajectories',
-         'bootstrap_counts',
-         'count_matrix',
-         'cmatrix', 
-         'connected_sets',
-         'error_perturbation',
-         'largest_connected_set',
-         'largest_connected_submatrix',
-         'connected_cmatrix',
-         'is_connected',
-         'prior_neighbor',
-         'prior_const',
-         'prior_rev',
-         'transition_matrix',
-         'tmatrix',
-         'log_likelihood',
-         'tmatrix_cov',
-         'error_perturbation',
-         'tmatrix_sampler',
-         'bootstrap_counts',
-         'bootstrap_trajectories']
+__all__ = ['bootstrap_trajectories',
+           'bootstrap_counts',
+           'count_matrix',
+           'cmatrix',
+           'connected_sets',
+           'error_perturbation',
+           'largest_connected_set',
+           'largest_connected_submatrix',
+           'connected_cmatrix',
+           'is_connected',
+           'prior_neighbor',
+           'prior_const',
+           'prior_rev',
+           'transition_matrix',
+           'tmatrix',
+           'log_likelihood',
+           'tmatrix_cov',
+           'error_perturbation',
+           'tmatrix_sampler',
+           'bootstrap_counts',
+           'bootstrap_trajectories']
 
-################################################################################
+##########################################################################
 # Count matrix
-################################################################################
+##########################################################################
 
-# DONE: Benjamin 
+# DONE: Benjamin
+
+
 def count_matrix(dtraj, lag, sliding=True, sparse_return=True, nstates=None):
     r"""Generate a count matrix from given microstate trajectory.
-    
+
     Parameters
     ----------
     dtraj : array_like or list of array_like
@@ -83,7 +88,7 @@ def count_matrix(dtraj, lag, sliding=True, sparse_return=True, nstates=None):
         Whether to return a dense or a sparse matrix.
     nstates : int, optional
         Enforce a count-matrix with shape=(nstates, nstates)
-    
+
     Returns
     -------
     C : scipy.sparse.coo_matrix
@@ -95,7 +100,7 @@ def count_matrix(dtraj, lag, sliding=True, sparse_return=True, nstates=None):
     two methods. Couning at lag and slidingwindow counting.
 
     **Lag**
-    
+
     This approach will skip all points in the trajectory that are
     seperated form the last point by less than the given lagtime
     :math:`\tau`.
@@ -126,12 +131,12 @@ def count_matrix(dtraj, lag, sliding=True, sparse_return=True, nstates=None):
 
     Examples
     --------
-    
+
     >>> from pyemma.msm.estimation import count_matrix
 
     >>> dtraj=np.array([0, 0, 1, 0, 1, 1, 0])
     >>> tau=2
-    
+
     Use the sliding approach first
 
     >>> C_sliding=count_matrix(dtraj, tau)
@@ -145,39 +150,41 @@ def count_matrix(dtraj, lag, sliding=True, sparse_return=True, nstates=None):
 
     Let us compare to the count-matrix we obtain using the lag
     approach
-    
+
     >>> C_lag=count_matrix(dtraj, tau, sliding=False)
     >>> C_lag.toarray()
     array([[ 0.,  1.],
            [ 1.,  1.]])
-    
+
     """
-    # convert dtraj input, if it contains out of nested python lists to 
+    # convert dtraj input, if it contains out of nested python lists to
     # a list of int ndarrays.
     # Otherwise if its already a list of integers/floats, convert to a single
     # int ndarray.
 
     # nested list?
     if any(isinstance(i, list) for i in dtraj):
-        dtraj = [np.array(d, dtype=int) for d in dtraj]
-    else: # single list or ndarray
+        dtraj = [_np.array(d, dtype=int) for d in dtraj]
+    else:  # single list or ndarray
         if isinstance(dtraj, list):
             for d in dtraj:
-                if not isinstance(d, np.ndarray):
-                    dtraj = np.array(dtraj, dtype=int)
+                if not isinstance(d, _np.ndarray):
+                    dtraj = _np.array(dtraj, dtype=int)
                     break
-        elif isinstance(dtraj, np.ndarray) and dtraj.ndim > 1:
+        elif isinstance(dtraj, _np.ndarray) and dtraj.ndim > 1:
             raise TypeError("Input should be list of integer ndarrays")
 
     if type(dtraj) is list:
-        return sparse.count_matrix.count_matrix_mult(dtraj, lag, sliding=sliding, sparse=sparse_return, nstates=nstates)
+        return _s_cmatrix.count_matrix_mult(dtraj, lag, sliding=sliding, sparse=sparse_return, nstates=nstates)
     else:
-        return sparse.count_matrix.count_matrix(dtraj, lag, sliding=sliding, sparse=sparse_return, nstates=nstates)
+        return _s_cmatrix.count_matrix(dtraj, lag, sliding=sliding, sparse=sparse_return, nstates=nstates)
 
-# DONE: Benjamin 
+# DONE: Benjamin
+
+
 def cmatrix(dtraj, lag, sliding=True, sparse_return=True, nstates=None):
     r"""Generate a count matrix in from given microstate trajectory.
-    
+
     Parameters
     ----------
     dtraj : array_like or list of array_like
@@ -191,7 +198,7 @@ def cmatrix(dtraj, lag, sliding=True, sparse_return=True, nstates=None):
         Whether to return a dense or a sparse matrix
     nstates : int, optional
         Enforce a count-matrix with shape=(nstates, nstates)
-    
+
     Returns
     -------
     C : scipy.sparse.coo_matrix
@@ -200,41 +207,40 @@ def cmatrix(dtraj, lag, sliding=True, sparse_return=True, nstates=None):
     See also
     --------
     count_matrix
-    
+
     Notes
     -----
     This is a shortcut for a call to count_matrix.
-        
+
     """
     return count_matrix(dtraj, lag, sliding=sliding, sparse_return=True, nstates=nstates)
 
-# # TODO: Implement in Python directly
+# TODO: Implement in Python directly
 # def count_matrix_cores(dtraj, cores, lag, sliding=True):
 #     r"""Generate a countmatrix for the milestoning process on the
 #     given core sets.
-#     
+#
 #     """
 #     raise NotImplementedError('Not implemented.')
-# 
-# # shortcut
+#
+# shortcut
 # cmatrix_cores=count_matrix_cores
 
 
-
-################################################################################
+##########################################################################
 # Bootstrapping data
-################################################################################
+##########################################################################
 
 def bootstrap_trajectories(trajs, correlation_length):
     r"""Generates a randomly resampled trajectory segments.
-    
+
     Parameters
     ----------
     trajs : array-like or array-like of array-like
         single or multiple trajectories. Every trajectory is assumed to be
         a statistically independent realization. Note that this is often not true and 
         is a weakness with the present bootstrapping approach.
-            
+
     correlation_length : int
         Correlation length (also known as the or statistical inefficiency) of the data.
         If set to < 1 or > L, where L is the longest trajectory length, the 
@@ -288,21 +294,21 @@ def bootstrap_trajectories(trajs, correlation_length):
     .. [4] F. Noe and F. Nueske: A variational approach to modeling
         slow processes in stochastic dynamical systems.  SIAM
         Multiscale Model. Simul., 11 . pp. 635-655 (2013)
-        
+
     """
-    return dense.bootstrapping.bootstrap_trajectories(trajs, correlation_length)
+    return _d_bootstrapping.bootstrap_trajectories(trajs, correlation_length)
 
 
 def bootstrap_counts(dtrajs, lagtime):
     r"""Generates a randomly resampled count matrix given the input coordinates.
-    
+
     Parameters
     ----------
     dtrajs : array-like or array-like of array-like
         single or multiple discrete trajectories. Every trajectory is assumed to be
         a statistically independent realization. Note that this is often not true and 
         is a weakness with the present bootstrapping approach.
-            
+
     lagtime : int
         the lag time at which the count matrix will be evaluated
 
@@ -313,7 +319,7 @@ def bootstrap_counts(dtrajs, lagtime):
     you can estimate a transition matrix, and from each of them computing the 
     observables of your interest. The standard deviation of such a sample of 
     the observable is a model for the standard error.
-    
+
     The bootstrap will be generated by sampling N/lagtime counts at time
     tuples (t, t+lagtime), where t is uniformly sampled over all trajectory
     time frames in [0,n_i-lagtime]. Here, n_i is the length of trajectory i
@@ -322,14 +328,14 @@ def bootstrap_counts(dtrajs, lagtime):
     See also
     --------
     bootstrap_trajectories
-    
+
     """
-    return dense.bootstrapping.bootstrap_counts(dtrajs, lagtime)
+    return _d_bootstrapping.bootstrap_counts(dtrajs, lagtime)
 
 
-################################################################################
+##########################################################################
 # Connectivity
-################################################################################
+##########################################################################
 
 # DONE: Ben Implement in Python directly
 def connected_sets(C, directed=True):
@@ -337,7 +343,7 @@ def connected_sets(C, directed=True):
 
     Connected components for a directed graph with edge-weights
     given by the count matrix.
-    
+
     Parameters
     ----------
     C : scipy.sparse matrix 
@@ -345,7 +351,7 @@ def connected_sets(C, directed=True):
     directed : bool, optional
        Whether to compute connected components for a directed  or
        undirected graph. Default is True.       
-    
+
     Returns
     -------
     cc : list of arrays of integers
@@ -353,7 +359,7 @@ def connected_sets(C, directed=True):
         corresponding connected component. The list is sorted
         according to the size of the individual components. The
         largest connected set is the first entry in the list, lcc=cc[0].
-    
+
     Notes
     -----    
     Viewing the count matrix as the adjacency matrix of a (directed) graph
@@ -368,7 +374,7 @@ def connected_sets(C, directed=True):
 
     Examples
     --------
-    
+
     >>> from pyemma.msm.estimation import connected_sets
 
     >>> C=np.array([10, 1, 0], [2, 0, 3], [0, 0, 4]])
@@ -379,18 +385,20 @@ def connected_sets(C, directed=True):
     >>> cc_undirected=connected_sets(C, directed=False)
     >>> cc_undirected
     [array([0, 1, 2])]
-    
-    """
-    if isdense(C):
-        return sparse.connectivity.connected_sets(csr_matrix(C), directed=directed)
-    else:
-        return sparse.connectivity.connected_sets(C, directed=directed)
 
-# DONE: Ben 
+    """
+    if _isdense(C):
+        return _s_connectivity.connected_sets(_csr_matrix(C), directed=directed)
+    else:
+        return _s_connectivity.connected_sets(C, directed=directed)
+
+# DONE: Ben
+
+
 def largest_connected_set(C, directed=True):
     r"""Largest connected component for a directed graph with edge-weights
     given by the count matrix.
-    
+
     Parameters
     ----------
     C : scipy.sparse matrix 
@@ -398,7 +406,7 @@ def largest_connected_set(C, directed=True):
     directed : bool, optional
        Whether to compute connected components for a directed  or
        undirected graph. Default is True.       
-    
+
     Returns
     -------
     lcc : array of integers
@@ -422,7 +430,7 @@ def largest_connected_set(C, directed=True):
 
     Examples
     --------
-    
+
     >>> from pyemma.msm.estimation import largest_connected_set
 
     >>> C=np.array([10, 1, 0], [2, 0, 3], [0, 0, 4]])
@@ -433,17 +441,19 @@ def largest_connected_set(C, directed=True):
     >>> lcc_undirected=largest_connected_set(C, directed=False)
     >>> lcc_undirected
     array([0, 1, 2])
-    
-    """
-    if isdense(C):
-        return sparse.connectivity.largest_connected_set(csr_matrix(C), directed=directed)
-    else:
-        return sparse.connectivity.largest_connected_set(C, directed=directed)
 
-# DONE: Ben 
+    """
+    if _isdense(C):
+        return _s_connectivity.largest_connected_set(_csr_matrix(C), directed=directed)
+    else:
+        return _s_connectivity.largest_connected_set(C, directed=directed)
+
+# DONE: Ben
+
+
 def largest_connected_submatrix(C, directed=True, lcc=None):
     r"""Compute the count matrix on the largest connected set.   
-    
+
     Parameters
     ----------
     C : scipy.sparse matrix 
@@ -453,13 +463,13 @@ def largest_connected_submatrix(C, directed=True, lcc=None):
        undirected graph. Default is True
     lcc : (M,) ndarray, optional
        The largest connected set             
-       
+
     Returns
     -------
     C_cc : scipy.sparse matrix
         Count matrix of largest completely 
         connected set of vertices (states)
-        
+
     See also
     --------
     largest_connected_set
@@ -478,7 +488,7 @@ def largest_connected_submatrix(C, directed=True, lcc=None):
 
     Examples
     --------
-    
+
     >>> from pyemma.msm.estimation import largest_connected_submatrix
 
     >>> C=np.array([10, 1, 0], [2, 0, 3], [0, 0, 4]])
@@ -493,16 +503,17 @@ def largest_connected_submatrix(C, directed=True, lcc=None):
     array([[10,  1,  0],
            [ 2,  0,  3],
            [ 0,  0,  4]])
-           
+
     """
-    if isdense(C):
-        return sparse.connectivity.largest_connected_submatrix(csr_matrix(C), directed=directed, lcc=lcc).toarray()
+    if _isdense(C):
+        return _s_connectivity.largest_connected_submatrix(_csr_matrix(C), directed=directed, lcc=lcc).toarray()
     else:
-        return sparse.connectivity.largest_connected_submatrix(C, directed=directed, lcc=lcc)
+        return _s_connectivity.largest_connected_submatrix(C, directed=directed, lcc=lcc)
+
 
 def connected_cmatrix(C, directed=True, lcc=None):
     r"""Compute the count matrix on the largest connected set.   
-    
+
     Parameters
     ----------
     C : scipy.sparse matrix 
@@ -510,13 +521,13 @@ def connected_cmatrix(C, directed=True, lcc=None):
     directed : bool, optional
        Whether to compute connected components for a directed or
        undirected graph. Default is True.       
-       
+
     Returns
     -------
     C_cc : scipy.sparse matrix
         Count matrix of largest completely 
         connected set of vertices (states)
-        
+
     See also
     --------
     largest_connected_submatrix
@@ -527,7 +538,7 @@ def connected_cmatrix(C, directed=True, lcc=None):
 
     Examples
     --------
-    
+
     >>> from pyemma.msm.estimation import largest_connected_submatrix
 
     >>> C=np.array([10, 1, 0], [2, 0, 3], [0, 0, 4]])
@@ -542,14 +553,16 @@ def connected_cmatrix(C, directed=True, lcc=None):
     array([[10,  1,  0],
            [ 2,  0,  3],
            [ 0,  0,  4]])
-           
+
     """
     return largest_connected_submatrix(C, directed=directed, lcc=lcc)
 
 # DONE: Jan
+
+
 def is_connected(C, directed=True):
     """Check connectivity of the given matrix.
-    
+
     Parameters
     ----------
     C : scipy.sparse matrix 
@@ -557,79 +570,81 @@ def is_connected(C, directed=True):
     directed : bool, optional
        Whether to compute connected components for a directed or
        undirected graph. Default is True.       
-       
+
     Returns
     -------
     is_connected: bool
         True if C is connected, False otherwise.
-        
+
     See also
     --------
     largest_connected_submatrix
-    
+
     Notes
     -----
     A count matrix is connected if the graph having the count matrix
     as adjacency matrix has a single connected component. Connectivity
     of a graph can be efficiently checked using Tarjan's algorithm.
-    
+
     References
     ----------
     .. [1] Tarjan, R E. 1972. Depth-first search and linear graph
         algorithms. SIAM Journal on Computing 1 (2): 146-160.
-        
+
     Examples
     --------
-    
+
     >>> from pyemma.msm.estimation import is_connected
-    
+
     >>> C=np.array([10, 1, 0], [2, 0, 3], [0, 0, 4]])
     >>> is_connected(C)
     False
-    
+
     >>> is_connected(C)
     True    
-    
+
     """
-    if isdense(C):
-        return sparse.connectivity.is_connected(csr_matrix(C), directed=directed)
+    if _isdense(C):
+        return _s_connectivity.is_connected(_csr_matrix(C), directed=directed)
     else:
-        return sparse.connectivity.is_connected(C, directed=directed)
+        return _s_connectivity.is_connected(C, directed=directed)
 
 # TODO: Implement in Python directly
+
+
 def mapping(set):
     """
     Constructs two dictionaries that map from the set values to their
     indexes, and vice versa.
-    
+
     Parameters
     ----------
     set : array-like of integers 
         a set of selected states
-    
+
     Returns
     -------
     dict : python dictionary mapping original to internal states 
-    
-    """   
+
+    """
     raise NotImplementedError('Not implemented.')
 
 
-################################################################################
+##########################################################################
 # priors
-################################################################################
+##########################################################################
 
 # DONE: Frank, Ben
-def prior_neighbor(C, alpha = 0.001):
+def prior_neighbor(C, alpha=0.001):
     r"""Neighbor prior for the given count matrix.    
-    
+
     Parameters
     ----------
     C : (M, M) ndarray or scipy.sparse matrix
         Count matrix
     alpha : float (optional)
         Value of prior counts
-    
+
     Returns
     -------
     B : (M, M) ndarray or scipy.sparse matrix
@@ -647,33 +662,35 @@ def prior_neighbor(C, alpha = 0.001):
     Examples
     --------
     >>> from pyemma.msm.estimation import prior_neighbor
-    
+
     >>> C=np.array([10, 1, 0], [2, 0, 3], [0, 1, 4]])
     >>> B=prior_neighbor(C)
     >>> B
     array([[ 0.001,  0.001,  0.   ],
            [ 0.001,  0.   ,  0.001],
            [ 0.   ,  0.001,  0.001]])
-           
+
     """
 
-    if isdense(C):
-        B=sparse.prior.prior_neighbor(csr_matrix(C), alpha=alpha)
+    if _isdense(C):
+        B = _s_prior.prior_neighbor(_csr_matrix(C), alpha=alpha)
         return B.toarray()
     else:
-        return sparse.prior.prior_neighbor(C, alpha=alpha)
+        return _s_prior.prior_neighbor(C, alpha=alpha)
 
 # DONE: Frank, Ben
-def prior_const(C, alpha = 0.001):
+
+
+def prior_const(C, alpha=0.001):
     r"""Constant prior for given count matrix.
-    
+
     Parameters
     ----------
     C : (M, M) ndarray or scipy.sparse matrix
         Count matrix
     alpha : float (optional)
         Value of prior counts    
-    
+
     Returns
     -------
     B : (M, M) ndarray 
@@ -689,24 +706,26 @@ def prior_const(C, alpha = 0.001):
     --------
 
     >>> from pyemma.msm.estimation import prior_const
-    
+
     >>> C=np.array([10, 1, 0], [2, 0, 3], [0, 1, 4]])
     >>> B=prior_const(C)
     >>> B
     array([[ 0.001,  0.001,  0.001],
            [ 0.001,  0.001,  0.001],
            [ 0.001,  0.001,  0.001]])
-           
+
     """
-    if isdense(C):
-        return sparse.prior.prior_const(C, alpha=alpha)
+    if _isdense(C):
+        return _s_prior.prior_const(C, alpha=alpha)
     else:
-        warnings.warn("Prior will be a dense matrix for sparse input")
-        return sparse.prior.prior_const(C, alpha=alpha)
+        _warnings.warn("Prior will be a dense matrix for sparse input")
+        return _s_prior.prior_const(C, alpha=alpha)
 
 __all__.append('prior_const')
 
 # DONE: Ben
+
+
 def prior_rev(C, alpha=-1.0):
     r"""Prior counts for sampling of reversible transition
     matrices.  
@@ -722,7 +741,7 @@ def prior_rev(C, alpha=-1.0):
         Count matrix
     alpha : float (optional)
         Value of prior counts
-       
+
     Returns
     -------
     B : (M, M) ndarray
@@ -741,7 +760,7 @@ def prior_rev(C, alpha=-1.0):
                        \alpha & i \leq j \\
                        0      & \text{elsewhere}
                        \end{array} \right .
-                       
+
     Examples
     --------
 
@@ -753,26 +772,26 @@ def prior_rev(C, alpha=-1.0):
     array([[-1., -1., -1.],
            [ 0., -1., -1.],
            [ 0.,  0., -1.]])
-           
+
     """
-    if isdense(C):
-        return sparse.prior.prior_rev(C, alpha=alpha)
+    if _isdense(C):
+        return _s_prior.prior_rev(C, alpha=alpha)
     else:
-        warnings.warn("Prior will be a dense matrix for sparse input")
-        return sparse.prior.prior_rev(C, alpha=alpha)     
+        _warnings.warn("Prior will be a dense matrix for sparse input")
+        return _s_prior.prior_rev(C, alpha=alpha)
 
 
-################################################################################
+##########################################################################
 # Transition matrix
-################################################################################
+##########################################################################
 
 # DONE: Frank implemented dense (Nonreversible + reversible with fixed pi)
 # DONE: Jan Implement in Python directly (Nonreversible)
 # Done: Martin Map to Stallone (Reversible)
 # Done: Ben (Fix docstrings)
 def transition_matrix(C, reversible=False, mu=None, **kwargs):
-    r"""Estimate the transition matrix from the given countmatrix.   
-    
+    r"""Estimate the transition matrix from the given countmatrix.
+
     Parameters
     ----------
     C : numpy ndarray or scipy.sparse matrix
@@ -789,7 +808,7 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
         Optional parameter with reversible = True and mu!=None.
         Regularization parameter for the interior point method. This value is added
         to the diagonal elements of C that are zero.
-    Xinit : (M, M) ndarray 
+    Xinit : (M, M) ndarray
         Optional parameter with reversible = True.
         initial value for the matrix of absolute transition probabilities. Unless set otherwise,
         will use X = diag(pi) t, where T is a nonreversible transition matrix estimated from C,
@@ -809,11 +828,11 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
     return_conv = False : Boolean
         Optional parameter with reversible = True.
         If set to true, the likelihood history and the pi_change history is returned.
-    
+
     Returns
     -------
     P : (M, M) ndarray or scipy.sparse matrix
-       The MLE transition matrix. P has the same data type (dense or sparse) 
+       The MLE transition matrix. P has the same data type (dense or sparse)
        as the input matrix C.
     The reversible estimator returns by default only P, but may also return
     (P,pi) or (P,lhist,pi_changes) or (P,pi,lhist,pi_changes) depending on the return settings
@@ -822,10 +841,10 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
     (pi) : ndarray (n)
         stationary distribution. Only returned if return_statdist = True
     (lhist) : ndarray (k)
-        likelihood history. Has the length of the number of iterations needed. 
+        likelihood history. Has the length of the number of iterations needed.
         Only returned if return_conv = True
     (pi_changes) : ndarray (k)
-        history of likelihood history. Has the length of the number of iterations needed. 
+        history of likelihood history. Has the length of the number of iterations needed.
         Only returned if return_conv = True
 
     Notes
@@ -874,9 +893,9 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
            [ 0.11161229,  0.01719193,  0.87119578]])
 
     """
-    if issparse(C):
+    if _issparse(C):
         sparse_mode = True
-    elif isdense(C):
+    elif _isdense(C):
         sparse_mode = False
     else:
         raise NotImplementedError('C has an unknown type.')
@@ -884,29 +903,32 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
     if reversible:
         if mu is None:
             if sparse_mode:
-                return sparse.mle_trev.mle_trev(C, **kwargs)
+                return _s_mle_trev.mle_trev(C, **kwargs)
             else:
-                return dense.transition_matrix.estimate_transition_matrix_reversible(C,**kwargs)
+                return _d_tmatrix.estimate_transition_matrix_reversible(C, **kwargs)
         else:
             if sparse_mode:
-                # Sparse, reversible, fixed pi (currently using dense with sparse conversion)
-                return sparse.mle_trev_given_pi.mle_trev_given_pi(C, mu,**kwargs)
+                # Sparse, reversible, fixed pi (currently using dense with
+                # sparse conversion)
+                return _s_mle_trev_given_pi.mle_trev_given_pi(C, mu, **kwargs)
             else:
-                return dense.mle_trev_given_pi.mle_trev_given_pi(C,mu,**kwargs)
-    else: # nonreversible estimation
+                return _d_mle_trev_given_pi.mle_trev_given_pi(C, mu, **kwargs)
+    else:  # nonreversible estimation
         if mu is None:
             if sparse_mode:
                 # Sparse,  nonreversible
-                return sparse.transition_matrix.transition_matrix_non_reversible(C)
+                return _s_tmatrix.transition_matrix_non_reversible(C)
             else:
                 # Dense,  nonreversible
-                return dense.transition_matrix.transition_matrix_non_reversible(C)
+                return _d_tmatrix.transition_matrix_non_reversible(C)
         else:
-            raise NotImplementedError('nonreversible mle with fixed stationary distribution not implemented.')
+            raise NotImplementedError(
+                'nonreversible mle with fixed stationary distribution not implemented.')
+
 
 def tmatrix(C, reversible=False, mu=None, **kwargs):
-    r"""Estimate the transition matrix from the given countmatrix.   
-    
+    r"""Estimate the transition matrix from the given countmatrix.
+
     Parameters
     ----------
     C : numpy ndarray or scipy.sparse matrix
@@ -943,11 +965,11 @@ def tmatrix(C, reversible=False, mu=None, **kwargs):
     return_conv = False : Boolean
         Optional parameter with reversible = True.
         If set to true, the likelihood history and the pi_change history is returned.
-    
+
     Returns
     -------
     P : (M, M) ndarray or scipy.sparse matrix
-       The MLE transition matrix. P has the same data type (dense or sparse) 
+       The MLE transition matrix. P has the same data type (dense or sparse)
        as the input matrix C.
     The reversible estimator returns by default only P, but may also return
     (P,pi) or (P,lhist,pi_changes) or (P,pi,lhist,pi_changes) depending on the return settings
@@ -956,24 +978,26 @@ def tmatrix(C, reversible=False, mu=None, **kwargs):
     (pi) : ndarray (n)
         stationary distribution. Only returned if return_statdist = True
     (lhist) : ndarray (k)
-        likelihood history. Has the length of the number of iterations needed. 
+        likelihood history. Has the length of the number of iterations needed.
         Only returned if return_conv = True
     (pi_changes) : ndarray (k)
-        history of likelihood history. Has the length of the number of iterations needed. 
-        Only returned if return_conv = True      
-        
+        history of likelihood history. Has the length of the number of iterations needed.
+        Only returned if return_conv = True
+
     See also
     --------
     transition_matrix
-    
+
     Notes
     -----
     Shortcut for transition_matrix.
-    
+
     """
     return transition_matrix(C, reversible=reversible, mu=mu, **kwargs)
 
 # DONE: FN+Jan+Ben Implement in Python directly
+
+
 def log_likelihood(C, T):
     r"""Log-likelihood of the count matrix given a transition matrix.
 
@@ -983,7 +1007,7 @@ def log_likelihood(C, T):
         Count matrix
     T : (M, M) ndarray orscipy.sparse matrix
         Transition matrix
-        
+
     Returns
     -------
     logL : float
@@ -991,7 +1015,7 @@ def log_likelihood(C, T):
 
     Notes
     -----
-        
+
     The likelihood of a set of observed transition counts
     :math:`C=(c_{ij})` for a given matrix of transition counts
     :math:`T=(t_{ij})` is given by 
@@ -1028,27 +1052,28 @@ def log_likelihood(C, T):
         Chodera, C Schuette and F Noe. 2011. Markov models of
         molecular kinetics: Generation and validation. J Chem Phys
         134: 174105     
-        
+
     """
-    if issparse(C) and issparse(T):
-        return sparse.likelihood.log_likelihood(C, T)
-    else: 
+    if _issparse(C) and _issparse(T):
+        return _s_likelihood.log_likelihood(C, T)
+    else:
         # use the dense likelihood calculator for all other cases
         # if a mix of dense/sparse C/T matrices is used, then both
         # will be converted to ndarrays.
-        if (not isinstance(C, np.ndarray)):
-            C = np.array(C)
-        if (not isinstance(T, np.ndarray)):
-            T = np.array(T)
+        if (not isinstance(C, _np.ndarray)):
+            C = _np.array(C)
+        if (not isinstance(T, _np.ndarray)):
+            T = _np.array(T)
         # computation is still efficient, because we only use terms
         # for nonzero elements of T
-        nz = np.nonzero(T)
-        return np.dot(C[nz], np.log(T[nz]))
+        nz = _np.nonzero(T)
+        return _np.dot(C[nz], _np.log(T[nz]))
 
-# DONE: Ben 
+
+# DONE: Ben
 def tmatrix_cov(C, k=None):
     r"""Covariance tensor for non-reversible transition matrix posterior.
-    
+
     Parameters
     ----------
     C : (M, M) ndarray or scipy.sparse matrix
@@ -1056,7 +1081,7 @@ def tmatrix_cov(C, k=None):
     k : int (optional)
         Return only covariance matrix for entires in the k-th row of
         the transition matrix
-       
+
     Returns
     -------
     cov : (M, M, M) ndarray
@@ -1076,12 +1101,13 @@ def tmatrix_cov(C, k=None):
     :math:`\text{cov}[p_{ij},p_{kl}]=\Sigma_{i,j,k,l}` is zero
     whenever :math:`i \neq k` so that only :math:`\Sigma_{i,j,i,l}` is
     returned.
-        
-    """ 
-    if issparse(C):
-        warnings.warn("Covariance matrix will be dense for sparse input")
-        C=C.toarray()
-    return dense.covariance.tmatrix_cov(C, row=k)
+
+    """
+    if _issparse(C):
+        _warnings.warn("Covariance matrix will be dense for sparse input")
+        C = C.toarray()
+    return _d_cov.tmatrix_cov(C, row=k)
+
 
 # DONE: Ben
 def error_perturbation(C, S):
@@ -1094,7 +1120,7 @@ def error_perturbation(C, S):
     S : (M, M) ndarray or (K, M, M) ndarray
         Sensitivity matrix (for scalar observable) or sensitivity
         tensor for vector observable
-        
+
     Returns
     -------
     X : float or (K, K) ndarray
@@ -1128,22 +1154,24 @@ def error_perturbation(C, S):
     The sensitivity is the covariance matrix for the observable 
 
     .. math:: \text{cov}[f_{\alpha}(T),f_{\beta}(T)]=\sum_{i,j,k,l} s_{\alpha i j} \text{cov}[t_{ij}, t_{kl}] s_{\beta kl}
-    
+
     """
 
-    if issparse(C):
-        warnings.warn("Error-perturbation will be dense for sparse input")
-        C=C.toarray()
-    return dense.covariance.error_perturbation(C, S)
+    if _issparse(C):
+        _warnings.warn("Error-perturbation will be dense for sparse input")
+        C = C.toarray()
+    return _d_cov.error_perturbation(C, S)
+
 
 def _showSparseConversionWarning():
-    warnings.warn('Converting input to dense, since method is '
+    _warnings.warn('Converting input to dense, since method is '
                   'currently only implemented for dense matrices.', UserWarning)
+
 
 # DONE: Martin Map to Stallone (Reversible)
 def tmatrix_sampler(C, reversible=False, mu=None, T0=None):
     r"""Generate transition matrix sampler object.
-    
+
     Parameters
     ----------
     C : (M, M) ndarray or scipy.sparse matrix
@@ -1157,7 +1185,7 @@ def tmatrix_sampler(C, reversible=False, mu=None, T0=None):
     T0 : ndarray, shape=(n, n) or scipy.sparse matrix
         Starting point of the MC chain of the sampling algorithm.
         Has to obey the required constraints.
-    
+
     Returns
     -------
     sampler : A :py:class:dense.ITransitionMatrixSampler object.
@@ -1171,7 +1199,7 @@ def tmatrix_sampler(C, reversible=False, mu=None, T0=None):
     .. math:: \mathbb{P}(T|C) \propto \prod_{i=1}^{M} \left( \prod_{j=1}^{M} p_{ij}^{c_{ij}} \right)
 
     The method can generate samples from the posterior under the follwing two constraints
-    
+
     **Reversible sampling**
 
     Using a MCMC sampler outlined in .. [1] it is ensured that samples
@@ -1182,7 +1210,7 @@ def tmatrix_sampler(C, reversible=False, mu=None, T0=None):
     **Reversible sampling with fixed stationary vector**
 
     Using a MCMC sampler outlined in .. [2] it is ensured that samples
-    from the posterior fulfill detailed balance with respect to a given 
+    from the posterior fulfill detailed balance with respect to a given
     probability vector :math:`(\mu_i)`.
 
     References
@@ -1192,16 +1220,16 @@ def tmatrix_sampler(C, reversible=False, mu=None, T0=None):
     .. [2] Trendelkamp-Schroer, B and F Noe. 2013. Efficient Bayesian estimation
         of Markov model transition matrices with given stationary distribution.
         J Chem Phys 138: 164113.
-    
+
     """
-    if issparse(C):
+    if _issparse(C):
         _showSparseConversionWarning()
-        C=C.toarray()
-    
+        C = C.toarray()
+
     from pyemma.util.pystallone import JavaException
     try:
         return ITransitionMatrixSampler(C, mu, reversible, Tinit=T0)
     except JavaException as je:
-        log = getLogger()
+        log = _getLogger()
         log.exception("Error during tmatrix sampling")
         raise

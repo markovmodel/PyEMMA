@@ -4,12 +4,12 @@ r"""User-API for the pyemma.msm package
 
 __docformat__ = "restructuredtext en"
 
-from flux import tpt as tpt_factory
+from flux import tpt as _tpt_factory
 
-from ui.timescales import ImpliedTimescales
-from ui.msm import MSM
-from ui.chapman_kolmogorov import chapman_kolmogorov
-from estimation.dense import hidden_markov_model as hmm
+from ui.timescales import ImpliedTimescales as _ITS
+from ui.msm import MSM as _MSM
+from ui.chapman_kolmogorov import chapman_kolmogorov as _ck
+from estimation.dense import hidden_markov_model as _hmm
 
 __author__ = "Benjamin Trendelkamp-Schroer, Martin Scherer, Frank Noe"
 __copyright__ = "Copyright 2014, Computational Molecular Biology Group, FU-Berlin"
@@ -17,15 +17,16 @@ __credits__ = ["Benjamin Trendelkamp-Schroer", "Martin Scherer", "Frank Noe"]
 __license__ = "FreeBSD"
 __version__ = "2.0.0"
 __maintainer__ = "Martin Scherer"
-__email__="m.scherer AT fu-berlin DOT de"
+__email__ = "m.scherer AT fu-berlin DOT de"
 
-__all__=['its',
-         'msm',
-         'cktest',
-         'tpt',
-         'hmsm']
+__all__ = ['its',
+           'msm',
+           'cktest',
+           'tpt',
+           'hmsm']
 
-def its(dtrajs, lags = None, nits=10, reversible = True, connected = True):
+
+def its(dtrajs, lags=None, nits=10, reversible=True, connected=True):
     r"""Calculates the implied timescales for a series of lag times.
 
     Parameters
@@ -54,7 +55,8 @@ def its(dtrajs, lags = None, nits=10, reversible = True, connected = True):
     pyemma.msm.ui.ImpliedTimescales
 
     """
-    itsobj = ImpliedTimescales(dtrajs, lags=lags, nits=nits, reversible=reversible, connected=connected)
+    itsobj = _ITS(
+        dtrajs, lags=lags, nits=nits, reversible=reversible, connected=connected)
     return itsobj
 
 
@@ -92,7 +94,8 @@ def msm(dtrajs, lag, reversible=True, sliding=True, compute=True):
     pyemma.msm.ui.MSM
 
     """
-    msmobj = MSM(dtrajs, lag, reversible=reversible, sliding=sliding, compute=compute)
+    msmobj = _MSM(
+        dtrajs, lag, reversible=reversible, sliding=sliding, compute=compute)
     return msmobj
 
 
@@ -130,7 +133,7 @@ def cktest(dtrajs, lag, K, nsets=2, sets=None):
         molecular kinetics: Generation and validation. J Chem Phys
         134: 174105
     """
-    return chapman_kolmogorov(dtrajs, lag, K, nsets=nsets, sets=sets)
+    return _ck(dtrajs, lag, K, nsets=nsets, sets=sets)
 
 
 def tpt(dtrajs, lag, A, B, reversible=True, sliding=True):
@@ -186,15 +189,15 @@ def tpt(dtrajs, lag, A, B, reversible=True, sliding=True):
         Proc. Natl. Acad. Sci. USA, 106, 19011-19016 (2009)
 
     """
-    msmobj = MSM(dtrajs, lag, reversible=reversible, sliding=sliding)
+    msmobj = _MSM(dtrajs, lag, reversible=reversible, sliding=sliding)
     T = msmobj.transition_matrix
     mu = msmobj.stationary_distribution
-    tptobj = tpt_factory(T, A, B, mu=mu)
+    tptobj = _tpt_factory(T, A, B, mu=mu)
     return tptobj
 
 
 def hmsm(dtrajs, nstate, lag=1, conv=0.01, maxiter=None, timeshift=None,
-         TCinit = None, chiInit = None):
+         TCinit=None, chiInit=None):
     """
     Implements a discrete Hidden Markov state model of conformational
     kinetics.  For details, see [1]_.
@@ -249,7 +252,6 @@ def hmsm(dtrajs, nstate, lag=1, conv=0.01, maxiter=None, timeshift=None,
 
     """
     # initialize
-    return hmm.HiddenMSM(dtrajs, nstate, lag=lag, conv=conv, maxiter=maxiter,
+    return _hmm.HiddenMSM(dtrajs, nstate, lag=lag, conv=conv, maxiter=maxiter,
                          timeshift=timeshift,
                          TCinit=TCinit, chiInit=chiInit)
-
