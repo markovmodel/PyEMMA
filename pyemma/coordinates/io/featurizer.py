@@ -5,6 +5,7 @@ from mdtraj.geometry.dihedral import _get_indices_phi, \
     _get_indices_psi, compute_dihedrals
 
 import numpy as np
+import warnings
 
 from pyemma.util.log import getLogger
 
@@ -346,7 +347,8 @@ class MDFeaturizer(object):
         """
         # if there are no features selected, return given trajectory
         if self._dim == 0:
-            raise ValueError("You have no features selected.")
+            warnings.warn("You have no features selected. Returning plain coordinates.")
+            return traj.xyz
 
         # TODO: define preprocessing step (RMSD etc.)
 
