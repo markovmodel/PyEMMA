@@ -26,6 +26,7 @@ from clustering.regspace import RegularSpaceClustering
 
 __all__ = ['discretizer',
            'feature_reader',
+           'memory_reader',
            'tica',
            'pca',
            'kmeans',
