@@ -39,7 +39,7 @@ compare for
 
 .. code-block:: python
 
-    if config['section].my_bool == 'True':
+    if config['section'].my_bool == 'True':
         pass
 
 
