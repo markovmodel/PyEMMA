@@ -23,6 +23,7 @@ from transform.tica import TICA
 from clustering.kmeans import KmeansClustering
 from clustering.uniform_time import UniformTimeClustering
 from clustering.regspace import RegularSpaceClustering
+from clustering.assign import AssignCenters
 
 __all__ = ['discretizer',
            'feature_reader',
@@ -31,6 +32,7 @@ __all__ = ['discretizer',
            'pca',
            'kmeans',
            'regspace',
+           'assign_centers',
            'uniform_time',
            ]
 
@@ -270,6 +272,38 @@ def regspace(data=None, dmin=-1):
     if dmin == -1:
         raise ValueError("provide a minimum distance for clustering")
     res = RegularSpaceClustering(dmin)
+    if data is not None:
+        inp = DataInMemory(data)
+        res.data_producer = inp
+        res.parametrize()
+    return res
+
+
+def assign_centers(data=None, centers):
+    """
+    Assigns given (precalculated) cluster centers.
+    If you already have cluster centers from somewhere, you use this 
+    to assign your data to the centers.
+
+    Parameters
+    ----------
+    clustercenters : path to file (csv) or ndarray
+        cluster centers to use in assignment of data
+
+    Returns
+    -------
+    obj : AssignCenters
+
+    Examples
+    --------
+    >>> data = np.loadtxt('my_data.csv')
+    >>> cluster_centers = 'my_centers.csv')
+    >>> disc = assign_centers(cluster_centers)
+    >>> disc.dtrajs
+    [array([0, 0, 1, ... ])]
+
+    """
+    res = AssignCenters(centers)
     if data is not None:
         inp = DataInMemory(data)
         res.data_producer = inp
