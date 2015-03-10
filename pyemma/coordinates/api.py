@@ -1,7 +1,16 @@
 """
 API for coordinates package
+===========================
+
+The coordinates API contains functions to pass your data (MD-trajectories, comma
+separated value ascii files, NumPy arrays) into a order parameter extraction pipeline.
+
+The class which links input (readers), transformers (PCA, TICA) and clustering
+together is the :func:`discretizer`. It builds up a pipeline to process your data
+into discrete state space.
+
 """
-__author__ = 'noe'
+__author__ = 'noe, scherer'
 
 from discretizer import Discretizer
 # io
@@ -29,29 +38,48 @@ def discretizer(reader,
                 transform=None,
                 cluster=KmeansClustering(n_clusters=100)):
     """
-    Constructs a discretizer
+    Constructs a discretizer object, which processes all data
 
 
     Parameters
     ----------
 
-    reader : instance of FeatureReader
-        get input data from a FeatureReader
+    reader : instance of :class:`pyemma.coordinates.io.reader.ChunkedReader`
+        the reader instance provides access to the data. If you are working with
+        MD data, you most likely want to use a FeatureReader.
 
     transform : instance of Transformer
         an optional transform like PCA/TICA etc.
 
-    cluster : instance of Transformer
-        a cluster algorithm to discretize transformed data
+    cluster : instance of clustering Transformer (optional)
+        a cluster algorithm to assign transformed data to discrete states. By
+        default we use Kmeans clustering with k=100
 
 
     Examples
     --------
 
+    Construct a discretizer pipeline processing all coordinates of trajectory 
+    "traj01.xtc" with a PCA transformation and cluster the principle components
+    with uniform time clustering:
+
     >>> reader = feature_reader(['traj01.xtc'], 'topology.pdb')
     >>> transform = pca(dim=2)
     >>> cluster = uniform_time(n_clusters=100)
     >>> disc = discretizer(reader, transform, cluster)
+
+    Finally you want to run the pipeline
+    >>> disc.run()
+
+
+    Access the the discrete trajectories and saving them to files:
+
+    >>> disc.dtrajs
+    [array([0, 0, 1, 1, 2, ... ])]
+
+    This will store the discrete trajectory to "traj01.dtraj":
+
+    >>> disc.save_dtrajs()
 
     """
     return Discretizer(reader, transform, cluster)
@@ -65,11 +93,19 @@ def discretizer(reader,
 
 def feature_reader(trajfiles, topfile):
     """
-    Constructs a feature reader
+    Constructs a feature reader :class:`pyemma.coordinates.io.FeatureReader`
 
-    :param trajfiles:
-    :param topfile:
-    :return:
+    Parameters
+    ----------
+
+    trajfiles : list of str
+        list of filenames to read sequentially
+    topfile : str
+        path to a topology file (eg. pdb)
+
+    Returns
+    -------
+
     """
     return FeatureReader(trajfiles, topfile)
 
@@ -78,8 +114,16 @@ def memory_reader(data):
     """
     Constructs a reader from an in-memory ndarray
 
-    :param data: (N,d) ndarray with N frames of d dimensions
-    :return:
+    Parameters
+    ----------
+    data : (N,d) ndarray
+        array with N frames of d dimensions
+
+    Returns
+    -------
+
+    :class:`DataInMemory`
+
     """
     return DataInMemory(data)
 
@@ -95,12 +139,18 @@ def pca(data=None, dim=2):
     """
     Constructs a PCA object
 
-    :param data:
-        ndarray with the data, if available. When given, the PCA is immediately parametrized
-    :param dim:
+    Parameters
+    ----------
+
+    data : ndarray (N, d)
+        with the data, if available. When given, the PCA is
+        immediately parametrized.
+
+    dim : int
         the number of dimensions to project onto
 
-    :return:
+    Returns
+    -------
         a PCA transformation object
     """
     res = PCA(dim)
@@ -113,12 +163,13 @@ def pca(data=None, dim=2):
 
 def tica(data=None, lag=10, dim=2):
     """
-    Time-lagged independent component analysis (TICA). When data is given, the transform is immediately computed.
+    Time-lagged independent component analysis (TICA). When data is given, the
+    transform is immediately computed.
     Otherwise, an empty TICA object is returned.
 
     Parameters
     ----------
-    data : ndarray, optional, default = None
+    data : ndarray(N, d), optional
         array with the data, if available. When given, the TICA transformation
         is immediately computed and can be used to transform data.
     lag : int, optional, default = 10
@@ -128,7 +179,7 @@ def tica(data=None, lag=10, dim=2):
 
     Returns
     -------
-    tica : a TICA transformation object
+    tica : a :class:`pyemma.coordinates.transform.TICA` transformation object
 
     References
     ----------
@@ -179,12 +230,15 @@ def uniform_time(data=None, k=100):
     """
     Constructs a uniform time clustering
 
-    :param data:
+    Parameters
+    ----------
+    data : ndarray(N, d)
         input data, if available in memory
-    :param k:
+    k : int
         the number of cluster centers
 
-    :return:
+    Returns
+    -------
         A UniformTimeClustering object
 
     """
@@ -200,12 +254,15 @@ def regspace(data=None, dmin=-1):
     """
     Constructs a regular space clustering
 
-    :param dmin:
+    Parameters
+    ----------
+    dmin : float
         the minimal distance between cluster centers
-    :param data:
+    data : ndarray(N, d)
         input data, if available in memory
 
-    :return:
+    Returns
+    -------
         A RegularSpaceClustering object
 
     """

@@ -1,5 +1,9 @@
 .. _ref_api:
 
+=================
+API Documentation
+=================
+
 Coordinates
 ===========
 The *coordinates* package contains tools to select features from MD-trajectories
@@ -9,6 +13,7 @@ modeling.
 .. toctree::
    :maxdepth: 1
    
+   coordinates.api
    coordinates.io
    coordinates.transform
    coordinates.clustering
