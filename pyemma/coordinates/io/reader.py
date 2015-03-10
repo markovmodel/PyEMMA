@@ -17,3 +17,7 @@ class ChunkedReader(object):
     def __init__(self, chunksize=0, lag=0):
         self.chunksize = chunksize
         self.lag = 0
+
+    def parametrize(self):
+        # nothing to do here, its just there for interface reasons
+        pass

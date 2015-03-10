@@ -31,6 +31,7 @@ class DataInMemory(ChunkedReader):
                 self.ndim = np.shape(_data)[1]
             self._lengths = [np.shape(_data)[0]]
         elif isinstance(_data, list):
+            # TODO: consider having a list of filenames here and lazy load them into memory
             self.data = _data
             self.ntraj = len(_data)
             # ensure all trajs have same dim
@@ -50,7 +51,16 @@ class DataInMemory(ChunkedReader):
 
         self.t = 0
         self.itraj = 0
-        self.chunksize = 0
+        self._chunksize = 0
+
+    @property
+    def chunksize(self):
+        return self._chunksize
+
+    @chunksize.setter
+    def chunksize(self, x):
+        # chunksize setting is forbidden, since we are operating in memory
+        pass
 
     def number_of_trajectories(self):
         """
@@ -120,7 +130,7 @@ class DataInMemory(ChunkedReader):
         traj = self.data[self.itraj]
 
         # complete trajectory mode
-        if self.chunksize == 0:
+        if self._chunksize == 0:
             if lag == 0:
                 X = traj
                 self.itraj += 1
@@ -130,38 +140,6 @@ class DataInMemory(ChunkedReader):
                 Y = traj[lag:traj_len]
                 self.itraj += 1
                 return (X, Y)
-        else:
-            #logger.debug("t=%i" % self.t)
-            # FIXME: if t + chunksize < traj_len, this selects wrong bounds. eg [100:40], which is empty
-            chunksize_bounds = min(self.t + self.chunksize, traj_len)
-            if lag == 0:
-                X = traj[self.t:chunksize_bounds]
-                self.t += np.shape(X)[0]
-                if self.t >= traj_len:
-                    self.itraj += 1
-                return X
-            else:
-                logger.warning("chunked lagged access not debugged!")
-                X = traj[self.t: chunksize_bounds - lag]
-                assert np.shape(X)[0] > 0
-                #logger.debug("Y=traj[%i+%i : %i]" %
-                #             (self.t, lag, chunksize_bounds))
-                # if we do not have enough data anymore for chunked, padd it with zeros
-                Y = traj[self.t + lag: chunksize_bounds]
-#                 if np.shape(Y)[0] == 0:
-#                     assert False
-#                     Y = PaddedArray(np.zeros_like(X), X.shape)
-
-                assert np.shape(X) == np.shape(Y), "%s != %s" % (str(np.shape(X)), str(np.shape(Y)))
-                self.t += np.shape(X)[0]
-                assert np.shape(Y)[0] > 0
-                if self.t + lag >= traj_len:
-                    self.itraj += 1
-                return (X, Y)
-
-    def parametrize(self):
-        # nothing to do here, its just there for interface reasons
-        pass
 
     @staticmethod
     def distance(x, y):
