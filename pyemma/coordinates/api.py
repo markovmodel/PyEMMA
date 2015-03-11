@@ -220,6 +220,14 @@ def kmeans(data=None, k=100, max_iter=1000):
     -------
     kmeans : A KmeansClustering object
 
+    Examples
+    --------
+
+    >>> traj_data = [np.random.random((100, 3)), np.random.random((100,3))
+    >>> clustering = kmeans(traj_data, n_clusters=20)
+    >>> clustering.dtrajs
+    [array([0, 0, 1, ... ])]
+
     """
     res = KmeansClustering(n_clusters=k, max_iter=max_iter)
     if data is not None:
