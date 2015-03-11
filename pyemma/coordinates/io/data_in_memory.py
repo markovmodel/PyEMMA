@@ -13,14 +13,20 @@ class DataInMemory(ChunkedReader):
     multi-dimensional multi-trajectory data fully stored in memory
     """
 
-    def __init__(self, _data):
+    def __init__(self, _data, **kwargs):
         """
 
-        :param data:
-            ndarray of shape (nframe, ndim) or
-            list of ndarrays, each of shape (nframe_i, ndim)
+        Parameters
+        ----------
+        data : ndarray (nframe, ndim) or list of ndarrays (nframe, ndim) or list of filenames
+            Data has to be either one 2d array which stores amount of frames in first
+            dimension and coordinates/features in second dimension or a list of this
+            arrays. Despite that it can also be a list of filenames (.csv or .npy files),
+            which will then be lazy loaded into memory.
         """
         ChunkedReader.__init__(self)
+
+        # TODO: ensure data has correct shape, use util function
 
         if isinstance(_data, np.ndarray):
             self.data = [_data]
@@ -31,7 +37,17 @@ class DataInMemory(ChunkedReader):
                 self.ndim = np.shape(_data)[1]
             self._lengths = [np.shape(_data)[0]]
         elif isinstance(_data, list):
-            # TODO: consider having a list of filenames here and lazy load them into memory
+            # lazy load given filenames into memory
+            if all(isinstance(d, str) for d in _data):
+                if 'mmap_mode' in kwargs:
+                    mmap_mode = kwargs['mmap_mode']
+                else:
+                    mmap_mode = 'r'
+                for f in _data:
+                    if f.endswith('.npy'):
+                        self.data.append(np.load(f, mmap_mode=mmap_mode))
+                    else:
+                        self.data.append(np.loadtxt(f))
             self.data = _data
             self.ntraj = len(_data)
             # ensure all trajs have same dim
@@ -44,7 +60,7 @@ class DataInMemory(ChunkedReader):
                                  % np.where(ndim_eq == False))
             self.ndim = ndims[0]
 
-            self._lengths = [np.shape(_data[i])[0] for i in range(len(_data))]
+            self._lengths = [np.shape(d)[0] for d in _data]
         else:
             raise ValueError('input data is neither an ndarray '
                              'nor a list of ndarrays!')
