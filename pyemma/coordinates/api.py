@@ -311,7 +311,7 @@ def assign_centers(data=None, centers=None):
     [array([0, 0, 1, ... ])]
 
     """
-    if not centers:
+    if centers is None:
         raise ValueError('You have to provide centers in form of a filename'
                          ' or NumPy array')
     res = AssignCenters(centers)
