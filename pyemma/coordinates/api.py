@@ -279,7 +279,7 @@ def regspace(data=None, dmin=-1):
     return res
 
 
-def assign_centers(data=None, centers):
+def assign_centers(data=None, centers=None):
     """
     Assigns given (precalculated) cluster centers.
     If you already have cluster centers from somewhere, you use this 
@@ -303,6 +303,9 @@ def assign_centers(data=None, centers):
     [array([0, 0, 1, ... ])]
 
     """
+    if not centers:
+        raise ValueError('You have to provide centers in form of a filename'
+                         ' or NumPy array')
     res = AssignCenters(centers)
     if data is not None:
         inp = DataInMemory(data)
