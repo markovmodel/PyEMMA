@@ -45,9 +45,9 @@ class DataInMemory(ChunkedReader):
                     mmap_mode = 'r'
                 for f in _data:
                     if f.endswith('.npy'):
-                        self.data.append(np.load(f, mmap_mode=mmap_mode))
+                        self.data.append(np.load(f, mmap_mode=mmap_mode, ndim=2))
                     else:
-                        self.data.append(np.loadtxt(f))
+                        self.data.append(np.loadtxt(f, ndim=2))
             self.data = _data
             self.ntraj = len(_data)
             # ensure all trajs have same dim
