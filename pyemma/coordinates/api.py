@@ -304,9 +304,13 @@ def assign_centers(data=None, centers=None):
 
     Examples
     --------
+
+    Load data to assign to clusters from 'my_data.csv' by using the cluster
+    centers from file 'my_centers.csv'
+
     >>> data = np.loadtxt('my_data.csv')
-    >>> cluster_centers = 'my_centers.csv')
-    >>> disc = assign_centers(cluster_centers)
+    >>> cluster_centers = np.loadtxt('my_centers.csv')
+    >>> disc = assign_centers(data, cluster_centers)
     >>> disc.dtrajs
     [array([0, 0, 1, ... ])]
 
