@@ -59,13 +59,14 @@ class ImpliedTimescales(object):
         self._nits = min(nits, nstates-1)
 
         # trajectory lengths
-        lengths = np.zeros(len(dtrajs))
+        self.lengths = np.zeros(len(dtrajs))
         for i in range(len(dtrajs)):
-            lengths[i] = len(dtrajs[i])
+            self.lengths[i] = len(dtrajs[i])
+        self.maxlength = np.max(self.lengths)
 
         # lag time
         if (lags is None):
-            maxlag = 0.5 * np.sum(lengths) / float(len(lengths))
+            maxlag = 0.5 * np.sum(self.lengths) / float(len(self.lengths))
             self._lags = self._generate_lags(maxlag, 1.5)
         else:
             self._lags = lags
@@ -90,10 +91,15 @@ class ImpliedTimescales(object):
         return lags
 
 
-    def _C_to_ts(self, C, tau):
+    def _estimate_ts_tau(self, tau):
         r"""Estimate timescales from the given count matrix.
         
         """
+        # estimation impossible?
+        if tau >= self.maxlength:
+            return None
+        # unconnected C matrix
+        C = cmatrix(self._dtrajs, tau)
         # connected set
         C = (connected_cmatrix(C)).toarray()
         if (len(C) > 1):
@@ -116,14 +122,13 @@ class ImpliedTimescales(object):
         maxlag  = len(self._lags)
         for i in range(len(self._lags)):
             tau = self._lags[i]
-            # estimate count matrix
-            C = cmatrix(self._dtrajs, tau)
             # estimate timescales
-            ts = self._C_to_ts(C, tau)
+            ts = self._estimate_ts_tau(tau)
             if (ts is None):
                 maxlag = i
                 warnings.warn('Could not compute a single timescale at tau = '+str(tau)+
                               '. Probably a connectivity problem. Try using smaller lagtimes')
+                break
             elif (len(ts) < self._nits):
                 maxnits = min(maxnits, len(ts))
                 warnings.warn('Could only compute '+str(len(ts))+' timescales at tau = '+str(tau)+
@@ -138,7 +143,9 @@ class ImpliedTimescales(object):
         # clean up
         self._nits = maxnits
         self._lags = self._lags[:maxlag]
+        print "lagtimes = ",self._lags
         self._its = self._its[:maxlag][:,:maxnits]
+        print "its = ",self._its
 
     
     def bootstrap(self, nsample=10):
@@ -154,7 +161,7 @@ class ImpliedTimescales(object):
                 # sample count matrix
                 C = bootstrap_counts(self._dtrajs, tau)
                 # estimate timescales
-                ts = self._C_to_ts(C, tau)
+                ts = self._estimate_ts_tau(C, tau)
                 # only use ts if we get all requested timescales
                 if (ts != None):
                     if (len(ts) == self._nits):

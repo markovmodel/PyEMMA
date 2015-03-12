@@ -50,6 +50,16 @@ class ImpliedTimescalesTest(unittest.TestCase):
         """
         self.compute_nice(False)
 
+    def test_too_large_lagtime(self):
+        dtraj = [[0,1,1,1,0]]
+        lags  = [1,2,3,4,5,6,7,8]
+        expected_lags = [1,2,3] # 4 is impossible because only one state remains and no finite timescales.
+        its = ImpliedTimescales(dtraj, lags=lags, reversible=False)
+        got_lags = its.get_lagtimes()
+        assert(np.shape(got_lags) == np.shape(expected_lags))
+        assert(np.allclose(got_lags, expected_lags))
+
+
 
 if __name__ == "__main__":
     unittest.main()
