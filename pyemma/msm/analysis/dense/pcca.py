@@ -433,11 +433,17 @@ def coarsegrain(P, n):
     
     ..math:
         \tilde{P} = M^T P M (M^T M)^{-1}
+
+    See [2]_ for the derivation of this form from the coarse-graining method first derived in [1]_.
     
-    See: 
-    F. Noe, H. Wu, J.-H. Prinz and N. Plattner:
-    Projected and hidden Markov models for calculating kinetics and metastable states of complex molecules
-    J. Chem. Phys. 139, 184114 (2013)
+    References
+    ----------
+    [1] S. Kube and M. Weber
+        A coarse graining method for the identification of transition rates between molecular conformations.
+        J. Chem. Phys. 126, 024103 (2007)
+    [2] F. Noe, H. Wu, J.-H. Prinz and N. Plattner:
+        Projected and hidden Markov models for calculating kinetics and metastable states of complex molecules
+        J. Chem. Phys. 139, 184114 (2013)
     """
     M = pcca(P,n)
     A = np.dot(np.dot(M.T, P), M)
