@@ -11,7 +11,7 @@ import scipy.sparse
 # count_matrix
 ################################################################################
 
-def count_matrix_mult(dtrajs, lag, sliding=True, sparse=True, nstates=None):
+def count_matrix_mult(dtrajs, lag, sliding=True, sparse=True, nstates=None, failfast=False):
     r"""Generate a count matrix from a given list of discrete trajectories.    
 
     Parameters
@@ -27,7 +27,10 @@ def count_matrix_mult(dtrajs, lag, sliding=True, sparse=True, nstates=None):
         Whether to return a dense or a sparse matrix
     nstates : int, optional
         Enforce a count-matrix with shape=(nstates, nstates)
-        
+    failfast = False : bool (optional)
+        True: will raise an error as soon as the lag time is longer than any of the trajectories.
+        False: will perform as long as the lag time fits within at least one of the trajectories.
+
     Returns
     -------
     C : scipy.sparse.csr_matrix
@@ -60,9 +63,9 @@ def count_matrix_mult(dtrajs, lag, sliding=True, sparse=True, nstates=None):
 
     """If nstates<4000 use bincount else use coo"""
     if nstates<4000:
-        return count_matrix_bincount_mult(dtrajs, lag, sliding=sliding, nstates=nstates, sparse=sparse)
+        return count_matrix_bincount_mult(dtrajs, lag, sliding=sliding, nstates=nstates, sparse=sparse, failfast=failfast)
     else:
-        return count_matrix_coo_mult(dtrajs, lag, sliding=sliding, sparse=sparse)     
+        return count_matrix_coo_mult(dtrajs, lag, sliding=sliding, sparse=sparse, failfast=failfast)
 
 def count_matrix(dtraj, lag, sliding=True, sparse=True, nstates=None):
     r"""Generate a count matrix from a given list of integers.
@@ -176,7 +179,7 @@ def count_matrix_coo(dtraj, lag, sliding=True, sparse=True, nstates=None):
     else:
         return C.toarray()
 
-def count_matrix_coo_mult(dtrajs, lag, sliding=True, sparse=True, nstates=None):
+def count_matrix_coo_mult(dtrajs, lag, sliding=True, sparse=True, nstates=None, failfast=False):
     r"""Generate a count matrix from a given list of discrete trajectories.
 
     The generated count matrix is a sparse matrix in coordinate 
@@ -193,6 +196,9 @@ def count_matrix_coo_mult(dtrajs, lag, sliding=True, sparse=True, nstates=None):
         is used for transition counting.
     sparse : bool (optional)
         Whether to return a dense or a sparse matrix.
+    failfast = False : bool (optional)
+        True: will raise an error as soon as the lag time is longer than any of the trajectories.
+        False: will perform as long as the lag time fits within at least one of the trajectories.
 
     Returns
     -------
@@ -211,9 +217,20 @@ def count_matrix_coo_mult(dtrajs, lag, sliding=True, sparse=True, nstates=None):
         nstates=nmax+1
 
     C=scipy.sparse.coo_matrix((nstates, nstates))
+
+    counted = False
     for dtraj in dtrajs:
-        Zi=count_matrix_coo(dtraj, lag, sliding=sliding, nstates=nstates)
-        C=C+Zi
+        if lag < np.size(dtraj):
+            Zi=count_matrix_coo(dtraj, lag, sliding=sliding, nstates=nstates)
+            C=C+Zi
+            counted = True
+        elif failfast:
+            raise ValueError('Lag time '+str(lag)+'is longer or equal than at least one trajectory. Either reduce lag time or set failfast=False')
+        else:
+            pass # nothing to do
+
+    if not counted:
+        raise ValueError('Lag time '+str(lag)+'is longer or equal than all trajectories. Reduce lag time.')
 
     # Z = scipy.sparse.coo_matrix((1,1))
     # for dtraj in dtrajs:
@@ -341,7 +358,7 @@ def count_matrix_bincount(dtraj, lag, sliding=True, sparse=True, nstates=None):
     else:
         return C
 
-def count_matrix_bincount_mult(dtrajs, lag, sliding=True, sparse=True, nstates=None):
+def count_matrix_bincount_mult(dtrajs, lag, sliding=True, sparse=True, nstates=None, failfast=False):
     r"""Generate a count matrix from a given list of discrete trajectories.
     
     Parameters
@@ -356,7 +373,10 @@ def count_matrix_bincount_mult(dtrajs, lag, sliding=True, sparse=True, nstates=N
     nstates : int (optional)
         The dimension of the count-matrix, nstates=nmax+1, where
         nmax is the maximum microstate index.
-        
+    failfast = False : bool (optional)
+        True: will raise an error as soon as the lag time is longer than any of the trajectories.
+        False: will perform as long as the lag time fits within at least one of the trajectories.
+
     Returns
     -------
     C : scipy.sparse.csr_matrix
@@ -386,8 +406,21 @@ def count_matrix_bincount_mult(dtrajs, lag, sliding=True, sparse=True, nstates=N
 
     C=np.zeros((nstates, nstates))
     """Estimate count matrix for each discrete trajectory and add to C"""
+
+    counted = False
     for dtraj in dtrajs:
-        C+=count_matrix_bincount(dtraj, lag, sliding=sliding, sparse=False, nstates=nstates)
+        if lag < np.size(dtraj):
+            C+=count_matrix_bincount(dtraj, lag, sliding=sliding, sparse=False, nstates=nstates)
+            counted = True
+        elif failfast:
+            raise ValueError('Lag time '+str(lag)+'is longer or equal than at least one trajectory. Either reduce lag time or set failfast=False')
+        else:
+            pass # nothing to do
+
+    if not counted:
+        raise ValueError('Lag time '+str(lag)+'is longer or equal than all trajectories. Reduce lag time.')
+
+
     if sparse:
         return scipy.sparse.csr_matrix(C)
     else:
