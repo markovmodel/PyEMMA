@@ -16,35 +16,19 @@ from pcca import pcca
 
 class TestPCCA(unittest.TestCase):
 
-
-    def setUp(self):
-        pass
-
     def test_pcca_no_transition_matrix(self):
         P = np.array([[1.0, 1.0],
                       [0.1, 0.9]])
-        try:
+
+        with self.assertRaises(ValueError):
             pcca(P, 2)
-            # no ValueError? then fail.
-            assert False
-        except ValueError:
-            pass
-        except: # different exception
-            assert False
 
     def test_pcca_no_detailed_balance(self):
         P = np.array([[0.8, 0.1, 0.1],
                       [0.3, 0.2, 0.5],
                       [0.6, 0.3, 0.1]])
-        try:
+        with self.assertRaises(ValueError):
             pcca(P, 2)
-            # no ValueError? then fail.
-            assert False
-        except ValueError:
-            pass
-        except: # different exception
-            assert False
-
 
     def test_pcca_1(self):
         P = np.array([[1, 0],
