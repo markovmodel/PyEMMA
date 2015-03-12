@@ -8,14 +8,17 @@ __docformat__ = "restructuredtext en"
 __all__=['ImpliedTimescales']
 
 import numpy as np
+import warnings
 
-from pyemma.msm.estimation import cmatrix, connected_cmatrix, tmatrix, bootstrap_counts
+from pyemma.msm.estimation import cmatrix, number_of_states, connected_cmatrix, tmatrix, bootstrap_counts
 from pyemma.msm.analysis import timescales
 from pyemma.util.statistics import confidence_interval
+from pyemma.util.types import ensure_dtraj_list as _ensure_dtraj_list
 
-#TODO: connectivity is currently not used. Introduce different connectivity modes (lag, minimal, set)
+#TODO: connectivity flat is currently not used. Introduce different connectivity modes (lag, minimal, set)
 #TODO: if not connected, might add infinity timescales.
 #TODO: Timescales should be assigned by similar eigenvectors rather than by order
+#TODO: when requesting too long lagtimes, throw a warning and exclude lagtime from calculation, but compute the rest
 class ImpliedTimescales(object):
     
     # estimated its. 2D-array with indexing: lagtime, its
@@ -24,7 +27,7 @@ class ImpliedTimescales(object):
     _its_samples = None
     
     
-    def __init__(self, dtrajs, lags = None, nits = 10, connected = True, reversible = True):
+    def __init__(self, dtrajs, lags = None, nits = 10, connected = True, reversible = True, failfast = False):
         r"""Calculates the implied timescales for a series of lag times.
         
         Parameters
@@ -40,36 +43,38 @@ class ImpliedTimescales(object):
             compute the connected set before transition matrix estimation at each lag
             separately
         reversible = True : boolean
-            estimate the transition matrix reversibly (True) or nonreversibly (False)"""
+            estimate the transition matrix reversibly (True) or nonreversibly (False)
+        failfast = False : boolean
+            if True, will raise an error as soon as not all requested timescales can be computed at all requested
+            lagtimes. If False, will continue with a warning and compute the timescales/lagtimes that are possible.
+
+        """
         # initialize
-        self._dtrajs = dtrajs
+        self._dtrajs = _ensure_dtraj_list(dtrajs)
         self._connected = connected
         self._reversible = reversible
-        # maximum trajectory length and number of states
 
-        # Check if input was array or list of arrays
-        if np.ndim(dtrajs) < 2:
-           # We we were only parsed an array
-           dtrajs=[dtrajs]
+        # maximum number of timescales
+        nstates = number_of_states(dtrajs)
+        self._nits = min(nits, nstates-1)
+
+        # trajectory lengths
         lengths = np.zeros(len(dtrajs))
-
-        n = 0
         for i in range(len(dtrajs)):
             lengths[i] = len(dtrajs[i])
-            n = max(n, np.max(dtrajs[i]))
-        # maximum number of timescales
-        self._nits = min(nits, n)
+
         # lag time
         if (lags is None):
             maxlag = 0.5 * np.sum(lengths) / float(len(lengths))
-            self._lags = self.__generate_lags__(maxlag, 1.5)
+            self._lags = self._generate_lags(maxlag, 1.5)
         else:
             self._lags = lags
+
         # estimate
-        self.__estimate__()
+        self._estimate()
 
                 
-    def __generate_lags__(self, maxlag, multiplier):
+    def _generate_lags(self, maxlag, multiplier):
         r"""Generate a set of lag times starting from 1 to maxlag, 
         using the given multiplier between successive lags
         
@@ -85,7 +90,7 @@ class ImpliedTimescales(object):
         return lags
 
 
-    def __C_to_ts__(self, C, tau):
+    def _C_to_ts(self, C, tau):
         r"""Estimate timescales from the given count matrix.
         
         """
@@ -101,26 +106,39 @@ class ImpliedTimescales(object):
             return None # no timescales available
         
     
-    def __estimate__(self):
+    def _estimate(self):
         r"""Estimates ITS at set of lagtimes
         
         """
         # initialize
         self._its = np.zeros((len(self._lags), self._nits))
+        maxnits = self._nits
+        maxlag  = len(self._lags)
         for i in range(len(self._lags)):
             tau = self._lags[i]
             # estimate count matrix
             C = cmatrix(self._dtrajs, tau)
             # estimate timescales
-            ts = self.__C_to_ts__(C, tau)
+            ts = self._C_to_ts(C, tau)
             if (ts is None):
-                raise RuntimeError('Could not compute a single timescale at tau = '+str(tau)+
-                                   '. Probably a connectivity problem. Try using smaller lagtimes')
-            if (len(ts) < self._nits):
-                raise RuntimeError('Could only compute '+str(len(ts))+' timescales at tau = '+str(tau)+
-                                   ' instead of the requested '+str(self._nits)+'. Probably a '+
-                                   ' connectivity problem. Request less timescales or smaller lagtimes')
+                maxlag = i
+                warnings.warn('Could not compute a single timescale at tau = '+str(tau)+
+                              '. Probably a connectivity problem. Try using smaller lagtimes')
+            elif (len(ts) < self._nits):
+                maxnits = min(maxnits, len(ts))
+                warnings.warn('Could only compute '+str(len(ts))+' timescales at tau = '+str(tau)+
+                              ' instead of the requested '+str(self._nits)+'. Probably a '+
+                              ' connectivity problem. Request less timescales or smaller lagtimes')
             self._its[i,:] = ts
+
+        # any infinities?
+        if (np.any(np.isinf(self._its))):
+            warnings.warn('Timescales contain infinities, indicating that the data is disconnected at some lag time')
+
+        # clean up
+        self._nits = maxnits
+        self._lags = self._lags[:maxlag]
+        self._its = self._its[:maxlag][:,:maxnits]
 
     
     def bootstrap(self, nsample=10):
@@ -136,7 +154,7 @@ class ImpliedTimescales(object):
                 # sample count matrix
                 C = bootstrap_counts(self._dtrajs, tau)
                 # estimate timescales
-                ts = self.__C_to_ts__(C, tau)
+                ts = self._C_to_ts(C, tau)
                 # only use ts if we get all requested timescales
                 if (ts != None):
                     if (len(ts) == self._nits):
@@ -226,7 +244,7 @@ class ImpliedTimescales(object):
 
 
     def get_sample_std(self, process = None):
-        r"""Returns the sample means of implied timescales. Need to
+        r"""Returns the standard error of implied timescales. Need to
         generate the samples first, e.g. by calling bootstrap
         
         Parameters
