@@ -143,9 +143,7 @@ class ImpliedTimescales(object):
         # clean up
         self._nits = maxnits
         self._lags = self._lags[:maxlag]
-        print "lagtimes = ",self._lags
         self._its = self._its[:maxlag][:,:maxnits]
-        print "its = ",self._its
 
     
     def bootstrap(self, nsample=10):

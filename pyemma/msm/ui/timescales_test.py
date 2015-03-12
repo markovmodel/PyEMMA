@@ -23,6 +23,12 @@ class ImpliedTimescalesTest(unittest.TestCase):
         # multitrajectory case
         self.dtrajs.append([[0],[1,1,1,1],[0,1,1,1,0],[0,1,0,1,0,1,0,1]])
 
+        # large-scale case
+        large_trajs = []
+        for i in range(10):
+            large_trajs.append(np.random.randint(10, size=1000))
+        self.dtrajs.append(large_trajs)
+
 
     def compute_nice(self, reversible):
         """
@@ -32,8 +38,8 @@ class ImpliedTimescalesTest(unittest.TestCase):
         """
         for i in range(len(self.dtrajs)):
             its = ImpliedTimescales(self.dtrajs[i], reversible=reversible)
-            print its.get_lagtimes()
-            print its.get_timescales()
+            #print its.get_lagtimes()
+            #print its.get_timescales()
 
 
     def test_nice_sliding_rev(self):
