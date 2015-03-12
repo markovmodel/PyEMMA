@@ -36,7 +36,7 @@ class Discretizer(object):
         the Transformer will be used to e.g reduce dimensionality of inputs.
     cluster : a clustering object
         used to assign input data to discrete states/ discrete trajectories.
-    chunksize : int 
+    chunksize : int
         how many frames shall be processed at once.
     """
 
@@ -64,6 +64,7 @@ class Discretizer(object):
 
         self.transformers.append(cluster)
 
+        # currently heuristical chunksize estimation is turned off.
         if chunksize is not None:
             build_chain(self.transformers, chunksize)
             self._chunksize = chunksize
@@ -102,7 +103,8 @@ class Discretizer(object):
         for trans in self.transformers:
             trans.chunksize = cs
 
-    def save_dtrajs(self, prefix='', output_format='ascii', extension='.dtraj'):
+    def save_dtrajs(self, prefix='', output_dir='.',
+                     output_format='ascii', extension='.dtraj'):
         """saves calculated discrete trajectories. Filenames are taken from
         given reader. If data comes from memory dtrajs are written to a default
         filename.
@@ -112,13 +114,14 @@ class Discretizer(object):
         ----------
         prefix : str
             prepend prefix to filenames.
-
+        output_dir : str (optional)
+            save files to this directory. Defaults to current working directory.
         output_format : str
             if format is 'ascii' dtrajs will be written as csv files, otherwise
             they will be written as NumPy .npy files.
-
         extension : str
             file extension to append (eg. '.itraj')
+
         """
 
         clustering = self.transformers[-1]
@@ -130,7 +133,7 @@ class Discretizer(object):
         if isinstance(reader, FeatureReader):
             trajfiles = reader.trajfiles
 
-        clustering.save_dtrajs(trajfiles, prefix, output_format, extension)
+        clustering.save_dtrajs(trajfiles, output_dir, prefix, output_format, extension)
 
     def _estimate_chunksize_from_mem_requirement(self, reader):
         """

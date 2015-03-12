@@ -90,14 +90,14 @@ class TestDataInMemory(unittest.TestCase):
             reader = DataInMemory(data)
 
     def test1dDataList(self):
-        n = 3
+        n = 10
         data = [np.arange(n), np.arange(n)]
         reader = DataInMemory(data)
 
-        self.assertEqual(reader.trajectory_lengths(), [n, n])
-        self.assertEqual(reader.dimension(), 3)
+        self.assertEqual(reader.trajectory_lengths(), [1, 1])
+        self.assertEqual(reader.dimension(), n)
         self.assertEqual(reader.ntraj, 2)
-        self.assertEqual(reader.n_frames_total(), n * 2)
+        self.assertEqual(reader.n_frames_total(), 2)
 
     def test_file_1d(self):
         DataInMemory(self.files1d)
