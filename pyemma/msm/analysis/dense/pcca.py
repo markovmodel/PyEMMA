@@ -435,7 +435,7 @@ def coarsegrain(P, n):
         \tilde{P} = M^T P M (M^T M)^{-1}
 
     See [2]_ for the derivation of this form from the coarse-graining method first derived in [1]_.
-    
+
     References
     ----------
     [1] S. Kube and M. Weber
