@@ -133,7 +133,7 @@ class Discretizer(object):
         if isinstance(reader, FeatureReader):
             trajfiles = reader.trajfiles
 
-        clustering.save_dtrajs(trajfiles, output_dir, prefix, output_format, extension)
+        clustering.save_dtrajs(trajfiles, prefix, output_dir, output_format, extension)
 
     def _estimate_chunksize_from_mem_requirement(self, reader):
         """
