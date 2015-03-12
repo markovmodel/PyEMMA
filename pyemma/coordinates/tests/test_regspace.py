@@ -5,13 +5,10 @@ Created on 26.01.2015
 '''
 import itertools
 import unittest
-import logging
 
 from pyemma.coordinates.clustering.regspace import RegularSpaceClustering, log
 import numpy as np
-import cProfile
-
-log.setLevel(logging.ERROR)
+import warnings
 
 
 class RandomDataSource:
@@ -57,21 +54,6 @@ class TestRegSpaceClustering(unittest.TestCase):
         self.dmin = 0.3
         self.clustering = RegularSpaceClustering(dmin=self.dmin)
         self.clustering.data_producer = RandomDataSource()
-        #self.pr = cProfile.Profile()
-        #self.pr.enable()
-        #print "*" * 80
-
-
-    def tearDown(self):
-        pass
-#         from pstats import Stats
-#         p = Stats(self.pr)
-#         p.strip_dirs()
-# 
-#         p.sort_stats('cumtime')
-#         p.print_stats()
-# 
-#         print "*" * 80
 
     def testAlgo(self):
         self.clustering.parametrize()
@@ -102,6 +84,18 @@ class TestRegSpaceClustering(unittest.TestCase):
         self.clustering.data_producer = RandomDataSource(a=-2, b=2)
         self.clustering.dmin = 2
         self.clustering.parametrize()
+
+    def testMaxCenters(self):
+        # insane small dmin shall trigger a warning
+        self.clustering.dmin = 0.00001
+        with warnings.catch_warnings(record=True) as w:
+            # Cause all warnings to always be triggered.
+            warnings.simplefilter("always")
+            # this shall trigger a warning
+            self.clustering.parametrize()
+            # TODO: verify num states matches max_clusters
+            #assert len(self.clustering.dtrajs) <= self.clustering.max_clusters
+            assert issubclass(w[-1].category, UserWarning)
 
 
 if __name__ == "__main__":

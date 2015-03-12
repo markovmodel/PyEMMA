@@ -9,6 +9,7 @@ from pyemma.util.annotators import doc_inherit
 from pyemma.coordinates.clustering.interface import AbstractClustering
 
 import numpy as np
+import warnings
 
 log = getLogger('RegSpaceClustering')
 __all__ = ['RegularSpaceClustering']
@@ -33,12 +34,13 @@ class RegularSpaceClustering(AbstractClustering):
 
     """
 
-    def __init__(self, dmin):
+    def __init__(self, dmin, max_clusters=1000):
         super(RegularSpaceClustering, self).__init__()
 
         self.dmin = dmin
         # temporary list to store cluster centers
         self._clustercenters = []
+        self.max_clusters = max_clusters
 
     @doc_inherit
     def describe(self):
@@ -84,6 +86,14 @@ class RegularSpaceClustering(AbstractClustering):
                 dist = np.fromiter((np.linalg.norm(x - c, 2)
                                     for c in self._clustercenters), dtype=np.float32)
 
+                if len(self._clustercenters) > self.max_clusters:
+                    msg = 'Maximum number of cluster centers reached.' \
+                          ' Consider increasing max_clusters or choose' \
+                          ' a larger minimum distance, dmin.'
+                    log.warning(msg)
+                    warnings.warn(msg)
+                    return False
+
                 minIndex = np.argmin(dist)
                 if dist[minIndex] >= self.dmin:
                     self._clustercenters.append(x)
@@ -91,9 +101,11 @@ class RegularSpaceClustering(AbstractClustering):
         elif ipass == 1:
             # discretize all
             if t == 0:
-                assert len(self._clustercenters) >= 1
-                # create numpy array from clustercenters list
-                self.clustercenters = np.array(self._clustercenters)
+                if itraj == 0:
+                    log.debug("mk array")
+                    assert len(self._clustercenters) >= 1
+                    # create numpy array from clustercenters list
+                    self.clustercenters = np.array(self._clustercenters)
 
                 log.debug("shape of clustercenters: %s" %
                           str(self.clustercenters.shape))

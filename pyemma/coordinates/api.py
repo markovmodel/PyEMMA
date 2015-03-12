@@ -9,6 +9,22 @@ The class which links input (readers), transformers (PCA, TICA) and clustering
 together is the :func:`discretizer`. It builds up a pipeline to process your data
 into discrete state space.
 
+The discretizer and clustering algorithms share a common attribute :attr:`dtrajs`,
+which stores the assignment of the data to the cluster centers.
+
+>>> d = discretizer(...)
+>>> d.run()
+>>> d.dtrajs
+[array([0, 0, 1 ... ])]
+
+Data may be provided either from MD trajectories, arrays, CSV and NumPy binary
+files.
+
+If you want to extract features like distances directly from MD trajectories and
+on the fly process them in the pipeline, please have a look at
+:class:`io.feature_reader.FeatureReader` and
+:class:`pyemma.coordinates.io.feature_reader.MDFeaturizer`.
+
 """
 __author__ = 'noe, scherer'
 
@@ -261,16 +277,20 @@ def uniform_time(data=None, k=100):
     return res
 
 
-def regspace(data=None, dmin=-1):
+def regspace(data=None, dmin=-1, max_centers=1000):
     """
     Constructs a regular space clustering
 
     Parameters
     ----------
-    dmin : float
-        the minimal distance between cluster centers
     data : ndarray(N, d)
         input data, if available in memory
+    dmin : float
+        the minimal distance between cluster centers
+    max_centers : int (optional), default=1000
+        If max_centers is reached, the algorithm will stop to find more centers,
+        but this may not approximate the state space well. It is maybe better
+        to increase dmin then.
 
     Returns
     -------
