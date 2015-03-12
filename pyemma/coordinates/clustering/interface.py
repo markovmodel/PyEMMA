@@ -92,5 +92,4 @@ class AbstractClustering(Transformer):
                     pass
                 write_dtraj(dest, dtraj)
             except IOError:
-                self.logger.exception(
-                    'Exception during writing dtraj to "%s"' % dest)
+                log.exception('Exception during writing dtraj to "%s"' % dest)
