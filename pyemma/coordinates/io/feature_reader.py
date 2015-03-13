@@ -1,12 +1,12 @@
 __author__ = 'noe'
 
-import mdtraj
 import numpy as np
 
-from mdtraj.core.trajectory import Trajectory
+from pyemma.coordinates.util import patches
 from pyemma.coordinates.io.reader import ChunkedReader
 from pyemma.util.log import getLogger
-from featurizer import MDFeaturizer
+
+from .featurizer import MDFeaturizer
 
 log = getLogger('FeatureReader')
 
@@ -31,12 +31,22 @@ class FeatureReader(ChunkedReader):
 
     Examples
     --------
+
     Iterator access:
 
     >>> reader = FeatureReader('mytraj.xtc', 'my_structure.pdb')
     >>> chunks = []
     >>> for itraj, X in reader:
     >>>     chunks.append(X)
+
+
+    Extract backbone torsion angles of protein during feature reading:
+
+    >>> reader = FeatureReader('mytraj.xtc', 'my_structure.pdb')
+    >>> reader.featurizer.backbone_torsions()
+    >>> chunks = []
+    >>> for _, X in reader:
+    ...     chunks.append(X)
 
     """
 
@@ -188,25 +198,9 @@ class FeatureReader(ChunkedReader):
             # increment trajectory
             itraj += 1
 
-    def _create_iter(self, filename):
-        return mdtraj.iterload(filename, chunk=self.chunksize, top=self.topfile)
-
-    def _open_time_lagged(self):
-        log.debug("open time lagged iterator for traj %i" % self.curr_itraj)
-        if self.mditer2 is not None:
-            self.mditer2.close()
-        self.mditer2 = self._create_iter(self.trajfiles[self.curr_itraj])
-        self.skip_n = int(np.floor(1.0 * self.curr_lag / self.chunksize))
-        log.debug("trying to skip %i frames in advanced iterator" %
-                  self.skip_n)
-        i = 0
-        for _ in xrange(self.skip_n):
-            try:
-                self.mditer2.next()
-                i += 1
-            except StopIteration:
-                log.debug("was able to increment %i times" % i)
-                break
+    def _create_iter(self, filename, skip=0):
+        return patches.iterload(filename, chunk=self.chunksize,
+                                top=self.topfile, skip=skip)
 
     def reset(self):
         """
@@ -230,43 +224,12 @@ class FeatureReader(ChunkedReader):
         if lag > 0:
             if self.curr_lag == 0:
                 # lag time changed, so open lagged iterator
+                log.debug("open time lagged iterator for traj %i with lag %i"
+                          % (self.curr_itraj, self.curr_lag))
                 self.curr_lag = lag
-                self._open_time_lagged()
-                try:
-                    self.last_advanced_chunk = self.mditer2.next()
-                except StopIteration:
-                    log.debug(
-                        "No more data in mditer2 during last_adv_chunk assignment. Padding with zeros")
-                    lagged_xyz = np.zeros_like(chunk.xyz)
-                    self.last_advanced_chunk = Trajectory(
-                        lagged_xyz, chunk.topology)
-            try:
-                adv_chunk = self.mditer2.next()
-            except StopIteration:
-                # no more data available in mditer2, so we have to take data from
-                # current chunk and padd it with zeros!
-                log.debug("No more data in mditer2. Padding with zeros."
-                          " Data avail: %i" % chunk.xyz.shape[0])
-                lagged_xyz = np.zeros_like(chunk.xyz)
-                adv_chunk = Trajectory(lagged_xyz, chunk.topology)
-
-            # build time lagged Trajectory by concatenating
-            # last adv chunk and advance chunk
-            i = lag - (self.chunksize * self.skip_n)
-            padding_length = max(0, chunk.xyz.shape[0]
-                                 - (self.last_advanced_chunk.xyz.shape[0] - i)
-                                 - adv_chunk.xyz.shape[0])
-            padding = np.zeros(
-                (padding_length, chunk.xyz.shape[1], chunk.xyz.shape[2]))
-            merged = Trajectory(np.concatenate(
-                                (self.last_advanced_chunk.xyz,
-                                 adv_chunk.xyz, padding)), chunk.topology)
-            # assert merged.xyz.shape[0] >= chunk.xyz.shape[0]
-            # skip "lag" number of frames and truncate to chunksize
-            chunk_lagged = merged[i:][:chunk.xyz.shape[0]]
-
-            # remember last advanced chunk
-            self.last_advanced_chunk = adv_chunk
+                self._create_iter(self.trajfiles[self.curr_itraj],
+                                  skip=self.curr_lag)
+            adv_chunk = self.mditer2.next()
 
         self.t += chunk.xyz.shape[0]
 
@@ -285,8 +248,11 @@ class FeatureReader(ChunkedReader):
         if lag == 0:
             return self.featurizer.map(chunk)
         else:
+            # TODO: note X and Y may have different shapes. This case has to be handled by subsequent transformers
             X = self.featurizer.map(chunk)
-            Y = self.featurizer.map(chunk_lagged)
+            Y = self.featurizer.map(adv_chunk)
+#             assert np.shape(X) == np.shape(Y), "shape X = %s; Y= %s; lag=%i" % (
+#                 np.shape(X), np.shape(Y), lag)
             return X, Y
 
     def __iter__(self):
@@ -313,6 +279,10 @@ class FeatureReader(ChunkedReader):
             X = self.next_chunk()
         else:
             X, Y = self.next_chunk(self.lag)
+            # we wont be able to correlate chunks of different len, so stop here
+            if np.shape(X) != np.shape(Y):
+                # TODO: determine if its possible to truncate X to shape of Y?
+                raise StopIteration
 
         last_itraj = self.curr_itraj
         # note: t is incremented in next_chunk
