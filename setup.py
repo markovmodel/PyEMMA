@@ -218,7 +218,8 @@ metadata = dict(
                       'pystallone>=1.0.0b3',
                       'mdtraj',
                       'scikit-learn',
-                      'psutil'],
+                      'psutil',
+		      'matplotlib'],
     zip_safe=False,
 )
 
