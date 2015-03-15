@@ -15,7 +15,7 @@ from pyemma.msm.analysis import timescales
 from pyemma.util.statistics import confidence_interval
 from pyemma.util.types import ensure_dtraj_list as _ensure_dtraj_list
 
-#TODO: connectivity flat is currently not used. Introduce different connectivity modes (lag, minimal, set)
+#TODO: connectivity flag is currently not used. Introduce different connectivity modes (lag, minimal, set)
 #TODO: if not connected, might add infinity timescales.
 #TODO: Timescales should be assigned by similar eigenvectors rather than by order
 #TODO: when requesting too long lagtimes, throw a warning and exclude lagtime from calculation, but compute the rest
@@ -69,7 +69,13 @@ class ImpliedTimescales(object):
             maxlag = 0.5 * np.sum(self.lengths) / float(len(self.lengths))
             self._lags = self._generate_lags(maxlag, 1.5)
         else:
-            self._lags = lags
+            self._lags = np.array(lags)
+            # check if some lag times are forbidden.
+            if np.max(self._lags) >= self.maxlength:
+                Ifit = np.where(self._lags < self.maxlength)[0]
+                Inofit = np.where(self._lags >= self.maxlength)[0]
+                warnings.warn('Some lag times exceed the longest trajectories. Will ignore lag times: '+str(self._lags[Inofit]))
+                self._lags = self._lags[Ifit]
 
         # estimate
         self._estimate()
@@ -91,15 +97,10 @@ class ImpliedTimescales(object):
         return lags
 
 
-    def _estimate_ts_tau(self, tau):
+    def _estimate_ts_tau(self, C, tau):
         r"""Estimate timescales from the given count matrix.
         
         """
-        # estimation impossible?
-        if tau >= self.maxlength:
-            return None
-        # unconnected C matrix
-        C = cmatrix(self._dtrajs, tau)
         # connected set
         C = (connected_cmatrix(C)).toarray()
         if (len(C) > 1):
@@ -119,13 +120,16 @@ class ImpliedTimescales(object):
         # initialize
         self._its = np.zeros((len(self._lags), self._nits))
         maxnits = self._nits
-        maxlag  = len(self._lags)
+        maxnlags  = len(self._lags)
         for i in range(len(self._lags)):
+            # get lag time to be used
             tau = self._lags[i]
+            # unconnected C matrix
+            C = cmatrix(self._dtrajs, tau)
             # estimate timescales
-            ts = self._estimate_ts_tau(tau)
+            ts = self._estimate_ts_tau(C, tau)
             if (ts is None):
-                maxlag = i
+                maxnlags = i
                 warnings.warn('Could not compute a single timescale at tau = '+str(tau)+
                               '. Probably a connectivity problem. Try using smaller lagtimes')
                 break
@@ -142,8 +146,8 @@ class ImpliedTimescales(object):
 
         # clean up
         self._nits = maxnits
-        self._lags = self._lags[:maxlag]
-        self._its = self._its[:maxlag][:,:maxnits]
+        self._lags = self._lags[:maxnlags]
+        self._its = self._its[:maxnlags][:,:maxnits]
 
     
     def bootstrap(self, nsample=10):
@@ -152,42 +156,75 @@ class ImpliedTimescales(object):
         """
         # initialize
         self._its_samples = np.zeros((len(self._lags), self._nits, nsample))
+        self._nits_sample = self._nits
+        maxnits = self._nits_sample
+        maxnlags  = len(self._lags)
         for i in range(len(self._lags)):
             tau = self._lags[i]
-            sampledWell = True
+            all_ts = True
+            any_ts = True
             for k in range(nsample):
                 # sample count matrix
                 C = bootstrap_counts(self._dtrajs, tau)
                 # estimate timescales
                 ts = self._estimate_ts_tau(C, tau)
                 # only use ts if we get all requested timescales
-                if (ts != None):
+                if (ts is not None):
                     if (len(ts) == self._nits):
                         self._its_samples[i,:,k] = ts
                     else:
-                        sampledWell = False
+                        all_ts = False
+                        maxnits = min(maxnits, len(ts))
+                        self._its_samples[i,:maxnits,k] = ts
                 else:
-                    sampledWell = False
-            if (not sampledWell):
-                raise RuntimeWarning('Could not compute all requested timescales at tau = '+str(tau)+
+                    any_ts = False
+                    maxnlags = i
+            if (not all_ts):
+                warnings.warn('Could not compute all requested timescales at tau = '+str(tau)+
                                      '. Bootstrap is incomplete and might be non-representative.'+
                                      ' Request less timescales or smaller lagtimes')
+            if (not any_ts):
+                warnings.warn('Could not compute a single timescale at tau = '+str(tau)+
+                              '. Probably a connectivity problem. Try using smaller lagtimes')
+        # clean up
+        self._nits_sample = maxnits
+        self._lags_sample = self._lags[:maxnlags]
+        self._its_samples = self._its_samples[:maxnlags,:,:][:,:maxnits,:]
 
-    
+
+    @property
+    def lagtimes(self):
+        r"""Return the list of lag times for which timescales were computed.
+
+        """
+        return self._lags
 
     def get_lagtimes(self):
         r"""Return the list of lag times for which timescales were computed.
         
         """
+        warnings.warn('get_lagtimes() is deprecated. Use lagtimes', DeprecationWarning)
         return self._lags
 
-
+    @property
     def number_of_timescales(self):
         r"""Return the number of timescales.
         
         """
         return self._nits
 
+    @property
+    def timescales(self):
+        r"""Returns the implied timescale estimates
+
+        Returns
+        --------
+        timescales : ndarray((l x k), dtype=float)
+            timescales for all processes and lag times.
+            l is the number of lag times and k is the number of computed timescales.
+
+        """
+        return self.get_timescales()
 
     def get_timescales(self, process = None):
         r"""Returns the implied timescale estimates
@@ -211,14 +248,46 @@ class ImpliedTimescales(object):
         else:
             return self._its[:,process]
 
+
+    @property
     def samples_available(self):
         r"""Returns True if samples are available and thus sample
         means, standard errors and confidence intervals can be
         obtained
         
         """
-        return (self._its_samples != None)
+        return (self._its_samples is not None)
 
+
+    @property
+    def sample_lagtimes(self):
+        r"""Return the list of lag times for which sample data is available
+
+        """
+        return self._lags_sample
+
+
+    @property
+    def sample_number_of_timescales(self):
+        r"""Return the number of timescales for which sample data is available
+
+        """
+        return self._nits_sample
+
+
+    @property
+    def sample_mean(self):
+        r"""Returns the sample means of implied timescales. Need to
+        generate the samples first, e.g. by calling bootstrap
+
+        Returns
+        -------
+        timescales : ndarray((l x k), dtype=float)
+            mean timescales for all processes and lag times.
+            l is the number of lag times and k is the number of computed timescales.
+
+        """
+        return self.get_sample_mean()
 
     def get_sample_mean(self, process = None):
         r"""Returns the sample means of implied timescales. Need to
@@ -247,6 +316,23 @@ class ImpliedTimescales(object):
         else:
             return np.mean(self._its_samples[:,process,:], axis = 1)
 
+
+    @property
+    def sample_std(self):
+        r"""Returns the standard error of implied timescales. Need to
+        generate the samples first, e.g. by calling bootstrap
+
+
+        Returns
+        -------
+        Returns
+        -------
+        timescales : ndarray((l x k), dtype=float)
+            standard deviations of timescales for all processes and lag times.
+            l is the number of lag times and k is the number of computed timescales.
+
+        """
+        return self.get_sample_std()
 
     def get_sample_std(self, process = None):
         r"""Returns the standard error of implied timescales. Need to
