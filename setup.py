@@ -9,14 +9,12 @@ to analyze trajectories generated from any kind of simulation
 """
 # TODO: extend docstring
 DOCLINES = __doc__.split("\n")
-__requires__ = 'setuptools>=2.2'
+__requires__ = 'setuptools>=3.6'
 
 import sys
 import os
 import versioneer
 import warnings
-
-from glob import glob
 
 CLASSIFIERS = """\
 Development Status :: 4 - Beta
