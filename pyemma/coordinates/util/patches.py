@@ -3,9 +3,6 @@ Created on 13.03.2015
 
 @author: marscher
 '''
-
-
-import mock
 import numpy as np
 import warnings
 
@@ -52,7 +49,7 @@ def iterload(filename, chunk=100, **kwargs):
     See Also
     --------
     load, load_frame
-        
+
     Examples
     --------
     >>> import mdtraj as md
@@ -64,7 +61,6 @@ def iterload(filename, chunk=100, **kwargs):
     <mdtraj.Trajectory with 100 frames, 423 atoms at 0x110740a90>
     <mdtraj.Trajectory with 100 frames, 423 atoms at 0x110740a90>
     """
-    log.debug("called patched iterload")
     stride = kwargs.get('stride', 1)
     atom_indices = cast_indices(kwargs.get('atom_indices', None))
     if chunk % stride != 0:
@@ -161,5 +157,5 @@ def iterload(filename, chunk=100, **kwargs):
 
         else:
             t = load(filename, **kwargs)
-            for i in range(0, len(t), chunk):
+            for i in range(skip, len(t), chunk):
                 yield t[i:i+chunk]
