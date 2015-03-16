@@ -116,7 +116,7 @@ class PCA(Transformer):
         # pass 1: means
         if ipass == 0:
             if t == 0:
-                log.debug("start to calculate mean")
+                log.debug("start to calculate mean for traj nr %i" % itraj)
                 self._sum_tmp = np.empty(X.shape[1])
             np.sum(X, axis=0, out=self._sum_tmp)
             self.mu += self._sum_tmp
@@ -127,7 +127,7 @@ class PCA(Transformer):
         # pass 2: covariances
         if ipass == 1:
             if t == 0:
-                log.debug("start calculate covariance")
+                log.debug("start calculate covariance for traj nr %i" % itraj)
                 self._dot_prod_tmp = np.empty_like(self.C)
             Xm = X - self.mu
             np.dot(Xm.T, Xm, self._dot_prod_tmp)

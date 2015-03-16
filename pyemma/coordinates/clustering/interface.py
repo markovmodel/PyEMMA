@@ -41,14 +41,11 @@ class AbstractClustering(Transformer):
             names of input trajectory files, will be used generate output files.
         prefix : str
             prepend prefix to filenames.
-
         output_dir : str
             save files to this directory.
-
         output_format : str
             if format is 'ascii' dtrajs will be written as csv files, otherwise
             they will be written as NumPy .npy files.
-
         extension : str
             file extension to append (eg. '.itraj')
         """
@@ -92,5 +89,4 @@ class AbstractClustering(Transformer):
                     pass
                 write_dtraj(dest, dtraj)
             except IOError:
-                self.logger.exception(
-                    'Exception during writing dtraj to "%s"' % dest)
+                log.exception('Exception during writing dtraj to "%s"' % dest)

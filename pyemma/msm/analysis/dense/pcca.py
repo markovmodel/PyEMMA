@@ -8,7 +8,7 @@ https://github.com/CMD-at-ZIB/ZIBMolPy/blob/master/ZIBMolPy_package/ZIBMolPy/alg
 import numpy as np
 import math
 
-def pcca_connected_isa(evec, n_clusters):
+def _pcca_connected_isa(evec, n_clusters):
     """
     PCCA+ spectral clustering method using the inner simplex algorithm.
     
@@ -108,7 +108,7 @@ def pcca_connected_isa(evec, n_clusters):
 
 
 
-def opt_soft(eigvectors, rot_matrix, n_clusters):
+def _opt_soft(eigvectors, rot_matrix, n_clusters):
     """
     Optimizes the PCCA+ rotation matrix such that the memberships are exclusively nonnegative.
         
@@ -154,7 +154,7 @@ def opt_soft(eigvectors, rot_matrix, n_clusters):
         # reshape into matrix
         rot_crop_matrix = np.reshape(rot_crop_vec, (x, y))
         # fill matrix
-        rot_matrix = fill_matrix(rot_crop_matrix, eigvectors)
+        rot_matrix = _fill_matrix(rot_crop_matrix, eigvectors)
 
         result = 0
         for i in range(0, n_clusters):
@@ -167,14 +167,14 @@ def opt_soft(eigvectors, rot_matrix, n_clusters):
     rot_crop_vec_opt = fmin( susanna_func, rot_crop_vec, args=(eigvectors,), disp=False)
 
     rot_crop_matrix = np.reshape(rot_crop_vec_opt, (x, y))
-    rot_matrix = fill_matrix(rot_crop_matrix, eigvectors)
+    rot_matrix = _fill_matrix(rot_crop_matrix, eigvectors)
 
     return rot_matrix
 
 
 
 
-def fill_matrix(rot_crop_matrix, eigvectors):
+def _fill_matrix(rot_crop_matrix, eigvectors):
     """
     Helper function for opt_soft
     
@@ -203,7 +203,7 @@ def fill_matrix(rot_crop_matrix, eigvectors):
 
 
 
-def pcca_connected(P, n, return_rot = False):
+def _pcca_connected(P, n, return_rot = False):
     """
     PCCA+ spectral clustering method with optimized memberships [1]_
     
@@ -248,6 +248,15 @@ def pcca_connected(P, n, return_rot = False):
     from pyemma.msm.analysis import stationary_distribution
     pi = stationary_distribution(P)
 
+    from pyemma.msm.analysis import is_reversible
+    if not is_reversible(P, mu=pi):
+        raise ValueError("Transition matrix does not fulfill detailed balance. "
+                         "Make sure to call pcca with a reversible transition matrix estimate")
+    #TODO: Susanna mentioned that she has a potential fix for nonreversible matrices by replacing each complex conjugate
+    #      pair by the real and imaginary components of one of the two vectors. We could use this but would then need to
+    #      orthonormalize all eigenvectors e.g. using Gram-Schmidt orthonormalization. Currently there is no theoretical
+    #      foundation for this, so I'll skip it for now.
+
     # right eigenvectors, ordered
     from pyemma.msm.analysis import eigenvectors
     evecs = eigenvectors(P,n)
@@ -265,10 +274,10 @@ def pcca_connected(P, n, return_rot = False):
     evecs = np.real(evecs)
 
     # create initial solution using PCCA+. This could have negative memberships
-    (chi, rot_matrix) = pcca_connected_isa(evecs, n)
+    (chi, rot_matrix) = _pcca_connected_isa(evecs, n)
 
     # optimize the rotation matrix with PCCA++. 
-    rot_matrix = opt_soft(evecs, rot_matrix, n)
+    rot_matrix = _opt_soft(evecs, rot_matrix, n)
 
     # These memberships should be nonnegative
     memberships = np.dot(evecs[:,:], rot_matrix)
@@ -390,7 +399,7 @@ def pcca(P, m):
             ipcca += 1
         elif (m_by_component > 1):
             #print "submatrix: ",closed_components_Psub[i]
-            chi[component,ipcca:ipcca+m_by_component] = pcca_connected(closed_components_Psub[i], m_by_component)
+            chi[component,ipcca:ipcca+m_by_component] = _pcca_connected(closed_components_Psub[i], m_by_component)
             ipcca += m_by_component
         else:
             raise RuntimeError("Component "+str(i)+" spuriously has "+str(m_by_component)+" pcca sets")
@@ -423,11 +432,17 @@ def coarsegrain(P, n):
     
     ..math:
         \tilde{P} = M^T P M (M^T M)^{-1}
-    
-    See: 
-    F. Noe, H. Wu, J.-H. Prinz and N. Plattner:
-    Projected and hidden Markov models for calculating kinetics and metastable states of complex molecules
-    J. Chem. Phys. 139, 184114 (2013)
+
+    See [2]_ for the derivation of this form from the coarse-graining method first derived in [1]_.
+
+    References
+    ----------
+    [1] S. Kube and M. Weber
+        A coarse graining method for the identification of transition rates between molecular conformations.
+        J. Chem. Phys. 126, 024103 (2007)
+    [2] F. Noe, H. Wu, J.-H. Prinz and N. Plattner:
+        Projected and hidden Markov models for calculating kinetics and metastable states of complex molecules
+        J. Chem. Phys. 139, 184114 (2013)
     """
     M = pcca(P,n)
     A = np.dot(np.dot(M.T, P), M)

@@ -8,49 +8,78 @@ logger = getLogger('DataInMemory')
 
 
 class DataInMemory(ChunkedReader):
-
-    """
+    r"""
     multi-dimensional multi-trajectory data fully stored in memory
+
+    Parameters
+    ----------
+    data : ndarray (nframe, ndim) or list of ndarrays (nframe, ndim) or list of filenames
+        Data has to be either one 2d array which stores amount of frames in first
+        dimension and coordinates/features in second dimension or a list of this
+        arrays. Despite that it can also be a list of filenames (.csv or .npy files),
+        which will then be lazy loaded into memory.
+
     """
 
-    def __init__(self, _data):
-        """
-
-        :param data:
-            ndarray of shape (nframe, ndim) or
-            list of ndarrays, each of shape (nframe_i, ndim)
-        """
+    def __init__(self, _data, **kwargs):
         ChunkedReader.__init__(self)
 
         if isinstance(_data, np.ndarray):
-            self.data = [_data]
             self.ntraj = 1
             if _data.ndim == 1:
                 self.ndim = np.shape(_data)[0]
             else:
                 self.ndim = np.shape(_data)[1]
             self._lengths = [np.shape(_data)[0]]
+            self.data = [_data]
         elif isinstance(_data, list):
-            self.data = _data
-            self.ntraj = len(_data)
-            # ensure all trajs have same dim
-            ndims = np.fromiter(([np.shape(_data[i])[1]
-                                  for i in xrange(len(_data))]), dtype=int)
-            ndim_eq = ndims == np.shape(_data[0][1])
-            if not np.all(ndim_eq):
-                raise ValueError("input data has different dimensions!"
-                                 " Indices not matching: %s"
-                                 % np.where(ndim_eq == False))
-            self.ndim = ndims[0]
+            # lazy load given filenames into memory
+            if all(isinstance(d, str) for d in _data):
+                self.data = []
+                if 'mmap_mode' in kwargs:
+                    mmap_mode = kwargs['mmap_mode']
+                else:
+                    mmap_mode = 'r'
+                for f in _data:
+                    if f.endswith('.npy'):
+                        x = np.load(f, mmap_mode=mmap_mode)
+                    else:
+                        x = np.loadtxt(f)
+                    x = np.atleast_2d(x)
+                    self.data.append(x)
 
-            self._lengths = [np.shape(_data[i])[0] for i in range(len(_data))]
+            # everything is an array
+            elif all(isinstance(d, np.ndarray) for d in _data):
+                self.data = [np.atleast_2d(d) for d in _data]
+            else:
+                raise ValueError("supply 2d ndarray, list of 2d ndarray"
+                                 " or list of filenames storing 2d arrays.")
+
+            self.ntraj = len(self.data)
+
+            # ensure all trajs have same dim
+            ndims = [np.shape(x)[1] for x in self.data]
+            if not np.unique(ndims).size == 1:
+                raise ValueError("input data has different dimensions!")
+
+            self.ndim = ndims[0]
+            self._lengths = [np.shape(d)[0] for d in self.data]
         else:
             raise ValueError('input data is neither an ndarray '
                              'nor a list of ndarrays!')
 
         self.t = 0
         self.itraj = 0
-        self.chunksize = 0
+        self._chunksize = 0
+
+    @property
+    def chunksize(self):
+        return self._chunksize
+
+    @chunksize.setter
+    def chunksize(self, x):
+        # chunksize setting is forbidden, since we are operating in memory
+        pass
 
     def number_of_trajectories(self):
         """
@@ -120,7 +149,7 @@ class DataInMemory(ChunkedReader):
         traj = self.data[self.itraj]
 
         # complete trajectory mode
-        if self.chunksize == 0:
+        if self._chunksize == 0:
             if lag == 0:
                 X = traj
                 self.itraj += 1
@@ -130,38 +159,6 @@ class DataInMemory(ChunkedReader):
                 Y = traj[lag:traj_len]
                 self.itraj += 1
                 return (X, Y)
-        else:
-            #logger.debug("t=%i" % self.t)
-            # FIXME: if t + chunksize < traj_len, this selects wrong bounds. eg [100:40], which is empty
-            chunksize_bounds = min(self.t + self.chunksize, traj_len)
-            if lag == 0:
-                X = traj[self.t:chunksize_bounds]
-                self.t += np.shape(X)[0]
-                if self.t >= traj_len:
-                    self.itraj += 1
-                return X
-            else:
-                logger.warning("chunked lagged access not debugged!")
-                X = traj[self.t: chunksize_bounds - lag]
-                assert np.shape(X)[0] > 0
-                #logger.debug("Y=traj[%i+%i : %i]" %
-                #             (self.t, lag, chunksize_bounds))
-                # if we do not have enough data anymore for chunked, padd it with zeros
-                Y = traj[self.t + lag: chunksize_bounds]
-#                 if np.shape(Y)[0] == 0:
-#                     assert False
-#                     Y = PaddedArray(np.zeros_like(X), X.shape)
-
-                assert np.shape(X) == np.shape(Y), "%s != %s" % (str(np.shape(X)), str(np.shape(Y)))
-                self.t += np.shape(X)[0]
-                assert np.shape(Y)[0] > 0
-                if self.t + lag >= traj_len:
-                    self.itraj += 1
-                return (X, Y)
-
-    def parametrize(self):
-        # nothing to do here, its just there for interface reasons
-        pass
 
     @staticmethod
     def distance(x, y):

@@ -154,11 +154,11 @@ class TestArguments(unittest.TestCase):
 
     def testInputFloat(self):
         dtraj_with_floats = [0.0, 1, 0, 2, 3, 1, 0.0]
-        dtraj_int = [0, 1, 0, 2, 3, 1, 0]
-        C_f = count_matrix(dtraj_with_floats, 1)
-        C_i = count_matrix(dtraj_int, 1)
-
-        np.testing.assert_array_equal(C_f.toarray(), C_i.toarray())
+        #dtraj_int = [0, 1, 0, 2, 3, 1, 0]
+        with self.assertRaises(TypeError):
+            C_f = count_matrix(dtraj_with_floats, 1)
+        #C_i = count_matrix(dtraj_int, 1)
+        #np.testing.assert_array_equal(C_f.toarray(), C_i.toarray())
 
 if __name__=="__main__":
     unittest.main()

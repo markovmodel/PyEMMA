@@ -6,6 +6,7 @@ Created on 17.02.2014
 from __future__ import absolute_import
 
 import os
+import errno
 import re
 from glob import glob
 from pyemma.util.log import getLogger
@@ -85,3 +86,13 @@ def read_dtrajs_from_pattern(patterns, logger=getLogger()):
                 'Exception occurred during reading of %s:\n%s' % (dt, e))
             raise
     return dtrajs
+
+
+def mkdir_p(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc:  # Python >2.5
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else:
+            raise

@@ -62,8 +62,8 @@ class TestFeatureReader(unittest.TestCase):
         frames = 0
         data = []
         for i, X in reader:
-            frames += X.xyz.shape[0]
-            data.append(X.xyz)
+            frames += X.shape[0]
+            data.append(X)
 
         # restore shape of input
         data = np.array(data).reshape(self.xyz.shape)
@@ -78,8 +78,8 @@ class TestFeatureReader(unittest.TestCase):
         frames = 0
         data = []
         for i, X in reader:
-            frames += X.xyz.shape[0]
-            data.append(X.xyz)
+            frames += X.shape[0]
+            data.append(X)
         self.assertEqual(frames, reader.trajectory_lengths()[0] * 2)
         # restore shape of input
         data = np.array(
@@ -95,9 +95,9 @@ class TestFeatureReader(unittest.TestCase):
         data = []
         lagged = []
         for _, X, Y in reader:
-            frames += X.xyz.shape[0]
-            data.append(X.xyz)
-            lagged.append(Y.xyz)
+            frames += X.shape[0]
+            data.append(X)
+            lagged.append(Y)
 
         merged_lagged = np.array(lagged).reshape(self.xyz.shape)
 

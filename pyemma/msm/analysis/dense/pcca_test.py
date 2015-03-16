@@ -16,9 +16,19 @@ from pcca import pcca
 
 class TestPCCA(unittest.TestCase):
 
+    def test_pcca_no_transition_matrix(self):
+        P = np.array([[1.0, 1.0],
+                      [0.1, 0.9]])
 
-    def setUp(self):
-        pass
+        with self.assertRaises(ValueError):
+            pcca(P, 2)
+
+    def test_pcca_no_detailed_balance(self):
+        P = np.array([[0.8, 0.1, 0.1],
+                      [0.3, 0.2, 0.5],
+                      [0.6, 0.3, 0.1]])
+        with self.assertRaises(ValueError):
+            pcca(P, 2)
 
     def test_pcca_1(self):
         P = np.array([[1, 0],
@@ -27,6 +37,7 @@ class TestPCCA(unittest.TestCase):
         sol = np.array([[ 1.,  0.],
                         [ 0.,  1.]])
         assert_allclose(chi, sol)
+
 
     def test_pcca_2(self):
         P = np.array([[0.0, 1.0, 0.0],
@@ -37,6 +48,7 @@ class TestPCCA(unittest.TestCase):
                         [ 1.,  0.],
                         [ 0.,  1.]])
         assert_allclose(chi, sol)
+
 
     def test_pcca_3(self):
         P = np.array([[0.9, 0.1, 0.0, 0.0],
@@ -65,6 +77,7 @@ class TestPCCA(unittest.TestCase):
                         [ 0.,  0.,  0.,  1.]])
         assert_allclose(chi, sol)
 
+
     def test_pcca_4(self):
         P = np.array([[0.9, 0.1, 0.0, 0.0],
                       [0.1, 0.8, 0.1, 0.0],
@@ -76,6 +89,7 @@ class TestPCCA(unittest.TestCase):
                         [ 1.,  0.],
                         [ 0.,  1.]])
         assert_allclose(chi, sol)
+
 
     def test_pcca_5(self):
         P = np.array([[0.9, 0.1, 0.0, 0.0, 0.0],
@@ -99,6 +113,7 @@ class TestPCCA(unittest.TestCase):
                         [ 0. ,  0. ,  1. ,  0. ],
                         [ 0. ,  0. ,  0. ,  1. ]])
         assert_allclose(chi, sol)
+
 
     def test_pcca_large(self):
         import os

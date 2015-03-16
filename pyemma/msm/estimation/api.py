@@ -31,6 +31,7 @@ import dense.mle_trev_given_pi
 
 from pyemma.util.log import getLogger
 from pyemma.msm.estimation.dense.tmatrix_sampler_jwrapper import ITransitionMatrixSampler
+from pyemma.util.types import ensure_dtraj_list as _ensure_dtraj_list
 
 __author__ = "Benjamin Trendelkamp-Schroer, Martin Scherer, Frank Noe"
 __copyright__ = "Copyright 2014, Computational Molecular Biology Group, FU-Berlin"
@@ -43,30 +44,88 @@ __email__="m.scherer AT fu-berlin DOT de"
 __all__=['bootstrap_trajectories',
          'bootstrap_counts',
          'count_matrix',
-         'cmatrix', 
+         'count_states',
+         'connected_cmatrix',
          'connected_sets',
+         'cmatrix',
          'error_perturbation',
+         'is_connected',
          'largest_connected_set',
          'largest_connected_submatrix',
-         'connected_cmatrix',
-         'is_connected',
-         'prior_neighbor',
-         'prior_const',
-         'prior_rev',
-         'transition_matrix',
-         'tmatrix',
          'log_likelihood',
+         'number_of_states',
+         'prior_const',
+         'prior_neighbor',
+         'prior_rev',
+         'tmatrix',
          'tmatrix_cov',
-         'error_perturbation',
          'tmatrix_sampler',
-         'bootstrap_counts',
-         'bootstrap_trajectories']
+         'transition_matrix']
+
+
+################################################################################
+# Basic counting
+################################################################################
+
+def count_states(dtrajs):
+    r"""returns a histogram count
+
+    Parameters
+    ----------
+    dtraj : array_like or list of array_like
+        Discretized trajectory or list of discretized trajectories
+
+    Returns
+    -------
+    count : ndarray((n), dtype=int)
+        the number of occurrances of each state. n=max+1 where max is the largest state index found.
+    """
+    # format input
+    dtrajs = _ensure_dtraj_list(dtrajs)
+    # make bincounts for each input trajectory
+    nmax = 0
+    bcs = []
+    for i in range(len(dtrajs)):
+        bc = np.bincount(dtrajs[i])
+        nmax = max(nmax, bc.shape[0])
+        bcs.append(bc)
+    # construct total bincount
+    res = np.zeros((nmax),dtype=int)
+    # add up individual bincounts
+    for i in range(len(bcs)):
+        res[:bcs[i].shape[0]] += bcs[i]
+    return res
+
+
+def number_of_states(dtrajs, only_used = False):
+    r"""returns the number of states in the given trajectories.
+
+    Parameters
+    ----------
+    dtraj : array_like or list of array_like
+        Discretized trajectory or list of discretized trajectories
+    only_used = False : boolean
+        If False, will return max+1, where max is the largest index used.
+        If True, will return the number of states that occur at least once.
+    """
+    dtrajs = _ensure_dtraj_list(dtrajs)
+    if only_used:
+        # only states with counts > 0 wanted. Make a bincount and count nonzeros
+        bc = count_states(dtrajs)
+        return np.count_nonzero(bc)
+    else:
+        # all states wanted, included nonpopulated ones. return max + 1
+        imax = 0
+        for dtraj in dtrajs:
+            imax = max(imax, np.max(dtraj))
+        return imax+1
+
 
 ################################################################################
 # Count matrix
 ################################################################################
 
-# DONE: Benjamin 
+# DONE: Benjamin, Frank
 def count_matrix(dtraj, lag, sliding=True, sparse_return=True, nstates=None):
     r"""Generate a count matrix from given microstate trajectory.
     
@@ -154,25 +213,8 @@ def count_matrix(dtraj, lag, sliding=True, sparse_return=True, nstates=None):
     """
     # convert dtraj input, if it contains out of nested python lists to 
     # a list of int ndarrays.
-    # Otherwise if its already a list of integers/floats, convert to a single
-    # int ndarray.
-
-    # nested list?
-    if any(isinstance(i, list) for i in dtraj):
-        dtraj = [np.array(d, dtype=int) for d in dtraj]
-    else: # single list or ndarray
-        if isinstance(dtraj, list):
-            for d in dtraj:
-                if not isinstance(d, np.ndarray):
-                    dtraj = np.array(dtraj, dtype=int)
-                    break
-        elif isinstance(dtraj, np.ndarray) and dtraj.ndim > 1:
-            raise TypeError("Input should be list of integer ndarrays")
-
-    if type(dtraj) is list:
-        return sparse.count_matrix.count_matrix_mult(dtraj, lag, sliding=sliding, sparse=sparse_return, nstates=nstates)
-    else:
-        return sparse.count_matrix.count_matrix(dtraj, lag, sliding=sliding, sparse=sparse_return, nstates=nstates)
+    dtraj = _ensure_dtraj_list(dtraj)
+    return sparse.count_matrix.count_matrix_mult(dtraj, lag, sliding=sliding, sparse=sparse_return, nstates=nstates)
 
 # DONE: Benjamin 
 def cmatrix(dtraj, lag, sliding=True, sparse_return=True, nstates=None):
@@ -324,6 +366,7 @@ def bootstrap_counts(dtrajs, lagtime):
     bootstrap_trajectories
     
     """
+    dtrajs = _ensure_dtraj_list(dtrajs)
     return dense.bootstrapping.bootstrap_counts(dtrajs, lagtime)
 
 
