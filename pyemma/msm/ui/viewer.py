@@ -1,8 +1,5 @@
 import mdtraj as md
-import IPython
-
 from mdtraj.html import TrajectoryView, enable_notebook
-from IPython.html.widgets.widget_int import IntSliderWidget
 
 
 def view_traj(traj, topology_file=None, stride=1, **kwargs):
@@ -22,12 +19,15 @@ def view_traj(traj, topology_file=None, stride=1, **kwargs):
     **kwargs : optional arguments
        are passed to `mdtraj.html.TrajectoryView`
     """
+    import IPython
+    from IPython.html.widgets.widget_int import IntSliderWidget
+
     if isinstance(traj, str):
         traj = md.load(traj, top=topology_file, stride=stride)
 
     # ensure we're able to use TrajectoryView
     enable_notebook()
-    
+
     if not 'colorBy' in kwargs:
         kwargs['colorBy'] = 'atom'
 
@@ -39,4 +39,3 @@ def view_traj(traj, topology_file=None, stride=1, **kwargs):
         widget.frame = val
     slider.on_trait_change(on_value_change, 'value')
     IPython.display.display(slider)
-    None

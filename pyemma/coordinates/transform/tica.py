@@ -72,7 +72,7 @@ class TICA(Transformer):
     @doc_inherit
     def describe(self):
         return "[TICA, lag = %i; output dimension = %i]" \
-            % (self.lag, self.output_dimension)
+            % (self.__lag, self.output_dimension)
 
     def dimension(self):
         """ output dimension"""

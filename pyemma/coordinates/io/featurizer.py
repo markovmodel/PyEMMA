@@ -76,7 +76,7 @@ class DistanceFeature:
 
     def __init__(self, top, distance_indexes):
         self.top = top
-        self.distance_indexes = distance_indexes
+        self.distance_indexes = np.array(distance_indexes)
         self.prefix_label = "DIST:"
 
     def describe(self):
