@@ -448,4 +448,7 @@ def coarsegrain(P, n):
     M = pcca(P,n)
     A = np.dot(np.dot(M.T, P), M)
     B = np.linalg.inv(np.dot(M.T,M))
-    return np.dot(A,B)
+    P = np.dot(A,B)
+    # renormalize to eliminate numerical errors
+    P /= P.sum(axis=1)[:,None]
+    return P
