@@ -8,6 +8,8 @@ from pyemma.util.log import getLogger
 from pyemma.util.annotators import doc_inherit
 from pyemma.coordinates.clustering.interface import AbstractClustering
 
+import regspatial
+
 import numpy as np
 import warnings
 
@@ -75,28 +77,15 @@ class RegularSpaceClustering(AbstractClustering):
         """
         log.debug("t=%i; itraj=%i" % (t, itraj))
         if ipass == 0:
-            # add first point as first centroid
-            if first_chunk:
-                self._clustercenters.append(X[0])
-                log.info("Run regspace clustering with dmin=%f;"
-                         " First centroid=%s" % (self.dmin, X[0]))
-            # TODO: optimize with cython, support different metrics
-            # see mixtape.libdistance
-            for x in X:
-                dist = np.fromiter((np.linalg.norm(x - c, 2)
-                                    for c in self._clustercenters), dtype=np.float32)
-
-                if len(self._clustercenters) > self.max_clusters:
-                    msg = 'Maximum number of cluster centers reached.' \
-                          ' Consider increasing max_clusters or choose' \
-                          ' a larger minimum distance, dmin.'
-                    log.warning(msg)
-                    warnings.warn(msg)
-                    return False
-
-                minIndex = np.argmin(dist)
-                if dist[minIndex] >= self.dmin:
-                    self._clustercenters.append(x)
+            try:
+                regspatial.cluster(X.astype(np.float32,order='C',copy=False), self._clustercenters, self.dmin, 'euclidean', self.max_clusters)
+            except RuntimeError as e:
+                msg = 'Maximum number of cluster centers reached.' \
+                      ' Consider increasing max_clusters or choose' \
+                      ' a larger minimum distance, dmin.'
+                log.warning(msg)
+                warnings.warn(msg)
+                return False
 
         elif ipass == 1:
             # discretize all

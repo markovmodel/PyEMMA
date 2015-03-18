@@ -81,6 +81,8 @@ def extensions():
     # setup OpenMP support
     from setup_util import detect_openmp
     openmp_enabled, needs_gomp = detect_openmp()
+    
+    import mdtraj
 
     exts = []
 
@@ -101,9 +103,17 @@ def extensions():
                   sources=['pyemma/msm/estimation/sparse/mle_trev.pyx',
                            'pyemma/msm/estimation/sparse/_mle_trev.c'])
 
+    regspatial_module = \
+        Extension('pyemma.coordinates.clustering.regspatial', 
+                  sources = ['pyemma/coordinates/clustering/regspatial.c'], 
+                  include_dirs = [mdtraj.capi()['include_dir']],
+                  libraries = ['theobald'],
+                  library_dirs = [mdtraj.capi()['lib_dir']])
+
     exts += [mle_trev_given_pi_dense_module,
              mle_trev_given_pi_sparse_module,
-             mle_trev_sparse_module]
+             mle_trev_sparse_module,
+             regspatial_module]
 
 #     kahan_sum = Extension('pyemma.coordinates.coordinate_transformation.exts.stable_sum',
 #                           sources=['pyemma/coordinates/coordinate_transformation/exts/stable_sum.pyx'],
@@ -232,7 +242,7 @@ if len(sys.argv) == 1 or (len(sys.argv) >= 2 and ('--help' in sys.argv[1:] or
     pass
 else:
     # setuptools>=2.2 can handle setup_requires
-    metadata['setup_requires'] = ['numpy>=1.6.0', 'setuptools>3.6']
+    metadata['setup_requires'] = ['numpy>=1.6.0', 'setuptools>3.6', 'mdtraj>=1.2.0']
 
     # when on git, we require cython
     if os.path.exists('.git'):
