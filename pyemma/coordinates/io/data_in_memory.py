@@ -1,6 +1,8 @@
 __author__ = 'noe'
 
 import numpy as np
+from scipy.spatial.distance import cdist
+
 from pyemma.coordinates.io.reader import ChunkedReader
 from pyemma.util.log import getLogger
 
@@ -178,4 +180,5 @@ class DataInMemory(ChunkedReader):
         :param y: ndarray (Nxn)
         :return:
         """
-        return np.linalg.norm(Y - x, 2, axis=1)
+        dists = cdist(Y, x)
+        return dists

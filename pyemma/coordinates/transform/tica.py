@@ -118,8 +118,8 @@ class TICA(Transformer):
         self.cov = np.zeros((dim, dim))
         self.cov_tau = np.zeros_like(self.cov)
 
-        log.info("Running TICA lag=%i; shape cov=(%i, %i)" %
-                 (self.lag, dim, dim))
+        log.info("Running TICA with lag=%i; Estimating two covariance matrices"
+                 " with dimension (%i, %i)" % (self.lag, dim, dim))
 
     def param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
                        last_chunk, ipass, Y=None):
@@ -174,6 +174,7 @@ class TICA(Transformer):
                 self.cov_tau += np.dot(X_meanfree.T, Y_meanfree)
 
             if last_chunk:
+                log.info("finished calculation of Cov and Cov_tau.")
                 return True  # finished!
 
         return False  # not finished yet.
@@ -192,8 +193,10 @@ class TICA(Transformer):
         self.cov_tau /= 2.0
 
         # diagonalize with low rank approximation
+        log.info("diagonalize Cov and Cov_tau")
         self.eigenvalues, self.eigenvectors = \
             eig_corr(self.cov, self.cov_tau, self.epsilon)
+        log.info("finished diagonalisation.")
 
     def map(self, X):
         """Projects the data onto the dominant independent components.
