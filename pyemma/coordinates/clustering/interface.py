@@ -26,7 +26,7 @@ class AbstractClustering(Transformer):
     def map(self, x):
         """get closest index of point in :attr:`clustercenters` to x."""
         d = self.data_producer.distances(x, self.clustercenters)
-        return np.argmin(d)
+        return np.argmin(d, axis=0)
 
     def save_dtrajs(self, trajfiles=None, prefix='',
                     output_dir='.',

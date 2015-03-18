@@ -3,7 +3,7 @@ __author__ = 'noe'
 from pyemma.util.log import getLogger
 
 import numpy as np
-
+from scipy.spatial.distance import cdist
 
 log = getLogger('Transformer')
 __all__ = ['Transformer']
@@ -345,4 +345,5 @@ class Transformer(object):
         distances : ndarray(m)
             euclidean distances between points in Y to x
         """
-        return np.linalg.norm(Y - x, 2, axis=1)
+        dists = cdist(Y, x)
+        return dists
