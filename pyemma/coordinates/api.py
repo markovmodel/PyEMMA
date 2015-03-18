@@ -1,32 +1,11 @@
-"""
-API for coordinates package
-===========================
-
-The coordinates API contains functions to pass your data (MD-trajectories, comma
-separated value ascii files, NumPy arrays) into a order parameter extraction pipeline.
-
-The class which links input (readers), transformers (PCA, TICA) and clustering
-together is the :func:`discretizer`. It builds up a pipeline to process your data
-into discrete state space.
-
-The discretizer and clustering algorithms share a common attribute :attr:`dtrajs`,
-which stores the assignment of the data to the cluster centers.
-
->>> d = discretizer(...)
->>> d.run()
->>> d.dtrajs
-[array([0, 0, 1 ... ])]
-
-Data may be provided either from MD trajectories, arrays, CSV and NumPy binary
-files.
-
-If you want to extract features like distances directly from MD trajectories and
-on the fly process them in the pipeline, please have a look at
-:class:`io.feature_reader.FeatureReader` and
-:class:`pyemma.coordinates.io.feature_reader.MDFeaturizer`.
+r"""User-API for the pyemma.coordinates package
 
 """
-__author__ = 'noe, scherer'
+
+__docformat__ = "restructuredtext en"
+
+
+from pyemma.util.annotators import deprecated
 
 from discretizer import Discretizer
 # io
@@ -41,11 +20,24 @@ from clustering.uniform_time import UniformTimeClustering
 from clustering.regspace import RegularSpaceClustering
 from clustering.assign import AssignCenters
 
+
+__author__ = "Frank Noe, Martin Scherer"
+__copyright__ = "Copyright 2015, Computational Molecular Biology Group, FU-Berlin"
+__credits__ = ["Benjamin Trendelkamp-Schroer", "Martin Scherer", "Frank Noe"]
+__license__ = "FreeBSD"
+__version__ = "2.0.0"
+__maintainer__ = "Martin Scherer"
+__email__ = "m.scherer AT fu-berlin DOT de"
+
 __all__ = ['discretizer',
            'feature_reader',
            'memory_reader',
            'tica',
            'pca',
+           'cluster_regspace',
+           'cluster_kmeans',
+           'cluster_uniform_time',
+           'cluster_assign_centers',
            'kmeans',
            'regspace',
            'assign_centers',
@@ -111,8 +103,7 @@ def discretizer(reader,
 
 
 def feature_reader(trajfiles, topfile):
-    """
-    Constructs a feature reader :class:`pyemma.coordinates.io.FeatureReader`
+    r"""Constructs a molecular feature reader.
 
     Parameters
     ----------
@@ -130,8 +121,7 @@ def feature_reader(trajfiles, topfile):
 
 
 def memory_reader(data):
-    """
-    Constructs a reader from an in-memory ndarray
+    r"""Constructs a reader from an in-memory ndarray.
 
     Parameters
     ----------
@@ -140,8 +130,7 @@ def memory_reader(data):
 
     Returns
     -------
-
-    :class:`DataInMemory`
+    obj : :class:`DataInMemory`
 
     """
     return DataInMemory(data)
@@ -155,8 +144,7 @@ def memory_reader(data):
 
 
 def pca(data=None, dim=2):
-    """
-    Constructs a PCA object
+    r"""Constructs a PCA object.
 
     Parameters
     ----------
@@ -170,7 +158,7 @@ def pca(data=None, dim=2):
 
     Returns
     -------
-        a PCA transformation object
+    obj : a PCA transformation object
     """
     res = PCA(dim)
     if data is not None:
@@ -181,10 +169,7 @@ def pca(data=None, dim=2):
 
 
 def tica(data=None, lag=10, dim=2):
-    """
-    Time-lagged independent component analysis (TICA). When data is given, the
-    transform is immediately computed.
-    Otherwise, an empty TICA object is returned.
+    r"""Time-lagged independent component analysis (TICA).
 
     Parameters
     ----------
@@ -199,6 +184,32 @@ def tica(data=None, lag=10, dim=2):
     Returns
     -------
     tica : a :class:`pyemma.coordinates.transform.TICA` transformation object
+
+    Notes
+    -----
+    When data is given, the transform is immediately computed.
+    Otherwise, an empty TICA object is returned.
+
+    Given a sequence of multivariate data :math:`X_t`, computes the mean-free
+    covariance and time-lagged covariance matrix:
+
+    .. math::
+
+        C_0 &=      (X_t - \mu)^T (X_t - \mu) \\
+        C_{\tau} &= (X_t - \mu)^T (X_t + \tau - \mu)
+
+    and solves the eigenvalue problem
+
+    .. math:: C_{\tau} r_i = C_0 \lambda_i r_i
+
+    where :math:`r_i` are the independent components and :math:`\lambda_i` are
+    their respective normalized time-autocorrelations. The eigenvalues are
+    related to the relaxation timescale by
+
+    .. math:: t_i = -\tau / \ln |\lambda_i|
+
+    When used as a dimension reduction method, the input data is projected
+    onto the dominant independent components.
 
     References
     ----------
@@ -221,9 +232,13 @@ def tica(data=None, lag=10, dim=2):
 #
 #=========================================================================
 
+@deprecated
 def kmeans(data=None, k=100, max_iter=1000):
-    """
-    Constructs a k-means clustering
+    return cluster_kmeans(data, k, max_iter)
+
+
+def cluster_kmeans(data=None, k=100, max_iter=1000):
+    r"""Constructs a k-means clustering object.
 
     Parameters
     ----------
@@ -253,9 +268,13 @@ def kmeans(data=None, k=100, max_iter=1000):
     return res
 
 
+@deprecated
 def uniform_time(data=None, k=100):
-    """
-    Constructs a uniform time clustering
+    return cluster_uniform_time(data, k)
+
+
+def cluster_uniform_time(data=None, k=100):
+    r"""Constructs a uniform time clustering object.
 
     Parameters
     ----------
@@ -277,9 +296,13 @@ def uniform_time(data=None, k=100):
     return res
 
 
+@deprecated
 def regspace(data=None, dmin=-1, max_centers=1000):
-    """
-    Constructs a regular space clustering
+    return cluster_regspace(data, dmin, max_centers)
+
+
+def cluster_regspace(data=None, dmin=-1, max_centers=1000):
+    r"""Constructs a regular space clustering object.
 
     Parameters
     ----------
@@ -294,7 +317,7 @@ def regspace(data=None, dmin=-1, max_centers=1000):
 
     Returns
     -------
-        A RegularSpaceClustering object
+    obj : A RegularSpaceClustering object
 
     """
     if dmin == -1:
@@ -307,10 +330,15 @@ def regspace(data=None, dmin=-1, max_centers=1000):
     return res
 
 
+@deprecated
 def assign_centers(data=None, centers=None):
-    """
-    Assigns given (precalculated) cluster centers.
-    If you already have cluster centers from somewhere, you use this 
+    return cluster_assign_centers(data, centers)
+
+
+def cluster_assign_centers(data=None, centers=None):
+    r"""Assigns given (precalculated) cluster centers.
+
+    If you already have cluster centers from somewhere, you use this
     to assign your data to the centers.
 
     Parameters
