@@ -345,5 +345,6 @@ class Transformer(object):
         distances : ndarray(m)
             euclidean distances between points in Y to x
         """
+        x = np.atleast_2d(x)
         dists = cdist(Y, x)
         return dists
