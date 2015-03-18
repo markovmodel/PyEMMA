@@ -122,14 +122,14 @@ class BackboneTorsionFeature:
         self.dim = len(self._phi_inds) + len(self._psi_inds)
 
     def describe(self):
-        labels = []
-        for ires in self._phi_inds:
-            labels.append("PHI: %s %i" %
-                          (self.topology.residue(ires).name, ires))
-        for ires in self._psi_inds:
-            labels.append("PSI: %s %i" %
-                          (self.topology.residue(ires).name, ires))
-        return labels
+        top = self.topology
+        labels_phi = ["PHI %s %i" % (top.atom(ires[0]).residue.name, ires[0])
+                      for ires in self._phi_inds]
+
+        labels_psi = ["PHI %s %i" % (top.atom(ires[0]).residue.name, ires[0])
+                      for ires in self._psi_inds]
+
+        return labels_phi + labels_psi
 
     def map(self, traj):
         y1 = compute_dihedrals(traj, self._phi_inds).astype(np.float32)
