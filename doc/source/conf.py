@@ -66,7 +66,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'PyEMMA'
-copyright = u'2014, CMB-group'
+copyright = u'2015, CMB-group'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

@@ -1,3 +1,4 @@
+from pyemma.util.annotators import deprecated
 __author__ = 'noe'
 
 import mdtraj
@@ -226,7 +227,11 @@ class MDFeaturizer(object):
 
         return pairs
 
+    @deprecated
     def distances(self, atom_pairs):
+        return self.add_distances(atom_pairs)
+
+    def add_distances(self, atom_pairs):
         """
         Adds the set of distances to the feature list
         :param atom_pairs:
@@ -238,7 +243,11 @@ class MDFeaturizer(object):
         self.active_features.append(f)
         self._dim += np.shape(atom_pairs)[0]
 
+    @deprecated
     def distancesCa(self):
+        return self.add_distances_ca()
+
+    def add_distances_ca(self):
         """
         Adds the set of Ca-distances to the feature list
         """
@@ -248,7 +257,11 @@ class MDFeaturizer(object):
         self.active_features.append(f)
         self._dim += np.shape(self.distance_indexes)[0]
 
+    @deprecated
     def inverse_distances(self, atom_pairs):
+        return self.add_inverse_distances(atom_pairs)
+
+    def add_inverse_distances(self, atom_pairs):
         """
         Adds the set of inverse distances to the feature list
 
@@ -260,7 +273,11 @@ class MDFeaturizer(object):
         self.active_features.append(f)
         self._dim += np.shape(self.distance_indexes)[0]
 
+    @deprecated
     def contacts(self, atom_pairs):
+        return self.add_contacts(atom_pairs)
+
+    def add_contacts(self, atom_pairs):
         """
         Adds the set of contacts to the feature list
         :param atom_pairs:
@@ -281,7 +298,11 @@ class MDFeaturizer(object):
         self._dim += np.shape(atom_pairs)[0]
         self.active_features.append(f)
 
+    @deprecated
     def angles(self, indexes):
+        return self.add_angles(indexes)
+
+    def add_angles(self, indexes):
         """
         Adds the list of angles to the feature list
 
@@ -311,7 +332,11 @@ class MDFeaturizer(object):
         self.angle_indexes = indexes
         self._dim += np.shape(indexes)[0]
 
+    @deprecated
     def backbone_torsions(self):
+        return self.add_backbone_torsions()
+
+    def add_backbone_torsions(self):
         """
         Adds all backbone torsions
         """
