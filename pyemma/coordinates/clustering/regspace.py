@@ -101,11 +101,10 @@ class RegularSpaceClustering(AbstractClustering):
                 log.info("number of clustercenters: %i" %
                          len(self.clustercenters))
                 n = self.data_producer.trajectory_length(itraj)
-                self.dtrajs.append(np.empty(n, dtype=int))
+                self.dtrajs.append(np.empty(n, dtype=np.int64))
             L = np.shape(X)[0]
-            # TODO: optimize: assign one chunk at once
-            for i in xrange(L):
-                self.dtrajs[itraj][i + t] = self.map(X[i])
+            
+            self.dtrajs[itraj][t:t+L] = self.map(X)
             if last_chunk:
                 return True  # finished!
 
