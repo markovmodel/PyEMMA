@@ -2,7 +2,7 @@
 IPython Notebook Tutorials
 ==========================
 
-These IPython (http://ipython.org) notebooks show the usage of the EMMA2 API in
+These IPython (http://ipython.org) notebooks show the usage of the PyEMMA API in
 action and also describe the workflow of Markov model building.
 
 
