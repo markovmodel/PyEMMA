@@ -9,6 +9,8 @@ import numpy as np
 import os
 from pyemma.util.files import mkdir_p
 
+import regspatial
+
 log = getLogger('Clustering')
 
 
@@ -25,8 +27,10 @@ class AbstractClustering(Transformer):
 
     def map(self, x):
         """get closest index of point in :attr:`clustercenters` to x."""
-        d = self.data_producer.distances(x, self.clustercenters)
-        return np.argmin(d, axis=0)
+        #d = self.data_producer.distances(x, self.clustercenters)
+        dtraj = np.empty(x.shape[0], np.int64)
+        regspatial.assign(x.astype(np.float32,order='C',copy=False),self.clustercenters,dtraj,'euclidean')
+        return dtraj
 
     def save_dtrajs(self, trajfiles=None, prefix='',
                     output_dir='.',
