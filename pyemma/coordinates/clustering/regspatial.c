@@ -200,7 +200,7 @@ static PyObject *assign(PyObject *self, PyObject *args) {
     /* import list of cluster centers */
     np_centers = (PyArrayObject*)PyArray_ContiguousFromAny(py_centers, NPY_FLOAT32, 2, 2);
     if(!np_centers) {
-        PyErr_SetString(PyExc_ValueError, "Could not convert \"centers\" to two-dimensional C-contiguous behanved ndarray of float (32)."); 
+        PyErr_SetString(PyExc_ValueError, "Could not convert \"centers\" to two-dimensional C-contiguous behaved ndarray of float (32)."); 
         goto error;
     }
     N_centers = np_centers->dimensions[0];
@@ -273,7 +273,7 @@ error:
 "centers : (M,K) ndarray-like of np.float32\n"\
 "    (input) Non-empty array-like of cluster centers.\n"\
 "dtraj : (N) ndarray of np.int64\n"\
-"    (output) discretized trajectory"\
+"    (output) discretized trajectory\n"\
 "    dtraj[i]=argmin{ d(chunk[i,:],centers[j,:]) | j in 0...(K-1) }\n"\
 "    where d is the metric that is specified with the argument `metric`.\n"\
 "metric : string\n"\
