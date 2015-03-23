@@ -1,6 +1,7 @@
 __author__ = 'noe'
 
 import numpy as np
+import mdtraj
 
 from pyemma.coordinates.util import patches
 from pyemma.coordinates.io.reader import ChunkedReader
@@ -223,17 +224,23 @@ class FeatureReader(ChunkedReader):
 
         if lag > 0:
             if self.curr_lag == 0:
-                # lag time changed, so open lagged iterator
+                # lag time or trajectory index changed, so open lagged iterator
                 log.debug("open time lagged iterator for traj %i with lag %i"
                           % (self.curr_itraj, self.curr_lag))
                 self.curr_lag = lag
-                self._create_iter(self.trajfiles[self.curr_itraj],
-                                  skip=self.curr_lag)
-            adv_chunk = self.mditer2.next()
+                self.mditer2 = self._create_iter(self.trajfiles[self.curr_itraj],
+                                                skip=self.curr_lag)
+            try:
+                adv_chunk = self.mditer2.next()
+            except StopIteration:
+                # When mditer2 ran over the trajectory end, return empty chunks.
+                adv_chunk = mdtraj.Trajectory(
+                              np.empty((0,chunk.xyz.shape[1],chunk.xyz.shape[2]),np.float32),
+                              chunk.topology)
 
         self.t += chunk.xyz.shape[0]
 
-        if (self.t + lag >= self.trajectory_length(self.curr_itraj) and
+        if (self.t >= self.trajectory_length(self.curr_itraj) and
                 self.curr_itraj < len(self.trajfiles) - 1):
             log.debug('closing current trajectory "%s"'
                       % self.trajfiles[self.curr_itraj])
@@ -279,10 +286,10 @@ class FeatureReader(ChunkedReader):
             X = self.next_chunk()
         else:
             X, Y = self.next_chunk(self.lag)
-            # we wont be able to correlate chunks of different len, so stop here
-            if np.shape(X) != np.shape(Y):
-                # TODO: determine if its possible to truncate X to shape of Y?
-                raise StopIteration
+            ## we wont be able to correlate chunks of different len, so stop here
+            #if np.shape(X) != np.shape(Y):
+            #    # TODO: determine if its possible to truncate X to shape of Y?
+            #    raise StopIteration
 
         last_itraj = self.curr_itraj
         # note: t is incremented in next_chunk
@@ -294,3 +301,5 @@ class FeatureReader(ChunkedReader):
             return (last_itraj, X)
 
         return (last_itraj, X, Y)
+
+

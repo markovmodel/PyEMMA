@@ -171,7 +171,7 @@ class Transformer(object):
                     L = np.shape(X)[0]
                     # last chunk in traj?
                     last_chunk_in_traj = (
-                        t + lag + L >= self.trajectory_length(itraj))
+                        t + L >= self.trajectory_length(itraj))
                     # last chunk?
                     last_chunk = (
                         last_chunk_in_traj and itraj >= self.number_of_trajectories() - 1)

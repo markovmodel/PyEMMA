@@ -166,23 +166,16 @@ class TICA(Transformer):
         if ipass == 1:
             X_meanfree = X - self.mu
             Y_meanfree = Y - self.mu
-	    # First evaluate the time-lagged matrix
-            self.cov_tau += np.dot(X_meanfree.T, Y_meanfree)
-
-
-	    # Expand the last frames from X_meanfree for the instantaneous matrix
-            if last_chunk_in_traj:
-               last_frames = Y_meanfree[-self.lag:]
-               X_meanfree = np.vstack((X_meanfree, last_frames))
- 
-            self.cov += np.dot(X_meanfree.T, X_meanfree)
+            # update the time-lagged covariance matrix
+            end = min(X_meanfree.shape[0],Y_meanfree.shape[0])
+            self.cov_tau += np.dot(X_meanfree[0:end].T, Y_meanfree[0:end])
             
+            # update the instantaneous covariance matrix
+            self.cov += np.dot(X_meanfree.T, X_meanfree)
 
             if last_chunk:
                 log.info("finished calculation of Cov and Cov_tau.")
-                #    self.cov += np.dot(X_meanfree.T, X_meanfree)
                 return True  # finished!
-
 
         return False  # not finished yet.
 

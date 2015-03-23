@@ -15,9 +15,9 @@ from mdtraj.core.element import hydrogen, oxygen
 from mdtraj.core.topology import Topology
 
 from pyemma.coordinates.clustering.uniform_time import UniformTimeClustering
-from ..discretizer import Discretizer
-from ..io.feature_reader import FeatureReader
-from ..transform.pca import PCA
+from pyemma.coordinates.discretizer import Discretizer
+from pyemma.coordinates.io.feature_reader import FeatureReader
+from pyemma.coordinates.transform.pca import PCA
 from pyemma.coordinates.api import kmeans
 
 
