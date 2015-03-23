@@ -20,8 +20,9 @@ class AbstractClustering(Transformer):
     provides a common interface for cluster algorithms.
     """
 
-    def __init__(self):
+    def __init__(self, metric='euclidean'):
         super(AbstractClustering, self).__init__()
+        self.metric = metric
         self.clustercenters = None
         self.dtrajs = []
 
@@ -29,7 +30,8 @@ class AbstractClustering(Transformer):
         """get closest index of point in :attr:`clustercenters` to x."""
         #d = self.data_producer.distances(x, self.clustercenters)
         dtraj = np.empty(x.shape[0], np.int64)
-        regspatial.assign(x.astype(np.float32,order='C',copy=False),self.clustercenters,dtraj,'euclidean')
+        regspatial.assign(x.astype(np.float32, order='C', copy=False), 
+                          self.clustercenters, dtraj, self.metric)
         return dtraj
 
     def save_dtrajs(self, trajfiles=None, prefix='',
