@@ -23,7 +23,6 @@ class Transformer(object):
 
     def __init__(self, chunksize=100, lag=0):
         self.chunksize = chunksize
-        self.n_short   = 0
         self._lag = lag
         self._in_memory = False
         self._dataproducer = None
@@ -165,7 +164,6 @@ class Transformer(object):
                         if self.trajectory_length(itraj) <= lag:
                             log.error(
                                 "trajectory nr %i to short, skipping it" % itraj)
-                            self.n_short += 1
                             break
                         X, Y = self.data_producer.next_chunk(lag=lag)
                     L = np.shape(X)[0]

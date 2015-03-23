@@ -68,7 +68,9 @@ class TICA(Transformer):
         self.cov_tau = None
         # mean
         self.mu = None
-        self.N = 0
+        self.N_mean = 0
+        self.N_cov = 0
+        self.N_cov_tau = 0
         self.eigenvalues = None
         self.eigenvectors = None
 
@@ -111,7 +113,9 @@ class TICA(Transformer):
             ("requested more output dimensions (%i) than dimension"
              " of input data (%i)" % (self.output_dimension, dim))
 
-        self.N = 0
+        self.N_mean = 0
+        self.N_cov = 0
+        self.N_cov_tau = 0
         # create mean array and covariance matrices
         self.mu = np.zeros(dim)
 
@@ -151,12 +155,12 @@ class TICA(Transformer):
             # TODO: maybe use stable sum here, since small chunksizes
             # accumulate more errors
             self.mu += np.sum(X, axis=0)
-            self.N += np.shape(X)[0]
+            self.N_mean += np.shape(X)[0]
 
             if last_chunk:
                 log.debug("mean before norming:\n%s" % self.mu)
-                log.debug("norming mean by %i" % self.N)
-                self.mu /= self.N
+                log.debug("norming mean by %i" % self.N_mean)
+                self.mu /= self.N_mean
                 log.info("calculated mean:\n%s" % self.mu)
 
                 # now we request real lagged data, since we are finished
@@ -164,6 +168,8 @@ class TICA(Transformer):
                 self.lag = self.__lag
 
         if ipass == 1:
+            self.N_cov += np.shape(X)[0]
+            self.N_cov_tau += np.shape(Y)[0]
             X_meanfree = X - self.mu
             Y_meanfree = Y - self.mu
             # update the time-lagged covariance matrix
@@ -182,8 +188,9 @@ class TICA(Transformer):
     @doc_inherit
     def param_finish(self):
         # norm
-        self.cov /= self.N - 1
-        self.cov_tau /= self.N - self.lag*(self.number_of_trajectories()-self.n_short) - 1
+        self.cov /= self.N_cov - 1
+        #self.cov_tau /= self.N - self.lag*(self.number_of_trajectories()-self.n_short) - 1
+        self.cov_tau /= self.N_cov_tau - 1 
 
         # symmetrize covariance matrices
         self.cov = self.cov + self.cov.T
