@@ -9,14 +9,11 @@ import tempfile
 import unittest
 
 from pyemma.coordinates.io.feature_reader import FeatureReader
-from pyemma.coordinates.transform.transformer import Transformer
 from pyemma.util.log import getLogger
 import pkg_resources
 
-from pyemma.coordinates.util.chaining import build_chain, run_chain
 import numpy as np
-import cProfile
-
+from pyemma.coordinates.api import feature_reader, discretizer, tica
 
 log = getLogger('TestFeatureReader')
 
@@ -44,17 +41,6 @@ class TestFeatureReader(unittest.TestCase):
     def tearDownClass(cls):
         os.unlink(cls.trajfile)
         super(TestFeatureReader, cls).tearDownClass()
-
-    def setUp(self):
-        self.pr = cProfile.Profile()
-        self.pr.enable()
-
-    def tearDown(self):
-        from pstats import Stats
-        p = Stats(self.pr)
-        p.sort_stats('cumtime')
-        # p.print_stats()
-        p.print_callers('heavy_function')
 
     def testIteratorAccess(self):
         reader = FeatureReader(self.trajfile, self.topfile)
@@ -99,7 +85,18 @@ class TestFeatureReader(unittest.TestCase):
             data.append(X)
             lagged.append(Y)
 
-        merged_lagged = np.array(lagged).reshape(self.xyz.shape)
+        assert len(data) == len(lagged)
+        merged_lagged = np.array(lagged)  # .reshape(self.xyz.shape)
+        print np.shape(merged_lagged)
+        print self.xyz.shape
+
+        cs = reader.chunksize
+        d = reader.trajectory_length(-1)
+        n = np.floor(d - lag * 1.0 / cs)
+
+        print n
+
+        merged_lagged.reshape(self.xyz.shape)
 
         # reproduce outcome
         fake_lagged = np.empty_like(self.xyz)
@@ -113,8 +110,15 @@ class TestFeatureReader(unittest.TestCase):
 
         self.assertEqual(frames, reader.trajectory_lengths()[0])
         np.testing.assert_equal(data, self.xyz)
+        
+    def test_with_pipeline_time_lagged(self):
+        reader= feature_reader(self.trajfile, self.topfile)
+        reader.featurizer.distances([[0,1], [0,1]])
+        t = tica(dim=2)
+        d = discretizer(reader, t)
+        d.run()
 
-    @unittest.skip("")
+    #@unittest.skip("")
     def testTimeLaggedAccess(self):
         # each frame has 2 atoms with 3 coords = 6 coords per frame.
         # coords are sequential through all frames and start with 0.
@@ -132,7 +136,7 @@ class TestFeatureReader(unittest.TestCase):
                 reader.chunksize = chunksize
                 reader.lag = lag
                 for _, _, y in reader:
-                    lagged_chunks.append(y.xyz)
+                    lagged_chunks.append(y)
 
                 coords = self.xyz
 

@@ -11,11 +11,12 @@ class Foo(object):
 class Bar(Foo):
     @doc_inherit
     def foo(self):
-        pass 
+        pass
 
 Now, Bar.foo.__doc__ == Bar().foo.__doc__ == Foo.foo.__doc__ == "Frobber"
 """
 
+import warnings
 from functools import wraps
 
 __all__ = ['doc_inherit']
@@ -69,3 +70,20 @@ class DocInherit(object):
         return func
 
 doc_inherit = DocInherit
+
+
+def deprecated(func):
+    '''This is a decorator which can be used to mark functions
+    as deprecated. It will result in a warning being emitted
+    when the function is used.'''
+
+    @wraps(func)
+    def new_func(*args, **kwargs):
+        warnings.warn_explicit(
+            "Call to deprecated function {}.".format(func.__name__),
+            category=DeprecationWarning,
+            filename=func.func_code.co_filename,
+            lineno=func.func_code.co_firstlineno + 1
+        )
+        return func(*args, **kwargs)
+    return new_func

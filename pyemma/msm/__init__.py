@@ -7,7 +7,7 @@ msm - Markov state models (:mod:`pyemma.msm`)
 .. currentmodule:: pyemma.msm
 
 User-API
---------
+========
 
 .. autosummary::
    :toctree: generated/
@@ -16,7 +16,7 @@ User-API
    msm
    tpt
    cktest
-   hmsm   
+   hmsm
 
 """
 

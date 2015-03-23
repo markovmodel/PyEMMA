@@ -19,13 +19,27 @@ class TICA(Transformer):
     r"""
     Time-lagged independent component analysis (TICA)
 
+    Parameters
+    ----------
+    lag : int
+        lag time
+    output_dimension : int
+        how many significant TICS to use to reduce dimension of input data
+    epsilon : float
+        eigenvalue norm cutoff. Eigenvalues of C0 with norms <= epsilon will be
+        cut off. The remaining number of Eigenvalues define the size
+        of the output.
+
+    Notes
+    -----
     Given a sequence of multivariate data :math:`X_t`, computes the mean-free
     covariance and time-lagged covariance matrix:
 
     .. math::
 
-        C_0 &=   (X_t - \mu)^T (X_t - \mu) \\
-        C_{\tau} &= (X_t - \mu)^T (X_t+\tau - \mu)
+        C_0 &=      (X_t - \mu)^T (X_t - \mu) \\
+        C_{\tau} &= (X_t - \mu)^T (X_t + \tau - \mu)
+
     and solves the eigenvalue problem
 
     .. math:: C_{\tau} r_i = C_0 \lambda_i r_i
@@ -38,17 +52,6 @@ class TICA(Transformer):
 
     When used as a dimension reduction method, the input data is projected
     onto the dominant independent components.
-
-    Parameters
-    ----------
-    lag : int
-        lag time
-    output_dimension : int
-        how many significant TICS to use to reduce dimension of input data
-    epsilon : float
-        eigenvalue norm cutoff. Eigenvalues of C0 with norms <= epsilon will be
-        cut off. The remaining number of Eigenvalues define the size
-        of the output.
 
     """
 
@@ -72,7 +75,7 @@ class TICA(Transformer):
     @doc_inherit
     def describe(self):
         return "[TICA, lag = %i; output dimension = %i]" \
-            % (self.lag, self.output_dimension)
+            % (self.__lag, self.output_dimension)
 
     def dimension(self):
         """ output dimension"""
@@ -115,8 +118,8 @@ class TICA(Transformer):
         self.cov = np.zeros((dim, dim))
         self.cov_tau = np.zeros_like(self.cov)
 
-        log.info("Running TICA lag=%i; shape cov=(%i, %i)" %
-                 (self.lag, dim, dim))
+        log.info("Running TICA with lag=%i; Estimating two covariance matrices"
+                 " with dimension (%i, %i)" % (self.lag, dim, dim))
 
     def param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
                        last_chunk, ipass, Y=None):
@@ -171,6 +174,7 @@ class TICA(Transformer):
                 self.cov_tau += np.dot(X_meanfree.T, Y_meanfree)
 
             if last_chunk:
+                log.info("finished calculation of Cov and Cov_tau.")
                 return True  # finished!
 
         return False  # not finished yet.
@@ -189,8 +193,10 @@ class TICA(Transformer):
         self.cov_tau /= 2.0
 
         # diagonalize with low rank approximation
+        log.info("diagonalize Cov and Cov_tau")
         self.eigenvalues, self.eigenvectors = \
             eig_corr(self.cov, self.cov_tau, self.epsilon)
+        log.info("finished diagonalisation.")
 
     def map(self, X):
         """Projects the data onto the dominant independent components.

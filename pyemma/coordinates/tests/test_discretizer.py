@@ -18,6 +18,7 @@ from pyemma.coordinates.clustering.uniform_time import UniformTimeClustering
 from ..discretizer import Discretizer
 from ..io.feature_reader import FeatureReader
 from ..transform.pca import PCA
+from pyemma.coordinates.api import kmeans
 
 
 def create_water_topology_on_disc(n):
@@ -68,6 +69,8 @@ class TestDiscretizer(unittest.TestCase):
 
         cls.trajfiles = [t1, t2]
 
+        cls.dest_dir = tempfile.mkdtemp()
+
         return c
 
     @classmethod
@@ -76,6 +79,9 @@ class TestDiscretizer(unittest.TestCase):
         os.unlink(cls.topfile)
         for f in cls.trajfiles:
             os.unlink(f)
+
+        import shutil
+        shutil.rmtree(cls.dest_dir, ignore_errors=True)
 
     def test(self):
         reader = FeatureReader(self.trajfiles, self.topfile)
@@ -98,6 +104,43 @@ class TestDiscretizer(unittest.TestCase):
         for dtraj in clustering.dtrajs:
             unique = np.unique(dtraj)
             self.assertEqual(unique.shape[0], n_clusters)
+
+    def test_with_data_in_mem(self):
+        import pyemma.coordinates as api
+
+        data = [np.random.random((100, 50)),
+                np.random.random((103, 50)),
+                np.random.random((33, 50))]
+        reader = api.memory_reader(data)
+
+        tpca = api.pca(dim=2)
+
+        n_centers = 10
+        kmeans = api.kmeans(k=n_centers)
+
+        disc = api.discretizer(reader, tpca, kmeans)
+        disc.run()
+
+        dtrajs = disc.dtrajs
+        for dtraj in dtrajs:
+            n_states = np.max((np.unique(dtraj)))
+            self.assertGreaterEqual(n_centers - 1, n_states,
+                                    "dtraj has more states than cluster centers")
+
+    def test_save_dtrajs(self):
+        reader = FeatureReader(self.trajfiles, self.topfile)
+        # select all possible distances
+        pairs = np.array(
+            [x for x in itertools.combinations(range(self.n_residues), 2)])
+
+        reader.featurizer.distances(pairs)
+        cluster = kmeans(k=2)
+        d = Discretizer(reader, cluster=cluster)
+        d.run()
+        d.save_dtrajs(output_dir=self.dest_dir)
+        
+        dtrajs = os.listdir(self.dest_dir)
+        
 
 
 if __name__ == "__main__":
