@@ -104,8 +104,7 @@ class UniformTimeClustering(AbstractClustering):
             if t == 0:
                 n = self.data_producer.trajectory_length(itraj)
                 self.dtrajs.append(np.zeros(n, dtype=int))
-            for i in xrange(L):
-                self.dtrajs[itraj][i + t] = self.map(X[i])
+            self.dtrajs[itraj][t:t+L] = self.map(X)
             if last_chunk:
                 return True  # done!
 
