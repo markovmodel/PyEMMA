@@ -1421,8 +1421,9 @@ def coarsegrain(P, n):
 ################################################################################
 
 def _showSparseConversionWarning():
-    warnings.warn('Converting input to dense, since sensitivity is '
-                  'currently only impled for dense types.', UserWarning)
+    msg = ("Converting input to dense, since this method is\n"
+        "currently only  implemented for dense arrays")
+    warnings.warn(msg, UserWarning)
 
 def eigenvalue_sensitivity(T, k):
     r"""Sensitivity matrix of a specified eigenvalue.
