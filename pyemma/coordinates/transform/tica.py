@@ -21,7 +21,7 @@ class TICA(Transformer):
 
     Parameters
     ----------
-    lag : int
+    tau : int
         lag time
     output_dimension : int
         how many significant TICS to use to reduce dimension of input data
@@ -59,7 +59,7 @@ class TICA(Transformer):
         super(TICA, self).__init__()
 
         # store lag time to set it appropriatly in second pass of parametrize
-        self.__lag = lag
+        self._tau = lag
         self.output_dimension = output_dimension
         self.epsilon = epsilon
 
@@ -73,11 +73,20 @@ class TICA(Transformer):
         self.N_cov_tau = 0
         self.eigenvalues = None
         self.eigenvectors = None
+       
+    @property
+    def tau(self):
+        return self._tau
+    
+    @tau.setter
+    def tau(self,new_tau):
+        self._parametrized = False
+        self._tau = new_tau
 
     @doc_inherit
     def describe(self):
-        return "[TICA, lag = %i; output dimension = %i]" \
-            % (self.__lag, self.output_dimension)
+        return "[TICA, tau = %i; output dimension = %i]" \
+            % (self._tau, self.output_dimension)
 
     def dimension(self):
         """ output dimension"""
@@ -122,8 +131,8 @@ class TICA(Transformer):
         self.cov = np.zeros((dim, dim))
         self.cov_tau = np.zeros_like(self.cov)
 
-        log.info("Running TICA with lag=%i; Estimating two covariance matrices"
-                 " with dimension (%i, %i)" % (self.lag, dim, dim))
+        log.info("Running TICA with tau=%i; Estimating two covariance matrices"
+                 " with dimension (%i, %i)" % (self._tau, dim, dim))
 
     def param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
                        last_chunk, ipass, Y=None):
@@ -165,7 +174,7 @@ class TICA(Transformer):
 
                 # now we request real lagged data, since we are finished
                 # with first pass
-                self.lag = self.__lag
+                self.lag = self._tau
 
         if ipass == 1:
             self.N_cov += np.shape(X)[0]
