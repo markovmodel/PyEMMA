@@ -54,14 +54,23 @@ class Transformer(object):
         """are results stored in memory?"""
         return self._in_memory
 
-    def operate_in_memory(self):
+    @in_memory.setter
+    def in_memory(self, op_in_mem):
         """
         If called, the output will be stored in memory
         """
-        self._in_memory = True
-        # output data
-        self.Y = [np.zeros((self.trajectory_length(itraj), self.dimension()))
-                  for itraj in xrange(self.number_of_trajectories())]
+        if not self._in_memory and op_in_mem:
+            self.Y = [np.zeros((self.trajectory_length(itraj), self.dimension()))
+                      for itraj in xrange(self.number_of_trajectories())]
+        elif not op_in_mem and self._in_memory:
+            self._clear_in_memory()
+
+        self._in_memory = op_in_mem
+
+    def _clear_in_memory(self):
+        assert self.in_memory, "tried to delete in memory results which are not set"
+        for y in self.Y:
+            del y
 
     @property
     def lag(self):
