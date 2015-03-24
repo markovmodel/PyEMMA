@@ -163,7 +163,7 @@ class TICA(Transformer):
         if ipass == 0:
             # TODO: maybe use stable sum here, since small chunksizes
             # accumulate more errors
-            self.mu += np.sum(X, axis=0)
+            self.mu += np.sum(X, axis=0, dtype=np.float64)
             self.N_mean += np.shape(X)[0]
 
             if last_chunk:
@@ -184,7 +184,7 @@ class TICA(Transformer):
             # update the time-lagged covariance matrix
             end = min(X_meanfree.shape[0],Y_meanfree.shape[0])
             self.cov_tau += np.dot(X_meanfree[0:end].T, Y_meanfree[0:end])
-            
+
             # update the instantaneous covariance matrix
             self.cov += np.dot(X_meanfree.T, X_meanfree)
 
