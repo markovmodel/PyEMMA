@@ -8,7 +8,7 @@ __docformat__ = "restructuredtext en"
 
 from pyemma.util.annotators import deprecated
 
-from discretizer import Discretizer
+from pyemma.coordinates.pipeline import Discretizer
 # io
 from io.feature_reader import FeatureReader
 from io.data_in_memory import DataInMemory
