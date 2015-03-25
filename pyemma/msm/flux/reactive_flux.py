@@ -142,34 +142,32 @@ class ReactiveFlux(object):
         return 1.0/self._kAB
 
 
-    def pathways(self, fraction = 1.0):
-        r"""Performs a pathway decomposition of the net flux.
-        
+    def pathways(self, fraction = 1.0, maxiter=1000):
+        r"""Decompose flux network into dominant reaction paths.
+
         Parameters
-        -----------
-        fraction = 1.0 : float
-            The fraction of the total flux for which pathways will be computed.
-            When set larger than 1.0, will use 1.0. When set <= 0.0, no
-            pathways will be computed and two empty lists will be returned.
-            For example, when set to fraction = 0.9, the pathway decomposition 
-            will stop when 90% of the flux have been accumulated. This is very
-            useful for large flux networks which often contain a few major and
-            a lot of minor paths. In such networks, the algorithm would spend a
-            very long time in the last few percent of pathways    
+        ----------
+        fraction : float, optional
+            Fraction of total flux to assemble in pathway decomposition
+        maxiter : int, optional
+            Maximum number of pathways for decomposition
         
         Returns
         -------
-        (paths, pathfluxes) : (list of int-arrays, double-array)
-            paths in the order of decreasing flux. Each path is given as an 
-            int-array of state indexes, ordered by increasing forward committor 
-            values. The first index of each path will be a state in A,
-            the last index a state in B. 
-            The corresponding figure in the pathfluxes-array is the flux carried 
-            by that path. The pathfluxes-array sums to the requested fraction of 
-            the total A->B flux.
-        """
-        return tptapi.pathways(self.net_flux, self.A, self.B, self.forward_committor, fraction = fraction, totalflux = self.total_flux)
+        paths : list
+            List of dominant reaction pathways
+        capacities: list
+            List of capacities corresponding to each reactions pathway in paths
 
+        References
+        ----------
+        .. [1] P. Metzner, C. Schuette and E. Vanden-Eijnden.
+            Transition Path Theory for Markov Jump Processes.
+            Multiscale Model Simul 7: 1192-1219 (2009)
+
+        """
+        return tptapi.pathways(self.net_flux, self.A, self.B, 
+                               fraction = fraction, maxiter=maxiter)
 
     def _pathways_to_flux(self, paths, pathfluxes, n=None):
         r"""Sums up the flux from the pathways given
