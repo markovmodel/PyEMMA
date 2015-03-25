@@ -156,6 +156,7 @@ def iterload(filename, chunk=100, **kwargs):
                                      unitcell_angles=box_angle)
 
         else:
+            log.critical("loading complete traj into mem! This might no be desired.")
             t = load(filename, **kwargs)
             for i in range(skip, len(t), chunk):
                 yield t[i:i+chunk]
