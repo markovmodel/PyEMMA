@@ -1,5 +1,10 @@
-__author__ = 'noe'
+r"""Unit test for the ImpliedTimescale object
 
+.. moduleauthor:: F.Noe <frank  DOT noe AT fu-berlin DOT de> 
+.. moduleauthor:: B.Trendelkamp-Schroer <benjamin DOT trendelkamp-schroer AT fu-berlin DOT de>
+
+"""
+import warnings
 import unittest
 import numpy as np
 
@@ -46,7 +51,7 @@ class ImpliedTimescalesTest(unittest.TestCase):
         for i in range(len(self.dtraj4_2)):
             self.dtraj4_2[i] = I[self.dtraj4_2[i]]
         self.dtrajs.append([self.dtraj4_2])
-        print "T4 ", timescales(self.P4)[1]
+        # print "T4 ", timescales(self.P4)[1]
 
 
     def compute_nice(self, reversible):
@@ -60,26 +65,29 @@ class ImpliedTimescalesTest(unittest.TestCase):
             #print its.get_lagtimes()
             #print its.get_timescales()
 
+    """This does not assert anything, but causes lots of uncatched warnings"""
+    # def test_nice_sliding_rev(self):
+    #     """
+    #     Tests if nonreversible sliding estimate runs without errors
+    #     :return:
+    #     """
+    #     self.compute_nice(True)
 
-    def test_nice_sliding_rev(self):
-        """
-        Tests if nonreversible sliding estimate runs without errors
-        :return:
-        """
-        self.compute_nice(True)
-
-    def test_nice_sliding_nonrev(self):
-        """
-        Tests if nonreversible sliding estimate runs without errors
-        :return:
-        """
-        self.compute_nice(False)
+    # def test_nice_sliding_nonrev(self):
+    #     """
+    #     Tests if nonreversible sliding estimate runs without errors
+    #     :return:
+    #     """
+    #     self.compute_nice(False)
 
     def test_too_large_lagtime(self):
         dtraj = [[0,1,1,1,0]]
         lags  = [1,2,3,4,5,6,7,8]
         expected_lags = [1,2,3] # 4 is impossible because only one state remains and no finite timescales.
-        its = ImpliedTimescales(dtraj, lags=lags, reversible=False)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            its = ImpliedTimescales(dtraj, lags=lags, reversible=False)
+            assert issubclass(w[-1].category, UserWarning)           
         got_lags = its.lagtimes
         assert(np.shape(got_lags) == np.shape(expected_lags))
         assert(np.allclose(got_lags, expected_lags))
