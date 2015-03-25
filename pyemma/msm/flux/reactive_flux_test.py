@@ -1,9 +1,8 @@
-'''
-Created on Aug 14, 2014
+r"""Unit test for the ReactiveFlux object
 
-@author: noe
-'''
+.. moduleauthor:: F.Noe <frank  DOT noe AT fu-berlin DOT de> 
 
+"""
 import unittest
 import numpy as np
 from pyemma.util.numeric import assert_allclose
