@@ -157,7 +157,13 @@ class FeatureReader(ChunkedReader):
 
         :return:
         """
-        return self.featurizer.dimension()
+        if len(self.featurizer.active_features)==0:
+            # special case: cartesion coordinates
+            top = mdtraj.load(self.topfile)
+            return top.n_atoms*3
+        else:
+            # general case
+            return self.featurizer.dimension()
 
     def get_memory_per_frame(self):
         """
@@ -253,11 +259,18 @@ class FeatureReader(ChunkedReader):
 
         # map data
         if lag == 0:
-            return self.featurizer.map(chunk)
+            if len(self.featurizer.active_features)==0:
+                return chunk.xyz.reshape((chunk.xyz.shape[0],chunk.xyz.shape[1]*chunk.xyz.shape[2]))
+            else:
+                return self.featurizer.map(chunk)
         else:
             # TODO: note X and Y may have different shapes. This case has to be handled by subsequent transformers
-            X = self.featurizer.map(chunk)
-            Y = self.featurizer.map(adv_chunk)
+            if len(self.featurizer.active_features)==0:
+                X = chunk.xyz.reshape((chunk.xyz.shape[0],chunk.xyz.shape[1]*chunk.xyz.shape[2]))
+                Y = adv_chunk.xyz.reshape((adv_chunk.xyz.shape[0],adv_chunk.xyz.shape[1]*adv_chunk.xyz.shape[2]))
+            else:
+                X = self.featurizer.map(chunk)
+                Y = self.featurizer.map(adv_chunk)
 #             assert np.shape(X) == np.shape(Y), "shape X = %s; Y= %s; lag=%i" % (
 #                 np.shape(X), np.shape(Y), lag)
             return X, Y
