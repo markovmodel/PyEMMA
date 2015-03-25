@@ -21,8 +21,7 @@ __email__="m.scherer AT fu-berlin DOT de"
 __all__=['its',
          'msm',
          'cktest',
-         'tpt',
-         'hmsm']
+         'tpt']
 
 def its(dtrajs, lags = None, nits=10, reversible = True, connected = True):
     r"""Calculates the implied timescales for a series of lag times.
@@ -95,12 +94,12 @@ def msm(dtrajs, lag, reversible=True, sliding=True, compute=True):
     return msmobj
 
 
-def cktest(msm, K, nsets=2, sets=None):
+def cktest(msmobj, K, nsets=2, sets=None):
     r"""Perform Chapman-Kolmogorov tests for given data.
 
     Parameters
     ----------
-    msm : :class:`pyemma.msm.ui.MSM` object
+    msmobj : :class:`pyemma.msm.ui.MSM` object
         Markov state model (MSM) object
     K : int 
         number of time points for the test
@@ -127,52 +126,44 @@ def cktest(msm, K, nsets=2, sets=None):
         molecular kinetics: Generation and validation. J Chem Phys
         134: 174105
     """
-    P = msm.transition_matrix
-    lcc = msm.largest_connected_set
-    dtrajs = msm.discretized_trajectories
-    tau = msm.lagtime
+    P = msmobj.transition_matrix
+    lcc = msmobj.largest_connected_set
+    dtrajs = msmobj.discretized_trajectories
+    tau = msmobj.lagtime
     return chapman_kolmogorov(P, lcc, dtrajs, tau, K, nsets=nsets, sets=sets)
 
-
-def tpt(dtrajs, lag, A, B, reversible=True, sliding=True):
-    r""" Computes the A->B reactive flux using transition path theory (TPT)  
-
+def tpt(msmobj, A, B):
+    r"""Computes the A->B reactive flux using transition path theory (TPT)
+    
     Parameters
     ----------
-    dtrajs : list
-        discrete trajectories
-    lag : int
-        lagtime for the MSM estimation
+    msmobj : :class:`pyemma.msm.ui.MSM` object
+        Markov state model (MSM) object
     A : array_like
         List of integer state labels for set A
     B : array_like
         List of integer state labels for set B
-    reversible : bool, optional
-        If true compute reversible MSM, else non-reversible MSM
-    sliding : bool, optional
-        If true use the sliding approach to counting, else
-        use the lagsampling approach
-
+        
     Returns
     -------
     tptobj : :class:`pyemma.msm.flux.ReactiveFlux` object
         A python object containing the reactive A->B flux network
         and several additional quantities, such as stationary probability,
-        committors and set definitions.
-
+        committors and set definitions
+        
     Notes
     -----
     The central object used in transition path theory is
     the forward and backward comittor function.
-
+    
     TPT (originally introduced in [1]) for continuous systems has a
     discrete version outlined in [2]. Here, we use the transition
     matrix formulation described in [3].
-
+    
     See also
     --------
     pyemma.msm.flux.ReactiveFlux
-
+    
     References
     ----------
     .. [1] W. E and E. Vanden-Eijnden.
@@ -185,72 +176,71 @@ def tpt(dtrajs, lag, A, B, reversible=True, sliding=True):
         T. Weikl: Constructing the Full Ensemble of Folding Pathways
         from Short Off-Equilibrium Simulations.
         Proc. Natl. Acad. Sci. USA, 106, 19011-19016 (2009)
-
+        
     """
-    msmobj = MSM(dtrajs, lag, reversible=reversible, sliding=sliding)
     T = msmobj.transition_matrix
     mu = msmobj.stationary_distribution
     tptobj = tpt_factory(T, A, B, mu=mu)
-    return tptobj
+    return tptobj   
 
 
-def hmsm(dtrajs, nstate, lag=1, conv=0.01, maxiter=None, timeshift=None,
-         TCinit = None, chiInit = None):
-    """
-    Implements a discrete Hidden Markov state model of conformational
-    kinetics.  For details, see [1]_.
+# def hmsm(dtrajs, nstate, lag=1, conv=0.01, maxiter=None, timeshift=None,
+#          TCinit = None, chiInit = None):
+#     """
+#     Implements a discrete Hidden Markov state model of conformational
+#     kinetics.  For details, see [1]_.
 
-    .. [1] Noe, F. and Wu, H. and Prinz, J.-H. and Plattner, N. (2013)
-    Projected and Hidden Markov Models for calculating kinetics and
-    metastable states of complex molecules.  J. Chem. Phys., 139. p. 184114
+#     .. [1] Noe, F. and Wu, H. and Prinz, J.-H. and Plattner, N. (2013)
+#     Projected and Hidden Markov Models for calculating kinetics and
+#     metastable states of complex molecules.  J. Chem. Phys., 139. p. 184114
 
-    Parameters
-    ----------
-    dtrajs : int-array or list of int-arrays
-        discrete trajectory or list of discrete trajectories
-    nstate : int
-        number of hidden states
-    lag : int
-        lag time at which the hidden transition matrix will be
-        estimated
-    conv = 0.01 : float
-        convergence criterion. The EM optimization will stop when the
-        likelihood has not increased by more than conv.
-    maxiter : int
-        maximum number of iterations until the EM optimization will be
-        stopped even when no convergence is achieved. By default, will
-        be set to 100 * nstate^2
-    timeshift : int
-        time-shift when using the window method for estimating at lag
-        times > 1. For example, when we have lag = 10 and timeshift =
-        2, the estimation will be conducted using five subtrajectories
-        with the following indexes:
-        [0, 10, 20, ...]
-        [2, 12, 22, ...]
-        [4, 14, 24, ...]
-        [6, 16, 26, ...]
-        [8, 18, 28, ...]
-        Basicly, when timeshift = 1, all data will be used, while for
-        > 1 data will be subsampled. Setting timeshift greater than
-        tau will have no effect, because at least the first
-        subtrajectory will be used.
-    TCinit : ndarray (m,m)
-        initial hidden transition matrix. If set to None, will generate a guess
-        using PCCA+ from a Markov model of the discrete trajectories estimated
-        at the given lag time.
-    chiInit : ndarray (m,n)
-        initial observation probability matrix. If set to None, will generate
-        a guess using PCCA+ from a Markov model of the discrete trajectories
-        estimated at the given lag time.
+#     Parameters
+#     ----------
+#     dtrajs : int-array or list of int-arrays
+#         discrete trajectory or list of discrete trajectories
+#     nstate : int
+#         number of hidden states
+#     lag : int
+#         lag time at which the hidden transition matrix will be
+#         estimated
+#     conv = 0.01 : float
+#         convergence criterion. The EM optimization will stop when the
+#         likelihood has not increased by more than conv.
+#     maxiter : int
+#         maximum number of iterations until the EM optimization will be
+#         stopped even when no convergence is achieved. By default, will
+#         be set to 100 * nstate^2
+#     timeshift : int
+#         time-shift when using the window method for estimating at lag
+#         times > 1. For example, when we have lag = 10 and timeshift =
+#         2, the estimation will be conducted using five subtrajectories
+#         with the following indexes:
+#         [0, 10, 20, ...]
+#         [2, 12, 22, ...]
+#         [4, 14, 24, ...]
+#         [6, 16, 26, ...]
+#         [8, 18, 28, ...]
+#         Basicly, when timeshift = 1, all data will be used, while for
+#         > 1 data will be subsampled. Setting timeshift greater than
+#         tau will have no effect, because at least the first
+#         subtrajectory will be used.
+#     TCinit : ndarray (m,m)
+#         initial hidden transition matrix. If set to None, will generate a guess
+#         using PCCA+ from a Markov model of the discrete trajectories estimated
+#         at the given lag time.
+#     chiInit : ndarray (m,n)
+#         initial observation probability matrix. If set to None, will generate
+#         a guess using PCCA+ from a Markov model of the discrete trajectories
+#         estimated at the given lag time.
 
-    Returns
-    -------
-    hmsm obj : :class:`pyemma.msm.estimation.dense.hidden_markov.model.HiddenMSM`
-       instance.
+#     Returns
+#     -------
+#     hmsm obj : :class:`pyemma.msm.estimation.dense.hidden_markov.model.HiddenMSM`
+#        instance.
 
-    """
-    # initialize
-    return HiddenMSM(dtrajs, nstate, lag=lag, conv=conv, maxiter=maxiter,
-                         timeshift=timeshift,
-                         TCinit=TCinit, chiInit=chiInit)
+#     """
+#     # initialize
+#     return HiddenMSM(dtrajs, nstate, lag=lag, conv=conv, maxiter=maxiter,
+#                          timeshift=timeshift,
+#                          TCinit=TCinit, chiInit=chiInit)
 
