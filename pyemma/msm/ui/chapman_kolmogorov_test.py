@@ -10,8 +10,6 @@ import numpy as np
 from pyemma.msm.generation import generate_traj
 from pyemma.msm.estimation import cmatrix, largest_connected_set, connected_cmatrix, tmatrix
 from pyemma.msm.analysis import statdist
-
-from pyemma.util.types import ensure_dtraj
 from pyemma.util.numeric import assert_allclose
 
 from birth_death_chain import BirthDeathChain
@@ -26,6 +24,7 @@ class TestCkTest(unittest.TestCase):
         """Reseed the rng to enforce 'deterministic' behavior"""
         np.random.mtrand.seed(42)
 
+        """Meta-stable birth-death chain"""
         b = 2
         q = np.zeros(7)
         p = np.zeros(7)
