@@ -78,7 +78,7 @@ class RegularSpaceClustering(AbstractClustering):
         log.debug("t=%i; itraj=%i" % (t, itraj))
         if ipass == 0:
             try:
-                regspatial.cluster(X.astype(np.float32,order='C',copy=False), self._clustercenters, self.dmin, 'euclidean', self.max_clusters)
+                regspatial.cluster(X.astype(np.float32,order='C',copy=False), self._clustercenters, self.dmin, self.metric, self.max_clusters)
             except RuntimeError as e:
                 msg = 'Maximum number of cluster centers reached.' \
                       ' Consider increasing max_clusters or choose' \

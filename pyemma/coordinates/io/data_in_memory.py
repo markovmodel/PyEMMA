@@ -157,7 +157,7 @@ class DataInMemory(ChunkedReader):
                 self.itraj += 1
                 return X
             else:
-                X = traj[: -lag]
+                X = traj
                 Y = traj[lag:traj_len]
                 self.itraj += 1
                 return (X, Y)

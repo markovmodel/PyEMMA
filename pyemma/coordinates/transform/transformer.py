@@ -26,6 +26,7 @@ class Transformer(object):
         self._lag = lag
         self._in_memory = False
         self._dataproducer = None
+        self._parametrized = False
 
     @property
     def data_producer(self):
@@ -34,6 +35,8 @@ class Transformer(object):
 
     @data_producer.setter
     def data_producer(self, dp):
+        if not dp is self._dataproducer:
+            self._parametrized = False
         self._dataproducer = dp
 
     @property
@@ -138,6 +141,10 @@ class Transformer(object):
             raise RuntimeError('Called parametrize of %s while data producer is not'
                                ' yet set. Ensure "data_producer" attribute is set!'
                                % self.describe())
+                               
+        if self._parametrized:
+            return
+            
         # init
         self.param_init()
         # feed data, until finished
@@ -163,13 +170,13 @@ class Transformer(object):
                     else:
                         if self.trajectory_length(itraj) <= lag:
                             log.error(
-                                "trajectory nr %i to short, skipping it" % self.itraj)
+                                "trajectory nr %i to short, skipping it" % itraj)
                             break
                         X, Y = self.data_producer.next_chunk(lag=lag)
                     L = np.shape(X)[0]
                     # last chunk in traj?
                     last_chunk_in_traj = (
-                        t + lag + L >= self.trajectory_length(itraj))
+                        t + L >= self.trajectory_length(itraj))
                     # last chunk?
                     last_chunk = (
                         last_chunk_in_traj and itraj >= self.number_of_trajectories() - 1)
@@ -184,6 +191,7 @@ class Transformer(object):
             ipass += 1
         # finish parametrization
         self.param_finish()
+        self._parametrized = True
         # memory mode? Then map all results
         if self.in_memory:
             self.map_to_memory()
@@ -228,13 +236,14 @@ class Transformer(object):
 
     def reset(self):
         """reset data position"""
-        if self.in_memory:
-            # operate in memory, implement iterator here
-            self.itraj = 0
-            self.t = 0
-        else:
+        if not self._parametrized:
+            self.parametrize()
+        self.itraj = 0
+        self.t = 0
+        if not self.in_memory:
             # operate in pipeline
             self.data_producer.reset()
+
 
     def next_chunk(self, lag=0):
         """
@@ -251,6 +260,7 @@ class Transformer(object):
         X, (Y if lag > 0) : array_like
             mapped (transformed) data
         """
+        
         if self.in_memory:
             if self.itraj >= self.number_of_trajectories():
                 return None
@@ -279,16 +289,15 @@ class Transformer(object):
             # operate in pipeline
             if lag == 0:
                 X = self.data_producer.next_chunk()
+                self.t += X.shape[0]
                 return self.map(X)
             else:
                 (X0, Xtau) = self.data_producer.next_chunk(lag=lag)
+                self.t += X0.shape[0]
                 return (self.map(X0), self.map(Xtau))
 
     def __iter__(self):
         self.reset()
-        self.last_chunk = False
-        self.itraj = 0
-        self.t = 0
         return self
 
     def next(self):
@@ -306,14 +315,23 @@ class Transformer(object):
         if self.itraj >= self.number_of_trajectories():
             raise StopIteration
 
-        X = self.data_producer.next_chunk()
-        L = np.shape(X)[0]
-        self.t += L
+        # next chunk already maps output
+        if self.lag == 0:
+            X = self.next_chunk()
+        else:
+            X, Y = self.next_chunk(self.lag)
+
         last_itraj = self.itraj
+        # note: t is incremented in next_chunk
         if self.t >= self.trajectory_length(self.itraj):
             self.itraj += 1
             self.t = 0
-        return (last_itraj, self.map(X))
+
+        return (last_itraj, X)
+        #if self.lag == 0:
+        #    return (last_itraj, X)
+
+        #return (last_itraj, X, Y)
 
     @staticmethod
     def distance(x, y):

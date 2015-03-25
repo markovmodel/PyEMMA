@@ -23,11 +23,11 @@ class TestFeatureReader(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         c = super(TestFeatureReader, cls).setUpClass()
-        # create a fake trajectory which has 2 atoms and coordinates are just a range
+        # create a fake trajectory which has 3 atoms and coordinates are just a range
         # over all frames.
         cls.trajfile = tempfile.mktemp('.xtc')
         cls.n_frames = 1000
-        cls.xyz = np.arange(cls.n_frames * 2 * 3).reshape((cls.n_frames, 2, 3))
+        cls.xyz = np.random.random(cls.n_frames * 3 * 3).reshape((cls.n_frames, 3, 3))
         log.debug("shape traj: %s" % str(cls.xyz.shape))
         cls.topfile = pkg_resources.resource_filename(
             'pyemma.coordinates.tests.test_featurereader', 'data/test.pdb')
@@ -55,7 +55,7 @@ class TestFeatureReader(unittest.TestCase):
         data = np.array(data).reshape(self.xyz.shape)
 
         self.assertEqual(frames, reader.trajectory_lengths()[0])
-        np.testing.assert_equal(data, self.xyz)
+        self.assertTrue(np.allclose(data, self.xyz))
 
     def testIteratorAccess2(self):
         reader = FeatureReader([self.trajfile, self.trajfile], self.topfile)
@@ -71,7 +71,7 @@ class TestFeatureReader(unittest.TestCase):
         data = np.array(
             data[0:reader.trajectory_lengths()[0] / reader.chunksize]).reshape(self.xyz.shape)
 
-        np.testing.assert_equal(data, self.xyz)
+        self.assertTrue(np.allclose(data, self.xyz))
 
     def testTimeLaggedIterator(self):
         lag = 10
@@ -86,35 +86,25 @@ class TestFeatureReader(unittest.TestCase):
             lagged.append(Y)
 
         assert len(data) == len(lagged)
-        merged_lagged = np.array(lagged)  # .reshape(self.xyz.shape)
-        print np.shape(merged_lagged)
-        print self.xyz.shape
-
-        cs = reader.chunksize
-        d = reader.trajectory_length(-1)
-        n = np.floor(d - lag * 1.0 / cs)
-
-        print n
-
-        merged_lagged.reshape(self.xyz.shape)
+        merged_lagged = np.concatenate(lagged,axis=0)  # .reshape(self.xyz.shape)
 
         # reproduce outcome
-        fake_lagged = np.empty_like(self.xyz)
-        fake_lagged[:-lag] = self.xyz[lag:]
-        fake_lagged[-lag:] = 0
+        xyz_s = self.xyz.shape
+        fake_lagged = np.empty((xyz_s[0]-lag,xyz_s[1],xyz_s[2]))
+        fake_lagged = self.xyz[lag:]
 
-        np.testing.assert_equal(merged_lagged, fake_lagged)
+        self.assertTrue(np.allclose(merged_lagged, fake_lagged))
 
         # restore shape of input
         data = np.array(data).reshape(self.xyz.shape)
 
         self.assertEqual(frames, reader.trajectory_lengths()[0])
-        np.testing.assert_equal(data, self.xyz)
+        self.assertTrue(np.allclose(data, self.xyz))
         
     def test_with_pipeline_time_lagged(self):
         reader= feature_reader(self.trajfile, self.topfile)
-        reader.featurizer.distances([[0,1], [0,1]])
-        t = tica(dim=2)
+        reader.featurizer.distances([[0,1], [0,2]])
+        t = tica(dim=2,lag=1)
         d = discretizer(reader, t)
         d.run()
 
@@ -142,7 +132,7 @@ class TestFeatureReader(unittest.TestCase):
 
                 for ii, c in enumerate(lagged_chunks[:-1]):
                     # all despite last chunk shall have chunksize
-                    self.assertEqual(c.shape[0], chunksize)
+                    self.assertTrue(c.shape[0] <= chunksize)
                     # first lagged chunk should start at lag and stop at chunksize +
                     # lag
                     ind1 = ii * chunksize + lag
