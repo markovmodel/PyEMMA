@@ -1,10 +1,10 @@
+from pyemma.coordinates.transform.transformer import Transformer
 __author__ = 'noe'
 
 import numpy as np
 import mdtraj
 
 from pyemma.coordinates.util import patches
-from pyemma.coordinates.io.reader import ChunkedReader
 from pyemma.util.log import getLogger
 
 from .featurizer import MDFeaturizer
@@ -14,7 +14,7 @@ log = getLogger('FeatureReader')
 __all__ = ['FeatureReader']
 
 
-class FeatureReader(ChunkedReader):
+class FeatureReader(Transformer):
 
     """
     Reads features from MD data.
@@ -53,7 +53,7 @@ class FeatureReader(ChunkedReader):
 
     def __init__(self, trajectories, topologyfile):
         # init with chunksize 100
-        ChunkedReader.__init__(self, 100)
+        Transformer.__init__(self, 100)
 
         # files
         if isinstance(trajectories, str):
@@ -86,6 +86,7 @@ class FeatureReader(ChunkedReader):
         self._totlength = np.sum(self._lengths)
 
         self.t = 0
+        self.data_producer = self
 
     def describe(self):
         """
@@ -95,17 +96,6 @@ class FeatureReader(ChunkedReader):
         """
         return "Feature reader, features = ", self.featurizer.describe()
 
-    def operate_in_memory(self):
-        """
-        If called, the output will be fully stored in memory
-
-        :return:
-        """
-        self.in_memory = True
-        # output data
-        self.Y = [np.empty((self.trajectory_length(itraj), self.dimension()))
-                  for itraj in xrange(self.number_of_trajectories())]
-
     def parametrize(self):
         """
         Parametrizes this transformer
@@ -113,7 +103,7 @@ class FeatureReader(ChunkedReader):
         :return:
         """
         if self.in_memory:
-            self.map_to_memory()
+            self._map_to_memory()
 
     def number_of_trajectories(self):
         """
@@ -180,7 +170,7 @@ class FeatureReader(ChunkedReader):
         """
         return 0
 
-    def map_to_memory(self):
+    def _map_to_memory(self):
         self.reset()
         # iterate over trajectories
         last_chunk = False
@@ -233,8 +223,7 @@ class FeatureReader(ChunkedReader):
                 log.debug("open time lagged iterator for traj %i with lag %i"
                           % (self.curr_itraj, self.curr_lag))
                 self.curr_lag = lag
-                self.mditer2 = self._create_iter(self.trajfiles[self.curr_itraj],
-                                                skip=self.curr_lag)
+                self.mditer2 = self._create_iter(self.trajfiles[self.curr_itraj],                                             skip=self.curr_lag)
             try:
                 adv_chunk = self.mditer2.next()
             except StopIteration:

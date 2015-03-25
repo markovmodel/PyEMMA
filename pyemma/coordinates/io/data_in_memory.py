@@ -3,13 +3,14 @@ __author__ = 'noe'
 import numpy as np
 from scipy.spatial.distance import cdist
 
-from pyemma.coordinates.io.reader import ChunkedReader
+from pyemma.coordinates.transform.transformer import Transformer
 from pyemma.util.log import getLogger
 
 logger = getLogger('DataInMemory')
 
 
-class DataInMemory(ChunkedReader):
+class DataInMemory(Transformer):
+
     r"""
     multi-dimensional multi-trajectory data fully stored in memory
 
@@ -24,7 +25,9 @@ class DataInMemory(ChunkedReader):
     """
 
     def __init__(self, _data, **kwargs):
-        ChunkedReader.__init__(self)
+        Transformer.__init__(self)
+
+        self.data_producer = self
 
         if isinstance(_data, np.ndarray):
             self.ntraj = 1
@@ -46,6 +49,7 @@ class DataInMemory(ChunkedReader):
                     if f.endswith('.npy'):
                         x = np.load(f, mmap_mode=mmap_mode)
                     else:
+                        # TODO: consider loading `chunksize` lines from file
                         x = np.loadtxt(f)
                     x = np.atleast_2d(x)
                     self.data.append(x)
@@ -72,16 +76,10 @@ class DataInMemory(ChunkedReader):
 
         self.t = 0
         self.itraj = 0
-        self._chunksize = 0
+        self.chunksize = 0
 
-    @property
-    def chunksize(self):
-        return self._chunksize
-
-    @chunksize.setter
-    def chunksize(self, x):
-        # chunksize setting is forbidden, since we are operating in memory
-        pass
+    def parametrize(self):
+        self._parametrized = True
 
     def number_of_trajectories(self):
         """
@@ -152,15 +150,34 @@ class DataInMemory(ChunkedReader):
 
         # complete trajectory mode
         if self._chunksize == 0:
+            X = traj
+            self.itraj += 1
+
             if lag == 0:
-                X = traj
-                self.itraj += 1
                 return X
             else:
-                X = traj
                 Y = traj[lag:traj_len]
-                self.itraj += 1
                 return (X, Y)
+        # chunked mode
+        else:
+            upper_bound = min(self.t + self._chunksize, traj_len)
+            slice_x = slice(self.t, upper_bound)
+
+            X = traj[slice_x]
+            self.t += X.shape[0]
+
+            if lag == 0:
+                if self.t >= traj_len:
+                    self.itraj += 1
+                return X
+            else:
+                # its okay to return empty chunks
+                upper_bound = min(self.t + lag + self._chunksize, traj_len)
+
+                Y = traj[self.t + lag: upper_bound]
+                if self.t + lag >= traj_len:
+                    self.itraj += 1
+                return X, Y
 
     @staticmethod
     def distance(x, y):
