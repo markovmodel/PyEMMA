@@ -7,6 +7,8 @@ import numpy as np
 
 from scipy.sparse import dia_matrix
 
+from numpy.testing import assert_allclose as assert_allclose_np
+
 __all__ = ['allclose_sparse',
            'assert_allclose',
            'diags',
@@ -14,7 +16,14 @@ __all__ = ['allclose_sparse',
            'choice',
            ]
 
-def allclose_sparse(A, B, rtol=1e-5, atol=1e-9):
+def assert_allclose(actual, desired, rtol=1.e-5, atol=1.e-8,
+                    err_msg='', verbose=True):
+    r"""wrapper for numpy.testing.allclose with default tolerances of
+    numpy.allclose. Needed since testing method has different values."""
+    return assert_allclose_np(actual, desired, rtol=rtol, atol=atol,
+                              err_msg=err_msg, verbose=True)
+
+def allclose_sparse(A, B, rtol=1e-5, atol=1e-8):
     """
     Compares two sparse matrices in the same matter like numpy.allclose()
     Parameters
@@ -44,8 +53,20 @@ def allclose_sparse(A, B, rtol=1e-5, atol=1e-9):
     `allclose(a, b)` might be different from `allclose(b, a)` in
     some rare cases.
     """
-    diff = (A - B).data
-    return np.allclose(diff, 0.0, rtol=rtol, atol=atol)
+    A = A.tocsr()
+    B = B.tocsr()
+
+    """Shape"""
+    same_shape = (A.shape == B.shape)
+    
+    """Data"""
+    if same_shape:
+        diff = (A - B).data
+        same_data = np.allclose(diff, 0.0, rtol=rtol, atol=atol)
+        
+        return same_data
+    else:
+        return False
 
 ################################################################################
 # Backward compatibility to NumPy 1.6 and scipy 0.11
@@ -396,9 +417,4 @@ except ImportError:
         return a[idx]
 
 
-def assert_allclose(actual, desired, rtol=1.e-5, atol=1.e-8,
-                    err_msg='', verbose=True):
-    r"""wrapper for numpy.testing.allclose with default tolerances of
-    numpy.allclose. Needed since testing method has different values."""
-    from numpy.testing import assert_allclose
-    return assert_allclose(actual, desired, rtol, atol, err_msg, verbose)
+
