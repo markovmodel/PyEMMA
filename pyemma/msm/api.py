@@ -7,7 +7,7 @@ __docformat__ = "restructuredtext en"
 from flux import tpt as tpt_factory
 from ui import ImpliedTimescales
 from ui import MSM
-from ui import chapman_kolmogorov
+from ui import cktest as chapman_kolmogorov
 from estimation.dense.hidden_markov_model import HiddenMSM
 
 __author__ = "Benjamin Trendelkamp-Schroer, Martin Scherer, Frank Noe"
@@ -95,15 +95,13 @@ def msm(dtrajs, lag, reversible=True, sliding=True, compute=True):
     return msmobj
 
 
-def cktest(dtrajs, lag, K, nsets=2, sets=None):
+def cktest(msm, K, nsets=2, sets=None):
     r"""Perform Chapman-Kolmogorov tests for given data.
 
     Parameters
     ----------
-    dtrajs : list
-        discrete trajectories
-    lag : int
-        lagtime for the MSM estimation
+    msm : :class:`pyemma.msm.ui.MSM` object
+        Markov state model (MSM) object
     K : int 
         number of time points for the test
     nsets : int, optional
@@ -129,7 +127,11 @@ def cktest(dtrajs, lag, K, nsets=2, sets=None):
         molecular kinetics: Generation and validation. J Chem Phys
         134: 174105
     """
-    return chapman_kolmogorov(dtrajs, lag, K, nsets=nsets, sets=sets)
+    P = msm.transition_matrix
+    lcc = msm.largest_connected_set
+    dtrajs = msm.discretized_trajectories
+    tau = msm.lagtime
+    return chapman_kolmogorov(P, lcc, dtrajs, tau, K, nsets=nsets, sets=sets)
 
 
 def tpt(dtrajs, lag, A, B, reversible=True, sliding=True):
