@@ -11,7 +11,7 @@ __all__ = ['Transformer']
 
 class Transformer(object):
 
-    """
+    """ Basis class for pipeline objects
 
     Parameters
     ----------
@@ -35,7 +35,7 @@ class Transformer(object):
 
     @data_producer.setter
     def data_producer(self, dp):
-        if not dp is self._dataproducer:
+        if dp is not self._dataproducer:
             self._parametrized = False
         self._dataproducer = dp
 
@@ -150,10 +150,10 @@ class Transformer(object):
             raise RuntimeError('Called parametrize of %s while data producer is not'
                                ' yet set. Ensure "data_producer" attribute is set!'
                                % self.describe())
-                               
+
         if self._parametrized:
             return
-            
+
         # init
         self.param_init()
         # feed data, until finished
@@ -203,7 +203,7 @@ class Transformer(object):
         self._parametrized = True
         # memory mode? Then map all results
         if self.in_memory:
-            self.map_to_memory()
+            self._map_to_memory()
 
     def param_init(self):
         """
@@ -218,7 +218,7 @@ class Transformer(object):
         """
         pass
 
-    def map_to_memory(self):
+    def _map_to_memory(self):
         """maps results to memory. Will be stored in attribute :attr:`Y`."""
         # if operating in main memory, do all the mapping now
         self.data_producer.reset()
@@ -253,7 +253,6 @@ class Transformer(object):
             # operate in pipeline
             self.data_producer.reset()
 
-
     def next_chunk(self, lag=0):
         """
         transforms next available chunk from either in memory data or internal
@@ -269,7 +268,6 @@ class Transformer(object):
         X, (Y if lag > 0) : array_like
             mapped (transformed) data
         """
-        
         if self.in_memory:
             if self.itraj >= self.number_of_trajectories():
                 return None
@@ -337,10 +335,6 @@ class Transformer(object):
             self.t = 0
 
         return (last_itraj, X)
-        #if self.lag == 0:
-        #    return (last_itraj, X)
-
-        #return (last_itraj, X, Y)
 
     @staticmethod
     def distance(x, y):
