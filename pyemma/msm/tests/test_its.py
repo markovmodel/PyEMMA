@@ -1,4 +1,4 @@
-r"""Unit test for the ImpliedTimescale object
+r"""Unit test for the its method
 
 .. moduleauthor:: F.Noe <frank  DOT noe AT fu-berlin DOT de> 
 .. moduleauthor:: B.Trendelkamp-Schroer <benjamin DOT trendelkamp-schroer AT fu-berlin DOT de>
@@ -8,7 +8,7 @@ import warnings
 import unittest
 import numpy as np
 
-from timescales import ImpliedTimescales
+from pyemma.msm import its as ImpliedTimescales
 from pyemma.msm.generation import generate_traj
 from pyemma.msm.analysis import timescales
 

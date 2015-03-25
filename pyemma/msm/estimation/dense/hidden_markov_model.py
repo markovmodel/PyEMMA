@@ -7,6 +7,7 @@ Created on Sep 9, 2014
 import numpy as np
 import pyemma.util.pystallone as stallone
 
+__all__=['HiddenMSM']
 
 class HiddenMSM(object):
 

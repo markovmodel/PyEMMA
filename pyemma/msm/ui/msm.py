@@ -1,6 +1,10 @@
 r"""Implement a MSM class that builds a Markov state models from
 microstate trajectories automatically computes important properties
-and provides them for later access."""
+and provides them for later access.
+
+.. moduleauthor:: B.Trendelkamp-Schroer <benjamin DOT trendelkamp-schroer AT fu-berlin DOT de>
+
+"""
 
 __docformat__ = "restructuredtext en"
 
@@ -43,7 +47,7 @@ class MSM(object):
 
         """
         self.dtrajs = dtrajs
-        self.lagtime = lag
+        self.tau = lag
 
         self.reversible = reversible
         self.sliding = sliding
@@ -74,7 +78,7 @@ class MSM(object):
 
     def compute(self):
         """Compute count matrix"""
-        self.C = cmatrix(self.dtrajs, self.lagtime, sliding=self.sliding)
+        self.C = cmatrix(self.dtrajs, self.tau, sliding=self.sliding)
 
         """Largest connected set"""
         self.lcc = largest_connected_set(self.C)
@@ -92,6 +96,14 @@ class MSM(object):
 
     def _assert_computed(self):
         assert self.computed, "MSM hasn't been computed yet, make sure to call MSM.compute()"
+
+    @property
+    def discretized_trajectories(self):
+        return self.dtrajs
+
+    @property
+    def lagtime(self):
+        return self.tau
 
     @property
     def count_matrix(self):
@@ -121,5 +133,5 @@ class MSM(object):
         return self.mu
 
     def get_timescales(self, k):
-        ts = timescales(self.T, k=k, tau=self.lagtime)
+        ts = timescales(self.T, k=k, tau=self.tau)
         return ts
