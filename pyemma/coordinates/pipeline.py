@@ -5,9 +5,7 @@ import numpy as np
 
 from pyemma.coordinates.clustering.interface import AbstractClustering
 from pyemma.coordinates.transform.transformer import Transformer
-from pyemma.coordinates.io.reader import ChunkedReader
 from pyemma.coordinates.io.feature_reader import FeatureReader
-from pyemma.coordinates.util.chaining import build_chain
 
 from pyemma.util.log import getLogger
 
@@ -186,15 +184,20 @@ class Discretizer(Pipeline):
         Pipeline.__init__(self, [], chunksize=chunksize)
 
         # check input
-        if not isinstance(reader, ChunkedReader):
-            raise ValueError('reader is not of the correct type')
+        if not isinstance(reader, Transformer):
+            raise ValueError('given reader is not of the correct type')
+        else:
+            if reader.data_producer is not reader:
+                raise ValueError("given reader is not a first stance data source."
+                                 " Check if its a FeatureReader or DataInMemory")
         if transform is not None:
             if not isinstance(transform, Transformer):
-                raise ValueError('transform is not of the correct type')
+                raise ValueError('transform is not a transformer but "%s"' %
+                                 str(type(transform)))
         if cluster is None:
             raise ValueError('Must specify a clustering algorithm!')
         else:
-            assert isinstance(cluster, Transformer), \
+            assert isinstance(cluster, AbstractClustering), \
                 'cluster is not of the correct type'
 
         if hasattr(reader, 'featurizer'):  # reader is a FeatureReader
@@ -225,7 +228,7 @@ class Discretizer(Pipeline):
         if not self._parametrized:
             logger.info("not yet parametrized, running now.")
             self.run()
-        return self.transformers[-1].dtrajs
+        return self._chain[-1].dtrajs
 
     def save_dtrajs(self, prefix='', output_dir='.',
                     output_format='ascii', extension='.dtraj'):
@@ -248,8 +251,8 @@ class Discretizer(Pipeline):
 
         """
 
-        clustering = self.transformers[-1]
-        reader = self.transformers[0]
+        clustering = self._chain[-1]
+        reader = self._chain[0]
 
         assert isinstance(clustering, AbstractClustering)
 
