@@ -64,7 +64,7 @@ class TestFeatureReaderAndTICA(unittest.TestCase):
         reader = FeatureReader(self.trajnames, self.temppdb)
         trans = TICA(lag=1,output_dimension=self.dim)
         trans.data_producer = reader
-        for tau in [1,10,100,1000,2000]:
+        for tau in [1,11,101,1001,2001]: # avoid cos(w*tau)==0
             log.info('number of trajectories reported by tica %d'%trans.number_of_trajectories())
             log.info('tau = %d corresponds to a number of %f cycles'%(tau,self.w*tau/(2.0*np.pi)))
             trans.tau = tau
@@ -76,8 +76,8 @@ class TestFeatureReaderAndTICA(unittest.TestCase):
         
             self.assertTrue(np.allclose(ana_cov,trans.cov,atol=1.E-3))
             self.assertTrue(np.allclose(ana_cov_tau,trans.cov_tau,atol=1.E-3))
-            log.info('max. eigenvalue (<=1+eps): %f'%np.max(trans.eigenvalues))
-            self.assertTrue(np.all(trans.eigenvalues <= 1.0+np.finfo(np.float32).eps))
+            log.info('max. eigenvalue: %f'%np.max(trans.eigenvalues))
+            self.assertTrue(np.all(trans.eigenvalues <= 1.0))
 
 if __name__ == "__main__":
     unittest.main()
