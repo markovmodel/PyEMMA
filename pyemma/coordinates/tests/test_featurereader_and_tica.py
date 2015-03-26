@@ -14,6 +14,8 @@ from pyemma.util.log import getLogger
 
 log = getLogger('TestFeatureReaderAndTICA')
 
+from nose.plugins.attrib import attr
+@attr(slow=True)
 class TestFeatureReaderAndTICA(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

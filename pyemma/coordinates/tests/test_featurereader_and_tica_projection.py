@@ -36,7 +36,8 @@ def save_trajs(trans):
         f.close()
     return fnames
 
-
+from nose.plugins.attrib import attr
+@attr(slow=True)
 class TestFeatureReaderAndTICA(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
