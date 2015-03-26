@@ -248,6 +248,7 @@ def _pcca_connected(P, n, return_rot = False):
 
     from pyemma.msm.analysis import stationary_distribution
     pi = stationary_distribution(P)
+    #print "statdist = ",pi
 
     from pyemma.msm.analysis import is_reversible
     if not is_reversible(P, mu=pi):
@@ -277,6 +278,8 @@ def _pcca_connected(P, n, return_rot = False):
     # create initial solution using PCCA+. This could have negative memberships
     (chi, rot_matrix) = _pcca_connected_isa(evecs, n)
 
+    #print "initial chi = \n",chi
+
     # optimize the rotation matrix with PCCA++. 
     rot_matrix = _opt_soft(evecs, rot_matrix, n)
 
@@ -290,6 +293,8 @@ def _pcca_connected(P, n, return_rot = False):
     #print "memberships unnormalized: ",memberships
     for i in range(0,np.shape(memberships)[0]):
         memberships[i] /= np.sum(memberships[i])
+
+    #print "final chi = \n",chi
 
     return memberships
 
@@ -348,7 +353,8 @@ def pcca(P, m):
     components = connected_sets(P)
     #print "all labels ",labels
     n_components = len(components)#(n_components, labels) = connected_components(P, connection='strong')
-    
+    #print 'n_components'
+
     # store components as closed (with positive equilibrium distribution)
     # or as transition states (with vanishing equilibrium distribution)
     closed_components = []
@@ -449,6 +455,5 @@ def coarsegrain(P, n):
     A = np.dot(np.dot(M.T, P), M)
     B = np.linalg.inv(np.dot(M.T,M))
     P = np.dot(A,B)
-    # renormalize to eliminate numerical errors
-    P /= P.sum(axis=1)[:,None]
+
     return P
