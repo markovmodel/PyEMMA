@@ -50,7 +50,7 @@ Development
 .. toctree::
    :maxdepth: 2
 
-   DevelopersGuide
+   DEVELOPMENT
 
 
 Indices and tables
