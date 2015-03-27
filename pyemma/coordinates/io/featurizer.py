@@ -1,5 +1,4 @@
-from pyemma.util.annotators import deprecated
-__author__ = 'noe'
+__author__ = 'noe, marscher'
 
 import mdtraj
 from mdtraj.geometry.dihedral import _get_indices_phi, \
@@ -8,6 +7,7 @@ from mdtraj.geometry.dihedral import _get_indices_phi, \
 import numpy as np
 import warnings
 
+from pyemma.util.annotators import deprecated
 from pyemma.util.log import getLogger
 
 log = getLogger('Featurizer')
@@ -29,6 +29,29 @@ def _describe_atom(topology, index):
     return "%s %i %s %i" % (at.residue.name, at.residue.index, at.name, at.index)
 
 
+def _catch_unhashable(x):
+    if hasattr(x, '__getitem__'):
+        res = list(x)
+        for i, value in enumerate(x):
+            if isinstance(value, np.ndarray):
+                res[i] = _hash_numpy_array(value)
+            else:
+                res[i] = value
+        return tuple(res)
+    elif isinstance(x, np.ndarray):
+        return _hash_numpy_array(value)
+
+    return x
+
+
+def _hash_numpy_array(x):
+    x.flags.writeable = False
+    hash_value = hash(x.shape)
+    hash_value |= hash(x.strides)
+    hash_value |= hash(x.data)
+    return hash_value
+
+
 class CustomFeature(object):
 
     """
@@ -42,12 +65,12 @@ class CustomFeature(object):
     ----------
     func : function
         will be invoked with given args and kwargs on mapping traj
-    args : list of positional args (optional)
-    kwargs : named arguments
+    args : list of positional args (optional) passed to func
+    kwargs : named arguments (optional) passed to func
 
     Examples
     --------
-    We use a FeatureReader to read md-trajectories and add a CustomFeature to
+    We use a FeatureReader to read MD-trajectories and add a CustomFeature to
     transform coordinates:
 
     >>> reader = FeatureReader(...)
@@ -65,15 +88,27 @@ class CustomFeature(object):
         self._kwargs = kwargs
 
     def describe(self):
-        return "override me to get proper description!"
+        return ["override me to get proper description!"]
 
     def map(self, traj):
         feature = self._func(traj, self._args, self._kwargs)
-        assert isinstance(feature, np.ndarray)
+        if not isinstance(feature, np.ndarray):
+            raise ValueError("your function should return a NumPy array!")
         return feature
 
+    def __hash__(self):
+        hash_value = hash(self._func)
+        # if key contains numpy arrays, we hash their data arrays
+        key = tuple(map(_catch_unhashable, self._args) +
+                    map(_catch_unhashable, sorted(self._kwargs.items())))
+        hash_value |= hash(key)
+        return hash_value
 
-class DistanceFeature:
+    def __eq__(self, other):
+        return self.__hash__() == other.__hash__()
+
+
+class DistanceFeature(object):
 
     def __init__(self, top, distance_indexes):
         self.top = top
@@ -81,15 +116,23 @@ class DistanceFeature:
         self.prefix_label = "DIST:"
 
     def describe(self):
-        labels = []
-        for pair in self.distance_indexes:
-            labels.append("%s%s - %s" % (self.prefix_label,
-                                         _describe_atom(self.top, pair[0]),
-                                         _describe_atom(self.top, pair[1])))
+        labels = ["%s %s - %s" % (self.prefix_label,
+                                  _describe_atom(self.top, pair[0]),
+                                  _describe_atom(self.top, pair[1]))
+                  for pair in self.distance_indexes]
         return labels
 
     def map(self, traj):
         return mdtraj.compute_distances(traj, self.distance_indexes)
+
+    def __hash__(self):
+        hash_value = _hash_numpy_array(self.distance_indexes)
+        hash_value |= hash(self.top)
+        hash_value |= hash(self.prefix_label)
+        return hash_value
+
+    def __eq__(self, other):
+        return self.__hash__() == other.__hash__()
 
 
 class InverseDistanceFeature(DistanceFeature):
@@ -101,8 +144,10 @@ class InverseDistanceFeature(DistanceFeature):
     def map(self, traj):
         return 1.0 / mdtraj.compute_distances(traj, self.distance_indexes)
 
+    # does not need own hash impl, since we take prefix label into account
 
-class BackboneTorsionFeature:
+
+class BackboneTorsionFeature(object):
 
     def __init__(self, topology):
         self.topology = topology
@@ -110,6 +155,7 @@ class BackboneTorsionFeature:
         # this is needed for get_indices functions, since they expect a Trajectory,
         # not a Topology
         class fake_traj():
+
             def __init__(self, top):
                 self.top = top
 
@@ -124,10 +170,10 @@ class BackboneTorsionFeature:
 
     def describe(self):
         top = self.topology
-        labels_phi = ["PHI %s %i" % (top.atom(ires[0]).residue.name, ires[0])
+        labels_phi = ["PHI %s %i" % _describe_atom(top, ires)
                       for ires in self._phi_inds]
 
-        labels_psi = ["PHI %s %i" % (top.atom(ires[0]).residue.name, ires[0])
+        labels_psi = ["PSI %s %i" % _describe_atom(top, ires)
                       for ires in self._psi_inds]
 
         return labels_phi + labels_psi
@@ -136,6 +182,16 @@ class BackboneTorsionFeature:
         y1 = compute_dihedrals(traj, self._phi_inds).astype(np.float32)
         y2 = compute_dihedrals(traj, self._psi_inds).astype(np.float32)
         return np.hstack((y1, y2))
+
+    def __hash__(self):
+        hash_value = _hash_numpy_array(self._phi_inds)
+        hash_value |= _hash_numpy_array(self._psi_inds)
+        hash_value |= hash(self.topology)
+
+        return hash_value
+
+    def __eq__(self, other):
+        return self.__hash__() == other.__hash__()
 
 
 class MDFeaturizer(object):
@@ -151,13 +207,7 @@ class MDFeaturizer(object):
 
     def __init__(self, topfile):
         self.topology = (mdtraj.load(topfile)).topology
-
-        self.distance_indexes = []
-        self.inv_distance_indexes = []
-        self.contact_indexes = []
-        self.angle_indexes = []
-
-        self.active_features = []
+        self.active_features = set()
         self._dim = 0
 
     def describe(self):
@@ -165,13 +215,12 @@ class MDFeaturizer(object):
         Returns a list of strings, one for each feature selected,
         with human-readable descriptions of the features.
 
-        :return:
+        Returns
+        -------
+        labels : list
+            a list of labels of all active features
         """
-        labels = []
-
-        for f in self.active_features:
-            labels.append(f.describe())
-
+        labels = [f.describe() for f in self.active_features]
         return labels
 
     def select(self, selstring):
@@ -227,6 +276,24 @@ class MDFeaturizer(object):
 
         return pairs
 
+    def _check_indices(self, pair_inds, pair_n=2):
+        """ensure pairs are valid (shapes, all atom indices available?, etc.) 
+        """
+        pair_inds = np.array(pair_inds)
+
+        if pair_inds.ndim != 2:
+            raise ValueError("pair indices has to be a matrix.")
+
+        if pair_inds.shape[1] != pair_n:
+            raise ValueError("pair indices shape has to be (x, %i)." % pair_n)
+
+        if pair_inds.max() > self.topology.n_atoms:
+            raise ValueError("index out of bounds: %i."
+                             " Maximum atom index available: %i"
+                             % (pair_inds.max(), self.topology.n_atoms))
+
+        return pair_inds
+
     @deprecated
     def distances(self, atom_pairs):
         return self.add_distances(atom_pairs)
@@ -234,14 +301,20 @@ class MDFeaturizer(object):
     def add_distances(self, atom_pairs):
         """
         Adds the set of distances to the feature list
-        :param atom_pairs:
+
+        Parameters
+        ----------
+        atom_pairs : ndarray (n, 2)
+            pair of indices, n has to be smaller than n atoms of topology.
         """
-        #assert atom_pairs.shape ==...
-        # TODO: shall we instead append here?
-        self.distance_indexes = atom_pairs
+        atom_pairs = self._check_indices(atom_pairs)
         f = DistanceFeature(self.topology, distance_indexes=atom_pairs)
-        self.active_features.append(f)
-        self._dim += np.shape(atom_pairs)[0]
+
+        if f not in self.active_features:
+            self.active_features.add(f)
+            self._dim += np.shape(atom_pairs)[0]
+        else:
+            log.warning("tried to add duplicate feature")
 
     @deprecated
     def distancesCa(self):
@@ -251,52 +324,69 @@ class MDFeaturizer(object):
         """
         Adds the set of Ca-distances to the feature list
         """
-        self.distance_indexes = self.pairs(self.select_Ca())
+        pairs = self.pairs(self.select_Ca())
 
-        f = DistanceFeature(self.topology, atom_pairs=self.distance_indexes)
-        self.active_features.append(f)
-        self._dim += np.shape(self.distance_indexes)[0]
+        f = DistanceFeature(self.topology, distance_indexes=pairs)
+
+        if f not in self.active_features:
+            self.active_features.add(f)
+            self._dim += np.shape(self.pairs)[0]
+        else:
+            log.warning("tried to add duplicate feature")
 
     @deprecated
     def inverse_distances(self, atom_pairs):
         return self.add_inverse_distances(atom_pairs)
 
     def add_inverse_distances(self, atom_pairs):
-        """
+        r"""
         Adds the set of inverse distances to the feature list
 
-        :param atom_pairs:
+        Parameters
+        ----------
+        atom_pairs : ndarray (n, 2)
+            pair of indices, n has to be smaller than n atoms of topology.
         """
-        self.inv_distance_indexes = atom_pairs
+        atom_pairs = self._check_indices(atom_pairs)
+        f = InverseDistanceFeature(top=self.topology,
+                                   distance_indexes=atom_pairs)
 
-        f = InverseDistanceFeature(atom_pairs=self.inv_distance_indexes)
-        self.active_features.append(f)
-        self._dim += np.shape(self.distance_indexes)[0]
+        if f not in self.active_features:
+            self.active_features.add(f)
+            self._dim += np.shape(atom_pairs)[0]
+        else:
+            log.warning("tried to add duplicate feature")
 
     @deprecated
     def contacts(self, atom_pairs):
         return self.add_contacts(atom_pairs)
 
     def add_contacts(self, atom_pairs):
+        r"""
+        Adds the set of contacts to the feature list.
+
+        Parameters
+        ----------
+        atom_pairs : ndarray (n, 2)
+            pair of indices, n has to be smaller than n atoms of topology.
         """
-        Adds the set of contacts to the feature list
-        :param atom_pairs:
-        """
-        #assert atom_pairs.shape == ...
-        #assert in_bounds , ... 
+        atom_pairs = self._check_indices(atom_pairs)
         f = CustomFeature(mdtraj.compute_contacts, atom_pairs=atom_pairs)
 
         def describe():
-            labels = []
-            for pair in self.contact_indexes:
-                labels.append("CONTACT: %s - %s" % (_describe_atom(self.topology, pair[0]),
-                                                    _describe_atom(self.topology, pair[1])))
+            labels = ["CONTACT: %s - %s" %
+                      (_describe_atom(self.topology, pair[0]),
+                       _describe_atom(self.topology, pair[1]))
+                      for pair in atom_pairs]
             return labels
         f.describe = describe
         f.topology = self.topology
 
-        self._dim += np.shape(atom_pairs)[0]
-        self.active_features.append(f)
+        if f not in self.active_features:
+            self._dim += np.shape(atom_pairs)[0]
+            self.active_features.add(f)
+        else:
+            log.warning("tried to add duplicate feature")
 
     @deprecated
     def angles(self, indexes):
@@ -311,26 +401,26 @@ class MDFeaturizer(object):
         indexes : np.ndarray, shape=(num_pairs, 3), dtype=int
             an array with triplets of atom indices
         """
-        #assert indexes.shape == 
-
+        indexes = self._check_indices(indexes, pair_n=3)
         f = CustomFeature(mdtraj.compute_angles, indexes=indexes)
 
         def describe():
-            labels = []
-            for triple in self.angle_indexes:
-                labels.append("ANGLE: %s - %s - %s " %
-                              (_describe_atom(self.topology, triple[0]),
-                               _describe_atom(self.topology, triple[1]),
-                               _describe_atom(self.topology, triple[2])))
+            labels = ["ANGLE: %s - %s - %s " %
+                      (_describe_atom(self.topology, triple[0]),
+                       _describe_atom(self.topology, triple[1]),
+                       _describe_atom(self.topology, triple[2]))
+                      for triple in indexes]
 
             return labels
 
         f.describe = describe
         f.topology = self.topology
 
-        self.active_features.append(f)
-        self.angle_indexes = indexes
-        self._dim += np.shape(indexes)[0]
+        if f not in self.active_features:
+            self.active_features.add(f)
+            self._dim += np.shape(indexes)[0]
+        else:
+            log.warning("tried to add duplicate feature")
 
     @deprecated
     def backbone_torsions(self):
@@ -341,9 +431,11 @@ class MDFeaturizer(object):
         Adds all backbone torsions
         """
         f = BackboneTorsionFeature(self.topology)
-        self.active_features.append(f)
-        log.debug("adding %i torsions angles" % f.dim)
-        self._dim += f.dim
+        if f not in self.active_features:
+            self.active_features.add(f)
+            self._dim += f.dim
+        else:
+            log.warning("tried to add duplicate feature")
 
     def add_custom_feature(self, feature, output_dimension):
         """
@@ -354,12 +446,20 @@ class MDFeaturizer(object):
         output_dimension : int
             a mapped feature coming from has this dimension.
         """
-        assert output_dimension > 0, "tried to add empty feature"
-        assert hasattr(feature, 'map'), "no map method in given feature"
-        assert hasattr(feature, 'describe')
+        if output_dimension <= 0:
+            raise ValueError("output_dimension has to be positive")
 
-        self.active_features.append(feature)
-        self._dim += output_dimension
+        if not hasattr(feature, 'map'):
+            raise ValueError("no map method in given feature")
+        else:
+            if not callable(getattr(feature, 'map')):
+                raise ValueError("map exists but is not a method")
+
+        if feature not in self.active_features:
+            self.active_features.add(feature)
+            self._dim += output_dimension
+        else:
+            log.warning("tried to add duplicate feature")
 
     def dimension(self):
         """ current dimension due to selected features """
@@ -372,7 +472,8 @@ class MDFeaturizer(object):
         """
         # if there are no features selected, return given trajectory
         if self._dim == 0:
-            warnings.warn("You have no features selected. Returning plain coordinates.")
+            warnings.warn(
+                "You have no features selected. Returning plain coordinates.")
             return traj.xyz
 
         # TODO: define preprocessing step (RMSD etc.)
@@ -380,10 +481,9 @@ class MDFeaturizer(object):
         # otherwise build feature vector.
         feature_vec = []
 
-        # only iterate over unique
-        # TODO: implement __hash__ and __eq__, see
-        # https://stackoverflow.com/questions/2038010/sets-of-instances
-        for f in set(self.active_features):
+        # TODO: consider parallel evaluation computation here, this effort is
+        # only worth it, if computation time dominates memory transfers
+        for f in self.active_features:
             feature_vec.append(f.map(traj).astype(np.float32))
 
         return np.hstack(feature_vec)
