@@ -159,8 +159,7 @@ class FeatureReader(ChunkedReader):
         """
         if len(self.featurizer.active_features)==0:
             # special case: cartesion coordinates
-            top = mdtraj.load(self.topfile)
-            return top.n_atoms*3
+            return self.featurizer.topology.n_atoms * 3
         else:
             # general case
             return self.featurizer.dimension()
