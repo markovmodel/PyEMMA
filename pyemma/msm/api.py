@@ -94,7 +94,7 @@ def msm(dtrajs, lag, reversible=True, sliding=True, compute=True):
     return msmobj
 
 
-def cktest(msmobj, K, nsets=2, sets=None):
+def cktest(msmobj, K, nsets=2, sets=None, full_output=False):
     r"""Perform Chapman-Kolmogorov tests for given data.
 
     Parameters
@@ -118,6 +118,8 @@ def cktest(msmobj, K, nsets=2, sets=None):
         set l to set l after k*lag steps as estimated from the given data
     eps_MD : (K, n_sets)
         eps_MD[k, l] is an estimate for the statistical error of p_MD[k, l]   
+    set_factors : (K, nsets) ndarray, optional
+        set_factor[k, i] is the quotient of the MD and the MSM set probabilities
 
     References
     ----------
@@ -130,7 +132,8 @@ def cktest(msmobj, K, nsets=2, sets=None):
     lcc = msmobj.largest_connected_set
     dtrajs = msmobj.discretized_trajectories
     tau = msmobj.lagtime
-    return chapman_kolmogorov(P, lcc, dtrajs, tau, K, nsets=nsets, sets=sets)
+    return chapman_kolmogorov(P, lcc, dtrajs, tau, K, 
+                              nsets=nsets, sets=sets, full_output=full_output)
 
 def tpt(msmobj, A, B):
     r"""Computes the A->B reactive flux using transition path theory (TPT)
