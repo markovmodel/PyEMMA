@@ -36,6 +36,13 @@ def save_trajs(trans):
         f.close()
     return fnames
 
+def random_invertible(n,eps=0.01):
+    'generate real random invertible matrix'
+    m=np.random.randn(n,n)
+    u,s,v=np.linalg.svd(m)
+    s=np.maximum(s,eps)
+    return u.dot(np.diag(s)).dot(v)
+
 from nose.plugins.attrib import attr
 @attr(slow=True)
 class TestFeatureReaderAndTICA(unittest.TestCase):
@@ -47,6 +54,8 @@ class TestFeatureReaderAndTICA(unittest.TestCase):
         N = 5000 # length of single trajectory # 500000
         N_trajs = 10 # number of trajectories
 
+        A = random_invertible(cls.dim) # mixing matrix
+        # tica will approximate its inverse with the projection matrix
         mean = np.random.randn(cls.dim)
 
         # create topology file
@@ -57,11 +66,13 @@ class TestFeatureReaderAndTICA(unittest.TestCase):
                   ('ATOM  %5d C    ACE A   1      28.490  31.600  33.379  0.00  1.00'%i)
 
         t = np.arange(0,N)
-        t_total = 0
         cls.trajnames = [] # list of xtc file names
         for i in xrange(N_trajs):
             # set up data
-            data = np.random.randn(N,cls.dim) + mean
+            white = np.random.randn(N,cls.dim)
+            brown = np.cumsum(white,axis=0)
+            correlated = np.dot(brown,A)
+            data = correlated + mean
             xyz = data.reshape((N,cls.dim//3,3))
             # create trajectory file
             traj = mdtraj.load(cls.temppdb)
@@ -70,7 +81,6 @@ class TestFeatureReaderAndTICA(unittest.TestCase):
             tempfname = tempfile.mktemp('.xtc')
             traj.save(tempfname)
             cls.trajnames.append(tempfname)
-            t_total += N
 
     @classmethod
     def tearDownClass(cls):
@@ -87,9 +97,11 @@ class TestFeatureReaderAndTICA(unittest.TestCase):
             log.info('number of trajectories reported by tica %d'%trans.number_of_trajectories())
             trans.tau = tau
             ic_fnames = save_trajs(trans) # this runs again the chain after the change of tau
+            #print '@@cov', trans.cov
+            #print '@@cov_tau', trans.cov_tau
 
             log.info('max. eigenvalue: %f'%np.max(trans.eigenvalues))
-            self.assertTrue(np.all(trans.eigenvalues <= 1.0))
+            self.assertTrue(np.all(trans.eigenvalues <= 1.1))
             
             # check ICs
             check = tica(data=ic_fnames,lag=tau,dim=self.dim)
@@ -98,6 +110,7 @@ class TestFeatureReaderAndTICA(unittest.TestCase):
             ic_cov_tau = np.zeros((self.dim,self.dim))
             ic_cov_tau[np.diag_indices(self.dim)] = trans.eigenvalues
             self.assertTrue(np.allclose(ic_cov_tau,check.cov_tau))
+            #print '@@cov_tau', check.cov_tau
             
             for fname in ic_fnames:
                 os.unlink(fname)
