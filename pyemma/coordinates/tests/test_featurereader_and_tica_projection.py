@@ -91,7 +91,7 @@ class TestFeatureReaderAndTICA(unittest.TestCase):
         
     def test_covariances_and_eigenvalues(self):
         reader = FeatureReader(self.trajnames, self.temppdb)
-        trans = TICA(lag=1,output_dimension=self.dim)
+        trans = TICA(lag=1,output_dimension=self.dim, force_eigenvalues_le_one=True)
         trans.data_producer = reader
         for tau in [1,10,100,1000,2000]:
             log.info('number of trajectories reported by tica %d'%trans.number_of_trajectories())
@@ -101,10 +101,10 @@ class TestFeatureReaderAndTICA(unittest.TestCase):
             #print '@@cov_tau', trans.cov_tau
 
             log.info('max. eigenvalue: %f'%np.max(trans.eigenvalues))
-            self.assertTrue(np.all(trans.eigenvalues <= 1.1))
+            self.assertTrue(np.all(trans.eigenvalues <= 1.0))
             
             # check ICs
-            check = tica(data=ic_fnames,lag=tau,dim=self.dim)
+            check = tica(data=ic_fnames, lag=tau, dim=self.dim, force_eigenvalues_le_one=True)
             _ = iter(check) # grab iterator to run the transform
             self.assertTrue(np.allclose(np.eye(self.dim),check.cov))
             ic_cov_tau = np.zeros((self.dim,self.dim))
