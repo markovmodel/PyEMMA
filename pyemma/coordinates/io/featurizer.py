@@ -67,6 +67,11 @@ class CustomFeature(object):
     def describe(self):
         return "override me to get proper description!"
 
+    @property
+    def dimension(self):
+        # override me to get correct dimension
+        return 0
+
     def map(self, traj):
         feature = self._func(traj, self._args, self._kwargs)
         assert isinstance(feature, np.ndarray)
@@ -92,6 +97,10 @@ class SelectionFeature:
             labels.append("%s%s" % (self.prefix_label, _describe_atom(self.top, i)))
         return labels
 
+    @property
+    def dimension(self):
+        return 3*self.indexes.shape[0]
+
     def map(self, traj):
         newshape = (traj.xyz.shape[0], 3*self.indexes.shape[0])
         return np.reshape(traj.xyz[:,self.indexes,:], newshape)
@@ -112,6 +121,10 @@ class DistanceFeature:
                                           _describe_atom(self.top, pair[0]),
                                           _describe_atom(self.top, pair[1])))
         return labels
+
+    @property
+    def dimension(self):
+        return self.distance_indexes.shape[0]
 
     def map(self, traj):
         return mdtraj.compute_distances(traj, self.distance_indexes, periodic=self.periodic)
@@ -160,6 +173,10 @@ class AngleFeature:
 
         return labels
 
+    @property
+    def dimension(self):
+        return self.angle_indexes.shape[0]
+
     def map(self, traj):
         rad = mdtraj.compute_angles(traj, self.angle_indexes)
         if self.deg:
@@ -187,8 +204,6 @@ class BackboneTorsionFeature:
         _, indices = _get_indices_psi(ft)
         self._psi_inds = indices
 
-        self.dim = len(self._phi_inds) + len(self._psi_inds)
-
     def describe(self):
         top = self.topology
         labels_phi = ["PHI %s %i" % (top.atom(ires[0]).residue.name, ires[0])
@@ -198,6 +213,10 @@ class BackboneTorsionFeature:
                       for ires in self._psi_inds]
 
         return labels_phi + labels_psi
+
+    @property
+    def dimension(self):
+        return len(self._phi_inds) + len(self._psi_inds)
 
     def map(self, traj):
         y1 = compute_dihedrals(traj, self._phi_inds).astype(np.float32)
@@ -222,12 +241,6 @@ class MDFeaturizer(object):
 
     def __init__(self, topfile):
         self.topology = (mdtraj.load(topfile)).topology
-
-        #self.distance_indexes = []
-        #self.inv_distance_indexes = []
-        #self.contact_indexes = []
-        #self.angle_indexes = []
-
         self.active_features = []
         self._dim = 0
 
@@ -358,7 +371,6 @@ class MDFeaturizer(object):
         # TODO: add possibility to align to a reference structure
         f = SelectionFeature(self.topology, indexes)
         self.active_features.append(f)
-        self._dim += np.shape(indexes)[0]*3
 
     @deprecated
     def distances(self, atom_pairs):
@@ -375,7 +387,6 @@ class MDFeaturizer(object):
         #assert atom_pairs.shape ==...
         f = DistanceFeature(self.topology, atom_pairs, periodic=periodic)
         self.active_features.append(f)
-        self._dim += np.shape(atom_pairs)[0]
 
     @deprecated
     def distancesCa(self):
@@ -403,7 +414,6 @@ class MDFeaturizer(object):
         """
         f = InverseDistanceFeature(self.topology, atom_pairs, periodic=True)
         self.active_features.append(f)
-        self._dim += np.shape(atom_pairs)[0]
 
     @deprecated
     def contacts(self, atom_pairs):
@@ -427,7 +437,6 @@ class MDFeaturizer(object):
         #assert in_bounds , ... 
         f = ContactFeature(self.topology, atom_pairs, threshold=threshold, periodic=periodic)
         self.active_features.append(f)
-        self._dim += np.shape(atom_pairs)[0]
 
     @deprecated
     def angles(self, indexes):
@@ -449,7 +458,6 @@ class MDFeaturizer(object):
 
         f = AngleFeature(self.topology, indexes, deg=deg)
         self.active_features.append(f)
-        self._dim += np.shape(indexes)[0]
 
     @deprecated
     def backbone_torsions(self):
@@ -467,9 +475,8 @@ class MDFeaturizer(object):
         """
         f = BackboneTorsionFeature(self.topology, deg=deg)
         self.active_features.append(f)
-        self._dim += f.dim
 
-    def add_custom_feature(self, feature, output_dimension):
+    def add_custom_feature(self, feature):
         """
         Adds a custom feature to the feature list.
 
@@ -477,17 +484,15 @@ class MDFeaturizer(object):
         ----------
         feature : object
             an object with interface like CustomFeature (map, describe methods)
-        output_dimension : int
-            a mapped feature coming from has this dimension.
 
         """
-        assert output_dimension > 0, "tried to add empty feature"
+        assert feature.dimension > 0, "tried to add empty feature"
         assert hasattr(feature, 'map'), "no map method in given feature"
         assert hasattr(feature, 'describe')
 
         self.active_features.append(feature)
-        self._dim += output_dimension
 
+    @property
     def dimension(self):
         """ current dimension due to selected features
 
@@ -497,7 +502,10 @@ class MDFeaturizer(object):
             total dimension due to all selection features
 
         """
-        return self._dim
+        dim = 0
+        for f in self.active_features:
+            dim += f.dimension
+        return dim
 
     def map(self, traj):
         """
@@ -516,7 +524,7 @@ class MDFeaturizer(object):
 
         """
         # if there are no features selected, return given trajectory
-        if self._dim == 0:
+        if len(self.active_features) == 0:
             warnings.warn("You have no features selected. Returning plain coordinates.")
             return traj.xyz
 
