@@ -1,5 +1,5 @@
 from pyemma.util.annotators import deprecated
-__author__ = 'noe'
+__author__ = 'Frank Noe, Martin Scherer'
 
 import mdtraj
 from mdtraj.geometry.dihedral import _get_indices_phi, \
@@ -99,10 +99,11 @@ class SelectionFeature:
 
 class DistanceFeature:
 
-    def __init__(self, top, distance_indexes):
+    def __init__(self, top, distance_indexes, periodic = True):
         self.top = top
         self.distance_indexes = np.array(distance_indexes)
         self.prefix_label = "DIST:"
+        self.periodic = periodic
 
     def describe(self):
         labels = []
@@ -113,30 +114,31 @@ class DistanceFeature:
         return labels
 
     def map(self, traj):
-        return mdtraj.compute_distances(traj, self.distance_indexes)
+        return mdtraj.compute_distances(traj, self.distance_indexes, periodic=self.periodic)
 
 
 class InverseDistanceFeature(DistanceFeature):
 
-    def __init__(self, top, distance_indexes):
-        DistanceFeature.__init__(self, top, distance_indexes)
+    def __init__(self, top, distance_indexes, periodic = True):
+        DistanceFeature.__init__(self, top, distance_indexes, periodic=periodic)
         self.prefix_label = "INVDIST:"
 
     def map(self, traj):
-        return 1.0 / mdtraj.compute_distances(traj, self.distance_indexes)
+        return 1.0 / mdtraj.compute_distances(traj, self.distance_indexes, periodic=self.periodic)
 
 
 class ContactFeature(DistanceFeature):
 
-    def __init__(self, top, distance_indexes, threshold):
+    def __init__(self, top, distance_indexes, threshold = 5.0, periodic=True):
         DistanceFeature.__init__(self, top, distance_indexes)
         self.prefix_label = "CONTACT:"
         self.threshold = threshold
+        self.periodic = periodic
 
     def map(self, traj):
-        dists = mdtraj.compute_distances(traj, self.distance_indexes)
+        dists = mdtraj.compute_distances(traj, self.distance_indexes, periodic=self.periodic)
         res = np.zeros((len(traj), self.distance_indexes.shape[0]), dtype=np.float32)
-        I = np.argwhere(dists > self.threshold)
+        I = np.argwhere(dists <= self.threshold)
         res[I[:,0],I[:,1]] = 1.0
         return res
 
@@ -224,7 +226,12 @@ class MDFeaturizer(object):
         Returns a list of strings, one for each feature selected,
         with human-readable descriptions of the features.
 
-        :return:
+        Returns
+        -------
+        labels : list of str
+            An ordered list of strings, one for each feature selected,
+            with human-readable descriptions of the features.
+
         """
         labels = []
 
@@ -235,35 +242,54 @@ class MDFeaturizer(object):
 
     def select(self, selstring):
         """
-        Selects using the given selection string
+        Returns the indexes of atoms matching the given selection
 
-        :param selstring:
-        :return:
+        Parameters
+        ----------
+        selstring : str
+            Selection string. See mdtraj documentation for details: http://mdtraj.org/latest/atom_selection.html
+
+        Returns
+        -------
+        indexes : ndarray((n), dtype=int)
+            array with selected atom indexes
+
         """
         return self.topology.select(selstring)
 
     def select_Ca(self):
         """
-        Selects Ca atoms
+        Returns the indexes of all Ca-atoms
 
-        :return:
+        Returns
+        -------
+        indexes : ndarray((n), dtype=int)
+            array with selected atom indexes
+
         """
         return self.topology.select("name CA")
 
     def select_Backbone(self):
         """
-        Selects backbone C, CA and N atoms
+        Returns the indexes of backbone C, CA and N atoms
 
-        :return:
+        Returns
+        -------
+        indexes : ndarray((n), dtype=int)
+            array with selected atom indexes
+
         """
-        # FIXME: this string raises
-        return self.topology.select("backbone name C[A] N")
+        return self.topology.select("backbone name C CA N")
 
     def select_Heavy(self):
         """
-        Selects all heavy atoms
+        Returns the indexes of all heavy atoms (Mass >= 2)
 
-        :return:
+        Returns
+        -------
+        indexes : ndarray((n), dtype=int)
+            array with selected atom indexes
+
         """
         return self.topology.select("mass >= 2")
 
@@ -272,27 +298,38 @@ class MDFeaturizer(object):
         """
         Creates all pairs between indexes, except for 1 and 2-neighbors
 
-        :return:
-        """
-        nsel = np.shape(sel)[0]
-        npair = ((nsel - 2) * (nsel - 3)) / 2
-        pairs = np.zeros((npair, 2))
-        s = 0
-        for i in range(0, nsel - 3):
-            d = nsel - 3 - i
-            pairs[s:s + d, 0] = sel[i]
-            pairs[s:s + d, 1] = sel[i + 3:nsel]
-            s += d
+        Parameters
+        ----------
+        sel : ndarray((n), dtype=int)
+            array with selected atom indexes
 
-        return pairs
+        Return:
+        -------
+        sel : ndarray((m,2), dtype=int)
+            m x 2 array with all pair indexes between different atoms that are at least 3 indexes apart,
+            i.e. if i is the index of an atom, the pairs [i,i-2], [i,i-1], [i,i], [i,i+1], [i,i+2], will
+            not be in sel. Moreover, the list is non-redundant, i.e. if [i,j] is in sel, then [j,i] is not.
+
+        """
+        p = []
+        for i in range(len(sel)):
+            for j in range(i+1,len(sel)):
+                # get ordered pair
+                I = sel[i]
+                J = sel[j]
+                if (I > J):
+                    I = sel[j]
+                    J = sel[i]
+                # exclude 1 and 2 neighbors
+                if (J > I+2):
+                    p.append([I,J])
+        return np.array(p)
 
     def add_all(self):
         """
         Adds all atom coordinates to the feature list.
         The coordinates are flattened as follows: [x1, y1, z1, x2, y2, z2, ...]
 
-        :param indexes:
-        :return:
         """
         # TODO: add possibility to align to a reference structure
         self.add_selection(range(self.topology.n_atoms))
@@ -302,25 +339,31 @@ class MDFeaturizer(object):
         Adds the selected atom coordinates to the feature list.
         The coordinates are flattened as follows: [x1, y1, z1, x2, y2, z2, ...]
 
-        :param indexes:
-        :return:
+        Parameters
+        ----------
+        indexes : ndarray((n), dtype=int)
+            array with selected atom indexes
+
         """
         # TODO: add possibility to align to a reference structure
         f = SelectionFeature(self.topology, indexes)
         self.active_features.append(f)
-        self._dim += np.shape(indexes)[0]
+        self._dim += np.shape(indexes)[0]*3
 
     @deprecated
     def distances(self, atom_pairs):
         return self.add_distances(atom_pairs)
 
-    def add_distances(self, atom_pairs):
+    def add_distances(self, atom_pairs, periodic=True):
         """
-        Adds the set of distances to the feature list
-        :param atom_pairs:
+        Adds the distances between the given pairs of atoms to the feature list.
+
+        atom_pairs : ndarray((n,2), dtype=int)
+            n x 2 array with pairs of atoms between which the distances shall be computed
+
         """
         #assert atom_pairs.shape ==...
-        f = DistanceFeature(self.topology, atom_pairs)
+        f = DistanceFeature(self.topology, atom_pairs, periodic=periodic)
         self.active_features.append(f)
         self._dim += np.shape(atom_pairs)[0]
 
@@ -328,26 +371,27 @@ class MDFeaturizer(object):
     def distancesCa(self):
         return self.add_distances_ca()
 
-    def add_distances_ca(self):
+    def add_distances_ca(self, periodic=True):
         """
-        Adds the set of Ca-distances to the feature list
+        Adds the distances between all Ca's (except for 1- and 2-neighbors) to the feature list.
+
         """
         distance_indexes = self.pairs(self.select_Ca())
-        f = DistanceFeature(self.topology, distance_indexes)
-        self.active_features.append(f)
-        self._dim += np.shape(distance_indexes)[0]
+        self.add_distances(distance_indexes, periodic=periodic)
 
     @deprecated
     def inverse_distances(self, atom_pairs):
         return self.add_inverse_distances(atom_pairs)
 
-    def add_inverse_distances(self, atom_pairs):
+    def add_inverse_distances(self, atom_pairs, periodic=True):
         """
-        Adds the set of inverse distances to the feature list
+        Adds the inverse distances between the given pairs of atoms to the feature list.
 
-        :param atom_pairs:
+        atom_pairs : ndarray((n,2), dtype=int)
+            n x 2 array with pairs of atoms between which the inverse distances shall be computed
+
         """
-        f = InverseDistanceFeature(self.topology, atom_pairs)
+        f = InverseDistanceFeature(self.topology, atom_pairs, periodic=True)
         self.active_features.append(f)
         self._dim += np.shape(atom_pairs)[0]
 
@@ -355,14 +399,23 @@ class MDFeaturizer(object):
     def contacts(self, atom_pairs):
         return self.add_contacts(atom_pairs)
 
-    def add_contacts(self, atom_pairs):
+    def add_contacts(self, atom_pairs, threshold = 5.0, periodic=True):
         """
         Adds the set of contacts to the feature list
-        :param atom_pairs:
+
+        Parameters
+        ----------
+        atom_pairs : ndarray((n, 2), dtype=int)
+            n x 2 array of pairs of atoms to compute contacts between
+        threshold : float, optional, default = 5.0
+            distances below this threshold will result in a feature 1.0, distances above will result in 0.0.
+            The default is set with Angstrom distances in mind.
+            Make sure that you know whether your coordinates are in Angstroms or nanometers when setting this threshold.
+
         """
         #assert atom_pairs.shape == ...
         #assert in_bounds , ... 
-        f = ContactFeature(self.topology, atom_pairs)
+        f = ContactFeature(self.topology, atom_pairs, threshold=threshold, periodic=periodic)
         self.active_features.append(f)
         self._dim += np.shape(atom_pairs)[0]
 
@@ -378,6 +431,7 @@ class MDFeaturizer(object):
         ----------
         indexes : np.ndarray, shape=(num_pairs, 3), dtype=int
             an array with triplets of atom indices
+
         """
         #assert indexes.shape == 
 
@@ -391,7 +445,8 @@ class MDFeaturizer(object):
 
     def add_backbone_torsions(self):
         """
-        Adds all backbone torsions
+        Adds all backbone phi/psi angles to the feature list.
+
         """
         f = BackboneTorsionFeature(self.topology)
         self.active_features.append(f)
@@ -399,12 +454,15 @@ class MDFeaturizer(object):
 
     def add_custom_feature(self, feature, output_dimension):
         """
+        Adds a custom feature to the feature list.
+
         Parameters
         ----------
         feature : object
             an object with interface like CustomFeature (map, describe methods)
         output_dimension : int
             a mapped feature coming from has this dimension.
+
         """
         assert output_dimension > 0, "tried to add empty feature"
         assert hasattr(feature, 'map'), "no map method in given feature"
@@ -414,13 +472,31 @@ class MDFeaturizer(object):
         self._dim += output_dimension
 
     def dimension(self):
-        """ current dimension due to selected features """
+        """ current dimension due to selected features
+
+        Returns
+        -------
+        dim : int
+            total dimension due to all selection features
+
+        """
         return self._dim
 
     def map(self, traj):
         """
-        Computes the features for the given trajectory
-        :return:
+        Maps an mdtraj Trajectory object to the selected output features
+
+        Parameters
+        ----------
+        traj : mdtraj Trajectory
+            Trajectory object used as an input
+
+        Returns
+        -------
+        out : ndarray( ( T, n ), dtype = float32 )
+            Output features: For each of T time steps in the given trajectory, a vector with all n output features
+            selected.
+
         """
         # if there are no features selected, return given trajectory
         if self._dim == 0:
