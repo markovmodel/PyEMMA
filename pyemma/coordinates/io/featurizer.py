@@ -533,10 +533,11 @@ class MDFeaturizer(object):
         # otherwise build feature vector.
         feature_vec = []
 
-        # only iterate over unique
-        # TODO: implement __hash__ and __eq__, see
-        # https://stackoverflow.com/questions/2038010/sets-of-instances
-        for f in set(self.active_features):
+        # FN: removed this because it does more harm than good. Sets are not ordered, and therefore the features may
+        # come in an unexpected sequence!
+        # for f in set(self.active_features):
+
+        for f in self.active_features:
             feature_vec.append(f.map(traj).astype(np.float32))
 
         return np.hstack(feature_vec)
