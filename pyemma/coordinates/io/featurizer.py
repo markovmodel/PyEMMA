@@ -368,10 +368,14 @@ class MDFeaturizer(object):
 
     def __init__(self, topfile):
         self.topology = (mdtraj.load(topfile)).topology
-        # TODO: use an ordered data strcture here to get reproducible order of
-        # feature vector
-        self.active_features = set()
+        self.active_features = []
         self._dim = 0
+
+    def __add_feature(self, f):
+        if f not in self.active_features:
+            self.active_features.append(f)
+        else:
+            log.warning("tried to re-add the same feature.")
 
     def describe(self):
         """
@@ -395,7 +399,8 @@ class MDFeaturizer(object):
         Parameters
         ----------
         selstring : str
-            Selection string. See mdtraj documentation for details: http://mdtraj.org/latest/atom_selection.html
+            Selection string. See mdtraj documentation for details:
+            http://mdtraj.org/latest/atom_selection.html
 
         Returns
         -------
@@ -513,7 +518,7 @@ class MDFeaturizer(object):
         """
         # TODO: add possibility to align to a reference structure
         f = SelectionFeature(self.topology, indexes)
-        self.active_features.add(f)
+        self.__add_feature(f)
 
     @deprecated
     def distances(self, atom_pairs):
@@ -531,7 +536,7 @@ class MDFeaturizer(object):
         """
         atom_pairs = self._check_indices(atom_pairs)
         f = DistanceFeature(self.topology, atom_pairs, periodic=periodic)
-        self.active_features.add(f)
+        self.__add_feature(f)
 
     @deprecated
     def distancesCa(self):
@@ -561,7 +566,7 @@ class MDFeaturizer(object):
         """
         atom_pairs = self._check_indices(atom_pairs)
         f = InverseDistanceFeature(self.topology, atom_pairs, periodic=True)
-        self.active_features.add(f)
+        self.__add_feature(f)
 
     @deprecated
     def contacts(self, atom_pairs):
@@ -581,7 +586,7 @@ class MDFeaturizer(object):
             Make sure that you know whether your coordinates are in Angstroms or nanometers when setting this threshold.
         """
         f = ContactFeature(self.topology, atom_pairs, threshold, periodic)
-        self.active_features.add(f)
+        self.__add_feature(f)
 
     @deprecated
     def angles(self, indexes):
@@ -596,12 +601,13 @@ class MDFeaturizer(object):
         indexes : np.ndarray, shape=(num_pairs, 3), dtype=int
             an array with triplets of atom indices
         deg : bool, optional, default = False
-            If False (default), angles will be computed in radians. If True, angles will be computed in degrees.
+            If False (default), angles will be computed in radians.
+            If True, angles will be computed in degrees.
 
         """
         indexes = self._check_indices(indexes, pair_n=3)
         f = AngleFeature(self.topology, indexes, deg=deg)
-        self.active_features.add(f)
+        self.__add_feature(f)
 
     def add_dihedrals(self, indexes, deg=False):
         """
@@ -612,12 +618,13 @@ class MDFeaturizer(object):
         indexes : np.ndarray, shape=(num_pairs, 4), dtype=int
             an array with quadruplets of atom indices
         deg : bool, optional, default = False
-            If False (default), angles will be computed in radians. If True, angles will be computed in degrees.
+            If False (default), angles will be computed in radians.
+            If True, angles will be computed in degrees.
 
         """
 
         f = DihedralFeature(self.topology, indexes, deg=deg)
-        self.active_features.add(f)
+        self.__add_feature(f)
 
     @deprecated
     def backbone_torsions(self):
@@ -630,11 +637,12 @@ class MDFeaturizer(object):
         Parameters
         ----------
         deg : bool, optional, default = False
-            If False (default), angles will be computed in radians. If True, angles will be computed in degrees.
+            If False (default), angles will be computed in radians.
+            If True, angles will be computed in degrees.
 
         """
         f = BackboneTorsionFeature(self.topology, deg=deg)
-        self.active_features.add(f)
+        self.__add_feature(f)
 
     def add_custom_feature(self, feature):
         """
@@ -656,7 +664,7 @@ class MDFeaturizer(object):
             if not callable(getattr(feature, 'map')):
                 raise ValueError("map exists but is not a method")
 
-        self.active_features.add(feature)
+        self.__add_feature(feature)
 
     def dimension(self):
         """ current dimension due to selected features
@@ -684,8 +692,8 @@ class MDFeaturizer(object):
         Returns
         -------
         out : ndarray((T, n), dtype=float32)
-            Output features: For each of T time steps in the given trajectory, a vector with all n output features
-            selected.
+            Output features: For each of T time steps in the given trajectory, 
+            a vector with all n output features selected.
 
         """
         # if there are no features selected, return given trajectory

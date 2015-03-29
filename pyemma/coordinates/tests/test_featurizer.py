@@ -20,6 +20,10 @@ class TestFeaturizer(unittest.TestCase):
         self.traj = mdtraj.load(xtcfile, top=self.pdbfile)
         self.feat = MDFeaturizer(self.pdbfile)
 
+    def test_select_backbone(self):
+        # FIXME: 
+        inds = self.feat.select_Backbone()
+
     def test_select_all(self):
         self.feat.add_all()
         assert (self.feat.dimension() == self.traj.n_atoms * 3)
