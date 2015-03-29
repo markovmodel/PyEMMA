@@ -185,6 +185,35 @@ class AngleFeature:
             return rad
 
 
+class DihedralFeature:
+
+    def __init__(self, top, dih_indexes, deg=False):
+        self.top = top
+        self.dih_indexes = np.array(dih_indexes)
+        self.deg = deg
+
+    def describe(self):
+        labels = []
+        for quad in self.dih_indexes:
+            labels.append("DIH: %s - %s - %s - %s " %
+                          (_describe_atom(self.top, quad[0]),
+                           _describe_atom(self.top, quad[1]),
+                           _describe_atom(self.top, quad[2]),
+                           _describe_atom(self.top, quad[3])))
+
+        return labels
+
+    @property
+    def dimension(self):
+        return self.dih_indexes.shape[0]
+
+    def map(self, traj):
+        rad = mdtraj.compute_dihedrals(traj, self.dih_indexes)
+        if self.deg:
+            return np.rad2deg(rad)
+        else:
+            return rad
+
 class BackboneTorsionFeature:
 
     def __init__(self, topology, deg=False):
@@ -457,6 +486,23 @@ class MDFeaturizer(object):
         #assert indexes.shape == 
 
         f = AngleFeature(self.topology, indexes, deg=deg)
+        self.active_features.append(f)
+
+    def add_dihedrals(self, indexes, deg=False):
+        """
+        Adds the list of dihedrals to the feature list
+
+        Parameters
+        ----------
+        indexes : np.ndarray, shape=(num_pairs, 4), dtype=int
+            an array with quadruplets of atom indices
+        deg : bool, optional, default = False
+            If False (default), angles will be computed in radians. If True, angles will be computed in degrees.
+
+        """
+        #assert indexes.shape ==
+
+        f = DihedralFeature(self.topology, indexes, deg=deg)
         self.active_features.append(f)
 
     @deprecated

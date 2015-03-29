@@ -108,6 +108,28 @@ class TestFeaturizer(unittest.TestCase):
         assert(np.alltrue(Y >= -180.0))
         assert(np.alltrue(Y <= 180.0))
 
+    def test_dihedrals(self):
+        feat = MDFeaturizer(self.pdbfile)
+        sel = np.array([[1,2,5,6],
+                        [1,3,8,9],
+                        [2,9,10,12]], dtype=int)
+        feat.add_dihedrals(sel)
+        assert(feat.dimension == sel.shape[0])
+        Y = feat.map(self.traj)
+        assert(np.alltrue(Y >= -np.pi))
+        assert(np.alltrue(Y <= np.pi))
+
+    def test_dihedrals_deg(self):
+        feat = MDFeaturizer(self.pdbfile)
+        sel = np.array([[1,2,5,6],
+                        [1,3,8,9],
+                        [2,9,10,12]], dtype=int)
+        feat.add_dihedrals(sel, deg=True)
+        assert(feat.dimension == sel.shape[0])
+        Y = feat.map(self.traj)
+        assert(np.alltrue(Y >= -180.0))
+        assert(np.alltrue(Y <= 180.0))
+        
     def test_backbone_dihedrals(self):
         #TODO: test me
         pass
