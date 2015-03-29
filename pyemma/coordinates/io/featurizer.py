@@ -145,9 +145,10 @@ class ContactFeature(DistanceFeature):
 
 class AngleFeature:
 
-    def __init__(self, top, angle_indexes):
+    def __init__(self, top, angle_indexes, deg=False):
         self.top = top
         self.angle_indexes = np.array(angle_indexes)
+        self.deg = deg
 
     def describe(self):
         labels = []
@@ -160,13 +161,18 @@ class AngleFeature:
         return labels
 
     def map(self, traj):
-        return mdtraj.compute_angles(traj, self.angle_indexes)
+        rad = mdtraj.compute_angles(traj, self.angle_indexes)
+        if self.deg:
+            return np.rad2deg(rad)
+        else:
+            return rad
 
 
 class BackboneTorsionFeature:
 
-    def __init__(self, topology):
+    def __init__(self, topology, deg=False):
         self.topology = topology
+        self.deg = deg
 
         # this is needed for get_indices functions, since they expect a Trajectory,
         # not a Topology
@@ -196,7 +202,11 @@ class BackboneTorsionFeature:
     def map(self, traj):
         y1 = compute_dihedrals(traj, self._phi_inds).astype(np.float32)
         y2 = compute_dihedrals(traj, self._psi_inds).astype(np.float32)
-        return np.hstack((y1, y2))
+        rad = np.hstack((y1, y2))
+        if self.deg:
+            return np.rad2deg(rad)
+        else:
+            return rad
 
 
 class MDFeaturizer(object):
@@ -423,7 +433,7 @@ class MDFeaturizer(object):
     def angles(self, indexes):
         return self.add_angles(indexes)
 
-    def add_angles(self, indexes):
+    def add_angles(self, indexes, deg=False):
         """
         Adds the list of angles to the feature list
 
@@ -431,11 +441,13 @@ class MDFeaturizer(object):
         ----------
         indexes : np.ndarray, shape=(num_pairs, 3), dtype=int
             an array with triplets of atom indices
+        deg : bool, optional, default = False
+            If False (default), angles will be computed in radians. If True, angles will be computed in degrees.
 
         """
         #assert indexes.shape == 
 
-        f = AngleFeature(self.topology, indexes)
+        f = AngleFeature(self.topology, indexes, deg=deg)
         self.active_features.append(f)
         self._dim += np.shape(indexes)[0]
 
@@ -443,12 +455,17 @@ class MDFeaturizer(object):
     def backbone_torsions(self):
         return self.add_backbone_torsions()
 
-    def add_backbone_torsions(self):
+    def add_backbone_torsions(self, deg=False):
         """
         Adds all backbone phi/psi angles to the feature list.
 
+        Parameters
+        ----------
+        deg : bool, optional, default = False
+            If False (default), angles will be computed in radians. If True, angles will be computed in degrees.
+
         """
-        f = BackboneTorsionFeature(self.topology)
+        f = BackboneTorsionFeature(self.topology, deg=deg)
         self.active_features.append(f)
         self._dim += f.dim
 
