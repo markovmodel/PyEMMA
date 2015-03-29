@@ -538,7 +538,6 @@ class MDFeaturizer(object):
 
         self.active_features.append(feature)
 
-    @property
     def dimension(self):
         """ current dimension due to selected features
 

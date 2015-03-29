@@ -17,7 +17,7 @@ class TestFeaturizer(unittest.TestCase):
     def test_select_all(self):
         feat = MDFeaturizer(self.pdbfile)
         feat.add_all()
-        assert (feat.dimension == self.traj.n_atoms * 3)
+        assert (feat.dimension() == self.traj.n_atoms * 3)
         refmap = np.reshape(self.traj.xyz, (len(self.traj), self.traj.n_atoms * 3))
         assert (np.all(refmap == feat.map(self.traj)))
 
@@ -25,7 +25,7 @@ class TestFeaturizer(unittest.TestCase):
         feat = MDFeaturizer(self.pdbfile)
         sel = np.array([1,2,5,20], dtype=int)
         feat.add_selection(sel)
-        assert (feat.dimension == sel.shape[0] * 3)
+        assert (feat.dimension() == sel.shape[0] * 3)
         refmap = np.reshape(self.traj.xyz[:,sel,:], (len(self.traj), sel.shape[0] * 3))
         assert (np.all(refmap == feat.map(self.traj)))
 
@@ -37,7 +37,7 @@ class TestFeaturizer(unittest.TestCase):
         assert(pairs.shape == pairs_expected.shape)
         assert(np.all(pairs == pairs_expected))
         feat.add_distances(pairs, periodic=False) # unperiodic distances such that we can compare
-        assert(feat.dimension == pairs_expected.shape[0])
+        assert(feat.dimension() == pairs_expected.shape[0])
         X = self.traj.xyz[:,pairs_expected[:,0],:]
         Y = self.traj.xyz[:,pairs_expected[:,1],:]
         D = np.sqrt(np.sum((X - Y) ** 2, axis=2))
@@ -51,7 +51,7 @@ class TestFeaturizer(unittest.TestCase):
         assert(pairs.shape == pairs_expected.shape)
         assert(np.all(pairs == pairs_expected))
         feat.add_inverse_distances(pairs, periodic=False) # unperiodic distances such that we can compare
-        assert(feat.dimension == pairs_expected.shape[0])
+        assert(feat.dimension() == pairs_expected.shape[0])
         X = self.traj.xyz[:,pairs_expected[:,0],:]
         Y = self.traj.xyz[:,pairs_expected[:,1],:]
         Dinv = 1.0/np.sqrt(np.sum((X - Y) ** 2, axis=2))
@@ -63,7 +63,7 @@ class TestFeaturizer(unittest.TestCase):
         assert(np.all(sel == range(self.traj.n_atoms))) # should be all for this Ca-traj
         pairs = feat.pairs(sel)
         feat.add_distances_ca(periodic=False) # unperiodic distances such that we can compare
-        assert(feat.dimension == pairs.shape[0])
+        assert(feat.dimension() == pairs.shape[0])
         X = self.traj.xyz[:,pairs[:,0],:]
         Y = self.traj.xyz[:,pairs[:,1],:]
         D = np.sqrt(np.sum((X - Y) ** 2, axis=2))
@@ -77,7 +77,7 @@ class TestFeaturizer(unittest.TestCase):
         assert(pairs.shape == pairs_expected.shape)
         assert(np.all(pairs == pairs_expected))
         feat.add_contacts(pairs, threshold=0.5, periodic=False) # unperiodic distances such that we can compare
-        assert(feat.dimension == pairs_expected.shape[0])
+        assert(feat.dimension() == pairs_expected.shape[0])
         X = self.traj.xyz[:,pairs_expected[:,0],:]
         Y = self.traj.xyz[:,pairs_expected[:,1],:]
         D = np.sqrt(np.sum((X - Y) ** 2, axis=2))
@@ -92,7 +92,7 @@ class TestFeaturizer(unittest.TestCase):
                         [1,3,8],
                         [2,9,10]], dtype=int)
         feat.add_angles(sel)
-        assert(feat.dimension == sel.shape[0])
+        assert(feat.dimension() == sel.shape[0])
         Y = feat.map(self.traj)
         assert(np.alltrue(Y >= -np.pi))
         assert(np.alltrue(Y <= np.pi))
@@ -103,7 +103,7 @@ class TestFeaturizer(unittest.TestCase):
                         [1,3,8],
                         [2,9,10]], dtype=int)
         feat.add_angles(sel, deg=True)
-        assert(feat.dimension == sel.shape[0])
+        assert(feat.dimension() == sel.shape[0])
         Y = feat.map(self.traj)
         assert(np.alltrue(Y >= -180.0))
         assert(np.alltrue(Y <= 180.0))
@@ -114,7 +114,7 @@ class TestFeaturizer(unittest.TestCase):
                         [1,3,8,9],
                         [2,9,10,12]], dtype=int)
         feat.add_dihedrals(sel)
-        assert(feat.dimension == sel.shape[0])
+        assert(feat.dimension() == sel.shape[0])
         Y = feat.map(self.traj)
         assert(np.alltrue(Y >= -np.pi))
         assert(np.alltrue(Y <= np.pi))
@@ -125,11 +125,11 @@ class TestFeaturizer(unittest.TestCase):
                         [1,3,8,9],
                         [2,9,10,12]], dtype=int)
         feat.add_dihedrals(sel, deg=True)
-        assert(feat.dimension == sel.shape[0])
+        assert(feat.dimension() == sel.shape[0])
         Y = feat.map(self.traj)
         assert(np.alltrue(Y >= -180.0))
         assert(np.alltrue(Y <= 180.0))
-        
+
     def test_backbone_dihedrals(self):
         #TODO: test me
         pass
