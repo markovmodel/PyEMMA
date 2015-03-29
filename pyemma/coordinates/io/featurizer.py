@@ -73,6 +73,30 @@ class CustomFeature(object):
         return feature
 
 
+class SelectionFeature:
+    """
+    Just provide the cartesian coordinates of a selection of atoms (could be simply all atoms).
+    The coordinates are flattened as follows: [x1, y1, z1, x2, y2, z2, ...]
+
+    """
+    #TODO: Needs an orientation option
+
+    def __init__(self, top, indexes):
+        self.top = top
+        self.indexes = np.array(indexes)
+        self.prefix_label = "ATOM:"
+
+    def describe(self):
+        labels = []
+        for i in self.indexes:
+            labels.append("%s%s" % (self.prefix_label, _describe_atom(self.top, i)))
+        return labels
+
+    def map(self, traj):
+        newshape = (traj.xyz.shape[0], 3*self.indexes.shape[0])
+        return np.reshape(traj.xyz[:,self.indexes,:], newshape)
+
+
 class DistanceFeature:
 
     def __init__(self, top, distance_indexes):
@@ -83,9 +107,9 @@ class DistanceFeature:
     def describe(self):
         labels = []
         for pair in self.distance_indexes:
-            labels.append("%s%s - %s" % (self.prefix_label,
-                                         _describe_atom(self.top, pair[0]),
-                                         _describe_atom(self.top, pair[1])))
+            labels.append("%s %s - %s" % (self.prefix_label,
+                                          _describe_atom(self.top, pair[0]),
+                                          _describe_atom(self.top, pair[1])))
         return labels
 
     def map(self, traj):
@@ -100,6 +124,40 @@ class InverseDistanceFeature(DistanceFeature):
 
     def map(self, traj):
         return 1.0 / mdtraj.compute_distances(traj, self.distance_indexes)
+
+
+class ContactFeature(DistanceFeature):
+
+    def __init__(self, top, distance_indexes, threshold):
+        DistanceFeature.__init__(self, top, distance_indexes)
+        self.prefix_label = "CONTACT:"
+        self.threshold = threshold
+
+    def map(self, traj):
+        dists = mdtraj.compute_distances(traj, self.distance_indexes)
+        res = np.zeros((len(traj), self.distance_indexes.shape[0]), dtype=np.float32)
+        I = np.argwhere(dists > self.threshold)[0]
+        res[I] = 1.0
+
+
+class AngleFeature:
+
+    def __init__(self, top, angle_indexes):
+        self.top = top
+        self.angle_indexes = np.array(angle_indexes)
+
+    def describe(self):
+        labels = []
+        for triple in self.angle_indexes:
+            labels.append("ANGLE: %s - %s - %s " %
+                          (_describe_atom(self.top, triple[0]),
+                           _describe_atom(self.top, triple[1]),
+                           _describe_atom(self.top, triple[2])))
+
+        return labels
+
+    def map(self, traj):
+        return mdtraj.compute_angles(traj, self.angle_indexes)
 
 
 class BackboneTorsionFeature:
@@ -152,10 +210,10 @@ class MDFeaturizer(object):
     def __init__(self, topfile):
         self.topology = (mdtraj.load(topfile)).topology
 
-        self.distance_indexes = []
-        self.inv_distance_indexes = []
-        self.contact_indexes = []
-        self.angle_indexes = []
+        #self.distance_indexes = []
+        #self.inv_distance_indexes = []
+        #self.contact_indexes = []
+        #self.angle_indexes = []
 
         self.active_features = []
         self._dim = 0
@@ -227,6 +285,30 @@ class MDFeaturizer(object):
 
         return pairs
 
+    def add_all(self):
+        """
+        Adds all atom coordinates to the feature list.
+        The coordinates are flattened as follows: [x1, y1, z1, x2, y2, z2, ...]
+
+        :param indexes:
+        :return:
+        """
+        # TODO: add possibility to align to a reference structure
+        self.add_selection(range(self.topology.n_atoms))
+
+    def add_selection(self, indexes):
+        """
+        Adds the selected atom coordinates to the feature list.
+        The coordinates are flattened as follows: [x1, y1, z1, x2, y2, z2, ...]
+
+        :param indexes:
+        :return:
+        """
+        # TODO: add possibility to align to a reference structure
+        f = SelectionFeature(self.topology, indexes)
+        self.active_features.append(f)
+        self._dim += np.shape(indexes)[0]
+
     @deprecated
     def distances(self, atom_pairs):
         return self.add_distances(atom_pairs)
@@ -237,9 +319,7 @@ class MDFeaturizer(object):
         :param atom_pairs:
         """
         #assert atom_pairs.shape ==...
-        # TODO: shall we instead append here?
-        self.distance_indexes = atom_pairs
-        f = DistanceFeature(self.topology, distance_indexes=atom_pairs)
+        f = DistanceFeature(self.topology, atom_pairs)
         self.active_features.append(f)
         self._dim += np.shape(atom_pairs)[0]
 
@@ -251,11 +331,10 @@ class MDFeaturizer(object):
         """
         Adds the set of Ca-distances to the feature list
         """
-        self.distance_indexes = self.pairs(self.select_Ca())
-
-        f = DistanceFeature(self.topology, atom_pairs=self.distance_indexes)
+        distance_indexes = self.pairs(self.select_Ca())
+        f = DistanceFeature(self.topology, distance_indexes)
         self.active_features.append(f)
-        self._dim += np.shape(self.distance_indexes)[0]
+        self._dim += np.shape(distance_indexes)[0]
 
     @deprecated
     def inverse_distances(self, atom_pairs):
@@ -267,11 +346,9 @@ class MDFeaturizer(object):
 
         :param atom_pairs:
         """
-        self.inv_distance_indexes = atom_pairs
-
-        f = InverseDistanceFeature(atom_pairs=self.inv_distance_indexes)
+        f = InverseDistanceFeature(self.topology, atom_pairs)
         self.active_features.append(f)
-        self._dim += np.shape(self.distance_indexes)[0]
+        self._dim += np.shape(atom_pairs)[0]
 
     @deprecated
     def contacts(self, atom_pairs):
@@ -284,19 +361,9 @@ class MDFeaturizer(object):
         """
         #assert atom_pairs.shape == ...
         #assert in_bounds , ... 
-        f = CustomFeature(mdtraj.compute_contacts, atom_pairs=atom_pairs)
-
-        def describe():
-            labels = []
-            for pair in self.contact_indexes:
-                labels.append("CONTACT: %s - %s" % (_describe_atom(self.topology, pair[0]),
-                                                    _describe_atom(self.topology, pair[1])))
-            return labels
-        f.describe = describe
-        f.topology = self.topology
-
-        self._dim += np.shape(atom_pairs)[0]
+        f = ContactFeature(self.topology, atom_pairs)
         self.active_features.append(f)
+        self._dim += np.shape(atom_pairs)[0]
 
     @deprecated
     def angles(self, indexes):
@@ -313,23 +380,8 @@ class MDFeaturizer(object):
         """
         #assert indexes.shape == 
 
-        f = CustomFeature(mdtraj.compute_angles, indexes=indexes)
-
-        def describe():
-            labels = []
-            for triple in self.angle_indexes:
-                labels.append("ANGLE: %s - %s - %s " %
-                              (_describe_atom(self.topology, triple[0]),
-                               _describe_atom(self.topology, triple[1]),
-                               _describe_atom(self.topology, triple[2])))
-
-            return labels
-
-        f.describe = describe
-        f.topology = self.topology
-
+        f = AngleFeature(self.topology, indexes)
         self.active_features.append(f)
-        self.angle_indexes = indexes
         self._dim += np.shape(indexes)[0]
 
     @deprecated
@@ -342,7 +394,6 @@ class MDFeaturizer(object):
         """
         f = BackboneTorsionFeature(self.topology)
         self.active_features.append(f)
-        log.debug("adding %i torsions angles" % f.dim)
         self._dim += f.dim
 
     def add_custom_feature(self, feature, output_dimension):
