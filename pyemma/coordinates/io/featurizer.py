@@ -1,4 +1,3 @@
-from pyemma.util.annotators import deprecated
 __author__ = 'Frank Noe, Martin Scherer'
 
 import mdtraj
@@ -9,6 +8,7 @@ import numpy as np
 import warnings
 
 from pyemma.util.log import getLogger
+from pyemma.util.annotators import deprecated
 
 log = getLogger('Featurizer')
 
@@ -86,14 +86,13 @@ class CustomFeature(object):
         self._func = func
         self._args = args
         self._kwargs = kwargs
+        if 'dim' in kwargs:
+            self.dimension = kwargs['dim']
+        else:
+            self.dimension = 0
 
     def describe(self):
         return ["override me to get proper description!"]
-
-    @property
-    def dimension(self):
-        # override me to get correct dimension
-        return 0
 
     def map(self, traj):
         feature = self._func(traj, self._args, self._kwargs)
@@ -112,13 +111,15 @@ class CustomFeature(object):
     def __eq__(self, other):
         return self.__hash__() == other.__hash__()
 
-class SelectionFeature:
+
+class SelectionFeature(object):
+
     """
     Just provide the cartesian coordinates of a selection of atoms (could be simply all atoms).
     The coordinates are flattened as follows: [x1, y1, z1, x2, y2, z2, ...]
 
     """
-    #TODO: Needs an orientation option
+    # TODO: Needs an orientation option
 
     def __init__(self, top, indexes):
         self.top = top
@@ -126,19 +127,24 @@ class SelectionFeature:
         self.prefix_label = "ATOM:"
 
     def describe(self):
-        labels = []
-        for i in self.indexes:
-            labels.append("%s%s" % (self.prefix_label, _describe_atom(self.top, i)))
+        labels = ["%s%s" % (self.prefix_label, _describe_atom(self.top, i))
+                  for i in self.indexes]
         return labels
 
     @property
     def dimension(self):
-        return 3*self.indexes.shape[0]
+        return 3 * self.indexes.shape[0]
 
     def map(self, traj):
-        newshape = (traj.xyz.shape[0], 3*self.indexes.shape[0])
-        return np.reshape(traj.xyz[:,self.indexes,:], newshape)
+        newshape = (traj.xyz.shape[0], 3 * self.indexes.shape[0])
+        return np.reshape(traj.xyz[:, self.indexes, :], newshape)
 
+    def __hash__(self):
+        hash_value = hash(self.top)
+        hash_value |= _hash_numpy_array(self.indexes)
+        hash_value |= hash(self.prefix_label)
+
+        return hash_value
 
     def __eq__(self, other):
         return self.__hash__() == other.__hash__()
@@ -179,7 +185,8 @@ class DistanceFeature(object):
 class InverseDistanceFeature(DistanceFeature):
 
     def __init__(self, top, distance_indexes, periodic=True):
-        DistanceFeature.__init__(self, top, distance_indexes, periodic=periodic)
+        DistanceFeature.__init__(
+            self, top, distance_indexes, periodic=periodic)
         self.prefix_label = "INVDIST:"
 
     def map(self, traj):
@@ -187,23 +194,31 @@ class InverseDistanceFeature(DistanceFeature):
 
     # does not need own hash impl, since we take prefix label into account
 
+
 class ContactFeature(DistanceFeature):
 
-    def __init__(self, top, distance_indexes, threshold = 5.0, periodic=True):
+    def __init__(self, top, distance_indexes, threshold=5.0, periodic=True):
         DistanceFeature.__init__(self, top, distance_indexes)
         self.prefix_label = "CONTACT:"
         self.threshold = threshold
         self.periodic = periodic
 
     def map(self, traj):
-        dists = mdtraj.compute_distances(traj, self.distance_indexes, periodic=self.periodic)
-        res = np.zeros((len(traj), self.distance_indexes.shape[0]), dtype=np.float32)
+        dists = mdtraj.compute_distances(
+            traj, self.distance_indexes, periodic=self.periodic)
+        res = np.zeros(
+            (len(traj), self.distance_indexes.shape[0]), dtype=np.float32)
         I = np.argwhere(dists <= self.threshold)
-        res[I[:,0],I[:,1]] = 1.0
+        res[I[:, 0], I[:, 1]] = 1.0
         return res
 
+    def __hash__(self):
+        hash_value = DistanceFeature.__hash__(self)
+        hash_value |= hash(self.threshold)
+        return hash_value
 
-class AngleFeature:
+
+class AngleFeature(object):
 
     def __init__(self, top, angle_indexes, deg=False):
         self.top = top
@@ -211,12 +226,12 @@ class AngleFeature:
         self.deg = deg
 
     def describe(self):
-        labels = []
-        for triple in self.angle_indexes:
-            labels.append("ANGLE: %s - %s - %s " %
-                          (_describe_atom(self.top, triple[0]),
-                           _describe_atom(self.top, triple[1]),
-                           _describe_atom(self.top, triple[2])))
+        labels = ["ANGLE: %s - %s - %s " %
+                  (_describe_atom(self.top, triple[0]),
+                   _describe_atom(self.top, triple[1]),
+                   _describe_atom(self.top, triple[2]))
+                  for triple in self.angle_indexes
+                  ]
 
         return labels
 
@@ -231,8 +246,18 @@ class AngleFeature:
         else:
             return rad
 
+    def __hash__(self):
+        hash_value = _hash_numpy_array(self.angle_indexes)
+        hash_value |= hash(self.top)
+        hash_value |= hash(self.deg)
 
-class DihedralFeature:
+        return hash_value
+
+    def __eq__(self, other):
+        return self.__hash__() == other.__hash__()
+
+
+class DihedralFeature(object):
 
     def __init__(self, top, dih_indexes, deg=False):
         self.top = top
@@ -240,14 +265,13 @@ class DihedralFeature:
         self.deg = deg
 
     def describe(self):
-        labels = []
-        for quad in self.dih_indexes:
-            labels.append("DIH: %s - %s - %s - %s " %
-                          (_describe_atom(self.top, quad[0]),
-                           _describe_atom(self.top, quad[1]),
-                           _describe_atom(self.top, quad[2]),
-                           _describe_atom(self.top, quad[3])))
-
+        labels = ["DIH: %s - %s - %s - %s " %
+                  (_describe_atom(self.top, quad[0]),
+                   _describe_atom(self.top, quad[1]),
+                   _describe_atom(self.top, quad[2]),
+                   _describe_atom(self.top, quad[3]))
+                  for quad in self.dih_indexes
+                  ]
         return labels
 
     @property
@@ -261,7 +285,19 @@ class DihedralFeature:
         else:
             return rad
 
-class BackboneTorsionFeature:
+    def __hash__(self):
+        hash_value = _hash_numpy_array(self.dih_indexes)
+        hash_value |= hash(self.top)
+        hash_value |= hash(self.deg)
+
+        return hash_value
+
+    def __eq__(self, other):
+        return hash(self) == hash(other)
+
+
+class BackboneTorsionFeature(object):
+    # TODO: maybe consider this as a special case of DihedralFeature?
 
     def __init__(self, topology, deg=False):
         self.topology = topology
@@ -270,6 +306,7 @@ class BackboneTorsionFeature:
         # this is needed for get_indices functions, since they expect a Trajectory,
         # not a Topology
         class fake_traj():
+
             def __init__(self, top):
                 self.top = top
 
@@ -297,6 +334,8 @@ class BackboneTorsionFeature:
         return self._dim
 
     def map(self, traj):
+        # TODO: can we merge phi_inds and psi_inds to only call
+        # compute_dihedrals once?
         y1 = compute_dihedrals(traj, self._phi_inds).astype(np.float32)
         y2 = compute_dihedrals(traj, self._psi_inds).astype(np.float32)
         rad = np.hstack((y1, y2))
@@ -329,6 +368,8 @@ class MDFeaturizer(object):
 
     def __init__(self, topfile):
         self.topology = (mdtraj.load(topfile)).topology
+        # TODO: use an ordered data strcture here to get reproducible order of
+        # feature vector
         self.active_features = set()
         self._dim = 0
 
@@ -420,7 +461,7 @@ class MDFeaturizer(object):
         """
         p = []
         for i in range(len(sel)):
-            for j in range(i+1,len(sel)):
+            for j in range(i + 1, len(sel)):
                 # get ordered pair
                 I = sel[i]
                 J = sel[j]
@@ -428,12 +469,11 @@ class MDFeaturizer(object):
                     I = sel[j]
                     J = sel[i]
                 # exclude 1 and 2 neighbors
-                if (J > I+2):
-                    p.append([I,J])
+                if (J > I + 2):
+                    p.append([I, J])
         return np.array(p)
 
-    @staticmethod
-    def _check_indices(pair_inds, pair_n=2):
+    def _check_indices(self, pair_inds, pair_n=2):
         """ensure pairs are valid (shapes, all atom indices available?, etc.) 
         """
         pair_inds = np.array(pair_inds)
@@ -473,7 +513,7 @@ class MDFeaturizer(object):
         """
         # TODO: add possibility to align to a reference structure
         f = SelectionFeature(self.topology, indexes)
-        self.active_features.append(f)
+        self.active_features.add(f)
 
     @deprecated
     def distances(self, atom_pairs):
@@ -485,7 +525,7 @@ class MDFeaturizer(object):
 
         Parameters
         ----------
-        atom_pairs : ndarray((n,2), dtype=int)
+        atom_pairs : ndarray((n, 2), dtype=int)
             n x 2 array with pairs of atoms between which the distances shall be computed
 
         """
@@ -512,7 +552,7 @@ class MDFeaturizer(object):
     def add_inverse_distances(self, atom_pairs, periodic=True):
         """
         Adds the inverse distances between the given pairs of atoms to the feature list.
-        
+
         Parameters
         ----------
         atom_pairs : ndarray((n,2), dtype=int)
@@ -527,7 +567,7 @@ class MDFeaturizer(object):
     def contacts(self, atom_pairs):
         return self.add_contacts(atom_pairs)
 
-    def add_contacts(self, atom_pairs, threshold = 5.0, periodic=True):
+    def add_contacts(self, atom_pairs, threshold=5.0, periodic=True):
         """
         Adds the set of contacts to the feature list
 
@@ -539,12 +579,9 @@ class MDFeaturizer(object):
             distances below this threshold will result in a feature 1.0, distances above will result in 0.0.
             The default is set with Angstrom distances in mind.
             Make sure that you know whether your coordinates are in Angstroms or nanometers when setting this threshold.
-
-        if f not in self.active_features:
-            self._dim += np.shape(atom_pairs)[0]
-            self.active_features.add(f)
-        else:
-            log.warning("tried to add duplicate feature")
+        """
+        f = ContactFeature(self.topology, atom_pairs, threshold, periodic)
+        self.active_features.add(f)
 
     @deprecated
     def angles(self, indexes):
@@ -564,7 +601,7 @@ class MDFeaturizer(object):
         """
         indexes = self._check_indices(indexes, pair_n=3)
         f = AngleFeature(self.topology, indexes, deg=deg)
-        self.active_features.append(f)
+        self.active_features.add(f)
 
     def add_dihedrals(self, indexes, deg=False):
         """
@@ -578,7 +615,6 @@ class MDFeaturizer(object):
             If False (default), angles will be computed in radians. If True, angles will be computed in degrees.
 
         """
-
 
         f = DihedralFeature(self.topology, indexes, deg=deg)
         self.active_features.add(f)
@@ -611,7 +647,8 @@ class MDFeaturizer(object):
 
         """
         if feature.dimension <= 0:
-            raise ValueError("output_dimension has to be positive")
+            raise ValueError("Dimension has to be positive. "
+                             "Please override dimension attribute in feature!")
 
         if not hasattr(feature, 'map'):
             raise ValueError("no map method in given feature")
@@ -619,11 +656,7 @@ class MDFeaturizer(object):
             if not callable(getattr(feature, 'map')):
                 raise ValueError("map exists but is not a method")
 
-        if feature not in self.active_features:
-            self.active_features.add(feature)
-            self._dim += output_dimension
-        else:
-            log.warning("tried to add duplicate feature")
+        self.active_features.add(feature)
 
     def dimension(self):
         """ current dimension due to selected features
@@ -657,7 +690,8 @@ class MDFeaturizer(object):
         """
         # if there are no features selected, return given trajectory
         if len(self.active_features) == 0:
-            warnings.warn("You have no features selected. Returning plain coordinates.")
+            warnings.warn(
+                "You have no features selected. Returning plain coordinates.")
             return traj.xyz
 
         # TODO: define preprocessing step (RMSD etc.)

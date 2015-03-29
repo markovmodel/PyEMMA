@@ -4,162 +4,157 @@ import numpy as np
 import os
 import mdtraj
 
-from pyemma.coordinates.io.featurizer import MDFeaturizer
+from pyemma.coordinates.io import featurizer as ft
+from pyemma.coordinates.io.featurizer import MDFeaturizer, CustomFeature
+from pyemma.coordinates.tests.test_discretizer import create_water_topology_on_disc
+
+path = os.path.join(os.path.split(__file__)[0],'data')
+xtcfile = os.path.join(path, 'bpti_mini.xtc')
+pdbfile = os.path.join(path, 'bpti_ca.pdb')
+
 
 class TestFeaturizer(unittest.TestCase):
 
     def setUp(self):
-        path = os.path.join(os.path.split(__file__)[0],'data')
-        xtcfile = os.path.join(path, 'bpti_mini.xtc')
-        self.pdbfile = os.path.join(path, 'bpti_ca.pdb')
+        self.pdbfile = pdbfile
         self.traj = mdtraj.load(xtcfile, top=self.pdbfile)
+        self.feat = MDFeaturizer(self.pdbfile)
 
     def test_select_all(self):
-        feat = MDFeaturizer(self.pdbfile)
-        feat.add_all()
-        assert (feat.dimension() == self.traj.n_atoms * 3)
+        self.feat.add_all()
+        assert (self.feat.dimension() == self.traj.n_atoms * 3)
         refmap = np.reshape(self.traj.xyz, (len(self.traj), self.traj.n_atoms * 3))
-        assert (np.all(refmap == feat.map(self.traj)))
+        assert (np.all(refmap == self.feat.map(self.traj)))
 
     def test_select(self):
-        feat = MDFeaturizer(self.pdbfile)
         sel = np.array([1,2,5,20], dtype=int)
-        feat.add_selection(sel)
-        assert (feat.dimension() == sel.shape[0] * 3)
+        self.feat.add_selection(sel)
+        assert (self.feat.dimension() == sel.shape[0] * 3)
         refmap = np.reshape(self.traj.xyz[:,sel,:], (len(self.traj), sel.shape[0] * 3))
-        assert (np.all(refmap == feat.map(self.traj)))
+        assert (np.all(refmap == self.feat.map(self.traj)))
 
     def test_distances(self):
-        feat = MDFeaturizer(self.pdbfile)
         sel = np.array([1,2,5,20], dtype=int)
         pairs_expected = np.array([[1,5],[1,20],[2,5],[2,20],[5,20]])
-        pairs = feat.pairs(sel)
+        pairs = self.feat.pairs(sel)
         assert(pairs.shape == pairs_expected.shape)
         assert(np.all(pairs == pairs_expected))
-        feat.add_distances(pairs, periodic=False) # unperiodic distances such that we can compare
-        assert(feat.dimension() == pairs_expected.shape[0])
+        self.feat.add_distances(pairs, periodic=False) # unperiodic distances such that we can compare
+        assert(self.feat.dimension() == pairs_expected.shape[0])
         X = self.traj.xyz[:,pairs_expected[:,0],:]
         Y = self.traj.xyz[:,pairs_expected[:,1],:]
         D = np.sqrt(np.sum((X - Y) ** 2, axis=2))
-        assert(np.allclose(D, feat.map(self.traj)))
+        assert(np.allclose(D, self.feat.map(self.traj)))
 
     def test_inverse_distances(self):
-        feat = MDFeaturizer(self.pdbfile)
         sel = np.array([1,2,5,20], dtype=int)
         pairs_expected = np.array([[1,5],[1,20],[2,5],[2,20],[5,20]])
-        pairs = feat.pairs(sel)
+        pairs = self.feat.pairs(sel)
         assert(pairs.shape == pairs_expected.shape)
         assert(np.all(pairs == pairs_expected))
-        feat.add_inverse_distances(pairs, periodic=False) # unperiodic distances such that we can compare
-        assert(feat.dimension() == pairs_expected.shape[0])
+        self.feat.add_inverse_distances(pairs, periodic=False) # unperiodic distances such that we can compare
+        assert(self.feat.dimension() == pairs_expected.shape[0])
         X = self.traj.xyz[:,pairs_expected[:,0],:]
         Y = self.traj.xyz[:,pairs_expected[:,1],:]
         Dinv = 1.0/np.sqrt(np.sum((X - Y) ** 2, axis=2))
-        assert(np.allclose(Dinv, feat.map(self.traj)))
+        assert(np.allclose(Dinv, self.feat.map(self.traj)))
 
     def test_ca_distances(self):
-        feat = MDFeaturizer(self.pdbfile)
-        sel = feat.select_Ca()
+        sel = self.feat.select_Ca()
         assert(np.all(sel == range(self.traj.n_atoms))) # should be all for this Ca-traj
-        pairs = feat.pairs(sel)
-        feat.add_distances_ca(periodic=False) # unperiodic distances such that we can compare
-        assert(feat.dimension() == pairs.shape[0])
+        pairs = self.feat.pairs(sel)
+        self.feat.add_distances_ca(periodic=False) # unperiodic distances such that we can compare
+        assert(self.feat.dimension() == pairs.shape[0])
         X = self.traj.xyz[:,pairs[:,0],:]
         Y = self.traj.xyz[:,pairs[:,1],:]
         D = np.sqrt(np.sum((X - Y) ** 2, axis=2))
-        assert(np.allclose(D, feat.map(self.traj)))
+        assert(np.allclose(D, self.feat.map(self.traj)))
 
     def test_contacts(self):
-        feat = MDFeaturizer(self.pdbfile)
         sel = np.array([1,2,5,20], dtype=int)
         pairs_expected = np.array([[1,5],[1,20],[2,5],[2,20],[5,20]])
-        pairs = feat.pairs(sel)
+        pairs = self.feat.pairs(sel)
         assert(pairs.shape == pairs_expected.shape)
         assert(np.all(pairs == pairs_expected))
-        feat.add_contacts(pairs, threshold=0.5, periodic=False) # unperiodic distances such that we can compare
-        assert(feat.dimension() == pairs_expected.shape[0])
+        self.feat.add_contacts(pairs, threshold=0.5, periodic=False) # unperiodic distances such that we can compare
+        assert(self.feat.dimension() == pairs_expected.shape[0])
         X = self.traj.xyz[:,pairs_expected[:,0],:]
         Y = self.traj.xyz[:,pairs_expected[:,1],:]
         D = np.sqrt(np.sum((X - Y) ** 2, axis=2))
         C = np.zeros(D.shape)
         I = np.argwhere(D <= 0.5)
         C[I[:,0],I[:,1]] = 1.0
-        assert(np.allclose(C, feat.map(self.traj)))
+        assert(np.allclose(C, self.feat.map(self.traj)))
 
     def test_angles(self):
-        feat = MDFeaturizer(self.pdbfile)
         sel = np.array([[1,2,5],
                         [1,3,8],
                         [2,9,10]], dtype=int)
-        feat.add_angles(sel)
-        assert(feat.dimension() == sel.shape[0])
-        Y = feat.map(self.traj)
+        self.feat.add_angles(sel)
+        assert(self.feat.dimension() == sel.shape[0])
+        Y = self.feat.map(self.traj)
         assert(np.alltrue(Y >= -np.pi))
         assert(np.alltrue(Y <= np.pi))
 
     def test_angles_deg(self):
-        feat = MDFeaturizer(self.pdbfile)
         sel = np.array([[1,2,5],
                         [1,3,8],
                         [2,9,10]], dtype=int)
-        feat.add_angles(sel, deg=True)
-        assert(feat.dimension() == sel.shape[0])
-        Y = feat.map(self.traj)
+        self.feat.add_angles(sel, deg=True)
+        assert(self.feat.dimension() == sel.shape[0])
+        Y = self.feat.map(self.traj)
         assert(np.alltrue(Y >= -180.0))
         assert(np.alltrue(Y <= 180.0))
 
     def test_dihedrals(self):
-        feat = MDFeaturizer(self.pdbfile)
         sel = np.array([[1,2,5,6],
                         [1,3,8,9],
                         [2,9,10,12]], dtype=int)
-        feat.add_dihedrals(sel)
-        assert(feat.dimension() == sel.shape[0])
-        Y = feat.map(self.traj)
+        self.feat.add_dihedrals(sel)
+        assert(self.feat.dimension() == sel.shape[0])
+        Y = self.feat.map(self.traj)
         assert(np.alltrue(Y >= -np.pi))
         assert(np.alltrue(Y <= np.pi))
 
     def test_dihedrals_deg(self):
-        feat = MDFeaturizer(self.pdbfile)
         sel = np.array([[1,2,5,6],
                         [1,3,8,9],
                         [2,9,10,12]], dtype=int)
-        feat.add_dihedrals(sel, deg=True)
-        assert(feat.dimension() == sel.shape[0])
-        Y = feat.map(self.traj)
+        self.feat.add_dihedrals(sel, deg=True)
+        assert(self.feat.dimension() == sel.shape[0])
+        Y = self.feat.map(self.traj)
         assert(np.alltrue(Y >= -180.0))
         assert(np.alltrue(Y <= 180.0))
 
     def test_backbone_dihedrals(self):
-        #TODO: test me
+        # TODO: test me
         pass
 
     def test_backbone_dihedrals_deg(self):
-        #TODO: test me
+        # TODO: test me
         pass
 
     def test_custom_feature(self):
-        #TODO: test me
+        # TODO: test me
         pass
+
 
 class TestFeaturizerNoDubs(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        super(TestFeaturizer, cls).setUpClass()
-        cls.topfile = create_water_topology_on_disc(100)
+        super(TestFeaturizerNoDubs, cls).setUpClass()
         cls.old_lvl = ft.log.level
         ft.log.level = 50
 
     @classmethod
     def tearDownClass(cls):
-        os.unlink(cls.topfile)
         ft.log.level = cls.old_lvl
 
     def testAddFeaturesWithDuplicates(self):
         """this tests adds multiple features twice (eg. same indices) and
         checks whether they are rejected or not"""
-        featurizer = MDFeaturizer(self.topfile)
+        featurizer = MDFeaturizer(pdbfile)
 
         featurizer.add_angles([[0, 1, 2], [0, 3, 4]])
         featurizer.add_angles([[0, 1, 2], [0, 3, 4]])
@@ -200,28 +195,30 @@ class TestFeaturizerNoDubs(unittest.TestCase):
             return x - 1
 
         my_feature = CustomFeature(my_func)
-        featurizer.add_custom_feature(my_feature, 3)
+        my_feature.dimension = 3
+        featurizer.add_custom_feature(my_feature)
 
         self.assertEqual(len(featurizer.active_features), 7)
-        featurizer.add_custom_feature(my_feature, 3)
+        featurizer.add_custom_feature(my_feature)
         self.assertEqual(len(featurizer.active_features), 7)
         # since myfunc and foo are different functions, it should be added
-        featurizer.add_custom_feature(CustomFeature(foo), 3)
+        foo_feat = CustomFeature(foo, dim=3)
+        featurizer.add_custom_feature(foo_feat)
         self.assertEqual(len(featurizer.active_features), 8)
 
     def test_labels(self):
         """ just checks for exceptions """
-        featurizer = MDFeaturizer(self.topfile)
+        featurizer = MDFeaturizer(pdbfile)
         featurizer.add_angles([[1, 2, 3], [4, 5, 6]])
         featurizer.add_backbone_torsions()
         featurizer.add_contacts([[0, 1], [0, 3]])
         featurizer.add_distances([[0, 1], [0, 3]])
         featurizer.add_inverse_distances([[0, 1], [0, 3]])
         cs = CustomFeature(lambda x: x - 1)
-        featurizer.add_custom_feature(cs, 3)
+        cs.dimension = lambda: 3
+        featurizer.add_custom_feature(cs)
 
         featurizer.describe()
-
 
 
 if __name__ == "__main__":
