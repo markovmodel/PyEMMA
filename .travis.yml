@@ -7,7 +7,7 @@ env:
   global:
     - PATH=$HOME/miniconda/bin:$HOME/miniconda/envs/ci/bin/:$PATH
     - common_py_deps="pip nose cython jpype1 mdtraj scikit-learn"
-    - doc_deps="ipython ipython-notebook sphinx matplotlib numpydoc"
+    - doc_deps="ipython ipython-notebook sphinx==1.2.3 matplotlib numpydoc"
     - deps="scipy numpy"
   matrix:
     secure: "byk9bmnGvP3qDfpYvPKX4909KeS6pJQtfW+GkSsuHy4vnp++gu2IsXC/CJeCB0r7hpoRp7Z+XlOtYmJLvb585LZmGaqIs5LKs1DimJniAg5anpywOnaXodspeFcz6UWtLlIAQQS3SvP9SXvvrlIiF8IwXqWfEewtoGbpiCj3dEo="
