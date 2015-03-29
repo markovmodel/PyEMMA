@@ -136,8 +136,9 @@ class ContactFeature(DistanceFeature):
     def map(self, traj):
         dists = mdtraj.compute_distances(traj, self.distance_indexes)
         res = np.zeros((len(traj), self.distance_indexes.shape[0]), dtype=np.float32)
-        I = np.argwhere(dists > self.threshold)[0]
-        res[I] = 1.0
+        I = np.argwhere(dists > self.threshold)
+        res[I[:,0],I[:,1]] = 1.0
+        return res
 
 
 class AngleFeature:
