@@ -432,7 +432,7 @@ class MDFeaturizer(object):
             array with selected atom indexes
 
         """
-        return self.topology.select("backbone name C CA N")
+        return self.topology.select("backbone and (name C or name CA or name N)")
 
     def select_Heavy(self):
         """
