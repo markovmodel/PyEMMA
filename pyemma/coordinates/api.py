@@ -11,6 +11,7 @@ from pyemma.util.log import getLogger
 
 from pyemma.coordinates.pipeline import Discretizer as _Discretizer
 # io
+from io.featurizer import MDFeaturizer as _MDFeaturizer
 from io.feature_reader import FeatureReader as _FeatureReader
 from io.data_in_memory import DataInMemory as _DataInMemory
 # transforms
@@ -33,6 +34,7 @@ __maintainer__ = "Martin Scherer"
 __email__ = "m.scherer AT fu-berlin DOT de"
 
 __all__ = ['discretizer',
+           'featurizer',
            'feature_reader',
            'memory_reader',
            'tica',
@@ -107,6 +109,17 @@ def discretizer(reader,
 # READERS
 #
 #==============================================================================
+
+
+def featurizer(topfile):
+    """ Constructs a MDFeaturizer to select and add coordinates or features from MD data.
+
+    Parameters
+    ----------
+    topfile : str
+        path to topology file (e.g pdb file)
+    """
+    return _MDFeaturizer(topfile)
 
 
 def feature_reader(trajfiles, topfile):
