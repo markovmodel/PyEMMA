@@ -128,7 +128,7 @@ class TestDataInMemory(unittest.TestCase):
             last_chunk_in_traj = False
             t = 0
             while not last_chunk_in_traj:
-                X, Y = reader.next_chunk(lag=lag)
+                X, Y = reader._next_chunk(lag=lag)
                 if itraj == 0:
                     self.assertEqual(X.shape, (100, 3))
                     self.assertEqual(Y.shape, (70, 3))
@@ -172,7 +172,7 @@ class TestDataInMemory(unittest.TestCase):
             last_chunk_in_traj = False
             t = 0
             while not last_chunk_in_traj:
-                X, Y = reader.next_chunk(lag=lag)
+                X, Y = reader._next_chunk(lag=lag)
                 print "X", X.shape
                 print "Y", Y.shape
                 print "-"*80

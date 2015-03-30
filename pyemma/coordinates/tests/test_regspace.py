@@ -21,11 +21,11 @@ class RandomDataSource:
             self.data += a
         self.i = -1
 
-    def next_chunk(self, lag=0):
+    def _next_chunk(self, lag=0):
         self.i += 1
         return self.data[self.i]
 
-    def reset(self):
+    def _reset(self):
         self.i = -1
 
     def trajectory_length(self, itraj):

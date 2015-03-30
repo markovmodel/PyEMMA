@@ -29,7 +29,7 @@ class UniformTimeClustering(AbstractClustering):
     def dimension(self):
         return 1
 
-    def get_memory_per_frame(self):
+    def _get_memory_per_frame(self):
         """
         Returns the memory requirements per frame, in bytes
 
@@ -38,7 +38,7 @@ class UniformTimeClustering(AbstractClustering):
         # 4 bytes per frame for an integer index
         return 0
 
-    def get_constant_memory(self):
+    def _get_constant_memory(self):
         """
         Returns the constant memory requirements, in bytes
 
@@ -47,7 +47,7 @@ class UniformTimeClustering(AbstractClustering):
         # memory for cluster centers and discrete trajectories
         return self.k * 4 * self.data_producer.dimension() + 4 * self.data_producer.n_frames_total()
 
-    def param_init(self):
+    def _param_init(self):
         """
         Initializes the parametrization.
 
@@ -64,7 +64,7 @@ class UniformTimeClustering(AbstractClustering):
         self.stride = self.data_producer.n_frames_total() / self.k
         self.nextt = self.stride / 2
 
-    def param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
+    def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
         """
 
         :param X:

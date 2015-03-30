@@ -47,11 +47,11 @@ class KmeansClustering(AbstractClustering):
         return 1
 
     @doc_inherit
-    def get_memory_per_frame(self):
+    def _get_memory_per_frame(self):
         return 1
 
     @doc_inherit
-    def get_constant_memory(self):
+    def _get_constant_memory(self):
         return 1
 
     @staticmethod
@@ -63,7 +63,13 @@ class KmeansClustering(AbstractClustering):
         # resutls mapped to memory during parameterize
         pass
 
-    def param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
+#     def param_init(self):
+#         # ensure we can cluster data
+#         input_dim = self.data_producer.dimension()
+#         if input_dim < self.n_clusters:
+#             raise ValueError("Input dimension lower than number of clusters!")
+
+    def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
                        last_chunk, ipass, Y=None):
         if X.ndim == 1:
             X = self._ensure2d(X)
@@ -82,7 +88,7 @@ class KmeansClustering(AbstractClustering):
                 return True
 
     @doc_inherit
-    def param_finish(self):
+    def _param_finish(self):
         self.clustercenters = self.algo.cluster_centers_
 
     @doc_inherit

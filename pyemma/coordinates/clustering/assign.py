@@ -40,7 +40,7 @@ class AssignCenters(AbstractClustering):
         self.clustercenters = clustercenters
         assert isinstance(self.clustercenters, np.ndarray)
 
-    def param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
+    def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
                        last_chunk, ipass, Y=None):
         # discretize all
         if t == 0:

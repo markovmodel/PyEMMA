@@ -63,7 +63,7 @@ class TICA(Transformer):
 
         # store lag time to set it appropriatly in second pass of parametrize
         self._tau = lag
-        self.output_dimension = output_dimension
+        self._output_dimension = output_dimension
         self.epsilon = epsilon
         self._force_eigenvalues_le_one = force_eigenvalues_le_one
 
@@ -77,27 +77,27 @@ class TICA(Transformer):
         self.N_cov_tau = 0
         self.eigenvalues = None
         self.eigenvectors = None
-       
+
     @property
     def tau(self):
         return self._tau
-    
+
     @tau.setter
-    def tau(self,new_tau):
+    def tau(self, new_tau):
         self._parametrized = False
         self._tau = new_tau
 
     @doc_inherit
     def describe(self):
         return "[TICA, tau = %i; output dimension = %i]" \
-            % (self._tau, self.output_dimension)
+            % (self._tau, self._output_dimension)
 
     def dimension(self):
         """ output dimension"""
-        return self.output_dimension
+        return self._output_dimension
 
     @doc_inherit
-    def get_memory_per_frame(self):
+    def _get_memory_per_frame(self):
         # temporaries
         dim = self.data_producer.dimension()
 
@@ -107,7 +107,7 @@ class TICA(Transformer):
         return 8 * (mean_free_vectors + dot_product)
 
     @doc_inherit
-    def get_constant_memory(self):
+    def _get_constant_memory(self):
         dim = self.data_producer.dimension()
 
         # memory for covariance matrices (lagged, non-lagged)
@@ -119,12 +119,12 @@ class TICA(Transformer):
         return 8 * (cov_elements + mu_elements)
 
     @doc_inherit
-    def param_init(self):
+    def _param_init(self):
         dim = self.data_producer.dimension()
         assert dim > 0, "zero dimension from data producer"
-        assert self.output_dimension <= dim, \
+        assert self._output_dimension <= dim, \
             ("requested more output dimensions (%i) than dimension"
-             " of input data (%i)" % (self.output_dimension, dim))
+             " of input data (%i)" % (self._output_dimension, dim))
 
         self.N_mean = 0
         self.N_cov = 0
@@ -138,7 +138,7 @@ class TICA(Transformer):
         log.info("Running TICA with tau=%i; Estimating two covariance matrices"
                  " with dimension (%i, %i)" % (self._tau, dim, dim))
 
-    def param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
+    def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
                        last_chunk, ipass, Y=None):
         """
         Chunk-based parameterization of TICA. Iterates through all data twice. In the first pass, the
@@ -206,12 +206,12 @@ class TICA(Transformer):
         return False  # not finished yet.
 
     @doc_inherit
-    def param_finish(self):
+    def _param_finish(self):
         if self._force_eigenvalues_le_one:
             # This is a bit unintuitive, for cov we include the frames that
-            # we count twice in cov and N_cov during param_add_data.
-            # For cov_tau, we don't and we symmetrize only in param_finish.
-            # (That is we double the number of frames only in param_finish).
+            # we count twice in cov and N_cov during _param_add_data.
+            # For cov_tau, we don't and we symmetrize only in _param_finish.
+            # (That is we double the number of frames only in _param_finish).
             # However this is mathemtically correct.
             assert self.N_cov == 2*self.N_cov_tau, 'inconsistency in C(0) and C(tau)'
         
@@ -247,5 +247,5 @@ class TICA(Transformer):
             the projected data
         """
         X_meanfree = X - self.mu
-        Y = np.dot(X_meanfree, self.eigenvectors[:, 0:self.output_dimension])
+        Y = np.dot(X_meanfree, self.eigenvectors[:, 0:self._output_dimension])
         return Y

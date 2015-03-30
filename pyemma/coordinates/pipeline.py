@@ -114,7 +114,7 @@ class Pipeline(object):
         estimate memory requirement from _chain of transformers and sets a
         chunksize accordingly
         """
-        if not hasattr(reader, 'get_memory_per_frame'):
+        if not hasattr(reader, '_get_memory_per_frame'):
             self.chunksize = 0
             return
 
@@ -124,8 +124,8 @@ class Pipeline(object):
         mem_per_frame = long(0)
 
         for trans in self.transformers:
-            mem_per_frame += trans.get_memory_per_frame()
-            const_mem += trans.get_constant_memory()
+            mem_per_frame += trans._get_memory_per_frame()
+            const_mem += trans._get_constant_memory()
         logger.info("per-frame memory requirements: %i" % mem_per_frame)
 
         # maximum allowed chunk size
@@ -149,7 +149,7 @@ class Pipeline(object):
         # starting from the back of the pipeline, store outputs if possible
         for trans in reversed(self.transformers):
             mem_req_trans = trans.n_frames_total() * \
-                trans.get_memory_per_frame()
+                trans._get_memory_per_frame()
             if Mfree > mem_req_trans:
                 Mfree -= mem_req_trans
                 # TODO: before we are allowed to call this method, we have to ensure all memory requirements are correct!

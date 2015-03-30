@@ -54,7 +54,7 @@ class PCA(Transformer):
         return self._output_dimension
 
     @doc_inherit
-    def get_constant_memory(self):
+    def _get_constant_memory(self):
         """Returns the constant memory requirements, in bytes."""
         # memory for mu, C, v, R
         dim = self.data_producer.dimension()
@@ -68,7 +68,7 @@ class PCA(Transformer):
         return 8 * (cov_elements + mu_elements + v_elements + R_elements)
 
     @doc_inherit
-    def get_memory_per_frame(self):
+    def _get_memory_per_frame(self):
         # memory for temporaries
         dim = self.data_producer.dimension()
 
@@ -79,7 +79,7 @@ class PCA(Transformer):
         return 8 * (x_meanfree_elements + dot_prod_elements)
 
     @doc_inherit
-    def param_init(self):
+    def _param_init(self):
         self.N = 0
         # create mean array and covariance matrix
         dim = self.data_producer.dimension()
@@ -88,7 +88,7 @@ class PCA(Transformer):
         self.mu = np.zeros(dim)
         self.C = np.zeros((dim, dim))
 
-    def param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
+    def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
                        last_chunk, ipass, Y=None):
         """
         Chunk-based parametrization of PCA. Iterates through all data twice. In the first pass, the
@@ -141,7 +141,7 @@ class PCA(Transformer):
         return False
 
     @doc_inherit
-    def param_finish(self):
+    def _param_finish(self):
         (v, R) = np.linalg.eigh(self.C)
         # sort
         I = np.argsort(v)[::-1]

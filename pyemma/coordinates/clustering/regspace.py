@@ -58,16 +58,16 @@ class RegularSpaceClustering(AbstractClustering):
         return 1
 
     @doc_inherit
-    def get_memory_per_frame(self):
+    def _get_memory_per_frame(self):
         # 4 bytes per frame for an integer index
         return 4
 
     @doc_inherit
-    def get_constant_memory(self):
+    def _get_constant_memory(self):
         # memory for cluster centers and discrete trajectories
         return 4 * self.data_producer.dimension() + 4 * self.data_producer.n_frames_total()
 
-    def param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
+    def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
         """
         first pass: calculate clustercenters
          1. choose first datapoint as centroid
@@ -110,5 +110,5 @@ class RegularSpaceClustering(AbstractClustering):
 
         return False
 
-    def param_finish(self):
+    def _param_finish(self):
         del self._clustercenters  # delete temporary

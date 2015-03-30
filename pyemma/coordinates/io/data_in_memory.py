@@ -6,6 +6,7 @@ from scipy.spatial.distance import cdist
 from pyemma.coordinates.transform.transformer import Transformer
 from pyemma.util.log import getLogger
 
+
 class DataInMemory(Transformer):
 
     r"""
@@ -71,8 +72,8 @@ class DataInMemory(Transformer):
             raise ValueError('input data is neither an ndarray '
                              'nor a list of ndarrays!')
 
-        self.t = 0
-        self.itraj = 0
+        self._t = 0
+        self._itraj = 0
         self.chunksize = 0
 
     def parametrize(self):
@@ -125,30 +126,30 @@ class DataInMemory(Transformer):
         """
         return self.ndim
 
-    def reset(self):
+    def _reset(self):
         """Resets the data producer
         """
-        self.itraj = 0
-        self.t = 0
+        self._itraj = 0
+        self._t = 0
 
-    def next_chunk(self, lag=0):
+    def _next_chunk(self, lag=0):
         """
 
         :param lag:
         :return:
         """
-        # finished once with all trajectories? so reset the pointer to allow
+        # finished once with all trajectories? so _reset the pointer to allow
         # multi-pass
-        if self.itraj >= self.ntraj:
-            self.reset()
+        if self._itraj >= self.ntraj:
+            self._reset()
 
-        traj_len = self._lengths[self.itraj]
-        traj = self.data[self.itraj]
+        traj_len = self._lengths[self._itraj]
+        traj = self.data[self._itraj]
 
         # complete trajectory mode
         if self._chunksize == 0:
             X = traj
-            self.itraj += 1
+            self._itraj += 1
 
             if lag == 0:
                 return X
@@ -157,25 +158,25 @@ class DataInMemory(Transformer):
                 return (X, Y)
         # chunked mode
         else:
-            upper_bound = min(self.t + self._chunksize, traj_len)
-            slice_x = slice(self.t, upper_bound)
+            upper_bound = min(self._t + self._chunksize, traj_len)
+            slice_x = slice(self._t, upper_bound)
 
             X = traj[slice_x]
-            self.t += X.shape[0]
+            self._t += X.shape[0]
 
             if lag == 0:
-                if self.t >= traj_len:
-                    self.itraj += 1
-                    self.t = 0
+                if self._t >= traj_len:
+                    self._itraj += 1
+                    self._t = 0
                 return X
             else:
                 # its okay to return empty chunks
-                upper_bound = min(self.t + lag + self._chunksize, traj_len)
+                upper_bound = min(self._t + lag + self._chunksize, traj_len)
 
-                Y = traj[self.t + lag: upper_bound]
-                if self.t + lag >= traj_len:
-                    self.itraj += 1
-                    self.t = 0
+                Y = traj[self._t + lag: upper_bound]
+                if self._t + lag >= traj_len:
+                    self._itraj += 1
+                    self._t = 0
                 return X, Y
 
     @staticmethod
