@@ -74,7 +74,7 @@ class TestCkTest(unittest.TestCase):
         eps_MD[0, :] = 0.0
         for k in range(1, K):
             """Build MSM at lagtime k*tau"""
-            C_MD = cmatrix(dtraj, (k+1)*tau, sliding=True)
+            C_MD = cmatrix(dtraj, k*tau, sliding=True)/(k*tau)
             lcc_MD = largest_connected_set(C_MD)
             Ccc_MD = connected_cmatrix(C_MD, lcc=lcc_MD)
             c_MD = Ccc_MD.sum(axis=1)
@@ -85,13 +85,13 @@ class TestCkTest(unittest.TestCase):
             prob_MD = w_MD_k[0, A].sum()            
             c = c_MD[A].sum()
             p_MD[k, 0] = prob_MD
-            eps_MD[k, 0] = np.sqrt((k + 1) * (prob_MD - prob_MD**2) / c)
+            eps_MD[k, 0] = np.sqrt(k * (prob_MD - prob_MD**2) / c)
 
             """Set B"""
             prob_MD = w_MD_k[1, B].sum()
             c = c_MD[B].sum()
             p_MD[k, 1] = prob_MD
-            eps_MD[k, 1] = np.sqrt((k + 1) * (prob_MD - prob_MD**2) / c)          
+            eps_MD[k, 1] = np.sqrt(k * (prob_MD - prob_MD**2) / c)          
 
         """Input"""
         self.P_MSM = P_MSM
@@ -116,6 +116,7 @@ class TestCkTest(unittest.TestCase):
     def test_cktest(self):
         p_MSM, p_MD, eps_MD = cktest(self.P_MSM, self.lcc_MSM, self.dtraj, 
                                      self.tau, self.K, sets=[self.A, self.B])
+        
         assert_allclose(p_MSM, self.p_MSM)
         assert_allclose(p_MD, self.p_MD)
         assert_allclose(eps_MD, self.eps_MD)
