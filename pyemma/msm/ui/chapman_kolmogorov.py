@@ -160,7 +160,7 @@ def cktest(T_MSM, lcc_MSM, dtrajs, lag, K, nsets=2, sets=None, full_output=False
         w_MSM_k = propagate(w_MSM_k, T_MSM)        
 
         """Estimate model at k*tau and normalize to make 'uncorrelated'"""
-        C_MD = cmatrix(dtrajs, (k+1)*lag, sliding=True)/((k+1)*lag)
+        C_MD = cmatrix(dtrajs, k*lag, sliding=True)/(k*lag)
         lcc_MD = largest_connected_set(C_MD)
         Ccc_MD = connected_cmatrix(C_MD, lcc=lcc_MD)
         """State counts for MD"""
@@ -208,7 +208,7 @@ def cktest(T_MSM, lcc_MSM, dtrajs, lag, K, nsets=2, sets=None, full_output=False
                 p_MD[k, l] = prob_MD
                 """Statistical errors"""
                 c = c_MD[A_MD].sum()
-                eps_MD[k, l]=np.sqrt((k + 1) * (prob_MD - prob_MD**2) / c)   
+                eps_MD[k, l]=np.sqrt(k * (prob_MD - prob_MD**2) / c)   
                 set_factors[k, l] = mu_MSM[lccmap_MSM.map(A_new)].sum()/mu_MSM[A_MSM].sum()
 
     if full_output:
