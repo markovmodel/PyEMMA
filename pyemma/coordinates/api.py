@@ -7,20 +7,22 @@ __docformat__ = "restructuredtext en"
 
 
 from pyemma.util.annotators import deprecated
+from pyemma.util.log import getLogger
 
-from pyemma.coordinates.pipeline import Discretizer
+from pyemma.coordinates.pipeline import Discretizer as _Discretizer
 # io
-from io.feature_reader import FeatureReader
-from io.data_in_memory import DataInMemory
+from io.feature_reader import FeatureReader as _FeatureReader
+from io.data_in_memory import DataInMemory as _DataInMemory
 # transforms
-from transform.pca import PCA
-from transform.tica import TICA
+from transform.pca import PCA as _PCA
+from transform.tica import TICA as _TICA
 # clustering
-from clustering.kmeans import KmeansClustering
-from clustering.uniform_time import UniformTimeClustering
-from clustering.regspace import RegularSpaceClustering
-from clustering.assign import AssignCenters
+from clustering.kmeans import KmeansClustering as _KmeansClustering
+from clustering.uniform_time import UniformTimeClustering as _UniformTimeClustering
+from clustering.regspace import RegularSpaceClustering as _RegularSpaceClustering
+from clustering.assign import AssignCenters as _AssignCenters
 
+logger = getLogger('coordinates.api')
 
 __author__ = "Frank Noe, Martin Scherer"
 __copyright__ = "Copyright 2015, Computational Molecular Biology Group, FU-Berlin"
@@ -49,7 +51,7 @@ __all__ = ['discretizer',
 
 def discretizer(reader,
                 transform=None,
-                cluster=KmeansClustering(n_clusters=100)):
+                cluster=None):
     """
     Constructs a discretizer object, which processes all data
 
@@ -65,8 +67,7 @@ def discretizer(reader,
         an optional transform like PCA/TICA etc.
 
     cluster : instance of clustering Transformer (optional)
-        a cluster algorithm to assign transformed data to discrete states. By
-        default we use Kmeans clustering with k=100
+        a cluster algorithm to assign transformed data to discrete states.
 
 
     Examples
@@ -95,7 +96,11 @@ def discretizer(reader,
     >>> disc.save_dtrajs()
 
     """
-    return Discretizer(reader, transform, cluster)
+    if cluster is None:
+        logger.warning('You did not specify a cluster algorithm.'
+                       ' Defaulting to kmeans(k=100)')
+        cluster = _KmeansClustering(n_clusters=100)
+    return _Discretizer(reader, transform, cluster)
 
 #==============================================================================
 #
@@ -132,7 +137,7 @@ def feature_reader(trajfiles, topfile):
     >>> reader.featurizer.add_distances([[0, 1], ... ])
 
     """
-    return FeatureReader(trajfiles, topfile)
+    return _FeatureReader(trajfiles, topfile)
 
 
 def memory_reader(data):
@@ -148,7 +153,7 @@ def memory_reader(data):
     obj : :class:`DataInMemory`
 
     """
-    return DataInMemory(data)
+    return _DataInMemory(data)
 
 
 #=========================================================================
@@ -175,9 +180,9 @@ def pca(data=None, dim=2):
     -------
     obj : a PCA transformation object
     """
-    res = PCA(dim)
+    res = _PCA(dim)
     if data is not None:
-        inp = DataInMemory(data)
+        inp = _DataInMemory(data)
         res.data_producer = inp
         res.parametrize()
     return res
@@ -236,9 +241,9 @@ def tica(data=None, lag=10, dim=2, force_eigenvalues_le_one=False):
     J. Chem. Phys. 139, 015102. doi: 10.1063/1.4811489
 
     """
-    res = TICA(lag, dim, force_eigenvalues_le_one=force_eigenvalues_le_one)
+    res = _TICA(lag, dim, force_eigenvalues_le_one=force_eigenvalues_le_one)
     if data is not None:
-        inp = DataInMemory(data)
+        inp = _DataInMemory(data)
         res.data_producer = inp
         res.parametrize()
     return res
@@ -278,9 +283,9 @@ def cluster_kmeans(data=None, k=100, max_iter=1000):
     [array([0, 0, 1, ... ])]
 
     """
-    res = KmeansClustering(n_clusters=k, max_iter=max_iter)
+    res = _KmeansClustering(n_clusters=k, max_iter=max_iter)
     if data is not None:
-        inp = DataInMemory(data)
+        inp = _DataInMemory(data)
         res.data_producer = inp
         res.parametrize()
     return res
@@ -306,9 +311,9 @@ def cluster_uniform_time(data=None, k=100):
         A UniformTimeClustering object
 
     """
-    res = UniformTimeClustering(k)
+    res = _UniformTimeClustering(k)
     if data is not None:
-        inp = DataInMemory(data)
+        inp = _DataInMemory(data)
         res.data_producer = inp
         res.parametrize()
     return res
@@ -340,9 +345,9 @@ def cluster_regspace(data=None, dmin=-1, max_centers=1000):
     """
     if dmin == -1:
         raise ValueError("provide a minimum distance for clustering")
-    res = RegularSpaceClustering(dmin)
+    res = _RegularSpaceClustering(dmin)
     if data is not None:
-        inp = DataInMemory(data)
+        inp = _DataInMemory(data)
         res.data_producer = inp
         res.parametrize()
     return res
@@ -386,9 +391,9 @@ def cluster_assign_centers(data=None, centers=None):
     if centers is None:
         raise ValueError('You have to provide centers in form of a filename'
                          ' or NumPy array')
-    res = AssignCenters(centers)
+    res = _AssignCenters(centers)
     if data is not None:
-        inp = DataInMemory(data)
+        inp = _DataInMemory(data)
         res.data_producer = inp
         res.parametrize()
     return res
