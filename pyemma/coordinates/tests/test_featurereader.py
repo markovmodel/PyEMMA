@@ -90,8 +90,8 @@ class TestFeatureReader(unittest.TestCase):
 
         # reproduce outcome
         xyz_s = self.xyz.shape
-        fake_lagged = np.empty((xyz_s[0]-lag,xyz_s[1],xyz_s[2]))
-        fake_lagged = self.xyz[lag:]
+        fake_lagged = np.empty((xyz_s[0]-lag,xyz_s[1]*xyz_s[2]))
+        fake_lagged = self.xyz.reshape((xyz_s[0],-1))[lag:]
 
         self.assertTrue(np.allclose(merged_lagged, fake_lagged))
 
@@ -128,7 +128,7 @@ class TestFeatureReader(unittest.TestCase):
                 for _, _, y in reader:
                     lagged_chunks.append(y)
 
-                coords = self.xyz
+                coords = self.xyz.reshape((self.xyz.shape[0],-1))
 
                 for ii, c in enumerate(lagged_chunks[:-1]):
                     # all despite last chunk shall have chunksize

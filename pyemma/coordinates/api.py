@@ -168,7 +168,7 @@ def pca(data=None, dim=2):
     return res
 
 
-def tica(data=None, lag=10, dim=2):
+def tica(data=None, lag=10, dim=2, force_eigenvalues_le_one=False):
     r"""Time-lagged independent component analysis (TICA).
 
     Parameters
@@ -180,6 +180,9 @@ def tica(data=None, lag=10, dim=2):
         the lag time, in multiples of the input time step
     dim : int, optional, default = 2
         the number of dimensions to project onto
+    force_eigenvalues_le_one : boolean
+        Compute covariance matrix and time-lagged covariance matrix such
+        that the generalized eigenvalues are always guaranteed to be <= 1.        
 
     Returns
     -------
@@ -218,7 +221,7 @@ def tica(data=None, lag=10, dim=2):
     J. Chem. Phys. 139, 015102. doi: 10.1063/1.4811489
 
     """
-    res = TICA(lag, dim)
+    res = TICA(lag, dim, force_eigenvalues_le_one=force_eigenvalues_le_one)
     if data is not None:
         inp = DataInMemory(data)
         res.data_producer = inp
