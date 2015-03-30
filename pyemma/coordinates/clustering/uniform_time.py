@@ -85,15 +85,11 @@ class UniformTimeClustering(AbstractClustering):
             time-lagged data (if available)
         :return:
         """
-        log.debug("itraj = " + str(itraj) + ". t = " + str(t) + ". last_chunk_in_traj = " + str(last_chunk_in_traj)
-                  + " last_chunk = " + str(last_chunk) + " ipass = " + str(ipass))
-
         L = np.shape(X)[0]
         if ipass == 0:
             maxt = self.tprev + t + L
             while (self.nextt < maxt):
                 i = self.nextt - self.tprev - t
-                # FIXME: n out of bounds
                 self.clustercenters[self.n] = X[i]
                 self.n += 1
                 self.nextt += self.stride

@@ -66,9 +66,7 @@ class KmeansClustering(AbstractClustering):
     def param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
                        last_chunk, ipass, Y=None):
         if X.ndim == 1:
-            log.debug("converting input to 2d.")
             X = self._ensure2d(X)
-            log.debug("new shape: %s" % str(X.shape))
 
         if ipass == 0:
             self.algo.partial_fit(X)
