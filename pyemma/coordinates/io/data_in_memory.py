@@ -6,9 +6,6 @@ from scipy.spatial.distance import cdist
 from pyemma.coordinates.transform.transformer import Transformer
 from pyemma.util.log import getLogger
 
-logger = getLogger('DataInMemory')
-
-
 class DataInMemory(Transformer):
 
     r"""
@@ -26,7 +23,7 @@ class DataInMemory(Transformer):
 
     def __init__(self, _data, **kwargs):
         Transformer.__init__(self)
-
+        self.logger = getLogger('DataInMemory[%i]' % id(self))
         self.data_producer = self
 
         if isinstance(_data, np.ndarray):
@@ -169,6 +166,7 @@ class DataInMemory(Transformer):
             if lag == 0:
                 if self.t >= traj_len:
                     self.itraj += 1
+                    self.t = 0
                 return X
             else:
                 # its okay to return empty chunks
@@ -177,6 +175,7 @@ class DataInMemory(Transformer):
                 Y = traj[self.t + lag: upper_bound]
                 if self.t + lag >= traj_len:
                     self.itraj += 1
+                    self.t = 0
                 return X, Y
 
     @staticmethod
