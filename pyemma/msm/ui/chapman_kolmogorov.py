@@ -159,8 +159,8 @@ def cktest(T_MSM, lcc_MSM, dtrajs, lag, K, nsets=2, sets=None, full_output=False
         """Propagate probability vectors for MSM"""
         w_MSM_k = propagate(w_MSM_k, T_MSM)        
 
-        """Estimate model at k*tau"""
-        C_MD = cmatrix(dtrajs, (k+1)*lag, sliding=True)
+        """Estimate model at k*tau and normalize to make 'uncorrelated'"""
+        C_MD = cmatrix(dtrajs, (k+1)*lag, sliding=True)/((k+1)*lag)
         lcc_MD = largest_connected_set(C_MD)
         Ccc_MD = connected_cmatrix(C_MD, lcc=lcc_MD)
         """State counts for MD"""

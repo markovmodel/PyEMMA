@@ -75,7 +75,7 @@ class TestCkTest(unittest.TestCase):
         eps_MD[0, :] = 0.0
         for k in range(1, K):
             """Build MSM at lagtime k*tau"""
-            C_MD = cmatrix(dtraj, (k+1)*tau, sliding=True)
+            C_MD = cmatrix(dtraj, (k+1)*tau, sliding=True)/((k+1)*tau)
             lcc_MD = largest_connected_set(C_MD)
             Ccc_MD = connected_cmatrix(C_MD, lcc=lcc_MD)
             c_MD = Ccc_MD.sum(axis=1)
