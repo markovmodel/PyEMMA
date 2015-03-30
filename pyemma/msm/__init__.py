@@ -16,7 +16,6 @@ User-API
    msm
    tpt
    cktest
-   hmsm
 
 """
 

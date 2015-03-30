@@ -44,7 +44,7 @@ class FeatureReader(ChunkedReader):
     Extract backbone torsion angles of protein during feature reading:
 
     >>> reader = FeatureReader('mytraj.xtc', 'my_structure.pdb')
-    >>> reader.featurizer.backbone_torsions()
+    >>> reader.featurizer.add_backbone_torsions()
     >>> chunks = []
     >>> for _, X in reader:
     ...     chunks.append(X)

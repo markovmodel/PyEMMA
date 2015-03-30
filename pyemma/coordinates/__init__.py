@@ -10,11 +10,9 @@ User-API
 ========
 
 The class which links input (readers), transformers (PCA, TICA) and clustering
-together is the :func:`discretizer`. It builds up a pipeline to process your data
-into discrete state space.
+together is the **Discretizer**. It builds up a pipeline to process your data
+into discrete state space. The API function **discretizer** creates it.
 
-..autosummary::
-  :toctree: generated/
 
 Readers
 -------

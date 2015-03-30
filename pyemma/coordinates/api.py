@@ -1,5 +1,6 @@
 r"""User-API for the pyemma.coordinates package
 
+.. currentmodule:: pyemma.coordinates.api
 """
 
 __docformat__ = "restructuredtext en"
@@ -38,6 +39,7 @@ __all__ = ['discretizer',
            'cluster_kmeans',
            'cluster_uniform_time',
            'cluster_assign_centers',
+           # deprecated:
            'kmeans',
            'regspace',
            'assign_centers',
@@ -74,7 +76,7 @@ def discretizer(reader,
     "traj01.xtc" with a PCA transformation and cluster the principle components
     with uniform time clustering:
 
-    >>> reader = feature_reader(['traj01.xtc'], 'topology.pdb')
+    >>> reader = feature_reader('traj01.xtc', 'topology.pdb')
     >>> transform = pca(dim=2)
     >>> cluster = uniform_time(n_clusters=100)
     >>> disc = discretizer(reader, transform, cluster)
@@ -115,6 +117,19 @@ def feature_reader(trajfiles, topfile):
 
     Returns
     -------
+    obj : :class:`io.FeatureReader`
+
+    Notes
+    -----
+    To select features refer to the documentation of the :class:`io.featurizer.MDFeaturizer`
+
+    Examples
+    --------
+
+    Select some distances as features
+
+    >>> reader = FeatureReader('traj1.xtc', 'traj_structure.pdb')
+    >>> reader.featurizer.add_distances([[0, 1], ... ])
 
     """
     return FeatureReader(trajfiles, topfile)
@@ -339,13 +354,15 @@ def assign_centers(data=None, centers=None):
 
 
 def cluster_assign_centers(data=None, centers=None):
-    r"""Assigns given (precalculated) cluster centers.
+    r"""Assigns data to (precalculated) cluster centers.
 
     If you already have cluster centers from somewhere, you use this
     to assign your data to the centers.
 
     Parameters
     ----------
+    data : list of arrays, list of file names or single array/filename
+        data to be assigned
     clustercenters : path to file (csv) or ndarray
         cluster centers to use in assignment of data
 
