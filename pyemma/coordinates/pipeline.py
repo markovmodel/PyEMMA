@@ -18,7 +18,8 @@ class Pipeline(object):
 
     def __init__(self, chain, chunksize=100):
         """
-        TODO: chunksize should be estimated from memory requirements (max memory usage)
+
+        TODO:chunksize should be estimated from memory requirements (max memory usage)
         """
         self._chain = []
         self.chunksize = chunksize
@@ -101,6 +102,15 @@ class Pipeline(object):
         return replaced
 
     def run(self):
+        import warnings
+        warnings.warn("run() is deprecated and will be disabled in the future. Use parametrize().", DeprecationWarning)
+        self.parametrize()
+
+    # TODO: DISCUSS - renamed run() to parametrize (because run is a bit ambiguous).
+    # TODO: We could also call it fit() (here and in the transformers).
+    # TODO: This might be nicer because it's shorter and the spelling is unambiguous
+    # TODO: (in contrast to parametrize and parameterize and parameterise that are all correct in english.
+    def parametrize(self):
         """
         reads all data and discretizes it into discrete trajectories
         """
@@ -108,6 +118,7 @@ class Pipeline(object):
             element.parametrize()
 
         self._parametrized = True
+
 
     def _estimate_chunksize_from_mem_requirement(self, reader):
         """
@@ -227,7 +238,7 @@ class Discretizer(Pipeline):
         """ get discrete trajectories """
         if not self._parametrized:
             logger.info("not yet parametrized, running now.")
-            self.run()
+            self.parametrize()
         return self._chain[-1].dtrajs
 
     def save_dtrajs(self, prefix='', output_dir='.',

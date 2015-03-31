@@ -106,7 +106,7 @@ class TestFeatureReader(unittest.TestCase):
         reader.featurizer.distances([[0,1], [0,2]])
         t = tica(dim=2,lag=1)
         d = discretizer(reader, t)
-        d.run()
+        d.parametrize()
 
     #@unittest.skip("")
     def testTimeLaggedAccess(self):

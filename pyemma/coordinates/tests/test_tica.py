@@ -25,7 +25,7 @@ class TestTICA(unittest.TestCase):
 
         tica.parametrize()
 
-        Y = tica.map(data)
+        Y = tica._map_array(data)
 
     def test_duplicated_data(self):
         tica = TICA(lag=1, output_dimension=1)

@@ -233,7 +233,7 @@ class TICA(Transformer):
             eig_corr(self.cov, self.cov_tau, self.epsilon)
         log.info("finished diagonalisation.")
 
-    def map(self, X):
+    def _map_array(self, X):
         """Projects the data onto the dominant independent components.
 
         Parameters
@@ -246,6 +246,7 @@ class TICA(Transformer):
         Y : ndarray(n,)
             the projected data
         """
+        #TODO: DISCUSS - I renamed this map to_map_array as we should only require to override
         X_meanfree = X - self.mu
         Y = np.dot(X_meanfree, self.eigenvectors[:, 0:self._output_dimension])
         return Y

@@ -95,7 +95,7 @@ class TestDiscretizer(unittest.TestCase):
         clustering = UniformTimeClustering(k=n_clusters)
 
         D = Discretizer(reader, transform=pcat, cluster=clustering)
-        D.run()
+        D.parametrize()
 
         self.assertEqual(len(D.dtrajs), len(self.trajfiles))
 
@@ -117,7 +117,7 @@ class TestDiscretizer(unittest.TestCase):
         kmeans = api.kmeans(k=n_centers)
 
         disc = api.discretizer(reader, tpca, kmeans)
-        disc.run()
+        disc.parametrize()
 
         dtrajs = disc.dtrajs
         for dtraj in dtrajs:
@@ -134,7 +134,7 @@ class TestDiscretizer(unittest.TestCase):
         reader.featurizer.distances(pairs)
         cluster = kmeans(k=2)
         d = Discretizer(reader, cluster=cluster)
-        d.run()
+        d.parametrize()
         d.save_dtrajs(output_dir=self.dest_dir)
         dtrajs = os.listdir(self.dest_dir)
 

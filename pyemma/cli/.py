@@ -21,7 +21,7 @@ def acf(trajs, acffname, stride=1, max_lag=None, subtract_mean=True, normalize=T
         stats = {}
         print 'computing mean'
         for fname in log_loop(trajs):
-            cocovar.run(fname, stats, True, False, False, False, 0)
+            cocovar.parametrize(fname, stats, True, False, False, False, 0)
         mean = stats['mean'] / stats['samples']
  
     acf = numpy.array([[]])

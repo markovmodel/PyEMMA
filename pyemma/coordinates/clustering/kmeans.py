@@ -92,7 +92,7 @@ class KmeansClustering(AbstractClustering):
         self.clustercenters = self.algo.cluster_centers_
 
     @doc_inherit
-    def map(self, X):
+    def _map_array(self, X):
         if X.ndim == 1:
             X = self._ensure2d(X)
         d = self.algo.predict(X)

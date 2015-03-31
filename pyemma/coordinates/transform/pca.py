@@ -148,7 +148,7 @@ class PCA(Transformer):
         self.eigenvalues = v[I]
         self.eigenvectors = R[:, I]
 
-    def map(self, X):
+    def _map_array(self, X):
         """
         Projects the data onto the dominant principal components.
 

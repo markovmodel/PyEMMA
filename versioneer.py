@@ -910,7 +910,7 @@ if 'cx_Freeze' in sys.modules:  # cx_freeze enabled?
             with open(target_versionfile, "w") as f:
                 f.write(SHORT_VERSION_PY % versions)
 
-            _build_exe.run(self)
+            _build_exe.parametrize(self)
             os.unlink(target_versionfile)
             with open(versionfile_source, "w") as f:
                 assert VCS is not None, "please set versioneer.VCS"

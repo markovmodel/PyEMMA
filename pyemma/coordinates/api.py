@@ -85,7 +85,7 @@ def discretizer(reader,
     >>> disc = discretizer(reader, transform, cluster)
 
     Finally you want to run the pipeline
-    >>> disc.run()
+    >>> disc.parametrize()
 
 
     Access the the discrete trajectories and saving them to files:
@@ -104,12 +104,159 @@ def discretizer(reader,
         cluster = _KmeansClustering(n_clusters=100)
     return _Discretizer(reader, transform, cluster)
 
+
 #==============================================================================
 #
-# READERS
+# DATA PROCESSING
 #
 #==============================================================================
 
+
+#TODO: DOC - which topology file formats does mdtraj support? Find out and complete docstring
+#
+#TODO: DISCUSS - There's a catch here: When loading MD file the nature frame would be a Nx3 array,
+#TODO: but for the transformers we expect flat arrays. We should either here have a 'flatten' flat, or be flexible
+#TODO: in transformer param/mapping by outmatically flatten all dimensions after the first.
+#
+#TODO: implement this
+def load(trajfiles, featurizer=None, topology=None, stride=1):
+    """ loads coordinate or feature data into memory. If your memory is not big enough consider the use of pipeline
+
+    Parameters
+    ----------
+    trajfiles : str or list of str
+        A filename or a list of filenames to trajectory files that can be processed by pyemma.
+        Both molecular dynamics trajectory files and raw data files (tabulated ASCII or binary) can be loaded.
+
+        When molecular dynamics trajectory files are loaded either a featurizer must be specified (for
+        reading specific quantities such as distances or dihedrals), or a topology file (in that case only
+        Cartesian coordinates will be read).
+
+        Molecular dynamics trajectory files are loaded through mdtraj (http://mdtraj.org/latest/),
+        and can possess any of the mdtraj-compatible trajectory formats including:
+
+           * CHARMM/NAMD (.dcd)
+           * Gromacs (.xtc)
+           * Gromacs (.trr)
+           * AMBER (.binpos)
+           * AMBER (.netcdf)
+           * PDB trajectory format (.pdb)
+           * TINKER (.arc),
+           * MDTRAJ (.hdf5)
+           * LAMMPS trajectory format (.lammpstrj)
+
+        Raw data can be in following format:
+
+           * tabulated ASCII (.dat, .txt)
+           * binary python (.npy, .npz)
+
+    featurizer : MDFeaturizer, optional, default = None
+        a featurizer object specifying how molecular dynamics files should be read (e.g. intramolecular distances,
+        angles, dihedrals, etc).
+
+    topology : str, optional, default = None
+        A molecular topology file, e.g. in PDB (.pdb) format
+
+    stride : int, optional, default = 1
+        Load only every stride'th frame. By default, every frame is loaded
+
+    Returns
+    -------
+    data : ndarray or list of ndarray
+        If a single filename was given as an input, will return a single ndarray of
+
+    See also
+    --------
+    :py:func:`pipeline` : if your memory is not big enough, use pipeline to process it in a streaming manner
+
+    """
+    pass
+
+
+def input(input, featurizer=None, topology=None):
+    """ Wraps the input for stream-based processing. Do this to construct the first stage of a data processing
+        :py:func:`pipeline`.
+
+    Parameters
+    ----------
+    input : str or ndarray or list of strings or list of ndarrays
+        The input file names or input data. Can be given in any of these ways:
+
+        1. File name of a single trajectory. Can have any of the molecular dynamics trajectory formats or
+           raw data formats specified in :py:func:`load`
+        2. List of trajectory file names. Can have any of the molecular dynamics trajectory formats or
+           raw data formats specified in :py:func:`load`
+        3. Molecular dynamics trajectory in memory as a numpy array of shape (T, N, 3) with T time steps, N atoms
+           each having three (x,y,z) spatial coordinates
+        4. List of molecular dynamics trajectories in memory, each given as a numpy array of shape (T_i, N, 3),
+           where trajectory i has T_i time steps and all trajectories have shape (N, 3).
+        5. Trajectory of some features or order parameters in memory
+           as a numpy array of shape (T, N) with T time steps and N dimensions
+        6. List of trajectories of some features or order parameters in memory, each given as a numpy array
+           of shape (T_i, N), where trajectory i has T_i time steps and all trajectories have N dimensions
+
+    featurizer : MDFeaturizer, optional, default = None
+        a featurizer object specifying how molecular dynamics files should be read (e.g. intramolecular distances,
+        angles, dihedrals, etc). This parameter only makes sense if the input comes in the form of molecular dynamics
+        trajectories or data, and will otherwise create a warning and have no effect
+
+    topology : str, optional, default = None
+        a topology file name. This is needed when molecular dynamics trajectories are given and no featurizer is given.
+        In this case, only the Cartesian coordinates will be read.
+
+    See also
+    --------
+    :py:func:`pipeline` : The data input is the first stage for your pipeline. Add other stages to it and build a pipeline
+        to analyze big data in streaming mode.
+
+    """
+    # CASE 1: input is a string or list of strings
+        # check: if single string create a one-element list
+        # check: do all files have the same file type? If not: raise ValueError.
+        # CASE 1.1: file types are MD files
+            # check: do we either have a featurizer or a topology file name? If not: raise ValueError.
+            # create a MD reader with filenames and topology
+        # CASE 1.2: file types are raw data files
+            # create raw data reader from filenames
+    # CASE 2: input is a (T, N, 3) array or list of (T_i, N, 3) arrays
+        # check: if single array, create a one-element list
+        # check: do all arrays have compatible dimensions (*, N, 3)? If not: raise ValueError.
+        # CASE 2.1: There is also a featurizer present, create FeatureReader out of input data and topology
+        # CASE 2.2: Else, create a flat view (T, N*3) and create MemoryReader
+    # CASE 3: input is a (T, N) array or list of (T_i, N) arrays
+        # check: if single array, create a one-element list
+        # check: do all arrays have compatible dimensions (*, N)? If not: raise ValueError.
+        # create MemoryReader
+
+# TODO: Alternative names: chain, stream, datastream... probably pipeline is the best name though.
+def pipeline(stages, run=True, param_stride=1):
+    """Constructs a data analysis pipeline and parametrizes it (unless prevented).
+
+    If this function takes too long, consider using the stride parameters
+
+    Parameters
+    ----------
+    stages : data input or list of pipeline stages
+        If given a single pipeline stage this must be a data input constructed by :py:func:`input`.
+        If a list of pipelining stages are given, the first stage must be a data input constructed by :py:func:`input`.
+    run : bool, optional, default = True
+        If True, the pipeline will be parametrized immediately with the given stages. If only an input stage is given,
+        the run flag has no effect at this time. True also means that the pipeline will be immediately re-parametrized
+        when further stages are added to it.
+        *Attention* True means this function may take a long time to compute.
+        If False, the pipeline will be passive, i.e. it will not do any computations before you call parametrize()
+    param_stride: int, optional, default = 1
+        If set to 1, all input data will be used throughout the pipeline to parametrize its stages. Note that this
+        could cause the parametrization step to be very slow for large data sets. Since molecular dynamics data is usually
+        correlated at short timescales, it is often sufficient to parametrize the pipeline at a longer stride.
+        See also stride option in the output functions of the pipeline.
+
+    Returns
+    -------
+    pipe : :py:class:pyemma.coordinates.pipeline.Pipeline
+        A pipeline object that is able to conduct big data analysis with limited memory in streaming mode.
+
+    """
 
 def featurizer(topfile):
     """ Constructs a MDFeaturizer to select and add coordinates or features from MD data.
@@ -122,7 +269,9 @@ def featurizer(topfile):
     return _MDFeaturizer(topfile)
 
 
+# TODO: I think we might not need this anymore. Should we deprecate this? What do the pipeline-people think?
 def feature_reader(trajfiles, topfile):
+
     r"""Constructs a molecular feature reader.
 
     Parameters
@@ -153,6 +302,7 @@ def feature_reader(trajfiles, topfile):
     return _FeatureReader(trajfiles, topfile)
 
 
+# TODO: I think we might not need this anymore. Should we deprecate this? What do the pipeline-people think?
 def memory_reader(data):
     r"""Constructs a reader from an in-memory ndarray.
 

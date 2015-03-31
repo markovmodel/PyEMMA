@@ -27,7 +27,7 @@ class AssignCenters(AbstractClustering):
     >>> reader = ...
     >>> assign = AssignCenters('my_centers.dat')
     >>> disc = discretizer(reader, cluster=assign)
-    >>> disc.run()
+    >>> disc.parametrize()
 
     """
 

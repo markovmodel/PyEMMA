@@ -205,11 +205,81 @@ class Transformer(object):
         if self.in_memory:
             self._map_to_memory()
 
+    def map(self, X):
+        """Maps the input data through the transformer to correspondingly shaped output data.
+
+        Parameters
+        ----------
+        X : ndarray(T, n) or list of ndarray(T_i, n)
+            The input data, where T is the number of time steps and n is the number of dimensions.
+            When a list is provided they can have differently many time steps, but the number of dimensions need
+            to be consistent.
+
+        Returns
+        -------
+        Y : ndarray(T, d) or list of ndarray(T_i, d)
+            the mapped data, where T is the number of time steps of the input data and d is the output dimension
+            of this transformer. If called with a list of trajectories, Y will also be a corresponding list of
+            trajectories
+        """
+        # TODO: This is a very naive implementation of case switching. Please check and make more robust if needed.
+        if isinstance(X, np.ndarray):
+            if X.ndim == 2:
+                return self._map_array(X)
+            else:
+                raise TypeError('Input has the wrong shape: '+str(X.shape)+' with '+str(X.ndim)+' dimensions. Expecting a matrix (2 dimensions)')
+        elif isinstance(X, list):
+            out = []
+            for x in X:
+                out.append(self._map_array(x))
+        else:
+            raise TypeError('Input has the wrong type: '+str(type(X))+'. Either accepting numpy arrays of dimension 2 or lists of such arrays')
+
+    # TODO: implement
+    def get_output(self, stride=1):
+        """Maps all input data of this transformer and returns it as and array or list of arrays
+
+        Parameters
+        ----------
+        stride : int, optional, default = 1
+            If set to 1, all frames of the input data will be read and mapped. This gives you great detail, but might
+            be slow and create memory issues when trying to allocate the resulting output array.
+            If set greater than 1, only every so many frames will be read and mapped. The output arrays are
+            correspondingly smaller
+
+        Returns:
+        --------
+        output : ndarray(T, d) or list of ndarray(T_i, d)
+            the mapped data, where T is the number of time steps of the input data, or if stride > 1,
+            floor(T_in / stride). d is the output dimension of this transformer.
+            If the input consists of a list of trajectories, Y will also be a corresponding list of trajectories
+
+        """
+        pass
+
+    def _map_array(self, X):
+        """
+        Initializes the parametrization.
+
+        Parameters
+        ----------
+        X : ndarray(T, n)
+            The input data, where T is the number of time steps and n is the number of dimensions.
+
+        Returns
+        -------
+        Y : ndarray(T, d)
+            the projected data, where T is the number of time steps of the input data and d is the output dimension
+            of this transformer.
+
+        """
+        pass
+
+
     def _param_init(self):
         """
         Initializes the parametrization.
         """
-        # create mean array and covariance matrix
         pass
 
     def _param_finish(self):

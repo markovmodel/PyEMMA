@@ -710,6 +710,6 @@ class MDFeaturizer(object):
         # TODO: consider parallel evaluation computation here, this effort is
         # only worth it, if computation time dominates memory transfers
         for f in self.active_features:
-            feature_vec.append(f.map(traj).astype(np.float32))
+            feature_vec.append(f._map_array(traj).astype(np.float32))
 
         return np.hstack(feature_vec)
