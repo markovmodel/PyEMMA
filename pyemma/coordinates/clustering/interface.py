@@ -26,13 +26,34 @@ class AbstractClustering(Transformer):
         self.clustercenters = None
         self.dtrajs = []
 
-    def map(self, x):
+    def _map_array(self, X):
         """get closest index of point in :attr:`clustercenters` to x."""
         #d = self.data_producer.distances(x, self.clustercenters)
-        dtraj = np.empty(x.shape[0], np.int64)
-        regspatial.assign(x.astype(np.float32, order='C', copy=False), 
+        dtraj = np.empty(X.shape[0], np.int64)
+        regspatial.assign(X.astype(np.float32, order='C', copy=False),
                           self.clustercenters, dtraj, self.metric)
         return dtraj
+
+    def assign(self, X):
+        """
+        Assigns the given trajectory or list of trajectories to cluster centers by using the discretization defined
+        by this clustering method (usually a Voronoi tesselation)
+
+        Parameters
+        ----------
+        X : ndarray(T, n) or list of ndarray(T_i, n)
+            The input data, where T is the number of time steps and n is the number of dimensions.
+            When a list is provided they can have differently many time steps, but the number of dimensions need
+            to be consistent.
+
+        Returns
+        -------
+        Y : ndarray(T, dtype=int) or list of ndarray(T_i, dtype=int)
+            The discretized trajectory: int-array with the indexes of the assigned clusters, or list of such int-arrays.
+            If called with a list of trajectories, Y will also be a corresponding list of discrete trajectories
+
+        """
+        return self.map(X)
 
     def save_dtrajs(self, trajfiles=None, prefix='',
                     output_dir='.',
