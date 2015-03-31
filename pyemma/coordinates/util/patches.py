@@ -139,7 +139,7 @@ def iterload(filename, chunk=100, **kwargs):
             with DCDTrajectoryFile(filename) as f:
                 ptr = 0
                 if skip > 0:
-                    xyz, _, _, _ = f.read(skip, atom_indices=atom_indices)
+                    xyz, _, _ = f.read(skip, atom_indices=atom_indices)
                     if len(xyz) == 0:
                         raise StopIteration()
                 while True:
