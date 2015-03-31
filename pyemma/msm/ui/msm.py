@@ -11,7 +11,7 @@ __docformat__ = "restructuredtext en"
 import numpy as np
 
 from pyemma.msm.estimation import cmatrix, largest_connected_set, connected_cmatrix, tmatrix
-from pyemma.msm.analysis import statdist, timescales
+from pyemma.msm.analysis import statdist, timescales, eigenvectors
 
 __all__ = ['MSM']
 
@@ -67,11 +67,17 @@ class MSM(object):
         self.T = None
 
         """Stationary distribution"""
-        self.mu = None
+        self.mu = []
 
         self.computed = False
 
         self.estimate_on_lcc = estimate_on_lcc
+
+        """Left eigenvectors"""
+        self.LEVs = []
+
+        """Right eigenvectors"""
+        self.REVs = []
 
         if compute:
             self.compute()
@@ -128,10 +134,26 @@ class MSM(object):
     @property
     def stationary_distribution(self):
         self._assert_computed()
-        if self.mu is None:
+        if np.size(self.mu) == 0:
             self.mu = statdist(self.T)
         return self.mu
 
-    def get_timescales(self, k):
+    def get_timescales(self, k = 10):
         ts = timescales(self.T, k=k, tau=self.tau)
         return ts
+
+    def get_LEVs(self, k = 10):
+        self._assert_computed()
+        
+        if np.size(self.LEVs) == 0:
+           self.LEVs = eigenvectors(self.T.toarray(), k = k, right=False )
+        else:
+           print "LEVs already computed. Use MSM.LEVs"
+
+    def get_REVs(self, k = 10):
+        self._assert_computed()
+        
+        if np.size(self.REVs) == 0:
+           self.REVs = eigenvectors(self.T.toarray(), k = k, right=True  )
+        else:
+           print "REVs already computed. Use MSM.REVs"
