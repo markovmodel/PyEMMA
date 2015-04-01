@@ -405,6 +405,74 @@ class Transformer(object):
             self._t = 0
 
         return (last_itraj, X)
+        
+
+    def get_output(self, dimensions=slice(0,None), stride=1):
+        '''Returns in-memory trajectories of the transformed data, optionally
+           reduced in the number of dimensions and/or time resolution.
+    
+           Parameters
+           ----------
+           transfrom :  pyemma.coordinates.transfrom.Transformer object
+               transform that provides the input data
+           dimensions : list-like of indexes or slice
+               indices of dimensions you like to keep, default = all
+           stride : int
+               only take every n'th frame, default = 1
+
+           Returns
+           -------
+               list of (traj_length[i]/stride,len(dimensions)) ndarrays
+
+           Notes
+           -----
+           This function may be RAM intensive if stride is too large or 
+           too many dimensions are selected.
+
+           Example
+           -------
+           plotting trajectories
+           >>> import matplotlib.pyplot as plt
+           >>> %matplotlib inline # only for ipython notebook
+
+           >>> trajs = transform.subsample(dimensions=(0,),stride=100)
+           >>> for traj in trajs:
+           >>>     plt.figure()
+           >>>     plt.plot(traj[:,0])
+        '''
+        
+        if isinstance(dimensions, int):
+            ndim = 1
+            dimensions = slice(dimensions,dimensions+1)
+        elif isinstance(dimensions, list):
+            ndim = len(dimensions)
+        elif isinstance(dimensions, np.ndarray):
+            assert dimensions.ndim == 1, 'dimension indices can\'t have more than one dimension'
+            ndim = dimensions.shape[0]
+        elif isinstance(dimensions, slice):
+            ndim = len(np.zeros(self.dimension())[dimensions])
+        else:
+            raise Exception('unsupported type (%s) of \"dimensions\"'%type(dimensions))
+            
+        trajs = [np.zeros((0, ndim))
+                 for _ in xrange(self.number_of_trajectories())]
+        last_i = -1    
+        for i, chunk in self:
+            if i != last_i:
+                 t_0 = 0
+                 t_next = 0
+                 last_i = i
+            size = chunk.shape[0]
+            if t_next-t_0 < size:        
+                block =  chunk[t_next-t_0::stride, dimensions]
+                trajs[i] = np.concatenate((trajs[i], block))
+                n_out = (size - (t_next-t_0) - 1)//stride + 1
+                assert block.shape[0] == n_out
+            else:
+                n_out = 0
+            t_0 += size
+            t_next += stride*n_out
+        return trajs        
 
     @staticmethod
     def distance(x, y):
