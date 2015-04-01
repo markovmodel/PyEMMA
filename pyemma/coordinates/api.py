@@ -82,8 +82,28 @@ def featurizer(topfile):
 
     See also
     --------
-    pyemma.coordinates.io.MDFeaturizer
-        Featurizer object
+
+    Construct a discretizer pipeline processing all coordinates of trajectory 
+    "traj01.xtc" with a PCA transformation and cluster the principle components
+    with uniform time clustering:
+
+    >>> reader = feature_reader('traj01.xtc', 'topology.pdb')
+    >>> transform = pca(dim=2)
+    >>> cluster = uniform_time(n_clusters=100)
+    >>> disc = discretizer(reader, transform, cluster)
+
+    Finally you want to run the pipeline
+    >>> disc.parametrize()
+
+
+    Access the the discrete trajectories and saving them to files:
+
+    >>> disc.dtrajs
+    [array([0, 0, 1, 1, 2, ... ])]
+
+    This will store the discrete trajectory to "traj01.dtraj":
+
+    >>> disc.save_dtrajs()
 
     """
     return _MDFeaturizer(topfile)
@@ -189,22 +209,49 @@ def input(input, featurizer=None, topology=None):
     """
     # CASE 1: input is a string or list of strings
         # check: if single string create a one-element list
+        if isinstance(input, basestring):
+            input_list = [input]
+        elif len(input) > 0 and all(isinstance(item, basestring) for item in input):
+            input_list = input
+        else:
+            if len(input) is 0:
+                raise ValueError("The passed input list should not be empty.")
+            else:
+                raise ValueError("The passed list did not exclusively contain strings.")
+
+        try:
+            idx = input_list[0].rindex(".")
+            suffix = input_list[0][idx:]
+        except ValueError:
+            suffix = ""
+
         # check: do all files have the same file type? If not: raise ValueError.
-        # CASE 1.1: file types are MD files
-            # check: do we either have a featurizer or a topology file name? If not: raise ValueError.
-            # create a MD reader with filenames and topology
-        # CASE 1.2: file types are raw data files
-            # create raw data reader from filenames
-    # CASE 2: input is a (T, N, 3) array or list of (T_i, N, 3) arrays
-        # check: if single array, create a one-element list
-        # check: do all arrays have compatible dimensions (*, N, 3)? If not: raise ValueError.
-        # CASE 2.1: There is also a featurizer present, create FeatureReader out of input data and topology
-        # CASE 2.2: Else, create a flat view (T, N*3) and create MemoryReader
-    # CASE 3: input is a (T, N) array or list of (T_i, N) arrays
-        # check: if single array, create a one-element list
-        # check: do all arrays have compatible dimensions (*, N)? If not: raise ValueError.
-        # create MemoryReader
-    pass
+        if all(item.endswith(suffix) for item in input_list):
+            from mdtraj.formats.registry import _FormatRegistry
+
+            # CASE 1.1: file types are MD files
+            if suffix in _FormatRegistry.loaders.keys():
+                # check: do we either have a featurizer or a topology file name? If not: raise ValueError.
+                # create a MD reader with file names and topology
+                if not featurizer and not topology:
+                    raise ValueError("The input files were MD files which makes it mandatory to have either a "
+                                     "featurizer or a topology file.")
+                if not topology:
+                    # we have a featurizer
+                    reader = _FeatureReader.init_from_featurizer(input_list, featurizer)
+                else:
+                    # we have a topology file
+                    reader = _FeatureReader(input_list, topology)
+            else:
+                # CASE 1.2: file types are raw data files
+                # create raw data reader from file names
+                pass
+
+        else:
+            raise ValueError("Not all elements in the input list were of the type %s!" % suffix)
+    else:
+        raise ValueError("Input \"%s\" was no string or list of strings." % input)
+    return reader
 
 # TODO: Alternative names: chain, stream, datastream... probably pipeline is the best name though.
 def pipeline(stages, run=True, param_stride=1):
