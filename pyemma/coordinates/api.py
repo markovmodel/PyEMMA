@@ -711,7 +711,7 @@ def cluster_kmeans(data=None, k=100, max_iter=1000):
     Examples
     --------
 
-    >>> traj_data = [np.random.random((100, 3)), np.random.random((100,3))
+    >>> traj_data = [np.random.random((100, 3)), np.random.random((100,3))]
     >>> clustering = kmeans(traj_data, n_clusters=20)
     >>> clustering.dtrajs
     [array([0, 0, 1, ... ])]
@@ -779,7 +779,7 @@ def cluster_regspace(data=None, dmin=-1, max_centers=1000):
     """
     if dmin == -1:
         raise ValueError("provide a minimum distance for clustering")
-    res = _RegularSpaceClustering(dmin)
+    res = _RegularSpaceClustering(dmin, max_centers)
     if data is not None:
         inp = _DataInMemory(data)
         res.data_producer = inp
