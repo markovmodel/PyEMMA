@@ -12,19 +12,17 @@ from pyemma.util.log import getLogger
 
 from pyemma.coordinates.pipelines import Discretizer as _Discretizer
 # io
-from io.featurizer import MDFeaturizer as _MDFeaturizer
-from io.feature_reader import FeatureReader as _FeatureReader
-from io.data_in_memory import DataInMemory as _DataInMemory
-from pyemma.coordinates.io.frames_from_file import frames_from_file as _frames_from_file
-
+from pyemma.coordinates.io.featurizer import MDFeaturizer as _MDFeaturizer
+from pyemma.coordinates.io.feature_reader import FeatureReader as _FeatureReader
+from pyemma.coordinates.io.data_in_memory import DataInMemory as _DataInMemory
 # transforms
-from transform.pca import PCA as _PCA
-from transform.tica import TICA as _TICA
+from pyemma.coordinates.transform.pca import PCA as _PCA
+from pyemma.coordinates.transform.tica import TICA as _TICA
 # clustering
-from clustering.kmeans import KmeansClustering as _KmeansClustering
-from clustering.uniform_time import UniformTimeClustering as _UniformTimeClustering
-from clustering.regspace import RegularSpaceClustering as _RegularSpaceClustering
-from clustering.assign import AssignCenters as _AssignCenters
+from pyemma.coordinates.clustering.kmeans import KmeansClustering as _KmeansClustering
+from pyemma.coordinates.clustering.uniform_time import UniformTimeClustering as _UniformTimeClustering
+from pyemma.coordinates.clustering.regspace import RegularSpaceClustering as _RegularSpaceClustering
+from pyemma.coordinates.clustering.assign import AssignCenters as _AssignCenters
 
 logger = getLogger('coordinates.api')
 
