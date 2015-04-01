@@ -168,12 +168,22 @@ def load(trajfiles, featurizer=None, topology=None, stride=1):
     :func:`pyemma.coordinates.pipeline` : if your memory is not big enough, use pipeline to process it in a streaming manner
 
     """
-    pass
+    if isinstance(trajfiles, basestring) or (
+        isinstance(trajfiles, (list, tuple)) and (any(isinstance(item, basestring) for item in trajfiles) or len(trajfiles) is 0)
+    ):
+        reader = _get_file_reader(trajfiles, topology, featurizer)
+        trajs = reader.get_output(stride = stride)
+        if len(trajs)==1:
+            return trajs[0]
+        else:
+            return trajs
+    else:
+        raise Exception('unsupported type (%s) of input'%type(trajfiles))
 
 
 def input(input, featurizer=None, topology=None):
     """ Wraps the input for stream-based processing. Do this to construct the first stage of a data processing
-        :func:`pipeline`.
+        :py:func:`pipeline`.
 
     Parameters
     ----------
@@ -278,11 +288,19 @@ def pipeline(stages, run=True, param_stride=1):
 
     Returns
     -------
-    pipe : :func:`pyemma.coordinates.pipeline`
+    pipe : :py:class:pyemma.coordinates.pipeline.Pipeline
         A pipeline object that is able to conduct big data analysis with limited memory in streaming mode.
 
     """
-    pass
+    
+    if param_stride!=1:
+        raise Exception('param_stride != 1 not implemented yet')
+    if not isinstance(stages, list):
+        stages = [satges]
+    p = Pipeline(stages)
+    if run:
+        p.parametrize()
+    return p
 
 def discretizer(reader,
                 transform=None,
@@ -670,6 +688,9 @@ def tica(data=None, lag=10, dim=2, force_eigenvalues_le_one=False):
 
     Notes
     -----
+    When data is given, the transform is immediately computed.
+    Otherwise, an empty TICA object is returned.
+
     Given a sequence of multivariate data :math:`X_t`, computes the mean-free
     covariance and time-lagged covariance matrix:
 
