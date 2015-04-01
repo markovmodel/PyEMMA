@@ -26,7 +26,7 @@ function run {
     $input = "nosetests.xml"
     $output = "transformed.xml"
     
-    nosetests pyemma --all-modules --with-xunit
+    nosetests pyemma --all-modules --with-xunit -a '!slow'
     $success = $?
     Write-Host "result code of nosetests:" $success
 
