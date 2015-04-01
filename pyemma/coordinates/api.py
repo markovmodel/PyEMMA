@@ -243,10 +243,9 @@ def input(input, featurizer=None, topology=None):
                     # we have a topology file
                     reader = _FeatureReader(input_list, topology)
             else:
-                # CASE 1.2: file types are raw data files
-                # create raw data reader from file names
+                # TODO: CASE 1.2: file types are raw data files
+                # TODO: create raw data reader from file names
                 pass
-
         else:
             raise ValueError("Not all elements in the input list were of the type %s!" % suffix)
     else:
