@@ -11,17 +11,17 @@ from pyemma.util.log import getLogger
 
 from pyemma.coordinates.pipeline import Discretizer as _Discretizer
 # io
-from io.featurizer import MDFeaturizer as _MDFeaturizer
-from io.feature_reader import FeatureReader as _FeatureReader
-from io.data_in_memory import DataInMemory as _DataInMemory
+from pyemma.coordinates.io.featurizer import MDFeaturizer as _MDFeaturizer
+from pyemma.coordinates.io.feature_reader import FeatureReader as _FeatureReader
+from pyemma.coordinates.io.data_in_memory import DataInMemory as _DataInMemory
 # transforms
-from transform.pca import PCA as _PCA
-from transform.tica import TICA as _TICA
+from pyemma.coordinates.transform.pca import PCA as _PCA
+from pyemma.coordinates.transform.tica import TICA as _TICA
 # clustering
-from clustering.kmeans import KmeansClustering as _KmeansClustering
-from clustering.uniform_time import UniformTimeClustering as _UniformTimeClustering
-from clustering.regspace import RegularSpaceClustering as _RegularSpaceClustering
-from clustering.assign import AssignCenters as _AssignCenters
+from pyemma.coordinates.clustering.kmeans import KmeansClustering as _KmeansClustering
+from pyemma.coordinates.clustering.uniform_time import UniformTimeClustering as _UniformTimeClustering
+from pyemma.coordinates.clustering.regspace import RegularSpaceClustering as _RegularSpaceClustering
+from pyemma.coordinates.clustering.assign import AssignCenters as _AssignCenters
 
 logger = getLogger('coordinates.api')
 
@@ -210,14 +210,53 @@ def input(input, featurizer=None, topology=None):
         to analyze big data in streaming mode.
 
     """
+    reader = None
     # CASE 1: input is a string or list of strings
+    if isinstance(input, basestring) or (
+        isinstance(input, (list, tuple)) and (any(isinstance(item, basestring) for item in input) or len(input) is 0)
+    ):
         # check: if single string create a one-element list
+        if isinstance(input, basestring):
+            input_list = [input]
+        elif len(input) > 0 and all(isinstance(item, basestring) for item in input):
+            input_list = input
+        else:
+            if len(input) is 0:
+                raise ValueError("The passed input list should not be empty.")
+            else:
+                raise ValueError("The passed list did not exclusively contain strings.")
+
+        try:
+            idx = input_list[0].rindex(".")
+            suffix = input_list[0][idx:]
+        except ValueError:
+            suffix = ""
+
         # check: do all files have the same file type? If not: raise ValueError.
-        # CASE 1.1: file types are MD files
-            # check: do we either have a featurizer or a topology file name? If not: raise ValueError.
-            # create a MD reader with filenames and topology
-        # CASE 1.2: file types are raw data files
-            # create raw data reader from filenames
+        if all(item.endswith(suffix) for item in input_list):
+            from mdtraj.formats.registry import _FormatRegistry
+
+            # CASE 1.1: file types are MD files
+            if suffix in _FormatRegistry.loaders.keys():
+                # check: do we either have a featurizer or a topology file name? If not: raise ValueError.
+                # create a MD reader with file names and topology
+                if not featurizer and not topology:
+                    raise ValueError("The input files were MD files which makes it mandatory to have either a "
+                                     "featurizer or a topology file.")
+                if not topology:
+                    # we have a featurizer
+                    reader = _FeatureReader.init_from_featurizer(input_list, featurizer)
+                else:
+                    # we have a topology file
+                    reader = _FeatureReader(input_list, topology)
+            else:
+                # CASE 1.2: file types are raw data files
+                # create raw data reader from file names
+                pass
+
+        else:
+            raise ValueError("Not all elements in the input list were of the type %s!" % suffix)
+    print reader
     # CASE 2: input is a (T, N, 3) array or list of (T_i, N, 3) arrays
         # check: if single array, create a one-element list
         # check: do all arrays have compatible dimensions (*, N, 3)? If not: raise ValueError.
