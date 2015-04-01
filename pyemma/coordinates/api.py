@@ -2,7 +2,7 @@ r"""User-API for the pyemma.coordinates package
 
 .. currentmodule:: pyemma.coordinates.api
 """
-from coordinates.io.util.reader_utils import get_file_reader
+from pyemma.coordinates.io.util.reader_utils import get_file_reader as _get_file_reader
 
 __docformat__ = "restructuredtext en"
 
@@ -174,7 +174,17 @@ def load(trajfiles, featurizer=None, topology=None, stride=1):
     :py:func:`pipeline` : if your memory is not big enough, use pipeline to process it in a streaming manner
 
     """
-    pass
+    if isinstance(trajfiles, basestring) or (
+        isinstance(trajfiles, (list, tuple)) and (any(isinstance(item, basestring) for item in trajfiles) or len(trajfiles) is 0)
+    ):
+        reader = _get_file_reader(trajfiles, topology, featurizer)
+        trajs = reader.get_output(stride = stride)
+        if len(trajs)==1:
+            return trajs[0]
+        else:
+            return trajs
+    else:
+        raise Exception('unsupported type (%s) of input'%type(trajfiles))
 
 
 def input(input, featurizer=None, topology=None):
@@ -219,7 +229,11 @@ def input(input, featurizer=None, topology=None):
     if isinstance(input, basestring) or (
         isinstance(input, (list, tuple)) and (any(isinstance(item, basestring) for item in input) or len(input) is 0)
     ):
-        reader = get_file_reader(input, topology, featurizer)
+        reader = _get_file_reader(input, topology, featurizer)
+        
+    elif isinstance(input, np.ndarray) or (
+        isinstance(input, (list, tuple)) and (any(isinstance(item, np.ndarray) for item in input) or len(input) is 0)
+    ):
     # CASE 2: input is a (T, N, 3) array or list of (T_i, N, 3) arrays
         # check: if single array, create a one-element list
         # check: do all arrays have compatible dimensions (*, N, 3)? If not: raise ValueError.
@@ -229,6 +243,11 @@ def input(input, featurizer=None, topology=None):
         # check: if single array, create a one-element list
         # check: do all arrays have compatible dimensions (*, N)? If not: raise ValueError.
         # create MemoryReader
+        raise Exception('input of ndarrays not implemented yet')
+
+    else:
+        raise Exception('unsupported type (%s) of input'%type(input))
+
     return reader
 
 
