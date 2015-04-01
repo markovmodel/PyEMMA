@@ -113,6 +113,9 @@ def discretizer(reader,
 
 
 #TODO: DOC - which topology file formats does mdtraj support? Find out and complete docstring
+# -> Supported file extensions:
+# -> ['.xtc', '.restrt', '.h5', '.lammpstrj', '.xml', '.inpcrd', '.mdcrd', '.stk', '.xyz', '.crd', '.lh5', '.nc',
+#     '.dtr', '.hdf5', '.pdb', '.dcd', '.rst7', '.mol2', '.netcdf', '.trr', '.gro', '.ncrst', '.binpos', '.arc']
 #
 #TODO: DISCUSS - There's a catch here: When loading MD file the nature frame would be a Nx3 array,
 #TODO: but for the transformers we expect flat arrays. We should either here have a 'flatten' flat, or be flexible
@@ -215,6 +218,24 @@ def input(input, featurizer=None, topology=None):
     if isinstance(input, basestring) or (
         isinstance(input, (list, tuple)) and (any(isinstance(item, basestring) for item in input) or len(input) is 0)
     ):
+        reader = _get_file_reader(input, topology, featurizer)
+    # CASE 2: input is a (T, N, 3) array or list of (T_i, N, 3) arrays
+        # check: if single array, create a one-element list
+        # check: do all arrays have compatible dimensions (*, N, 3)? If not: raise ValueError.
+        # CASE 2.1: There is also a featurizer present, create FeatureReader out of input data and topology
+        # CASE 2.2: Else, create a flat view (T, N*3) and create MemoryReader
+    # CASE 3: input is a (T, N) array or list of (T_i, N) arrays
+        # check: if single array, create a one-element list
+        # check: do all arrays have compatible dimensions (*, N)? If not: raise ValueError.
+        # create MemoryReader
+    return reader
+
+
+def _get_file_reader(input, topology, featurizer):
+    if isinstance(input, basestring) or (
+                isinstance(input, (list, tuple)) and (any(isinstance(item, basestring) for item in input) or len(input) is 0)
+    ):
+        reader = None
         # check: if single string create a one-element list
         if isinstance(input, basestring):
             input_list = [input]
@@ -229,8 +250,8 @@ def input(input, featurizer=None, topology=None):
         try:
             idx = input_list[0].rindex(".")
             suffix = input_list[0][idx:]
-        except ValueError:
-            suffix = ""
+        except ValueError as ex:
+            raise ValueError("The specified files %s had no file extension!" % input_list, ex)
 
         # check: do all files have the same file type? If not: raise ValueError.
         if all(item.endswith(suffix) for item in input_list):
@@ -256,16 +277,9 @@ def input(input, featurizer=None, topology=None):
 
         else:
             raise ValueError("Not all elements in the input list were of the type %s!" % suffix)
-    print reader
-    # CASE 2: input is a (T, N, 3) array or list of (T_i, N, 3) arrays
-        # check: if single array, create a one-element list
-        # check: do all arrays have compatible dimensions (*, N, 3)? If not: raise ValueError.
-        # CASE 2.1: There is also a featurizer present, create FeatureReader out of input data and topology
-        # CASE 2.2: Else, create a flat view (T, N*3) and create MemoryReader
-    # CASE 3: input is a (T, N) array or list of (T_i, N) arrays
-        # check: if single array, create a one-element list
-        # check: do all arrays have compatible dimensions (*, N)? If not: raise ValueError.
-        # create MemoryReader
+    else:
+        raise ValueError("Input \"%s\" was no string or list of strings." % input)
+    return reader
 
 # TODO: Alternative names: chain, stream, datastream... probably pipeline is the best name though.
 def pipeline(stages, run=True, param_stride=1):
