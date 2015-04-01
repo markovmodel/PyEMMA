@@ -2,6 +2,7 @@ r"""User-API for the pyemma.coordinates package
 
 .. currentmodule:: pyemma.coordinates.api
 """
+from pyemma.coordinates.io.util.reader_utils import get_file_reader as _get_file_reader
 
 __docformat__ = "restructuredtext en"
 
