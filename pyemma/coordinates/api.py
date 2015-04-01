@@ -280,6 +280,15 @@ def pipeline(stages, run=True, param_stride=1):
         A pipeline object that is able to conduct big data analysis with limited memory in streaming mode.
 
     """
+    
+    if param_stride!=1:
+        raise Exception('param_stride != 1 not implemented yet')
+    if not isinstance(stages, list):
+        stages = [satges]
+    p = Pipeline(stages)
+    if run:
+        p.parametrize()
+    return p
 
 def featurizer(topfile):
     """ Constructs a MDFeaturizer to select and add coordinates or features from MD data.
