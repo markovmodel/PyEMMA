@@ -102,8 +102,9 @@ class MSM(object):
         self.mu = statdist(self.T)
 
         """ First left and right EVs"""
-        self.LEVs = eigenvectors(self.T, k = np.min([10, self.T.shape[0]-1]), right=False )          
-        self.REVs = eigenvectors(self.T, k = np.min([10, self.T.shape[0]-1]), right=True )
+        k = np.min([10, self.T.shape[0]-2])
+        self.LEVs = eigenvectors(self.T, k = k, right=False )          
+        self.REVs = eigenvectors(self.T, k = k, right=True )
 
         self.computed = True
 
