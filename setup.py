@@ -102,12 +102,15 @@ def extensions():
         Extension('pyemma.msm.estimation.sparse.mle_trev',
                   sources=['pyemma/msm/estimation/sparse/mle_trev.pyx',
                            'pyemma/msm/estimation/sparse/_mle_trev.c'])
-
+    if sys.platform.startswith('win'):
+        lib_prefix = 'lib'
+    else:
+        lib_prefix = ''
     regspatial_module = \
         Extension('pyemma.coordinates.clustering.regspatial', 
                   sources = ['pyemma/coordinates/clustering/regspatial.c'], 
                   include_dirs = [mdtraj.capi()['include_dir']],
-                  libraries = ['theobald'],
+                  libraries = [lib_prefix+'theobald'],
                   library_dirs = [mdtraj.capi()['lib_dir']])
 
     exts += [mle_trev_given_pi_dense_module,
