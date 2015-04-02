@@ -59,7 +59,7 @@ versioneer.parentdir_prefix = 'pyemma-'
 ###############################################################################
 def extensions():
     """How do we handle cython:
-    1. when on git, require cython during setup time (do not distribute 
+    1. when on git, require cython during setup time (do not distribute
     generated .c files via git)
      a) cython present -> fine
      b) no cython present -> install it on the fly. Extensions have to have .pyx suffix
@@ -81,7 +81,7 @@ def extensions():
     # setup OpenMP support
     from setup_util import detect_openmp
     openmp_enabled, needs_gomp = detect_openmp()
-    
+
     import mdtraj
 
     exts = []
@@ -107,8 +107,8 @@ def extensions():
     else:
         lib_prefix = ''
     regspatial_module = \
-        Extension('pyemma.coordinates.clustering.regspatial', 
-                  sources = ['pyemma/coordinates/clustering/regspatial.c'], 
+        Extension('pyemma.coordinates.clustering.regspatial',
+                  sources = ['pyemma/coordinates/clustering/regspatial.c'],
                   include_dirs = [mdtraj.capi()['include_dir']],
                   libraries = [lib_prefix+'theobald'],
                   library_dirs = [mdtraj.capi()['lib_dir']])
@@ -118,15 +118,6 @@ def extensions():
              mle_trev_sparse_module,
              regspatial_module]
 
-#     kahan_sum = Extension('pyemma.coordinates.coordinate_transformation.exts.stable_sum',
-#                           sources=['pyemma/coordinates/coordinate_transformation/exts/stable_sum.pyx'],
-#                           extra_compile_args = ['-g'])
-#     
-#     update_mean = Extension('pyemma.coordinates.coordinate_transformation.exts.fmath_wrapper',
-#                           sources=['pyemma/coordinates/coordinate_transformation/exts/fmath_wrapper.pyx'],)
-# 
-#     #exts += [kahan_sum]
-#     exts += [update_mean]
     if USE_CYTHON: # if we have cython available now, cythonize module
         exts = cythonize(exts)
 
@@ -177,7 +168,7 @@ def get_cmdclass():
                 cythonize(extensions())
             except ImportError:
                 warnings.warn('at sdist cythonize failed')
-            
+
             return versioneer.cmd_sdist.run(self)
 
     cmdclass = dict(build_ext=np_build,
@@ -245,7 +236,11 @@ if len(sys.argv) == 1 or (len(sys.argv) >= 2 and ('--help' in sys.argv[1:] or
     pass
 else:
     # setuptools>=2.2 can handle setup_requires
-    metadata['setup_requires'] = ['numpy>=1.6.0', 'setuptools>3.6', 'mdtraj>=1.2.0']
+    metadata['setup_requires'] = ['numpy>=1.6.0',
+                                  'setuptools>3.6',
+                                  'mdtraj>=1.2.0',
+                                  'nose',
+                                 ]
 
     # when on git, we require cython
     if os.path.exists('.git'):
