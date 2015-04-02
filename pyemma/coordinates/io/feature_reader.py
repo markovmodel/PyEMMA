@@ -7,7 +7,7 @@ import mdtraj
 from pyemma.coordinates.util import patches
 from pyemma.util.log import getLogger
 
-from .featurizer import MDFeaturizer
+from pyemma.coordinates.io.featurizer import MDFeaturizer
 
 log = getLogger('FeatureReader')
 
@@ -62,7 +62,8 @@ class FeatureReader(Transformer):
         self.topfile = topologyfile
 
         # featurizer
-        self.featurizer = MDFeaturizer(topologyfile)
+        if not hasattr(self, "featurizer"):
+            self.featurizer = MDFeaturizer(topologyfile)
 
         # _lengths
         self._lengths = []
@@ -87,6 +88,11 @@ class FeatureReader(Transformer):
 
         self._t = 0
         self.data_producer = self
+
+    @classmethod
+    def init_from_featurizer(cls, trajectories, featurizer):
+        cls.featurizer = featurizer
+        return cls(trajectories, featurizer.topologyfile)
 
     def describe(self):
         """
