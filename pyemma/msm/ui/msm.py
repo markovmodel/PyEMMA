@@ -11,7 +11,7 @@ __docformat__ = "restructuredtext en"
 import numpy as np
 
 from pyemma.msm.estimation import cmatrix, largest_connected_set, connected_cmatrix, tmatrix
-from pyemma.msm.analysis import statdist, timescales
+from pyemma.msm.analysis import statdist, timescales, eigenvectors
 
 __all__ = ['MSM']
 
@@ -73,6 +73,12 @@ class MSM(object):
 
         self.estimate_on_lcc = estimate_on_lcc
 
+        """Left eigenvectors"""
+        self.LEVs = None
+
+        """Right eigenvectors"""
+        self.REVs = None
+
         if compute:
             self.compute()
 
@@ -91,6 +97,14 @@ class MSM(object):
             self.T = tmatrix(self.Ccc, reversible=self.reversible)
         else:
             self.T = tmatrix(self.C, reversible=self.reversible)
+
+        """Stationary distribution"""
+        self.mu = statdist(self.T)
+
+        """ First left and right EVs"""
+        k = np.min([10, self.T.shape[0]-2])
+        self.LEVs = eigenvectors(self.T, k = k, right=False )          
+        self.REVs = eigenvectors(self.T, k = k, right=True )
 
         self.computed = True
 
@@ -128,10 +142,38 @@ class MSM(object):
     @property
     def stationary_distribution(self):
         self._assert_computed()
-        if self.mu is None:
-            self.mu = statdist(self.T)
         return self.mu
 
-    def get_timescales(self, k):
+    def get_timescales(self, k = 10):
         ts = timescales(self.T, k=k, tau=self.tau)
         return ts
+
+    def get_LEVs(self, k = None):
+        self._assert_computed()
+        
+        if k is None:
+           k = self.T.shape[0] 
+        else:
+           k = np.min([self.T.shape[0], k])
+
+        if self.LEVs.shape[1] < k and k < self.T.shape[0]:
+           self.LEVs = eigenvectors(self.T, k, right=False )           # "some" eigenvectors: sparse diagonalization 
+        elif self.LEVs.shape[1] < k and k == self.T.shape[0]:
+           self.LEVs = eigenvectors(self.T.toarray(), k, right=False ) # all eigenvectors: no point in sparse diagonalization
+        else:
+           self.LEVs = self.LEVs[:,:k]
+
+    def get_REVs(self, k = None):
+        self._assert_computed()
+        
+        if k is None:
+           k = self.T.shape[0] 
+        else:
+           k = np.min([self.T.shape[0], k])
+
+        if self.REVs.shape[1] < k and k < self.T.shape[0]:
+           self.REVs = eigenvectors(self.T, k, right=False )           # "some" eigenvectors: sparse diagonalization 
+        elif self.REVs.shape[1] < k and k == self.T.shape[0]:
+           self.REVs = eigenvectors(self.T.toarray(), k, right = True ) # all eigenvectors: no point in sparse diagonalization
+        else:
+           self.REVs = self.REVs[:,:k]
