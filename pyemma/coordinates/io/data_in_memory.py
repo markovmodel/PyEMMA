@@ -88,35 +88,49 @@ class DataInMemory(Transformer):
         """
         return self.ntraj
 
-    def trajectory_length(self, itraj):
+    def trajectory_length(self, itraj, stride=1):
         """
         Returns the length of trajectory
 
         :param itraj:
             trajectory index
+        :param stride: 
+            return value is the number of frames in trajectory when
+            running through it with a step size of `stride`            
 
         :return:
             length of trajectory
         """
-        return self._lengths[itraj]
+        return (self._lengths[itraj] - 1) // stride + 1
 
-    def trajectory_lengths(self):
+    def trajectory_lengths(self, stride=1):
         """
         Returns the length of each trajectory
+
+        :param stride:
+            return value is the number of frames in trajectories when
+            running through them with a step size of `stride`       
 
         :return:
             length of each trajectory
         """
-        return self._lengths
+        return [(l - 1)//stride + 1 for l in self._lengths]
 
-    def n_frames_total(self):
+    def n_frames_total(self, stride=1):
         """
         Returns the total number of frames, over all trajectories
+
+        :param stride:
+            return value is the number of frames in trajectories when
+            running through them with a step size of `stride`       
 
         :return:
             the total number of frames, over all trajectories
         """
-        return np.sum(self._lengths)
+        if stride == 1:
+            return np.sum(self._lengths)
+        else:
+            return sum(self.trajectory_lengths(stride))        
 
     def dimension(self):
         """
@@ -126,13 +140,13 @@ class DataInMemory(Transformer):
         """
         return self.ndim
 
-    def _reset(self):
+    def _reset(self, stride=1):
         """Resets the data producer
         """
         self._itraj = 0
         self._t = 0
 
-    def _next_chunk(self, lag=0):
+    def _next_chunk(self, lag=0, stride=1):
         """
 
         :param lag:
@@ -148,35 +162,32 @@ class DataInMemory(Transformer):
 
         # complete trajectory mode
         if self._chunksize == 0:
-            X = traj
+            X = traj[::stride]
             self._itraj += 1
 
             if lag == 0:
                 return X
             else:
-                Y = traj[lag:traj_len]
+                Y = traj[lag*stride:traj_len:stride]
                 return (X, Y)
         # chunked mode
         else:
-            upper_bound = min(self._t + self._chunksize, traj_len)
-            slice_x = slice(self._t, upper_bound)
+            upper_bound = min(self._t + self._chunksize*stride, traj_len)
+            slice_x = slice(self._t, upper_bound, stride)
 
             X = traj[slice_x]
-            self._t += X.shape[0]
+            self._t = upper_bound
+
+            if self._t >= traj_len:
+                self._itraj += 1
+                self._t = 0
 
             if lag == 0:
-                if self._t >= traj_len:
-                    self._itraj += 1
-                    self._t = 0
                 return X
             else:
                 # its okay to return empty chunks
-                upper_bound = min(self._t + lag + self._chunksize, traj_len)
-
-                Y = traj[self._t + lag: upper_bound]
-                if self._t + lag >= traj_len:
-                    self._itraj += 1
-                    self._t = 0
+                upper_bound = min(self._t + (lag + self._chunksize)*stride, traj_len)
+                Y = traj[self._t + lag : upper_bound : stride]
                 return X, Y
 
     @staticmethod

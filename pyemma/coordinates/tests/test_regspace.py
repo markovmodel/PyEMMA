@@ -21,14 +21,17 @@ class RandomDataSource:
             self.data += a
         self.i = -1
 
-    def _next_chunk(self, lag=0):
+    def _next_chunk(self, lag=0, stride=1):
+        assert stride==1, 'stride !=1 not implemented'
         self.i += 1
         return self.data[self.i]
 
-    def _reset(self):
+    def _reset(self, stride=1):
+        assert stride == 1, 'stride !=1 not implemented'
         self.i = -1
 
-    def trajectory_length(self, itraj):
+    def trajectory_length(self, itraj, stride=1):
+        assert stride == 1, 'stride !=1 not implemented'
         return self.data[itraj].shape[0]
 
     def number_of_trajectories(self):
