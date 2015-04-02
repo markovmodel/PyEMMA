@@ -293,13 +293,12 @@ def pipeline(stages, run=True, param_stride=1):
 
     """
     
-    if param_stride!=1:
-        raise Exception('param_stride != 1 not implemented yet')
     if not isinstance(stages, list):
         stages = [satges]
     p = Pipeline(stages)
+    # TODO: store param_stride if we don't run the pipeline right now
     if run:
-        p.parametrize()
+        p.parametrize(param_stride)
     return p
 
 def discretizer(reader,
