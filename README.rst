@@ -2,6 +2,19 @@
 EMMA (Emma's Markov Model Algorithms)
 =====================================
 
+.. image:: https://travis-ci.org/markovmodel/PyEMMA.svg?branch=devel
+   :target: https://travis-ci.org/markovmodel/PyEMMA
+.. image:: https://badge.fury.io/py/pyemma.svg
+   :target: https://pypi.python.org/pypi/pyemma
+.. image:: https://binstar.org/omnia/pyemma/badges/version.svg
+   :target: https://binstar.org/omnia/pyemma
+.. image:: https://pypip.in/d/pyemma/badge.svg
+   :target: https://pypi.python.org/pypi/pyemma
+.. image:: https://binstar.org/xavier/binstar/badges/downloads.svg
+   :target: https://binstar.org/omnia/pyemma
+.. image:: https://binstar.org/omnia/pyemma/badges/installer/conda.svg
+   :target: https://conda.binstar.org/omnia
+
 What is it?
 -----------
 EMMA is an open source collection of algorithms implemented mostly in
