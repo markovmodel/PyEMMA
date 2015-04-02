@@ -321,10 +321,10 @@ class BackboneTorsionFeature(object):
 
     def describe(self):
         top = self.topology
-        labels_phi = ["PHI %s %i" % _describe_atom(top, ires)
+        labels_phi = ["PHI %s" % _describe_atom(top, ires)
                       for ires in self._phi_inds]
 
-        labels_psi = ["PSI %s %i" % _describe_atom(top, ires)
+        labels_psi = ["PSI %s" % _describe_atom(top, ires)
                       for ires in self._psi_inds]
 
         return labels_phi + labels_psi
