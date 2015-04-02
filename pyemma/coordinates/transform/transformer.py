@@ -206,10 +206,6 @@ class Transformer(object):
                         X = self.data_producer._next_chunk(stride=stride)
                         Y = None
                     else:
-                        if self.trajectory_length(itraj,stride=stride) <= lag:
-                            log.error(
-                                "trajectory nr %i to short, skipping it" % itraj)
-                            break
                         X, Y = self.data_producer._next_chunk(lag=lag,stride=stride)
                     L = np.shape(X)[0]
                     # last chunk in traj?
