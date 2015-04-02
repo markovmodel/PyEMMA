@@ -183,23 +183,27 @@ class TICA(Transformer):
                 return False,self._tau
 
         elif ipass == 1:
-            self.N_cov += np.shape(X)[0]
-            self.N_cov_tau += np.shape(Y)[0]
-            X_meanfree = X - self.mu
-            Y_meanfree = Y - self.mu
-            # update the time-lagged covariance matrix
-            end = min(X_meanfree.shape[0],Y_meanfree.shape[0])
-            self.cov_tau += np.dot(X_meanfree[0:end].T, Y_meanfree[0:end])
+            if self.trajectory_length(itraj,stride=stride) > self._tau:
+                self.N_cov += np.shape(X)[0]
+                self.N_cov_tau += np.shape(Y)[0]
+                X_meanfree = X - self.mu
+                Y_meanfree = Y - self.mu
+                # update the time-lagged covariance matrix
+                end = min(X_meanfree.shape[0],Y_meanfree.shape[0])
+                self.cov_tau += np.dot(X_meanfree[0:end].T, Y_meanfree[0:end])
 
-            # update the instantaneous covariance matrix
-            self.cov += np.dot(X_meanfree.T, X_meanfree)
+                # update the instantaneous covariance matrix
+                self.cov += np.dot(X_meanfree.T, X_meanfree)
             
-            if self._force_eigenvalues_le_one:
-                start2 = max(self._tau-t, 0)
-                end2   = min(self.trajectory_length(itraj,stride)-self._tau-t, X_meanfree.shape[0])
-                if start2 < X_meanfree.shape[0] and end2 > 0 and start2 < end2: 
-                    self.cov += np.dot(X_meanfree[start2:end2,:].T, X_meanfree[start2:end2,:])
-                    self.N_cov += (end2-start2)
+                if self._force_eigenvalues_le_one:
+                    start2 = max(self._tau-t, 0)
+                    end2   = min(self.trajectory_length(itraj,stride)-self._tau-t, X_meanfree.shape[0])
+                    if start2 < X_meanfree.shape[0] and end2 > 0 and start2 < end2: 
+                        self.cov += np.dot(X_meanfree[start2:end2,:].T, X_meanfree[start2:end2,:])
+                        assert X_meanfree[start2:end2,:].shape[0] == (end2-start2)
+                        self.N_cov += (end2-start2)
+            else:
+                log.error("trajectory nr %i too short, skipping it" % itraj)
 
             if last_chunk:
                 log.info("finished calculation of Cov and Cov_tau.")
