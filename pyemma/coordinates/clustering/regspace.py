@@ -67,7 +67,7 @@ class RegularSpaceClustering(AbstractClustering):
         # memory for cluster centers and discrete trajectories
         return 4 * self.data_producer.dimension() + 4 * self.data_producer.n_frames_total()
 
-    def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
+    def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None, stride=1):
         """
         first pass: calculate clustercenters
          1. choose first datapoint as centroid
@@ -100,7 +100,7 @@ class RegularSpaceClustering(AbstractClustering):
                           str(self.clustercenters.shape))
                 log.info("number of clustercenters: %i" %
                          len(self.clustercenters))
-                n = self.data_producer.trajectory_length(itraj)
+                n = self.data_producer.trajectory_length(itraj, stride=stride)
                 self.dtrajs.append(np.empty(n, dtype=np.int64))
             L = np.shape(X)[0]
             

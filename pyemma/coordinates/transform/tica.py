@@ -58,11 +58,11 @@ class TICA(Transformer):
 
     """
 
-    def __init__(self, lag, output_dimension, epsilon=1e-6, force_eigenvalues_le_one=False):
+    def __init__(self, tau, output_dimension, epsilon=1e-6, force_eigenvalues_le_one=False):
         super(TICA, self).__init__()
 
         # store lag time to set it appropriatly in second pass of parametrize
-        self._tau = lag
+        self._tau = tau
         self._output_dimension = output_dimension
         self.epsilon = epsilon
         self._force_eigenvalues_le_one = force_eigenvalues_le_one
@@ -137,9 +137,11 @@ class TICA(Transformer):
 
         log.info("Running TICA with tau=%i; Estimating two covariance matrices"
                  " with dimension (%i, %i)" % (self._tau, dim, dim))
+                 
+        return 0 # in zero'th pass don't request lagged data
 
     def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
-                       last_chunk, ipass, Y=None):
+                       last_chunk, ipass, Y=None, stride=1):
         """
         Chunk-based parameterization of TICA. Iterates through all data twice. In the first pass, the
         data means are estimated, in the second pass the covariance and time-lagged covariance
@@ -178,9 +180,9 @@ class TICA(Transformer):
 
                 # now we request real lagged data, since we are finished
                 # with first pass
-                self.lag = self._tau
+                return False,self._tau
 
-        if ipass == 1:
+        elif ipass == 1:
             self.N_cov += np.shape(X)[0]
             self.N_cov_tau += np.shape(Y)[0]
             X_meanfree = X - self.mu
@@ -194,7 +196,7 @@ class TICA(Transformer):
             
             if self._force_eigenvalues_le_one:
                 start2 = max(self._tau-t, 0)
-                end2   = min(self.trajectory_length(itraj)-self._tau-t, X_meanfree.shape[0])
+                end2   = min(self.trajectory_length(itraj,stride)-self._tau-t, X_meanfree.shape[0])
                 if start2 < X_meanfree.shape[0] and end2 > 0 and start2 < end2: 
                     self.cov += np.dot(X_meanfree[start2:end2,:].T, X_meanfree[start2:end2,:])
                     self.N_cov += (end2-start2)
@@ -217,7 +219,6 @@ class TICA(Transformer):
         
         # norm
         self.cov /= self.N_cov - 1
-        #self.cov_tau /= self.N - self.lag*(self.number_of_trajectories()-self.n_short) - 1
         self.cov_tau /= self.N_cov_tau - 1 
 
         # symmetrize covariance matrices

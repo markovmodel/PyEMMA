@@ -18,7 +18,7 @@ class TestTICA(unittest.TestCase):
     def test(self):
         np.random.seed(0)
 
-        tica = TICA(lag=50, output_dimension=1)
+        tica = TICA(tau=50, output_dimension=1)
         data = np.random.randn(100, 10)
         ds = DataInMemory(data)
         tica.data_producer = ds
@@ -28,7 +28,7 @@ class TestTICA(unittest.TestCase):
         Y = tica._map_array(data)
 
     def test_duplicated_data(self):
-        tica = TICA(lag=1, output_dimension=1)
+        tica = TICA(tau=1, output_dimension=1)
 
         # make some data that has one column repeated twice
         X = np.random.randn(100, 2)
@@ -43,7 +43,7 @@ class TestTICA(unittest.TestCase):
         assert tica.eigenvalues.dtype == np.float64
 
     def test_singular_zeros(self):
-        tica = TICA(lag=1, output_dimension=1)
+        tica = TICA(tau=1, output_dimension=1)
 
         # make some data that has one column of all zeros
         X = np.random.randn(100, 2)
@@ -67,7 +67,7 @@ class TestTICA(unittest.TestCase):
         # un-chunked
         d = DataInMemory(X)
 
-        tica = TICA(lag=lag, output_dimension=1)
+        tica = TICA(tau=lag, output_dimension=1)
         tica.data_producer = d
         tica.parametrize()
 

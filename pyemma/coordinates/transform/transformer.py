@@ -9,6 +9,28 @@ log = getLogger('Transformer')
 __all__ = ['Transformer']
 
 
+class TransformerIterator(object):
+    def __init__(self, transformer, stride=1, lag=0):
+        self._stride = stride
+        self._lag = lag
+        self._transformer = transformer
+        
+    def __iter__(self):
+        return self
+        
+    def next(self):
+        if self._transformer._itraj >= self._transformer.number_of_trajectories():
+            raise StopIteration
+
+        last_itraj = self._transformer._itraj
+        if self._lag == 0:
+            X = self._transformer._next_chunk(lag=self._lag, stride=self._stride)
+            return (last_itraj, X)
+        else:
+            X,Y = self._transformer._next_chunk(lag=self._lag, stride=self._stride)
+            return (last_itraj, X, Y)
+
+
 class Transformer(object):
 
     """ Basis class for pipeline objects
@@ -23,7 +45,7 @@ class Transformer(object):
 
     def __init__(self, chunksize=100, lag=0):
         self.chunksize = chunksize
-        self._lag = lag
+        #self._lag = lag
         self._in_memory = False
         self._dataproducer = None
         self._parametrized = False
@@ -62,6 +84,7 @@ class Transformer(object):
         if not self._in_memory and op_in_mem:
             self.Y = [np.zeros((self.trajectory_length(itraj), self.dimension()))
                       for itraj in xrange(self.number_of_trajectories())]
+            self._map_to_memory()
         elif not op_in_mem and self._in_memory:
             self._clear_in_memory()
 
@@ -71,17 +94,6 @@ class Transformer(object):
         assert self.in_memory, "tried to delete in memory results which are not set"
         for y in self.Y:
             del y
-
-    @property
-    def lag(self):
-        """lag time, at which a second time lagged data source will be processed.
-        """
-        return self._lag
-
-    @lag.setter
-    def lag(self, lag):
-        assert lag >= 0, "lag time has to be positive."
-        self._lag = int(lag)
 
     def number_of_trajectories(self):
         """
@@ -93,7 +105,7 @@ class Transformer(object):
         """
         return self.data_producer.number_of_trajectories()
 
-    def trajectory_length(self, itraj):
+    def trajectory_length(self, itraj, stride=1):
         """
         Returns the length of trajectory with given index.
 
@@ -101,32 +113,45 @@ class Transformer(object):
         ----------
         itraj : int
             trajectory index
+        stride : int
+            return value is the number of frames in trajectory when
+            running through it with a step size of `stride`            
 
         Returns
         -------
         int : length of trajectory
         """
-        return self.data_producer.trajectory_length(itraj)
+        return self.data_producer.trajectory_length(itraj, stride=stride)
 
-    def trajectory_lengths(self):
+    def trajectory_lengths(self, stride=1):
         """
         Returns the length of each trajectory.
 
+        Parameters
+        ----------
+        stride : int
+            return value is the number of frames in trajectories when
+            running through them with a step size of `stride`        
         Returns
         -------
         int : length of each trajectory
         """
-        return self.data_producer.trajectory_lengths()
+        return self.data_producer.trajectory_lengths(stride=stride)
 
-    def n_frames_total(self):
+    def n_frames_total(self, stride=1):
         """
         Returns total number of frames.
 
+        Parameters
+        ----------
+        stride : int
+            return value is the number of frames in trajectories when
+            running through them with a step size of `stride`        
         Returns
         -------
         int : n_frames_total
         """
-        return self.data_producer.n_frames_total()
+        return self.data_producer.n_frames_total(stride=stride)
 
     def _get_memory_per_frame(self):
         """
@@ -142,7 +167,7 @@ class Transformer(object):
         """ get a representation of this Transformer"""
         return self.__str__()
 
-    def parametrize(self):
+    def parametrize(self, stride=1):
         r""" parametrize this Transformer
         """
         # check if ready
@@ -155,7 +180,11 @@ class Transformer(object):
             return
 
         # init
-        self._param_init()
+        return_value = self._param_init()
+        if return_value is not None:
+            lag = return_value
+        else:
+            lag = 0
         # feed data, until finished
         add_data_finished = False
         ipass = 0
@@ -163,35 +192,39 @@ class Transformer(object):
         # parametrize
         while not add_data_finished:
             first_chunk = True
-            self.data_producer._reset()
+            self.data_producer._reset(stride=stride)
             # iterate over trajectories
             last_chunk = False
             itraj = 0
-            lag = self._lag
+            #lag = self._lag
             while not last_chunk:
                 last_chunk_in_traj = False
                 t = 0
                 while not last_chunk_in_traj:
                     # iterate over times within trajectory
                     if lag == 0:
-                        X = self.data_producer._next_chunk()
+                        X = self.data_producer._next_chunk(stride=stride)
                         Y = None
                     else:
-                        if self.trajectory_length(itraj) <= lag:
+                        if self.trajectory_length(itraj,stride=stride) <= lag:
                             log.error(
                                 "trajectory nr %i to short, skipping it" % itraj)
                             break
-                        X, Y = self.data_producer._next_chunk(lag=lag)
+                        X, Y = self.data_producer._next_chunk(lag=lag,stride=stride)
                     L = np.shape(X)[0]
                     # last chunk in traj?
                     last_chunk_in_traj = (
-                        t + L >= self.trajectory_length(itraj))
+                        t + L >= self.trajectory_length(itraj,stride=stride))
                     # last chunk?
                     last_chunk = (
                         last_chunk_in_traj and itraj >= self.number_of_trajectories() - 1)
                     # first chunk
-                    add_data_finished = self._param_add_data(
-                        X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=Y)
+                    return_value = self._param_add_data(
+                        X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=Y, stride=stride)
+                    if isinstance(return_value, tuple):
+                        add_data_finished, lag = return_value
+                    else:
+                        add_data_finished = return_value
                     first_chunk = False
                     # increment time
                     t += L
@@ -234,28 +267,6 @@ class Transformer(object):
                 out.append(self._map_array(x))
         else:
             raise TypeError('Input has the wrong type: '+str(type(X))+'. Either accepting numpy arrays of dimension 2 or lists of such arrays')
-
-    # TODO: implement
-    def get_output(self, stride=1):
-        """Maps all input data of this transformer and returns it as and array or list of arrays
-
-        Parameters
-        ----------
-        stride : int, optional, default = 1
-            If set to 1, all frames of the input data will be read and mapped. This gives you great detail, but might
-            be slow and create memory issues when trying to allocate the resulting output array.
-            If set greater than 1, only every so many frames will be read and mapped. The output arrays are
-            correspondingly smaller
-
-        Returns:
-        --------
-        output : ndarray(T, d) or list of ndarray(T_i, d)
-            the mapped data, where T is the number of time steps of the input data, or if stride > 1,
-            floor(T_in / stride). d is the output dimension of this transformer.
-            If the input consists of a list of trajectories, Y will also be a corresponding list of trajectories
-
-        """
-        pass
 
     def _map_array(self, X):
         """
@@ -313,17 +324,17 @@ class Transformer(object):
             # increment trajectory
             itraj += 1
 
-    def _reset(self):
+    def _reset(self, stride=1):
         """_reset data position"""
-        if not self._parametrized:
+        if not self._parametrized: # TODO: should this stay or should it go?
             self.parametrize()
         self._itraj = 0
         self._t = 0
         if not self.in_memory:
             # operate in pipeline
-            self.data_producer._reset()
+            self.data_producer._reset(stride=stride)
 
-    def _next_chunk(self, lag=0):
+    def _next_chunk(self, lag=0, stride=1):
         """
         transforms next available chunk from either in memory data or internal
         data_producer
@@ -345,66 +356,151 @@ class Transformer(object):
             traj_len = self.trajectory_length(self._itraj)
             if lag == 0:
                 Y = self.Y[self._itraj][
-                    self._t:min(self._t + self.chunksize, traj_len)]
+                    self._t:min(self._t + self.chunksize*stride, traj_len):stride]
                 # increment counters
-                self._t += self.chunksize
+                self._t += self.chunksize*stride
                 if self._t >= traj_len:
                     self._itraj += 1
                     self._t = 0
                 return Y
             else:
                 Y0 = self.Y[self._itraj][
-                    self._t:min(self._t + self.chunksize, traj_len)]
+                    self._t:min(self._t + self.chunksize*stride, traj_len):stride]
                 Ytau = self.Y[self._itraj][
-                    self._t + lag:min(self._t + self.chunksize + lag, traj_len)]
+                    self._t + lag*stride:min(self._t + (self.chunksize + lag)*stride, traj_len):stride]
                 # increment counters
-                self._t += self.chunksize
+                self._t += self.chunksize*stride
                 if self._t >= traj_len:
                     self._itraj += 1
                 return (Y0, Ytau)
         else:
             # operate in pipeline
             if lag == 0:
-                X = self.data_producer._next_chunk()
+                X = self.data_producer._next_chunk(stride=stride)
                 self._t += X.shape[0]
+                if self._t >= self.trajectory_length(self._itraj, stride=stride):
+                    self._itraj += 1
+                    self._t = 0                
                 return self.map(X)
             else:
-                (X0, Xtau) = self.data_producer._next_chunk(lag=lag)
+                (X0, Xtau) = self.data_producer._next_chunk(lag=lag, stride=stride)
                 self._t += X0.shape[0]
+                if self._t >= self.trajectory_length(self._itraj, stride=stride):
+                    self._itraj += 1
+                    self._t = 0                
                 return (self.map(X0), self.map(Xtau))
 
     def __iter__(self):
+        """
+        Returns an iterator that allows to access the transformed data.
+        
+        Returns
+        -------
+        iterator : `pyemma.coordinates.transfrom.TransformerIterator`
+            a call to the .next() method of this iterator will return the pair
+            (itraj, X) : (int, ndarray(n, m))
+            where itraj corresponds to input sequence number (eg. trajectory index)
+            and X is the transformed data, n = chunksize or n < chunksize at end
+            of input.
+        """        
         self._reset()
-        return self
+        return TransformerIterator(self, stride=1, lag=0)
 
-    def next(self):
-        """ enable iteration over transformed data.
+    def iterator(self, stride=1, lag=0):
+        """
+        Returns an iterator that allows to access the transformed data.
+        
+        Parameters
+        ----------
+        stride : int
+            Only transform every N'th frame, default = 1
+        lag : int
+            Configure the iterator such that it will return time-lagged data
+            with a lag time of `lag`. If `lag` is used together with `stride`
+            the operation will work as if the striding operation is applied
+            before the time-lagged trajectory is shifted by `lag` steps.
+            Therefore the effective lag time will be stride*lag.
 
         Returns
         -------
-        (itraj, X) : (int, ndarray(n, m)
-            itraj corresponds to input sequence number (eg. trajectory index)
+        iterator : `pyemma.coordinates.transfrom.TransformerIterator`
+            If lag = 0, a call to the .next() method of this iterator will return
+            the pair
+            (itraj, X) : (int, ndarray(n, m))
+            where itraj corresponds to input sequence number (eg. trajectory index)
             and X is the transformed data, n = chunksize or n < chunksize at end
             of input.
 
+            If lag > 0, a call to the .next() method of this iterator will return
+            the tuple
+            (itraj, X, Y) : (int, ndarray(n, m), ndarray(p, m))
+            where itraj and X are the same as above and Y contain the time-lagged
+            data.
         """
-        # iterate over trajectories
-        if self._itraj >= self.number_of_trajectories():
-            raise StopIteration
+        self._reset(stride=stride)
+        return TransformerIterator(self, stride=stride, lag=lag)
 
-        # next chunk already maps output
-        if self.lag == 0:
-            X = self._next_chunk()
+    def get_output(self, dimensions=slice(0,None), stride=1):
+        """Maps all input data of this transformer and returns it as and array or list of arrays
+           
+           Parameters
+           ----------
+           transfrom : pyemma.coordinates.transfrom.Transformer object
+               transform that provides the input data
+           dimensions : list-like of indexes or slice
+               indices of dimensions you like to keep, default = all
+           stride : int
+               only take every n'th frame, default = 1
+           
+           Returns
+           -------
+           output : ndarray(T, d) or list of ndarray(T_i, d)
+               the mapped data, where T is the number of time steps of the input data, or if stride > 1,
+               floor(T_in / stride). d is the output dimension of this transformer.
+               If the input consists of a list of trajectories, Y will also be a corresponding list of trajectories
+           
+           Notes
+           -----
+           This function may be RAM intensive if stride is too large or
+           too many dimensions are selected.
+           
+           Example
+           -------
+           plotting trajectories
+           >>> import matplotlib.pyplot as plt
+           >>> %matplotlib inline # only for ipython notebook
+           >>> trajs = transform.subsample(dimensions=(0,),stride=100)
+           >>> for traj in trajs:
+           >>> plt.figure()
+           >>> plt.plot(traj[:,0])
+        """
+
+        if isinstance(dimensions, int):
+            ndim = 1
+            dimensions = slice(dimensions,dimensions+1)
+        elif isinstance(dimensions, list):
+            ndim = len(np.zeros(self.dimension())[dimensions])
+        elif isinstance(dimensions, np.ndarray):
+            assert dimensions.ndim == 1, 'dimension indices can\'t have more than one dimension'
+            ndim = len(np.zeros(self.dimension())[dimensions])
+        elif isinstance(dimensions, slice):
+            ndim = len(np.zeros(self.dimension())[dimensions])
         else:
-            X, Y = self._next_chunk(self.lag)
+            raise Exception('unsupported type (%s) of \"dimensions\"'%type(dimensions))
 
-        last_itraj = self._itraj
-        # note: _t is incremented in _next_chunk
-        if self._t >= self.trajectory_length(self._itraj):
-            self._itraj += 1
-            self._t = 0
+        # allocate memory
+        trajs = [ np.empty((l, ndim)) for l in self.trajectory_lengths(stride=stride) ]
 
-        return (last_itraj, X)
+        # fetch data
+        last_itraj = -1
+        for itraj, chunk in self.iterator(stride=stride):
+            if itraj != last_itraj:
+                last_itraj = itraj
+                t = 0
+            trajs[itraj][t:t+chunk.shape[0],:] = chunk[:, dimensions]
+            t += chunk.shape[0]
+
+        return trajs
 
     @staticmethod
     def distance(x, y):
