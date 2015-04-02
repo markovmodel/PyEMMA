@@ -6,7 +6,7 @@ python:
 env:
   global:
     - PATH=$HOME/miniconda/bin:$HOME/miniconda/envs/ci/bin/:$PATH
-    - common_py_deps="pip nose cython jpype1 mdtraj scikit-learn"
+    - common_py_deps="pip nose cython jpype1 mdtraj scikit-learn matplotlib"
     - doc_deps="ipython ipython-notebook sphinx==1.2.3 matplotlib numpydoc"
     - deps="scipy numpy"
   matrix:
@@ -33,6 +33,7 @@ install:
 - python setup.py install
 
 script:
+- ls .eggs || true
 - python setup.py nosetests
 
 after_success:
