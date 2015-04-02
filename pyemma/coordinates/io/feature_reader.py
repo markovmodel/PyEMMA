@@ -1,10 +1,10 @@
+from pyemma.coordinates.transform.transformer import Transformer
 __author__ = 'noe'
 
 import numpy as np
 import mdtraj
 
 from pyemma.coordinates.util import patches
-from pyemma.coordinates.io.reader import ChunkedReader
 from pyemma.util.log import getLogger
 
 from .featurizer import MDFeaturizer
@@ -14,7 +14,7 @@ log = getLogger('FeatureReader')
 __all__ = ['FeatureReader']
 
 
-class FeatureReader(ChunkedReader):
+class FeatureReader(Transformer):
 
     """
     Reads features from MD data.
@@ -53,7 +53,7 @@ class FeatureReader(ChunkedReader):
 
     def __init__(self, trajectories, topologyfile):
         # init with chunksize 100
-        ChunkedReader.__init__(self, 100)
+        Transformer.__init__(self, 100)
 
         # files
         if isinstance(trajectories, str):
@@ -69,11 +69,11 @@ class FeatureReader(ChunkedReader):
         self._totlength = 0
 
         # iteration
-        self.mditer = None
+        self._mditer = None
         # current lag time
-        self.curr_lag = 0
+        self._curr_lag = 0
         # time lagged iterator
-        self.mditer2 = None
+        self._mditer2 = None
 
         # cache size
         self.in_memory = False
@@ -85,7 +85,8 @@ class FeatureReader(ChunkedReader):
 
         self._totlength = np.sum(self._lengths)
 
-        self.t = 0
+        self._t = 0
+        self.data_producer = self
 
     def describe(self):
         """
@@ -95,17 +96,6 @@ class FeatureReader(ChunkedReader):
         """
         return "Feature reader, features = ", self.featurizer.describe()
 
-    def operate_in_memory(self):
-        """
-        If called, the output will be fully stored in memory
-
-        :return:
-        """
-        self.in_memory = True
-        # output data
-        self.Y = [np.empty((self.trajectory_length(itraj), self.dimension()))
-                  for itraj in xrange(self.number_of_trajectories())]
-
     def parametrize(self):
         """
         Parametrizes this transformer
@@ -113,7 +103,7 @@ class FeatureReader(ChunkedReader):
         :return:
         """
         if self.in_memory:
-            self.map_to_memory()
+            self._map_to_memory()
 
     def number_of_trajectories(self):
         """
@@ -164,7 +154,7 @@ class FeatureReader(ChunkedReader):
             # general case
             return self.featurizer.dimension()
 
-    def get_memory_per_frame(self):
+    def _get_memory_per_frame(self):
         """
         Returns the memory requirements per frame, in bytes
 
@@ -172,7 +162,7 @@ class FeatureReader(ChunkedReader):
         """
         return 4 * self.dimension()
 
-    def get_constant_memory(self):
+    def _get_constant_memory(self):
         """
         Returns the constant memory requirements, in bytes
 
@@ -180,8 +170,8 @@ class FeatureReader(ChunkedReader):
         """
         return 0
 
-    def map_to_memory(self):
-        self.reset()
+    def _map_to_memory(self):
+        self._reset()
         # iterate over trajectories
         last_chunk = False
         itraj = 0
@@ -189,7 +179,7 @@ class FeatureReader(ChunkedReader):
             last_chunk_in_traj = False
             t = 0
             while not last_chunk_in_traj:
-                y = self.next_chunk()
+                y = self._next_chunk()
                 assert y is not None
                 L = np.shape(y)[0]
                 # last chunk in traj?
@@ -208,53 +198,52 @@ class FeatureReader(ChunkedReader):
         return patches.iterload(filename, chunk=self.chunksize,
                                 top=self.topfile, skip=skip)
 
-    def reset(self):
+    def _reset(self):
         """
         resets the chunk reader
         """
         self.curr_itraj = 0
-        self.curr_lag = 0
+        self._curr_lag = 0
         if len(self.trajfiles) >= 1:
-            self.t = 0
-            self.mditer = self._create_iter(self.trajfiles[0])
+            self._t = 0
+            self._mditer = self._create_iter(self.trajfiles[0])
 
-    def next_chunk(self, lag=0):
+    def _next_chunk(self, lag=0):
         """
         gets the next chunk. If lag > 0, we open another iterator with same chunk
         size and advance it by one, as soon as this method is called with a lag > 0.
 
         :return: a feature mapped vector X, or (X, Y) if lag > 0
         """
-        chunk = self.mditer.next()
+        chunk = self._mditer.next()
 
         if lag > 0:
-            if self.curr_lag == 0:
+            if self._curr_lag == 0:
                 # lag time or trajectory index changed, so open lagged iterator
                 log.debug("open time lagged iterator for traj %i with lag %i"
-                          % (self.curr_itraj, self.curr_lag))
-                self.curr_lag = lag
-                self.mditer2 = self._create_iter(self.trajfiles[self.curr_itraj],
-                                                skip=self.curr_lag)
+                          % (self.curr_itraj, self._curr_lag))
+                self._curr_lag = lag
+                self._mditer2 = self._create_iter(self.trajfiles[self.curr_itraj],                                             skip=self._curr_lag)
             try:
-                adv_chunk = self.mditer2.next()
+                adv_chunk = self._mditer2.next()
             except StopIteration:
-                # When mditer2 ran over the trajectory end, return empty chunks.
+                # When _mditer2 ran over the trajectory end, return empty chunks.
                 adv_chunk = mdtraj.Trajectory(
                               np.empty((0,chunk.xyz.shape[1],chunk.xyz.shape[2]),np.float32),
                               chunk.topology)
 
-        self.t += chunk.xyz.shape[0]
+        self._t += chunk.xyz.shape[0]
 
-        if (self.t >= self.trajectory_length(self.curr_itraj) and
+        if (self._t >= self.trajectory_length(self.curr_itraj) and
                 self.curr_itraj < len(self.trajfiles) - 1):
             log.debug('closing current trajectory "%s"'
                       % self.trajfiles[self.curr_itraj])
-            self.mditer.close()
-            self.t = 0
+            self._mditer.close()
+            self._t = 0
             self.curr_itraj += 1
-            self.mditer = self._create_iter(self.trajfiles[self.curr_itraj])
-            # we open self.mditer2 only if requested due lag parameter!
-            self.curr_lag = 0
+            self._mditer = self._create_iter(self.trajfiles[self.curr_itraj])
+            # we open self._mditer2 only if requested due lag parameter!
+            self._curr_lag = 0
 
         # map data
         if lag == 0:
@@ -275,7 +264,7 @@ class FeatureReader(ChunkedReader):
             return X, Y
 
     def __iter__(self):
-        self.reset()
+        self._reset()
         return self
 
     def next(self):
@@ -295,19 +284,19 @@ class FeatureReader(ChunkedReader):
 
         # next chunk already maps output
         if self.lag == 0:
-            X = self.next_chunk()
+            X = self._next_chunk()
         else:
-            X, Y = self.next_chunk(self.lag)
+            X, Y = self._next_chunk(self.lag)
             ## we wont be able to correlate chunks of different len, so stop here
             #if np.shape(X) != np.shape(Y):
             #    # TODO: determine if its possible to truncate X to shape of Y?
             #    raise StopIteration
 
         last_itraj = self.curr_itraj
-        # note: t is incremented in next_chunk
-        if self.t >= self.trajectory_length(self.curr_itraj):
+        # note: _t is incremented in _next_chunk
+        if self._t >= self.trajectory_length(self.curr_itraj):
             self.curr_itraj += 1
-            self.t = 0
+            self._t = 0
 
         if self.lag == 0:
             return (last_itraj, X)

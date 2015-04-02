@@ -9,7 +9,7 @@ import tempfile
 import numpy as np
 import numpy.random
 import mdtraj
-from pyemma.coordinates.api import feature_reader, tica, TICA
+from pyemma.coordinates.api import feature_reader, tica, _TICA as TICA
 from pyemma.coordinates.io.feature_reader import FeatureReader
 from pyemma.util.log import getLogger
 

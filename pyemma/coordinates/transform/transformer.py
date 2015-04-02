@@ -11,7 +11,7 @@ __all__ = ['Transformer']
 
 class Transformer(object):
 
-    """
+    """ Basis class for pipeline objects
 
     Parameters
     ----------
@@ -35,7 +35,7 @@ class Transformer(object):
 
     @data_producer.setter
     def data_producer(self, dp):
-        if not dp is self._dataproducer:
+        if dp is not self._dataproducer:
             self._parametrized = False
         self._dataproducer = dp
 
@@ -54,14 +54,23 @@ class Transformer(object):
         """are results stored in memory?"""
         return self._in_memory
 
-    def operate_in_memory(self):
+    @in_memory.setter
+    def in_memory(self, op_in_mem):
         """
         If called, the output will be stored in memory
         """
-        self._in_memory = True
-        # output data
-        self.Y = [np.zeros((self.trajectory_length(itraj), self.dimension()))
-                  for itraj in xrange(self.number_of_trajectories())]
+        if not self._in_memory and op_in_mem:
+            self.Y = [np.zeros((self.trajectory_length(itraj), self.dimension()))
+                      for itraj in xrange(self.number_of_trajectories())]
+        elif not op_in_mem and self._in_memory:
+            self._clear_in_memory()
+
+        self._in_memory = op_in_mem
+
+    def _clear_in_memory(self):
+        assert self.in_memory, "tried to delete in memory results which are not set"
+        for y in self.Y:
+            del y
 
     @property
     def lag(self):
@@ -119,13 +128,13 @@ class Transformer(object):
         """
         return self.data_producer.n_frames_total()
 
-    def get_memory_per_frame(self):
+    def _get_memory_per_frame(self):
         """
         Returns the memory requirements per frame, in bytes
         """
         return 4 * self.dimension()
 
-    def get_constant_memory(self):
+    def _get_constant_memory(self):
         """Returns the constant memory requirements, in bytes."""
         return 0
 
@@ -141,12 +150,12 @@ class Transformer(object):
             raise RuntimeError('Called parametrize of %s while data producer is not'
                                ' yet set. Ensure "data_producer" attribute is set!'
                                % self.describe())
-                               
+
         if self._parametrized:
             return
-            
+
         # init
-        self.param_init()
+        self._param_init()
         # feed data, until finished
         add_data_finished = False
         ipass = 0
@@ -154,7 +163,7 @@ class Transformer(object):
         # parametrize
         while not add_data_finished:
             first_chunk = True
-            self.data_producer.reset()
+            self.data_producer._reset()
             # iterate over trajectories
             last_chunk = False
             itraj = 0
@@ -165,14 +174,14 @@ class Transformer(object):
                 while not last_chunk_in_traj:
                     # iterate over times within trajectory
                     if lag == 0:
-                        X = self.data_producer.next_chunk()
+                        X = self.data_producer._next_chunk()
                         Y = None
                     else:
                         if self.trajectory_length(itraj) <= lag:
                             log.error(
                                 "trajectory nr %i to short, skipping it" % itraj)
                             break
-                        X, Y = self.data_producer.next_chunk(lag=lag)
+                        X, Y = self.data_producer._next_chunk(lag=lag)
                     L = np.shape(X)[0]
                     # last chunk in traj?
                     last_chunk_in_traj = (
@@ -181,7 +190,7 @@ class Transformer(object):
                     last_chunk = (
                         last_chunk_in_traj and itraj >= self.number_of_trajectories() - 1)
                     # first chunk
-                    add_data_finished = self.param_add_data(
+                    add_data_finished = self._param_add_data(
                         X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=Y)
                     first_chunk = False
                     # increment time
@@ -190,29 +199,29 @@ class Transformer(object):
                 itraj += 1
             ipass += 1
         # finish parametrization
-        self.param_finish()
+        self._param_finish()
         self._parametrized = True
         # memory mode? Then map all results
         if self.in_memory:
-            self.map_to_memory()
+            self._map_to_memory()
 
-    def param_init(self):
+    def _param_init(self):
         """
         Initializes the parametrization.
         """
         # create mean array and covariance matrix
         pass
 
-    def param_finish(self):
+    def _param_finish(self):
         """
         Finalizes the parametrization.
         """
         pass
 
-    def map_to_memory(self):
+    def _map_to_memory(self):
         """maps results to memory. Will be stored in attribute :attr:`Y`."""
         # if operating in main memory, do all the mapping now
-        self.data_producer.reset()
+        self.data_producer._reset()
         # iterate over trajectories
         last_chunk = False
         itraj = 0
@@ -220,7 +229,7 @@ class Transformer(object):
             last_chunk_in_traj = False
             t = 0
             while not last_chunk_in_traj:
-                X = self.data_producer.next_chunk()
+                X = self.data_producer._next_chunk()
                 L = np.shape(X)[0]
                 # last chunk in traj?
                 last_chunk_in_traj = (t + L >= self.trajectory_length(itraj))
@@ -234,18 +243,17 @@ class Transformer(object):
             # increment trajectory
             itraj += 1
 
-    def reset(self):
-        """reset data position"""
+    def _reset(self):
+        """_reset data position"""
         if not self._parametrized:
             self.parametrize()
-        self.itraj = 0
-        self.t = 0
+        self._itraj = 0
+        self._t = 0
         if not self.in_memory:
             # operate in pipeline
-            self.data_producer.reset()
+            self.data_producer._reset()
 
-
-    def next_chunk(self, lag=0):
+    def _next_chunk(self, lag=0):
         """
         transforms next available chunk from either in memory data or internal
         data_producer
@@ -260,44 +268,43 @@ class Transformer(object):
         X, (Y if lag > 0) : array_like
             mapped (transformed) data
         """
-        
         if self.in_memory:
-            if self.itraj >= self.number_of_trajectories():
+            if self._itraj >= self.number_of_trajectories():
                 return None
             # operate in memory, implement iterator here
-            traj_len = self.trajectory_length(self.itraj)
+            traj_len = self.trajectory_length(self._itraj)
             if lag == 0:
-                Y = self.Y[self.itraj][
-                    self.t:min(self.t + self.chunksize, traj_len)]
+                Y = self.Y[self._itraj][
+                    self._t:min(self._t + self.chunksize, traj_len)]
                 # increment counters
-                self.t += self.chunksize
-                if self.t >= traj_len:
-                    self.itraj += 1
-                    self.t = 0
+                self._t += self.chunksize
+                if self._t >= traj_len:
+                    self._itraj += 1
+                    self._t = 0
                 return Y
             else:
-                Y0 = self.Y[self.itraj][
-                    self.t:min(self.t + self.chunksize, traj_len)]
-                Ytau = self.Y[self.itraj][
-                    self.t + lag:min(self.t + self.chunksize + lag, traj_len)]
+                Y0 = self.Y[self._itraj][
+                    self._t:min(self._t + self.chunksize, traj_len)]
+                Ytau = self.Y[self._itraj][
+                    self._t + lag:min(self._t + self.chunksize + lag, traj_len)]
                 # increment counters
-                self.t += self.chunksize
-                if self.t >= traj_len:
-                    self.itraj += 1
+                self._t += self.chunksize
+                if self._t >= traj_len:
+                    self._itraj += 1
                 return (Y0, Ytau)
         else:
             # operate in pipeline
             if lag == 0:
-                X = self.data_producer.next_chunk()
-                self.t += X.shape[0]
+                X = self.data_producer._next_chunk()
+                self._t += X.shape[0]
                 return self.map(X)
             else:
-                (X0, Xtau) = self.data_producer.next_chunk(lag=lag)
-                self.t += X0.shape[0]
+                (X0, Xtau) = self.data_producer._next_chunk(lag=lag)
+                self._t += X0.shape[0]
                 return (self.map(X0), self.map(Xtau))
 
     def __iter__(self):
-        self.reset()
+        self._reset()
         return self
 
     def next(self):
@@ -312,26 +319,22 @@ class Transformer(object):
 
         """
         # iterate over trajectories
-        if self.itraj >= self.number_of_trajectories():
+        if self._itraj >= self.number_of_trajectories():
             raise StopIteration
 
         # next chunk already maps output
         if self.lag == 0:
-            X = self.next_chunk()
+            X = self._next_chunk()
         else:
-            X, Y = self.next_chunk(self.lag)
+            X, Y = self._next_chunk(self.lag)
 
-        last_itraj = self.itraj
-        # note: t is incremented in next_chunk
-        if self.t >= self.trajectory_length(self.itraj):
-            self.itraj += 1
-            self.t = 0
+        last_itraj = self._itraj
+        # note: _t is incremented in _next_chunk
+        if self._t >= self.trajectory_length(self._itraj):
+            self._itraj += 1
+            self._t = 0
 
         return (last_itraj, X)
-        #if self.lag == 0:
-        #    return (last_itraj, X)
-
-        #return (last_itraj, X, Y)
 
     @staticmethod
     def distance(x, y):

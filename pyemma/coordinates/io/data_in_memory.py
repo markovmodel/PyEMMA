@@ -3,13 +3,12 @@ __author__ = 'noe'
 import numpy as np
 from scipy.spatial.distance import cdist
 
-from pyemma.coordinates.io.reader import ChunkedReader
+from pyemma.coordinates.transform.transformer import Transformer
 from pyemma.util.log import getLogger
 
-logger = getLogger('DataInMemory')
 
+class DataInMemory(Transformer):
 
-class DataInMemory(ChunkedReader):
     r"""
     multi-dimensional multi-trajectory data fully stored in memory
 
@@ -24,7 +23,9 @@ class DataInMemory(ChunkedReader):
     """
 
     def __init__(self, _data, **kwargs):
-        ChunkedReader.__init__(self)
+        Transformer.__init__(self)
+        self.logger = getLogger('DataInMemory[%i]' % id(self))
+        self.data_producer = self
 
         if isinstance(_data, np.ndarray):
             self.ntraj = 1
@@ -46,6 +47,7 @@ class DataInMemory(ChunkedReader):
                     if f.endswith('.npy'):
                         x = np.load(f, mmap_mode=mmap_mode)
                     else:
+                        # TODO: consider loading `chunksize` lines from file
                         x = np.loadtxt(f)
                     x = np.atleast_2d(x)
                     self.data.append(x)
@@ -70,18 +72,12 @@ class DataInMemory(ChunkedReader):
             raise ValueError('input data is neither an ndarray '
                              'nor a list of ndarrays!')
 
-        self.t = 0
-        self.itraj = 0
-        self._chunksize = 0
+        self._t = 0
+        self._itraj = 0
+        self.chunksize = 0
 
-    @property
-    def chunksize(self):
-        return self._chunksize
-
-    @chunksize.setter
-    def chunksize(self, x):
-        # chunksize setting is forbidden, since we are operating in memory
-        pass
+    def parametrize(self):
+        self._parametrized = True
 
     def number_of_trajectories(self):
         """
@@ -130,37 +126,58 @@ class DataInMemory(ChunkedReader):
         """
         return self.ndim
 
-    def reset(self):
+    def _reset(self):
         """Resets the data producer
         """
-        self.itraj = 0
-        self.t = 0
+        self._itraj = 0
+        self._t = 0
 
-    def next_chunk(self, lag=0):
+    def _next_chunk(self, lag=0):
         """
 
         :param lag:
         :return:
         """
-        # finished once with all trajectories? so reset the pointer to allow
+        # finished once with all trajectories? so _reset the pointer to allow
         # multi-pass
-        if self.itraj >= self.ntraj:
-            self.reset()
+        if self._itraj >= self.ntraj:
+            self._reset()
 
-        traj_len = self._lengths[self.itraj]
-        traj = self.data[self.itraj]
+        traj_len = self._lengths[self._itraj]
+        traj = self.data[self._itraj]
 
         # complete trajectory mode
         if self._chunksize == 0:
+            X = traj
+            self._itraj += 1
+
             if lag == 0:
-                X = traj
-                self.itraj += 1
                 return X
             else:
-                X = traj
                 Y = traj[lag:traj_len]
-                self.itraj += 1
                 return (X, Y)
+        # chunked mode
+        else:
+            upper_bound = min(self._t + self._chunksize, traj_len)
+            slice_x = slice(self._t, upper_bound)
+
+            X = traj[slice_x]
+            self._t += X.shape[0]
+
+            if lag == 0:
+                if self._t >= traj_len:
+                    self._itraj += 1
+                    self._t = 0
+                return X
+            else:
+                # its okay to return empty chunks
+                upper_bound = min(self._t + lag + self._chunksize, traj_len)
+
+                Y = traj[self._t + lag: upper_bound]
+                if self._t + lag >= traj_len:
+                    self._itraj += 1
+                    self._t = 0
+                return X, Y
 
     @staticmethod
     def distance(x, y):

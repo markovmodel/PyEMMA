@@ -227,9 +227,9 @@ metadata['requires'] = ['numpy', 'scipy', 'pystallone']
 
 # not installing?
 if len(sys.argv) == 1 or (len(sys.argv) >= 2 and ('--help' in sys.argv[1:] or
-                            sys.argv[1] in ('--help-commands',
-                                            '--version',
-                                            'clean'))):
+                          sys.argv[1] in ('--help-commands',
+                                          '--version',
+                                          'clean'))):
     pass
 else:
     # setuptools>=2.2 can handle setup_requires

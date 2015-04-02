@@ -30,18 +30,18 @@ class WriterCSV(Transformer):
         self.filename = filename
         self.last_frame = False
 
-        self.reset()
+        self._reset()
 
     def describe(self):
         return "[Writer filename='%s']" % self.filename
 
-    def get_constant_memory(self):
+    def _get_constant_memory(self):
         return 0
 
     def dimension(self):
         return self.data_producer.dimension()
 
-    def reset(self):
+    def _reset(self):
         try:
             self.fh.close()
             log.debug('closed file')
@@ -56,7 +56,7 @@ class WriterCSV(Transformer):
             log.exception('could not open file "%s" for writing.')
             raise
 
-    def param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
+    def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
         np.savetxt(self.fh, X)
         if last_chunk:
             log.debug("closing file")
