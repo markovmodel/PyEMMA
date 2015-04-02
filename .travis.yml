@@ -30,7 +30,7 @@ before_install:
 - conda list
 
 install:
-- python setup.py install
+- python setup.py develop 
 
 script:
 - nosetests -a '!slow'
