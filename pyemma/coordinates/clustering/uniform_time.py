@@ -64,7 +64,7 @@ class UniformTimeClustering(AbstractClustering):
         self.stride = self.data_producer.n_frames_total() / self.k
         self.nextt = self.stride / 2
 
-    def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
+    def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None, stride=1):
         """
 
         :param X:
@@ -94,11 +94,11 @@ class UniformTimeClustering(AbstractClustering):
                 self.n += 1
                 self.nextt += self.stride
             if last_chunk_in_traj:
-                self.tprev += self.data_producer.trajectory_length(itraj)
+                self.tprev += self.data_producer.trajectory_length(itraj, stride=stride)
         if ipass == 1:
             # discretize all
             if t == 0:
-                n = self.data_producer.trajectory_length(itraj)
+                n = self.data_producer.trajectory_length(itraj, stride=stride)
                 self.dtrajs.append(np.zeros(n, dtype=int))
             self.dtrajs[itraj][t:t+L] = self.map(X)
             if last_chunk:

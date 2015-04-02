@@ -139,7 +139,7 @@ class TICA(Transformer):
                  " with dimension (%i, %i)" % (self._tau, dim, dim))
 
     def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
-                        last_chunk, ipass, Y=None):
+                       last_chunk, ipass, Y=None, stride=1):
         """
         Chunk-based parameterization of TICA. Iterates through all data twice. In the first pass, the
         data means are estimated, in the second pass the covariance and time-lagged covariance
@@ -165,11 +165,16 @@ class TICA(Transformer):
         :return:
         """
         if ipass == 0:
+            # TODO: maybe use stable sum here, since small chunksizes
+            # accumulate more errors
             self.mu += np.sum(X, axis=0, dtype=np.float64)
             self.N_mean += np.shape(X)[0]
 
             if last_chunk:
+                log.debug("mean before norming:\n%s" % self.mu)
+                log.debug("norming mean by %i" % self.N_mean)
                 self.mu /= self.N_mean
+                log.info("calculated mean:\n%s" % self.mu)
 
                 # now we request real lagged data, since we are finished
                 # with first pass
@@ -189,7 +194,7 @@ class TICA(Transformer):
 
             if self._force_eigenvalues_le_one:
                 start2 = max(self._tau-t, 0)
-                end2   = min(self.trajectory_length(itraj)-self._tau-t, X_meanfree.shape[0])
+                end2   = min(self.trajectory_length(itraj,stride)-self._tau-t, X_meanfree.shape[0])
                 if start2 < X_meanfree.shape[0] and end2 > 0 and start2 < end2: 
                     self.cov += np.dot(X_meanfree[start2:end2,:].T, X_meanfree[start2:end2,:])
                     self.N_cov += (end2-start2)
@@ -212,7 +217,8 @@ class TICA(Transformer):
 
         # norm
         self.cov /= self.N_cov - 1
-        self.cov_tau /= self.N_cov_tau - 1
+        #self.cov_tau /= self.N - self.lag*(self.number_of_trajectories()-self.n_short) - 1
+        self.cov_tau /= self.N_cov_tau - 1 
 
         # symmetrize covariance matrices
         self.cov = self.cov + self.cov.T
@@ -240,7 +246,7 @@ class TICA(Transformer):
         Y : ndarray(n,)
             the projected data
         """
-        # TODO: move this to an extension to avoid mean_free temporary
+        #TODO: DISCUSS - I renamed this map to_map_array as we should only require to override
         X_meanfree = X - self.mu
         Y = np.dot(X_meanfree, self.eigenvectors[:, 0:self._output_dimension])
         return Y

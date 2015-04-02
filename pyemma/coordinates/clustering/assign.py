@@ -40,10 +40,10 @@ class AssignCenters(AbstractClustering):
         assert isinstance(self.clustercenters, np.ndarray)
 
     def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
-                       last_chunk, ipass, Y=None):
+                       last_chunk, ipass, Y=None, stride=1):
         # discretize all
         if t == 0:
-            n = self.data_producer.trajectory_length(itraj)
+            n = self.data_producer.trajectory_length(itraj, stride=stride)
             self.dtrajs.append(np.empty(n, dtype=int))
 
         L = np.shape(X)[0]
