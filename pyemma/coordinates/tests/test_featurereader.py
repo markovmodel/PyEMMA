@@ -76,11 +76,10 @@ class TestFeatureReader(unittest.TestCase):
     def testTimeLaggedIterator(self):
         lag = 10
         reader = FeatureReader(self.trajfile, self.topfile)
-        reader.lag = lag
         frames = 0
         data = []
         lagged = []
-        for _, X, Y in reader:
+        for _, X, Y in reader.iterator(lag=lag):
             frames += X.shape[0]
             data.append(X)
             lagged.append(Y)
@@ -124,8 +123,7 @@ class TestFeatureReader(unittest.TestCase):
                 lagged_chunks = []
                 reader = FeatureReader(self.trajfile, self.topfile)
                 reader.chunksize = chunksize
-                reader.lag = lag
-                for _, _, y in reader:
+                for _, _, y in reader.iterator(lag=lag):
                     lagged_chunks.append(y)
 
                 coords = self.xyz.reshape((self.xyz.shape[0],-1))

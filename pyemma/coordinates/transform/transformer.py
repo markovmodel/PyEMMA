@@ -29,6 +29,8 @@ class TransformerIterator(object):
         else:
             X,Y = self._transformer._next_chunk(lag=self._lag, stride=self._stride)
             return (last_itraj, X, Y)
+
+
 class Transformer(object):
 
     """ Basis class for pipeline objects
@@ -43,7 +45,7 @@ class Transformer(object):
 
     def __init__(self, chunksize=100, lag=0):
         self.chunksize = chunksize
-        self._lag = lag
+        #self._lag = lag
         self._in_memory = False
         self._dataproducer = None
         self._parametrized = False
@@ -82,6 +84,7 @@ class Transformer(object):
         if not self._in_memory and op_in_mem:
             self.Y = [np.zeros((self.trajectory_length(itraj), self.dimension()))
                       for itraj in xrange(self.number_of_trajectories())]
+            self._map_to_memory()
         elif not op_in_mem and self._in_memory:
             self._clear_in_memory()
 
@@ -91,17 +94,6 @@ class Transformer(object):
         assert self.in_memory, "tried to delete in memory results which are not set"
         for y in self.Y:
             del y
-
-    @property
-    def lag(self):
-        """lag time, at which a second time lagged data source will be processed.
-        """
-        return self._lag
-
-    @lag.setter
-    def lag(self, lag):
-        assert lag >= 0, "lag time has to be positive."
-        self._lag = int(lag)
 
     def number_of_trajectories(self):
         """
@@ -188,7 +180,11 @@ class Transformer(object):
             return
 
         # init
-        self._param_init()
+        return_value = self._param_init()
+        if return_value is not None:
+            lag = return_value
+        else:
+            lag = 0
         # feed data, until finished
         add_data_finished = False
         ipass = 0
@@ -200,7 +196,7 @@ class Transformer(object):
             # iterate over trajectories
             last_chunk = False
             itraj = 0
-            lag = self._lag
+            #lag = self._lag
             while not last_chunk:
                 last_chunk_in_traj = False
                 t = 0
@@ -223,8 +219,12 @@ class Transformer(object):
                     last_chunk = (
                         last_chunk_in_traj and itraj >= self.number_of_trajectories() - 1)
                     # first chunk
-                    add_data_finished = self._param_add_data(
+                    return_value = self._param_add_data(
                         X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=Y, stride=stride)
+                    if isinstance(return_value, tuple):
+                        add_data_finished, lag = return_value
+                    else:
+                        add_data_finished = return_value
                     first_chunk = False
                     # increment time
                     t += L
@@ -267,28 +267,6 @@ class Transformer(object):
                 out.append(self._map_array(x))
         else:
             raise TypeError('Input has the wrong type: '+str(type(X))+'. Either accepting numpy arrays of dimension 2 or lists of such arrays')
-
-    # TODO: implement
-    def get_output(self, stride=1):
-        """Maps all input data of this transformer and returns it as and array or list of arrays
-
-        Parameters
-        ----------
-        stride : int, optional, default = 1
-            If set to 1, all frames of the input data will be read and mapped. This gives you great detail, but might
-            be slow and create memory issues when trying to allocate the resulting output array.
-            If set greater than 1, only every so many frames will be read and mapped. The output arrays are
-            correspondingly smaller
-
-        Returns:
-        --------
-        output : ndarray(T, d) or list of ndarray(T_i, d)
-            the mapped data, where T is the number of time steps of the input data, or if stride > 1,
-            floor(T_in / stride). d is the output dimension of this transformer.
-            If the input consists of a list of trajectories, Y will also be a corresponding list of trajectories
-
-        """
-        pass
 
     def _map_array(self, X):
         """
@@ -348,7 +326,7 @@ class Transformer(object):
 
     def _reset(self, stride=1):
         """_reset data position"""
-        if not self._parametrized:
+        if not self._parametrized: # TODO: should this stay or should it go?
             self.parametrize()
         self._itraj = 0
         self._t = 0
@@ -428,7 +406,7 @@ class Transformer(object):
         self._reset()
         return TransformerIterator(self, stride=1, lag=0)
 
-    def iter_stridden(self, stride=1, lag=0):
+    def iterator(self, stride=1, lag=0):
         """
         Returns an iterator that allows to access the transformed data.
         
@@ -462,51 +440,24 @@ class Transformer(object):
         self._reset(stride=stride)
         return TransformerIterator(self, stride=stride, lag=lag)
 
-    #def next(self):
-        #""" enable iteration over transformed data.
-
-        #Returns
-        #-------
-        #(itraj, X) : (int, ndarray(n, m)
-            #itraj corresponds to input sequence number (eg. trajectory index)
-            #and X is the transformed data, n = chunksize or n < chunksize at end
-            #of input.
-
-        #"""
-        ## iterate over trajectories
-        #if self._itraj >= self.number_of_trajectories():
-            #raise StopIteration
-
-        ## next chunk already maps output
-        #if self.lag == 0:
-            #X = self._next_chunk()
-        #else:
-            #X, Y = self._next_chunk(self.lag)
-
-        #last_itraj = self._itraj
-        ## note: _t is incremented in _next_chunk
-        #if self._t >= self.trajectory_length(self._itraj):
-            #self._itraj += 1
-            #self._t = 0
-
-        #return (last_itraj, X)
-
     def get_output(self, dimensions=slice(0,None), stride=1):
-        '''Returns in-memory trajectories of the transformed data, optionally
-           reduced in the number of dimensions and/or time resolution.
+        """Maps all input data of this transformer and returns it as and array or list of arrays
            
            Parameters
            ----------
            transfrom : pyemma.coordinates.transfrom.Transformer object
-           transform that provides the input data
+               transform that provides the input data
            dimensions : list-like of indexes or slice
-           indices of dimensions you like to keep, default = all
+               indices of dimensions you like to keep, default = all
            stride : int
-           only take every n'th frame, default = 1
+               only take every n'th frame, default = 1
            
            Returns
            -------
-           list of (traj_length[i]/stride,len(dimensions)) ndarrays
+           output : ndarray(T, d) or list of ndarray(T_i, d)
+               the mapped data, where T is the number of time steps of the input data, or if stride > 1,
+               floor(T_in / stride). d is the output dimension of this transformer.
+               If the input consists of a list of trajectories, Y will also be a corresponding list of trajectories
            
            Notes
            -----
@@ -522,8 +473,8 @@ class Transformer(object):
            >>> for traj in trajs:
            >>> plt.figure()
            >>> plt.plot(traj[:,0])
-        '''
-        
+        """
+
         if isinstance(dimensions, int):
             ndim = 1
             dimensions = slice(dimensions,dimensions+1)
@@ -542,7 +493,7 @@ class Transformer(object):
 
         # fetch data
         last_itraj = -1
-        for itraj, chunk in self.iter_stridden(stride=stride):
+        for itraj, chunk in self.iterator(stride=stride):
             if itraj != last_itraj:
                 last_itraj = itraj
                 t = 0
