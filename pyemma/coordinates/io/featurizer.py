@@ -39,7 +39,7 @@ def _catch_unhashable(x):
                 res[i] = value
         return tuple(res)
     elif isinstance(x, np.ndarray):
-        return _hash_numpy_array(value)
+        return _hash_numpy_array(x)
 
     return x
 
@@ -367,6 +367,7 @@ class MDFeaturizer(object):
     """
 
     def __init__(self, topfile):
+        self.topologyfile = topfile
         self.topology = (mdtraj.load(topfile)).topology
         self.active_features = []
         self._dim = 0
