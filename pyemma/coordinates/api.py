@@ -319,6 +319,71 @@ def memory_reader(data):
     return _DataInMemory(data)
 
 
+#TODO: Is the result of coordinates.input the correct object here, or should we rather extract a separate loader class
+# that is not featurized?
+#TODO: please implement
+def save_traj(traj_inp, indexes, outfile):
+    r"""Saves a selected sequence of frames as a trajectory
+
+    Extracts the specified sequence of time/trajectory indexes from the input loader
+    and saves it in a molecular dynamics trajectory. The output format will be determined
+    by the outfile name.
+
+    Parameters
+    ----------
+    traj_inp : :py:func:`pyemma.coordinates.io.feature_reader.FeatureReader`
+        An input reader. Please use :py:func:`pyemma.coordinates.input` to construct it.
+    indexes : ndarray(T, 2) or list of ndarray(T_i, 2)
+        A (T x 2) array for writing a trajectory of T time steps. Each row contains two indexes (i, t), where
+        i is the index of the trajectory from the input and t is the index of the time step within the trajectory.
+        If a list of index arrays are given, these will be simply concatenated, i.e. they will be written
+        subsequently in the same trajectory file.
+    outfile : str
+        The name of the output file. Its extension will determine the file type written. Example: "out.dcd"
+
+    """
+    pass
+
+#TODO: DISCUSS - Is the result of coordinates.input the correct object here, or should we rather extract a separate loader class
+# that is not featurized?
+#TODO: please implement
+def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None):
+    r"""Saves selected sequences of frames as trajectories
+
+    Extracts a number of specified sequences of time/trajectory indexes from the input loader
+    and saves them in a set of molecular dynamics trajectoryies.
+    The output filenames are obtained by prefix + str(n) + .fmt, where n counts the output
+    trajectory and extension is either set by the user, or else determined from the input.
+    Example: When the input is in dcd format, and indexes is a list of length 3, the output will
+    by default go to files "set_1.dcd", "set_2.dcd", "set_3.dcd". If you want files to be stored
+    in a specific subfolder, simply specify the relativ path in the prefix, e.g. prefix='~/macrostates/pcca_'
+
+    Parameters
+    ----------
+    traj_inp : :py:func:`pyemma.coordinates.io.feature_reader.FeatureReader`
+        An input reader. Please use :py:func:`pyemma.coordinates.input` to construct it.
+    indexes : list of ndarray(T_i, 2)
+        A list of N arrays, each of size (T_n x 2) for writing N trajectories of T_i time steps.
+        Each row contains two indexes (i, t), where i is the index of the trajectory from the input
+        and t is the index of the time step within the trajectory.
+    prefix : str, optional, default = 'set_'
+        output filename prefix. Can include an absolute or relative path name.
+    fmt : str, optional, default = None
+        Outpuf file format. By default, the file extension and format. will be determined from the input. If a different
+        format is desired, specify the corresponding file extension here without a dot, e.g. "dcd" or "xtc"
+    outfiles : list of str, optional, default = None
+        A list of output file names. When given, this will override the settings of prefix and fmt, and output
+        will be written to these files
+
+    Returns:
+    --------
+    outfiles : list of str
+        The list of absolute paths that the output files have been written to.
+
+    """
+    pass
+
+
 #=========================================================================
 #
 # TRANSFORMATION ALGORITHMS
