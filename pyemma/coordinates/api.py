@@ -440,6 +440,7 @@ def save_traj(traj_inp, indexes, outfile):
         If set to None, the trajectory object is returned to memory
 
     """
+    pass
 
     import numpy as np
     from itertools import islice
