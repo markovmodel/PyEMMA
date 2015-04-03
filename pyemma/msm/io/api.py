@@ -8,6 +8,8 @@ PyEMMA MSM io API
 
 __docformat__ = "restructuredtext en"
 
+from pyemma.util.annotators import shortcut
+
 from scipy.sparse import issparse
 from scipy.sparse.sputils import isdense
 
@@ -44,7 +46,7 @@ __all__=['read_discrete_trajectory',
 # ascii
 ################################################################################
 
-# DONE: Implement in Python directly
+@shortcut('read_dtraj')
 def read_discrete_trajectory(filename):
     r"""Read discrete trajectory from ascii file.   
     
@@ -96,29 +98,7 @@ def read_discrete_trajectory(filename):
     """
     return trajectory.read_discrete_trajectory(filename)
 
-def read_dtraj(filename):
-    r"""Read discrete trajectory from ascii file.   
-    
-    Parameters
-    ---------- 
-    filename : str
-        The filename of the discretized trajectory file. 
-        The filename can either contain the full or the 
-        relative path to the file.
-    
-    Returns
-    -------
-    dtraj : (M, ) ndarray of int
-        Discrete state trajectory.
-
-    See also
-    --------
-    read_discrete_trajectory
-
-    """
-    return read_discrete_trajectory(filename)
-
-# DONE: Implement in Python directly
+@shortcut('write_dtraj')
 def write_discrete_trajectory(filename, dtraj):
     r"""Write discrete trajectory to ascii file.   
     
@@ -167,30 +147,12 @@ def write_discrete_trajectory(filename, dtraj):
     """
     trajectory.write_discrete_trajectory(filename, dtraj)
 
-def write_dtraj(filename, dtraj):
-    r"""Write discrete trajectory to ascii file.   
-    
-    Parameters
-    ---------- 
-    filename : str 
-        The filename of the discrete state trajectory file. 
-        The filename can either contain the full or the 
-        relative path to the file.
-    dtraj : array-like of int
-        Discrete state trajectory
-
-    See also
-    --------
-    write_discrete_trajectory
-    
-    """
-    write_discrete_trajectory(filename, dtraj)
 
 ################################################################################
 # binary
 ################################################################################
 
-# DONE: Implement in Python directly
+@shortcut('load_dtraj')
 def load_discrete_trajectory(filename):
     r"""Read discrete trajectory form binary file.   
 
@@ -242,29 +204,7 @@ def load_discrete_trajectory(filename):
     """
     return trajectory.load_discrete_trajectory(filename)
 
-def load_dtraj(filename):
-    r"""Read discrete trajectory form binary file.   
-
-    Parameters
-    ---------- 
-    filename : str 
-        The filename of the discrete state trajectory file. 
-        The filename can either contain the full or the 
-        relative path to the file.
-    
-    Returns
-    -------
-    dtraj : (M,) ndarray of int
-        Discrete state trajectory
-
-    See also
-    --------
-    load_discrete_trajectory
-    
-    """
-    return load_discrete_trajectory(filename)
-
-# DONE : Implement in Python directly
+@shortcut('save_dtraj')
 def save_discrete_trajectory(filename, dtraj):
     r"""Write discrete trajectory to binary file.  
 
@@ -312,25 +252,6 @@ def save_discrete_trajectory(filename, dtraj):
     
     """
     trajectory.save_discrete_trajectory(filename, dtraj)
-
-def save_dtraj(filename, dtraj):
-    r"""Write discrete trajectory to binary file.  
-
-    Parameters
-    ---------- 
-    filename : str 
-        The filename of the discrete state trajectory file. 
-        The filename can either contain the full or the 
-        relative path to the file.    
-    dtraj : array-like of int
-        Discrete state trajectory
-        
-    See also
-    --------
-    save_discrete_trajectory        
-    
-    """
-    save_discrete_trajectory(filename, dtraj)
 
 ################################################################################
 # Matrix IO
