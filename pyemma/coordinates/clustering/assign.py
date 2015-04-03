@@ -4,7 +4,6 @@ Created on 18.02.2015
 @author: marscher
 '''
 from pyemma.coordinates.clustering.interface import AbstractClustering
-from pyemma.msm.io import read_matrix
 import numpy as np
 
 
@@ -35,7 +34,7 @@ class AssignCenters(AbstractClustering):
         super(AssignCenters, self).__init__()
 
         if isinstance(clustercenters, str):
-            self.clustercenters = read_matrix(clustercenters)
+            self.clustercenters = np.loadtxt(clustercenters)
 
         self.clustercenters = clustercenters
         assert isinstance(self.clustercenters, np.ndarray)
