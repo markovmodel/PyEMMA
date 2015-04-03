@@ -32,6 +32,8 @@ import dense.mle_trev_given_pi
 from pyemma.util.log import getLogger
 from pyemma.util.annotators import shortcut
 from pyemma.msm.estimation.dense.tmatrix_sampler_jwrapper import ITransitionMatrixSampler
+from pyemma.util.discrete_trajectories import count_states as _count_states
+from pyemma.util.discrete_trajectories import number_of_states as _number_of_states
 from pyemma.util.types import ensure_dtraj_list as _ensure_dtraj_list
 
 __author__ = "Benjamin Trendelkamp-Schroer, Martin Scherer, Frank Noe"
@@ -44,10 +46,8 @@ __email__="m.scherer AT fu-berlin DOT de"
 
 __all__=['bootstrap_trajectories',
          'bootstrap_counts',
-         'cmatrix',
          'count_matrix',
          'count_states',
-         'connected_cmatrix',
          'connected_sets',
          'error_perturbation',
          'is_connected',
@@ -58,20 +58,22 @@ __all__=['bootstrap_trajectories',
          'prior_const',
          'prior_neighbor',
          'prior_rev',
-         'tmatrix',
          'transition_matrix',
          'log_likelihood',
          'tmatrix_cov',
          'tmatrix_sampler',
         ]
-
-# shortcuts being added:
-# ['cmatrix', 'tmatrix']
+# append shortcuts separately in order to avoid code syntax error
+__all__.append('cmatrix')
+__all__.append('connected_cmatrix')
+__all__.append('tmatrix')
 
 ################################################################################
 # Basic counting
 ################################################################################
 
+
+@shortcut('histogram')
 def count_states(dtrajs):
     r"""returns a histogram count
 
@@ -85,23 +87,10 @@ def count_states(dtrajs):
     count : ndarray((n), dtype=int)
         the number of occurrances of each state. n=max+1 where max is the largest state index found.
     """
-    # format input
-    dtrajs = _ensure_dtraj_list(dtrajs)
-    # make bincounts for each input trajectory
-    nmax = 0
-    bcs = []
-    for i in range(len(dtrajs)):
-        bc = np.bincount(dtrajs[i])
-        nmax = max(nmax, bc.shape[0])
-        bcs.append(bc)
-    # construct total bincount
-    res = np.zeros((nmax),dtype=int)
-    # add up individual bincounts
-    for i in range(len(bcs)):
-        res[:bcs[i].shape[0]] += bcs[i]
-    return res
+    return _count_states(dtrajs)
 
 
+@shortcut('nstates')
 def number_of_states(dtrajs, only_used = False):
     r"""returns the number of states in the given trajectories.
 
@@ -113,17 +102,7 @@ def number_of_states(dtrajs, only_used = False):
         If False, will return max+1, where max is the largest index used.
         If True, will return the number of states that occur at least once.
     """
-    dtrajs = _ensure_dtraj_list(dtrajs)
-    if only_used:
-        # only states with counts > 0 wanted. Make a bincount and count nonzeros
-        bc = count_states(dtrajs)
-        return np.count_nonzero(bc)
-    else:
-        # all states wanted, included nonpopulated ones. return max + 1
-        imax = 0
-        for dtraj in dtrajs:
-            imax = max(imax, np.max(dtraj))
-        return imax+1
+    return _number_of_states(dtrajs, only_used = only_used)
 
 
 ################################################################################
@@ -221,7 +200,6 @@ def count_matrix(dtraj, lag, sliding=True, sparse_return=True, nstates=None):
     # a list of int ndarrays.
     dtraj = _ensure_dtraj_list(dtraj)
     return sparse.count_matrix.count_matrix_mult(dtraj, lag, sliding=sliding, sparse=sparse_return, nstates=nstates)
-
 
 
 # # TODO: Implement in Python directly
@@ -813,6 +791,9 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
         Chodera, C Schuette and F Noe. 2011. Markov models of
         molecular kinetics: Generation and validation. J Chem Phys
         134: 174105
+    .. [2] Bowman, G R, K A Beauchamp, G Boxer and V S Pande. 2009.
+        Progress and challenges in the automated construction of Markov state models for full protein systems.
+        J. Chem. Phys. 131: 124101
 
     Examples
     --------

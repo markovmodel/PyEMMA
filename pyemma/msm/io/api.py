@@ -13,7 +13,7 @@ from pyemma.util.annotators import shortcut
 from scipy.sparse import issparse
 from scipy.sparse.sputils import isdense
 
-import trajectory.trajectory as trajectory
+import pyemma.util.discrete_trajectories as trajectory
 import matrix.matrix as matrix
 
 __author__ = "Benjamin Trendelkamp-Schroer, Martin Scherer, Frank Noe"
