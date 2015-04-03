@@ -227,6 +227,7 @@ def input(input, featurizer=None, topology=None):
         # check: if single array, create a one-element list
         # check: do all arrays have compatible dimensions (*, N)? If not: raise ValueError.
         # create MemoryReader
+    pass
 
 # TODO: Alternative names: chain, stream, datastream... probably pipeline is the best name though.
 def pipeline(stages, run=True, param_stride=1):
@@ -257,6 +258,7 @@ def pipeline(stages, run=True, param_stride=1):
         A pipeline object that is able to conduct big data analysis with limited memory in streaming mode.
 
     """
+    pass
 
 def featurizer(topfile):
     """ Constructs a MDFeaturizer to select and add coordinates or features from MD data.

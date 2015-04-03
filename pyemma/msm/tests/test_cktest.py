@@ -44,7 +44,7 @@ class TestCkTest(unittest.TestCase):
         MSM = msm(dtraj, tau)
         C_MSM = MSM.count_matrix_full
         lcc_MSM = MSM.largest_connected_set
-        Ccc_MSM = MSM.count_matrix
+        Ccc_MSM = MSM.count_matrix_active
         P_MSM = MSM.transition_matrix
         mu_MSM = MSM.stationary_distribution
 

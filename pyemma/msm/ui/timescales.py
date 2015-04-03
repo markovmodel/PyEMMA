@@ -10,10 +10,11 @@ __all__=['ImpliedTimescales']
 import numpy as np
 import warnings
 
-from pyemma.msm.estimation import cmatrix, number_of_states, connected_cmatrix, tmatrix, bootstrap_counts
+from pyemma.msm.estimation import cmatrix, connected_cmatrix, tmatrix, bootstrap_counts
 from pyemma.msm.analysis import timescales
 from pyemma.util.statistics import confidence_interval
 from pyemma.util.types import ensure_dtraj_list as _ensure_dtraj_list
+from pyemma.util.discrete_trajectories import number_of_states
 
 #TODO: connectivity flag is currently not used. Introduce different connectivity modes (lag, minimal, set)
 #TODO: if not connected, might add infinity timescales.
