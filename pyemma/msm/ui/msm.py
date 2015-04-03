@@ -2,24 +2,37 @@ r"""Implement a MSM class that builds a Markov state models from
 microstate trajectories automatically computes important properties
 and provides them for later access.
 
-.. moduleauthor:: B.Trendelkamp-Schroer <benjamin DOT trendelkamp-schroer AT fu-berlin DOT de>
+.. moduleauthor:: B. Trendelkamp-Schroer <benjamin DOT trendelkamp-schroer AT fu-berlin DOT de>
+.. moduleauthor:: F. Noe <frank DOT noe AT fu-berlin DOT de>
 
 """
 
 __docformat__ = "restructuredtext en"
 
 import numpy as np
+import warnings
+import copy
+from pyemma.util.annotators import shortcut
 
-from pyemma.msm.estimation import cmatrix, largest_connected_set, connected_cmatrix, tmatrix
-from pyemma.msm.analysis import statdist, timescales
 
 __all__ = ['MSM']
+
+# TODO - DISCUSS CHANGES:
+# TODO: I removed the option sliding=True because now we force sliding but compute a transition matrix with effective
+#       counts for computing error bars
+# TODO: By default all operations are dense (+usability +reliability). The behavior can be switched by the user with
+#       the flag sparse. a warning is generated when building an MSM > 4000 states with sparse=False
+# TODO: sample trajectory and by state
+
+
+# TODO: Explain concept of an active set
+# TODO: Take care of sliding counts
 
 
 class MSM(object):
 
-    def __init__(self, dtrajs, lag, reversible=True, sliding=True, compute=True,
-                 estimate_on_lcc=True):
+    def __init__(self, dtrajs, lag, reversible=True, sparse=False,
+                 connectivity='largest', compute=True, **kwargs):
         r"""Estimate Markov state model (MSM) from discrete trajectories.
 
         Parameters
@@ -29,15 +42,36 @@ class MSM(object):
             or a single ndarray for only one trajectory.
         lag : int
             lagtime for the MSM estimation
-        reversible : bool (optional)
+        reversible : bool, optional, default = True
             If true compute reversible MSM, else non-reversible MSM
-        sliding : bool (optional)
-            If true use the sliding approach to counting, else
-            use the lagsampling approach
-        conpute : bool (optional)
+        sparse : bool, optional, default = False
+            If true compute count matrix, transition matrix and all derived quantities using sparse matrix algebra.
+            In this case python sparse matrices will be returned by the corresponding functions instead of numpy
+            arrays. This behavior is suggested for very large numbers of states (e.g. > 4000) because it is likely
+            to be much more efficient.
+        connectivity : str, optional, default = 'largest'
+            Connectivity mode. Three methods are intended (currently only 'largest' is implemented)
+            'largest' : The active set is the largest reversibly connected set. All estimation will be done on this
+                subset and all quantities (transition matrix, stationary distribution, etc) are only defined on this
+                subset and are correspondingly smaller than the full set of states
+            'all' : The active set is the full set of states. Estimation will be conducted on each reversibly connected
+                set separately. That means the transition matrix will decompose into disconnected submatrices,
+                the stationarity vector is only defined within subsets, etc. Currently not implemented.
+            'none' : The active set is the full set of states. Estimation will be conducted on the full set of states
+                without ensuring connectivity. This only permits nonreversible estimation. Currently not implemented.
+        compute : bool (optional)
             If true estimate the MSM when creating the MSM object.
-        estimate_on_lcc : bool (optional)
-            If true estimate the MSM on largest connected input subset.
+        **kwargs: Optional algorithm-specific parameters. See below for special cases
+        maxiter = 1000000 : int
+            Optional parameter with reversible = True.
+            maximum number of iterations before the transition matrix estimation method exits
+        maxerr = 1e-8 : float
+            Optional parameter with reversible = True.
+            convergence tolerance for transition matrix estimation.
+            This specifies the maximum change of the Euclidean norm of relative
+            stationary probabilities (x_i = sum_k x_ik). The relative stationary probability changes
+            e_i = (x_i^(1) - x_i^(2))/(x_i^(1) + x_i^(2)) are used in order to track changes in small
+            probabilities. The Euclidean norm of the change vector, |e_i|_2, is compared to convtol.
 
         Notes
         -----
@@ -46,92 +80,323 @@ class MSM(object):
         method.
 
         """
-        self.dtrajs = dtrajs
+        self._dtrajs_full = dtrajs
         self.tau = lag
 
         self.reversible = reversible
-        self.sliding = sliding
+        #self.sliding = sliding
 
-        """Empty attributes that will be computed later"""
+        # count states
+        import pyemma.msm.estimation as msmest
+        self._n_full = msmest.count_states(dtrajs)
 
-        """Count-matrix"""
-        self.C = None
+        # sparse matrix computation wanted?
+        self.sparse = sparse
+        if self._n_full > 4000 and not sparse:
+            warnings.warn('Building a dense MSM with '+str(self._n_full)+' states. This can be inefficient or '+
+                          'unfeasible in terms of both runtime and memory consumption. Consider using sparse=True.')
 
-        """Largest connected set"""
-        self.lcc = None
+        # TODO: do we need these None definitions? Why?
+        #"""Count-matrix"""
+        #self._C_full = None
 
-        """Count matrix on largest set"""
-        self.Ccc = None
+        #"""Largest connected set"""
+        #self._lcs = None
 
-        """Transition matrix"""
-        self.T = None
+        #"""Count matrix on largest set"""
+        #self._C_lcs = None
 
-        """Stationary distribution"""
-        self.mu = None
+        #"""Transition matrix"""
+        #self._T = None
 
-        self.computed = False
+        #"""Stationary distribution"""
+        #self._mu = None
 
-        self.estimate_on_lcc = estimate_on_lcc
+        #self._computed = False
 
-        if compute:
-            self.compute()
-
-    def compute(self):
-        """Compute count matrix"""
-        self.C = cmatrix(self.dtrajs, self.tau, sliding=self.sliding)
-
-        """Largest connected set"""
-        self.lcc = largest_connected_set(self.C)
-
-        """Largest connected countmatrix"""
-        self.Ccc = connected_cmatrix(self.C)
-
-        """Estimate transition matrix"""
-        if self.estimate_on_lcc:
-            self.T = tmatrix(self.Ccc, reversible=self.reversible)
+        # store connectivity mode (lowercase)
+        self.connectivity = connectivity.lower()
+        if self.connectivity == 'largest':
+            pass  # this is the current default. no need to do anything
+        elif self.connectivity == 'all':
+            raise NotImplementedError('MSM estimation with connectivity=\'all\' is currently not implemented.')
+        elif self.connectivity == 'none':
+            raise NotImplementedError('MSM estimation with connectivity=\'none\' is currently not implemented.')
         else:
-            self.T = tmatrix(self.C, reversible=self.reversible)
+            raise ValueError('connectivity mode '+str(connectivity)+' is unknown.')
 
-        self.computed = True
+        # run estimation unless suppressed
+        if compute:
+            self.compute(kwargs)
 
-    def _assert_computed(self):
-        assert self.computed, "MSM hasn't been computed yet, make sure to call MSM.compute()"
+
+    def compute(self, **kwargs):
+        r"""Runs msm estimation.
+
+        Only need to call this method if the msm was initialized with compute=False - otherwise it will have
+        been called at time of initialization.
+
+        """
+        import pyemma.msm.estimation as msmest
+
+        # Compute count matrix
+        self._C_full = msmest.count_matrix(self._dtrajs_full, self.tau, sliding=True)
+
+        # Compute connected sets
+        self._connected_sets = msmest.largest_connected_set(self._C_full)
+
+        if self.connectivity == 'largest':
+            # the largest connected set is the active set. This is at the same time a mapping from active to full
+            self._active_set = self._connected_sets[0]
+        else:
+            # for 'None' and 'all' all visited states are active
+            from pyemma.util.discrete_trajectories import visited_set
+            self._active_set = visited_set(self._dtrajs_full)
+
+        # back-mapping from full to lcs
+        self._full2active = -1*np.ones((self._n_full), dtype=int)
+        self._full2active[self._active_set] = range(len(self._active_set))
+
+        # active set count matrix
+        from pyemma.util.linalg import submatrix
+        self._C_active = submatrix(self._C_full, self._active_set)
+
+        # continue sparse or dense?
+        if not self.sparse:
+            # converting count matrices to arrays. As a result the transition matrix and all subsequent properties
+            # will be computed using dense arrays and dense matrix algebra.
+            self._C_full = self._C_full.toarray()
+            self._C_active = self._C_active.toarray()
+
+        # Estimate transition matrix
+        if self.connectivity == 'largest':
+            self._T = msmest.transition_matrix(self._C_active, reversible=self.reversible, **kwargs)
+        elif self.connectivity == 'none':
+            # reversible mode only possible if active set is connected - in this case all visited states are connected
+            # and thus this mode is identical to 'largest'
+            if self.reversible and not msmest.is_connected(self._C_active):
+                raise ValueError('Reversible MSM estimation is not possible with connectivity mode \'none\', because the set of all visited states is not reversibly connected')
+            self._T = msmest.transition_matrix(self._C_active, reversible=self.reversible, **kwargs)
+        else:
+            raise NotImplementedError('MSM estimation with connectivity=\'self.connectivity\' is currently not implemented.')
+
+        # compute connected dtrajs
+        self._dtrajs_active = []
+        for dtraj in self._dtrajs_full:
+            self._dtrajs_active.append(self._full2active[dtraj])
+
+        self._computed = True
+
+
+    ################################################################################
+    # Basic attributes
+    ################################################################################
+
 
     @property
-    def discretized_trajectories(self):
-        return self.dtrajs
+    def computed(self):
+        """Returns whether this msm has been estimated yet"""
+        return self._computed
+
+    def _assert_computed(self):
+        assert self._computed, "MSM hasn't been computed yet, make sure to call MSM.compute()"
+
+    @property
+    @shortcut('dtrajs_full')
+    def discrete_trajectories_full(self):
+        """
+        A list of integer arrays with the original (unmapped) discrete trajectories:
+
+        """
+        return self._dtrajs_full
+
+    @property
+    @shortcut('dtrajs_active')
+    def discrete_trajectories_active(self):
+        """
+        A list of integer arrays with the discrete trajectories mapped to the connectivity mode used.
+        For example, for connectivity='largest', the indexes will be given within the connected set.
+        Frames that are not in the connected set will be -1.
+
+        """
+        return self._dtrajs_full
 
     @property
     def lagtime(self):
+        """
+        The lag time at which the Markov model was estimated
+
+        """
         return self.tau
 
     @property
-    def count_matrix(self):
+    def count_matrix_active(self):
+        """
+        The count matrix on the active set given the connectivity mode used. For example, for connectivity='largest',
+        the count matrix is given only on the largest reversibly connected set.
+
+        """
         self._assert_computed()
-        return self.Ccc
+        return self._C_active
 
     @property
     def count_matrix_full(self):
+        """
+        The count matrix on full set of discrete states, irrespective as to whether they are connected or not.
+
+        """
         self._assert_computed()
-        return self.C
+        return self._C_full
 
     @property
     def largest_connected_set(self):
+        """
+        The largest reversible connected set of states
+
+        """
         self._assert_computed()
-        return self.lcc
+        return self._connected_sets[0]
+
+    @property
+    def connected_sets(self):
+        """
+        The reversible connected sets of states, sorted by size (descending)
+
+        """
+        self._assert_computed()
+        return self._connected_sets
 
     @property
     def transition_matrix(self):
+        """
+        The transition matrix, estimated on the active set. For example, for connectivity='largest' it will be the
+        transition matrix amongst the largest set of reversibly connected states
+
+        """
         self._assert_computed()
-        return self.T
+        return self._T
+
+
+    ################################################################################
+    # Compute derived quantities
+    ################################################################################
+
 
     @property
     def stationary_distribution(self):
+        """
+        The stationary distribution, estimated on the active set. For example, for connectivity='largest' it will be the
+        transition matrix amongst the largest set of reversibly connected states
+
+        """
         self._assert_computed()
-        if self.mu is None:
-            self.mu = statdist(self.T)
-        return self.mu
+        if self._mu is None:
+            from pyemma.msm.analysis import stationary_distribution as _statdist
+            self._mu = _statdist(self._T)
+        return self._mu
 
     def get_timescales(self, k):
-        ts = timescales(self.T, k=k, tau=self.tau)
+        """
+        The stationary distribution on the full set of discrete states. The output will depend very much on the
+        connectivity mode used. For connectivity='largest', only the largest set of reversibly connected states
+        will have probability and all other states have probability zero.
+
+        """
+        from pyemma.msm.analysis import timescales as _timescales
+        ts = _timescales(self._T, k=k, tau=self.tau)
         return ts
+
+
+    ################################################################################
+    # Generation of trajectories and samples
+    ################################################################################
+
+    @property
+    def active_state_indexes(self):
+        """
+        Ensures that the connected states are indexed and returns the indices
+        """
+        try: # if we have this attribute, return it
+            return self._active_state_indexes
+        except: # didn't exist? then create it.
+            import pyemma.util.discrete_trajectories as dt
+            self._active_state_indexes = dt.index_states(self._active_set)
+            return self._active_state_indexes
+
+    def generate_traj(self, N, start = None, stop = None, stride = 1):
+        """Generates a synthetic discrete trajectory of length N and simulation time stride * lag time * N
+
+        This information can be used
+        in order to generate a synthetic molecular dynamics trajectory - see :py:function:`pyemma.coordinates.save_traj`
+
+        Parameters
+        ----------
+        N : int
+            Number of time steps in the output trajectory. The total simulation time is stride * lag time * N
+        start : int, optional, default = None
+            starting state. If not given, will sample from the stationary distribution of P
+        stop : int or int-array-like, optional, default = None
+            stopping set. If given, the trajectory will be stopped before N steps
+            once a state of the stop set is reached
+        stride : int, optional, default = 1
+            Multiple of lag time used as a time step. By default, the time step is equal to the lag time
+
+        Returns
+        -------
+        indexes : ndarray( (N, 2) )
+            trajectory and time indexes of the simulated trajectory. Each row consist of a tuple (i, t), where i is
+            the index of the trajectory and t is the time index within the trajectory.
+
+        See also
+        --------
+        :py:function:`pyemma.coordinates.save_traj`
+            in order to save this synthetic trajectory as a trajectory file with molecular structures
+
+        """
+        # generate synthetic states
+        from pyemma.msm.generation import generate_traj as _generate_traj
+        syntraj = _generate_traj(self._T, N, start = start, stop = stop, dt = stride)
+        # result
+        from pyemma.util.discrete_trajectories import sample_indexes_by_sequence
+        return sample_indexes_by_sequence(self.active_state_indexes, syntraj)
+
+    def sample_by_state(self, nsample, subset=None, replace=True):
+        """Generates samples of the connected states.
+
+        For each state in the active set of states, generates nsample samples with trajectory/time indexes.
+        This information can be used in order to generate a trajectory of length nsample * nconnected using
+        :py:function:`pyemma.coordinates.save_traj` or nconnected trajectories of length nsample each using
+        :py:function:`pyemma.coordinates.save_trajs`
+
+        Parameters
+        ----------
+        N : int
+            Number of time steps in the output trajectory. The total simulation time is stride * lag time * N
+        nsample : int
+            Number of samples per state. If replace = False, the number of returned samples per state could be smaller
+            if less than nsample indexes are available for a state.
+        subset : ndarray((n)), optional, default = None
+            array of states to be indexed. By default all states in the connected set will be used
+        replace : boolean, optional
+            Whether the sample is with or without replacement
+        start : int, optional, default = None
+            starting state. If not given, will sample from the stationary distribution of P
+
+        Returns
+        -------
+        indexes : list of ndarray( (N, 2) )
+            list of trajectory/time index arrays with an array for each state.
+            Within each index array, each row consist of a tuple (i, t), where i is
+            the index of the trajectory and t is the time index within the trajectory.
+
+        See also
+        --------
+        :py:function:`pyemma.coordinates.save_traj`
+            in order to save the sampled frames sequentially in a trajectory file with molecular structures
+        :py:function:`pyemma.coordinates.save_trajs`
+            in order to save the sampled frames in nconnected trajectory files with molecular structures
+
+        """
+        # generate connected state indexes
+        import pyemma.util.discrete_trajectories as dt
+        return dt.sample_indexes_by_state(self._active_set, nsample, subset=subset, replace=replace)
