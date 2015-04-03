@@ -2,8 +2,8 @@ r"""Implement a MSM class that builds a Markov state models from
 microstate trajectories automatically computes important properties
 and provides them for later access.
 
-.. moduleauthor:: B. Trendelkamp-Schroer <benjamin DOT trendelkamp-schroer AT fu-berlin DOT de>
 .. moduleauthor:: F. Noe <frank DOT noe AT fu-berlin DOT de>
+.. moduleauthor:: B. Trendelkamp-Schroer <benjamin DOT trendelkamp-schroer AT fu-berlin DOT de>
 
 """
 
@@ -31,8 +31,10 @@ __all__ = ['MSM']
 
 class MSM(object):
 
-    def __init__(self, dtrajs, lag, reversible=True, sparse=False,
-                 connectivity='largest', compute=True, **kwargs):
+    def __init__(self, dtrajs, lag,
+                 reversible=True, sparse=False, connectivity='largest', compute=True,
+                 dt = '1 step',
+                 **kwargs):
         r"""Estimate Markov state model (MSM) from discrete trajectories.
 
         Parameters
@@ -41,7 +43,7 @@ class MSM(object):
             discrete trajectories, stored as integer ndarrays (arbitrary size)
             or a single ndarray for only one trajectory.
         lag : int
-            lagtime for the MSM estimation
+            lagtime for the MSM estimation in multiples of trajectory steps
         reversible : bool, optional, default = True
             If true compute reversible MSM, else non-reversible MSM
         sparse : bool, optional, default = False
@@ -56,11 +58,22 @@ class MSM(object):
                 subset and are correspondingly smaller than the full set of states
             'all' : The active set is the full set of states. Estimation will be conducted on each reversibly connected
                 set separately. That means the transition matrix will decompose into disconnected submatrices,
-                the stationarity vector is only defined within subsets, etc. Currently not implemented.
+                the stationary vector is only defined within subsets, etc. Currently not implemented.
             'none' : The active set is the full set of states. Estimation will be conducted on the full set of states
                 without ensuring connectivity. This only permits nonreversible estimation. Currently not implemented.
-        compute : bool (optional)
+        compute : bool, optional, default=True
             If true estimate the MSM when creating the MSM object.
+        dt : str, optional, default='1 step'
+            Description of the physical time corresponding to the lag. May be used by analysis algorithms such as
+            plotting tools to pretty-print the axes. By default '1 step', i.e. there is no physical time unit.
+            Specify by a number, whitespace and unit. Permitted units are (* is an arbitrary string):
+            'fs',  'femtosecond*'
+            'ps',  'picosecond*'
+            'ns',  'nanosecond*'
+            'us',  'microsecond*'
+            'ms',  'millisecond*'
+            's',   'second*'
+
         **kwargs: Optional algorithm-specific parameters. See below for special cases
         maxiter = 1000000 : int
             Optional parameter with reversible = True.
@@ -96,24 +109,6 @@ class MSM(object):
             warnings.warn('Building a dense MSM with '+str(self._n_full)+' states. This can be inefficient or '+
                           'unfeasible in terms of both runtime and memory consumption. Consider using sparse=True.')
 
-        # TODO: do we need these None definitions? Why?
-        #"""Count-matrix"""
-        #self._C_full = None
-
-        #"""Largest connected set"""
-        #self._lcs = None
-
-        #"""Count matrix on largest set"""
-        #self._C_lcs = None
-
-        #"""Transition matrix"""
-        #self._T = None
-
-        #"""Stationary distribution"""
-        #self._mu = None
-
-        #self._computed = False
-
         # store connectivity mode (lowercase)
         self.connectivity = connectivity.lower()
         if self.connectivity == 'largest':
@@ -126,8 +121,12 @@ class MSM(object):
             raise ValueError('connectivity mode '+str(connectivity)+' is unknown.')
 
         # run estimation unless suppressed
+        self._computed = False
         if compute:
             self.compute(kwargs)
+
+        # set time step
+        self.dt = dt
 
 
     def compute(self, **kwargs):
@@ -281,31 +280,109 @@ class MSM(object):
     # Compute derived quantities
     ################################################################################
 
+    @property
+    def active_state_fraction(self):
+        """The fraction of states in the active set.
+
+        """
+        self._assert_computed()
+        return float(self._active_set) / float(self._n_full)
+
+    @property
+    def active_count_fraction(self):
+        """The fraction of counts in the active set.
+
+        """
+        self._assert_computed()
+        from pyemma.util.discrete_trajectories import count_states
+        hist = count_states(self._dtrajs_full)
+        hist_active = hist[self._active_set]
+        return float(np.sum(hist_active)) / float(np.sum(hist))
 
     @property
     def stationary_distribution(self):
-        """
-        The stationary distribution, estimated on the active set. For example, for connectivity='largest' it will be the
+        """The stationary distribution, estimated on the active set.
+
+        For example, for connectivity='largest' it will be the
         transition matrix amongst the largest set of reversibly connected states
 
         """
         self._assert_computed()
-        if self._mu is None:
+        try:
+            return self._mu
+        except:
             from pyemma.msm.analysis import stationary_distribution as _statdist
             self._mu = _statdist(self._T)
-        return self._mu
+            return self._mu
 
-    def get_timescales(self, k):
+    def get_timescales(self, k = None):
         """
-        The stationary distribution on the full set of discrete states. The output will depend very much on the
-        connectivity mode used. For connectivity='largest', only the largest set of reversibly connected states
-        will have probability and all other states have probability zero.
+        The relaxation timescales corresponding to the eigenvalues
+
+        Parameters
+        ----------
+        k : int
+            number of timescales to be computed. By default identical to the number of eigenvalues computed minus 1
+
+        Returns
+        -------
+        ts : ndarray(m)
+            relaxation timescales, defined by :math:`-tau / ln | \lambda_i |, i = 2,...,k+1`.
 
         """
         from pyemma.msm.analysis import timescales as _timescales
-        ts = _timescales(self._T, k=k, tau=self.tau)
+        ts = _timescales(self._T, k=k+1, tau=self.tau)[1:] # exclude the stationary process
         return ts
 
+    ################################################################################
+    # For general statistics
+    ################################################################################
+
+    def trajectory_weights(self):
+        """Uses the MSM to assign a probability weight to each trajectory frame.
+
+        This is a powerful function for the calculation of arbitrary observables in the trajectories one has
+        started the analysis with. The stationary probability of the MSM will be used to reweigh all states.
+        Returns a list of weight arrays, one for each trajectory, and with a number of elements equal to
+        trajectory frames. Given :math:`N` trajectories of lengths :math:`T_1` to :math:`T_N`, this function
+        returns corresponding weights:
+        .. math::
+            (w_{1,1}, ..., w_{1,T_1}), (w_{N,1}, ..., w_{N,T_N})
+        that are normalized to one:
+        .. math::
+            \sum_{i=1}^N \sum_{t=1}^{T_i} w_{i,t} = 1
+        Suppose you are interested in computing the expectation value of a function :math:`a(x)`, where :math:`x`
+        are your input configurations. Use this function to compute the weights of all input configurations and
+        obtain the estimated expectation by:
+        .. math::
+            \langle a \rangle = \sum_{i=1}^N \sum_{t=1}^{T_i} w_{i,t} a(x_{i,t})
+        Or if you are interested in computing the time-lagged correlation between functions :math:`a(x)` and
+        :math:`b(x)` you could do:
+        .. math::
+            \langle a(t) b(t+\tau) \rangle_t = \sum_{i=1}^N \sum_{t=1}^{T_i} w_{i,t} a(x_{i,t}) a(x_{i,t+\tau})
+
+        Returns
+        -------
+        The normalized trajectory weights. Given :math:`N` trajectories of lengths :math:`T_1` to :math:`T_N`,
+        returns the corresponding weights:
+        .. math::
+            (w_{1,1}, ..., w_{1,T_1}), (w_{N,1}, ..., w_{N,T_N})
+
+        """
+        # compute stationary distribution, expanded to full set
+        statdist_full = np.zeros[self._n_full]
+        statdist_full[self._active_set] = self.stationary_distribution
+        # simply read off stationary distribution and accumulate total weight
+        W = []
+        wtot = 0.0
+        for dtraj in self._dtrajs_full:
+            w = statdist_full[dtraj]
+            wtot += np.sum(W)
+        # normalize
+        for w in W:
+            w /= wtot
+        # done
+        return W
 
     ################################################################################
     # Generation of trajectories and samples
