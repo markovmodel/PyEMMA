@@ -21,6 +21,7 @@ from pyemma.util.types import ensure_dtraj_list as _ensure_dtraj_list
 # ascii
 ################################################################################
 
+@shortcut('read_dtraj')
 def read_discrete_trajectory(filename):
     """Read discrete trajectory from ascii file.
 
@@ -45,6 +46,7 @@ def read_discrete_trajectory(filename):
         dtraj=np.fromstring(lines, dtype=int, sep="\n")
         return dtraj
 
+@shortcut('write_dtraj')
 def write_discrete_trajectory(filename, dtraj):
     r"""Write discrete trajectory to ascii file.
 
@@ -70,6 +72,7 @@ def write_discrete_trajectory(filename, dtraj):
 # binary
 ################################################################################
 
+@shortcut('load_dtraj')
 def load_discrete_trajectory(filename):
     r"""Read discrete trajectory form binary file.
 
@@ -92,6 +95,7 @@ def load_discrete_trajectory(filename):
     dtraj=np.load(filename)
     return dtraj
 
+@shortcut('save_dtraj')
 def save_discrete_trajectory(filename, dtraj):
     r"""Write discrete trajectory to binary file.
 
@@ -149,6 +153,21 @@ def count_states(dtrajs):
         res[:bcs[i].shape[0]] += bcs[i]
     return res
 
+def visited_set(dtrajs):
+    r"""returns the set of states that have at least one count
+
+    Parameters
+    ----------
+    dtraj : array_like or list of array_like
+        Discretized trajectory or list of discretized trajectories
+
+    Returns
+    -------
+    vis : ndarray((n), dtype=int)
+        the set of states that have at least one count.
+    """
+    hist = count_states(dtrajs)
+    return np.argwhere(hist > 0)[:,0]
 
 @shortcut('nstates')
 def number_of_states(dtrajs, only_used = False):
