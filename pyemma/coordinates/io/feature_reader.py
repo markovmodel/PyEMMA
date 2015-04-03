@@ -91,6 +91,9 @@ class FeatureReader(Transformer):
 
     @classmethod
     def init_from_featurizer(cls, trajectories, featurizer):
+        if not isinstance(featurizer, Featurizer):
+            raise ValueError("given featurizer is not of type Featurizer, but is %s"
+                             % type(featurizer))
         cls.featurizer = featurizer
         return cls(trajectories, featurizer.topologyfile)
 
@@ -173,7 +176,7 @@ class FeatureReader(Transformer):
 
         :return:
         """
-        if len(self.featurizer.active_features)==0:
+        if len(self.featurizer.active_features) == 0:
             # special case: cartesion coordinates
             return self.featurizer.topology.n_atoms * 3
         else:
@@ -242,8 +245,9 @@ class FeatureReader(Transformer):
         :return: a feature mapped vector X, or (X, Y) if lag > 0
         """
         assert stride <= self.chunksize, 'stride > chunk size. This is not supported for MD trajectories.'
-        
+
         chunk = self._mditer.next()
+        shape = chunk.xyz.shape
 
         if lag > 0:
             if self._curr_lag == 0:
@@ -258,10 +262,10 @@ class FeatureReader(Transformer):
             except StopIteration:
                 # When _mditer2 ran over the trajectory end, return empty chunks.
                 adv_chunk = mdtraj.Trajectory(
-                              np.empty((0,chunk.xyz.shape[1],chunk.xyz.shape[2]),np.float32),
+                              np.empty((0, shape[1], shape[2]), np.float32),
                               chunk.topology)
 
-        self._t += chunk.xyz.shape[0]
+        self._t += shape[0]
 
         if (self._t >= self.trajectory_length(self._itraj, stride=stride) and
                 self._itraj < len(self.trajfiles) - 1):
@@ -276,60 +280,18 @@ class FeatureReader(Transformer):
 
         # map data
         if lag == 0:
-            if len(self.featurizer.active_features)==0:
-                return chunk.xyz.reshape((chunk.xyz.shape[0],chunk.xyz.shape[1]*chunk.xyz.shape[2]))
+            if len(self.featurizer.active_features) == 0:
+                shape_2d = (shape[0], shape[1] * shape[2])
+                return chunk.xyz.reshape(shape_2d)
             else:
                 return self.featurizer.map(chunk)
         else:
-            # TODO: note X and Y may have different shapes. This case has to be handled by subsequent transformers
-            if len(self.featurizer.active_features)==0:
-                X = chunk.xyz.reshape((chunk.xyz.shape[0],chunk.xyz.shape[1]*chunk.xyz.shape[2]))
-                Y = adv_chunk.xyz.reshape((adv_chunk.xyz.shape[0],adv_chunk.xyz.shape[1]*adv_chunk.xyz.shape[2]))
+            if len(self.featurizer.active_features) == 0:
+                shape_Y = adv_chunk.xyz.shape
+
+                X = chunk.xyz.reshape((shape[0], shape[1] * shape[2]))
+                Y = adv_chunk.xyz.reshape((shape_Y[0], shape_Y[1] * shape_Y[2]))
             else:
                 X = self.featurizer.map(chunk)
                 Y = self.featurizer.map(adv_chunk)
-#             assert np.shape(X) == np.shape(Y), "shape X = %s; Y= %s; lag=%i" % (
-#                 np.shape(X), np.shape(Y), lag)
             return X, Y
-
-    #def __iter__(self):
-        #self._reset()
-        #return self
-
-    #def next(self):
-        #""" enable iteration over transformed data.
-
-        #Returns
-        #-------
-        #(itraj, X) : (int, ndarray(n, m)
-            #itraj corresponds to input sequence number (eg. trajectory index)
-            #and X is the transformed data, n = chunksize or n < chunksize at end
-            #of input.
-
-        #"""
-        ## iterate over trajectories
-        #if self._itraj >= self.number_of_trajectories():
-            #raise StopIteration
-
-        ## next chunk already maps output
-        #if self.lag == 0:
-            #X = self._next_chunk()
-        #else:
-            #X, Y = self._next_chunk(self.lag)
-            ### we wont be able to correlate chunks of different len, so stop here
-            ##if np.shape(X) != np.shape(Y):
-            ##    # TODO: determine if its possible to truncate X to shape of Y?
-            ##    raise StopIteration
-
-        #last_itraj = self._itraj
-        ## note: _t is incremented in _next_chunk
-        #if self._t >= self.trajectory_length(self._itraj):
-            #self._itraj += 1
-            #self._t = 0
-
-        #if self.lag == 0:
-            #return (last_itraj, X)
-
-        #return (last_itraj, X, Y)
-
-
