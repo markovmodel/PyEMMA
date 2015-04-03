@@ -376,7 +376,8 @@ class MDFeaturizer(object):
         if f not in self.active_features:
             self.active_features.append(f)
         else:
-            log.warning("tried to re-add the same feature.")
+            log.warning("tried to re-add the same feature %s"
+                        % f.__class__.__name__)
 
     def describe(self):
         """
