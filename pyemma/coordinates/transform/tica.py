@@ -170,7 +170,7 @@ class TICA(Transformer):
             # TODO: maybe use stable sum here, since small chunksizes
             # accumulate more errors
             self.mu += np.sum(X, axis=0, dtype=np.float64)
-            self.N_mean += np.shape(X)[0]
+            self.N_mean += np.shape(X)[0] 
 
             if last_chunk:
                 log.debug("mean before norming:\n%s" % self.mu)
@@ -184,24 +184,41 @@ class TICA(Transformer):
 
         elif ipass == 1:
             if self.trajectory_length(itraj,stride=stride) > self._tau:
-                self.N_cov += np.shape(X)[0]
-                self.N_cov_tau += np.shape(Y)[0]
+                self.N_cov_tau += 2.0*np.shape(Y)[0]
                 X_meanfree = X - self.mu
                 Y_meanfree = Y - self.mu
                 # update the time-lagged covariance matrix
                 end = min(X_meanfree.shape[0],Y_meanfree.shape[0])
-                self.cov_tau += np.dot(X_meanfree[0:end].T, Y_meanfree[0:end])
+                self.cov_tau += 2.0*np.dot(X_meanfree[0:end].T, Y_meanfree[0:end])
 
                 # update the instantaneous covariance matrix
-                self.cov += np.dot(X_meanfree.T, X_meanfree)
-            
                 if self._force_eigenvalues_le_one:
-                    start2 = max(self._tau-t, 0)
-                    end2   = min(self.trajectory_length(itraj,stride)-self._tau-t, X_meanfree.shape[0])
-                    if start2 < X_meanfree.shape[0] and end2 > 0 and start2 < end2: 
-                        self.cov += np.dot(X_meanfree[start2:end2,:].T, X_meanfree[start2:end2,:])
-                        assert X_meanfree[start2:end2,:].shape[0] == (end2-start2)
-                        self.N_cov += (end2-start2)
+                    # MSM-like counting
+                    Zptau = self._tau-t # zero plus tau
+                    Nmtau = self.trajectory_length(itraj,stride=stride)-t-self._tau # N minus tau
+
+                    # restrict to valid block indices
+                    size = X_meanfree.shape[0]
+                    Zptau = min(max(Zptau,0),size)
+                    Nmtau = min(max(Nmtau,0),size)
+
+                    # update covariance matrix
+                    start2 = min(Zptau,Nmtau) 
+                    end2 = max(Zptau,Nmtau)
+                    self.cov += np.dot(X_meanfree[0:start2,:].T, X_meanfree[0:start2,:])
+                    self.N_cov += start2
+
+                    if Nmtau > Zptau:
+                        self.cov += 2.0*np.dot(X_meanfree[start2:end2,:].T, X_meanfree[start2:end2,:])
+                        self.N_cov += 2.0*(end2-start2)
+
+                    self.cov += np.dot(X_meanfree[end2:,:].T, X_meanfree[end2:,:])
+                    self.N_cov += (size-end2)
+                else:
+                    # traditional counting
+                    self.cov += 2.0*np.dot(X_meanfree.T, X_meanfree)
+                    self.N_cov += 2.0*np.shape(X)[0]
+            
             else:
                 log.error("trajectory nr %i too short, skipping it" % itraj)
 
@@ -214,23 +231,18 @@ class TICA(Transformer):
     @doc_inherit
     def _param_finish(self):
         if self._force_eigenvalues_le_one:
-            # This is a bit unintuitive, for cov we include the frames that
-            # we count twice in cov and N_cov during _param_add_data.
-            # For cov_tau, we don't and we symmetrize only in _param_finish.
-            # (That is we double the number of frames only in _param_finish).
-            # However this is mathemtically correct.
-            assert self.N_cov == 2*self.N_cov_tau, 'inconsistency in C(0) and C(tau)'
+            assert self.N_cov == self.N_cov_tau, 'inconsistency in C(0) and C(tau)'
         
-        # norm
-        self.cov /= self.N_cov - 1
-        self.cov_tau /= self.N_cov_tau - 1 
-
         # symmetrize covariance matrices
         self.cov = self.cov + self.cov.T
-        self.cov /= 2.0
-
+        self.cov *= 0.5
+        
         self.cov_tau = self.cov_tau + self.cov_tau.T
-        self.cov_tau /= 2.0
+        self.cov_tau *= 0.5
+
+        # norm
+        self.cov /= self.N_cov - 1
+        self.cov_tau /= self.N_cov_tau - 1
 
         # diagonalize with low rank approximation
         log.info("diagonalize Cov and Cov_tau")

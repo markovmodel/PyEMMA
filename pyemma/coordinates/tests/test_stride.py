@@ -26,7 +26,7 @@ class TestStride(unittest.TestCase):
         cls.data = []
         for i in xrange(N_trajs):
             # set up data
-            N = int(np.random.rand()*1000+10) # 10...60
+            N = int(np.random.rand()*1000+10)
             xyz = np.random.randn(N,cls.dim//3,3).astype(np.float32)
             cls.data.append(xyz)
             t = np.arange(0,N)
@@ -87,9 +87,12 @@ class TestStride(unittest.TestCase):
                 
     def test_parametrize_with_stride(self):
         #for stride in xrange(1,100,20):
-        for stride in xrange(1,20):
+        for stride in xrange(1,100,5):
             r = pyemma.coordinates.feature_reader(self.trajnames, self.temppdb)
-            t = pyemma.coordinates.transform.tica.TICA(tau=5,output_dimension=2,force_eigenvalues_le_one=False)
+            ##print 'expected total length of trajectories:', r.trajectory_lengths(stride=stride)
+            tau = 5
+            ##print 'expected inner frames', [max(l-2*tau,0) for l in r.trajectory_lengths(stride=stride)]
+            t = pyemma.coordinates.transform.tica.TICA(tau=tau,output_dimension=2,force_eigenvalues_le_one=True)
             # force_eigenvalues_le_one=True enables an internal consitency check in TICA
             t.data_producer = r
             #print 'STRIDE:', stride
@@ -97,7 +100,8 @@ class TestStride(unittest.TestCase):
             #print 'theoretical result N:', sum(r.trajectory_lengths(stride=stride))
             t.parametrize(stride=stride)
             #print 'TICA', t.N_cov, 2*t.N_cov_tau
-            #self.assertTrue(np.all(t.eigenvalues<=1.0))
+            #print 'eigenvalues', sorted(t.eigenvalues)[::-1][0:5]
+            self.assertTrue(np.all(t.eigenvalues<=1.0+1.E-12))
         
             
     @classmethod
