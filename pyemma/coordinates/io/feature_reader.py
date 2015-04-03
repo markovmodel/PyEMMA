@@ -228,7 +228,6 @@ class FeatureReader(Transformer):
         """
         resets the chunk reader
         """
-        assert stride <= self.chunksize, 'stride > chunk size. This is not supported for MD trajectories.'
         self._itraj = 0
         self._curr_lag = 0
         if len(self.trajfiles) >= 1:
