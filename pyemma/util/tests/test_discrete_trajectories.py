@@ -147,5 +147,36 @@ class TestIndexStates(unittest.TestCase):
         # just run these to see if there's any exception
         dt.index_states(dtraj)
 
+class TestSampleIndexes(unittest.TestCase):
+
+    def test_sample_by_sequence(self):
+        dtraj =[0,1,2,3,2,1,0]
+        idx = dt.index_states(dtraj)
+        seq = [0,1,1,1,0,0,0,0,1,1]
+        sidx = dt.sample_indexes_by_sequence(idx, seq)
+        assert(np.alltrue(sidx.shape == (len(seq),2)))
+        for t in range(sidx.shape[0]):
+            assert(sidx[t,0] == 0) # did we pick the right traj?
+            assert(dtraj[sidx[t,1]] == seq[t]) # did we pick the right states?
+
+    def test_sample_by_state_replace(self):
+        dtraj =[0,1,2,3,2,1,0]
+        idx = dt.index_states(dtraj)
+        sidx = dt.sample_indexes_by_state(idx, 5)
+        for i in range(4):
+            assert(sidx[i].shape[0] == 5)
+            for t in range(sidx[i].shape[0]):
+                assert(dtraj[sidx[i][t,1]] == i)
+
+    def test_sample_by_state_replace_subset(self):
+        dtraj =[0,1,2,3,2,1,0]
+        idx = dt.index_states(dtraj)
+        subset = [1,2]
+        sidx = dt.sample_indexes_by_state(idx, 5, subset=subset)
+        for i in range(len(subset)):
+            assert(sidx[i].shape[0] == 5)
+            for t in range(sidx[i].shape[0]):
+                assert(dtraj[sidx[i][t,1]] == subset[i])
+
 if __name__=="__main__":
     unittest.main()

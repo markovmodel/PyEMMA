@@ -184,6 +184,8 @@ def index_states(dtrajs, subset = None):
 
     Parameters
     ----------
+    dtraj : array_like or list of array_like
+        Discretized trajectory or list of discretized trajectories
     subset : ndarray((n)), optional, default = None
         array of states to be indexed. By default all states in dtrajs will be used
 
@@ -218,7 +220,7 @@ def index_states(dtrajs, subset = None):
     res    = np.ndarray((len(subset)), dtype=object)
     counts = np.zeros((len(subset)), dtype=int)
     for i,s in enumerate(subset):
-        res[i] = np.zeros((hist[s],2))
+        res[i] = np.zeros((hist[s],2), dtype=int)
     # walk through trajectories and remember requested state indexes
     for i,dtraj in enumerate(dtrajs):
         for t,s in enumerate(dtraj):
@@ -230,5 +232,88 @@ def index_states(dtrajs, subset = None):
     return res
 
 ################################################################################
-# sampling
+# sampling from state indexes
 ################################################################################
+
+
+def sample_indexes_by_sequence(indexes, sequence):
+    """Samples trajectory/time indexes according to the given sequence of states
+
+    Parameters
+    ----------
+    indexes : list of ndarray( (N_i, 2) )
+        For each state, all trajectory and time indexes where this state occurs.
+        Each matrix has a number of rows equal to the number of occurrences of the corresponding state,
+        with rows consisting of a tuple (i, t), where i is the index of the trajectory and t is the time index
+        within the trajectory.
+    sequence : array of integers
+        A sequence of discrete states. For each state, a trajectory/time index will be sampled at which dtrajs
+        have an occurrences of this state
+
+    Returns
+    -------
+    indexes : ndarray( (N, 2) )
+        The sampled index sequence.
+        Index array with a number of rows equal to N=len(sequence), with rows consisting of a tuple (i, t),
+        where i is the index of the trajectory and t is the time index within the trajectory.
+
+    """
+    N = len(sequence)
+    res = np.zeros((N,2), dtype=int)
+    for t in range(N):
+        s = sequence[t]
+        i = np.random.randint(indexes[s].shape[0])
+        res[t,:] = indexes[s][i,:]
+
+    return res
+
+def sample_indexes_by_state(indexes, nsample, subset=None, replace=True):
+    """Samples trajectory/time indexes according to the given sequence of states
+
+    Parameters
+    ----------
+    indexes : list of ndarray( (N_i, 2) )
+        For each state, all trajectory and time indexes where this state occurs.
+        Each matrix has a number of rows equal to the number of occurrences of the corresponding state,
+        with rows consisting of a tuple (i, t), where i is the index of the trajectory and t is the time index
+        within the trajectory.
+    nsample : int
+        Number of samples per state. If replace = False, the number of returned samples per state could be smaller
+        if less than nsample indexes are available for a state.
+    subset : ndarray((n)), optional, default = None
+        array of states to be indexed. By default all states in dtrajs will be used
+    replace : boolean, optional
+        Whether the sample is with or without replacement
+
+    Returns
+    -------
+    indexes : list of ndarray( (N, 2) )
+        List of the sampled indices by state.
+        Each element is an index array with a number of rows equal to N=len(sequence), with rows consisting of a
+        tuple (i, t), where i is the index of the trajectory and t is the time index within the trajectory.
+
+    """
+    # how many states in total?
+    n = len(indexes)
+    # define set of states to work on
+    if subset is None:
+        subset = range(n)
+
+    # list of states
+    res = np.ndarray((len(subset)), dtype=object)
+    for i in range(len(subset)):
+        # sample the following state
+        s = subset[i]
+        # how many indexes are available?
+        m_available = indexes[s].shape[0]
+        # do we have no indexes for this state? Then insert empty array.
+        if (m_available == 0):
+            res[i] = np.zeros((0,2), dtype=int)
+        elif replace:
+            I = np.random.choice(m_available, nsample, replace=True)
+            res[i] = indexes[s][I,:]
+        else:
+            I = np.random.choice(m_available, min(m_available,nsample), replace=False)
+            res[i] = indexes[s][I,:]
+
+    return res
