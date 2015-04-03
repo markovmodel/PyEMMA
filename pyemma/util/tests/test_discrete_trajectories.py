@@ -104,7 +104,48 @@ class TestDiscreteTrajectoryStatistics(unittest.TestCase):
         dt.number_of_states(dtraj)
         dt.count_states(dtraj)
 
+class TestIndexStates(unittest.TestCase):
 
+    def test_subset_error(self):
+        dtraj =[0,1,2,3,2,1,0]
+        # should be a ValueError because this is not a subset
+        with self.assertRaises(ValueError):
+            dt.index_states(dtraj, subset=[3,4,5])
+
+    def test_onetraj(self):
+        dtraj =[0,1,2,3,2,1,0]
+        # should be a ValueError because this is not a subset
+        res = dt.index_states(dtraj)
+        expected = [np.array([[0,0],[0,6]]),np.array([[0,1],[0,5]]),np.array([[0,2],[0,4]]),np.array([[0,3]])]
+        assert(len(res) == len(expected))
+        for i in range(len(res)):
+            assert(res[i].shape == expected[i].shape)
+            assert(np.alltrue(res[i] == expected[i]))
+
+    def test_onetraj_sub(self):
+        dtraj =[0,1,2,3,2,1,0]
+        # should be a ValueError because this is not a subset
+        res = dt.index_states(dtraj, subset=[2,3])
+        expected = [np.array([[0,2],[0,4]]),np.array([[0,3]])]
+        assert(len(res) == len(expected))
+        for i in range(len(res)):
+            assert(res[i].shape == expected[i].shape)
+            assert(np.alltrue(res[i] == expected[i]))
+
+    def test_twotraj(self):
+        dtrajs = [[0,1,2,3,2,1,0], [3,4,5]]
+        # should be a ValueError because this is not a subset
+        res = dt.index_states(dtrajs)
+        expected = [np.array([[0,0],[0,6]]),np.array([[0,1],[0,5]]),np.array([[0,2],[0,4]]),np.array([[0,3],[1,0]]),np.array([[1,1]]),np.array([[1,2]])]
+        assert(len(res) == len(expected))
+        for i in range(len(res)):
+            assert(res[i].shape == expected[i].shape)
+            assert(np.alltrue(res[i] == expected[i]))
+
+    def test_big(self):
+        dtraj = dt.read_discrete_trajectory(testpath+'2well_traj_100K.dat')
+        # just run these to see if there's any exception
+        dt.index_states(dtraj)
 
 if __name__=="__main__":
     unittest.main()

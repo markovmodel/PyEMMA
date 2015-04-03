@@ -196,24 +196,29 @@ def index_states(dtrajs, subset = None):
         within the trajectory.
 
     """
+    # check input
+    dtrajs = _ensure_dtraj_list(dtrajs)
     # select subset unless given
     n = number_of_states(dtrajs)
     if subset is None:
         subset = range(n)
+    else:
+        if np.max(subset) >= n:
+            raise ValueError('Selected subset is not a subset of the states in dtrajs.')
     # histogram states
     hist = count_states(dtrajs)
     # efficient access to which state are accessible
-    is_requested = np.array((n), dtype=bool)
+    is_requested = np.ndarray((n), dtype=bool)
     is_requested[:] = False
     is_requested[subset] = True
     # efficient access to requested state indexes
     full2states = np.zeros((n), dtype=int)
     full2states[subset] = range(len(subset))
     # initialize results
-    res    = np.array((len(subset)), dtype=object)
+    res    = np.ndarray((len(subset)), dtype=object)
     counts = np.zeros((len(subset)), dtype=int)
     for i,s in enumerate(subset):
-        res[i] = np.zeros((hist[s]))
+        res[i] = np.zeros((hist[s],2))
     # walk through trajectories and remember requested state indexes
     for i,dtraj in enumerate(dtrajs):
         for t,s in enumerate(dtraj):
