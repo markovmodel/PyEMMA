@@ -54,10 +54,10 @@ class TestMSM(unittest.TestCase):
 
     def test_MSM(self):
         msm = markov_state_model(self.dtrajs, self.tau)
-        assert_allclose(self.dtrajs, msm.discretized_trajectories)
+        assert_allclose(self.dtrajs, msm.discrete_trajectories)
         self.assertEqual(self.tau, msm.lagtime)
         assert_allclose(self.lcc_MSM, msm.largest_connected_set)
-        self.assertTrue(allclose_sparse(self.Ccc_MSM, msm.count_matrix))
+        self.assertTrue(allclose_sparse(self.Ccc_MSM, msm.count_matrix_active))
         self.assertTrue(allclose_sparse(self.C_MSM, msm.count_matrix_full))
         self.assertTrue(allclose_sparse(self.P_MSM, msm.transition_matrix))
         assert_allclose(self.mu_MSM, msm.stationary_distribution)

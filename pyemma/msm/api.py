@@ -130,7 +130,7 @@ def cktest(msmobj, K, nsets=2, sets=None, full_output=False):
     """
     P = msmobj.transition_matrix
     lcc = msmobj.largest_connected_set
-    dtrajs = msmobj.discretized_trajectories
+    dtrajs = msmobj.discrete_trajectories
     tau = msmobj.lagtime
     return chapman_kolmogorov(P, lcc, dtrajs, tau, K, 
                               nsets=nsets, sets=sets, full_output=full_output)
