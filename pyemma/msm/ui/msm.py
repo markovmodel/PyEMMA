@@ -32,7 +32,7 @@ __all__ = ['MSM']
 class MSM(object):
 
     def __init__(self, dtrajs, lag,
-                 reversible=True, sparse=False, connectivity='largest', compute=True,
+                 reversible=True, sparse=False, neig=None, connectivity='largest', compute=True,
                  dt = '1 step',
                  **kwargs):
         r"""Estimate Markov state model (MSM) from discrete trajectories.
@@ -51,6 +51,9 @@ class MSM(object):
             In this case python sparse matrices will be returned by the corresponding functions instead of numpy
             arrays. This behavior is suggested for very large numbers of states (e.g. > 4000) because it is likely
             to be much more efficient.
+        neig : int, optional, default = None
+            Number of eigenvalues to be computed. By default (dense) all eigenvalues will be computed. This property
+            must be set if sparse is True.
         connectivity : str, optional, default = 'largest'
             Connectivity mode. Three methods are intended (currently only 'largest' is implemented)
             'largest' : The active set is the largest reversibly connected set. All estimation will be done on this
@@ -104,10 +107,13 @@ class MSM(object):
         self._n_full = msmest.count_states(dtrajs)
 
         # sparse matrix computation wanted?
-        self.sparse = sparse
+        self._sparse = sparse
+        self._neig = neig
         if self._n_full > 4000 and not sparse:
             warnings.warn('Building a dense MSM with '+str(self._n_full)+' states. This can be inefficient or '+
                           'unfeasible in terms of both runtime and memory consumption. Consider using sparse=True.')
+        if sparse and neig is None:
+            raise ValueError('You have requested sparse=True, then the number of eigenvalues neig must also be set.')
 
         # store connectivity mode (lowercase)
         self.connectivity = connectivity.lower()
@@ -126,7 +132,8 @@ class MSM(object):
             self.compute(kwargs)
 
         # set time step
-        self.dt = dt
+        from pyemma.util.units import TimeUnit
+        self._timeunit = TimeUnit(dt)
 
 
     def compute(self, **kwargs):
@@ -191,6 +198,15 @@ class MSM(object):
     # Basic attributes
     ################################################################################
 
+    @property
+    def is_sparse(self):
+        """Returns whether the MSM is sparse """
+        return self._sparse
+
+    @property
+    def timestep(self):
+        """Returns the time step as string, e.g. '10 ps'"""
+        return str(self._timeunit)
 
     @property
     def computed(self):
