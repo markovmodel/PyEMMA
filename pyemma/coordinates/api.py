@@ -354,30 +354,28 @@ def save_traj(traj_inp, indexes, outfile):
     # Convert to index (T,2) array if parsed a list or a list of lists
     indexes = np.vstack(indexes)
 
-    # Create a list of iterables from the trajectories
-    trajectory_iterator_list = [None]*traj_inp.number_of_trajectories()
+    # Instantiate  a list of iterables that will contain mdtraj trajectory objects
+    trajectory_iterator_list = []
 
     # Cycle only over files that are actually mentioned in "indexes"
-    for ff in np.unique(indexes[:,1]):
+    file_idxs, file_pos = np.unique(indexes[:,0], return_inverse = True)
+    for ii, ff in enumerate(file_idxs):
 
-        # Find ff's entries in the indexes array
-        frames = indexes[indexes[:,1]==ff, 0]
-
+        # Slice the indexes array (frame column) where file ff was mentioned
+        frames = indexes[file_pos == ii, 1]
         # Store the trajectory object that comes out of _frames_from_file
         #  directly as an iterator in trajectory_iterator_list
-        trajectory_iterator_list[ff] = itertools.islice(_frames_from_file(traj_inp.trajfiles[ff], traj_inp.topfile, frames,
-                                                                          chunksize=traj_inp.chunksize, verbose = False),
-                                                        None)
+        trajectory_iterator_list.append(itertools.islice(_frames_from_file(traj_inp.trajfiles[ff], traj_inp.topfile, frames,chunksize=traj_inp.chunksize, verbose = False), None))
 
     # Iterate directly over the index of files and pick the trajectory that you need from the iterator list
     traj = None
-    for file_idx in indexes[:,1]:
+    for traj_idx in file_pos:
         # Append the trajectory from the respective list of iterators
         # and advance that iterator
         if traj is None:
-            traj = trajectory_iterator_list[file_idx].next()
+            traj = trajectory_iterator_list[traj_idx].next()
         else:
-            traj = traj.join(trajectory_iterator_list[file_idx].next())
+            traj = traj.join(trajectory_iterator_list[traj_idx].next())
     
     # Return to memory as an mdtraj trajectory object 
     if outfile is None:
