@@ -215,8 +215,8 @@ class DataInMemory(Transformer):
 
             X = traj[slice_x]
             self._t += X.shape[0]
-            
-			if self._t >= traj_len:
+
+            if self._t >= traj_len:
                 self._itraj += 1
                 self._t = 0
 
