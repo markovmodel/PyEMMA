@@ -1,4 +1,3 @@
-from pyemma.coordinates.transform.transformer import Transformer
 __author__ = 'noe'
 
 import numpy as np
@@ -8,6 +7,7 @@ from pyemma.coordinates.util import patches
 from pyemma.util.log import getLogger
 
 from pyemma.coordinates.io.featurizer import MDFeaturizer
+from pyemma.coordinates.transform.transformer import Transformer
 
 log = getLogger('FeatureReader')
 
@@ -91,7 +91,7 @@ class FeatureReader(Transformer):
 
     @classmethod
     def init_from_featurizer(cls, trajectories, featurizer):
-        if not isinstance(featurizer, Featurizer):
+        if not isinstance(featurizer, MDFeaturizer):
             raise ValueError("given featurizer is not of type Featurizer, but is %s"
                              % type(featurizer))
         cls.featurizer = featurizer
