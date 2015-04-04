@@ -323,7 +323,6 @@ def memory_reader(data):
 
 #TODO: Is the result of coordinates.input the correct object here, or should we rather extract a separate loader class
 # that is not featurized?
-#TODO: please implement
 def save_traj(traj_inp, indexes, outfile):
 
     r"""Saves a selected sequence of frames as a trajectory
@@ -379,9 +378,13 @@ def save_traj(traj_inp, indexes, outfile):
             traj = trajectory_iterator_list[file_idx].next()
         else:
             traj = traj.join(trajectory_iterator_list[file_idx].next())
-
+    
+    # Return to memory as an mdtraj trajectory object 
     if outfile is None:
         return traj
+    # or to disk as a molecular trajectory file
+    else:
+        traj.save(outfile)
 
 #TODO: DISCUSS - Is the result of coordinates.input the correct object here, or should we rather extract a separate loader class
 # that is not featurized?
