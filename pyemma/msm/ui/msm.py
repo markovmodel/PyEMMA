@@ -26,13 +26,12 @@ __all__ = ['MSM']
 
 
 # TODO: Explain concept of an active set
-# TODO: Take care of sliding counts
 
 
 class MSM(object):
 
     def __init__(self, dtrajs, lag,
-                 reversible=True, sparse=False, neig=None, connectivity='largest', compute=True,
+                 reversible=True, sparse=False, connectivity='largest', compute=True,
                  dt = '1 step',
                  **kwargs):
         r"""Estimate Markov state model (MSM) from discrete trajectories.
@@ -51,9 +50,6 @@ class MSM(object):
             In this case python sparse matrices will be returned by the corresponding functions instead of numpy
             arrays. This behavior is suggested for very large numbers of states (e.g. > 4000) because it is likely
             to be much more efficient.
-        neig : int, optional, default = None
-            Number of eigenvalues to be computed. By default (dense) all eigenvalues will be computed. This property
-            must be set if sparse is True.
         connectivity : str, optional, default = 'largest'
             Connectivity mode. Three methods are intended (currently only 'largest' is implemented)
             'largest' : The active set is the largest reversibly connected set. All estimation will be done on this
@@ -99,7 +95,7 @@ class MSM(object):
         self._dtrajs_full = dtrajs
         self.tau = lag
 
-        self.reversible = reversible
+        self._reversible = reversible
         #self.sliding = sliding
 
         # count states
@@ -108,12 +104,9 @@ class MSM(object):
 
         # sparse matrix computation wanted?
         self._sparse = sparse
-        self._neig = neig
         if self._n_full > 4000 and not sparse:
             warnings.warn('Building a dense MSM with '+str(self._n_full)+' states. This can be inefficient or '+
                           'unfeasible in terms of both runtime and memory consumption. Consider using sparse=True.')
-        if sparse and neig is None:
-            raise ValueError('You have requested sparse=True, then the number of eigenvalues neig must also be set.')
 
         # store connectivity mode (lowercase)
         self.connectivity = connectivity.lower()
@@ -136,7 +129,8 @@ class MSM(object):
         self._timeunit = TimeUnit(dt)
 
 
-    def compute(self, **kwargs):
+
+    def compute(self, kwargs):
         r"""Runs msm estimation.
 
         Only need to call this method if the msm was initialized with compute=False - otherwise it will have
@@ -166,9 +160,10 @@ class MSM(object):
         # active set count matrix
         from pyemma.util.linalg import submatrix
         self._C_active = submatrix(self._C_full, self._active_set)
+        self._n_active = self._C_active.shape[0]
 
         # continue sparse or dense?
-        if not self.sparse:
+        if not self._sparse:
             # converting count matrices to arrays. As a result the transition matrix and all subsequent properties
             # will be computed using dense arrays and dense matrix algebra.
             self._C_full = self._C_full.toarray()
@@ -176,13 +171,13 @@ class MSM(object):
 
         # Estimate transition matrix
         if self.connectivity == 'largest':
-            self._T = msmest.transition_matrix(self._C_active, reversible=self.reversible, **kwargs)
+            self._T = msmest.transition_matrix(self._C_active, reversible=self._reversible, **kwargs)
         elif self.connectivity == 'none':
             # reversible mode only possible if active set is connected - in this case all visited states are connected
             # and thus this mode is identical to 'largest'
-            if self.reversible and not msmest.is_connected(self._C_active):
+            if self._reversible and not msmest.is_connected(self._C_active):
                 raise ValueError('Reversible MSM estimation is not possible with connectivity mode \'none\', because the set of all visited states is not reversibly connected')
-            self._T = msmest.transition_matrix(self._C_active, reversible=self.reversible, **kwargs)
+            self._T = msmest.transition_matrix(self._C_active, reversible=self._reversible, **kwargs)
         else:
             raise NotImplementedError('MSM estimation with connectivity=\'self.connectivity\' is currently not implemented.')
 
@@ -197,6 +192,11 @@ class MSM(object):
     ################################################################################
     # Basic attributes
     ################################################################################
+
+    @property
+    def is_reversible(self):
+        """Returns whether the MSM is sparse """
+        return self._reversible
 
     @property
     def is_sparse(self):
@@ -246,9 +246,38 @@ class MSM(object):
 
     @property
     def count_matrix_active(self):
+        """The count matrix on the active set given the connectivity mode used.
+
+        For example, for connectivity='largest', the count matrix is given only on the largest reversibly connected set.
+        Attention: This count matrix has been obtained by sliding a window of length tau across the data. It contains
+        a factor of tau more counts than are statistically uncorrelated. It's fine to use this matrix for maximum
+        likelihood estimated, but it will give far too small errors if you use it for uncertainty calculations. In order
+        to do uncertainty calculations, use the effective count matrix, see: :py:function:`effective_count_matrix_active`
+
+        See Also
+        --------
+        :py:function:`effective_count_matrix_active`
+            For a count matrix with effective (statistically uncorrelated) counts.
+
         """
-        The count matrix on the active set given the connectivity mode used. For example, for connectivity='largest',
-        the count matrix is given only on the largest reversibly connected set.
+        self._assert_computed()
+        return self._C_active
+
+    @property
+    def effective_count_matrix_active(self):
+        """Statistically uncorrelated transition counts within the active set of states
+
+        You can use this count matrix for any kind of estimation, in particular it is mean to give reasonable
+        error bars in uncertainty measurements (error perturbation or Gibbs sampling of the posterior).
+
+        The effective count matrix is obtained by dividing the sliding-window count matrix by the lag time. This
+        can be shown to provide a likelihood that is the geometrical average over shifted subsamples of the trajectory,
+        :math:`(s_1,\:s_{tau+1},\:...),\:(s_2,\:t_{tau+2},\:...),` etc. This geometrical average converges to the
+        correct likelihood in the statistical limit _[1].
+
+        [1] Trendelkamp-Schroer B, H Wu, F Paul and F Noe. 2015:
+        Reversible Markov models of molecular kinetics: Estimation and uncertainty.
+        in preparation.
 
         """
         self._assert_computed()
@@ -258,6 +287,16 @@ class MSM(object):
     def count_matrix_full(self):
         """
         The count matrix on full set of discrete states, irrespective as to whether they are connected or not.
+        Attention: This count matrix has been obtained by sliding a window of length tau across the data. It contains
+        a factor of tau more counts than are statistically uncorrelated. It's fine to use this matrix for maximum
+        likelihood estimated, but it will give far too small errors if you use it for uncertainty calculations. In order
+        to do uncertainty calculations, use the effective count matrix, see: :py:function:`effective_count_matrix_active`
+        (only implemented on the active set), or divide this count matrix by tau.
+
+        See Also
+        --------
+        :py:function:`effective_count_matrix_active`
+            For a active-set count matrix with effective (statistically uncorrelated) counts.
 
         """
         self._assert_computed()
@@ -331,14 +370,72 @@ class MSM(object):
             self._mu = _statdist(self._T)
             return self._mu
 
-    def get_timescales(self, k = None):
+
+    def _do_eigendecomposition(self, k, ncv=None):
+        """Conducts the eigenvalue decomposition and stores k eigenvalues, left and right eigenvectors
+
+        Parameters
+        ----------
+        k : int
+            The number of eigenvalues / eigenvectors to be kept
+        ncv : int (optional)
+            Relevant for eigenvalue decomposition of reversible transition matrices.
+            ncv is the number of Lanczos vectors generated, `ncv` must be greater than k;
+            it is recommended that ncv > 2*k
+
         """
-        The relaxation timescales corresponding to the eigenvalues
+        from pyemma.msm.analysis import rdl_decomposition
+        if self._reversible:
+            self._R, self._D, self._L = rdl_decomposition(self._T, k=k, norm='reversible', ncv=ncv)
+        else:
+            self._R, self._D, self._L = rdl_decomposition(self._T, k=k, norm='normal', ncv=ncv)
+        self._eigenvalues = np.diag(self._D)
+
+
+    def _ensure_eigendecomposition(self, k = None, ncv=None):
+        """Ensures that eigendecomposition has been performed with at least k eigenpairs
+
+        k : int
+            number of eigenpairs needed. This setting is mandatory for sparse transition matrices
+            (if you set sparse=True in the initialization). For dense matrices, k will be ignored
+            as all eigenvalues and eigenvectors will be computed and stored.
+        ncv : int (optional)
+            Relevant for eigenvalue decomposition of reversible transition matrices.
+            ncv is the number of Lanczos vectors generated, `ncv` must be greater than k;
+            it is recommended that ncv > 2*k
+
+        """
+        # are we ready?
+        self._assert_computed()
+        # check input?
+        if self._sparse:
+            if k is None:
+                raise ValueError('You have requested sparse=True, then the number of eigenvalues neig must also be set.')
+        else:
+            # override setting - we anyway have to compute all eigenvalues, so we'll also store them.
+            k = self._n_active
+        # ensure that eigenvalue decomposition with k components is done.
+        try:
+            m = len(self._eigenvalues) # this will raise and exception if self._eigenvalues doesn't exist yet.
+            if (m < k):
+                # not enough eigenpairs present - recompute:
+                self._do_eigendecomposition(k, ncv=ncv)
+        except:
+            # no eigendecomposition yet - compute:
+            self._do_eigendecomposition(k, ncv=ncv)
+
+
+    def get_eigenvalues(self, k = None, ncv = None):
+        """Compute the transition matrix eigenvalues
 
         Parameters
         ----------
         k : int
             number of timescales to be computed. By default identical to the number of eigenvalues computed minus 1
+        ncv : int (optional)
+            Relevant for eigenvalue decomposition of reversible transition matrices.
+            ncv is the number of Lanczos vectors generated, `ncv` must be greater than k;
+            it is recommended that ncv > 2*k
 
         Returns
         -------
@@ -346,9 +443,472 @@ class MSM(object):
             relaxation timescales, defined by :math:`-tau / ln | \lambda_i |, i = 2,...,k+1`.
 
         """
-        from pyemma.msm.analysis import timescales as _timescales
-        ts = _timescales(self._T, k=k+1, tau=self.tau)[1:] # exclude the stationary process
+        self._ensure_eigendecomposition(k = k, ncv = ncv)
+        return self._eigenvalues[:k]
+
+
+    def get_left_eigenvectors(self, k = None, ncv = None):
+        """Compute the left transition matrix eigenvectors
+
+        Parameters
+        ----------
+        k : int
+            number of timescales to be computed. By default identical to the number of eigenvalues computed minus 1
+        ncv : int (optional)
+            Relevant for eigenvalue decomposition of reversible transition matrices.
+            ncv is the number of Lanczos vectors generated, `ncv` must be greater than k;
+            it is recommended that ncv > 2*k
+
+        Returns
+        -------
+        L : ndarray(k,n)
+            left eigenvectors in a row matrix. l_ij is the j'th component of the i'th left eigenvector
+
+        """
+        self._ensure_eigendecomposition(k = k, ncv = ncv)
+        return self._L[:k,:]
+
+
+    def get_right_eigenvectors(self, k = None, ncv = None):
+        """Compute the right transition matrix eigenvectors
+
+        Parameters
+        ----------
+        k : int
+            number of timescales to be computed. By default identical to the number of eigenvalues computed minus 1
+        ncv : int (optional)
+            Relevant for eigenvalue decomposition of reversible transition matrices.
+            ncv is the number of Lanczos vectors generated, `ncv` must be greater than k;
+            it is recommended that ncv > 2*k
+
+        Returns
+        -------
+        R : ndarray(n,k)
+            right eigenvectors in a column matrix. r_ij is the i'th component of the j'th right eigenvector
+
+        """
+        self._ensure_eigendecomposition(k = k, ncv = ncv)
+        return self._L[:k,:]
+
+
+    def get_timescales(self, k = None, ncv = None):
+        """
+        The relaxation timescales corresponding to the eigenvalues
+
+        Parameters
+        ----------
+        k : int
+            number of timescales to be computed. As a result, k+1 eigenvalues will be computed
+        ncv : int (optional)
+            Relevant for eigenvalue decomposition of reversible transition matrices.
+            ncv is the number of Lanczos vectors generated, `ncv` must be greater than k;
+            it is recommended that ncv > 2*k
+
+        Returns
+        -------
+        ts : ndarray(m)
+            relaxation timescales, defined by :math:`-tau / ln | \lambda_i |, i = 2,...,k+1`.
+
+        """
+        self._ensure_eigendecomposition(k = k+1, ncv = ncv)
+        from pyemma.msm.analysis.dense.decomposition import timescales_from_eigenvalues as _timescales
+        ts = _timescales(self._eigenvalues, tau=self.tau)[1:k+1] # exclude the stationary process
         return ts
+
+
+    def _assert_in_active(self, A):
+        """
+        Checks if set A is within the active set
+
+        Parameters
+        ----------
+        A : int or int array
+            set of states
+        """
+        assert np.max(A) < self._n_active, 'Chosen set contains states that are not included in the active set.'
+
+    def mfpt(self, A, B):
+        """Mean first passage times from set A to set B
+
+        Parameters
+        ----------
+        A : int or int array
+            set of starting states
+        B : int or int array
+            set of target states
+        """
+        self._assert_computed()
+        self._assert_in_active(A)
+        self._assert_in_active(B)
+        from pyemma.msm.analysis import mfpt as _mfpt
+        return _mfpt(self._T, B, origin=A, mu=self.stationary_distribution)
+
+
+    def committor_forward(self, A, B):
+        """Forward committor (also known as p_fold or splitting probability) from set A to set B
+
+        Parameters
+        ----------
+        A : int or int array
+            set of starting states
+        B : int or int array
+            set of target states
+        """
+        self._assert_computed()
+        self._assert_in_active(A)
+        self._assert_in_active(B)
+        from pyemma.msm.analysis import committor as _committor
+        return _committor(self._T, A, B, forward=True)
+
+
+    def committor_backward(self, A, B):
+        """Backward committor from set A to set B
+
+        Parameters
+        ----------
+        A : int or int array
+            set of starting states
+        B : int or int array
+            set of target states
+        """
+        self._assert_computed()
+        self._assert_in_active(A)
+        self._assert_in_active(B)
+        from pyemma.msm.analysis import committor as _committor
+        return _committor(self._T, A, B, forward=False, mu=self.stationary_distribution)
+
+
+    def expectation(self, a):
+        r"""Equilibrium expectation value of a given observable.
+
+        Parameters
+        ----------
+        a : (M,) ndarray
+            Observable vector
+
+        Returns
+        -------
+        val: float
+            Equilibrium expectation value fo the given observable
+
+        Notes
+        -----
+        The equilibrium expectation value of an observable a is defined as follows
+
+        .. math::
+
+            \mathbb{E}_{\mu}[a] = \sum_i \mu_i a_i
+
+        :math:`\mu=(\mu_i)` is the stationary vector of the transition matrix :math:`T`.
+        """
+        # are we ready?
+        self._assert_computed()
+        # check input
+        assert np.shape(a)[0] == self._n_active, 'observable vector a does not have the same size like the active set. Need len(a) = '+str(self._n_active)
+        return np.dot(a, self.stationary_distribution)
+
+
+    def correlation(self, a, lag, b=None, k=None, ncv=None):
+        r"""Time-correlation for equilibrium experiment.
+
+        Parameters
+        ----------
+        a : (M,) ndarray
+            Observable, represented as vector on state space
+        lag : int or int array
+            List of lag time or lag times (in units of the transition matrix lag time tau) at which to compute correlation
+        b : (M,) ndarray (optional)
+            Second observable, for cross-correlations
+        k : int (optional)
+            Number of eigenvalues and eigenvectors to use for computation
+        ncv : int (optional)
+            Only relevant for sparse matrices and large lag times, where the relaxation will be computes using an
+            eigenvalue decomposition. The number of Lanczos vectors generated, `ncv` must be greater than k;
+            it is recommended that ncv > 2*k
+
+        Returns
+        -------
+        correlations : ndarray
+            Correlation values at given times
+
+        """
+        # are we ready?
+        self._assert_computed()
+        # check input
+        assert np.shape(a)[0] == self._n_active, 'observable vector a does not have the same size like the active set. Need len(a) = '+str(self._n_active)
+        if b is not None:
+            assert np.shape(b)[0] == self._n_active, 'observable vector b does not have the same size like the active set. Need len(b) = '+str(self._n_active)
+        if isinstance(lag, int):
+            lag = [lag]
+        from pyemma.msm.analysis import correlation as _correlation
+        # TODO: this could be improved. If we have already done an eigenvalue decomposition, we could provide it.
+        # TODO: for this, the correlation function must accept already-available eigenvalue decompositions.
+        return _correlation(self._T, a, obs2=b, times=lag, k = k, ncv = ncv)
+
+
+    def fingerprint_correlation(self, a, lag, b=None, k=None, ncv=None):
+        r"""Dynamical fingerprint for equilibrium time-correlation experiment.
+
+        Parameters
+        ----------
+        a : (M,) ndarray
+            Observable, represented as vector on state space
+        lag : int or int array
+            List of lag time or lag times (in units of the transition matrix lag time tau) at which to compute correlation
+        b : (M,) ndarray (optional)
+            Second observable, for cross-correlations
+        k : int (optional)
+            Number of eigenvalues and eigenvectors to use for computation
+        ncv : int (optional)
+            Only relevant for sparse matrices and large lag times, where the relaxation will be computes using an
+            eigenvalue decomposition. The number of Lanczos vectors generated, `ncv` must be greater than k;
+            it is recommended that ncv > 2*k
+
+        Returns
+        -------
+        timescales : (N,) ndarray
+            Time-scales of the transition matrix
+        amplitudes : (N,) ndarray
+            Amplitudes for the correlation experiment
+
+        References
+        ----------
+        .. [1] Noe, F, S Doose, I Daidone, M Loellmann, M Sauer, J D
+            Chodera and J Smith. 2010. Dynamical fingerprints for probing
+            individual relaxation processes in biomolecular dynamics with
+            simulations and kinetic experiments. PNAS 108 (12): 4822-4827.
+
+        """
+        # are we ready?
+        self._assert_computed()
+        # check input
+        assert np.shape(a)[0] == self._n_active, 'observable vector a does not have the same size like the active set. Need len(a) = '+str(self._n_active)
+        if b is not None:
+            assert np.shape(b)[0] == self._n_active, 'observable vector b does not have the same size like the active set. Need len(b) = '+str(self._n_active)
+        if isinstance(lag, int):
+            lag = [lag]
+        from pyemma.msm.analysis import fingerprint_correlation as _fc
+        # TODO: this could be improved. If we have already done an eigenvalue decomposition, we could provide it.
+        # TODO: for this, the correlation function must accept already-available eigenvalue decompositions.
+        return _fc(self._T, a, obs2=b, tau = self.tau, k = k, ncv = ncv)
+
+
+    def relaxation(self, p0, a, lag, k=None, ncv=None):
+        r"""Relaxation experiment.
+
+        The relaxation experiment describes the time-evolution
+        of an expectation value starting in a non-equilibrium
+        situation.
+
+        Parameters
+        ----------
+        p0 : (n,) ndarray
+            Initial distribution for a relaxation experiment
+        a : (n,) ndarray
+            Observable, represented as vector on state space
+        lag : int or list of int (optional)
+            Times at which to compute expectation
+        k : int (optional)
+            Number of eigenvalues and eigenvectors to use for computation
+        ncv : int (optional)
+            Only relevant for sparse matrices and large lag times, where the relaxation will be computes using an
+            eigenvalue decomposition.
+            The number of Lanczos vectors generated, `ncv` must be greater than k; it is recommended that ncv > 2*k
+
+        Returns
+        -------
+        res : ndarray
+            Array of expectation value at given times
+
+        """
+        # are we ready?
+        self._assert_computed()
+        # check input
+        assert np.shape(p0)[0] == self._n_active, 'initial distribution p0 does not have the same size like the active set. Need len(p0) = '+str(self._n_active)
+        assert np.shape(a)[0] == self._n_active, 'observable vector a does not have the same size like the active set. Need len(a) = '+str(self._n_active)
+        if isinstance(lag, int):
+            lag = [lag]
+        from pyemma.msm.analysis import relaxation as _relaxation
+        # TODO: this could be improved. If we have already done an eigenvalue decomposition, we could provide it.
+        # TODO: for this, the correlation function must accept already-available eigenvalue decompositions.
+        return _relaxation(self._T, p0, a, times=lag, k = k, ncv = ncv)
+
+
+    def fingerprint_relaxation(self, p0, a, k=None, ncv=None):
+        r"""Dynamical fingerprint for perturbation/relaxation experiment.
+
+        Parameters
+        ----------
+        p0 : (n,) ndarray
+            Initial distribution for a relaxation experiment
+        a : (n,) ndarray
+            Observable, represented as vector on state space
+        lag : int or int array
+            List of lag time or lag times (in units of the transition matrix lag time tau) at which to compute correlation
+        k : int (optional)
+            Number of eigenvalues and eigenvectors to use for computation
+        ncv : int (optional)
+            Only relevant for sparse matrices and large lag times, where the relaxation will be computes using an
+            eigenvalue decomposition. The number of Lanczos vectors generated, `ncv` must be greater than k;
+            it is recommended that ncv > 2*k
+
+        Returns
+        -------
+        timescales : (N,) ndarray
+            Time-scales of the transition matrix
+        amplitudes : (N,) ndarray
+            Amplitudes for the relaxation experiment
+
+        References
+        ----------
+        .. [1] Noe, F, S Doose, I Daidone, M Loellmann, M Sauer, J D
+            Chodera and J Smith. 2010. Dynamical fingerprints for probing
+            individual relaxation processes in biomolecular dynamics with
+            simulations and kinetic experiments. PNAS 108 (12): 4822-4827.
+
+        """
+        # are we ready?
+        self._assert_computed()
+        # check input
+        assert np.shape(p0)[0] == self._n_active, 'initial distribution p0 does not have the same size like the active set. Need len(p0) = '+str(self._n_active)
+        assert np.shape(a)[0] == self._n_active, 'observable vector a does not have the same size like the active set. Need len(a) = '+str(self._n_active)
+        from pyemma.msm.analysis import fingerprint_relaxation as _fr
+        # TODO: this could be improved. If we have already done an eigenvalue decomposition, we could provide it.
+        # TODO: for this, the correlation function must accept already-available eigenvalue decompositions.
+        return _fr(self._T, p0, a, tau = self.tau, k = k, ncv = ncv)
+
+
+    ################################################################################
+    # pcca
+    ################################################################################
+
+    def _ensure_pcca(self, m):
+        # can we do it?
+        if not self._reversible:
+            raise ValueError('Cannot compute PCCA for non-reversible matrices. Set reversible=True when constructing the MSM.')
+
+        from pyemma.msm.analysis.dense.pcca import PCCA
+        # ensure that we have a pcca object with the right number of states
+        try:
+            # this will except if we don't have a pcca object
+            if self.pcca.n_metastable != m:
+                # incorrect number of states - recompute
+                self.pcca = PCCA(self._T, m)
+        except:
+            # didn't have a pcca object yet - compute
+            self.pcca = PCCA(self._T, m)
+
+    def pcca_memberships(self, m):
+        """ Computes the memberships of active set states to metastable sets with the PCCA++ method _[1].
+
+        Parameters
+        ----------
+        m : int
+            Number of Perron-clusters
+
+        Returns
+        -------
+        M : ndarray((n,m))
+            A matrix containing the probability or membership of each state to be assigned to each metastable set.
+            i.e. p(metastable | state). The row sums of M are 1.
+
+        References
+        ----------
+        .. [1] Roeblitz, S and M Weber. 2013. Fuzzy spectral clustering by
+            PCCA+: application to Markov state models and data
+            classification. Advances in Data Analysis and Classification 7
+            (2): 147-179
+        """
+        # are we ready?
+        self._assert_computed()
+        self._ensure_pcca(m)
+        return self.pcca.memberships
+
+    def pcca_distributions(self, m):
+        """ Computes the probability distributions of active set states within each metastable set using the PCCA++ method _[1]
+        using Bayesian inversion as described in _[2].
+
+        Parameters
+        ----------
+        m : int
+            Number of Perron-clusters
+
+        Returns
+        -------
+        p_out : ndarray((m,n))
+            A matrix containing the probability distribution of each active set state, given that we are in a
+            metastable set.
+            i.e. p(state | metastable). The row sums of p_out are 1.
+
+        References
+        ----------
+        .. [1] Roeblitz, S and M Weber. 2013. Fuzzy spectral clustering by
+            PCCA+: application to Markov state models and data
+            classification. Advances in Data Analysis and Classification 7
+            (2): 147-179
+        .. [2] F. Noe, H. Wu, J.-H. Prinz and N. Plattner:
+            Projected and hidden Markov models for calculating kinetics and metastable states of complex molecules
+            J. Chem. Phys. 139, 184114 (2013)
+        """
+        # are we ready?
+        self._assert_computed()
+        self._ensure_pcca(m)
+        return self.pcca.output_probabilities
+
+    def pcca_sets(self, m):
+        """ Computes the metastable sets of active set states within each metastable set using the PCCA++ method _[1]
+
+        This is only recommended for visualization purposes. You *cannot* compute any
+        actual quantity of the coarse-grained kinetics without employing the fuzzy memberships!
+
+        Parameters
+        ----------
+        m : int
+            Number of Perron-clusters
+
+        Returns
+        -------
+        A list of length equal to metastable states. Each element is an array with microstate indexes contained in it
+
+        References
+        ----------
+        .. [1] Roeblitz, S and M Weber. 2013. Fuzzy spectral clustering by
+            PCCA+: application to Markov state models and data
+            classification. Advances in Data Analysis and Classification 7
+            (2): 147-179
+        """
+        # are we ready?
+        self._assert_computed()
+        self._ensure_pcca(m)
+        return self.pcca.metastable_sets
+
+    def pcca_assignments(self, m):
+        """ Computes the assignment to metastable sets for active set states using the PCCA++ method _[1]
+
+        This is only recommended for visualization purposes. You *cannot* compute any
+        actual quantity of the coarse-grained kinetics without employing the fuzzy memberships!
+
+        Parameters
+        ----------
+        m : int
+            Number of Perron-clusters
+
+        Returns
+        -------
+        For each active set state, the metastable state it is located in.
+
+        References
+        ----------
+        .. [1] Roeblitz, S and M Weber. 2013. Fuzzy spectral clustering by
+            PCCA+: application to Markov state models and data
+            classification. Advances in Data Analysis and Classification 7
+            (2): 147-179
+        """
+        # are we ready?
+        self._assert_computed()
+        self._ensure_pcca(m)
+        return self.pcca.metastable_assignment
+
 
     ################################################################################
     # For general statistics
