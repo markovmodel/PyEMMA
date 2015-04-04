@@ -434,6 +434,7 @@ def timescales(T, tau=1, k=None, ncv=None):
     else:
         raise _type_not_supported
 
+
 # DONE: Ben
 def eigenvectors(T, k=None, right=True, ncv=None):
     r"""Compute eigenvectors of given transition matrix.
@@ -501,7 +502,7 @@ def eigenvectors(T, k=None, right=True, ncv=None):
         raise _type_not_supported
 
 # DONE: Ben
-def rdl_decomposition(T, k=None, norm='standard', ncv=None):
+def rdl_decomposition(T, k=None, norm='auto', ncv=None):
     r"""Compute the decomposition into eigenvalues, left and right
     eigenvectors.
     
@@ -511,18 +512,19 @@ def rdl_decomposition(T, k=None, norm='standard', ncv=None):
         Transition matrix    
     k : int (optional)
         Number of eigenvector/eigenvalue pairs
-    norm: {'standard', 'reversible'}, optional
+    norm: {'standard', 'reversible', 'auto'}, optional
         which normalization convention to use
 
-        ============ ===========================================
+        ============ =============================================
         norm       
-        ============ ===========================================
+        ============ =============================================
         'standard'   LR = Id, is a probability\
                      distribution, the stationary distribution\
                      of `T`. Right eigenvectors `R`\
                      have a 2-norm of 1
         'reversible' `R` and `L` are related via ``L[0, :]*R``  
-        ============ =========================================== 
+        'auto'       reversible if T is reversible, else standard.
+        ============ =============================================
 
     ncv : int (optional)
         The number of Lanczos vectors generated, `ncv` must be greater than k;
@@ -809,8 +811,6 @@ def committor(T, A, B, forward=True, mu=None):
 
     else:
         raise _type_not_supported
-    
-    return committor
 
 
 ################################################################################
@@ -863,7 +863,7 @@ def expected_counts(T, p0, N):
     elif isdense(T):
         return dense.expectations.expected_counts(p0, T, N)
     else:
-        _type_not_supported
+        raise _type_not_supported
 
 # DONE: Ben
 def expected_counts_stationary(T, N, mu=None):
@@ -914,7 +914,7 @@ def expected_counts_stationary(T, N, mu=None):
     elif isdense(T):
         return dense.expectations.expected_counts_stationary(T, N, mu=mu)
     else:
-        _type_not_supported   
+        raise _type_not_supported
 
 
 ################################################################################
@@ -1023,7 +1023,7 @@ def fingerprint_correlation(T, obs1, obs2=None, tau=1, k=None, ncv=None):
     elif isdense(T):
         return dense.fingerprints.fingerprint_correlation(T, obs1, obs2, tau=tau, k=k)
     else:
-        _type_not_supported   
+        raise _type_not_supported
 
 # DONE: Martin+Frank+Ben: Implement in Python directly
 def fingerprint_relaxation(T, p0, obs, tau=1, k=None, ncv=None):
@@ -1108,7 +1108,7 @@ def fingerprint_relaxation(T, p0, obs, tau=1, k=None, ncv=None):
     elif isdense(T):
         return dense.fingerprints.fingerprint_relaxation(T, p0, obs, tau=tau, k=k)
     else:
-        _type_not_supported 
+        raise _type_not_supported
 
 # DONE: Frank, Ben
 def expectation(T, a, mu=None):
@@ -1234,7 +1234,7 @@ def correlation(T, obs1, obs2=None, times=[1], k=None, ncv=None):
     elif isdense(T):
         return dense.fingerprints.correlation(T, obs1, obs2=obs2, times=times, k=k)
     else:
-        _type_not_supported 
+        raise _type_not_supported
 
 
 # DONE: Martin+Frank+Ben: Implement in Python directly
@@ -1303,7 +1303,7 @@ def relaxation(T, p0, obs, times=[1], k=None, ncv=None):
     elif isdense(T):
         return dense.fingerprints.relaxation(T, p0, obs, k=k, times=times)
     else:
-        _type_not_supported 
+        raise _type_not_supported
     
     
 
@@ -1350,7 +1350,7 @@ def pcca(T, n):
     elif isdense(T):
         return dense.pcca.pcca(T, n)
     else:
-        _type_not_supported
+        raise _type_not_supported
 
 
 def coarsegrain(P, n):
@@ -1373,7 +1373,7 @@ def coarsegrain(P, n):
     elif isdense(P):
         return dense.pcca.coarsegrain(P, n)
     else:
-        _type_not_supported
+        raise _type_not_supported
 
 
 ################################################################################
