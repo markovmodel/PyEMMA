@@ -164,19 +164,17 @@ class DataInMemory(Transformer):
             X = traj[slice_x]
             self._t += X.shape[0]
 
+            if self._t >= traj_len:
+                self._itraj += 1
+                self._t = 0
+
             if lag == 0:
-                if self._t >= traj_len:
-                    self._itraj += 1
-                    self._t = 0
                 return X
             else:
                 # its okay to return empty chunks
                 upper_bound = min(self._t + lag + self._chunksize, traj_len)
 
                 Y = traj[self._t + lag: upper_bound]
-                if self._t + lag >= traj_len:
-                    self._itraj += 1
-                    self._t = 0
                 return X, Y
 
     @staticmethod

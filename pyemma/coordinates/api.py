@@ -14,6 +14,8 @@ from pyemma.coordinates.pipeline import Discretizer as _Discretizer
 from io.featurizer import MDFeaturizer as _MDFeaturizer
 from io.feature_reader import FeatureReader as _FeatureReader
 from io.data_in_memory import DataInMemory as _DataInMemory
+from pyemma.coordinates.io.frames_from_file import frames_from_file as _frames_from_file
+
 # transforms
 from transform.pca import PCA as _PCA
 from transform.tica import TICA as _TICA
@@ -323,8 +325,8 @@ def memory_reader(data):
 
 #TODO: Is the result of coordinates.input the correct object here, or should we rather extract a separate loader class
 # that is not featurized?
-#TODO: please implement
 def save_traj(traj_inp, indexes, outfile):
+
     r"""Saves a selected sequence of frames as a trajectory
 
     Extracts the specified sequence of time/trajectory indexes from the input loader
@@ -335,16 +337,56 @@ def save_traj(traj_inp, indexes, outfile):
     ----------
     traj_inp : :py:func:`pyemma.coordinates.io.feature_reader.FeatureReader`
         An input reader. Please use :py:func:`pyemma.coordinates.input` to construct it.
+
     indexes : ndarray(T, 2) or list of ndarray(T_i, 2)
         A (T x 2) array for writing a trajectory of T time steps. Each row contains two indexes (i, t), where
         i is the index of the trajectory from the input and t is the index of the time step within the trajectory.
         If a list of index arrays are given, these will be simply concatenated, i.e. they will be written
         subsequently in the same trajectory file.
-    outfile : str
+
+    outfile : str.
         The name of the output file. Its extension will determine the file type written. Example: "out.dcd"
+        If set to None, the trajectory object is returned to memory
 
     """
-    pass
+
+    import numpy as np
+    import itertools
+
+    # Convert to index (T,2) array if parsed a list or a list of lists
+    indexes = np.vstack(indexes)
+
+    # Create a list of iterables from the trajectories
+    trajectory_iterator_list = [None]*traj_inp.number_of_trajectories()
+
+    # Cycle only over files that are actually mentioned in "indexes"
+    for ff in np.unique(indexes[:,1]):
+
+        # Find ff's entries in the indexes array
+        frames = indexes[indexes[:,1]==ff, 0]
+
+        # Store the trajectory object that comes out of _frames_from_file
+        #  directly as an iterator in trajectory_iterator_list
+        trajectory_iterator_list[ff] = itertools.islice(_frames_from_file(traj_inp.trajfiles[ff], traj_inp.topfile, frames,
+                                                                          chunksize=traj_inp.chunksize, verbose = False),
+                                                        None)
+
+    # Iterate directly over the index of files and pick the trajectory that you need from the iterator list
+    traj = None
+    for file_idx in indexes[:,1]:
+        # Append the trajectory from the respective list of iterators
+        # and advance that iterator
+        if traj is None:
+            traj = trajectory_iterator_list[file_idx].next()
+        else:
+            traj = traj.join(trajectory_iterator_list[file_idx].next())
+    
+    # Return to memory as an mdtraj trajectory object 
+    if outfile is None:
+        return traj
+    # or to disk as a molecular trajectory file
+    else:
+        traj.save(outfile)
 
 #TODO: DISCUSS - Is the result of coordinates.input the correct object here, or should we rather extract a separate loader class
 # that is not featurized?
@@ -383,7 +425,7 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None):
         The list of absolute paths that the output files have been written to.
 
     """
-    pass
+    needed_files = np.unique(indexes[:,0])
 
 
 #=========================================================================

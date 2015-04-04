@@ -8,7 +8,7 @@ from flux import tpt as tpt_factory
 from ui import ImpliedTimescales
 from ui import MSM
 from ui import cktest as chapman_kolmogorov
-from estimation.dense.hidden_markov_model import HiddenMSM
+# from estimation.dense.hidden_markov_model import HiddenMSM
 
 __author__ = "Benjamin Trendelkamp-Schroer, Martin Scherer, Frank Noe"
 __copyright__ = "Copyright 2014, Computational Molecular Biology Group, FU-Berlin"

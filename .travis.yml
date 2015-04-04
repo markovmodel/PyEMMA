@@ -6,7 +6,7 @@ python:
 env:
   global:
     - PATH=$HOME/miniconda/bin:$HOME/miniconda/envs/ci/bin/:$PATH
-    - common_py_deps="pip nose cython jpype1 mdtraj scikit-learn"
+    - common_py_deps="pip nose cython jpype1 mdtraj scikit-learn matplotlib"
     - doc_deps="ipython ipython-notebook sphinx==1.2.3 matplotlib numpydoc"
     - deps="scipy numpy"
   matrix:
@@ -30,12 +30,10 @@ before_install:
 - conda list
 
 install:
-- python setup.py install
+- python setup.py develop 
 
 script:
-- printf "[Java]\nstartup=True" > ~/pyemma.cfg
-- cat ~/pyemma.cfg
-- python setup.py test 
+- nosetests -a '!slow'
 
 after_success:
 - tools/ci/travis/make_docs.sh
