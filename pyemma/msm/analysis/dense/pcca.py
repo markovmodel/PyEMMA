@@ -302,7 +302,7 @@ def pcca(P, m):
     """
     PCCA+ spectral clustering method with optimized memberships [1]_
     
-    Clusters the first n_cluster eigenvectors of a transition matrix in order to cluster the states.
+    Clusters the first m eigenvectors of a transition matrix in order to cluster the states.
     This function does not assume that the transition matrix is fully connected. Disconnected sets
     will automatically define the first metastable states, with perfect membership assignments.
     
@@ -322,10 +322,6 @@ def pcca(P, m):
         A matrix containing the probability or membership of each state to be assigned to each cluster.
         The rows sum to 1.
         
-    rot_mat : ndarray (m x m)
-        A rotation matrix that rotates the dominant eigenvectors to yield the PCCA memberships, i.e.:
-        chi = np.dot(evec, rot_matrix
-
     References
     ----------
     [1] S. Roeblitz and M. Weber, Fuzzy spectral clustering by PCCA+: 
@@ -454,5 +450,122 @@ def coarsegrain(P, n):
     A = np.dot(np.dot(M.T, P), M)
     B = np.linalg.inv(np.dot(M.T,M))
     P = np.dot(A,B)
+    # renormalize to eliminate numerical errors
+    P /= P.sum(axis=1)[:,None]
 
     return P
+
+
+class PCCA:
+    """
+    PCCA+ spectral clustering method with optimized memberships [1]_
+
+    Clusters the first m eigenvectors of a transition matrix in order to cluster the states.
+    This function does not assume that the transition matrix is fully connected. Disconnected sets
+    will automatically define the first metastable states, with perfect membership assignments.
+
+    Parameters
+    ----------
+    P : ndarray (n,n)
+        Transition matrix.
+    m : int
+        Number of clusters to group to.
+
+    References
+    ----------
+    [1] S. Roeblitz and M. Weber, Fuzzy spectral clustering by PCCA+:
+        application to Markov state models and data classification.
+        Adv Data Anal Classif 7, 147-179 (2013).
+    [2] F. Noe, multiset PCCA and HMMs, in preparation.
+
+    """
+
+    def __init__(self, P, m):
+        # TODO: can be improved: if we have eigendecomposition already, this can be exploited.
+        # remember input
+        self.P = P
+        self.m = m
+
+        # pcca coarse-graining
+        # --------------------
+        # PCCA memberships
+        # TODO: can be improved. pcca computes stationary distribution internally, we don't need to compute it twice.
+        self._M = pcca(P, m)
+
+        # stationary distribution
+        from pyemma.msm.analysis import stationary_distribution as _sd
+        self._pi = _sd(P)
+
+        # coarse-grained stationary distribution
+        self._pi_coarse = np.dot(self._M.T, self._pi)
+
+        # HMM output matrix
+        self._B = np.dot(np.dot(np.diag(1.0/self._pi_coarse), self._M.T), np.diag(self._pi))
+        # renormalize B to make it row-stochastic
+        self._B /= self._B.sum(axis=1)[:,None]
+        self._B /= self._B.sum(axis=1)[:,None]
+
+        # coarse-grained transition matrix
+        self._A = np.dot(np.dot(self._M.T, P), self._M)
+        W = np.linalg.inv(np.dot(self._M.T,self._M))
+        self._P_coarse = np.dot(self._A,W)
+        # renormalize to eliminate numerical errors
+        self._P_coarse /= self._P_coarse.sum(axis=1)[:,None]
+
+    @property
+    def transition_matrix(self):
+        return self.P
+
+    @property
+    def stationary_probability(self):
+        return self._pi
+
+    @property
+    def n_metastable(self):
+        return self.m
+
+    @property
+    def memberships(self):
+        return self._M
+
+    @property
+    def output_probabilities(self):
+        return self._B
+
+    @property
+    def coarse_grained_transition_matrix(self):
+        return self._P_coarse
+
+    @property
+    def coarse_grained_stationary_probability(self):
+        return self._pi_coarse
+
+    @property
+    def metastable_assignment(self):
+        """
+        Crisp clustering using PCCA. This is only recommended for visualization purposes. You *cannot* compute any
+        actual quantity of the coarse-grained kinetics without employing the fuzzy memberships!
+
+        Returns
+        -------
+        For each microstate, the metastable state it is located in.
+
+        """
+        return np.argmax(self.memberships, axis=1)
+
+    @property
+    def metastable_sets(self):
+        """
+        Crisp clustering using PCCA. This is only recommended for visualization purposes. You *cannot* compute any
+        actual quantity of the coarse-grained kinetics without employing the fuzzy memberships!
+
+        Returns
+        -------
+        A list of length equal to metastable states. Each element is an array with microstate indexes contained in it
+
+        """
+        res = []
+        assignment = self.metastable_assignment
+        for i in self.m:
+            res.append(np.where(assignment == i)[0])
+        return res
