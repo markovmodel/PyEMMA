@@ -750,10 +750,11 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
         maximum number of iterations before the method exits
     maxerr = 1e-8 : float
         Optional parameter with reversible = True.
-        convergence tolerance. This specifies the maximum change of the Euclidean norm of relative
-        stationary probabilities (x_i = sum_k x_ik). The relative stationary probability changes
-        e_i = (x_i^(1) - x_i^(2))/(x_i^(1) + x_i^(2)) are used in order to track changes in small
-        probabilities. The Euclidean norm of the change vector, |e_i|_2, is compared to convtol.
+        convergence tolerance for transition matrix estimation.
+        This specifies the maximum change of the Euclidean norm of relative
+        stationary probabilities (:math:`x_i = \sum_k x_{ik}`). The relative stationary probability changes
+        :math:`e_i = (x_i^{(1)} - x_i^{(2)})/(x_i^{(1)} + x_i^{(2)})` are used in order to track changes in small
+        probabilities. The Euclidean norm of the change vector, :math:`|e_i|_2`, is compared to maxerr.
     return_statdist = False : Boolean
         Optional parameter with reversible = True.
         If set to true, the stationary distribution is also returned
