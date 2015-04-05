@@ -81,9 +81,9 @@ class MSM(object):
             Optional parameter with reversible = True.
             convergence tolerance for transition matrix estimation.
             This specifies the maximum change of the Euclidean norm of relative
-            stationary probabilities (x_i = sum_k x_ik). The relative stationary probability changes
-            e_i = (x_i^(1) - x_i^(2))/(x_i^(1) + x_i^(2)) are used in order to track changes in small
-            probabilities. The Euclidean norm of the change vector, |e_i|_2, is compared to convtol.
+            stationary probabilities (:math:`x_i = \sum_k x_{ik}`). The relative stationary probability changes
+            :math:`e_i = (x_i^{(1)} - x_i^{(2)})/(x_i^{(1)} + x_i^{(2)})` are used in order to track changes in small
+            probabilities. The Euclidean norm of the change vector, :math:`|e_i|_2`, is compared to maxerr.
 
         Notes
         -----
@@ -263,11 +263,12 @@ class MSM(object):
         Attention: This count matrix has been obtained by sliding a window of length tau across the data. It contains
         a factor of tau more counts than are statistically uncorrelated. It's fine to use this matrix for maximum
         likelihood estimated, but it will give far too small errors if you use it for uncertainty calculations. In order
-        to do uncertainty calculations, use the effective count matrix, see: :py:function:`effective_count_matrix_active`
+        to do uncertainty calculations, use the effective count matrix, see:
+        pyemma.msm.ui.msm.MSM.effective_count_matrix
 
         See Also
         --------
-        :py:function:`effective_count_matrix_active`
+        pyemma.msm.ui.msm.MSM.effective_count_matrix
             For a count matrix with effective (statistically uncorrelated) counts.
 
         """
@@ -301,12 +302,12 @@ class MSM(object):
         Attention: This count matrix has been obtained by sliding a window of length tau across the data. It contains
         a factor of tau more counts than are statistically uncorrelated. It's fine to use this matrix for maximum
         likelihood estimated, but it will give far too small errors if you use it for uncertainty calculations. In order
-        to do uncertainty calculations, use the effective count matrix, see: :py:function:`effective_count_matrix_active`
+        to do uncertainty calculations, use the effective count matrix, see: :func:`pyemma.msm.ui.msm.MSM.effective_count_matrix`
         (only implemented on the active set), or divide this count matrix by tau.
 
         See Also
         --------
-        :py:function:`effective_count_matrix_active`
+        :func:`pyemma.msm.ui.msm.MSM.effective_count_matrix`
             For a active-set count matrix with effective (statistically uncorrelated) counts.
 
         """
@@ -473,7 +474,7 @@ class MSM(object):
         Returns
         -------
         ts : ndarray(m)
-            relaxation timescales, defined by :math:`-tau / ln | \lambda_i |, i = 2,...,k+1`.
+            transition matrix eigenvalues :math:`\lambda_i, i = 1,...,k`., sorted by descending norm.
 
         """
         self._ensure_eigendecomposition(k = k, ncv = ncv)
@@ -1017,7 +1018,8 @@ class MSM(object):
         """Generates a synthetic discrete trajectory of length N and simulation time stride * lag time * N
 
         This information can be used
-        in order to generate a synthetic molecular dynamics trajectory - see :py:function:`pyemma.coordinates.save_traj`
+        in order to generate a synthetic molecular dynamics trajectory - see
+        :func:`pyemma.coordinates.save_traj`
 
         Parameters
         ----------
@@ -1039,7 +1041,7 @@ class MSM(object):
 
         See also
         --------
-        :py:function:`pyemma.coordinates.save_traj`
+        :func:`pyemma.coordinates.save_traj`
             in order to save this synthetic trajectory as a trajectory file with molecular structures
 
         """
@@ -1055,8 +1057,8 @@ class MSM(object):
 
         For each state in the active set of states, generates nsample samples with trajectory/time indexes.
         This information can be used in order to generate a trajectory of length nsample * nconnected using
-        :py:function:`pyemma.coordinates.save_traj` or nconnected trajectories of length nsample each using
-        :py:function:`pyemma.coordinates.save_trajs`
+        :func:`pyemma.coordinates.save_traj` or nconnected trajectories of length nsample each using
+        :func:`pyemma.coordinates.save_traj`
 
         Parameters
         ----------
@@ -1081,9 +1083,9 @@ class MSM(object):
 
         See also
         --------
-        :py:function:`pyemma.coordinates.save_traj`
+        :func:`pyemma.coordinates.save_traj`
             in order to save the sampled frames sequentially in a trajectory file with molecular structures
-        :py:function:`pyemma.coordinates.save_trajs`
+        :func:`pyemma.coordinates.save_trajs`
             in order to save the sampled frames in nconnected trajectory files with molecular structures
 
         """
