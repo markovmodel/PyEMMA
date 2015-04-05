@@ -698,9 +698,11 @@ class MDFeaturizer(object):
         """
         # if there are no features selected, return given trajectory
         if len(self.active_features) == 0:
-            warnings.warn(
-                "You have no features selected. Returning plain coordinates.")
-            return traj.xyz
+            warnings.warn("You have no features selected."
+                          " Returning plain coordinates.")
+            s = traj.xyz.shape
+            new_shape = (s[0], s[1] * s[2])
+            return traj.xyz.reshape(new_shape)
 
         # TODO: define preprocessing step (RMSD etc.)
 

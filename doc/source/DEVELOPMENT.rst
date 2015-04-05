@@ -5,23 +5,26 @@ Developer's Guide
 .. toctree::
    :maxdepth: 2
 
-Basic Idea:
------------
-Use a development branch to work on and reintegrate this periodically
+Contributing
+============
+
+Basic Idea
+----------
+We use the development "devel" branch to work on and reintegrate this periodically
 into the master branch. To develop certain features one should use
 feature branches, which are themselves branched from the development
 branch. Feature branches will be reintegrated into the development
-branch.  For releases we merge the development branch into the master
+branch. For releases we merge the development branch into the master
 branch.
 
-Why:
-----
+Why
+---
 * Have a tested, "stable" master branch, which is directly available by cloning.
 * Interference with other devs is minimized until merging.
 
 
-How:
-----
+How
+---
 A maintainer merges the development branch(es) periodically. These
 branches should be pretested (e.g by automatic runs of the test-suite
 and tagging these branches as "tested"/"stable" etc.). This can be
@@ -71,8 +74,8 @@ despite running all tests (which is encouraged if you are changing core features
 you can run individual tests by directly invoking them with python interpreter.
 
 
-Workflow for branching and merging:
------------------------------------
+Workflow for branching and merging
+----------------------------------
 A developer creates a feature branch "feature" and commits his work to
 this branch. When he is done with his work (have written at least a
 working test case for it), he pushes this feature branch to his fork
@@ -144,8 +147,8 @@ On github create a pull request from myfork/feature to origin/devel,
 see https://help.github.com/articles/using-pull-requests
 
 
-Conclusions:
-------------
+Conclusions
+-----------
 
 * Working branches do not interfere with other ones.
 * The devel branch contains all tested implemented features
@@ -153,3 +156,27 @@ Conclusions:
 * Work with pull request to ensure your features are being tested by CI 
 * The master branch contains all tested features and represents the
   set of features that are suitable for public usage
+  
+
+Publish a new release
+=====================
+
+1. merge current devel branch into master
+
+::
+   git checkout master; git merge devel
+
+2. make a new tag 'vmajor.minor.patch' where major is major release and so on
+
+::
+   git tag -m "release description" v1.1
+
+3. IMPORTANT: first push, then push --tags
+
+::
+
+   git push; git push --tags
+
+4. Update conda recipes and perform binstar pushing (partially automized)
+
+
