@@ -1085,9 +1085,9 @@ class MSM(object):
 
         See also
         --------
-        :func:`pyemma.coordinates.save_traj`
+        :meth:`pyemma.coordinates.api.save_traj`
             in order to save the sampled frames sequentially in a trajectory file with molecular structures
-        :func:`pyemma.coordinates.save_trajs`
+        :meth:`pyemma.coordinates.save_trajs`
             in order to save the sampled frames in nconnected trajectory files with molecular structures
 
         """
