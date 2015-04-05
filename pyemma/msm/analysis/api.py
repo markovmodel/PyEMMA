@@ -10,11 +10,18 @@ __docformat__ = "restructuredtext en"
 
 import warnings
 
-import numpy as np
-from scipy.sparse import issparse, csr_matrix
-from scipy.sparse.sputils import isdense
+import numpy as _np
+from scipy.sparse import issparse as _issparse
+from scipy.sparse import csr_matrix as _csr_matrix
+from scipy.sparse.sputils import isdense as _isdense
 
 from pyemma.util.annotators import shortcut
+
+# type-checking
+from pyemma.util.types import ensure_int_array as _ensure_int_array
+from pyemma.util.types import ensure_float_array as _ensure_float_array
+from pyemma.util.types import ensure_int_array_or_None as _ensure_int_array_or_None
+from pyemma.util.types import ensure_float_array_or_None as _ensure_float_array_or_None
 
 import dense.assessment
 import dense.committor
@@ -116,9 +123,9 @@ def is_transition_matrix(T, tol=1e-12):
     True
         
     """
-    if issparse(T):
+    if _issparse(T):
         return sparse.assessment.is_transition_matrix(T, tol)
-    elif isdense(T):
+    elif _isdense(T):
         return dense.assessment.is_transition_matrix(T, tol)
     else:
         raise _type_not_supported
@@ -160,9 +167,9 @@ def is_rate_matrix(K, tol=1e-12):
     True
         
     """
-    if issparse(K):
+    if _issparse(K):
         return sparse.assessment.is_rate_matrix(K, tol)
-    elif isdense(K):
+    elif _isdense(K):
         return dense.assessment.is_rate_matrix(K, tol)
     else:
         raise _type_not_supported
@@ -224,10 +231,10 @@ def is_connected(T, directed=True):
     True
     
     """
-    if issparse(T):
+    if _issparse(T):
         return sparse.assessment.is_connected(T, directed=directed)
-    elif isdense(T):
-        T=csr_matrix(T)
+    elif _isdense(T):
+        T=_csr_matrix(T)
         return sparse.assessment.is_connected(T, directed=directed)
     else:
         raise _type_not_supported
@@ -281,9 +288,12 @@ def is_reversible(T, mu=None, tol=1e-12):
     True
         
     """
-    if issparse(T):
+    # check input
+    mu = _ensure_float_array_or_None(mu, require_order=True)
+    # go
+    if _issparse(T):
         return sparse.assessment.is_reversible(T, mu, tol)
-    elif isdense(T):
+    elif _isdense(T):
         return dense.assessment.is_reversible(T, mu, tol)
     else:
         raise _type_not_supported
@@ -337,9 +347,9 @@ def stationary_distribution(T):
                          "distribution. Separate disconnected components "
                          "and handle them separately")
     # we're good to go...
-    if issparse(T):
+    if _issparse(T):
         return sparse.decomposition.stationary_distribution_from_backward_iteration(T)
-    elif isdense(T):
+    elif _isdense(T):
         return dense.decomposition.stationary_distribution_from_backward_iteration(T)
     else:
         raise _type_not_supported
@@ -379,9 +389,9 @@ def eigenvalues(T, k=None, ncv=None):
     array([1.0+0.j, 0.9+0.j, -0.1+0.j]) 
 
     """
-    if issparse(T):
+    if _issparse(T):
         return sparse.decomposition.eigenvalues(T, k, ncv=ncv)
-    elif isdense(T):
+    elif _isdense(T):
         return dense.decomposition.eigenvalues(T, k)
     else:
         raise _type_not_supported
@@ -427,9 +437,9 @@ def timescales(T, tau=1, k=None, ncv=None):
     array([        inf,  9.49122158,  0.43429448])
     
     """
-    if issparse(T):
+    if _issparse(T):
         return sparse.decomposition.timescales(T, tau=tau, k=k, ncv=ncv)
-    elif isdense(T):
+    elif _isdense(T):
         return dense.decomposition.timescales(T, tau=tau, k=k)
     else:
         raise _type_not_supported
@@ -494,9 +504,9 @@ def eigenvectors(T, k=None, right=True, ncv=None):
            [  5.77350269e-01,  -7.07106781e-01,   9.90147543e-02]])
            
     """
-    if issparse(T):
+    if _issparse(T):
         return sparse.decomposition.eigenvectors(T, k=k, right=right, ncv=ncv)
-    elif isdense(T):
+    elif _isdense(T):
         return dense.decomposition.eigenvectors(T, k=k, right=right)
     else: 
         raise _type_not_supported
@@ -574,9 +584,9 @@ def rdl_decomposition(T, k=None, norm='auto', ncv=None):
            [  4.59068406e-01,  -9.18136813e-01,   4.59068406e-01]])    
            
     """    
-    if issparse(T):
+    if _issparse(T):
         return sparse.decomposition.rdl_decomposition(T, k=k, norm=norm, ncv=ncv)
-    elif isdense(T):
+    elif _isdense(T):
         return dense.decomposition.rdl_decomposition(T, k=k, norm=norm)
     else: 
         raise _type_not_supported
@@ -642,11 +652,15 @@ def mfpt(T, target, origin=None, mu=None):
     array([  0.,  12.,  22.])
     
     """
-    if issparse(T):
+    # check inputs
+    target = _ensure_int_array(target)
+    origin = _ensure_int_array_or_None(origin)
+    # go
+    if _issparse(T):
         if origin is None:
             return sparse.mean_first_passage_time.mfpt(T, target)
         return sparse.mean_first_passage_time.mfpt_between_sets(T,target,origin,mu=mu)
-    elif isdense(T):
+    elif _isdense(T):
         if origin is None:
             return dense.mean_first_passage_time.mfpt(T, target)
         return dense.mean_first_passage_time.mfpt_between_sets(T,target,origin,mu=mu)
@@ -658,7 +672,7 @@ def hitting_probability(P, target):
     """
     Computes the hitting probabilities for all states to the target states.
     
-    The hitting probability of state i to set A is defined as the minimal, 
+    The hitting probability of state i to the target set A is defined as the minimal,
     non-negative solution of:
     
     .. math::
@@ -670,10 +684,11 @@ def hitting_probability(P, target):
     h : ndarray(n)
         a vector with hitting probabilities
     """
-    if issparse(P):
+    target = _ensure_int_array(target)
+    if _issparse(P):
         _showSparseConversionWarning() # currently no sparse implementation!
         return dense.hitting_probability.hitting_probability(P.toarray(),target)
-    elif isdense(P):
+    elif _isdense(P):
         return dense.hitting_probability.hitting_probability(P,target)
     else:
         raise _type_not_supported
@@ -788,7 +803,9 @@ def committor(T, A, B, forward=True, mu=None):
     array([ 1.        ,  0.45454545,  0.        ])
     
     """
-    if issparse(T):
+    A = _ensure_int_array(A)
+    B = _ensure_int_array(B)
+    if _issparse(T):
         if forward:
             return sparse.committor.forward_committor(T, A, B)
         else:
@@ -799,7 +816,7 @@ def committor(T, A, B, forward=True, mu=None):
             else:
                 return sparse.committor.backward_committor(T, A, B)
 
-    elif isdense(T):
+    elif _isdense(T):
         if forward:
             return dense.committor.forward_committor(T, A, B)
         else:
@@ -858,9 +875,12 @@ def expected_counts(T, p0, N):
            [  0.        ,   4.04960006,  36.44640052]])
         
     """
-    if issparse(T):
+    # check input
+    p0 = _ensure_float_array(p0, require_order=True)
+    # go
+    if _issparse(T):
         return sparse.expectations.expected_counts(p0, T, N)
-    elif isdense(T):
+    elif _isdense(T):
         return dense.expectations.expected_counts(p0, T, N)
     else:
         raise _type_not_supported
@@ -909,9 +929,12 @@ def expected_counts_stationary(T, N, mu=None):
            [  0.        ,   4.54545455,  40.90909091]])       
     
     """
-    if issparse(T):
+    # check input
+    mu = _ensure_float_array_or_None(mu, require_order=True)
+    # go
+    if _issparse(T):
         return sparse.expectations.expected_counts_stationary(T, N, mu=mu)
-    elif isdense(T):
+    elif _isdense(T):
         return dense.expectations.expected_counts_stationary(T, N, mu=mu)
     else:
         raise _type_not_supported
@@ -1017,10 +1040,13 @@ def fingerprint_correlation(T, obs1, obs2=None, tau=1, k=None, ncv=None):
     array([ 0.20661157,  0.22727273,  0.02066116])
     
     """
-
-    if issparse(T):
+    # check input
+    obs1 = _ensure_float_array(obs1, require_order=True)
+    obs2 = _ensure_float_array_or_None(obs2, require_order=True)
+    # go
+    if _issparse(T):
         return sparse.fingerprints.fingerprint_correlation(T, obs1, obs2=obs2, tau=tau, k=k, ncv=ncv)
-    elif isdense(T):
+    elif _isdense(T):
         return dense.fingerprints.fingerprint_correlation(T, obs1, obs2, tau=tau, k=k)
     else:
         raise _type_not_supported
@@ -1103,9 +1129,13 @@ def fingerprint_relaxation(T, p0, obs, tau=1, k=None, ncv=None):
     array([ 0.45454545,  0.5       ,  0.04545455])    
         
     """
-    if issparse(T):
+    # check input
+    p0 = _ensure_float_array(p0, require_order=True)
+    obs = _ensure_float_array(obs, require_order=True)
+    # go
+    if _issparse(T):
         return sparse.fingerprints.fingerprint_relaxation(T, p0, obs, tau=tau, k=k, ncv=ncv)
-    elif isdense(T):
+    elif _isdense(T):
         return dense.fingerprints.fingerprint_relaxation(T, p0, obs, tau=tau, k=k)
     else:
         raise _type_not_supported
@@ -1150,9 +1180,13 @@ def expectation(T, a, mu=None):
     0.90909090909090917       
     
     """
+    # check input
+    a = _ensure_float_array(a, require_order=True)
+    mu = _ensure_float_array_or_None(mu, require_order=True)
+    # go
     if not mu:
         mu=stationary_distribution(T)
-    return np.dot(mu,a)
+    return _np.dot(mu,a)
 
 # DONE: Martin+Frank+Ben: Implement in Python directly
 def correlation(T, obs1, obs2=None, times=[1], k=None, ncv=None):
@@ -1229,9 +1263,14 @@ def correlation(T, obs1, obs2=None, times=[1], k=None, ncv=None):
     array([ 0.40909091,  0.34081364,  0.28585667,  0.23424263])
     
     """
-    if issparse(T):
+    # check input
+    obs1 = _ensure_float_array(obs1, require_order=True)
+    obs2 = _ensure_float_array_or_None(obs2, require_order=True)
+    times = _ensure_int_array(times, require_order=True)
+    # go
+    if _issparse(T):
         return sparse.fingerprints.correlation(T, obs1, obs2=obs2, times=times, k=k, ncv=ncv)
-    elif isdense(T):
+    elif _isdense(T):
         return dense.fingerprints.correlation(T, obs1, obs2=obs2, times=times, k=k)
     else:
         raise _type_not_supported
@@ -1298,9 +1337,14 @@ def relaxation(T, p0, obs, times=[1], k=None, ncv=None):
     array([ 1.        ,  0.8407    ,  0.71979377,  0.60624287])
     
     """
-    if issparse(T):
+    # check input
+    p0 = _ensure_float_array(p0, require_order=True)
+    obs = _ensure_float_array(obs, require_order=True)
+    times = _ensure_int_array(times, require_order=True)
+    # go
+    if _issparse(T):
         return sparse.fingerprints.relaxation(T, p0, obs, k=k, times=times)
-    elif isdense(T):
+    elif _isdense(T):
         return dense.fingerprints.relaxation(T, p0, obs, k=k, times=times)
     else:
         raise _type_not_supported
@@ -1344,10 +1388,10 @@ def pcca(T, n):
         (2): 147-179
     
     """
-    if issparse(T):
+    if _issparse(T):
         _showSparseConversionWarning()
         return dense.pcca.pcca(T.toarray(), n)
-    elif isdense(T):
+    elif _isdense(T):
         return dense.pcca.pcca(T, n)
     else:
         raise _type_not_supported
@@ -1367,10 +1411,10 @@ def coarsegrain(P, n):
     Projected and hidden Markov models for calculating kinetics and metastable states of complex molecules
     J. Chem. Phys. 139, 184114 (2013)
     """
-    if issparse(P):
+    if _issparse(P):
         _showSparseConversionWarning()
         return dense.pcca.coarsegrain(P.toarray(), n)
-    elif isdense(P):
+    elif _isdense(P):
         return dense.pcca.coarsegrain(P, n)
     else:
         raise _type_not_supported
@@ -1401,10 +1445,10 @@ def eigenvalue_sensitivity(T, k):
         Sensitivity matrix for k-th eigenvalue.
     
     """
-    if issparse(T):
+    if _issparse(T):
         _showSparseConversionWarning()
         eigenvalue_sensitivity(T.todense(), k)
-    elif isdense(T):
+    elif _isdense(T):
         return dense.sensitivity.eigenvalue_sensitivity(T, k)
     else:
         raise _type_not_supported
@@ -1425,10 +1469,10 @@ def timescale_sensitivity(T, k):
         Sensitivity matrix for the k-th time-scale.
         
     """
-    if issparse(T):
+    if _issparse(T):
         _showSparseConversionWarning()
         timescale_sensitivity(T.todense(), k)
-    elif isdense(T):
+    elif _isdense(T):
         return dense.sensitivity.timescale_sensitivity(T, k)
     else:
         raise _type_not_supported
@@ -1453,10 +1497,10 @@ def eigenvector_sensitivity(T, k, j, right=True):
         Sensitivity matrix for the j-th element of the k-th eigenvector.
     
     """
-    if issparse(T):
+    if _issparse(T):
         _showSparseConversionWarning()
         eigenvector_sensitivity(T.todense(), k, j, right=right)
-    elif isdense(T):
+    elif _isdense(T):
         return dense.sensitivity.eigenvector_sensitivity(T, k, j, right=right)
     else:
         raise _type_not_supported
@@ -1482,10 +1526,10 @@ def stationary_distribution_sensitivity(T, j):
         of the stationary distribution.
     
     """
-    if issparse(T):
+    if _issparse(T):
         _showSparseConversionWarning()
         stationary_distribution_sensitivity(T.todense(), j)
-    elif isdense(T):
+    elif _isdense(T):
         return dense.sensitivity.stationary_distribution_sensitivity(T, j)
     else:
         raise _type_not_supported
@@ -1508,10 +1552,13 @@ def mfpt_sensitivity(T, target, i):
         Sensitivity matrix for specified state
     
     """
-    if issparse(T):
+    # check input
+    target = _ensure_int_array(target)
+    # go
+    if _issparse(T):
         _showSparseConversionWarning()
         mfpt_sensitivity(T.todense(), target, i)
-    elif isdense(T):
+    elif _isdense(T):
         return dense.sensitivity.mfpt_sensitivity(T, target, i)
     else:
         raise _type_not_supported
@@ -1541,10 +1588,13 @@ def committor_sensitivity(T, A, B, i, forward=True):
         Sensitivity matrix of the specified committor entry.
     
     """
-    if issparse(T):
+    # check inputs
+    A = _ensure_int_array(A)
+    B = _ensure_int_array(B)
+    if _issparse(T):
         _showSparseConversionWarning()
         committor_sensitivity(T.todense(), A, B, i, forward)
-    elif isdense(T):
+    elif _isdense(T):
         if forward:
             return dense.sensitivity.forward_committor_sensitivity(T, A, B, i)
         else:
@@ -1568,10 +1618,13 @@ def expectation_sensitivity(T, a):
         Sensitivity matrix of the expectation value.
     
     """
-    if issparse(T):
+    # check input
+    a = _ensure_float_array(a, require_order=True)
+    # go
+    if _issparse(T):
         _showSparseConversionWarning()
         return dense.sensitivity.expectation_sensitivity(T.toarray(), a)
-    elif isdense(T):
+    elif _isdense(T):
         return dense.sensitivity.expectation_sensitivity(T, a)
     else:
         raise _type_not_supported
