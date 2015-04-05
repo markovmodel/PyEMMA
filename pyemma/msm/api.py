@@ -6,7 +6,7 @@ __docformat__ = "restructuredtext en"
 
 from flux import tpt as tpt_factory
 from ui import ImpliedTimescales
-from ui import MSM
+from ui import EstimatedMSM, MSM
 from ui import cktest as chapman_kolmogorov
 # from estimation.dense.hidden_markov_model import HiddenMSM
 
@@ -19,7 +19,8 @@ __maintainer__ = "Martin Scherer"
 __email__="m.scherer AT fu-berlin DOT de"
 
 __all__=['its',
-         'msm',
+         'markov_model',
+         'estimate_markov_model',
          'cktest',
          'tpt']
 
@@ -56,7 +57,28 @@ def its(dtrajs, lags = None, nits=10, reversible = True, connected = True):
     return itsobj
 
 
-def msm(dtrajs, lag, reversible=True, sparse=False, connectivity='largest', compute=True,
+def markov_model(P, dt = '1 step'):
+    r"""Wraps transition matrix into a Markov model object, which conveniently provides various quantities
+
+    Parameters
+    ----------
+    P : ndarray(n,n)
+        transition matrix
+    dt : str, optional, default='1 step'
+        Description of the physical time corresponding to the lag. May be used by analysis algorithms such as
+        plotting tools to pretty-print the axes. By default '1 step', i.e. there is no physical time unit.
+        Specify by a number, whitespace and unit. Permitted units are (* is an arbitrary string):
+        'fs',  'femtosecond*'
+        'ps',  'picosecond*'
+        'ns',  'nanosecond*'
+        'us',  'microsecond*'
+        'ms',  'millisecond*'
+        's',   'second*'
+
+    """
+    return MSM(P, dt=dt)
+
+def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivity='largest', compute=True,
         dt = '1 step', **kwargs):
     r"""Estimate Markov state model (MSM) from discrete trajectories.
 
@@ -120,7 +142,7 @@ def msm(dtrajs, lag, reversible=True, sparse=False, connectivity='largest', comp
     pyemma.msm.ui.MSM
 
     """
-    return MSM(dtrajs, lag, reversible=reversible, sparse=sparse, connectivity=connectivity, compute=compute, dt = dt, **kwargs)
+    return EstimatedMSM(dtrajs, lag, reversible=reversible, sparse=sparse, connectivity=connectivity, compute=compute, dt = dt, **kwargs)
 
 
 def cktest(msmobj, K, nsets=2, sets=None, full_output=False):
@@ -159,7 +181,7 @@ def cktest(msmobj, K, nsets=2, sets=None, full_output=False):
     """
     P = msmobj.transition_matrix
     lcc = msmobj.largest_connected_set
-    dtrajs = msmobj.discrete_trajectories
+    dtrajs = msmobj.discrete_trajectories_full
     tau = msmobj.lagtime
     return chapman_kolmogorov(P, lcc, dtrajs, tau, K, 
                               nsets=nsets, sets=sets, full_output=full_output)
