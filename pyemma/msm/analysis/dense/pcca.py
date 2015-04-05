@@ -566,6 +566,6 @@ class PCCA:
         """
         res = []
         assignment = self.metastable_assignment
-        for i in self.m:
+        for i in range(self.m):
             res.append(np.where(assignment == i)[0])
         return res
