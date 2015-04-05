@@ -19,14 +19,6 @@ from pyemma.coordinates import save_trajs
 
 __all__ = ['MSM','EstimatedMSM']
 
-# TODO - DISCUSS CHANGES:
-# TODO: I removed the option sliding=True because now we force sliding but compute a transition matrix with effective
-#       counts for computing error bars
-# TODO: By default all operations are dense (+usability +reliability). The behavior can be switched by the user with
-#       the flag sparse. a warning is generated when building an MSM > 4000 states with sparse=False
-# TODO: sample trajectory and by state
-
-
 # TODO: Explain concept of an active set
 
 
@@ -579,7 +571,7 @@ class MSM(object):
         Parameters
         ----------
         m : int
-            Number of Perron-clusters
+            Number of metastable sets
 
         Returns
         -------
@@ -606,7 +598,7 @@ class MSM(object):
         Parameters
         ----------
         m : int
-            Number of Perron-clusters
+            Number of metastable sets
 
         Returns
         -------
@@ -639,7 +631,7 @@ class MSM(object):
         Parameters
         ----------
         m : int
-            Number of Perron-clusters
+            Number of metastable sets
 
         Returns
         -------
@@ -666,7 +658,7 @@ class MSM(object):
         Parameters
         ----------
         m : int
-            Number of Perron-clusters
+            Number of metastable sets
 
         Returns
         -------
