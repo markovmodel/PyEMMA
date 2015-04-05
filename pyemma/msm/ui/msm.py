@@ -14,6 +14,8 @@ import warnings
 import copy
 from pyemma.util.annotators import shortcut
 
+from pyemma.coordinates import save_traj
+from pyemma.coordinates import save_trajs
 
 __all__ = ['MSM']
 
@@ -264,11 +266,11 @@ class MSM(object):
         a factor of tau more counts than are statistically uncorrelated. It's fine to use this matrix for maximum
         likelihood estimated, but it will give far too small errors if you use it for uncertainty calculations. In order
         to do uncertainty calculations, use the effective count matrix, see:
-        pyemma.msm.ui.msm.MSM.effective_count_matrix
+        :func:`msm.MSM.effective_count_matrix`
 
         See Also
         --------
-        pyemma.msm.ui.msm.MSM.effective_count_matrix
+        :meth:`pyemma.msm.ui.msm.MSM.effective_count_matrix`
             For a count matrix with effective (statistically uncorrelated) counts.
 
         """
@@ -1041,7 +1043,7 @@ class MSM(object):
 
         See also
         --------
-        :func:`pyemma.coordinates.save_traj`
+        pyemma.coordinates.save_traj
             in order to save this synthetic trajectory as a trajectory file with molecular structures
 
         """
