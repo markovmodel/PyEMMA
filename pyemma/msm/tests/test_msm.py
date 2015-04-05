@@ -17,7 +17,7 @@ from pyemma.msm.estimation import cmatrix, largest_connected_set, connected_cmat
 from pyemma.msm.analysis import statdist, timescales
 from pyemma.util.numeric import assert_allclose, allclose_sparse
 from pyemma.msm.ui.birth_death_chain import BirthDeathChain
-from pyemma.msm import msm as markov_state_model
+from pyemma.msm import estimate_markov_model as markov_state_model
 
 class TestMSMSimple(unittest.TestCase):
 
