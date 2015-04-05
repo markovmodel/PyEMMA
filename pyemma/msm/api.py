@@ -56,7 +56,8 @@ def its(dtrajs, lags = None, nits=10, reversible = True, connected = True):
     return itsobj
 
 
-def msm(dtrajs, lag, reversible=True, sliding=True, compute=True):
+def msm(dtrajs, lag, reversible=True, sparse=False, connectivity='largest', compute=True,
+        dt = '1 step', **kwargs):
     r"""Estimate Markov state model (MSM) from discrete trajectories.
 
     Parameters
@@ -119,9 +120,7 @@ def msm(dtrajs, lag, reversible=True, sliding=True, compute=True):
     pyemma.msm.ui.MSM
 
     """
-
-    msmobj = MSM(dtrajs, lag, reversible=reversible, sliding=sliding, compute=compute)
-    return msmobj
+    return MSM(dtrajs, lag, reversible=reversible, sparse=sparse, connectivity=connectivity, compute=compute, dt = dt, **kwargs)
 
 
 def cktest(msmobj, K, nsets=2, sets=None, full_output=False):
