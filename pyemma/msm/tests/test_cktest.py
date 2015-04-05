@@ -13,7 +13,7 @@ from pyemma.msm.analysis import statdist
 from pyemma.util.numeric import assert_allclose
 from pyemma.msm.ui.birth_death_chain import BirthDeathChain
 
-from pyemma.msm import msm, cktest
+from pyemma.msm import estimate_markov_model, cktest
 
 class TestCkTest(unittest.TestCase):
     
@@ -41,7 +41,7 @@ class TestCkTest(unittest.TestCase):
         tau = 1
 
         """Estimate MSM"""
-        MSM = msm(dtraj, tau)
+        MSM = estimate_markov_model(dtraj, tau)
         C_MSM = MSM.count_matrix_full
         lcc_MSM = MSM.largest_connected_set
         Ccc_MSM = MSM.count_matrix_active
@@ -57,7 +57,7 @@ class TestCkTest(unittest.TestCase):
         w_MSM[1, B] = mu_MSM[B]/mu_MSM[B].sum()
 
         K = 10
-        P_MSM_dense = P_MSM.toarray()
+        P_MSM_dense = P_MSM
         
         p_MSM = np.zeros((K, 2))
         w_MSM_k = 1.0*w_MSM
