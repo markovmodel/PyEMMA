@@ -96,7 +96,7 @@ class ImpliedTimescalesTest(unittest.TestCase):
         t2 = timescales(self.P2)[1]
         lags = [1,2,3,4,5]
         its = ImpliedTimescales([self.dtraj2], lags=lags)
-        est = its.timescales(0)
+        est = its.timescales[0]
         assert(np.alltrue(est < t2+2.0))
         assert(np.alltrue(est > t2-2.0))
 
@@ -104,7 +104,7 @@ class ImpliedTimescalesTest(unittest.TestCase):
         t4 = timescales(self.P4)[1]
         lags = [int(t4)]
         its = ImpliedTimescales([self.dtraj4_2], lags=lags)
-        est = its.timescales(0)
+        est = its.timescales[0]
         assert(np.alltrue(est < t4+15.0))
         assert(np.alltrue(est > t4-15.0))
 
