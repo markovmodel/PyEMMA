@@ -29,6 +29,7 @@ import dense.fingerprints
 import dense.decomposition
 import dense.expectations
 import dense.pcca
+from dense.pcca import PCCA
 import dense.sensitivity
 import dense.mean_first_passage_time
 import dense.hitting_probability
@@ -1364,22 +1365,42 @@ def relaxation(T, p0, obs, times=[1], k=None, ncv=None):
 # PCCA
 ################################################################################
 
-# DONE: Jan, Frank
-def pcca(T, n):
-    r"""Find meta-stable Perron-clusters.
-    
+def _pcca_object(T, m):
+    """
+    Constructs the pcca object from dense or sparse
+
     Parameters
     ----------
-    T : (M, M) ndarray or scipy.sparse matrix
+    T : (n, n) ndarray or scipy.sparse matrix
         Transition matrix
-    n : int
-        Number of Perron-clusters
-    
+    m : int
+        Number of metastable sets
+
     Returns
     -------
-    clusters : (M, n) ndarray
-        Membership vectors. clusters[i, :] contains the membership vector
-        for the i-th Perron-cluster.
+    pcca : PCCA
+        PCCA object
+    """
+    if _issparse(T):
+        _showSparseConversionWarning()
+        T = T.toarray()
+    return PCCA(T, m)
+
+# DONE: Jan, Frank
+def pcca(T, m):
+    r"""Compute meta-stable sets using PCCA++ _[1] and return the membership of all states to these sets.
+
+    Parameters
+    ----------
+    T : (n, n) ndarray or scipy.sparse matrix
+        Transition matrix
+    m : int
+        Number of metastable sets
+
+    Returns
+    -------
+    clusters : (n, m) ndarray
+        Membership vectors. clusters[i, j] contains the membership of state i to metastable state j
 
     Notes
     -----
@@ -1395,38 +1416,169 @@ def pcca(T, n):
         PCCA+: application to Markov state models and data
         classification. Advances in Data Analysis and Classification 7
         (2): 147-179
-    
+
     """
-    if _issparse(T):
-        _showSparseConversionWarning()
-        return dense.pcca.pcca(T.toarray(), n)
-    elif _isdense(T):
-        return dense.pcca.pcca(T, n)
-    else:
-        raise _type_not_supported
+    warnings.warn('pcca method is deprecated because of its unspecific naming and will be removed soon. Use pcca_memberships in the future.', DeprecationWarning)
+    return pcca_memberships(T, m)
 
 
-def coarsegrain(P, n):
+# DONE: Frank
+def pcca_memberships(T, m):
+    r"""Compute meta-stable sets using PCCA++ _[1] and return the membership of all states to these sets.
+
+    Parameters
+    ----------
+    T : (n, n) ndarray or scipy.sparse matrix
+        Transition matrix
+    m : int
+        Number of metastable sets
+
+    Returns
+    -------
+    clusters : (n, m) ndarray
+        Membership vectors. clusters[i, j] contains the membership of state i to metastable state j
+
+    Notes
+    -----
+    Perron cluster center analysis assigns each microstate a vector of
+    membership probabilities. This assignement is performed using the
+    right eigenvectors of the transition matrix. Membership
+    probabilities are computed via numerical optimization of the
+    entries of a membership matrix.
+
+    References
+    ----------
+    .. [1] Roeblitz, S and M Weber. 2013. Fuzzy spectral clustering by
+        PCCA+: application to Markov state models and data
+        classification. Advances in Data Analysis and Classification 7
+        (2): 147-179
+
     """
-    Coarse-grains transition matrix P to n sets using PCCA
+    return _pcca_object(T, m).memberships
+
+
+# DONE: Frank
+def pcca_sets(T, m):
+    r""" Computes the metastable sets given transition matrix T using the PCCA++ method _[1]
+
+    This is only recommended for visualization purposes. You *cannot* compute any
+    actual quantity of the coarse-grained kinetics without employing the fuzzy memberships!
+
+    Parameters
+    ----------
+    T : (n, n) ndarray or scipy.sparse matrix
+        Transition matrix
+    m : int
+        Number of metastable sets
+
+    Returns
+    -------
+    A list of length equal to metastable states. Each element is an array with microstate indexes contained in it
+
+    References
+    ----------
+    .. [1] Roeblitz, S and M Weber. 2013. Fuzzy spectral clustering by
+        PCCA+: application to Markov state models and data
+        classification. Advances in Data Analysis and Classification 7
+        (2): 147-179
+    """
+    return _pcca_object(T, m).metastable_sets
+
+
+# DONE: Frank
+def pcca_assignments(T, m):
+    """ Computes the assignment to metastable sets for active set states using the PCCA++ method _[1]
+
+    This is only recommended for visualization purposes. You *cannot* compute any
+    actual quantity of the coarse-grained kinetics without employing the fuzzy memberships!
+
+    Parameters
+    ----------
+    m : int
+        Number of metastable sets
+
+    Returns
+    -------
+    For each active set state, the metastable state it is located in.
+
+    References
+    ----------
+    .. [1] Roeblitz, S and M Weber. 2013. Fuzzy spectral clustering by
+        PCCA+: application to Markov state models and data
+        classification. Advances in Data Analysis and Classification 7
+        (2): 147-179
+    """
+    return _pcca_object(T, m).metastable_assignment
+
+
+def pcca_distributions(T, m):
+    """ Computes the probability distributions of active set states within each metastable set using the PCCA++ method _[1]
+    using Bayesian inversion as described in _[2].
+
+    Parameters
+    ----------
+    m : int
+        Number of metastable sets
+
+    Returns
+    -------
+    p_out : ndarray( (m, n) )
+        A matrix containing the probability distribution of each active set state, given that we are in a
+        metastable set.
+        i.e. p(state | metastable). The row sums of p_out are 1.
+
+    References
+    ----------
+    .. [1] Roeblitz, S and M Weber. 2013. Fuzzy spectral clustering by
+        PCCA+: application to Markov state models and data
+        classification. Advances in Data Analysis and Classification 7
+        (2): 147-179
+    .. [2] F. Noe, H. Wu, J.-H. Prinz and N. Plattner:
+        Projected and hidden Markov models for calculating kinetics and metastable states of complex molecules
+        J. Chem. Phys. 139, 184114 (2013)
+    """
+    return _pcca_object(T, m).output_probabilities
+
+
+def coarsegrain(P, m):
+    """Coarse-grains transition matrix P to n sets using PCCA++ _[1]
     
     Coarse-grains transition matrix P such that the dominant eigenvalues are preserved, using:
     
     ..math:
         \tilde{P} = M^T P M (M^T M)^{-1}
-    
-    See: 
-    F. Noe, H. Wu, J.-H. Prinz and N. Plattner:
-    Projected and hidden Markov models for calculating kinetics and metastable states of complex molecules
-    J. Chem. Phys. 139, 184114 (2013)
+
+    where :math:`M` is the membership probability matrix and P is the full transition matrix.
+    See _[2] and _[3] for the theory. The results of the coarse-graining can be interpreted as a hidden markov model
+    where the states of the coarse-grained transition matrix are the hidden states. Therefore we additionally return
+    the stationary probability of the coarse-grained transition matrix as well as the output probability matrix from
+    metastable states to states in order to provide all objects needed for an HMM.
+
+    Returns
+    -------
+    pi_c : ndarray( (m) )
+        Equilibrium probability vector of the coarse-grained transition matrix
+    P_c : ndarray( (m, m) )
+        Coarse-grained transition matrix
+    p_out : ndarray( (m, n) )
+        A matrix containing the probability distribution of each active set state, given that we are in a
+        metastable set.
+        i.e. p(state | metastable). The row sums of p_out are 1.
+
+    References
+    ----------
+    .. [1] Roeblitz, S and M Weber. 2013. Fuzzy spectral clustering by
+        PCCA+: application to Markov state models and data
+        classification. Advances in Data Analysis and Classification 7
+        (2): 147-179
+    .. [2] Kube, S and M Weber.
+        A coarse-graining method for the identification of transition rates between molecular conformations
+        J. Chem. Phys. 126, 024103 (2007)
+    .. [2] F. Noe, H. Wu, J.-H. Prinz and N. Plattner:
+        Projected and hidden Markov models for calculating kinetics and metastable states of complex molecules
+        J. Chem. Phys. 139, 184114 (2013)
     """
-    if _issparse(P):
-        _showSparseConversionWarning()
-        return dense.pcca.coarsegrain(P.toarray(), n)
-    elif _isdense(P):
-        return dense.pcca.coarsegrain(P, n)
-    else:
-        raise _type_not_supported
+    return _pcca_object(P, m).coarse_grained_transition_matrix
 
 
 ################################################################################
