@@ -40,7 +40,7 @@ def plot_implied_timescales(ITS, ax=None, outfile=None, xlog=False, ylog=True, c
     #ymax = 1.5*_np.min(ITS.get_timescales())
     for i in range(ITS.number_of_timescales):
         # plot estimate
-        ax.plot(lags, ITS.get_timescales(i), color = colors[i % len(colors)])
+        ax.plot(lags, ITS.timescales(i), color = colors[i % len(colors)])
         # sample available?
         if (ITS.samples_available and ITS.sample_number_of_timescales > i):
             # plot sample mean

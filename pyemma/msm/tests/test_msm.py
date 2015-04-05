@@ -61,7 +61,7 @@ class TestMSM(unittest.TestCase):
         self.assertTrue(allclose_sparse(self.C_MSM, msm.count_matrix_full))
         self.assertTrue(allclose_sparse(self.P_MSM, msm.transition_matrix))
         assert_allclose(self.mu_MSM, msm.stationary_distribution)
-        assert_allclose(self.ts, msm.get_timescales(self.k))
+        assert_allclose(self.ts, msm.timescales(self.k))
 
 if __name__=="__main__":
     unittest.main()
