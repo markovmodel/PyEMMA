@@ -1,4 +1,4 @@
-r"""User-API for the pyemma.msm package
+r"""User API for the pyemma.msm package
 
 """
 
@@ -68,12 +68,17 @@ def markov_model(P, dt = '1 step'):
         Description of the physical time corresponding to the lag. May be used by analysis algorithms such as
         plotting tools to pretty-print the axes. By default '1 step', i.e. there is no physical time unit.
         Specify by a number, whitespace and unit. Permitted units are (* is an arbitrary string):
-        'fs',  'femtosecond*'
-        'ps',  'picosecond*'
-        'ns',  'nanosecond*'
-        'us',  'microsecond*'
-        'ms',  'millisecond*'
-        's',   'second*'
+
+        |  'fs',  'femtosecond*'
+        |  'ps',  'picosecond*'
+        |  'ns',  'nanosecond*'
+        |  'us',  'microsecond*'
+        |  'ms',  'millisecond*'
+        |  's',   'second*'
+
+    See also
+    --------
+    pyemma.msm.ui.MSM
 
     """
     return MSM(P, dt=dt)
@@ -112,12 +117,13 @@ def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
         Description of the physical time corresponding to the lag. May be used by analysis algorithms such as
         plotting tools to pretty-print the axes. By default '1 step', i.e. there is no physical time unit.
         Specify by a number, whitespace and unit. Permitted units are (* is an arbitrary string):
-        'fs',  'femtosecond*'
-        'ps',  'picosecond*'
-        'ns',  'nanosecond*'
-        'us',  'microsecond*'
-        'ms',  'millisecond*'
-        's',   'second*'
+
+        |  'fs',  'femtosecond*'
+        |  'ps',  'picosecond*'
+        |  'ns',  'nanosecond*'
+        |  'us',  'microsecond*'
+        |  'ms',  'millisecond*'
+        |  's',   'second*'
 
     **kwargs: Optional algorithm-specific parameters. See below for special cases
     maxiter = 1000000 : int
@@ -139,7 +145,7 @@ def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
 
     See also
     --------
-    pyemma.msm.ui.MSM
+    pyemma.msm.ui.EstimatedMSM
 
     """
     return EstimatedMSM(dtrajs, lag, reversible=reversible, sparse=sparse, connectivity=connectivity, compute=compute, dt = dt, **kwargs)

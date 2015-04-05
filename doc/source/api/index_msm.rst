@@ -5,7 +5,7 @@ Markov State Models API
 The *msm* package provides functions to estimate, analyze and generate
 Markov state models. All public functions accept dense NumPy and SciPy
 sparse types and distinguish them automatically, so the optimal
-underlying solution for a problem is choosen.
+underlying solution for a problem is chosen.
 
 
 .. automodule:: pyemma.msm

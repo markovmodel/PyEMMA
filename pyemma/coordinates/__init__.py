@@ -14,13 +14,16 @@ together is the **Discretizer**. It builds up a pipeline to process your data
 into discrete state space. The API function **discretizer** creates it.
 
 
-Readers
--------
+Data handling and IO
+--------------------
 .. autosummary::
    :toctree: generated/
 
-   feature_reader
-   memory_reader
+   featurizer
+   input
+   discretizer
+   save_traj
+   save_trajs
 
 Transformations
 ---------------
@@ -39,6 +42,7 @@ Clustering Algorithms
    cluster_regspace
    cluster_uniform_time
    cluster_assign_centers
+
 
 """
 from .api import *

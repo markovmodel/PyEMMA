@@ -45,13 +45,13 @@ __all__ = ['discretizer',
            'cluster_kmeans',
            'cluster_uniform_time',
            'cluster_assign_centers',
+           'save_traj',
+           'save_trajs',
            # deprecated:
            'kmeans',
            'regspace',
            'assign_centers',
-           'uniform_time',
-           'save_traj',
-           'save_trajs'
+           'uniform_time'
            ]
 
 
