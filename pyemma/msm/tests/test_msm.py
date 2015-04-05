@@ -77,7 +77,10 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
         self.tau = 10
         self.msm = markov_state_model(self.dtraj, self.tau)
 
-    # compute, computed
+    # ---------------------------------
+    # BASIC PROPERTIES
+    # ---------------------------------
+
     def test_compute(self):
         # should give warning
         with warnings.catch_warnings(record=True) as w:
@@ -85,8 +88,6 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
 
     def test_computed(self):
         assert(self.msm.computed)
-
-    # BASIC PROPERTIES
 
     def test_active_set(self):
         # should always be <= full set
@@ -129,7 +130,23 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
         # HERE: states are shifted down from the beginning, because early states are missing
         assert(dta[0][0] < self.dtraj[0])
 
+    # ---------------------------------
     # DERIVED QUANTITIES
+    # ---------------------------------
+
+    def test_active_count_fraction(self):
+        # should always be a fraction
+        assert(self.msm.active_count_fraction >= 0.0 and self.msm.active_count_fraction<= 1.0)
+        # special case for this data set:
+        assert(self.msm.active_count_fraction == 1.0)
+
+    def test_active_state_fraction(self):
+        # should always be a fraction
+        assert(self.msm.active_state_fraction >= 0.0 and self.msm.active_state_fraction<= 1.0)
+
+    def test_effective_count_matrix(self):
+        assert(np.allclose(self.tau * self.msm.effective_count_matrix, self.msm.count_matrix_active))
+
     def expectation(self):
         e = self.msm.expectation(range(self.msm.nstates))
         assert(np.abs(e - 31.73) < 0.01)
@@ -166,20 +183,6 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
         assert(len(rel2) == 1000)
         assert(rel2[0] < rel2[-1])
 
-    def test_active_count_fraction(self):
-        # should always be a fraction
-        assert(self.msm.active_count_fraction >= 0.0 and self.msm.active_count_fraction<= 1.0)
-        # special case for this data set:
-        assert(self.msm.active_count_fraction == 1.0)
-
-    def test_active_state_fraction(self):
-        # should always be a fraction
-        assert(self.msm.active_state_fraction >= 0.0 and self.msm.active_state_fraction<= 1.0)
-
-    def test_effective_count_matrix(self):
-        assert(np.allclose(self.tau * self.msm.effective_count_matrix, self.msm.count_matrix_active))
-
-
     def test_committor(self):
         a = 16
         b = 48
@@ -195,6 +198,10 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
         assert (np.all(q_backward[40:] < 0.5))
         # REVERSIBLE:
         assert (np.allclose(np.abs(q_forward + q_backward, np.ones(self.msm.nstates))))
+
+    # ---------------------------------
+    # STATISTICS, SAMPLING
+    # ---------------------------------
 
     def test_active_state_indexes(self):
         I = self.msm.active_state_indexes
