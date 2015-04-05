@@ -592,7 +592,7 @@ def rdl_decomposition(T, k=None, norm='auto', ncv=None):
         raise _type_not_supported
 
 # DONE: Ben, Chris
-def mfpt(T, target, origin=None, mu=None):
+def mfpt(T, target, origin=None, tau=1, mu=None):
     r"""Mean first passage times (from a set of starting states - optional)
     to a set of target states.
     
@@ -604,6 +604,10 @@ def mfpt(T, target, origin=None, mu=None):
         Target states for mfpt calculation.
     origin : int or list of int (optional)
         Set of starting states.
+    tau : int (optional)
+        The time-lag (in elementary time steps of the microstate
+        trajectory) at which the given transition matrix was
+        constructed.
     mu : (n,) ndarray (optional)
         The stationary distribution of the transition matrix T.
     
@@ -658,14 +662,19 @@ def mfpt(T, target, origin=None, mu=None):
     # go
     if _issparse(T):
         if origin is None:
-            return sparse.mean_first_passage_time.mfpt(T, target)
-        return sparse.mean_first_passage_time.mfpt_between_sets(T,target,origin,mu=mu)
+            t_tau = sparse.mean_first_passage_time.mfpt(T, target)
+        else:
+            t_tau = sparse.mean_first_passage_time.mfpt_between_sets(T,target,origin,mu=mu)
     elif _isdense(T):
         if origin is None:
-            return dense.mean_first_passage_time.mfpt(T, target)
-        return dense.mean_first_passage_time.mfpt_between_sets(T,target,origin,mu=mu)
+            t_tau = dense.mean_first_passage_time.mfpt(T, target)
+        else:
+            t_tau = dense.mean_first_passage_time.mfpt_between_sets(T,target,origin,mu=mu)
     else:
         raise _type_not_supported
+
+    # scale answer by lag time used.
+    return tau * t_tau
 
 
 def hitting_probability(P, target):
