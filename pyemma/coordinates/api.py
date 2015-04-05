@@ -50,6 +50,8 @@ __all__ = ['discretizer',
            'regspace',
            'assign_centers',
            'uniform_time',
+           'save_traj',
+           'save_trajs'
            ]
 
 
