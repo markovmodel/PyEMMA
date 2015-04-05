@@ -7,13 +7,13 @@ def is_int(l):
     r"""Checks if l is an integer
 
     """
-    return (l, numbers.Integral)
+    return isinstance(l, numbers.Integral)
 
 def is_float(l):
     r"""Checks if l is a float
 
     """
-    return (l, numbers.Real)
+    return isinstance(l, numbers.Real)
 
 def is_list_of_int(l):
     r"""Checks if l is a list of integers
@@ -81,7 +81,7 @@ def is_float_array(l):
 
     """
     if isinstance(l, np.ndarray):
-        if l.ndim == 1 and (l.dtype.kind == 'i' or l.dtype.kind == 'u'):
+        if l.ndim == 1 and (l.dtype.kind == 'f'):
             return True
     return False
 
