@@ -92,15 +92,17 @@ class MSM(object):
         method.
 
         """
-        self._dtrajs_full = dtrajs
-        self.tau = lag
+        # TODO: extensive input checking!
+        from pyemma.util.types import ensure_dtraj_list
+        self._dtrajs_full = ensure_dtraj_list(dtrajs)
+        self._tau = lag
 
         self._reversible = reversible
         #self.sliding = sliding
 
         # count states
         import pyemma.msm.estimation as msmest
-        self._n_full = msmest.count_states(dtrajs)
+        self._n_full = msmest.number_of_states(dtrajs)
 
         # sparse matrix computation wanted?
         self._sparse = sparse
@@ -121,8 +123,9 @@ class MSM(object):
 
         # run estimation unless suppressed
         self._computed = False
+        self._kwargs = kwargs
         if compute:
-            self.compute(kwargs)
+            self.compute()
 
         # set time step
         from pyemma.util.units import TimeUnit
@@ -130,24 +133,29 @@ class MSM(object):
 
 
 
-    def compute(self, kwargs):
+    def compute(self):
         r"""Runs msm estimation.
 
         Only need to call this method if the msm was initialized with compute=False - otherwise it will have
         been called at time of initialization.
 
         """
+        # already computed? nothing to do
+        if self._computed:
+            warnings.warn('compute is called twice. This call has no effect.')
+            return
+
         import pyemma.msm.estimation as msmest
 
         # Compute count matrix
-        self._C_full = msmest.count_matrix(self._dtrajs_full, self.tau, sliding=True)
+        self._C_full = msmest.count_matrix(self._dtrajs_full, self._tau, sliding=True)
 
         # Compute connected sets
-        self._connected_sets = msmest.largest_connected_set(self._C_full)
+        self._connected_sets = msmest.connected_sets(self._C_full)
 
         if self.connectivity == 'largest':
             # the largest connected set is the active set. This is at the same time a mapping from active to full
-            self._active_set = self._connected_sets[0]
+            self._active_set = msmest.largest_connected_set(self._C_full)
         else:
             # for 'None' and 'all' all visited states are active
             from pyemma.util.discrete_trajectories import visited_set
@@ -155,7 +163,7 @@ class MSM(object):
 
         # back-mapping from full to lcs
         self._full2active = -1*np.ones((self._n_full), dtype=int)
-        self._full2active[self._active_set] = range(len(self._active_set))
+        self._full2active[self._active_set] = np.array(range(len(self._active_set)), dtype=int)
 
         # active set count matrix
         from pyemma.util.linalg import submatrix
@@ -169,15 +177,18 @@ class MSM(object):
             self._C_full = self._C_full.toarray()
             self._C_active = self._C_active.toarray()
 
+        # Effective count matrix
+        self._C_effective_active = self._C_active / float(self._tau)
+
         # Estimate transition matrix
         if self.connectivity == 'largest':
-            self._T = msmest.transition_matrix(self._C_active, reversible=self._reversible, **kwargs)
+            self._T = msmest.transition_matrix(self._C_active, reversible=self._reversible, **self._kwargs)
         elif self.connectivity == 'none':
             # reversible mode only possible if active set is connected - in this case all visited states are connected
             # and thus this mode is identical to 'largest'
             if self._reversible and not msmest.is_connected(self._C_active):
                 raise ValueError('Reversible MSM estimation is not possible with connectivity mode \'none\', because the set of all visited states is not reversibly connected')
-            self._T = msmest.transition_matrix(self._C_active, reversible=self._reversible, **kwargs)
+            self._T = msmest.transition_matrix(self._C_active, reversible=self._reversible, **self._kwargs)
         else:
             raise NotImplementedError('MSM estimation with connectivity=\'self.connectivity\' is currently not implemented.')
 
@@ -234,7 +245,7 @@ class MSM(object):
         Frames that are not in the connected set will be -1.
 
         """
-        return self._dtrajs_full
+        return self._dtrajs_active
 
     @property
     def lagtime(self):
@@ -242,7 +253,7 @@ class MSM(object):
         The lag time at which the Markov model was estimated
 
         """
-        return self.tau
+        return self._tau
 
     @property
     def count_matrix_active(self):
@@ -264,7 +275,7 @@ class MSM(object):
         return self._C_active
 
     @property
-    def effective_count_matrix_active(self):
+    def effective_count_matrix(self):
         """Statistically uncorrelated transition counts within the active set of states
 
         You can use this count matrix for any kind of estimation, in particular it is mean to give reasonable
@@ -281,7 +292,7 @@ class MSM(object):
 
         """
         self._assert_computed()
-        return self._C_active
+        return self._C_effective_active
 
     @property
     def count_matrix_full(self):
@@ -301,6 +312,24 @@ class MSM(object):
         """
         self._assert_computed()
         return self._C_full
+
+    @property
+    def nstates(self):
+        """
+        The active set of states on which all computations and estimations will be done
+
+        """
+        self._assert_computed()
+        return self._n_active
+
+    @property
+    def active_set(self):
+        """
+        The active set of states on which all computations and estimations will be done
+
+        """
+        self._assert_computed()
+        return self._active_set
 
     @property
     def largest_connected_set(self):
@@ -341,7 +370,7 @@ class MSM(object):
 
         """
         self._assert_computed()
-        return float(self._active_set) / float(self._n_full)
+        return float(self._n_active) / float(self._n_full)
 
     @property
     def active_count_fraction(self):
@@ -387,6 +416,10 @@ class MSM(object):
         from pyemma.msm.analysis import rdl_decomposition
         if self._reversible:
             self._R, self._D, self._L = rdl_decomposition(self._T, k=k, norm='reversible', ncv=ncv)
+            # everything must be real-valued
+            self._R = self._R.real
+            self._D = self._D.real
+            self._L = self._L.real
         else:
             self._R, self._D, self._L = rdl_decomposition(self._T, k=k, norm='normal', ncv=ncv)
         self._eigenvalues = np.diag(self._D)
@@ -425,7 +458,7 @@ class MSM(object):
             self._do_eigendecomposition(k, ncv=ncv)
 
 
-    def get_eigenvalues(self, k = None, ncv = None):
+    def eigenvalues(self, k = None, ncv = None):
         """Compute the transition matrix eigenvalues
 
         Parameters
@@ -447,7 +480,7 @@ class MSM(object):
         return self._eigenvalues[:k]
 
 
-    def get_left_eigenvectors(self, k = None, ncv = None):
+    def eigenvectors_left(self, k = None, ncv = None):
         """Compute the left transition matrix eigenvectors
 
         Parameters
@@ -469,7 +502,7 @@ class MSM(object):
         return self._L[:k,:]
 
 
-    def get_right_eigenvectors(self, k = None, ncv = None):
+    def eigenvectors_right(self, k = None, ncv = None):
         """Compute the right transition matrix eigenvectors
 
         Parameters
@@ -488,10 +521,10 @@ class MSM(object):
 
         """
         self._ensure_eigendecomposition(k = k, ncv = ncv)
-        return self._L[:k,:]
+        return self._R[:,:k]
 
 
-    def get_timescales(self, k = None, ncv = None):
+    def timescales(self, k = None, ncv = None):
         """
         The relaxation timescales corresponding to the eigenvalues
 
@@ -510,10 +543,16 @@ class MSM(object):
             relaxation timescales, defined by :math:`-tau / ln | \lambda_i |, i = 2,...,k+1`.
 
         """
-        self._ensure_eigendecomposition(k = k+1, ncv = ncv)
+        neig = k
+        if (k is not None):
+            neig += 1
+        self._ensure_eigendecomposition(k = neig, ncv = ncv)
         from pyemma.msm.analysis.dense.decomposition import timescales_from_eigenvalues as _timescales
-        ts = _timescales(self._eigenvalues, tau=self.tau)[1:k+1] # exclude the stationary process
-        return ts
+        ts = _timescales(self._eigenvalues, tau=self._tau)
+        if neig is None:
+            return ts[1:]
+        else:
+            return ts[1:neig] # exclude the stationary process
 
 
     def _assert_in_active(self, A):
@@ -541,7 +580,8 @@ class MSM(object):
         self._assert_in_active(A)
         self._assert_in_active(B)
         from pyemma.msm.analysis import mfpt as _mfpt
-        return _mfpt(self._T, B, origin=A, mu=self.stationary_distribution)
+        # scale mfpt by lag time
+        return self._tau * _mfpt(self._T, B, origin=A, mu=self.stationary_distribution)
 
 
     def committor_forward(self, A, B):
@@ -608,14 +648,14 @@ class MSM(object):
         return np.dot(a, self.stationary_distribution)
 
 
-    def correlation(self, a, lag, b=None, k=None, ncv=None):
+    def correlation(self, a, times, b=None, k=None, ncv=None):
         r"""Time-correlation for equilibrium experiment.
 
         Parameters
         ----------
         a : (M,) ndarray
             Observable, represented as vector on state space
-        lag : int or int array
+        times : int or int array
             List of lag time or lag times (in units of the transition matrix lag time tau) at which to compute correlation
         b : (M,) ndarray (optional)
             Second observable, for cross-correlations
@@ -638,23 +678,21 @@ class MSM(object):
         assert np.shape(a)[0] == self._n_active, 'observable vector a does not have the same size like the active set. Need len(a) = '+str(self._n_active)
         if b is not None:
             assert np.shape(b)[0] == self._n_active, 'observable vector b does not have the same size like the active set. Need len(b) = '+str(self._n_active)
-        if isinstance(lag, int):
-            lag = [lag]
+        if isinstance(times, int):
+            times = [times]
         from pyemma.msm.analysis import correlation as _correlation
         # TODO: this could be improved. If we have already done an eigenvalue decomposition, we could provide it.
         # TODO: for this, the correlation function must accept already-available eigenvalue decompositions.
-        return _correlation(self._T, a, obs2=b, times=lag, k = k, ncv = ncv)
+        return _correlation(self._T, a, obs2=b, times=times, k = k, ncv = ncv)
 
 
-    def fingerprint_correlation(self, a, lag, b=None, k=None, ncv=None):
+    def fingerprint_correlation(self, a, b=None, k=None, ncv=None):
         r"""Dynamical fingerprint for equilibrium time-correlation experiment.
 
         Parameters
         ----------
         a : (M,) ndarray
             Observable, represented as vector on state space
-        lag : int or int array
-            List of lag time or lag times (in units of the transition matrix lag time tau) at which to compute correlation
         b : (M,) ndarray (optional)
             Second observable, for cross-correlations
         k : int (optional)
@@ -685,15 +723,13 @@ class MSM(object):
         assert np.shape(a)[0] == self._n_active, 'observable vector a does not have the same size like the active set. Need len(a) = '+str(self._n_active)
         if b is not None:
             assert np.shape(b)[0] == self._n_active, 'observable vector b does not have the same size like the active set. Need len(b) = '+str(self._n_active)
-        if isinstance(lag, int):
-            lag = [lag]
         from pyemma.msm.analysis import fingerprint_correlation as _fc
         # TODO: this could be improved. If we have already done an eigenvalue decomposition, we could provide it.
         # TODO: for this, the correlation function must accept already-available eigenvalue decompositions.
-        return _fc(self._T, a, obs2=b, tau = self.tau, k = k, ncv = ncv)
+        return _fc(self._T, a, obs2=b, tau = self._tau, k = k, ncv = ncv)
 
 
-    def relaxation(self, p0, a, lag, k=None, ncv=None):
+    def relaxation(self, p0, a, times, k=None, ncv=None):
         r"""Relaxation experiment.
 
         The relaxation experiment describes the time-evolution
@@ -706,8 +742,8 @@ class MSM(object):
             Initial distribution for a relaxation experiment
         a : (n,) ndarray
             Observable, represented as vector on state space
-        lag : int or list of int (optional)
-            Times at which to compute expectation
+        times : int or list of int (optional)
+            Time steps (multiples of the transition matrix lag time tau) at which to compute expectation
         k : int (optional)
             Number of eigenvalues and eigenvectors to use for computation
         ncv : int (optional)
@@ -726,12 +762,12 @@ class MSM(object):
         # check input
         assert np.shape(p0)[0] == self._n_active, 'initial distribution p0 does not have the same size like the active set. Need len(p0) = '+str(self._n_active)
         assert np.shape(a)[0] == self._n_active, 'observable vector a does not have the same size like the active set. Need len(a) = '+str(self._n_active)
-        if isinstance(lag, int):
-            lag = [lag]
+        if isinstance(times, int):
+            times = [times]
         from pyemma.msm.analysis import relaxation as _relaxation
         # TODO: this could be improved. If we have already done an eigenvalue decomposition, we could provide it.
         # TODO: for this, the correlation function must accept already-available eigenvalue decompositions.
-        return _relaxation(self._T, p0, a, times=lag, k = k, ncv = ncv)
+        return _relaxation(self._T, p0, a, times=times, k = k, ncv = ncv)
 
 
     def fingerprint_relaxation(self, p0, a, k=None, ncv=None):
@@ -775,7 +811,7 @@ class MSM(object):
         from pyemma.msm.analysis import fingerprint_relaxation as _fr
         # TODO: this could be improved. If we have already done an eigenvalue decomposition, we could provide it.
         # TODO: for this, the correlation function must accept already-available eigenvalue decompositions.
-        return _fr(self._T, p0, a, tau = self.tau, k = k, ncv = ncv)
+        return _fr(self._T, p0, a, tau = self._tau, k = k, ncv = ncv)
 
 
     ################################################################################
@@ -946,13 +982,14 @@ class MSM(object):
 
         """
         # compute stationary distribution, expanded to full set
-        statdist_full = np.zeros[self._n_full]
+        statdist_full = np.zeros([self._n_full])
         statdist_full[self._active_set] = self.stationary_distribution
         # simply read off stationary distribution and accumulate total weight
         W = []
         wtot = 0.0
         for dtraj in self._dtrajs_full:
             w = statdist_full[dtraj]
+            W.append(w)
             wtot += np.sum(W)
         # normalize
         for w in W:
@@ -973,7 +1010,7 @@ class MSM(object):
             return self._active_state_indexes
         except: # didn't exist? then create it.
             import pyemma.util.discrete_trajectories as dt
-            self._active_state_indexes = dt.index_states(self._active_set)
+            self._active_state_indexes = dt.index_states(self._dtrajs_full, subset=self._active_set)
             return self._active_state_indexes
 
     def generate_traj(self, N, start = None, stop = None, stride = 1):
@@ -1052,4 +1089,4 @@ class MSM(object):
         """
         # generate connected state indexes
         import pyemma.util.discrete_trajectories as dt
-        return dt.sample_indexes_by_state(self._active_set, nsample, subset=subset, replace=replace)
+        return dt.sample_indexes_by_state(self.active_state_indexes, nsample, subset=subset, replace=replace)
