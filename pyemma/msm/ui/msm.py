@@ -266,11 +266,11 @@ class MSM(object):
         a factor of tau more counts than are statistically uncorrelated. It's fine to use this matrix for maximum
         likelihood estimated, but it will give far too small errors if you use it for uncertainty calculations. In order
         to do uncertainty calculations, use the effective count matrix, see:
-        :func:`msm.MSM.effective_count_matrix`
+        effective_count_matrix
 
         See Also
         --------
-        :meth:`pyemma.msm.ui.msm.MSM.effective_count_matrix`
+        effective_count_matrix
             For a count matrix with effective (statistically uncorrelated) counts.
 
         """
@@ -304,12 +304,12 @@ class MSM(object):
         Attention: This count matrix has been obtained by sliding a window of length tau across the data. It contains
         a factor of tau more counts than are statistically uncorrelated. It's fine to use this matrix for maximum
         likelihood estimated, but it will give far too small errors if you use it for uncertainty calculations. In order
-        to do uncertainty calculations, use the effective count matrix, see: :func:`pyemma.msm.ui.msm.MSM.effective_count_matrix`
+        to do uncertainty calculations, use the effective count matrix, see: :attribute:`effective_count_matrix`
         (only implemented on the active set), or divide this count matrix by tau.
 
         See Also
         --------
-        :func:`pyemma.msm.ui.msm.MSM.effective_count_matrix`
+        effective_count_matrix
             For a active-set count matrix with effective (statistically uncorrelated) counts.
 
         """
