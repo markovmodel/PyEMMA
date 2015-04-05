@@ -30,37 +30,41 @@ class TimeUnit:
             's',   'second*'
 
         """
-        unit = unit.lower()
-        words = unit.split(' ')
+        lunit = unit.lower()
+        words = lunit.split(' ')
 
 
         if len(words) == 1:
             self._factor = 1.0
-            unit = words[0]
+            unitstring = words[0]
         elif len(words) == 2:
-            self._factor = int(words[0])
-            unit = words[1]
+            self._factor = float(words[0])
+            unitstring = words[1]
         else:
             raise ValueError('Illegal input string: '+str(unit))
 
-        if unit == 'fs' or unit.startswith('femtosecond'):
+        if unitstring == 'step':
+            self._unit = self._UNIT_STEP
+        elif unitstring == 'fs' or unitstring.startswith('femtosecond'):
             self._unit = self._UNIT_FS
-        elif unit == 'ps' or unit.startswith('picosecond'):
+        elif unitstring == 'ps' or unitstring.startswith('picosecond'):
             self._unit = self._UNIT_PS
-        elif unit == 'ns' or unit.startswith('nanosecond'):
+        elif unitstring == 'ns' or unitstring.startswith('nanosecond'):
             self._unit = self._UNIT_NS
-        elif unit == 'us' or unit.startswith('microsecond'):
+        elif unitstring == 'us' or unitstring.startswith('microsecond'):
             self._unit = self._UNIT_US
-        elif unit == 'ms' or unit.startswith('millisecond'):
+        elif unitstring == 'ms' or unitstring.startswith('millisecond'):
             self._unit = self._UNIT_MS
-        elif unit == 's' or unit.startswith('second'):
+        elif unitstring == 's' or unitstring.startswith('second'):
             self._unit = self._UNIT_S
+        else:
+            raise ValueError('Time unit is not understood: '+unit)
 
     def __str__(self):
         if self._unit == -1:
-            return self._factor+' step'
+            return str(self._factor)+' step'
         else:
-            return self._factor+' '+self._unit_names[self._unit]
+            return str(self._factor)+' '+self._unit_names[self._unit]
 
     def rescale_around1(self, times):
         """
