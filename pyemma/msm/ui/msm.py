@@ -17,7 +17,7 @@ from pyemma.util.annotators import shortcut
 from pyemma.coordinates import save_traj
 from pyemma.coordinates import save_trajs
 
-__all__ = ['MSM']
+__all__ = ['MSM','EstimatedMSM']
 
 # TODO - DISCUSS CHANGES:
 # TODO: I removed the option sliding=True because now we force sliding but compute a transition matrix with effective
@@ -32,179 +32,40 @@ __all__ = ['MSM']
 
 class MSM(object):
 
-    def __init__(self, dtrajs, lag,
-                 reversible=True, sparse=False, connectivity='largest', compute=True,
-                 dt = '1 step',
-                 **kwargs):
-        r"""Estimate Markov state model (MSM) from discrete trajectories.
-
-        Parameters
-        ----------
-        dtrajs : list containing ndarrays(dtype=int) or ndarray(n, dtype=int)
-            discrete trajectories, stored as integer ndarrays (arbitrary size)
-            or a single ndarray for only one trajectory.
-        lag : int
-            lagtime for the MSM estimation in multiples of trajectory steps
-        reversible : bool, optional, default = True
-            If true compute reversible MSM, else non-reversible MSM
-        sparse : bool, optional, default = False
-            If true compute count matrix, transition matrix and all derived quantities using sparse matrix algebra.
-            In this case python sparse matrices will be returned by the corresponding functions instead of numpy
-            arrays. This behavior is suggested for very large numbers of states (e.g. > 4000) because it is likely
-            to be much more efficient.
-        connectivity : str, optional, default = 'largest'
-            Connectivity mode. Three methods are intended (currently only 'largest' is implemented)
-            'largest' : The active set is the largest reversibly connected set. All estimation will be done on this
-                subset and all quantities (transition matrix, stationary distribution, etc) are only defined on this
-                subset and are correspondingly smaller than the full set of states
-            'all' : The active set is the full set of states. Estimation will be conducted on each reversibly connected
-                set separately. That means the transition matrix will decompose into disconnected submatrices,
-                the stationary vector is only defined within subsets, etc. Currently not implemented.
-            'none' : The active set is the full set of states. Estimation will be conducted on the full set of states
-                without ensuring connectivity. This only permits nonreversible estimation. Currently not implemented.
-        compute : bool, optional, default=True
-            If true estimate the MSM when creating the MSM object.
-        dt : str, optional, default='1 step'
-            Description of the physical time corresponding to the lag. May be used by analysis algorithms such as
-            plotting tools to pretty-print the axes. By default '1 step', i.e. there is no physical time unit.
-            Specify by a number, whitespace and unit. Permitted units are (* is an arbitrary string):
-            'fs',  'femtosecond*'
-            'ps',  'picosecond*'
-            'ns',  'nanosecond*'
-            'us',  'microsecond*'
-            'ms',  'millisecond*'
-            's',   'second*'
-
-        **kwargs: Optional algorithm-specific parameters. See below for special cases
-        maxiter = 1000000 : int
-            Optional parameter with reversible = True.
-            maximum number of iterations before the transition matrix estimation method exits
-        maxerr = 1e-8 : float
-            Optional parameter with reversible = True.
-            convergence tolerance for transition matrix estimation.
-            This specifies the maximum change of the Euclidean norm of relative
-            stationary probabilities (:math:`x_i = \sum_k x_{ik}`). The relative stationary probability changes
-            :math:`e_i = (x_i^{(1)} - x_i^{(2)})/(x_i^{(1)} + x_i^{(2)})` are used in order to track changes in small
-            probabilities. The Euclidean norm of the change vector, :math:`|e_i|_2`, is compared to maxerr.
-
-        Notes
-        -----
-        You can postpone the estimation of the MSM using compute=False and
-        initiate the estimation procedure by manually calling the MSM.compute()
-        method.
-
-        """
-        # TODO: extensive input checking!
-        from pyemma.util.types import ensure_dtraj_list
-        self._dtrajs_full = ensure_dtraj_list(dtrajs)
-        self._tau = lag
-
-        self._reversible = reversible
-        #self.sliding = sliding
-
-        # count states
+    def __init__(self, T, dt = '1 step'):
+        import pyemma.msm.analysis as msmana
         import pyemma.msm.estimation as msmest
-        self._n_full = msmest.number_of_states(dtrajs)
+        # check input
+        if not msmana.is_transition_matrix(T):
+            raise ValueError('T is not a transition matrix.')
 
-        # sparse matrix computation wanted?
-        self._sparse = sparse
-        if self._n_full > 4000 and not sparse:
-            warnings.warn('Building a dense MSM with '+str(self._n_full)+' states. This can be inefficient or '+
-                          'unfeasible in terms of both runtime and memory consumption. Consider using sparse=True.')
-
-        # store connectivity mode (lowercase)
-        self.connectivity = connectivity.lower()
-        if self.connectivity == 'largest':
-            pass  # this is the current default. no need to do anything
-        elif self.connectivity == 'all':
-            raise NotImplementedError('MSM estimation with connectivity=\'all\' is currently not implemented.')
-        elif self.connectivity == 'none':
-            raise NotImplementedError('MSM estimation with connectivity=\'none\' is currently not implemented.')
-        else:
-            raise ValueError('connectivity mode '+str(connectivity)+' is unknown.')
-
-        # run estimation unless suppressed
-        self._computed = False
-        self._kwargs = kwargs
-        if compute:
-            self.compute()
-
+        # set inputs
+        # set transition matrix
+        self._T = T
+        # nstates
+        self._nstates = np.shape(T)[0]
         # set time step
         from pyemma.util.units import TimeUnit
         self._timeunit = TimeUnit(dt)
 
+        # check connectivity
+        # TODO: abusing C-connectivity test for T. Either provide separate T-connectivity test or move to a central location because it's the same code.
+        if not msmest.is_connected(T):
+            raise NotImplementedError('Transition matrix T is disconnected. This is currently not supported in the MSM object.')
 
-
-    def compute(self):
-        r"""Runs msm estimation.
-
-        Only need to call this method if the msm was initialized with compute=False - otherwise it will have
-        been called at time of initialization.
-
-        """
-        # already computed? nothing to do
-        if self._computed:
-            warnings.warn('compute is called twice. This call has no effect.')
-            return
-
-        import pyemma.msm.estimation as msmest
-
-        # Compute count matrix
-        self._C_full = msmest.count_matrix(self._dtrajs_full, self._tau, sliding=True)
-
-        # Compute connected sets
-        self._connected_sets = msmest.connected_sets(self._C_full)
-
-        if self.connectivity == 'largest':
-            # the largest connected set is the active set. This is at the same time a mapping from active to full
-            self._active_set = msmest.largest_connected_set(self._C_full)
-        else:
-            # for 'None' and 'all' all visited states are active
-            from pyemma.util.discrete_trajectories import visited_set
-            self._active_set = visited_set(self._dtrajs_full)
-
-        # back-mapping from full to lcs
-        self._full2active = -1*np.ones((self._n_full), dtype=int)
-        self._full2active[self._active_set] = np.array(range(len(self._active_set)), dtype=int)
-
-        # active set count matrix
-        from pyemma.util.linalg import submatrix
-        self._C_active = submatrix(self._C_full, self._active_set)
-        self._n_active = self._C_active.shape[0]
-
-        # continue sparse or dense?
-        if not self._sparse:
-            # converting count matrices to arrays. As a result the transition matrix and all subsequent properties
-            # will be computed using dense arrays and dense matrix algebra.
-            self._C_full = self._C_full.toarray()
-            self._C_active = self._C_active.toarray()
-
-        # Effective count matrix
-        self._C_effective_active = self._C_active / float(self._tau)
-
-        # Estimate transition matrix
-        if self.connectivity == 'largest':
-            self._T = msmest.transition_matrix(self._C_active, reversible=self._reversible, **self._kwargs)
-        elif self.connectivity == 'none':
-            # reversible mode only possible if active set is connected - in this case all visited states are connected
-            # and thus this mode is identical to 'largest'
-            if self._reversible and not msmest.is_connected(self._C_active):
-                raise ValueError('Reversible MSM estimation is not possible with connectivity mode \'none\', because the set of all visited states is not reversibly connected')
-            self._T = msmest.transition_matrix(self._C_active, reversible=self._reversible, **self._kwargs)
-        else:
-            raise NotImplementedError('MSM estimation with connectivity=\'self.connectivity\' is currently not implemented.')
-
-        # compute connected dtrajs
-        self._dtrajs_active = []
-        for dtraj in self._dtrajs_full:
-            self._dtrajs_active.append(self._full2active[dtraj])
-
+        # set basic attributes
+        self._reversible = msmana.is_reversible(T)
+        from scipy.sparse import issparse
+        self._sparse = issparse(T)
+        # Since we set T by hand, this object is always computed.
         self._computed = True
-
 
     ################################################################################
     # Basic attributes
     ################################################################################
+
+    def _assert_computed(self):
+        assert self._computed, "MSM hasn't been computed yet, make sure to call MSM.compute()"
 
     @property
     def is_reversible(self):
@@ -218,103 +79,8 @@ class MSM(object):
 
     @property
     def timestep(self):
-        """Returns the time step as string, e.g. '10 ps'"""
+        """Returns the physical time corresponding to one step of the transition matrix as string, e.g. '10 ps'"""
         return str(self._timeunit)
-
-    @property
-    def computed(self):
-        """Returns whether this msm has been estimated yet"""
-        return self._computed
-
-    def _assert_computed(self):
-        assert self._computed, "MSM hasn't been computed yet, make sure to call MSM.compute()"
-
-    @property
-    @shortcut('dtrajs_full')
-    def discrete_trajectories_full(self):
-        """
-        A list of integer arrays with the original (unmapped) discrete trajectories:
-
-        """
-        return self._dtrajs_full
-
-    @property
-    @shortcut('dtrajs_active')
-    def discrete_trajectories_active(self):
-        """
-        A list of integer arrays with the discrete trajectories mapped to the connectivity mode used.
-        For example, for connectivity='largest', the indexes will be given within the connected set.
-        Frames that are not in the connected set will be -1.
-
-        """
-        return self._dtrajs_active
-
-    @property
-    def lagtime(self):
-        """
-        The lag time at which the Markov model was estimated
-
-        """
-        return self._tau
-
-    @property
-    def count_matrix_active(self):
-        """The count matrix on the active set given the connectivity mode used.
-
-        For example, for connectivity='largest', the count matrix is given only on the largest reversibly connected set.
-        Attention: This count matrix has been obtained by sliding a window of length tau across the data. It contains
-        a factor of tau more counts than are statistically uncorrelated. It's fine to use this matrix for maximum
-        likelihood estimated, but it will give far too small errors if you use it for uncertainty calculations. In order
-        to do uncertainty calculations, use the effective count matrix, see:
-        effective_count_matrix
-
-        See Also
-        --------
-        effective_count_matrix
-            For a count matrix with effective (statistically uncorrelated) counts.
-
-        """
-        self._assert_computed()
-        return self._C_active
-
-    @property
-    def effective_count_matrix(self):
-        """Statistically uncorrelated transition counts within the active set of states
-
-        You can use this count matrix for any kind of estimation, in particular it is mean to give reasonable
-        error bars in uncertainty measurements (error perturbation or Gibbs sampling of the posterior).
-
-        The effective count matrix is obtained by dividing the sliding-window count matrix by the lag time. This
-        can be shown to provide a likelihood that is the geometrical average over shifted subsamples of the trajectory,
-        :math:`(s_1,\:s_{tau+1},\:...),\:(s_2,\:t_{tau+2},\:...),` etc. This geometrical average converges to the
-        correct likelihood in the statistical limit _[1].
-
-        [1] Trendelkamp-Schroer B, H Wu, F Paul and F Noe. 2015:
-        Reversible Markov models of molecular kinetics: Estimation and uncertainty.
-        in preparation.
-
-        """
-        self._assert_computed()
-        return self._C_effective_active
-
-    @property
-    def count_matrix_full(self):
-        """
-        The count matrix on full set of discrete states, irrespective as to whether they are connected or not.
-        Attention: This count matrix has been obtained by sliding a window of length tau across the data. It contains
-        a factor of tau more counts than are statistically uncorrelated. It's fine to use this matrix for maximum
-        likelihood estimated, but it will give far too small errors if you use it for uncertainty calculations. In order
-        to do uncertainty calculations, use the effective count matrix, see: :attribute:`effective_count_matrix`
-        (only implemented on the active set), or divide this count matrix by tau.
-
-        See Also
-        --------
-        effective_count_matrix
-            For a active-set count matrix with effective (statistically uncorrelated) counts.
-
-        """
-        self._assert_computed()
-        return self._C_full
 
     @property
     def nstates(self):
@@ -323,34 +89,7 @@ class MSM(object):
 
         """
         self._assert_computed()
-        return self._n_active
-
-    @property
-    def active_set(self):
-        """
-        The active set of states on which all computations and estimations will be done
-
-        """
-        self._assert_computed()
-        return self._active_set
-
-    @property
-    def largest_connected_set(self):
-        """
-        The largest reversible connected set of states
-
-        """
-        self._assert_computed()
-        return self._connected_sets[0]
-
-    @property
-    def connected_sets(self):
-        """
-        The reversible connected sets of states, sorted by size (descending)
-
-        """
-        self._assert_computed()
-        return self._connected_sets
+        return self._nstates
 
     @property
     def transition_matrix(self):
@@ -362,29 +101,9 @@ class MSM(object):
         self._assert_computed()
         return self._T
 
-
     ################################################################################
     # Compute derived quantities
     ################################################################################
-
-    @property
-    def active_state_fraction(self):
-        """The fraction of states in the active set.
-
-        """
-        self._assert_computed()
-        return float(self._n_active) / float(self._n_full)
-
-    @property
-    def active_count_fraction(self):
-        """The fraction of counts in the active set.
-
-        """
-        self._assert_computed()
-        from pyemma.util.discrete_trajectories import count_states
-        hist = count_states(self._dtrajs_full)
-        hist_active = hist[self._active_set]
-        return float(np.sum(hist_active)) / float(np.sum(hist))
 
     @property
     def stationary_distribution(self):
@@ -449,7 +168,7 @@ class MSM(object):
                 raise ValueError('You have requested sparse=True, then the number of eigenvalues neig must also be set.')
         else:
             # override setting - we anyway have to compute all eigenvalues, so we'll also store them.
-            k = self._n_active
+            k = self._nstates
         # ensure that eigenvalue decomposition with k components is done.
         try:
             m = len(self._eigenvalues) # this will raise and exception if self._eigenvalues doesn't exist yet.
@@ -557,7 +276,6 @@ class MSM(object):
         else:
             return ts[1:neig] # exclude the stationary process
 
-
     def _assert_in_active(self, A):
         """
         Checks if set A is within the active set
@@ -567,7 +285,7 @@ class MSM(object):
         A : int or int array
             set of states
         """
-        assert np.max(A) < self._n_active, 'Chosen set contains states that are not included in the active set.'
+        assert np.max(A) < self._nstates, 'Chosen set contains states that are not included in the active set.'
 
     def mfpt(self, A, B):
         """Mean first passage times from set A to set B
@@ -647,7 +365,7 @@ class MSM(object):
         # are we ready?
         self._assert_computed()
         # check input
-        assert np.shape(a)[0] == self._n_active, 'observable vector a does not have the same size like the active set. Need len(a) = '+str(self._n_active)
+        assert np.shape(a)[0] == self._nstates, 'observable vector a does not have the same size like the active set. Need len(a) = '+str(self._nstates)
         return np.dot(a, self.stationary_distribution)
 
 
@@ -678,9 +396,9 @@ class MSM(object):
         # are we ready?
         self._assert_computed()
         # check input
-        assert np.shape(a)[0] == self._n_active, 'observable vector a does not have the same size like the active set. Need len(a) = '+str(self._n_active)
+        assert np.shape(a)[0] == self._nstates, 'observable vector a does not have the same size like the active set. Need len(a) = '+str(self._nstates)
         if b is not None:
-            assert np.shape(b)[0] == self._n_active, 'observable vector b does not have the same size like the active set. Need len(b) = '+str(self._n_active)
+            assert np.shape(b)[0] == self._nstates, 'observable vector b does not have the same size like the active set. Need len(b) = '+str(self._nstates)
         if isinstance(times, int):
             times = [times]
         from pyemma.msm.analysis import correlation as _correlation
@@ -723,9 +441,9 @@ class MSM(object):
         # are we ready?
         self._assert_computed()
         # check input
-        assert np.shape(a)[0] == self._n_active, 'observable vector a does not have the same size like the active set. Need len(a) = '+str(self._n_active)
+        assert np.shape(a)[0] == self._nstates, 'observable vector a does not have the same size like the active set. Need len(a) = '+str(self._nstates)
         if b is not None:
-            assert np.shape(b)[0] == self._n_active, 'observable vector b does not have the same size like the active set. Need len(b) = '+str(self._n_active)
+            assert np.shape(b)[0] == self._nstates, 'observable vector b does not have the same size like the active set. Need len(b) = '+str(self._nstates)
         from pyemma.msm.analysis import fingerprint_correlation as _fc
         # TODO: this could be improved. If we have already done an eigenvalue decomposition, we could provide it.
         # TODO: for this, the correlation function must accept already-available eigenvalue decompositions.
@@ -763,8 +481,8 @@ class MSM(object):
         # are we ready?
         self._assert_computed()
         # check input
-        assert np.shape(p0)[0] == self._n_active, 'initial distribution p0 does not have the same size like the active set. Need len(p0) = '+str(self._n_active)
-        assert np.shape(a)[0] == self._n_active, 'observable vector a does not have the same size like the active set. Need len(a) = '+str(self._n_active)
+        assert np.shape(p0)[0] == self._nstates, 'initial distribution p0 does not have the same size like the active set. Need len(p0) = '+str(self._nstates)
+        assert np.shape(a)[0] == self._nstates, 'observable vector a does not have the same size like the active set. Need len(a) = '+str(self._nstates)
         if isinstance(times, int):
             times = [times]
         from pyemma.msm.analysis import relaxation as _relaxation
@@ -809,8 +527,8 @@ class MSM(object):
         # are we ready?
         self._assert_computed()
         # check input
-        assert np.shape(p0)[0] == self._n_active, 'initial distribution p0 does not have the same size like the active set. Need len(p0) = '+str(self._n_active)
-        assert np.shape(a)[0] == self._n_active, 'observable vector a does not have the same size like the active set. Need len(a) = '+str(self._n_active)
+        assert np.shape(p0)[0] == self._nstates, 'initial distribution p0 does not have the same size like the active set. Need len(p0) = '+str(self._nstates)
+        assert np.shape(a)[0] == self._nstates, 'observable vector a does not have the same size like the active set. Need len(a) = '+str(self._nstates)
         from pyemma.msm.analysis import fingerprint_relaxation as _fr
         # TODO: this could be improved. If we have already done an eigenvalue decomposition, we could provide it.
         # TODO: for this, the correlation function must accept already-available eigenvalue decompositions.
@@ -947,6 +665,324 @@ class MSM(object):
         self._assert_computed()
         self._ensure_pcca(m)
         return self.pcca.metastable_assignment
+
+
+class EstimatedMSM(MSM):
+
+    def __init__(self, dtrajs, lag,
+                 reversible=True, sparse=False, connectivity='largest', compute=True,
+                 dt = '1 step',
+                 **kwargs):
+        r"""Estimate Markov state model (MSM) from discrete trajectories.
+
+        Parameters
+        ----------
+        dtrajs : list containing ndarrays(dtype=int) or ndarray(n, dtype=int)
+            discrete trajectories, stored as integer ndarrays (arbitrary size)
+            or a single ndarray for only one trajectory.
+        lag : int
+            lagtime for the MSM estimation in multiples of trajectory steps
+        reversible : bool, optional, default = True
+            If true compute reversible MSM, else non-reversible MSM
+        sparse : bool, optional, default = False
+            If true compute count matrix, transition matrix and all derived quantities using sparse matrix algebra.
+            In this case python sparse matrices will be returned by the corresponding functions instead of numpy
+            arrays. This behavior is suggested for very large numbers of states (e.g. > 4000) because it is likely
+            to be much more efficient.
+        connectivity : str, optional, default = 'largest'
+            Connectivity mode. Three methods are intended (currently only 'largest' is implemented)
+            'largest' : The active set is the largest reversibly connected set. All estimation will be done on this
+                subset and all quantities (transition matrix, stationary distribution, etc) are only defined on this
+                subset and are correspondingly smaller than the full set of states
+            'all' : The active set is the full set of states. Estimation will be conducted on each reversibly connected
+                set separately. That means the transition matrix will decompose into disconnected submatrices,
+                the stationary vector is only defined within subsets, etc. Currently not implemented.
+            'none' : The active set is the full set of states. Estimation will be conducted on the full set of states
+                without ensuring connectivity. This only permits nonreversible estimation. Currently not implemented.
+        compute : bool, optional, default=True
+            If true estimate the MSM when creating the MSM object.
+        dt : str, optional, default='1 step'
+            Description of the physical time corresponding to the lag. May be used by analysis algorithms such as
+            plotting tools to pretty-print the axes. By default '1 step', i.e. there is no physical time unit.
+            Specify by a number, whitespace and unit. Permitted units are (* is an arbitrary string):
+            'fs',  'femtosecond*'
+            'ps',  'picosecond*'
+            'ns',  'nanosecond*'
+            'us',  'microsecond*'
+            'ms',  'millisecond*'
+            's',   'second*'
+
+        **kwargs: Optional algorithm-specific parameters. See below for special cases
+        maxiter = 1000000 : int
+            Optional parameter with reversible = True.
+            maximum number of iterations before the transition matrix estimation method exits
+        maxerr = 1e-8 : float
+            Optional parameter with reversible = True.
+            convergence tolerance for transition matrix estimation.
+            This specifies the maximum change of the Euclidean norm of relative
+            stationary probabilities (:math:`x_i = \sum_k x_{ik}`). The relative stationary probability changes
+            :math:`e_i = (x_i^{(1)} - x_i^{(2)})/(x_i^{(1)} + x_i^{(2)})` are used in order to track changes in small
+            probabilities. The Euclidean norm of the change vector, :math:`|e_i|_2`, is compared to maxerr.
+
+        Notes
+        -----
+        You can postpone the estimation of the MSM using compute=False and
+        initiate the estimation procedure by manually calling the MSM.compute()
+        method.
+
+        """
+        # TODO: extensive input checking!
+        from pyemma.util.types import ensure_dtraj_list
+        self._dtrajs_full = ensure_dtraj_list(dtrajs)
+        self._tau = lag
+
+        self._reversible = reversible
+        #self.sliding = sliding
+
+        # count states
+        import pyemma.msm.estimation as msmest
+        self._n_full = msmest.number_of_states(dtrajs)
+
+        # sparse matrix computation wanted?
+        self._sparse = sparse
+        if self._n_full > 4000 and not sparse:
+            warnings.warn('Building a dense MSM with '+str(self._n_full)+' states. This can be inefficient or '+
+                          'unfeasible in terms of both runtime and memory consumption. Consider using sparse=True.')
+
+        # store connectivity mode (lowercase)
+        self.connectivity = connectivity.lower()
+        if self.connectivity == 'largest':
+            pass  # this is the current default. no need to do anything
+        elif self.connectivity == 'all':
+            raise NotImplementedError('MSM estimation with connectivity=\'all\' is currently not implemented.')
+        elif self.connectivity == 'none':
+            raise NotImplementedError('MSM estimation with connectivity=\'none\' is currently not implemented.')
+        else:
+            raise ValueError('connectivity mode '+str(connectivity)+' is unknown.')
+
+        # run estimation unless suppressed
+        self._computed = False
+        self._kwargs = kwargs
+        if compute:
+            self.compute()
+
+        # set time step
+        from pyemma.util.units import TimeUnit
+        self._timeunit = TimeUnit(dt)
+
+    def compute(self):
+        r"""Runs msm estimation.
+
+        Only need to call this method if the msm was initialized with compute=False - otherwise it will have
+        been called at time of initialization.
+
+        """
+        # already computed? nothing to do
+        if self._computed:
+            warnings.warn('compute is called twice. This call has no effect.')
+            return
+
+        import pyemma.msm.estimation as msmest
+
+        # Compute count matrix
+        self._C_full = msmest.count_matrix(self._dtrajs_full, self._tau, sliding=True)
+
+        # Compute connected sets
+        self._connected_sets = msmest.connected_sets(self._C_full)
+
+        if self.connectivity == 'largest':
+            # the largest connected set is the active set. This is at the same time a mapping from active to full
+            self._active_set = msmest.largest_connected_set(self._C_full)
+        else:
+            # for 'None' and 'all' all visited states are active
+            from pyemma.util.discrete_trajectories import visited_set
+            self._active_set = visited_set(self._dtrajs_full)
+
+        # back-mapping from full to lcs
+        self._full2active = -1*np.ones((self._n_full), dtype=int)
+        self._full2active[self._active_set] = np.array(range(len(self._active_set)), dtype=int)
+
+        # active set count matrix
+        from pyemma.util.linalg import submatrix
+        self._C_active = submatrix(self._C_full, self._active_set)
+        self._nstates = self._C_active.shape[0]
+
+        # continue sparse or dense?
+        if not self._sparse:
+            # converting count matrices to arrays. As a result the transition matrix and all subsequent properties
+            # will be computed using dense arrays and dense matrix algebra.
+            self._C_full = self._C_full.toarray()
+            self._C_active = self._C_active.toarray()
+
+        # Effective count matrix
+        self._C_effective_active = self._C_active / float(self._tau)
+
+        # Estimate transition matrix
+        if self.connectivity == 'largest':
+            self._T = msmest.transition_matrix(self._C_active, reversible=self._reversible, **self._kwargs)
+        elif self.connectivity == 'none':
+            # reversible mode only possible if active set is connected - in this case all visited states are connected
+            # and thus this mode is identical to 'largest'
+            if self._reversible and not msmest.is_connected(self._C_active):
+                raise ValueError('Reversible MSM estimation is not possible with connectivity mode \'none\', because the set of all visited states is not reversibly connected')
+            self._T = msmest.transition_matrix(self._C_active, reversible=self._reversible, **self._kwargs)
+        else:
+            raise NotImplementedError('MSM estimation with connectivity=\'self.connectivity\' is currently not implemented.')
+
+        # compute connected dtrajs
+        self._dtrajs_active = []
+        for dtraj in self._dtrajs_full:
+            self._dtrajs_active.append(self._full2active[dtraj])
+
+        self._computed = True
+
+
+    ################################################################################
+    # Basic attributes
+    ################################################################################
+
+    @property
+    def computed(self):
+        """Returns whether this msm has been estimated yet"""
+        return self._computed
+
+    @property
+    def lagtime(self):
+        """
+        The lag time at which the Markov model was estimated
+
+        """
+        return self._tau
+
+    @property
+    @shortcut('dtrajs_full')
+    def discrete_trajectories_full(self):
+        """
+        A list of integer arrays with the original (unmapped) discrete trajectories:
+
+        """
+        return self._dtrajs_full
+
+    @property
+    @shortcut('dtrajs_active')
+    def discrete_trajectories_active(self):
+        """
+        A list of integer arrays with the discrete trajectories mapped to the connectivity mode used.
+        For example, for connectivity='largest', the indexes will be given within the connected set.
+        Frames that are not in the connected set will be -1.
+
+        """
+        return self._dtrajs_active
+
+    @property
+    def count_matrix_active(self):
+        """The count matrix on the active set given the connectivity mode used.
+
+        For example, for connectivity='largest', the count matrix is given only on the largest reversibly connected set.
+        Attention: This count matrix has been obtained by sliding a window of length tau across the data. It contains
+        a factor of tau more counts than are statistically uncorrelated. It's fine to use this matrix for maximum
+        likelihood estimated, but it will give far too small errors if you use it for uncertainty calculations. In order
+        to do uncertainty calculations, use the effective count matrix, see:
+        effective_count_matrix
+
+        See Also
+        --------
+        effective_count_matrix
+            For a count matrix with effective (statistically uncorrelated) counts.
+
+        """
+        self._assert_computed()
+        return self._C_active
+
+    @property
+    def effective_count_matrix(self):
+        """Statistically uncorrelated transition counts within the active set of states
+
+        You can use this count matrix for any kind of estimation, in particular it is mean to give reasonable
+        error bars in uncertainty measurements (error perturbation or Gibbs sampling of the posterior).
+
+        The effective count matrix is obtained by dividing the sliding-window count matrix by the lag time. This
+        can be shown to provide a likelihood that is the geometrical average over shifted subsamples of the trajectory,
+        :math:`(s_1,\:s_{tau+1},\:...),\:(s_2,\:t_{tau+2},\:...),` etc. This geometrical average converges to the
+        correct likelihood in the statistical limit _[1].
+
+        [1] Trendelkamp-Schroer B, H Wu, F Paul and F Noe. 2015:
+        Reversible Markov models of molecular kinetics: Estimation and uncertainty.
+        in preparation.
+
+        """
+        self._assert_computed()
+        return self._C_effective_active
+
+    @property
+    def count_matrix_full(self):
+        """
+        The count matrix on full set of discrete states, irrespective as to whether they are connected or not.
+        Attention: This count matrix has been obtained by sliding a window of length tau across the data. It contains
+        a factor of tau more counts than are statistically uncorrelated. It's fine to use this matrix for maximum
+        likelihood estimated, but it will give far too small errors if you use it for uncertainty calculations. In order
+        to do uncertainty calculations, use the effective count matrix, see: :attribute:`effective_count_matrix`
+        (only implemented on the active set), or divide this count matrix by tau.
+
+        See Also
+        --------
+        effective_count_matrix
+            For a active-set count matrix with effective (statistically uncorrelated) counts.
+
+        """
+        self._assert_computed()
+        return self._C_full
+
+    @property
+    def active_set(self):
+        """
+        The active set of states on which all computations and estimations will be done
+
+        """
+        self._assert_computed()
+        return self._active_set
+
+    @property
+    def largest_connected_set(self):
+        """
+        The largest reversible connected set of states
+
+        """
+        self._assert_computed()
+        return self._connected_sets[0]
+
+    @property
+    def connected_sets(self):
+        """
+        The reversible connected sets of states, sorted by size (descending)
+
+        """
+        self._assert_computed()
+        return self._connected_sets
+
+
+    ################################################################################
+    # Compute derived quantities
+    ################################################################################
+
+    @property
+    def active_state_fraction(self):
+        """The fraction of states in the active set.
+
+        """
+        self._assert_computed()
+        return float(self._nstates) / float(self._n_full)
+
+    @property
+    def active_count_fraction(self):
+        """The fraction of counts in the active set.
+
+        """
+        self._assert_computed()
+        from pyemma.util.discrete_trajectories import count_states
+        hist = count_states(self._dtrajs_full)
+        hist_active = hist[self._active_set]
+        return float(np.sum(hist_active)) / float(np.sum(hist))
 
 
     ################################################################################
