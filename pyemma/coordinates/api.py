@@ -451,13 +451,11 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None, inmemo
 
     # This implementation looks for "i_indexes" separately, and thus one traj_inp.trajfile 
     # might be accessed more than once (less memory intensive)
-    # TODO: provide an option to look for all frames in "indexes" simultaneously, and sort into outfiles 
-    # aftwerwards (much more memory intensive, but more efficient)
     if not inmemory:
        for i_indexes, outfile in izip(indexes, outfiles):
            # TODO: use kwargs** to parse to save_traj
            save_traj(traj_inp, i_indexes, outfile)
-
+    # This implementation is "one file - one pass" but might temporally create huge memory objects 
     else:
        traj = save_traj(traj_inp, indexes, outfile=None)
        i_idx = 0
