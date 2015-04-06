@@ -354,8 +354,6 @@ def memory_reader(data):
     return _DataInMemory(data)
 
 
-#TODO: Is the result of coordinates.input the correct object here, or should we rather extract a separate loader class
-# that is not featurized?
 def save_traj(traj_inp, indexes, outfile):
 
     r"""Saves a selected sequence of frames as a trajectory
@@ -382,7 +380,7 @@ def save_traj(traj_inp, indexes, outfile):
     """
 
     import numpy as np
-    import itertools
+    from itertools import islice
 
     # Convert to index (T,2) array if parsed a list or a list of lists
     indexes = np.vstack(indexes)
@@ -398,7 +396,7 @@ def save_traj(traj_inp, indexes, outfile):
         frames = indexes[file_pos == ii, 1]
         # Store the trajectory object that comes out of _frames_from_file
         #  directly as an iterator in trajectory_iterator_list
-        trajectory_iterator_list.append(itertools.islice(_frames_from_file(traj_inp.trajfiles[ff], traj_inp.topfile, frames,chunksize=traj_inp.chunksize, verbose = False), None))
+        trajectory_iterator_list.append(islice(_frames_from_file(traj_inp.trajfiles[ff], traj_inp.topfile, frames,chunksize=traj_inp.chunksize, verbose = False), None))
 
     # Iterate directly over the index of files and pick the trajectory that you need from the iterator list
     traj = None
@@ -417,10 +415,10 @@ def save_traj(traj_inp, indexes, outfile):
     else:
         traj.save(outfile)
 
-#TODO: DISCUSS - Is the result of coordinates.input the correct object here, or should we rather extract a separate loader class
-# that is not featurized?
-#TODO: please implement
-def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None):
+    logger.info("Created file %s"%outfile)
+
+
+def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None, inmemory = False):
     r"""Saves selected sequences of frames as trajectories
 
     Extracts a number of specified sequences of time/trajectory indexes from the input loader
@@ -447,14 +445,61 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None):
     outfiles : list of str, optional, default = None
         A list of output file names. When given, this will override the settings of prefix and fmt, and output
         will be written to these files
-
+    inmemory : Boolean, default = False (untested for large files)
+        Instead of internally calling traj_save for every (T_i,2) array in "indexes", only one call is made. Internally,
+        this generates a potentially large molecular trajectory object in memory that is subsequently sliced into the
+        files of "outfiles". Should be faster for large "indexes" arrays and large files, though it is quite memory intensive.
+        The optimal situation is to avoid streaming two times through a huge file for "indexes" of type:
+        indexes = [
+                   [1 4000000],
+                   [1 4000001]
+                  ]
+        
     Returns:
     --------
     outfiles : list of str
         The list of absolute paths that the output files have been written to.
 
     """
-    needed_files = np.unique(indexes[:,0])
+    from itertools import izip
+    # Make sure indexes is a list
+    if not isinstance(indexes, list):
+       indexes = [indexes]
+    
+    # Determine output format of the molecular trajectory file
+    if fmt is None:
+        import os
+        _, fmt = os.path.splitext(traj_inp.trajfiles[0])
+
+    # Prepare the list of outfiles before the loop
+    if outfiles is None:   
+       outfiles=[]
+       for ii in xrange(len(indexes)):
+           outfiles.append(prefix+'%06u'%ii+fmt)
+   
+    # Check that we have the same name of outfiles as (T, 2)-indexes arrays
+    if len(indexes) != len(outfiles):
+       raise Exception('len(indexes) (%s) does not match len(outfiles) (%s)'%(len(indexes), len(outfiles)))
+
+    # This implementation looks for "i_indexes" separately, and thus one traj_inp.trajfile 
+    # might be accessed more than once (less memory intensive)
+    if not inmemory:
+       for i_indexes, outfile in izip(indexes, outfiles):
+           # TODO: use kwargs** to parse to save_traj
+           save_traj(traj_inp, i_indexes, outfile)
+    # This implementation is "one file - one pass" but might temporally create huge memory objects 
+    else:
+       traj = save_traj(traj_inp, indexes, outfile=None)
+       i_idx = 0
+       for i_indexes, outfile in izip(indexes, outfiles):
+           # Create indices for slicing the mdtraj trajectory object
+           f_idx = i_idx + len(i_indexes)
+           i_idx = f_idx
+           
+           traj[i_idx:f_idx].save(outfile)
+           logger.info("Created file %s"%outfile)
+
+    return outfiles
 
 
 #=========================================================================
