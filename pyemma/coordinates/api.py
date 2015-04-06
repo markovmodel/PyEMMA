@@ -5,11 +5,12 @@ r"""User-API for the pyemma.coordinates package
 
 __docformat__ = "restructuredtext en"
 
+import numpy as np
 
 from pyemma.util.annotators import deprecated
 from pyemma.util.log import getLogger
 
-from pyemma.coordinates.pipeline import Discretizer as _Discretizer
+from pyemma.coordinates.pipelines import Discretizer as _Discretizer
 # io
 from io.featurizer import MDFeaturizer as _MDFeaturizer
 from io.feature_reader import FeatureReader as _FeatureReader
@@ -35,19 +36,25 @@ __version__ = "2.0.0"
 __maintainer__ = "Martin Scherer"
 __email__ = "m.scherer AT fu-berlin DOT de"
 
-__all__ = ['discretizer',
+__all__ = [# IO
            'featurizer',
-           'feature_reader',
-           'memory_reader',
-           'tica',
+           'load',
+           'input',
+           'pipeline',
+           'discretizer',
+           'save_traj',
+           'save_trajs',
+           # transform
            'pca',
+           'tica',
+           # cluster
            'cluster_regspace',
            'cluster_kmeans',
            'cluster_uniform_time',
            'cluster_assign_centers',
-           'save_traj',
-           'save_trajs',
            # deprecated:
+           'feature_reader',
+           'memory_reader',
            'kmeans',
            'regspace',
            'assign_centers',
@@ -55,65 +62,33 @@ __all__ = ['discretizer',
            ]
 
 
-def discretizer(reader,
-                transform=None,
-                cluster=None):
-    """
-    Constructs a discretizer object, which processes all data
-
-
-    Parameters
-    ----------
-
-    reader : instance of :class:`pyemma.coordinates.io.reader.ChunkedReader`
-        the reader instance provides access to the data. If you are working with
-        MD data, you most likely want to use a FeatureReader.
-
-    transform : instance of Transformer
-        an optional transform like PCA/TICA etc.
-
-    cluster : instance of clustering Transformer (optional)
-        a cluster algorithm to assign transformed data to discrete states.
-
-
-    Examples
-    --------
-
-    Construct a discretizer pipeline processing all coordinates of trajectory 
-    "traj01.xtc" with a PCA transformation and cluster the principle components
-    with uniform time clustering:
-
-    >>> reader = feature_reader('traj01.xtc', 'topology.pdb')
-    >>> transform = pca(dim=2)
-    >>> cluster = uniform_time(n_clusters=100)
-    >>> disc = discretizer(reader, transform, cluster)
-
-    Finally you want to run the pipeline
-    >>> disc.parametrize()
-
-
-    Access the the discrete trajectories and saving them to files:
-
-    >>> disc.dtrajs
-    [array([0, 0, 1, 1, 2, ... ])]
-
-    This will store the discrete trajectory to "traj01.dtraj":
-
-    >>> disc.save_dtrajs()
-
-    """
-    if cluster is None:
-        logger.warning('You did not specify a cluster algorithm.'
-                       ' Defaulting to kmeans(k=100)')
-        cluster = _KmeansClustering(n_clusters=100)
-    return _Discretizer(reader, transform, cluster)
-
 
 #==============================================================================
 #
 # DATA PROCESSING
 #
 #==============================================================================
+
+
+def featurizer(topfile):
+    """ Constructs a MDFeaturizer to select and add coordinates or features from MD data.
+
+    Parameters
+    ----------
+    topfile : str
+        path to topology file (e.g pdb file)
+
+    Returns
+    -------
+    feat : :py:class:`io.MDFeaturizer`
+
+    See also
+    --------
+    pyemma.coordinates.io.MDFeaturizer
+        Featurizer object
+
+    """
+    return _MDFeaturizer(topfile)
 
 
 #TODO: DOC - which topology file formats does mdtraj support? Find out and complete docstring
@@ -171,7 +146,7 @@ def load(trajfiles, featurizer=None, topology=None, stride=1):
 
     See also
     --------
-    :py:func:`pipeline` : if your memory is not big enough, use pipeline to process it in a streaming manner
+    :func:`pyemma.coordinates.pipeline` : if your memory is not big enough, use pipeline to process it in a streaming manner
 
     """
     pass
@@ -179,7 +154,7 @@ def load(trajfiles, featurizer=None, topology=None, stride=1):
 
 def input(input, featurizer=None, topology=None):
     """ Wraps the input for stream-based processing. Do this to construct the first stage of a data processing
-        :py:func:`pipeline`.
+        :func:`pipeline`.
 
     Parameters
     ----------
@@ -210,7 +185,7 @@ def input(input, featurizer=None, topology=None):
 
     See also
     --------
-    :py:func:`pipeline` : The data input is the first stage for your pipeline. Add other stages to it and build a pipeline
+    :func:`pyemma.coordinates.pipeline` : The data input is the first stage for your pipeline. Add other stages to it and build a pipeline
         to analyze big data in streaming mode.
 
     """
@@ -258,21 +233,65 @@ def pipeline(stages, run=True, param_stride=1):
 
     Returns
     -------
-    pipe : :py:class:pyemma.coordinates.pipeline.Pipeline
+    pipe : :func:`pyemma.coordinates.pipeline`
         A pipeline object that is able to conduct big data analysis with limited memory in streaming mode.
 
     """
     pass
 
-def featurizer(topfile):
-    """ Constructs a MDFeaturizer to select and add coordinates or features from MD data.
+def discretizer(reader,
+                transform=None,
+                cluster=None):
+    """
+    Constructs a discretizer: a specialized processing pipeline from MD trajectories to a cluster discretization
+
 
     Parameters
     ----------
-    topfile : str
-        path to topology file (e.g pdb file)
+
+    reader : instance of :class:`pyemma.coordinates.io.reader.ChunkedReader`
+        the reader instance provides access to the data. If you are working with
+        MD data, you most likely want to use a FeatureReader.
+
+    transform : instance of Transformer
+        an optional transform like PCA/TICA etc.
+
+    cluster : instance of clustering Transformer (optional)
+        a cluster algorithm to assign transformed data to discrete states.
+
+
+    Examples
+    --------
+
+    Construct a discretizer pipeline processing all coordinates of trajectory
+    "traj01.xtc" with a PCA transformation and cluster the principal components
+    with uniform time clustering:
+
+    >>> reader = feature_reader('traj01.xtc', 'topology.pdb')
+    >>> transform = pca(dim=2)
+    >>> cluster = uniform_time(n_clusters=100)
+    >>> disc = discretizer(reader, transform, cluster)
+
+    Finally you want to run the pipeline
+    >>> disc.parametrize()
+
+
+    Access the the discrete trajectories and saving them to files:
+
+    >>> disc.dtrajs
+    [array([0, 0, 1, 1, 2, ... ])]
+
+    This will store the discrete trajectory to "traj01.dtraj":
+
+    >>> disc.save_dtrajs()
+
     """
-    return _MDFeaturizer(topfile)
+    if cluster is None:
+        logger.warning('You did not specify a cluster algorithm.'
+                       ' Defaulting to kmeans(k=100)')
+        cluster = _KmeansClustering(n_clusters=100)
+    return _Discretizer(reader, transform, cluster)
+
 
 
 # TODO: I think we might not need this anymore. Should we deprecate this? What do the pipeline-people think?
@@ -295,6 +314,11 @@ def feature_reader(trajfiles, topfile):
     Notes
     -----
     To select features refer to the documentation of the :class:`io.featurizer.MDFeaturizer`
+
+    See also
+    --------
+    pyemma.coordinates.io.FeatureReader
+        Reader object
 
     Examples
     --------
@@ -320,6 +344,11 @@ def memory_reader(data):
     Returns
     -------
     obj : :class:`DataInMemory`
+
+    See also
+    --------
+    pyemma.coordinates.io.DataInMemory
+        Reader object
 
     """
     return _DataInMemory(data)
@@ -436,21 +465,69 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None):
 
 
 def pca(data=None, dim=2):
-    r"""Constructs a PCA object.
+    r"""Principal Component Analysis (PCA).
+
+    PCA is a linear transformation method that finds coordinates of maximal variance.
+    A linear projection onto the principal components thus makes a minimal error in terms
+    of variation in the data. Note, however, that this method is not optimal
+    for Markov model construction because for that purpose the main objective is to
+    preserve the slow processes which can sometimes be associated with small variance.
+
+    Estimates a PCA transformation from data. When input data is given as an
+    argument, the estimation will be carried out right away, and the resulting
+    object can be used to obtain eigenvalues, eigenvectors or project input data
+    onto the principal components. If data is not given, this object is an
+    empty estimator and can be put into a :func:`pipeline` in order to use PCA
+    in streaming mode.
 
     Parameters
     ----------
 
-    data : ndarray (N, d)
-        with the data, if available. When given, the PCA is
-        immediately parametrized.
+    data : ndarray (T, d) or list of ndarray (T_i, d)
+        data array or list of data arrays. T or T_i are the number of time steps in a
+        trajectory. When data is given, the PCA is immediately parametrized by estimating
+        the covariance matrix and computing its eigenvectors.
 
     dim : int
-        the number of dimensions to project onto
+        the number of dimensions (principal components) to project onto. A call to the
+        :func:`map <pyemma.coordinates.transform.PCA.map>` function reduces the d-dimensional
+        input to only dim dimensions such that the data preserves the maximum possible variance
+        amonst dim-dimensional linear projections.
 
     Returns
     -------
-    obj : a PCA transformation object
+    obj : a :class:`PCA <pyemma.coordinates.transform.PCA>` transformation object
+
+    Notes
+    -----
+    Given a sequence of multivariate data :math:`X_t`,
+    computes the mean-free covariance matrix.
+
+    .. math:: C = (X - \mu)^T (X - \mu)
+
+    and solves the eigenvalue problem
+
+    .. math:: C r_i = \sigma_i r_i,
+
+    where :math:`r_i` are the principal components and :math:`\sigma_i` are
+    their respective variances.
+
+    When used as a dimension reduction method, the input data is projected onto
+    the dominant principal components.
+
+    See `Wiki page <http://en.wikipedia.org/wiki/Principal_component_analysis>`_ for more theory and references.
+
+    See also
+    --------
+    tica
+        for time-lagged independent component analysis
+
+    References
+    ----------
+    .. [1] Hotelling, H. 1933.
+        Analysis of a complex of statistical variables into principal components.
+        J. Edu. Psych. 24, 417-441 and 498-520.
+
     """
     res = _PCA(dim)
     if data is not None:
@@ -463,6 +540,22 @@ def pca(data=None, dim=2):
 def tica(data=None, lag=10, dim=2, force_eigenvalues_le_one=False):
     r"""Time-lagged independent component analysis (TICA).
 
+    TICA is a linear transformation method. In contrast to PCA that finds
+    coordinates of maximal variance, TICA finds coordinates of maximal autocorrelation
+    at the given lag time. Thus, TICA is useful to find the *slow* components
+    in a dataset and thus an excellent choice to transform molecular dynamics
+    data before clustering data for the construction of a Markov model.
+    When the input data is the result of a Markov process (such as thermostatted
+    molecular dynamics), TICA finds in fact an approximation to the eigenfunctions and
+    eigenvalues of the underlying Markov operator [1]_.
+
+    Estimates a TICA transformation from data. When input data is given as an
+    argument, the estimation will be carried out right away, and the resulting
+    object can be used to obtain eigenvalues, eigenvectors or project input data
+    onto the slowest TICA components. If data is not given, this object is an
+    empty estimator and can be put into a :func:`pipeline` in order to use TICA
+    in streaming mode.
+
     Parameters
     ----------
     data : ndarray(N, d), optional
@@ -471,20 +564,22 @@ def tica(data=None, lag=10, dim=2, force_eigenvalues_le_one=False):
     lag : int, optional, default = 10
         the lag time, in multiples of the input time step
     dim : int, optional, default = 2
-        the number of dimensions to project onto
+        the number of dimensions (independent components) to project onto. A call to the
+        :func:`map <pyemma.coordinates.transform.TICA.map>` function reduces the d-dimensional
+        input to only dim dimensions such that the data preserves the maximum possible autocorrelation
+        amonst dim-dimensional linear projections.
     force_eigenvalues_le_one : boolean
         Compute covariance matrix and time-lagged covariance matrix such
         that the generalized eigenvalues are always guaranteed to be <= 1.        
 
     Returns
     -------
-    tica : a :class:`pyemma.coordinates.transform.TICA` transformation object
+    tica : a :class:`TICA <pyemma.coordinates.transform.TICA>` transformation object.
+        Can be used to obtain the TICA eigenvalues and eigenvectors, and to
+        perform a projection of input data to the dominant TICA eigenvectors.
 
     Notes
     -----
-    When data is given, the transform is immediately computed.
-    Otherwise, an empty TICA object is returned.
-
     Given a sequence of multivariate data :math:`X_t`, computes the mean-free
     covariance and time-lagged covariance matrix:
 
@@ -501,16 +596,35 @@ def tica(data=None, lag=10, dim=2, force_eigenvalues_le_one=False):
     their respective normalized time-autocorrelations. The eigenvalues are
     related to the relaxation timescale by
 
-    .. math:: t_i = -\tau / \ln |\lambda_i|
+    .. math::
+
+        t_i = -\frac{\tau}{\ln |\lambda_i|}
 
     When used as a dimension reduction method, the input data is projected
     onto the dominant independent components.
 
+    TICA was originally introduced for signal processing in [3]_. It was introduced
+    to molecular dynamics and as a method for the construction of Markov models in
+    [1]_ and [2]_. It was shown in [2]_ that when applied to molecular dynamics data,
+    TICA is an approximation to the eigenvalues and eigenvectors of the true underlying
+    dynamics.
+
+    See also
+    --------
+    pca
+        for principal component analysis
+
     References
     ----------
     .. [1] Perez-Hernandez G, F Paul, T Giorgino, G De Fabritiis and F Noe. 2013.
-    Identification of slow molecular order parameters for Markov model construction
-    J. Chem. Phys. 139, 015102. doi: 10.1063/1.4811489
+        Identification of slow molecular order parameters for Markov model construction
+        J. Chem. Phys. 139, 015102. doi:10.1063/1.4811489
+    .. [2] Schwantes C, V S Pande. 2013.
+        Improvements in Markov State Model Construction Reveal Many Non-Native Interactions in the Folding of NTL9
+        J. Chem. Theory. Comput. 9, 2000-2009. doi:10.1021/ct300878a
+    .. [3] L. Molgedey and H. G. Schuster. 1994.
+        Separation of a mixture of independent signals using time delayed correlations
+        Phys. Rev. Lett. 72, 3634.
 
     """
     res = _TICA(lag, dim, force_eigenvalues_le_one=force_eigenvalues_le_one)
@@ -535,6 +649,8 @@ def kmeans(data=None, k=100, max_iter=1000):
 def cluster_kmeans(data=None, k=100, max_iter=1000):
     r"""Constructs a k-means clustering object.
 
+    .. seealso:: **Theoretical background**: `Wiki page <http://en.wikipedia.org/wiki/K-means_clustering>`_
+
     Parameters
     ----------
     data: ndarray
@@ -545,6 +661,7 @@ def cluster_kmeans(data=None, k=100, max_iter=1000):
     Returns
     -------
     kmeans : A KmeansClustering object
+
 
     Examples
     --------
