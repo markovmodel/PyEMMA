@@ -1140,3 +1140,32 @@ class EstimatedMSM(MSM):
         # generate connected state indexes
         import pyemma.util.discrete_trajectories as dt
         return dt.sample_indexes_by_state(self.active_state_indexes, nsample, subset=subset, replace=replace)
+
+    def sample_by_distributions(self, distributions, nsample, subset=None, replace=True):
+        """Generates samples according to given probability distributions
+
+        Parameters
+        ----------
+        indexes : list of ndarray( (N_i, 2) )
+            For each state, all trajectory and time indexes where this state occurs.
+            Each matrix has a number of rows equal to the number of occurrences of the corresponding state,
+            with rows consisting of a tuple (i, t), where i is the index of the trajectory and t is the time index
+            within the trajectory.
+        distributions : list or array of ndarray ( (n) )
+            m distributions over states. Each distribution must be of length n and must sum up to 1.0
+        nsample : int
+            Number of samples per distribution. If replace = False, the number of returned samples per state could be smaller
+            if less than nsample indexes are available for a state.
+
+        Returns
+        -------
+        indexes : length m list of ndarray( (nsample, 2) )
+            List of the sampled indices by distribution.
+            Each element is an index array with a number of rows equal to nsample, with rows consisting of a
+            tuple (i, t), where i is the index of the trajectory and t is the time index within the trajectory.
+
+        """
+        # generate connected state indexes
+        import pyemma.util.discrete_trajectories as dt
+        return dt.sample_indexes_by_distribution(self.active_state_indexes, distributions, nsample)
+
