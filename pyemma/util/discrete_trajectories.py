@@ -336,3 +336,42 @@ def sample_indexes_by_state(indexes, nsample, subset=None, replace=True):
             res[i] = indexes[s][I,:]
 
     return res
+
+def sample_indexes_by_distribution(indexes, distributions, nsample):
+    """Samples trajectory/time indexes according to the given probability distributions
+
+    Parameters
+    ----------
+    indexes : list of ndarray( (N_i, 2) )
+        For each state, all trajectory and time indexes where this state occurs.
+        Each matrix has a number of rows equal to the number of occurrences of the corresponding state,
+        with rows consisting of a tuple (i, t), where i is the index of the trajectory and t is the time index
+        within the trajectory.
+    distributions : list or array of ndarray ( (n) )
+        m distributions over states. Each distribution must be of length n and must sum up to 1.0
+    nsample : int
+        Number of samples per distribution. If replace = False, the number of returned samples per state could be smaller
+        if less than nsample indexes are available for a state.
+
+    Returns
+    -------
+    indexes : length m list of ndarray( (nsample, 2) )
+        List of the sampled indices by distribution.
+        Each element is an index array with a number of rows equal to nsample, with rows consisting of a
+        tuple (i, t), where i is the index of the trajectory and t is the time index within the trajectory.
+
+    """
+    # how many states in total?
+    n = len(indexes)
+    for dist in distributions:
+        if len(dist) != n:
+            raise('Size error: Distributions must all be of length n (number of states).')
+
+    # list of states
+    res = np.ndarray((len(distributions)), dtype=object)
+    for i in range(len(distributions)):
+        # sample states by distribution
+        sequence = np.random.choice(n, size=nsample, p=distributions[i])
+        res[i] = sample_indexes_by_sequence(indexes, sequence)
+    #
+    return res
