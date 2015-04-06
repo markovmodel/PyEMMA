@@ -321,8 +321,6 @@ def memory_reader(data):
     return _DataInMemory(data)
 
 
-#TODO: Is the result of coordinates.input the correct object here, or should we rather extract a separate loader class
-# that is not featurized?
 def save_traj(traj_inp, indexes, outfile):
 
     r"""Saves a selected sequence of frames as a trajectory
@@ -385,8 +383,8 @@ def save_traj(traj_inp, indexes, outfile):
         traj.save(outfile)
 
     logger.info("Created file %s"%outfile)
-#TODO: DISCUSS - Is the result of coordinates.input the correct object here, or should we rather extract a separate loader class
-# that is not featurized?
+
+
 def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None, inmemory = False):
     r"""Saves selected sequences of frames as trajectories
 
@@ -437,7 +435,8 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None, inmemo
     
     # Determine output format of the molecular trajectory file
     if fmt is None:
-       fmt = traj_inp.trajfiles[0][-4:]
+        import os
+        _, fmt = os.path.splitext(traj_inp.trajfiles[0])
 
     # Prepare the list of outfiles before the loop
     if outfiles is None:   
@@ -468,6 +467,8 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None, inmemo
            logger.info("Created file %s"%outfile)
 
     return outfiles
+
+
 #=========================================================================
 #
 # TRANSFORMATION ALGORITHMS
