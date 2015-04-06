@@ -414,7 +414,7 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None, inmemo
     outfiles : list of str, optional, default = None
         A list of output file names. When given, this will override the settings of prefix and fmt, and output
         will be written to these files
-    inmemory : Boolean, default = False
+    inmemory : Boolean, default = False (untested for large files)
         Instead of internally calling traj_save for every (T_i,2) array in "indexes", only one call is made. Internally,
         this generates a potentially large molecular trajectory object in memory that is subsequently sliced into the
         files of "outfiles". Should be faster for large "indexes" arrays and large files, though it is quite memory intensive.
