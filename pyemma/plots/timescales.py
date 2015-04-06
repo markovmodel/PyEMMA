@@ -40,11 +40,11 @@ def plot_implied_timescales(ITS, ax=None, outfile=None, xlog=False, ylog=True, c
     #ymax = 1.5*_np.min(ITS.get_timescales())
     for i in range(ITS.number_of_timescales):
         # plot estimate
-        ax.plot(lags, ITS.timescales(i), color = colors[i % len(colors)])
+        ax.plot(lags, ITS.get_timescales(process=i), color = colors[i % len(colors)])
         # sample available?
         if (ITS.samples_available and ITS.sample_number_of_timescales > i):
             # plot sample mean
-            ax.plot(ITS.sample_lagtimes, ITS.get_sample_mean(i), marker='o', color = colors[i % len(colors)], linestyle = 'dashed')
+            ax.plot(ITS.sample_lagtimes, ITS.get_sample_mean(process=i), marker='o', color = colors[i % len(colors)], linestyle = 'dashed')
             (lconf, rconf) = ITS.get_sample_conf(confidence, i)
             ax.fill_between(ITS.sample_lagtimes, lconf, rconf, alpha=0.2, color=colors[i % len(colors)])
         # reference available?

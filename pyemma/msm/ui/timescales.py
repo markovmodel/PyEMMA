@@ -176,7 +176,7 @@ class ImpliedTimescales(object):
                     else:
                         all_ts = False
                         maxnits = min(maxnits, len(ts))
-                        self._its_samples[i,:maxnits,k] = ts
+                        self._its_samples[i,:maxnits,k] = ts[:maxnits]
                 else:
                     any_ts = False
                     maxnlags = i
