@@ -83,28 +83,8 @@ def featurizer(topfile):
 
     See also
     --------
-
-    Construct a discretizer pipeline processing all coordinates of trajectory 
-    "traj01.xtc" with a PCA transformation and cluster the principle components
-    with uniform time clustering:
-
-    >>> reader = feature_reader('traj01.xtc', 'topology.pdb')
-    >>> transform = pca(dim=2)
-    >>> cluster = uniform_time(n_clusters=100)
-    >>> disc = discretizer(reader, transform, cluster)
-
-    Finally you want to run the pipeline
-    >>> disc.parametrize()
-
-
-    Access the the discrete trajectories and saving them to files:
-
-    >>> disc.dtrajs
-    [array([0, 0, 1, 1, 2, ... ])]
-
-    This will store the discrete trajectory to "traj01.dtraj":
-
-    >>> disc.save_dtrajs()
+    pyemma.coordinates.io.MDFeaturizer
+        Featurizer object
 
     """
     return _MDFeaturizer(topfile)
@@ -183,7 +163,7 @@ def load(trajfiles, featurizer=None, topology=None, stride=1):
 
 def input(input, featurizer=None, topology=None):
     """ Wraps the input for stream-based processing. Do this to construct the first stage of a data processing
-        :py:func:`pipeline`.
+        :func:`pipeline`.
 
     Parameters
     ----------
@@ -288,7 +268,7 @@ def pipeline(stages, run=True, param_stride=1):
 
     Returns
     -------
-    pipe : :py:class:pyemma.coordinates.pipeline.Pipeline
+    pipe : :func:`pyemma.coordinates.pipeline`
         A pipeline object that is able to conduct big data analysis with limited memory in streaming mode.
 
     """
@@ -688,9 +668,6 @@ def tica(data=None, lag=10, dim=2, force_eigenvalues_le_one=False):
 
     Notes
     -----
-    When data is given, the transform is immediately computed.
-    Otherwise, an empty TICA object is returned.
-
     Given a sequence of multivariate data :math:`X_t`, computes the mean-free
     covariance and time-lagged covariance matrix:
 
