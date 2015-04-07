@@ -9,6 +9,7 @@ from pyemma.util.annotators import deprecated
 from pyemma.util.log import getLogger
 
 from pyemma.coordinates.pipelines import Discretizer as _Discretizer, Pipeline
+from pyemma.coordinates.pipelines import Pipeline as _Pipeline
 # io
 from pyemma.coordinates.io.featurizer import MDFeaturizer as _MDFeaturizer
 from pyemma.coordinates.io.feature_reader import FeatureReader as _FeatureReader
@@ -279,7 +280,7 @@ def pipeline(stages, run=True, param_stride=1):
     
     if not isinstance(stages, list):
         stages = [stages]
-    p = Pipeline(stages)
+    p = _Pipeline(stages)
     # TODO: store param_stride if we don't run the pipeline right now
     if run:
         p.parametrize(param_stride)

@@ -137,7 +137,7 @@ class Pipeline(object):
         const_mem = long(0)
         mem_per_frame = long(0)
 
-        for trans in self.transformers:
+        for trans in self._chain:
             mem_per_frame += trans._get_memory_per_frame()
             const_mem += trans._get_constant_memory()
         self._logger.info("per-frame memory requirements: %i" % mem_per_frame)
@@ -161,7 +161,7 @@ class Pipeline(object):
         self._logger.info("free memory: %i" % Mfree)
 
         # starting from the back of the pipeline, store outputs if possible
-        for trans in reversed(self.transformers):
+        for trans in reversed(self._chain):
             mem_req_trans = trans.n_frames_total() * \
                 trans._get_memory_per_frame()
             if Mfree > mem_req_trans:
