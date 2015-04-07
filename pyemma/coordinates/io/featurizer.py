@@ -391,8 +391,10 @@ class MDFeaturizer(object):
             with human-readable descriptions of the features.
 
         """
-        labels = [f.describe() for f in self.active_features]
-        return labels
+        all_labels = []
+        for f in self.active_features:
+            all_labels += f.describe()
+        return all_labels
 
     def select(self, selstring):
         """
