@@ -12,11 +12,7 @@ __docformat__ = "restructuredtext en"
 import numpy as np
 from math import ceil
 import warnings
-import copy
 from pyemma.util.annotators import shortcut
-
-from pyemma.coordinates import save_traj
-from pyemma.coordinates import save_trajs
 
 __all__ = ['MSM','EstimatedMSM']
 
@@ -185,7 +181,7 @@ class MSM(object):
         # ensure that eigenvalue decomposition with k components is done.
         try:
             m = len(self._eigenvalues) # this will raise and exception if self._eigenvalues doesn't exist yet.
-            if (m < k):
+            if m < k:
                 # not enough eigenpairs present - recompute:
                 self._do_eigendecomposition(k, ncv=ncv)
         except:
@@ -280,7 +276,7 @@ class MSM(object):
 
         """
         neig = k
-        if (k is not None):
+        if k is not None:
             neig += 1
         self._ensure_eigendecomposition(k = neig, ncv = ncv)
         from pyemma.msm.analysis.dense.decomposition import timescales_from_eigenvalues as _timescales
@@ -1272,16 +1268,11 @@ class EstimatedMSM(MSM):
         import pyemma.util.discrete_trajectories as dt
         return dt.sample_indexes_by_state(self.active_state_indexes, nsample, subset=subset, replace=replace)
 
-    def sample_by_distributions(self, distributions, nsample, subset=None, replace=True):
+    def sample_by_distributions(self, distributions, nsample):
         """Generates samples according to given probability distributions
 
         Parameters
         ----------
-        indexes : list of ndarray( (N_i, 2) )
-            For each state, all trajectory and time indexes where this state occurs.
-            Each matrix has a number of rows equal to the number of occurrences of the corresponding state,
-            with rows consisting of a tuple (i, t), where i is the index of the trajectory and t is the time index
-            within the trajectory.
         distributions : list or array of ndarray ( (n) )
             m distributions over states. Each distribution must be of length n and must sum up to 1.0
         nsample : int
