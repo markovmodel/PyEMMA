@@ -1,5 +1,5 @@
 from pyemma.coordinates.io import FeatureReader as _FeatureReader
-
+import mdtraj as md
 
 def get_file_reader(input, topology, featurizer):
     if isinstance(input, basestring) or (
@@ -49,3 +49,15 @@ def get_file_reader(input, topology, featurizer):
     else:
         raise ValueError("Input \"%s\" was no string or list of strings." % input)
     return reader
+
+
+def single_traj_from_n_files(file_list, top):
+    # Creates a single trajectory object from a list of files
+    traj = None
+    for ff in file_list:
+        if traj is None:
+            traj = md.load(ff, top=top)
+        else:
+            traj = traj.join(md.load(ff, top=top))
+
+    return traj
