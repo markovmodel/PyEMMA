@@ -11,7 +11,7 @@ import numpy as np
 from pyemma.util.annotators import deprecated
 from pyemma.util.log import getLogger
 
-from pyemma.coordinates.pipelines import Discretizer as _Discretizer
+from pyemma.coordinates.pipelines import Discretizer as _Discretizer, Pipeline
 # io
 from pyemma.coordinates.io.featurizer import MDFeaturizer as _MDFeaturizer
 from pyemma.coordinates.io.feature_reader import FeatureReader as _FeatureReader
@@ -199,22 +199,22 @@ def input(input, featurizer=None, topology=None):
 
     """
     # CASE 1: input is a string or list of strings
-        # check: if single string create a one-element list
-        if isinstance(input, basestring):
-            input_list = [input]
-        elif len(input) > 0 and all(isinstance(item, basestring) for item in input):
-            input_list = input
+    # check: if single string create a one-element list
+    if isinstance(input, basestring):
+        input_list = [input]
+    elif len(input) > 0 and all(isinstance(item, basestring) for item in input):
+        input_list = input
+    else:
+        if len(input) is 0:
+            raise ValueError("The passed input list should not be empty.")
         else:
-            if len(input) is 0:
-                raise ValueError("The passed input list should not be empty.")
-            else:
-                raise ValueError("The passed list did not exclusively contain strings.")
+            raise ValueError("The passed list did not exclusively contain strings.")
 
-        try:
-            idx = input_list[0].rindex(".")
-            suffix = input_list[0][idx:]
-        except ValueError:
-            suffix = ""
+    try:
+        idx = input_list[0].rindex(".")
+        suffix = input_list[0][idx:]
+    except ValueError:
+        suffix = ""
 
         # check: do all files have the same file type? If not: raise ValueError.
         if all(item.endswith(suffix) for item in input_list):
@@ -274,7 +274,7 @@ def pipeline(stages, run=True, param_stride=1):
     """
     
     if not isinstance(stages, list):
-        stages = [satges]
+        stages = [stages]
     p = Pipeline(stages)
     # TODO: store param_stride if we don't run the pipeline right now
     if run:
