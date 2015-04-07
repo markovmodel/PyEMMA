@@ -19,6 +19,7 @@ Now, Bar.foo.__doc__ == Bar().foo.__doc__ == Foo.foo.__doc__ == "Frobber"
 import warnings
 from functools import wraps
 import inspect
+from pyemma.util.log import getLogger
 
 __all__ = ['doc_inherit']
 
@@ -80,13 +81,18 @@ def deprecated(func):
 
     @wraps(func)
     def new_func(*args, **kwargs):
+        (frame, filename, line_number, function_name, lines, index) = \
+            inspect.getouterframes(inspect.currentframe())[1]
+
         warnings.warn_explicit(
-            "Call to deprecated function {}.".format(func.__name__),
+            "Call to deprecated function %s. Called from %s line %i" %
+            (func.__name__, filename, line_number),
             category=DeprecationWarning,
             filename=func.func_code.co_filename,
             lineno=func.func_code.co_firstlineno + 1
         )
         return func(*args, **kwargs)
+
     return new_func
 
 
