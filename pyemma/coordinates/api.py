@@ -90,14 +90,8 @@ def featurizer(topfile):
 
 
 #TODO: DOC - which topology file formats does mdtraj support? Find out and complete docstring
-#
-#TODO: DISCUSS - There's a catch here: When loading MD file the nature frame would be a Nx3 array,
-#TODO: but for the transformers we expect flat arrays. We should either here have a 'flatten' flat, or be flexible
-#TODO: in transformer param/mapping by outmatically flatten all dimensions after the first.
-#
-#TODO: implement this
 def load(trajfiles, featurizer=None, topology=None, stride=1):
-    """ loads coordinate or feature data into memory. If your memory is not big enough consider the use of pipeline
+    """ loads coordinate features into memory. If your memory is not big enough consider the use of pipeline
 
     Parameters
     ----------
@@ -107,7 +101,9 @@ def load(trajfiles, featurizer=None, topology=None, stride=1):
 
         When molecular dynamics trajectory files are loaded either a featurizer must be specified (for
         reading specific quantities such as distances or dihedrals), or a topology file (in that case only
-        Cartesian coordinates will be read).
+        Cartesian coordinates will be read). In the latter case, the resulting feature vectors will have length
+        3N for each trajectory frame, with N being the number of atoms and (x1, y1, z1, x2, y2, z2, ...) being
+        the sequence of coordinates in the vector.
 
         Molecular dynamics trajectory files are loaded through mdtraj (http://mdtraj.org/latest/),
         and can possess any of the mdtraj-compatible trajectory formats including:
@@ -140,11 +136,18 @@ def load(trajfiles, featurizer=None, topology=None, stride=1):
     Returns
     -------
     data : ndarray or list of ndarray
-        If a single filename was given as an input, will return a single ndarray of
+        If a single filename was given as an input (and unless the format is .npz) , will return a single ndarray of
+        size (T, d), where T is the number of time steps in the trajectory and d is the number of features
+        (coordinates, observables). When reading from molecular dynamics data without a specific featurizer,
+        each feature vector will have size d=3N and will hold the Cartesian coordinates in the sequence
+        (x1, y1, z1, x2, y2, z2, ...).
+        If multiple filenames were given, or if the file is a .npz holding multiple arrays, the result is a list
+        of appropriately shaped arrays
 
     See also
     --------
-    :func:`pyemma.coordinates.pipeline` : if your memory is not big enough, use pipeline to process it in a streaming manner
+    :func:`pyemma.coordinates.pipeline`
+        if your memory is not big enough, use pipeline to process it in a streaming manner
 
     """
     if isinstance(trajfiles, basestring) or (
@@ -193,7 +196,8 @@ def input(input, featurizer=None, topology=None):
 
     See also
     --------
-    :func:`pyemma.coordinates.pipeline` : The data input is the first stage for your pipeline. Add other stages to it and build a pipeline
+    :func:`pyemma.coordinates.pipeline`
+        The data input is the first stage for your pipeline. Add other stages to it and build a pipeline
         to analyze big data in streaming mode.
 
     """
@@ -235,6 +239,7 @@ def input(input, featurizer=None, topology=None):
             else:
                 # TODO: CASE 1.2: file types are raw data files
                 # TODO: create raw data reader from file names
+                reader = None # to satisfy code check upon return. Replace by real code.
                 pass
         else:
             raise ValueError("Not all elements in the input list were of the type %s!" % suffix)
