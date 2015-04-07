@@ -441,7 +441,7 @@ class Transformer(object):
         return TransformerIterator(self, stride=stride, lag=lag)
 
     def get_output(self, dimensions=slice(0,None), stride=1):
-        """Maps all input data of this transformer and returns it as and array or list of arrays
+        """Maps all input data of this transformer and returns it as an array or list of arrays
            
            Parameters
            ----------
@@ -467,12 +467,15 @@ class Transformer(object):
            Example
            -------
            plotting trajectories
+           >>> import pyemma.coordinates as coor
            >>> import matplotlib.pyplot as plt
            >>> %matplotlib inline # only for ipython notebook
-           >>> trajs = transform.subsample(dimensions=(0,),stride=100)
+           >>>
+           >>> tica = coor.tica() # fill with some actual data!
+           >>> trajs = tica.get_output(dimensions=(0,),stride=100)
            >>> for traj in trajs:
-           >>> plt.figure()
-           >>> plt.plot(traj[:,0])
+           >>>     plt.figure()
+           >>>     plt.plot(traj[:,0])
         """
 
         if isinstance(dimensions, int):
