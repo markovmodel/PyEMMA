@@ -35,7 +35,7 @@ class DataInMemory(Transformer):
 
     def __init__(self, data, mmap_mode='r'):
         Transformer.__init__(self, chunksize=1000)
-        self.logger = getLogger('DataInMemory[%i]' % id(self))
+        self.logger = getLogger('DataInMemory[%s]' % hex(id(self)))
         self.data_producer = self
 
         # storage
@@ -81,6 +81,8 @@ class DataInMemory(Transformer):
         self._t = 0
         self._itraj = 0
 
+        self._parametrized = True
+
     def __add_array_to_storage(self, array):
         # checks shapes, eg convert them (2d), raise if not possible
         # after checks passed, add array to self._data
@@ -92,7 +94,8 @@ class DataInMemory(Transformer):
         else:
             shape = array.shape
             # hold first dimension, multiply the rest
-            shape_2d = (shape[0], functools.reduce(lambda x, y: x * y, shape[1:]))
+            shape_2d = (
+                shape[0], functools.reduce(lambda x, y: x * y, shape[1:]))
             array = np.reshape(array, shape_2d)
 
         self._data.append(array)
@@ -113,9 +116,6 @@ class DataInMemory(Transformer):
                              "Dimensions are = %s" % ndims)
 
         self._ndim = ndims[0]
-
-    def parametrize(self):
-        self._parametrized = True
 
     def number_of_trajectories(self):
         """
@@ -214,6 +214,7 @@ class DataInMemory(Transformer):
             slice_x = slice(self._t, upper_bound, stride)
 
             X = traj[slice_x]
+            last_t = self._t
             self._t += X.shape[0]
 
             if self._t >= traj_len:
@@ -225,8 +226,10 @@ class DataInMemory(Transformer):
             else:
                 # its okay to return empty chunks
                 upper_bound = min(
-                    self._t + (lag + self._chunksize) * stride, traj_len)
-                Y = traj[self._t + lag: upper_bound: stride]
+                    last_t + (lag + self._chunksize) * stride, traj_len)
+                slice_y = slice(last_t + lag, upper_bound, stride)
+
+                Y = traj[slice_y]
                 return X, Y
 
     @staticmethod

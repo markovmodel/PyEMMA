@@ -65,12 +65,13 @@ class TestDataInMemory(unittest.TestCase):
 
     def test_npz(self):
         reader = DataInMemory(self.npz)
+        self.assertEqual(reader.number_of_trajectories(), 2)
 
     def testListOfArrays(self):
 
         frames_per_traj = 100
         dim = 3
-        data = [np.random.random((frames_per_traj, dim)) for i in xrange(3)]
+        data = [np.random.random((frames_per_traj, dim)) for _ in xrange(3)]
 
         d = DataInMemory(data)
 
@@ -184,39 +185,44 @@ class TestDataInMemory(unittest.TestCase):
         chunksize = 10
         lag = 1
 
-        data = [np.random.random((n, 3)), np.zeros((29, 3)),
-                np.random.random((n - 50, 3))]
+#         data = [np.random.random((n, 3)),
+#                 np.zeros((29, 3)),
+#                 np.random.random((n - 50, 3))]
+        data = [np.arange(300).reshape((n,3)),
+                np.arange(29*3).reshape((29,3)),
+                np.arange(150).reshape(50,3)]
         input_lens = [x.shape[0] for x in data]
         reader = DataInMemory(data)
         reader.chunksize = chunksize
 
         self.assertEqual(reader.n_frames_total(), sum(input_lens))
 
-        # iterate over data
+        # store results by traj
         chunks = {0: [], 1: [], 2: []}
         lagged_chunks = {0: [], 1: [], 2: []}
 
+        # iterate over data
         for itraj, X, Y in reader.iterator(lag=lag):
             chunks[itraj].append(X)
+            print Y
             lagged_chunks[itraj].append(Y)
 
         # check results
-        merged_chunks = [np.array(c) for c in chunks.values()]
-        merged_lagged_chunks = [np.array(c) for c in lagged_chunks.values()]
+        merged_chunks = [np.concatenate(c) for c in chunks.values()]
+        merged_lagged_chunks = [np.concatenate(c) for c in lagged_chunks.values()]
 
-        logger.debug("shapes: %s" % [x.shape for x in merged_chunks])
-
+        # unlagged data
         np.testing.assert_equal(
             merged_chunks[0].reshape(data[0].shape), data[0])
-        logger.debug("from %s to %s" %
-                     (str(merged_chunks[1].shape), str(data[1].shape)))
         np.testing.assert_equal(
             merged_chunks[1].reshape(data[1].shape), data[1])
         np.testing.assert_equal(
             merged_chunks[2].reshape(data[2].shape), data[2])
 
-        logger.debug(merged_lagged_chunks[0].shape)
+        # lagged data
+        lagged_0 = [d[lag:] for d in data]
 
+        np.testing.assert_equal(merged_lagged_chunks[0], lagged_0[0])
 
 if __name__ == "__main__":
     unittest.main()
