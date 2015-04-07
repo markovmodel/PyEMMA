@@ -13,7 +13,6 @@ import regspatial
 import numpy as np
 import warnings
 
-log = getLogger('RegSpaceClustering')
 __all__ = ['RegularSpaceClustering']
 
 
@@ -67,7 +66,7 @@ class RegularSpaceClustering(AbstractClustering):
         # memory for cluster centers and discrete trajectories
         return 4 * self.data_producer.dimension() + 4 * self.data_producer.n_frames_total()
 
-    def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None):
+    def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None, stride=1):
         """
         first pass: calculate clustercenters
          1. choose first datapoint as centroid
@@ -75,15 +74,16 @@ class RegularSpaceClustering(AbstractClustering):
          3. add new centroid, if min(distance to all other clustercenters) >= dmin
         second pass: assign data to discrete trajectories
         """
-        log.debug("t=%i; itraj=%i" % (t, itraj))
         if ipass == 0:
             try:
-                regspatial.cluster(X.astype(np.float32,order='C',copy=False), self._clustercenters, self.dmin, self.metric, self.max_clusters)
-            except RuntimeError as e:
+                regspatial.cluster(X.astype(np.float32,order='C',copy=False),
+                                   self._clustercenters, self.dmin,
+                                   self.metric, self.max_clusters)
+            except RuntimeError:
                 msg = 'Maximum number of cluster centers reached.' \
                       ' Consider increasing max_clusters or choose' \
                       ' a larger minimum distance, dmin.'
-                log.warning(msg)
+                self._logger.warning(msg)
                 warnings.warn(msg)
                 return False
 
@@ -91,19 +91,15 @@ class RegularSpaceClustering(AbstractClustering):
             # discretize all
             if t == 0:
                 if itraj == 0:
-                    log.debug("mk array")
                     assert len(self._clustercenters) >= 1
                     # create numpy array from clustercenters list
                     self.clustercenters = np.array(self._clustercenters)
-
-                log.debug("shape of clustercenters: %s" %
-                          str(self.clustercenters.shape))
-                log.info("number of clustercenters: %i" %
-                         len(self.clustercenters))
-                n = self.data_producer.trajectory_length(itraj)
+                    self._logger.info("number of clustercenters: %i" %
+                                      len(self.clustercenters))
+                n = self.data_producer.trajectory_length(itraj, stride=stride)
                 self.dtrajs.append(np.empty(n, dtype=np.int64))
             L = np.shape(X)[0]
-            
+
             self.dtrajs[itraj][t:t+L] = self.map(X)
             if last_chunk:
                 return True  # finished!

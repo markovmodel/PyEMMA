@@ -21,7 +21,6 @@ class TestFeaturizer(unittest.TestCase):
         self.feat = MDFeaturizer(self.pdbfile)
 
     def test_select_backbone(self):
-        # FIXME: 
         inds = self.feat.select_Backbone()
 
     def test_select_all(self):
@@ -144,16 +143,6 @@ class TestFeaturizer(unittest.TestCase):
 
 
 class TestFeaturizerNoDubs(unittest.TestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        super(TestFeaturizerNoDubs, cls).setUpClass()
-        cls.old_lvl = ft.log.level
-        ft.log.level = 50
-
-    @classmethod
-    def tearDownClass(cls):
-        ft.log.level = cls.old_lvl
 
     def testAddFeaturesWithDuplicates(self):
         """this tests adds multiple features twice (eg. same indices) and

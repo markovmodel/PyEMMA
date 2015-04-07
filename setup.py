@@ -245,7 +245,7 @@ else:
     # when on git, we require cython
     if os.path.exists('.git'):
         warnings.warn('using git, require cython')
-        metadata['setup_requires'] += ['cython>=0.20']
+        metadata['setup_requires'] += ['cython>=0.22']
 
     # only require numpy and extensions in case of building/installing
     metadata['ext_modules'] = lazy_cythonize(extensions)

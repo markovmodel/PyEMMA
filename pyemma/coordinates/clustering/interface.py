@@ -4,14 +4,12 @@ Created on 18.02.2015
 @author: marscher
 '''
 from pyemma.coordinates.transform.transformer import Transformer
-from pyemma.util.log import getLogger
-import numpy as np
-import os
 from pyemma.util.files import mkdir_p
 
-import regspatial
+import numpy as np
+import os
 
-log = getLogger('Clustering')
+from pyemma.coordinates.clustering import regspatial
 
 
 class AbstractClustering(Transformer):
@@ -116,12 +114,12 @@ class AbstractClustering(Transformer):
 
         for filename, dtraj in zip(output_files, dtrajs):
             dest = path.join(output_dir, filename)
-            log.debug('writing dtraj to "%s"' % dest)
+            self._logger.debug('writing dtraj to "%s"' % dest)
             try:
                 if path.exists(dest):
                     # TODO: decide what to do if file already exists.
-                    log.warn('overwriting existing dtraj "%s"' % dest)
+                    self._logger.warn('overwriting existing dtraj "%s"' % dest)
                     pass
                 write_dtraj(dest, dtraj)
             except IOError:
-                log.exception('Exception during writing dtraj to "%s"' % dest)
+                self._logger.exception('Exception during writing dtraj to "%s"' % dest)

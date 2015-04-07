@@ -6,9 +6,10 @@ Created on 26.01.2015
 import itertools
 import unittest
 
-from pyemma.coordinates.clustering.regspace import RegularSpaceClustering, log
+from pyemma.coordinates.clustering.regspace import RegularSpaceClustering
 import numpy as np
 import warnings
+from pyemma.coordinates.api import cluster_regspace
 
 
 class RandomDataSource:
@@ -21,14 +22,17 @@ class RandomDataSource:
             self.data += a
         self.i = -1
 
-    def _next_chunk(self, lag=0):
+    def _next_chunk(self, lag=0, stride=1):
+        assert stride==1, 'stride !=1 not implemented'
         self.i += 1
         return self.data[self.i]
 
-    def _reset(self):
+    def _reset(self, stride=1):
+        assert stride == 1, 'stride !=1 not implemented'
         self.i = -1
 
-    def trajectory_length(self, itraj):
+    def trajectory_length(self, itraj, stride=1):
+        assert stride == 1, 'stride !=1 not implemented'
         return self.data[itraj].shape[0]
 
     def number_of_trajectories(self):
@@ -96,6 +100,10 @@ class TestRegSpaceClustering(unittest.TestCase):
             # TODO: verify num states matches max_clusters
             #assert len(self.clustering.dtrajs) <= self.clustering.max_clusters
             assert issubclass(w[-1].category, UserWarning)
+
+    def test1d_data(self):
+        data = np.random.random(100)
+        cluster_regspace(data, dmin=0.3)
 
 
 if __name__ == "__main__":
