@@ -70,7 +70,7 @@ class KmeansClustering(AbstractClustering):
 #             raise ValueError("Input dimension lower than number of clusters!")
 
     def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
-                       last_chunk, ipass, Y=None):
+                       last_chunk, ipass, Y=None, stride=1):
         if X.ndim == 1:
             X = self._ensure2d(X)
 
@@ -79,7 +79,7 @@ class KmeansClustering(AbstractClustering):
         if ipass == 1:
             # discretize all
             if t == 0:
-                n = self.data_producer.trajectory_length(itraj)
+                n = self.data_producer.trajectory_length(itraj, stride=stride)
                 self.dtrajs.append(np.empty(n, dtype=int))
             assignment = self.algo.predict(X)
             self.dtrajs[itraj][t: t + assignment.shape[0]] = assignment

@@ -5,26 +5,24 @@ r"""User-API for the pyemma.coordinates package
 
 __docformat__ = "restructuredtext en"
 
-import numpy as np
-
 from pyemma.util.annotators import deprecated
 from pyemma.util.log import getLogger
 
-from pyemma.coordinates.pipelines import Discretizer as _Discretizer
+from pyemma.coordinates.pipelines import Discretizer as _Discretizer, Pipeline
 # io
-from io.featurizer import MDFeaturizer as _MDFeaturizer
-from io.feature_reader import FeatureReader as _FeatureReader
-from io.data_in_memory import DataInMemory as _DataInMemory
+from pyemma.coordinates.io.featurizer import MDFeaturizer as _MDFeaturizer
+from pyemma.coordinates.io.feature_reader import FeatureReader as _FeatureReader
+from pyemma.coordinates.io.data_in_memory import DataInMemory as _DataInMemory
+from pyemma.coordinates.io.util.reader_utils import get_file_reader as _get_file_reader
 from pyemma.coordinates.io.frames_from_file import frames_from_file as _frames_from_file
-
 # transforms
-from transform.pca import PCA as _PCA
-from transform.tica import TICA as _TICA
+from pyemma.coordinates.transform.pca import PCA as _PCA
+from pyemma.coordinates.transform.tica import TICA as _TICA
 # clustering
-from clustering.kmeans import KmeansClustering as _KmeansClustering
-from clustering.uniform_time import UniformTimeClustering as _UniformTimeClustering
-from clustering.regspace import RegularSpaceClustering as _RegularSpaceClustering
-from clustering.assign import AssignCenters as _AssignCenters
+from pyemma.coordinates.clustering.kmeans import KmeansClustering as _KmeansClustering
+from pyemma.coordinates.clustering.uniform_time import UniformTimeClustering as _UniformTimeClustering
+from pyemma.coordinates.clustering.regspace import RegularSpaceClustering as _RegularSpaceClustering
+from pyemma.coordinates.clustering.assign import AssignCenters as _AssignCenters
 
 logger = getLogger('coordinates.api')
 
@@ -149,7 +147,17 @@ def load(trajfiles, featurizer=None, topology=None, stride=1):
     :func:`pyemma.coordinates.pipeline` : if your memory is not big enough, use pipeline to process it in a streaming manner
 
     """
-    pass
+    if isinstance(trajfiles, basestring) or (
+        isinstance(trajfiles, (list, tuple)) and (any(isinstance(item, basestring) for item in trajfiles) or len(trajfiles) is 0)
+    ):
+        reader = _get_file_reader(trajfiles, topology, featurizer)
+        trajs = reader.get_output(stride = stride)
+        if len(trajs)==1:
+            return trajs[0]
+        else:
+            return trajs
+    else:
+        raise Exception('unsupported type (%s) of input'%type(trajfiles))
 
 
 def input(input, featurizer=None, topology=None):
@@ -190,23 +198,49 @@ def input(input, featurizer=None, topology=None):
 
     """
     # CASE 1: input is a string or list of strings
-        # check: if single string create a one-element list
+    # check: if single string create a one-element list
+    if isinstance(input, basestring):
+        input_list = [input]
+    elif len(input) > 0 and all(isinstance(item, basestring) for item in input):
+        input_list = input
+    else:
+        if len(input) is 0:
+            raise ValueError("The passed input list should not be empty.")
+        else:
+            raise ValueError("The passed list did not exclusively contain strings.")
+
+    try:
+        idx = input_list[0].rindex(".")
+        suffix = input_list[0][idx:]
+    except ValueError:
+        suffix = ""
+
         # check: do all files have the same file type? If not: raise ValueError.
-        # CASE 1.1: file types are MD files
-            # check: do we either have a featurizer or a topology file name? If not: raise ValueError.
-            # create a MD reader with filenames and topology
-        # CASE 1.2: file types are raw data files
-            # create raw data reader from filenames
-    # CASE 2: input is a (T, N, 3) array or list of (T_i, N, 3) arrays
-        # check: if single array, create a one-element list
-        # check: do all arrays have compatible dimensions (*, N, 3)? If not: raise ValueError.
-        # CASE 2.1: There is also a featurizer present, create FeatureReader out of input data and topology
-        # CASE 2.2: Else, create a flat view (T, N*3) and create MemoryReader
-    # CASE 3: input is a (T, N) array or list of (T_i, N) arrays
-        # check: if single array, create a one-element list
-        # check: do all arrays have compatible dimensions (*, N)? If not: raise ValueError.
-        # create MemoryReader
-    pass
+        if all(item.endswith(suffix) for item in input_list):
+            from mdtraj.formats.registry import _FormatRegistry
+
+            # CASE 1.1: file types are MD files
+            if suffix in _FormatRegistry.loaders.keys():
+                # check: do we either have a featurizer or a topology file name? If not: raise ValueError.
+                # create a MD reader with file names and topology
+                if not featurizer and not topology:
+                    raise ValueError("The input files were MD files which makes it mandatory to have either a "
+                                     "featurizer or a topology file.")
+                if not topology:
+                    # we have a featurizer
+                    reader = _FeatureReader.init_from_featurizer(input_list, featurizer)
+                else:
+                    # we have a topology file
+                    reader = _FeatureReader(input_list, topology)
+            else:
+                # TODO: CASE 1.2: file types are raw data files
+                # TODO: create raw data reader from file names
+                pass
+        else:
+            raise ValueError("Not all elements in the input list were of the type %s!" % suffix)
+    else:
+        raise ValueError("Input \"%s\" was no string or list of strings." % input)
+    return reader
 
 # TODO: Alternative names: chain, stream, datastream... probably pipeline is the best name though.
 def pipeline(stages, run=True, param_stride=1):
@@ -237,7 +271,14 @@ def pipeline(stages, run=True, param_stride=1):
         A pipeline object that is able to conduct big data analysis with limited memory in streaming mode.
 
     """
-    pass
+    
+    if not isinstance(stages, list):
+        stages = [stages]
+    p = Pipeline(stages)
+    # TODO: store param_stride if we don't run the pipeline right now
+    if run:
+        p.parametrize(param_stride)
+    return p
 
 def discretizer(reader,
                 transform=None,
@@ -378,6 +419,7 @@ def save_traj(traj_inp, indexes, outfile):
         If set to None, the trajectory object is returned to memory
 
     """
+    pass
 
     import numpy as np
     from itertools import islice
@@ -711,7 +753,7 @@ def cluster_kmeans(data=None, k=100, max_iter=1000):
     Examples
     --------
 
-    >>> traj_data = [np.random.random((100, 3)), np.random.random((100,3))
+    >>> traj_data = [np.random.random((100, 3)), np.random.random((100,3))]
     >>> clustering = kmeans(traj_data, n_clusters=20)
     >>> clustering.dtrajs
     [array([0, 0, 1, ... ])]
@@ -779,7 +821,7 @@ def cluster_regspace(data=None, dmin=-1, max_centers=1000):
     """
     if dmin == -1:
         raise ValueError("provide a minimum distance for clustering")
-    res = _RegularSpaceClustering(dmin)
+    res = _RegularSpaceClustering(dmin, max_centers)
     if data is not None:
         inp = _DataInMemory(data)
         res.data_producer = inp
