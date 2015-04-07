@@ -275,7 +275,8 @@ class MSM(object):
         Returns
         -------
         ts : ndarray(m)
-            relaxation timescales, defined by :math:`-tau / ln | \lambda_i |, i = 2,...,k+1`.
+            relaxation timescales in units of the input trajectory time step,
+            defined by :math:`-tau / ln | \lambda_i |, i = 2,...,k+1`.
 
         """
         neig = k
@@ -301,7 +302,7 @@ class MSM(object):
         assert np.max(A) < self._nstates, 'Chosen set contains states that are not included in the active set.'
 
     def mfpt(self, A, B):
-        """Mean first passage times from set A to set B
+        """Mean first passage times from set A to set B, in units of the input trajectory time step
 
         Parameters
         ----------
@@ -420,16 +421,18 @@ class MSM(object):
         a : (M,) ndarray
             Observable, represented as vector on state space
         maxtime : int or float
-            Maximum time (in trajectory frames) until which the correlation function will be evaluated. Internally,
-            the correlation function can only be computed in integer multiples of the Markov model lag time, and therefore
-            the actual last time point will be computed at :math:`\mathrm{ceil}(\mathrm{maxtime} / \tau)`
+            Maximum time (in units of the input trajectory time step) until which the correlation function will be
+            evaluated.
+            Internally, the correlation function can only be computed in integer multiples of the Markov model lag time,
+            and therefore the actual last time point will be computed at :math:`\mathrm{ceil}(\mathrm{maxtime} / \tau)`
             By default (None), the maxtime will be set equal to the 3 times the slowest relaxation time of the MSM,
             because after this time the signal is constant.
         b : (M,) ndarray (optional)
             Second observable, for cross-correlations
         k : int (optional)
-            Number of eigenvalues and eigenvectors to use for computation. This option is only relevant for sparse matrices
-            and long times for which an eigenvalue decomposition will be done instead of using the matrix power.
+            Number of eigenvalues and eigenvectors to use for computation. This option is only relevant for sparse
+            matrices and long times for which an eigenvalue decomposition will be done instead of using the
+            matrix power.
         ncv : int (optional)
             Only relevant for sparse matrices and large lag times, where the relaxation will be computes using an
             eigenvalue decomposition. The number of Lanczos vectors generated, `ncv` must be greater than k;
@@ -438,7 +441,7 @@ class MSM(object):
         Returns
         -------
         times : ndarray (N)
-            Time points (in frames) at which the correlation has been computed
+            Time points (in units of the input trajectory time step) at which the correlation has been computed
         correlations : ndarray (N)
             Correlation values at given times
 
@@ -511,7 +514,7 @@ class MSM(object):
         Returns
         -------
         timescales : (N,) ndarray
-            Time-scales of the transition matrix
+            Time-scales (in units of the input trajectory time step) of the transition matrix
         amplitudes : (N,) ndarray
             Amplitudes for the correlation experiment
 
@@ -578,9 +581,10 @@ class MSM(object):
         a : (n,) ndarray
             Observable, represented as vector on state space
         maxtime : int or float, optional, default = None
-            Maximum time (in trajectory frames) until which the correlation function will be evaluated. Internally,
-            the correlation function can only be computed in integer multiples of the Markov model lag time, and therefore
-            the actual last time point will be computed at :math:`\mathrm{ceil}(\mathrm{maxtime} / \tau)`.
+            Maximum time (in units of the input trajectory time step) until which the correlation function will be
+            evaluated. Internally, the correlation function can only be computed in integer multiples of the
+            Markov model lag time, and therefore the actual last time point will be computed at
+            :math:`\mathrm{ceil}(\mathrm{maxtime} / \tau)`.
             By default (None), the maxtime will be set equal to the 3 times the slowest relaxation time of the MSM,
             because after this time the signal is constant.
         k : int (optional)
@@ -592,6 +596,8 @@ class MSM(object):
 
         Returns
         -------
+        times : ndarray (N)
+            Time points (in units of the input trajectory time step) at which the relaxation has been computed
         res : ndarray
             Array of expectation value at given times
 
@@ -638,7 +644,7 @@ class MSM(object):
         Returns
         -------
         timescales : (N,) ndarray
-            Time-scales of the transition matrix
+            Time-scales (in units of the input trajectory time step) of the transition matrix
         amplitudes : (N,) ndarray
             Amplitudes for the relaxation experiment
 
@@ -1214,6 +1220,10 @@ class EstimatedMSM(MSM):
             in order to save this synthetic trajectory as a trajectory file with molecular structures
 
         """
+        #TODO: this is the only function left which does something time-related in a multiple of tau rather than dt.
+        #TODO: we could generate dt-strided trajectories by sampling tau times from the current state, but that would
+        #TODO: probably lead to a weird-looking trajectory. Maybe we could use a HMM to generate intermediate 'hidden'
+        #TODO: frames. Anyway, this is a nontrivial issue.
         # generate synthetic states
         from pyemma.msm.generation import generate_traj as _generate_traj
         syntraj = _generate_traj(self._T, N, start = start, stop = stop, dt = stride)
