@@ -5,12 +5,10 @@ Created on 19.01.2015
 '''
 from .transformer import Transformer
 from pyemma.util.linalg import eig_corr
-from pyemma.util.log import getLogger
 from pyemma.util.annotators import doc_inherit
 
 import numpy as np
 
-log = getLogger('TICA')
 __all__ = ['TICA']
 
 
@@ -135,13 +133,13 @@ class TICA(Transformer):
         self.cov = np.zeros((dim, dim))
         self.cov_tau = np.zeros_like(self.cov)
 
-        log.info("Running TICA with tau=%i; Estimating two covariance matrices"
-                 " with dimension (%i, %i)" % (self._tau, dim, dim))
-                 
-        return 0 # in zero'th pass don't request lagged data
+        self._logger.info("Running TICA with tau=%i; Estimating two covariance matrices"
+                          " with dimension (%i, %i)" % (self._tau, dim, dim))
+
+        return 0  # in zero'th pass don't request lagged data
 
     def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
-                       last_chunk, ipass, Y=None, stride=1):
+                        last_chunk, ipass, Y=None, stride=1):
         """
         Chunk-based parameterization of TICA. Iterates through all data twice. In the first pass, the
         data means are estimated, in the second pass the covariance and time-lagged covariance
@@ -170,17 +168,15 @@ class TICA(Transformer):
             # TODO: maybe use stable sum here, since small chunksizes
             # accumulate more errors
             self.mu += np.sum(X, axis=0, dtype=np.float64)
-            self.N_mean += np.shape(X)[0] 
+            self.N_mean += np.shape(X)[0]
 
             if last_chunk:
-                log.debug("mean before norming:\n%s" % self.mu)
-                log.debug("norming mean by %i" % self.N_mean)
                 self.mu /= self.N_mean
-                log.info("calculated mean:\n%s" % self.mu)
+                self._logger.info("calculated mean.")
 
                 # now we request real lagged data, since we are finished
                 # with first pass
-                return False,self._tau
+                return False, self._tau
 
         elif ipass == 1:
             if self.trajectory_length(itraj,stride=stride) > self._tau:
@@ -218,12 +214,12 @@ class TICA(Transformer):
                     # traditional counting
                     self.cov += 2.0*np.dot(X_meanfree.T, X_meanfree)
                     self.N_cov += 2.0*np.shape(X)[0]
-            
+
             else:
-                log.error("trajectory nr %i too short, skipping it" % itraj)
+                self._logger.error("trajectory nr %i too short, skipping it" % itraj)
 
             if last_chunk:
-                log.info("finished calculation of Cov and Cov_tau.")
+                self._logger.info("finished calculation of Cov and Cov_tau.")
                 return True  # finished!
 
         return False  # not finished yet.
@@ -232,11 +228,11 @@ class TICA(Transformer):
     def _param_finish(self):
         if self._force_eigenvalues_le_one:
             assert self.N_cov == self.N_cov_tau, 'inconsistency in C(0) and C(tau)'
-        
+
         # symmetrize covariance matrices
         self.cov = self.cov + self.cov.T
         self.cov *= 0.5
-        
+
         self.cov_tau = self.cov_tau + self.cov_tau.T
         self.cov_tau *= 0.5
 
@@ -245,10 +241,10 @@ class TICA(Transformer):
         self.cov_tau /= self.N_cov_tau - 1
 
         # diagonalize with low rank approximation
-        log.info("diagonalize Cov and Cov_tau")
+        self._logger.info("diagonalize Cov and Cov_tau")
         self.eigenvalues, self.eigenvectors = \
             eig_corr(self.cov, self.cov_tau, self.epsilon)
-        log.info("finished diagonalisation.")
+        self._logger.info("finished diagonalisation.")
 
     def _map_array(self, X):
         """Projects the data onto the dominant independent components.
@@ -263,7 +259,7 @@ class TICA(Transformer):
         Y : ndarray(n,)
             the projected data
         """
-        #TODO: DISCUSS - I renamed this map to_map_array as we should only require to override
+        #TODO: consider writing an extension to avoid temporary Xmeanfree
         X_meanfree = X - self.mu
         Y = np.dot(X_meanfree, self.eigenvectors[:, 0:self._output_dimension])
         return Y

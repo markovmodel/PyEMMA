@@ -6,7 +6,6 @@ import functools
 from scipy.spatial.distance import cdist
 
 from pyemma.coordinates.transform.transformer import Transformer
-from pyemma.util.log import getLogger
 
 # TODO: consider having this with an underlying loader, since we might now want
 # everyting in memory!
@@ -35,7 +34,6 @@ class DataInMemory(Transformer):
 
     def __init__(self, data, mmap_mode='r'):
         Transformer.__init__(self, chunksize=1000)
-        self.logger = getLogger('DataInMemory[%s]' % hex(id(self)))
         self.data_producer = self
 
         # storage

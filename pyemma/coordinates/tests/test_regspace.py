@@ -6,9 +6,10 @@ Created on 26.01.2015
 import itertools
 import unittest
 
-from pyemma.coordinates.clustering.regspace import RegularSpaceClustering, log
+from pyemma.coordinates.clustering.regspace import RegularSpaceClustering
 import numpy as np
 import warnings
+from pyemma.coordinates.api import cluster_regspace
 
 
 class RandomDataSource:
@@ -99,6 +100,10 @@ class TestRegSpaceClustering(unittest.TestCase):
             # TODO: verify num states matches max_clusters
             #assert len(self.clustering.dtrajs) <= self.clustering.max_clusters
             assert issubclass(w[-1].category, UserWarning)
+
+    def test1d_data(self):
+        data = np.random.random(100)
+        cluster_regspace(data, dmin=0.3)
 
 
 if __name__ == "__main__":

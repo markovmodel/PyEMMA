@@ -10,8 +10,6 @@ import warnings
 from pyemma.util.log import getLogger
 from pyemma.util.annotators import deprecated
 
-log = getLogger('Featurizer')
-
 __all__ = ['MDFeaturizer',
            'CustomFeature',
            ]
@@ -371,13 +369,15 @@ class MDFeaturizer(object):
         self.topology = (mdtraj.load(topfile)).topology
         self.active_features = []
         self._dim = 0
+        self._logger = getLogger("%s[%s]" %
+                                 (self.__class__.__name__, hex(id(self))))
 
     def __add_feature(self, f):
         if f not in self.active_features:
             self.active_features.append(f)
         else:
-            log.warning("tried to re-add the same feature %s"
-                        % f.__class__.__name__)
+            self._logger.warning("tried to re-add the same feature %s"
+                                 % f.__class__.__name__)
 
     def describe(self):
         """

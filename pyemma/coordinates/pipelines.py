@@ -9,9 +9,9 @@ from pyemma.coordinates.io.feature_reader import FeatureReader
 
 from pyemma.util.log import getLogger
 
-
-logger = getLogger('Discretizer')
-__all__ = ['Discretizer']
+__all__ = ['Discretizer',
+           'Pipeline',
+           ]
 
 
 class Pipeline(object):
@@ -29,6 +29,9 @@ class Pipeline(object):
             self.add_element(e)
 
         self._parametrized = False
+
+        name = "%s[%s]" % (self.__class__.__name__, hex(id(self)))
+        self._logger = getLogger(name)
 
     @property
     def chunksize(self):
@@ -130,17 +133,17 @@ class Pipeline(object):
             return
 
         M = psutil.virtual_memory()[1]  # available RAM in bytes
-        logger.info("available RAM: %i" % M)
+        self._logger.info("available RAM: %i" % M)
         const_mem = long(0)
         mem_per_frame = long(0)
 
         for trans in self.transformers:
             mem_per_frame += trans._get_memory_per_frame()
             const_mem += trans._get_constant_memory()
-        logger.info("per-frame memory requirements: %i" % mem_per_frame)
+        self._logger.info("per-frame memory requirements: %i" % mem_per_frame)
 
         # maximum allowed chunk size
-        logger.info("const mem: %i" % const_mem)
+        self._logger.info("const mem: %i" % const_mem)
         chunksize = (M - const_mem) / mem_per_frame
         if chunksize < 0:
             raise MemoryError(
@@ -148,14 +151,14 @@ class Pipeline(object):
 
         # is this chunksize sufficient to store full trajectories?
         chunksize = min(chunksize, np.max(reader.trajectory_lengths()))
-        logger.info("resulting chunk size: %i" % chunksize)
+        self._logger.info("resulting chunk size: %i" % chunksize)
 
         # set chunksize
         self.chunksize = chunksize
 
         # any memory unused? if yes, we can store results
         Mfree = M - const_mem - chunksize * mem_per_frame
-        logger.info("free memory: %i" % Mfree)
+        self._logger.info("free memory: %i" % Mfree)
 
         # starting from the back of the pipeline, store outputs if possible
         for trans in reversed(self.transformers):
@@ -165,7 +168,7 @@ class Pipeline(object):
                 Mfree -= mem_req_trans
                 # TODO: before we are allowed to call this method, we have to ensure all memory requirements are correct!
                 # trans.operate_in_memory()
-                logger.info("spending %i bytes to operate in main memory: %s "
+                self._logger.info("spending %i bytes to operate in main memory: %s "
                             % (mem_req_trans,  trans.describe()))
 
 
@@ -213,7 +216,7 @@ class Discretizer(Pipeline):
 
         if hasattr(reader, 'featurizer'):  # reader is a FeatureReader
             if reader.featurizer.dimension == 0:
-                logger.warning("no features selected!")
+                self._logger.warning("no features selected!")
 
         self.add_element(reader)
 
@@ -237,7 +240,7 @@ class Discretizer(Pipeline):
     def dtrajs(self):
         """ get discrete trajectories """
         if not self._parametrized:
-            logger.info("not yet parametrized, running now.")
+            self._logger.info("not yet parametrized, running now.")
             self.parametrize()
         return self._chain[-1].dtrajs
 

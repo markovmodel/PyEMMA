@@ -5,7 +5,6 @@ from pyemma.util.log import getLogger
 import numpy as np
 from scipy.spatial.distance import cdist
 
-log = getLogger('Transformer')
 __all__ = ['Transformer']
 
 
@@ -45,10 +44,11 @@ class Transformer(object):
 
     def __init__(self, chunksize=100, lag=0):
         self.chunksize = chunksize
-        #self._lag = lag
         self._in_memory = False
         self._dataproducer = None
         self._parametrized = False
+
+        self.__create_logger()
 
     @property
     def data_producer(self):
@@ -94,6 +94,10 @@ class Transformer(object):
         assert self.in_memory, "tried to delete in memory results which are not set"
         for y in self.Y:
             del y
+
+    def __create_logger(self):
+        name = "%s[%s]" % (self.__class__.__name__, hex(id(self)))
+        self._logger = getLogger(name)
 
     def number_of_trajectories(self):
         """

@@ -6,11 +6,8 @@ Created on 22.01.2015
 import numpy as np
 from sklearn.cluster import MiniBatchKMeans
 
-from pyemma.util.log import getLogger
 from pyemma.util.annotators import doc_inherit
 from pyemma.coordinates.clustering.interface import AbstractClustering
-
-log = getLogger('KmeansClustering')
 
 __all__ = ['KmeansClustering']
 
