@@ -339,12 +339,12 @@ def discretizer(reader,
         cluster = _KmeansClustering(n_clusters=100)
     return _Discretizer(reader, transform, cluster)
 
-
-
-# TODO: I think we might not need this anymore. Should we deprecate this? What do the pipeline-people think?
+@deprecated
 def feature_reader(trajfiles, topfile):
 
-    r"""Constructs a molecular feature reader.
+    r"""*Deprecated.* Constructs a molecular feature reader.
+
+    This funtion is deprecated. Use :func:`input` instead
 
     Parameters
     ----------
@@ -367,21 +367,14 @@ def feature_reader(trajfiles, topfile):
     pyemma.coordinates.io.FeatureReader
         Reader object
 
-    Examples
-    --------
-
-    Select some distances as features
-
-    >>> reader = FeatureReader('traj1.xtc', 'traj_structure.pdb')
-    >>> reader.featurizer.add_distances([[0, 1], ... ])
-
     """
     return _FeatureReader(trajfiles, topfile)
 
-
-# TODO: I think we might not need this anymore. Should we deprecate this? What do the pipeline-people think?
+@deprecated
 def memory_reader(data):
-    r"""Constructs a reader from an in-memory ndarray.
+    r"""*Deprecated.* Constructs a reader from an in-memory ndarray.
+
+    This funtion is deprecated. Use :func:`input` instead
 
     Parameters
     ----------
@@ -781,6 +774,7 @@ def cluster_kmeans(data=None, k=100, max_iter=1000):
     Examples
     --------
 
+    >>> import numpy as np
     >>> traj_data = [np.random.random((100, 3)), np.random.random((100,3))]
     >>> clustering = kmeans(traj_data, n_clusters=20)
     >>> clustering.dtrajs
@@ -885,6 +879,7 @@ def cluster_assign_centers(data=None, centers=None):
     Load data to assign to clusters from 'my_data.csv' by using the cluster
     centers from file 'my_centers.csv'
 
+    >>> import numpy as np
     >>> data = np.loadtxt('my_data.csv')
     >>> cluster_centers = np.loadtxt('my_centers.csv')
     >>> disc = assign_centers(data, cluster_centers)
