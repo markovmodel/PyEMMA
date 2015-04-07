@@ -335,7 +335,7 @@ class Transformer(object):
             self.parametrize()
         self._itraj = 0
         self._t = 0
-        if not self.in_memory:
+        if not self.in_memory and self.data_producer is not self:
             # operate in pipeline
             self.data_producer._reset(stride=stride)
 

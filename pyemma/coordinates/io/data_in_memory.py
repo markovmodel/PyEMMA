@@ -1,3 +1,4 @@
+from pyemma.coordinates.io.file_reader import FileReader
 __author__ = 'noe, marscher'
 
 import numpy as np
@@ -21,52 +22,24 @@ class DataInMemory(Transformer):
 
     Parameters
     ----------
-    data : ndarray (nframe, ndim) or list of ndarrays (nframe, ndim) or list of filenames
+    data : ndarray (nframe, ndim) or list of ndarrays (nframe, ndim)
         Data has to be either one 2d array which stores amount of frames in first
         dimension and coordinates/features in second dimension or a list of this
-        arrays. Despite that it can also be a list of filenames (.csv or .np[y,z] files),
-        which will then be loaded into memory.
-
-    mmap_mode : str (optional), default='r'
-        binary NumPy arrays are being memory mapped using this flag.
-
+        arrays.
     """
 
-    def __init__(self, data, mmap_mode='r'):
+    def __init__(self, data):
         Transformer.__init__(self, chunksize=1000)
         self.data_producer = self
 
         # storage
         self._data = []
 
-        self.mmap_mode = mmap_mode
-
         if not isinstance(data, (list, tuple)):
             data = [data]
 
-        # files (path strings)
-        if all(isinstance(d, basestring) for d in data):
-
-            # check files are readable via pre-creating file handles
-            fh = [open(f) for f in data]
-
-            for ii, f in enumerate(data):
-                if f.endswith('.npy'):
-                    x = np.load(f, mmap_mode=mmap_mode)
-                    fh[ii].close()
-                    self.__add_array_to_storage(x)
-                elif f.endswith('.npz'):
-                    # closes file handle
-                    with np.load(fh[ii]) as fh:
-                        for _, x in fh.items():
-                            self.__add_array_to_storage(x)
-                else:
-                    x = np.loadtxt(fh[ii])
-                    fh[ii].close()
-                    self.__add_array_to_storage(x)
-
         # everything is an array
-        elif all(isinstance(d, np.ndarray) for d in data):
+        if all(isinstance(d, np.ndarray) for d in data):
             for d in data:
                 self.__add_array_to_storage(d)
         else:
@@ -80,6 +53,19 @@ class DataInMemory(Transformer):
         self._itraj = 0
 
         self._parametrized = True
+
+    @classmethod
+    def load_from_files(cls, files):
+        """ construct this by loading all files into memory
+
+        Parameters
+        ----------
+        files: str or list of str
+            filenames to read from
+        """
+        reader = FileReader(files)
+        data = reader.get_output()
+        return cls(data)
 
     def __add_array_to_storage(self, array):
         # checks shapes, eg convert them (2d), raise if not possible
