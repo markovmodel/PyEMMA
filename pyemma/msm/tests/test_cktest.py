@@ -6,6 +6,8 @@ r"""Unit test for Chapman-Kolmogorov-Test module
 import unittest
 
 import numpy as np
+from os.path import abspath, join
+from os import pardir
 
 from pyemma.msm.generation import generate_traj
 from pyemma.msm.estimation import cmatrix, largest_connected_set, connected_cmatrix, tmatrix
@@ -14,6 +16,9 @@ from pyemma.util.numeric import assert_allclose
 from pyemma.msm.ui.birth_death_chain import BirthDeathChain
 
 from pyemma.msm import estimate_markov_model, cktest
+
+from pyemma.msm import estimate_markov_model as markov_state_model
+from pyemma.msm import cktest as api_cktest
 
 class TestCkTest(unittest.TestCase):
     
@@ -115,6 +120,33 @@ class TestCkTest(unittest.TestCase):
         assert_allclose(p_MSM, self.p_MSM)
         assert_allclose(p_MD, self.p_MD)
         assert_allclose(eps_MD, self.eps_MD)       
+
+class TestCkTestDoubleWell(unittest.TestCase):
+
+    def setUp(self):
+        testpath = abspath(join(abspath(__file__), pardir)) + '/../../util/tests/data/'
+        import pyemma.util.discrete_trajectories as dt
+        self.dtraj = dt.read_discrete_trajectory(testpath+'2well_traj_100K.dat')
+        self.tau = 10
+        self.msm = markov_state_model(self.dtraj, self.tau)
+
+    def test_cktest(self):
+        ckres = api_cktest(self.msm, 100, nsets=2)
+        # we should get three results: MSM expectation, data expectation, data errors
+        assert len(ckres) == 3
+        # shape right?
+        for i in range(3):
+            assert np.all(ckres[i].shape == (100, 2))
+        # start from 1
+        assert np.allclose(ckres[0][0,:], np.array([1.0,1.0]))
+        assert np.allclose(ckres[1][0,:], np.array([1.0,1.0]))
+        # errors should be zero at first point
+        assert np.allclose(ckres[2][0,:], np.array([0.0,0.0]))
+        # should be near 0.5 at the end
+        assert np.abs(ckres[0][-1,0] - 0.5) < 0.05
+        assert np.abs(ckres[0][-1,0] - 0.5) < 0.05
+        assert np.abs(ckres[1][-1,1] - 0.5) < 0.05
+        assert np.abs(ckres[1][-1,1] - 0.5) < 0.05
 
 if __name__=="__main__":
     unittest.main()
