@@ -25,10 +25,10 @@ class TestSaveTrajs(unittest.TestCase):
 
     def setUp(self):
         self.eps = 1e-6
-        self.pdbfile = 'data/bpti_ca.pdb'
-        self.trajfiles = ['data/bpti_001-033.xtc',
-                          'data/bpti_034-066.xtc',
-                          'data/bpti_067-100.xtc'
+        self.pdbfile = 'coordinates/tests/data/bpti_ca.pdb'
+        self.trajfiles = ['coordinates/tests/data/bpti_001-033.xtc',
+                          'coordinates/tests/data/bpti_034-066.xtc',
+                          'coordinates/tests/data/bpti_067-100.xtc'
                           ]
 
         # Create random sets of files and frames to be retrieved from trajfiles
