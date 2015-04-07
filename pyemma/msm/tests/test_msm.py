@@ -328,34 +328,39 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
 
     def test_correlation(self):
         # raise assertion error because size is wrong:
+        maxtime = 100000
         a = [1,2,3]
         with self.assertRaises(AssertionError):
             self.msm.correlation(a, 1)
         # should decrease
         a = range(self.msm.nstates)
-        corr1 = self.msm.correlation(a, range(1000))
-        assert(len(corr1) == 1000)
+        times, corr1 = self.msm.correlation(a, maxtime = maxtime)
+        assert(len(corr1) == maxtime/self.msm._tau)
+        assert(len(times) == maxtime/self.msm._tau)
         assert(corr1[0] > corr1[-1])
         a = range(self.msm.nstates)
-        corr2 = self.msm.correlation(a, range(1000), b=a)
+        times, corr2 = self.msm.correlation(a, a, maxtime = maxtime, )
         # should be indentical to autocorr
         assert(np.all(corr1 == corr2))
         # Test: should be increasing in time
         b = range(self.msm.nstates)[::-1]
-        corr3 = self.msm.correlation(a, range(1000), b)
-        assert(len(corr3) == 1000)
+        times, corr3 = self.msm.correlation(a, b, maxtime = maxtime, )
+        assert(len(times) == maxtime/self.msm._tau)
+        assert(len(corr3) == maxtime/self.msm._tau)
         assert(corr3[0] < corr3[-1])
 
     def test_relaxation(self):
         pi_perturbed = (self.msm.stationary_distribution**2)
         pi_perturbed /= pi_perturbed.sum()
         a = range(self.msm.nstates)
-        rel1 = self.msm.relaxation(self.msm.stationary_distribution, a, range(1000))
+        maxtime = 100000
+        times, rel1 = self.msm.relaxation(self.msm.stationary_distribution, a, maxtime = maxtime)
         # should be constant because we are in equilibrium
         assert(np.allclose(rel1-rel1[0], np.zeros((np.shape(rel1)[0]))))
-        rel2 = self.msm.relaxation(pi_perturbed, a, range(1000))
+        times, rel2 = self.msm.relaxation(pi_perturbed, a, maxtime = maxtime)
         # should relax
-        assert(len(rel2) == 1000)
+        assert(len(times) == maxtime/self.msm._tau)
+        assert(len(rel2) == maxtime/self.msm._tau)
         assert(rel2[0] < rel2[-1])
 
     def test_fingerprint_correlation(self):

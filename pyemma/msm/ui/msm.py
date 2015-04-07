@@ -10,6 +10,7 @@ and provides them for later access.
 __docformat__ = "restructuredtext en"
 
 import numpy as np
+from math import ceil
 import warnings
 import copy
 from pyemma.util.annotators import shortcut
@@ -57,6 +58,8 @@ class MSM(object):
         # set time step
         from pyemma.util.units import TimeUnit
         self._timeunit = TimeUnit(dt)
+        # set tau to 1. This is just needed in order to make the time-based methods (timescales, mfpt) work even without reference to timed data.
+        self._tau = 1
 
         # check connectivity
         # TODO: abusing C-connectivity test for T. Either provide separate T-connectivity test or move to a central location because it's the same code.
@@ -379,19 +382,54 @@ class MSM(object):
         return np.dot(a, self.stationary_distribution)
 
 
-    def correlation(self, a, times, b=None, k=None, ncv=None):
+    def correlation(self, a, b=None, maxtime=None, k=None, ncv=None):
         r"""Time-correlation for equilibrium experiment.
+
+        In order to simulate a time-correlation experiment (e.g. fluorescence correlation spectroscopy [1]_, dynamical
+        neutron scattering [2]_, ...), first compute the mean values of your experimental observable :math:`a` by MSM state:
+
+        .. :math:
+            a_i = \frac{1}{N_i} \sum_{x_t \in S_i} f(x_t)
+
+        where :math:`S_i` is the set of configurations belonging to MSM state :math:`i` and :math:`f()` is a function
+        that computes the experimental observable of interest for configuration :math:`x_t`. If a cross-correlation
+        function is wanted, also apply the above computation to a second experimental observable :math:`b`.
+
+        Then the precise (i.e. without statistical error) autocorrelation function of :math:`f(x_t)` given the Markov
+        model is computed by correlation(a), and the precise cross-correlation function is computed by correlation(a,b).
+        This is done by evaluating the equation
+
+        .. :math:
+            acf_a(k\tau)     & = & \mathbf{a}^\top \mathrm{diag}(\boldsymbol{\pi}) \mathbf{P(\tau)}^k \mathbf{a} \\
+            ccf_{a,b}(k\tau) & = & \mathbf{a}^\top \mathrm{diag}(\boldsymbol{\pi}) \mathbf{P(\tau)}^k \mathbf{b} \\
+
+        where :math:`acf` stands for autocorrelation function and :math:`ccf` stands for cross-correlation function,
+        :math:`\mathbf{P(\tau)}` is the transition matrix at lag time :math:`\tau`, :math:`\boldsymbol{\pi}` is the
+        equilibrium distribution of :math:`\mathbf{P}`, and :math:`k` is the time index.
+
+        Note that instead of using this method you could generate a long synthetic trajectory from the MSM using
+        :func:`generate_traj` and then estimating the time-correlation of your observable(s) directly from this
+        trajectory. However, there is no reason to do this because the present method does that calculation without
+        any sampling, and only in the limit of an infinitely long synthetic trajectory the two results will agree
+        exactly. The correlation function computed by the present method still has statistical uncertainty from the
+        fact that the underlying MSM transition matrix has statistical uncertainty when being estimated from data, but
+        there is no additional (and unnecessary) uncertainty due to synthetic trajectory generation.
 
         Parameters
         ----------
         a : (M,) ndarray
             Observable, represented as vector on state space
-        times : int or int array
-            List of lag time or lag times (in units of the transition matrix lag time tau) at which to compute correlation
+        maxtime : int or float
+            Maximum time (in trajectory frames) until which the correlation function will be evaluated. Internally,
+            the correlation function can only be computed in integer multiples of the Markov model lag time, and therefore
+            the actual last time point will be computed at :math:`\mathrm{ceil}(\mathrm{maxtime} / \tau)`
+            By default (None), the maxtime will be set equal to the 3 times the slowest relaxation time of the MSM,
+            because after this time the signal is constant.
         b : (M,) ndarray (optional)
             Second observable, for cross-correlations
         k : int (optional)
-            Number of eigenvalues and eigenvectors to use for computation
+            Number of eigenvalues and eigenvectors to use for computation. This option is only relevant for sparse matrices
+            and long times for which an eigenvalue decomposition will be done instead of using the matrix power.
         ncv : int (optional)
             Only relevant for sparse matrices and large lag times, where the relaxation will be computes using an
             eigenvalue decomposition. The number of Lanczos vectors generated, `ncv` must be greater than k;
@@ -399,8 +437,36 @@ class MSM(object):
 
         Returns
         -------
-        correlations : ndarray
+        times : ndarray (N)
+            Time points (in frames) at which the correlation has been computed
+        correlations : ndarray (N)
             Correlation values at given times
+
+        Examples
+        --------
+
+        This example computes the autocorrelation function of a simple observable on a three-state Markov model
+        and plots the result using matplotlib:
+
+        >>> import numpy as np
+        >>> import pyemma.msm as msm
+        >>>
+        >>> P = np.array([[0.99, 0.01, 0], [0.01, 0.9, 0.09], [0, 0.1, 0.9]])
+        >>> a = np.array([0.0, 0.5, 1.0])
+        >>> M = msm.markov_model(P)
+        >>> times, acf = M.correlation(a)
+        >>>
+        >>> import matplotlib.pylab as plt
+        >>> plt.plot(times, acf)
+
+        References
+        ----------
+        .. [1] Noe, F., S. Doose, I. Daidone, M. Loellmann, J. D. Chodera, M. Sauer and J. C. Smith. 2011
+            Dynamical fingerprints for probing individual relaxation processes in biomolecular dynamics with simulations
+            and kinetic experiments. Proc. Natl. Acad. Sci. USA 108, 4822-4827.
+        .. [2] Lindner, B., Z. Yi, J.-H. Prinz, J. C. Smith and F. Noe. 2013.
+            Dynamic Neutron Scattering from Conformational Dynamics I: Theory and Markov models.
+            J. Chem. Phys. 139, 175101.
 
         """
         # are we ready?
@@ -409,12 +475,20 @@ class MSM(object):
         assert np.shape(a)[0] == self._nstates, 'observable vector a does not have the same size like the active set. Need len(a) = '+str(self._nstates)
         if b is not None:
             assert np.shape(b)[0] == self._nstates, 'observable vector b does not have the same size like the active set. Need len(b) = '+str(self._nstates)
-        if isinstance(times, int):
-            times = [times]
+        # compute number of tau steps
+        if maxtime is None:
+            # by default, use five times the longest relaxation time, because then we have relaxed to equilibrium.
+            maxtime = 5*self.timescales()[0]
+        kmax = int(ceil(float(maxtime) / self._tau))
+        steps = np.array(range(kmax), dtype=int)
+        # compute correlation
         from pyemma.msm.analysis import correlation as _correlation
         # TODO: this could be improved. If we have already done an eigenvalue decomposition, we could provide it.
         # TODO: for this, the correlation function must accept already-available eigenvalue decompositions.
-        return _correlation(self._T, a, obs2=b, times=times, k = k, ncv = ncv)
+        res = _correlation(self._T, a, obs2=b, times=steps, k = k, ncv = ncv)
+        # return times scaled by tau
+        times = self._tau * steps
+        return times, res
 
 
     def fingerprint_correlation(self, a, b=None, k=None, ncv=None):
@@ -427,7 +501,8 @@ class MSM(object):
         b : (M,) ndarray (optional)
             Second observable, for cross-correlations
         k : int (optional)
-            Number of eigenvalues and eigenvectors to use for computation
+            Number of eigenvalues and eigenvectors to use for computation. This option is only relevant for sparse matrices
+            and long times for which an eigenvalue decomposition will be done instead of using the matrix power.
         ncv : int (optional)
             Only relevant for sparse matrices and large lag times, where the relaxation will be computes using an
             eigenvalue decomposition. The number of Lanczos vectors generated, `ncv` must be greater than k;
@@ -460,12 +535,41 @@ class MSM(object):
         return _fc(self._T, a, obs2=b, tau = self._tau, k = k, ncv = ncv)
 
 
-    def relaxation(self, p0, a, times, k=None, ncv=None):
-        r"""Relaxation experiment.
+    def relaxation(self, p0, a, maxtime = None, k=None, ncv=None):
+        r"""Simulates a perturbation-relaxation experiment.
 
-        The relaxation experiment describes the time-evolution
-        of an expectation value starting in a non-equilibrium
-        situation.
+        In perturbation-relaxation experiments such as temperature-jump, pH-jump, pressure jump or rapid mixing
+        experiments, an ensemble of molecules is initially prepared in an off-equilibrium distribution and the
+        expectation value of some experimental observable is then followed over time as the ensemble relaxes towards
+        equilibrium.
+
+        In order to simulate such an experiment, first determine the distribution of states at which the experiment is
+        started, :math:`p_0` and compute the mean values of your experimental observable :math:`a` by MSM state:
+
+        .. :math:
+            a_i = \frac{1}{N_i} \sum_{x_t \in S_i} f(x_t)
+
+        where :math:`S_i` is the set of configurations belonging to MSM state :math:`i` and :math:`f()` is a function
+        that computes the experimental observable of interest for configuration :math:`x_t`.
+
+        Then the precise (i.e. without statistical error) time-dependent expectation value of :math:`f(x_t)` given the Markov
+        model is computed by relaxation(p0, a). This is done by evaluating the equation
+
+        .. :math:
+            E_a(k\tau)     & = & \mathbf{p_0}^\top \mathbf{P(\tau)}^k \mathbf{a} \\
+
+        where :math:`E` stands for the expectation value that relaxes to its equilibrium value that is identical
+        to expectation(a), :math:`\mathbf{P(\tau)}` is the transition matrix at lag time :math:`\tau`, :math:`\boldsymbol{\pi}` is the
+        equilibrium distribution of :math:`\mathbf{P}`, and :math:`k` is the time index.
+
+        Note that instead of using this method you could generate many synthetic trajectory from the MSM using
+        :func:`generate_traj` that with starting points drawn from the initial distribution and then estimating the
+        time-dependent expectation value by an ensemble average. However, there is no reason to do this because the
+        present method does that calculation without any sampling, and only in the limit of an infinitely many
+        trajectories the two results will agree exactly. The relaxation function computed by the present method still
+        has statistical uncertainty from the fact that the underlying MSM transition matrix has statistical uncertainty
+        when being estimated from data, but there is no additional (and unnecessary) uncertainty due to synthetic
+        trajectory generation.
 
         Parameters
         ----------
@@ -473,8 +577,12 @@ class MSM(object):
             Initial distribution for a relaxation experiment
         a : (n,) ndarray
             Observable, represented as vector on state space
-        times : int or list of int (optional)
-            Time steps (multiples of the transition matrix lag time tau) at which to compute expectation
+        maxtime : int or float, optional, default = None
+            Maximum time (in trajectory frames) until which the correlation function will be evaluated. Internally,
+            the correlation function can only be computed in integer multiples of the Markov model lag time, and therefore
+            the actual last time point will be computed at :math:`\mathrm{ceil}(\mathrm{maxtime} / \tau)`.
+            By default (None), the maxtime will be set equal to the 3 times the slowest relaxation time of the MSM,
+            because after this time the signal is constant.
         k : int (optional)
             Number of eigenvalues and eigenvectors to use for computation
         ncv : int (optional)
@@ -493,12 +601,20 @@ class MSM(object):
         # check input
         assert np.shape(p0)[0] == self._nstates, 'initial distribution p0 does not have the same size like the active set. Need len(p0) = '+str(self._nstates)
         assert np.shape(a)[0] == self._nstates, 'observable vector a does not have the same size like the active set. Need len(a) = '+str(self._nstates)
-        if isinstance(times, int):
-            times = [times]
+        # compute number of tau steps
+        if maxtime is None:
+            # by default, use five times the longest relaxation time, because then we have relaxed to equilibrium.
+            maxtime = 5*self.timescales()[0]
+        kmax = int(ceil(float(maxtime) / self._tau))
+        steps = np.array(range(kmax), dtype=int)
+        # compute relaxation function
         from pyemma.msm.analysis import relaxation as _relaxation
         # TODO: this could be improved. If we have already done an eigenvalue decomposition, we could provide it.
         # TODO: for this, the correlation function must accept already-available eigenvalue decompositions.
-        return _relaxation(self._T, p0, a, times=times, k = k, ncv = ncv)
+        res = _relaxation(self._T, p0, a, times=steps, k = k, ncv = ncv)
+        # return times scaled by tau
+        times = self._tau * steps
+        return times, res
 
 
     def fingerprint_relaxation(self, p0, a, k=None, ncv=None):
@@ -1069,6 +1185,10 @@ class EstimatedMSM(MSM):
         in order to generate a synthetic molecular dynamics trajectory - see
         :func:`pyemma.coordinates.save_traj`
 
+        Note that the time different between two samples is the Markov model lag time  :math:`\tau`. When comparing
+        quantities computing from this synthetic trajectory and from the input trajectories, the time points of this
+        trajectory must be scaled by the lag time in order to have them on the same time scale.
+
         Parameters
         ----------
         N : int
@@ -1086,6 +1206,7 @@ class EstimatedMSM(MSM):
         indexes : ndarray( (N, 2) )
             trajectory and time indexes of the simulated trajectory. Each row consist of a tuple (i, t), where i is
             the index of the trajectory and t is the time index within the trajectory.
+            Note that the time different between two samples is the Markov model lag time  :math:`\tau`.
 
         See also
         --------
