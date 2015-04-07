@@ -2,11 +2,8 @@ r"""User-API for the pyemma.coordinates package
 
 .. currentmodule:: pyemma.coordinates.api
 """
-from pyemma.coordinates.io.util.reader_utils import get_file_reader as _get_file_reader
 
 __docformat__ = "restructuredtext en"
-
-import numpy as np
 
 from pyemma.util.annotators import deprecated
 from pyemma.util.log import getLogger
@@ -16,6 +13,8 @@ from pyemma.coordinates.pipelines import Discretizer as _Discretizer, Pipeline
 from pyemma.coordinates.io.featurizer import MDFeaturizer as _MDFeaturizer
 from pyemma.coordinates.io.feature_reader import FeatureReader as _FeatureReader
 from pyemma.coordinates.io.data_in_memory import DataInMemory as _DataInMemory
+from pyemma.coordinates.io.util.reader_utils import get_file_reader as _get_file_reader
+from pyemma.coordinates.io.frames_from_file import frames_from_file as _frames_from_file
 # transforms
 from pyemma.coordinates.transform.pca import PCA as _PCA
 from pyemma.coordinates.transform.tica import TICA as _TICA
