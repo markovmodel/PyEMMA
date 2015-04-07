@@ -11,3 +11,7 @@ The API is currently divided into two main parts:
 
    index_corr
    index_msm
+
+Plotting functions for aiding in the scientific analysis are found here:
+
+   index_plots

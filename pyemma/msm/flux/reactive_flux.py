@@ -10,36 +10,47 @@ import api as tptapi
 __all__=['ReactiveFlux']
 
 class ReactiveFlux(object):
+    r"""Reactive flux object.
+
+    This object describes a reactive flux, i.e. a network of fluxes from a set of source states A, to a set of
+    sink states B, via a set of intermediate nodes. Every node has three properties: the stationary probability mu,
+    the forward committor qplus and the backward committor qminus. Every pair of edges has the following properties:
+    a flux, generally a net flux that has no unnecessary back-fluxes, and optionally a gross flux.
+
+    Flux objects can be used to compute transition pathways (and their weights) from A to B, the total flux, the
+    total transition rate or mean first passage time, and they can be coarse-grained onto a set discretization
+    of the node set.
+
+    Fluxes can be computed in EMMA using transition path theory - see :func:`pyemma.msm.tpt`
+
+    Parameters
+    ----------
+    A : array_like
+        List of integer state labels for set A
+    B : array_like
+        List of integer state labels for set B
+    flux : (n,n) ndarray or scipy sparse matrix
+        effective or net flux of A->B pathways
+    mu : (n,) ndarray (optional)
+        Stationary vector
+    qminus : (n,) ndarray (optional)
+        Backward committor for A->B reaction
+    qplus : (n,) ndarray (optional)
+        Forward committor for A-> B reaction
+    gross_flux : (n,n) ndarray or scipy sparse matrix
+        gross flux of A->B pathways, if available
+
+    Notes
+    -----
+    Reactive flux contains a flux network from educt states (A) to product states (B).
+
+    See also
+    --------
+    pyemma.msm.tpt
+
+    """
     def __init__(self, A, B, flux,
                  mu=None, qminus=None, qplus=None, gross_flux=None):
-        r"""Reactive flux object.
-        
-        Parameters
-        ----------
-        A : array_like
-            List of integer state labels for set A
-        B : array_like
-            List of integer state labels for set B
-        flux : (n,n) ndarray or scipy sparse matrix
-            effective or net flux of A->B pathways
-        mu : (n,) ndarray (optional)
-            Stationary vector
-        qminus : (n,) ndarray (optional)
-            Backward committor for A->B reaction
-        qplus : (n,) ndarray (optional)
-            Forward committor for A-> B reaction
-        gross_flux : (n,n) ndarray or scipy sparse matrix
-            gross flux of A->B pathways, if available
-
-        Notes
-        -----
-        Reactive flux contains a flux network from educt states (A) to product states (B).
-        
-        See also
-        --------
-        pyemma.msm.tpt
-        
-        """
         # set data
         self._A = A
         self._B = B

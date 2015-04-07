@@ -6,7 +6,8 @@ __docformat__ = "restructuredtext en"
 
 from flux import tpt as tpt_factory
 from ui import ImpliedTimescales
-from ui import EstimatedMSM, MSM
+from ui import EstimatedMSM
+from ui import MSM
 from ui import cktest as chapman_kolmogorov
 
 __author__ = "Benjamin Trendelkamp-Schroer, Martin Scherer, Frank Noe"
@@ -45,11 +46,20 @@ def its(dtrajs, lags = None, nits=10, reversible = True, connected = True):
 
     Returns
     -------
-    itsobj : :class:`pyemma.msm.ui.ImpliedTimescales` object
+    itsobj : :class:`ImpliedTimescales <pyemma.msm.ui.ImpliedTimescales>` object
 
     See also
     --------
-    pyemma.msm.ui.ImpliedTimescales
+    ImpliedTimescales
+        The object returned by this function.
+    pyemma.plots.plot_implied_timescales
+        Plotting function for the :class:`ImpliedTimescales <pyemma.msm.ui.ImpliedTimescales>` object
+
+    References
+    ----------
+    .. [1] Swope, W. C. and J. W. Pitera and F. Suits
+        Describing protein folding kinetics by molecular dynamics simulations: 1. Theory.
+        J. Phys. Chem. B 108: 6571-6581 (2004)
 
     """
     itsobj = ImpliedTimescales(dtrajs, lags=lags, nits=nits, reversible=reversible, connected=connected)
@@ -58,6 +68,9 @@ def its(dtrajs, lags = None, nits=10, reversible = True, connected = True):
 
 def markov_model(P, dt = '1 step'):
     r"""Wraps transition matrix into a Markov model object, which conveniently provides various quantities
+
+    Returns a :class:`MSM <pyemma.msm.ui.MSM>` that contains the transition matrix
+    and allows to compute a large number of quantities related to Markov models.
 
     Parameters
     ----------
@@ -75,9 +88,13 @@ def markov_model(P, dt = '1 step'):
         |  'ms',  'millisecond*'
         |  's',   'second*'
 
+    Returns
+    -------
+    A :class:`MSM <pyemma.msm.ui.MSM>` object containing a transition matrix and various other MSM-related quantities.
+
     See also
     --------
-    pyemma.msm.ui.MSM
+    MSM : A MSM object
 
     """
     return MSM(P, dt=dt)
@@ -85,6 +102,9 @@ def markov_model(P, dt = '1 step'):
 def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivity='largest', compute=True,
         dt = '1 step', **kwargs):
     r"""Estimate Markov state model (MSM) from discrete trajectories.
+
+    Returns a :class:`EstimatedMSM <pyemma.msm.ui.EstimatedMSM>` that contains the estimated transition matrix
+    and allows to compute a large number of quantities related to Markov models.
 
     Parameters
     ----------
@@ -136,6 +156,11 @@ def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
         :math:`e_i = (x_i^{(1)} - x_i^{(2)})/(x_i^{(1)} + x_i^{(2)})` are used in order to track changes in small
         probabilities. The Euclidean norm of the change vector, :math:`|e_i|_2`, is compared to maxerr.
 
+    Returns
+    -------
+    An :class:`EstimatedMSM <pyemma.msm.ui.EstimatedMSM>` object containing a transition matrix and various other
+    MSM-related quantities.
+
     Notes
     -----
     You can postpone the estimation of the MSM using compute=False and
@@ -144,7 +169,7 @@ def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
 
     See also
     --------
-    pyemma.msm.ui.EstimatedMSM
+    EstimatedMSM : An MSM object that has been estimated from data
 
     """
     return EstimatedMSM(dtrajs, lag, reversible=reversible, sparse=sparse, connectivity=connectivity, compute=compute, dt = dt, **kwargs)
@@ -155,7 +180,7 @@ def cktest(msmobj, K, nsets=2, sets=None, full_output=False):
 
     Parameters
     ----------
-    msmobj : :class:`pyemma.msm.ui.MSM` object
+    msmobj : :class:`MSM <pyemma.msm.ui.MSM>` or `EstimatedMSM <pyemma.msm.ui.EstimatedMSM>` object
         Markov state model (MSM) object
     K : int 
         number of time points for the test
@@ -193,10 +218,14 @@ def cktest(msmobj, K, nsets=2, sets=None, full_output=False):
 
 def tpt(msmobj, A, B):
     r"""Computes the A->B reactive flux using transition path theory (TPT)
-    
+
+    The returned :class:`ReactiveFlux <pyemma.msm.flux.ReactiveFlux>` object can be used to extract various quantities
+    of the flux, as well as to compute A -> B transition pathways, their weights, and to coarse-grain the flux onto
+    sets of states.
+
     Parameters
     ----------
-    msmobj : :class:`pyemma.msm.ui.MSM` object
+    msmobj : :class:`MSM <pyemma.msm.ui.MSM>` or `EstimatedMSM <pyemma.msm.ui.EstimatedMSM>` object
         Markov state model (MSM) object
     A : array_like
         List of integer state labels for set A
@@ -205,23 +234,24 @@ def tpt(msmobj, A, B):
         
     Returns
     -------
-    tptobj : :class:`pyemma.msm.flux.ReactiveFlux` object
+    tptobj : :class:`ReactiveFlux <pyemma.msm.flux.ReactiveFlux>` object
         A python object containing the reactive A->B flux network
         and several additional quantities, such as stationary probability,
-        committors and set definitions
+        committors and set definitions.
         
     Notes
     -----
     The central object used in transition path theory is
-    the forward and backward comittor function.
+    the forward and backward committor function.
     
-    TPT (originally introduced in [1]) for continuous systems has a
-    discrete version outlined in [2]. Here, we use the transition
-    matrix formulation described in [3].
+    TPT (originally introduced in [1]_) for continuous systems has a
+    discrete version outlined in [2]_. Here, we use the transition
+    matrix formulation described in [3]_.
     
     See also
     --------
-    pyemma.msm.flux.ReactiveFlux
+    ReactiveFlux
+        Reactive Flux object
     
     References
     ----------
