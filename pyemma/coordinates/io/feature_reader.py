@@ -4,12 +4,9 @@ import numpy as np
 import mdtraj
 
 from pyemma.coordinates.util import patches
-from pyemma.util.log import getLogger
 
 from pyemma.coordinates.io.featurizer import MDFeaturizer
 from pyemma.coordinates.transform.transformer import Transformer
-
-log = getLogger('FeatureReader')
 
 __all__ = ['FeatureReader']
 
@@ -252,8 +249,8 @@ class FeatureReader(Transformer):
         if lag > 0:
             if self._curr_lag == 0:
                 # lag time or trajectory index changed, so open lagged iterator
-                log.debug("open time lagged iterator for traj %i with lag %i"
-                          % (self._itraj, self._curr_lag))
+                self._logger.debug("open time lagged iterator for traj %i with lag %i"
+                                   % (self._itraj, self._curr_lag))
                 self._curr_lag = lag
                 self._mditer2 = self._create_iter(self.trajfiles[self._itraj],
                                                   skip=self._curr_lag*stride, stride=stride) 
@@ -269,8 +266,8 @@ class FeatureReader(Transformer):
 
         if (self._t >= self.trajectory_length(self._itraj, stride=stride) and
                 self._itraj < len(self.trajfiles) - 1):
-            log.debug('closing current trajectory "%s"'
-                      % self.trajfiles[self._itraj])
+            self._logger.debug('closing current trajectory "%s"'
+                               % self.trajfiles[self._itraj])
             self._mditer.close()
             self._t = 0
             self._itraj += 1
