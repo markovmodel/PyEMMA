@@ -10,35 +10,11 @@ from scipy.sparse import issparse
 
 from pyemma.msm.estimation import cmatrix, connected_cmatrix, largest_connected_set, tmatrix
 from pyemma.msm.analysis import statdist
-from pyemma.msm.analysis import pcca
+from pyemma.msm.analysis import pcca_sets
 
 from mapping import MapToConnectedStateLabels
 
 __all__=['cktest']
-
-def pcca_sets(P, n, lcc):
-    r"""Compute partition into Perron clusters.
-
-    Parameters
-    ----------
-    P : (M, M) ndarray
-        Transition matrix
-    n : int
-        Number of Perron clusters
-
-    Returns 
-    -------
-    sets : list
-        List of arrays, sets[i] contains the states in the i-th Perron
-        cluster
-
-    """
-    sets=[]
-    pcca_prob=pcca(P, n)
-    pcca_ind=np.argmax(pcca_prob, axis=1)
-    for i in range(n):
-        sets.append(lcc[pcca_ind==i])
-    return sets
 
 def propagate(W, P, n=1):
     r"""Propagate probabilities.

@@ -13,7 +13,8 @@ User-API
    :toctree: generated/
 
    its
-   msm
+   markov_model
+   estimate_markov_model
    tpt
    cktest
 

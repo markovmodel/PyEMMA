@@ -10,8 +10,7 @@ import errno
 import re
 from glob import glob
 from pyemma.util.log import getLogger
-
-from pyemma.msm.io.api import read_discrete_trajectory
+from pyemma.util.discrete_trajectories import read_discrete_trajectory
 
 __all__ = ['paths_from_patterns', 'read_dtrajs_from_pattern']
 

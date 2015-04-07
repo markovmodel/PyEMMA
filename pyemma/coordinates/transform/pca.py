@@ -89,7 +89,7 @@ class PCA(Transformer):
         self.C = np.zeros((dim, dim))
 
     def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
-                       last_chunk, ipass, Y=None):
+                       last_chunk, ipass, Y=None, stride=1):
         """
         Chunk-based parametrization of PCA. Iterates through all data twice. In the first pass, the
         data means are estimated, in the second pass the covariance matrix is estimated.

@@ -89,11 +89,12 @@ def deprecated(func):
         return func(*args, **kwargs)
     return new_func
 
-def shortcut(name):
-    """ add an shortcut (alias) to a decorated function.
 
-    The alias function will have the same docstring and will be appended to
-    the module __all__ variable, where the original function is defined.
+def shortcut(name):
+    """Add an shortcut (alias) to a decorated function.
+
+    Calling the shortcut (alias) will call the decorated function. The shortcut name will be appended
+    to the module's __all__ variable and the shortcut function will inherit the function's docstring
 
     Examples
     --------
@@ -113,6 +114,8 @@ def shortcut(name):
         # docstrings are also being copied
         frame.f_globals[name] = f
         if frame.f_globals.has_key('__all__'):
-            frame.f_globals['__all__'].append(name)
+            # add shortcut if it's not already there.
+            if name not in frame.f_globals['__all__']:
+                frame.f_globals['__all__'].append(name)
         return f
     return wrap
