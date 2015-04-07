@@ -422,9 +422,7 @@ def save_traj(traj_inp, indexes, outfile, verbose=False):
     """
 
     from itertools import islice
-
-    # Convert to index (T,2) array if parsed a list or a list of lists
-    indexes = np.vstack(indexes)
+    from numpy import vstack, unique
 
     # Convert to index (T,2) array if parsed a list or a list of arrays
     indexes = vstack(indexes)
