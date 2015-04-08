@@ -102,10 +102,11 @@ class FeatureReader(Transformer):
         """
         return "Feature reader, features = ", self.featurizer.describe()
 
-    def parametrize(self):
+    def parametrize(self, **kwargs):
         """
         Parametrizes this transformer
 
+        :param **kwargs:
         :return:
         """
         if self.in_memory:
