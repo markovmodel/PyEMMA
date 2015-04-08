@@ -109,6 +109,7 @@ class FeatureReader(ReaderInterface):
         """
         Parametrizes this transformer
 
+        :param **kwargs:
         :return:
         """
         if self.in_memory:
