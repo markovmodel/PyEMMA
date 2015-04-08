@@ -6,16 +6,11 @@ python:
 env:
   global:
     - PATH=$HOME/miniconda/bin:$HOME/miniconda/envs/ci/bin/:$PATH
-    - common_py_deps="pip nose cython jpype1 mdtraj scikit-learn matplotlib"
+    - common_py_deps="pip pylint nose cython jpype1 mdtraj scikit-learn matplotlib"
     - doc_deps="ipython ipython-notebook sphinx==1.2.3 matplotlib numpydoc"
     - deps="scipy numpy"
   matrix:
     secure: "byk9bmnGvP3qDfpYvPKX4909KeS6pJQtfW+GkSsuHy4vnp++gu2IsXC/CJeCB0r7hpoRp7Z+XlOtYmJLvb585LZmGaqIs5LKs1DimJniAg5anpywOnaXodspeFcz6UWtLlIAQQS3SvP9SXvvrlIiF8IwXqWfEewtoGbpiCj3dEo="
-#    - deps="scipy=0.11 numpy=1.7 cython"
-# - deps="numpy=0.12 numpy=1.8" 
-# - deps="numpy=0.13 numpy=1.8" 
-# - deps="numpy=0.14 numpy=1.9" 
-# - deps="scipy=0.11 numpy=1.6"
 
 before_install:
 # before we invoke setup.py, install $common_deps with conda and let the rest
@@ -33,7 +28,10 @@ install:
 - python setup.py develop 
 
 script:
+# run tests omiting slow attributed tests.
 - nosetests -a '!slow'
+# run pylint (non fatal exit and show only errors)
+- pylint --rcfile=.pylintrc pyemma || true
 
 after_success:
 - tools/ci/travis/make_docs.sh
