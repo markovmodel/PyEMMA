@@ -8,6 +8,7 @@ the retrival via save_trajs
 import unittest
 import os
 import shutil
+import tempfile
 
 import numpy as np
 
@@ -43,11 +44,7 @@ class TestSaveTrajs(unittest.TestCase):
 
         self.sets = [set_1, set_2]
 
-        self.subdir = '/tmp/save_trajs_test/'
-        try:
-            os.mkdir(self.subdir)
-        except:
-            pass
+        self.subdir = tempfile.mkdtemp(suffix='save_trajs_test')
 
         # Instantiate the reader
         self.reader = feature_reader(self.trajfiles, self.pdbfile)
