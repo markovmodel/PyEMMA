@@ -10,6 +10,11 @@ __all__ = ['Transformer']
 
 class TransformerIterator(object):
     def __init__(self, transformer, stride=1, lag=0):
+        # reset transformer iteration
+
+        # TODO: I think it might be necessary to reset the transformer before starting to iterate. If not, can you
+        # TODO: guarantee it is set to the correct initial settings such as _itraj=0?
+        # transformer._reset()
         self._stride = stride
         self._lag = lag
         self._transformer = transformer
@@ -492,14 +497,33 @@ class Transformer(object):
             raise Exception('unsupported type (%s) of \"dimensions\"'%type(dimensions))
 
         # allocate memory
+
         trajs = [ np.empty((l, ndim)) for l in self.trajectory_lengths(stride=stride) ]
 
         # fetch data
         last_itraj = -1
+        # TODO: Please check: Die naechste Zeile habe ich eingefuegt. Bin ziemlich sicher, dass die da rein muss.
+        t = 0 # first time point
         for itraj, chunk in self.iterator(stride=stride):
             if itraj != last_itraj:
                 last_itraj = itraj
-                t = 0
+                t = 0 # reset time to 0 for new trajectory
+            # TODO: an dieser Stelle tritt das Problem auf: Die chunksize passt nicht ins Zielarray.
+            # TODO: Verschiedene moegliche Ursachen, evtl. mehrere: Iterator ist nicht initialisiert oder laeuft falsch,
+            # TODO: Zielgroesse mit stride stimmt nicht
+            # shaperight = chunk[:, dimensions].shape
+            # shapeleft = trajs[itraj][t:t+chunk.shape[0],:].shape
+            # if shapeleft[0] != shaperight[0]:
+            #     print "Found problem!!!"
+            #     print 'right', shaperight
+            #     print 'left', shapeleft
+            #     print 'itraj', itraj
+            #     print 't', t
+            #     print 'trajs[itraj].shape', trajs[itraj].shape
+            #     print 'chunk.shape', chunk.shape
+            #     print 'chunk.shape[0]', chunk.shape[0]
+            #     import sys
+            #     sys.exit()
             trajs[itraj][t:t+chunk.shape[0],:] = chunk[:, dimensions]
             t += chunk.shape[0]
 

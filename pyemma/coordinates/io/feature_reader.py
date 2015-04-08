@@ -134,6 +134,7 @@ class FeatureReader(Transformer):
         :return:
             length of trajectory
         """
+        # TODO: What??? Ist das richtig?
         return (self._lengths[itraj] - 1) // stride + 1
 
     def trajectory_lengths(self, stride=1):
@@ -148,6 +149,7 @@ class FeatureReader(Transformer):
         
         :return:
         """
+        # TODO: What??? Ist das richtig?
         return [(l - 1)//stride + 1 for l in self._lengths]
 
     def n_frames_total(self, stride=1):
