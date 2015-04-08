@@ -75,375 +75,578 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
         import pyemma.util.discrete_trajectories as dt
         self.dtraj = dt.read_discrete_trajectory(testpath+'2well_traj_100K.dat')
         self.tau = 10
-        self.msm = markov_state_model(self.dtraj, self.tau)
+        self.msmrev = markov_state_model(self.dtraj, self.tau)
+        self.msm    = markov_state_model(self.dtraj, self.tau, reversible=False)
 
     # ---------------------------------
     # BASIC PROPERTIES
     # ---------------------------------
 
-    def test_compute(self):
+    def _compute(self, msm):
         # should give warning
         with warnings.catch_warnings(record=True) as w:
-            self.msm.compute()
+            msm.compute()
+
+    def test_compute(self):
+        self._compute(self.msmrev)
+        self._compute(self.msm)
+
+    def _computed(self, msm):
+        assert(msm.computed)
 
     def test_computed(self):
-        assert(self.msm.computed)
+        self._computed(self.msmrev)
+        self._computed(self.msm)
 
     def test_reversible(self):
+        # NONREVERSIBLE
+        assert(self.msmrev.is_reversible)
         # REVERSIBLE
-        assert(self.msm.is_reversible)
+        assert(not self.msm.is_reversible)
+
+    def _sparse(self, msm):
+        assert(not msm.is_sparse)
 
     def test_sparse(self):
-        # default
-        assert(not self.msm.is_sparse)
+        self._sparse(self.msmrev)
+        self._sparse(self.msm)
 
-    def test_lagtime(self):
+    def _lagtime(self, msm):
         assert(self.msm.lagtime == self.tau)
 
-    def test_active_set(self):
+    def test_lagtime(self):
+        self._lagtime(self.msmrev)
+        self._lagtime(self.msm)
+
+    def _active_set(self, msm):
         # should always be <= full set
-        assert(len(self.msm.active_set) <= self.msm._n_full)
-        # REVERSIBLE: should be range(msm.n_states)
-        assert(len(self.msm.active_set) == self.msm.nstates)
+        assert(len(msm.active_set) <= self.msm._n_full)
+        # should be length of nstates
+        assert(len(msm.active_set) == self.msm.nstates)
+
+    def test_active_set(self):
+        self._active_set(self.msmrev)
+        self._active_set(self.msm)
+
+    def _largest_connected_set(self, msm):
+        lcs = msm.largest_connected_set
+        # identical to first connected set
+        assert(np.all(lcs == msm.connected_sets[0]))
+        # LARGEST: identical to active set
+        assert(np.all(lcs == msm.active_set))
 
     def test_largest_connected_set(self):
-        lcs = self.msm.largest_connected_set
-        # identical to first connected set
-        assert(np.all(lcs == self.msm.connected_sets[0]))
-        # REVERSIBLE: identical to active set
-        assert(np.all(lcs == self.msm.active_set))
+        self._largest_connected_set(self.msmrev)
+        self._largest_connected_set(self.msm)
+
+    def _nstates(self, msm):
+        # should always be <= full
+        assert(msm.nstates <= msm._n_full)
+        # THIS DATASET:
+        assert(msm.nstates == 66)
 
     def test_nstates(self):
-        # should always be <= full
-        assert(self.msm.nstates <= self.msm._n_full)
-        # THIS DATASET:
-        assert(self.msm.nstates == 66)
+        self._nstates(self.msmrev)
+        self._nstates(self.msm)
+
+    def _connected_sets(self, msm):
+        cs = msm.connected_sets
+        assert(len(cs) >= 1)
+        # MODE LARGEST:
+        assert(np.all(cs[0] == msm.active_set))
 
     def test_connected_sets(self):
-        cs = self.msm.connected_sets
-        assert(len(cs) >= 1)
-        # REVERSIBLE:
-        assert(np.all(cs[0] == self.msm.active_set))
+        self._connected_sets(self.msmrev)
+        self._connected_sets(self.msm)
+
+    def _connectivity(self, msm):
+        # HERE:
+        assert(msm.connectivity == 'largest')
 
     def test_connectivity(self):
-        # HERE:
-        assert(self.msm.connectivity == 'largest')
+        self._connectivity(self.msmrev)
+        self._connectivity(self.msm)
+
+    def _count_matrix_active(self, msm):
+        C = msm.count_matrix_active
+        assert(np.all(C.shape == (msm.nstates,msm.nstates)))
 
     def test_count_matrix_active(self):
-        C = self.msm.count_matrix_active
-        assert(np.all(C.shape == (self.msm.nstates,self.msm.nstates)))
+        self._count_matrix_active(self.msmrev)
+        self._count_matrix_active(self.msm)
+
+    def _count_matrix_full(self, msm):
+        C = msm.count_matrix_full
+        assert(np.all(C.shape == (msm._n_full,msm._n_full)))
 
     def test_count_matrix_full(self):
-        C = self.msm.count_matrix_full
-        assert(np.all(C.shape == (self.msm._n_full,self.msm._n_full)))
+        self._count_matrix_full(self.msmrev)
+        self._count_matrix_full(self.msm)
+
+    def _discrete_trajectories_full(self, msm):
+        assert(np.all(self.dtraj == msm.discrete_trajectories_full[0]))
 
     def test_discrete_trajectories_full(self):
-        assert(np.all(self.dtraj == self.msm.discrete_trajectories_full[0]))
+        self._discrete_trajectories_full(self.msmrev)
+        self._discrete_trajectories_full(self.msm)
 
-    def test_discrete_trajectories_active(self):
-        dta = self.msm.discrete_trajectories_active
+    def _discrete_trajectories_active(self, msm):
+        dta = msm.discrete_trajectories_active
         # HERE
         assert(len(dta) == 1)
         # HERE: states are shifted down from the beginning, because early states are missing
         assert(dta[0][0] < self.dtraj[0])
 
-    def test_timestep(self):
-        assert(self.msm.timestep.startswith('1'))
-        assert(self.msm.timestep.endswith('step'))
+    def test_discrete_trajectories_active(self):
+        self._discrete_trajectories_active(self.msmrev)
+        self._discrete_trajectories_active(self.msm)
 
-    def test_transition_matrix(self):
-        P = self.msm.transition_matrix
+    def _timestep(self, msm):
+        assert(msm.timestep.startswith('1'))
+        assert(msm.timestep.endswith('step'))
+
+    def test_timestep(self):
+        self._timestep(self.msmrev)
+        self._timestep(self.msm)
+
+    def _transition_matrix(self, msm):
+        P = msm.transition_matrix
         # should be ndarray by default
         assert(isinstance(P,np.ndarray))
         # shape
-        assert(np.all(P.shape==(self.msm.nstates,self.msm.nstates)))
+        assert(np.all(P.shape==(msm.nstates,msm.nstates)))
         # test transition matrix properties
         import pyemma.msm.analysis as msmana
         assert(msmana.is_transition_matrix(P))
         assert(msmana.is_connected(P))
         # REVERSIBLE
-        assert(msmana.is_reversible(P))
+        if msm.is_reversible:
+            assert(msmana.is_reversible(P))
+
+    def test_transition_matrix(self):
+        self._transition_matrix(self.msmrev)
+        self._transition_matrix(self.msm)
 
     # ---------------------------------
     # SIMPLE STATISTICS
     # ---------------------------------
 
-    def test_active_count_fraction(self):
+    def _active_count_fraction(self, msm):
         # should always be a fraction
-        assert(self.msm.active_count_fraction >= 0.0 and self.msm.active_count_fraction<= 1.0)
+        assert(msm.active_count_fraction >= 0.0 and msm.active_count_fraction<= 1.0)
         # special case for this data set:
-        assert(self.msm.active_count_fraction == 1.0)
+        assert(msm.active_count_fraction == 1.0)
+
+    def test_active_count_fraction(self):
+        self._active_count_fraction(self.msmrev)
+        self._active_count_fraction(self.msm)
+
+    def _active_state_fraction(self, msm):
+        # should always be a fraction
+        assert(msm.active_state_fraction >= 0.0 and msm.active_state_fraction<= 1.0)
 
     def test_active_state_fraction(self):
         # should always be a fraction
-        assert(self.msm.active_state_fraction >= 0.0 and self.msm.active_state_fraction<= 1.0)
+        self._active_state_fraction(self.msmrev)
+        self._active_state_fraction(self.msm)
+
+    def _effective_count_matrix(self, msm):
+        assert(np.allclose(self.tau * msm.effective_count_matrix, msm.count_matrix_active))
 
     def test_effective_count_matrix(self):
-        assert(np.allclose(self.tau * self.msm.effective_count_matrix, self.msm.count_matrix_active))
+        self._effective_count_matrix(self.msmrev)
+        self._effective_count_matrix(self.msm)
 
     # ---------------------------------
     # EIGENVALUES, EIGENVECTORS
     # ---------------------------------
 
-    def test_statdist(self):
-        mu = self.msm.stationary_distribution
+    def _statdist(self, msm):
+        mu = msm.stationary_distribution
         # should strictly positive (irreversibility)
         assert(np.all(mu > 0))
         # should sum to one
         assert(np.abs(np.sum(mu)-1.0) < 1e-10)
 
-    def test_eigenvalues(self):
-        ev = self.msm.eigenvalues()
+    def test_statdist(self):
+        self._statdist(self.msmrev)
+        self._statdist(self.msm)
+
+    def _eigenvalues(self, msm):
+        ev = msm.eigenvalues()
         # stochasticity
-        assert(np.max(np.abs(ev)) <= 1)
+        assert(np.max(np.abs(ev)) <= 1 + 1e-12)
         # irreducible
         assert(np.max(np.abs(ev[1:])) < 1)
-        # ordered
-        assert(np.all(np.argsort(np.abs(ev))[::-1] == np.arange(len(ev))))
+        # ordered?
+        evabs = np.abs(ev)
+        for i in range(0, len(evabs)-1):
+            assert (evabs[i] >= evabs[i+1])
         # REVERSIBLE:
-        assert(np.all(np.isreal(ev)))
+        if msm.is_reversible:
+            assert(np.all(np.isreal(ev)))
 
-    def test_eigenvectors_left(self):
-        L = self.msm.eigenvectors_left()
+    def test_eigenvalues(self):
+        self._eigenvalues(self.msmrev)
+        self._eigenvalues(self.msm)
+
+    def _eigenvectors_left(self, msm):
+        L = msm.eigenvectors_left()
         # shape should be right
-        assert(np.all(L.shape == (self.msm.nstates,self.msm.nstates)))
+        assert(np.all(L.shape == (msm.nstates,msm.nstates)))
         # first one should be identical to stat.dist
         l1 = L[0,:]
-        err = self.msm.stationary_distribution - l1
+        err = msm.stationary_distribution - l1
         assert(np.max(np.abs(err)) < 1e-10)
         # sums should be 1, 0, 0, ...
-        assert(np.allclose(np.sum(L[1:,:], axis=1), np.zeros(self.msm.nstates-1)))
+        assert(np.allclose(np.sum(L[1:,:], axis=1), np.zeros(msm.nstates-1)))
         # REVERSIBLE:
-        assert(np.all(np.isreal(L)))
+        if msm.is_reversible:
+            assert(np.all(np.isreal(L)))
 
-    def test_eigenvectors_right(self):
-        R = self.msm.eigenvectors_right()
+    def test_eigenvectors_left(self):
+        self._eigenvectors_left(self.msmrev)
+        self._eigenvectors_left(self.msm)
+
+    def _eigenvectors_right(self, msm):
+        R = msm.eigenvectors_right()
         # shape should be right
-        assert(np.all(R.shape == (self.msm.nstates,self.msm.nstates)))
+        assert(np.all(R.shape == (msm.nstates,msm.nstates)))
         # should be all ones
         r1 = R[:,0]
-        assert(np.allclose(r1, np.ones(self.msm.nstates)))
+        assert(np.allclose(r1, np.ones(msm.nstates)))
         # REVERSIBLE:
-        assert(np.all(np.isreal(R)))
+        if msm.is_reversible:
+            assert(np.all(np.isreal(R)))
 
-    def test_eigenvectors_RDL(self):
-        R = self.msm.eigenvectors_right()
-        D = np.diag(self.msm.eigenvalues())
-        L = self.msm.eigenvectors_left()
+    def test_eigenvectors_right(self):
+        self._eigenvectors_right(self.msmrev)
+        self._eigenvectors_right(self.msm)
+
+    def _eigenvectors_RDL(self, msm):
+        R = msm.eigenvectors_right()
+        D = np.diag(msm.eigenvalues())
+        L = msm.eigenvectors_left()
 
         # orthogonality constraint
-        assert(np.allclose(np.dot(R,L), np.eye(self.msm.nstates)))
+        assert(np.allclose(np.dot(R,L), np.eye(msm.nstates)))
         # REVERSIBLE: also true for LR because reversible matrix
-        assert(np.allclose(np.dot(L,R), np.eye(self.msm.nstates)))
+        if msm.is_reversible:
+            assert(np.allclose(np.dot(L,R), np.eye(msm.nstates)))
         # recover transition matrix
-        assert(np.allclose(np.dot(R, np.dot(D,L)), self.msm.transition_matrix))
+        assert(np.allclose(np.dot(R, np.dot(D,L)), msm.transition_matrix))
 
-    def test_timescales(self):
-        ts = self.msm.timescales()
+    def test_eigenvectors_RDL(self):
+        self._eigenvectors_RDL(self.msmrev)
+        self._eigenvectors_RDL(self.msm)
+
+    def _timescales(self, msm):
+        ts = msm.timescales()
         # should be all positive
         assert(np.all(ts > 0))
-        # should be all real
-        assert(np.all(np.isreal(ts)))
-        # HERE:
-        assert(np.max(np.abs(ts[0:3] - np.array([310.87248087, 8.50933441, 5.09082957]))) < 1e-6)
+        # REVERSIBLE: should be all real
+        if msm.is_reversible:
+            assert(np.all(np.isreal(ts)))
+            # HERE:
+            assert(np.max(np.abs(ts[0:3] - np.array([310.87248087, 8.50933441, 5.09082957]))) < 1e-6)
+        else:
+            # HERE:
+            assert(np.max(np.abs(ts[0:3] - np.array([310.49376926, 8.48302712, 5.02649564]))) < 1e-6)
+
+    def test_timescales(self):
+        self._timescales(self.msmrev)
+        self._timescales(self.msm)
 
     # ---------------------------------
     # FIRST PASSAGE PROBLEMS
     # ---------------------------------
 
-    def test_committor(self):
+    def _committor(self, msm):
         a = 16
         b = 48
-        q_forward = self.msm.committor_forward(a,b)
+        q_forward = msm.committor_forward(a,b)
         assert (q_forward[a] == 0)
         assert (q_forward[b] == 1)
         assert (np.all(q_forward[:30] < 0.5))
         assert (np.all(q_forward[40:] > 0.5))
-        q_backward = self.msm.committor_backward(a,b)
+        q_backward = msm.committor_backward(a,b)
         assert (q_backward[a] == 1)
         assert (q_backward[b] == 0)
         assert (np.all(q_backward[:30] > 0.5))
         assert (np.all(q_backward[40:] < 0.5))
         # REVERSIBLE:
-        assert (np.allclose(q_forward + q_backward, np.ones(self.msm.nstates)))
+        if msm.is_reversible:
+            assert (np.allclose(q_forward + q_backward, np.ones(msm.nstates)))
 
-    def test_mfpt(self):
+    def test_committor(self):
+        self._committor(self.msmrev)
+        self._committor(self.msm)
+
+    def _mfpt(self, msm):
         a = 16
         b = 48
-        t = self.msm.mfpt(a,b)
+        t = msm.mfpt(a,b)
         assert(t > 0)
         # HERE:
-        assert(np.abs(t - 872.69132618104049) < 1e-6)
+        if msm.is_reversible:
+            assert(np.abs(t - 872.69132618104049) < 1e-6)
+        else:
+            assert(np.abs(t - 872.07000910307738) < 1e-6)
+
+    def test_mfpt(self):
+        self._mfpt(self.msmrev)
+        self._mfpt(self.msm)
 
     # ---------------------------------
     # PCCA
     # ---------------------------------
 
+    def _pcca_assignment(self, msm):
+        if msm.is_reversible:
+            ass = msm.pcca_assignments(2)
+            # test: number of states
+            assert(len(ass) == msm.nstates)
+            # test: should be 0 or 1
+            assert(np.all(ass >= 0))
+            assert(np.all(ass <= 1))
+            # should be equal (zero variance) within metastable sets
+            assert(np.std(ass[:30]) == 0)
+            assert(np.std(ass[40:]) == 0)
+        else:
+            with self.assertRaises(ValueError):
+               ass = msm.pcca_assignments(2)
+
     def test_pcca_assignment(self):
-        ass = self.msm.pcca_assignments(2)
-        # test: number of states
-        assert(len(ass) == self.msm.nstates)
-        # test: should be 0 or 1
-        assert(np.all(ass >= 0))
-        assert(np.all(ass <= 1))
-        # should be equal (zero variance) within metastable sets
-        assert(np.std(ass[:30]) == 0)
-        assert(np.std(ass[40:]) == 0)
+        self._pcca_assignment(self.msmrev)
+        self._pcca_assignment(self.msm)
+
+    def _pcca_distributions(self, msm):
+        if msm.is_reversible:
+            pccadist = msm.pcca_distributions(2)
+            # should be right size
+            assert(np.all(pccadist.shape == (2,msm.nstates)))
+            # should be nonnegative
+            assert(np.all(pccadist >= 0))
+            # should roughly add up to stationary:
+            ds = pccadist[0]+pccadist[1]
+            ds /= ds.sum()
+            assert(np.max(np.abs(ds - msm.stationary_distribution)) < 0.001)
+        else:
+            with self.assertRaises(ValueError):
+                pccadist = msm.pcca_distributions(2)
 
     def test_pcca_distributions(self):
-        pccadist = self.msm.pcca_distributions(2)
-        # should be right size
-        assert(np.all(pccadist.shape == (2,self.msm.nstates)))
-        # should be nonnegative
-        assert(np.all(pccadist >= 0))
-        # should roughly add up to stationary:
-        ds = pccadist[0]+pccadist[1]
-        ds /= ds.sum()
-        assert(np.max(np.abs(ds - self.msm.stationary_distribution)) < 0.001)
+        self._pcca_distributions(self.msmrev)
+        self._pcca_distributions(self.msm)
+
+    def _pcca_memberships(self, msm):
+        if msm.is_reversible:
+            M = msm.pcca_memberships(2)
+            # should be right size
+            assert(np.all(M.shape == (msm.nstates,2)))
+            # should be nonnegative
+            assert(np.all(M >= 0))
+            # should add up to one:
+            assert(np.allclose(np.sum(M, axis=1), np.ones(msm.nstates)))
+        else:
+            with self.assertRaises(ValueError):
+                M = msm.pcca_memberships(2)
 
     def test_pcca_memberships(self):
-        M = self.msm.pcca_memberships(2)
-        # should be right size
-        assert(np.all(M.shape == (self.msm.nstates,2)))
-        # should be nonnegative
-        assert(np.all(M >= 0))
-        # should add up to one:
-        assert(np.allclose(np.sum(M, axis=1), np.ones(self.msm.nstates)))
+        self._pcca_memberships(self.msmrev)
+        self._pcca_memberships(self.msm)
+
+    def _pcca_sets(self, msm):
+        if msm.is_reversible:
+            S = msm.pcca_sets(2)
+            assignment = msm.pcca_assignments(2)
+            # should coincide with assignment
+            for i,s in enumerate(S):
+                for j in range(len(s)):
+                    assert(assignment[s[j]] == i)
+        else:
+            with self.assertRaises(ValueError):
+                S = msm.pcca_sets(2)
+                assignment = msm.pcca_assignments(2)
 
     def test_pcca_sets(self):
-        S = self.msm.pcca_sets(2)
-        assignment = self.msm.pcca_assignments(2)
-        # should coincide with assignment
-        for i,s in enumerate(S):
-            for j in range(len(s)):
-                assert(assignment[s[j]] == i)
+        self._pcca_sets(self.msmrev)
+        self._pcca_sets(self.msm)
 
     # ---------------------------------
     # EXPERIMENTAL STUFF
     # ---------------------------------
 
-    def expectation(self):
-        e = self.msm.expectation(range(self.msm.nstates))
+    def _expectation(self, msm):
+        e = msm.expectation(range(msm.nstates))
+        # approximately equal for both
         assert(np.abs(e - 31.73) < 0.01)
 
-    def test_correlation(self):
+    def test_expectation(self):
+        self._expectation(self.msmrev)
+        self._expectation(self.msm)
+
+    def _correlation(self, msm):
         # raise assertion error because size is wrong:
         maxtime = 100000
         a = [1,2,3]
         with self.assertRaises(AssertionError):
-            self.msm.correlation(a, 1)
+            msm.correlation(a, 1)
         # should decrease
-        a = range(self.msm.nstates)
-        times, corr1 = self.msm.correlation(a, maxtime = maxtime)
-        assert(len(corr1) == maxtime/self.msm._tau)
-        assert(len(times) == maxtime/self.msm._tau)
+        a = range(msm.nstates)
+        times, corr1 = msm.correlation(a, maxtime = maxtime)
+        assert(len(corr1) == maxtime/msm._tau)
+        assert(len(times) == maxtime/msm._tau)
         assert(corr1[0] > corr1[-1])
-        a = range(self.msm.nstates)
-        times, corr2 = self.msm.correlation(a, a, maxtime = maxtime, )
-        # should be indentical to autocorr
+        a = range(msm.nstates)
+        times, corr2 = msm.correlation(a, a, maxtime = maxtime, )
+        # should be identical to autocorr
         assert(np.all(corr1 == corr2))
         # Test: should be increasing in time
-        b = range(self.msm.nstates)[::-1]
-        times, corr3 = self.msm.correlation(a, b, maxtime = maxtime, )
-        assert(len(times) == maxtime/self.msm._tau)
-        assert(len(corr3) == maxtime/self.msm._tau)
+        b = range(msm.nstates)[::-1]
+        times, corr3 = msm.correlation(a, b, maxtime = maxtime, )
+        assert(len(times) == maxtime/msm._tau)
+        assert(len(corr3) == maxtime/msm._tau)
         assert(corr3[0] < corr3[-1])
 
-    def test_relaxation(self):
-        pi_perturbed = (self.msm.stationary_distribution**2)
+    def test_correlation(self):
+        self._correlation(self.msmrev)
+        self._correlation(self.msm)
+
+    def _relaxation(self, msm):
+        pi_perturbed = (msm.stationary_distribution**2)
         pi_perturbed /= pi_perturbed.sum()
-        a = range(self.msm.nstates)
+        a = range(msm.nstates)
         maxtime = 100000
-        times, rel1 = self.msm.relaxation(self.msm.stationary_distribution, a, maxtime = maxtime)
+        times, rel1 = msm.relaxation(msm.stationary_distribution, a, maxtime = maxtime)
         # should be constant because we are in equilibrium
         assert(np.allclose(rel1-rel1[0], np.zeros((np.shape(rel1)[0]))))
-        times, rel2 = self.msm.relaxation(pi_perturbed, a, maxtime = maxtime)
+        times, rel2 = msm.relaxation(pi_perturbed, a, maxtime = maxtime)
         # should relax
-        assert(len(times) == maxtime/self.msm._tau)
-        assert(len(rel2) == maxtime/self.msm._tau)
+        assert(len(times) == maxtime/msm._tau)
+        assert(len(rel2) == maxtime/msm._tau)
         assert(rel2[0] < rel2[-1])
 
+    def test_relaxation(self):
+        self._relaxation(self.msmrev)
+        self._relaxation(self.msm)
+
+    def _fingerprint_correlation(self, msm):
+        if msm.is_reversible:
+            # raise assertion error because size is wrong:
+            a = [1,2,3]
+            with self.assertRaises(AssertionError):
+                msm.fingerprint_correlation(a, 1)
+            # should decrease
+            a = range(self.msm.nstates)
+            fp1 = msm.fingerprint_correlation(a)
+            # first timescale is infinite
+            assert(fp1[0][0] == np.inf)
+            # next timescales are identical to timescales:
+            assert(np.allclose(fp1[0][1:], msm.timescales()))
+            # all amplitudes nonnegative (for autocorrelation)
+            assert(np.all(fp1[1][:] >= 0))
+            # identical call
+            b = range(msm.nstates)
+            fp2 = msm.fingerprint_correlation(a, b)
+            assert(np.allclose(fp1[0],fp2[0]))
+            assert(np.allclose(fp1[1],fp2[1]))
+            # should be - of the above, apart from the first
+            b = range(msm.nstates)[::-1]
+            fp3 = msm.fingerprint_correlation(a, b)
+            assert(np.allclose(fp1[0],fp3[0]))
+            assert(np.allclose(fp1[1][1:],-fp3[1][1:]))
+        else: # raise ValueError, because fingerprints are not defined for nonreversible
+            with self.assertRaises(ValueError):
+                a = range(self.msm.nstates)
+                msm.fingerprint_correlation(a)
+            with self.assertRaises(ValueError):
+                a = range(self.msm.nstates)
+                b = range(msm.nstates)
+                msm.fingerprint_correlation(a, b)
+
     def test_fingerprint_correlation(self):
-        # raise assertion error because size is wrong:
-        a = [1,2,3]
-        with self.assertRaises(AssertionError):
-            self.msm.fingerprint_correlation(a, 1)
-        # should decrease
-        a = range(self.msm.nstates)
-        fp1 = self.msm.fingerprint_correlation(a)
-        # first timescale is infinite
-        assert(fp1[0][0] == np.inf)
-        # next timescales are identical to timescales:
-        assert(np.allclose(fp1[0][1:], self.msm.timescales()))
-        # all amplitudes nonnegative (for autocorrelation)
-        assert(np.all(fp1[1][:] >= 0))
-        # identical call
-        b = range(self.msm.nstates)
-        fp2 = self.msm.fingerprint_correlation(a, b)
-        assert(np.allclose(fp1[0],fp2[0]))
-        assert(np.allclose(fp1[1],fp2[1]))
-        # should be - of the above, apart from the first
-        b = range(self.msm.nstates)[::-1]
-        fp3 = self.msm.fingerprint_correlation(a, b)
-        assert(np.allclose(fp1[0],fp3[0]))
-        assert(np.allclose(fp1[1][1:],-fp3[1][1:]))
+        self._fingerprint_correlation(self.msmrev)
+        self._fingerprint_correlation(self.msm)
+
+    def _fingerprint_relaxation(self, msm):
+        if msm.is_reversible:
+            # raise assertion error because size is wrong:
+            a = [1,2,3]
+            with self.assertRaises(AssertionError):
+                msm.fingerprint_relaxation(msm.stationary_distribution, a)
+            # equilibrium relaxation should be constant
+            a = range(msm.nstates)
+            fp1 = msm.fingerprint_relaxation(msm.stationary_distribution, a)
+            # first timescale is infinite
+            assert(fp1[0][0] == np.inf)
+            # next timescales are identical to timescales:
+            assert(np.allclose(fp1[0][1:], msm.timescales()))
+            # dynamical amplitudes should be near 0 because we are in equilibrium
+            assert(np.max(np.abs(fp1[1][1:])) < 1e-10)
+            # off-equilibrium relaxation
+            pi_perturbed = (msm.stationary_distribution**2)
+            pi_perturbed /= pi_perturbed.sum()
+            fp2 = msm.fingerprint_relaxation(pi_perturbed, a)
+            # first timescale is infinite
+            assert(fp2[0][0] == np.inf)
+            # next timescales are identical to timescales:
+            assert(np.allclose(fp2[0][1:], msm.timescales()))
+            # dynamical amplitudes should be significant because we are not in equilibrium
+            assert(np.max(np.abs(fp2[1][1:])) > 0.1)
+        else: # raise ValueError, because fingerprints are not defined for nonreversible
+            with self.assertRaises(ValueError):
+                a = range(self.msm.nstates)
+                msm.fingerprint_relaxation(msm.stationary_distribution, a)
+            with self.assertRaises(ValueError):
+                pi_perturbed = (msm.stationary_distribution**2)
+                pi_perturbed /= pi_perturbed.sum()
+                a = range(self.msm.nstates)
+                msm.fingerprint_relaxation(pi_perturbed, a)
 
     def test_fingerprint_relaxation(self):
-        # raise assertion error because size is wrong:
-        a = [1,2,3]
-        with self.assertRaises(AssertionError):
-            self.msm.fingerprint_relaxation(self.msm.stationary_distribution, a)
-        # equilibrium relaxation should be constant
-        a = range(self.msm.nstates)
-        fp1 = self.msm.fingerprint_relaxation(self.msm.stationary_distribution, a)
-        # first timescale is infinite
-        assert(fp1[0][0] == np.inf)
-        # next timescales are identical to timescales:
-        assert(np.allclose(fp1[0][1:], self.msm.timescales()))
-        # dynamical amplitudes should be near 0 because we are in equilibrium
-        assert(np.max(np.abs(fp1[1][1:])) < 1e-10)
-        # off-equilibrium relaxation
-        pi_perturbed = (self.msm.stationary_distribution**2)
-        pi_perturbed /= pi_perturbed.sum()
-        fp2 = self.msm.fingerprint_relaxation(pi_perturbed, a)
-        # first timescale is infinite
-        assert(fp2[0][0] == np.inf)
-        # next timescales are identical to timescales:
-        assert(np.allclose(fp2[0][1:], self.msm.timescales()))
-        # dynamical amplitudes should be significant because we are not in equilibrium
-        assert(np.max(np.abs(fp2[1][1:])) > 0.1)
+        self._fingerprint_relaxation(self.msmrev)
+        self._fingerprint_relaxation(self.msm)
 
     # ---------------------------------
     # STATISTICS, SAMPLING
     # ---------------------------------
 
-    def test_active_state_indexes(self):
-        I = self.msm.active_state_indexes
-        assert(len(I) == self.msm.nstates)
+    def _active_state_indexes(self, msm):
+        I = msm.active_state_indexes
+        assert(len(I) == msm.nstates)
         # compare to histogram
         import pyemma.util.discrete_trajectories as dt
-        hist = dt.count_states(self.msm.discrete_trajectories_full)
+        hist = dt.count_states(msm.discrete_trajectories_full)
         # number of frames should match on active subset
-        A = self.msm.active_set
+        A = msm.active_set
         for i in range(A.shape[0]):
             assert(I[i].shape[0] == hist[A[i]])
             assert(I[i].shape[1] == 2)
 
-    def test_generate_traj(self):
+    def test_active_state_indexes(self):
+        self._active_state_indexes(self.msmrev)
+        self._active_state_indexes(self.msm)
+
+    def _generate_traj(self, msm):
         T = 10
-        gt = self.msm.generate_traj(T)
+        gt = msm.generate_traj(T)
         # Test: should have the right dimension
         assert(np.all(gt.shape == (T,2)))
         # itraj should be right
         assert(np.all(gt[:,0] == 0))
 
-    def test_sample_by_state(self):
+    def test_generate_traj(self):
+        self._generate_traj(self.msmrev)
+        self._generate_traj(self.msm)
+
+    def _sample_by_state(self, msm):
         nsample = 100
-        ss = self.msm.sample_by_state(nsample)
+        ss = msm.sample_by_state(nsample)
         # must have the right size
-        assert(len(ss) == self.msm.nstates)
+        assert(len(ss) == msm.nstates)
         # must be correctly assigned
-        dtraj_active = self.msm.discrete_trajectories_active[0]
+        dtraj_active = msm.discrete_trajectories_active[0]
         for i,samples in enumerate(ss):
             # right shape
             assert(np.all(samples.shape == (nsample,2)))
@@ -451,30 +654,42 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
                 assert(row[0] == 0) # right trajectory
                 assert(dtraj_active[row[1]] == i)
 
-    def test_trajectory_weights(self):
-        W = self.msm.trajectory_weights()
+    def test_sample_by_state(self):
+        self._sample_by_state(self.msmrev)
+        self._sample_by_state(self.msm)
+
+    def _trajectory_weights(self, msm):
+        W = msm.trajectory_weights()
         # should sum to 1
         assert(np.abs(np.sum(W[0])-1.0) < 1e-6)
+
+    def test_trajectory_weights(self):
+        self._trajectory_weights(self.msmrev)
+        self._trajectory_weights(self.msm)
 
     # ----------------------------------
     # MORE COMPLEX TESTS / SANITY CHECKS
     # ----------------------------------
 
-    def test_two_state_kinetics(self):
+    def _two_state_kinetics(self, msm):
         # sanity check: k_forward + k_backward = 1.0/t2 for the two-state process
-        l2 = self.msm.eigenvectors_left()[1,:]
+        l2 = msm.eigenvectors_left()[1,:]
         core1 = np.argmin(l2)
         core2 = np.argmax(l2)
         # transition time from left to right and vice versa
-        t12 = self.msm.mfpt(core1, core2)
-        t21 = self.msm.mfpt(core2, core1)
+        t12 = msm.mfpt(core1, core2)
+        t21 = msm.mfpt(core2, core1)
         # relaxation time
-        t2 = self.msm.timescales()[0]
+        t2 = msm.timescales()[0]
         # the following should hold roughly = k12 + k21 = k2.
         # sum of forward/backward rates can be a bit smaller because we are using small cores and therefore underestimate rates
-        ksum = 1.0/self.msm.mfpt(core1, core2) + 1.0/self.msm.mfpt(core2, core1)
-        k2 = 1.0/self.msm.timescales()[0]
+        ksum = 1.0/t12 + 1.0/t21
+        k2 = 1.0/t2
         assert(np.abs(k2 - ksum) < 0.001)
+
+    def test_two_state_kinetics(self):
+        self._two_state_kinetics(self.msmrev)
+        self._two_state_kinetics(self.msm)
 
 if __name__=="__main__":
     unittest.main()
