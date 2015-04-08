@@ -78,7 +78,8 @@ class TestReaderUtils(unittest.TestCase):
         # files list contains something else than strings
         self.assertRaises(ValueError, api.input, self.traj_files.append([2]), None, self.pdb_file)
         # input file is directory
-        self.assertRaises(ValueError, api.input, "/", None, self.pdb_file)
+        root_dir = os.path.abspath(os.sep)
+        self.assertRaises(ValueError, api.input, root_dir, None, self.pdb_file)
 
 
 if __name__ == "__main__":
