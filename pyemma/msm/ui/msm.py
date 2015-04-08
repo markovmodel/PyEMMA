@@ -152,7 +152,7 @@ class MSM(object):
             self._D = self._D.real
             self._L = self._L.real
         else:
-            self._R, self._D, self._L = rdl_decomposition(self._T, k=k, norm='normal', ncv=ncv)
+            self._R, self._D, self._L = rdl_decomposition(self._T, k=k, norm='standard', ncv=ncv)
         self._eigenvalues = np.diag(self._D)
 
 
@@ -524,6 +524,9 @@ class MSM(object):
         """
         # are we ready?
         self._assert_computed()
+        # will not compute for nonreversible matrices
+        if (not self.is_reversible) and (self.nstates > 2):
+            raise ValueError('Fingerprint calculation is not supported for nonreversible transition matrices. Consider estimating the MSM with reversible = True')
         # check input
         assert np.shape(a)[0] == self._nstates, 'observable vector a does not have the same size like the active set. Need len(a) = '+str(self._nstates)
         if b is not None:
@@ -654,6 +657,9 @@ class MSM(object):
         """
         # are we ready?
         self._assert_computed()
+        # will not compute for nonreversible matrices
+        if (not self.is_reversible) and (self.nstates > 2):
+            raise ValueError('Fingerprint calculation is not supported for nonreversible transition matrices. Consider estimating the MSM with reversible = True')
         # check input
         assert np.shape(p0)[0] == self._nstates, 'initial distribution p0 does not have the same size like the active set. Need len(p0) = '+str(self._nstates)
         assert np.shape(a)[0] == self._nstates, 'observable vector a does not have the same size like the active set. Need len(a) = '+str(self._nstates)
