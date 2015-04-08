@@ -174,7 +174,9 @@ class MSM(object):
         # check input?
         if self._sparse:
             if k is None:
-                raise ValueError('You have requested sparse=True, then the number of eigenvalues neig must also be set.')
+                # if k is None and we're in sparse mode, just return what is already # in self._L and self_R
+                return
+                #raise ValueError('You have requested sparse=True, then the number of eigenvalues neig must also be set.')
         else:
             # override setting - we anyway have to compute all eigenvalues, so we'll also store them.
             k = self._nstates
@@ -842,6 +844,9 @@ class EstimatedMSM(MSM):
         |  'ms',  'millisecond*'
         |  's',   'second*'
 
+    n_sparse_vec : int, optional, default = 10
+        Only does something in sparse mode. Number of eigenvectors to be computed by default.
+
     **kwargs: Optional algorithm-specific parameters. See below for special cases
     maxiter = 1000000 : int
         Optional parameter with reversible = True.
@@ -863,7 +868,7 @@ class EstimatedMSM(MSM):
     """
     def __init__(self, dtrajs, lag,
                  reversible=True, sparse=False, connectivity='largest', estimate=True,
-                 dt = '1 step',
+                 dt = '1 step', n_sparse_vec = 10,
                  **kwargs):
         # TODO: extensive input checking!
         from pyemma.util.types import ensure_dtraj_list
@@ -872,6 +877,9 @@ class EstimatedMSM(MSM):
 
         self._reversible = reversible
         #self.sliding = sliding
+
+        # A variable that to override sparse = True for small matrices (simplifies computations)
+        self._n_force_dense = 10
 
         # count states
         import pyemma.msm.estimation as msmest
@@ -882,6 +890,9 @@ class EstimatedMSM(MSM):
         if self._n_full > 4000 and not sparse:
             warnings.warn('Building a dense MSM with '+str(self._n_full)+' states. This can be inefficient or '+
                           'unfeasible in terms of both runtime and memory consumption. Consider using sparse=True.')
+
+        # set the number of vectors to be automatically produced in sparse mode
+        self._n_sparse_vec = n_sparse_vec
 
         # store connectivity mode (lowercase)
         self.connectivity = connectivity.lower()
@@ -941,6 +952,19 @@ class EstimatedMSM(MSM):
         self._C_active = submatrix(self._C_full, self._active_set)
         self._nstates = self._C_active.shape[0]
 
+        # Avoid sparsity when it is not actually needed # A bit aggressive, perhaps?
+        if self._nstates < self._n_force_dense and self._sparse:
+            warnings.warn('Building a sparse MSM with '+str(self._nstates)+' states. Overriding your sparse = True option')
+            self._sparse = False
+
+        # The combination of self._nstates < self._n_sparse_vec automatically **and** sparse = True
+        # is NOT allowed
+        if self._sparse and self._nstates < self._n_sparse_vec:
+            warnings.warn('n_sparse_vec is %u, but only %u states available.'%(self._n_sparse_vec,  self._nstates))
+            self._n_sparse_vec = np.max((1, self._nstates - 2))
+            warnings.warn('Resetting n_sparse_vec to %u (= min(1, self._n_states -2))'%(self._n_sparse_vec))
+            warnings.warn('IN SPARSE MODE, THIS IS VERY INEFFICIENT. Reconsider smaller values of n_sparse_vec or the option sparse = True')
+
         # continue sparse or dense?
         if not self._sparse:
             # converting count matrices to arrays. As a result the transition matrix and all subsequent properties
@@ -969,6 +993,12 @@ class EstimatedMSM(MSM):
             self._dtrajs_active.append(self._full2active[dtraj])
 
         self._estimated = True
+
+        # if sparse option was set to true, we can compute the some eigenvectors here
+        if self._sparse:
+            self._ensure_eigendecomposition(k = self._n_sparse_vec, ncv = None)
+        if not self._sparse and self._nstates <= self._n_force_dense:
+            self._ensure_eigendecomposition()
 
 
     ################################################################################
