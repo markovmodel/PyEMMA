@@ -682,14 +682,14 @@ class MSM(object):
         # ensure that we have a pcca object with the right number of states
         try:
             # this will except if we don't have a pcca object
-            if self.pcca.n_metastable != m:
+            if self._pcca.n_metastable != m:
                 # incorrect number of states - recompute
-                self.pcca = PCCA(self._T, m)
+                self._pcca = PCCA(self._T, m)
         except:
             # didn't have a pcca object yet - compute
-            self.pcca = PCCA(self._T, m)
+            self._pcca = PCCA(self._T, m)
 
-    def pcca_memberships(self, m):
+    def metastable_memberships(self, m):
         """ Computes the memberships of active set states to metastable sets with the PCCA++ method _[1].
 
         Parameters
@@ -713,9 +713,9 @@ class MSM(object):
         # are we ready?
         self._assert_estimated()
         self._ensure_pcca(m)
-        return self.pcca.memberships
+        return self._pcca.memberships
 
-    def pcca_distributions(self, m):
+    def metastable_distributions(self, m):
         """ Computes the probability distributions of active set states within each metastable set using the PCCA++ method _[1]
         using Bayesian inversion as described in _[2].
 
@@ -744,9 +744,9 @@ class MSM(object):
         # are we ready?
         self._assert_estimated()
         self._ensure_pcca(m)
-        return self.pcca.output_probabilities
+        return self._pcca.output_probabilities
 
-    def pcca_sets(self, m):
+    def metastable_sets(self, m):
         """ Computes the metastable sets of active set states within each metastable set using the PCCA++ method _[1]
 
         This is only recommended for visualization purposes. You *cannot* compute any
@@ -771,9 +771,9 @@ class MSM(object):
         # are we ready?
         self._assert_estimated()
         self._ensure_pcca(m)
-        return self.pcca.metastable_sets
+        return self._pcca.metastable_sets
 
-    def pcca_assignments(self, m):
+    def metastable_assignments(self, m):
         """ Computes the assignment to metastable sets for active set states using the PCCA++ method _[1]
 
         This is only recommended for visualization purposes. You *cannot* compute any
@@ -798,7 +798,7 @@ class MSM(object):
         # are we ready?
         self._assert_estimated()
         self._ensure_pcca(m)
-        return self.pcca.metastable_assignment
+        return self._pcca.metastable_assignment
 
 
 class EstimatedMSM(MSM):
