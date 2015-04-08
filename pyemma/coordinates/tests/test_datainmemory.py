@@ -95,28 +95,20 @@ class TestDataInMemory(unittest.TestCase):
         data = np.arange(n)
         reader = DataInMemory(data)
 
-        self.assertEqual(reader.trajectory_lengths(), [1])
-        self.assertEqual(reader.dimension(), n)
+        self.assertEqual(reader.trajectory_lengths(), [n])
+        self.assertEqual(reader.dimension(), 1)
         self.assertEqual(reader.number_of_trajectories(), 1)
-        self.assertEqual(reader.n_frames_total(), 1)
-
-    def test1dDataList_diff_dim(self):
-        # TODO: discuss it shall be possible to use 1d data of different
-        # length?
-        n = 3
-        data = [np.arange(n), np.arange(n + 1)]
-        with self.assertRaises(ValueError):
-            reader = DataInMemory(data)
+        self.assertEqual(reader.n_frames_total(), n)
 
     def test1dDataList(self):
         n = 10
         data = [np.arange(n), np.arange(n)]
         reader = DataInMemory(data)
 
-        self.assertEqual(reader.trajectory_lengths(), [1, 1])
-        self.assertEqual(reader.dimension(), n)
+        self.assertEqual(reader.trajectory_lengths(), [n, n])
+        self.assertEqual(reader.dimension(), 1)
         self.assertEqual(reader.number_of_trajectories(), 2)
-        self.assertEqual(reader.n_frames_total(), 2)
+        self.assertEqual(reader.n_frames_total(), 2 * n)
 
     def test_file_1d(self):
         DataInMemory(self.files1d)
@@ -180,49 +172,87 @@ class TestDataInMemory(unittest.TestCase):
             # increment trajectory
             itraj += 1
 
-    def test_lagged_iterator(self):
-        n = 100
+    def test_lagged_iterator_1d(self):
+        n = 57
         chunksize = 10
         lag = 1
 
 #         data = [np.random.random((n, 3)),
 #                 np.zeros((29, 3)),
 #                 np.random.random((n - 50, 3))]
-        data = [np.arange(300).reshape((n,3)),
-                np.arange(29*3).reshape((29,3)),
-                np.arange(150).reshape(50,3)]
+#         data = [np.arange(300).reshape((n,3)),
+#                 np.arange(29*3).reshape((29,3)),
+#                 np.arange(150).reshape(50,3)]
+        data = [np.arange(n), np.arange(50), np.arange(30)]
         input_lens = [x.shape[0] for x in data]
+        # print data[0].shape
         reader = DataInMemory(data)
         reader.chunksize = chunksize
 
         self.assertEqual(reader.n_frames_total(), sum(input_lens))
 
         # store results by traj
-        chunks = {0: [], 1: [], 2: []}
-        lagged_chunks = {0: [], 1: [], 2: []}
+        chunked_trajs = [[] for _ in xrange(len(data))]
+        chunked_lagged_trajs = [[] for _ in xrange(len(data))]
 
         # iterate over data
         for itraj, X, Y in reader.iterator(lag=lag):
-            chunks[itraj].append(X)
-            print Y
-            lagged_chunks[itraj].append(Y)
+            chunked_trajs[itraj].append(X)
+            chunked_lagged_trajs[itraj].append(Y)
 
-        # check results
-        merged_chunks = [np.concatenate(c) for c in chunks.values()]
-        merged_lagged_chunks = [np.concatenate(c) for c in lagged_chunks.values()]
+        trajs = [np.vstack(ichunks) for ichunks in chunked_trajs]
+        lagged_trajs = [np.vstack(ichunks) for ichunks in chunked_lagged_trajs]
 
         # unlagged data
-        np.testing.assert_equal(
-            merged_chunks[0].reshape(data[0].shape), data[0])
-        np.testing.assert_equal(
-            merged_chunks[1].reshape(data[1].shape), data[1])
-        np.testing.assert_equal(
-            merged_chunks[2].reshape(data[2].shape), data[2])
+        for traj, input_traj in zip(trajs, data):
+            np.testing.assert_equal(traj.reshape(input_traj.shape), input_traj)
 
         # lagged data
         lagged_0 = [d[lag:] for d in data]
 
-        np.testing.assert_equal(merged_lagged_chunks[0], lagged_0[0])
+        for traj, input_traj in zip(lagged_trajs, lagged_0):
+            np.testing.assert_equal(traj.reshape(input_traj.shape), input_traj)
+
+    def test_lagged_iterator_2d(self):
+        n = 57
+        chunksize = 10
+        lag = 1
+
+#         data = [np.random.random((n, 3)),
+#                 np.zeros((29, 3)),
+#                 np.random.random((n - 50, 3))]
+        data = [np.arange(300).reshape((100, 3)),
+                np.arange(29 * 3).reshape((29, 3)),
+                np.arange(150).reshape(50, 3)]
+        input_lens = [x.shape[0] for x in data]
+        # print data[0].shape
+        reader = DataInMemory(data)
+        reader.chunksize = chunksize
+
+        self.assertEqual(reader.n_frames_total(), sum(input_lens))
+
+        # store results by traj
+        chunks = [[] for _ in xrange(len(data))]
+        lagged_chunks = [[] for _ in xrange(len(data))]
+
+        # iterate over data
+        for itraj, X, Y in reader.iterator(lag=lag):
+            chunks[itraj].append(X)
+            lagged_chunks[itraj].append(Y)
+
+        trajs = [np.vstack(ichunks) for ichunks in chunks]
+
+        lagged_trajs = [np.vstack(ichunks) for ichunks in lagged_chunks]
+
+        # unlagged data
+        for traj, input_traj in zip(trajs, data):
+            np.testing.assert_equal(traj.reshape(input_traj.shape), input_traj)
+
+        # lagged data
+        lagged_0 = [d[lag:] for d in data]
+
+        for traj, input_traj in zip(lagged_trajs, lagged_0):
+            np.testing.assert_equal(traj.reshape(input_traj.shape), input_traj)
 
 if __name__ == "__main__":
     unittest.main()

@@ -86,7 +86,7 @@ class DataInMemory(Transformer):
         # after checks passed, add array to self._data
 
         if array.ndim == 1:
-            array = np.atleast_2d(array)
+            array = np.atleast_2d(array).T
         elif array.ndim == 2:
             pass
         else:
@@ -163,7 +163,9 @@ class DataInMemory(Transformer):
         :return:
             the total number of frames, over all trajectories
         """
+        # FIXME: in case of 1 traj, this returns 1!!!
         if stride == 1:
+            self._logger.debug("self._lengths= %s " % self._lengths)
             return np.sum(self._lengths)
         else:
             return sum(self.trajectory_lengths(stride))
@@ -208,25 +210,28 @@ class DataInMemory(Transformer):
                 return (X, Y)
         # chunked mode
         else:
-            upper_bound = min(self._t + self._chunksize * stride, traj_len)
+            upper_bound = min(self._t + (self._chunksize + 1)*stride, traj_len)
             slice_x = slice(self._t, upper_bound, stride)
 
             X = traj[slice_x]
-            last_t = self._t
-            self._t += X.shape[0]
-
-            if self._t >= traj_len:
-                self._itraj += 1
-                self._t = 0
+            self._logger.debug(X[0])
 
             if lag == 0:
+                self._t = upper_bound
+
+                if upper_bound >= traj_len:
+                    self._itraj += 1
+                    self._t = 0
                 return X
             else:
                 # its okay to return empty chunks
-                upper_bound = min(
-                    last_t + (lag + self._chunksize) * stride, traj_len)
-                slice_y = slice(last_t + lag, upper_bound, stride)
+                upper_bound = min(self._t + (lag + self._chunksize+1)*stride, traj_len)
+                slice_y = slice(self._t + lag, upper_bound, stride)
+                self._t += X.shape[0]
 
+                if self._t >= traj_len:
+                    self._itraj += 1
+                    self._t = 0
                 Y = traj[slice_y]
                 return X, Y
 
