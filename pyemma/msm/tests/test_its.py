@@ -105,8 +105,8 @@ class ImpliedTimescalesTest(unittest.TestCase):
         lags = [int(t4)]
         its = ImpliedTimescales([self.dtraj4_2], lags=lags)
         est = its.timescales[0]
-        assert(np.alltrue(est < t4+15.0))
-        assert(np.alltrue(est > t4-15.0))
+        assert(np.alltrue(est < t4+20.0))
+        assert(np.alltrue(est > t4-20.0))
 
 if __name__ == "__main__":
     unittest.main()

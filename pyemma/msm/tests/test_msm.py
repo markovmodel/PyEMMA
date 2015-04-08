@@ -85,7 +85,7 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
     def _compute(self, msm):
         # should give warning
         with warnings.catch_warnings(record=True) as w:
-            msm.compute()
+            msm.estimate()
 
     def test_compute(self):
         self._compute(self.msmrev)

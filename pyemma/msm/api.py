@@ -99,7 +99,7 @@ def markov_model(P, dt = '1 step'):
     """
     return MSM(P, dt=dt)
 
-def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivity='largest', compute=True,
+def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivity='largest', estimate=True,
         dt = '1 step', **kwargs):
     r"""Estimate Markov state model (MSM) from discrete trajectories.
 
@@ -130,7 +130,7 @@ def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
             the stationary vector is only defined within subsets, etc. Currently not implemented.
         'none' : The active set is the full set of states. Estimation will be conducted on the full set of states
             without ensuring connectivity. This only permits nonreversible estimation. Currently not implemented.
-    compute : bool, optional, default=True
+    estimate : bool, optional, default=True
         If true estimate the MSM when creating the MSM object.
     dt : str, optional, default='1 step'
         Description of the physical time corresponding to the lag. May be used by analysis algorithms such as
@@ -164,7 +164,7 @@ def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
     Notes
     -----
     You can postpone the estimation of the MSM using compute=False and
-    initiate the estimation procedure by manually calling the MSM.compute()
+    initiate the estimation procedure by manually calling the MSM.estimate()
     method.
 
     See also
@@ -172,7 +172,7 @@ def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
     EstimatedMSM : An MSM object that has been estimated from data
 
     """
-    return EstimatedMSM(dtrajs, lag, reversible=reversible, sparse=sparse, connectivity=connectivity, compute=compute, dt = dt, **kwargs)
+    return EstimatedMSM(dtrajs, lag, reversible=reversible, sparse=sparse, connectivity=connectivity, estimate=estimate, dt = dt, **kwargs)
 
 
 def cktest(msmobj, K, nsets=2, sets=None, full_output=False):

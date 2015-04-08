@@ -67,14 +67,14 @@ class MSM(object):
         from scipy.sparse import issparse
         self._sparse = issparse(T)
         # Since we set T by hand, this object is always computed.
-        self._computed = True
+        self._estimated = True
 
     ################################################################################
     # Basic attributes
     ################################################################################
 
-    def _assert_computed(self):
-        assert self._computed, "MSM hasn't been computed yet, make sure to call MSM.compute()"
+    def _assert_estimated(self):
+        assert self._estimated, "MSM hasn't been computed yet, make sure to call MSM.compute()"
 
     @property
     def is_reversible(self):
@@ -97,7 +97,7 @@ class MSM(object):
         The active set of states on which all computations and estimations will be done
 
         """
-        self._assert_computed()
+        self._assert_estimated()
         return self._nstates
 
     @property
@@ -107,7 +107,7 @@ class MSM(object):
         transition matrix amongst the largest set of reversibly connected states
 
         """
-        self._assert_computed()
+        self._assert_estimated()
         return self._T
 
     ################################################################################
@@ -122,7 +122,7 @@ class MSM(object):
         transition matrix amongst the largest set of reversibly connected states
 
         """
-        self._assert_computed()
+        self._assert_estimated()
         try:
             return self._mu
         except:
@@ -170,7 +170,7 @@ class MSM(object):
 
         """
         # are we ready?
-        self._assert_computed()
+        self._assert_estimated()
         # check input?
         if self._sparse:
             if k is None:
@@ -307,7 +307,7 @@ class MSM(object):
         B : int or int array
             set of target states
         """
-        self._assert_computed()
+        self._assert_estimated()
         self._assert_in_active(A)
         self._assert_in_active(B)
         from pyemma.msm.analysis import mfpt as _mfpt
@@ -325,7 +325,7 @@ class MSM(object):
         B : int or int array
             set of target states
         """
-        self._assert_computed()
+        self._assert_estimated()
         self._assert_in_active(A)
         self._assert_in_active(B)
         from pyemma.msm.analysis import committor as _committor
@@ -342,7 +342,7 @@ class MSM(object):
         B : int or int array
             set of target states
         """
-        self._assert_computed()
+        self._assert_estimated()
         self._assert_in_active(A)
         self._assert_in_active(B)
         from pyemma.msm.analysis import committor as _committor
@@ -373,7 +373,7 @@ class MSM(object):
         :math:`\mu=(\mu_i)` is the stationary vector of the transition matrix :math:`T`.
         """
         # are we ready?
-        self._assert_computed()
+        self._assert_estimated()
         # check input
         assert np.shape(a)[0] == self._nstates, 'observable vector a does not have the same size like the active set. Need len(a) = '+str(self._nstates)
         return np.dot(a, self.stationary_distribution)
@@ -469,7 +469,7 @@ class MSM(object):
 
         """
         # are we ready?
-        self._assert_computed()
+        self._assert_estimated()
         # check input
         assert np.shape(a)[0] == self._nstates, 'observable vector a does not have the same size like the active set. Need len(a) = '+str(self._nstates)
         if b is not None:
@@ -523,7 +523,7 @@ class MSM(object):
 
         """
         # are we ready?
-        self._assert_computed()
+        self._assert_estimated()
         # will not compute for nonreversible matrices
         if (not self.is_reversible) and (self.nstates > 2):
             raise ValueError('Fingerprint calculation is not supported for nonreversible transition matrices. Consider estimating the MSM with reversible = True')
@@ -602,7 +602,7 @@ class MSM(object):
 
         """
         # are we ready?
-        self._assert_computed()
+        self._assert_estimated()
         # check input
         assert np.shape(p0)[0] == self._nstates, 'initial distribution p0 does not have the same size like the active set. Need len(p0) = '+str(self._nstates)
         assert np.shape(a)[0] == self._nstates, 'observable vector a does not have the same size like the active set. Need len(a) = '+str(self._nstates)
@@ -656,7 +656,7 @@ class MSM(object):
 
         """
         # are we ready?
-        self._assert_computed()
+        self._assert_estimated()
         # will not compute for nonreversible matrices
         if (not self.is_reversible) and (self.nstates > 2):
             raise ValueError('Fingerprint calculation is not supported for nonreversible transition matrices. Consider estimating the MSM with reversible = True')
@@ -711,7 +711,7 @@ class MSM(object):
             (2): 147-179
         """
         # are we ready?
-        self._assert_computed()
+        self._assert_estimated()
         self._ensure_pcca(m)
         return self.pcca.memberships
 
@@ -742,7 +742,7 @@ class MSM(object):
             J. Chem. Phys. 139, 184114 (2013)
         """
         # are we ready?
-        self._assert_computed()
+        self._assert_estimated()
         self._ensure_pcca(m)
         return self.pcca.output_probabilities
 
@@ -769,7 +769,7 @@ class MSM(object):
             (2): 147-179
         """
         # are we ready?
-        self._assert_computed()
+        self._assert_estimated()
         self._ensure_pcca(m)
         return self.pcca.metastable_sets
 
@@ -796,7 +796,7 @@ class MSM(object):
             (2): 147-179
         """
         # are we ready?
-        self._assert_computed()
+        self._assert_estimated()
         self._ensure_pcca(m)
         return self.pcca.metastable_assignment
 
@@ -828,7 +828,7 @@ class EstimatedMSM(MSM):
             the stationary vector is only defined within subsets, etc. Currently not implemented.
         'none' : The active set is the full set of states. Estimation will be conducted on the full set of states
             without ensuring connectivity. This only permits nonreversible estimation. Currently not implemented.
-    compute : bool, optional, default=True
+    estimate : bool, optional, default=True
         If true estimate the MSM when creating the MSM object.
     dt : str, optional, default='1 step'
         Description of the physical time corresponding to the lag. May be used by analysis algorithms such as
@@ -856,13 +856,13 @@ class EstimatedMSM(MSM):
 
     Notes
     -----
-    You can postpone the estimation of the MSM using compute=False and
-    initiate the estimation procedure by manually calling the MSM.compute()
+    You can postpone the estimation of the MSM using estimate=False and
+    initiate the estimation procedure by manually calling the MSM.estimate()
     method.
 
     """
     def __init__(self, dtrajs, lag,
-                 reversible=True, sparse=False, connectivity='largest', compute=True,
+                 reversible=True, sparse=False, connectivity='largest', estimate=True,
                  dt = '1 step',
                  **kwargs):
         # TODO: extensive input checking!
@@ -895,16 +895,16 @@ class EstimatedMSM(MSM):
             raise ValueError('connectivity mode '+str(connectivity)+' is unknown.')
 
         # run estimation unless suppressed
-        self._computed = False
+        self._estimated = False
         self._kwargs = kwargs
-        if compute:
-            self.compute()
+        if estimate:
+            self.estimate()
 
         # set time step
         from pyemma.util.units import TimeUnit
         self._timeunit = TimeUnit(dt)
 
-    def compute(self):
+    def estimate(self):
         r"""Runs msm estimation.
 
         Only need to call this method if the msm was initialized with compute=False - otherwise it will have
@@ -912,7 +912,7 @@ class EstimatedMSM(MSM):
 
         """
         # already computed? nothing to do
-        if self._computed:
+        if self._estimated:
             warnings.warn('compute is called twice. This call has no effect.')
             return
 
@@ -968,7 +968,7 @@ class EstimatedMSM(MSM):
         for dtraj in self._dtrajs_full:
             self._dtrajs_active.append(self._full2active[dtraj])
 
-        self._computed = True
+        self._estimated = True
 
 
     ################################################################################
@@ -978,7 +978,7 @@ class EstimatedMSM(MSM):
     @property
     def computed(self):
         """Returns whether this msm has been estimated yet"""
-        return self._computed
+        return self._estimated
 
     @property
     def lagtime(self):
@@ -1025,7 +1025,7 @@ class EstimatedMSM(MSM):
             For a count matrix with effective (statistically uncorrelated) counts.
 
         """
-        self._assert_computed()
+        self._assert_estimated()
         return self._C_active
 
     @property
@@ -1045,7 +1045,7 @@ class EstimatedMSM(MSM):
         in preparation.
 
         """
-        self._assert_computed()
+        self._assert_estimated()
         return self._C_effective_active
 
     @property
@@ -1064,7 +1064,7 @@ class EstimatedMSM(MSM):
             For a active-set count matrix with effective (statistically uncorrelated) counts.
 
         """
-        self._assert_computed()
+        self._assert_estimated()
         return self._C_full
 
     @property
@@ -1073,7 +1073,7 @@ class EstimatedMSM(MSM):
         The active set of states on which all computations and estimations will be done
 
         """
-        self._assert_computed()
+        self._assert_estimated()
         return self._active_set
 
     @property
@@ -1082,7 +1082,7 @@ class EstimatedMSM(MSM):
         The largest reversible connected set of states
 
         """
-        self._assert_computed()
+        self._assert_estimated()
         return self._connected_sets[0]
 
     @property
@@ -1091,7 +1091,7 @@ class EstimatedMSM(MSM):
         The reversible connected sets of states, sorted by size (descending)
 
         """
-        self._assert_computed()
+        self._assert_estimated()
         return self._connected_sets
 
 
@@ -1104,7 +1104,7 @@ class EstimatedMSM(MSM):
         """The fraction of states in the active set.
 
         """
-        self._assert_computed()
+        self._assert_estimated()
         return float(self._nstates) / float(self._n_full)
 
     @property
@@ -1112,7 +1112,7 @@ class EstimatedMSM(MSM):
         """The fraction of counts in the active set.
 
         """
-        self._assert_computed()
+        self._assert_estimated()
         from pyemma.util.discrete_trajectories import count_states
         hist = count_states(self._dtrajs_full)
         hist_active = hist[self._active_set]
