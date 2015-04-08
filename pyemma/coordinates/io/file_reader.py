@@ -205,6 +205,7 @@ class CSVReader(Transformer):
             if self._fh.name == self._filenames[self._itraj]:
                 return
             else:
+                self._logger.debug("closing file %s" %self._fh.name)
                 self._fh.close()
 
         # handle all kinds of types....
@@ -214,18 +215,19 @@ class CSVReader(Transformer):
 
     def __set_lengths_and_dimension(self):
         for ii, f in enumerate(self._filenames):
+            self._logger.debug("set len/dim for file %s" % f)
             self.__open_file(ii)
             length = 0
             first_line = True
             # we have to read this
             for line in self._fh:
                 if first_line:
-                    print line
+                    #print line
                     arr = np.fromstring(line, sep=' ')
                     dim = arr.shape[0]
                     first_line = False
                 length += dim
-
+            self._logger.debug("calculated length: %i" %length )
             self._lengths.append(length)
             if self._ndim == 0:
                 self._ndim = dim
