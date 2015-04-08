@@ -673,10 +673,48 @@ class MSM(object):
     # pcca
     ################################################################################
 
-    def _ensure_pcca(self, m):
+    def _assert_pcca(self):
+        """ Tests if pcca object is available, or else raises a ValueError.
+
+        """
+        try:
+            if self._pcca is None:
+                raise ValueError('Metastable decomposition has not yet been computed. Please call pcca(m) first.')
+        except:
+            raise ValueError('Metastable decomposition has not yet been computed. Please call pcca(m) first.')
+
+    def pcca(self, m):
+        """ Runs PCCA++ [1]_ in order to compute a fuzzy metastable decomposition of MSM states
+
+        After calling this method you can access :func:`metastable_memberships`,
+        :func:`metastable_distributions`, :func:`metastable_sets` and :func:`metastable_assignments`
+
+        Parameters
+        ----------
+        m : int
+            Number of metastable sets
+
+        Returns
+        -------
+        pcca_obj : :class:`PCCA <pyemma.msm.analysis.dense.pcca.PCCA>`
+            An object containing all PCCA quantities. However, you can also ingore this return value and instead
+            retrieve the quantities of your interest with the following MSM functions: :func:`metastable_memberships`,
+            :func:`metastable_distributions`, :func:`metastable_sets` and :func:`metastable_assignments`.
+
+        References
+        ----------
+        .. [1] Roeblitz, S and M Weber. 2013. Fuzzy spectral clustering by
+            PCCA+: application to Markov state models and data
+            classification. Advances in Data Analysis and Classification 7
+            (2): 147-179
+
+        """
         # can we do it?
         if not self._reversible:
             raise ValueError('Cannot compute PCCA for non-reversible matrices. Set reversible=True when constructing the MSM.')
+
+        # we need to have a transition matrix
+        self._assert_estimated()
 
         from pyemma.msm.analysis.dense.pcca import PCCA
         # ensure that we have a pcca object with the right number of states
@@ -689,13 +727,13 @@ class MSM(object):
             # didn't have a pcca object yet - compute
             self._pcca = PCCA(self._T, m)
 
-    def metastable_memberships(self, m):
-        """ Computes the memberships of active set states to metastable sets with the PCCA++ method _[1].
+        return self._pcca
 
-        Parameters
-        ----------
-        m : int
-            Number of metastable sets
+    @property
+    def metastable_memberships(self):
+        """ Computes the memberships of active set states to metastable sets with the PCCA++ method [1]_.
+
+        :func:`pcca` needs to be called first before this attribute is available.
 
         Returns
         -------
@@ -703,33 +741,41 @@ class MSM(object):
             A matrix containing the probability or membership of each state to be assigned to each metastable set.
             i.e. p(metastable | state). The row sums of M are 1.
 
+        See also
+        --------
+        pcca
+            to compute the metastable decomposition
+
         References
         ----------
         .. [1] Roeblitz, S and M Weber. 2013. Fuzzy spectral clustering by
             PCCA+: application to Markov state models and data
             classification. Advances in Data Analysis and Classification 7
             (2): 147-179
+
         """
         # are we ready?
-        self._assert_estimated()
-        self._ensure_pcca(m)
+        self._assert_pcca()
         return self._pcca.memberships
 
-    def metastable_distributions(self, m):
-        """ Computes the probability distributions of active set states within each metastable set using the PCCA++ method _[1]
-        using Bayesian inversion as described in _[2].
+    @property
+    def metastable_distributions(self):
+        """ Computes the probability distributions of active set states within each metastable set using the PCCA++ method [1]_
+        using Bayesian inversion as described in [2]_.
 
-        Parameters
-        ----------
-        m : int
-            Number of metastable sets
+        :func:`pcca` needs to be called first before this attribute is available.
 
         Returns
         -------
         p_out : ndarray((m,n))
-            A matrix containing the probability distribution of each active set state, given that we are in a
-            metastable set.
+            A matrix containing the probability distribution of each active set state, given that we are in one of the
+            m metastable sets.
             i.e. p(state | metastable). The row sums of p_out are 1.
+
+        See also
+        --------
+        pcca
+            to compute the metastable decomposition
 
         References
         ----------
@@ -740,64 +786,70 @@ class MSM(object):
         .. [2] F. Noe, H. Wu, J.-H. Prinz and N. Plattner:
             Projected and hidden Markov models for calculating kinetics and metastable states of complex molecules
             J. Chem. Phys. 139, 184114 (2013)
+
         """
         # are we ready?
-        self._assert_estimated()
-        self._ensure_pcca(m)
+        self._assert_pcca()
         return self._pcca.output_probabilities
 
-    def metastable_sets(self, m):
-        """ Computes the metastable sets of active set states within each metastable set using the PCCA++ method _[1]
+    @property
+    def metastable_sets(self):
+        """ Computes the metastable sets of active set states within each metastable set using the PCCA++ method [1]_
+
+        :func:`pcca` needs to be called first before this attribute is available.
 
         This is only recommended for visualization purposes. You *cannot* compute any
         actual quantity of the coarse-grained kinetics without employing the fuzzy memberships!
-
-        Parameters
-        ----------
-        m : int
-            Number of metastable sets
 
         Returns
         -------
         A list of length equal to metastable states. Each element is an array with microstate indexes contained in it
 
+        See also
+        --------
+        pcca
+            to compute the metastable decomposition
+
         References
         ----------
         .. [1] Roeblitz, S and M Weber. 2013. Fuzzy spectral clustering by
             PCCA+: application to Markov state models and data
             classification. Advances in Data Analysis and Classification 7
             (2): 147-179
+
         """
         # are we ready?
-        self._assert_estimated()
-        self._ensure_pcca(m)
+        self._assert_pcca()
         return self._pcca.metastable_sets
 
-    def metastable_assignments(self, m):
-        """ Computes the assignment to metastable sets for active set states using the PCCA++ method _[1]
+    @property
+    def metastable_assignments(self):
+        """ Computes the assignment to metastable sets for active set states using the PCCA++ method [1]_
+
+        :func:`pcca` needs to be called first before this attribute is available.
 
         This is only recommended for visualization purposes. You *cannot* compute any
         actual quantity of the coarse-grained kinetics without employing the fuzzy memberships!
-
-        Parameters
-        ----------
-        m : int
-            Number of metastable sets
 
         Returns
         -------
         For each active set state, the metastable state it is located in.
 
+        See also
+        --------
+        pcca
+            to compute the metastable decomposition
+
         References
         ----------
         .. [1] Roeblitz, S and M Weber. 2013. Fuzzy spectral clustering by
             PCCA+: application to Markov state models and data
             classification. Advances in Data Analysis and Classification 7
             (2): 147-179
+
         """
         # are we ready?
-        self._assert_estimated()
-        self._ensure_pcca(m)
+        self._assert_pcca()
         return self._pcca.metastable_assignment
 
 

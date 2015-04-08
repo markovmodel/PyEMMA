@@ -403,7 +403,8 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
 
     def _pcca_assignment(self, msm):
         if msm.is_reversible:
-            ass = msm.metastable_assignments(2)
+            msm.pcca(2)
+            ass = msm.metastable_assignments
             # test: number of states
             assert(len(ass) == msm.nstates)
             # test: should be 0 or 1
@@ -414,7 +415,8 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
             assert(np.std(ass[40:]) == 0)
         else:
             with self.assertRaises(ValueError):
-               ass = msm.metastable_assignments(2)
+                msm.pcca(2)
+                ass = msm.metastable_assignments
 
     def test_pcca_assignment(self):
         self._pcca_assignment(self.msmrev)
@@ -422,7 +424,8 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
 
     def _pcca_distributions(self, msm):
         if msm.is_reversible:
-            pccadist = msm.metastable_distributions(2)
+            msm.pcca(2)
+            pccadist = msm.metastable_distributions
             # should be right size
             assert(np.all(pccadist.shape == (2,msm.nstates)))
             # should be nonnegative
@@ -433,7 +436,8 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
             assert(np.max(np.abs(ds - msm.stationary_distribution)) < 0.001)
         else:
             with self.assertRaises(ValueError):
-                pccadist = msm.metastable_distributions(2)
+                msm.pcca(2)
+                pccadist = msm.metastable_distributions
 
     def test_pcca_distributions(self):
         self._pcca_distributions(self.msmrev)
@@ -441,7 +445,8 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
 
     def _pcca_memberships(self, msm):
         if msm.is_reversible:
-            M = msm.metastable_memberships(2)
+            msm.pcca(2)
+            M = msm.metastable_memberships
             # should be right size
             assert(np.all(M.shape == (msm.nstates,2)))
             # should be nonnegative
@@ -450,7 +455,8 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
             assert(np.allclose(np.sum(M, axis=1), np.ones(msm.nstates)))
         else:
             with self.assertRaises(ValueError):
-                M = msm.metastable_memberships(2)
+                msm.pcca(2)
+                M = msm.metastable_memberships
 
     def test_pcca_memberships(self):
         self._pcca_memberships(self.msmrev)
@@ -458,16 +464,18 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
 
     def _pcca_sets(self, msm):
         if msm.is_reversible:
-            S = msm.metastable_sets(2)
-            assignment = msm.metastable_assignments(2)
+            msm.pcca(2)
+            S = msm.metastable_sets
+            assignment = msm.metastable_assignments
             # should coincide with assignment
             for i,s in enumerate(S):
                 for j in range(len(s)):
                     assert(assignment[s[j]] == i)
         else:
             with self.assertRaises(ValueError):
-                S = msm.metastable_sets(2)
-                assignment = msm.metastable_assignments(2)
+                msm.pcca(2)
+                S = msm.metastable_sets
+                assignment = msm.metastable_assignments
 
     def test_pcca_sets(self):
         self._pcca_sets(self.msmrev)
