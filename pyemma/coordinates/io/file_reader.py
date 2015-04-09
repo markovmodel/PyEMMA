@@ -259,7 +259,7 @@ class CSVReader(ReaderInterface):
             self._itraj += 1
 
             self._open_file()
-            self._open_file_lagged()
+            self._open_file_lagged(skip=lag)
 
         if lag != self._current_lag:
             self._current_lag = lag
