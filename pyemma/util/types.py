@@ -85,6 +85,14 @@ def is_float_array(l):
             return True
     return False
 
+def is_float_matrix(l):
+    r"""Checks if l is a numpy array of floats
+
+    """
+    if isinstance(l, np.ndarray):
+        if l.ndim == 2 and (l.dtype.kind == 'f'):
+            return True
+    return False
 
 def ensure_dtraj(dtraj):
     r"""Makes sure that dtraj is a discrete trajectory (array of int)
@@ -222,3 +230,53 @@ def ensure_float_array_or_None(F, require_order = False):
         return F
     else:
         return ensure_float_array(F, require_order = require_order)
+
+def ensure_dtype_float(x, default=np.float64):
+    r"""Makes sure that x is type of float
+
+    """
+    if isinstance(x, np.ndarray):
+        if x.dtype.kind == 'f':
+            return x
+        elif x.dtype.kind == 'i':
+            return x.astype(default)
+        else:
+            raise TypeError('x is of type '+str(x.dtype)+' that cannot be converted to float')
+    else:
+        raise TypeError('x is not an array')
+
+
+def ensure_traj(traj):
+    r"""Makes sure that dtraj is a discrete trajectory (array of int)
+
+    """
+    if is_float_matrix(traj):
+        return traj
+    elif is_float_array(traj):
+        return traj[:,None]
+    else:
+        try:
+            arr = np.array(traj)
+            arr = ensure_dtype_float(arr)
+            if is_float_matrix(arr):
+                return arr
+            if is_float_array(arr):
+                return arr[:,None]
+            else:
+                raise TypeError('Argument traj cannot be cast into a two-dimensional array. Check type.')
+        except:
+            raise TypeError('Argument traj is not a trajectory - only float-arrays or list of float-arrays are allowed. Check type.')
+
+def ensure_traj_list(trajs):
+    if isinstance(trajs, list):
+        # elements are ints? make it a matrix and wrap into a list
+        if is_list_of_float(trajs):
+            return [np.array(trajs)[:,None]]
+        else:
+            res = []
+            for i in range(len(trajs)):
+                res.append(ensure_traj(trajs[i]))
+            return res
+    else:
+        # looks like this is one trajectory
+        return [ensure_traj(trajs)]
