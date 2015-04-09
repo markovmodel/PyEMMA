@@ -1,4 +1,3 @@
-from pyemma.coordinates.io.file_reader import FileReader
 __author__ = 'noe, marscher'
 
 import numpy as np
@@ -63,7 +62,10 @@ class DataInMemory(Transformer):
         files: str or list of str
             filenames to read from
         """
-        reader = FileReader(files)
+        # import here to avoid cyclic import
+        from pyemma.coordinates.io.file_reader import NumPyFileReader
+
+        reader = NumPyFileReader(files)
         data = reader.get_output()
         return cls(data)
 
