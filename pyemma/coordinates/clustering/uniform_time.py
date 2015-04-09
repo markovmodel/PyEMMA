@@ -1,11 +1,9 @@
 __author__ = 'noe'
 
-from pyemma.util.log import getLogger
 from pyemma.coordinates.clustering.interface import AbstractClustering
 
 import numpy as np
 
-log = getLogger('UniformTimeClustering')
 __all__ = ['UniformTimeClustering']
 
 
@@ -25,9 +23,6 @@ class UniformTimeClustering(AbstractClustering):
 
     def describe(self):
         return "[Uniform time clustering, k = %i]" % self.k
-
-    def dimension(self):
-        return 1
 
     def _get_memory_per_frame(self):
         """
@@ -53,16 +48,16 @@ class UniformTimeClustering(AbstractClustering):
 
         :return:
         """
-        log.info("Running uniform time clustering")
+        self._logger.info("Running uniform time clustering")
         # initialize cluster centers
         self.clustercenters = np.zeros(
             (self.k, self.data_producer.dimension()), dtype=np.float32)
         # initialize time counters
-        self.tprev = 0
-        self.ipass = 0
-        self.n = 0
-        self.stride = self.data_producer.n_frames_total() / self.k
-        self.nextt = self.stride / 2
+        self._tprev = 0
+        self._ipass = 0
+        self._n = 0
+        self._stride = self.data_producer.n_frames_total() / self.k
+        self._nextt = self._stride / 2
 
     def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None, stride=1):
         """
@@ -79,7 +74,7 @@ class UniformTimeClustering(AbstractClustering):
             boolean. True if this is the last chunk within the trajectory.
         :param last_chunk:
             boolean. True if this is the last chunk globally.
-        :param ipass:
+        :param _ipass:
             number of pass through data
         :param Y:
             time-lagged data (if available)
@@ -87,14 +82,14 @@ class UniformTimeClustering(AbstractClustering):
         """
         L = np.shape(X)[0]
         if ipass == 0:
-            maxt = self.tprev + t + L
-            while (self.nextt < maxt):
-                i = self.nextt - self.tprev - t
-                self.clustercenters[self.n] = X[i]
-                self.n += 1
-                self.nextt += self.stride
+            maxt = self._tprev + t + L
+            while (self._nextt < maxt):
+                i = self._nextt - self._tprev - t
+                self.clustercenters[self._n] = X[i]
+                self._n += 1
+                self._nextt += self._stride
             if last_chunk_in_traj:
-                self.tprev += self.data_producer.trajectory_length(itraj, stride=stride)
+                self._tprev += self.data_producer.trajectory_length(itraj, stride=stride)
         if ipass == 1:
             # discretize all
             if t == 0:

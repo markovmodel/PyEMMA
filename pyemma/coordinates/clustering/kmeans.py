@@ -40,14 +40,9 @@ class KmeansClustering(AbstractClustering):
     def describe(self):
         return "[Kmeans, k=%i]" % self.n_clusters
 
-    def dimension(self):
-        return 1
-
-    @doc_inherit
     def _get_memory_per_frame(self):
         return 1
 
-    @doc_inherit
     def _get_constant_memory(self):
         return 1
 
@@ -84,11 +79,9 @@ class KmeansClustering(AbstractClustering):
             if last_chunk:
                 return True
 
-    @doc_inherit
     def _param_finish(self):
         self.clustercenters = self.algo.cluster_centers_
 
-    @doc_inherit
     def _map_array(self, X):
         if X.ndim == 1:
             X = self._ensure2d(X)
