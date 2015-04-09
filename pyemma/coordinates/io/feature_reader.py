@@ -198,7 +198,7 @@ class FeatureReader(Transformer):
 
     def _map_to_memory(self, stride=1):
         #TODO: stride is currently not implemented
-        if stride > 1:
+        if stride > 1: 
             raise NotImplementedError('stride option for FeatureReader._map_to_memory is currently not implemented')
 
         self._reset()
