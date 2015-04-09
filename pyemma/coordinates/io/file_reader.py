@@ -10,41 +10,14 @@ from pandas.io.parsers import TextFileReader
 import functools
 
 
-class NumPyFileReader(Transformer):
-
-    """reads NumPy files in chunks. Supports .npy and .npz files
-
-    Parameters
-    ----------
-    filenames : str or list of strings
-
-    chunksize : int
-        how many rows are read at once
-
-    mmap_mode : str (optional), default='r'
-        binary NumPy arrays are being memory mapped using this flag.
+class ReaderInterface(Transformer):
+    """basic interface for readers
     """
 
-    def __init__(self, filenames, chunksize=1000, mmap_mode='r'):
-        Transformer.__init__(self, chunksize=chunksize)
+    def __init__(self, chunksize=100):
+        super(ReaderInterface, self).__init__(chunksize=chunksize)
+        # TODO: think about if this should be none or self
         self.data_producer = None
-
-        if not isinstance(filenames, (list, tuple)):
-            filenames = [filenames]
-        self._filenames = filenames
-
-        for f in self._filenames:
-            if not (f.endswith('.npy') or f.endswith('.npz')):
-                raise ValueError('given file "%s" is not supported'
-                                 ' by this reader' % f)
-
-        self.mmap_mode = mmap_mode
-
-        # current storage, holds mmapped arrays
-        self._data = []
-
-        # current file handle
-        self._fh = None
 
         # internal counters
         self._t = 0
@@ -52,12 +25,8 @@ class NumPyFileReader(Transformer):
 
         # lengths and dims
         self._ntraj = -1
-        self._ndim = 0
+        self._ndim = -1
         self._lengths = []
-
-        self.__set_dimensions_and_lenghts()
-
-        self._parametrized = True
 
     def dimension(self):
         """
@@ -84,6 +53,64 @@ class NumPyFileReader(Transformer):
         else:
             return sum(self.trajectory_lengths(stride))
 
+    def _add_array_to_storage(self, array):
+        # checks shapes, eg convert them (2d), raise if not possible
+        # after checks passed, add array to self._data
+
+        if array.ndim == 1:
+            array = np.atleast_2d(array).T
+        elif array.ndim == 2:
+            pass
+        else:
+            shape = array.shape
+            # hold first dimension, multiply the rest
+            shape_2d = (shape[0],
+                        functools.reduce(lambda x, y: x * y, shape[1:]))
+            array = np.reshape(array, shape_2d)
+
+        #self._logger.debug("added array with shape %s" % str(array.shape))
+        self._data.append(array)
+
+
+class NumPyFileReader(ReaderInterface):
+
+    """reads NumPy files in chunks. Supports .npy and .npz files
+
+    Parameters
+    ----------
+    filenames : str or list of strings
+
+    chunksize : int
+        how many rows are read at once
+
+    mmap_mode : str (optional), default='r'
+        binary NumPy arrays are being memory mapped using this flag.
+    """
+
+    def __init__(self, filenames, chunksize=1000, mmap_mode='r'):
+        super(NumPyFileReader, self).__init__(chunksize=chunksize)
+
+        if not isinstance(filenames, (list, tuple)):
+            filenames = [filenames]
+        self._filenames = filenames
+
+        for f in self._filenames:
+            if not (f.endswith('.npy') or f.endswith('.npz')):
+                raise ValueError('given file "%s" is not supported'
+                                 ' by this reader' % f)
+
+        self.mmap_mode = mmap_mode
+
+        # current storage, holds mmapped arrays
+        self._data = []
+
+        # current file handle
+        self._fh = None
+
+        self.__set_dimensions_and_lenghts()
+
+        self._parametrized = True
+
     def _reset(self, stride=1):
         self._t = 0
         self._itraj = 0
@@ -105,35 +132,17 @@ class NumPyFileReader(Transformer):
 
         if filename.endswith('.npy'):
             x = np.load(filename, mmap_mode=self.mmap_mode)
-            self.__add_array_to_storage(x)
+            self._add_array_to_storage(x)
 
         # in this case the file might contain several arrays
         elif filename.endswith('.npz'):
             # closes file handle
             npz_file = np.load(self._fh, mmap_mode=self.mmap_mode)
             for _, arr in npz_file.items():
-                self.__add_array_to_storage(arr)
+                self._add_array_to_storage(arr)
         else:
             raise ValueError("given file '%s' is not a NumPy array. Make sure it has"
                              " either an .npy or .npz extension" % filename)
-
-    def __add_array_to_storage(self, array):
-        # checks shapes, eg convert them (2d), raise if not possible
-        # after checks passed, add array to self._data
-
-        if array.ndim == 1:
-            array = np.atleast_2d(array).T
-        elif array.ndim == 2:
-            pass
-        else:
-            shape = array.shape
-            # hold first dimension, multiply the rest
-            shape_2d = (
-                shape[0], functools.reduce(lambda x, y: x * y, shape[1:]))
-            array = np.reshape(array, shape_2d)
-
-        self._logger.debug("added array with shape %s" % str(array.shape))
-        self._data.append(array)
 
     def __set_dimensions_and_lenghts(self):
         for f in self._filenames:
@@ -200,176 +209,27 @@ class NumPyFileReader(Transformer):
                 return X, Y
 
 
-# class CSVReader(Transformer):
-#
-#     """ a stupid csv reader
-#     """
-#
-#     def __init__(self, ascii_files, chunksize=100):
-#         Transformer.__init__(self, chunksize=chunksize)
-#         self.data_producer = self
-#
-# todo check list of files
-# TODO: ensure no .npy|z files are in this list
-#         if not isinstance(ascii_files, (list, tuple)):
-#             ascii_files = [ascii_files]
-#         self._filenames = ascii_files
-#         self._ntraj = len(self._filenames)
-#
-#         self._fh = None
-#         self._itraj = 0
-#         self._t = 0
-#         self._lengths = []
-#         self._ndim = 0
-#
-# ascii files
-#         self._current_file_is_ascii = False
-#         self._ascii_pos = 0
-#
-#         self.__set_lengths_and_dimension()
-#
-#     def __load_file(self, i):
-#         assert i <= self._ntraj
-#
-#         if self._fh is not None:
-# name already open?
-#             if self._fh.name == self._filenames[self._itraj]:
-#                 return
-#             else:
-#                 self._logger.debug("closing file %s" % self._fh.name)
-#                 self._fh.close()
-#
-# handle all kinds of types....
-#         filename = self._filenames[i]
-#         self._logger.debug("opening file %s" % filename)
-#         self._fh = open(filename)
-#
-#     def __set_lengths_and_dimension(self):
-#         for ii, f in enumerate(self._filenames):
-#             self._logger.debug("set len/dim for file %s" % f)
-#             self.__load_file(ii)
-#             length = 0
-#             first_line = True
-# we have to read this
-#             for line in self._fh:
-#                 if first_line:
-# print line
-#                     arr = np.fromstring(line, sep=' ')
-#                     dim = arr.shape[0]
-#                     first_line = False
-#                 length += dim
-#             self._logger.debug("calculated length: %i" % length)
-#             self._lengths.append(length)
-#             if self._ndim == 0:
-#                 self._ndim = dim
-#             elif self._ndim != dim:
-#                 raise ValueError(
-#                     "different dimension in current file '%s'" % f)
-#
-#     def dimension(self):
-#         return self._ndim
-#
-#     def number_of_trajectories(self):
-#         """
-#         Returns the number of trajectories
-#
-#         :return:
-#             number of trajectories
-#         """
-#         return self._ntraj
-#
-#     def trajectory_length(self, itraj, stride=1):
-#         """
-#         Returns the length of trajectory
-#
-#         :param itraj:
-#             trajectory index
-#         :param stride:
-#             return value is the number of frames in trajectory when
-#             running through it with a step size of `stride`
-#
-#         :return:
-#             length of trajectory
-#         """
-#         return (self._lengths[itraj] - 1) // int(stride) + 1
-#
-#     def trajectory_lengths(self, stride=1):
-#         """
-#         Returns the length of each trajectory
-#
-#         :param stride:
-#             return value is the number of frames in trajectories when
-#             running through them with a step size of `stride`
-#
-#         :return:
-#             list containing length of each trajectory
-#         """
-#         return [(l - 1) // stride + 1 for l in self._lengths]
-#
-#     def n_frames_total(self, stride=1):
-#         """
-#         Returns the total number of frames, over all trajectories
-#
-#         :param stride:
-#             return value is the number of frames in trajectories when
-#             running through them with a step size of `stride`
-#
-#         :return:
-#             the total number of frames, over all trajectories
-#         """
-#         if stride == 1:
-#             return np.sum(self._lengths)
-#         else:
-#             return sum(self.trajectory_lengths(stride))
-#
-#     def _reset(self, stride=1):
-#         self._t = 0
-#         self._itraj = 0
-#         if self._fh is not None:
-#             self._fh.close()
-#
-#         self._current_file_is_ascii = False
-#         self._current_file_is_ascii = 0
-#
-#     def _next_chunk(self, lag=0, stride=1):
-#
-#         self.__load_file(self._itraj)
-#
-#         if self._t >= self.trajectory_length(self._itraj, stride=stride):
-#             self._itraj += 1
-#             self._t = 0
-#
-# ascii mode, read "chunksize" lines from file
-#         chunks = []
-#         count = 0
-#         assert not self._fh.closed
-#         for line in self._fh:
-#             chunks.append(line)
-#             if count >= self.chunksize + lag:
-#                 break
-#             count += 1
-#
-#         chunks = np.vstack(chunks)
-#         X = chunks[0:self.chunksize]
-#
-#         if lag == 0:
-#             return X
-#         else:
-#             Y = chunks[lag:self.chunksize + lag]
-#             return X, Y
+class CSVReader(ReaderInterface):
+    """reads tabulated data from given files in chunked mode
 
+    Parameters
+    ----------
+    filenames : list of strings
+        filenames (including paths) to read
+    sep : str
+        separator to use during parsing the file
+    chunksize : int 
+        how many lines to process at once
 
-class CSVReader(Transformer):
+    """
 
     def __init__(self, filenames, sep=' ', chunksize=1000):
         super(CSVReader, self).__init__(chunksize=chunksize)
         self.data_producer = self
 
-        if not isinstance(filenames, list):
+        if not isinstance(filenames, (tuple, list)):
             filenames = [filenames]
         self._filenames = filenames
-        # self._logger.debug(self._filenames)
-        print self._filenames
 
         self.sep = sep
 
@@ -401,7 +261,7 @@ class CSVReader(Transformer):
                 # determine file length
                 with open(f) as fh:
                     self._lengths.append(sum(1 for _ in fh))
-                with open(f) as fh:
+                    fh.seek(0)
                     line = fh.readline()
                     dim = np.fromstring(line, sep=self.sep).shape[0]
                     ndims.append(dim)
@@ -418,18 +278,6 @@ class CSVReader(Transformer):
         else:
             self._ndim = dim
 
-    def dimension(self):
-        return self._ndim
-
-    def trajectory_lengths(self, stride=1):
-        return self._lengths
-
-    def trajectory_length(self, itraj, stride=1):
-        return self._lengths[itraj]
-
-    def number_of_trajectories(self):
-        return self._ntraj
-
     def _reset(self, stride=1):
         self._t = 0
         self._itraj = 0
@@ -438,11 +286,12 @@ class CSVReader(Transformer):
         fn = self._filenames[self._itraj]
 
         # do not open same file
-        if self._reader and self._reader.f == fn:
-            return
+        # if self._reader and self._reader.f == fn:
+        #    return
         self._reader = TextFileReader(fn, chunksize=self.chunksize)
 
     def _open_file_lagged(self, skip):
+        self._logger.debug("opening lagged file with skip=%i" % skip)
         fn = self._filenames[self._itraj]
 
         # do not open same file, if we can still read something
@@ -456,11 +305,17 @@ class CSVReader(Transformer):
 
         self._open_file()
 
-        if self._t >= self.trajectory_length(self._itraj):
-            self._logger.info("t(%i) >= tlen(%i)" %
-                              (self._t, self.trajectory_length(self._itraj)))
+        if (self._t >= self.trajectory_length(self._itraj, stride=stride) and
+                self._itraj < len(self._filenames) - 1):
+            # close file handles and open new ones
             self._t = 0
             self._itraj += 1
+#            self.__load_file(self._filenames[self._itraj])
+#         if self._t >= self.trajectory_length(self._itraj):
+#             self._logger.info("t(%i) >= tlen(%i)" %
+#                               (self._t, self.trajectory_length(self._itraj)))
+#             self._t = 0
+#             self._itraj += 1
             self._open_file()
             self._open_file_lagged()
 
@@ -481,4 +336,3 @@ class CSVReader(Transformer):
             except StopIteration:
                 Y = np.empty(0)
             return X, Y
-
