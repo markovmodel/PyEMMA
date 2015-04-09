@@ -10,6 +10,7 @@ import numpy as np
 import os
 
 from pyemma.coordinates.clustering import regspatial
+from pyemma.util.annotators import doc_inherit
 
 
 class AbstractClustering(Transformer):
@@ -26,11 +27,14 @@ class AbstractClustering(Transformer):
 
     def _map_array(self, X):
         """get closest index of point in :attr:`clustercenters` to x."""
-        #d = self.data_producer.distances(x, self.clustercenters)
         dtraj = np.empty(X.shape[0], np.int64)
         regspatial.assign(X.astype(np.float32, order='C', copy=False),
                           self.clustercenters, dtraj, self.metric)
         return dtraj
+
+    @doc_inherit
+    def dimension(self):
+        return 1
 
     def assign(self, X):
         """

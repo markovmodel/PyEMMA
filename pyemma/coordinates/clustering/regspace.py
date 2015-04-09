@@ -4,7 +4,6 @@ Created on 26.01.2015
 @author: marscher
 '''
 
-from pyemma.util.log import getLogger
 from pyemma.util.annotators import doc_inherit
 from pyemma.coordinates.clustering.interface import AbstractClustering
 
@@ -21,7 +20,7 @@ class RegularSpaceClustering(AbstractClustering):
     """Clusters data objects in such a way, that cluster centers are at least in
     distance of dmin to each other according to the given metric.
     The assignment of data objects to cluster centers is performed by
-    Voronoi paritioning. That means, that a data object is assigned to
+    Voronoi partioning. That means, that a data object is assigned to
     that clusters center, which has the least distance [1] Senne et al.
 
     Parameters
@@ -38,30 +37,36 @@ class RegularSpaceClustering(AbstractClustering):
     def __init__(self, dmin, max_clusters=1000):
         super(RegularSpaceClustering, self).__init__()
 
-        self.dmin = dmin
+        self._dmin = dmin
         # temporary list to store cluster centers
         self._clustercenters = []
         self.max_clusters = max_clusters
 
     @doc_inherit
     def describe(self):
-        return "[RegularSpaceClustering dmin=%i]" % self.dmin
+        return "[RegularSpaceClustering dmin=%i]" % self._dmin
 
-    @doc_inherit
+    @property
+    def dmin(self):
+        return self._dmin
+
+    @dmin.setter
+    def dmin(self, d):
+        if d < 0:
+            raise ValueError("d has to be positive")
+
+        self._dmin = float(d)
+        self._parametrized = False
+
     def _map_to_memory(self):
         # nothing to do, because memory-mapping of the discrete trajectories is
         # done in parametrize
         pass
 
-    def dimension(self):
-        return 1
-
-    @doc_inherit
     def _get_memory_per_frame(self):
         # 4 bytes per frame for an integer index
         return 4
 
-    @doc_inherit
     def _get_constant_memory(self):
         # memory for cluster centers and discrete trajectories
         return 4 * self.data_producer.dimension() + 4 * self.data_producer.n_frames_total()
@@ -77,7 +82,7 @@ class RegularSpaceClustering(AbstractClustering):
         if ipass == 0:
             try:
                 regspatial.cluster(X.astype(np.float32,order='C',copy=False),
-                                   self._clustercenters, self.dmin,
+                                   self._clustercenters, self._dmin,
                                    self.metric, self.max_clusters)
             except RuntimeError:
                 msg = 'Maximum number of cluster centers reached.' \

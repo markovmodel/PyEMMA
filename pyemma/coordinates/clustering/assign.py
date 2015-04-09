@@ -33,7 +33,7 @@ class AssignCenters(AbstractClustering):
     def __init__(self, clustercenters):
         super(AssignCenters, self).__init__()
 
-        if isinstance(clustercenters, str):
+        if isinstance(clustercenters, basestring):
             self.clustercenters = np.loadtxt(clustercenters)
 
         self.clustercenters = clustercenters
