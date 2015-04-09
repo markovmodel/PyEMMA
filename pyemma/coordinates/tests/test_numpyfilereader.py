@@ -8,42 +8,40 @@ import os
 import tempfile
 
 import numpy as np
-from pyemma.coordinates.io.file_reader import FileReader, CSVReader
+from pyemma.coordinates.io.file_reader import NumPyFileReader
+from pyemma.util.log import getLogger
 
 
-@unittest.skip("jo")
 class TestFileReader(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+
+        cls.logger = getLogger(cls.__class__.__name__)
+
         d = np.random.random((100, 3))
         d_1d = np.random.random(100)
 
-        f1 = tempfile.mktemp()
+        f1 = tempfile.mktemp(suffix='.npy')
         f2 = tempfile.mktemp(suffix='.npy')
-        f3 = tempfile.mktemp()
-        f4 = tempfile.mktemp(suffix='.npy')
-        f5 = tempfile.mktemp(suffix='.dat')
-
-        npz = tempfile.mktemp(suffix='.npz')
+        f3 = tempfile.mktemp(suffix='.npz')
 
         # 2d
-        np.savetxt(f1, d)
-        np.save(f2, d)
-        np.savetxt(f5, d)
+        np.save(f1, d)
 
         # 1d
-        np.savetxt(f3, d_1d)
-        np.save(f4, d_1d)
+        np.save(f2, d_1d)
 
-        np.savez(npz, d, d)
+        np.savez(f3, d, d)
 
-        cls.files2d = [f1, f2, f5]
-        cls.files1d = [f3, f4]
+        cls.files2d = [f1, f3]
+        cls.files1d = [f2]
         cls.d = d
         cls.d_1d = d_1d
 
-        cls.npz = npz
+        cls.npy_files = [f for f in cls.files2d if f.endswith('.npy')]
+        cls.npz = f3
+
         return cls
 
     @classmethod
@@ -60,40 +58,37 @@ class TestFileReader(unittest.TestCase):
             pass
 
     def test_only_npy(self):
-        reader = FileReader(self.files)
+        reader = NumPyFileReader(self.npy_files)
 
-        reader.get_output()
+        from_files = [np.load(f) for f in self.npy_files]
+        concatenated = np.vstack(from_files)
+
+        output = reader.get_output()
+
+        self.assertEqual(reader.number_of_trajectories(), len(self.npy_files))
+        self.assertEqual(reader.n_frames_total(), concatenated.shape[0])
+
+        for x, y in zip(output, from_files):
+            np.testing.assert_equal(x, y)
 
     def testSingleFile(self):
-        reader = FileReader(self.files2d[0])
+        reader = NumPyFileReader(self.npy_files[0])
 
         self.assertEqual(reader.n_frames_total(), self.d.shape[0])
 
     def test_npz(self):
-        reader = FileReader(self.npz)
-        self.assertEqual(reader.number_of_trajectories(), 2)
+        reader = NumPyFileReader(self.npz)
 
-    def test_file_1d(self):
-        FileReader(self.files1d)
+        all_data = reader.get_output()
 
-    def test_file_2d(self):
-        FileReader(self.files2d)
+        fh = np.load(self.npz)
+        data = [x[1] for x in fh.items()]
+        fh.close()
 
+        self.assertEqual(reader.number_of_trajectories(), len(data))
 
-class TestCSVReader(unittest.TestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        cls.dir = tempfile.mkdtemp(prefix='pyemma_filereader')
-        cls.data = np.random.random((10000, 42))
-        cls.filename1 = os.path.join(cls.dir, "data.dat")
-        np.savetxt(cls.filename1, cls.data)
-        return cls
-
-    def test_read(self):
-        reader = CSVReader(self.filename1, chunksize=30)
-
-        reader.get_output()
+        for output, input in zip(all_data, data):
+            np.testing.assert_equal(output, input)
 
 
 if __name__ == "__main__":
