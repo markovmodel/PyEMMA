@@ -58,14 +58,9 @@ class TestDataInMemory(unittest.TestCase):
         except:
             pass
 
-    def testSingleFile(self):
-        reader = DataInMemory(self.files2d[0])
-
-        self.assertEqual(reader.n_frames_total(), self.d.shape[0])
-
-    def test_npz(self):
-        reader = DataInMemory(self.npz)
-        self.assertEqual(reader.number_of_trajectories(), 2)
+    def testWrongArgsuments(self):
+        with self.assertRaises(ValueError):
+            reader = DataInMemory(self.files2d[0])
 
     def testListOfArrays(self):
 
@@ -109,12 +104,6 @@ class TestDataInMemory(unittest.TestCase):
         self.assertEqual(reader.dimension(), 1)
         self.assertEqual(reader.number_of_trajectories(), 2)
         self.assertEqual(reader.n_frames_total(), 2 * n)
-
-    def test_file_1d(self):
-        DataInMemory(self.files1d)
-
-    def test_file_2d(self):
-        DataInMemory(self.files2d)
 
     def testNotEqualDims(self):
         """ should raise, since different dims can not be processed"""

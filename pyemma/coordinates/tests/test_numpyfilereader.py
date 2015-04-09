@@ -70,6 +70,21 @@ class TestFileReader(unittest.TestCase):
 
         for x, y in zip(output, from_files):
             np.testing.assert_equal(x, y)
+            
+    def test_small_chunks(self):
+        reader = NumPyFileReader(self.npy_files)
+        reader.chunksize=30
+
+        from_files = [np.load(f) for f in self.npy_files]
+        concatenated = np.vstack(from_files)
+
+        output = reader.get_output()
+
+        self.assertEqual(reader.number_of_trajectories(), len(self.npy_files))
+        self.assertEqual(reader.n_frames_total(), concatenated.shape[0])
+
+        for x, y in zip(output, from_files):
+            np.testing.assert_equal(x, y)
 
     def testSingleFile(self):
         reader = NumPyFileReader(self.npy_files[0])
