@@ -4,14 +4,13 @@ import numpy as np
 import mdtraj
 
 from pyemma.coordinates.util import patches
-
+from pyemma.coordinates.io.interface import ReaderInterface
 from pyemma.coordinates.io.featurizer import MDFeaturizer
-from pyemma.coordinates.transform.transformer import Transformer
 
 __all__ = ['FeatureReader']
 
 
-class FeatureReader(Transformer):
+class FeatureReader(ReaderInterface):
 
     """
     Reads features from MD data.
@@ -48,12 +47,13 @@ class FeatureReader(Transformer):
 
     """
 
-    def __init__(self, trajectories, topologyfile):
+    def __init__(self, trajectories, topologyfile, chunksize=100):
         # init with chunksize 100
-        Transformer.__init__(self, 100)
+        super(FeatureReader, self).__init__(chunksize=chunksize)
+        self.data_producer = self
 
         # files
-        if isinstance(trajectories, str):
+        if isinstance(trajectories, basestring):
             trajectories = [trajectories]
         self.trajfiles = trajectories
         self.topfile = topologyfile
@@ -61,10 +61,6 @@ class FeatureReader(Transformer):
         # featurizer
         if not hasattr(self, "featurizer"):
             self.featurizer = MDFeaturizer(topologyfile)
-
-        # _lengths
-        self._lengths = []
-        self._totlength = 0
 
         # iteration
         self._mditer = None
@@ -76,15 +72,9 @@ class FeatureReader(Transformer):
         # cache size
         self.in_memory = False
         self.Y = None
-        # basic statistics
-        for traj in trajectories:
-            sum_frames = sum(t.n_frames for t in self._create_iter(traj))
-            self._lengths.append(sum_frames)
 
-        self._totlength = np.sum(self._lengths)
-
-        self._t = 0
-        self.data_producer = self
+        self.__set_dimensions_and_lenghts()
+        self._parametrized = True
 
     @classmethod
     def init_from_featurizer(cls, trajectories, featurizer):
@@ -93,6 +83,19 @@ class FeatureReader(Transformer):
                              % type(featurizer))
         cls.featurizer = featurizer
         return cls(trajectories, featurizer.topologyfile)
+
+    def __set_dimensions_and_lenghts(self):
+        self._ntraj = len(self.trajfiles)
+        # basic statistics
+        for traj in self.trajfiles:
+            sum_frames = sum(t.n_frames for t in self._create_iter(traj))
+            self._lengths.append(sum_frames)
+
+        # number of trajectories/data sets
+        if self._ntraj == 0:
+            raise ValueError("no valid data")
+
+        # note: dimension is a custom impl in this class
 
     def describe(self):
         """
@@ -110,64 +113,6 @@ class FeatureReader(Transformer):
         """
         if self.in_memory:
             self._map_to_memory()
-
-    def number_of_trajectories(self):
-        """
-        Returns the number of trajectories
-
-        :return:
-            number of trajectories
-        """
-        return len(self.trajfiles)
-
-    def trajectory_length(self, itraj, stride=1):
-        """
-        Returns the length of trajectory
-
-        Parameters
-        ----------
-        itraj : int
-        stride : int
-            return value is the number of frames in trajectory when
-            running through it with a step size of `stride`
-
-        :return:
-            length of trajectory
-        """
-        # TODO: What??? Ist das richtig?
-        return (self._lengths[itraj] - 1) // stride + 1
-
-    def trajectory_lengths(self, stride=1):
-        """       
-        Returns the trajectory _lengths in a list
-
-        Parameters
-        ----------
-        stride : int
-            return value is the number of frames in trajectory when
-            running through it with a step size of `stride`
-        
-        :return:
-        """
-        # TODO: What??? Ist das richtig?
-        return [(l - 1)//stride + 1 for l in self._lengths]
-
-    def n_frames_total(self, stride=1):
-        """
-        Returns the total number of frames, summed over all trajectories
-
-        Parameters
-        ----------                
-        stride : int
-            return value is the number of frames in trajectories when
-            running through them with a step size of `stride`       
-
-        :return:
-        """
-        if stride == 1:
-            return self._totlength
-        else:
-            return sum(self.trajectory_lengths(stride))
 
     def dimension(self):
         """
@@ -256,14 +201,15 @@ class FeatureReader(Transformer):
                                        % (self._itraj, self._curr_lag))
                 self._curr_lag = lag
                 self._mditer2 = self._create_iter(self.trajfiles[self._itraj],
-                                                  skip=self._curr_lag*stride, stride=stride) 
+                                                  skip=self._curr_lag * stride, stride=stride)
             try:
                 adv_chunk = self._mditer2.next()
             except StopIteration:
-                # When _mditer2 ran over the trajectory end, return empty chunks.
+                # When _mditer2 ran over the trajectory end, return empty
+                # chunks.
                 adv_chunk = mdtraj.Trajectory(
-                              np.empty((0, shape[1], shape[2]), np.float32),
-                              chunk.topology)
+                    np.empty((0, shape[1], shape[2]), np.float32),
+                    chunk.topology)
 
         self._t += shape[0]
 
@@ -275,7 +221,8 @@ class FeatureReader(Transformer):
             self._mditer.close()
             self._t = 0
             self._itraj += 1
-            self._mditer = self._create_iter(self.trajfiles[self._itraj], stride=stride)
+            self._mditer = self._create_iter(
+                self.trajfiles[self._itraj], stride=stride)
             # we open self._mditer2 only if requested due lag parameter!
             self._curr_lag = 0
 
@@ -291,7 +238,8 @@ class FeatureReader(Transformer):
                 shape_Y = adv_chunk.xyz.shape
 
                 X = chunk.xyz.reshape((shape[0], shape[1] * shape[2]))
-                Y = adv_chunk.xyz.reshape((shape_Y[0], shape_Y[1] * shape_Y[2]))
+                Y = adv_chunk.xyz.reshape(
+                    (shape_Y[0], shape_Y[1] * shape_Y[2]))
             else:
                 X = self.featurizer.map(chunk)
                 Y = self.featurizer.map(adv_chunk)
