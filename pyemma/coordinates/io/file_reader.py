@@ -5,71 +5,8 @@ Created on 07.04.2015
 '''
 import numpy as np
 
-from pyemma.coordinates.transform.transformer import Transformer
 from pandas.io.parsers import TextFileReader
-import functools
-
-
-class ReaderInterface(Transformer):
-    """basic interface for readers
-    """
-
-    def __init__(self, chunksize=100):
-        super(ReaderInterface, self).__init__(chunksize=chunksize)
-        # TODO: think about if this should be none or self
-        self.data_producer = None
-
-        # internal counters
-        self._t = 0
-        self._itraj = 0
-
-        # lengths and dims
-        self._ntraj = -1
-        self._ndim = -1
-        self._lengths = []
-
-    def dimension(self):
-        """
-        Returns the number of output dimensions
-
-        :return:
-        """
-        return self._ndim
-
-    def trajectory_length(self, itraj, stride=1):
-        return (self._lengths[itraj] - 1) // int(stride) + 1
-
-    def trajectory_lengths(self, stride=1):
-        return [(l - 1) // stride + 1 for l in self._lengths]
-
-    def number_of_trajectories(self):
-        return self._ntraj
-
-    def n_frames_total(self, stride=1):
-        # FIXME: in case of 1 traj, this returns 1!!!
-        if stride == 1:
-            self._logger.debug("self._lengths= %s " % self._lengths)
-            return np.sum(self._lengths)
-        else:
-            return sum(self.trajectory_lengths(stride))
-
-    def _add_array_to_storage(self, array):
-        # checks shapes, eg convert them (2d), raise if not possible
-        # after checks passed, add array to self._data
-
-        if array.ndim == 1:
-            array = np.atleast_2d(array).T
-        elif array.ndim == 2:
-            pass
-        else:
-            shape = array.shape
-            # hold first dimension, multiply the rest
-            shape_2d = (shape[0],
-                        functools.reduce(lambda x, y: x * y, shape[1:]))
-            array = np.reshape(array, shape_2d)
-
-        #self._logger.debug("added array with shape %s" % str(array.shape))
-        self._data.append(array)
+from pyemma.coordinates.io.interface import ReaderInterface
 
 
 class NumPyFileReader(ReaderInterface):
@@ -216,14 +153,16 @@ class CSVReader(ReaderInterface):
     ----------
     filenames : list of strings
         filenames (including paths) to read
-    sep : str
-        separator to use during parsing the file
     chunksize : int 
         how many lines to process at once
 
+    kwargs : named variables
+        these will be passed into pandas FileTextReader
+        see : http://pandas.pydata.org/pandas-docs/dev/generated/pandas.io.parsers.read_csv.html
+
     """
 
-    def __init__(self, filenames, sep=' ', chunksize=1000):
+    def __init__(self, filenames, chunksize=1000, **kwargs):
         super(CSVReader, self).__init__(chunksize=chunksize)
         self.data_producer = self
 
@@ -231,14 +170,20 @@ class CSVReader(ReaderInterface):
             filenames = [filenames]
         self._filenames = filenames
 
-        self.sep = sep
+        if not kwargs:
+            self._kwargs = {}
 
-        self._t = 0
-        self._itraj = 0
+        # default arguments for underlying csv reader
+        if not kwargs.get('sep'):
+            self._kwargs['sep'] = ' '
 
-        self._ndim = 0
-        self._ntraj = 0
-        self._lengths = []
+        # we do not need header info
+        if not kwargs.get('header'):
+            self._kwargs['header'] = None
+
+        # user wants to skip lines, so we need to remember this for lagged access
+        if kwargs.get('skip'):
+            self._skip = kwargs.pop('skip')
 
         self._reader = None
         self.__set_dimensions_and_lenghts()
@@ -247,6 +192,7 @@ class CSVReader(ReaderInterface):
         self._lagged_reader = None
         self._current_lag = 0
 
+        self._kwargs = kwargs
         self._parametrized = True
 
     def __set_dimensions_and_lenghts(self):
@@ -263,13 +209,13 @@ class CSVReader(ReaderInterface):
                     self._lengths.append(sum(1 for _ in fh))
                     fh.seek(0)
                     line = fh.readline()
-                    dim = np.fromstring(line, sep=self.sep).shape[0]
+                    dim = np.fromstring(line, sep=self._kwargs['sep']).shape[0]
                     ndims.append(dim)
 
             # parent of IOError, OSError *and* WindowsError where available
             except EnvironmentError:
                 self._logger.exception()
-                self._logger.error("removing %s from list" % f)
+                self._logger.error("removing %s from list, since it caused an error" % f)
                 self._filenames.remove(f)
 
         # check all files have same dimensions
@@ -288,7 +234,7 @@ class CSVReader(ReaderInterface):
         # do not open same file
         # if self._reader and self._reader.f == fn:
         #    return
-        self._reader = TextFileReader(fn, chunksize=self.chunksize)
+        self._reader = TextFileReader(fn, chunksize=self.chunksize, **self._kwargs)
 
     def _open_file_lagged(self, skip):
         self._logger.debug("opening lagged file with skip=%i" % skip)
@@ -297,9 +243,9 @@ class CSVReader(ReaderInterface):
         # do not open same file, if we can still read something
         if self._lagged_reader and self._lagged_reader.f == fn:
             return
-
+        skip = skip + self._kwargs['skip']
         self._lagged_reader = TextFileReader(
-            fn, chunksize=self.chunksize, skip=skip)
+            fn, chunksize=self.chunksize, skip=skip, **self._kwargs)
 
     def _next_chunk(self, lag=0, stride=1):
 
@@ -307,15 +253,11 @@ class CSVReader(ReaderInterface):
 
         if (self._t >= self.trajectory_length(self._itraj, stride=stride) and
                 self._itraj < len(self._filenames) - 1):
+            self._logger.debug("open new file")
             # close file handles and open new ones
             self._t = 0
             self._itraj += 1
-#            self.__load_file(self._filenames[self._itraj])
-#         if self._t >= self.trajectory_length(self._itraj):
-#             self._logger.info("t(%i) >= tlen(%i)" %
-#                               (self._t, self.trajectory_length(self._itraj)))
-#             self._t = 0
-#             self._itraj += 1
+
             self._open_file()
             self._open_file_lagged()
 
@@ -330,7 +272,6 @@ class CSVReader(ReaderInterface):
         else:
             X = self._reader.get_chunk().values
             self._t += X.shape[0]
-            assert self._lagged_reader
             try:
                 Y = self._lagged_reader.get_chunk().values
             except StopIteration:
