@@ -445,9 +445,9 @@ class Transformer(object):
         self._reset(stride=stride)
         return TransformerIterator(self, stride=stride, lag=lag)
 
-    def get_output(self, dimensions=slice(0,None), stride=1):
+    def get_output(self, dimensions=slice(0, None), stride=1):
         """Maps all input data of this transformer and returns it as an array or list of arrays
-           
+
            Parameters
            ----------
            transfrom : pyemma.coordinates.transfrom.Transformer object
@@ -456,19 +456,19 @@ class Transformer(object):
                indices of dimensions you like to keep, default = all
            stride : int
                only take every n'th frame, default = 1
-           
+
            Returns
            -------
            output : ndarray(T, d) or list of ndarray(T_i, d)
                the mapped data, where T is the number of time steps of the input data, or if stride > 1,
                floor(T_in / stride). d is the output dimension of this transformer.
                If the input consists of a list of trajectories, Y will also be a corresponding list of trajectories
-           
+
            Notes
            -----
            This function may be RAM intensive if stride is too large or
            too many dimensions are selected.
-           
+
            Example
            -------
            plotting trajectories
@@ -485,7 +485,7 @@ class Transformer(object):
 
         if isinstance(dimensions, int):
             ndim = 1
-            dimensions = slice(dimensions,dimensions+1)
+            dimensions = slice(dimensions, dimensions+1)
         elif isinstance(dimensions, list):
             ndim = len(np.zeros(self.dimension())[dimensions])
         elif isinstance(dimensions, np.ndarray):
@@ -494,37 +494,25 @@ class Transformer(object):
         elif isinstance(dimensions, slice):
             ndim = len(np.zeros(self.dimension())[dimensions])
         else:
-            raise Exception('unsupported type (%s) of \"dimensions\"'%type(dimensions))
+            raise Exception('unsupported type (%s) of \"dimensions\"' % type(dimensions))
+
+        assert ndim > 0, "ndim was zero in %s" % self.__class__.__name__
 
         # allocate memory
+        trajs = [np.empty((l, ndim)) for l in self.trajectory_lengths(stride=stride)]
 
-        trajs = [ np.empty((l, ndim)) for l in self.trajectory_lengths(stride=stride) ]
+        if __debug__:
+            self._logger.debug("get_output(): created output trajs with shapes: %s"
+                               % [x.shape for x in trajs])
 
         # fetch data
         last_itraj = -1
-        # TODO: Please check: Die naechste Zeile habe ich eingefuegt. Bin ziemlich sicher, dass die da rein muss.
-        t = 0 # first time point
+        t = 0  # first time point
         for itraj, chunk in self.iterator(stride=stride):
             if itraj != last_itraj:
                 last_itraj = itraj
-                t = 0 # reset time to 0 for new trajectory
-            # TODO: an dieser Stelle tritt das Problem auf: Die chunksize passt nicht ins Zielarray.
-            # TODO: Verschiedene moegliche Ursachen, evtl. mehrere: Iterator ist nicht initialisiert oder laeuft falsch,
-            # TODO: Zielgroesse mit stride stimmt nicht
-            # shaperight = chunk[:, dimensions].shape
-            # shapeleft = trajs[itraj][t:t+chunk.shape[0],:].shape
-            # if shapeleft[0] != shaperight[0]:
-            #     print "Found problem!!!"
-            #     print 'right', shaperight
-            #     print 'left', shapeleft
-            #     print 'itraj', itraj
-            #     print 't', t
-            #     print 'trajs[itraj].shape', trajs[itraj].shape
-            #     print 'chunk.shape', chunk.shape
-            #     print 'chunk.shape[0]', chunk.shape[0]
-            #     import sys
-            #     sys.exit()
-            trajs[itraj][t:t+chunk.shape[0],:] = chunk[:, dimensions]
+                t = 0  # reset time to 0 for new trajectory
+            trajs[itraj][t:t+chunk.shape[0], :] = chunk[:, dimensions]
             t += chunk.shape[0]
 
         return trajs
