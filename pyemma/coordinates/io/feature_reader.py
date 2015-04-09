@@ -102,14 +102,14 @@ class FeatureReader(Transformer):
         """
         return "Feature reader, features = ", self.featurizer.describe()
 
-    def parametrize(self):
+    def parametrize(self, stride=1):
         """
         Parametrizes this transformer
 
         :return:
         """
         if self.in_memory:
-            self._map_to_memory()
+            self._map_to_memory(stride=stride)
 
     def number_of_trajectories(self):
         """
@@ -134,7 +134,6 @@ class FeatureReader(Transformer):
         :return:
             length of trajectory
         """
-        # TODO: What??? Ist das richtig?
         return (self._lengths[itraj] - 1) // stride + 1
 
     def trajectory_lengths(self, stride=1):
@@ -149,7 +148,6 @@ class FeatureReader(Transformer):
         
         :return:
         """
-        # TODO: What??? Ist das richtig?
         return [(l - 1)//stride + 1 for l in self._lengths]
 
     def n_frames_total(self, stride=1):
@@ -198,7 +196,11 @@ class FeatureReader(Transformer):
         """
         return 0
 
-    def _map_to_memory(self):
+    def _map_to_memory(self, stride=1):
+        #TODO: stride is currently not implemented
+        if stride > 1:
+            raise NotImplementedError('stride option for FeatureReader._map_to_memory is currently not implemented')
+
         self._reset()
         # iterate over trajectories
         last_chunk = False
