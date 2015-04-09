@@ -230,9 +230,9 @@ metadata['requires'] = ['numpy', 'scipy', 'pystallone']
 
 # not installing?
 if len(sys.argv) == 1 or (len(sys.argv) >= 2 and ('--help' in sys.argv[1:] or
-                            sys.argv[1] in ('--help-commands',
-                                            '--version',
-                                            'clean'))):
+                          sys.argv[1] in ('--help-commands',
+                                          '--version',
+                                          'clean'))):
     pass
 else:
     # setuptools>=2.2 can handle setup_requires
@@ -245,7 +245,7 @@ else:
     # when on git, we require cython
     if os.path.exists('.git'):
         warnings.warn('using git, require cython')
-        metadata['setup_requires'] += ['cython>=0.20']
+        metadata['setup_requires'] += ['cython>=0.22']
 
     # only require numpy and extensions in case of building/installing
     metadata['ext_modules'] = lazy_cythonize(extensions)

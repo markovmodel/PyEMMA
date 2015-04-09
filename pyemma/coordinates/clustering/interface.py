@@ -4,14 +4,12 @@ Created on 18.02.2015
 @author: marscher
 '''
 from pyemma.coordinates.transform.transformer import Transformer
-from pyemma.util.log import getLogger
-import numpy as np
-import os
 from pyemma.util.files import mkdir_p
 
-import regspatial
+import numpy as np
+import os
 
-log = getLogger('Clustering')
+from pyemma.coordinates.clustering import regspatial
 
 
 class AbstractClustering(Transformer):
@@ -26,13 +24,34 @@ class AbstractClustering(Transformer):
         self.clustercenters = None
         self.dtrajs = []
 
-    def map(self, x):
+    def _map_array(self, X):
         """get closest index of point in :attr:`clustercenters` to x."""
         #d = self.data_producer.distances(x, self.clustercenters)
-        dtraj = np.empty(x.shape[0], np.int64)
-        regspatial.assign(x.astype(np.float32, order='C', copy=False), 
+        dtraj = np.empty(X.shape[0], np.int64)
+        regspatial.assign(X.astype(np.float32, order='C', copy=False),
                           self.clustercenters, dtraj, self.metric)
         return dtraj
+
+    def assign(self, X):
+        """
+        Assigns the given trajectory or list of trajectories to cluster centers by using the discretization defined
+        by this clustering method (usually a Voronoi tesselation)
+
+        Parameters
+        ----------
+        X : ndarray(T, n) or list of ndarray(T_i, n)
+            The input data, where T is the number of time steps and n is the number of dimensions.
+            When a list is provided they can have differently many time steps, but the number of dimensions need
+            to be consistent.
+
+        Returns
+        -------
+        Y : ndarray(T, dtype=int) or list of ndarray(T_i, dtype=int)
+            The discretized trajectory: int-array with the indexes of the assigned clusters, or list of such int-arrays.
+            If called with a list of trajectories, Y will also be a corresponding list of discrete trajectories
+
+        """
+        return self.map(X)
 
     def save_dtrajs(self, trajfiles=None, prefix='',
                     output_dir='.',
@@ -95,12 +114,12 @@ class AbstractClustering(Transformer):
 
         for filename, dtraj in zip(output_files, dtrajs):
             dest = path.join(output_dir, filename)
-            log.debug('writing dtraj to "%s"' % dest)
+            self._logger.debug('writing dtraj to "%s"' % dest)
             try:
                 if path.exists(dest):
                     # TODO: decide what to do if file already exists.
-                    log.warn('overwriting existing dtraj "%s"' % dest)
+                    self._logger.warn('overwriting existing dtraj "%s"' % dest)
                     pass
                 write_dtraj(dest, dtraj)
             except IOError:
-                log.exception('Exception during writing dtraj to "%s"' % dest)
+                self._logger.exception('Exception during writing dtraj to "%s"' % dest)

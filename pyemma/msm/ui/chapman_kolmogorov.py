@@ -10,35 +10,11 @@ from scipy.sparse import issparse
 
 from pyemma.msm.estimation import cmatrix, connected_cmatrix, largest_connected_set, tmatrix
 from pyemma.msm.analysis import statdist
-from pyemma.msm.analysis import pcca
+from pyemma.msm.analysis import pcca_sets
 
 from mapping import MapToConnectedStateLabels
 
 __all__=['cktest']
-
-def pcca_sets(P, n, lcc):
-    r"""Compute partition into Perron clusters.
-
-    Parameters
-    ----------
-    P : (M, M) ndarray
-        Transition matrix
-    n : int
-        Number of Perron clusters
-
-    Returns 
-    -------
-    sets : list
-        List of arrays, sets[i] contains the states in the i-th Perron
-        cluster
-
-    """
-    sets=[]
-    pcca_prob=pcca(P, n)
-    pcca_ind=np.argmax(pcca_prob, axis=1)
-    for i in range(n):
-        sets.append(lcc[pcca_ind==i])
-    return sets
 
 def propagate(W, P, n=1):
     r"""Propagate probabilities.
@@ -130,10 +106,14 @@ def cktest(T_MSM, lcc_MSM, dtrajs, lag, K, nsets=2, sets=None, full_output=False
                    "You can avoid automatic conversion to dense arrays by\n"
                    "giving sets for the Chapman-Kolmogorov test explicitly")
             warnings.warn(msg, UserWarning)
-            sets=pcca_sets(T_MSM.toarray(), nsets, lcc_MSM)
+            sets=pcca_sets(T_MSM.toarray(), nsets)
         else:
-            sets=pcca_sets(T_MSM, nsets, lcc_MSM)
+            sets=pcca_sets(T_MSM, nsets)
     nsets = len(sets)
+
+    # translate sets from connected-set indexes to full indexes, where the comparison is made:
+    for i,s in enumerate(sets):
+        sets[i] = lcc_MSM[s]
 
     """Stationary distribution at 1*tau"""
     mu_MSM = statdist(T_MSM)  

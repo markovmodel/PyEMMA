@@ -4,17 +4,14 @@ import numpy as np
 import mdtraj
 
 from pyemma.coordinates.util import patches
-from pyemma.coordinates.io.reader import ChunkedReader
-from pyemma.util.log import getLogger
 
-from .featurizer import MDFeaturizer
-
-log = getLogger('FeatureReader')
+from pyemma.coordinates.io.featurizer import MDFeaturizer
+from pyemma.coordinates.transform.transformer import Transformer
 
 __all__ = ['FeatureReader']
 
 
-class FeatureReader(ChunkedReader):
+class FeatureReader(Transformer):
 
     """
     Reads features from MD data.
@@ -53,7 +50,7 @@ class FeatureReader(ChunkedReader):
 
     def __init__(self, trajectories, topologyfile):
         # init with chunksize 100
-        ChunkedReader.__init__(self, 100)
+        Transformer.__init__(self, 100)
 
         # files
         if isinstance(trajectories, str):
@@ -62,18 +59,19 @@ class FeatureReader(ChunkedReader):
         self.topfile = topologyfile
 
         # featurizer
-        self.featurizer = MDFeaturizer(topologyfile)
+        if not hasattr(self, "featurizer"):
+            self.featurizer = MDFeaturizer(topologyfile)
 
         # _lengths
         self._lengths = []
         self._totlength = 0
 
         # iteration
-        self.mditer = None
+        self._mditer = None
         # current lag time
-        self.curr_lag = 0
+        self._curr_lag = 0
         # time lagged iterator
-        self.mditer2 = None
+        self._mditer2 = None
 
         # cache size
         self.in_memory = False
@@ -85,7 +83,16 @@ class FeatureReader(ChunkedReader):
 
         self._totlength = np.sum(self._lengths)
 
-        self.t = 0
+        self._t = 0
+        self.data_producer = self
+
+    @classmethod
+    def init_from_featurizer(cls, trajectories, featurizer):
+        if not isinstance(featurizer, MDFeaturizer):
+            raise ValueError("given featurizer is not of type Featurizer, but is %s"
+                             % type(featurizer))
+        cls.featurizer = featurizer
+        return cls(trajectories, featurizer.topologyfile)
 
     def describe(self):
         """
@@ -95,25 +102,14 @@ class FeatureReader(ChunkedReader):
         """
         return "Feature reader, features = ", self.featurizer.describe()
 
-    def operate_in_memory(self):
-        """
-        If called, the output will be fully stored in memory
-
-        :return:
-        """
-        self.in_memory = True
-        # output data
-        self.Y = [np.empty((self.trajectory_length(itraj), self.dimension()))
-                  for itraj in xrange(self.number_of_trajectories())]
-
-    def parametrize(self):
+    def parametrize(self, stride=1):
         """
         Parametrizes this transformer
 
         :return:
         """
         if self.in_memory:
-            self.map_to_memory()
+            self._map_to_memory(stride=stride)
 
     def number_of_trajectories(self):
         """
@@ -124,32 +120,52 @@ class FeatureReader(ChunkedReader):
         """
         return len(self.trajfiles)
 
-    def trajectory_length(self, itraj):
+    def trajectory_length(self, itraj, stride=1):
         """
         Returns the length of trajectory
 
         Parameters
         ----------
         itraj : int
+        stride : int
+            return value is the number of frames in trajectory when
+            running through it with a step size of `stride`
 
         :return:
             length of trajectory
         """
-        return self._lengths[itraj]
+        return (self._lengths[itraj] - 1) // stride + 1
 
-    def trajectory_lengths(self):
-        """
+    def trajectory_lengths(self, stride=1):
+        """       
         Returns the trajectory _lengths in a list
+
+        Parameters
+        ----------
+        stride : int
+            return value is the number of frames in trajectory when
+            running through it with a step size of `stride`
+        
         :return:
         """
-        return self._lengths
+        return [(l - 1)//stride + 1 for l in self._lengths]
 
-    def n_frames_total(self):
+    def n_frames_total(self, stride=1):
         """
         Returns the total number of frames, summed over all trajectories
+
+        Parameters
+        ----------                
+        stride : int
+            return value is the number of frames in trajectories when
+            running through them with a step size of `stride`       
+
         :return:
         """
-        return self._totlength
+        if stride == 1:
+            return self._totlength
+        else:
+            return sum(self.trajectory_lengths(stride))
 
     def dimension(self):
         """
@@ -157,14 +173,14 @@ class FeatureReader(ChunkedReader):
 
         :return:
         """
-        if len(self.featurizer.active_features)==0:
+        if len(self.featurizer.active_features) == 0:
             # special case: cartesion coordinates
             return self.featurizer.topology.n_atoms * 3
         else:
             # general case
             return self.featurizer.dimension()
 
-    def get_memory_per_frame(self):
+    def _get_memory_per_frame(self):
         """
         Returns the memory requirements per frame, in bytes
 
@@ -172,7 +188,7 @@ class FeatureReader(ChunkedReader):
         """
         return 4 * self.dimension()
 
-    def get_constant_memory(self):
+    def _get_constant_memory(self):
         """
         Returns the constant memory requirements, in bytes
 
@@ -180,8 +196,12 @@ class FeatureReader(ChunkedReader):
         """
         return 0
 
-    def map_to_memory(self):
-        self.reset()
+    def _map_to_memory(self, stride=1):
+        #TODO: stride is currently not implemented
+        if stride > 1:
+            raise NotImplementedError('stride option for FeatureReader._map_to_memory is currently not implemented')
+
+        self._reset()
         # iterate over trajectories
         last_chunk = False
         itraj = 0
@@ -189,7 +209,7 @@ class FeatureReader(ChunkedReader):
             last_chunk_in_traj = False
             t = 0
             while not last_chunk_in_traj:
-                y = self.next_chunk()
+                y = self._next_chunk()
                 assert y is not None
                 L = np.shape(y)[0]
                 # last chunk in traj?
@@ -204,114 +224,75 @@ class FeatureReader(ChunkedReader):
             # increment trajectory
             itraj += 1
 
-    def _create_iter(self, filename, skip=0):
+    def _create_iter(self, filename, skip=0, stride=1):
         return patches.iterload(filename, chunk=self.chunksize,
-                                top=self.topfile, skip=skip)
+                                top=self.topfile, skip=skip, stride=stride)
 
-    def reset(self):
+    def _reset(self, stride=1):
         """
         resets the chunk reader
         """
-        self.curr_itraj = 0
-        self.curr_lag = 0
+        self._itraj = 0
+        self._curr_lag = 0
         if len(self.trajfiles) >= 1:
-            self.t = 0
-            self.mditer = self._create_iter(self.trajfiles[0])
+            self._t = 0
+            self._mditer = self._create_iter(self.trajfiles[0], stride=stride)
 
-    def next_chunk(self, lag=0):
+    def _next_chunk(self, lag=0, stride=1):
         """
         gets the next chunk. If lag > 0, we open another iterator with same chunk
         size and advance it by one, as soon as this method is called with a lag > 0.
 
         :return: a feature mapped vector X, or (X, Y) if lag > 0
         """
-        chunk = self.mditer.next()
+        assert stride <= self.chunksize, 'stride > chunk size. This is not supported for MD trajectories.'
+
+        chunk = self._mditer.next()
+        shape = chunk.xyz.shape
 
         if lag > 0:
-            if self.curr_lag == 0:
+            if self._curr_lag == 0:
                 # lag time or trajectory index changed, so open lagged iterator
-                log.debug("open time lagged iterator for traj %i with lag %i"
-                          % (self.curr_itraj, self.curr_lag))
-                self.curr_lag = lag
-                self.mditer2 = self._create_iter(self.trajfiles[self.curr_itraj],
-                                                skip=self.curr_lag)
+                self._logger.debug("open time lagged iterator for traj %i with lag %i"
+                                   % (self._itraj, self._curr_lag))
+                self._curr_lag = lag
+                self._mditer2 = self._create_iter(self.trajfiles[self._itraj],
+                                                  skip=self._curr_lag*stride, stride=stride) 
             try:
-                adv_chunk = self.mditer2.next()
+                adv_chunk = self._mditer2.next()
             except StopIteration:
-                # When mditer2 ran over the trajectory end, return empty chunks.
+                # When _mditer2 ran over the trajectory end, return empty chunks.
                 adv_chunk = mdtraj.Trajectory(
-                              np.empty((0,chunk.xyz.shape[1],chunk.xyz.shape[2]),np.float32),
+                              np.empty((0, shape[1], shape[2]), np.float32),
                               chunk.topology)
 
-        self.t += chunk.xyz.shape[0]
+        self._t += shape[0]
 
-        if (self.t >= self.trajectory_length(self.curr_itraj) and
-                self.curr_itraj < len(self.trajfiles) - 1):
-            log.debug('closing current trajectory "%s"'
-                      % self.trajfiles[self.curr_itraj])
-            self.mditer.close()
-            self.t = 0
-            self.curr_itraj += 1
-            self.mditer = self._create_iter(self.trajfiles[self.curr_itraj])
-            # we open self.mditer2 only if requested due lag parameter!
-            self.curr_lag = 0
+        if (self._t >= self.trajectory_length(self._itraj, stride=stride) and
+                self._itraj < len(self.trajfiles) - 1):
+            self._logger.debug('closing current trajectory "%s"'
+                               % self.trajfiles[self._itraj])
+            self._mditer.close()
+            self._t = 0
+            self._itraj += 1
+            self._mditer = self._create_iter(self.trajfiles[self._itraj], stride=stride)
+            # we open self._mditer2 only if requested due lag parameter!
+            self._curr_lag = 0
 
         # map data
         if lag == 0:
-            if len(self.featurizer.active_features)==0:
-                return chunk.xyz.reshape((chunk.xyz.shape[0],chunk.xyz.shape[1]*chunk.xyz.shape[2]))
+            if len(self.featurizer.active_features) == 0:
+                shape_2d = (shape[0], shape[1] * shape[2])
+                return chunk.xyz.reshape(shape_2d)
             else:
                 return self.featurizer.map(chunk)
         else:
-            # TODO: note X and Y may have different shapes. This case has to be handled by subsequent transformers
-            if len(self.featurizer.active_features)==0:
-                X = chunk.xyz.reshape((chunk.xyz.shape[0],chunk.xyz.shape[1]*chunk.xyz.shape[2]))
-                Y = adv_chunk.xyz.reshape((adv_chunk.xyz.shape[0],adv_chunk.xyz.shape[1]*adv_chunk.xyz.shape[2]))
+            if len(self.featurizer.active_features) == 0:
+                shape_Y = adv_chunk.xyz.shape
+
+                X = chunk.xyz.reshape((shape[0], shape[1] * shape[2]))
+                Y = adv_chunk.xyz.reshape((shape_Y[0], shape_Y[1] * shape_Y[2]))
             else:
                 X = self.featurizer.map(chunk)
                 Y = self.featurizer.map(adv_chunk)
-#             assert np.shape(X) == np.shape(Y), "shape X = %s; Y= %s; lag=%i" % (
-#                 np.shape(X), np.shape(Y), lag)
             return X, Y
-
-    def __iter__(self):
-        self.reset()
-        return self
-
-    def next(self):
-        """ enable iteration over transformed data.
-
-        Returns
-        -------
-        (itraj, X) : (int, ndarray(n, m)
-            itraj corresponds to input sequence number (eg. trajectory index)
-            and X is the transformed data, n = chunksize or n < chunksize at end
-            of input.
-
-        """
-        # iterate over trajectories
-        if self.curr_itraj >= self.number_of_trajectories():
-            raise StopIteration
-
-        # next chunk already maps output
-        if self.lag == 0:
-            X = self.next_chunk()
-        else:
-            X, Y = self.next_chunk(self.lag)
-            ## we wont be able to correlate chunks of different len, so stop here
-            #if np.shape(X) != np.shape(Y):
-            #    # TODO: determine if its possible to truncate X to shape of Y?
-            #    raise StopIteration
-
-        last_itraj = self.curr_itraj
-        # note: t is incremented in next_chunk
-        if self.t >= self.trajectory_length(self.curr_itraj):
-            self.curr_itraj += 1
-            self.t = 0
-
-        if self.lag == 0:
-            return (last_itraj, X)
-
-        return (last_itraj, X, Y)
-
-

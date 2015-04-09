@@ -41,6 +41,10 @@ with conda::
 
      conda install -c https://conda.binstar.org/omnia pyemma
 
+
+or install latest devel branch with pip::
+     pip install git+https://github.com/markovmodel/PyEMMA.git@devel
+
 For a complete guide to installation, please have a look at the version 
 `online <http://pythonhosted.org/pyEMMA/INSTALL.html>`__ or offline in file
 doc/source/INSTALL.rst

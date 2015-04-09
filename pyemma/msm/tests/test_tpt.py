@@ -8,7 +8,7 @@ import unittest
 import numpy as np
 from pyemma.util.numeric import assert_allclose
 
-from pyemma.msm import msm, tpt
+from pyemma.msm import markov_model, tpt
 import pyemma.msm.analysis as msmana
 
 
@@ -52,16 +52,7 @@ class TestReactiveFluxFunctions(unittest.TestCase):
                                                  [ 0.         , 0.         , 0.         , 0.         , 0.        ],
                                                  [ 0.         , 0.         , 0.         , 0.         , 0.        ]])
 
-        """Dummy dtraj to trick trick constructor of MSM"""
-        dtraj = [0, 0]
-        tau = 1
-
-        msmobj = msm(dtraj, tau, compute=False)
-        """Set attributes manually"""
-        msmobj.C = np.zeros(self.P.shape)
-        msmobj.lcc = np.arange(self.P.shape[0])
-        msmobj.Ccc = msmobj.C
-        msmobj.T = self.P
+        msmobj = markov_model(self.P)
         msmobj.mu = msmana.statdist(self.P)
         msmobj.computed = True
         msmobj1 = msmobj
@@ -123,12 +114,7 @@ class TestReactiveFluxFunctions(unittest.TestCase):
         dtraj = [0, 0]
         tau = 1
 
-        msmobj = msm(dtraj, tau, compute=False)
-        """Set attributes manually"""
-        msmobj.C = np.zeros(self.P2.shape)
-        msmobj.lcc = np.arange(self.P2.shape[0])
-        msmobj.Ccc = msmobj.C
-        msmobj.T = self.P2
+        msmobj = markov_model(self.P2)
         msmobj.mu = msmana.statdist(self.P2)
         msmobj.computed = True
         msmobj2 = msmobj

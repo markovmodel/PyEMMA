@@ -10,11 +10,18 @@ __docformat__ = "restructuredtext en"
 
 import warnings
 
-import numpy as np
-from scipy.sparse import issparse, csr_matrix
-from scipy.sparse.sputils import isdense
+import numpy as _np
+from scipy.sparse import issparse as _issparse
+from scipy.sparse import csr_matrix as _csr_matrix
+from scipy.sparse.sputils import isdense as _isdense
 
 from pyemma.util.annotators import shortcut
+
+# type-checking
+from pyemma.util.types import ensure_int_array as _ensure_int_array
+from pyemma.util.types import ensure_float_array as _ensure_float_array
+from pyemma.util.types import ensure_int_array_or_None as _ensure_int_array_or_None
+from pyemma.util.types import ensure_float_array_or_None as _ensure_float_array_or_None
 
 import dense.assessment
 import dense.committor
@@ -22,6 +29,7 @@ import dense.fingerprints
 import dense.decomposition
 import dense.expectations
 import dense.pcca
+from dense.pcca import PCCA
 import dense.sensitivity
 import dense.mean_first_passage_time
 import dense.hitting_probability
@@ -56,6 +64,10 @@ __all__=['is_transition_matrix',
          'committor',
          'hitting_probability',
          'pcca',
+         'pcca_sets',
+         'pcca_assignments',
+         'pcca_distributions',
+         'pcca_memberships',
          'expectation',
          'fingerprint_correlation',
          'fingerprint_relaxation',
@@ -116,9 +128,9 @@ def is_transition_matrix(T, tol=1e-12):
     True
         
     """
-    if issparse(T):
+    if _issparse(T):
         return sparse.assessment.is_transition_matrix(T, tol)
-    elif isdense(T):
+    elif _isdense(T):
         return dense.assessment.is_transition_matrix(T, tol)
     else:
         raise _type_not_supported
@@ -160,9 +172,9 @@ def is_rate_matrix(K, tol=1e-12):
     True
         
     """
-    if issparse(K):
+    if _issparse(K):
         return sparse.assessment.is_rate_matrix(K, tol)
-    elif isdense(K):
+    elif _isdense(K):
         return dense.assessment.is_rate_matrix(K, tol)
     else:
         raise _type_not_supported
@@ -224,10 +236,10 @@ def is_connected(T, directed=True):
     True
     
     """
-    if issparse(T):
+    if _issparse(T):
         return sparse.assessment.is_connected(T, directed=directed)
-    elif isdense(T):
-        T=csr_matrix(T)
+    elif _isdense(T):
+        T=_csr_matrix(T)
         return sparse.assessment.is_connected(T, directed=directed)
     else:
         raise _type_not_supported
@@ -281,9 +293,12 @@ def is_reversible(T, mu=None, tol=1e-12):
     True
         
     """
-    if issparse(T):
+    # check input
+    mu = _ensure_float_array_or_None(mu, require_order=True)
+    # go
+    if _issparse(T):
         return sparse.assessment.is_reversible(T, mu, tol)
-    elif isdense(T):
+    elif _isdense(T):
         return dense.assessment.is_reversible(T, mu, tol)
     else:
         raise _type_not_supported
@@ -337,9 +352,9 @@ def stationary_distribution(T):
                          "distribution. Separate disconnected components "
                          "and handle them separately")
     # we're good to go...
-    if issparse(T):
+    if _issparse(T):
         return sparse.decomposition.stationary_distribution_from_backward_iteration(T)
-    elif isdense(T):
+    elif _isdense(T):
         return dense.decomposition.stationary_distribution_from_backward_iteration(T)
     else:
         raise _type_not_supported
@@ -379,9 +394,9 @@ def eigenvalues(T, k=None, ncv=None):
     array([1.0+0.j, 0.9+0.j, -0.1+0.j]) 
 
     """
-    if issparse(T):
+    if _issparse(T):
         return sparse.decomposition.eigenvalues(T, k, ncv=ncv)
-    elif isdense(T):
+    elif _isdense(T):
         return dense.decomposition.eigenvalues(T, k)
     else:
         raise _type_not_supported
@@ -427,12 +442,13 @@ def timescales(T, tau=1, k=None, ncv=None):
     array([        inf,  9.49122158,  0.43429448])
     
     """
-    if issparse(T):
+    if _issparse(T):
         return sparse.decomposition.timescales(T, tau=tau, k=k, ncv=ncv)
-    elif isdense(T):
+    elif _isdense(T):
         return dense.decomposition.timescales(T, tau=tau, k=k)
     else:
         raise _type_not_supported
+
 
 # DONE: Ben
 def eigenvectors(T, k=None, right=True, ncv=None):
@@ -493,15 +509,15 @@ def eigenvectors(T, k=None, right=True, ncv=None):
            [  5.77350269e-01,  -7.07106781e-01,   9.90147543e-02]])
            
     """
-    if issparse(T):
+    if _issparse(T):
         return sparse.decomposition.eigenvectors(T, k=k, right=right, ncv=ncv)
-    elif isdense(T):
+    elif _isdense(T):
         return dense.decomposition.eigenvectors(T, k=k, right=right)
     else: 
         raise _type_not_supported
 
 # DONE: Ben
-def rdl_decomposition(T, k=None, norm='standard', ncv=None):
+def rdl_decomposition(T, k=None, norm='auto', ncv=None):
     r"""Compute the decomposition into eigenvalues, left and right
     eigenvectors.
     
@@ -511,18 +527,19 @@ def rdl_decomposition(T, k=None, norm='standard', ncv=None):
         Transition matrix    
     k : int (optional)
         Number of eigenvector/eigenvalue pairs
-    norm: {'standard', 'reversible'}, optional
+    norm: {'standard', 'reversible', 'auto'}, optional
         which normalization convention to use
 
-        ============ ===========================================
+        ============ =============================================
         norm       
-        ============ ===========================================
+        ============ =============================================
         'standard'   LR = Id, is a probability\
                      distribution, the stationary distribution\
                      of `T`. Right eigenvectors `R`\
                      have a 2-norm of 1
         'reversible' `R` and `L` are related via ``L[0, :]*R``  
-        ============ =========================================== 
+        'auto'       reversible if T is reversible, else standard.
+        ============ =============================================
 
     ncv : int (optional)
         The number of Lanczos vectors generated, `ncv` must be greater than k;
@@ -572,15 +589,15 @@ def rdl_decomposition(T, k=None, norm='standard', ncv=None):
            [  4.59068406e-01,  -9.18136813e-01,   4.59068406e-01]])    
            
     """    
-    if issparse(T):
+    if _issparse(T):
         return sparse.decomposition.rdl_decomposition(T, k=k, norm=norm, ncv=ncv)
-    elif isdense(T):
+    elif _isdense(T):
         return dense.decomposition.rdl_decomposition(T, k=k, norm=norm)
     else: 
         raise _type_not_supported
 
 # DONE: Ben, Chris
-def mfpt(T, target, origin=None, mu=None):
+def mfpt(T, target, origin=None, tau=1, mu=None):
     r"""Mean first passage times (from a set of starting states - optional)
     to a set of target states.
     
@@ -592,6 +609,10 @@ def mfpt(T, target, origin=None, mu=None):
         Target states for mfpt calculation.
     origin : int or list of int (optional)
         Set of starting states.
+    tau : int (optional)
+        The time-lag (in elementary time steps of the microstate
+        trajectory) at which the given transition matrix was
+        constructed.
     mu : (n,) ndarray (optional)
         The stationary distribution of the transition matrix T.
     
@@ -640,23 +661,32 @@ def mfpt(T, target, origin=None, mu=None):
     array([  0.,  12.,  22.])
     
     """
-    if issparse(T):
+    # check inputs
+    target = _ensure_int_array(target)
+    origin = _ensure_int_array_or_None(origin)
+    # go
+    if _issparse(T):
         if origin is None:
-            return sparse.mean_first_passage_time.mfpt(T, target)
-        return sparse.mean_first_passage_time.mfpt_between_sets(T,target,origin,mu=mu)
-    elif isdense(T):
+            t_tau = sparse.mean_first_passage_time.mfpt(T, target)
+        else:
+            t_tau = sparse.mean_first_passage_time.mfpt_between_sets(T,target,origin,mu=mu)
+    elif _isdense(T):
         if origin is None:
-            return dense.mean_first_passage_time.mfpt(T, target)
-        return dense.mean_first_passage_time.mfpt_between_sets(T,target,origin,mu=mu)
+            t_tau = dense.mean_first_passage_time.mfpt(T, target)
+        else:
+            t_tau = dense.mean_first_passage_time.mfpt_between_sets(T,target,origin,mu=mu)
     else:
         raise _type_not_supported
+
+    # scale answer by lag time used.
+    return tau * t_tau
 
 
 def hitting_probability(P, target):
     """
     Computes the hitting probabilities for all states to the target states.
     
-    The hitting probability of state i to set A is defined as the minimal, 
+    The hitting probability of state i to the target set A is defined as the minimal,
     non-negative solution of:
     
     .. math::
@@ -668,10 +698,11 @@ def hitting_probability(P, target):
     h : ndarray(n)
         a vector with hitting probabilities
     """
-    if issparse(P):
+    target = _ensure_int_array(target)
+    if _issparse(P):
         _showSparseConversionWarning() # currently no sparse implementation!
         return dense.hitting_probability.hitting_probability(P.toarray(),target)
-    elif isdense(P):
+    elif _isdense(P):
         return dense.hitting_probability.hitting_probability(P,target)
     else:
         raise _type_not_supported
@@ -786,7 +817,9 @@ def committor(T, A, B, forward=True, mu=None):
     array([ 1.        ,  0.45454545,  0.        ])
     
     """
-    if issparse(T):
+    A = _ensure_int_array(A)
+    B = _ensure_int_array(B)
+    if _issparse(T):
         if forward:
             return sparse.committor.forward_committor(T, A, B)
         else:
@@ -797,7 +830,7 @@ def committor(T, A, B, forward=True, mu=None):
             else:
                 return sparse.committor.backward_committor(T, A, B)
 
-    elif isdense(T):
+    elif _isdense(T):
         if forward:
             return dense.committor.forward_committor(T, A, B)
         else:
@@ -809,8 +842,6 @@ def committor(T, A, B, forward=True, mu=None):
 
     else:
         raise _type_not_supported
-    
-    return committor
 
 
 ################################################################################
@@ -858,12 +889,15 @@ def expected_counts(T, p0, N):
            [  0.        ,   4.04960006,  36.44640052]])
         
     """
-    if issparse(T):
+    # check input
+    p0 = _ensure_float_array(p0, require_order=True)
+    # go
+    if _issparse(T):
         return sparse.expectations.expected_counts(p0, T, N)
-    elif isdense(T):
+    elif _isdense(T):
         return dense.expectations.expected_counts(p0, T, N)
     else:
-        _type_not_supported
+        raise _type_not_supported
 
 # DONE: Ben
 def expected_counts_stationary(T, N, mu=None):
@@ -909,12 +943,15 @@ def expected_counts_stationary(T, N, mu=None):
            [  0.        ,   4.54545455,  40.90909091]])       
     
     """
-    if issparse(T):
+    # check input
+    mu = _ensure_float_array_or_None(mu, require_order=True)
+    # go
+    if _issparse(T):
         return sparse.expectations.expected_counts_stationary(T, N, mu=mu)
-    elif isdense(T):
+    elif _isdense(T):
         return dense.expectations.expected_counts_stationary(T, N, mu=mu)
     else:
-        _type_not_supported   
+        raise _type_not_supported
 
 
 ################################################################################
@@ -1017,13 +1054,16 @@ def fingerprint_correlation(T, obs1, obs2=None, tau=1, k=None, ncv=None):
     array([ 0.20661157,  0.22727273,  0.02066116])
     
     """
-
-    if issparse(T):
+    # check input
+    obs1 = _ensure_float_array(obs1, require_order=True)
+    obs2 = _ensure_float_array_or_None(obs2, require_order=True)
+    # go
+    if _issparse(T):
         return sparse.fingerprints.fingerprint_correlation(T, obs1, obs2=obs2, tau=tau, k=k, ncv=ncv)
-    elif isdense(T):
+    elif _isdense(T):
         return dense.fingerprints.fingerprint_correlation(T, obs1, obs2, tau=tau, k=k)
     else:
-        _type_not_supported   
+        raise _type_not_supported
 
 # DONE: Martin+Frank+Ben: Implement in Python directly
 def fingerprint_relaxation(T, p0, obs, tau=1, k=None, ncv=None):
@@ -1103,12 +1143,16 @@ def fingerprint_relaxation(T, p0, obs, tau=1, k=None, ncv=None):
     array([ 0.45454545,  0.5       ,  0.04545455])    
         
     """
-    if issparse(T):
+    # check input
+    p0 = _ensure_float_array(p0, require_order=True)
+    obs = _ensure_float_array(obs, require_order=True)
+    # go
+    if _issparse(T):
         return sparse.fingerprints.fingerprint_relaxation(T, p0, obs, tau=tau, k=k, ncv=ncv)
-    elif isdense(T):
+    elif _isdense(T):
         return dense.fingerprints.fingerprint_relaxation(T, p0, obs, tau=tau, k=k)
     else:
-        _type_not_supported 
+        raise _type_not_supported
 
 # DONE: Frank, Ben
 def expectation(T, a, mu=None):
@@ -1150,9 +1194,13 @@ def expectation(T, a, mu=None):
     0.90909090909090917       
     
     """
+    # check input
+    a = _ensure_float_array(a, require_order=True)
+    mu = _ensure_float_array_or_None(mu, require_order=True)
+    # go
     if not mu:
         mu=stationary_distribution(T)
-    return np.dot(mu,a)
+    return _np.dot(mu,a)
 
 # DONE: Martin+Frank+Ben: Implement in Python directly
 def correlation(T, obs1, obs2=None, times=[1], k=None, ncv=None):
@@ -1229,12 +1277,17 @@ def correlation(T, obs1, obs2=None, times=[1], k=None, ncv=None):
     array([ 0.40909091,  0.34081364,  0.28585667,  0.23424263])
     
     """
-    if issparse(T):
+    # check input
+    obs1 = _ensure_float_array(obs1, require_order=True)
+    obs2 = _ensure_float_array_or_None(obs2, require_order=True)
+    times = _ensure_int_array(times, require_order=True)
+    # go
+    if _issparse(T):
         return sparse.fingerprints.correlation(T, obs1, obs2=obs2, times=times, k=k, ncv=ncv)
-    elif isdense(T):
+    elif _isdense(T):
         return dense.fingerprints.correlation(T, obs1, obs2=obs2, times=times, k=k)
     else:
-        _type_not_supported 
+        raise _type_not_supported
 
 
 # DONE: Martin+Frank+Ben: Implement in Python directly
@@ -1298,12 +1351,17 @@ def relaxation(T, p0, obs, times=[1], k=None, ncv=None):
     array([ 1.        ,  0.8407    ,  0.71979377,  0.60624287])
     
     """
-    if issparse(T):
+    # check input
+    p0 = _ensure_float_array(p0, require_order=True)
+    obs = _ensure_float_array(obs, require_order=True)
+    times = _ensure_int_array(times, require_order=True)
+    # go
+    if _issparse(T):
         return sparse.fingerprints.relaxation(T, p0, obs, k=k, times=times)
-    elif isdense(T):
+    elif _isdense(T):
         return dense.fingerprints.relaxation(T, p0, obs, k=k, times=times)
     else:
-        _type_not_supported 
+        raise _type_not_supported
     
     
 
@@ -1311,22 +1369,42 @@ def relaxation(T, p0, obs, times=[1], k=None, ncv=None):
 # PCCA
 ################################################################################
 
-# DONE: Jan, Frank
-def pcca(T, n):
-    r"""Find meta-stable Perron-clusters.
-    
+def _pcca_object(T, m):
+    """
+    Constructs the pcca object from dense or sparse
+
     Parameters
     ----------
-    T : (M, M) ndarray or scipy.sparse matrix
+    T : (n, n) ndarray or scipy.sparse matrix
         Transition matrix
-    n : int
-        Number of Perron-clusters
-    
+    m : int
+        Number of metastable sets
+
     Returns
     -------
-    clusters : (M, n) ndarray
-        Membership vectors. clusters[i, :] contains the membership vector
-        for the i-th Perron-cluster.
+    pcca : PCCA
+        PCCA object
+    """
+    if _issparse(T):
+        _showSparseConversionWarning()
+        T = T.toarray()
+    return PCCA(T, m)
+
+# DONE: Jan, Frank
+def pcca(T, m):
+    r"""Compute meta-stable sets using PCCA++ _[1] and return the membership of all states to these sets.
+
+    Parameters
+    ----------
+    T : (n, n) ndarray or scipy.sparse matrix
+        Transition matrix
+    m : int
+        Number of metastable sets
+
+    Returns
+    -------
+    clusters : (n, m) ndarray
+        Membership vectors. clusters[i, j] contains the membership of state i to metastable state j
 
     Notes
     -----
@@ -1342,38 +1420,169 @@ def pcca(T, n):
         PCCA+: application to Markov state models and data
         classification. Advances in Data Analysis and Classification 7
         (2): 147-179
-    
+
     """
-    if issparse(T):
-        _showSparseConversionWarning()
-        return dense.pcca.pcca(T.toarray(), n)
-    elif isdense(T):
-        return dense.pcca.pcca(T, n)
-    else:
-        _type_not_supported
+    warnings.warn('pcca method is deprecated because of its unspecific naming and will be removed soon. Use pcca_memberships in the future.', DeprecationWarning)
+    return pcca_memberships(T, m)
 
 
-def coarsegrain(P, n):
+# DONE: Frank
+def pcca_memberships(T, m):
+    r"""Compute meta-stable sets using PCCA++ _[1] and return the membership of all states to these sets.
+
+    Parameters
+    ----------
+    T : (n, n) ndarray or scipy.sparse matrix
+        Transition matrix
+    m : int
+        Number of metastable sets
+
+    Returns
+    -------
+    clusters : (n, m) ndarray
+        Membership vectors. clusters[i, j] contains the membership of state i to metastable state j
+
+    Notes
+    -----
+    Perron cluster center analysis assigns each microstate a vector of
+    membership probabilities. This assignement is performed using the
+    right eigenvectors of the transition matrix. Membership
+    probabilities are computed via numerical optimization of the
+    entries of a membership matrix.
+
+    References
+    ----------
+    .. [1] Roeblitz, S and M Weber. 2013. Fuzzy spectral clustering by
+        PCCA+: application to Markov state models and data
+        classification. Advances in Data Analysis and Classification 7
+        (2): 147-179
+
     """
-    Coarse-grains transition matrix P to n sets using PCCA
+    return _pcca_object(T, m).memberships
+
+
+# DONE: Frank
+def pcca_sets(T, m):
+    r""" Computes the metastable sets given transition matrix T using the PCCA++ method _[1]
+
+    This is only recommended for visualization purposes. You *cannot* compute any
+    actual quantity of the coarse-grained kinetics without employing the fuzzy memberships!
+
+    Parameters
+    ----------
+    T : (n, n) ndarray or scipy.sparse matrix
+        Transition matrix
+    m : int
+        Number of metastable sets
+
+    Returns
+    -------
+    A list of length equal to metastable states. Each element is an array with microstate indexes contained in it
+
+    References
+    ----------
+    .. [1] Roeblitz, S and M Weber. 2013. Fuzzy spectral clustering by
+        PCCA+: application to Markov state models and data
+        classification. Advances in Data Analysis and Classification 7
+        (2): 147-179
+    """
+    return _pcca_object(T, m).metastable_sets
+
+
+# DONE: Frank
+def pcca_assignments(T, m):
+    """ Computes the assignment to metastable sets for active set states using the PCCA++ method _[1]
+
+    This is only recommended for visualization purposes. You *cannot* compute any
+    actual quantity of the coarse-grained kinetics without employing the fuzzy memberships!
+
+    Parameters
+    ----------
+    m : int
+        Number of metastable sets
+
+    Returns
+    -------
+    For each active set state, the metastable state it is located in.
+
+    References
+    ----------
+    .. [1] Roeblitz, S and M Weber. 2013. Fuzzy spectral clustering by
+        PCCA+: application to Markov state models and data
+        classification. Advances in Data Analysis and Classification 7
+        (2): 147-179
+    """
+    return _pcca_object(T, m).metastable_assignment
+
+
+def pcca_distributions(T, m):
+    """ Computes the probability distributions of active set states within each metastable set using the PCCA++ method _[1]
+    using Bayesian inversion as described in _[2].
+
+    Parameters
+    ----------
+    m : int
+        Number of metastable sets
+
+    Returns
+    -------
+    p_out : ndarray( (m, n) )
+        A matrix containing the probability distribution of each active set state, given that we are in a
+        metastable set.
+        i.e. p(state | metastable). The row sums of p_out are 1.
+
+    References
+    ----------
+    .. [1] Roeblitz, S and M Weber. 2013. Fuzzy spectral clustering by
+        PCCA+: application to Markov state models and data
+        classification. Advances in Data Analysis and Classification 7
+        (2): 147-179
+    .. [2] F. Noe, H. Wu, J.-H. Prinz and N. Plattner:
+        Projected and hidden Markov models for calculating kinetics and metastable states of complex molecules
+        J. Chem. Phys. 139, 184114 (2013)
+    """
+    return _pcca_object(T, m).output_probabilities
+
+
+def coarsegrain(P, m):
+    """Coarse-grains transition matrix P to n sets using PCCA++ _[1]
     
     Coarse-grains transition matrix P such that the dominant eigenvalues are preserved, using:
     
     ..math:
         \tilde{P} = M^T P M (M^T M)^{-1}
-    
-    See: 
-    F. Noe, H. Wu, J.-H. Prinz and N. Plattner:
-    Projected and hidden Markov models for calculating kinetics and metastable states of complex molecules
-    J. Chem. Phys. 139, 184114 (2013)
+
+    where :math:`M` is the membership probability matrix and P is the full transition matrix.
+    See _[2] and _[3] for the theory. The results of the coarse-graining can be interpreted as a hidden markov model
+    where the states of the coarse-grained transition matrix are the hidden states. Therefore we additionally return
+    the stationary probability of the coarse-grained transition matrix as well as the output probability matrix from
+    metastable states to states in order to provide all objects needed for an HMM.
+
+    Returns
+    -------
+    pi_c : ndarray( (m) )
+        Equilibrium probability vector of the coarse-grained transition matrix
+    P_c : ndarray( (m, m) )
+        Coarse-grained transition matrix
+    p_out : ndarray( (m, n) )
+        A matrix containing the probability distribution of each active set state, given that we are in a
+        metastable set.
+        i.e. p(state | metastable). The row sums of p_out are 1.
+
+    References
+    ----------
+    .. [1] Roeblitz, S and M Weber. 2013. Fuzzy spectral clustering by
+        PCCA+: application to Markov state models and data
+        classification. Advances in Data Analysis and Classification 7
+        (2): 147-179
+    .. [2] Kube, S and M Weber.
+        A coarse-graining method for the identification of transition rates between molecular conformations
+        J. Chem. Phys. 126, 024103 (2007)
+    .. [2] F. Noe, H. Wu, J.-H. Prinz and N. Plattner:
+        Projected and hidden Markov models for calculating kinetics and metastable states of complex molecules
+        J. Chem. Phys. 139, 184114 (2013)
     """
-    if issparse(P):
-        _showSparseConversionWarning()
-        return dense.pcca.coarsegrain(P.toarray(), n)
-    elif isdense(P):
-        return dense.pcca.coarsegrain(P, n)
-    else:
-        _type_not_supported
+    return _pcca_object(P, m).coarse_grained_transition_matrix
 
 
 ################################################################################
@@ -1401,10 +1610,10 @@ def eigenvalue_sensitivity(T, k):
         Sensitivity matrix for k-th eigenvalue.
     
     """
-    if issparse(T):
+    if _issparse(T):
         _showSparseConversionWarning()
         eigenvalue_sensitivity(T.todense(), k)
-    elif isdense(T):
+    elif _isdense(T):
         return dense.sensitivity.eigenvalue_sensitivity(T, k)
     else:
         raise _type_not_supported
@@ -1425,10 +1634,10 @@ def timescale_sensitivity(T, k):
         Sensitivity matrix for the k-th time-scale.
         
     """
-    if issparse(T):
+    if _issparse(T):
         _showSparseConversionWarning()
         timescale_sensitivity(T.todense(), k)
-    elif isdense(T):
+    elif _isdense(T):
         return dense.sensitivity.timescale_sensitivity(T, k)
     else:
         raise _type_not_supported
@@ -1453,10 +1662,10 @@ def eigenvector_sensitivity(T, k, j, right=True):
         Sensitivity matrix for the j-th element of the k-th eigenvector.
     
     """
-    if issparse(T):
+    if _issparse(T):
         _showSparseConversionWarning()
         eigenvector_sensitivity(T.todense(), k, j, right=right)
-    elif isdense(T):
+    elif _isdense(T):
         return dense.sensitivity.eigenvector_sensitivity(T, k, j, right=right)
     else:
         raise _type_not_supported
@@ -1482,10 +1691,10 @@ def stationary_distribution_sensitivity(T, j):
         of the stationary distribution.
     
     """
-    if issparse(T):
+    if _issparse(T):
         _showSparseConversionWarning()
         stationary_distribution_sensitivity(T.todense(), j)
-    elif isdense(T):
+    elif _isdense(T):
         return dense.sensitivity.stationary_distribution_sensitivity(T, j)
     else:
         raise _type_not_supported
@@ -1508,10 +1717,13 @@ def mfpt_sensitivity(T, target, i):
         Sensitivity matrix for specified state
     
     """
-    if issparse(T):
+    # check input
+    target = _ensure_int_array(target)
+    # go
+    if _issparse(T):
         _showSparseConversionWarning()
         mfpt_sensitivity(T.todense(), target, i)
-    elif isdense(T):
+    elif _isdense(T):
         return dense.sensitivity.mfpt_sensitivity(T, target, i)
     else:
         raise _type_not_supported
@@ -1541,10 +1753,13 @@ def committor_sensitivity(T, A, B, i, forward=True):
         Sensitivity matrix of the specified committor entry.
     
     """
-    if issparse(T):
+    # check inputs
+    A = _ensure_int_array(A)
+    B = _ensure_int_array(B)
+    if _issparse(T):
         _showSparseConversionWarning()
         committor_sensitivity(T.todense(), A, B, i, forward)
-    elif isdense(T):
+    elif _isdense(T):
         if forward:
             return dense.sensitivity.forward_committor_sensitivity(T, A, B, i)
         else:
@@ -1568,10 +1783,13 @@ def expectation_sensitivity(T, a):
         Sensitivity matrix of the expectation value.
     
     """
-    if issparse(T):
+    # check input
+    a = _ensure_float_array(a, require_order=True)
+    # go
+    if _issparse(T):
         _showSparseConversionWarning()
         return dense.sensitivity.expectation_sensitivity(T.toarray(), a)
-    elif isdense(T):
+    elif _isdense(T):
         return dense.sensitivity.expectation_sensitivity(T, a)
     else:
         raise _type_not_supported

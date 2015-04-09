@@ -63,7 +63,7 @@ def iterload(filename, chunk=100, **kwargs):
     """
     stride = kwargs.get('stride', 1)
     atom_indices = cast_indices(kwargs.get('atom_indices', None))
-    if chunk % stride != 0:
+    if chunk % stride != 0 and filename.endswith('.dcd'):
         raise ValueError('Stride must be a divisor of chunk. stride=%d does not go '
                          'evenly into chunk=%d' % (stride, chunk))
     if chunk == 0:
@@ -156,6 +156,7 @@ def iterload(filename, chunk=100, **kwargs):
                                      unitcell_angles=box_angle)
 
         else:
+            log.critical("loading complete traj into mem! This might no be desired.")
             t = load(filename, **kwargs)
             for i in range(skip, len(t), chunk):
                 yield t[i:i+chunk]

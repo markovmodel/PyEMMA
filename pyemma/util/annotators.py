@@ -19,6 +19,7 @@ Now, Bar.foo.__doc__ == Bar().foo.__doc__ == Foo.foo.__doc__ == "Frobber"
 import warnings
 from functools import wraps
 import inspect
+from pyemma.util.log import getLogger
 
 __all__ = ['doc_inherit']
 
@@ -80,20 +81,26 @@ def deprecated(func):
 
     @wraps(func)
     def new_func(*args, **kwargs):
+        (frame, filename, line_number, function_name, lines, index) = \
+            inspect.getouterframes(inspect.currentframe())[1]
+
         warnings.warn_explicit(
-            "Call to deprecated function {}.".format(func.__name__),
+            "Call to deprecated function %s. Called from %s line %i" %
+            (func.__name__, filename, line_number),
             category=DeprecationWarning,
             filename=func.func_code.co_filename,
             lineno=func.func_code.co_firstlineno + 1
         )
         return func(*args, **kwargs)
+
     return new_func
 
-def shortcut(name):
-    """ add an shortcut (alias) to a decorated function.
 
-    The alias function will have the same docstring and will be appended to
-    the module __all__ variable, where the original function is defined.
+def shortcut(name):
+    """Add an shortcut (alias) to a decorated function.
+
+    Calling the shortcut (alias) will call the decorated function. The shortcut name will be appended
+    to the module's __all__ variable and the shortcut function will inherit the function's docstring
 
     Examples
     --------
@@ -113,6 +120,8 @@ def shortcut(name):
         # docstrings are also being copied
         frame.f_globals[name] = f
         if frame.f_globals.has_key('__all__'):
-            frame.f_globals['__all__'].append(name)
+            # add shortcut if it's not already there.
+            if name not in frame.f_globals['__all__']:
+                frame.f_globals['__all__'].append(name)
         return f
     return wrap

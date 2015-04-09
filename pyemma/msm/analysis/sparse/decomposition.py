@@ -174,7 +174,7 @@ def eigenvectors(T, k=None, right=True, ncv=None):
             ind=np.argsort(np.abs(val))[::-1]
             return vecs[:, ind]
 
-def rdl_decomposition(T, k=None, norm='standard', ncv=None):
+def rdl_decomposition(T, k=None, norm='auto', ncv=None):
     r"""Compute the decomposition into left and right eigenvectors.
 
     Parameters
@@ -183,11 +183,12 @@ def rdl_decomposition(T, k=None, norm='standard', ncv=None):
         Transition matrix    
     k : int (optional)
         Number of eigenvector/eigenvalue pairs
-    norm: {'standard', 'reversible'}
+    norm: {'standard', 'reversible', 'auto'}
         standard: (L'R) = Id, L[:,0] is a probability distribution,
             the stationary distribution mu of T. Right eigenvectors
             R have a 2-norm of 1.
         reversible: R and L are related via L=L[:,0]*R.
+        auto: will be reversible if T is reversible, otherwise standard.
     ncv : int (optional)
         The number of Lanczos vectors generated, `ncv` must be greater than k;
         it is recommended that ncv > 2*k
@@ -209,6 +210,14 @@ def rdl_decomposition(T, k=None, norm='standard', ncv=None):
     """
     if k is None:
         raise ValueError("Number of eigenvectors required for decomposition of sparse matrix")
+    # auto-set norm
+    if norm=='auto':
+        from pyemma.msm.analysis import is_reversible
+        if (is_reversible(T)):
+            norm = 'reversible'
+        else:
+            norm = 'standard'
+    # Standard norm: Euclidean norm is 1 for r and LR = I.
     if norm=='standard':
         v, R=scipy.sparse.linalg.eigs(T, k=k, which='LM', ncv=ncv)
         r, L=scipy.sparse.linalg.eigs(T.transpose(), k=k, which='LM', ncv=ncv)
@@ -235,6 +244,7 @@ def rdl_decomposition(T, k=None, norm='standard', ncv=None):
 
         return R, D, np.transpose(L)
 
+    # Reversible norm:
     elif norm=='reversible':
         v, R=scipy.sparse.linalg.eigs(T, k=k, which='LM', ncv=ncv)
         mu=stationary_distribution_from_backward_iteration(T)

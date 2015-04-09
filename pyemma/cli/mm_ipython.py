@@ -94,10 +94,10 @@ def main():
 
     if args.install:
         install_notebooks(args.dest, args.overwrite)
-        if args.run:
+        if args.parametrize:
             start_ipython_server(args.dest, ipy_opt)
     else:
-        if args.run:
+        if args.parametrize:
             start_ipython_server(get_default_install_location(), ipy_opt)
 
     return 0

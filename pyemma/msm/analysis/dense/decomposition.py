@@ -205,7 +205,8 @@ def rdl_decomposition(T, k=None, norm='standard'):
             the stationary distribution mu of T. Right eigenvectors
             R have a 2-norm of 1.
         reversible: R and L are related via L=L[:,0]*R.
-        
+        auto: will be reversible if T is reversible, otherwise standard.
+
     Returns
     -------
     R : (M, M) ndarray
@@ -232,6 +233,14 @@ def rdl_decomposition(T, k=None, norm='standard'):
     """Diagonal matrix containing eigenvalues"""
     D=np.diag(w)
     
+    # auto-set norm
+    if norm=='auto':
+        from pyemma.msm.analysis import is_reversible
+        if (is_reversible(T)):
+            norm = 'reversible'
+        else:
+            norm = 'standard'
+    # Standard norm: Euclidean norm is 1 for r and LR = I.
     if norm =='standard':
         L=solve(np.transpose(R), np.eye(d))
         
@@ -244,6 +253,7 @@ def rdl_decomposition(T, k=None, norm='standard'):
         else:
             return R[:,0:k], D[0:k,0:k], np.transpose(L[:,0:k])
 
+    # Reversible norm:
     elif norm=='reversible':
         b=np.zeros(d)
         b[0]=1.0 

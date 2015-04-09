@@ -5,12 +5,10 @@ Created on 19.01.2015
 '''
 from .transformer import Transformer
 from pyemma.util.linalg import eig_corr
-from pyemma.util.log import getLogger
 from pyemma.util.annotators import doc_inherit
 
 import numpy as np
 
-log = getLogger('TICA')
 __all__ = ['TICA']
 
 
@@ -58,12 +56,12 @@ class TICA(Transformer):
 
     """
 
-    def __init__(self, lag, output_dimension, epsilon=1e-6, force_eigenvalues_le_one=False):
+    def __init__(self, tau, output_dimension, epsilon=1e-6, force_eigenvalues_le_one=False):
         super(TICA, self).__init__()
 
         # store lag time to set it appropriatly in second pass of parametrize
-        self._tau = lag
-        self.output_dimension = output_dimension
+        self._tau = tau
+        self._output_dimension = output_dimension
         self.epsilon = epsilon
         self._force_eigenvalues_le_one = force_eigenvalues_le_one
 
@@ -77,27 +75,27 @@ class TICA(Transformer):
         self.N_cov_tau = 0
         self.eigenvalues = None
         self.eigenvectors = None
-       
+
     @property
     def tau(self):
         return self._tau
-    
+
     @tau.setter
-    def tau(self,new_tau):
+    def tau(self, new_tau):
         self._parametrized = False
         self._tau = new_tau
 
     @doc_inherit
     def describe(self):
         return "[TICA, tau = %i; output dimension = %i]" \
-            % (self._tau, self.output_dimension)
+            % (self._tau, self._output_dimension)
 
     def dimension(self):
         """ output dimension"""
-        return self.output_dimension
+        return self._output_dimension
 
     @doc_inherit
-    def get_memory_per_frame(self):
+    def _get_memory_per_frame(self):
         # temporaries
         dim = self.data_producer.dimension()
 
@@ -107,7 +105,7 @@ class TICA(Transformer):
         return 8 * (mean_free_vectors + dot_product)
 
     @doc_inherit
-    def get_constant_memory(self):
+    def _get_constant_memory(self):
         dim = self.data_producer.dimension()
 
         # memory for covariance matrices (lagged, non-lagged)
@@ -119,12 +117,12 @@ class TICA(Transformer):
         return 8 * (cov_elements + mu_elements)
 
     @doc_inherit
-    def param_init(self):
+    def _param_init(self):
         dim = self.data_producer.dimension()
         assert dim > 0, "zero dimension from data producer"
-        assert self.output_dimension <= dim, \
+        assert self._output_dimension <= dim, \
             ("requested more output dimensions (%i) than dimension"
-             " of input data (%i)" % (self.output_dimension, dim))
+             " of input data (%i)" % (self._output_dimension, dim))
 
         self.N_mean = 0
         self.N_cov = 0
@@ -135,11 +133,13 @@ class TICA(Transformer):
         self.cov = np.zeros((dim, dim))
         self.cov_tau = np.zeros_like(self.cov)
 
-        log.info("Running TICA with tau=%i; Estimating two covariance matrices"
-                 " with dimension (%i, %i)" % (self._tau, dim, dim))
+        self._logger.info("Running TICA with tau=%i; Estimating two covariance matrices"
+                          " with dimension (%i, %i)" % (self._tau, dim, dim))
 
-    def param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
-                       last_chunk, ipass, Y=None):
+        return 0  # in zero'th pass don't request lagged data
+
+    def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
+                        last_chunk, ipass, Y=None, stride=1):
         """
         Chunk-based parameterization of TICA. Iterates through all data twice. In the first pass, the
         data means are estimated, in the second pass the covariance and time-lagged covariance
@@ -171,69 +171,82 @@ class TICA(Transformer):
             self.N_mean += np.shape(X)[0]
 
             if last_chunk:
-                log.debug("mean before norming:\n%s" % self.mu)
-                log.debug("norming mean by %i" % self.N_mean)
                 self.mu /= self.N_mean
-                log.info("calculated mean:\n%s" % self.mu)
+                self._logger.info("calculated mean.")
 
                 # now we request real lagged data, since we are finished
                 # with first pass
-                self.lag = self._tau
+                return False, self._tau
 
-        if ipass == 1:
-            self.N_cov += np.shape(X)[0]
-            self.N_cov_tau += np.shape(Y)[0]
-            X_meanfree = X - self.mu
-            Y_meanfree = Y - self.mu
-            # update the time-lagged covariance matrix
-            end = min(X_meanfree.shape[0],Y_meanfree.shape[0])
-            self.cov_tau += np.dot(X_meanfree[0:end].T, Y_meanfree[0:end])
+        elif ipass == 1:
+            if self.trajectory_length(itraj,stride=stride) > self._tau:
+                self.N_cov_tau += 2.0*np.shape(Y)[0]
+                X_meanfree = X - self.mu
+                Y_meanfree = Y - self.mu
+                # update the time-lagged covariance matrix
+                end = min(X_meanfree.shape[0],Y_meanfree.shape[0])
+                self.cov_tau += 2.0*np.dot(X_meanfree[0:end].T, Y_meanfree[0:end])
 
-            # update the instantaneous covariance matrix
-            self.cov += np.dot(X_meanfree.T, X_meanfree)
-            
-            if self._force_eigenvalues_le_one:
-                start2 = max(self._tau-t, 0)
-                end2   = min(self.trajectory_length(itraj)-self._tau-t, X_meanfree.shape[0])
-                if start2 < X_meanfree.shape[0] and end2 > 0 and start2 < end2: 
-                    self.cov += np.dot(X_meanfree[start2:end2,:].T, X_meanfree[start2:end2,:])
-                    self.N_cov += (end2-start2)
+                # update the instantaneous covariance matrix
+                if self._force_eigenvalues_le_one:
+                    # MSM-like counting
+                    Zptau = self._tau-t # zero plus tau
+                    Nmtau = self.trajectory_length(itraj,stride=stride)-t-self._tau # N minus tau
+
+                    # restrict to valid block indices
+                    size = X_meanfree.shape[0]
+                    Zptau = min(max(Zptau,0),size)
+                    Nmtau = min(max(Nmtau,0),size)
+
+                    # update covariance matrix
+                    start2 = min(Zptau,Nmtau) 
+                    end2 = max(Zptau,Nmtau)
+                    self.cov += np.dot(X_meanfree[0:start2,:].T, X_meanfree[0:start2,:])
+                    self.N_cov += start2
+
+                    if Nmtau > Zptau:
+                        self.cov += 2.0*np.dot(X_meanfree[start2:end2,:].T, X_meanfree[start2:end2,:])
+                        self.N_cov += 2.0*(end2-start2)
+
+                    self.cov += np.dot(X_meanfree[end2:,:].T, X_meanfree[end2:,:])
+                    self.N_cov += (size-end2)
+                else:
+                    # traditional counting
+                    self.cov += 2.0*np.dot(X_meanfree.T, X_meanfree)
+                    self.N_cov += 2.0*np.shape(X)[0]
+
+            else:
+                self._logger.error("trajectory nr %i too short, skipping it" % itraj)
 
             if last_chunk:
-                log.info("finished calculation of Cov and Cov_tau.")
+                self._logger.info("finished calculation of Cov and Cov_tau.")
                 return True  # finished!
 
         return False  # not finished yet.
 
     @doc_inherit
-    def param_finish(self):
+    def _param_finish(self):
         if self._force_eigenvalues_le_one:
-            # This is a bit unintuitive, for cov we include the frames that
-            # we count twice in cov and N_cov during param_add_data.
-            # For cov_tau, we don't and we symmetrize only in param_finish.
-            # (That is we double the number of frames only in param_finish).
-            # However this is mathemtically correct.
-            assert self.N_cov == 2*self.N_cov_tau, 'inconsistency in C(0) and C(tau)'
-        
-        # norm
-        self.cov /= self.N_cov - 1
-        #self.cov_tau /= self.N - self.lag*(self.number_of_trajectories()-self.n_short) - 1
-        self.cov_tau /= self.N_cov_tau - 1 
+            assert self.N_cov == self.N_cov_tau, 'inconsistency in C(0) and C(tau)'
 
         # symmetrize covariance matrices
         self.cov = self.cov + self.cov.T
-        self.cov /= 2.0
+        self.cov *= 0.5
 
         self.cov_tau = self.cov_tau + self.cov_tau.T
-        self.cov_tau /= 2.0
+        self.cov_tau *= 0.5
+
+        # norm
+        self.cov /= self.N_cov - 1
+        self.cov_tau /= self.N_cov_tau - 1
 
         # diagonalize with low rank approximation
-        log.info("diagonalize Cov and Cov_tau")
+        self._logger.info("diagonalize Cov and Cov_tau")
         self.eigenvalues, self.eigenvectors = \
             eig_corr(self.cov, self.cov_tau, self.epsilon)
-        log.info("finished diagonalisation.")
+        self._logger.info("finished diagonalisation.")
 
-    def map(self, X):
+    def _map_array(self, X):
         """Projects the data onto the dominant independent components.
 
         Parameters
@@ -246,6 +259,7 @@ class TICA(Transformer):
         Y : ndarray(n,)
             the projected data
         """
+        #TODO: consider writing an extension to avoid temporary Xmeanfree
         X_meanfree = X - self.mu
-        Y = np.dot(X_meanfree, self.eigenvectors[:, 0:self.output_dimension])
+        Y = np.dot(X_meanfree, self.eigenvectors[:, 0:self._output_dimension])
         return Y

@@ -15,10 +15,8 @@ from mdtraj.core.element import hydrogen, oxygen
 from mdtraj.core.topology import Topology
 
 from pyemma.coordinates.clustering.uniform_time import UniformTimeClustering
-from pyemma.coordinates.discretizer import Discretizer
-from pyemma.coordinates.io.feature_reader import FeatureReader
-from pyemma.coordinates.transform.pca import PCA
-from pyemma.coordinates.api import kmeans
+from pyemma.coordinates.pipelines import Discretizer
+from pyemma.coordinates.api import kmeans, feature_reader, pca
 
 
 def create_water_topology_on_disc(n):
@@ -84,20 +82,20 @@ class TestDiscretizer(unittest.TestCase):
         shutil.rmtree(cls.dest_dir, ignore_errors=True)
 
     def test(self):
-        reader = FeatureReader(self.trajfiles, self.topfile)
+        reader = feature_reader(self.trajfiles, self.topfile)
         # select all possible distances
         pairs = np.array(
             [x for x in itertools.combinations(range(self.n_residues), 2)])
 
         reader.featurizer.distances(pairs)
 
-        tica = PCA(output_dimension=2)
+        pcat = pca(dim=2)
 
         n_clusters = 2
         clustering = UniformTimeClustering(k=n_clusters)
 
-        D = Discretizer(reader, transform=tica, cluster=clustering)
-        D.run()
+        D = Discretizer(reader, transform=pcat, cluster=clustering)
+        D.parametrize()
 
         self.assertEqual(len(D.dtrajs), len(self.trajfiles))
 
@@ -119,7 +117,7 @@ class TestDiscretizer(unittest.TestCase):
         kmeans = api.kmeans(k=n_centers)
 
         disc = api.discretizer(reader, tpca, kmeans)
-        disc.run()
+        disc.parametrize()
 
         dtrajs = disc.dtrajs
         for dtraj in dtrajs:
@@ -128,7 +126,7 @@ class TestDiscretizer(unittest.TestCase):
                                     "dtraj has more states than cluster centers")
 
     def test_save_dtrajs(self):
-        reader = FeatureReader(self.trajfiles, self.topfile)
+        reader = feature_reader(self.trajfiles, self.topfile)
         # select all possible distances
         pairs = np.array(
             [x for x in itertools.combinations(range(self.n_residues), 2)])
@@ -136,11 +134,9 @@ class TestDiscretizer(unittest.TestCase):
         reader.featurizer.distances(pairs)
         cluster = kmeans(k=2)
         d = Discretizer(reader, cluster=cluster)
-        d.run()
+        d.parametrize()
         d.save_dtrajs(output_dir=self.dest_dir)
-        
         dtrajs = os.listdir(self.dest_dir)
-        
 
 
 if __name__ == "__main__":

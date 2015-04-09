@@ -15,7 +15,7 @@ from pyemma.util.numeric import assert_allclose
 from birth_death_chain import BirthDeathChain
 from chapman_kolmogorov import cktest
 
-class TestCkTest(unittest.TestCase):
+class TestCkTestBirthDeath(unittest.TestCase):
     
     def setUp(self):
         """Store state of the rng"""
@@ -120,7 +120,6 @@ class TestCkTest(unittest.TestCase):
         assert_allclose(p_MSM, self.p_MSM)
         assert_allclose(p_MD, self.p_MD)
         assert_allclose(eps_MD, self.eps_MD)
-        
 
 if __name__=="__main__":
     unittest.main()

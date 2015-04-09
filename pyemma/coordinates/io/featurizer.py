@@ -10,8 +10,6 @@ import warnings
 from pyemma.util.log import getLogger
 from pyemma.util.annotators import deprecated
 
-log = getLogger('Featurizer')
-
 __all__ = ['MDFeaturizer',
            'CustomFeature',
            ]
@@ -39,7 +37,7 @@ def _catch_unhashable(x):
                 res[i] = value
         return tuple(res)
     elif isinstance(x, np.ndarray):
-        return _hash_numpy_array(value)
+        return _hash_numpy_array(x)
 
     return x
 
@@ -321,10 +319,10 @@ class BackboneTorsionFeature(object):
 
     def describe(self):
         top = self.topology
-        labels_phi = ["PHI %s %i" % _describe_atom(top, ires)
+        labels_phi = ["PHI %s" % _describe_atom(top, ires)
                       for ires in self._phi_inds]
 
-        labels_psi = ["PSI %s %i" % _describe_atom(top, ires)
+        labels_psi = ["PSI %s" % _describe_atom(top, ires)
                       for ires in self._psi_inds]
 
         return labels_phi + labels_psi
@@ -367,15 +365,19 @@ class MDFeaturizer(object):
     """
 
     def __init__(self, topfile):
+        self.topologyfile = topfile
         self.topology = (mdtraj.load(topfile)).topology
         self.active_features = []
         self._dim = 0
+        self._logger = getLogger("%s[%s]" %
+                                 (self.__class__.__name__, hex(id(self))))
 
     def __add_feature(self, f):
         if f not in self.active_features:
             self.active_features.append(f)
         else:
-            log.warning("tried to re-add the same feature.")
+            self._logger.warning("tried to re-add the same feature %s"
+                                 % f.__class__.__name__)
 
     def describe(self):
         """
@@ -389,8 +391,10 @@ class MDFeaturizer(object):
             with human-readable descriptions of the features.
 
         """
-        labels = [f.describe() for f in self.active_features]
-        return labels
+        all_labels = []
+        for f in self.active_features:
+            all_labels += f.describe()
+        return all_labels
 
     def select(self, selstring):
         """
