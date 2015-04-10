@@ -47,7 +47,7 @@ class FeatureReader(ReaderInterface):
 
     """
 
-    def __init__(self, trajectories, topologyfile, chunksize=100, featurizer=None):
+    def __init__(self, trajectories, topologyfile=None, chunksize=100, featurizer=None):
         assert (topologyfile is not None) or (featurizer is not None), \
             "Needs either a topology file or a featurizer for instantiation"
         # init with chunksize 100
