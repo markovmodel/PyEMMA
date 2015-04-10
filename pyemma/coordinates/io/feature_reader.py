@@ -48,7 +48,7 @@ class FeatureReader(Transformer):
 
     """
 
-    def __init__(self, trajectories, topologyfile):
+    def __init__(self, trajectories, topologyfile, featurizer=None):
         # init with chunksize 100
         Transformer.__init__(self, 100)
 
@@ -59,8 +59,11 @@ class FeatureReader(Transformer):
         self.topfile = topologyfile
 
         # featurizer
-        if not hasattr(self, "featurizer"):
+        if not featurizer:
             self.featurizer = MDFeaturizer(topologyfile)
+        else:
+            self.featurizer = featurizer
+            self.topfile = featurizer.topologyfile
 
         # _lengths
         self._lengths = []
@@ -91,8 +94,7 @@ class FeatureReader(Transformer):
         if not isinstance(featurizer, MDFeaturizer):
             raise ValueError("given featurizer is not of type Featurizer, but is %s"
                              % type(featurizer))
-        cls.featurizer = featurizer
-        return cls(trajectories, featurizer.topologyfile)
+        return cls(trajectories, None, featurizer=featurizer)
 
     def describe(self):
         """
