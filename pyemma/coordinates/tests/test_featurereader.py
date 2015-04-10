@@ -39,8 +39,10 @@ class TestFeatureReader(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        os.unlink(cls.trajfile)
-        super(TestFeatureReader, cls).tearDownClass()
+        try:
+            os.unlink(cls.trajfile)
+        except EnvironmentError:
+            pass
 
     def testIteratorAccess(self):
         reader = FeatureReader(self.trajfile, self.topfile)
