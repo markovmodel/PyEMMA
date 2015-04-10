@@ -16,13 +16,14 @@ __all__ = ['Discretizer',
 
 class Pipeline(object):
 
-    def __init__(self, chain, chunksize=100):
+    def __init__(self, chain, chunksize=100, param_stride=1):
         """
 
         TODO:chunksize should be estimated from memory requirements (max memory usage)
         """
         self._chain = []
         self.chunksize = chunksize
+        self.param_stride = param_stride
 
         # add given elements in chain
         for e in chain:
@@ -118,7 +119,7 @@ class Pipeline(object):
         reads all data and discretizes it into discrete trajectories
         """
         for element in self._chain:
-            element.parametrize()
+            element.parametrize(stride=self.param_stride)
 
         self._parametrized = True
 
@@ -193,9 +194,9 @@ class Discretizer(Pipeline):
         how many frames shall be processed at once.
     """
 
-    def __init__(self, reader, transform=None, cluster=None, chunksize=100):
+    def __init__(self, reader, transform=None, cluster=None, chunksize=100, param_stride=1):
         # init with an empty chain and add given transformers afterwards
-        Pipeline.__init__(self, [], chunksize=chunksize)
+        Pipeline.__init__(self, [], chunksize=chunksize, param_stride=param_stride)
 
         # check input
         if not isinstance(reader, Transformer):

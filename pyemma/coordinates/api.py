@@ -7,6 +7,7 @@ __docformat__ = "restructuredtext en"
 
 from pyemma.util.annotators import deprecated
 from pyemma.util.log import getLogger
+from pyemma.util import types as _types
 
 from pyemma.coordinates.pipelines import Discretizer as _Discretizer
 from pyemma.coordinates.pipelines import Pipeline as _Pipeline
@@ -280,15 +281,16 @@ def pipeline(stages, run=True, param_stride=1):
     
     if not isinstance(stages, list):
         stages = [stages]
-    p = _Pipeline(stages)
-    # TODO: store param_stride if we don't run the pipeline right now
+    p = _Pipeline(stages, param_stride=param_stride)
     if run:
-        p.parametrize(param_stride)
+        p.parametrize()
     return p
 
 def discretizer(reader,
                 transform=None,
-                cluster=None):
+                cluster=None,
+                run=True,
+                param_stride=1):
     """
     Constructs a discretizer: a specialized processing pipeline from MD trajectories to a cluster discretization
 
@@ -337,7 +339,11 @@ def discretizer(reader,
         logger.warning('You did not specify a cluster algorithm.'
                        ' Defaulting to kmeans(k=100)')
         cluster = _KmeansClustering(n_clusters=100)
-    return _Discretizer(reader, transform, cluster)
+    disc = _Discretizer(reader, transform, cluster, param_stride=param_stride)
+    if run:
+        disc.parametrize()
+    return disc
+
 
 @deprecated
 def feature_reader(trajfiles, topfile):
@@ -571,7 +577,6 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None, inmemo
 #
 #=========================================================================
 
-
 def pca(data=None, dim=2):
     r"""Principal Component Analysis (PCA).
 
@@ -639,6 +644,7 @@ def pca(data=None, dim=2):
     """
     res = _PCA(dim)
     if data is not None:
+        data = _types.ensure_traj_list(data)
         inp = _DataInMemory(data)
         res.data_producer = inp
         res.parametrize()
@@ -737,6 +743,7 @@ def tica(data=None, lag=10, dim=2, force_eigenvalues_le_one=False):
     """
     res = _TICA(lag, dim, force_eigenvalues_le_one=force_eigenvalues_le_one)
     if data is not None:
+        data = _types.ensure_traj_list(data)
         inp = _DataInMemory(data)
         res.data_producer = inp
         res.parametrize()
@@ -783,6 +790,7 @@ def cluster_kmeans(data=None, k=100, max_iter=1000):
     """
     res = _KmeansClustering(n_clusters=k, max_iter=max_iter)
     if data is not None:
+        data = _types.ensure_traj_list(data)
         inp = _DataInMemory(data)
         res.data_producer = inp
         res.parametrize()
@@ -811,6 +819,7 @@ def cluster_uniform_time(data=None, k=100):
     """
     res = _UniformTimeClustering(k)
     if data is not None:
+        data = _types.ensure_traj_list(data)
         inp = _DataInMemory(data)
         res.data_producer = inp
         res.parametrize()
@@ -845,6 +854,7 @@ def cluster_regspace(data=None, dmin=-1, max_centers=1000):
         raise ValueError("provide a minimum distance for clustering")
     res = _RegularSpaceClustering(dmin, max_centers)
     if data is not None:
+        data = _types.ensure_traj_list(data)
         inp = _DataInMemory(data)
         res.data_producer = inp
         res.parametrize()
@@ -892,6 +902,7 @@ def cluster_assign_centers(data=None, centers=None):
                          ' or NumPy array')
     res = _AssignCenters(centers)
     if data is not None:
+        data = _types.ensure_traj_list(data)
         inp = _DataInMemory(data)
         res.data_producer = inp
         res.parametrize()

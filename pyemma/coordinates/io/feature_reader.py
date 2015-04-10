@@ -105,14 +105,14 @@ class FeatureReader(ReaderInterface):
         """
         return "Feature reader, features = ", self.featurizer.describe()
 
-    def parametrize(self):
+    def parametrize(self, stride=1):
         """
         Parametrizes this transformer
 
         :return:
         """
         if self.in_memory:
-            self._map_to_memory()
+            self._map_to_memory(stride=stride)
 
     def dimension(self):
         """
@@ -143,7 +143,11 @@ class FeatureReader(ReaderInterface):
         """
         return 0
 
-    def _map_to_memory(self):
+    def _map_to_memory(self, stride=1):
+        #TODO: stride is currently not implemented
+        if stride > 1: 
+            raise NotImplementedError('stride option for FeatureReader._map_to_memory is currently not implemented')
+
         self._reset()
         # iterate over trajectories
         last_chunk = False
@@ -188,10 +192,6 @@ class FeatureReader(ReaderInterface):
 
         :return: a feature mapped vector X, or (X, Y) if lag > 0
         """
-        if stride <= self.chunksize:
-            raise RuntimeError('stride > chunk size.'
-                               ' This is not supported for MD trajectories.')
-
         chunk = self._mditer.next()
         shape = chunk.xyz.shape
 
@@ -203,15 +203,14 @@ class FeatureReader(ReaderInterface):
                                        % (self._itraj, self._curr_lag))
                 self._curr_lag = lag
                 self._mditer2 = self._create_iter(self.trajfiles[self._itraj],
-                                                  skip=self._curr_lag * stride, stride=stride)
+                                                  skip=self._curr_lag*stride, stride=stride) 
             try:
                 adv_chunk = self._mditer2.next()
             except StopIteration:
-                # When _mditer2 ran over the trajectory end, return empty
-                # chunks.
+                # When _mditer2 ran over the trajectory end, return empty chunks.
                 adv_chunk = mdtraj.Trajectory(
-                    np.empty((0, shape[1], shape[2]), np.float32),
-                    chunk.topology)
+                              np.empty((0, shape[1], shape[2]), np.float32),
+                              chunk.topology)
 
         self._t += shape[0]
 
@@ -223,8 +222,7 @@ class FeatureReader(ReaderInterface):
             self._mditer.close()
             self._t = 0
             self._itraj += 1
-            self._mditer = self._create_iter(
-                self.trajfiles[self._itraj], stride=stride)
+            self._mditer = self._create_iter(self.trajfiles[self._itraj], stride=stride)
             # we open self._mditer2 only if requested due lag parameter!
             self._curr_lag = 0
 
@@ -240,8 +238,7 @@ class FeatureReader(ReaderInterface):
                 shape_Y = adv_chunk.xyz.shape
 
                 X = chunk.xyz.reshape((shape[0], shape[1] * shape[2]))
-                Y = adv_chunk.xyz.reshape(
-                    (shape_Y[0], shape_Y[1] * shape_Y[2]))
+                Y = adv_chunk.xyz.reshape((shape_Y[0], shape_Y[1] * shape_Y[2]))
             else:
                 X = self.featurizer.map(chunk)
                 Y = self.featurizer.map(adv_chunk)

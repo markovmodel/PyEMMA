@@ -31,11 +31,32 @@ class TestKmeans(unittest.TestCase):
     def testDtraj(self):
         assert self.kmeans.dtrajs[0].dtype == int
 
-    def test_1d_data(self):
-        # check for exception
-        data = np.arange(10)
+    def test_3gaussian_1d_singletraj(self):
+        # generate 1D data from three gaussians
+        X = [np.random.randn(100)-2.0,
+             np.random.randn(100),
+             np.random.randn(100)+2.0]
+        X = np.hstack(X)
+        kmeans = cluster_kmeans(X, k=10)
+        cc = kmeans.clustercenters
+        assert(np.any(cc < 1.0))
+        assert(np.any((cc > -1.0) * (cc < 1.0)))
+        assert(np.any(cc > -1.0))
 
-        kmeans = cluster_kmeans(data, k=7)
+    def test_3gaussian_2d_multitraj(self):
+        # generate 1D data from three gaussians
+        X1 = np.zeros((100,2))
+        X1[:,0] = np.random.randn(100)-2.0
+        X2 = np.zeros((100,2))
+        X2[:,0] = np.random.randn(100)
+        X3 = np.zeros((100,2))
+        X3[:,0] = np.random.randn(100)+2.0
+        X = [X1, X2, X3]
+        kmeans = cluster_kmeans(X, k=10)
+        cc = kmeans.clustercenters
+        assert(np.any(cc < 1.0))
+        assert(np.any((cc > -1.0) * (cc < 1.0)))
+        assert(np.any(cc > -1.0))
 
     def testSaveDtrajs(self):
         prefix = "test"
