@@ -7,6 +7,8 @@ import numpy as np
 
 from pandas.io.parsers import TextFileReader
 from pyemma.coordinates.io.interface import ReaderInterface
+import pandas
+import csv
 
 
 class NumPyFileReader(ReaderInterface):
@@ -147,13 +149,14 @@ class NumPyFileReader(ReaderInterface):
 
 
 class CSVReader(ReaderInterface):
+
     """reads tabulated data from given files in chunked mode
 
     Parameters
     ----------
     filenames : list of strings
         filenames (including paths) to read
-    chunksize : int 
+    chunksize : int
         how many lines to process at once
 
     kwargs : named variables
@@ -169,57 +172,66 @@ class CSVReader(ReaderInterface):
         if not isinstance(filenames, (tuple, list)):
             filenames = [filenames]
         self._filenames = filenames
+        # list of boolean to indicate if file
+        self._has_header = [False] * len(self._filenames)
 
-        if not kwargs:
-            self._kwargs = {}
+        self._kwargs = {}
 
         # default arguments for underlying csv reader
         if not kwargs.get('sep'):
-            self._kwargs['sep'] = ' '
+            self._kwargs['sep'] = '\s+'
 
-        # we do not need header info
-        if not kwargs.get('header'):
-            self._kwargs['header'] = None
+        if not kwargs.get('comment'):
+            self._kwargs['comment'] = "#"
 
-        # user wants to skip lines, so we need to remember this for lagged access
+        # user wants to skip lines, so we need to remember this for lagged
+        # access
         if kwargs.get('skip'):
             self._skip = kwargs.pop('skip')
+        else:
+            self._skip = 0
 
         self._reader = None
-        self.__set_dimensions_and_lenghts()
+        self._reader_lagged = None
 
-        # lagged access
-        self._lagged_reader = None
+        # determine if lagged access pattern has changed
         self._current_lag = 0
 
-        self._kwargs = kwargs
+        self.__set_dimensions_and_lenghts()
         self._parametrized = True
 
     def __set_dimensions_and_lenghts(self):
         # number of trajectories/data sets
         self._ntraj = len(self._filenames)
         if self._ntraj == 0:
-            raise ValueError("no valid data")
+            raise ValueError("empty file list")
 
         ndims = []
-        for f in self._filenames:
+
+        for ii, f in enumerate(self._filenames):
             try:
                 # determine file length
                 with open(f) as fh:
                     self._lengths.append(sum(1 for _ in fh))
                     fh.seek(0)
-                    line = fh.readline()
-                    dim = np.fromstring(line, sep=self._kwargs['sep']).shape[0]
+                    # determine if file has header here:
+                    self._has_header[ii] = csv.Sniffer().has_header(
+                        fh.read(1024))
+                    fh.seek(0)
+                    r = TextFileReader(fh, chunksize=2, sep="\s+")
+                    dim = r.get_chunk(1).values.squeeze().shape[0]
                     ndims.append(dim)
 
             # parent of IOError, OSError *and* WindowsError where available
             except EnvironmentError:
                 self._logger.exception()
-                self._logger.error("removing %s from list, since it caused an error" % f)
+                self._logger.error(
+                    "removing %s from list, since it caused an error" % f)
                 self._filenames.remove(f)
 
         # check all files have same dimensions
         if not len(np.unique(ndims)) == 1:
+            self._logger.error("got different dims: %s" % ndims)
             raise ValueError("input files have different dims")
         else:
             self._ndim = dim
@@ -227,53 +239,75 @@ class CSVReader(ReaderInterface):
     def _reset(self, stride=1):
         self._t = 0
         self._itraj = 0
+        # to reopen files
+        self._reader = None
+        self._reader_lagged = None
 
-    def _open_file(self):
+    def _open_file(self, skip=0, stride=1, lagged=False):
         fn = self._filenames[self._itraj]
 
         # do not open same file
-        # if self._reader and self._reader.f == fn:
-        #    return
-        self._reader = TextFileReader(fn, chunksize=self.chunksize, **self._kwargs)
+        if not lagged:
+            reader = self._reader
+        else:
+            reader = self._reader_lagged
 
-    def _open_file_lagged(self, skip):
-        self._logger.debug("opening lagged file with skip=%i" % skip)
-        fn = self._filenames[self._itraj]
-
-        # do not open same file, if we can still read something
-        if self._lagged_reader and self._lagged_reader.f == fn:
+        if reader and reader.f == fn:
             return
-        skip = skip + self._kwargs['skip']
-        self._lagged_reader = TextFileReader(
-            fn, chunksize=self.chunksize, skip=skip, **self._kwargs)
+
+        if self._has_header[self._itraj]:
+            # set first line to be interpreted as header(labels)
+            header = 0
+        else:
+            header = None
+
+        skip = self._skip + skip
+        nt = self.trajectory_length(self._itraj, 1)
+
+        # calculate an index set, which rows to skip (includes stride)
+        if stride > 1 or skip > 0:
+            rows_to_read = np.arange(skip, nt, stride)
+            all_inds = np.arange(0, nt)
+            skiprows = np.setdiff1d(all_inds, rows_to_read, True)
+        else:
+            skiprows = 0
+
+        if __debug__:
+            self._logger.debug("skiprows:\n%s" % skiprows)
+
+        reader = pandas.read_csv(fn, header=header, chunksize=self.chunksize,
+                                 sep='\s+', skiprows=skiprows)
+
+        if not lagged:
+            self._reader = reader
+        else:
+            self._reader_lagged = reader
 
     def _next_chunk(self, lag=0, stride=1):
-
-        self._open_file()
+        if self._reader is None:
+            self._open_file(stride=stride)
 
         if (self._t >= self.trajectory_length(self._itraj, stride=stride) and
                 self._itraj < len(self._filenames) - 1):
-            self._logger.debug("open new file")
             # close file handles and open new ones
             self._t = 0
             self._itraj += 1
 
-            self._open_file()
-            self._open_file_lagged(skip=lag)
+            self._open_file(stride=stride)
 
         if lag != self._current_lag:
             self._current_lag = lag
-            self._open_file_lagged(skip=lag)
+            self._open_file(skip=lag, stride=stride, lagged=True)
+
+        # omit rows according to stride
+        X = self._reader.get_chunk().values
+        self._t += X.shape[0]
 
         if lag == 0:
-            X = self._reader.get_chunk().values
-            self._t += X.shape[0]
             return X
         else:
-            X = self._reader.get_chunk().values
-            self._t += X.shape[0]
             try:
-                Y = self._lagged_reader.get_chunk().values
+                Y = self._reader_lagged.get_chunk().values
             except StopIteration:
                 Y = np.empty(0)
             return X, Y
