@@ -203,7 +203,7 @@ class FeatureReader(ReaderInterface):
                                        % (self._itraj, self._curr_lag))
                 self._curr_lag = lag
                 self._mditer2 = self._create_iter(self.trajfiles[self._itraj],
-                                                  skip=self._curr_lag * stride, stride=stride)
+                                                  skip=self._curr_lag*stride, stride=stride) 
             try:
                 adv_chunk = self._mditer2.next()
             except StopIteration:
