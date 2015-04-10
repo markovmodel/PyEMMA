@@ -47,7 +47,9 @@ class FeatureReader(ReaderInterface):
 
     """
 
-    def __init__(self, trajectories, topologyfile, chunksize=100):
+    def __init__(self, trajectories, topologyfile=None, chunksize=100, featurizer=None):
+        assert (topologyfile is not None) or (featurizer is not None), \
+            "Needs either a topology file or a featurizer for instantiation"
         # init with chunksize 100
         super(FeatureReader, self).__init__(chunksize=chunksize)
         self.data_producer = self
@@ -59,8 +61,14 @@ class FeatureReader(ReaderInterface):
         self.topfile = topologyfile
 
         # featurizer
-        if not hasattr(self, "featurizer"):
+        if topologyfile and featurizer:
+            self._logger.warning("Both a topology file and a featurizer were given as arguments. "
+                                 "Only featurizer gets respected in this case.")
+        if not featurizer:
             self.featurizer = MDFeaturizer(topologyfile)
+        else:
+            self.featurizer = featurizer
+            self.topfile = featurizer.topologyfile
 
         # iteration
         self._mditer = None
@@ -75,14 +83,6 @@ class FeatureReader(ReaderInterface):
 
         self.__set_dimensions_and_lenghts()
         self._parametrized = True
-
-    @classmethod
-    def init_from_featurizer(cls, trajectories, featurizer):
-        if not isinstance(featurizer, MDFeaturizer):
-            raise ValueError("given featurizer is not of type Featurizer, but is %s"
-                             % type(featurizer))
-        cls.featurizer = featurizer
-        return cls(trajectories, featurizer.topologyfile)
 
     def __set_dimensions_and_lenghts(self):
         self._ntraj = len(self.trajfiles)

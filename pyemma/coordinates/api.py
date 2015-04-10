@@ -15,7 +15,7 @@ from pyemma.coordinates.pipelines import Pipeline as _Pipeline
 from pyemma.coordinates.io.featurizer import MDFeaturizer as _MDFeaturizer
 from pyemma.coordinates.io.feature_reader import FeatureReader as _FeatureReader
 from pyemma.coordinates.io.data_in_memory import DataInMemory as _DataInMemory
-from pyemma.coordinates.io.util.reader_utils import get_file_reader as _get_file_reader
+from pyemma.coordinates.io.util.reader_utils import create_file_reader as _create_file_reader
 from pyemma.coordinates.io.frames_from_file import frames_from_file as _frames_from_file
 # transforms
 from pyemma.coordinates.transform.pca import PCA as _PCA
@@ -155,7 +155,7 @@ def load(trajfiles, featurizer=None, topology=None, stride=1):
     if isinstance(trajfiles, basestring) or (
         isinstance(trajfiles, (list, tuple)) and (any(isinstance(item, basestring) for item in trajfiles) or len(trajfiles) is 0)
     ):
-        reader = _get_file_reader(trajfiles, topology, featurizer)
+        reader = _create_file_reader(trajfiles, topology, featurizer)
         trajs = reader.get_output(stride = stride)
         if len(trajs)==1:
             return trajs[0]
@@ -203,50 +203,25 @@ def input(input, featurizer=None, topology=None):
         to analyze big data in streaming mode.
 
     """
+    from numpy import ndarray
+
     # CASE 1: input is a string or list of strings
     # check: if single string create a one-element list
-    if isinstance(input, basestring):
-        input_list = [input]
-    elif len(input) > 0 and all(isinstance(item, basestring) for item in input):
-        input_list = input
+    if isinstance(input, basestring) or (isinstance(input, (list, tuple)) and (any(isinstance(item, basestring) for item in input) or len(input) is 0)):
+        reader = _create_file_reader(input, topology, featurizer)
+
+    elif isinstance(input, ndarray) or (isinstance(input, (list, tuple)) and (any(isinstance(item, ndarray) for item in input) or len(input) is 0)):
+        # CASE 2: input is a (T, N, 3) array or list of (T_i, N, 3) arrays
+        # check: if single array, create a one-element list
+        # check: do all arrays have compatible dimensions (*, N, 3)? If not: raise ValueError.
+        # check: if single array, create a one-element list
+        # check: do all arrays have compatible dimensions (*, N)? If not: raise ValueError.
+        # create MemoryReader
+        #raise Exception('input of ndarrays not implemented yet')
+        reader = None
     else:
-        if len(input) is 0:
-            raise ValueError("The passed input list should not be empty.")
-        else:
-            raise ValueError("The passed list did not exclusively contain strings.")
+        raise ValueError('unsupported type (%s) of input' % type(input))
 
-    try:
-        idx = input_list[0].rindex(".")
-        suffix = input_list[0][idx:]
-    except ValueError:
-        suffix = ""
-
-        # check: do all files have the same file type? If not: raise ValueError.
-        if all(item.endswith(suffix) for item in input_list):
-            from mdtraj.formats.registry import _FormatRegistry
-
-            # CASE 1.1: file types are MD files
-            if suffix in _FormatRegistry.loaders.keys():
-                # check: do we either have a featurizer or a topology file name? If not: raise ValueError.
-                # create a MD reader with file names and topology
-                if not featurizer and not topology:
-                    raise ValueError("The input files were MD files which makes it mandatory to have either a "
-                                     "featurizer or a topology file.")
-                if not topology:
-                    # we have a featurizer
-                    reader = _FeatureReader.init_from_featurizer(input_list, featurizer)
-                else:
-                    # we have a topology file
-                    reader = _FeatureReader(input_list, topology)
-            else:
-                # TODO: CASE 1.2: file types are raw data files
-                # TODO: create raw data reader from file names
-                reader = None # to satisfy code check upon return. Replace by real code.
-                pass
-        else:
-            raise ValueError("Not all elements in the input list were of the type %s!" % suffix)
-    else:
-        raise ValueError("Input \"%s\" was no string or list of strings." % input)
     return reader
 
 # TODO: Alternative names: chain, stream, datastream... probably pipeline is the best name though.
