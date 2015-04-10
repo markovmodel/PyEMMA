@@ -9,7 +9,7 @@ import pyemma.coordinates.api as api
 logger = getLogger('TestReaderUtils')
 
 
-class TestReaderUtils(unittest.TestCase):
+class TestApiInput(unittest.TestCase):
     def setUp(self):
         path = os.path.join(os.path.split(__file__)[0], 'data')
         self.pdb_file = os.path.join(path, 'bpti_ca.pdb')
