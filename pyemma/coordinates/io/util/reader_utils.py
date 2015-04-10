@@ -61,10 +61,10 @@ def create_file_reader(input_files, topology, featurizer):
                                          "featurizer or a topology file.")
                     if not topology:
                         # we have a featurizer
-                        reader = _FeatureReader.init_from_featurizer(input_list, featurizer)
+                        reader = _FeatureReader(input_list, featurizer=featurizer)
                     else:
                         # we have a topology file
-                        reader = _FeatureReader(input_list, topology)
+                        reader = _FeatureReader(input_list, topologyfile=topology)
                 else:
                     # TODO: CASE 1.2: file types are raw data files
                     # TODO: create raw data reader from file names
