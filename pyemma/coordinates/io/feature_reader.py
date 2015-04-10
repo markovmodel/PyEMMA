@@ -188,7 +188,9 @@ class FeatureReader(ReaderInterface):
 
         :return: a feature mapped vector X, or (X, Y) if lag > 0
         """
-        assert stride <= self.chunksize, 'stride > chunk size. This is not supported for MD trajectories.'
+        if stride <= self.chunksize:
+            raise RuntimeError('stride > chunk size.'
+                               ' This is not supported for MD trajectories.')
 
         chunk = self._mditer.next()
         shape = chunk.xyz.shape
