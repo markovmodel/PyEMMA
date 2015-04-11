@@ -4,8 +4,8 @@ import numpy as np
 import mdtraj
 
 from pyemma.coordinates.util import patches
-from pyemma.coordinates.io.interface import ReaderInterface
-from pyemma.coordinates.io.featurizer import MDFeaturizer
+from pyemma.coordinates.data.interface import ReaderInterface
+from pyemma.coordinates.data.featurizer import MDFeaturizer
 
 __all__ = ['FeatureReader']
 

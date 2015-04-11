@@ -6,7 +6,7 @@ Created on 07.04.2015
 import numpy as np
 
 from pandas.io.parsers import TextFileReader
-from pyemma.coordinates.io.interface import ReaderInterface
+from pyemma.coordinates.data.interface import ReaderInterface
 import pandas
 import csv
 

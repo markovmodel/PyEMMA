@@ -12,11 +12,11 @@ from pyemma.util import types as _types
 from pyemma.coordinates.pipelines import Discretizer as _Discretizer
 from pyemma.coordinates.pipelines import Pipeline as _Pipeline
 # io
-from pyemma.coordinates.io.featurizer import MDFeaturizer as _MDFeaturizer
-from pyemma.coordinates.io.feature_reader import FeatureReader as _FeatureReader
-from pyemma.coordinates.io.data_in_memory import DataInMemory as _DataInMemory
-from pyemma.coordinates.io.util.reader_utils import create_file_reader as _create_file_reader
-from pyemma.coordinates.io.frames_from_file import frames_from_file as _frames_from_file
+from pyemma.coordinates.data.featurizer import MDFeaturizer as _MDFeaturizer
+from pyemma.coordinates.data.feature_reader import FeatureReader as _FeatureReader
+from pyemma.coordinates.data.data_in_memory import DataInMemory as _DataInMemory
+from pyemma.coordinates.data.util.reader_utils import create_file_reader as _create_file_reader
+from pyemma.coordinates.data.frames_from_file import frames_from_file as _frames_from_file
 # transforms
 from pyemma.coordinates.transform.transformer import Transformer as _Transformer
 from pyemma.coordinates.transform.pca import PCA as _PCA
@@ -81,11 +81,11 @@ def featurizer(topfile):
 
     Returns
     -------
-    feat : :py:class:`io.MDFeaturizer`
+    feat : :py:class:`data.MDFeaturizer`
 
     See also
     --------
-    pyemma.coordinates.io.MDFeaturizer
+    pyemma.coordinates.data.MDFeaturizer
         Featurizer object
 
     """
@@ -274,7 +274,7 @@ def discretizer(reader,
     Parameters
     ----------
 
-    reader : instance of :class:`pyemma.coordinates.io.reader.ChunkedReader`
+    reader : instance of :class:`pyemma.coordinates.data.reader.ChunkedReader`
         the reader instance provides access to the data. If you are working with
         MD data, you most likely want to use a FeatureReader.
 
@@ -346,7 +346,7 @@ def feature_reader(trajfiles, topfile):
 
     See also
     --------
-    pyemma.coordinates.io.FeatureReader
+    pyemma.coordinates.data.FeatureReader
         Reader object
 
     """
@@ -369,7 +369,7 @@ def memory_reader(data):
 
     See also
     --------
-    pyemma.coordinates.io.DataInMemory
+    pyemma.coordinates.data.DataInMemory
         Reader object
 
     """
@@ -385,7 +385,7 @@ def save_traj(traj_inp, indexes, outfile, verbose=False):
 
     Parameters
     ----------
-    traj_inp : :py:func:`pyemma.coordinates.io.feature_reader.FeatureReader`
+    traj_inp : :py:func:`pyemma.coordinates.data.feature_reader.FeatureReader`
         An input reader. Please use :py:func:`pyemma.coordinates.input` to construct it.
 
     indexes : ndarray(T, 2) or list of ndarray(T_i, 2)
@@ -457,7 +457,7 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None, inmemo
 
     Parameters
     ----------
-    traj_inp : :py:func:`pyemma.coordinates.io.feature_reader.FeatureReader`
+    traj_inp : :py:func:`pyemma.coordinates.data.feature_reader.FeatureReader`
         An input reader. Please use :py:func:`pyemma.coordinates.input` to construct it.
 
     indexes : list of ndarray(T_i, 2)

@@ -8,7 +8,7 @@ import os
 import tempfile
 
 import numpy as np
-from pyemma.coordinates.io.file_reader import NumPyFileReader
+from pyemma.coordinates.data.file_reader import NumPyFileReader
 from pyemma.util.log import getLogger
 
 

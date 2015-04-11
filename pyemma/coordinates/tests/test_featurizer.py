@@ -4,8 +4,8 @@ import numpy as np
 import os
 import mdtraj
 
-from pyemma.coordinates.io import featurizer as ft
-from pyemma.coordinates.io.featurizer import MDFeaturizer, CustomFeature
+from pyemma.coordinates.data import featurizer as ft
+from pyemma.coordinates.data.featurizer import MDFeaturizer, CustomFeature
 from pyemma.coordinates.tests.test_discretizer import create_water_topology_on_disc
 
 path = os.path.join(os.path.split(__file__)[0],'data')

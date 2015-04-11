@@ -1,4 +1,4 @@
-from pyemma.coordinates.io import FeatureReader as _FeatureReader
+from pyemma.coordinates.data import FeatureReader as _FeatureReader
 import mdtraj as md
 import os
 

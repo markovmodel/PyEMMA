@@ -12,7 +12,7 @@ import tempfile
 
 import numpy as np
 
-from pyemma.coordinates.io.util.reader_utils import single_traj_from_n_files
+from pyemma.coordinates.data.util.reader_utils import single_traj_from_n_files
 from pyemma.coordinates import feature_reader
 from pyemma.coordinates.api import save_trajs
 

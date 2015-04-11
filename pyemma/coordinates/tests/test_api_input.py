@@ -1,7 +1,7 @@
 import unittest
 import os
 
-from pyemma.coordinates.io import MDFeaturizer
+from pyemma.coordinates.data import MDFeaturizer
 from pyemma.util.log import getLogger
 import pyemma.coordinates.api as api
 
