@@ -227,7 +227,7 @@ def source(inp, featurizer=None, topology=None):
     return reader
 
 # TODO: Alternative names: chain, stream, datastream... probably pipeline is the best name though.
-def pipeline(stages, run=True, param_stride=1):
+def pipeline(stages, run=True, stride=1):
     """Constructs a data analysis pipeline and parametrizes it (unless prevented).
 
     If this function takes too long, consider using the stride parameters
@@ -243,7 +243,7 @@ def pipeline(stages, run=True, param_stride=1):
         when further stages are added to it.
         *Attention* True means this function may take a long time to compute.
         If False, the pipeline will be passive, i.e. it will not do any computations before you call parametrize()
-    param_stride: int, optional, default = 1
+    stride : int, optional, default = 1
         If set to 1, all input data will be used throughout the pipeline to parametrize its stages. Note that this
         could cause the parametrization step to be very slow for large data sets. Since molecular dynamics data is usually
         correlated at short timescales, it is often sufficient to parametrize the pipeline at a longer stride.
@@ -258,7 +258,7 @@ def pipeline(stages, run=True, param_stride=1):
     
     if not isinstance(stages, list):
         stages = [stages]
-    p = _Pipeline(stages, param_stride=param_stride)
+    p = _Pipeline(stages, param_stride=stride)
     if run:
         p.parametrize()
     return p
@@ -267,7 +267,7 @@ def discretizer(reader,
                 transform=None,
                 cluster=None,
                 run=True,
-                param_stride=1):
+                stride=1):
     """
     Constructs a discretizer: a specialized processing pipeline from MD trajectories to a cluster discretization
 
@@ -284,6 +284,12 @@ def discretizer(reader,
 
     cluster : instance of clustering Transformer (optional)
         a cluster algorithm to assign transformed data to discrete states.
+
+    stride : int, optional, default = 1
+        If set to 1, all input data will be used throughout the pipeline to parametrize its stages. Note that this
+        could cause the parametrization step to be very slow for large data sets. Since molecular dynamics data is usually
+        correlated at short timescales, it is often sufficient to parametrize the pipeline at a longer stride.
+        See also stride option in the output functions of the pipeline.
 
 
     Examples
@@ -316,7 +322,7 @@ def discretizer(reader,
         logger.warning('You did not specify a cluster algorithm.'
                        ' Defaulting to kmeans(k=100)')
         cluster = _KmeansClustering(n_clusters=100)
-    disc = _Discretizer(reader, transform, cluster, param_stride=param_stride)
+    disc = _Discretizer(reader, transform, cluster, param_stride=stride)
     if run:
         disc.parametrize()
     return disc
@@ -554,7 +560,7 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None, inmemo
 #
 #=========================================================================
 
-def _param_stage(previous_stage, this_stage):
+def _param_stage(previous_stage, this_stage, stride=1):
     """Parametrizes the given pipelining stage if a valid source is given
 
     Parameters
@@ -578,10 +584,10 @@ def _param_stage(previous_stage, this_stage):
     # parametrize transformer
     this_stage.data_producer = inputstage
     this_stage.chunksize = inputstage.chunksize
-    this_stage.parametrize()
+    this_stage.parametrize(stride=stride)
     return this_stage
 
-def pca(data=None, dim=2):
+def pca(data=None, dim=2, stride=1):
     r"""Principal Component Analysis (PCA).
 
     PCA is a linear transformation method that finds coordinates of maximal variance.
@@ -610,6 +616,13 @@ def pca(data=None, dim=2):
         :func:`map <pyemma.coordinates.transform.PCA.map>` function reduces the d-dimensional
         input to only dim dimensions such that the data preserves the maximum possible variance
         amonst dim-dimensional linear projections.
+
+    stride : int, optional, default = 1
+        If set to 1, all input data will be used for estimation. Note that this could cause this calculation
+        to be very slow for large data sets. Since molecular dynamics data is usually
+        correlated at short timescales, it is often sufficient to estimate transformations at a longer stride.
+        Note that the stride option in the get_output() function of the returned object is independent, so
+        you can parametrize at a long stride, and still map all frames through the transformer.
 
     Returns
     -------
@@ -647,10 +660,10 @@ def pca(data=None, dim=2):
 
     """
     res = _PCA(dim)
-    return _param_stage(data, res)
+    return _param_stage(data, res, stride=stride)
 
 
-def tica(data=None, lag=10, dim=2, force_eigenvalues_le_one=False):
+def tica(data=None, lag=10, dim=2, stride=1, force_eigenvalues_le_one=False):
     r"""Time-lagged independent component analysis (TICA).
 
     TICA is a linear transformation method. In contrast to PCA that finds
@@ -674,16 +687,27 @@ def tica(data=None, lag=10, dim=2, force_eigenvalues_le_one=False):
     data : ndarray(N, d), optional
         array with the data, if available. When given, the TICA transformation
         is immediately computed and can be used to transform data.
+
     lag : int, optional, default = 10
         the lag time, in multiples of the input time step
+
     dim : int, optional, default = 2
         the number of dimensions (independent components) to project onto. A call to the
         :func:`map <pyemma.coordinates.transform.TICA.map>` function reduces the d-dimensional
         input to only dim dimensions such that the data preserves the maximum possible autocorrelation
         amonst dim-dimensional linear projections.
+
+    stride : int, optional, default = 1
+        If set to 1, all input data will be used for estimation. Note that this could cause this calculation
+        to be very slow for large data sets. Since molecular dynamics data is usually
+        correlated at short timescales, it is often sufficient to estimate transformations at a longer stride.
+        Note that the stride option in the get_output() function of the returned object is independent, so
+        you can parametrize at a long stride, and still map all frames through the transformer.
+
     force_eigenvalues_le_one : boolean
         Compute covariance matrix and time-lagged covariance matrix such
-        that the generalized eigenvalues are always guaranteed to be <= 1.        
+        that the generalized eigenvalues are always guaranteed to be <= 1.
+
 
     Returns
     -------
@@ -740,8 +764,10 @@ def tica(data=None, lag=10, dim=2, force_eigenvalues_le_one=False):
         Phys. Rev. Lett. 72, 3634.
 
     """
+    # don't expose this until we know what this is doing.
+    force_eigenvalues_le_one = False
     res = _TICA(lag, dim, force_eigenvalues_le_one=force_eigenvalues_le_one)
-    return _param_stage(data, res)
+    return _param_stage(data, res, stride=stride)
 
 
 #=========================================================================
@@ -751,11 +777,11 @@ def tica(data=None, lag=10, dim=2, force_eigenvalues_le_one=False):
 #=========================================================================
 
 @deprecated
-def kmeans(data=None, k=100, max_iter=1000):
-    return cluster_kmeans(data, k, max_iter)
+def kmeans(data=None, k=100, max_iter=1000, stride=1):
+    return cluster_kmeans(data, k, max_iter, stride=stride)
 
 
-def cluster_kmeans(data=None, k=100, max_iter=1000):
+def cluster_kmeans(data=None, k=100, max_iter=10, stride=1):
     r"""Constructs a k-means clustering object.
 
     .. seealso:: **Theoretical background**: `Wiki page <http://en.wikipedia.org/wiki/K-means_clustering>`_
@@ -764,8 +790,16 @@ def cluster_kmeans(data=None, k=100, max_iter=1000):
     ----------
     data: ndarray
         input data, if available in memory
+
     k: int
         the number of cluster centers
+
+    stride : int, optional, default = 1
+        If set to 1, all input data will be used for estimation. Note that this could cause this calculation
+        to be very slow for large data sets. Since molecular dynamics data is usually
+        correlated at short timescales, it is often sufficient to estimate transformations at a longer stride.
+        Note that the stride option in the get_output() function of the returned object is independent, so
+        you can parametrize at a long stride, and still map all frames through the transformer.
 
     Returns
     -------
@@ -783,23 +817,31 @@ def cluster_kmeans(data=None, k=100, max_iter=1000):
 
     """
     res = _KmeansClustering(n_clusters=k, max_iter=max_iter)
-    return _param_stage(data, res)
+    return _param_stage(data, res, stride=stride)
 
 
 @deprecated
-def uniform_time(data=None, k=100):
-    return cluster_uniform_time(data, k)
+def uniform_time(data=None, k=100, stride=1):
+    return cluster_uniform_time(data, k, stride=stride)
 
 
-def cluster_uniform_time(data=None, k=100):
+def cluster_uniform_time(data=None, k=100, stride=1):
     r"""Constructs a uniform time clustering object.
 
     Parameters
     ----------
     data : ndarray(N, d)
         input data, if available in memory
+
     k : int
         the number of cluster centers
+
+    stride : int, optional, default = 1
+        If set to 1, all input data will be used for estimation. Note that this could cause this calculation
+        to be very slow for large data sets. Since molecular dynamics data is usually
+        correlated at short timescales, it is often sufficient to estimate transformations at a longer stride.
+        Note that the stride option in the get_output() function of the returned object is independent, so
+        you can parametrize at a long stride, and still map all frames through the transformer.
 
     Returns
     -------
@@ -811,23 +853,32 @@ def cluster_uniform_time(data=None, k=100):
 
 
 @deprecated
-def regspace(data=None, dmin=-1, max_centers=1000):
-    return cluster_regspace(data, dmin, max_centers)
+def regspace(data=None, dmin=-1, max_centers=1000, stride=1):
+    return cluster_regspace(data, dmin, max_centers, stride=stride)
 
 
-def cluster_regspace(data=None, dmin=-1, max_centers=1000):
+def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1):
     r"""Constructs a regular space clustering object.
 
     Parameters
     ----------
     data : ndarray(N, d)
         input data, if available in memory
+
     dmin : float
         the minimal distance between cluster centers
+
     max_centers : int (optional), default=1000
         If max_centers is reached, the algorithm will stop to find more centers,
         but this may not approximate the state space well. It is maybe better
         to increase dmin then.
+
+    stride : int, optional, default = 1
+        If set to 1, all input data will be used for estimation. Note that this could cause this calculation
+        to be very slow for large data sets. Since molecular dynamics data is usually
+        correlated at short timescales, it is often sufficient to estimate transformations at a longer stride.
+        Note that the stride option in the get_output() function of the returned object is independent, so
+        you can parametrize at a long stride, and still map all frames through the transformer.
 
     Returns
     -------
@@ -837,15 +888,15 @@ def cluster_regspace(data=None, dmin=-1, max_centers=1000):
     if dmin == -1:
         raise ValueError("provide a minimum distance for clustering")
     res = _RegularSpaceClustering(dmin, max_centers)
-    return _param_stage(data, res)
+    return _param_stage(data, res, stride=stride)
 
 
 @deprecated
-def assign_centers(data=None, centers=None):
-    return cluster_assign_centers(data, centers)
+def assign_centers(data=None, centers=None, stride=1):
+    return cluster_assign_centers(data, centers, stride=stride)
 
 
-def cluster_assign_centers(data=None, centers=None):
+def cluster_assign_centers(data=None, centers=None, stride=1):
     r"""Assigns data to (precalculated) cluster centers.
 
     If you already have cluster centers from somewhere, you use this
@@ -855,8 +906,16 @@ def cluster_assign_centers(data=None, centers=None):
     ----------
     data : list of arrays, list of file names or single array/filename
         data to be assigned
+
     clustercenters : path to file (csv) or ndarray
         cluster centers to use in assignment of data
+
+    stride : int, optional, default = 1
+        If set to 1, all input data will be used for estimation. Note that this could cause this calculation
+        to be very slow for large data sets. Since molecular dynamics data is usually
+        correlated at short timescales, it is often sufficient to estimate transformations at a longer stride.
+        Note that the stride option in the get_output() function of the returned object is independent, so
+        you can parametrize at a long stride, and still map all frames through the transformer.
 
     Returns
     -------
@@ -880,4 +939,4 @@ def cluster_assign_centers(data=None, centers=None):
         raise ValueError('You have to provide centers in form of a filename'
                          ' or NumPy array')
     res = _AssignCenters(centers)
-    return _param_stage(data, res)
+    return _param_stage(data, res, stride=stride)
