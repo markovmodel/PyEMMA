@@ -23,7 +23,7 @@ class RandomDataSource:
         self.i = -1
 
     def _next_chunk(self, lag=0, stride=1):
-        assert stride==1, 'stride !=1 not implemented'
+        assert stride == 1, 'stride !=1 not implemented'
         self.i += 1
         return self.data[self.i]
 
@@ -98,7 +98,7 @@ class TestRegSpaceClustering(unittest.TestCase):
             # this shall trigger a warning
             self.clustering.parametrize()
             # TODO: verify num states matches max_clusters
-            #assert len(self.clustering.dtrajs) <= self.clustering.max_clusters
+            # assert len(self.clustering.dtrajs) <= self.clustering.max_clusters
             assert issubclass(w[-1].category, UserWarning)
 
     def test1d_data(self):

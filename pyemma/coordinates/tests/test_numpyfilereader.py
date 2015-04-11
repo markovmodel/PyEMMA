@@ -73,7 +73,7 @@ class TestFileReader(unittest.TestCase):
             
     def test_small_chunks(self):
         reader = NumPyFileReader(self.npy_files)
-        reader.chunksize=30
+        reader.chunksize = 30
 
         from_files = [np.load(f) for f in self.npy_files]
         concatenated = np.vstack(from_files)
@@ -102,8 +102,8 @@ class TestFileReader(unittest.TestCase):
 
         self.assertEqual(reader.number_of_trajectories(), len(data))
 
-        for output, input in zip(all_data, data):
-            np.testing.assert_equal(output, input)
+        for outp, inp in zip(all_data, data):
+            np.testing.assert_equal(outp, inp)
 
 
 if __name__ == "__main__":

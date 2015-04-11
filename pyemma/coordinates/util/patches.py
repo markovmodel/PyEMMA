@@ -52,14 +52,17 @@ def iterload(filename, chunk=100, **kwargs):
 
     Examples
     --------
+
     >>> import mdtraj as md
     >>> for chunk in md.iterload('output.xtc', top='topology.pdb')
-    ...    print chunk
+    >>>     print chunk
+
     <mdtraj.Trajectory with 100 frames, 423 atoms at 0x110740a90>
     <mdtraj.Trajectory with 100 frames, 423 atoms at 0x110740a90>
     <mdtraj.Trajectory with 100 frames, 423 atoms at 0x110740a90>
     <mdtraj.Trajectory with 100 frames, 423 atoms at 0x110740a90>
     <mdtraj.Trajectory with 100 frames, 423 atoms at 0x110740a90>
+
     """
     stride = kwargs.get('stride', 1)
     atom_indices = cast_indices(kwargs.get('atom_indices', None))
@@ -68,7 +71,8 @@ def iterload(filename, chunk=100, **kwargs):
                          'evenly into chunk=%d' % (stride, chunk))
     if chunk == 0:
         yield load(filename, **kwargs)
-    else:  # If chunk was 0 then we want to avoid filetype-specific code in case of undefined behavior in various file parsers.
+    # If chunk was 0 then we want to avoid filetype-specific code in case of undefined behavior in various file parsers.
+    else:
         skip = kwargs.get('skip', 0)
         if filename.endswith('.h5'):
             if 'top' in kwargs:

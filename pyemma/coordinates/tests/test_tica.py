@@ -67,7 +67,7 @@ class TestTICA(unittest.TestCase):
         # un-chunked
         d = DataInMemory(X)
 
-        tica = TICA(tau=lag, output_dimension=1)
+        tica = TICA(lag, 1)
         tica.data_producer = d
         tica.parametrize()
 
@@ -77,7 +77,7 @@ class TestTICA(unittest.TestCase):
         # ------- run again with new chunksize -------
         d = DataInMemory(X)
         d.chunksize = chunk
-        tica = TICA(lag=lag, output_dimension=1)
+        tica = TICA(lag, 1)
         tica.data_producer = d
 
         tica.parametrize()

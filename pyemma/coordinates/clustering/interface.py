@@ -101,7 +101,7 @@ class AbstractClustering(Transformer):
                     name = "%s_%s%s" % (prefix, basename, extension)
                 else:
                     name = "%s%s" % (basename, extension)
-                #name = path.join(p, name)
+                # name = path.join(p, name)
                 output_files.append(name)
         else:
             for i in xrange(len(dtrajs)):

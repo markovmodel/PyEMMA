@@ -62,7 +62,7 @@ def acf(trajs, stride=1, max_lag=None, subtract_mean=True, normalize=True, mean=
             n_samples += traj.shape[0]
         mean /= n_samples
 
-    acf = np.array([[]])
+    res = np.array([[]])
     # number of samples for every tau
     N = np.array([])
 
@@ -86,21 +86,21 @@ def acf(trajs, stride=1, max_lag=None, subtract_mean=True, normalize=True, mean=
         Ntraj = np.linspace(l, l - acftraj.shape[0] + 1, acftraj.shape[0])
         # adapt shape of acf: resize temporal dimension, additionally set
         # number of order parameters of acf in the first step
-        if acf.shape[1] < acftraj.shape[1] and acf.shape[1] > 0:
+        if res.shape[1] < acftraj.shape[1] and res.shape[1] > 0:
             raise Exception(('number of order parameters in tarjectory number %d differs ' +
                              'from the number found in previous trajectories.') % i)
-        if acf.shape[1] < acftraj.shape[1] or acf.shape[0] < acftraj.shape[0]:
-            acf.resize(acftraj.shape)
+        if res.shape[1] < acftraj.shape[1] or res.shape[0] < acftraj.shape[0]:
+            res.resize(acftraj.shape)
             N.resize(acftraj.shape[0])
         # update acf and number of samples
-        acf[0:acftraj.shape[0], :] += acftraj
+        res[0:acftraj.shape[0], :] += acftraj
         N[0:acftraj.shape[0]] += Ntraj
 
     # divide by number of samples
-    acf = np.transpose(np.transpose(acf) / N)
+    res = np.transpose(np.transpose(res) / N)
 
     # normalize acfs
     if normalize:
-        acf /= acf[0, :].copy()
+        res /= res[0, :].copy()
 
-    return acf
+    return res

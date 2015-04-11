@@ -82,7 +82,8 @@ class UniformTimeClustering(AbstractClustering):
                 T = self.data_producer.n_frames_total(stride=stride)
                 if self.k > T:
                     self.k = T
-                    self._logger.info('Requested more clusters (k = ',str(self.k),') than there are total data points ('+str(T)+'. Will do clustering with k = '+str(T))
+                    self._logger.info('Requested more clusters (k = '+str(self.k)+') than there are total data points ('
+                                      +str(T)+'. Will do clustering with k = '+str(T))
                 # time in previous trajectories
                 self._tprev = 0
                 # number of clusters yet

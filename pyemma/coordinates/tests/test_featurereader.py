@@ -87,12 +87,12 @@ class TestFeatureReader(unittest.TestCase):
             lagged.append(Y)
 
         assert len(data) == len(lagged)
-        merged_lagged = np.concatenate(lagged,axis=0)  # .reshape(self.xyz.shape)
+        merged_lagged = np.concatenate(lagged, axis=0)  # .reshape(self.xyz.shape)
 
         # reproduce outcome
         xyz_s = self.xyz.shape
-        fake_lagged = np.empty((xyz_s[0]-lag,xyz_s[1]*xyz_s[2]))
-        fake_lagged = self.xyz.reshape((xyz_s[0],-1))[lag:]
+        fake_lagged = np.empty((xyz_s[0]-lag, xyz_s[1]*xyz_s[2]))
+        fake_lagged = self.xyz.reshape((xyz_s[0], -1))[lag:]
 
         self.assertTrue(np.allclose(merged_lagged, fake_lagged))
 
@@ -103,13 +103,13 @@ class TestFeatureReader(unittest.TestCase):
         self.assertTrue(np.allclose(data, self.xyz))
         
     def test_with_pipeline_time_lagged(self):
-        reader= feature_reader(self.trajfile, self.topfile)
-        reader.featurizer.distances([[0,1], [0,2]])
-        t = tica(dim=2,lag=1)
+        reader = feature_reader(self.trajfile, self.topfile)
+        reader.featurizer.distances([[0, 1], [0, 2]])
+        t = tica(dim=2, lag=1)
         d = discretizer(reader, t)
         d.parametrize()
 
-    #@unittest.skip("")
+    # @unittest.skip("")
     def testTimeLaggedAccess(self):
         # each frame has 2 atoms with 3 coords = 6 coords per frame.
         # coords are sequential through all frames and start with 0.
@@ -128,7 +128,7 @@ class TestFeatureReader(unittest.TestCase):
                 for _, _, y in reader.iterator(lag=lag):
                     lagged_chunks.append(y)
 
-                coords = self.xyz.reshape((self.xyz.shape[0],-1))
+                coords = self.xyz.reshape((self.xyz.shape[0], -1))
 
                 for ii, c in enumerate(lagged_chunks[:-1]):
                     # all despite last chunk shall have chunksize
@@ -160,7 +160,7 @@ class TestFeatureReader(unittest.TestCase):
 #                 print last_chunk
 #                 print "-"*10
 #                 print expected
-                #np.testing.assert_allclose(last_chunk, expected)
+                # np.testing.assert_allclose(last_chunk, expected)
 
 if __name__ == "__main__":
     unittest.main()

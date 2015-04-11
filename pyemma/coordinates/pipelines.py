@@ -97,7 +97,7 @@ class Pipeline(object):
             pass
 
         # set data_producer for predecessor of e
-        #self._chain[max(0, index - 1)].data_producer = self._chain[index]
+        # self._chain[max(0, index - 1)].data_producer = self._chain[index]
 
         # since data producer of element after insertion changed, reset its status
         # TODO: make parameterized a property?
@@ -122,7 +122,6 @@ class Pipeline(object):
             element.parametrize(stride=self.param_stride)
 
         self._parametrized = True
-
 
     def _estimate_chunksize_from_mem_requirement(self, reader):
         """
@@ -167,10 +166,10 @@ class Pipeline(object):
                 trans._get_memory_per_frame()
             if Mfree > mem_req_trans:
                 Mfree -= mem_req_trans
-                # TODO: before we are allowed to call this method, we have to ensure all memory requirements are correct!
+                # TODO: before we are allowed to call this method, we have to ensure all memory requirements are correct
                 # trans.operate_in_memory()
                 self._logger.info("spending %i bytes to operate in main memory: %s "
-                            % (mem_req_trans,  trans.describe()))
+                                  % (mem_req_trans,  trans.describe()))
 
 
 class Discretizer(Pipeline):
