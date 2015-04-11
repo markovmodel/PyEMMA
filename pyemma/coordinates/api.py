@@ -18,6 +18,7 @@ from pyemma.coordinates.io.data_in_memory import DataInMemory as _DataInMemory
 from pyemma.coordinates.io.util.reader_utils import create_file_reader as _create_file_reader
 from pyemma.coordinates.io.frames_from_file import frames_from_file as _frames_from_file
 # transforms
+from pyemma.coordinates.transform.transformer import Transformer as _Transformer
 from pyemma.coordinates.transform.pca import PCA as _PCA
 from pyemma.coordinates.transform.tica import TICA as _TICA
 # clustering
@@ -552,6 +553,33 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None, inmemo
 #
 #=========================================================================
 
+def _param_stage(source, stage):
+    """Parametrizes the given pipelining stage if a valid source is given
+
+    Parameters
+    ----------
+    source : one of the following: None, Transformer (subclass), ndarray, list of ndarrays
+        data source from which this transformer will be parametrized. If None, there is no input data and the stage
+        will be returned without any other action.
+    stage : the transformer object to be parametrized given the source input.
+
+    """
+    # no input given - nothing to do
+    if source is None:
+        return stage
+    # this is a pipelining stage, so let's parametrize from it
+    elif isinstance(source, _Transformer) or issubclass(source.__class__, _Transformer):
+            inputstage = source
+    # second option: data is array or list of arrays
+    else:
+        data = _types.ensure_traj_list(source)
+        inputstage = _DataInMemory(data)
+    # parametrize transformer
+    stage.data_producer = inputstage
+    stage.chunksize = inputstage.chunksize
+    stage.parametrize()
+    return stage
+
 def pca(data=None, dim=2):
     r"""Principal Component Analysis (PCA).
 
@@ -618,12 +646,7 @@ def pca(data=None, dim=2):
 
     """
     res = _PCA(dim)
-    if data is not None:
-        data = _types.ensure_traj_list(data)
-        inp = _DataInMemory(data)
-        res.data_producer = inp
-        res.parametrize()
-    return res
+    return _param_stage(data, res)
 
 
 def tica(data=None, lag=10, dim=2, force_eigenvalues_le_one=False):
@@ -717,12 +740,7 @@ def tica(data=None, lag=10, dim=2, force_eigenvalues_le_one=False):
 
     """
     res = _TICA(lag, dim, force_eigenvalues_le_one=force_eigenvalues_le_one)
-    if data is not None:
-        data = _types.ensure_traj_list(data)
-        inp = _DataInMemory(data)
-        res.data_producer = inp
-        res.parametrize()
-    return res
+    return _param_stage(data, res)
 
 
 #=========================================================================
@@ -764,12 +782,7 @@ def cluster_kmeans(data=None, k=100, max_iter=1000):
 
     """
     res = _KmeansClustering(n_clusters=k, max_iter=max_iter)
-    if data is not None:
-        data = _types.ensure_traj_list(data)
-        inp = _DataInMemory(data)
-        res.data_producer = inp
-        res.parametrize()
-    return res
+    return _param_stage(data, res)
 
 
 @deprecated
@@ -793,12 +806,7 @@ def cluster_uniform_time(data=None, k=100):
 
     """
     res = _UniformTimeClustering(k)
-    if data is not None:
-        data = _types.ensure_traj_list(data)
-        inp = _DataInMemory(data)
-        res.data_producer = inp
-        res.parametrize()
-    return res
+    return _param_stage(data, res)
 
 
 @deprecated
@@ -828,12 +836,7 @@ def cluster_regspace(data=None, dmin=-1, max_centers=1000):
     if dmin == -1:
         raise ValueError("provide a minimum distance for clustering")
     res = _RegularSpaceClustering(dmin, max_centers)
-    if data is not None:
-        data = _types.ensure_traj_list(data)
-        inp = _DataInMemory(data)
-        res.data_producer = inp
-        res.parametrize()
-    return res
+    return _param_stage(data, res)
 
 
 @deprecated
@@ -876,9 +879,4 @@ def cluster_assign_centers(data=None, centers=None):
         raise ValueError('You have to provide centers in form of a filename'
                          ' or NumPy array')
     res = _AssignCenters(centers)
-    if data is not None:
-        data = _types.ensure_traj_list(data)
-        inp = _DataInMemory(data)
-        res.data_producer = inp
-        res.parametrize()
-    return res
+    return _param_stage(data, res)
