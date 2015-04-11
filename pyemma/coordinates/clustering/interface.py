@@ -10,7 +10,6 @@ import numpy as np
 import os
 
 from pyemma.coordinates.clustering import regspatial
-from pyemma.util.annotators import doc_inherit
 
 
 class AbstractClustering(Transformer):
