@@ -79,12 +79,16 @@ class UniformTimeClustering(AbstractClustering):
             # initialize
             if (first_chunk):
                 # initialize time counters
+                T = self.data_producer.n_frames_total(stride=stride)
+                if self.k > T:
+                    self.k = T
+                    self._logger.info('Requested more clusters (k = ',str(self.k),') than there are total data points ('+str(T)+'. Will do clustering with k = '+str(T))
                 # time in previous trajectories
                 self._tprev = 0
                 # number of clusters yet
                 self._n = 0
                 # time segment length between cluster centers
-                self._dt = self.data_producer.n_frames_total(stride=stride) / self.k
+                self._dt = T / self.k
                 # first data point in the middle of the time segment
                 self._nextt = self._dt / 2
             # final time we can go to with this chunk
