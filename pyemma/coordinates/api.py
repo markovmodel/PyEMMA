@@ -40,7 +40,7 @@ __email__ = "m.scherer AT fu-berlin DOT de"
 __all__ = [# IO
            'featurizer',
            'load',
-           'input',
+           'source',
            'pipeline',
            'discretizer',
            'save_traj',
@@ -166,14 +166,15 @@ def load(trajfiles, featurizer=None, topology=None, stride=1):
         raise Exception('unsupported type (%s) of input'%type(trajfiles))
 
 
-def input(inp, featurizer=None, topology=None):
-    """ Wraps the input for stream-based processing. Do this to construct the first stage of a data processing
-        :func:`pipeline`.
+def source(inp, featurizer=None, topology=None):
+    """ Wraps the input data for as a data source for stream-based processing.
+
+        Use this function to construct the first stage of a data processing :func:`pipeline`.
 
     Parameters
     ----------
-    input : str or ndarray or list of strings or list of ndarrays
-        The input file names or input data. Can be given in any of these ways:
+    inp : str or ndarray or list of strings or list of ndarrays
+        The inp file names or input data. Can be given in any of these ways:
 
         1. File name of a single trajectory. Can have any of the molecular dynamics trajectory formats or
            raw data formats specified in :py:func:`load`
@@ -326,7 +327,7 @@ def feature_reader(trajfiles, topfile):
 
     r"""*Deprecated.* Constructs a molecular feature reader.
 
-    This funtion is deprecated. Use :func:`input` instead
+    This funtion is deprecated. Use :func:`source` instead
 
     Parameters
     ----------
@@ -356,7 +357,7 @@ def feature_reader(trajfiles, topfile):
 def memory_reader(data):
     r"""*Deprecated.* Constructs a reader from an in-memory ndarray.
 
-    This funtion is deprecated. Use :func:`input` instead
+    This funtion is deprecated. Use :func:`source` instead
 
     Parameters
     ----------
@@ -386,7 +387,7 @@ def save_traj(traj_inp, indexes, outfile, verbose=False):
     Parameters
     ----------
     traj_inp : :py:func:`pyemma.coordinates.data.feature_reader.FeatureReader`
-        An input reader. Please use :py:func:`pyemma.coordinates.input` to construct it.
+        An input reader. Please use :py:func:`pyemma.coordinates.source` to construct it.
 
     indexes : ndarray(T, 2) or list of ndarray(T_i, 2)
         A (T x 2) array for writing a trajectory of T time steps. Each row contains two indexes (i, t), where
@@ -458,7 +459,7 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None, inmemo
     Parameters
     ----------
     traj_inp : :py:func:`pyemma.coordinates.data.feature_reader.FeatureReader`
-        An input reader. Please use :py:func:`pyemma.coordinates.input` to construct it.
+        A data source as provided by Please use :py:func:`pyemma.coordinates.source` to construct it.
 
     indexes : list of ndarray(T_i, 2)
         A list of N arrays, each of size (T_n x 2) for writing N trajectories of T_i time steps.
@@ -553,7 +554,7 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None, inmemo
 #
 #=========================================================================
 
-def _param_stage(source, stage):
+def _param_stage(previous_stage, this_stage):
     """Parametrizes the given pipelining stage if a valid source is given
 
     Parameters
@@ -565,20 +566,20 @@ def _param_stage(source, stage):
 
     """
     # no input given - nothing to do
-    if source is None:
-        return stage
+    if previous_stage is None:
+        return this_stage
     # this is a pipelining stage, so let's parametrize from it
-    elif isinstance(source, _Transformer) or issubclass(source.__class__, _Transformer):
-            inputstage = source
+    elif isinstance(previous_stage, _Transformer) or issubclass(previous_stage.__class__, _Transformer):
+            inputstage = previous_stage
     # second option: data is array or list of arrays
     else:
-        data = _types.ensure_traj_list(source)
+        data = _types.ensure_traj_list(previous_stage)
         inputstage = _DataInMemory(data)
     # parametrize transformer
-    stage.data_producer = inputstage
-    stage.chunksize = inputstage.chunksize
-    stage.parametrize()
-    return stage
+    this_stage.data_producer = inputstage
+    this_stage.chunksize = inputstage.chunksize
+    this_stage.parametrize()
+    return this_stage
 
 def pca(data=None, dim=2):
     r"""Principal Component Analysis (PCA).
