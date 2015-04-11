@@ -9,7 +9,7 @@ import unittest
 import tempfile
 import os
 
-from pyemma.coordinates.io.file_reader import CSVReader
+from pyemma.coordinates.data.file_reader import CSVReader
 
 
 class TestCSVReader(unittest.TestCase):

@@ -8,7 +8,7 @@ import os
 import tempfile
 import unittest
 
-from pyemma.coordinates.io.feature_reader import FeatureReader
+from pyemma.coordinates.data.feature_reader import FeatureReader
 from pyemma.util.log import getLogger
 import pkg_resources
 

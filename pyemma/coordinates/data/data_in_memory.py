@@ -2,7 +2,7 @@ __author__ = 'noe, marscher'
 
 import numpy as np
 
-from pyemma.coordinates.io.interface import ReaderInterface
+from pyemma.coordinates.data.interface import ReaderInterface
 
 # TODO: consider having this with an underlying loader, since we might now want
 # everyting in memory!
@@ -55,7 +55,7 @@ class DataInMemory(ReaderInterface):
             filenames to read from
         """
         # import here to avoid cyclic import
-        from pyemma.coordinates.io.file_reader import NumPyFileReader
+        from pyemma.coordinates.data.file_reader import NumPyFileReader
 
         reader = NumPyFileReader(files)
         data = reader.get_output()

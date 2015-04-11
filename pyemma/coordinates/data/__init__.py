@@ -1,9 +1,9 @@
 r"""
 ===============================================================================
-io - IO Utilities (:mod:`pyemma.coordinates.io`)
+io - IO Utilities (:mod:`pyemma.coordinates.data`)
 ===============================================================================
 
-.. currentmodule: pyemma.coordinates.io
+.. currentmodule: pyemma.coordinates.data
 
 Order parameters
 ================

@@ -5,7 +5,7 @@ import numpy as np
 
 from pyemma.coordinates.clustering.interface import AbstractClustering
 from pyemma.coordinates.transform.transformer import Transformer
-from pyemma.coordinates.io.feature_reader import FeatureReader
+from pyemma.coordinates.data.feature_reader import FeatureReader
 
 from pyemma.util.log import getLogger
 

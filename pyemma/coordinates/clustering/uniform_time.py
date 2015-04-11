@@ -52,12 +52,6 @@ class UniformTimeClustering(AbstractClustering):
         # initialize cluster centers
         self.clustercenters = np.zeros(
             (self.k, self.data_producer.dimension()), dtype=np.float32)
-        # initialize time counters
-        self._tprev = 0
-        self._ipass = 0
-        self._n = 0
-        self._stride = self.data_producer.n_frames_total() / self.k
-        self._nextt = self._stride / 2
 
     def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None, stride=1):
         """
@@ -82,12 +76,29 @@ class UniformTimeClustering(AbstractClustering):
         """
         L = np.shape(X)[0]
         if ipass == 0:
+            # initialize
+            if (first_chunk):
+                # initialize time counters
+                T = self.data_producer.n_frames_total(stride=stride)
+                if self.k > T:
+                    self.k = T
+                    self._logger.info('Requested more clusters (k = ',str(self.k),') than there are total data points ('+str(T)+'. Will do clustering with k = '+str(T))
+                # time in previous trajectories
+                self._tprev = 0
+                # number of clusters yet
+                self._n = 0
+                # time segment length between cluster centers
+                self._dt = T / self.k
+                # first data point in the middle of the time segment
+                self._nextt = self._dt / 2
+            # final time we can go to with this chunk
             maxt = self._tprev + t + L
-            while (self._nextt < maxt):
+            # harvest cluster centers from this chunk until we have left it
+            while (self._nextt < maxt and self._n < self.k):
                 i = self._nextt - self._tprev - t
                 self.clustercenters[self._n] = X[i]
                 self._n += 1
-                self._nextt += self._stride
+                self._nextt += self._dt
             if last_chunk_in_traj:
                 self._tprev += self.data_producer.trajectory_length(itraj, stride=stride)
         if ipass == 1:

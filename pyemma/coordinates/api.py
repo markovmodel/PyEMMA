@@ -12,12 +12,13 @@ from pyemma.util import types as _types
 from pyemma.coordinates.pipelines import Discretizer as _Discretizer
 from pyemma.coordinates.pipelines import Pipeline as _Pipeline
 # io
-from pyemma.coordinates.io.featurizer import MDFeaturizer as _MDFeaturizer
-from pyemma.coordinates.io.feature_reader import FeatureReader as _FeatureReader
-from pyemma.coordinates.io.data_in_memory import DataInMemory as _DataInMemory
-from pyemma.coordinates.io.util.reader_utils import get_file_reader as _get_file_reader
-from pyemma.coordinates.io.frames_from_file import frames_from_file as _frames_from_file
+from pyemma.coordinates.data.featurizer import MDFeaturizer as _MDFeaturizer
+from pyemma.coordinates.data.feature_reader import FeatureReader as _FeatureReader
+from pyemma.coordinates.data.data_in_memory import DataInMemory as _DataInMemory
+from pyemma.coordinates.data.util.reader_utils import create_file_reader as _create_file_reader
+from pyemma.coordinates.data.frames_from_file import frames_from_file as _frames_from_file
 # transforms
+from pyemma.coordinates.transform.transformer import Transformer as _Transformer
 from pyemma.coordinates.transform.pca import PCA as _PCA
 from pyemma.coordinates.transform.tica import TICA as _TICA
 # clustering
@@ -39,7 +40,7 @@ __email__ = "m.scherer AT fu-berlin DOT de"
 __all__ = [# IO
            'featurizer',
            'load',
-           'input',
+           'source',
            'pipeline',
            'discretizer',
            'save_traj',
@@ -80,11 +81,11 @@ def featurizer(topfile):
 
     Returns
     -------
-    feat : :py:class:`io.MDFeaturizer`
+    feat : :py:class:`data.MDFeaturizer`
 
     See also
     --------
-    pyemma.coordinates.io.MDFeaturizer
+    pyemma.coordinates.data.MDFeaturizer
         Featurizer object
 
     """
@@ -155,7 +156,7 @@ def load(trajfiles, featurizer=None, topology=None, stride=1):
     if isinstance(trajfiles, basestring) or (
         isinstance(trajfiles, (list, tuple)) and (any(isinstance(item, basestring) for item in trajfiles) or len(trajfiles) is 0)
     ):
-        reader = _get_file_reader(trajfiles, topology, featurizer)
+        reader = _create_file_reader(trajfiles, topology, featurizer)
         trajs = reader.get_output(stride = stride)
         if len(trajs)==1:
             return trajs[0]
@@ -165,14 +166,15 @@ def load(trajfiles, featurizer=None, topology=None, stride=1):
         raise Exception('unsupported type (%s) of input'%type(trajfiles))
 
 
-def input(input, featurizer=None, topology=None):
-    """ Wraps the input for stream-based processing. Do this to construct the first stage of a data processing
-        :func:`pipeline`.
+def source(inp, featurizer=None, topology=None):
+    """ Wraps the input data for as a data source for stream-based processing.
+
+        Use this function to construct the first stage of a data processing :func:`pipeline`.
 
     Parameters
     ----------
-    input : str or ndarray or list of strings or list of ndarrays
-        The input file names or input data. Can be given in any of these ways:
+    inp : str or ndarray or list of strings or list of ndarrays
+        The inp file names or input data. Can be given in any of these ways:
 
         1. File name of a single trajectory. Can have any of the molecular dynamics trajectory formats or
            raw data formats specified in :py:func:`load`
@@ -203,50 +205,25 @@ def input(input, featurizer=None, topology=None):
         to analyze big data in streaming mode.
 
     """
+    from numpy import ndarray
+
     # CASE 1: input is a string or list of strings
     # check: if single string create a one-element list
-    if isinstance(input, basestring):
-        input_list = [input]
-    elif len(input) > 0 and all(isinstance(item, basestring) for item in input):
-        input_list = input
+    if isinstance(inp, basestring) or (isinstance(inp, (list, tuple)) and (any(isinstance(item, basestring) for item in inp) or len(inp) is 0)):
+        reader = _create_file_reader(inp, topology, featurizer)
+
+    elif isinstance(inp, ndarray) or (isinstance(inp, (list, tuple)) and (any(isinstance(item, ndarray) for item in inp) or len(inp) is 0)):
+        # CASE 2: input is a (T, N, 3) array or list of (T_i, N, 3) arrays
+        # check: if single array, create a one-element list
+        # check: do all arrays have compatible dimensions (*, N, 3)? If not: raise ValueError.
+        # check: if single array, create a one-element list
+        # check: do all arrays have compatible dimensions (*, N)? If not: raise ValueError.
+        # create MemoryReader
+        #raise Exception('input of ndarrays not implemented yet')
+        reader = None
     else:
-        if len(input) is 0:
-            raise ValueError("The passed input list should not be empty.")
-        else:
-            raise ValueError("The passed list did not exclusively contain strings.")
+        raise ValueError('unsupported type (%s) of input' % type(inp))
 
-    try:
-        idx = input_list[0].rindex(".")
-        suffix = input_list[0][idx:]
-    except ValueError:
-        suffix = ""
-
-        # check: do all files have the same file type? If not: raise ValueError.
-        if all(item.endswith(suffix) for item in input_list):
-            from mdtraj.formats.registry import _FormatRegistry
-
-            # CASE 1.1: file types are MD files
-            if suffix in _FormatRegistry.loaders.keys():
-                # check: do we either have a featurizer or a topology file name? If not: raise ValueError.
-                # create a MD reader with file names and topology
-                if not featurizer and not topology:
-                    raise ValueError("The input files were MD files which makes it mandatory to have either a "
-                                     "featurizer or a topology file.")
-                if not topology:
-                    # we have a featurizer
-                    reader = _FeatureReader.init_from_featurizer(input_list, featurizer)
-                else:
-                    # we have a topology file
-                    reader = _FeatureReader(input_list, topology)
-            else:
-                # TODO: CASE 1.2: file types are raw data files
-                # TODO: create raw data reader from file names
-                reader = None # to satisfy code check upon return. Replace by real code.
-                pass
-        else:
-            raise ValueError("Not all elements in the input list were of the type %s!" % suffix)
-    else:
-        raise ValueError("Input \"%s\" was no string or list of strings." % input)
     return reader
 
 # TODO: Alternative names: chain, stream, datastream... probably pipeline is the best name though.
@@ -298,7 +275,7 @@ def discretizer(reader,
     Parameters
     ----------
 
-    reader : instance of :class:`pyemma.coordinates.io.reader.ChunkedReader`
+    reader : instance of :class:`pyemma.coordinates.data.reader.ChunkedReader`
         the reader instance provides access to the data. If you are working with
         MD data, you most likely want to use a FeatureReader.
 
@@ -350,7 +327,7 @@ def feature_reader(trajfiles, topfile):
 
     r"""*Deprecated.* Constructs a molecular feature reader.
 
-    This funtion is deprecated. Use :func:`input` instead
+    This funtion is deprecated. Use :func:`source` instead
 
     Parameters
     ----------
@@ -370,7 +347,7 @@ def feature_reader(trajfiles, topfile):
 
     See also
     --------
-    pyemma.coordinates.io.FeatureReader
+    pyemma.coordinates.data.FeatureReader
         Reader object
 
     """
@@ -380,7 +357,7 @@ def feature_reader(trajfiles, topfile):
 def memory_reader(data):
     r"""*Deprecated.* Constructs a reader from an in-memory ndarray.
 
-    This funtion is deprecated. Use :func:`input` instead
+    This funtion is deprecated. Use :func:`source` instead
 
     Parameters
     ----------
@@ -393,7 +370,7 @@ def memory_reader(data):
 
     See also
     --------
-    pyemma.coordinates.io.DataInMemory
+    pyemma.coordinates.data.DataInMemory
         Reader object
 
     """
@@ -409,8 +386,8 @@ def save_traj(traj_inp, indexes, outfile, verbose=False):
 
     Parameters
     ----------
-    traj_inp : :py:func:`pyemma.coordinates.io.feature_reader.FeatureReader`
-        An input reader. Please use :py:func:`pyemma.coordinates.input` to construct it.
+    traj_inp : :py:func:`pyemma.coordinates.data.feature_reader.FeatureReader`
+        An input reader. Please use :py:func:`pyemma.coordinates.source` to construct it.
 
     indexes : ndarray(T, 2) or list of ndarray(T_i, 2)
         A (T x 2) array for writing a trajectory of T time steps. Each row contains two indexes (i, t), where
@@ -481,8 +458,8 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None, inmemo
 
     Parameters
     ----------
-    traj_inp : :py:func:`pyemma.coordinates.io.feature_reader.FeatureReader`
-        An input reader. Please use :py:func:`pyemma.coordinates.input` to construct it.
+    traj_inp : :py:func:`pyemma.coordinates.data.feature_reader.FeatureReader`
+        A data source as provided by Please use :py:func:`pyemma.coordinates.source` to construct it.
 
     indexes : list of ndarray(T_i, 2)
         A list of N arrays, each of size (T_n x 2) for writing N trajectories of T_i time steps.
@@ -577,6 +554,33 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None, inmemo
 #
 #=========================================================================
 
+def _param_stage(previous_stage, this_stage):
+    """Parametrizes the given pipelining stage if a valid source is given
+
+    Parameters
+    ----------
+    source : one of the following: None, Transformer (subclass), ndarray, list of ndarrays
+        data source from which this transformer will be parametrized. If None, there is no input data and the stage
+        will be returned without any other action.
+    stage : the transformer object to be parametrized given the source input.
+
+    """
+    # no input given - nothing to do
+    if previous_stage is None:
+        return this_stage
+    # this is a pipelining stage, so let's parametrize from it
+    elif isinstance(previous_stage, _Transformer) or issubclass(previous_stage.__class__, _Transformer):
+            inputstage = previous_stage
+    # second option: data is array or list of arrays
+    else:
+        data = _types.ensure_traj_list(previous_stage)
+        inputstage = _DataInMemory(data)
+    # parametrize transformer
+    this_stage.data_producer = inputstage
+    this_stage.chunksize = inputstage.chunksize
+    this_stage.parametrize()
+    return this_stage
+
 def pca(data=None, dim=2):
     r"""Principal Component Analysis (PCA).
 
@@ -643,12 +647,7 @@ def pca(data=None, dim=2):
 
     """
     res = _PCA(dim)
-    if data is not None:
-        data = _types.ensure_traj_list(data)
-        inp = _DataInMemory(data)
-        res.data_producer = inp
-        res.parametrize()
-    return res
+    return _param_stage(data, res)
 
 
 def tica(data=None, lag=10, dim=2, force_eigenvalues_le_one=False):
@@ -742,12 +741,7 @@ def tica(data=None, lag=10, dim=2, force_eigenvalues_le_one=False):
 
     """
     res = _TICA(lag, dim, force_eigenvalues_le_one=force_eigenvalues_le_one)
-    if data is not None:
-        data = _types.ensure_traj_list(data)
-        inp = _DataInMemory(data)
-        res.data_producer = inp
-        res.parametrize()
-    return res
+    return _param_stage(data, res)
 
 
 #=========================================================================
@@ -789,12 +783,7 @@ def cluster_kmeans(data=None, k=100, max_iter=1000):
 
     """
     res = _KmeansClustering(n_clusters=k, max_iter=max_iter)
-    if data is not None:
-        data = _types.ensure_traj_list(data)
-        inp = _DataInMemory(data)
-        res.data_producer = inp
-        res.parametrize()
-    return res
+    return _param_stage(data, res)
 
 
 @deprecated
@@ -818,12 +807,7 @@ def cluster_uniform_time(data=None, k=100):
 
     """
     res = _UniformTimeClustering(k)
-    if data is not None:
-        data = _types.ensure_traj_list(data)
-        inp = _DataInMemory(data)
-        res.data_producer = inp
-        res.parametrize()
-    return res
+    return _param_stage(data, res)
 
 
 @deprecated
@@ -853,12 +837,7 @@ def cluster_regspace(data=None, dmin=-1, max_centers=1000):
     if dmin == -1:
         raise ValueError("provide a minimum distance for clustering")
     res = _RegularSpaceClustering(dmin, max_centers)
-    if data is not None:
-        data = _types.ensure_traj_list(data)
-        inp = _DataInMemory(data)
-        res.data_producer = inp
-        res.parametrize()
-    return res
+    return _param_stage(data, res)
 
 
 @deprecated
@@ -901,9 +880,4 @@ def cluster_assign_centers(data=None, centers=None):
         raise ValueError('You have to provide centers in form of a filename'
                          ' or NumPy array')
     res = _AssignCenters(centers)
-    if data is not None:
-        data = _types.ensure_traj_list(data)
-        inp = _DataInMemory(data)
-        res.data_producer = inp
-        res.parametrize()
-    return res
+    return _param_stage(data, res)
