@@ -114,9 +114,9 @@ class TestDiscretizer(unittest.TestCase):
         tpca = api.pca(dim=2)
 
         n_centers = 10
-        kmeans = api.kmeans(k=n_centers)
+        km = api.kmeans(k=n_centers)
 
-        disc = api.discretizer(reader, tpca, kmeans)
+        disc = api.discretizer(reader, tpca, km)
         disc.parametrize()
 
         dtrajs = disc.dtrajs

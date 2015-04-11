@@ -45,12 +45,12 @@ class TestKmeans(unittest.TestCase):
 
     def test_3gaussian_2d_multitraj(self):
         # generate 1D data from three gaussians
-        X1 = np.zeros((100,2))
-        X1[:,0] = np.random.randn(100)-2.0
-        X2 = np.zeros((100,2))
-        X2[:,0] = np.random.randn(100)
-        X3 = np.zeros((100,2))
-        X3[:,0] = np.random.randn(100)+2.0
+        X1 = np.zeros((100, 2))
+        X1[:, 0] = np.random.randn(100)-2.0
+        X2 = np.zeros((100, 2))
+        X2[:, 0] = np.random.randn(100)
+        X3 = np.zeros((100, 2))
+        X3[:, 0] = np.random.randn(100)+2.0
         X = [X1, X2, X3]
         kmeans = cluster_kmeans(X, k=10)
         cc = kmeans.clustercenters
@@ -63,7 +63,7 @@ class TestKmeans(unittest.TestCase):
         extension = ".dtraj"
         outdir = self.dtraj_dir
         self.kmeans.save_dtrajs(trajfiles=None, prefix=prefix,
-                                    output_dir=outdir, extension=extension)
+                                output_dir=outdir, extension=extension)
 
         names = ["%s_%i%s" % (prefix, i, extension)
                  for i in xrange(self.kmeans.data_producer.number_of_trajectories())]

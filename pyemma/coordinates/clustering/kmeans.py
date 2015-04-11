@@ -58,14 +58,14 @@ class KmeansClustering(AbstractClustering):
         if ipass == 0:
             # beginning - compute
             if first_chunk:
-                memreq = 1e-6 * 2 * X[0,:].nbytes * self.n_frames_total(stride=stride)
+                memreq = 1e-6 * 2 * X[0, :].nbytes * self.n_frames_total(stride=stride)
                 self._logger.warn('K-means implementation is currently memory inefficient.'
                                   ' This calculation needs %i megabytes of main memory.'
                                   ' If you get a memory error, try using a larger stride.'
                                   % memreq)
 
             # appends a true copy
-            self._chunks.append(X[:,:])
+            self._chunks.append(X[:, :])
 
             # run k-means in the end
             if last_chunk:

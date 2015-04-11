@@ -46,7 +46,7 @@ class TestCSVReader(unittest.TestCase):
         f = tempfile.mktemp(prefix=".dat")
         np.savetxt(f, self.data, header="x y z")
         try:
-            reader = CSVReader()
+            reader = CSVReader(f)
             self.assertEqual(reader.number_of_trajectories(), 1)
             self.assertEqual(reader.dimension(), self.nd)
             self.assertEqual(reader.n_frames_total(), self.nt)

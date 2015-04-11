@@ -26,8 +26,8 @@ class TestSaveTrajs(unittest.TestCase):
 
     def setUp(self):
         self.eps = 1e-6
-        path = os.path.join(os.path.split(__file__)[0],'data')
-        self.pdbfile = os.path.join(path,'bpti_ca.pdb')
+        path = os.path.join(os.path.split(__file__)[0], 'data')
+        self.pdbfile = os.path.join(path, 'bpti_ca.pdb')
         self.trajfiles = [os.path.join(path, 'bpti_001-033.xtc'),
                           os.path.join(path, 'bpti_034-066.xtc'),
                           os.path.join(path, 'bpti_067-100.xtc')

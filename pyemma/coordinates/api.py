@@ -37,39 +37,32 @@ __version__ = "2.0.0"
 __maintainer__ = "Martin Scherer"
 __email__ = "m.scherer AT fu-berlin DOT de"
 
-__all__ = [# IO
-           'featurizer',
+__all__ = ['featurizer',  # IO
            'load',
            'source',
            'pipeline',
            'discretizer',
            'save_traj',
            'save_trajs',
-           # transform
-           'pca',
+           'pca',  # transform
            'tica',
-           # cluster
-           'cluster_regspace',
+           'cluster_regspace',  # cluster
            'cluster_kmeans',
            'cluster_uniform_time',
            'cluster_assign_centers',
-           # deprecated:
-           'feature_reader',
+           'feature_reader',  # deprecated:
            'memory_reader',
            'kmeans',
            'regspace',
            'assign_centers',
-           'uniform_time'
-           ]
+           'uniform_time']
 
 
-
-#==============================================================================
+# ==============================================================================
 #
 # DATA PROCESSING
 #
-#==============================================================================
-
+# ==============================================================================
 
 def featurizer(topfile):
     """ Constructs a MDFeaturizer to select and add coordinates or features from MD data.
@@ -92,8 +85,8 @@ def featurizer(topfile):
     return _MDFeaturizer(topfile)
 
 
-#TODO: DOC - which topology file formats does mdtraj support? Find out and complete docstring
-def load(trajfiles, featurizer=None, topology=None, stride=1):
+# TODO: DOC - which topology file formats does mdtraj support? Find out and complete docstring
+def load(trajfiles, features=None, top=None, stride=1):
     """ loads coordinate features into memory. If your memory is not big enough consider the use of pipeline
 
     Parameters
@@ -126,11 +119,11 @@ def load(trajfiles, featurizer=None, topology=None, stride=1):
            * tabulated ASCII (.dat, .txt)
            * binary python (.npy, .npz)
 
-    featurizer : MDFeaturizer, optional, default = None
+    features : MDFeaturizer, optional, default = None
         a featurizer object specifying how molecular dynamics files should be read (e.g. intramolecular distances,
         angles, dihedrals, etc).
 
-    topology : str, optional, default = None
+    top : str, optional, default = None
         A molecular topology file, e.g. in PDB (.pdb) format
 
     stride : int, optional, default = 1
@@ -154,19 +147,19 @@ def load(trajfiles, featurizer=None, topology=None, stride=1):
 
     """
     if isinstance(trajfiles, basestring) or (
-        isinstance(trajfiles, (list, tuple)) and (any(isinstance(item, basestring) for item in trajfiles) or len(trajfiles) is 0)
-    ):
-        reader = _create_file_reader(trajfiles, topology, featurizer)
+        isinstance(trajfiles, (list, tuple))
+            and (any(isinstance(item, basestring) for item in trajfiles) or len(trajfiles) is 0)):
+        reader = _create_file_reader(trajfiles, top, features)
         trajs = reader.get_output(stride = stride)
-        if len(trajs)==1:
+        if len(trajs) == 1:
             return trajs[0]
         else:
             return trajs
     else:
-        raise Exception('unsupported type (%s) of input'%type(trajfiles))
+        raise Exception('unsupported type (%s) of input' % type(trajfiles))
 
 
-def source(inp, featurizer=None, topology=None):
+def source(inp, features=None, top=None):
     """ Wraps the input data for as a data source for stream-based processing.
 
         Use this function to construct the first stage of a data processing :func:`pipeline`.
@@ -189,12 +182,12 @@ def source(inp, featurizer=None, topology=None):
         6. List of trajectories of some features or order parameters in memory, each given as a numpy array
            of shape (T_i, N), where trajectory i has T_i time steps and all trajectories have N dimensions
 
-    featurizer : MDFeaturizer, optional, default = None
+    features : MDFeaturizer, optional, default = None
         a featurizer object specifying how molecular dynamics files should be read (e.g. intramolecular distances,
         angles, dihedrals, etc). This parameter only makes sense if the input comes in the form of molecular dynamics
         trajectories or data, and will otherwise create a warning and have no effect
 
-    topology : str, optional, default = None
+    top : str, optional, default = None
         a topology file name. This is needed when molecular dynamics trajectories are given and no featurizer is given.
         In this case, only the Cartesian coordinates will be read.
 
@@ -209,22 +202,25 @@ def source(inp, featurizer=None, topology=None):
 
     # CASE 1: input is a string or list of strings
     # check: if single string create a one-element list
-    if isinstance(inp, basestring) or (isinstance(inp, (list, tuple)) and (any(isinstance(item, basestring) for item in inp) or len(inp) is 0)):
-        reader = _create_file_reader(inp, topology, featurizer)
+    if isinstance(inp, basestring) or (isinstance(inp, (list, tuple))
+                                       and (any(isinstance(item, basestring) for item in inp) or len(inp) is 0)):
+        reader = _create_file_reader(inp, top, features)
 
-    elif isinstance(inp, ndarray) or (isinstance(inp, (list, tuple)) and (any(isinstance(item, ndarray) for item in inp) or len(inp) is 0)):
+    elif isinstance(inp, ndarray) or (isinstance(inp, (list, tuple))
+                                      and (any(isinstance(item, ndarray) for item in inp) or len(inp) is 0)):
         # CASE 2: input is a (T, N, 3) array or list of (T_i, N, 3) arrays
         # check: if single array, create a one-element list
         # check: do all arrays have compatible dimensions (*, N, 3)? If not: raise ValueError.
         # check: if single array, create a one-element list
         # check: do all arrays have compatible dimensions (*, N)? If not: raise ValueError.
         # create MemoryReader
-        #raise Exception('input of ndarrays not implemented yet')
+        # raise Exception('input of ndarrays not implemented yet')
         reader = None
     else:
         raise ValueError('unsupported type (%s) of input' % type(inp))
 
     return reader
+
 
 # TODO: Alternative names: chain, stream, datastream... probably pipeline is the best name though.
 def pipeline(stages, run=True, stride=1):
@@ -262,6 +258,7 @@ def pipeline(stages, run=True, stride=1):
     if run:
         p.parametrize()
     return p
+
 
 def discretizer(reader,
                 transform=None,
@@ -358,6 +355,7 @@ def feature_reader(trajfiles, topfile):
 
     """
     return _FeatureReader(trajfiles, topfile)
+
 
 @deprecated
 def memory_reader(data):
@@ -513,8 +511,10 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None, inmemo
     # Make sure the elements of that lists are arrays, and that they are shaped properly
     for i_indexes in indexes:
         assert isinstance(i_indexes, ndarray), "The elements in the 'indexes' variable must be numpy.ndarrays"
-        assert i_indexes.ndim == 2, "The elements in the 'indexes' variable are must have ndim = 2, and not %u" % i_indexes.ndim
-        assert i_indexes.shape[1] == 2, "The elements in the 'indexes' variable are must be of shape (T_i,2), and not (%u,%u)" % i_indexes.shape
+        assert i_indexes.ndim == 2, \
+            "The elements in the 'indexes' variable are must have ndim = 2, and not %u" % i_indexes.ndim
+        assert i_indexes.shape[1] == 2, \
+            "The elements in the 'indexes' variable are must be of shape (T_i,2), and not (%u,%u)" % i_indexes.shape
 
     # Determine output format of the molecular trajectory file
     if fmt is None:
@@ -554,11 +554,11 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None, inmemo
     return outfiles
 
 
-#=========================================================================
+# =========================================================================
 #
 # TRANSFORMATION ALGORITHMS
 #
-#=========================================================================
+# =========================================================================
 
 def _param_stage(previous_stage, this_stage, stride=1):
     """Parametrizes the given pipelining stage if a valid source is given
@@ -586,6 +586,7 @@ def _param_stage(previous_stage, this_stage, stride=1):
     this_stage.chunksize = inputstage.chunksize
     this_stage.parametrize(stride=stride)
     return this_stage
+
 
 def pca(data=None, dim=2, stride=1):
     r"""Principal Component Analysis (PCA).
@@ -770,11 +771,11 @@ def tica(data=None, lag=10, dim=2, stride=1, force_eigenvalues_le_one=False):
     return _param_stage(data, res, stride=stride)
 
 
-#=========================================================================
+# =========================================================================
 #
 # CLUSTERING ALGORITHMS
 #
-#=========================================================================
+# =========================================================================
 
 @deprecated
 def kmeans(data=None, k=100, max_iter=1000, stride=1):
@@ -805,7 +806,6 @@ def cluster_kmeans(data=None, k=100, max_iter=10, stride=1):
     -------
     kmeans : A KmeansClustering object
 
-
     Examples
     --------
 
@@ -813,6 +813,7 @@ def cluster_kmeans(data=None, k=100, max_iter=10, stride=1):
     >>> traj_data = [np.random.random((100, 3)), np.random.random((100,3))]
     >>> clustering = kmeans(traj_data, n_clusters=20)
     >>> clustering.dtrajs
+
     [array([0, 0, 1, ... ])]
 
     """

@@ -81,7 +81,7 @@ class RegularSpaceClustering(AbstractClustering):
         """
         if ipass == 0:
             try:
-                regspatial.cluster(X.astype(np.float32,order='C',copy=False),
+                regspatial.cluster(X.astype(np.float32, order='C', copy=False),
                                    self._clustercenters, self._dmin,
                                    self.metric, self.max_clusters)
             except RuntimeError:

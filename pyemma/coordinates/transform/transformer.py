@@ -31,7 +31,7 @@ class TransformerIterator(object):
             X = self._transformer._next_chunk(lag=self._lag, stride=self._stride)
             return (last_itraj, X)
         else:
-            X,Y = self._transformer._next_chunk(lag=self._lag, stride=self._stride)
+            X, Y = self._transformer._next_chunk(lag=self._lag, stride=self._stride)
             return (last_itraj, X, Y)
 
 
@@ -205,7 +205,7 @@ class Transformer(object):
             # iterate over trajectories
             last_chunk = False
             itraj = 0
-            #lag = self._lag
+            # lag = self._lag
             while not last_chunk:
                 last_chunk_in_traj = False
                 t = 0
@@ -215,11 +215,11 @@ class Transformer(object):
                         X = self.data_producer._next_chunk(stride=stride)
                         Y = None
                     else:
-                        X, Y = self.data_producer._next_chunk(lag=lag,stride=stride)
+                        X, Y = self.data_producer._next_chunk(lag=lag, stride=stride)
                     L = np.shape(X)[0]
                     # last chunk in traj?
                     last_chunk_in_traj = (
-                        t + L >= self.trajectory_length(itraj,stride=stride))
+                        t + L >= self.trajectory_length(itraj, stride=stride))
                     # last chunk?
                     last_chunk = (
                         last_chunk_in_traj and itraj >= self.number_of_trajectories() - 1)
@@ -265,13 +265,15 @@ class Transformer(object):
             if X.ndim == 2:
                 return self._map_array(X)
             else:
-                raise TypeError('Input has the wrong shape: '+str(X.shape)+' with '+str(X.ndim)+' dimensions. Expecting a matrix (2 dimensions)')
+                raise TypeError('Input has the wrong shape: '+str(X.shape)+' with '+str(X.ndim)
+                                +' dimensions. Expecting a matrix (2 dimensions)')
         elif isinstance(X, list):
             out = []
             for x in X:
                 out.append(self._map_array(x))
         else:
-            raise TypeError('Input has the wrong type: '+str(type(X))+'. Either accepting numpy arrays of dimension 2 or lists of such arrays')
+            raise TypeError('Input has the wrong type: '+str(type(X))
+                            +'. Either accepting numpy arrays of dimension 2 or lists of such arrays')
 
     def _map_array(self, X):
         """
@@ -290,7 +292,6 @@ class Transformer(object):
 
         """
         pass
-
 
     def _param_init(self):
         """
@@ -331,7 +332,7 @@ class Transformer(object):
 
     def _reset(self, stride=1):
         """_reset data position"""
-        if not self._parametrized: # TODO: should this stay or should it go?
+        if not self._parametrized:  # TODO: should this stay or should it go?
             self.parametrize()
         self._itraj = 0
         self._t = 0
@@ -446,41 +447,43 @@ class Transformer(object):
         return TransformerIterator(self, stride=stride, lag=lag)
 
     def get_output(self, dimensions=slice(0, None), stride=1):
-        """Maps all input data of this transformer and returns it as an array or list of arrays
+        """ Maps all input data of this transformer and returns it as an array or list of arrays
 
-           Parameters
-           ----------
-           transfrom : pyemma.coordinates.transfrom.Transformer object
-               transform that provides the input data
-           dimensions : list-like of indexes or slice
-               indices of dimensions you like to keep, default = all
-           stride : int
-               only take every n'th frame, default = 1
+            Parameters
+            ----------
+            transfrom : pyemma.coordinates.transfrom.Transformer object
+                transform that provides the input data
+            dimensions : list-like of indexes or slice
+                indices of dimensions you like to keep, default = all
+            stride : int
+                only take every n'th frame, default = 1
 
-           Returns
-           -------
-           output : ndarray(T, d) or list of ndarray(T_i, d)
-               the mapped data, where T is the number of time steps of the input data, or if stride > 1,
-               floor(T_in / stride). d is the output dimension of this transformer.
-               If the input consists of a list of trajectories, Y will also be a corresponding list of trajectories
+            Returns
+            -------
+            output : ndarray(T, d) or list of ndarray(T_i, d)
+                the mapped data, where T is the number of time steps of the input data, or if stride > 1,
+                floor(T_in / stride). d is the output dimension of this transformer.
+                If the input consists of a list of trajectories, Y will also be a corresponding list of trajectories
 
-           Notes
-           -----
-           This function may be RAM intensive if stride is too large or
-           too many dimensions are selected.
+            Notes
+            -----
+            This function may be RAM intensive if stride is too large or
+            too many dimensions are selected.
 
-           Example
-           -------
-           plotting trajectories
-           >>> import pyemma.coordinates as coor
-           >>> import matplotlib.pyplot as plt
-           >>> %matplotlib inline # only for ipython notebook
-           >>>
-           >>> tica = coor.tica() # fill with some actual data!
-           >>> trajs = tica.get_output(dimensions=(0,),stride=100)
-           >>> for traj in trajs:
-           >>>     plt.figure()
-           >>>     plt.plot(traj[:,0])
+            Example
+            -------
+            plotting trajectories
+
+            >>> import pyemma.coordinates as coor
+            >>> import matplotlib.pyplot as plt
+            >>> %matplotlib inline # only for ipython notebook
+            >>>
+            >>> tica = coor.tica() # fill with some actual data!
+            >>> trajs = tica.get_output(dimensions=(0,), stride=100)
+            >>> for traj in trajs:
+            >>>     plt.figure()
+            >>>     plt.plot(traj[:, 0])
+
         """
 
         if isinstance(dimensions, int):

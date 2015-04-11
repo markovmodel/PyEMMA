@@ -5,6 +5,7 @@ Created on 17.02.2015
 '''
 from pyemma.util.annotators import deprecated
 
+
 @deprecated
 def build_chain(transformers, chunksize=None):
     """
@@ -20,6 +21,7 @@ def build_chain(transformers, chunksize=None):
             t.chunksize = chunksize
 
     return transformers
+
 
 @deprecated
 def run_chain(chain):
