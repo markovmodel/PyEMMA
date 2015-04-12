@@ -263,14 +263,16 @@ class Transformer(object):
         # TODO: This is a very naive implementation of case switching. Please check and make more robust if needed.
         if isinstance(X, np.ndarray):
             if X.ndim == 2:
-                return self._map_array(X)
+                mapped = self._map_array(X)
+                return mapped
             else:
                 raise TypeError('Input has the wrong shape: '+str(X.shape)+' with '+str(X.ndim)
                                 +' dimensions. Expecting a matrix (2 dimensions)')
         elif isinstance(X, list):
             out = []
             for x in X:
-                out.append(self._map_array(x))
+                mapped = self._map_array(x)
+                out.append(mapped)
         else:
             raise TypeError('Input has the wrong type: '+str(type(X))
                             +'. Either accepting numpy arrays of dimension 2 or lists of such arrays')
@@ -386,7 +388,7 @@ class Transformer(object):
                 self._t += X.shape[0]
                 if self._t >= self.trajectory_length(self._itraj, stride=stride):
                     self._itraj += 1
-                    self._t = 0                
+                    self._t = 0
                 return self.map(X)
             else:
                 (X0, Xtau) = self.data_producer._next_chunk(lag=lag, stride=stride)
@@ -515,8 +517,9 @@ class Transformer(object):
             if itraj != last_itraj:
                 last_itraj = itraj
                 t = 0  # reset time to 0 for new trajectory
-            trajs[itraj][t:t+chunk.shape[0], :] = chunk[:, dimensions]
-            t += chunk.shape[0]
+            L = chunk.shape[0]
+            trajs[itraj][t:t + L, :] = chunk[:, dimensions]
+            t += L
 
         return trajs
 

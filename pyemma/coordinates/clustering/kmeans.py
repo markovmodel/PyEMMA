@@ -100,4 +100,4 @@ class KmeansClustering(AbstractClustering):
         if X.ndim == 1:
             X = self._ensure2d(X)
         d = self._algo.predict(X)
-        return d
+        return d[:,None] # always return a column vector in this function

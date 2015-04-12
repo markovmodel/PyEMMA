@@ -30,7 +30,8 @@ class AbstractClustering(Transformer):
         dtraj = np.empty(X.shape[0], np.int64)
         regspatial.assign(X.astype(np.float32, order='C', copy=False),
                           self.clustercenters, dtraj, self.metric)
-        return dtraj
+        res = dtraj[:,None] # always return a column vector in this function
+        return res
 
     def dimension(self):
         """output dimension of clustering algorithm (always 1)."""
