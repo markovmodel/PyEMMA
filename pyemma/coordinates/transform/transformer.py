@@ -18,10 +18,10 @@ class TransformerIterator(object):
         self._stride = stride
         self._lag = lag
         self._transformer = transformer
-        
+
     def __iter__(self):
         return self
-        
+
     def next(self):
         if self._transformer._itraj >= self._transformer.number_of_trajectories():
             raise StopIteration
@@ -99,6 +99,11 @@ class Transformer(object):
         assert self.in_memory, "tried to delete in memory results which are not set"
         for y in self.Y:
             del y
+
+    def dimension(self):
+        """ output dimension of this transformation """
+        raise NotImplementedError('this method has to be implemented in'
+                                  ' children of this class.')
 
     def __create_logger(self):
         name = "%s[%s]" % (self.__class__.__name__, hex(id(self)))
