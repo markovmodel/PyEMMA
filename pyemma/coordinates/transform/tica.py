@@ -56,13 +56,13 @@ class TICA(Transformer):
 
     """
 
-    def __init__(self, tau, output_dimension, epsilon=1e-6, force_eigenvalues_le_one=False):
+    def __init__(self, lag, output_dimension, epsilon=1e-6, force_eigenvalues_le_one=False):
         super(TICA, self).__init__()
 
         # store lag time to set it appropriatly in second pass of parametrize
-        self._tau = tau
+        self._lag = lag
         self._output_dimension = output_dimension
-        self.epsilon = epsilon
+        self._epsilon = epsilon
         self._force_eigenvalues_le_one = force_eigenvalues_le_one
 
         # covariances
@@ -70,25 +70,25 @@ class TICA(Transformer):
         self.cov_tau = None
         # mean
         self.mu = None
-        self.N_mean = 0
-        self.N_cov = 0
-        self.N_cov_tau = 0
+        self._N_mean = 0
+        self._N_cov = 0
+        self._N_cov_tau = 0
         self.eigenvalues = None
         self.eigenvectors = None
 
     @property
-    def tau(self):
-        return self._tau
+    def lag(self):
+        return self._lag
 
-    @tau.setter
-    def tau(self, new_tau):
+    @lag.setter
+    def lag(self, new_tau):
         self._parametrized = False
-        self._tau = new_tau
+        self._lag = new_tau
 
     @doc_inherit
     def describe(self):
         return "[TICA, tau = %i; output dimension = %i]" \
-            % (self._tau, self._output_dimension)
+            % (self._lag, self._output_dimension)
 
     def dimension(self):
         """ output dimension"""
@@ -116,6 +116,10 @@ class TICA(Transformer):
 
         return 8 * (cov_elements + mu_elements)
 
+    @property
+    def mean(self):
+        return self.mu
+
     @doc_inherit
     def _param_init(self):
         dim = self.data_producer.dimension()
@@ -124,9 +128,9 @@ class TICA(Transformer):
             ("requested more output dimensions (%i) than dimension"
              " of input data (%i)" % (self._output_dimension, dim))
 
-        self.N_mean = 0
-        self.N_cov = 0
-        self.N_cov_tau = 0
+        self._N_mean = 0
+        self._N_cov = 0
+        self._N_cov_tau = 0
         # create mean array and covariance matrices
         self.mu = np.zeros(dim)
 
@@ -134,7 +138,7 @@ class TICA(Transformer):
         self.cov_tau = np.zeros_like(self.cov)
 
         self._logger.info("Running TICA with tau=%i; Estimating two covariance matrices"
-                          " with dimension (%i, %i)" % (self._tau, dim, dim))
+                          " with dimension (%i, %i)" % (self._lag, dim, dim))
 
         return 0  # in zero'th pass don't request lagged data
 
@@ -168,19 +172,19 @@ class TICA(Transformer):
             # TODO: maybe use stable sum here, since small chunksizes
             # accumulate more errors
             self.mu += np.sum(X, axis=0, dtype=np.float64)
-            self.N_mean += np.shape(X)[0]
+            self._N_mean += np.shape(X)[0]
 
             if last_chunk:
-                self.mu /= self.N_mean
+                self.mu /= self._N_mean
                 self._logger.info("calculated mean.")
 
                 # now we request real lagged data, since we are finished
                 # with first pass
-                return False, self._tau
+                return False, self._lag
 
         elif ipass == 1:
-            if self.trajectory_length(itraj, stride=stride) > self._tau:
-                self.N_cov_tau += 2.0*np.shape(Y)[0]
+            if self.trajectory_length(itraj, stride=stride) > self._lag:
+                self._N_cov_tau += 2.0*np.shape(Y)[0]
                 X_meanfree = X - self.mu
                 Y_meanfree = Y - self.mu
                 # update the time-lagged covariance matrix
@@ -190,8 +194,8 @@ class TICA(Transformer):
                 # update the instantaneous covariance matrix
                 if self._force_eigenvalues_le_one:
                     # MSM-like counting
-                    Zptau = self._tau-t  # zero plus tau
-                    Nmtau = self.trajectory_length(itraj, stride=stride)-t-self._tau  # N minus tau
+                    Zptau = self._lag-t  # zero plus tau
+                    Nmtau = self.trajectory_length(itraj, stride=stride)-t-self._lag  # N minus tau
 
                     # restrict to valid block indices
                     size = X_meanfree.shape[0]
@@ -202,18 +206,18 @@ class TICA(Transformer):
                     start2 = min(Zptau, Nmtau)
                     end2 = max(Zptau, Nmtau)
                     self.cov += np.dot(X_meanfree[0:start2, :].T, X_meanfree[0:start2, :])
-                    self.N_cov += start2
+                    self._N_cov += start2
 
                     if Nmtau > Zptau:
                         self.cov += 2.0*np.dot(X_meanfree[start2:end2, :].T, X_meanfree[start2:end2, :])
-                        self.N_cov += 2.0*(end2-start2)
+                        self._N_cov += 2.0*(end2-start2)
 
                     self.cov += np.dot(X_meanfree[end2:, :].T, X_meanfree[end2:, :])
-                    self.N_cov += (size-end2)
+                    self._N_cov += (size-end2)
                 else:
                     # traditional counting
                     self.cov += 2.0*np.dot(X_meanfree.T, X_meanfree)
-                    self.N_cov += 2.0*np.shape(X)[0]
+                    self._N_cov += 2.0*np.shape(X)[0]
 
             else:
                 self._logger.warning("trajectory nr %i too short, skipping it" % itraj)
@@ -227,7 +231,7 @@ class TICA(Transformer):
     @doc_inherit
     def _param_finish(self):
         if self._force_eigenvalues_le_one:
-            assert self.N_cov == self.N_cov_tau, 'inconsistency in C(0) and C(tau)'
+            assert self._N_cov == self._N_cov_tau, 'inconsistency in C(0) and C(tau)'
 
         # symmetrize covariance matrices
         self.cov = self.cov + self.cov.T
@@ -237,13 +241,13 @@ class TICA(Transformer):
         self.cov_tau *= 0.5
 
         # norm
-        self.cov /= self.N_cov - 1
-        self.cov_tau /= self.N_cov_tau - 1
+        self.cov /= self._N_cov - 1
+        self.cov_tau /= self._N_cov_tau - 1
 
         # diagonalize with low rank approximation
         self._logger.info("diagonalize Cov and Cov_tau")
         self.eigenvalues, self.eigenvectors = \
-            eig_corr(self.cov, self.cov_tau, self.epsilon)
+            eig_corr(self.cov, self.cov_tau, self._epsilon)
         self._logger.info("finished diagonalisation.")
 
     def _map_array(self, X):
