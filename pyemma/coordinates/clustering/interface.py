@@ -32,21 +32,28 @@ class AbstractClustering(Transformer):
                           self.clustercenters, dtraj, self.metric)
         return dtraj
 
-    @doc_inherit
     def dimension(self):
+        """output dimension of clustering algorithm (always 1)."""
         return 1
 
-    def assign(self, X):
+    def assign(self, X=None, stride=1):
         """
         Assigns the given trajectory or list of trajectories to cluster centers by using the discretization defined
         by this clustering method (usually a Voronoi tesselation)
 
         Parameters
         ----------
-        X : ndarray(T, n) or list of ndarray(T_i, n)
-            The input data, where T is the number of time steps and n is the number of dimensions.
+        X : ndarray(T, n) or list of ndarray(T_i, n), optional, default = None
+            Optional input data to map, where T is the number of time steps and n is the number of dimensions.
             When a list is provided they can have differently many time steps, but the number of dimensions need
-            to be consistent.
+            to be consistent. When X is not provided, the result of assign is identical to get_output(), i.e. the
+            data used for clustering will be assigned.
+
+        stride : int, optional, default = 1
+            If set to 1, all frames of the input data will be assigned. Note that this could cause this calculation
+            to be very slow for large data sets. Since molecular dynamics data is usually
+            correlated at short timescales, it is often sufficient to obtain the discretization at a longer stride.
+            Note that the stride option used to conduct the clustering is independent of the assign stride.
 
         Returns
         -------
