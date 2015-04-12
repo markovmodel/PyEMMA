@@ -532,36 +532,3 @@ class Transformer(object):
 
         return trajs
 
-    @staticmethod
-    def distance(x, y):
-        """ stub for calculating the euclidian norm between x and y.
-
-        Parameters
-        ----------
-        x : ndarray(n)
-        y : ndarray(n)
-
-        Returns
-        -------
-        d : float
-            euclidean distance
-        """
-        return np.linalg.norm(x - y, 2)
-
-    @staticmethod
-    def distances(x, Y):
-        """ stub for calculating the euclidian norm between x and a set of points Y.
-
-        Parameters
-        ----------
-        x : ndarray(n)
-        Y : ndarray(m, n)
-
-        Returns
-        -------
-        distances : ndarray(m)
-            euclidean distances between points in Y to x
-        """
-        x = np.atleast_2d(x)
-        dists = cdist(Y, x)
-        return dists
