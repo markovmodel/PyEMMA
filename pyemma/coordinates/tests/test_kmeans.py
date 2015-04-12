@@ -28,8 +28,8 @@ class TestKmeans(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.dtraj_dir, ignore_errors=True)
 
-    def testDtraj(self):
-        assert self.kmeans.dtrajs[0].dtype == int
+    def testDtrajType(self):
+        assert self.kmeans.dtrajs[0].dtype == self.kmeans.output_type()
 
     def test_3gaussian_1d_singletraj(self):
         # generate 1D data from three gaussians
