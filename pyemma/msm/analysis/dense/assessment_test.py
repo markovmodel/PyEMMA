@@ -9,13 +9,15 @@ import numpy as np
 import assessment
 from committor_test import BirthDeathChain
 
+
 def create_rate_matrix():
-    a = [[-3, 3, 0, 0 ],
-         [3, -5, 2, 0 ],
+    a = [[-3, 3, 0, 0],
+         [3, -5, 2, 0],
          [0, 3, -5, 2],
-         [0, 0, 3, -3] ]
+         [0, 0, 3, -3]]
     
     return np.asmatrix(a)
+
 
 class RateMatrixTest(unittest.TestCase):
 
@@ -23,14 +25,13 @@ class RateMatrixTest(unittest.TestCase):
         self.A = create_rate_matrix()
 
     def testIsRateMatrix(self):
-        self.assert_(assessment.is_rate_matrix(self.A), \
-                     'A should be a rate matrix')
+        self.assert_(assessment.is_rate_matrix(self.A), 'A should be a rate matrix')
         
         # manipulate matrix so it isn't a rate matrix any more
         self.A[0][0] = 3
-        self.assertFalse(assessment.is_rate_matrix(self.A), \
-                        'matrix is not a rate matrix')
+        self.assertFalse(assessment.is_rate_matrix(self.A), 'matrix is not a rate matrix')
         
+
 class ReversibleTest(unittest.TestCase):
     
     def setUp(self):
@@ -47,8 +48,7 @@ class ReversibleTest(unittest.TestCase):
     
     def testIsReversible(self):
         # create a reversible matrix
-        self.assertTrue(assessment.is_reversible(self.T, self.mu),
-                        "T should be reversible")
+        self.assertTrue(assessment.is_reversible(self.T, self.mu), "T should be reversible")
 
 if __name__ == "__main__":
     unittest.main()

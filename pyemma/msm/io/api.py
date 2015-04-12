@@ -22,21 +22,20 @@ __credits__ = ["Benjamin Trendelkamp-Schroer", "Martin Scherer", "Frank Noe"]
 __license__ = "FreeBSD"
 __version__ = "2.0.0"
 __maintainer__ = "Martin Scherer"
-__email__="m.scherer AT fu-berlin DOT de"
+__email__ = "m.scherer AT fu-berlin DOT de"
 
-__all__=['read_discrete_trajectory',
-         'read_dtraj',
-         'write_discrete_trajectory',
-         'write_dtraj',
-         'load_discrete_trajectory',
-         'load_dtraj',
-         'save_discrete_trajectory',
-         'save_dtraj',
-         'read_matrix',
-         'write_matrix',
-         'save_matrix',
-         'load_matrix',
-         ]
+__all__ = ['read_discrete_trajectory',
+           'read_dtraj',
+           'write_discrete_trajectory',
+           'write_dtraj',
+           'load_discrete_trajectory',
+           'load_dtraj',
+           'save_discrete_trajectory',
+           'save_dtraj',
+           'read_matrix',
+           'write_matrix',
+           'save_matrix',
+           'load_matrix']
 
 ################################################################################
 # Discrete trajectory IO
@@ -79,11 +78,11 @@ def read_discrete_trajectory(filename):
 
     Use temporary file
     
-    >>> tmpfile=NamedTemporaryFile()
+    >>> tmpfile = NamedTemporaryFile()
 
     Discrete trajectory
     
-    >>> dtraj=np.array([0, 1, 0, 0, 1, 1, 0])
+    >>> dtraj = np.array([0, 1, 0, 0, 1, 1, 0])
 
     Write to disk (as ascii file)
     
@@ -91,12 +90,13 @@ def read_discrete_trajectory(filename):
 
     Read from disk
 
-    >>> X=read_discrete_trajectory(tmpfile.name)
+    >>> X = read_discrete_trajectory(tmpfile.name)
     >>> X
     array([0, 1, 0, 0, 1, 1, 0])
     
     """
     return trajectory.read_discrete_trajectory(filename)
+
 
 @shortcut('write_dtraj')
 def write_discrete_trajectory(filename, dtraj):
@@ -128,11 +128,11 @@ def write_discrete_trajectory(filename, dtraj):
 
     Use temporary file
     
-    >>> tmpfile=NamedTemporaryFile()
+    >>> tmpfile = NamedTemporaryFile()
 
     Discrete trajectory
     
-    >>> dtraj=np.array([0, 1, 0, 0, 1, 1, 0])
+    >>> dtraj = np.array([0, 1, 0, 0, 1, 1, 0])
 
     Write to disk (as ascii file)
     
@@ -140,7 +140,7 @@ def write_discrete_trajectory(filename, dtraj):
 
     Read from disk
 
-    >>> X=read_discrete_trajectory(tmpfile.name)
+    >>> X = read_discrete_trajectory(tmpfile.name)
     >>> X
     array([0, 1, 0, 0, 1, 1, 0])    
     
@@ -185,11 +185,11 @@ def load_discrete_trajectory(filename):
 
     Use temporary file
     
-    >>> tmpfile=NamedTemporaryFile()
+    >>> tmpfile = NamedTemporaryFile()
 
     Discrete trajectory
     
-    >>> dtraj=np.array([0, 1, 0, 0, 1, 1, 0])
+    >>> dtraj = np.array([0, 1, 0, 0, 1, 1, 0])
 
     Write to disk (as ascii file)
     
@@ -197,12 +197,13 @@ def load_discrete_trajectory(filename):
 
     Read from disk
 
-    >>> X=load_discrete_trajectory(tmpfile.name)
+    >>> X = load_discrete_trajectory(tmpfile.name)
     >>> X
     array([0, 1, 0, 0, 1, 1, 0])       
     
     """
     return trajectory.load_discrete_trajectory(filename)
+
 
 @shortcut('save_dtraj')
 def save_discrete_trajectory(filename, dtraj):
@@ -234,11 +235,11 @@ def save_discrete_trajectory(filename, dtraj):
 
     Use temporary file
     
-    >>> tmpfile=NamedTemporaryFile()
+    >>> tmpfile = NamedTemporaryFile()
 
     Discrete trajectory
     
-    >>> dtraj=np.array([0, 1, 0, 0, 1, 1, 0])
+    >>> dtraj = np.array([0, 1, 0, 0, 1, 1, 0])
 
     Write to disk (as ascii file)
     
@@ -246,12 +247,13 @@ def save_discrete_trajectory(filename, dtraj):
 
     Read from disk
 
-    >>> X=load_discrete_trajectory(tmpfile.name)
+    >>> X = load_discrete_trajectory(tmpfile.name)
     >>> X
     array([0, 1, 0, 0, 1, 1, 0])       
     
     """
     trajectory.save_discrete_trajectory(filename, dtraj)
+
 
 ################################################################################
 # Matrix IO
@@ -313,16 +315,16 @@ def read_matrix(filename, mode='default', dtype=float, comments='#'):
 
     Use temporary file with ending '.dat'
 
-    >>> tmpfile=NamedTemporaryFile(suffix='.dat')
+    >>> tmpfile = NamedTemporaryFile(suffix='.dat')
 
     Dense (3, 2) matrix
 
-    >>> A=np.array([[3, 1], [2, 1], [1, 1]])
+    >>> A = np.array([[3, 1], [2, 1], [1, 1]])
     >>> write_matrix(tmpfile.name, A)
 
     Load from disk
 
-    >>> X=load_matrix(tmpfile.name)
+    >>> X = load_matrix(tmpfile.name)
     >>> X
     array([[ 3.,  1.],
            [ 2.,  1.],
@@ -334,32 +336,33 @@ def read_matrix(filename, mode='default', dtype=float, comments='#'):
 
     Use temporary file with ending '.coo.dat'
 
-    >>> tmpfile=NamedTemporaryFile(suffix='.coo.dat')
+    >>> tmpfile = NamedTemporaryFile(suffix='.coo.dat')
 
     Sparse (3, 3) matrix
 
-    >>> A=csr_matrix(np.eye(3))
+    >>> A = csr_matrix(np.eye(3))
     >>> write_matrix(tmpfile.name, A)
 
     Load from disk
 
-    >>> X=load_matrix(tmpfile.name)
+    >>> X = load_matrix(tmpfile.name)
     >>> X
     array([[ 1.,  0.,  0.],
            [ 0.,  1.,  0.],
            [ 0.,  0.,  1.]])
            
-    """    
-    if mode=='dense':
+    """
+    if mode == 'dense':
         return matrix.read_matrix_dense(filename, dtype=dtype, comments=comments)
-    elif mode=='sparse':
+    elif mode == 'sparse':
         return matrix.read_matrix_sparse(filename, dtype=dtype, comments=comments)
     else:
-        is_sparse=matrix.is_sparse_file(filename)
+        is_sparse = matrix.is_sparse_file(filename)
         if is_sparse:
             return matrix.read_matrix_sparse(filename, dtype=dtype, comments=comments)
         else:
-            return matrix.read_matrix_dense(filename, dtype=dtype, comments=comments)    
+            return matrix.read_matrix_dense(filename, dtype=dtype, comments=comments)
+
 
 def write_matrix(filename, A, mode='default', fmt='%.18e', header='', comments='#'):
     r"""Write matrix to ascii file.  
@@ -419,16 +422,16 @@ def write_matrix(filename, A, mode='default', fmt='%.18e', header='', comments='
 
     Use temporary file with ending '.dat'
 
-    >>> tmpfile=NamedTemporaryFile(suffix='.dat')
+    >>> tmpfile = NamedTemporaryFile(suffix='.dat')
 
     Dense (3, 2) matrix
 
-    >>> A=np.array([[3, 1], [2, 1], [1, 1]])
+    >>> A = np.array([[3, 1], [2, 1], [1, 1]])
     >>> write_matrix(tmpfile.name, A)
 
     Load from disk
 
-    >>> X=load_matrix(tmpfile.name)
+    >>> X = load_matrix(tmpfile.name)
     >>> X
     array([[ 3.,  1.],
            [ 2.,  1.],
@@ -440,27 +443,27 @@ def write_matrix(filename, A, mode='default', fmt='%.18e', header='', comments='
 
     Use temporary file with ending '.coo.dat'
 
-    >>> tmpfile=NamedTemporaryFile(suffix='.coo.dat')
+    >>> tmpfile = NamedTemporaryFile(suffix='.coo.dat')
 
     Sparse (3, 3) matrix
 
-    >>> A=csr_matrix(np.eye(3))
+    >>> A = csr_matrix(np.eye(3))
     >>> write_matrix(tmpfile.name, A)
 
     Load from disk
 
-    >>> X=load_matrix(tmpfile.name)
+    >>> X = load_matrix(tmpfile.name)
     >>> X
     array([[ 1.,  0.,  0.],
            [ 0.,  1.,  0.],
            [ 0.,  0.,  1.]])
     
     """
-    if mode=='dense':   
-        A=matrix.todense(A)
+    if mode == 'dense':
+        A = matrix.todense(A)
         matrix.write_matrix_dense(filename, A, fmt=fmt, header=header, comments=comments)
-    elif mode=='sparse':
-        A=matrix.tosparse(A)
+    elif mode == 'sparse':
+        A = matrix.tosparse(A)
         matrix.write_matrix_sparse(filename, A, fmt=fmt, header=header, comments=comments)
     else:
         if isdense(A):
@@ -469,6 +472,7 @@ def write_matrix(filename, A, mode='default', fmt='%.18e', header='', comments='
             matrix.write_matrix_sparse(filename, A, fmt=fmt, header=header, comments=comments)
         else:
             raise TypeError('A is not a numpy.ndarray or a scipy.sparse matrix.')
+
 
 ################################################################################
 # binary
@@ -522,16 +526,16 @@ def save_matrix(filename, A, mode='default'):
 
     Use temporary file with ending '.npy'
 
-    >>> tmpfile=NamedTemporaryFile(suffix='.npy')
+    >>> tmpfile = NamedTemporaryFile(suffix='.npy')
 
     Dense (3, 2) matrix
 
-    >>> A=np.array([[3, 1], [2, 1], [1, 1]])
+    >>> A = np.array([[3, 1], [2, 1], [1, 1]])
     >>> write_matrix(tmpfile.name, A)
 
     Load from disk
 
-    >>> X=load_matrix(tmpfile.name)
+    >>> X = load_matrix(tmpfile.name)
     >>> X
     array([[ 3.,  1.],
            [ 2.,  1.],
@@ -543,27 +547,27 @@ def save_matrix(filename, A, mode='default'):
 
     Use temporary file with ending '.coo.dat'
 
-    >>> tmpfile=NamedTemporaryFile(suffix='.coo.npy')
+    >>> tmpfile = NamedTemporaryFile(suffix='.coo.npy')
 
     Sparse (3, 3) matrix
 
-    >>> A=csr_matrix(np.eye(3))
+    >>> A = csr_matrix(np.eye(3))
     >>> write_matrix(tmpfile.name, A)
 
     Load from disk
 
-    >>> X=load_matrix(tmpfile.name)
+    >>> X = load_matrix(tmpfile.name)
     >>> X
     array([[ 1.,  0.,  0.],
            [ 0.,  1.,  0.],
            [ 0.,  0.,  1.]])
     
     """
-    if mode=='dense':
-        A=matrix.todense(A)
+    if mode == 'dense':
+        A = matrix.todense(A)
         matrix.save_matrix_dense(filename, A)
-    elif mode=='sparse':
-        A=matrix.tosparse(A)
+    elif mode == 'sparse':
+        A = matrix.tosparse(A)
         matrix.save_matrix_sparse(filename, A)
     else:
         if isdense(A):
@@ -571,7 +575,8 @@ def save_matrix(filename, A, mode='default'):
         elif issparse(A):
             matrix.save_matrix_sparse(filename, A)
         else:
-            raise TypeError('A is not a numpy.ndarray or a scipy.sparse matrix.')    
+            raise TypeError('A is not a numpy.ndarray or a scipy.sparse matrix.')
+
 
 def load_matrix(filename, mode='default'):
     r"""Read matrix from binary file.  
@@ -612,16 +617,16 @@ def load_matrix(filename, mode='default'):
 
     Use temporary file with ending '.npy'
 
-    >>> tmpfile=NamedTemporaryFile(suffix='.npy')
+    >>> tmpfile = NamedTemporaryFile(suffix='.npy')
 
     Dense (3, 2) matrix
 
-    >>> A=np.array([[3, 1], [2, 1], [1, 1]])
-    >>> write_matrix(tmpfile.name, A)
+    >>> A = np.array([[3, 1], [2, 1], [1, 1]])
+    >>> save_matrix(tmpfile.name, A)
 
     Load from disk
 
-    >>> X=load_matrix(tmpfile.name)
+    >>> X = load_matrix(tmpfile.name)
     >>> X
     array([[ 3.,  1.],
            [ 2.,  1.],
@@ -633,31 +638,29 @@ def load_matrix(filename, mode='default'):
     
     Use temporary file with ending '.coo.dat'
     
-    >>> tmpfile=NamedTemporaryFile(suffix='.coo.npy')
+    >>> tmpfile = NamedTemporaryFile(suffix='.coo.npy')
     
     Sparse (3, 3) matrix
     
-    >>> A=csr_matrix(np.eye(3))
+    >>> A = csr_matrix(np.eye(3))
     >>> write_matrix(tmpfile.name, A)
     
     Load from disk
     
-    >>> X=load_matrix(tmpfile.name)
+    >>> X = load_matrix(tmpfile.name)
     >>> X
     array([[ 1.,  0.,  0.],
            [ 0.,  1.,  0.],
            [ 0.,  0.,  1.]])
         
     """
-    if mode=='dense':
+    if mode == 'dense':
         return matrix.load_matrix_dense(filename)
-    elif mode=='sparse':
+    elif mode == 'sparse':
         return matrix.load_matrix_sparse(filename)
     else:
-        is_sparse=matrix.is_sparse_file(filename)
+        is_sparse = matrix.is_sparse_file(filename)
         if is_sparse:
             return matrix.load_matrix_sparse(filename)
         else:
             return matrix.load_matrix_dense(filename)
-
-    

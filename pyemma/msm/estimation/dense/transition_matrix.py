@@ -6,6 +6,7 @@ Created on Jan 13, 2014
 
 import numpy as np
 
+
 def transition_matrix_non_reversible(C):
     r"""
     Estimates a nonreversible transition matrix from count matrix C
@@ -23,10 +24,11 @@ def transition_matrix_non_reversible(C):
     
     """
     # multiply by 1.0 to make sure we're not doing integer division 
-    rowsums = 1.0*np.sum(C,axis=1)
+    rowsums = 1.0 * np.sum(C, axis=1)
     if np.min(rowsums) <= 0:
-        raise ValueError("Transition matrix has row sum of "+str(np.min(rowsums))+". Must have strictly positive row sums.")
-    return np.divide(C, rowsums[:,np.newaxis])
+        raise ValueError(
+            "Transition matrix has row sum of " + str(np.min(rowsums)) + ". Must have strictly positive row sums.")
+    return np.divide(C, rowsums[:, np.newaxis])
 
 
 def __initX(C):
@@ -35,7 +37,7 @@ def __initX(C):
     """
     from ..api import tmatrix
     from ...analysis import statdist
-    
+
     T = tmatrix(C)
     mu = statdist(T)
     Corr = np.dot(np.diag(mu), T)
@@ -65,9 +67,8 @@ def __relative_error(x, y, norm=None):
     return np.linalg.norm(erel, ord=norm)
 
 
-
-def estimate_transition_matrix_reversible(C, Xinit = None, maxiter = 1000000, maxerr = 1e-8, 
-                                          return_statdist = False, return_conv = False):
+def estimate_transition_matrix_reversible(C, Xinit=None, maxiter=1000000, maxerr=1e-8,
+                                          return_statdist=False, return_conv=False):
     """
     iterative method for estimating a maximum likelihood reversible transition matrix
     
@@ -114,39 +115,39 @@ def estimate_transition_matrix_reversible(C, Xinit = None, maxiter = 1000000, ma
     from ...estimation import log_likelihood
     # check input
     if (not is_connected(C)):
-        ValueError('Count matrix is not fully connected. '+
-                   'Need fully connected count matrix for '+
+        ValueError('Count matrix is not fully connected. ' +
+                   'Need fully connected count matrix for ' +
                    'reversible transition matrix estimation.')
     converged = False
     n = np.shape(C)[0]
     # initialization
-    C2 = C + C.T # reversibly counted matrix
+    C2 = C + C.T  # reversibly counted matrix
     nz = np.nonzero(C2)
-    csum = np.sum(C, axis=1) # row sums C
+    csum = np.sum(C, axis=1)  # row sums C
     X = Xinit
     if (X is None):
-        X = __initX(C) # initial X
-    xsum = np.sum(X, axis=1) # row sums x
-    D = np.zeros((n,n)) # helper matrix
-    T = np.zeros((n,n)) # transition matrix
+        X = __initX(C)  # initial X
+    xsum = np.sum(X, axis=1)  # row sums x
+    D = np.zeros((n, n))  # helper matrix
+    T = np.zeros((n, n))  # transition matrix
     # if convergence history requested, initialize variables 
     if (return_conv):
         diffs = np.zeros(maxiter)
         # likelihood
         lhist = np.zeros(maxiter)
-        T = X / xsum[:,np.newaxis]
+        T = X / xsum[:, np.newaxis]
         lhist[0] = log_likelihood(C, T)
     # iteration
     i = 1
-    while (i < maxiter-1) and (not converged):
+    while (i < maxiter - 1) and (not converged):
         # c_i / x_i
         c_over_x = csum / xsum
         # d_ij = (c_i/x_i) + (c_j/x_j)
-        D[:] = c_over_x[:,np.newaxis]
+        D[:] = c_over_x[:, np.newaxis]
         D += c_over_x
         # update estimate
         X[nz] = C2[nz] / D[nz]
-        X[nz] /= np.sum(X[nz])         # renormalize
+        X[nz] /= np.sum(X[nz])  # renormalize
         xsumnew = np.sum(X, axis=1)
         # compute difference in pi
         diff = __relative_error(xsum, xsumnew)
@@ -155,24 +156,24 @@ def estimate_transition_matrix_reversible(C, Xinit = None, maxiter = 1000000, ma
         # any convergence history wanted?
         if (return_conv):
             # update T and likelihood
-            T = X / xsum[:,np.newaxis]
+            T = X / xsum[:, np.newaxis]
             lhist[i] = log_likelihood(C, T)
             diffs[i] = diff
         # converged?
         converged = (diff < maxerr)
         i += 1
     # finalize and return
-    T = X / xsum[:,np.newaxis]
+    T = X / xsum[:, np.newaxis]
     if (return_statdist and return_conv):
         return (T, xsum, lhist[0:i], diffs[0:i])
     if (return_statdist):
         return (T, xsum)
     if (return_conv):
         return (T, lhist[0:i], diffs[0:i])
-    return T # else just return T
+    return T  # else just return T
 
 
-def transition_matrix_reversible_fixpi(Z, mu, maxerr=1e-10, maxiter=10000, return_iterations = False):
+def transition_matrix_reversible_fixpi(Z, mu, maxerr=1e-10, maxiter=10000, return_iterations=False):
     r"""
     maximum likelihood transition matrix with fixed stationary distribution
     
@@ -202,25 +203,26 @@ def transition_matrix_reversible_fixpi(Z, mu, maxerr=1e-10, maxiter=10000, retur
     # constants
     B = Z + Z.transpose()
     # variables
-    csum=np.sum(Z, axis=1)
+    csum = np.sum(Z, axis=1)
     if (np.min(csum) <= 0):
         raise ValueError('Count matrix has rowsum(s) of zero. Require a count matrix with positive rowsums.')
     if (np.min(mu) <= 0):
         raise ValueError('Stationary distribution has zero elements. Require a positive stationary distribution.')
     if (np.min(np.diag(Z)) == 0):
-        raise ValueError('Count matrix has diagonals with 0. Cannot guarantee convergence of algorithm. Suggestion: add a small prior (e.g. 1e-10) to the diagonal')
-    l = 1.0*csum
-    lnew = 1.0*csum
+        raise ValueError(
+            'Count matrix has diagonals with 0. Cannot guarantee convergence of algorithm. Suggestion: add a small prior (e.g. 1e-10) to the diagonal')
+    l = 1.0 * csum
+    lnew = 1.0 * csum
     q = np.zeros((n))
-    A = np.zeros((n,n))
-    D = np.zeros((n,n))
+    A = np.zeros((n, n))
+    D = np.zeros((n, n))
     # iterate lambda
     converged = False
     while (not converged) and (it < maxiter):
         # q_i = mu_i / l_i
         np.divide(mu, l, q)
         # d_ij = (mu_i / mu_j) * (l_j/l_i) + 1
-        D[:] = q[:,np.newaxis]
+        D[:] = q[:, np.newaxis]
         D /= q
         D += 1
         # a_ij = b_ij / d_ij
@@ -228,7 +230,7 @@ def transition_matrix_reversible_fixpi(Z, mu, maxerr=1e-10, maxiter=10000, retur
         # new l_i = rowsum_i(A)
         np.sum(A, axis=1, out=lnew)
         # evaluate change
-        err = np.linalg.norm(l-lnew,2)
+        err = np.linalg.norm(l - lnew, 2)
         # is it converged?
         converged = (err <= maxerr)
         # copy new to old l-vector
@@ -236,9 +238,10 @@ def transition_matrix_reversible_fixpi(Z, mu, maxerr=1e-10, maxiter=10000, retur
         it += 1
     if (not converged) and (it >= maxiter):
         raise ValueError('NOT CONVERGED: 2-norm of Langrange multiplier vector is still '
-                    +str(err)+' > '+str(maxerr)+' after '+str(it)+' iterations. Increase maxiter or decrease maxerr')
+                         + str(err) + ' > ' + str(maxerr) + ' after ' + str(
+            it) + ' iterations. Increase maxiter or decrease maxerr')
     # compute T from Langrangian multipliers
-    T = np.divide(A,l[:,np.newaxis])
+    T = np.divide(A, l[:, np.newaxis])
     # return
     if return_iterations:
         return T, it

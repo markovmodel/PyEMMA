@@ -20,19 +20,19 @@ __credits__ = ["Benjamin Trendelkamp-Schroer", "Martin Scherer", "Frank Noe"]
 __license__ = "FreeBSD"
 __version__ = "2.0.0"
 __maintainer__ = "Martin Scherer"
-__email__="m.scherer AT fu-berlin DOT de"
+__email__ = "m.scherer AT fu-berlin DOT de"
 
-__all__=['tpt',
-         'flux_matrix',
-         'to_netflux',
-         'flux_production',
-         'flux_producers',
-         'flux_consumers',
-         'coarsegrain',
-         'total_flux',
-         'rate',
-         'mfpt',
-         'pathways']
+__all__ = ['tpt',
+           'flux_matrix',
+           'to_netflux',
+           'flux_production',
+           'flux_producers',
+           'flux_consumers',
+           'coarsegrain',
+           'total_flux',
+           'rate',
+           'mfpt',
+           'pathways']
 
 _type_not_supported = \
     TypeError("T is not a numpy.ndarray or a scipy.sparse matrix.")
@@ -40,6 +40,7 @@ _type_not_supported = \
 # ======================================================================
 # Main Factory
 # ======================================================================
+
 
 # DONE: Ben, Frank
 def tpt(T, A, B, mu=None, qminus=None, qplus=None, rate_matrix=False):
@@ -107,8 +108,9 @@ def tpt(T, A, B, mu=None, qminus=None, qplus=None, rate_matrix=False):
     if (rate_matrix is False) and (not msmana.is_transition_matrix(T)):
         raise ValueError('given matrix T is not a transition matrix')
     if (rate_matrix is True):
-        raise NotImplementedError('TPT with rate matrix is not yet implemented - But it is very simple, so feel free to do it.')
-    
+        raise NotImplementedError(
+            'TPT with rate matrix is not yet implemented - But it is very simple, so feel free to do it.')
+
     # we can compute the following properties from either dense or sparse T
     # stationary dist
     if mu is None:
@@ -119,19 +121,21 @@ def tpt(T, A, B, mu=None, qminus=None, qplus=None, rate_matrix=False):
     # backward committor
     if qminus is None:
         if msmana.is_reversible(T, mu=mu):
-            qminus = 1.0-qplus
+            qminus = 1.0 - qplus
         else:
             qminus = msmana.committor(T, A, B, forward=False, mu=mu)
     # gross flux
-    grossflux = flux_matrix(T, mu, qminus, qplus, netflux = False)
+    grossflux = flux_matrix(T, mu, qminus, qplus, netflux=False)
     # net flux
     netflux = to_netflux(grossflux)
-    
+
     # construct flux object
     from reactive_flux import ReactiveFlux
+
     F = ReactiveFlux(A, B, netflux, mu=mu, qminus=qminus, qplus=qplus, gross_flux=grossflux)
     # done
     return F
+
 
 # ======================================================================
 # Flux matrix operations
@@ -205,7 +209,7 @@ def flux_matrix(T, pi, qminus, qplus, netflux=True):
     elif isdense(T):
         return dense.tpt.flux_matrix(T, pi, qminus, qplus, netflux=netflux)
     else:
-        raise _type_not_supported  
+        raise _type_not_supported
 
 
 def to_netflux(flux):
@@ -242,7 +246,7 @@ def to_netflux(flux):
     elif isdense(flux):
         return dense.tpt.to_netflux(flux)
     else:
-        raise _type_not_supported  
+        raise _type_not_supported
 
 
 def flux_production(F):
@@ -260,7 +264,7 @@ def flux_production(F):
         (negative) at each state
         
     """
-    return dense.tpt.flux_production(F) # works for dense or sparse
+    return dense.tpt.flux_production(F)  # works for dense or sparse
 
 
 def flux_producers(F, rtol=1e-05, atol=1e-12):
@@ -283,7 +287,7 @@ def flux_producers(F, rtol=1e-05, atol=1e-12):
         produce more outflux and thereby violate flux conservation.
         
     """
-    return dense.tpt.flux_producers(F) # works for dense or sparse
+    return dense.tpt.flux_producers(F)  # works for dense or sparse
 
 
 def flux_consumers(F, rtol=1e-05, atol=1e-12):
@@ -306,7 +310,7 @@ def flux_consumers(F, rtol=1e-05, atol=1e-12):
         produce more outflux and thereby violate flux conservation.
         
     """
-    return dense.tpt.flux_consumers(F) # works for dense or sparse
+    return dense.tpt.flux_consumers(F)  # works for dense or sparse
 
 
 def coarsegrain(F, sets):
@@ -342,7 +346,7 @@ def coarsegrain(F, sets):
     elif isdense(F):
         return dense.tpt.coarsegrain(F, sets)
     else:
-        raise _type_not_supported  
+        raise _type_not_supported
 
 
 # ======================================================================
@@ -350,7 +354,7 @@ def coarsegrain(F, sets):
 # ======================================================================
 
 
-def total_flux(F, A = None):
+def total_flux(F, A=None):
     r"""Compute the total flux, or turnover flux, that is produced by
         the flux sources and consumed by the flux sinks.
         
@@ -375,11 +379,11 @@ def total_flux(F, A = None):
         
     """
     if issparse(F):
-        return sparse.tpt.total_flux(F, A = A)
+        return sparse.tpt.total_flux(F, A=A)
     elif isdense(F):
-        return dense.tpt.total_flux(F, A = A)
+        return dense.tpt.total_flux(F, A=A)
     else:
-        raise _type_not_supported  
+        raise _type_not_supported
 
 
 def rate(totflux, pi, qminus):
@@ -463,7 +467,6 @@ def mfpt(totflux, pi, qminus):
     return dense.tpt.mfpt(totflux, pi, qminus)
 
 
-
 ###############################################################################
 # Pathway decomposition
 ###############################################################################
@@ -516,7 +519,7 @@ def pathways(F, A, B, fraction=1.0, maxiter=1000):
         return sparse.pathways.pathways(F, A, B, fraction=fraction, maxiter=maxiter)
     elif isdense(F):
         return sparse.pathways.pathways(csr_matrix(F), A, B, fraction=fraction, maxiter=maxiter)
-    else: 
+    else:
         raise _type_not_supported
 
 

@@ -23,6 +23,7 @@ class BirthDeathChain():
                 p_i     j=i+1 for i<d-1
 
     """
+
     def __init__(self, q, p):
         """Generate a birth and death chain from creation and
         anhilation probabilities.
@@ -35,16 +36,16 @@ class BirthDeathChain():
             Creation probabilities for transition from i to i+1
 
         """
-        if q[0]!=0.0:
+        if q[0] != 0.0:
             raise ValueError('Probability q[0] must be zero')
-        if p[-1]!=0.0:
+        if p[-1] != 0.0:
             raise ValueError('Probability p[-1] must be zero')
-        if not np.all(q+p<=1.0):
+        if not np.all(q + p <= 1.0):
             raise ValueError('Probabilities q+p can not exceed one')
-        self.q=q
-        self.p=p
-        self.r=1-self.q-self.p
-        self.dim=self.r.shape[0]
+        self.q = q
+        self.p = p
+        self.r = 1 - self.q - self.p
+        self.dim = self.r.shape[0]
 
     def transition_matrix(self):
         """Tridiagonal transition matrix for birth and death chain
@@ -55,11 +56,11 @@ class BirthDeathChain():
             Transition matrix for birth and death chain with given
             creation and anhilation probabilities.
 
-        """        
-        P0=np.diag(self.r, k=0)
-        P1=np.diag(self.p[0:-1], k=1)
-        P_1=np.diag(self.q[1:], k=-1)
-        return P0+P1+P_1
+        """
+        P0 = np.diag(self.r, k=0)
+        P1 = np.diag(self.p[0:-1], k=1)
+        P_1 = np.diag(self.q[1:], k=-1)
+        return P0 + P1 + P_1
 
     def transition_matrix_sparse(self):
         """Tridiagonal transition matrix for birth and death chain
@@ -70,16 +71,15 @@ class BirthDeathChain():
             Transition matrix for birth and death chain with given
             birth and death probabilities.
 
-        """        
-        P=diags([self.q[1:], self.r, self.p[0:-1]], [-1, 0, 1])
+        """
+        P = diags([self.q[1:], self.r, self.p[0:-1]], [-1, 0, 1])
         return P
 
-
     def stationary_distribution(self):
-        a=np.zeros(self.dim)
-        a[0]=1.0
-        a[1:]=np.cumprod(self.p[0:-1]/self.q[1:])
-        mu=a/np.sum(a)
+        a = np.zeros(self.dim)
+        a[0] = 1.0
+        a[1:] = np.cumprod(self.p[0:-1] / self.q[1:])
+        mu = a / np.sum(a)
         return mu
 
     def committor_forward(self, a, b):
@@ -107,28 +107,28 @@ class BirthDeathChain():
             Vector of committor probabilities.
 
         """
-        u=np.zeros(self.dim)
-        g=np.zeros(self.dim-1)
-        g[0]=1.0
-        g[1:]=np.cumprod(self.q[1:-1]/self.p[1:-1])
-        
+        u = np.zeros(self.dim)
+        g = np.zeros(self.dim - 1)
+        g[0] = 1.0
+        g[1:] = np.cumprod(self.q[1:-1] / self.p[1:-1])
+
         """If a and b are equal the event T_b<T_a is impossible
            for any starting state x so that the committor is
            zero everywhere"""
-        if a==b:
+        if a == b:
             return u
-        elif a<b:
+        elif a < b:
             """Birth-death chain has to hit a before it can hit b"""
-            u[0:a+1]=0.0 
+            u[0:a + 1] = 0.0
             """Birth-death chain has to hit b before it can hit a"""
-            u[b:]=1.0
+            u[b:] = 1.0
             """Intermediate states are given in terms of sums of g"""
-            u[a+1:b]=np.cumsum(g[a:b])[0:-1]/np.sum(g[a:b])
+            u[a + 1:b] = np.cumsum(g[a:b])[0:-1] / np.sum(g[a:b])
             return u
         else:
-            u[0:b+1]=1.0
-            u[a:]=0.0
-            u[b+1:a]=(np.cumsum(g[b:a])[0:-1]/np.sum(g[b:a]))[::-1]
+            u[0:b + 1] = 1.0
+            u[a:] = 0.0
+            u[b + 1:a] = (np.cumsum(g[b:a])[0:-1] / np.sum(g[b:a]))[::-1]
             return u
 
     def committor_backward(self, a, b):
@@ -169,33 +169,35 @@ class BirthDeathChain():
             w=1-u        
 
         """
-        return 1.0-self.committor_forward(a, b)
+        return 1.0 - self.committor_forward(a, b)
+
 
 class TestCommittor(unittest.TestCase):
     def setUp(self):
-        p=np.zeros(100)
-        q=np.zeros(100)
-        p[0:-1]=0.5
-        q[1:]=0.5
-        p[49]=0.01
-        q[51]=0.1
+        p = np.zeros(100)
+        q = np.zeros(100)
+        p[0:-1] = 0.5
+        q[1:] = 0.5
+        p[49] = 0.01
+        q[51] = 0.1
 
-        self.bdc=BirthDeathChain(q, p)
+        self.bdc = BirthDeathChain(q, p)
 
     def tearDown(self):
         pass
 
     def test_forward_comittor(self):
-        P=self.bdc.transition_matrix_sparse()
-        un=committor.forward_committor(P, range(10), range(90,100))
-        u=self.bdc.committor_forward(9, 90)               
+        P = self.bdc.transition_matrix_sparse()
+        un = committor.forward_committor(P, range(10), range(90, 100))
+        u = self.bdc.committor_forward(9, 90)
         assert_allclose(un, u)
 
     def test_backward_comittor(self):
-        P=self.bdc.transition_matrix_sparse()
-        un=committor.backward_committor(P, range(10), range(90,100))
-        u=self.bdc.committor_backward(9, 90)               
+        P = self.bdc.transition_matrix_sparse()
+        un = committor.backward_committor(P, range(10), range(90, 100))
+        u = self.bdc.committor_backward(9, 90)
         assert_allclose(un, u)
+
 
 if __name__ == "__main__":
     unittest.main()

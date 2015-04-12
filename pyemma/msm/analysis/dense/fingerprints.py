@@ -15,6 +15,7 @@ from decomposition import stationary_distribution_from_backward_iteration as sta
 # Fingerprints
 ################################################################################
 
+
 def fingerprint_correlation(P, obs1, obs2=None, tau=1, k=None):
     r"""Dynamical fingerprint for equilibrium correlation experiment.
 
@@ -44,6 +45,7 @@ def fingerprint_correlation(P, obs1, obs2=None, tau=1, k=None):
     """
     return fingerprint(P, obs1, obs2=obs2, k=k, tau=tau)
 
+
 def fingerprint_relaxation(P, p0, obs, tau=1, k=None):
     r"""Dynamical fingerprint for relaxation experiment.
 
@@ -71,7 +73,7 @@ def fingerprint_relaxation(P, p0, obs, tau=1, k=None):
         Amplitudes for the relaxation experiment
         
     """
-    one_vec=np.ones(P.shape[0])
+    one_vec = np.ones(P.shape[0])
     return fingerprint(P, one_vec, obs2=obs, p0=p0, k=k, tau=tau)
 
 def fingerprint(P, obs1, obs2=None, p0=None, tau=1, k=None):
@@ -103,23 +105,24 @@ def fingerprint(P, obs1, obs2=None, p0=None, tau=1, k=None):
         Amplitudes for the given observable(s)
         
     """
-    if obs2 is None: 
-        obs2=obs1
-    R, D, L=rdl_decomposition(P, k=k)
+    if obs2 is None:
+        obs2 = obs1
+    R, D, L = rdl_decomposition(P, k=k)
     """Stationary vector"""
-    mu=L[0, :]
+    mu = L[0, :]
     """Extract diagonal"""
-    w=np.diagonal(D)  
+    w = np.diagonal(D)
     """Compute time-scales"""
-    timescales = timescales_from_eigenvalues(w, tau)      
+    timescales = timescales_from_eigenvalues(w, tau)
     if p0 is None:
         """Use stationary distribution - we can not use only left
         eigenvectors since the system might be non-reversible"""
-        amplitudes=np.dot(mu*obs1, R)*np.dot(L, obs2)
+        amplitudes = np.dot(mu * obs1, R) * np.dot(L, obs2)
     else:
         """Use initial distribution"""
-        amplitudes=np.dot(p0*obs1, R)*np.dot(L, obs2)
+        amplitudes = np.dot(p0 * obs1, R) * np.dot(L, obs2)
     return timescales, amplitudes
+
 
 ################################################################################
 # Expectation
@@ -141,8 +144,9 @@ def expectation(P, obs):
         Expectation value    
 
     """
-    pi=statdist(P)
+    pi = statdist(P)
     return np.dot(pi, obs)
+
 
 ################################################################################
 # Correlation
@@ -170,12 +174,13 @@ def correlation(P, obs1, obs2=None, times=[1], k=None):
         Correlation values at given times
         
     """
-    M=P.shape[0]
-    T=np.asarray(times).max()
-    if T<M:
+    M = P.shape[0]
+    T = np.asarray(times).max()
+    if T < M:
         return correlation_matvec(P, obs1, obs2=obs2, times=times)
     else:
         return correlation_decomp(P, obs1, obs2=obs2, times=times, k=k)
+
 
 def correlation_decomp(P, obs1, obs2=None, times=[1], k=None):
     r"""Time-correlation for equilibrium experiment - via decomposition.
@@ -199,23 +204,24 @@ def correlation_decomp(P, obs1, obs2=None, times=[1], k=None):
         Correlation values at given times
         
     """
-    if obs2 is None: 
-        obs2=obs1
-    R, D, L=rdl_decomposition(P, k=k)    
+    if obs2 is None:
+        obs2 = obs1
+    R, D, L = rdl_decomposition(P, k=k)
     """Stationary vector"""
-    mu=L[0,:]
+    mu = L[0, :]
     """Extract eigenvalues"""
-    ev=np.diagonal(D)  
+    ev = np.diagonal(D)
     """Amplitudes"""
-    amplitudes=np.dot(mu*obs1, R)*np.dot(L, obs2)
+    amplitudes = np.dot(mu * obs1, R) * np.dot(L, obs2)
     """Propgate eigenvalues"""
-    times=np.asarray(times)
-    ev_t=ev[np.newaxis,:]**times[:,np.newaxis]
+    times = np.asarray(times)
+    ev_t = ev[np.newaxis, :] ** times[:, np.newaxis]
     """Compute result"""
-    res=np.dot(ev_t, amplitudes)
+    res = np.dot(ev_t, amplitudes)
     """Truncate imaginary part - should be zero anyways"""
-    res=res.real
-    return res       
+    res = res.real
+    return res
+
 
 def correlation_matvec(P, obs1, obs2=None, times=[1]):
     r"""Time-correlation for equilibrium experiment - via matrix vector products.
@@ -237,42 +243,44 @@ def correlation_matvec(P, obs1, obs2=None, times=[1]):
         Correlation values at given times
         
     """
-    if obs2 is None: 
-        obs2=obs1
+    if obs2 is None:
+        obs2 = obs1
 
     """Compute stationary vector"""
-    mu=statdist(P)
-    obs1mu=mu*obs1
+    mu = statdist(P)
+    obs1mu = mu * obs1
 
-    times=np.asarray(times)
+    times = np.asarray(times)
     """Sort in increasing order"""
-    ind=np.argsort(times)
-    times=times[ind]
+    ind = np.argsort(times)
+    times = times[ind]
 
-    if times[0]<0:
-        raise ValueError("Times can not be negative")    
-    dt=times[1:]-times[0:-1] 
+    if times[0] < 0:
+        raise ValueError("Times can not be negative")
+    dt = times[1:] - times[0:-1]
 
-    nt=len(times)
+    nt = len(times)
 
-    correlations=np.zeros(nt)
+    correlations = np.zeros(nt)
 
     """Propagate obs2 to initial time"""
-    obs2_t=1.0*obs2
-    obs2_t=propagate(P, obs2_t, times[0])
-    correlations[0]=np.dot(obs1mu, obs2_t)
-    for i in range(nt-1):
-        obs2_t=propagate(P, obs2_t, dt[i])
-        correlations[i+1]=np.dot(obs1mu, obs2_t)
+    obs2_t = 1.0 * obs2
+    obs2_t = propagate(P, obs2_t, times[0])
+    correlations[0] = np.dot(obs1mu, obs2_t)
+    for i in range(nt - 1):
+        obs2_t = propagate(P, obs2_t, dt[i])
+        correlations[i + 1] = np.dot(obs1mu, obs2_t)
 
     """Cast back to original order of time points"""
-    correlations=correlations[ind]
+    correlations = correlations[ind]
 
-    return correlations        
+    return correlations
+
 
 ################################################################################
 # Relaxation
 ################################################################################
+
 
 def relaxation(P, p0, obs, times=[1], k=None):
     r"""Relaxation experiment.
@@ -300,12 +308,13 @@ def relaxation(P, p0, obs, times=[1], k=None):
         Array of expectation value at given times
         
     """
-    M=P.shape[0]
-    T=np.asarray(times).max()
-    if T<M:
+    M = P.shape[0]
+    T = np.asarray(times).max()
+    if T < M:
         return relaxation_matvec(P, p0, obs, times=times)
     else:
-        return relaxation_decomp(P, p0, obs, times=times, k=k)    
+        return relaxation_decomp(P, p0, obs, times=times, k=k)
+
 
 def relaxation_decomp(P, p0, obs, times=[1], k=None):
     r"""Relaxation experiment.
@@ -333,19 +342,20 @@ def relaxation_decomp(P, p0, obs, times=[1], k=None):
         Array of expectation value at given times
         
     """
-    R, D, L=rdl_decomposition(P, k=k)    
+    R, D, L = rdl_decomposition(P, k=k)
     """Extract eigenvalues"""
-    ev=np.diagonal(D)  
+    ev = np.diagonal(D)
     """Amplitudes"""
-    amplitudes=np.dot(p0, R)*np.dot(L, obs)
+    amplitudes = np.dot(p0, R) * np.dot(L, obs)
     """Propgate eigenvalues"""
-    times=np.asarray(times)
-    ev_t=ev[np.newaxis,:]**times[:,np.newaxis]
+    times = np.asarray(times)
+    ev_t = ev[np.newaxis, :] ** times[:, np.newaxis]
     """Compute result"""
-    res=np.dot(ev_t, amplitudes)
+    res = np.dot(ev_t, amplitudes)
     """Truncate imaginary part - should be zero anyways"""
-    res=res.real   
-    return res       
+    res = res.real
+    return res
+
 
 def relaxation_matvec(P, p0, obs, times=[1]):
     r"""Relaxation experiment.
@@ -371,36 +381,37 @@ def relaxation_matvec(P, p0, obs, times=[1]):
         Array of expectation value at given times
         
     """
-    times=np.asarray(times)
+    times = np.asarray(times)
     """Sort in increasing order"""
-    ind=np.argsort(times)
-    times=times[ind]
+    ind = np.argsort(times)
+    times = times[ind]
 
-    if times[0]<0:
-        raise ValueError("Times can not be negative")    
-    dt=times[1:]-times[0:-1] 
+    if times[0] < 0:
+        raise ValueError("Times can not be negative")
+    dt = times[1:] - times[0:-1]
 
-    nt=len(times)
+    nt = len(times)
 
-    relaxations=np.zeros(nt)
+    relaxations = np.zeros(nt)
 
     """Propagate obs to initial time"""
-    obs_t=1.0*obs
-    obs_t=propagate(P, obs_t, times[0])
-    relaxations[0]=np.dot(p0, obs_t)
-    for i in range(nt-1):
-        obs_t=propagate(P, obs_t, dt[i])
-        relaxations[i+1]=np.dot(p0, obs_t)
+    obs_t = 1.0 * obs
+    obs_t = propagate(P, obs_t, times[0])
+    relaxations[0] = np.dot(p0, obs_t)
+    for i in range(nt - 1):
+        obs_t = propagate(P, obs_t, dt[i])
+        relaxations[i + 1] = np.dot(p0, obs_t)
 
     """Cast back to original order of time points"""
-    relaxations=relaxations[ind]
+    relaxations = relaxations[ind]
 
-    return relaxations    
+    return relaxations
+
 
 ################################################################################
 # Helper functions
 ################################################################################
-        
+
 def propagate(A, x, N):
     r"""Use matrix A to propagate vector x.
 
@@ -419,7 +430,7 @@ def propagate(A, x, N):
         Propagated vector
     
     """
-    y=1.0*x
+    y = 1.0 * x
     for i in range(N):
-        y=np.dot(A, y)
+        y = np.dot(A, y)
     return y

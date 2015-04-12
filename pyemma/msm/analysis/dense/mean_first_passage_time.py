@@ -8,6 +8,7 @@ import numpy as np
 from scipy.linalg import solve
 from decomposition import stationary_distribution_from_backward_iteration as stationary_distribution
 
+
 def mfpt(T, target):
     r"""Mean first passage times to a set of target states.
     
@@ -52,19 +53,19 @@ def mfpt(T, target):
     
     >>> from pyemma.msm.analysis import mfpt
     
-    >>> T=np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
-    >>> m_t=mfpt(T)
+    >>> T = np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
+    >>> m_t = mfpt(T)
     >>> m_t
     array([  0.,  12.,  22.])
     
     """
     dim = T.shape[0]
     A = np.eye(dim) - T
-    A[target,:] = 0.0
-    A[target,target] = 1.0
+    A[target, :] = 0.0
+    A[target, target] = 1.0
     b = np.ones(dim)
     b[target] = 0.0
-    m_t = solve(A,b)
+    m_t = solve(A, b)
     return m_t
 
 
@@ -102,13 +103,13 @@ def mfpt_between_sets(T, target, origin, mu=None):
 
     """Stationary distribution restriced on starting set X"""
     nuX = mu[origin]
-    muX = nuX/np.sum(nuX)
+    muX = nuX / np.sum(nuX)
 
     """Mean first-passage time to Y (for all possible starting states)"""
-    tY = mfpt(T,target)       
+    tY = mfpt(T, target)
 
     """Mean first-passage time from X to Y"""
-    tXY = np.dot(muX,tY[origin])
+    tXY = np.dot(muX, tY[origin])
     return tXY
 
 

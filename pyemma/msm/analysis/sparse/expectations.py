@@ -5,14 +5,13 @@ expectation values for a given transition matrix.
 
 """
 
-
 import numpy as np
 
-import scipy.sparse
 from pyemma.util.numeric import diags
-from scipy.sparse import coo_matrix, csr_matrix
+from scipy.sparse import coo_matrix
 
 import decomposition
+
 
 def expected_counts(p0, T, N):
     r"""Compute expected transition counts for Markov chain after N steps. 
@@ -36,24 +35,25 @@ def expected_counts(p0, T, N):
         Expected value for transition counts after N steps. 
     
     """
-    if(N<=0):
-        EC=coo_matrix(T.shape, dtype=float)
+    if (N <= 0):
+        EC = coo_matrix(T.shape, dtype=float)
         return EC
-    else:        
-        """Probability vector after (k=0) propagations"""                     
-        p_k=1.0*p0
+    else:
+        """Probability vector after (k=0) propagations"""
+        p_k = 1.0 * p0
         """Sum of vectors after (k=0) propagations"""
-        p_sum=1.0*p_k           
+        p_sum = 1.0 * p_k
         """Transpose T to use sparse dot product"""
-        Tt=T.transpose()
-        for k in np.arange(N-1):
+        Tt = T.transpose()
+        for k in np.arange(N - 1):
             """Propagate one step p_{k} -> p_{k+1}"""
-            p_k=Tt.dot(p_k)
+            p_k = Tt.dot(p_k)
             """Update sum"""
-            p_sum+=p_k
-        D_psum=diags(p_sum, 0)
-        EC=D_psum.dot(T)
-        return EC            
+            p_sum += p_k
+        D_psum = diags(p_sum, 0)
+        EC = D_psum.dot(T)
+        return EC
+
 
 def expected_counts_stationary(T, n, mu=None):
     r"""Expected transition counts for Markov chain in equilibrium. 
@@ -80,12 +80,12 @@ def expected_counts_stationary(T, n, mu=None):
         Expected value for transition counts after N steps.         
     
     """
-    if(n<=0):
-        EC=coo_matrix(T.shape, dtype=float)
+    if (n <= 0):
+        EC = coo_matrix(T.shape, dtype=float)
         return EC
     else:
         if mu is None:
-            mu=decomposition.stationary_distribution_from_eigenvector(T)
-        D_mu=diags(mu, 0)
-        EC=n*D_mu.dot(T)
+            mu = decomposition.stationary_distribution_from_eigenvector(T)
+        D_mu = diags(mu, 0)
+        EC = n * D_mu.dot(T)
         return EC

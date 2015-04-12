@@ -7,6 +7,7 @@ Created on 22.11.2013
 import numpy
 from decomposition import stationary_distribution_from_backward_iteration as stationary_distribution
 
+
 # TODO:make faster. So far not effectively programmed
 # Martin: done, but untested, since there is no testcase...
 def forward_committor_sensitivity(T, A, B, index):
@@ -27,22 +28,22 @@ def forward_committor_sensitivity(T, A, B, index):
     x : ndarray, shape=(n, n)
         Sensitivity matrix for entry index around transition matrix T. Reversibility is not assumed.
     """
-    
+
     n = len(T)
-    set_X = numpy.arange(n)#set(range(n))
-    set_A = numpy.unique(A)#set(A)
-    set_B = numpy.unique(B)#set(B)
-    set_AB = numpy.union1d(set_A, set_B)#set_A | set_B
-    notAB = numpy.setdiff1d(set_X, set_AB, True)#list(set_X - set_AB)
+    set_X = numpy.arange(n)  # set(range(n))
+    set_A = numpy.unique(A)  # set(A)
+    set_B = numpy.unique(B)  # set(B)
+    set_AB = numpy.union1d(set_A, set_B)  # set_A | set_B
+    notAB = numpy.setdiff1d(set_X, set_AB, True)  # list(set_X - set_AB)
     m = len(notAB)
 
     K = T - numpy.diag(numpy.ones(n))
 
     U = K[numpy.ix_(notAB, notAB)]
-    
+
     v = numpy.zeros(m)
-    
-    #for i in xrange(0, m):
+
+    # for i in xrange(0, m):
     #   for k in xrange(0, len(set_B)):
     #       v[i] = v[i] - K[notAB[i], B[k]]
     v[:] = v[:] - K[notAB[:], B[:]]
@@ -54,17 +55,18 @@ def forward_committor_sensitivity(T, A, B, index):
     q_forward[set_B] = 1
     #for i in range(len(notAB)):
     q_forward[notAB[:]] = qI[:]
-        
-    target = numpy.eye(1,n,index)
-    target = target[0,notAB]
+
+    target = numpy.eye(1, n, index)
+    target = target[0, notAB]
 
     UinvVec = numpy.linalg.solve(U.T, target)
-    Siab = numpy.zeros((n,n))
-        
+    Siab = numpy.zeros((n, n))
+
     for i in xrange(m):
         Siab[notAB[i]] = - UinvVec[i] * q_forward
 
     return Siab
+
 
 def backward_committor_sensitivity(T, A, B, index):
     """ 
@@ -84,51 +86,52 @@ def backward_committor_sensitivity(T, A, B, index):
     x : ndarray, shape=(n, n)
         Sensitivity matrix for entry index around transition matrix T. Reversibility is not assumed.
     """
-    
+
     # This is really ugly to compute. The problem is, that changes in T induce changes in
     # the stationary distribution and so we need to add this influence, too
     # I implemented something which is correct, but don't ask me about the derivation
-    
+
     n = len(T)
-    
+
     trT = numpy.transpose(T)
-    
+
     one = numpy.ones(n)
     eq = stationary_distribution(T)
-    
+
     mEQ = numpy.diag(eq)
     mIEQ = numpy.diag(1.0 / eq)
     mSEQ = numpy.diag(1.0 / eq / eq)
-    
-    backT = numpy.dot(mIEQ, numpy.dot( trT, mEQ))
-    
+
+    backT = numpy.dot(mIEQ, numpy.dot(trT, mEQ))
+
     qMat = forward_committor_sensitivity(backT, A, B, index)
-    
+
     matA = trT - numpy.identity(n)
     matA = numpy.concatenate((matA, [one]))
-    
+
     phiM = numpy.linalg.pinv(matA)
-    
-    phiM = phiM[:,0:n]
-    
+
+    phiM = phiM[:, 0:n]
+
     trQMat = numpy.transpose(qMat)
-    
-    d1 = numpy.dot( mSEQ, numpy.diagonal(numpy.dot( numpy.dot(trT, mEQ), trQMat), 0) )
-    d2 = numpy.diagonal(numpy.dot( numpy.dot(trQMat, mIEQ), trT), 0)
-        
+
+    d1 = numpy.dot(mSEQ, numpy.diagonal(numpy.dot(numpy.dot(trT, mEQ), trQMat), 0))
+    d2 = numpy.diagonal(numpy.dot(numpy.dot(trQMat, mIEQ), trT), 0)
+
     psi1 = numpy.dot(d1, phiM)
     psi2 = numpy.dot(-d2, phiM)
-    
+
     v1 = psi1 - one * numpy.dot(psi1, eq)
     v3 = psi2 - one * numpy.dot(psi2, eq)
-    
+
     part1 = numpy.outer(eq, v1)
-    part2 = numpy.dot( numpy.dot(mEQ, trQMat), mIEQ)
+    part2 = numpy.dot(numpy.dot(mEQ, trQMat), mIEQ)
     part3 = numpy.outer(eq, v3)
-    
+
     sensitivity = part1 + part2 + part3
-    
+
     return sensitivity
+
 
 def eigenvalue_sensitivity(T, k):
     """ 
@@ -145,18 +148,19 @@ def eigenvalue_sensitivity(T, k):
     x : ndarray, shape=(n, n)
         Sensitivity matrix for entry index around transition matrix T. Reversibility is not assumed.
     """
-        
+
     eValues, rightEigenvectors = numpy.linalg.eig(T)
-    leftEigenvectors = numpy.linalg.inv(rightEigenvectors)    
-    
+    leftEigenvectors = numpy.linalg.inv(rightEigenvectors)
+
     perm = numpy.argsort(eValues)[::-1]
 
-    rightEigenvectors=rightEigenvectors[:,perm]
-    leftEigenvectors=leftEigenvectors[perm]
-    
-    sensitivity = numpy.outer(leftEigenvectors[k], rightEigenvectors[:,k])
-    
+    rightEigenvectors = rightEigenvectors[:, perm]
+    leftEigenvectors = leftEigenvectors[perm]
+
+    sensitivity = numpy.outer(leftEigenvectors[k], rightEigenvectors[:, k])
+
     return sensitivity
+
 
 def timescale_sensitivity(T, k):
     """ 
@@ -173,28 +177,29 @@ def timescale_sensitivity(T, k):
     x : ndarray, shape=(n, n)
         Sensitivity matrix for entry index around transition matrix T. Reversibility is not assumed.
     """
-        
+
     eValues, rightEigenvectors = numpy.linalg.eig(T)
-    leftEigenvectors = numpy.linalg.inv(rightEigenvectors)    
-    
+    leftEigenvectors = numpy.linalg.inv(rightEigenvectors)
+
     perm = numpy.argsort(eValues)[::-1]
 
     eValues = eValues[perm]
-    rightEigenvectors=rightEigenvectors[:,perm]
-    leftEigenvectors=leftEigenvectors[perm]
-    
+    rightEigenvectors = rightEigenvectors[:, perm]
+    leftEigenvectors = leftEigenvectors[perm]
+
     eVal = eValues[k]
-    
-    sensitivity = numpy.outer(leftEigenvectors[k], rightEigenvectors[:,k])
-    
+
+    sensitivity = numpy.outer(leftEigenvectors[k], rightEigenvectors[:, k])
+
     if eVal < 1.0:
-        factor = 1.0 / (numpy.log(eVal)**2) / eVal
+        factor = 1.0 / (numpy.log(eVal) ** 2) / eVal
     else:
-        factor = 0.0    
-    
+        factor = 0.0
+
     sensitivity *= factor
-    
+
     return sensitivity
+
 
 # TODO: The eigenvector sensitivity depends on the normalization, e.g. l^T r = 1 or norm(r) = 1
 # Should we fix that or add another option. Also the sensitivity depends on the initial eigenvectors
@@ -234,42 +239,43 @@ def eigenvector_sensitivity(T, k, j, right=True):
     than the function stationary_distribution_sensitivity and this function should not be used in this
     case!
     """
-    
+
     n = len(T)
-    
-    if not right:    
+
+    if not right:
         T = numpy.transpose(T)
-    
+
     eValues, rightEigenvectors = numpy.linalg.eig(T)
-    leftEigenvectors = numpy.linalg.inv(rightEigenvectors)        
+    leftEigenvectors = numpy.linalg.inv(rightEigenvectors)
     perm = numpy.argsort(eValues)[::-1]
 
     eValues = eValues[perm]
-    rightEigenvectors=rightEigenvectors[:,perm]
-    leftEigenvectors=leftEigenvectors[perm]
-        
-    rEV = rightEigenvectors[:,k]
+    rightEigenvectors = rightEigenvectors[:, perm]
+    leftEigenvectors = leftEigenvectors[perm]
+
+    rEV = rightEigenvectors[:, k]
     lEV = leftEigenvectors[k]
     eVal = eValues[k]
-    
+
     vecA = numpy.zeros(n)
     vecA[j] = 1.0
-           
+
     matA = T - eVal * numpy.identity(n)
-        # Use here rEV as additional condition, means that we assume the vector to be
-        # orthogonal to rEV
+    # Use here rEV as additional condition, means that we assume the vector to be
+    # orthogonal to rEV
     matA = numpy.concatenate((matA, [rEV]))
-                
-    phi = numpy.linalg.lstsq(numpy.transpose(matA), vecA)    
-        
+
+    phi = numpy.linalg.lstsq(numpy.transpose(matA), vecA)
+
     phi = numpy.delete(phi[0], -1)
-                
-    sensitivity = -numpy.outer(phi,rEV) + numpy.dot(phi,rEV) * numpy.outer(lEV, rEV) 
-    
+
+    sensitivity = -numpy.outer(phi, rEV) + numpy.dot(phi, rEV) * numpy.outer(lEV, rEV)
+
     if not right:
-        sensitivity = numpy.transpose(sensitivity)          
-        
+        sensitivity = numpy.transpose(sensitivity)
+
     return sensitivity
+
 
 def stationary_distribution_sensitivity(T, j):
     r"""Calculate the sensitivity matrix for entry j the stationary
@@ -292,28 +298,29 @@ def stationary_distribution_sensitivity(T, j):
     Note, that this function uses a different normalization convention for the sensitivity compared to
     eigenvector_sensitivity. See there for further information.
     """
-            
+
     n = len(T)
-        
+
     lEV = numpy.ones(n)
     rEV = stationary_distribution(T)
     eVal = 1.0
-    
+
     T = numpy.transpose(T)
-    
+
     vecA = numpy.zeros(n)
     vecA[j] = 1.0
-               
+
     matA = T - eVal * numpy.identity(n)
     # normalize s.t. sum is one using rEV which is constant
     matA = numpy.concatenate((matA, [lEV]))
-                
-    phi = numpy.linalg.lstsq(numpy.transpose(matA), vecA)    
+
+    phi = numpy.linalg.lstsq(numpy.transpose(matA), vecA)
     phi = numpy.delete(phi[0], -1)
-                    
-    sensitivity = -numpy.outer(rEV, phi) + numpy.dot(phi,rEV) * numpy.outer(rEV, lEV)           
-        
+
+    sensitivity = -numpy.outer(rEV, phi) + numpy.dot(phi, rEV) * numpy.outer(rEV, lEV)
+
     return sensitivity
+
 
 def mfpt_sensitivity(T, target, j):
     """ 
@@ -332,28 +339,29 @@ def mfpt_sensitivity(T, target, j):
     x : ndarray, shape=(n, n)
         Sensitivity matrix for entry index around transition matrix T. Reversibility is not assumed.
     """
-    
+
     n = len(T)
-    
+
     matA = T - numpy.diag(numpy.ones((n)))
     matA[target] *= 0
     matA[target, target] = 1.0
-    
-    tVec = -1. * numpy.ones(n);
-    tVec[target] = 0;
-    
+
+    tVec = -1. * numpy.ones(n)
+    tVec[target] = 0
+
     mfpt = numpy.linalg.solve(matA, tVec)
     aVec = numpy.zeros(n)
     aVec[j] = 1.0
-    
-    phiVec = numpy.linalg.solve(numpy.transpose(matA), aVec )
-    
+
+    phiVec = numpy.linalg.solve(numpy.transpose(matA), aVec)
+
     # TODO: Check sign of sensitivity!
-        
+
     sensitivity = -1.0 * numpy.outer(phiVec, mfpt)
-    sensitivity[target] *= 0;
-    
+    sensitivity[target] *= 0
+
     return sensitivity
+
 
 def expectation_sensitivity(T, a):
     r"""Sensitivity of expectation value of observable A=(a_i).
@@ -371,9 +379,9 @@ def expectation_sensitivity(T, a):
         Sensitivity matrix of the expectation value.
     
     """
-    M=T.shape[0]
-    S=numpy.zeros((M, M))
+    M = T.shape[0]
+    S = numpy.zeros((M, M))
     for i in range(M):
-        S+=a[i]*stationary_distribution_sensitivity(T, i)
+        S += a[i] * stationary_distribution_sensitivity(T, i)
     return S
 

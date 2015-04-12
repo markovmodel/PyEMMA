@@ -14,21 +14,20 @@ from pyemma.msm.estimation import tmatrix as apicall
 
 testpath = abspath(join(abspath(__file__), pardir)) + '/testfiles/'
 
+
 class Test_mle_trev_given_pi(unittest.TestCase):
-    
     def setUp(self):
         self.eps = 1.0E-6
-    
-    def test_mle_trev_given_pi(self):
-        C=np.loadtxt(testpath+'C_1_lag.dat')
-        pi=np.loadtxt(testpath+'pi.dat')
 
-        T_cython_dense = mtrgpd(C,pi,eps=self.eps)
-        T_cython_sparse = mtrgps(scipy.sparse.csr_matrix(C),pi,eps=self.eps).toarray()
-        T_python = tmrfp(C,pi)
-        T_api_dense = apicall(C,reversible=True,mu=pi,eps=self.eps)
-        T_api_sparse = apicall(scipy.sparse.csr_matrix(C),reversible=True,mu=pi,\
-                                   eps=self.eps).toarray()
+    def test_mle_trev_given_pi(self):
+        C = np.loadtxt(testpath + 'C_1_lag.dat')
+        pi = np.loadtxt(testpath + 'pi.dat')
+
+        T_cython_dense = mtrgpd(C, pi, eps=self.eps)
+        T_cython_sparse = mtrgps(scipy.sparse.csr_matrix(C), pi, eps=self.eps).toarray()
+        T_python = tmrfp(C, pi)
+        T_api_dense = apicall(C, reversible=True, mu=pi, eps=self.eps)
+        T_api_sparse = apicall(scipy.sparse.csr_matrix(C), reversible=True, mu=pi, eps=self.eps).toarray()
 
         # print T_python
         # print T_api_sparse
@@ -38,6 +37,6 @@ class Test_mle_trev_given_pi(unittest.TestCase):
         assert_allclose(T_api_sparse, T_python)
         assert_allclose(T_api_dense, T_python)
 
+
 if __name__ == '__main__':
     unittest.main()
-    

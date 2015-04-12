@@ -110,12 +110,12 @@ class TestTICA_Extensive(unittest.TestCase):
     def test_cov(self):
         cov_ref = np.dot(self.X.T, self.X) / float(self.T)
         assert(np.all(self.tica_obj.cov.shape == cov_ref.shape))
-        assert(np.max(self.tica_obj.cov - cov_ref) < 1e-2)
+        assert(np.max(self.tica_obj.cov - cov_ref) < 3e-2)
 
     def test_cov_tau(self):
         cov_tau_ref = np.dot(self.X[self.lag:].T, self.X[:self.T-self.lag]) / float(self.T - self.lag)
         assert(np.all(self.tica_obj.cov_tau.shape == cov_tau_ref.shape))
-        assert(np.max(self.tica_obj.cov_tau - cov_tau_ref) < 1e-2)
+        assert(np.max(self.tica_obj.cov_tau - cov_tau_ref) < 3e-2)
 
     def test_data_producer(self):
         assert self.tica_obj.data_producer is not None

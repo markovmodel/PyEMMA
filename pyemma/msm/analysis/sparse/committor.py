@@ -11,6 +11,7 @@ from scipy.sparse.linalg import spsolve
 
 from decomposition import stationary_distribution_from_backward_iteration as statdist
 
+
 def forward_committor(T, A, B):
     r"""Forward committor between given sets.
 
@@ -45,39 +46,40 @@ def forward_committor(T, A, B):
     with generator matrix L=(P-I).
 
     """
-    X=set(range(T.shape[0]))
-    A=set(A)
-    B=set(B)
-    AB=A.intersection(B)
-    notAB=X.difference(A).difference(B)
-    if len(AB)>0:
+    X = set(range(T.shape[0]))
+    A = set(A)
+    B = set(B)
+    AB = A.intersection(B)
+    notAB = X.difference(A).difference(B)
+    if len(AB) > 0:
         raise ValueError("Sets A and B have to be disjoint")
-    L=T-eye(T.shape[0], T.shape[0])
+    L = T - eye(T.shape[0], T.shape[0])
 
     """Assemble left hand-side W for linear system"""
     """Equation (I)"""
-    W=1.0*L
+    W = 1.0 * L
 
     """Equation (II)"""
-    W=W.todok()
-    W[list(A), :]=0.0
+    W = W.todok()
+    W[list(A), :] = 0.0
     W.tocsr()
-    W=W + coo_matrix( (np.ones(len(A)), (list(A), list(A))), shape=W.shape).tocsr()
+    W = W + coo_matrix((np.ones(len(A)), (list(A), list(A))), shape=W.shape).tocsr()
 
     """Equation (III)"""
-    W=W.todok()
-    W[list(B), :]=0.0
+    W = W.todok()
+    W[list(B), :] = 0.0
     W.tocsr()
-    W=W + coo_matrix( (np.ones(len(B)), (list(B), list(B))), shape=W.shape).tocsr()
+    W = W + coo_matrix((np.ones(len(B)), (list(B), list(B))), shape=W.shape).tocsr()
 
     """Assemble right hand side r for linear system"""
     """Equation (I+II)"""
-    r=np.zeros(T.shape[0])
+    r = np.zeros(T.shape[0])
     """Equation (III)"""
-    r[list(B)]=1.0
+    r[list(B)] = 1.0
 
-    u=spsolve(W, r)
+    u = spsolve(W, r)
     return u
+
 
 def backward_committor(T, A, B):
     r"""Backward committor between given sets.
@@ -114,40 +116,40 @@ def backward_committor(T, A, B):
     with adjoint of the generator matrix K=(D_pi(P-I))'.
 
     """
-    X=set(range(T.shape[0]))
-    A=set(A)
-    B=set(B)
-    AB=A.intersection(B)
-    notAB=X.difference(A).difference(B)
-    if len(AB)>0:
+    X = set(range(T.shape[0]))
+    A = set(A)
+    B = set(B)
+    AB = A.intersection(B)
+    notAB = X.difference(A).difference(B)
+    if len(AB) > 0:
         raise ValueError("Sets A and B have to be disjoint")
-    pi=statdist(T)
-    L=T-eye(T.shape[0], T.shape[0])
-    D=diags([pi,], [0,])
-    K=(D.dot(L)).T
+    pi = statdist(T)
+    L = T - eye(T.shape[0], T.shape[0])
+    D = diags([pi, ], [0, ])
+    K = (D.dot(L)).T
 
     """Assemble left-hand side W for linear system"""
     """Equation (I)"""
-    W=1.0*K
+    W = 1.0 * K
 
     """Equation (II)"""
-    W=W.todok()
-    W[list(A), :]=0.0
+    W = W.todok()
+    W[list(A), :] = 0.0
     W.tocsr()
-    W=W + coo_matrix( (np.ones(len(A)), (list(A), list(A))), shape=W.shape).tocsr()
+    W = W + coo_matrix((np.ones(len(A)), (list(A), list(A))), shape=W.shape).tocsr()
 
     """Equation (III)"""
-    W=W.todok()
-    W[list(B), :]=0.0
+    W = W.todok()
+    W[list(B), :] = 0.0
     W.tocsr()
-    W=W + coo_matrix( (np.ones(len(B)), (list(B), list(B))), shape=W.shape).tocsr()
+    W = W + coo_matrix((np.ones(len(B)), (list(B), list(B))), shape=W.shape).tocsr()
 
     """Assemble right-hand side r for linear system"""
     """Equation (I)+(III)"""
-    r=np.zeros(T.shape[0])
+    r = np.zeros(T.shape[0])
     """Equation (II)"""
-    r[list(A)]=1.0
+    r[list(A)] = 1.0
 
-    u=spsolve(W, r)
+    u = spsolve(W, r)
 
     return u

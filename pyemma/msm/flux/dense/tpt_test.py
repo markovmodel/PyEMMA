@@ -10,6 +10,7 @@ from pyemma.util.numeric import assert_allclose
 
 import tpt
 
+
 class BirthDeathChain():
     """Birth and death chain class
 
@@ -21,6 +22,7 @@ class BirthDeathChain():
                 p_i     j=i+1 for i<d-1
 
     """
+
     def __init__(self, q, p):
         """Generate a birth and death chain from creation and
         anhilation probabilities.
@@ -33,16 +35,16 @@ class BirthDeathChain():
             Creation probabilities for transition from i to i+1
 
         """
-        if q[0]!=0.0:
+        if q[0] != 0.0:
             raise ValueError('Probability q[0] must be zero')
-        if p[-1]!=0.0:
+        if p[-1] != 0.0:
             raise ValueError('Probability p[-1] must be zero')
-        if not np.all(q+p<=1.0):
+        if not np.all(q + p <= 1.0):
             raise ValueError('Probabilities q+p can not exceed one')
-        self.q=q
-        self.p=p
-        self.r=1-self.q-self.p
-        self.dim=self.r.shape[0]
+        self.q = q
+        self.p = p
+        self.r = 1 - self.q - self.p
+        self.dim = self.r.shape[0]
 
     def transition_matrix(self):
         """Tridiagonal transition matrix for birth and death chain
@@ -53,17 +55,17 @@ class BirthDeathChain():
             Transition matrix for birth and death chain with given
             creation and anhilation probabilities.
 
-        """        
-        P0=np.diag(self.r, k=0)
-        P1=np.diag(self.p[0:-1], k=1)
-        P_1=np.diag(self.q[1:], k=-1)
-        return P0+P1+P_1
+        """
+        P0 = np.diag(self.r, k=0)
+        P1 = np.diag(self.p[0:-1], k=1)
+        P_1 = np.diag(self.q[1:], k=-1)
+        return P0 + P1 + P_1
 
     def stationary_distribution(self):
-        a=np.zeros(self.dim)
-        a[0]=1.0
-        a[1:]=np.cumprod(self.p[0:-1]/self.q[1:])
-        mu=a/np.sum(a)
+        a = np.zeros(self.dim)
+        a[0] = 1.0
+        a[1:] = np.cumprod(self.p[0:-1] / self.q[1:])
+        mu = a / np.sum(a)
         return mu
 
     def committor_forward(self, a, b):
@@ -91,28 +93,28 @@ class BirthDeathChain():
             Vector of committor probabilities.
 
         """
-        u=np.zeros(self.dim)
-        g=np.zeros(self.dim-1)
-        g[0]=1.0
-        g[1:]=np.cumprod(self.q[1:-1]/self.p[1:-1])
-        
+        u = np.zeros(self.dim)
+        g = np.zeros(self.dim - 1)
+        g[0] = 1.0
+        g[1:] = np.cumprod(self.q[1:-1] / self.p[1:-1])
+
         """If a and b are equal the event T_b<T_a is impossible
            for any starting state x so that the committor is
            zero everywhere"""
-        if a==b:
+        if a == b:
             return u
-        elif a<b:
+        elif a < b:
             """Birth-death chain has to hit a before it can hit b"""
-            u[0:a+1]=0.0 
+            u[0:a + 1] = 0.0
             """Birth-death chain has to hit b before it can hit a"""
-            u[b:]=1.0
+            u[b:] = 1.0
             """Intermediate states are given in terms of sums of g"""
-            u[a+1:b]=np.cumsum(g[a:b])[0:-1]/np.sum(g[a:b])
+            u[a + 1:b] = np.cumsum(g[a:b])[0:-1] / np.sum(g[a:b])
             return u
         else:
-            u[0:b+1]=1.0
-            u[a:]=0.0
-            u[b+1:a]=(np.cumsum(g[b:a])[0:-1]/np.sum(g[b:a]))[::-1]
+            u[0:b + 1] = 1.0
+            u[a:] = 0.0
+            u[b + 1:a] = (np.cumsum(g[b:a])[0:-1] / np.sum(g[b:a]))[::-1]
             return u
 
     def committor_backward(self, a, b):
@@ -153,7 +155,7 @@ class BirthDeathChain():
             w=1-u        
 
         """
-        return 1.0-self.committor_forward(a, b)
+        return 1.0 - self.committor_forward(a, b)
 
     def flux(self, a, b):
         r"""The flux network for the reaction from
@@ -173,15 +175,15 @@ class BirthDeathChain():
             
         """
         # if b<=a:
-        #     raise ValueError("State index b has to be strictly larger than state index a")
-        qminus=self.committor_backward(a, b)
-        qplus=self.committor_forward(a, b)
-        P=self.transition_matrix()
-        pi=self.stationary_distribution()
+        # raise ValueError("State index b has to be strictly larger than state index a")
+        qminus = self.committor_backward(a, b)
+        qplus = self.committor_forward(a, b)
+        P = self.transition_matrix()
+        pi = self.stationary_distribution()
 
-        flux=pi[:,np.newaxis]*qminus[:,np.newaxis]*P*qplus[np.newaxis,:]
-        ind=np.diag_indices(P.shape[0])
-        flux[ind]=0.0
+        flux = pi[:, np.newaxis] * qminus[:, np.newaxis] * P * qplus[np.newaxis, :]
+        ind = np.diag_indices(P.shape[0])
+        flux[ind] = 0.0
         return flux
 
     def netflux(self, a, b):
@@ -201,10 +203,10 @@ class BirthDeathChain():
             Matrix of flux values between pairs of states.
             
         """
-        flux=self.flux(a, b)
-        netflux=flux-np.transpose(flux)
-        ind=(netflux<0.0)
-        netflux[ind]=0.0
+        flux = self.flux(a, b)
+        netflux = flux - np.transpose(flux)
+        ind = (netflux < 0.0)
+        netflux[ind] = 0.0
         return netflux
 
     def totalflux(self, a, b):
@@ -224,62 +226,64 @@ class BirthDeathChain():
             The total flux between reactant and product
             
         """
-        flux=self.flux(a, b)
-        A=range(a+1)
-        notA=range(a+1, flux.shape[0])
-        F=flux[A, :][:,notA].sum()
+        flux = self.flux(a, b)
+        A = range(a + 1)
+        notA = range(a + 1, flux.shape[0])
+        F = flux[A, :][:, notA].sum()
         return F
 
     def rate(self, a, b):
-        F=self.totalflux(a, b)
-        pi=self.stationary_distribution()
-        qminus=self.committor_backward(a, b)
-        kAB=F/(pi*qminus).sum()
+        F = self.totalflux(a, b)
+        pi = self.stationary_distribution()
+        qminus = self.committor_backward(a, b)
+        kAB = F / (pi * qminus).sum()
         return kAB
-        
+
+
 class TestTPT(unittest.TestCase):
     def setUp(self):
-        p=np.zeros(10)
-        q=np.zeros(10)
-        p[0:-1]=0.5
-        q[1:]=0.5
-        p[4]=0.01
-        q[6]=0.1
+        p = np.zeros(10)
+        q = np.zeros(10)
+        p[0:-1] = 0.5
+        q[1:] = 0.5
+        p[4] = 0.01
+        q[6] = 0.1
 
-        self.A=[0,1]
-        self.B=[8,9]
-        self.a=1
-        self.b=8
+        self.A = [0, 1]
+        self.B = [8, 9]
+        self.a = 1
+        self.b = 8
 
-        self.bdc=BirthDeathChain(q, p)
-        self.T=self.bdc.transition_matrix()
+        self.bdc = BirthDeathChain(q, p)
+        self.T = self.bdc.transition_matrix()
 
-        """Use precomputed mu, qminus, qplus"""        
+        """Use precomputed mu, qminus, qplus"""
         self.mu = self.bdc.stationary_distribution()
         self.qplus = self.bdc.committor_forward(self.a, self.b)
         self.qminus = self.bdc.committor_backward(self.a, self.b)
-        #self.qminus = committor.backward_committor(self.T, self.A, self.B, mu=self.mu)
-        #self.qplus = committor.forward_committor(self.T, self.A, self.B)
+        # self.qminus = committor.backward_committor(self.T, self.A, self.B, mu=self.mu)
+        # self.qplus = committor.forward_committor(self.T, self.A, self.B)
         self.fluxn = tpt.flux_matrix(self.T, self.mu, self.qminus, self.qplus, netflux=False)
         self.netfluxn = tpt.to_netflux(self.fluxn)
         self.Fn = tpt.total_flux(self.fluxn, self.A)
         self.kn = tpt.rate(self.Fn, self.mu, self.qminus)
 
     def test_flux(self):
-        flux=self.bdc.flux(self.a, self.b)        
+        flux = self.bdc.flux(self.a, self.b)
         assert_allclose(self.fluxn, flux)
 
     def test_netflux(self):
-        netflux=self.bdc.netflux(self.a, self.b)
+        netflux = self.bdc.netflux(self.a, self.b)
         assert_allclose(self.netfluxn, netflux)
 
     def test_totalflux(self):
-        F=self.bdc.totalflux(self.a, self.b)
+        F = self.bdc.totalflux(self.a, self.b)
         assert_allclose(self.Fn, F)
 
     def test_rate(self):
-        k=self.bdc.rate(self.a, self.b)
+        k = self.bdc.rate(self.a, self.b)
         assert_allclose(self.kn, k)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -9,9 +9,8 @@ __all__ = ['regroup_RAM',
            'from_lcc_labels',
            'to_lcc_labels']
 
+
 class MapToConnectedStateLabels():
-    
-    
     def __init__(self, lcc):
         r"""Mapping from original labels to lcc-indices.
         
@@ -21,10 +20,10 @@ class MapToConnectedStateLabels():
             Largest connected set of microstates (original labels)
             
         """
-        self.lcc=lcc
-        self.new_labels=np.arange(len(self.lcc))
-        self.dictmap=dict(zip(self.lcc, self.new_labels))
-    
+        self.lcc = lcc
+        self.new_labels = np.arange(len(self.lcc))
+        self.dictmap = dict(zip(self.lcc, self.new_labels))
+
     def map(self, A):
         r"""Map subset of microstates to subset of connected
         microstates.
@@ -42,10 +41,10 @@ class MapToConnectedStateLabels():
 
         """
         if not set(A).issubset(set(self.lcc)):
-            raise ValueError("A is not a subset of the set of "+\
-                                 "completely connected states.")
+            raise ValueError("A is not a subset of the set of completely connected states.")
         else:
             return [self.dictmap[i] for i in A]
+
 
 def from_lcc_labels(states_in_lcc, lcc):
     r"""Recover original labels of microstate after they have been
@@ -65,6 +64,7 @@ def from_lcc_labels(states_in_lcc, lcc):
         
     """
     return lcc[states_in_lcc]
+
 
 def to_lcc_labels(states, lcc):
     r"""Relabel microstates replacing the original label by the
@@ -87,7 +87,7 @@ def to_lcc_labels(states, lcc):
     return mymap.map(states)
 
 
-def regroup_RAM(trajs,disctrajs):
+def regroup_RAM(trajs, disctrajs):
     r"""Regroups MD trajectories into clusters according to discretised trajectories.
 
     Parameters
@@ -109,30 +109,32 @@ def regroup_RAM(trajs,disctrajs):
     """
 
     # handle single element invocation
-    if not isinstance(trajs,list):
+    if not isinstance(trajs, list):
         trajs = [trajs]
-    if not isinstance(disctrajs,list):
+    if not isinstance(disctrajs, list):
         disctrajs = [disctrajs]
-        
-    assert len(disctrajs)==len(trajs), 'Number of disctrajs and number of trajs doesn\'t agree.'
-    states = np.unique(np.hstack(([np.unique(disctraj) for disctraj in disctrajs]))) 
-    states = np.setdiff1d(states,[-1]) # exclude invalid states
-    cluster = [None]*(np.max(states)+1) 
-    for disctraj,traj,i in zip(disctrajs,trajs,xrange(len(trajs))):
-        assert len(disctraj)==traj.n_frames, 'Length of disctraj[%d] doesn\'t match number of frames in traj[%d].'%(i,i)
+
+    assert len(disctrajs) == len(trajs), 'Number of disctrajs and number of trajs doesn\'t agree.'
+    states = np.unique(np.hstack(([np.unique(disctraj) for disctraj in disctrajs])))
+    states = np.setdiff1d(states, [-1])  # exclude invalid states
+    cluster = [None] * (np.max(states) + 1)
+    for disctraj, traj, i in zip(disctrajs, trajs, xrange(len(trajs))):
+        assert len(disctraj) == traj.n_frames, 'Length of disctraj[%d] doesn\'t match number of frames in traj[%d].' % (
+            i, i)
         for s in states:
-            match = (disctraj==s)
-            if np.count_nonzero(match)>0:
+            match = (disctraj == s)
+            if np.count_nonzero(match) > 0:
                 if cluster[s] is None:
-                    cluster[s] = traj.xyz[match,:,:]
+                    cluster[s] = traj.xyz[match, :, :]
                 else:
-                    cluster[s] = np.concatenate((cluster[s],traj.xyz[match,:,:]),axis=0)
+                    cluster[s] = np.concatenate((cluster[s], traj.xyz[match, :, :]), axis=0)
     for i in xrange(len(cluster)):
         if not cluster[i] is None:
-            cluster[i] = md.Trajectory(cluster[i],trajs[0].topology)
+            cluster[i] = md.Trajectory(cluster[i], trajs[0].topology)
     return cluster
 
-def regroup_DISK(trajs,topology_file,disctrajs,path,stride=1):
+
+def regroup_DISK(trajs, topology_file, disctrajs, path, stride=1):
     """Regroups MD trajectories into clusters according to discretised trajectories.
 
     Parameters
@@ -156,38 +158,38 @@ def regroup_DISK(trajs,topology_file,disctrajs,path,stride=1):
         assigned to cluster i.
     """
     # handle single element invocation
-    if not isinstance(trajs,list):
+    if not isinstance(trajs, list):
         trajs = [trajs]
-    if not isinstance(disctrajs,list):
+    if not isinstance(disctrajs, list):
         disctrajs = [disctrajs]
 
     states = np.unique(np.hstack(([np.unique(disctraj) for disctraj in disctrajs])))
-    states = np.setdiff1d(states,[-1]) # exclude invalid states
-    writer = [None]*(max(states)+1)
-    cluster = [None]*(max(states)+1)
+    states = np.setdiff1d(states, [-1])  # exclude invalid states
+    writer = [None] * (max(states) + 1)
+    cluster = [None] * (max(states) + 1)
 
     for i in states:
-        cluster[i] = path+os.sep+('%d.xtc'%i)
-        writer[i] = XTCTrajectoryFile(cluster[i],'w',force_overwrite=True)
+        cluster[i] = path + os.sep + ('%d.xtc' % i)
+        writer[i] = XTCTrajectoryFile(cluster[i], 'w', force_overwrite=True)
 
-    for disctraj,traj in zip(disctrajs,trajs):
-        reader = md.iterload(traj,top=topology_file,stride=stride)
+    for disctraj, traj in zip(disctrajs, trajs):
+        reader = md.iterload(traj, top=topology_file, stride=stride)
         start = 0
         for chunk in reader:
             chunk_length = chunk.xyz.shape[0]
             for i in xrange(chunk_length):
-                cl = disctraj[i+start]
-                if cl!=-1:
-                    writer[cl].write(chunk.xyz[i,:,:]) # np.newaxis?
+                cl = disctraj[i + start]
+                if cl != -1:
+                    writer[cl].write(chunk.xyz[i, :, :])  # np.newaxis?
             start += chunk_length
-         # TODO: check that whole disctrajs was used
+            # TODO: check that whole disctrajs was used
     for i in states:
         writer[i].close()
-        
+
     return cluster
-    
-   
-def PCCA_disctrajs(disctrajs,connected_set,memberships):
+
+
+def PCCA_disctrajs(disctrajs, connected_set, memberships):
     r"""Compute disctrajs coarse-grained to the PCCA sets.
 
     Parameters
@@ -206,17 +208,17 @@ def PCCA_disctrajs(disctrajs,connected_set,memberships):
     If disctaj[i][j] isn't in the connected set, cgdisctraj[i][j]==-1.
     """
 
-    if not isinstance(disctrajs,list):
+    if not isinstance(disctrajs, list):
         disctrajs = [disctrajs]
 
     assert connected_set.ndim == 1
     assert connected_set.shape[0] == memberships.shape[0]
 
     # compute the forward map : old index -> new index
-    backward_map = connected_set # map : new index -> old index
-    n_states = np.max(disctrajs)+1
-    forward_map = np.ones(n_states,dtype=int)*(-1)
-    forward_map[backward_map] = np.arange(backward_map.shape[0]) # forward(backward)=Identity
-    pcca_map = np.hstack((np.argmax(memberships,axis=1),[-1]))
-    return [ pcca_map[forward_map[d]] for d in disctrajs ]        
+    backward_map = connected_set  # map : new index -> old index
+    n_states = np.max(disctrajs) + 1
+    forward_map = np.ones(n_states, dtype=int) * (-1)
+    forward_map[backward_map] = np.arange(backward_map.shape[0])  # forward(backward)=Identity
+    pcca_map = np.hstack((np.argmax(memberships, axis=1), [-1]))
+    return [pcca_map[forward_map[d]] for d in disctrajs]
 

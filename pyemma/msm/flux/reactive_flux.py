@@ -7,7 +7,8 @@ __moduleauthor__ = "Benjamin Trendelkamp-Schroer, Frank Noe"
 import numpy as np
 import api as tptapi
 
-__all__=['ReactiveFlux']
+__all__ = ['ReactiveFlux']
+
 
 class ReactiveFlux(object):
     r"""Reactive flux object.
@@ -49,6 +50,7 @@ class ReactiveFlux(object):
     pyemma.msm.tpt
 
     """
+
     def __init__(self, A, B, flux,
                  mu=None, qminus=None, qplus=None, gross_flux=None):
         # set data
@@ -62,7 +64,6 @@ class ReactiveFlux(object):
         # compute derived quantities:
         self._totalflux = tptapi.total_flux(flux, A)
         self._kAB = tptapi.rate(self._totalflux, mu, qminus)
-
 
     @property
     def nstates(self):
@@ -90,7 +91,7 @@ class ReactiveFlux(object):
         r"""Returns the set of intermediate states
         
         """
-        return list(set(range(self.nstates))-set(self._A)-set(self._B))
+        return list(set(range(self.nstates)) - set(self._A) - set(self._B))
 
     @property
     def stationary_distribution(self):
@@ -150,10 +151,9 @@ class ReactiveFlux(object):
     def mfpt(self):
         r"""Returns the rate (inverse mfpt) of A-->B transitions
         """
-        return 1.0/self._kAB
+        return 1.0 / self._kAB
 
-
-    def pathways(self, fraction = 1.0, maxiter=1000):
+    def pathways(self, fraction=1.0, maxiter=1000):
         r"""Decompose flux network into dominant reaction paths.
 
         Parameters
@@ -177,8 +177,8 @@ class ReactiveFlux(object):
             Multiscale Model Simul 7: 1192-1219 (2009)
 
         """
-        return tptapi.pathways(self.net_flux, self.A, self.B, 
-                               fraction = fraction, maxiter=maxiter)
+        return tptapi.pathways(self.net_flux, self.A, self.B,
+                               fraction=fraction, maxiter=maxiter)
 
     def _pathways_to_flux(self, paths, pathfluxes, n=None):
         r"""Sums up the flux from the pathways given
@@ -205,24 +205,22 @@ class ReactiveFlux(object):
             for p in paths:
                 n = max(n, np.max(p))
             n += 1
-        
+
         # initialize flux
-        F = np.zeros((n,n))
+        F = np.zeros((n, n))
         for i in range(len(paths)):
             p = paths[i]
-            for t in range(len(p)-1):
-                F[p[t],p[t+1]] += pathfluxes[i]
+            for t in range(len(p) - 1):
+                F[p[t], p[t + 1]] += pathfluxes[i]
         return F
 
-
-    def major_flux(self, fraction = 0.9):
+    def major_flux(self, fraction=0.9):
         r"""Returns the main pathway part of the net flux comprising
         at most the requested fraction of the full flux.
         
         """
-        (paths,pathfluxes) = self.pathways(fraction = fraction)
+        (paths, pathfluxes) = self.pathways(fraction=fraction)
         return self._pathways_to_flux(paths, pathfluxes, n=self.nstates)
-
 
     # this will be a private function in tpt. only Parameter left will be the sets to be distinguished
     def _compute_coarse_sets(self, user_sets):
@@ -262,10 +260,10 @@ class ReactiveFlux(object):
         setB = set(self.B)
         setI = set(self.I)
         raw_sets = [set(user_set) for user_set in user_sets]
-        
+
         # anything missing? Compute all listed states 
         set_all = set(range(self.nstates))
-        set_all_user = [] 
+        set_all_user = []
         for user_set in raw_sets:
             set_all_user += user_set
         set_all_user = set(set_all_user)
@@ -273,7 +271,7 @@ class ReactiveFlux(object):
         set_rest = set_all - set_all_user
         if len(set_rest) > 0:
             raw_sets.append(set_rest)
-        
+
         # split sets
         Asets = []
         Isets = []
@@ -289,11 +287,10 @@ class ReactiveFlux(object):
             if len(s) > 0:
                 Bsets.append(s)
         tpt_sets = Asets + Isets + Bsets
-        Aindexes = range(0,len(Asets))
-        Bindexes = range(len(Asets)+len(Isets),len(tpt_sets))
-        
-        return (tpt_sets, Aindexes, Bindexes)
+        Aindexes = range(0, len(Asets))
+        Bindexes = range(len(Asets) + len(Isets), len(tpt_sets))
 
+        return (tpt_sets, Aindexes, Bindexes)
 
     def coarse_grain(self, user_sets):
         r"""Coarse-grains the flux onto user-defined sets. 
@@ -325,26 +322,26 @@ class ReactiveFlux(object):
         
         """
         # coarse-grain sets
-        (tpt_sets,Aindexes,Bindexes) = self._compute_coarse_sets(user_sets)
+        (tpt_sets, Aindexes, Bindexes) = self._compute_coarse_sets(user_sets)
         nnew = len(tpt_sets)
-        
+
         # coarse-grain fluxHere we should branch between sparse and dense implementations, but currently there is only a 
         F_coarse = tptapi.coarsegrain(self._gross_flux, tpt_sets)
         Fnet_coarse = tptapi.to_netflux(F_coarse)
-        
+
         # coarse-grain stationary probability and committors - this can be done all dense
         pstat_coarse = np.zeros((nnew))
         forward_committor_coarse = np.zeros((nnew))
         backward_committor_coarse = np.zeros((nnew))
-        for i in range(0,nnew):
+        for i in range(0, nnew):
             I = list(tpt_sets[i])
             muI = self._mu[I]
             pstat_coarse[i] = np.sum(muI)
-            partialI = muI/pstat_coarse[i] # normalized stationary probability over I
+            partialI = muI / pstat_coarse[i]  # normalized stationary probability over I
             forward_committor_coarse[i] = np.dot(partialI, self._qplus[I])
             backward_committor_coarse[i] = np.dot(partialI, self._qminus[I])
-        
-        res = ReactiveFlux(Aindexes, Bindexes, Fnet_coarse, mu=pstat_coarse, 
-                     qminus=backward_committor_coarse, qplus=forward_committor_coarse, gross_flux=F_coarse)
-        return (tpt_sets,res)
+
+        res = ReactiveFlux(Aindexes, Bindexes, Fnet_coarse, mu=pstat_coarse,
+                           qminus=backward_committor_coarse, qplus=forward_committor_coarse, gross_flux=F_coarse)
+        return (tpt_sets, res)
 

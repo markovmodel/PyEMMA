@@ -25,27 +25,26 @@ def remove_negative_entries(A):
         Input matrix with negative entries set to zero.
 
     """
-    A=A.tocoo()
+    A = A.tocoo()
 
-    data=A.data
-    row=A.row
-    col=A.col
+    data = A.data
+    row = A.row
+    col = A.col
 
     """Positive entries"""
-    pos=data>0.0
-    
-    datap=data[pos]
-    rowp=row[pos]
-    colp=col[pos]
+    pos = data > 0.0
 
-    Aplus=coo_matrix((datap, (rowp, colp)), shape=A.shape)
+    datap = data[pos]
+    rowp = row[pos]
+    colp = col[pos]
+
+    Aplus = coo_matrix((datap, (rowp, colp)), shape=A.shape)
     return Aplus
 
 
 # ======================================================================
 # Flux matrix operations
 # ======================================================================
-
 
 
 def flux_matrix(T, pi, qminus, qplus, netflux=True):
@@ -71,14 +70,14 @@ def flux_matrix(T, pi, qminus, qplus, netflux=True):
         Matrix of flux values between pairs of states.
     
     """
-    D1=diags((pi*qminus,), (0,))
-    D2=diags((qplus,), (0,))
-    
-    flux=D1.dot(T.dot(D2))
-    
+    D1 = diags((pi * qminus,), (0,))
+    D2 = diags((qplus,), (0,))
+
+    flux = D1.dot(T.dot(D2))
+
     """Remove self-fluxes"""
-    flux=flux-diags(flux.diagonal(), 0)
-    
+    flux = flux - diags(flux.diagonal(), 0)
+
     """Return net or gross flux"""
     if netflux:
         return to_netflux(flux)
@@ -103,10 +102,10 @@ def to_netflux(flux):
         Matrix of netflux values between pairs of states.
     
     """
-    netflux=flux-flux.T
-    
+    netflux = flux - flux.T
+
     """Set negative entries to zero"""
-    netflux=remove_negative_entries(netflux)
+    netflux = remove_negative_entries(netflux)
     return netflux
 
 
@@ -128,13 +127,13 @@ def coarsegrain(F, sets):
     """
     nnew = len(sets)
     Fin = F.tocsr()
-    Fc = csr_matrix((nnew,nnew))
-    for i in range(0,nnew-1):
-        for j in range(i,nnew):
+    Fc = csr_matrix((nnew, nnew))
+    for i in range(0, nnew - 1):
+        for j in range(i, nnew):
             I = list(sets[i])
             J = list(sets[j])
-            Fc[i,j] = (Fin[I,:][:,J]).sum()
-            Fc[j,i] = (Fin[J,:][:,I]).sum()
+            Fc[i, j] = (Fin[I, :][:, J]).sum()
+            Fc[j, i] = (Fin[J, :][:, I]).sum()
     return Fc
 
 
@@ -159,18 +158,18 @@ def total_flux(flux, A):
         The total flux between reactant and product
     
     """
-    X=set(np.arange(flux.shape[0])) # total state space
-    A=set(A)
-    notA=X.difference(A)
-    
+    X = set(np.arange(flux.shape[0]))  # total state space
+    A = set(A)
+    notA = X.difference(A)
+
     """Extract rows corresponding to A"""
-    W=flux.tocsr()
-    W=W[list(A), :]
+    W = flux.tocsr()
+    W = W[list(A), :]
     """Extract columns corresonding to X\A"""
-    W=W.tocsc()
-    W=W[:,list(notA)]
-    
-    F=W.sum()
+    W = W.tocsc()
+    W = W[:, list(notA)]
+
+    F = W.sum()
     return F
 
 

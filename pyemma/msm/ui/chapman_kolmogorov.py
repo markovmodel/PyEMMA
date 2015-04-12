@@ -14,7 +14,8 @@ from pyemma.msm.analysis import pcca_sets
 
 from mapping import MapToConnectedStateLabels
 
-__all__=['cktest']
+__all__ = ['cktest']
+
 
 def propagate(W, P, n=1):
     r"""Propagate probabilities.
@@ -36,19 +37,20 @@ def propagate(W, P, n=1):
     """
     if issparse(P):
         """Ensure csr format"""
-        P = P.tocsr()        
+        P = P.tocsr()
         """Transpose W and P"""
         WT = W.T
         PT = P.T
         for i in range(n):
             WT = PT.dot(WT)
-        """Transpose propgated WT"""    
+        """Transpose propgated WT"""
         W_n = WT.T
     else:
-        W_n = 1.0*W
+        W_n = 1.0 * W
         for i in range(n):
             W_n = np.dot(W_n, P)
-    return W_n                        
+    return W_n
+
 
 def cktest(T_MSM, lcc_MSM, dtrajs, lag, K, nsets=2, sets=None, full_output=False):
     r"""Perform Chapman-Kolmogorov tests for given data.
@@ -92,32 +94,32 @@ def cktest(T_MSM, lcc_MSM, dtrajs, lag, K, nsets=2, sets=None, full_output=False
         molecular kinetics: Generation and validation. J Chem Phys
         134: 174105
         
-    """    
+    """
     p_MD = np.zeros((K, nsets))
     p_MSM = np.zeros((K, nsets))
-    eps_MD = np.zeros((K, nsets))    
+    eps_MD = np.zeros((K, nsets))
     set_factors = np.zeros((K, nsets))
 
     if sets is None:
-        """Compute PCCA-sets from MSM at lagtime 1*\tau"""    
+        """Compute PCCA-sets from MSM at lagtime 1*\tau"""
         if issparse(T_MSM):
             msg = ("Converting sparse transition matrix to dense\n"
                    "since PCCA is currently only implemented for dense matrices.\n"
                    "You can avoid automatic conversion to dense arrays by\n"
                    "giving sets for the Chapman-Kolmogorov test explicitly")
             warnings.warn(msg, UserWarning)
-            sets=pcca_sets(T_MSM.toarray(), nsets)
+            sets = pcca_sets(T_MSM.toarray(), nsets)
         else:
-            sets=pcca_sets(T_MSM, nsets)
+            sets = pcca_sets(T_MSM, nsets)
     nsets = len(sets)
 
     # translate sets from connected-set indexes to full indexes, where the comparison is made:
-    for i,s in enumerate(sets):
+    for i, s in enumerate(sets):
         sets[i] = lcc_MSM[s]
 
     """Stationary distribution at 1*tau"""
-    mu_MSM = statdist(T_MSM)  
-    
+    mu_MSM = statdist(T_MSM)
+
     """Mapping to lcc at lagtime 1*tau"""
     lccmap_MSM = MapToConnectedStateLabels(lcc_MSM)
 
@@ -126,21 +128,21 @@ def cktest(T_MSM, lcc_MSM, dtrajs, lag, K, nsets=2, sets=None, full_output=False
     for l in range(nsets):
         A = sets[l]
         A_MSM = lccmap_MSM.map(A)
-        w_MSM_1[l, A_MSM] = mu_MSM[A_MSM]/mu_MSM[A_MSM].sum()    
+        w_MSM_1[l, A_MSM] = mu_MSM[A_MSM] / mu_MSM[A_MSM].sum()
 
-    w_MSM_k = 1.0*w_MSM_1    
+    w_MSM_k = 1.0 * w_MSM_1
 
     p_MSM[0, :] = 1.0
     p_MD[0, :] = 1.0
     eps_MD[0, :] = 0.0
     set_factors[0, :] = 1.0
 
-    for k in range(1, K): 
+    for k in range(1, K):
         """Propagate probability vectors for MSM"""
-        w_MSM_k = propagate(w_MSM_k, T_MSM)        
+        w_MSM_k = propagate(w_MSM_k, T_MSM)
 
         """Estimate model at k*tau and normalize to make 'uncorrelated'"""
-        C_MD = cmatrix(dtrajs, k*lag, sliding=True)/(k*lag)
+        C_MD = cmatrix(dtrajs, k * lag, sliding=True) / (k * lag)
         lcc_MD = largest_connected_set(C_MD)
         Ccc_MD = connected_cmatrix(C_MD, lcc=lcc_MD)
         """State counts for MD"""
@@ -152,12 +154,12 @@ def cktest(T_MSM, lcc_MSM, dtrajs, lag, K, nsets=2, sets=None, full_output=False
         lccmap_MD = MapToConnectedStateLabels(lcc_MD)
 
         """Intersection of lcc_1 and lcc_k. lcc_k is not necessarily contained within lcc_1"""
-        lcc = np.intersect1d(lcc_MSM, lcc_MD)           
+        lcc = np.intersect1d(lcc_MSM, lcc_MD)
 
         """Stationary distribution restricted to lcc at lagtime k*tau"""
         mu_MD = np.zeros(T_MD.shape[0])
         """Extract stationary values in 'joint' lcc and assining them to their respective position"""
-        mu_MD[lccmap_MD.map(lcc)] = mu_MSM[lccmap_MSM.map(lcc)]        
+        mu_MD[lccmap_MD.map(lcc)] = mu_MSM[lccmap_MSM.map(lcc)]
 
         """Obtain sets and distribution at k*tau"""
         w_MD_1 = np.zeros((nsets, mu_MD.shape[0]))
@@ -165,31 +167,31 @@ def cktest(T_MSM, lcc_MSM, dtrajs, lag, K, nsets=2, sets=None, full_output=False
             A = sets[l]
             """Intersect the set with the lcc at lagtime k*tau"""
             A_new = np.intersect1d(A, lcc)
-            if A_new.size > 0:           
+            if A_new.size > 0:
                 A_MD = lccmap_MD.map(A_new)
-                w_MD_1[l, A_MD] = mu_MD[A_MD]/mu_MD[A_MD].sum()
+                w_MD_1[l, A_MD] = mu_MD[A_MD] / mu_MD[A_MD].sum()
 
         """Propagate vector by the MD model"""
         w_MD_k = propagate(w_MD_1, T_MD)
 
         """Compute values"""
-        
+
         for l in range(len(sets)):
             A = sets[l]
             """MSM values"""
             A_MSM = lccmap_MSM.map(A)
             p_MSM[k, l] = w_MSM_k[l, A_MSM].sum()
-            
+
             """MD values"""
             A_new = np.intersect1d(A, lcc)
-            if A_new.size > 0:           
+            if A_new.size > 0:
                 A_MD = lccmap_MD.map(A_new)
                 prob_MD = w_MD_k[l, A_MD].sum()
                 p_MD[k, l] = prob_MD
                 """Statistical errors"""
                 c = c_MD[A_MD].sum()
-                eps_MD[k, l]=np.sqrt(k * (prob_MD - prob_MD**2) / c)   
-                set_factors[k, l] = mu_MSM[lccmap_MSM.map(A_new)].sum()/mu_MSM[A_MSM].sum()
+                eps_MD[k, l] = np.sqrt(k * (prob_MD - prob_MD ** 2) / c)
+                set_factors[k, l] = mu_MSM[lccmap_MSM.map(A_new)].sum() / mu_MSM[A_MSM].sum()
 
     if full_output:
         return p_MSM, p_MD, eps_MD, set_factors

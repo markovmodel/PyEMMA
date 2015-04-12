@@ -6,6 +6,7 @@ r"""Dense implementation of hitting probabilities
 
 import numpy as np
 
+
 def hitting_probability(P, target):
     """
     Computes the hitting probabilities for all states to the target states.
@@ -29,19 +30,19 @@ def hitting_probability(P, target):
     # target size
     n = np.shape(P)[0]
     # nontarget
-    nontarget = np.array(list(set(range(n))-set(target)), dtype=int)
+    nontarget = np.array(list(set(range(n)) - set(target)), dtype=int)
     # stable states
     stable = np.where(np.isclose(np.diag(P), 1) == True)[0]
     # everything else
-    origin = np.array(list(set(nontarget)-set(stable)), dtype=int)
+    origin = np.array(list(set(nontarget) - set(stable)), dtype=int)
     # solve hitting probability problem (P-I)x = -b
-    A = P[origin,:][:,origin] - np.eye((len(origin)))
-    b = np.sum(-P[origin,:][:,target], axis=1)
-    x = np.linalg.solve(A,b)
+    A = P[origin, :][:, origin] - np.eye((len(origin)))
+    b = np.sum(-P[origin, :][:, target], axis=1)
+    x = np.linalg.solve(A, b)
     # fill up full solution with 0's for stable states and 1's for target
     xfull = np.ones((n))
     xfull[origin] = x
     xfull[target] = 1
     xfull[stable] = 0
-    
+
     return xfull

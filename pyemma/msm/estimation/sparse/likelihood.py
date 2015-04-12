@@ -8,8 +8,8 @@ def log_likelihood(C, T):
     """
         implementation of likelihood of C given T
     """
-    C=C.tocsr()
-    T=T.tocsr()
+    C = C.tocsr()
+    T = T.tocsr()
     ind = scipy.nonzero(C)
     relT = np.array(T[ind])[0, :]
     relT = np.log(relT)

@@ -10,6 +10,7 @@ from scipy.linalg import solve
 
 from decomposition import stationary_distribution_from_backward_iteration as statdist
 
+
 def forward_committor(T, A, B):
     r"""Forward committor between given sets.
 
@@ -44,33 +45,34 @@ def forward_committor(T, A, B):
     with generator matrix L=(P-I).
                           
     """
-    X=set(range(T.shape[0]))
-    A=set(A)
-    B=set(B)
-    AB=A.intersection(B)
-    notAB=X.difference(A).difference(B)
-    if len(AB)>0:
+    X = set(range(T.shape[0]))
+    A = set(A)
+    B = set(B)
+    AB = A.intersection(B)
+    notAB = X.difference(A).difference(B)
+    if len(AB) > 0:
         raise ValueError("Sets A and B have to be disjoint")
-    L=T-np.eye(T.shape[0]) # Generator matrix
+    L = T - np.eye(T.shape[0])  # Generator matrix
 
-    """Assemble left hand-side W for linear system"""    
+    """Assemble left hand-side W for linear system"""
     """Equation (I)"""
-    W=1.0*L
+    W = 1.0 * L
     """Equation (II)"""
-    W[list(A), :]=0.0
-    W[list(A), list(A)]=1.0
+    W[list(A), :] = 0.0
+    W[list(A), list(A)] = 1.0
     """Equation (III)"""
-    W[list(B), :]=0.0
-    W[list(B), list(B)]=1.0
+    W[list(B), :] = 0.0
+    W[list(B), list(B)] = 1.0
 
     """Assemble right hand side r for linear system"""
     """Equation (I+II)"""
-    r=np.zeros(T.shape[0])
+    r = np.zeros(T.shape[0])
     """Equation (III)"""
-    r[list(B)]=1.0
-    
-    u=solve(W, r)
-    return u       
+    r[list(B)] = 1.0
+
+    u = solve(W, r)
+    return u
+
 
 def backward_committor(T, A, B, mu=None):
     r"""Backward committor between given sets.
@@ -109,33 +111,33 @@ def backward_committor(T, A, B, mu=None):
     with adjoint of the generator matrix K=(D_pi(P-I))'.
                           
     """
-    X=set(range(T.shape[0]))
-    A=set(A)
-    B=set(B)
-    AB=A.intersection(B)
-    notAB=X.difference(A).difference(B)
-    if len(AB)>0:
+    X = set(range(T.shape[0]))
+    A = set(A)
+    B = set(B)
+    AB = A.intersection(B)
+    notAB = X.difference(A).difference(B)
+    if len(AB) > 0:
         raise ValueError("Sets A and B have to be disjoint")
     if mu is None:
-        mu=statdist(T)
-    K=np.transpose(mu[:,np.newaxis]*(T-np.eye(T.shape[0])))
+        mu = statdist(T)
+    K = np.transpose(mu[:, np.newaxis] * (T - np.eye(T.shape[0])))
 
     """Assemble left-hand side W for linear system"""
     """Equation (I)"""
-    W=1.0*K
+    W = 1.0 * K
     """Equation (II)"""
-    W[list(A), :]=0.0
-    W[list(A), list(A)]=1.0
+    W[list(A), :] = 0.0
+    W[list(A), list(A)] = 1.0
     """Equation (III)"""
-    W[list(B), :]=0.0
-    W[list(B), list(B)]=1.0
+    W[list(B), :] = 0.0
+    W[list(B), list(B)] = 1.0
 
     """Assemble right-hand side r for linear system"""
     """Equation (I)+(III)"""
-    r=np.zeros(T.shape[0])
+    r = np.zeros(T.shape[0])
     """Equation (II)"""
-    r[list(A)]=1.0
+    r[list(A)] = 1.0
 
-    u=solve(W, r)
+    u = solve(W, r)
 
     return u

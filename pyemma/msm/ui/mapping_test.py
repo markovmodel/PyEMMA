@@ -10,9 +10,9 @@ from pyemma.util.numeric import assert_allclose
 
 from mapping import from_lcc_labels, to_lcc_labels
 
+
 class TestLccLabels(unittest.TestCase):
-    
-    
+
     def setUp(self):
         self.lcc = np.array([1, 3, 5])
         self.ix = np.arange(self.lcc.shape[0])

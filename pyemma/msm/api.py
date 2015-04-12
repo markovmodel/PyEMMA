@@ -16,15 +16,16 @@ __credits__ = ["Benjamin Trendelkamp-Schroer", "Martin Scherer", "Frank Noe"]
 __license__ = "FreeBSD"
 __version__ = "2.0.0"
 __maintainer__ = "Martin Scherer"
-__email__="m.scherer AT fu-berlin DOT de"
+__email__ = "m.scherer AT fu-berlin DOT de"
 
-__all__=['its',
-         'markov_model',
-         'estimate_markov_model',
-         'cktest',
-         'tpt']
+__all__ = ['its',
+           'markov_model',
+           'estimate_markov_model',
+           'cktest',
+           'tpt']
 
-def its(dtrajs, lags = None, nits=10, reversible = True, connected = True):
+
+def its(dtrajs, lags=None, nits=10, reversible=True, connected=True):
     r"""Calculates the implied timescales for a series of lag times.
 
     Parameters
@@ -66,7 +67,7 @@ def its(dtrajs, lags = None, nits=10, reversible = True, connected = True):
     return itsobj
 
 
-def markov_model(P, dt = '1 step'):
+def markov_model(P, dt='1 step'):
     r"""Wraps transition matrix into a Markov model object, which conveniently provides various quantities
 
     Returns a :class:`MSM <pyemma.msm.ui.MSM>` that contains the transition matrix
@@ -99,8 +100,9 @@ def markov_model(P, dt = '1 step'):
     """
     return MSM(P, dt=dt)
 
+
 def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivity='largest', estimate=True,
-        dt = '1 step', **kwargs):
+                          dt='1 step', **kwargs):
     r"""Estimate Markov state model (MSM) from discrete trajectories.
 
     Returns a :class:`EstimatedMSM <pyemma.msm.ui.EstimatedMSM>` that contains the estimated transition matrix
@@ -172,7 +174,8 @@ def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
     EstimatedMSM : An MSM object that has been estimated from data
 
     """
-    return EstimatedMSM(dtrajs, lag, reversible=reversible, sparse=sparse, connectivity=connectivity, estimate=estimate, dt = dt, **kwargs)
+    return EstimatedMSM(dtrajs, lag, reversible=reversible, sparse=sparse, connectivity=connectivity, estimate=estimate,
+                        dt=dt, **kwargs)
 
 
 def cktest(msmobj, K, nsets=2, sets=None, full_output=False):
@@ -213,8 +216,9 @@ def cktest(msmobj, K, nsets=2, sets=None, full_output=False):
     lcc = msmobj.largest_connected_set
     dtrajs = msmobj.discrete_trajectories_full
     tau = msmobj.lagtime
-    return chapman_kolmogorov(P, lcc, dtrajs, tau, K, 
+    return chapman_kolmogorov(P, lcc, dtrajs, tau, K,
                               nsets=nsets, sets=sets, full_output=full_output)
+
 
 def tpt(msmobj, A, B):
     r"""Computes the A->B reactive flux using transition path theory (TPT)
