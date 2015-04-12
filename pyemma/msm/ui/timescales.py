@@ -56,13 +56,13 @@ class ImpliedTimescales(object):
         self._reversible = reversible
 
         # maximum number of timescales
-        nstates = number_of_states(dtrajs)
+        nstates = number_of_states(self._dtrajs)
         self._nits = min(nits, nstates-1)
 
         # trajectory lengths
-        self.lengths = np.zeros(len(dtrajs))
-        for i in range(len(dtrajs)):
-            self.lengths[i] = len(dtrajs[i])
+        self.lengths = np.zeros(len(self._dtrajs))
+        for i in range(len(self._dtrajs)):
+            self.lengths[i] = len(self._dtrajs[i])
         self.maxlength = np.max(self.lengths)
 
         # lag time
