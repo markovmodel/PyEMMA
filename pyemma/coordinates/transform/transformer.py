@@ -302,7 +302,7 @@ class Transformer(object):
             of this transformer.
 
         """
-        pass
+        raise NotImplementedError('No mapping defined for this transformer.')
 
     def _param_init(self):
         """
