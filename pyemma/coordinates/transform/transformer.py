@@ -87,7 +87,7 @@ class Transformer(object):
         If called, the output will be stored in memory
         """
         if not self._in_memory and op_in_mem:
-            self.Y = [np.zeros((self.trajectory_length(itraj), self.dimension()))
+            self._Y = [np.zeros((self.trajectory_length(itraj), self.dimension()))
                       for itraj in xrange(self.number_of_trajectories())]
             self._map_to_memory()
         elif not op_in_mem and self._in_memory:
@@ -97,7 +97,7 @@ class Transformer(object):
 
     def _clear_in_memory(self):
         assert self.in_memory, "tried to delete in memory results which are not set"
-        for y in self.Y:
+        for y in self._Y:
             del y
 
     def dimension(self):
@@ -180,9 +180,6 @@ class Transformer(object):
     def describe(self):
         """ get a representation of this Transformer"""
         return self.__str__()
-
-    def dimension(self):
-        return 0  # default
 
     def output_type(self):
         return np.float32
@@ -338,7 +335,7 @@ class Transformer(object):
                 last_chunk = (
                     last_chunk_in_traj and itraj >= self.number_of_trajectories() - 1)
                 # write
-                self.Y[itraj][t:t + L] = self.map(X)
+                self._Y[itraj][t:t + L] = self.map(X)
                 # increment time
                 t += L
             # increment trajectory
@@ -375,7 +372,7 @@ class Transformer(object):
             # operate in memory, implement iterator here
             traj_len = self.trajectory_length(self._itraj)
             if lag == 0:
-                Y = self.Y[self._itraj][
+                Y = self._Y[self._itraj][
                     self._t:min(self._t + self.chunksize*stride, traj_len):stride]
                 # increment counters
                 self._t += self.chunksize*stride
@@ -384,9 +381,9 @@ class Transformer(object):
                     self._t = 0
                 return Y
             else:
-                Y0 = self.Y[self._itraj][
+                Y0 = self._Y[self._itraj][
                     self._t:min(self._t + self.chunksize*stride, traj_len):stride]
-                Ytau = self.Y[self._itraj][
+                Ytau = self._Y[self._itraj][
                     self._t + lag*stride:min(self._t + (self.chunksize + lag)*stride, traj_len):stride]
                 # increment counters
                 self._t += self.chunksize*stride
