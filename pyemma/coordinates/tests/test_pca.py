@@ -101,6 +101,10 @@ class TestPCA_Extensive(unittest.TestCase):
 
     def test_n_frames_total(self):
         # map not defined for source
+        self.pca_obj.n_frames_total() == self.T
+
+    def test_number_of_trajectories(self):
+        # map not defined for source
         self.pca_obj.number_of_trajectories() == 1
 
     def test_output_type(self):

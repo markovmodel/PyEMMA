@@ -19,10 +19,10 @@ class UniformTimeClustering(AbstractClustering):
 
     def __init__(self, k=2):
         super(UniformTimeClustering, self).__init__()
-        self.k = k
+        self.n_clusters = k
 
     def describe(self):
-        return "[Uniform time clustering, k = %i]" % self.k
+        return "[Uniform time clustering, k = %i]" % self.n_clusters
 
     def _get_memory_per_frame(self):
         """
@@ -40,7 +40,7 @@ class UniformTimeClustering(AbstractClustering):
         :return:
         """
         # memory for cluster centers and discrete trajectories
-        return self.k * 4 * self.data_producer.dimension() + 4 * self.data_producer.n_frames_total()
+        return self.n_clusters * 4 * self.data_producer.dimension() + 4 * self.data_producer.n_frames_total()
 
     def _param_init(self):
         """
@@ -51,7 +51,7 @@ class UniformTimeClustering(AbstractClustering):
         self._logger.info("Running uniform time clustering")
         # initialize cluster centers
         self.clustercenters = np.zeros(
-            (self.k, self.data_producer.dimension()), dtype=np.float32)
+            (self.n_clusters, self.data_producer.dimension()), dtype=np.float32)
 
     def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None, stride=1):
         """
@@ -80,22 +80,22 @@ class UniformTimeClustering(AbstractClustering):
             if (first_chunk):
                 # initialize time counters
                 T = self.data_producer.n_frames_total(stride=stride)
-                if self.k > T:
-                    self.k = T
-                    self._logger.info('Requested more clusters (k = '+str(self.k)+') than there are total data points ('
+                if self.n_clusters > T:
+                    self.n_clusters = T
+                    self._logger.info('Requested more clusters (k = '+str(self.n_clusters)+') than there are total data points ('
                                       +str(T)+'. Will do clustering with k = '+str(T))
                 # time in previous trajectories
                 self._tprev = 0
                 # number of clusters yet
                 self._n = 0
                 # time segment length between cluster centers
-                self._dt = T / self.k
+                self._dt = T / self.n_clusters
                 # first data point in the middle of the time segment
                 self._nextt = self._dt / 2
             # final time we can go to with this chunk
             maxt = self._tprev + t + L
             # harvest cluster centers from this chunk until we have left it
-            while (self._nextt < maxt and self._n < self.k):
+            while (self._nextt < maxt and self._n < self.n_clusters):
                 i = self._nextt - self._tprev - t
                 self.clustercenters[self._n] = X[i]
                 self._n += 1

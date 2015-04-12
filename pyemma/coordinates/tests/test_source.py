@@ -132,6 +132,10 @@ class TestSourceCallAll(unittest.TestCase):
 
     def test_n_frames_total(self):
         # map not defined for source
+        self.inp.n_frames_total() == 100
+
+    def test_number_of_trajectories(self):
+        # map not defined for source
         self.inp.number_of_trajectories() == 1
 
     def test_output_type(self):

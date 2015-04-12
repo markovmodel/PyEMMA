@@ -74,7 +74,7 @@ class KmeansClustering(AbstractClustering):
                 # free part of the memory
                 del self._chunks
                 # run k-means with all the data
-                self._logger.info("Pass 1: Accumulated all data, running kmeans on "+str(alldata.shape))
+                self._logger.info("Accumulated all data, running kmeans on "+str(alldata.shape))
                 self._algo.fit(alldata)
 
             # done
