@@ -77,21 +77,22 @@ class KmeansClustering(AbstractClustering):
                 self._logger.info("Pass 1: Accumulated all data, running kmeans on "+str(alldata.shape))
                 self._algo.fit(alldata)
 
-        # second pass: assign states
-        if ipass == 1:
-            if first_chunk:
-                self._logger.info("Pass 2: Assigning data")
-            # discretize all
-            if t == 0:
-                n = self.data_producer.trajectory_length(itraj, stride=stride)
-                self.dtrajs.append(np.empty(n, dtype=int))
-
-            assignment = self._algo.predict(X)
-            self.dtrajs[itraj][t: t + assignment.shape[0]] = assignment
-
             # done
             if last_chunk:
                 return True
+        # # second pass: assign states
+        # if ipass == 1:
+        #     if first_chunk:
+        #         self._logger.info("Pass 2: Assigning data")
+        #     # discretize all
+        #     if t == 0:
+        #         n = self.data_producer.trajectory_length(itraj, stride=stride)
+        #         self.dtrajs.append(np.empty(n, dtype=int))
+        #
+        #     assignment = self._algo.predict(X)
+        #     self.dtrajs[itraj][t: t + assignment.shape[0]] = assignment
+
+
 
     def _param_finish(self):
         self.clustercenters = self._algo.cluster_centers_
@@ -100,4 +101,6 @@ class KmeansClustering(AbstractClustering):
         if X.ndim == 1:
             X = self._ensure2d(X)
         d = self._algo.predict(X)
-        return d[:,None] # always return a column vector in this function
+        if d.dtype != self.output_type():
+            d = d.astype(self.output_type())  # convert type if necessary
+        return d[:,None]  # always return a column vector in this function

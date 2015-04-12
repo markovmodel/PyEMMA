@@ -176,6 +176,12 @@ class Transformer(object):
         """ get a representation of this Transformer"""
         return self.__str__()
 
+    def dimension(self):
+        return 0  # default
+
+    def output_type(self):
+        return np.float32
+
     def parametrize(self, stride=1):
         r""" parametrize this Transformer
         """
@@ -504,7 +510,7 @@ class Transformer(object):
         assert ndim > 0, "ndim was zero in %s" % self.__class__.__name__
 
         # allocate memory
-        trajs = [np.empty((l, ndim)) for l in self.trajectory_lengths(stride=stride)]
+        trajs = [np.empty((l, ndim), dtype=self.output_type()) for l in self.trajectory_lengths(stride=stride)]
 
         if __debug__:
             self._logger.debug("get_output(): created output trajs with shapes: %s"

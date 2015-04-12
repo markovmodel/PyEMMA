@@ -23,11 +23,18 @@ class AbstractClustering(Transformer):
         super(AbstractClustering, self).__init__()
         self.metric = metric
         self.clustercenters = None
-        self.dtrajs = []
+        self._dtrajs = []
+
+    @property
+    def dtrajs(self):
+        if (len(self._dtrajs) == 0):  # nothing assigned yet, doing that now
+            return self.assign(stride = 1)
+        else:
+            return self._dtrajs  # returning what we have saved
 
     def _map_array(self, X):
         """get closest index of point in :attr:`clustercenters` to x."""
-        dtraj = np.empty(X.shape[0], np.int64)
+        dtraj = np.empty(X.shape[0], dtype=self.output_type())
         regspatial.assign(X.astype(np.float32, order='C', copy=False),
                           self.clustercenters, dtraj, self.metric)
         res = dtraj[:,None] # always return a column vector in this function
@@ -37,10 +44,16 @@ class AbstractClustering(Transformer):
         """output dimension of clustering algorithm (always 1)."""
         return 1
 
+    def output_type(self):
+        return np.int64
+
     def assign(self, X=None, stride=1):
         """
         Assigns the given trajectory or list of trajectories to cluster centers by using the discretization defined
-        by this clustering method (usually a Voronoi tesselation)
+        by this clustering method (usually a Voronoi tesselation).
+
+        You can assign multiple times with different strides. The last result of assign will be saved and is available
+        as the attribute :func:`dtrajs`.
 
         Parameters
         ----------
@@ -48,13 +61,14 @@ class AbstractClustering(Transformer):
             Optional input data to map, where T is the number of time steps and n is the number of dimensions.
             When a list is provided they can have differently many time steps, but the number of dimensions need
             to be consistent. When X is not provided, the result of assign is identical to get_output(), i.e. the
-            data used for clustering will be assigned.
+            data used for clustering will be assigned. If X is given, the stride argument is not accepted.
 
         stride : int, optional, default = 1
             If set to 1, all frames of the input data will be assigned. Note that this could cause this calculation
             to be very slow for large data sets. Since molecular dynamics data is usually
             correlated at short timescales, it is often sufficient to obtain the discretization at a longer stride.
             Note that the stride option used to conduct the clustering is independent of the assign stride.
+            This argument is only accepted if X is not given.
 
         Returns
         -------
@@ -63,7 +77,26 @@ class AbstractClustering(Transformer):
             If called with a list of trajectories, Y will also be a corresponding list of discrete trajectories
 
         """
-        return self.map(X)
+        if X is None:
+            # map to column vectors
+            mapped = self.get_output(stride=stride)
+            # flatten and save
+            self._dtrajs = [np.transpose(m)[0] for m in mapped]
+            # return
+            return self._dtrajs
+        else:
+            if stride != 1:
+                raise ValueError('assign accepts either X or stride parameters, but not both. If you want to map '+
+                                 'only a subset of your data, extract the subset yourself and pass it as X.')
+            # map to column vector(s)
+            mapped = self.map(X)
+            # flatten
+            if isinstance(mapped, np.ndarray):
+                mapped = np.transpose(mapped)[0]
+            else:
+                mapped = [np.transpose(m)[0] for m in mapped]
+            # return
+            return mapped
 
     def save_dtrajs(self, trajfiles=None, prefix='',
                     output_dir='.',
@@ -98,7 +131,6 @@ class AbstractClustering(Transformer):
             from pyemma.msm.io import save_discrete_trajectory as write_dtraj
         import os.path as path
 
-        dtrajs = self.dtrajs  # clustering.dtrajs
         output_files = []
 
         if trajfiles is not None:  # have filenames available?
@@ -112,19 +144,19 @@ class AbstractClustering(Transformer):
                 # name = path.join(p, name)
                 output_files.append(name)
         else:
-            for i in xrange(len(dtrajs)):
+            for i in xrange(len(self.dtrajs)):
                 if prefix is not '':
                     name = "%s_%i%s" % (prefix, i, extension)
                 else:
                     name = i + extension
                 output_files.append(name)
 
-        assert len(dtrajs) == len(output_files)
+        assert len(self.dtrajs) == len(output_files)
 
         if not os.path.exists(output_dir):
             mkdir_p(output_dir)
 
-        for filename, dtraj in zip(output_files, dtrajs):
+        for filename, dtraj in zip(output_files, self.dtrajs):
             dest = path.join(output_dir, filename)
             self._logger.debug('writing dtraj to "%s"' % dest)
             try:
