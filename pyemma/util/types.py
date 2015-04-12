@@ -76,6 +76,15 @@ def is_int_array(l):
             return True
     return False
 
+def is_int_matrix(l):
+    r"""Checks if l is a numpy array of floats
+
+    """
+    if isinstance(l, np.ndarray):
+        if l.ndim == 2 and (l.dtype.kind == 'i' or l.dtype.kind == 'u'):
+            return True
+    return False
+
 def is_float_array(l):
     r"""Checks if l is a numpy array of floats
 
