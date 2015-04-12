@@ -216,7 +216,7 @@ class TICA(Transformer):
                     self.N_cov += 2.0*np.shape(X)[0]
 
             else:
-                self._logger.error("trajectory nr %i too short, skipping it" % itraj)
+                self._logger.info("trajectory nr %i too short, skipping it" % itraj)
 
             if last_chunk:
                 self._logger.info("finished calculation of Cov and Cov_tau.")
