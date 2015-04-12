@@ -8,6 +8,7 @@ import unittest
 
 from pyemma.coordinates.clustering.regspace import RegularSpaceClustering
 import numpy as np
+import pyemma.util.types as types
 import warnings
 from pyemma.coordinates.api import cluster_regspace
 
@@ -34,6 +35,11 @@ class RandomDataSource:
     def trajectory_length(self, itraj, stride=1):
         assert stride == 1, 'stride !=1 not implemented'
         return self.data[itraj].shape[0]
+
+    def trajectory_lengths(self, stride=1):
+        assert stride == 1, 'stride !=1 not implemented'
+        lengths = [traj.shape[0] for traj in self.data]
+        return lengths
 
     def number_of_trajectories(self):
         return self.data.shape[0]
@@ -62,7 +68,8 @@ class TestRegSpaceClustering(unittest.TestCase):
     def testAlgo(self):
         self.clustering.parametrize()
 
-        assert self.clustering.dtrajs[0].dtype == int
+        # correct type of dtrajs
+        assert types.is_int_array(self.clustering.dtrajs[0])
 
         # assert distance for each centroid is at least dmin
         for c in itertools.combinations(self.clustering.clustercenters, 2):
