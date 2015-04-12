@@ -97,7 +97,7 @@ class TestFeatureReaderAndTICA(unittest.TestCase):
         trans.data_producer = reader
         for tau in [1, 10, 100, 1000, 2000]:
             log.info('number of trajectories reported by tica %d' % trans.number_of_trajectories())
-            trans.tau = tau
+            trans.lag = tau
             ic_fnames = save_trajs(trans)  # this runs again the chain after the change of tau
             # print '@@cov', trans.cov
             # print '@@cov_tau', trans.cov_tau
