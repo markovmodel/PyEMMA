@@ -1,15 +1,17 @@
 import unittest
 import os
+import numpy as np
 
 from pyemma.coordinates.data import MDFeaturizer
 from pyemma.util.log import getLogger
 import pyemma.coordinates.api as api
+import pyemma.util.types as types
 
 
 logger = getLogger('TestReaderUtils')
 
 
-class TestApiInput(unittest.TestCase):
+class TestSource(unittest.TestCase):
     def setUp(self):
         path = os.path.join(os.path.split(__file__)[0], 'data')
         self.pdb_file = os.path.join(path, 'bpti_ca.pdb')
@@ -81,6 +83,82 @@ class TestApiInput(unittest.TestCase):
         root_dir = os.path.abspath(os.sep)
         self.assertRaises(ValueError, api.source, root_dir, None, self.pdb_file)
 
+class TestSourceCallAll(unittest.TestCase):
+    def setUp(self):
+        path = os.path.join(os.path.split(__file__)[0], 'data')
+        self.pdb_file = os.path.join(path, 'bpti_ca.pdb')
+        self.xtc_file = os.path.join(path, 'bpti_mini.xtc')
+        self.inp = api.source(self.xtc_file, top=self.pdb_file)
+
+    def test_chunksize(self):
+        assert types.is_int(self.inp.chunksize)
+
+    def test_data_producer(self):
+        assert self.inp.data_producer is not None
+
+    def test_describe(self):
+        desc = self.inp.describe()
+        assert types.is_string(desc) or types.is_list_of_string(desc)
+
+    def test_dimension(self):
+        assert types.is_int(self.inp.dimension())
+
+    def test_featurizer(self):
+        # must have a featurizer
+        assert self.inp.featurizer is not None
+
+    def test_get_output(self):
+        O = self.inp.get_output()
+        assert types.is_list(O)
+        assert len(O) == 1
+        assert types.is_float_matrix(O[0])
+        assert O[0].shape[0] == 100
+        assert O[0].shape[1] == self.inp.dimension()
+
+    def test_in_memory(self):
+        assert isinstance(self.inp.in_memory, bool)
+
+    def test_iterator(self):
+        for itraj, chunk in self.inp:
+            assert types.is_int(itraj)
+            assert types.is_float_matrix(chunk)
+            assert chunk.shape[0] == self.inp.chunksize
+            assert chunk.shape[1] == self.inp.dimension()
+
+    def test_map(self):
+        # map not defined for source
+        with self.assertRaises(NotImplementedError):
+            self.inp.map(np.zeros((10,10)))
+
+    def test_n_frames_total(self):
+        # map not defined for source
+        self.inp.n_frames_total() == 100
+
+    def test_number_of_trajectories(self):
+        # map not defined for source
+        self.inp.number_of_trajectories() == 1
+
+    def test_output_type(self):
+        assert self.inp.output_type() == np.float32
+
+    def test_parametrize(self):
+        # nothing should happen
+        self.inp.parametrize()
+
+    def test_topfile(self):
+        types.is_string(self.inp.topfile)
+
+    def test_trajectory_length(self):
+        assert self.inp.trajectory_length(0) == 100
+        with self.assertRaises(IndexError):
+            self.inp.trajectory_length(1)
+
+    def test_trajectory_lengths(self):
+        assert len(self.inp.trajectory_lengths()) == 1
+        assert self.inp.trajectory_lengths()[0] == self.inp.trajectory_length(0)
+
+    def test_trajfiles(self):
+        assert types.is_list_of_string(self.inp.trajfiles)
 
 if __name__ == "__main__":
     unittest.main()

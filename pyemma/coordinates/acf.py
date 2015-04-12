@@ -56,7 +56,7 @@ def acf(trajs, stride=1, max_lag=None, subtract_mean=True, normalize=True, mean=
         n_samples = trajs[0].shape[0]
         for i, traj in enumerate(trajs[1:]):
             if traj.shape[1] != mean.shape[0]:
-                raise Exception(('number of order parameters in tarjectory number %d differs' +
+                raise Exception(('number of order parameters in trajectory number %d differs' +
                                  'from the number found in previous trajectories.') % (i + 1))
             mean += traj.sum(axis=0)
             n_samples += traj.shape[0]
@@ -87,7 +87,7 @@ def acf(trajs, stride=1, max_lag=None, subtract_mean=True, normalize=True, mean=
         # adapt shape of acf: resize temporal dimension, additionally set
         # number of order parameters of acf in the first step
         if res.shape[1] < acftraj.shape[1] and res.shape[1] > 0:
-            raise Exception(('number of order parameters in tarjectory number %d differs ' +
+            raise Exception(('number of order parameters in trajectory number %d differs ' +
                              'from the number found in previous trajectories.') % i)
         if res.shape[1] < acftraj.shape[1] or res.shape[0] < acftraj.shape[0]:
             res.resize(acftraj.shape)

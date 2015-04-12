@@ -37,8 +37,8 @@ def determine_lengths(dtrajs):
     dtrajs : list of int-arrays
         discrete trajectories
     """
-    if (isinstance(dtrajs[0],(int))):
-        return len(dtrajs)*np.ones((1))
+    if (isinstance(dtrajs[0], (int))):
+        return len(dtrajs) * np.ones((1))
     lengths = np.zeros((len(dtrajs)))
     for i in range(len(dtrajs)):
         lengths[i] = len(dtrajs[i])
@@ -55,34 +55,34 @@ def bootstrap_trajectories(trajs, correlation_length):
     if (isinstance(trajs[0], (int, long, float))):
         trajs = [trajs]
     ntraj = len(trajs)
-    
+
     # determine correlation length to be used
     lengths = determine_lengths(trajs)
     Ltot = np.sum(lengths)
     Lmax = np.max(lengths)
     if (correlation_length < 1):
-        correlation_length = Lmax    
-    
-    # assign probabilites to select trajectories
+        correlation_length = Lmax
+
+        # assign probabilites to select trajectories
     w_trajs = np.zeros((len(trajs)))
     for i in range(ntraj):
         w_trajs[i] = len(trajs[i])
-    w_trajs /= np.sum(w_trajs) # normalize to sum 1.0
+    w_trajs /= np.sum(w_trajs)  # normalize to sum 1.0
     distrib_trajs = rv_discrete(values=(range(ntraj), w_trajs))
-    
+
     # generate subtrajectories
     Laccum = 0
-    subs = []    
+    subs = []
     while (Laccum < Ltot):
         # pick a random trajectory
         itraj = distrib_trajs.rvs()
         # pick a starting frame
-        t0 = random.randint(0, max(1,len(trajs[itraj])-correlation_length))
-        t1 = min(len(trajs[itraj]), t0+correlation_length)
+        t0 = random.randint(0, max(1, len(trajs[itraj]) - correlation_length))
+        t1 = min(len(trajs[itraj]), t0 + correlation_length)
         # add new subtrajectory
         subs.append(trajs[itraj][t0:t1])
         # increment available states
-        Laccum += (t1-t0)
+        Laccum += (t1 - t0)
 
     # and return
     return subs
@@ -95,11 +95,12 @@ def bootstrap_counts_singletraj(dtraj, lagtime, n):
     # check if length is sufficient
     L = len(dtraj)
     if (lagtime > L):
-        raise ValueError('Cannot sample counts with lagtime '+str(lagtime)+' from a trajectory with length '+str(L))
+        raise ValueError(
+            'Cannot sample counts with lagtime ' + str(lagtime) + ' from a trajectory with length ' + str(L))
     # sample
-    I = np.random.random_integers(0, L-lagtime-1, size=n)
+    I = np.random.random_integers(0, L - lagtime - 1, size=n)
     J = I + lagtime
-    
+
     # return state pairs
     return (dtraj[I], dtraj[J])
 
@@ -121,19 +122,19 @@ def bootstrap_counts(dtrajs, lagtime):
     Ltot = np.sum(lengths)
     if (lagtime >= Lmax):
         raise ValueError('Cannot estimate count matrix: lag time '
-                         +str(lagtime)+' is longer than the longest trajectory length '+str(Lmax))
+                         + str(lagtime) + ' is longer than the longest trajectory length ' + str(Lmax))
     nsample = int(Ltot / lagtime)
 
     # determine number of states n
     n = number_of_states(dtrajs)
-        
+
     # assigning trajectory sampling weights
     w_trajs = np.maximum(0.0, lengths - lagtime)
-    w_trajs /= np.sum(w_trajs) # normalize to sum 1.0
+    w_trajs /= np.sum(w_trajs)  # normalize to sum 1.0
     distrib_trajs = rv_discrete(values=(range(ntraj), w_trajs))
     # sample number of counts from each trajectory
-    n_from_traj = np.bincount(distrib_trajs.rvs(size = nsample), minlength = ntraj)
-    
+    n_from_traj = np.bincount(distrib_trajs.rvs(size=nsample), minlength=ntraj)
+
     # for each trajectory, sample counts and stack them
     rows = np.zeros((nsample))
     cols = np.zeros((nsample))
@@ -141,11 +142,11 @@ def bootstrap_counts(dtrajs, lagtime):
     ncur = 0
     for i in range(len(n_from_traj)):
         if n_from_traj[i] > 0:
-            (r,c) = bootstrap_counts_singletraj(dtrajs[i], lagtime, n_from_traj[i])
+            (r, c) = bootstrap_counts_singletraj(dtrajs[i], lagtime, n_from_traj[i])
             rows[ncur:ncur + n_from_traj[i]] = r
             cols[ncur:ncur + n_from_traj[i]] = c
             ncur += n_from_traj[i]
     # sum over counts
-    Csparse = scipy.sparse.coo_matrix((ones, (rows,cols)), shape=(n,n))
-    
+    Csparse = scipy.sparse.coo_matrix((ones, (rows, cols)), shape=(n, n))
+
     return Csparse.tocsr()

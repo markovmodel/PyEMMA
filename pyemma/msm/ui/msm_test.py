@@ -10,11 +10,12 @@ import numpy as np
 from pyemma.msm.generation import generate_traj
 from pyemma.msm.estimation import cmatrix, largest_connected_set, connected_cmatrix, tmatrix
 from pyemma.msm.analysis import statdist, timescales
-from pyemma.util.numeric import assert_allclose, allclose_sparse
+from pyemma.util.numeric import assert_allclose
 
 from birth_death_chain import BirthDeathChain
 
 from msm import EstimatedMSM
+
 
 class TestMSM(unittest.TestCase):
 
@@ -65,5 +66,5 @@ class TestMSM(unittest.TestCase):
         assert_allclose(self.mu_MSM, msm.stationary_distribution)
         assert_allclose(self.ts, msm.timescales(self.k))
 
-if __name__=="__main__":
+if __name__ == "__main__":
     unittest.main()

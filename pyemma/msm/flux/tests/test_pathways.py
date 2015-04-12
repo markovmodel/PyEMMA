@@ -12,6 +12,7 @@ from scipy.sparse import csr_matrix
 from pyemma.util.numeric import assert_allclose
 from pyemma.msm.flux import pathways
 
+
 class TestPathways(unittest.TestCase):
     
     def setUp(self):

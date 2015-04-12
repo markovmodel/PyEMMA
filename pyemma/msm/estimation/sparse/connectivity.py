@@ -8,6 +8,7 @@ import numpy as np
 import scipy.sparse
 import scipy.sparse.csgraph as csgraph
 
+
 def connected_sets(C, directed=True):
     r"""Compute connected components for a directed graph with weights
     represented by the given count matrix.
@@ -27,42 +28,43 @@ def connected_sets(C, directed=True):
         the corresponding connected component.
 
     """
-    M=C.shape[0]
+    M = C.shape[0]
     """ Compute connected components of C. nc is the number of
     components, indices contain the component labels of the states
     """
-    nc, indices=csgraph.connected_components(C, directed=directed, connection='strong')
-    
-    states=np.arange(M) # Discrete states
+    nc, indices = csgraph.connected_components(C, directed=directed, connection='strong')
+
+    states = np.arange(M)  # Discrete states
 
     """Order indices"""
-    ind=np.argsort(indices)
-    indices=indices[ind]
+    ind = np.argsort(indices)
+    indices = indices[ind]
 
     """Order states"""
-    states=states[ind]
+    states = states[ind]
     """ The state index tuple is now of the following form (states,
     indices)=([s_23, s_17,...,s_3, s_2, ...], [0, 0, ..., 1, 1, ...])
     """
 
     """Find number of states per component"""
-    count=np.bincount(indices)
+    count = np.bincount(indices)
 
     """Cumulative sum of count gives start and end indices of
     components"""
-    csum=np.zeros(len(count)+1, dtype=int)
-    csum[1:]=np.cumsum(count)
+    csum = np.zeros(len(count) + 1, dtype=int)
+    csum[1:] = np.cumsum(count)
 
     """Generate list containing components, sort each component by
     increasing state label"""
-    cc=[]
+    cc = []
     for i in range(nc):
-        cc.append(np.sort(states[csum[i]:csum[i+1]]))
-    
+        cc.append(np.sort(states[csum[i]:csum[i + 1]]))
+
     """Sort by size of component - largest component first"""
-    cc=sorted(cc, key=lambda x: -len(x))
-    
+    cc = sorted(cc, key=lambda x: -len(x))
+
     return cc
+
 
 def largest_connected_set(C, directed=True):
     r"""Compute connected components for a directed graph with weights
@@ -80,6 +82,7 @@ def largest_connected_set(C, directed=True):
 
     """
     return connected_sets(C, directed=directed)[0]
+
 
 def largest_connected_submatrix(C, directed=True, lcc=None):
     r"""Compute the count matrix of the largest connected set.
@@ -109,24 +112,25 @@ def largest_connected_submatrix(C, directed=True, lcc=None):
 
     """
     if lcc is None:
-        lcc=largest_connected_set(C, directed=directed)
-    
+        lcc = largest_connected_set(C, directed=directed)
+
     """Row slicing"""
     if scipy.sparse.issparse(C):
         C_cc = C.tocsr()
     else:
         C_cc = C
-    C_cc=C_cc[lcc, :]
+    C_cc = C_cc[lcc, :]
 
     """Column slicing"""
     if scipy.sparse.issparse(C):
         C_cc = C_cc.tocsc()
-    C_cc=C_cc[:, lcc]
+    C_cc = C_cc[:, lcc]
 
     if scipy.sparse.issparse(C):
         return C_cc.tocoo()
     else:
         return C_cc
+
 
 def is_connected(C, directed=True):
     r"""Return true, if the input count matrix is completely connected.
@@ -146,7 +150,6 @@ def is_connected(C, directed=True):
         
 
     """
-    nc=csgraph.connected_components(C, directed=directed, connection='strong', \
-                                        return_labels=False)    
+    nc = csgraph.connected_components(C, directed=directed, connection='strong', \
+                                      return_labels=False)
     return nc == 1
-    

@@ -71,6 +71,14 @@ class RegularSpaceClustering(AbstractClustering):
         # memory for cluster centers and discrete trajectories
         return 4 * self.data_producer.dimension() + 4 * self.data_producer.n_frames_total()
 
+    def _param_init(self):
+        """
+        Initializes the parametrization.
+
+        :return:
+        """
+        self._logger.info("Running regular space clustering")
+
     def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None, stride=1):
         """
         first pass: calculate clustercenters
@@ -87,6 +95,7 @@ class RegularSpaceClustering(AbstractClustering):
                 # finished regularly
                 if last_chunk:
                     self.clustercenters = np.array(self._clustercenters)
+                    self.n_clusters = self.clustercenters.shape[0]
                     return True  # finished!
             except RuntimeError:
                 msg = 'Maximum number of cluster centers reached.' \
@@ -96,6 +105,7 @@ class RegularSpaceClustering(AbstractClustering):
                 warnings.warn(msg)
                 # finished anyway, because we have no more space for clusters. Rest of trajectory has no effect
                 self.clustercenters = np.array(self._clustercenters)
+                self.n_clusters = self.clustercenters.shape[0]
                 return True
 
         return False

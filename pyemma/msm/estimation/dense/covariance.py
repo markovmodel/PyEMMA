@@ -6,6 +6,7 @@ r"""This module implements the transition matrix covariance function
 
 import numpy as np
 
+
 def tmatrix_cov(C, row=None):
     r"""Covariance tensor for the non-reversible transition matrix ensemble
 
@@ -29,26 +30,27 @@ def tmatrix_cov(C, row=None):
     """
 
     if row is None:
-        alpha=C+1.0 #Dirichlet parameters
-        alpha0=alpha.sum(axis=1) #Sum of paramters (per row)
-    
-        norm=alpha0**2*(alpha0+1.0)
+        alpha = C + 1.0  # Dirichlet parameters
+        alpha0 = alpha.sum(axis=1)  # Sum of paramters (per row)
+
+        norm = alpha0 ** 2 * (alpha0 + 1.0)
 
         """Non-normalized covariance tensor"""
-        Z=-alpha[:,:,np.newaxis]*alpha[:,np.newaxis,:]
+        Z = -alpha[:, :, np.newaxis] * alpha[:, np.newaxis, :]
 
         """Correct-diagonal"""
-        ind=np.diag_indices(C.shape[0])
-        Z[:, ind[0], ind[1]]+=alpha0[:,np.newaxis]*alpha
+        ind = np.diag_indices(C.shape[0])
+        Z[:, ind[0], ind[1]] += alpha0[:, np.newaxis] * alpha
 
         """Covariance matrix"""
-        cov=Z/norm[:,np.newaxis,np.newaxis]
+        cov = Z / norm[:, np.newaxis, np.newaxis]
 
-        return cov       
-    
+        return cov
+
     else:
-        alpha=C[row, :]+1.0
+        alpha = C[row, :] + 1.0
         return dirichlet_covariance(alpha)
+
 
 def dirichlet_covariance(alpha):
     r"""Covariance matrix for Dirichlet distribution.
@@ -64,20 +66,21 @@ def dirichlet_covariance(alpha):
         Covariance matrix
         
     """
-    alpha0=alpha.sum()
-    norm=alpha0**2*(alpha0+1.0)
+    alpha0 = alpha.sum()
+    norm = alpha0 ** 2 * (alpha0 + 1.0)
 
     """Non normalized covariance"""
-    Z=-alpha[:,np.newaxis]*alpha[np.newaxis,:]
+    Z = -alpha[:, np.newaxis] * alpha[np.newaxis, :]
 
     """Correct diagonal"""
-    ind=np.diag_indices(Z.shape[0])
-    Z[ind]+=alpha0*alpha
+    ind = np.diag_indices(Z.shape[0])
+    Z[ind] += alpha0 * alpha
 
     """Covariance matrix"""
-    cov=Z/norm
-    
+    cov = Z / norm
+
     return cov
+
 
 def error_perturbation_single(C, S, R=None):
     r"""Error-perturbation arising from a given sensitivity
@@ -97,11 +100,12 @@ def error_perturbation_single(C, S, R=None):
          Variance (covariance) of observable(s)
 
     """
-    cov=tmatrix_cov(C) # (M, M, M)
+    cov = tmatrix_cov(C)  # (M, M, M)
     if R is None:
-        R=S
-    X=S[:,:,np.newaxis]*cov*R[:,np.newaxis,:]
+        R = S
+    X = S[:, :, np.newaxis] * cov * R[:, np.newaxis, :]
     return X.sum()
+
 
 def error_perturbation_var(C, S):
     r"""Error-perturbation arising from a given sensitivity
@@ -114,12 +118,13 @@ def error_perturbation_var(C, S):
         Sensitivity tensor
 
     """
-    K=S.shape[0]
-    cov=tmatrix_cov(C)
+    K = S.shape[0]
+    cov = tmatrix_cov(C)
     for i in range(K):
-        R=S[i,:,:]
-        X[i]=(R[:,:,np.newaxis]*cov*R[:,np.newaxis,:]).sum()
-    
+        R = S[i, :, :]
+        X[i] = (R[:, :, np.newaxis] * cov * R[:, np.newaxis, :]).sum()
+
+
 def error_perturbation_cov(C, S):
     r"""Error-perturbation arising from a given sensitivity
 
@@ -136,16 +141,17 @@ def error_perturbation_cov(C, S):
         Covariance matrix for given sensitivity
 
     """
-    K=S.shape[0]
-    X=np.zeros((K, K))
-    cov=tmatrix_cov(C)
+    K = S.shape[0]
+    X = np.zeros((K, K))
+    cov = tmatrix_cov(C)
     for i in range(K):
         for j in range(K):
-            Q=S[i, :, :]
-            R=S[j, :, :]
-            X[i, j]=(Q[:,:,np.newaxis]*cov*R[:,np.newaxis,:]).sum()
+            Q = S[i, :, :]
+            R = S[j, :, :]
+            X[i, j] = (Q[:, :, np.newaxis] * cov * R[:, np.newaxis, :]).sum()
     return X
-        
+
+
 def error_perturbation(C, S):
     r"""Error perturbation for given sensitivity matrix.
 
@@ -164,9 +170,9 @@ def error_perturbation(C, S):
         (for vector-valued observable)
         
     """
-    if len(S.shape)==2: #Scalar observable
+    if len(S.shape) == 2:  # Scalar observable
         return error_perturbation_single(C, S)
-    elif len(S.shape)==3: #Vector observable
+    elif len(S.shape) == 3:  # Vector observable
         return error_perturbation_cov(C, S)
     else:
         raise ValueError("Sensitivity matrix S has to be a 2d or 3d array")    

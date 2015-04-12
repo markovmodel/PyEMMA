@@ -6,7 +6,8 @@ r"""Decomposition of a netflux network into its dominant reaction pathways
 import warnings
 import numpy as np
 import scipy.sparse.csgraph as csgraph
-from scipy.sparse import csr_matrix, coo_matrix
+from scipy.sparse import coo_matrix
+
 
 def find_bottleneck(F, A, B):
     r"""Find dynamic bottleneck of flux network.
@@ -26,46 +27,47 @@ def find_bottleneck(F, A, B):
     The edge corresponding to the dynamic bottleneck
 
     """
-    F=F.tocoo()
-    n=F.shape[0]
-    
+    F = F.tocoo()
+    n = F.shape[0]
+
     """Get exdges and corresponding flux values"""
-    val=F.data
-    row=F.row
-    col=F.col
+    val = F.data
+    row = F.row
+    col = F.col
 
     """Sort edges according to flux"""
-    ind=np.argsort(val)
-    val=val[ind]
-    row=row[ind]
-    col=col[ind]
+    ind = np.argsort(val)
+    val = val[ind]
+    row = row[ind]
+    col = col[ind]
 
     """Check if edge with largest conductivity connects A and B"""
-    b=np.array(row[-1], col[-1])
-    if has_path(b, A, B):    
+    b = np.array(row[-1], col[-1])
+    if has_path(b, A, B):
         return b
     else:
         """Bisection of flux-value array"""
-        r=val.size
-        l=0
-        N=0
-        while r-l>1:
-            m=np.int(np.floor(0.5*(r+l)))
-            valtmp=val[m:]
-            rowtmp=row[m:]
-            coltmp=col[m:]
-            C=coo_matrix((valtmp, (rowtmp, coltmp)), shape=(n, n))
+        r = val.size
+        l = 0
+        N = 0
+        while r - l > 1:
+            m = np.int(np.floor(0.5 * (r + l)))
+            valtmp = val[m:]
+            rowtmp = row[m:]
+            coltmp = col[m:]
+            C = coo_matrix((valtmp, (rowtmp, coltmp)), shape=(n, n))
             """Check if there is a path connecting A and B by
             iterating over all starting nodes in A"""
             if has_connection(C, A, B):
-                l=1*m
+                l = 1 * m
             else:
-                r=1*m
-                
-        E_AB=coo_matrix((val[l+1:], (row[l+1:], col[l+1:])), shape=(n, n))
-        b1=row[l]
-        b2=col[l]
+                r = 1 * m
+
+        E_AB = coo_matrix((val[l + 1:], (row[l + 1:], col[l + 1:])), shape=(n, n))
+        b1 = row[l]
+        b2 = col[l]
         return b1, b2, E_AB
+
 
 def has_connection(graph, A, B):
     r"""Check if the given graph contains a path connecting A and B.
@@ -85,12 +87,13 @@ def has_connection(graph, A, B):
        True if the graph contains a path connecting A and B, otherwise
        False.
        
-    """  
+    """
     for istart in A:
-        nodes=csgraph.breadth_first_order(graph, istart, directed=True, return_predecessors=False)
-        if has_path(nodes, A, B):       
+        nodes = csgraph.breadth_first_order(graph, istart, directed=True, return_predecessors=False)
+        if has_path(nodes, A, B):
             return True
-    return False    
+    return False
+
 
 def has_path(nodes, A, B):
     r"""Test if nodes from a breadth_first_order search lead from A to
@@ -111,9 +114,10 @@ def has_path(nodes, A, B):
         True if there exists a path, else False
 
     """
-    x1 = np.intersect1d(nodes, A).size>0
-    x2 = np.intersect1d(nodes, B).size>0
-    return x1 and x2                       
+    x1 = np.intersect1d(nodes, A).size > 0
+    x2 = np.intersect1d(nodes, B).size > 0
+    return x1 and x2
+
 
 def pathway(F, A, B):
     r"""Compute the dominant reaction-pathway.
@@ -134,23 +138,24 @@ def pathway(F, A, B):
         
     """
     b1, b2, F = find_bottleneck(F, A, B)
-    if np.any(A==b1):
-        wL = [b1,]
-    elif np.any(B==b1):
-        raise ValueError(("Roles of vertices b1 and b2 are switched." 
-                         "This should never happen for a correct flux network"
-                         "obtained from a reversible transition meatrix."))
+    if np.any(A == b1):
+        wL = [b1, ]
+    elif np.any(B == b1):
+        raise ValueError(("Roles of vertices b1 and b2 are switched."
+                          "This should never happen for a correct flux network"
+                          "obtained from a reversible transition meatrix."))
     else:
-        wL = pathway(F, A, [b1,])
-    if np.any(B==b2):
-        wR = [b2,]
-    elif np.any(A==b2):
-        raise ValueError(("Roles of vertices b1 and b2 are switched." 
-                         "This should never happen for a correct flux network"
-                         "obtained from a reversible transition meatrix."))        
+        wL = pathway(F, A, [b1, ])
+    if np.any(B == b2):
+        wR = [b2, ]
+    elif np.any(A == b2):
+        raise ValueError(("Roles of vertices b1 and b2 are switched."
+                          "This should never happen for a correct flux network"
+                          "obtained from a reversible transition meatrix."))
     else:
-        wR = pathway(F, [b2,], B)
-    return wL+wR
+        wR = pathway(F, [b2, ], B)
+    return wL + wR
+
 
 def capacity(F, path):
     r"""Compute capacity (min. current) of path.
@@ -170,13 +175,14 @@ def capacity(F, path):
     """
     F = F.todok()
     L = len(path)
-    currents = np.zeros(L-1)
-    for l in range(L-1):
+    currents = np.zeros(L - 1)
+    for l in range(L - 1):
         i = path[l]
-        j = path[l+1]
+        j = path[l + 1]
         currents[l] = F[i, j]
-    
+
     return currents.min()
+
 
 def remove_path(F, path):
     r"""Remove capacity along a path from flux network.
@@ -197,12 +203,13 @@ def remove_path(F, path):
     c = capacity(F, path)
     F = F.todok()
     L = len(path)
-    for l in range(L-1):
+    for l in range(L - 1):
         i = path[l]
-        j = path[l+1]
+        j = path[l + 1]
         F[i, j] -= c
     return F
-    
+
+
 def pathways(F, A, B, fraction=1.0, maxiter=1000):
     r"""Decompose flux network into dominant reaction paths.
 
@@ -234,8 +241,8 @@ def pathways(F, A, B, fraction=1.0, maxiter=1000):
                 
     """
     F, a, b = add_endstates(F, A, B)
-    A = [a,]
-    B = [b,]
+    A = [a, ]
+    B = [b, ]
 
     """Total flux"""
     TF = F.tocsr()[A, :].sum()
@@ -264,12 +271,13 @@ def pathways(F, A, B, fraction=1.0, maxiter=1000):
         """Remove capacity along given path from flux-network"""
         F = remove_path(F, path)
         niter += 1
-        if CF/TF>=fraction:
+        if CF / TF >= fraction:
             break
         if niter > maxiter:
-            warnings.warn("Maximum number of iterations reached", RuntimeWarning)            
+            warnings.warn("Maximum number of iterations reached", RuntimeWarning)
     return paths, capacities
-        
+
+
 def add_endstates(F, A, B):
     r"""Adds artifical end states replacing source and sink sets.
 
@@ -292,17 +300,17 @@ def add_endstates(F, A, B):
         The new single sink b_new = M+1
     
     """
-    
+
     """Outgoing currents from A"""
     F = F.tocsr()
     outA = (F[A, :].sum(axis=1)).getA()[:, 0]
 
     """Incoming currents into B"""
     F = F.tocsc()
-    inB = (F[:, B].sum(axis=0)).getA()[0, :]    
+    inB = (F[:, B].sum(axis=0)).getA()[0, :]
 
     F = F.tocoo()
-    M = F.shape[0]    
+    M = F.shape[0]
 
     data_old = F.data
     row_old = F.row
@@ -317,18 +325,18 @@ def add_endstates(F, A, B):
     """Add currents from old B to new B=[n+1,]"""
     row2 = np.array(B)
     col2 = np.zeros(inB.shape[0], dtype=np.int)
-    col2[:] = M+1
+    col2[:] = M + 1
     data2 = inB
-    
+
     """Stack data, row and col arrays"""
     data = np.hstack((data_old, data1, data2))
     row = np.hstack((row_old, row1, row2))
     col = np.hstack((col_old, col1, col2))
 
     """New netflux matrix"""
-    F_new = coo_matrix((data, (row, col)), shape=(M+2, M+2))
+    F_new = coo_matrix((data, (row, col)), shape=(M + 2, M + 2))
 
-    return F_new, M, M+1
+    return F_new, M, M + 1
 
 
 

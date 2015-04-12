@@ -10,6 +10,7 @@ import numpy as np
 # Flux matrix operations
 # ======================================================================
 
+
 def flux_matrix(T, pi, qminus, qplus, netflux=True):
     r"""Compute the TPT flux network for the reaction A-->B.
     
@@ -44,11 +45,10 @@ def flux_matrix(T, pi, qminus, qplus, netflux=True):
     
     
     """
-    flux=pi[:,np.newaxis]*qminus[:,np.newaxis]*T*\
-        qplus[np.newaxis,:]
-    ind=np.diag_indices(T.shape[0])
+    ind = np.diag_indices(T.shape[0])
+    flux = pi[:, np.newaxis] * qminus[:, np.newaxis] * T * qplus[np.newaxis, :]
     """Remove self fluxes f_ii"""
-    flux[ind]=0.0
+    flux[ind] = 0.0
     """Return net or gross flux"""
     if netflux:
         return to_netflux(flux)
@@ -73,11 +73,11 @@ def to_netflux(flux):
         Matrix of netflux values between pairs of states.
     
     """
-    netflux=flux-np.transpose(flux)
+    netflux = flux - np.transpose(flux)
     """Set negative fluxes to zero"""
-    ind=(netflux<0.0)
-    netflux[ind]=0.0       
-    return netflux       
+    ind = (netflux < 0.0)
+    netflux[ind] = 0.0
+    return netflux
 
 
 def flux_production(F):
@@ -93,9 +93,9 @@ def flux_production(F):
     prod : (n) ndarray
         array with flux production (positive) or consumption (negative) at each state
     """
-    influxes  = np.array(np.sum(F, axis = 0)).flatten() # all that flows in
-    outfluxes = np.array(np.sum(F, axis = 1)).flatten() # all that flows out
-    prod  = outfluxes - influxes # net flux into nodes
+    influxes = np.array(np.sum(F, axis=0)).flatten()  # all that flows in
+    outfluxes = np.array(np.sum(F, axis=1)).flatten()  # all that flows out
+    prod = outfluxes - influxes  # net flux into nodes
     return prod
 
 
@@ -120,8 +120,8 @@ def flux_producers(F, rtol=1e-05, atol=1e-12):
     
     """
     n = F.shape[0]
-    influxes  = np.array(np.sum(F, axis = 0)).flatten() # all that flows in
-    outfluxes = np.array(np.sum(F, axis = 1)).flatten() # all that flows out
+    influxes = np.array(np.sum(F, axis=0)).flatten()  # all that flows in
+    outfluxes = np.array(np.sum(F, axis=1)).flatten()  # all that flows out
     # net out flux absolute
     prod_abs = np.maximum(outfluxes - influxes, np.zeros(n))
     # net out flux relative
@@ -152,8 +152,8 @@ def flux_consumers(F, rtol=1e-05, atol=1e-12):
     """
     # can be used with sparse or dense
     n = np.shape(F)[0]
-    influxes  = np.array(np.sum(F, axis = 0)).flatten() # all that flows in
-    outfluxes = np.array(np.sum(F, axis = 1)).flatten() # all that flows out
+    influxes = np.array(np.sum(F, axis=0)).flatten()  # all that flows in
+    outfluxes = np.array(np.sum(F, axis=1)).flatten()  # all that flows out
     # net in flux absolute
     con_abs = np.maximum(influxes - outfluxes, np.zeros(n))
     # net in flux relative
@@ -179,14 +179,14 @@ def coarsegrain(F, sets):
     
     """
     nnew = len(sets)
-    Fc = np.zeros((nnew,nnew))
-    for i in range(0,nnew-1):
-        for j in range(i+1,nnew):
+    Fc = np.zeros((nnew, nnew))
+    for i in range(0, nnew - 1):
+        for j in range(i + 1, nnew):
             I = list(sets[i])
             J = list(sets[j])
-            Fc[i,j] = np.sum(F[I,:][:,J])
-            Fc[j,i] = np.sum(F[J,:][:,I])
-    return Fc    
+            Fc[i, j] = np.sum(F[I, :][:, J])
+            Fc[j, i] = np.sum(F[J, :][:, I])
+    return Fc
 
 
 # ======================================================================
@@ -194,7 +194,7 @@ def coarsegrain(F, sets):
 # ======================================================================
 
 
-def total_flux(F, A = None):
+def total_flux(F, A=None):
     r"""Compute the total flux, or turnover flux, that is produced by the
         flux sources and consumed by the flux sinks
     
@@ -218,10 +218,10 @@ def total_flux(F, A = None):
         outflux = np.sum(np.maximum(prod, zeros))
         return outflux
     else:
-        X=set(np.arange(F.shape[0])) # total state space
-        A=set(A)
-        notA=X.difference(A)
-        outflux=(F[list(A),:])[:,list(notA)].sum()
+        X = set(np.arange(F.shape[0]))  # total state space
+        A = set(A)
+        notA = X.difference(A)
+        outflux = (F[list(A), :])[:, list(notA)].sum()
         return outflux
 
 
@@ -244,7 +244,7 @@ def rate(totflux, pi, qminus):
         Markov chain)
     
     """
-    kAB = totflux / (pi*qminus).sum()
+    kAB = totflux / (pi * qminus).sum()
     return kAB
 
 

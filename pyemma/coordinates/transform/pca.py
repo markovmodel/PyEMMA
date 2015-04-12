@@ -76,6 +76,14 @@ class PCA(Transformer):
 
         return 8 * (x_meanfree_elements + dot_prod_elements)
 
+    @property
+    def mean(self):
+        return self.mu
+
+    @property
+    def covariance_matrix(self):
+        return self.cov
+
     @doc_inherit
     def _param_init(self):
         self.N = 0
@@ -84,7 +92,7 @@ class PCA(Transformer):
         self._logger.info("Running PCA on %i dimensional input" % dim)
         assert dim > 0, "Incoming data of PCA has 0 dimension!"
         self.mu = np.zeros(dim)
-        self.C = np.zeros((dim, dim))
+        self.cov = np.zeros((dim, dim))
 
     def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
                         last_chunk, ipass, Y=None, stride=1):
@@ -126,12 +134,12 @@ class PCA(Transformer):
         if ipass == 1:
             if t == 0:
                 self._logger.debug("start calculate covariance for traj nr %i" % itraj)
-                self._dot_prod_tmp = np.empty_like(self.C)
+                self._dot_prod_tmp = np.empty_like(self.cov)
             Xm = X - self.mu
             np.dot(Xm.T, Xm, self._dot_prod_tmp)
-            self.C += self._dot_prod_tmp
+            self.cov += self._dot_prod_tmp
             if last_chunk:
-                self.C /= self.N - 1
+                self.cov /= self.N - 1
                 self._logger.debug("finished")
                 return True  # finished!
 
@@ -140,7 +148,7 @@ class PCA(Transformer):
 
     @doc_inherit
     def _param_finish(self):
-        (v, R) = np.linalg.eigh(self.C)
+        (v, R) = np.linalg.eigh(self.cov)
         # sort
         I = np.argsort(v)[::-1]
         self.eigenvalues = v[I]

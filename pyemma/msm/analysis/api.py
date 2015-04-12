@@ -47,39 +47,39 @@ __credits__ = ["Benjamin Trendelkamp-Schroer", "Martin Scherer", "Frank Noe"]
 __license__ = "FreeBSD"
 __version__ = "2.0.0"
 __maintainer__ = "Martin Scherer"
-__email__="m.scherer AT fu-berlin DOT de"
+__email__ = "m.scherer AT fu-berlin DOT de"
 
-__all__=['is_transition_matrix',
-         'is_rate_matrix',
-         'is_connected',
-         'is_reversible',
-         'stationary_distribution',
-         'eigenvalues',
-         'timescales',
-         'eigenvectors',
-         'rdl_decomposition',
-         'expected_counts',
-         'expected_counts_stationary',
-         'mfpt',
-         'committor',
-         'hitting_probability',
-         'pcca',
-         'pcca_sets',
-         'pcca_assignments',
-         'pcca_distributions',
-         'pcca_memberships',
-         'expectation',
-         'fingerprint_correlation',
-         'fingerprint_relaxation',
-         'correlation',
-         'relaxation',
-         'stationary_distribution_sensitivity',
-         'eigenvalue_sensitivity',
-         'timescale_sensitivity',
-         'eigenvector_sensitivity',
-         'mfpt_sensitivity',
-         'committor_sensitivity',
-         'expectation_sensitivity']
+__all__ = ['is_transition_matrix',
+           'is_rate_matrix',
+           'is_connected',
+           'is_reversible',
+           'stationary_distribution',
+           'eigenvalues',
+           'timescales',
+           'eigenvectors',
+           'rdl_decomposition',
+           'expected_counts',
+           'expected_counts_stationary',
+           'mfpt',
+           'committor',
+           'hitting_probability',
+           'pcca',
+           'pcca_sets',
+           'pcca_assignments',
+           'pcca_distributions',
+           'pcca_memberships',
+           'expectation',
+           'fingerprint_correlation',
+           'fingerprint_relaxation',
+           'correlation',
+           'relaxation',
+           'stationary_distribution_sensitivity',
+           'eigenvalue_sensitivity',
+           'timescale_sensitivity',
+           'eigenvector_sensitivity',
+           'mfpt_sensitivity',
+           'committor_sensitivity',
+           'expectation_sensitivity']
 # shortcuts added later:
 # ['statdist', 'is_tmatrix', 'statdist_sensitivity']
 
@@ -89,6 +89,7 @@ _type_not_supported = \
 ################################################################################
 # Assessment tools
 ################################################################################
+
 
 # DONE : Martin, Ben
 @shortcut('is_tmatrix')
@@ -119,11 +120,11 @@ def is_transition_matrix(T, tol=1e-12):
   
     >>> from pyemma.msm.analysis import is_transition_matrix
 
-    >>> A=np.array([[0.4, 0.5, 0.3], [0.2, 0.4, 0.4], [-1, 1, 1]])
+    >>> A = np.array([[0.4, 0.5, 0.3], [0.2, 0.4, 0.4], [-1, 1, 1]])
     >>> is_transition_matrix(A)
     False
 
-    >>> T=np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
+    >>> T = np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
     >>> is_transition_matrix(T)
     True
         
@@ -134,6 +135,7 @@ def is_transition_matrix(T, tol=1e-12):
         return dense.assessment.is_transition_matrix(T, tol)
     else:
         raise _type_not_supported
+
 
 # DONE: Martin, Ben
 def is_rate_matrix(K, tol=1e-12):
@@ -163,11 +165,11 @@ def is_rate_matrix(K, tol=1e-12):
     
     >>> from pyemma.msm.analysis import is_rate_matrix
 
-    >>> A=np.array([[0.5, -0.5, -0.2], [-0.3, 0.6, -0.3], [-0.2, 0.2, 0.0]])
+    >>> A = np.array([[0.5, -0.5, -0.2], [-0.3, 0.6, -0.3], [-0.2, 0.2, 0.0]])
     >>> is_rate_matrix(A)
     False
 
-    >>> K=np.array([[0.3, -0.2, -0.1], [-0.5, 0.5, 0.0], [-0.1, -0.1, 0.2]])
+    >>> K = np.array([[0.3, -0.2, -0.1], [-0.5, 0.5, 0.0], [-0.1, -0.1, 0.2]])
     >>> is_rate_matrix(K)
     True
         
@@ -179,7 +181,8 @@ def is_rate_matrix(K, tol=1e-12):
     else:
         raise _type_not_supported
 
-#Done: Ben
+
+# Done: Ben
 def is_connected(T, directed=True):
     r"""Check connectivity of the given matrix.
     
@@ -227,11 +230,11 @@ def is_connected(T, directed=True):
     
     >>> from pyemma.msm.analysis import is_connected
 
-    >>> A=np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.0, 1.0]])
+    >>> A = np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.0, 1.0]])
     >>> is_connected(A)
     False
 
-    >>> T=np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
+    >>> T = np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
     >>> is_connected(T)
     True
     
@@ -239,10 +242,11 @@ def is_connected(T, directed=True):
     if _issparse(T):
         return sparse.assessment.is_connected(T, directed=directed)
     elif _isdense(T):
-        T=_csr_matrix(T)
+        T = _csr_matrix(T)
         return sparse.assessment.is_connected(T, directed=directed)
     else:
         raise _type_not_supported
+
 
 # DONE: Martin
 def is_reversible(T, mu=None, tol=1e-12):
@@ -284,11 +288,11 @@ def is_reversible(T, mu=None, tol=1e-12):
     
     >>> from pyemma.msm.analysis import is_reversible
 
-    >>> P=np.array([[0.8, 0.1, 0.1], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
+    >>> P = np.array([[0.8, 0.1, 0.1], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
     >>> is_reversible(P)
     False
 
-    >>> T=np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
+    >>> T = np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
     is_reversible(T)
     True
         
@@ -335,8 +339,8 @@ def stationary_distribution(T):
 
     >>> from pyemma.msm.analysis import stationary_distribution
 
-    >>> T=np.array([[0.9, 0.1, 0.0], [0.4, 0.2, 0.4], [0.0, 0.1, 0.9]])
-    >>> mu=stationary_distribution(T)
+    >>> T = np.array([[0.9, 0.1, 0.0], [0.4, 0.2, 0.4], [0.0, 0.1, 0.9]])
+    >>> mu = stationary_distribution(T)
     >>> mu
     array([0.44444444, 0.11111111, 0.44444444])
 
@@ -358,6 +362,7 @@ def stationary_distribution(T):
         return dense.decomposition.stationary_distribution_from_backward_iteration(T)
     else:
         raise _type_not_supported
+
 
 # DONE: Martin, Ben
 def eigenvalues(T, k=None, ncv=None):
@@ -388,8 +393,8 @@ def eigenvalues(T, k=None, ncv=None):
 
     >>> from pyemma.msm.analysis import eigenvalues
 
-    >>> T=np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
-    >>> w=eigenvalues(T)
+    >>> T = np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
+    >>> w = eigenvalues(T)
     >>> w
     array([1.0+0.j, 0.9+0.j, -0.1+0.j]) 
 
@@ -400,6 +405,7 @@ def eigenvalues(T, k=None, ncv=None):
         return dense.decomposition.eigenvalues(T, k)
     else:
         raise _type_not_supported
+
 
 # DONE: Ben
 def timescales(T, tau=1, k=None, ncv=None):
@@ -436,8 +442,8 @@ def timescales(T, tau=1, k=None, ncv=None):
     
     >>> from pyemma.msm.analysis import timescales
 
-    >>> T=np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
-    >>> ts=timescales(T)
+    >>> T = np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
+    >>> ts = timescales(T)
     >>> ts
     array([        inf,  9.49122158,  0.43429448])
     
@@ -498,8 +504,8 @@ def eigenvectors(T, k=None, right=True, ncv=None):
 
     >>> from pyemma.msm.analysis import eigenvalues
 
-    >>> T=np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
-    >>> R=eigenvalues(T)
+    >>> T = np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
+    >>> R = eigenvalues(T)
     
     Matrix with right eigenvectors as columns
     
@@ -513,8 +519,9 @@ def eigenvectors(T, k=None, right=True, ncv=None):
         return sparse.decomposition.eigenvectors(T, k=k, right=right, ncv=ncv)
     elif _isdense(T):
         return dense.decomposition.eigenvectors(T, k=k, right=right)
-    else: 
+    else:
         raise _type_not_supported
+
 
 # DONE: Ben
 def rdl_decomposition(T, k=None, norm='auto', ncv=None):
@@ -564,8 +571,8 @@ def rdl_decomposition(T, k=None, norm='auto', ncv=None):
     
     >>> from pyemma.msm.analysis import rdl_decomposition
     
-    >>> T=np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
-    >>> R, D, L=rdl_decomposition(T)
+    >>> T = np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
+    >>> R, D, L = rdl_decomposition(T)
     
     Matrix with right eigenvectors as columns
     
@@ -588,13 +595,14 @@ def rdl_decomposition(T, k=None, norm='auto', ncv=None):
            [  7.07106781e-01,   2.80317573e-17,  -7.07106781e-01],
            [  4.59068406e-01,  -9.18136813e-01,   4.59068406e-01]])    
            
-    """    
+    """
     if _issparse(T):
         return sparse.decomposition.rdl_decomposition(T, k=k, norm=norm, ncv=ncv)
     elif _isdense(T):
         return dense.decomposition.rdl_decomposition(T, k=k, norm=norm)
-    else: 
+    else:
         raise _type_not_supported
+
 
 # DONE: Ben, Chris
 def mfpt(T, target, origin=None, tau=1, mu=None):
@@ -655,8 +663,8 @@ def mfpt(T, target, origin=None, tau=1, mu=None):
     
     >>> from pyemma.msm.analysis import mfpt
     
-    >>> T=np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
-    >>> m_t=mfpt(T,0)
+    >>> T = np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
+    >>> m_t = mfpt(T,0)
     >>> m_t
     array([  0.,  12.,  22.])
     
@@ -669,12 +677,12 @@ def mfpt(T, target, origin=None, tau=1, mu=None):
         if origin is None:
             t_tau = sparse.mean_first_passage_time.mfpt(T, target)
         else:
-            t_tau = sparse.mean_first_passage_time.mfpt_between_sets(T,target,origin,mu=mu)
+            t_tau = sparse.mean_first_passage_time.mfpt_between_sets(T, target, origin, mu=mu)
     elif _isdense(T):
         if origin is None:
             t_tau = dense.mean_first_passage_time.mfpt(T, target)
         else:
-            t_tau = dense.mean_first_passage_time.mfpt_between_sets(T,target,origin,mu=mu)
+            t_tau = dense.mean_first_passage_time.mfpt_between_sets(T, target, origin, mu=mu)
     else:
         raise _type_not_supported
 
@@ -700,10 +708,10 @@ def hitting_probability(P, target):
     """
     target = _ensure_int_array(target)
     if _issparse(P):
-        _showSparseConversionWarning() # currently no sparse implementation!
-        return dense.hitting_probability.hitting_probability(P.toarray(),target)
+        _showSparseConversionWarning()  # currently no sparse implementation!
+        return dense.hitting_probability.hitting_probability(P.toarray(), target)
     elif _isdense(P):
-        return dense.hitting_probability.hitting_probability(P,target)
+        return dense.hitting_probability.hitting_probability(P, target)
     else:
         raise _type_not_supported
 
@@ -804,15 +812,15 @@ def committor(T, A, B, forward=True, mu=None):
     --------
 
     >>> from pyemma.msm.analysis import committor
-    >>> T=np.array([[0.89, 0.1, 0.01], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
-    >>> A=[0]
-    >>> B=[2]
+    >>> T = np.array([[0.89, 0.1, 0.01], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
+    >>> A = [0]
+    >>> B = [2]
 
-    >>> u_plus=committor(T, A, B)
+    >>> u_plus = committor(T, A, B)
     >>> u_plus
     array([ 0. ,  0.5,  1. ])
     
-    >>> u_minus=committor(T, A, B, forward=False)
+    >>> u_minus = committor(T, A, B, forward=False)
     >>> u_minus
     array([ 1.        ,  0.45454545,  0.        ])
     
@@ -825,8 +833,8 @@ def committor(T, A, B, forward=True, mu=None):
         else:
             """ if P is time reversible backward commitor is equal 1 - q+"""
             if is_reversible(T, mu=mu):
-                return 1.0-sparse.committor.forward_committor(T, A, B)
-                
+                return 1.0 - sparse.committor.forward_committor(T, A, B)
+
             else:
                 return sparse.committor.backward_committor(T, A, B)
 
@@ -836,7 +844,7 @@ def committor(T, A, B, forward=True, mu=None):
         else:
             """ if P is time reversible backward commitor is equal 1 - q+"""
             if is_reversible(T, mu=mu):
-                return 1.0-dense.committor.forward_committor(T, A, B)
+                return 1.0 - dense.committor.forward_committor(T, A, B)
             else:
                 return dense.committor.backward_committor(T, A, B)
 
@@ -878,10 +886,10 @@ def expected_counts(T, p0, N):
     --------
     >>> from pyemma.msm.analysis import expected_counts
 
-    >>> T=np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
-    >>> p0=np.array([1.0, 0.0, 0.0])
-    >>> N=100
-    >>> EC=expected_counts(T, p0, N)
+    >>> T = np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
+    >>> p0 = np.array([1.0, 0.0, 0.0])
+    >>> N = 100
+    >>> EC = expected_counts(T, p0, N)
 
     >>> EC
     array([[ 45.44616147,   5.0495735 ,   0.        ],
@@ -898,6 +906,7 @@ def expected_counts(T, p0, N):
         return dense.expectations.expected_counts(p0, T, N)
     else:
         raise _type_not_supported
+
 
 # DONE: Ben
 def expected_counts_stationary(T, N, mu=None):
@@ -931,11 +940,11 @@ def expected_counts_stationary(T, N, mu=None):
         
     Examples
     --------
-    >>> from pyemma.msm.analysis import expected_counts
+    >>> from pyemma.msm.analysis import expected_counts_stationary
     
-    >>> T=np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
-    >>> N=100
-    >>> EC=expected_counts_stationary(T, N)
+    >>> T = np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
+    >>> N = 100
+    >>> EC = expected_counts_stationary(T, N)
     
     >>> EC
     array([[ 40.90909091,   4.54545455,   0.        ],
@@ -1043,9 +1052,9 @@ def fingerprint_correlation(T, obs1, obs2=None, tau=1, k=None, ncv=None):
     
     >>> from pyemma.msm.analysis import fingerprint_correlation
 
-    >>> T=np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
-    >>> a=np.array([1.0, 0.0, 0.0])
-    >>> ts, amp=fingerprint_correlation(T, a)
+    >>> T = np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
+    >>> a = np.array([1.0, 0.0, 0.0])
+    >>> ts, amp = fingerprint_correlation(T, a)
 
     >>> ts
     array([        inf,  9.49122158,  0.43429448])
@@ -1064,6 +1073,7 @@ def fingerprint_correlation(T, obs1, obs2=None, tau=1, k=None, ncv=None):
         return dense.fingerprints.fingerprint_correlation(T, obs1, obs2, tau=tau, k=k)
     else:
         raise _type_not_supported
+
 
 # DONE: Martin+Frank+Ben: Implement in Python directly
 def fingerprint_relaxation(T, p0, obs, tau=1, k=None, ncv=None):
@@ -1131,10 +1141,10 @@ def fingerprint_relaxation(T, p0, obs, tau=1, k=None, ncv=None):
     
     >>> from pyemma.msm.analysis import fingerprint_relaxation
 
-    >>> T=np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
-    >>> p0=np.array([1.0, 0.0, 0.0])
-    >>> a=np.array([1.0, 0.0, 0.0])
-    >>> ts, amp=fingerprint_relaxation(T, p0, a)
+    >>> T = np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
+    >>> p0 = np.array([1.0, 0.0, 0.0])
+    >>> a = np.array([1.0, 0.0, 0.0])
+    >>> ts, amp = fingerprint_relaxation(T, p0, a)
 
     >>> ts
     array([        inf,  9.49122158,  0.43429448])
@@ -1153,6 +1163,7 @@ def fingerprint_relaxation(T, p0, obs, tau=1, k=None, ncv=None):
         return dense.fingerprints.fingerprint_relaxation(T, p0, obs, tau=tau, k=k)
     else:
         raise _type_not_supported
+
 
 # DONE: Frank, Ben
 def expectation(T, a, mu=None):
@@ -1199,8 +1210,9 @@ def expectation(T, a, mu=None):
     mu = _ensure_float_array_or_None(mu, require_order=True)
     # go
     if not mu:
-        mu=stationary_distribution(T)
-    return _np.dot(mu,a)
+        mu = stationary_distribution(T)
+    return _np.dot(mu, a)
+
 
 # DONE: Martin+Frank+Ben: Implement in Python directly
 def correlation(T, obs1, obs2=None, times=[1], k=None, ncv=None):
@@ -1268,11 +1280,11 @@ def correlation(T, obs1, obs2=None, times=[1], k=None, ncv=None):
     
     >>> from pyemma.msm.analysis import correlation
 
-    >>> T=np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
-    >>> a=np.array([1.0, 0.0, 0.0])
-    >>> times=np.array([1, 5, 10, 20])
+    >>> T = np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
+    >>> a = np.array([1.0, 0.0, 0.0])
+    >>> times = np.array([1, 5, 10, 20])
 
-    >>> corr=correlation(T, a, times=times)
+    >>> corr = correlation(T, a, times=times)
     >>> corr
     array([ 0.40909091,  0.34081364,  0.28585667,  0.23424263])
     
@@ -1341,12 +1353,12 @@ def relaxation(T, p0, obs, times=[1], k=None, ncv=None):
 
     >>> from pyemma.msm.analysis import correlation
 
-    >>> T=np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
-    >>> p0=np.array([1.0, 0.0, 0.0])
-    >>> a=np.array([1.0, 1.0, 0.0])
-    >>> times=np.array([1, 5, 10, 20])
+    >>> T = np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
+    >>> p0 = np.array([1.0, 0.0, 0.0])
+    >>> a = np.array([1.0, 1.0, 0.0])
+    >>> times = np.array([1, 5, 10, 20])
 
-    >>> rel=relaxation(P, p0, times=times)
+    >>> rel = relaxation(P, p0, times=times)
     >>> rel
     array([ 1.        ,  0.8407    ,  0.71979377,  0.60624287])
     
@@ -1362,12 +1374,10 @@ def relaxation(T, p0, obs, times=[1], k=None, ncv=None):
         return dense.fingerprints.relaxation(T, p0, obs, k=k, times=times)
     else:
         raise _type_not_supported
-    
-    
 
-################################################################################
+# ========================
 # PCCA
-################################################################################
+# ========================
 
 def _pcca_object(T, m):
     """
@@ -1389,6 +1399,7 @@ def _pcca_object(T, m):
         _showSparseConversionWarning()
         T = T.toarray()
     return PCCA(T, m)
+
 
 # DONE: Jan, Frank
 def pcca(T, m):
@@ -1422,7 +1433,8 @@ def pcca(T, m):
         (2): 147-179
 
     """
-    warnings.warn('pcca method is deprecated because of its unspecific naming and will be removed soon. Use pcca_memberships in the future.', DeprecationWarning)
+    warnings.warn('pcca method is deprecated because of its unspecific naming and will be removed soon. '+
+                  'Use pcca_memberships in the future.', DeprecationWarning)
     return pcca_memberships(T, m)
 
 
@@ -1590,9 +1602,9 @@ def coarsegrain(P, m):
 ################################################################################
 
 def _showSparseConversionWarning():
-    msg = ("Converting input to dense, since this method is\n"
-        "currently only  implemented for dense arrays")
+    msg = ("Converting input to dense, since this method is currently only implemented for dense arrays")
     warnings.warn(msg, UserWarning)
+
 
 def eigenvalue_sensitivity(T, k):
     r"""Sensitivity matrix of a specified eigenvalue.
@@ -1618,6 +1630,7 @@ def eigenvalue_sensitivity(T, k):
     else:
         raise _type_not_supported
 
+
 def timescale_sensitivity(T, k):
     r"""Sensitivity matrix of a specified time-scale.
     
@@ -1641,6 +1654,7 @@ def timescale_sensitivity(T, k):
         return dense.sensitivity.timescale_sensitivity(T, k)
     else:
         raise _type_not_supported
+
 
 def eigenvector_sensitivity(T, k, j, right=True):
     r"""Sensitivity matrix of a selected eigenvector element.
@@ -1669,6 +1683,7 @@ def eigenvector_sensitivity(T, k, j, right=True):
         return dense.sensitivity.eigenvector_sensitivity(T, k, j, right=right)
     else:
         raise _type_not_supported
+
 
 # DONE: Implement in Python directly
 @shortcut('statdist_sensitivity')
@@ -1699,6 +1714,7 @@ def stationary_distribution_sensitivity(T, j):
     else:
         raise _type_not_supported
 
+
 def mfpt_sensitivity(T, target, i):
     r"""Sensitivity matrix of the mean first-passage time from specified state.
     
@@ -1727,6 +1743,7 @@ def mfpt_sensitivity(T, target, i):
         return dense.sensitivity.mfpt_sensitivity(T, target, i)
     else:
         raise _type_not_supported
+
 
 # DONE: Jan (sparse implementation missing)
 def committor_sensitivity(T, A, B, i, forward=True):
@@ -1766,6 +1783,7 @@ def committor_sensitivity(T, A, B, i, forward=True):
             return dense.sensitivity.backward_committor_sensitivity(T, A, B, i)
     else:
         raise _type_not_supported
+
 
 def expectation_sensitivity(T, a):
     r"""Sensitivity of expectation value of observable A=(a_i).

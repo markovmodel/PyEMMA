@@ -19,6 +19,7 @@ import warnings
 from pyemma.util.numeric import isclose
 from pyemma.util.exceptions import ImaginaryEigenValueWarning, SpectralWarning
 
+
 def backward_iteration(A, mu, x0, tol=1e-15, maxiter=100):
     r"""Find eigenvector to approximate eigenvalue via backward iteration.
 
@@ -39,25 +40,26 @@ def backward_iteration(A, mu, x0, tol=1e-15, maxiter=100):
         Eigenvector to approximate eigenvalue mu
 
     """
-    T=A-mu*eye(A.shape[0], A.shape[0])
-    T=T.tocsc()
+    T = A - mu * eye(A.shape[0], A.shape[0])
+    T = T.tocsc()
     """Prefactor T and return a function for solution"""
-    solve=factorized(T)
+    solve = factorized(T)
     """Starting iterate with ||y_0||=1"""
-    r0=1.0/np.linalg.norm(x0)
-    y0=x0*r0
+    r0 = 1.0 / np.linalg.norm(x0)
+    y0 = x0 * r0
     """Local variables for inverse iteration"""
-    y=1.0*y0
-    r=1.0*r0
-    N=0
-    for iter in range(maxiter):
-        x=solve(y)
-        r=1.0/np.linalg.norm(x)
-        y=x*r
-        if r<=tol:
+    y = 1.0 * y0
+    r = 1.0 * r0
+    N = 0
+    for i in range(maxiter):
+        x = solve(y)
+        r = 1.0 / np.linalg.norm(x)
+        y = x * r
+        if r <= tol:
             return y
-    msg = "Failed to converge after %d iterations, residuum is %e" %(maxiter, r)
+    msg = "Failed to converge after %d iterations, residuum is %e" % (maxiter, r)
     raise RuntimeError(msg)
+
 
 def stationary_distribution_from_backward_iteration(P, eps=1e-15):
     r"""Fast computation of the stationary vector using backward
@@ -76,12 +78,13 @@ def stationary_distribution_from_backward_iteration(P, eps=1e-15):
         Stationary vector
 
     """
-    A=P.transpose()
-    mu=1.0-eps
-    x0=np.ones(P.shape[0])
-    y=backward_iteration(A, mu, x0)
-    pi=y/y.sum()
+    A = P.transpose()
+    mu = 1.0 - eps
+    x0 = np.ones(P.shape[0])
+    y = backward_iteration(A, mu, x0)
+    pi = y / y.sum()
     return pi
+
 
 def stationary_distribution_from_eigenvector(T, ncv=None):
     r"""Compute stationary distribution of stochastic matrix T. 
@@ -103,10 +106,11 @@ def stationary_distribution_from_eigenvector(T, ncv=None):
         Vector of stationary probabilities.
 
     """
-    vals, vecs=scipy.sparse.linalg.eigs(T.transpose(), k=1, which='LR', ncv=ncv)
-    nu=vecs[:, 0].real
-    mu=nu/np.sum(nu)
+    vals, vecs = scipy.sparse.linalg.eigs(T.transpose(), k=1, which='LR', ncv=ncv)
+    nu = vecs[:, 0].real
+    mu = nu / np.sum(nu)
     return mu
+
 
 def eigenvalues(T, k=None, ncv=None):
     r"""Compute the eigenvalues of a sparse transition matrix
@@ -132,9 +136,10 @@ def eigenvalues(T, k=None, ncv=None):
     if k is None:
         raise ValueError("Number of eigenvalues required for decomposition of sparse matrix")
     else:
-        v=scipy.sparse.linalg.eigs(T, k=k, which='LM', return_eigenvectors=False, ncv=ncv)
-        ind=np.argsort(np.abs(v))[::-1]
+        v = scipy.sparse.linalg.eigs(T, k=k, which='LM', return_eigenvectors=False, ncv=ncv)
+        ind = np.argsort(np.abs(v))[::-1]
         return v[ind]
+
 
 def eigenvectors(T, k=None, right=True, ncv=None):
     r"""Compute eigenvectors of given transition matrix.
@@ -166,13 +171,14 @@ def eigenvectors(T, k=None, right=True, ncv=None):
         raise ValueError("Number of eigenvectors required for decomposition of sparse matrix")
     else:
         if right:
-            val, vecs=scipy.sparse.linalg.eigs(T, k=k, which='LM', ncv=ncv)
-            ind=np.argsort(np.abs(val))[::-1]
-            return vecs[:,ind]
-        else:
-            val, vecs=scipy.sparse.linalg.eigs(T.transpose(), k=k, which='LM', ncv=ncv)
-            ind=np.argsort(np.abs(val))[::-1]
+            val, vecs = scipy.sparse.linalg.eigs(T, k=k, which='LM', ncv=ncv)
+            ind = np.argsort(np.abs(val))[::-1]
             return vecs[:, ind]
+        else:
+            val, vecs = scipy.sparse.linalg.eigs(T.transpose(), k=k, which='LM', ncv=ncv)
+            ind = np.argsort(np.abs(val))[::-1]
+            return vecs[:, ind]
+
 
 def rdl_decomposition(T, k=None, norm='auto', ncv=None):
     r"""Compute the decomposition into left and right eigenvectors.
@@ -211,69 +217,71 @@ def rdl_decomposition(T, k=None, norm='auto', ncv=None):
     if k is None:
         raise ValueError("Number of eigenvectors required for decomposition of sparse matrix")
     # auto-set norm
-    if norm=='auto':
+    if norm == 'auto':
         from pyemma.msm.analysis import is_reversible
+
         if (is_reversible(T)):
             norm = 'reversible'
         else:
             norm = 'standard'
     # Standard norm: Euclidean norm is 1 for r and LR = I.
-    if norm=='standard':
-        v, R=scipy.sparse.linalg.eigs(T, k=k, which='LM', ncv=ncv)
-        r, L=scipy.sparse.linalg.eigs(T.transpose(), k=k, which='LM', ncv=ncv)
+    if norm == 'standard':
+        v, R = scipy.sparse.linalg.eigs(T, k=k, which='LM', ncv=ncv)
+        r, L = scipy.sparse.linalg.eigs(T.transpose(), k=k, which='LM', ncv=ncv)
 
         """Sort right eigenvectors"""
-        ind=np.argsort(np.abs(v))[::-1]
-        v=v[ind]
-        R=R[:,ind]
+        ind = np.argsort(np.abs(v))[::-1]
+        v = v[ind]
+        R = R[:, ind]
 
         """Sort left eigenvectors"""
-        ind=np.argsort(np.abs(r))[::-1]
-        r=r[ind]
-        L=L[:,ind]
+        ind = np.argsort(np.abs(r))[::-1]
+        r = r[ind]
+        L = L[:, ind]
 
         """l1-normalization of L[:, 0]"""
-        L[:, 0]=L[:, 0]/np.sum(L[:, 0])
+        L[:, 0] = L[:, 0] / np.sum(L[:, 0])
 
         """Standard normalization L'R=Id"""
-        ov=np.diag(np.dot(np.transpose(L), R))
-        R=R/ov[np.newaxis, :]
+        ov = np.diag(np.dot(np.transpose(L), R))
+        R = R / ov[np.newaxis, :]
 
         """Diagonal matrix with eigenvalues"""
-        D=np.diag(v)
+        D = np.diag(v)
 
         return R, D, np.transpose(L)
 
     # Reversible norm:
-    elif norm=='reversible':
-        v, R=scipy.sparse.linalg.eigs(T, k=k, which='LM', ncv=ncv)
-        mu=stationary_distribution_from_backward_iteration(T)
+    elif norm == 'reversible':
+        v, R = scipy.sparse.linalg.eigs(T, k=k, which='LM', ncv=ncv)
+        mu = stationary_distribution_from_backward_iteration(T)
 
         """Sort right eigenvectors"""
-        ind=np.argsort(np.abs(v))[::-1]
-        v=v[ind]
-        R=R[:,ind]
+        ind = np.argsort(np.abs(v))[::-1]
+        v = v[ind]
+        R = R[:, ind]
 
         """Ensure that R[:,0] is positive"""
-        R[:,0]=R[:,0]/np.sign(R[0,0])
+        R[:, 0] = R[:, 0] / np.sign(R[0, 0])
 
         """Diagonal matrix with eigenvalues"""
-        D=np.diag(v)
+        D = np.diag(v)
 
         """Compute left eigenvectors from right ones"""
-        L=mu[:, np.newaxis]*R
+        L = mu[:, np.newaxis] * R
 
         """Compute overlap"""
-        s=np.diag(np.dot(np.transpose(L), R))
+        s = np.diag(np.dot(np.transpose(L), R))
 
         """Renormalize left-and right eigenvectors to ensure L'R=Id"""
-        R=R/np.sqrt(s[np.newaxis, :])
-        L=L/np.sqrt(s[np.newaxis, :])           
-        
-        return R, D, np.transpose(L)              
+        R = R / np.sqrt(s[np.newaxis, :])
+        L = L / np.sqrt(s[np.newaxis, :])
+
+        return R, D, np.transpose(L)
     else:
         raise ValueError("Keyword 'norm' has to be either 'standard' or 'reversible'")
-        
+
+
 def timescales(T, tau=1, k=None, ncv=None):
     r"""Compute implied time scales of given transition matrix
     
@@ -293,35 +301,36 @@ def timescales(T, tau=1, k=None, ncv=None):
         The implied time scales of the transition matrix.
     """
     if k is None:
-        raise ValueError("Number of time scales required for decomposition of sparse matrix")    
-    values=scipy.sparse.linalg.eigs(T, k=k, which='LM', return_eigenvectors=False, ncv=ncv)
-    
+        raise ValueError("Number of time scales required for decomposition of sparse matrix")
+    values = scipy.sparse.linalg.eigs(T, k=k, which='LM', return_eigenvectors=False, ncv=ncv)
+
     """Sort by absolute value"""
-    ind=np.argsort(np.abs(values))[::-1]
-    values=values[ind]
-    
+    ind = np.argsort(np.abs(values))[::-1]
+    values = values[ind]
+
     """Check for dominant eigenvalues with large imaginary part"""
     if not np.allclose(values.imag, 0.0):
         warnings.warn('Using eigenvalues with non-zero imaginary part '
                       'for implied time scale computation', ImaginaryEigenValueWarning)
 
     """Check for multiple eigenvalues of magnitude one"""
-    ind_abs_one=isclose(np.abs(values), 1.0)
-    if sum(ind_abs_one)>1:
+    ind_abs_one = isclose(np.abs(values), 1.0)
+    if sum(ind_abs_one) > 1:
         warnings.warn('Multiple eigenvalues with magnitude one.', SpectralWarning)
 
     """Compute implied time scales"""
-    ts=np.zeros(len(values))
+    ts = np.zeros(len(values))
 
     """Eigenvalues of magnitude one imply infinite rate"""
-    ts[ind_abs_one]=np.inf
+    ts[ind_abs_one] = np.inf
 
     """All other eigenvalues give rise to finite rates"""
-    ts[np.logical_not(ind_abs_one)]=\
-        -1.0*tau/np.log(np.abs(values[np.logical_not(ind_abs_one)]))
+    ts[np.logical_not(ind_abs_one)] = \
+        -1.0 * tau / np.log(np.abs(values[np.logical_not(ind_abs_one)]))
     return ts
 
-def timescales_from_eigenvalues(eval, tau=1):
+
+def timescales_from_eigenvalues(ev, tau=1):
     r"""Compute implied time scales from given eigenvalues
     
     Parameters
@@ -335,24 +344,24 @@ def timescales_from_eigenvalues(eval, tau=1):
         The implied time scales to the given eigenvalues, in the same order.
     
     """
-    
+
     """Check for dominant eigenvalues with large imaginary part"""
-    if not np.allclose(eval.imag, 0.0):
+    if not np.allclose(ev.imag, 0.0):
         warnings.warn('Using eigenvalues with non-zero imaginary part '
                       'for implied time scale computation', ImaginaryEigenValueWarning)
 
     """Check for multiple eigenvalues of magnitude one"""
-    ind_abs_one=isclose(np.abs(eval), 1.0)
-    if sum(ind_abs_one)>1:
+    ind_abs_one = isclose(np.abs(ev), 1.0)
+    if sum(ind_abs_one) > 1:
         warnings.warn('Multiple eigenvalues with magnitude one.', SpectralWarning)
 
     """Compute implied time scales"""
-    ts=np.zeros(len(eval))
+    ts = np.zeros(len(ev))
 
     """Eigenvalues of magnitude one imply infinite timescale"""
-    ts[ind_abs_one]=np.inf
+    ts[ind_abs_one] = np.inf
 
     """All other eigenvalues give rise to finite timescales"""
-    ts[np.logical_not(ind_abs_one)]=\
-        -1.0*tau/np.log(np.abs(eval[np.logical_not(ind_abs_one)]))
+    ts[np.logical_not(ind_abs_one)] = \
+        -1.0 * tau / np.log(np.abs(ev[np.logical_not(ind_abs_one)]))
     return ts

@@ -87,7 +87,7 @@ class TestDiscretizer(unittest.TestCase):
         pairs = np.array(
             [x for x in itertools.combinations(range(self.n_residues), 2)])
 
-        reader.featurizer.distances(pairs)
+        #reader.featurizer.distances(pairs)
 
         pcat = pca(dim=2)
 
@@ -131,7 +131,7 @@ class TestDiscretizer(unittest.TestCase):
         pairs = np.array(
             [x for x in itertools.combinations(range(self.n_residues), 2)])
 
-        reader.featurizer.distances(pairs)
+        #reader.featurizer.distances(pairs)
         cluster = kmeans(k=2)
         d = Discretizer(reader, cluster=cluster)
         d.parametrize()

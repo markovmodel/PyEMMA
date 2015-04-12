@@ -10,8 +10,8 @@ from pyemma.util.numeric import assert_allclose
 
 from hitting_probability import hitting_probability
 
+
 class TestHitting(unittest.TestCase):
-    
     def setUp(self):
         pass
 
@@ -19,21 +19,21 @@ class TestHitting(unittest.TestCase):
         pass
 
     def test_hitting1(self):
-        P = np.array([[ 0.,  1.,  0.],
-                      [ 0.,  1.,  0.],
-                      [ 0.,  0.,  1.]])
-        sol = np.array([1,0,0])
+        P = np.array([[0., 1., 0.],
+                      [0., 1., 0.],
+                      [0., 0., 1.]])
+        sol = np.array([1, 0, 0])
         assert_allclose(hitting_probability(P, 1), sol)
-        assert_allclose(hitting_probability(P, [1,2]), sol)
-        
+        assert_allclose(hitting_probability(P, [1, 2]), sol)
+
     def test_hitting2(self):
         P = np.array([[1.0, 0.0, 0.0, 0.0],
                       [0.1, 0.8, 0.1, 0.0],
                       [0.0, 0.0, 0.8, 0.2],
                       [0.0, 0.0, 0.2, 0.8]])
-        sol = np.array([ 0. ,  0.5,  1. ,  1. ])
-        assert_allclose(hitting_probability(P, [2,3]), sol)
-        
+        sol = np.array([0., 0.5, 1., 1.])
+        assert_allclose(hitting_probability(P, [2, 3]), sol)
+
     def test_hitting3(self):
         P = np.array([[0.9, 0.1, 0.0, 0.0, 0.0],
                       [0.1, 0.9, 0.0, 0.0, 0.0],
@@ -42,7 +42,8 @@ class TestHitting(unittest.TestCase):
                       [0.0, 0.0, 0.0, 0.2, 0.8]])
         sol = np.array([0.0, 0.0, 8.33333333e-01, 1.0, 1.0])
         assert_allclose(hitting_probability(P, 3), sol)
-        assert_allclose(hitting_probability(P, [3,4]), sol)
-        
-if __name__=="__main__":
+        assert_allclose(hitting_probability(P, [3, 4]), sol)
+
+
+if __name__ == "__main__":
     unittest.main()

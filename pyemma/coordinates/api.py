@@ -49,7 +49,7 @@ __all__ = ['featurizer',  # IO
            'cluster_regspace',  # cluster
            'cluster_kmeans',
            'cluster_uniform_time',
-           'cluster_assign_centers',
+           'assign_to_centers',
            'feature_reader',  # deprecated:
            'memory_reader',
            'kmeans',
@@ -766,7 +766,7 @@ def tica(data=None, lag=10, dim=2, stride=1, force_eigenvalues_le_one=False):
 
     """
     # don't expose this until we know what this is doing.
-    force_eigenvalues_le_one = False
+    #force_eigenvalues_le_one = False
     res = _TICA(lag, dim, force_eigenvalues_le_one=force_eigenvalues_le_one)
     return _param_stage(data, res, stride=stride)
 
@@ -894,13 +894,13 @@ def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1):
 
 @deprecated
 def assign_centers(data=None, centers=None, stride=1):
-    return cluster_assign_centers(data, centers, stride=stride)
+    return assign_to_centers(data, centers, stride=stride)
 
 
-def cluster_assign_centers(data=None, centers=None, stride=1):
-    r"""Assigns data to (precalculated) cluster centers.
+def assign_to_centers(data=None, centers=None, stride=1):
+    r"""Assigns data to the nearest cluster centers, thus creating a Voronoi partition.
 
-    If you already have cluster centers from somewhere, you use this
+    If you already have cluster centers from somewhere, you can use this
     to assign your data to the centers.
 
     Parameters
@@ -908,7 +908,7 @@ def cluster_assign_centers(data=None, centers=None, stride=1):
     data : list of arrays, list of file names or single array/filename
         data to be assigned
 
-    clustercenters : path to file (csv) or ndarray
+    centers : path to file (csv) or ndarray
         cluster centers to use in assignment of data
 
     stride : int, optional, default = 1
@@ -933,6 +933,7 @@ def cluster_assign_centers(data=None, centers=None, stride=1):
     >>> cluster_centers = np.loadtxt('my_centers.csv')
     >>> disc = assign_centers(data, cluster_centers)
     >>> disc.dtrajs
+
     [array([0, 0, 1, ... ])]
 
     """

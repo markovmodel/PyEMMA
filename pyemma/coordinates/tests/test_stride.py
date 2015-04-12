@@ -3,7 +3,7 @@ import os
 import tempfile
 import numpy as np
 import mdtraj
-import pyemma
+import pyemma.coordinates as coor
 
 
 class TestStride(unittest.TestCase):
@@ -38,9 +38,9 @@ class TestStride(unittest.TestCase):
 
     def test_length_and_content_feature_reader_and_TICA(self):
         for stride in xrange(1, 100, 20):
-            r = pyemma.coordinates.feature_reader(self.trajnames, self.temppdb)
-            t = pyemma.coordinates.transform.tica.TICA(2, 2, force_eigenvalues_le_one=True)
-            t.data_producer = r
+            r = coor.feature_reader(self.trajnames, self.temppdb)
+            t = coor.tica(data=r, lag=2, dim=2, force_eigenvalues_le_one=True)
+            # t.data_producer = r
             t.parametrize()
             
             # subsample data
@@ -73,7 +73,7 @@ class TestStride(unittest.TestCase):
             d.append(np.random.randn(N, 10).astype(np.float32))
         
         # read data
-        reader = pyemma.coordinates.memory_reader(d)
+        reader = coor.memory_reader(d)
         
         # compare
         for stride in xrange(1, 10):
@@ -84,13 +84,13 @@ class TestStride(unittest.TestCase):
     def test_parametrize_with_stride(self):
         # for stride in xrange(1,100,20):
         for stride in xrange(1, 100, 5):
-            r = pyemma.coordinates.feature_reader(self.trajnames, self.temppdb)
+            r = coor.feature_reader(self.trajnames, self.temppdb)
             # print 'expected total length of trajectories:', r.trajectory_lengths(stride=stride)
             tau = 5
             # print 'expected inner frames', [max(l-2*tau,0) for l in r.trajectory_lengths(stride=stride)]
-            t = pyemma.coordinates.transform.tica.TICA(tau=tau, output_dimension=2, force_eigenvalues_le_one=True)
+            t = coor.tica(r, lag=tau, dim=2, force_eigenvalues_le_one=True)
             # force_eigenvalues_le_one=True enables an internal consitency check in TICA
-            t.data_producer = r
+            # t.data_producer = r
             # print 'STRIDE:', stride
             # print 'theoretical result 2*(N-tau):', sum([2*(x-5) for x in r.trajectory_lengths(stride=stride) if x > 5])
             # print 'theoretical result N:', sum(r.trajectory_lengths(stride=stride))

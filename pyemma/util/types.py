@@ -76,6 +76,15 @@ def is_int_array(l):
             return True
     return False
 
+def is_int_matrix(l):
+    r"""Checks if l is a numpy array of floats
+
+    """
+    if isinstance(l, np.ndarray):
+        if l.ndim == 2 and (l.dtype.kind == 'i' or l.dtype.kind == 'u'):
+            return True
+    return False
+
 def is_float_array(l):
     r"""Checks if l is a numpy array of floats
 
@@ -93,6 +102,15 @@ def is_float_matrix(l):
         if l.ndim == 2 and (l.dtype.kind == 'f'):
             return True
     return False
+
+def is_string(s):
+    return isinstance(s, basestring)
+
+def is_list(S):
+    return isinstance(S, (list, tuple))
+
+def is_list_of_string(S):
+    return isinstance(S, (list, tuple)) and (all(isinstance(s, basestring) for s in S))
 
 def ensure_dtraj(dtraj):
     r"""Makes sure that dtraj is a discrete trajectory (array of int)

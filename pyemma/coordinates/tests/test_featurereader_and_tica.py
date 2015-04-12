@@ -69,7 +69,7 @@ class TestFeatureReaderAndTICA(unittest.TestCase):
         for tau in [1, 11, 101, 1001, 2001]:  # avoid cos(w*tau)==0
             log.info('number of trajectories reported by tica %d' % trans.number_of_trajectories())
             log.info('tau = %d corresponds to a number of %f cycles' % (tau, self.w*tau/(2.0*np.pi)))
-            trans.tau = tau
+            trans.lag = tau
             _ = iter(trans)  # grab iterator to run chain
 
             # analytical solution for C_ij(tau) is 0.5*A[i]*A[j]*cos(phi[i]-phi[j])*cos(w*tau)

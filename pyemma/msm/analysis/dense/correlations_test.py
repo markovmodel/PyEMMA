@@ -11,18 +11,18 @@ from committor_test import BirthDeathChain
 
 import correlations
 
+
 class TestCorrelations(unittest.TestCase):
-
     def setUp(self):
-        p=np.zeros(10)
-        q=np.zeros(10)
-        p[0:-1]=0.5
-        q[1:]=0.5
-        p[4]=0.01
-        q[6]=0.1
+        p = np.zeros(10)
+        q = np.zeros(10)
+        p[0:-1] = 0.5
+        q[1:] = 0.5
+        p[4] = 0.01
+        q[6] = 0.1
 
-        self.bdc=BirthDeathChain(q, p)
-        
+        self.bdc = BirthDeathChain(q, p)
+
         self.mu = self.bdc.stationary_distribution()
         self.T = self.bdc.transition_matrix()
 
@@ -39,26 +39,22 @@ class TestCorrelations(unittest.TestCase):
         obs2[8] = 1
         obs2[9] = 1
         time = 0
-        corr = correlations.time_correlation_direct_by_mtx_vec_prod(self.T, self.mu,
-                                                    obs1, obs2, time)
+        corr = correlations.time_correlation_direct_by_mtx_vec_prod(self.T, self.mu, obs1, obs2, time)
         self.assertEqual(corr, 0)
-        
-        
+
         time = 100
-        corr = correlations.time_correlation_direct_by_mtx_vec_prod(self.T, self.mu,
-                                                    obs1, obs2, time)
+        corr = correlations.time_correlation_direct_by_mtx_vec_prod(self.T, self.mu, obs1, obs2, time)
         self.assertGreater(corr, 0.0, "correlation should be > 0.")
-    
+
     @unittest.SkipTest
     def test_time_auto_correlation(self):
-        #TODO:
         """test with obs2 = obs1, to test autocorrelation"""
         obs1 = np.zeros(10)
         obs1[0] = 1
         time = 100
         print correlations.time_correlation_direct_by_mtx_vec_prod(self.T, self.mu, obs1, time=time)
-       
-    @unittest.SkipTest 
+
+    @unittest.SkipTest
     def test_time_corr2(self):
         obs1 = np.zeros(10)
         obs1[5:] = 1
@@ -66,7 +62,7 @@ class TestCorrelations(unittest.TestCase):
         obs2[8] = 1
         time = 2
         print correlations.time_correlation_direct_by_mtx_vec_prod(self.T, self.mu, obs1, obs2, time=time)
-        
+
     def test_time_correlations(self):
         """
         tests whether the outcome of the wrapper time_correlations_direct
@@ -76,21 +72,19 @@ class TestCorrelations(unittest.TestCase):
         obs1[3:5] = 1
         obs2 = np.zeros(10)
         obs2[4:8] = 1
-        times = [1,2, 20, 40, 100, 200, 1000]
+        times = [1, 2, 20, 40, 100, 200, 1000]
         # calculate without wrapper
         corr_expected = np.empty(len(times))
         i = 0
         for t in times:
-            corr_expected[i] = correlations.time_correlation_direct_by_mtx_vec_prod(self.T, self.mu,
-                                                           obs1, obs2, t)
+            corr_expected[i] = correlations.time_correlation_direct_by_mtx_vec_prod(self.T, self.mu, obs1, obs2, t)
             i += 1
         # calculate with wrapper
         corr_actual = correlations.time_correlations_direct(self.T, self.mu, obs1, obs2, times)
-        
-        self.assertTrue(np.allclose(corr_expected, corr_actual), 
+
+        self.assertTrue(np.allclose(corr_expected, corr_actual),
                         "correlations differ:\n%s\n%s" % (corr_expected, corr_actual))
-        
-        
+
     def test_time_relaxation_stat(self):
         """
             start with stationary distribution, so increasing time should 
@@ -107,29 +101,30 @@ class TestCorrelations(unittest.TestCase):
     def test_time_relaxation(self):
         obs = np.zeros(10)
         obs[9] = 1
-        
-        p0 = np.zeros(10) * 1./10
-        
+
+        p0 = np.zeros(10) * 1. / 10
+
         # compute by hand
         # p0 P^k obs
         P1000 = np.linalg.matrix_power(self.T, 1000)
         expected = np.dot(np.dot(p0, P1000), obs)
-        result =  correlations.time_relaxation_direct_by_mtx_vec_prod(self.T, p0, obs, time=1000)
+        result = correlations.time_relaxation_direct_by_mtx_vec_prod(self.T, p0, obs, time=1000)
         self.assertAlmostEqual(expected, result)
-        
+
     def test_time_relaxations(self):
         obs = np.zeros(10)
         obs[9] = 1
-        
-        p0 = np.zeros(10) * 1./10
+
+        p0 = np.zeros(10) * 1. / 10
         times = [1, 100, 1000]
         expected = []
         for t in times:
             expected.append(correlations.time_relaxation_direct_by_mtx_vec_prod(self.T, p0, obs, t))
-        
+
         result = correlations.time_relaxations_direct(self.T, p0, obs, times)
-        
+
         assert_allclose(expected, result)
+
 
 if __name__ == "__main__":
     unittest.main()

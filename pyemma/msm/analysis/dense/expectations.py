@@ -10,6 +10,7 @@ import numpy as np
 from decomposition import rdl_decomposition
 from decomposition import stationary_distribution_from_backward_iteration as statdist
 
+
 def expected_counts(p0, T, n):
     r"""Compute expected transition counts for Markov chain after n steps. 
     
@@ -37,12 +38,13 @@ def expected_counts(p0, T, n):
     EC : (M, M) ndarray
         Expected value for transition counts after n steps. 
     
-    """        
-    M=T.shape[0]
-    if n<=M:
+    """
+    M = T.shape[0]
+    if n <= M:
         return ec_matrix_vector(p0, T, n)
     else:
-        return ec_geometric_series(p0, T, n)      
+        return ec_geometric_series(p0, T, n)
+
 
 def expected_counts_stationary(T, n, mu=None):
     r"""Expected transition counts for Markov chain in equilibrium. 
@@ -69,14 +71,15 @@ def expected_counts_stationary(T, n, mu=None):
         Expected value for transition counts after a propagation of n steps. 
     
     """
-    if n<=0:
-        EC=np.zeros(T.shape)
+    if n <= 0:
+        EC = np.zeros(T.shape)
         return EC
     else:
         if mu is None:
-            mu=statdist(T)
-        EC=n*mu[:, np.newaxis]*T
+            mu = statdist(T)
+        EC = n * mu[:, np.newaxis] * T
         return EC
+
 
 def geometric_series(q, n):
     """
@@ -99,28 +102,29 @@ def geometric_series(q, n):
         The value of the finite series.
         
     """
-    q=np.asarray(q)    
-    if n<0:
+    q = np.asarray(q)
+    if n < 0:
         raise ValueError('Finite geometric series is only defined for n>=0.')
     else:
         """q is scalar"""
-        if q.ndim==0:
-            if q==1:
-                s=(n+1)*1.0
+        if q.ndim == 0:
+            if q == 1:
+                s = (n + 1) * 1.0
                 return s
             else:
-                s=(1.0-q**(n+1))/(1.0-q)
+                s = (1.0 - q ** (n + 1)) / (1.0 - q)
                 return s
         """q is ndarray"""
-        s=np.zeros(np.shape(q), dtype=q.dtype)
+        s = np.zeros(np.shape(q), dtype=q.dtype)
         """All elements with value q=1"""
-        ind=(q==1.0)
+        ind = (q == 1.0)
         """For q=1 the sum has the value s=n+1"""
-        s[ind]=(n+1)*1.0   
+        s[ind] = (n + 1) * 1.0
         """All elements with value q\neq 1"""
-        not_ind=np.logical_not(ind)
-        s[not_ind]=(1.0-q[not_ind]**(n+1))/(1.0-q[not_ind]) 
+        not_ind = np.logical_not(ind)
+        s[not_ind] = (1.0 - q[not_ind] ** (n + 1)) / (1.0 - q[not_ind])
         return s
+
 
 def ec_matrix_vector(p0, T, n):
     r"""Compute expected transition counts for Markov chain after n
@@ -153,25 +157,26 @@ def ec_matrix_vector(p0, T, n):
     EC : (M, M) ndarray
         Expected value for transition counts after N steps. 
     
-    """        
-    if(n<=0):
-        EC=np.zeros(T.shape)
+    """
+    if (n <= 0):
+        EC = np.zeros(T.shape)
         return EC
     else:
-        """Probability vector after (k=0) propagations"""                     
-        p_k=1.0*p0
+        """Probability vector after (k=0) propagations"""
+        p_k = 1.0 * p0
         """Sum of vectors after (k=0) propagations"""
-        p_sum=1.0*p_k           
-        for k in xrange(n-1):
+        p_sum = 1.0 * p_k
+        for k in xrange(n - 1):
             """Propagate one step p_{k} -> p_{k+1}"""
-            p_k=np.dot(p_k,T)      
+            p_k = np.dot(p_k, T)
             """Update sum"""
-            p_sum+=p_k             
+            p_sum += p_k
         """Expected counts"""
-        EC=p_sum[:,np.newaxis]*T     
+        EC = p_sum[:, np.newaxis] * T
         return EC
-    
-def ec_geometric_series(p0, T, n):  
+
+
+def ec_geometric_series(p0, T, n):
     r"""Compute expected transition counts for Markov chain after n
     steps.
 
@@ -203,21 +208,21 @@ def ec_geometric_series(p0, T, n):
         Expected value for transition counts after N steps. 
     
     """
-    if(n<=0):
-        EC=np.zeros(T.shape)
+    if (n <= 0):
+        EC = np.zeros(T.shape)
         return EC
     else:
-        R, D, L=rdl_decomposition(T)
-        w=np.diagonal(D)
-        L=np.transpose(L)
+        R, D, L = rdl_decomposition(T)
+        w = np.diagonal(D)
+        L = np.transpose(L)
 
-        D_sum=np.diag(geometric_series(w, n-1))
-        T_sum=np.dot(np.dot(R, D_sum), np.conjugate(np.transpose(L)))
-        p_sum=np.dot(p0, T_sum)
-        EC=p_sum[:,np.newaxis]*T
+        D_sum = np.diag(geometric_series(w, n - 1))
+        T_sum = np.dot(np.dot(R, D_sum), np.conjugate(np.transpose(L)))
+        p_sum = np.dot(p0, T_sum)
+        EC = p_sum[:, np.newaxis] * T
         """Truncate imginary part - which is zero, but we want real
         return values"""
-        EC=EC.real
+        EC = EC.real
         return EC
         
 

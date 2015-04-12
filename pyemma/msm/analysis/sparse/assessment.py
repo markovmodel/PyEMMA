@@ -10,6 +10,7 @@ from pyemma.util.numeric import allclose_sparse
 
 import numpy as np
 
+
 def is_transition_matrix(T, tol):
     """
     True if T is a transition matrix
@@ -28,14 +29,14 @@ def is_transition_matrix(T, tol):
         False, otherwise
 
     """
-    T=T.tocsr() # compressed sparse row for fast row slicing
-    values=T.data # non-zero entries of T
+    T = T.tocsr()  # compressed sparse row for fast row slicing
+    values = T.data  # non-zero entries of T
 
     """Check entry-wise positivity"""
-    is_positive=np.allclose(values, np.abs(values), rtol=tol)
+    is_positive = np.allclose(values, np.abs(values), rtol=tol)
 
     """Check row normalization"""
-    is_normed=np.allclose(T.sum(axis=1), 1.0, rtol=tol)
+    is_normed = np.allclose(T.sum(axis=1), 1.0, rtol=tol)
 
     return is_positive and is_normed
 
@@ -57,26 +58,26 @@ def is_rate_matrix(K, tol):
         False, otherwise
     """
     K = K.tocsr()
-    
-    # check rows sum up to zero.
-    row_sum = K.sum(axis = 1)
-    sum_eq_zero = np.allclose(row_sum, np.zeros(shape=row_sum.shape), atol=tol)
 
+    # check rows sum up to zero.
+    row_sum = K.sum(axis=1)
+    sum_eq_zero = np.allclose(row_sum, np.zeros(shape=row_sum.shape), atol=tol)
 
     # store copy of original diagonal
     org_diag = K.diagonal()
-    
+
     # substract diagonal
-    K=K-diags(org_diag, 0)
+    K = K - diags(org_diag, 0)
 
     # check off diagonals are > 0
-    values=K.data
-    values_gt_zero = np.allclose(values, np.abs(values), atol = tol)
+    values = K.data
+    values_gt_zero = np.allclose(values, np.abs(values), atol=tol)
 
     # add diagonal
-    K=K+diags(org_diag, 0)
+    K = K + diags(org_diag, 0)
 
     return values_gt_zero and sum_eq_zero
+
 
 def is_reversible(T, mu=None, tol=1e-15):
     r"""
@@ -102,17 +103,19 @@ def is_reversible(T, mu=None, tol=1e-15):
     """
     if not is_transition_matrix(T, tol):
         raise ValueError("given matrix is not a valid transition matrix.")
-    
+
     T = T.tocsr()
-    
+
     if mu is None:
         from decomposition import stationary_distribution_from_backward_iteration as statdist
+
         mu = statdist(T)
-    
+
     Mu = diags(mu, 0)
     prod = Mu * T
-    
-    return allclose_sparse(prod, prod.transpose(), rtol=tol)        
+
+    return allclose_sparse(prod, prod.transpose(), rtol=tol)
+
 
 def is_connected(T, directed=True):
     r"""Check connectivity of the transition matrix.
@@ -134,9 +137,10 @@ def is_connected(T, directed=True):
         
 
     """
-    nc=connected_components(T, directed=directed, connection='strong', \
-                                        return_labels=False)    
+    nc = connected_components(T, directed=directed, connection='strong', \
+                              return_labels=False)
     return nc == 1
+
 
 def is_ergodic(T, tol):
     """
@@ -159,9 +163,9 @@ def is_ergodic(T, tol):
         T = T.tocsr()
     if not is_transition_matrix(T, tol):
         raise ValueError("given matrix is not a valid transition matrix.")
-    
+
     num_components = connected_components(T, directed=True, \
                                           connection='strong', \
                                           return_labels=False)
-    
+
     return num_components == 1
