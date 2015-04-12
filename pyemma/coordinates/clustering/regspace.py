@@ -84,30 +84,19 @@ class RegularSpaceClustering(AbstractClustering):
                 regspatial.cluster(X.astype(np.float32, order='C', copy=False),
                                    self._clustercenters, self._dmin,
                                    self.metric, self.max_clusters)
+                # finished regularly
+                if last_chunk:
+                    self.clustercenters = np.array(self._clustercenters)
+                    return True  # finished!
             except RuntimeError:
                 msg = 'Maximum number of cluster centers reached.' \
                       ' Consider increasing max_clusters or choose' \
                       ' a larger minimum distance, dmin.'
                 self._logger.warning(msg)
                 warnings.warn(msg)
-                return False
-
-        elif ipass == 1:
-            # discretize all
-            if t == 0:
-                if itraj == 0:
-                    assert len(self._clustercenters) >= 1
-                    # create numpy array from clustercenters list
-                    self.clustercenters = np.array(self._clustercenters)
-                    self._logger.info("number of clustercenters: %i" %
-                                      len(self.clustercenters))
-                n = self.data_producer.trajectory_length(itraj, stride=stride)
-                self.dtrajs.append(np.empty(n, dtype=np.int64))
-            L = np.shape(X)[0]
-
-            self.dtrajs[itraj][t:t+L] = self.map(X)
-            if last_chunk:
-                return True  # finished!
+                # finished anyway, because we have no more space for clusters. Rest of trajectory has no effect
+                self.clustercenters = np.array(self._clustercenters)
+                return True
 
         return False
 

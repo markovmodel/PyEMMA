@@ -102,12 +102,6 @@ class UniformTimeClustering(AbstractClustering):
                 self._nextt += self._dt
             if last_chunk_in_traj:
                 self._tprev += self.data_producer.trajectory_length(itraj, stride=stride)
-        if ipass == 1:
-            # discretize all
-            if t == 0:
-                n = self.data_producer.trajectory_length(itraj, stride=stride)
-                self.dtrajs.append(np.zeros(n, dtype=int))
-            self.dtrajs[itraj][t:t+L] = self.map(X)
             if last_chunk:
                 return True  # done!
 
