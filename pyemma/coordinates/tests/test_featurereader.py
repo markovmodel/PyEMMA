@@ -104,7 +104,7 @@ class TestFeatureReader(unittest.TestCase):
         
     def test_with_pipeline_time_lagged(self):
         reader = feature_reader(self.trajfile, self.topfile)
-        reader.featurizer.distances([[0, 1], [0, 2]])
+        #reader.featurizer.distances([[0, 1], [0, 2]])
         t = tica(dim=2, lag=1)
         d = discretizer(reader, t)
         d.parametrize()
