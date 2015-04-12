@@ -284,6 +284,7 @@ class Transformer(object):
             for x in X:
                 mapped = self._map_array(x)
                 out.append(mapped)
+            return out
         else:
             raise TypeError('Input has the wrong type: '+str(type(X))
                             +'. Either accepting numpy arrays of dimension 2 or lists of such arrays')
