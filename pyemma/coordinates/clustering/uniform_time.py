@@ -115,6 +115,3 @@ class UniformTimeClustering(AbstractClustering):
         # nothing to do, because memory-mapping of the discrete trajectories is
         # done in parametrize
         pass
-
-    def get_discrete_trajectories(self):
-        return self.dtrajs
