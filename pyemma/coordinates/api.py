@@ -214,8 +214,7 @@ def source(inp, features=None, top=None):
         # check: if single array, create a one-element list
         # check: do all arrays have compatible dimensions (*, N)? If not: raise ValueError.
         # create MemoryReader
-        # raise Exception('input of ndarrays not implemented yet')
-        reader = None
+        reader = _DataInMemory(inp)
     else:
         raise ValueError('unsupported type (%s) of input' % type(inp))
 
@@ -251,7 +250,7 @@ def pipeline(stages, run=True, stride=1):
         A pipeline object that is able to conduct big data analysis with limited memory in streaming mode.
 
     """
-    
+
     if not isinstance(stages, list):
         stages = [stages]
     p = _Pipeline(stages, param_stride=stride)

@@ -219,7 +219,6 @@ metadata = dict(
                       'scipy>=0.11',
                       'mdtraj',
                       'scikit-learn',
-                      'psutil',
                       'matplotlib'],
     zip_safe=False,
 )
