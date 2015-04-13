@@ -43,10 +43,7 @@ class TestCluster(unittest.TestCase):
                                 [1,-1],
                                 [4,2]])
         # assignment
-        cls.ass = coor.assign_to_centers(data = cls.X, centers=cls.centers)
-
-    def setUp(self):
-        pass
+        cls.ass = coor.assign_to_centers(data = cls.X, centers=cls.centers, return_dtrajs=False)
 
     def test_chunksize(self):
         assert types.is_int(self.ass.chunksize)
@@ -78,6 +75,11 @@ class TestCluster(unittest.TestCase):
         # assignment in this case should be perfect
         for i in range(self.T):
             assert c.dtrajs[0][i] == int(i / self.nsample)
+
+    def test_return_dtrajs(self):
+        dtrajs = coor.assign_to_centers(data=self.X, centers=self.centers)
+        for dtraj in dtrajs:
+            assert types.is_int_array(dtraj)
 
     def test_get_output(self):
         c = self.ass

@@ -896,7 +896,7 @@ def assign_centers(data=None, centers=None, stride=1):
     return assign_to_centers(data, centers, stride=stride)
 
 
-def assign_to_centers(data=None, centers=None, stride=1):
+def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True):
     r"""Assigns data to the nearest cluster centers, thus creating a Voronoi partition.
 
     If you already have cluster centers from somewhere, you can use this
@@ -919,7 +919,8 @@ def assign_to_centers(data=None, centers=None, stride=1):
 
     Returns
     -------
-    obj : AssignCenters
+    dtrajs : list of integer arrays
+        assigned data
 
     Examples
     --------
@@ -930,8 +931,8 @@ def assign_to_centers(data=None, centers=None, stride=1):
     >>> import numpy as np
     >>> data = np.loadtxt('my_data.csv')
     >>> cluster_centers = np.loadtxt('my_centers.csv')
-    >>> disc = assign_centers(data, cluster_centers)
-    >>> disc.dtrajs
+    >>> dtrajs = assign_centers(data, cluster_centers)
+    >>> print dtrajs
 
     [array([0, 0, 1, ... ])]
 
@@ -940,4 +941,8 @@ def assign_to_centers(data=None, centers=None, stride=1):
         raise ValueError('You have to provide centers in form of a filename'
                          ' or NumPy array')
     res = _AssignCenters(centers)
-    return _param_stage(data, res, stride=stride)
+    parametrized_stage = _param_stage(data, res, stride=stride)
+    if return_dtrajs:
+        return parametrized_stage.dtrajs
+
+    return parametrized_stage
