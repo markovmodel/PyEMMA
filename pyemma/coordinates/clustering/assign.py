@@ -39,15 +39,18 @@ class AssignCenters(AbstractClustering):
         self.clustercenters = clustercenters
         assert isinstance(self.clustercenters, np.ndarray)
 
+        # since we provided centers, this transformer is already parametrized.
+        self._parametrized = True
+
     def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
                         last_chunk, ipass, Y=None, stride=1):
         # discretize all
         if t == 0:
             n = self.data_producer.trajectory_length(itraj, stride=stride)
-            self.dtrajs.append(np.empty(n, dtype=int))
+            self._dtrajs.append(np.empty(n, dtype=int))
 
         L = np.shape(X)[0]
-        self.dtrajs[itraj][t:t+L] = self.map(X)
+        self._dtrajs[itraj][t:t+L] = self.map(X)
 
         if last_chunk:
             return True

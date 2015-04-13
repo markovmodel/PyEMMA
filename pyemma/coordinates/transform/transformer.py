@@ -469,40 +469,38 @@ class Transformer(object):
     def get_output(self, dimensions=slice(0, None), stride=1):
         """ Maps all input data of this transformer and returns it as an array or list of arrays
 
-            Parameters
-            ----------
-            transfrom : pyemma.coordinates.transfrom.Transformer object
-                transform that provides the input data
-            dimensions : list-like of indexes or slice
-                indices of dimensions you like to keep, default = all
-            stride : int
-                only take every n'th frame, default = 1
+        Parameters
+        ----------
+        dimensions : list-like of indexes or slice
+            indices of dimensions you like to keep, default = all
+        stride : int
+            only take every n'th frame, default = 1
 
-            Returns
-            -------
-            output : ndarray(T, d) or list of ndarray(T_i, d)
-                the mapped data, where T is the number of time steps of the input data, or if stride > 1,
-                floor(T_in / stride). d is the output dimension of this transformer.
-                If the input consists of a list of trajectories, Y will also be a corresponding list of trajectories
+        Returns
+        -------
+        output : ndarray(T, d) or list of ndarray(T_i, d)
+            the mapped data, where T is the number of time steps of the input data, or if stride > 1,
+            floor(T_in / stride). d is the output dimension of this transformer.
+            If the input consists of a list of trajectories, Y will also be a corresponding list of trajectories
 
-            Notes
-            -----
-            This function may be RAM intensive if stride is too large or
-            too many dimensions are selected.
+        Notes
+        -----
+        This function may be RAM intensive if stride is too large or
+        too many dimensions are selected.
 
-            Example
-            -------
-            plotting trajectories
+        Example
+        -------
+        plotting trajectories
 
-            >>> import pyemma.coordinates as coor
-            >>> import matplotlib.pyplot as plt
-            >>> %matplotlib inline # only for ipython notebook
-            >>>
-            >>> tica = coor.tica() # fill with some actual data!
-            >>> trajs = tica.get_output(dimensions=(0,), stride=100)
-            >>> for traj in trajs:
-            >>>     plt.figure()
-            >>>     plt.plot(traj[:, 0])
+        >>> import pyemma.coordinates as coor
+        >>> import matplotlib.pyplot as plt
+        >>> %matplotlib inline # only for ipython notebook
+        >>>
+        >>> tica = coor.tica() # fill with some actual data!
+        >>> trajs = tica.get_output(dimensions=(0,), stride=100)
+        >>> for traj in trajs:
+        >>>     plt.figure()
+        >>>     plt.plot(traj[:, 0])
 
         """
 
@@ -522,7 +520,8 @@ class Transformer(object):
         assert ndim > 0, "ndim was zero in %s" % self.__class__.__name__
 
         # allocate memory
-        trajs = [np.empty((l, ndim), dtype=self.output_type()) for l in self.trajectory_lengths(stride=stride)]
+        trajs = [np.empty((l, ndim), dtype=self.output_type())
+                 for l in self.trajectory_lengths(stride=stride)]
 
         if __debug__:
             self._logger.debug("get_output(): created output trajs with shapes: %s"
@@ -531,6 +530,7 @@ class Transformer(object):
         # fetch data
         last_itraj = -1
         t = 0  # first time point
+        assert self._parametrized, "has to be parametrized before getting output!"
         for itraj, chunk in self.iterator(stride=stride):
             if itraj != last_itraj:
                 last_itraj = itraj
