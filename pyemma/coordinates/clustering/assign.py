@@ -36,8 +36,7 @@ class AssignCenters(AbstractClustering):
         if isinstance(clustercenters, basestring):
             self.clustercenters = np.loadtxt(clustercenters)
 
-        self.clustercenters = clustercenters
-        assert isinstance(self.clustercenters, np.ndarray)
+        self.clustercenters = np.array(clustercenters, dtype=np.float32, order='C')
 
         # since we provided centers, this transformer is already parametrized.
         self._parametrized = True
