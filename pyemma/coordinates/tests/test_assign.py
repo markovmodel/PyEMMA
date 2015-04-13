@@ -3,13 +3,12 @@ import os
 import numpy as np
 import tempfile
 
-from pyemma.coordinates.data import MDFeaturizer
 from pyemma.util.log import getLogger
 import pyemma.coordinates as coor
 import pyemma.util.types as types
 
 
-logger = getLogger('TestReaderUtils')
+logger = getLogger('TestCluster')
 
 
 class TestCluster(unittest.TestCase):
@@ -78,7 +77,7 @@ class TestCluster(unittest.TestCase):
         assert len(c.dtrajs[0]) == self.T
         # assignment in this case should be perfect
         for i in range(self.T):
-            assert c.dtrajs[0][i] == (i // self.nsample)
+            assert c.dtrajs[0][i] == (i // self.nsample), c.dtrajs[0][i]
 
     def test_get_output(self):
         c = self.ass
