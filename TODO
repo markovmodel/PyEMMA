@@ -1,5 +1,3 @@
-* (pystallone) recover code to handle python lists as array
-
 * pre cythonized files blow up repo (ugly merge conflicts) - if we just require
   cython in a source install and ship binary packages for users too stupid to 
   provide a sane env, we can just preserve the use of complicated workarounds.
@@ -7,7 +5,7 @@
   -> require a stable build for travis (first available when travis provides more mac builders)
 
   provide binaries:
-    for emma, pystallone, jpype:
+    for emma:
     write conda recipes for all
 
 * remove output cells of ipython notebooks and unify their history (we do not want to track output).

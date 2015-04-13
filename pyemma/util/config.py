@@ -1,53 +1,36 @@
 r'''
 Runtime Configuration
 =====================
-
 To configure the runtime behavior like logging system or parameters for the
 Java/Python bridge, the configuration module reads several config files to build
 its final set of settings. It searches for the file 'pyemma.cfg' in several
 locations with different priorities:
-
 1. $CWD/pyemma.cfg
 2. /etc/pyemma.cfg
 3. ~/pyemma.cfg
 4. $PYTHONPATH/pyemma/pyemma.cfg (always taken as default configuration file)
-
 The default values are stored in later file to ensure these values are always
 defined. This is preferred over hardcoding them somewhere in the Python code.
-
-
 Default configuration file
 --------------------------
-
 Default settings are stored in a provided pyemma.cfg file, which is included in
 the Python package:
-
 .. literalinclude:: ../../pyemma/pyemma.cfg
     :language: ini
-
 To access the config at runtime eg. the logging section:
-
 .. code-block:: python
-
     from pyemma.util.config import config
     print config.Logging.level
-
 Notes
 -----
 All values are being stored as strings, so to compare eg. if a value is True,
 compare for
-
 .. code-block:: python
-
     if config['section'].my_bool == 'True':
         pass
-
-
 .. codeauthor:: Martin Scherer <m.scherer at fu-berlin.de>
-
 Members of module
 -----------------
-
 '''
 
 __docformat__ = "restructuredtext en"
@@ -87,7 +70,6 @@ def readConfiguration():
     TODO: consider using json to support arbitray python objects in ini file (if this getting more complex)
     """
     import pkg_resources
-    import sys
 
     global configParser, conf_values, used_filenames
 
@@ -110,31 +92,6 @@ def readConfiguration():
     except EnvironmentError as e:
         raise RuntimeError("FATAL ERROR: could not read default configuration"
                            " file %s\n%s" % (default_pyemma_conf, e))
-
-    # handle case of different max heap sizes on 32/64 bit
-    is64bit = sys.maxsize > 2 ** 32
-    if is64bit:
-        maxheap = 2000
-    else:
-        maxheap = 1280
-
-    # if we have psutil, try to maximize memory usage.
-    try:
-        import psutil
-        # available virtual memory in mb
-        max_avail = psutil.virtual_memory().available / 1024 ** 2
-
-        maxheap = max(maxheap, max_avail)
-    except ImportError:
-        pass
-
-    if maxheap < 1024:
-        import warnings
-        warnings.warn('Less than 1 GB of free memory. Underlying Java virtual'
-                      ' machine capped to %s mb. Working with trajectories on'
-                      ' Java side may cause memory problems.' % maxheap)
-
-    defParser.set('Java', 'maxHeap', '%sm' % maxheap)
 
     # store values of defParser in configParser with sections
     configParser = ConfigParser.SafeConfigParser()

@@ -84,11 +84,16 @@ class TestSource(unittest.TestCase):
         self.assertRaises(ValueError, api.source, root_dir, None, self.pdb_file)
 
 class TestSourceCallAll(unittest.TestCase):
-    def setUp(self):
+
+    @classmethod
+    def setUpClass(cls):
         path = os.path.join(os.path.split(__file__)[0], 'data')
-        self.pdb_file = os.path.join(path, 'bpti_ca.pdb')
-        self.xtc_file = os.path.join(path, 'bpti_mini.xtc')
-        self.inp = api.source(self.xtc_file, top=self.pdb_file)
+        cls.pdb_file = os.path.join(path, 'bpti_ca.pdb')
+        cls.xtc_file = os.path.join(path, 'bpti_mini.xtc')
+        cls.inp = api.source(cls.xtc_file, top=cls.pdb_file)
+
+    def setUp(self):
+        pass
 
     def test_chunksize(self):
         assert types.is_int(self.inp.chunksize)

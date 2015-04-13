@@ -19,7 +19,6 @@ class TestCluster(unittest.TestCase):
         super(TestCluster, cls).setUpClass()
         cls.dtraj_dir = tempfile.mkdtemp()
 
-    def setUp(self):
         # generate Gaussian mixture
         means = [np.array([-3,0]),
                  np.array([-1,1]),
@@ -33,16 +32,19 @@ class TestCluster(unittest.TestCase):
                   np.array([0.3,2])]
         # continuous trajectory
         nsample = 1000
-        self.T = len(means)*nsample
-        self.X = np.zeros((self.T, 2))
+        cls.T = len(means)*nsample
+        cls.X = np.zeros((cls.T, 2))
         for i in range(len(means)):
-            self.X[i*nsample:(i+1)*nsample,0] = widths[i][0] * np.random.randn() + means[i][0]
-            self.X[i*nsample:(i+1)*nsample,1] = widths[i][1] * np.random.randn() + means[i][1]
+            cls.X[i*nsample:(i+1)*nsample,0] = widths[i][0] * np.random.randn() + means[i][0]
+            cls.X[i*nsample:(i+1)*nsample,1] = widths[i][1] * np.random.randn() + means[i][1]
         # cluster in different ways
-        self.km = coor.cluster_kmeans(data = self.X, k = 100)
-        self.rs = coor.cluster_regspace(data = self.X, dmin=0.5)
-        self.rt = coor.cluster_uniform_time(data = self.X, k = 100)
-        self.cl = [self.km, self.rs, self.rt]
+        cls.km = coor.cluster_kmeans(data = cls.X, k = 100)
+        cls.rs = coor.cluster_regspace(data = cls.X, dmin=0.5)
+        cls.rt = coor.cluster_uniform_time(data = cls.X, k = 100)
+        cls.cl = [cls.km, cls.rs, cls.rt]
+
+    def setUp(self):
+        pass
 
     def test_chunksize(self):
         for c in self.cl:

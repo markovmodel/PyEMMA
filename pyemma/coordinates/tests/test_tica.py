@@ -84,25 +84,29 @@ class TestTICA_Basic(unittest.TestCase):
 
 class TestTICA_Extensive(unittest.TestCase):
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         import pyemma.msm.generation as msmgen
 
         # generate HMM with two Gaussians
-        self.P = np.array([[0.99, 0.01],
+        cls.P = np.array([[0.99, 0.01],
                       [0.01, 0.99]])
-        self.T = 10000
+        cls.T = 10000
         means = [np.array([-1,1]), np.array([1,-1])]
         widths = [np.array([0.3,2]),np.array([0.3,2])]
         # continuous trajectory
-        self.X = np.zeros((self.T, 2))
+        cls.X = np.zeros((cls.T, 2))
         # hidden trajectory
-        dtraj = msmgen.generate_traj(self.P, self.T)
-        for t in range(self.T):
+        dtraj = msmgen.generate_traj(cls.P, cls.T)
+        for t in range(cls.T):
             s = dtraj[t]
-            self.X[t,0] = widths[s][0] * np.random.randn() + means[s][0]
-            self.X[t,1] = widths[s][1] * np.random.randn() + means[s][1]
-        self.lag = 10
-        self.tica_obj = tica(data = self.X, lag=self.lag, dim=1)
+            cls.X[t,0] = widths[s][0] * np.random.randn() + means[s][0]
+            cls.X[t,1] = widths[s][1] * np.random.randn() + means[s][1]
+        cls.lag = 10
+        cls.tica_obj = tica(data = cls.X, lag=cls.lag, dim=1)
+
+    def setUp(self):
+        pass
 
     def test_chunksize(self):
         assert types.is_int(self.tica_obj.chunksize)
