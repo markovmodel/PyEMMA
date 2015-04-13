@@ -7,7 +7,7 @@ import os
 import tempfile
 import numpy as np
 import mdtraj
-from pyemma.coordinates.api import _TICA as TICA
+from pyemma.coordinates import api
 from pyemma.coordinates.data.feature_reader import FeatureReader
 from pyemma.util.log import getLogger
 
@@ -64,9 +64,9 @@ class TestFeatureReaderAndTICA(unittest.TestCase):
         
     def test_covariances_and_eigenvalues(self):
         reader = FeatureReader(self.trajnames, self.temppdb)
-        trans = TICA(lag=1, output_dimension=self.dim)
-        trans.data_producer = reader
-        for lag in [1, 11, 101, 1001, 2001]:  # avoid cos(w*lag)==0
+        trans = api.tica(data=reader, dim=self.dim, lag=1)
+        #TICA(tau=1, output_dimension=self.dim)
+        for lag in [1, 11, 101, 1001, 2001]:  # avoid cos(w*tau)==0
             log.info('number of trajectories reported by tica %d' % trans.number_of_trajectories())
             log.info('tau = %d corresponds to a number of %f cycles' % (lag, self.w*lag/(2.0*np.pi)))
             trans.lag = lag

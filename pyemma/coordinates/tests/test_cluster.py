@@ -1,9 +1,9 @@
 import unittest
 import os
-import numpy as np
 import tempfile
 
-from pyemma.coordinates.data import MDFeaturizer
+import numpy as np
+
 from pyemma.util.log import getLogger
 import pyemma.coordinates as coor
 import pyemma.util.types as types
