@@ -15,57 +15,44 @@ def is_float(l):
     """
     return isinstance(l, numbers.Real)
 
+def is_iterable_of_int(l):
+    r""" Checks if l is iterable and contains only integral types """
+    if not hasattr(l, '__iter__'):
+        return False
+
+    return all(is_int(value) for value in l)
+
 def is_list_of_int(l):
     r"""Checks if l is a list of integers
 
     """
-    if isinstance(l, list):
-        if (len(l) > 0):
-            if is_int(l[0]): # TODO: this is not sufficient - we should go through the list, but this is inefficient.
-                return True
-        else:
-            return False
-    else:
-        return False
+    return is_iterable_of_int(l)
 
 def is_tuple_of_int(l):
     r"""Checks if l is a list of integers
 
     """
-    if isinstance(l, tuple):
-        if (len(l) > 0):
-            if is_int(l[0]): # TODO: this is not sufficient - we should go through the list, but this is inefficient.
-                return True
-        else:
-            return False
-    else:
+    return is_iterable_of_int(l)
+
+
+def is_iterable_of_float(l):
+    r""" Checks if l is iterable and contains only floating point types """
+    if not hasattr(l, '__iter__'):
         return False
+
+    return all(is_float(value) for value in l)
 
 def is_list_of_float(l):
     r"""Checks if l is a list of integers
 
     """
-    if isinstance(l, list):
-        if (len(l) > 0):
-            if is_float(l[0]): # TODO: this is not sufficient - we should go through the list, but this is inefficient.
-                return True
-        else:
-            return False
-    else:
-        return False
+    return is_iterable_of_float(l)
 
 def is_tuple_of_float(l):
     r"""Checks if l is a list of integers
 
     """
-    if isinstance(l, tuple):
-        if (len(l) > 0):
-            if is_float(l[0]): # TODO: this is not sufficient - we should go through the list, but this is inefficient.
-                return True
-        else:
-            return False
-    else:
-        return False
+    return is_iterable_of_float(l)
 
 def is_int_array(l):
     r"""Checks if l is a numpy array of integers
@@ -107,6 +94,7 @@ def is_string(s):
     return isinstance(s, basestring)
 
 def is_list(S):
+    # FIXME: name states check for list, but checks for tuple __and__ list. Thats confusing.
     return isinstance(S, (list, tuple))
 
 def is_list_of_string(S):
@@ -214,9 +202,7 @@ def ensure_float_array(F, require_order = False):
         return F
     elif is_float(F):
         return np.array([F])
-    elif is_list_of_float(F):
-        return np.array(F)
-    elif is_tuple_of_float(F):
+    elif is_iterable_of_float(F):
         return np.array(F)
     elif isinstance(F, set):
         if require_order:

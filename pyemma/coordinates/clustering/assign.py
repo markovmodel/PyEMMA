@@ -36,8 +36,7 @@ class AssignCenters(AbstractClustering):
         if isinstance(clustercenters, basestring):
             self.clustercenters = np.loadtxt(clustercenters)
 
-        self.clustercenters = clustercenters
-        assert isinstance(self.clustercenters, np.ndarray)
+        self.clustercenters = np.array(clustercenters, dtype=np.float32, order='C')
 
         # since we provided centers, this transformer is already parametrized.
         self._parametrized = True
@@ -50,7 +49,7 @@ class AssignCenters(AbstractClustering):
             self._dtrajs.append(np.empty(n, dtype=int))
 
         L = np.shape(X)[0]
-        self._dtrajs[itraj][t:t+L] = self.map(X)
+        self._dtrajs[itraj][t:t+L] = self._map_array(X).squeeze()
 
         if last_chunk:
             return True

@@ -82,8 +82,11 @@ class UniformTimeClustering(AbstractClustering):
                 T = self.data_producer.n_frames_total(stride=stride)
                 if self.n_clusters > T:
                     self.n_clusters = T
-                    self._logger.info('Requested more clusters (k = '+str(self.n_clusters)+') than there are total data points ('
-                                      +str(T)+'. Will do clustering with k = '+str(T))
+                    self._logger.info('Requested more clusters (k = %i'
+                                      ' than there are total data points %i)'
+                                      '. Will do clustering with k = %i'
+                                      % (self.n_clusters, T, T))
+
                 # time in previous trajectories
                 self._tprev = 0
                 # number of clusters yet
@@ -101,7 +104,8 @@ class UniformTimeClustering(AbstractClustering):
                 self._n += 1
                 self._nextt += self._dt
             if last_chunk_in_traj:
-                self._tprev += self.data_producer.trajectory_length(itraj, stride=stride)
+                self._tprev += self.data_producer.trajectory_length(
+                    itraj, stride=stride)
             if last_chunk:
                 return True  # done!
 
