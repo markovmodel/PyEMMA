@@ -511,7 +511,7 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
         a = range(msm.nstates)
         times, corr2 = msm.correlation(a, a, maxtime=maxtime, )
         # should be identical to autocorr
-        assert (np.all(corr1 == corr2))
+        assert (np.allclose(corr1, corr2))
         # Test: should be increasing in time
         b = range(msm.nstates)[::-1]
         times, corr3 = msm.correlation(a, b, maxtime=maxtime, )
