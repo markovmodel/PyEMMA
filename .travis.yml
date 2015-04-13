@@ -31,7 +31,7 @@ script:
 # run tests omiting slow attributed tests.
 - nosetests -a '!slow'
 # run pylint (non fatal exit and show only errors)
-- pylint --rcfile=.pylintrc pyemma || true
+- pylint -j 4 --rcfile=.pylintrc pyemma || true
 
 after_success:
 - tools/ci/travis/make_docs.sh
