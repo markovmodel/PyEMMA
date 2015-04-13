@@ -70,7 +70,7 @@ class TestFeatureReaderAndTICA(unittest.TestCase):
             log.info('number of trajectories reported by tica %d' % trans.number_of_trajectories())
             log.info('tau = %d corresponds to a number of %f cycles' % (tau, self.w*tau/(2.0*np.pi)))
             trans.lag = tau
-            _ = iter(trans)  # grab iterator to run chain
+            trans.parametrize()
 
             # analytical solution for C_ij(tau) is 0.5*A[i]*A[j]*cos(phi[i]-phi[j])*cos(w*tau)
             ana_cov = 0.5*self.A[:, np.newaxis]*self.A*np.cos(self.phi[:, np.newaxis]-self.phi)
