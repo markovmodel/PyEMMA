@@ -217,7 +217,6 @@ metadata = dict(
     # runtime dependencies
     install_requires=['numpy>=1.6.0',
                       'scipy>=0.11',
-                      'pystallone>=1.0.0b3',
                       'mdtraj',
                       'scikit-learn',
                       'psutil',
@@ -226,7 +225,7 @@ metadata = dict(
 )
 
 # this is only metadata and not used by setuptools
-metadata['requires'] = ['numpy', 'scipy', 'pystallone']
+metadata['requires'] = ['numpy', 'scipy']
 
 # not installing?
 if len(sys.argv) == 1 or (len(sys.argv) >= 2 and ('--help' in sys.argv[1:] or
