@@ -20,11 +20,11 @@ class RandomDataSource(DataInMemory):
         """
         creates random values in interval [a,b]
         """
-        data = np.random.random((n_samples, chunksize, dim))
+        data = np.random.random((n_samples, dim))
         if a is not None and b is not None:
             data *= (b - a)
             data += a
-        super(RandomDataSource, self).__init__(data)
+        super(RandomDataSource, self).__init__(data, chunksize=chunksize)
 
 
 class TestRegSpaceClustering(unittest.TestCase):
