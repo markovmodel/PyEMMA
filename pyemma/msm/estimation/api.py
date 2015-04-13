@@ -704,10 +704,6 @@ def prior_rev(C, alpha=-1.0):
 # Transition matrix
 ################################################################################
 
-# DONE: Frank implemented dense (Nonreversible + reversible with fixed pi)
-# DONE: Jan Implement in Python directly (Nonreversible)
-# Done: Martin Map to Stallone (Reversible)
-# Done: Ben (Fix docstrings)
 @shortcut('tmatrix')
 def transition_matrix(C, reversible=False, mu=None, **kwargs):
     r"""Estimate the transition matrix from the given countmatrix.   

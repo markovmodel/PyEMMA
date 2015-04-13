@@ -17,9 +17,7 @@ class PrecisionWarning(RuntimeWarning):
     r"""    
     This warning indicates that some operation in your code leads
     to a conversion of datatypes, which involves a loss/gain in
-    precision.  For instance in the stallone wrapper only 32 bit
-    integer and doubles are supported. So these types have to be
-    converted with the known implications.  
+    precision.
 
     """
     pass
