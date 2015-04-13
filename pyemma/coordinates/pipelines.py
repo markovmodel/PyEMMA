@@ -107,13 +107,15 @@ class Pipeline(object):
 
     def run(self):
         import warnings
-        warnings.warn("run() is deprecated and will be disabled in the future. Use parametrize().", DeprecationWarning)
+        warnings.warn(
+            "run() is deprecated and will be disabled in the future. Use parametrize().", DeprecationWarning)
         self.parametrize()
 
     # TODO: DISCUSS - renamed run() to parametrize (because run is a bit ambiguous).
     # TODO: We could also call it fit() (here and in the transformers).
     # TODO: This might be nicer because it's shorter and the spelling is unambiguous
-    # TODO: (in contrast to parametrize and parameterize and parameterise that are all correct in english.
+    # TODO: (in contrast to parametrize and parameterize and parameterise that
+    # are all correct in english.
     def parametrize(self):
         """
         reads all data and discretizes it into discrete trajectories
@@ -130,6 +132,13 @@ class Pipeline(object):
         """
         if not hasattr(reader, '_get_memory_per_frame'):
             self.chunksize = 0
+            return
+
+        try:
+            import psutil
+        except ImportError:
+            self._logger.warning(
+                "psutil not available. Can not estimate mem requirements")
             return
 
         M = psutil.virtual_memory()[1]  # available RAM in bytes
@@ -195,7 +204,8 @@ class Discretizer(Pipeline):
 
     def __init__(self, reader, transform=None, cluster=None, chunksize=100, param_stride=1):
         # init with an empty chain and add given transformers afterwards
-        Pipeline.__init__(self, [], chunksize=chunksize, param_stride=param_stride)
+        Pipeline.__init__(
+            self, [], chunksize=chunksize, param_stride=param_stride)
 
         # check input
         if not isinstance(reader, Transformer):
