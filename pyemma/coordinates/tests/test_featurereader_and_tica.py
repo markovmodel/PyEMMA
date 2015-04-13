@@ -66,15 +66,15 @@ class TestFeatureReaderAndTICA(unittest.TestCase):
         reader = FeatureReader(self.trajnames, self.temppdb)
         trans = TICA(lag=1, output_dimension=self.dim)
         trans.data_producer = reader
-        for tau in [1, 11, 101, 1001, 2001]:  # avoid cos(w*tau)==0
+        for lag in [1, 11, 101, 1001, 2001]:  # avoid cos(w*lag)==0
             log.info('number of trajectories reported by tica %d' % trans.number_of_trajectories())
-            log.info('tau = %d corresponds to a number of %f cycles' % (tau, self.w*tau/(2.0*np.pi)))
-            trans.lag = tau
+            log.info('tau = %d corresponds to a number of %f cycles' % (lag, self.w*lag/(2.0*np.pi)))
+            trans.lag = lag
             trans.parametrize()
 
-            # analytical solution for C_ij(tau) is 0.5*A[i]*A[j]*cos(phi[i]-phi[j])*cos(w*tau)
+            # analytical solution for C_ij(lag) is 0.5*A[i]*A[j]*cos(phi[i]-phi[j])*cos(w*lag)
             ana_cov = 0.5*self.A[:, np.newaxis]*self.A*np.cos(self.phi[:, np.newaxis]-self.phi)
-            ana_cov_tau = ana_cov*np.cos(self.w*tau)
+            ana_cov_tau = ana_cov*np.cos(self.w*lag)
         
             self.assertTrue(np.allclose(ana_cov, trans.cov, atol=1.E-3))
             self.assertTrue(np.allclose(ana_cov_tau, trans.cov_tau, atol=1.E-3))
