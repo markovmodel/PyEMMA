@@ -35,25 +35,25 @@ class TestApiSourceFileReader(unittest.TestCase):
         os.remove(cls.dat)
         os.remove(cls.csv)
 
-    def test_obtain_numpy_file_reader_npy(self):
-        reader = api.source(self.npy)
-        self.assertIsNotNone(reader, "Reader object should not be none.")
-        self.assertTrue(isinstance(reader, NumPyFileReader), "Should be a NumPyFileReader.")
-
-    def test_obtain_numpy_file_reader_npz(self):
-        reader = api.source(self.npz)
-        self.assertIsNotNone(reader, "Reader object should not be none.")
-        self.assertTrue(isinstance(reader, NumPyFileReader), "Should be a NumPyFileReader.")
-
-    def test_obtain_csv_file_reader_dat(self):
-        reader = api.source(self.dat)
-        self.assertIsNotNone(reader, "Reader object should not be none.")
-        self.assertTrue(isinstance(reader, CSVReader), "Should be a CSVReader.")
-
-    def test_obtain_csv_file_reader_csv(self):
-        reader = api.source(self.csv)
-        self.assertIsNotNone(reader, "Reader object should not be none.")
-        self.assertTrue(isinstance(reader, CSVReader), "Should be a CSVReader.")
+    # def test_obtain_numpy_file_reader_npy(self):
+    #     reader = api.source(self.npy)
+    #     self.assertIsNotNone(reader, "Reader object should not be none.")
+    #     self.assertTrue(isinstance(reader, NumPyFileReader), "Should be a NumPyFileReader.")
+    #
+    # def test_obtain_numpy_file_reader_npz(self):
+    #     reader = api.source(self.npz)
+    #     self.assertIsNotNone(reader, "Reader object should not be none.")
+    #     self.assertTrue(isinstance(reader, NumPyFileReader), "Should be a NumPyFileReader.")
+    #
+    # def test_obtain_csv_file_reader_dat(self):
+    #     reader = api.source(self.dat)
+    #     self.assertIsNotNone(reader, "Reader object should not be none.")
+    #     self.assertTrue(isinstance(reader, CSVReader), "Should be a CSVReader.")
+    #
+    # def test_obtain_csv_file_reader_csv(self):
+    #     reader = api.source(self.csv)
+    #     self.assertIsNotNone(reader, "Reader object should not be none.")
+    #     self.assertTrue(isinstance(reader, CSVReader), "Should be a CSVReader.")
 
 
 class TestApiSourceFeatureReader(unittest.TestCase):
