@@ -17,3 +17,4 @@ User-API
 """
 
 from .timescales import plot_implied_timescales
+from .plots2d import scatter_contour

@@ -64,5 +64,11 @@ def plot_implied_timescales(ITS, ax=None, outfile=None, xlog=False, ylog=True, c
     if (ylog):
         ax.set_yscale('log')
 
+    # show or save
+    if outfile is None:
+        _plt.show()
+    else:
+        _plt.savefig(outfile)
+
     return ax
 
