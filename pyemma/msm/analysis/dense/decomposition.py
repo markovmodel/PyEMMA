@@ -9,6 +9,7 @@ Dense matrices are represented by numpy.ndarrays throughout this module.
 """
 
 import numpy as np
+import numbers
 import warnings
 
 from scipy.linalg import eig, eigvals, solve, lu_factor, lu_solve
@@ -189,7 +190,7 @@ def eigenvectors(T, k=None, right=True):
     """ Return eigenvectors """
     if k is None:
         return eigvec
-    elif isinstance(k, int):
+    elif isinstance(k, numbers.Integral):
         return eigvec[:, 0:k]
     else:
         ind = np.asarray(k)

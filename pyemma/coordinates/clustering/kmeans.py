@@ -46,12 +46,6 @@ class KmeansClustering(AbstractClustering):
         # resutls mapped to memory during parameterize
         pass
 
-#     def param_init(self):
-#         # ensure we can cluster data
-#         input_dim = self.data_producer.dimension()
-#         if input_dim < self.n_clusters:
-#             raise ValueError("Input dimension lower than number of clusters!")
-
     def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
                         last_chunk, ipass, Y=None, stride=1):
         # first pass: gather data and run k-means
@@ -80,26 +74,11 @@ class KmeansClustering(AbstractClustering):
             # done
             if last_chunk:
                 return True
-        # # second pass: assign states
-        # if ipass == 1:
-        #     if first_chunk:
-        #         self._logger.info("Pass 2: Assigning data")
-        #     # discretize all
-        #     if t == 0:
-        #         n = self.data_producer.trajectory_length(itraj, stride=stride)
-        #         self.dtrajs.append(np.empty(n, dtype=int))
-        #
-        #     assignment = self._algo.predict(X)
-        #     self.dtrajs[itraj][t: t + assignment.shape[0]] = assignment
-
-
 
     def _param_finish(self):
         self.clustercenters = self._algo.cluster_centers_
 
     def _map_array(self, X):
-        if X.ndim == 1:
-            X = self._ensure2d(X)
         d = self._algo.predict(X)
         if d.dtype != self.output_type():
             d = d.astype(self.output_type())  # convert type if necessary
