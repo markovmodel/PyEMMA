@@ -11,8 +11,9 @@ __docformat__ = "restructuredtext en"
 
 import numpy as np
 from math import ceil
-import warnings
 from pyemma.util.annotators import shortcut
+from pyemma.util.log import getLogger
+
 
 __all__ = ['MSM', 'EstimatedMSM']
 
@@ -937,6 +938,9 @@ class EstimatedMSM(MSM):
         # TODO: extensive input checking!
         from pyemma.util.types import ensure_dtraj_list
 
+        # start logging
+        self.__create_logger()
+
         self._dtrajs_full = ensure_dtraj_list(dtrajs)
         self._tau = lag
 
@@ -950,9 +954,12 @@ class EstimatedMSM(MSM):
 
         # sparse matrix computation wanted?
         self._sparse = sparse
+        if sparse:
+            self._logger.warn('Sparse mode is currently untested and might lead to errors. '
+                               'I strongly suggest to use sparse=False unless you know what you are doing.')
         if self._n_full > 4000 and not sparse:
-            warnings.warn('Building a dense MSM with ' + str(self._n_full) + ' states. This can be inefficient or ' +
-                          'unfeasible in terms of both runtime and memory consumption. Consider using sparse=True.')
+            self._logger.warn('Building a dense MSM with ' + str(self._n_full) + ' states. This can be inefficient or '
+                              'unfeasible in terms of both runtime and memory consumption. Consider using sparse=True.')
 
         # store connectivity mode (lowercase)
         self.connectivity = connectivity.lower()
@@ -976,6 +983,10 @@ class EstimatedMSM(MSM):
 
         self._timeunit = TimeUnit(dt)
 
+    def __create_logger(self):
+        name = "%s[%s]" % (self.__class__.__name__, hex(id(self)))
+        self._logger = getLogger(name)
+
     def estimate(self):
         r"""Runs msm estimation.
 
@@ -985,7 +996,7 @@ class EstimatedMSM(MSM):
         """
         # already computed? nothing to do
         if self._estimated:
-            warnings.warn('compute is called twice. This call has no effect.')
+            self._logger.warn('compute is called twice. This call has no effect.')
             return
 
         import pyemma.msm.estimation as msmest
