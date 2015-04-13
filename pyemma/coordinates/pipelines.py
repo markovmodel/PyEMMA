@@ -1,6 +1,5 @@
 __author__ = 'noe, marscher'
 
-import psutil
 import numpy as np
 
 from pyemma.coordinates.clustering.interface import AbstractClustering
