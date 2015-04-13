@@ -43,11 +43,10 @@ class Transformer(object):
     ----------
     chunksize : int (optional)
         the chunksize used to batch process underlying data
-    lag : int (optional)
-        if you want to process time lagged data, set this to a value > 0.
+
     """
 
-    def __init__(self, chunksize=100, lag=0):
+    def __init__(self, chunksize=100):
         self.chunksize = chunksize
         self._in_memory = False
         self._dataproducer = None
@@ -182,6 +181,7 @@ class Transformer(object):
         return self.__str__()
 
     def output_type(self):
+        """ by default transformers return single precision floats """
         return np.float32
 
     def parametrize(self, stride=1):
@@ -274,17 +274,19 @@ class Transformer(object):
                 mapped = self._map_array(X)
                 return mapped
             else:
-                raise TypeError('Input has the wrong shape: '+str(X.shape)+' with '+str(X.ndim)
-                                +' dimensions. Expecting a matrix (2 dimensions)')
-        elif isinstance(X, list):
+                raise TypeError('Input has the wrong shape: %s with %i'
+                                ' dimensions. Expecting a matrix (2 dimensions)'
+                                % (str(X.shape, X.ndim)))
+        elif isinstance(X, (list, tuple)):
             out = []
             for x in X:
                 mapped = self._map_array(x)
                 out.append(mapped)
             return out
         else:
-            raise TypeError('Input has the wrong type: '+str(type(X))
-                            +'. Either accepting numpy arrays of dimension 2 or lists of such arrays')
+            raise TypeError('Input has the wrong type: %s '
+                            '. Either accepting numpy arrays of dimension 2 '
+                            'or lists of such arrays' % (str(type(X))))
 
     def _map_array(self, X):
         """
@@ -316,6 +318,10 @@ class Transformer(object):
         """
         pass
 
+    def _param_add_data(self, *args, **kwargs):
+        """ add data to prameterization """
+        raise NotImplementedError('sub-classes should override this')
+
     def _map_to_memory(self):
         """maps results to memory. Will be stored in attribute :attr:`Y`."""
         # if operating in main memory, do all the mapping now
@@ -343,7 +349,10 @@ class Transformer(object):
 
     def _reset(self, stride=1):
         """_reset data position"""
-        if not self._parametrized:  # TODO: should this stay or should it go?
+        # TODO: children of this do not call parametrize nor reset their data_producers.
+        # check if this is an issue
+        if not self._parametrized:
+            self._logger.warning("reset(): not yet parametrized!")
             self.parametrize()
         self._itraj = 0
         self._t = 0
@@ -404,13 +413,13 @@ class Transformer(object):
                 self._t += X0.shape[0]
                 if self._t >= self.trajectory_length(self._itraj, stride=stride):
                     self._itraj += 1
-                    self._t = 0                
+                    self._t = 0
                 return (self.map(X0), self.map(Xtau))
 
     def __iter__(self):
         """
         Returns an iterator that allows to access the transformed data.
-        
+
         Returns
         -------
         iterator : `pyemma.coordinates.transfrom.TransformerIterator`
