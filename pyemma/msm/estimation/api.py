@@ -28,10 +28,9 @@ import dense.bootstrapping
 import dense.transition_matrix
 import dense.covariance
 import dense.mle_trev_given_pi
+import dense.tmatrix_sampler
 
-from pyemma.util.log import getLogger
 from pyemma.util.annotators import shortcut
-from pyemma.msm.estimation.dense.tmatrix_sampler_jwrapper import ITransitionMatrixSampler
 from pyemma.util.discrete_trajectories import count_states as _count_states
 from pyemma.util.discrete_trajectories import number_of_states as _number_of_states
 from pyemma.util.types import ensure_dtraj_list as _ensure_dtraj_list
@@ -60,6 +59,7 @@ __all__ = ['bootstrap_trajectories',
            'prior_rev',
            'transition_matrix',
            'log_likelihood',
+           'sample_tmatrix',
            'tmatrix_cov',
            'tmatrix_sampler']
 
@@ -1019,7 +1019,50 @@ def _showSparseConversionWarning():
                   'currently only implemented for dense matrices.', UserWarning)
 
 
-# DONE: Martin Map to Stallone (Reversible)
+def sample_tmatrix(C, nsample=1, reversible=False, mu=None, T0=None):
+    r"""samples transition matrices from the posterior distribution
+
+    Parameters
+    ----------
+    C : (M, M) ndarray or scipy.sparse matrix
+        Count matrix
+    nsample : int
+        number of samples to be drawn
+    reversible : bool
+        If true sample from the ensemble of transition matrices
+        restricted to those obeying a detailed balance condition,
+        else draw from the whole ensemble of stochastic matrices.
+    mu : array_like
+        The stationary distribution of the transition matrix samples.
+    T0 : ndarray, shape=(n, n) or scipy.sparse matrix
+        Starting point of the MC chain of the sampling algorithm.
+        Has to obey the required constraints.
+
+    Returns
+    -------
+    P : ndarray(n,n) or array of ndarray(n,n)
+        sampled transition matrix (or multiple matrices if nsample > 1)
+
+    Notes
+    -----
+    The transition matrix sampler generates transition matrices from
+    the posterior distribution. The posterior distribution is given as
+    a product of Dirichlet distributions
+
+    .. math:: \mathbb{P}(T|C) \propto \prod_{i=1}^{M} \left( \prod_{j=1}^{M} p_{ij}^{c_{ij}} \right)
+
+    """
+    if issparse(C):
+        _showSparseConversionWarning()
+        C = C.toarray()
+
+    if reversible:
+        raise NotImplementedError('Reversible transition matrix sampling is currently disabled')
+
+    from dense.tmatrix_sampler import sample_nonrev
+    return sample_nonrev(C, nsample=nsample)
+
+
 def tmatrix_sampler(C, reversible=False, mu=None, T0=None):
     r"""Generate transition matrix sampler object.
     
@@ -1039,7 +1082,7 @@ def tmatrix_sampler(C, reversible=False, mu=None, T0=None):
     
     Returns
     -------
-    sampler : A :py:class:dense.ITransitionMatrixSampler object.
+    sampler : A :py:class:dense.tmatrix_sampler.TransitionMatrixSampler object that can be used to generate samples.
 
     Notes
     -----
@@ -1051,37 +1094,38 @@ def tmatrix_sampler(C, reversible=False, mu=None, T0=None):
 
     The method can generate samples from the posterior under the follwing two constraints
     
-    **Reversible sampling**
-
-    Using a MCMC sampler outlined in .. [1] it is ensured that samples
-    from the posterior are reversible, i.e. there is a probability
-    vector :math:`(\mu_i)` such that :math:`\mu_i t_{ij} = \mu_j
-    t_{ji}` holds for all :math:`i,j`.
-
-    **Reversible sampling with fixed stationary vector**
-
-    Using a MCMC sampler outlined in .. [2] it is ensured that samples
-    from the posterior fulfill detailed balance with respect to a given 
-    probability vector :math:`(\mu_i)`.
-
-    References
-    ----------
-    .. [1] Noe, F. 2008. Probability distributions of molecular observables
-        computed from Markov state models. J Chem Phys 128: 244103.
-    .. [2] Trendelkamp-Schroer, B and F Noe. 2013. Efficient Bayesian estimation
-        of Markov model transition matrices with given stationary distribution.
-        J Chem Phys 138: 164113.
-    
     """
+    # TODO: re-include reversible documention when implemented
+    # The method can generate samples from the posterior under the follwing two constraints
+    #
+    # **Reversible sampling**
+    #
+    # Using a MCMC sampler outlined in .. [1] it is ensured that samples
+    # from the posterior are reversible, i.e. there is a probability
+    # vector :math:`(\mu_i)` such that :math:`\mu_i t_{ij} = \mu_j
+    # t_{ji}` holds for all :math:`i,j`.
+    #
+    # **Reversible sampling with fixed stationary vector**
+    #
+    # Using a MCMC sampler outlined in .. [2] it is ensured that samples
+    # from the posterior fulfill detailed balance with respect to a given
+    # probability vector :math:`(\mu_i)`.
+    #
+    # References
+    # ----------
+    # .. [1] Noe, F. 2008. Probability distributions of molecular observables
+    #     computed from Markov state models. J Chem Phys 128: 244103.
+    # .. [2] Trendelkamp-Schroer, B and F Noe. 2013. Efficient Bayesian estimation
+    #     of Markov model transition matrices with given stationary distribution.
+    #     J Chem Phys 138: 164113.
+
     if issparse(C):
         _showSparseConversionWarning()
         C = C.toarray()
 
-    from pyemma.util.pystallone import JavaException
+    if reversible:
+        raise NotImplementedError('Reversible transition matrix sampling is currently disabled')
 
-    try:
-        return ITransitionMatrixSampler(C, mu, reversible, Tinit=T0)
-    except JavaException as je:
-        log = getLogger()
-        log.exception("Error during tmatrix sampling")
-        raise
+    from dense.tmatrix_sampler import TransitionMatrixSamplerNonrev
+    sampler = TransitionMatrixSamplerNonrev(C)
+    return sampler
