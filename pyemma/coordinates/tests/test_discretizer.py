@@ -20,7 +20,7 @@ from pyemma.coordinates.api import kmeans, feature_reader, pca
 
 
 def create_water_topology_on_disc(n):
-    topfile = tempfile.mkstemp('.pdb')[1]
+    topfile = tempfile.mktemp('.pdb')
     top = Topology()
     chain = top.add_chain()
 
