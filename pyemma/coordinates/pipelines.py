@@ -124,6 +124,15 @@ class Pipeline(object):
 
         self._parametrized = True
 
+    def _is_parametrized(self):
+        """
+        Iterates through the pipeline elements and check if every element is parametrized.
+        """
+        result = self._parametrized
+        for el in self._chain:
+            result &= el._parametrized
+        return result
+
     def _estimate_chunksize_from_mem_requirement(self, reader):
         """
         estimate memory requirement from _chain of transformers and sets a
