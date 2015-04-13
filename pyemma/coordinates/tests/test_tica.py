@@ -1,14 +1,16 @@
-'''
+"""
 Created on 02.02.2015
 
 @author: marscher
-'''
+"""
 import unittest
 import os
 import numpy as np
 
+from pyemma.coordinates import api
+
 from pyemma.coordinates.data.data_in_memory import DataInMemory
-from pyemma.coordinates import source,tica
+from pyemma.coordinates import source, tica
 from pyemma.util.log import getLogger
 import pyemma.util.types as types
 
@@ -16,12 +18,11 @@ logger = getLogger('TestTICA')
 
 
 class TestTICA_Basic(unittest.TestCase):
-
     def test(self):
         np.random.seed(0)
 
         data = np.random.randn(100, 10)
-        tica_obj = tica(data=data, lag=10, dim=1)
+        tica_obj = api.tica(data=data, lag=10, dim=1)
         tica_obj.parametrize()
         Y = tica_obj._map_array(data)
         # right shape
@@ -45,7 +46,7 @@ class TestTICA_Basic(unittest.TestCase):
 
         d = DataInMemory(X)
 
-        tica_obj = tica(data = d, lag=1, dim=1)
+        tica_obj = api.tica(data=d, lag=1, dim=1)
 
         assert tica_obj.eigenvectors.dtype == np.float64
         assert tica_obj.eigenvalues.dtype == np.float64
@@ -55,7 +56,7 @@ class TestTICA_Basic(unittest.TestCase):
         X = np.random.randn(100, 2)
         X = np.hstack((X, np.zeros((100, 1))))
 
-        tica_obj = tica(data = X, lag=1, dim=1)
+        tica_obj = api.tica(data=X, lag=1, dim=1)
 
         assert tica_obj.eigenvectors.dtype == np.float64
         assert tica_obj.eigenvalues.dtype == np.float64
@@ -69,7 +70,7 @@ class TestTICA_Basic(unittest.TestCase):
         # un-chunked
         d = DataInMemory(X)
 
-        tica_obj = tica(data=d, lag=lag, dim=1)
+        tica_obj = api.tica(data=d, lag=lag, dim=1)
 
         cov = tica_obj.cov.copy()
         mean = tica_obj.mu.copy()
@@ -82,28 +83,28 @@ class TestTICA_Basic(unittest.TestCase):
         np.testing.assert_allclose(tica_obj.mu, mean)
         np.testing.assert_allclose(tica_obj.cov, cov)
 
-class TestTICA_Extensive(unittest.TestCase):
 
+class TestTICAExtensive(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         import pyemma.msm.generation as msmgen
 
         # generate HMM with two Gaussians
         cls.P = np.array([[0.99, 0.01],
-                      [0.01, 0.99]])
+                          [0.01, 0.99]])
         cls.T = 10000
-        means = [np.array([-1,1]), np.array([1,-1])]
-        widths = [np.array([0.3,2]),np.array([0.3,2])]
+        means = [np.array([-1, 1]), np.array([1, -1])]
+        widths = [np.array([0.3, 2]), np.array([0.3, 2])]
         # continuous trajectory
         cls.X = np.zeros((cls.T, 2))
         # hidden trajectory
         dtraj = msmgen.generate_traj(cls.P, cls.T)
         for t in range(cls.T):
             s = dtraj[t]
-            cls.X[t,0] = widths[s][0] * np.random.randn() + means[s][0]
-            cls.X[t,1] = widths[s][1] * np.random.randn() + means[s][1]
+            cls.X[t, 0] = widths[s][0] * np.random.randn() + means[s][0]
+            cls.X[t, 1] = widths[s][1] * np.random.randn() + means[s][1]
         cls.lag = 10
-        cls.tica_obj = tica(data = cls.X, lag=cls.lag, dim=1)
+        cls.tica_obj = api.tica(data=cls.X, lag=cls.lag, dim=1)
 
     def setUp(self):
         pass
@@ -113,13 +114,13 @@ class TestTICA_Extensive(unittest.TestCase):
 
     def test_cov(self):
         cov_ref = np.dot(self.X.T, self.X) / float(self.T)
-        assert(np.all(self.tica_obj.cov.shape == cov_ref.shape))
-        assert(np.max(self.tica_obj.cov - cov_ref) < 3e-2)
+        assert (np.all(self.tica_obj.cov.shape == cov_ref.shape))
+        assert (np.max(self.tica_obj.cov - cov_ref) < 3e-2)
 
     def test_cov_tau(self):
-        cov_tau_ref = np.dot(self.X[self.lag:].T, self.X[:self.T-self.lag]) / float(self.T - self.lag)
-        assert(np.all(self.tica_obj.cov_tau.shape == cov_tau_ref.shape))
-        assert(np.max(self.tica_obj.cov_tau - cov_tau_ref) < 3e-2)
+        cov_tau_ref = np.dot(self.X[self.lag:].T, self.X[:self.T - self.lag]) / float(self.T - self.lag)
+        assert (np.all(self.tica_obj.cov_tau.shape == cov_tau_ref.shape))
+        assert (np.max(self.tica_obj.cov_tau - cov_tau_ref) < 3e-2)
 
     def test_data_producer(self):
         assert self.tica_obj.data_producer is not None
@@ -140,8 +141,8 @@ class TestTICA_Extensive(unittest.TestCase):
 
     def test_eigenvectors(self):
         evec = self.tica_obj.eigenvectors
-        assert(np.all(evec.shape == (2,2)))
-        assert np.max(np.abs(evec[:,0]) - np.array([1,0]) < 0.05)
+        assert (np.all(evec.shape == (2, 2)))
+        assert np.max(np.abs(evec[:, 0]) - np.array([1, 0]) < 0.05)
 
     def test_get_output(self):
         O = self.tica_obj.get_output()
@@ -206,6 +207,7 @@ class TestTICA_Extensive(unittest.TestCase):
     def test_trajectory_lengths(self):
         assert len(self.tica_obj.trajectory_lengths()) == 1
         assert self.tica_obj.trajectory_lengths()[0] == self.tica_obj.trajectory_length(0)
+
 
 if __name__ == "__main__":
     unittest.main()
