@@ -68,9 +68,9 @@ class TestFeatureReaderAndTICA(unittest.TestCase):
         #TICA(tau=1, output_dimension=self.dim)
         for lag in [1, 11, 101, 1001, 2001]:  # avoid cos(w*tau)==0
             log.info('number of trajectories reported by tica %d' % trans.number_of_trajectories())
-            log.info('lag = %d corresponds to a number of %f cycles' % (lag, self.w*lag/(2.0*np.pi)))
+            log.info('tau = %d corresponds to a number of %f cycles' % (lag, self.w*lag/(2.0*np.pi)))
             trans.lag = lag
-            _ = iter(trans)  # grab iterator to run chain
+            trans.parametrize()
 
             # analytical solution for C_ij(lag) is 0.5*A[i]*A[j]*cos(phi[i]-phi[j])*cos(w*lag)
             ana_cov = 0.5*self.A[:, np.newaxis]*self.A*np.cos(self.phi[:, np.newaxis]-self.phi)
