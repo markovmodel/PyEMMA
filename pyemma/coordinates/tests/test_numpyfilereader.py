@@ -69,7 +69,7 @@ class TestFileReader(unittest.TestCase):
         self.assertEqual(reader.n_frames_total(), concatenated.shape[0])
 
         for x, y in zip(output, from_files):
-            np.testing.assert_equal(x, y)
+            np.testing.assert_array_almost_equal(x, y)
             
     def test_small_chunks(self):
         reader = NumPyFileReader(self.npy_files)
@@ -84,7 +84,7 @@ class TestFileReader(unittest.TestCase):
         self.assertEqual(reader.n_frames_total(), concatenated.shape[0])
 
         for x, y in zip(output, from_files):
-            np.testing.assert_equal(x, y)
+            np.testing.assert_array_almost_equal(x, y)
 
     def testSingleFile(self):
         reader = NumPyFileReader(self.npy_files[0])
@@ -103,7 +103,7 @@ class TestFileReader(unittest.TestCase):
         self.assertEqual(reader.number_of_trajectories(), len(data))
 
         for outp, inp in zip(all_data, data):
-            np.testing.assert_equal(outp, inp)
+            np.testing.assert_array_almost_equal(outp, inp)
 
 
 if __name__ == "__main__":
