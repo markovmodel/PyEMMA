@@ -6,8 +6,9 @@ Created on 09.04.2015
 import unittest
 
 import numpy as np
+
+from pyemma.coordinates import api
 from pyemma.coordinates.data.data_in_memory import DataInMemory
-from pyemma.coordinates.clustering.uniform_time import UniformTimeClustering
 
 
 class TestUniformTimeClustering(unittest.TestCase):
@@ -17,7 +18,7 @@ class TestUniformTimeClustering(unittest.TestCase):
         reader = DataInMemory(x)
 
         k = 2
-        c = UniformTimeClustering(k)
+        c = api.cluster_uniform_time(k=k)
 
         c.data_producer = reader
         c.parametrize()
@@ -27,7 +28,7 @@ class TestUniformTimeClustering(unittest.TestCase):
         reader = DataInMemory(x)
 
         k = 2
-        c = UniformTimeClustering(k)
+        c = api.cluster_uniform_time(k=k)
 
         c.data_producer = reader
         c.parametrize()
@@ -38,7 +39,7 @@ class TestUniformTimeClustering(unittest.TestCase):
         reader = DataInMemory(x)
 
         k = 298
-        c = UniformTimeClustering(k)
+        c = api.cluster_uniform_time(k=k)
 
         c.data_producer = reader
         c.parametrize()

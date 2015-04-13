@@ -4,17 +4,18 @@ Created on 02.02.2015
 @author: marscher
 '''
 import unittest
-import os
+
 import numpy as np
 
-from pyemma.coordinates import source,pca
+from pyemma.coordinates import pca
 from pyemma.util.log import getLogger
 import pyemma.util.types as types
+
 
 logger = getLogger('TestTICA')
 
 
-class TestPCA_Extensive(unittest.TestCase):
+class TestPCAExtensive(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):

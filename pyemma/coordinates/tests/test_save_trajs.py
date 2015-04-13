@@ -12,8 +12,8 @@ import tempfile
 
 import numpy as np
 
+import pyemma.coordinates as coor
 from pyemma.coordinates.data.util.reader_utils import single_traj_from_n_files
-from pyemma.coordinates import feature_reader
 from pyemma.coordinates.api import save_trajs
 
 
@@ -47,7 +47,7 @@ class TestSaveTrajs(unittest.TestCase):
         self.subdir = tempfile.mkdtemp(suffix='save_trajs_test')
 
         # Instantiate the reader
-        self.reader = feature_reader(self.trajfiles, self.pdbfile)
+        self.reader = coor.source(self.trajfiles, top=self.pdbfile)
         self.reader.chunksize = 10
         self.n_pass_files = [self.subdir + 'n_pass.set_%06u.xtc' % ii for ii in xrange(len(self.sets))]
         self.one_pass_files = [self.subdir + '1_pass.set_%06u.xtc' % ii for ii in xrange(len(self.sets))]
