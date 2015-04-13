@@ -62,24 +62,37 @@ class TestDecompositionDense(unittest.TestCase):
 
     def test_eigenvectors(self):
         P = self.bdc.transition_matrix()
-        ev, L, R = eig(P, left=True, right=True)
-        ind = np.argsort(np.abs(ev))[::-1]
-        R = R[:, ind]
-        L = L[:, ind]
 
-        """k=None"""
+        # k==None
+        ev = eigvals(P)
+        ev = ev[np.argsort(np.abs(ev))[::-1]]
+        Dn = np.diag(ev)
+
+        # right eigenvectors
         Rn = eigenvectors(P)
-        assert_allclose(R, Rn)
-
+        assert_allclose(np.dot(P,Rn),np.dot(Rn,Dn))
+        # left eigenvectors
         Ln = eigenvectors(P, right=False)
-        assert_allclose(L, Ln)
+        assert_allclose(np.dot(Ln.T,P),np.dot(Dn,Ln.T))
+        # orthogonality
+        Xn = np.dot(Ln.T, Rn)
+        di = np.diag_indices(Xn.shape[0])
+        Xn[di] = 0.0
+        assert_allclose(Xn,0)
 
-        """k is not None"""
+        # k!=None
+        Dnk = Dn[:,0:self.k][0:self.k,:]
+        # right eigenvectors
         Rn = eigenvectors(P, k=self.k)
-        assert_allclose(R[:, 0:self.k], Rn)
-
+        assert_allclose(np.dot(P,Rn),np.dot(Rn,Dnk))
+        # left eigenvectors
         Ln = eigenvectors(P, right=False, k=self.k)
-        assert_allclose(L[:, 0:self.k], Ln)
+        assert_allclose(np.dot(Ln.T,P),np.dot(Dnk,Ln.T))
+        # orthogonality
+        Xn = np.dot(Ln.T, Rn)
+        di = np.diag_indices(self.k)
+        Xn[di] = 0.0
+        assert_allclose(Xn,0)
 
     def test_rdl_decomposition(self):
         P = self.bdc.transition_matrix()
