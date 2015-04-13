@@ -14,15 +14,17 @@ import numpy as np
 import pyemma.util.types as types
 
 
-def RandomDataSource(a=None, b=None, chunksize=1000, n_samples=5, dim=3):
-    """
-    creates random values in intervall [a,b]
-    """
-    data = np.random.random((n_samples, chunksize, dim))
-    if a is not None and b is not None:
-        data *= (b - a)
-        data += a
-    return DataInMemory(data)
+class RandomDataSource(DataInMemory):
+
+    def __init__(self, a=None, b=None, chunksize=1000, n_samples=5, dim=3):
+        """
+        creates random values in interval [a,b]
+        """
+        data = np.random.random((n_samples, chunksize, dim))
+        if a is not None and b is not None:
+            data *= (b - a)
+            data += a
+        super(RandomDataSource, self).__init__(data)
 
 
 class TestRegSpaceClustering(unittest.TestCase):
