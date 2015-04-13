@@ -7,7 +7,7 @@ import os
 import tempfile
 import numpy as np
 import mdtraj
-from pyemma.coordinates.api import _TICA as TICA
+from pyemma.coordinates import api
 from pyemma.coordinates.data.feature_reader import FeatureReader
 from pyemma.util.log import getLogger
 
@@ -64,17 +64,17 @@ class TestFeatureReaderAndTICA(unittest.TestCase):
         
     def test_covariances_and_eigenvalues(self):
         reader = FeatureReader(self.trajnames, self.temppdb)
-        trans = TICA(tau=1, output_dimension=self.dim)
-        trans.data_producer = reader
-        for tau in [1, 11, 101, 1001, 2001]:  # avoid cos(w*tau)==0
+        trans = api.tica(data=reader, dim=self.dim, lag=1)
+        #TICA(tau=1, output_dimension=self.dim)
+        for lag in [1, 11, 101, 1001, 2001]:  # avoid cos(w*tau)==0
             log.info('number of trajectories reported by tica %d' % trans.number_of_trajectories())
-            log.info('tau = %d corresponds to a number of %f cycles' % (tau, self.w*tau/(2.0*np.pi)))
-            trans.lag = tau
+            log.info('tau = %d corresponds to a number of %f cycles' % (lag, self.w*lag/(2.0*np.pi)))
+            trans.lag = lag
             _ = iter(trans)  # grab iterator to run chain
 
             # analytical solution for C_ij(tau) is 0.5*A[i]*A[j]*cos(phi[i]-phi[j])*cos(w*tau)
             ana_cov = 0.5*self.A[:, np.newaxis]*self.A*np.cos(self.phi[:, np.newaxis]-self.phi)
-            ana_cov_tau = ana_cov*np.cos(self.w*tau)
+            ana_cov_tau = ana_cov*np.cos(self.w*lag)
         
             self.assertTrue(np.allclose(ana_cov, trans.cov, atol=1.E-3))
             self.assertTrue(np.allclose(ana_cov_tau, trans.cov_tau, atol=1.E-3))
