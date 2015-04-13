@@ -7,7 +7,7 @@ import mdtraj
 import os
 import tempfile
 import unittest
-
+from pyemma.coordinates import api
 from pyemma.coordinates.data.feature_reader import FeatureReader
 from pyemma.util.log import getLogger
 import pkg_resources
@@ -45,7 +45,7 @@ class TestFeatureReader(unittest.TestCase):
             pass
 
     def testIteratorAccess(self):
-        reader = FeatureReader(self.trajfile, self.topfile)
+        reader = api.source(self.trajfile, top=self.topfile)
 
         frames = 0
         data = []
@@ -123,7 +123,7 @@ class TestFeatureReader(unittest.TestCase):
                 log.info("chunksize=%i\tlag=%i" % (chunksize, lag))
 
                 lagged_chunks = []
-                reader = FeatureReader(self.trajfile, self.topfile)
+                reader = api.source(self.trajfile, top=self.topfile)
                 reader.chunksize = chunksize
                 for _, _, y in reader.iterator(lag=lag):
                     lagged_chunks.append(y)
