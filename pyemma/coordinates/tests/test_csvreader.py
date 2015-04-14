@@ -23,6 +23,10 @@ class TestCSVReader(unittest.TestCase):
         cls.data = np.arange(cls.nt * cls.nd).reshape(cls.nt, cls.nd)
         cls.filename1 = os.path.join(cls.dir, "data.dat")
         np.savetxt(cls.filename1, cls.data)
+
+        cls.file_with_header = tempfile.mktemp(prefix=".dat", dir=cls.dir)
+        np.savetxt(cls.file_with_header, cls.data, header="x y z")
+
         return cls
 
     @classmethod
@@ -41,26 +45,16 @@ class TestCSVReader(unittest.TestCase):
         np.testing.assert_almost_equal(output[0], self.data)
 
     def test_read_1file_with_header(self):
-        f = tempfile.mktemp(prefix=".dat")
-        np.savetxt(f, self.data, header="x y z")
-        try:
-            reader = CSVReader(f)
-            self.assertEqual(reader.number_of_trajectories(), 1)
-            self.assertEqual(reader.dimension(), self.nd)
-            self.assertEqual(reader.n_frames_total(), self.nt)
+        reader = CSVReader(self.file_with_header)
+        self.assertEqual(reader.number_of_trajectories(), 1)
+        self.assertEqual(reader.dimension(), self.nd)
+        self.assertEqual(reader.n_frames_total(), self.nt)
 
-            output = reader.get_output()
+        output = reader.get_output()
 
-            np.testing.assert_almost_equal(output[0], self.data)
-        except:
-            try:
-                os.unlink(f)
-            except:
-                pass
-            finally:
-                raise
+        np.testing.assert_almost_equal(output[0], self.data)
 
-    def test_read_lagged(self):
+    def test_read_lagged_small_chunks(self):
         lag = 200
         reader = CSVReader(self.filename1, chunksize=30)
 
@@ -107,15 +101,11 @@ class TestCSVReader(unittest.TestCase):
             chunks = np.vstack(chunks)
             np.testing.assert_almost_equal(chunks, self.data[t:])
 
-    @unittest.skip("known to be broken")
     def test_with_stride_and_lag(self):
-        # FIXME: fix this
         reader = CSVReader(self.filename1)
 
         for s in [2, 3, 7, 10]:
             for t in [1, 23, 7, 59]:
-                print "stride", s
-                print "lag", t
                 chunks = []
                 chunks_lag = []
                 for _, X, Y in reader.iterator(stride=s, lag=t):
@@ -125,10 +115,24 @@ class TestCSVReader(unittest.TestCase):
                 chunks_lag = np.vstack(chunks_lag)
                 np.testing.assert_almost_equal(chunks, self.data[::s])
                 np.testing.assert_almost_equal(chunks_lag, self.data[t::s],
-                                        "output is not equal for lag %i and stride %i"
-                                        % (t, s))
-                print "---" * 40
+                                               err_msg="output is not equal for"
+                                               " lag %i and stride %i" % (t, s))
 
+    def test_with_stride_and_lag_with_header(self):
+        reader = CSVReader(self.file_with_header)
 
+        for s in [2, 3, 7, 10]:
+            for t in [1, 23, 7, 59]:
+                chunks = []
+                chunks_lag = []
+                for _, X, Y in reader.iterator(stride=s, lag=t):
+                    chunks.append(X)
+                    chunks_lag.append(Y)
+                chunks = np.vstack(chunks)
+                chunks_lag = np.vstack(chunks_lag)
+                np.testing.assert_almost_equal(chunks, self.data[::s])
+                np.testing.assert_almost_equal(chunks_lag, self.data[t::s],
+                                               err_msg="output is not equal for"
+                                               " lag %i and stride %i" % (t, s))
 if __name__ == '__main__':
     unittest.main()
