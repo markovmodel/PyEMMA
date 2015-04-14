@@ -21,7 +21,7 @@ Data handling and IO
 
    featurizer
    load
-   input
+   source
    pipeline
    discretizer
    save_traj
@@ -51,7 +51,7 @@ Clustering Algorithms
    cluster_kmeans
    cluster_regspace
    cluster_uniform_time
-   cluster_assign_centers
+   assign_to_centers
 
 
 """
