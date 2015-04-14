@@ -29,6 +29,12 @@ class TestApiSourceFileReader(unittest.TestCase):
         cls.dat = tempfile.mktemp(suffix='.dat', dir=cls.dir)
         cls.csv = tempfile.mktemp(suffix='.csv', dir=cls.dir)
 
+        cls.bs = tempfile.mktemp(suffix=".bs", dir=cls.dir)
+
+        with open(cls.bs, "w") as fh:
+            fh.write("meaningless\n")
+            fh.write("this can not be interpreted\n")
+
         np.save(cls.npy, data_np)
         np.savez(cls.npz, data_np, data_np)
         np.savetxt(cls.dat, data_raw)
@@ -49,16 +55,20 @@ class TestApiSourceFileReader(unittest.TestCase):
         self.assertIsNotNone(reader, "Reader object should not be none.")
         self.assertTrue(
             isinstance(reader, NumPyFileReader), "Should be a NumPyFileReader.")
-    #
-    # def test_obtain_csv_file_reader_dat(self):
-    #     reader = api.source(self.dat)
-    #     self.assertIsNotNone(reader, "Reader object should not be none.")
-    #     self.assertTrue(isinstance(reader, CSVReader), "Should be a CSVReader.")
-    #
-    # def test_obtain_csv_file_reader_csv(self):
-    #     reader = api.source(self.csv)
-    #     self.assertIsNotNone(reader, "Reader object should not be none.")
-    #     self.assertTrue(isinstance(reader, CSVReader), "Should be a CSVReader.")
+
+    def test_obtain_csv_file_reader_dat(self):
+        reader = api.source(self.dat)
+        self.assertIsNotNone(reader, "Reader object should not be none.")
+        self.assertTrue(isinstance(reader, CSVReader), "Should be a CSVReader.")
+
+    def test_obtain_csv_file_reader_csv(self):
+        reader = api.source(self.csv)
+        self.assertIsNotNone(reader, "Reader object should not be none.")
+        self.assertTrue(isinstance(reader, CSVReader), "Should be a CSVReader.")
+
+    def test_bullshit_csv(self):
+        # this file is not parseable as tabulated float file
+        self.assertRaises(ValueError, api.source, self.bs)
 
 
 class TestApiSourceFeatureReader(unittest.TestCase):
