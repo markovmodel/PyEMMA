@@ -150,13 +150,13 @@ def load(trajfiles, features=None, top=None, stride=1):
         isinstance(trajfiles, (list, tuple))
             and (any(isinstance(item, basestring) for item in trajfiles) or len(trajfiles) is 0)):
         reader = _create_file_reader(trajfiles, top, features)
-        trajs = reader.get_output(stride = stride)
+        trajs = reader.get_output(stride=stride)
         if len(trajs) == 1:
             return trajs[0]
         else:
             return trajs
     else:
-        raise Exception('unsupported type (%s) of input' % type(trajfiles))
+        raise ValueError('unsupported type (%s) of input' % type(trajfiles))
 
 
 def source(inp, features=None, top=None):
