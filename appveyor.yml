@@ -49,4 +49,4 @@ test_script:
   - "powershell ./tools/ci/appveyor/runTestsuite.ps1"
 
 deploy_script:
-  - ./tools/ci/appveyor/deploy.ps1
+  - "powershell ./tools/ci/appveyor/deploy.ps1"
