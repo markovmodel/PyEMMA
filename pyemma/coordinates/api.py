@@ -503,9 +503,12 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None, inmemo
     from itertools import izip
     from numpy import ndarray
 
-    # Make sure indexes is a list
-    if not isinstance(indexes, list):
-        indexes = [indexes]
+    # Make sure indexes is iterable
+    assert _types.is_iterable(indexes), "Indexes must be an iterable of matrices."
+    # only if 2d-array, convert into a list
+    if isinstance(indexes, ndarray):
+        if indexes.ndim == 2:
+            indexes = [indexes]
 
     # Make sure the elements of that lists are arrays, and that they are shaped properly
     for i_indexes in indexes:

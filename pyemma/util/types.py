@@ -2,6 +2,8 @@ __author__ = 'noe'
 
 import numpy as np
 import numbers
+import collections
+
 
 def is_int(l):
     r"""Checks if l is an integer
@@ -17,7 +19,7 @@ def is_float(l):
 
 def is_iterable_of_int(l):
     r""" Checks if l is iterable and contains only integral types """
-    if not hasattr(l, '__iter__'):
+    if not is_iterable(l):
         return False
 
     return all(is_int(value) for value in l)
@@ -37,7 +39,7 @@ def is_tuple_of_int(l):
 
 def is_iterable_of_float(l):
     r""" Checks if l is iterable and contains only floating point types """
-    if not hasattr(l, '__iter__'):
+    if not is_iterable(l):
         return False
 
     return all(is_float(value) for value in l)
@@ -92,6 +94,9 @@ def is_float_matrix(l):
 
 def is_string(s):
     return isinstance(s, basestring)
+
+def is_iterable(I):
+    return isinstance(I, collections.Iterable)
 
 def is_list(S):
     # FIXME: name states check for list, but checks for tuple __and__ list. Thats confusing.
