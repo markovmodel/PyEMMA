@@ -2,14 +2,13 @@
 function install_deps {
 	wget https://github.com/jgm/pandoc/releases/download/1.13.2/pandoc-1.13.2-1-amd64.deb \
 		-O pandoc.deb
-	#dpkg -i --force-not-root --root=$HOME pandoc.deb 
-        sudo pkg -i pandoc.deb 
+	dpkg -x pandoc.deb 
 
-        #export PATH=$PATH:$HOME/bin
-        # try to execute pandoc
-        pandoc --version
+	export PATH=$PATH:$HOME/usr/bin
+	# try to execute pandoc
+	pandoc --version
+	
 	conda install -q --yes $doc_deps
-
 	pip install -r requirements-build-doc.txt wheel
 }
 
