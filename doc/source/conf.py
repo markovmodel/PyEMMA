@@ -37,17 +37,17 @@ extensions = [
     #'sphinx.ext.pngmath',
     'sphinx.ext.mathjax',
     #'sphinx.ext.intersphinx',
-    #'sphinx.ext.coverage',
+    #'sphinx.ext.coverage'
     #'sphinx.ext.viewcode'
 ]
 
 # for edit on github button
 html_context = {
     'github_user': 'markovmodel',
-    'display_github': True,
+    'display_github': False,
     'github_repo': 'PyEMMA',
     'github_version': 'devel',
-    'conf_py_path': '/doc/',
+    'conf_py_path': '/pyemma/',
     'html_logo': 'logo-200px.png',
     'base_url': 'http://pythonhosted.org/pyEMMA'
 }
