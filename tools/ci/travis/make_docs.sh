@@ -2,7 +2,7 @@
 function install_deps {
 	wget https://github.com/jgm/pandoc/releases/download/1.13.2/pandoc-1.13.2-1-amd64.deb \
 		-O pandoc.deb
-	dpkg -x pandoc.deb 
+	dpkg -x pandoc.deb $HOME
 
 	export PATH=$PATH:$HOME/usr/bin
 	# try to execute pandoc
