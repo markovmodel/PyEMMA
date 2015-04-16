@@ -20,11 +20,11 @@ but play at your own risk.
 
 If you already have a conda installation, directly go to step 3:
 
-1. Download and install miniconda for Python 2.7, 64 bit:
+1. Download and install miniconda for Python 2.7, 32 or 64 bit depending on your system:
 
    http://conda.pydata.org/miniconda.html
 
-   select **yes** to add conda to the PATH variable.
+   select **yes** to add conda to the **PATH** variable.
 
 2. If you have installed from a Linux shell, either open a new shell to have an updated PATH,
    or update your PATH variable by ``source ~/.bashrc`` (or .tcsh, .csh - whichever shell you are using).
@@ -34,6 +34,7 @@ If you already have a conda installation, directly go to step 3:
    .. code::
 
       conda config --add channels http://conda.binstar.org/omnia
+      conda install binstar # to be able to get packages from binstar
       conda install pyemma
 
    if the command conda is unknown, the PATH variable is probably not set correctly (see 1. and 2.)
@@ -71,9 +72,9 @@ various problems have arisen with pip in compiling the packages that pyEMMA depe
 
       pip install wheel
 
-   Now you are able to install binaries if you are have MacOSX or Windows.
-   Binaries for all flavours of Linux are currently out of our scope - sorry.
-   In this case, please read on how to build from source.
+   Now you are able to install binaries if you are have MacOSX or Windows. At the
+   moment of writing PyPI does not support Linux binaries at all, so Linux users
+   have to compile by themselfs.
 
 3. Install pyEMMA using
 
@@ -101,7 +102,7 @@ various problems have arisen with pip in compiling the packages that pyEMMA depe
 
 Building from Source
 ====================
-If you are using Linux and refuse to use anaconda, you will build pyEMMA from the
+If you refuse to use Anaconda, you will build pyEMMA from the
 source. In this approach, all pyEMMA dependencies will be built from the source too.
 Building these from source is sometimes (if not usually) tricky, takes a
 long time and is error prone - though it is **not** recommended nor supported
@@ -114,6 +115,7 @@ by us. If unsure, use the anaconda installation.
    * cython >= 0.22
    * numpy >= 1.6
    * scipy >= 0.11
+   * matplotlib >= 1.4
 
    If you do not fulfill these requirements, try to upgrade all packages:
 
@@ -123,6 +125,12 @@ by us. If unsure, use the anaconda installation.
        pip install --upgrade cython
        pip install --upgrade numpy
        pip install --upgrade scipy
+       pip install --upgrade matplotlib
+       
+   Note that if pip finds a newer version, it will trigger an update which will
+   most likely involve compilation.
+   Especially NumPy and SciPy are hard to build. You might want to take a look at
+   this guide here: http://www.scipy.org/scipylib/building/
 
 2. The build and install process is in one step, as all dependencies are dragged in
 via the provided *setup.py* script. So you only need to get the source of Emma
