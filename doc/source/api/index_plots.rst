@@ -1,4 +1,4 @@
-.. _ref-coordinates:
+.. _ref-plotting:
 
 Plotting API
 ============
