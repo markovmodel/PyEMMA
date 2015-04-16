@@ -46,6 +46,11 @@ class TestPCAExtensive(unittest.TestCase):
     def setUpClass(cls):
         import pyemma.msm.generation as msmgen
 
+        # set random state
+        cls.old_state = np.random.get_state()
+        from pyemma.coordinates.tests.random_states import state_pca
+        np.random.set_state(state_pca)
+
         # generate HMM with two Gaussians
         cls.P = np.array([[0.99, 0.01],
                       [0.01, 0.99]])
@@ -63,8 +68,9 @@ class TestPCAExtensive(unittest.TestCase):
         cls.lag = 10
         cls.pca_obj = pca(data = cls.X, dim=1)
 
-    def setUp(self):
-        pass
+    @classmethod
+    def tearDownClass(cls):
+        np.random.set_state(cls.old_state)
 
     def test_chunksize(self):
         assert types.is_int(self.pca_obj.chunksize)
