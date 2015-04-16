@@ -25,10 +25,4 @@ MSM estimation and validation
    generated/its
    generated/fingerprints
    generated/tpt
-   generated/sampling
-   
-Java/Python-Bridge
-==================
-
-.. toctree::
-   generated/JavaPythonBridge
+..   generated/sampling
