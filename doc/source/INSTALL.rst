@@ -4,193 +4,164 @@
 Installation
 ============
 
-Recommended way
-===============
-
-Use the `Anaconda`_ scientific Python stack to easily install PyEMMA software and
-its dependencies.
+To install the PyEMMA Python package, you need a few Python package dependencies. If these dependencies are not
+available in their right versions, the installation will fail. We recommend a way that is relatively safe,
+but you are welcome to try another approach if you know what you are doing.
 
 
-To install the PyEMMA Python package, you need a few Python package dependencies
-like **NumPy** and **SciPy**.
+Anaconda install (Recommended)
+==============================
 
-No matter whether you choose the binary or source install method these will be
-installed automatically during the setup process.
+We strongly recommend to use the Anaconda scientific python distribution in order to install
+python-based software, including pyEMMA. Python-based software is not trivial to distribute
+and this approach saves you many headaches and problems that frequently arise in other installation
+methods. You are free to use a different approach (see below) if you know how to sort out problems,
+but play at your own risk.
 
-If you are using the sources to install, you have to note that if your current
-Python environment does not contain NumPy and SciPy, those packages will be
-built from source too. Building these from source is sometimes tricky, takes a
-long time and is error prone - though it is **not** recommended nor supported
-by us.
+If you already have a conda installation, directly go to step 3:
 
+1. Download and install miniconda for Python 2.7, 32 or 64 bit depending on your system:
 
-You should either ensure you have Numpy and Scipy installed prior to a source
-build of Emma or use a binary installation method, which will install
-dependencies automatically.
+   http://conda.pydata.org/miniconda.html
 
-No matter if you choose binary or source install, you have to ensure the
-prequisites in the next section are met or you will most likely encounter
-errors.
+   select **yes** to add conda to the **PATH** variable.
 
-Java/Python Bridge
-==================
-JPype will be installed automatically, you only need to ensure, you have a
-working Java runtime (JRE). For the Java/Python bridge provided by **JPype**
-you need a recent Java Runtime (>= 1.6), which is already provided by most
-platforms. You are strongly encouraged to set a environment variable
-"JAVA_HOME" to point to your desired Java installation. If you are able to
-execute *java* from the command line, you are already done. Otherwise you
-should set up JAVA_HOME or PATH to enable JPype to find the runtime.
+2. If you have installed from a Linux shell, either open a new shell to have an updated PATH,
+   or update your PATH variable by ``source ~/.bashrc`` (or .tcsh, .csh - whichever shell you are using).
 
-There exists a guide at
-`Java.com <https://www.java.com/en/download/help/path.xml>`_ describing the
-setting of a **PATH** environment variable.
+3. Add the omnia-md software channel, and install (or update) pyemma:
 
+   .. code::
 
-Setting up a correct JAVA_HOME
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      conda config --add channels http://conda.binstar.org/omnia
+      conda install binstar # to be able to get packages from binstar
+      conda install pyemma
 
-This is especially useful if you have
-multiple versions of Java and want to force JPype to use a given one.
+   if the command conda is unknown, the PATH variable is probably not set correctly (see 1. and 2.)
 
-.. To locate all Java installations on your system, you may try this snippet:
-.. .. code-block:: python
+4. Check installation:
 
-   import os.path                                                            
-   import sys                                                                     
-                                                                                   
-   if sys.platform == 'darwin':                                                    
-      libfile = 'libjvm.dylib'                                                     
-   elif sys.platform in ('win32', 'cygwin'):                                       
-      libfile = 'libjvm.dll'                                                       
-   else:                                                                           
-      libfile = 'libjvm.so'                                                        
-   for root, dirs, files in os.walk("/"):                                          
-       if libfile in files:                                                        
-          print "java found in %s" % root
+   .. code::
 
-.. This will print all possible values for JAVA_HOME
+      conda list
 
-Lets assume you have Oracles Java Virtual Machine installed under:
-`/usr/lib/jvm/java-8-oracle`. This is just an example, do not try to copy paste
-this - it will fail.
+   shows you the installed python packages. You should find a pyemma 1.2 (or later)
+   and ipython, ipython-notebook 3.1 (or later). If ipython is not up to date, you can still use pyemma,
+   but you won't be able to load our example notebooks. In that case, update it by
 
-So you would like to add the following in your ".bashrc" file (or your prefered
-way to set environment variables).
+   .. code::
 
-.. code-block:: bash
-
-   export JAVA_HOME=/usr/lib/jvm/java-8-oracle
-
-To test if this is correct, try to execute the java command from your new
-JAVA_HOME:
-
-.. code-block:: bash
-
-   $JAVA_HOME/bin/java -version
-
-It should output something like this:
-
-::
-
-   java version "1.8.0_20"
-   Java(TM) SE Runtime Environment (build 1.8.0_20-b26)
-   Java HotSpot(TM) 64-Bit Server VM (build 25.20-b23, mixed mode)
-   
-If the command is not found, the JAVA_HOME does not point to the correct
-location.
+      conda install ipython-notebook
 
 
-Binary Packages
-===============
-
-Anaconda
-~~~~~~~~
-
-It is recommended to use the binary **Anaconda** Python distribution, as it is
-easy to install the difficult to build packages NumPy and SciPy under MacOSX
-and Windows.
-
-Get it a minimal distribution for Python **2.7** for your operating system from
-http://conda.pydata.org/miniconda.html
-
-After setting it up, you can install Emma via the conda package manager from the
-`Omnia MD <http://www.omnia.md/>`_ software channel.
-
-::
-
-   conda config --add channels https://conda.binstar.org/omnia
-   conda install pyemma
 
 Python Package Index (PyPI)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+===========================
+
 If you do not like Anaconda for some reason you should use the Python package
-manager **pip** to install. If you do not have pip, please read its
-`install guide <http://pip.readthedocs.org/en/latest/installing.html>`_.
+manager **pip** to install. This is not recommended, because in the past,
+various problems have arisen with pip in compiling the packages that pyEMMA depends upon.
 
+1. If you do not have pip, please read the install guide:
+   `install guide <http://pip.readthedocs.org/en/latest/installing.html>`_.
 
-Then make sure pip is enabled to install so called
-`wheel <http://wheel.readthedocs.org/en/latest/>`_ packages:
+2. Make sure pip is enabled to install so called
+   `wheel <http://wheel.readthedocs.org/en/latest/>`_ packages:
 
-::
+   ::
 
-   pip install wheel
+      pip install wheel
 
-Then you are able to install binaries if you are have MacOSX or Windows.
-Binaries for all flavours of Linux are currently out of our scope - sorry.
-Please read howto build from source.
+   Now you are able to install binaries if you are have MacOSX or Windows. At the
+   moment of writing PyPI does not support Linux binaries at all, so Linux users
+   have to compile by themselfs.
+
+3. Install pyEMMA using
+
+   ::
+
+      pip install pyemma
+
+4. Check your installation
+
+   ::
+
+      python
+      >>> import pyemma
+      >>> pyemma.__version__
+
+   should print 1.2 or later
+
+   ::
+   
+      >>> import IPython
+      >>> IPython.__version__
+
+   should print 3.1 or later. If ipython is not up to date, update it by ``pip install ipython``
+
 
 Building from Source
 ====================
-If you are a developer, want to have optimized builds of Emma for your platform
-or are using Linux, you want to build it from source. This guide assumes you
-have NumPy and SciPy installed.
+If you refuse to use Anaconda, you will build pyEMMA from the
+source. In this approach, all pyEMMA dependencies will be built from the source too.
+Building these from source is sometimes (if not usually) tricky, takes a
+long time and is error prone - though it is **not** recommended nor supported
+by us. If unsure, use the anaconda installation.
 
+1. Ensure that you fulfill the following prerequesites:
 
-Prequisites
-~~~~~~~~~~~
- * C/C++ compiler
- * Have a valid JAVA_HOME.
- * recent version of Python setuptools
+   * C/C++ compiler
+   * setuptools > 3.6
+   * cython >= 0.22
+   * numpy >= 1.6
+   * scipy >= 0.11
+   * matplotlib >= 1.4
 
+   If you do not fulfill these requirements, try to upgrade all packages:
 
-Setuptools
-~~~~~~~~~~
-It is recommended to upgrade to latest setuptools for a smooth installation
-process. Invoke pip to upgrade:
+   ::
 
-::
+       pip install --upgrade setuptools
+       pip install --upgrade cython
+       pip install --upgrade numpy
+       pip install --upgrade scipy
+       pip install --upgrade matplotlib
+       
+   Note that if pip finds a newer version, it will trigger an update which will
+   most likely involve compilation.
+   Especially NumPy and SciPy are hard to build. You might want to take a look at
+   this guide here: http://www.scipy.org/scipylib/building/
 
-    pip install --upgrade setuptools
-
-
-Building/Installing
-~~~~~~~~~~~~~~~~~~~
-The build and install process is in one step, as all dependencies are dragged in
+2. The build and install process is in one step, as all dependencies are dragged in
 via the provided *setup.py* script. So you only need to get the source of Emma
 and run it to build Emma itself and all of its dependencies (if not already
 supplied) from source.
 
-Recommended for users:
+   ::
 
-::
+      pip install pyemma
 
-   pip install pyemma
 
-Recommended method for developers using GIT:
+For Developers
+==============
+If you are a developer, clone the code repository from github and install it as follows
 
-1. Obtain a clone via
+1. Ensure the Prerequesites (point 1) described for "Building from Source" above.
 
-::
+2. Make a suitable directory, and inside clone the reposity via
 
-   git clone https://github.com/markovmodel/PyEMMA.git
+   ::
 
-2. install pyemma via
+      git clone https://github.com/markovmodel/PyEMMA.git
 
-::
+3. install pyemma via
 
-   python setup.py develop [--user]
+   ::
 
-The develop install has the advantage that if only python scripts are being changed
-eg. via an pull or a local edit, you do not have to reinstall anything, because
-the setup command simply created a link to your working copy.
+      python setup.py develop [--user]
+
+   The develop install has the advantage that if only python scripts are being changed
+   e.g. via an pull or a local edit, you do not have to reinstall anything, because
+   the setup command simply created a link to your working copy. Repeating point 3 is
+   only necessary if any of pyEMMA's C-files change and need to be rebuilt.
+
