@@ -165,3 +165,15 @@ If you are a developer, clone the code repository from github and install it as 
    the setup command simply created a link to your working copy. Repeating point 3 is
    only necessary if any of pyEMMA's C-files change and need to be rebuilt.
 
+Frequently Asked Questions (FAQ)
+================================
+
+* Q: Installation went fine with conda, but import pyemma leads to the following error: ::
+   
+       ImportError: No module named PySide
+       
+  A: install pyside manually with conda::
+     
+     conda install pyside
+
+
