@@ -49,8 +49,8 @@ def hist(transform, dimensions, nbins):
         bin edges compatible with pyplot.pcolormesh and pyplot.bar,
         see below.
 
-    Example
-    -------
+    Examples
+    --------
 
     >>> import matplotlib.pyplot as plt
     >>> %matplotlib inline # only for ipython notebook
