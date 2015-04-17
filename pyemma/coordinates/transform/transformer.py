@@ -27,6 +27,7 @@ __author__ = 'noe, marscher'
 from pyemma.util.log import getLogger
 from pyemma.util.eta import ETA
 
+from itertools import count
 import numpy as np
 
 from abc import ABCMeta, abstractmethod
@@ -72,6 +73,8 @@ class Transformer(object):
 
     """
     __metaclass__ = ABCMeta
+    # count instances
+    _ids = count(0)
 
     def __init__(self, chunksize=100):
         self.chunksize = chunksize
@@ -133,8 +136,16 @@ class Transformer(object):
         pass
 
     def __create_logger(self):
-        name = "%s[%s]" % (self.__class__.__name__, hex(id(self)))
+        count = self._ids.next()
+        #name = "%s[%s]" % (self.__class__.__name__, hex(id(self)))
+        name = "%s[%i]" % (self.__class__.__name__, count)
+        self._name = name
         self._logger = getLogger(name)
+
+    def __del__(self):
+        # if this transformer gets garbage collected remove its logger
+        import logging
+        del logging.Logger.manager.loggerDict[self._name]
 
     def number_of_trajectories(self):
         """
