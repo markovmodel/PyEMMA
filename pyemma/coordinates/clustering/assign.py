@@ -34,7 +34,7 @@ import numpy as np
 
 class AssignCenters(AbstractClustering):
 
-    """Assigns given (precalculated) cluster centers. If you already have
+    """Assigns given (pre-calculated) cluster centers. If you already have
     cluster centers from somewhere, you use this class to assign your data to it.
 
     Parameters
@@ -47,10 +47,10 @@ class AssignCenters(AbstractClustering):
     Assuming you have stored your centers in a CSV file:
 
     >>> from pyemma.coordinates.clustering import AssignCenters
-    >>> from pyemma.coordinates import discretizer
+    >>> from pyemma.coordinates import pipeline
     >>> reader = ...
     >>> assign = AssignCenters('my_centers.dat')
-    >>> disc = discretizer(reader, cluster=assign)
+    >>> disc = pipeline(reader, cluster=assign)
     >>> disc.parametrize()
 
     """
@@ -65,6 +65,9 @@ class AssignCenters(AbstractClustering):
 
         # since we provided centers, this transformer is already parametrized.
         self._parametrized = True
+
+    def describe(self):
+        return "[AssignCenters c=%s]" % self.clustercenters
 
     def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
                         last_chunk, ipass, Y=None, stride=1):

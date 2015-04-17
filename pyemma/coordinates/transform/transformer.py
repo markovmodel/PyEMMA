@@ -1,4 +1,3 @@
-
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
 # All rights reserved.
@@ -23,12 +22,13 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-__author__ = 'noe'
+__author__ = 'noe, marscher'
 
 from pyemma.util.log import getLogger
 
 import numpy as np
-from scipy.spatial.distance import cdist
+
+from abc import ABCMeta, abstractmethod
 
 __all__ = ['Transformer']
 
@@ -70,6 +70,7 @@ class Transformer(object):
         the chunksize used to batch process underlying data
 
     """
+    __metaclass__ = ABCMeta
 
     def __init__(self, chunksize=100):
         self.chunksize = chunksize
@@ -112,7 +113,7 @@ class Transformer(object):
         """
         if not self._in_memory and op_in_mem:
             self._Y = [np.zeros((self.trajectory_length(itraj), self.dimension()))
-                      for itraj in xrange(self.number_of_trajectories())]
+                       for itraj in xrange(self.number_of_trajectories())]
             self._map_to_memory()
         elif not op_in_mem and self._in_memory:
             self._clear_in_memory()
@@ -124,10 +125,10 @@ class Transformer(object):
         for y in self._Y:
             del y
 
+    @abstractmethod
     def dimension(self):
         """ output dimension of this transformation """
-        raise NotImplementedError('this method has to be implemented in'
-                                  ' children of this class.')
+        pass
 
     def __create_logger(self):
         name = "%s[%s]" % (self.__class__.__name__, hex(id(self)))
@@ -153,7 +154,7 @@ class Transformer(object):
             trajectory index
         stride : int
             return value is the number of frames in trajectory when
-            running through it with a step size of `stride`            
+            running through it with a step size of `stride`
 
         Returns
         -------
@@ -169,7 +170,8 @@ class Transformer(object):
         ----------
         stride : int
             return value is the number of frames in trajectories when
-            running through them with a step size of `stride`        
+            running through them with a step size of `stride`
+
         Returns
         -------
         int : length of each trajectory
@@ -184,7 +186,8 @@ class Transformer(object):
         ----------
         stride : int
             return value is the number of frames in trajectories when
-            running through them with a step size of `stride`        
+            running through them with a step size of `stride`
+
         Returns
         -------
         int : n_frames_total
@@ -201,9 +204,10 @@ class Transformer(object):
         """Returns the constant memory requirements, in bytes."""
         return 0
 
+    @abstractmethod
     def describe(self):
         """ get a representation of this Transformer"""
-        return self.__str__()
+        pass
 
     def output_type(self):
         """ by default transformers return single precision floats """
@@ -313,6 +317,7 @@ class Transformer(object):
                             '. Either accepting numpy arrays of dimension 2 '
                             'or lists of such arrays' % (str(type(X))))
 
+    @abstractmethod
     def _map_array(self, X):
         """
         Initializes the parametrization.
@@ -329,7 +334,7 @@ class Transformer(object):
             of this transformer.
 
         """
-        raise NotImplementedError('No mapping defined for this transformer.')
+        pass
 
     def _param_init(self):
         """
@@ -343,9 +348,10 @@ class Transformer(object):
         """
         pass
 
+    @abstractmethod
     def _param_add_data(self, *args, **kwargs):
         """ add data to prameterization """
-        raise NotImplementedError('sub-classes should override this')
+        pass
 
     def _map_to_memory(self):
         """maps results to memory. Will be stored in attribute :attr:`Y`."""
@@ -453,14 +459,14 @@ class Transformer(object):
             where itraj corresponds to input sequence number (eg. trajectory index)
             and X is the transformed data, n = chunksize or n < chunksize at end
             of input.
-        """        
+        """
         self._reset()
         return TransformerIterator(self, stride=1, lag=0)
 
     def iterator(self, stride=1, lag=0):
         """
         Returns an iterator that allows to access the transformed data.
-        
+
         Parameters
         ----------
         stride : int
@@ -540,7 +546,7 @@ class Transformer(object):
         elif isinstance(dimensions, slice):
             ndim = len(np.zeros(self.dimension())[dimensions])
         else:
-            raise Exception('unsupported type (%s) of \"dimensions\"' % type(dimensions))
+            raise ValueError('unsupported type (%s) of \"dimensions\"' % type(dimensions))
 
         assert ndim > 0, "ndim was zero in %s" % self.__class__.__name__
 
