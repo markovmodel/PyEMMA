@@ -31,8 +31,8 @@ from mdtraj.geometry.dihedral import _get_indices_phi, \
 import numpy as np
 import warnings
 
-from pyemma.util.log import getLogger
 from pyemma.util.annotators import deprecated
+from pyemma.coordinates.transform.transformer import Transformer
 
 __all__ = ['MDFeaturizer',
            'CustomFeature',
@@ -153,12 +153,9 @@ class SelectionFeature(object):
     def describe(self):
         labels = []
         for i in self.indexes:
-            labels.append("%s%s x" %
-                          (self.prefix_label, _describe_atom(self.top, i)))
-            labels.append("%s%s y" %
-                          (self.prefix_label, _describe_atom(self.top, i)))
-            labels.append("%s%s z" %
-                          (self.prefix_label, _describe_atom(self.top, i)))
+            labels.append("%s%s x" % (self.prefix_label, _describe_atom(self.top, i)))
+            labels.append("%s%s y" % (self.prefix_label, _describe_atom(self.top, i)))
+            labels.append("%s%s z" % (self.prefix_label, _describe_atom(self.top, i)))
         return labels
 
     @property
@@ -387,7 +384,7 @@ class BackboneTorsionFeature(object):
         return self.__hash__() == other.__hash__()
 
 
-class MDFeaturizer(object):
+class MDFeaturizer(Transformer):
 
     """extracts features from MD trajectories.
 
@@ -399,12 +396,29 @@ class MDFeaturizer(object):
     """
 
     def __init__(self, topfile):
+        super(MDFeaturizer, self).__init__()
+
         self.topologyfile = topfile
-        self.topology = (mdtraj.load(topfile)).topology
+
         self.active_features = []
         self._dim = 0
-        self._logger = getLogger("%s[%s]" %
-                                 (self.__class__.__name__, hex(id(self))))
+
+        self._parametrized = True
+
+    @property
+    def topology(self):
+        """ mdtraj.Topology instance """
+        return self._topology
+
+    @property
+    def topologyfile(self):
+        """ file where Topology will be red from """
+        return self._topologyfile
+
+    @topologyfile.setter
+    def topologyfile(self, topfile):
+        self._topologyfile = topfile
+        self._topology = (mdtraj.load(topfile)).topology
 
     def __add_feature(self, f):
         if f not in self.active_features:
@@ -741,6 +755,12 @@ class MDFeaturizer(object):
         dim = sum(f.dimension for f in self.active_features)
         return dim
 
+    def _map_array(self, X):
+        pass
+
+    def _param_add_data(self, *args, **kwargs):
+        pass
+
     def map(self, traj):
         """
         Maps an mdtraj Trajectory object to the selected output features
@@ -757,6 +777,9 @@ class MDFeaturizer(object):
             a vector with all n output features selected.
 
         """
+        if not isinstance(traj, mdtraj.Trajectory):
+            raise ValueError("no valid input. Expect mdtraj.Trajectory. Got %s" % type(traj))
+
         # if there are no features selected, return given trajectory
         if len(self.active_features) == 0:
             warnings.warn("You have no features selected."
