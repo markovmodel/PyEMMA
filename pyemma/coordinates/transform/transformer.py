@@ -137,8 +137,10 @@ class Transformer(object):
 
     def __create_logger(self):
         count = self._ids.next()
-        #name = "%s[%s]" % (self.__class__.__name__, hex(id(self)))
-        name = "%s[%i]" % (self.__class__.__name__, count)
+        i = self.__module__.rfind(".")
+        j = self.__module__.find(".") +1
+        package = self.__module__[j:i]
+        name = "%s.%s[%i]" % (package, self.__class__.__name__, count)
         self._name = name
         self._logger = getLogger(name)
 
