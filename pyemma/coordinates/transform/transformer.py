@@ -25,6 +25,7 @@
 __author__ = 'noe, marscher'
 
 from pyemma.util.log import getLogger
+from pyemma.util.eta import ETA
 
 import numpy as np
 
@@ -77,6 +78,7 @@ class Transformer(object):
         self._in_memory = False
         self._dataproducer = None
         self._parametrized = False
+        self._param_with_stride = 1
 
         self.__create_logger()
 
@@ -221,6 +223,13 @@ class Transformer(object):
             raise RuntimeError('Called parametrize of %s while data producer is not'
                                ' yet set. Ensure "data_producer" attribute is set!'
                                % self.describe())
+
+        # if stride is not equal to one and does not match to a previous call
+        # retrigger parametrization
+        if stride != self._param_with_stride:
+            self._parametrized = False
+
+        self._param_with_stride = stride
 
         if self._parametrized:
             return
@@ -561,12 +570,18 @@ class Transformer(object):
         last_itraj = -1
         t = 0  # first time point
         assert self._parametrized, "has to be parametrized before getting output!"
+        eta = ETA(sum(self.trajectory_lengths(stride)) / self.chunksize)
+        if eta.denominator > 0:
+            self._logger.info("getting output...")
         for itraj, chunk in self.iterator(stride=stride):
+            eta.numerator += 1
             if itraj != last_itraj:
                 last_itraj = itraj
                 t = 0  # reset time to 0 for new trajectory
             L = chunk.shape[0]
             trajs[itraj][t:t + L, :] = chunk[:, dimensions]
             t += L
+            if eta.denominator != 0 and t != 0 and t % 1000 == 0:
+                self._logger.info(eta)
 
         return trajs

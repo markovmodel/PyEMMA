@@ -1,4 +1,3 @@
-
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
 # All rights reserved.
@@ -26,8 +25,11 @@
 __author__ = 'noe'
 
 import numpy as np
+
 from .transformer import Transformer
+
 from pyemma.util.annotators import doc_inherit
+from pyemma.util.eta import ETA
 
 __all__ = ['PCA']
 
@@ -63,6 +65,9 @@ class PCA(Transformer):
         self._output_dimension = output_dimension
         self._dot_prod_tmp = None
         self.Y = None
+
+        self._eta_mean = 0
+        self._eta_cov = 0
 
     @doc_inherit
     def describe(self):
@@ -119,6 +124,11 @@ class PCA(Transformer):
         self.mu = np.zeros(dim)
         self.cov = np.zeros((dim, dim))
 
+        # amount of chunks
+        denom = sum(self.trajectory_lengths(stride=self._param_with_stride)) / self.chunksize
+        self._eta_mean = ETA(denom)
+        self._eta_cov = ETA(denom)
+
     def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
                         last_chunk, ipass, Y=None, stride=1):
         """
@@ -152,6 +162,12 @@ class PCA(Transformer):
             np.sum(X, axis=0, out=self._sum_tmp)
             self.mu += self._sum_tmp
             self.N += np.shape(X)[0]
+
+            # counting chunks and log of eta
+            self._eta_mean.numerator += 1
+            if self._eta_mean.denominator != 0 and t != 0 and t % 1000 == 0:
+                self._logger.info(self._eta_mean)
+
             if last_chunk:
                 self.mu /= self.N
 
@@ -163,6 +179,11 @@ class PCA(Transformer):
             Xm = X - self.mu
             np.dot(Xm.T, Xm, self._dot_prod_tmp)
             self.cov += self._dot_prod_tmp
+
+            self._eta_cov.numerator += 1
+            if self._eta_cov.denominator != 0 and t != 0 and t % 1000 == 0:
+                self._logger.debug(self._eta_cov)
+
             if last_chunk:
                 self.cov /= self.N - 1
                 self._logger.debug("finished")
