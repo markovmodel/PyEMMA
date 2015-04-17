@@ -25,10 +25,13 @@
 __author__ = 'noe, marscher'
 
 from pyemma.util.log import getLogger
-from pyemma.util.eta import ETA
+from pyemma.util.progressbar.misc import interactive_session
+from pyemma.util.progressbar import ProgressBar
 
 from itertools import count
 import numpy as np
+import sys
+from math import ceil
 
 from abc import ABCMeta, abstractmethod
 
@@ -106,6 +109,15 @@ class Transformer(object):
         assert size >= 0, "chunksize has to be positive"
         self._chunksize = int(size)
 
+    def _n_chunks(self, stride=1):
+        """ rough estimate of how many chunks will be processed """
+        if self._chunksize != 0:
+            chunks = sum([ceil(l / float(self._chunksize))
+                          for l in self.trajectory_lengths(stride)])
+        else:
+            chunks = 1
+        return chunks
+
     @property
     def in_memory(self):
         """are results stored in memory?"""
@@ -144,10 +156,34 @@ class Transformer(object):
         self._name = name
         self._logger = getLogger(name)
 
-    def __del__(self):
-        # if this transformer gets garbage collected remove its logger
-        import logging
-        del logging.Logger.manager.loggerDict[self._name]
+    def _show_progressbar(self, bar, append_time_diff=True):
+        """ shows given bar either using an ipython widget, if in
+        interactive session or simply use the string format of it and print it
+        to stdout."""
+
+        if interactive_session:
+            # create IPython widget on first call
+            if not hasattr(bar, 'widget'):
+                from IPython.display import display
+                from IPython.html.widgets import IntProgress
+
+                widget = IntProgress()
+                # make it visible once
+                display(widget)
+                bar.widget = widget
+            else:
+                widget = bar.widget
+
+            desc = bar.description
+            if append_time_diff:
+                # TODO: maybe make this a method of bar
+                desc += '\t' + bar._generate_eta(bar._eta.eta_seconds) + '\t'
+
+            widget.description = desc
+            widget.value = bar.percent
+        else:
+            sys.stdout.write("\r" + str(bar))
+            sys.stdout.flush()
 
     def number_of_trajectories(self):
         """
@@ -583,18 +619,19 @@ class Transformer(object):
         last_itraj = -1
         t = 0  # first time point
         assert self._parametrized, "has to be parametrized before getting output!"
-        eta = ETA(sum(self.trajectory_lengths(stride)) / self.chunksize)
-        if eta.denominator > 0:
-            self._logger.info("getting output...")
+        progress = ProgressBar(self._n_chunks(stride))
+        #self._logger.info("getting output...")
+
         for itraj, chunk in self.iterator(stride=stride):
-            eta.numerator += 1
             if itraj != last_itraj:
                 last_itraj = itraj
                 t = 0  # reset time to 0 for new trajectory
             L = chunk.shape[0]
             trajs[itraj][t:t + L, :] = chunk[:, dimensions]
             t += L
-            if eta.denominator != 0 and t != 0 and t % 1000 == 0:
-                self._logger.info(eta)
 
+            # update progress
+            progress.numerator += 1
+            self._show_progressbar(progress)
+        
         return trajs

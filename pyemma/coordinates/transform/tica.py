@@ -28,7 +28,7 @@ Created on 19.01.2015
 '''
 from .transformer import Transformer
 
-from pyemma.util.eta import ETA
+from pyemma.util.progressbar import ProgressBar
 from pyemma.util.linalg import eig_corr
 from pyemma.util.annotators import doc_inherit
 
@@ -101,8 +101,8 @@ class TICA(Transformer):
         self.eigenvalues = None
         self.eigenvectors = None
 
-        self._eta_mean = 0
-        self._eta_cov = 0
+        self._progress_mean = None
+        self._progress_cov = None
 
     @property
     def lag(self):
@@ -171,9 +171,9 @@ class TICA(Transformer):
                           " with dimension (%i, %i)" % (self._lag, dim, dim))
 
         # amount of chunks
-        denom = sum(self.trajectory_lengths(stride=self._param_with_stride)) / self.chunksize
-        self._eta_mean = ETA(denom)
-        self._eta_cov = ETA(denom)
+        denom = self._n_chunks(self._param_with_stride)
+        self._progress_mean = ProgressBar(denom, description="calculate mean")
+        self._progress_cov = ProgressBar(denom, description="calculate covariances")
 
         return 0  # in zero'th pass don't request lagged data
 
@@ -207,9 +207,8 @@ class TICA(Transformer):
             self.mu += np.sum(X, axis=0, dtype=np.float64)
             self._N_mean += np.shape(X)[0]
             # counting chunks and log of eta
-            self._eta_mean.numerator += 1
-            if self._eta_mean.denominator != 0 and t != 0 and t % 1000 == 0:
-                self._logger.info(self._eta_mean)
+            self._progress_mean.numerator += 1
+            self._show_progressbar(self._progress_mean)
 
             if last_chunk:
                 self.mu /= self._N_mean
@@ -263,9 +262,8 @@ class TICA(Transformer):
                     self.cov += 2.0 * np.dot(X_meanfree.T, X_meanfree)
                     self._N_cov += 2.0 * np.shape(X)[0]
 
-                self._eta_cov.numerator += 1
-                if self._eta_cov.denominator != 0 and t != 0 and t % 1000 == 0:
-                    self._logger.debug(self._eta_cov)
+                self._progress_cov.numerator += 1
+                self._show_progressbar(self._progress_cov)
 
             else:
                 self._logger.warning("trajectory nr %i too short, skipping it" % itraj)
@@ -294,10 +292,6 @@ class TICA(Transformer):
 
         # diagonalize with low rank approximation
         self._logger.info("diagonalize Cov and Cov_tau.")
-#         res = np.array(timeit.repeat('dim=%i;import numpy;x=numpy.random.random(dim); x.dot(x)'
-#                                      % self.cov_tau.shape[0], number=10))
-#         eta = self.cov.shape[0] ** 3 * res.mean()
-#         self._logger.info("eta: %is" % eta)
         self.eigenvalues, self.eigenvectors = \
             eig_corr(self.cov, self.cov_tau, self._epsilon)
         self._logger.info("finished diagonalisation.")

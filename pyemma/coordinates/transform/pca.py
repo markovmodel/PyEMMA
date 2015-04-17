@@ -29,7 +29,7 @@ import numpy as np
 from .transformer import Transformer
 
 from pyemma.util.annotators import doc_inherit
-from pyemma.util.eta import ETA
+from pyemma.util.progressbar import ProgressBar
 
 __all__ = ['PCA']
 
@@ -66,8 +66,8 @@ class PCA(Transformer):
         self._dot_prod_tmp = None
         self.Y = None
 
-        self._eta_mean = 0
-        self._eta_cov = 0
+        self._progress_mean = None
+        self._progress_cov = None
 
     @doc_inherit
     def describe(self):
@@ -125,9 +125,9 @@ class PCA(Transformer):
         self.cov = np.zeros((dim, dim))
 
         # amount of chunks
-        denom = sum(self.trajectory_lengths(stride=self._param_with_stride)) / self.chunksize
-        self._eta_mean = ETA(denom)
-        self._eta_cov = ETA(denom)
+        denom = self._n_chunks(self._param_with_stride)
+        self._progress_mean = ProgressBar(denom, description="calculate mean")
+        self._progress_cov = ProgressBar(denom, description="calculate covariances")
 
     def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
                         last_chunk, ipass, Y=None, stride=1):
@@ -164,9 +164,8 @@ class PCA(Transformer):
             self.N += np.shape(X)[0]
 
             # counting chunks and log of eta
-            self._eta_mean.numerator += 1
-            if self._eta_mean.denominator != 0 and t != 0 and t % 1000 == 0:
-                self._logger.info(self._eta_mean)
+            self._progress_mean.numerator += 1
+            self._show_progressbar(self._progress_mean)
 
             if last_chunk:
                 self.mu /= self.N
@@ -180,9 +179,8 @@ class PCA(Transformer):
             np.dot(Xm.T, Xm, self._dot_prod_tmp)
             self.cov += self._dot_prod_tmp
 
-            self._eta_cov.numerator += 1
-            if self._eta_cov.denominator != 0 and t != 0 and t % 1000 == 0:
-                self._logger.debug(self._eta_cov)
+            self._progress_cov.numerator += 1
+            self._show_progressbar(self._progress_cov)
 
             if last_chunk:
                 self.cov /= self.N - 1
