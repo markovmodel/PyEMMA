@@ -90,7 +90,7 @@ __all__ = ['featurizer',  # IO
 # ==============================================================================
 
 def featurizer(topfile):
-    """ Constructs a MDFeaturizer to select and add coordinates or features from MD data.
+    """ Featurizer to select features from MD data.
 
     Parameters
     ----------
@@ -99,11 +99,11 @@ def featurizer(topfile):
 
     Returns
     -------
-    feat : :py:class:`data.MDFeaturizer`
+    feat : :py:class:`Featurizer <data.MDFeaturizer>`
 
     See also
     --------
-    pyemma.coordinates.data.MDFeaturizer
+    data.MDFeaturizer
         Featurizer object
 
     """
@@ -112,7 +112,9 @@ def featurizer(topfile):
 
 # TODO: DOC - which topology file formats does mdtraj support? Find out and complete docstring
 def load(trajfiles, features=None, top=None, stride=1):
-    """ loads coordinate features into memory. If your memory is not big enough consider the use of pipeline
+    """ loads coordinate features into memory
+
+    If your memory is not big enough consider the use of pipeline, or use the stride option to subsample the data.
 
     Parameters
     ----------
@@ -185,7 +187,7 @@ def load(trajfiles, features=None, top=None, stride=1):
 
 
 def source(inp, features=None, top=None):
-    """ Wraps the input data for as a data source for stream-based processing.
+    """ Wraps input as data source for pipeline
 
         Use this function to construct the first stage of a data processing :func:`pipeline`.
 
@@ -246,11 +248,11 @@ def source(inp, features=None, top=None):
     return reader
 
 
-# TODO: Alternative names: chain, stream, datastream... probably pipeline is the best name though.
 def pipeline(stages, run=True, stride=1):
-    """Constructs a data analysis pipeline and parametrizes it (unless prevented).
+    """Data analysis pipeline
 
-    If this function takes too long, consider using the stride parameters
+    Constructs a data analysis :class:`Pipeline <pyemma.coordinates.Pipeline>` and parametrizes it (unless prevented).
+    If this function takes too long, consider loading data in memory, or if this doesn't fit, use the stride parameter.
 
     Parameters
     ----------
@@ -271,7 +273,7 @@ def pipeline(stages, run=True, stride=1):
 
     Returns
     -------
-    pipe : :func:`pyemma.coordinates.pipeline`
+    pipe : :class:`Pipeline <pyemma.coordinates.Pipeline>`
         A pipeline object that is able to conduct big data analysis with limited memory in streaming mode.
 
     """
@@ -289,9 +291,15 @@ def discretizer(reader,
                 cluster=None,
                 run=True,
                 stride=1):
-    """
-    Constructs a discretizer: a specialized processing pipeline from MD trajectories to a cluster discretization
+    """Specialized pipeline: From trajectories to clustering
 
+    Constructs a pipeline that consists of three stages:
+    1. an input stage (mandatory)
+    2. a transformer stage (optional)
+    3. a clustering stage (mandatory)
+
+    This function is identical to calling :func:`pipeline` with the three stages, it is only meant as a guidance
+    for the (probably) most common case of using a pipeline.
 
     Parameters
     ----------
@@ -308,9 +316,14 @@ def discretizer(reader,
 
     stride : int, optional, default = 1
         If set to 1, all input data will be used throughout the pipeline to parametrize its stages. Note that this
-        could cause the parametrization step to be very slow for large data sets. Since molecular dynamics data is usually
-        correlated at short timescales, it is often sufficient to parametrize the pipeline at a longer stride.
+        could cause the parametrization step to be very slow for large data sets. Since molecular dynamics data is
+        usually correlated at short timescales, it is often sufficient to parametrize the pipeline at a longer stride.
         See also stride option in the output functions of the pipeline.
+
+    Returns
+    -------
+    pipe : :class:`Pipeline <_Pipeline>`
+        A pipeline object that is able to conduct big data analysis with limited memory in streaming mode.
 
 
     Examples
@@ -351,7 +364,6 @@ def discretizer(reader,
 
 @deprecated
 def feature_reader(trajfiles, topfile):
-
     r"""*Deprecated.* Constructs a molecular feature reader.
 
     This funtion is deprecated. Use :func:`source` instead
@@ -406,7 +418,7 @@ def memory_reader(data):
 
 
 def save_traj(traj_inp, indexes, outfile, verbose=False):
-    r"""Saves a selected sequence of frames as a trajectory
+    r"""Saves a sequence of frames as a trajectory
 
     Extracts the specified sequence of time/trajectory indexes from the input loader
     and saves it in a molecular dynamics trajectory. The output format will be determined
@@ -474,7 +486,7 @@ def save_traj(traj_inp, indexes, outfile, verbose=False):
 
 
 def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None, inmemory=False, verbose=False):
-    r"""Saves selected sequences of frames as trajectories
+    r"""Saves sequences of frames as trajectories
 
     Extracts a number of specified sequences of time/trajectory indexes from the input loader
     and saves them in a set of molecular dynamics trajectoryies.
@@ -810,7 +822,14 @@ def kmeans(data=None, k=100, max_iter=1000, stride=1):
 
 
 def cluster_kmeans(data=None, k=100, max_iter=10, stride=1):
-    r"""Constructs a k-means clustering object.
+    r"""k-means clustering
+
+    If given data, performs a k-means clustering and then assigns the data using a Voronoi discretization.
+    Returns a :class:`KmeansClustering <pyemma.coordinates.clustering.KmeansClustering>` object
+    that can be used to extract the discretized
+    data sequences, or to assign other data points to the same partition. If data is not given, an
+    empty :class:`KmeansClustering <pyemma.coordinates.clustering.KmeansClustering>` will be created that
+    still needs to be parametrized, e.g. in a :func:`pipeline`.
 
     .. seealso:: **Theoretical background**: `Wiki page <http://en.wikipedia.org/wiki/K-means_clustering>`_
 
@@ -831,7 +850,7 @@ def cluster_kmeans(data=None, k=100, max_iter=10, stride=1):
 
     Returns
     -------
-    kmeans : A KmeansClustering object
+    kmeans : A :class:'KmeansClustering <pyemma.coordinates.clustering.KmeansClustering>' object
 
     Examples
     --------
@@ -854,7 +873,15 @@ def uniform_time(data=None, k=100, stride=1):
 
 
 def cluster_uniform_time(data=None, k=100, stride=1):
-    r"""Constructs a uniform time clustering object.
+    r"""Uniform time clustering
+
+    If given data, performs a clustering that selects data points uniformly in time and then assigns the data
+    using a Voronoi discretization. Returns a
+    :class:`UniformTimeClustering <pyemma.coordinates.clustering.UniformTimeClustering>` object
+    that can be used to extract the discretized data sequences, or to assign other data points to the same partition.
+    If data is not given, an empty
+    :class:`UniformTimeClustering <pyemma.coordinates.clustering.UniformTimeClustering>` will be created that
+    still needs to be parametrized, e.g. in a :func:`pipeline`.
 
     Parameters
     ----------
@@ -873,7 +900,7 @@ def cluster_uniform_time(data=None, k=100, stride=1):
 
     Returns
     -------
-        A UniformTimeClustering object
+        A :class:`UniformTimeClustering <pyemma.coordinates.clustering.UniformTimeClustering>` object
 
     """
     res = _UniformTimeClustering(k)
@@ -886,7 +913,19 @@ def regspace(data=None, dmin=-1, max_centers=1000, stride=1):
 
 
 def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1):
-    r"""Constructs a regular space clustering object.
+    r"""Regular space clustering
+
+    If given data, performs a regular space clustering [1]_ and returns a
+    :class:`RegularSpaceClustering <pyemma.coordinates.clustering.RegularSpaceClustering>` object that
+    can be used to extract the discretized data sequences, or to assign other data points to the same partition.
+    If data is not given, an empty
+    :class:`RegularSpaceClustering <pyemma.coordinates.clustering.RegularSpaceClustering>` will be created
+    that still needs to be parametrized, e.g. in a :func:`pipeline`.
+
+    Regular space clustering is very similar to Hartigan's leader algorithm [2]_. It consists of two passes through
+    the data. Initially, the first data point is added to the list of centers. For every subsequent data point, if
+    it has a greater distance than dmin from every center, it also becomes a center. In the second pass, a Voronoi
+    discretization with the computed centers is used to partition the data.
 
     Parameters
     ----------
@@ -898,8 +937,9 @@ def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1):
 
     max_centers : int (optional), default=1000
         If max_centers is reached, the algorithm will stop to find more centers,
-        but this may not approximate the state space well. It is maybe better
-        to increase dmin then.
+        but it is possible that parts of the state space are not properly discretized. This will generate a
+        warning. If that happens, it is suggested to increase dmin such that the number of centers stays below
+        max_centers.
 
     stride : int, optional, default = 1
         If set to 1, all input data will be used for estimation. Note that this could cause this calculation
@@ -910,7 +950,15 @@ def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1):
 
     Returns
     -------
-    obj : A RegularSpaceClustering object
+    obj : A :class:`RegularSpaceClustering <pyemma.coordinates.clustering.RegularSpaceClustering>` object
+
+    References
+    ----------
+    .. [1] Prinz J-H, Wu H, Sarich M, Keller B, Senne M, Held M, Chodera JD, Schuette Ch and Noe F. 2011.
+        Markov models of molecular kinetics: Generation and Validation.
+        J. Chem. Phys. 134, 174105.
+    .. [2] Hartigan J. Clustering algorithms.
+        New York: Wiley; 1975.
 
     """
     if dmin == -1:
@@ -925,10 +973,12 @@ def assign_centers(data=None, centers=None, stride=1):
 
 
 def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True):
-    r"""Assigns data to the nearest cluster centers, thus creating a Voronoi partition.
+    r"""Assigns data to the nearest cluster centers
 
-    If you already have cluster centers from somewhere, you can use this
-    to assign your data to the centers.
+    Creates a Voronoi partition with the given cluster centers. If given trajectories as data, this function
+    will by default discretize the trajectories and return discrete trajectories of corresponding lengths.
+    Otherwise, an assignment object will be returned that can be used to assign data later or can serve
+    as a pipeline stage.
 
     Parameters
     ----------
@@ -945,9 +995,14 @@ def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True):
         Note that the stride option in the get_output() function of the returned object is independent, so
         you can parametrize at a long stride, and still map all frames through the transformer.
 
+    return_dtrajs : bool, optional, default = True
+        If true will return the discretized trajectories obtained from assigning the coordinates in the data
+        input. This will only have effect if data is given. When data is not given or return_dtrajs is False,
+        the :class:'AssignCenters <_AssignCenters>' object will be returned.
+
     Returns
     -------
-    dtrajs : list of integer arrays
+    assignment : list of integer arrays or an :class:`AssignCenters <pyemma.coordinates.clustering.AssignCenters>` object
         assigned data
 
     Examples
@@ -959,7 +1014,7 @@ def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True):
     >>> import numpy as np
     >>> data = np.loadtxt('my_data.csv')
     >>> cluster_centers = np.loadtxt('my_centers.csv')
-    >>> dtrajs = assign_centers(data, cluster_centers)
+    >>> dtrajs = assign_to_centers(data, cluster_centers)
     >>> print dtrajs
 
     [array([0, 0, 1, ... ])]
@@ -970,7 +1025,7 @@ def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True):
                          ' or NumPy array')
     res = _AssignCenters(centers)
     parametrized_stage = _param_stage(data, res, stride=stride)
-    if return_dtrajs:
+    if return_dtrajs and data is not None:
         return parametrized_stage.dtrajs
 
     return parametrized_stage

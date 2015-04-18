@@ -21,6 +21,7 @@ Coordinate classes
 .. toctree::
    :maxdepth: 1
 
-   coordinates.io
+   coordinates.data
+   coordinates.pipelines
    coordinates.transform
    coordinates.clustering

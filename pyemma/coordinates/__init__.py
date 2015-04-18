@@ -52,14 +52,6 @@ Data handling and IO
    save_traj
    save_trajs
 
-Deprecated Readers
---------------------
-.. autosummary::
-   :toctree: generated/
-
-   feature_reader
-   memory_reader
-
 Transformations
 ---------------
 .. autosummary::
