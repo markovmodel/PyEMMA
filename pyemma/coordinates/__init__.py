@@ -1,18 +1,4 @@
 r"""
-=========================================================
-coordinates (:mod:`pyemma.coordinates`)
-=========================================================
-
-.. currentmodule:: pyemma.coordinates
-
-
-User-API
-========
-
-The class which links input (readers), transformers (PCA, TICA) and clustering
-together is the **Discretizer**. It builds up a pipeline to process your data
-into discrete state space. The API function **discretizer** creates it.
-
 
 Data handling and IO
 --------------------
@@ -26,14 +12,6 @@ Data handling and IO
    discretizer
    save_traj
    save_trajs
-
-Deprecated Readers
---------------------
-.. autosummary::
-   :toctree: generated/
-
-   feature_reader
-   memory_reader
 
 Transformations
 ---------------
@@ -56,3 +34,13 @@ Clustering Algorithms
 
 """
 from .api import *
+
+from .pipelines import Pipeline
+from transform.pca import PCA
+from transform.tica import TICA
+from clustering.kmeans import KmeansClustering
+from clustering.uniform_time import UniformTimeClustering
+from clustering.regspace import RegularSpaceClustering
+from clustering.assign import AssignCenters
+
+

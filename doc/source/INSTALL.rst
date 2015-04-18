@@ -92,7 +92,7 @@ various problems have arisen with pip in compiling the packages that pyEMMA depe
    should print 1.2 or later
 
    ::
-   
+
       >>> import IPython
       >>> IPython.__version__
 
