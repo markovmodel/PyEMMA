@@ -1,10 +1,9 @@
 r'''
 Runtime Configuration
 =====================
-To configure the runtime behavior like logging system or parameters for the
-Java/Python bridge, the configuration module reads several config files to build
-its final set of settings. It searches for the file 'pyemma.cfg' in several
-locations with different priorities:
+To configure the runtime behavior like logging system, the configuration module
+reads several config files to build its final set of settings. It searches for
+the file 'pyemma.cfg' in several locations with different priorities:
 
 1. $CWD/pyemma.cfg
 2. /etc/pyemma.cfg
@@ -13,6 +12,7 @@ locations with different priorities:
 
 The default values are stored in later file to ensure these values are always
 defined. This is preferred over hardcoding them somewhere in the Python code.
+
 Default configuration file
 --------------------------
 Default settings are stored in a provided pyemma.cfg file, which is included in
@@ -38,6 +38,16 @@ compare for
     if config['section'].my_bool == 'True':
         pass
 
+Members
+-------
+
+.. currentmodule:: pyemma.util.config
+
+.. autosummary::
+   :toctree:: generated/
+
+    conf_values
+    used_filenames
 '''
 
 __docformat__ = "restructuredtext en"
