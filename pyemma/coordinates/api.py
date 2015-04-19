@@ -507,8 +507,8 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None, inmemo
     verbose : boolean, default is False
         Verbose output while looking for "indexes" in the "traj_inp.trajfiles"
 
-    Returns:
-    --------
+    Returns
+    -------
     outfiles : list of str
         The list of absolute paths that the output files have been written to.
 
