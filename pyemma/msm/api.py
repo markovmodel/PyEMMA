@@ -51,7 +51,7 @@ __all__ = ['its',
 
 
 def its(dtrajs, lags=None, nits=10, reversible=True, connected=True):
-    r"""Calculates the implied timescales for a series of lag times.
+    r"""Calculate implied timescales for a series of lag times.
 
     Parameters
     ----------
@@ -93,7 +93,7 @@ def its(dtrajs, lags=None, nits=10, reversible=True, connected=True):
 
 
 def markov_model(P, dt='1 step'):
-    r"""Wraps transition matrix into a Markov model object, which conveniently provides various quantities
+    r"""Markov model with a given transition matrix
 
     Returns a :class:`MSM <pyemma.msm.ui.MSM>` that contains the transition matrix
     and allows to compute a large number of quantities related to Markov models.
@@ -128,7 +128,7 @@ def markov_model(P, dt='1 step'):
 
 def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivity='largest', estimate=True,
                           dt='1 step', **kwargs):
-    r"""Estimate Markov state model (MSM) from discrete trajectories.
+    r"""Estimates a Markov model from discrete trajectories
 
     Returns a :class:`EstimatedMSM <pyemma.msm.ui.EstimatedMSM>` that contains the estimated transition matrix
     and allows to compute a large number of quantities related to Markov models.
@@ -204,7 +204,7 @@ def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
 
 
 def cktest(msmobj, K, nsets=2, sets=None, full_output=False):
-    r"""Perform Chapman-Kolmogorov tests for given data.
+    r"""Chapman-Kolmogorov test for the given MSM
 
     Parameters
     ----------
@@ -246,7 +246,7 @@ def cktest(msmobj, K, nsets=2, sets=None, full_output=False):
 
 
 def tpt(msmobj, A, B):
-    r"""Computes the A->B reactive flux using transition path theory (TPT)
+    r"""A->B reactive flux from transition path theory (TPT)
 
     The returned :class:`ReactiveFlux <pyemma.msm.flux.ReactiveFlux>` object can be used to extract various quantities
     of the flux, as well as to compute A -> B transition pathways, their weights, and to coarse-grain the flux onto

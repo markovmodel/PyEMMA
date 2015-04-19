@@ -25,13 +25,9 @@
 
 r"""
 
-=============================================
-msm - Markov state models (:mod:`pyemma.msm`)
-=============================================
-
 .. currentmodule:: pyemma.msm
 
-User-API
+User API
 ========
 
 .. autosummary::
@@ -42,6 +38,32 @@ User-API
    estimate_markov_model
    tpt
    cktest
+
+**MSM classes** encapsulating complex functionality. You don't need to construct these classes yourself, as this
+is done by the user API functions above. Find here a documentation how to extract features from them.
+
+.. autosummary::
+   :toctree: generated/
+
+   ui.MSM
+   ui.EstimatedMSM
+   ui.ImpliedTimescales
+   flux.ReactiveFlux
+
+
+MSM functions (low-level API)
+=============================
+Low-level functions for estimation and analysis of transition matrices and io.
+
+.. toctree::
+   :maxdepth: 1
+
+   msm.io
+   msm.generation
+   msm.estimation
+   msm.analysis
+   msm.flux
+
 
 """
 

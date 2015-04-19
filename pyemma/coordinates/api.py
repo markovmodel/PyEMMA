@@ -251,14 +251,15 @@ def source(inp, features=None, top=None):
 def pipeline(stages, run=True, stride=1):
     """Data analysis pipeline
 
-    Constructs a data analysis :class:`Pipeline <pyemma.coordinates.Pipeline>` and parametrizes it (unless prevented).
+    Constructs a data analysis :class:`Pipeline <pyemma.coordinates.pipelines.Pipeline>` and parametrizes it
+    (unless prevented).
     If this function takes too long, consider loading data in memory, or if this doesn't fit, use the stride parameter.
 
     Parameters
     ----------
     stages : data input or list of pipeline stages
-        If given a single pipeline stage this must be a data input constructed by :py:func:`input`.
-        If a list of pipelining stages are given, the first stage must be a data input constructed by :py:func:`input`.
+        If given a single pipeline stage this must be a data input constructed by :py:func:`source`.
+        If a list of pipelining stages are given, the first stage must be a data input constructed by :py:func:`source`.
     run : bool, optional, default = True
         If True, the pipeline will be parametrized immediately with the given stages. If only an input stage is given,
         the run flag has no effect at this time. True also means that the pipeline will be immediately re-parametrized
@@ -267,13 +268,13 @@ def pipeline(stages, run=True, stride=1):
         If False, the pipeline will be passive, i.e. it will not do any computations before you call parametrize()
     stride : int, optional, default = 1
         If set to 1, all input data will be used throughout the pipeline to parametrize its stages. Note that this
-        could cause the parametrization step to be very slow for large data sets. Since molecular dynamics data is usually
-        correlated at short timescales, it is often sufficient to parametrize the pipeline at a longer stride.
+        could cause the parametrization step to be very slow for large data sets. Since molecular dynamics data is
+        usually correlated at short timescales, it is often sufficient to parametrize the pipeline at a longer stride.
         See also stride option in the output functions of the pipeline.
 
     Returns
     -------
-    pipe : :class:`Pipeline <pyemma.coordinates.Pipeline>`
+    pipe : :class:`Pipeline <pyemma.coordinates.pipelines.Pipeline>`
         A pipeline object that is able to conduct big data analysis with limited memory in streaming mode.
 
     """
@@ -294,9 +295,10 @@ def discretizer(reader,
     """Specialized pipeline: From trajectories to clustering
 
     Constructs a pipeline that consists of three stages:
-    1. an input stage (mandatory)
-    2. a transformer stage (optional)
-    3. a clustering stage (mandatory)
+
+       1. an input stage (mandatory)
+       2. a transformer stage (optional)
+       3. a clustering stage (mandatory)
 
     This function is identical to calling :func:`pipeline` with the three stages, it is only meant as a guidance
     for the (probably) most common case of using a pipeline.
@@ -322,7 +324,7 @@ def discretizer(reader,
 
     Returns
     -------
-    pipe : :class:`Pipeline <_Pipeline>`
+    pipe : :class:`Pipeline <pyemma.coordinates.pipelines.Pipeline>`
         A pipeline object that is able to conduct big data analysis with limited memory in streaming mode.
 
 

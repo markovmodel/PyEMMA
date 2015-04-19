@@ -39,8 +39,11 @@ together is the **Discretizer**. It builds up a pipeline to process your data
 into discrete state space. The API function **discretizer** creates it.
 
 
-Data handling and IO
---------------------
+User API
+========
+
+**Data handling and IO**
+
 .. autosummary::
    :toctree: generated/
 
@@ -52,16 +55,16 @@ Data handling and IO
    save_traj
    save_trajs
 
-Transformations
----------------
+**Transformations**
+
 .. autosummary::
    :toctree: generated/
 
    pca
    tica
 
-Clustering Algorithms
----------------------
+**Clustering Algorithms**
+
 .. autosummary::
    :toctree: generated/
 
@@ -70,6 +73,17 @@ Clustering Algorithms
    cluster_uniform_time
    assign_to_centers
 
+Classes
+=======
+**Coordinate classes** encapsulating complex functionality. You don't need to construct these classes yourself, as this
+is done by the user API functions above. Find here a documentation how to extract features from them.
+
+.. autosummary::
+   :toctree: generated/
+
+   pipelines.Pipeline
+   transform.PCA
+   transform.TICA
 
 """
 from .api import *
