@@ -50,6 +50,7 @@ Development
 .. toctree::
    :maxdepth: 2
 
+   CHANGELOG
    DEVELOPMENT
 
 
