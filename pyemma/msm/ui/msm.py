@@ -21,7 +21,7 @@ __all__ = ['MSM', 'EstimatedMSM']
 
 
 class MSM(object):
-    r"""Wraps transition matrix into a Markov model object, which conveniently provides various quantities
+    r"""Markov model with a given transition matrix
 
     Parameters
     ----------
@@ -871,7 +871,7 @@ class MSM(object):
 
 
 class EstimatedMSM(MSM):
-    r"""Estimate Markov state model (MSM) from discrete trajectories.
+    r"""Estimates a Markov model from discrete trajectories.
 
     Parameters
     ----------

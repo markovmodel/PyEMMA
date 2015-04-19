@@ -15,13 +15,3 @@ integers.
 .. toctree::
    :maxdepth: 1
 
-Coordinate classes
-------------------
-
-.. toctree::
-   :maxdepth: 1
-
-   coordinates.data
-   coordinates.pipelines
-   coordinates.transform
-   coordinates.clustering

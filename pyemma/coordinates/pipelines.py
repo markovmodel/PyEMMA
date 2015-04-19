@@ -14,12 +14,12 @@ __all__ = ['Discretizer',
 
 
 class Pipeline(object):
+    """Data processing pipeline
+
+    """
 
     def __init__(self, chain, chunksize=100, param_stride=1):
-        """
-
-        TODO:chunksize should be estimated from memory requirements (max memory usage)
-        """
+        # TODO:chunksize should be estimated from memory requirements (max memory usage)
         self._chain = []
         self.chunksize = chunksize
         self.param_stride = param_stride
@@ -45,8 +45,9 @@ class Pipeline(object):
             e.chunksize = cs
 
     def add_element(self, e):
-        """
-        appends the given element to the end of the current chain
+        """appends a pipeline stage
+
+        Appends the given element to the end of the current chain
         """
         # TODO: sanity checks on e
 
@@ -62,8 +63,9 @@ class Pipeline(object):
         self._chain.append(e)
 
     def set_element(self, index, e):
-        """
-        replace an element in chain and return replaced one.
+        """replaces a pipeline stage
+
+        Replace an element in chain and return replaced one.
         """
         if index > len(self._chain):
             raise IndexError("tried to access element %i, but chain has only %i"
@@ -105,6 +107,8 @@ class Pipeline(object):
         return replaced
 
     def run(self):
+        """deprecated. Identical to parametrize()
+        """
         import warnings
         warnings.warn(
             "run() is deprecated and will be disabled in the future. Use parametrize().", DeprecationWarning)
