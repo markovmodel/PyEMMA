@@ -187,7 +187,7 @@ class ReactiveFlux(object):
             Fraction of total flux to assemble in pathway decomposition
         maxiter : int, optional
             Maximum number of pathways for decomposition
-        
+
         Returns
         -------
         paths : list
@@ -207,23 +207,23 @@ class ReactiveFlux(object):
 
     def _pathways_to_flux(self, paths, pathfluxes, n=None):
         r"""Sums up the flux from the pathways given
-        
+
         Parameters
         -----------
         paths : list of int-arrays
         list of pathways
-        
+
         pathfluxes : double-array
             array with path fluxes
-        
+
         n : int
             number of states. If not set, will be automatically determined.
-        
-        Returns:
-        --------
+
+        Returns
+        -------
         flux : (n,n) ndarray of float
             the flux containing the summed path fluxes
-        
+
         """
         if (n is None):
             n = 0
