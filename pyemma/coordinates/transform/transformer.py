@@ -87,7 +87,7 @@ class Transformer(object):
         """
         if not self._in_memory and op_in_mem:
             self._Y = [np.zeros((self.trajectory_length(itraj), self.dimension()))
-                      for itraj in xrange(self.number_of_trajectories())]
+                       for itraj in xrange(self.number_of_trajectories())]
             self._map_to_memory()
         elif not op_in_mem and self._in_memory:
             self._clear_in_memory()
@@ -128,7 +128,7 @@ class Transformer(object):
             trajectory index
         stride : int
             return value is the number of frames in trajectory when
-            running through it with a step size of `stride`            
+            running through it with a step size of `stride`
 
         Returns
         -------
@@ -144,7 +144,8 @@ class Transformer(object):
         ----------
         stride : int
             return value is the number of frames in trajectories when
-            running through them with a step size of `stride`        
+            running through them with a step size of `stride`
+
         Returns
         -------
         int : length of each trajectory
@@ -159,7 +160,8 @@ class Transformer(object):
         ----------
         stride : int
             return value is the number of frames in trajectories when
-            running through them with a step size of `stride`        
+            running through them with a step size of `stride`
+
         Returns
         -------
         int : n_frames_total
