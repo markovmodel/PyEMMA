@@ -69,10 +69,11 @@ Members
 .. currentmodule:: pyemma.util.config
 
 .. autosummary::
-   :toctree:: generated/
+   :toctree: generated/
 
     conf_values
     used_filenames
+
 '''
 
 __docformat__ = "restructuredtext en"
