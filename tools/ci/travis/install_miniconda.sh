@@ -1,6 +1,7 @@
 #!/bin/bash
 
 TARGET=$HOME/miniconda
+BASE_ENV=$TARGET/envs/ci
 
 function install_miniconda {
 	wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O mc.sh -o /dev/null
@@ -8,8 +9,13 @@ function install_miniconda {
 }
 
 function create_env {
-	conda create -q --yes -n ci -c https://conda.binstar.org/omnia \
-		python=$TRAVIS_PYTHON_VERSION $deps $common_py_deps
+	# initially create env
+	if [[ ! -d $BASE_ENV ]]; then
+		conda create -q --yes -n ci -c https://conda.binstar.org/omnia \
+			python=$TRAVIS_PYTHON_VERSION $deps $common_py_deps
+	fi
+
+	conda install -qy python=$TRAVIS_PYTHON_VERSION $deps $common_py_deps
 }
 
 # check if miniconda is available
