@@ -15,3 +15,15 @@ integers.
 .. toctree::
    :maxdepth: 1
 
+
+.. include impl detail here hidden, to get generate docs for these
+   as sometimes api doc links to them.
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   coordinates.clustering
+   coordinates.data
+   coordinates.transform
+   coordinates.pipelines
