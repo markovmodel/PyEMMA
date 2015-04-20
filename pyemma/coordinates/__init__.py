@@ -1,4 +1,3 @@
-
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
 # All rights reserved.
@@ -24,20 +23,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 r"""
-=========================================================
-coordinates (:mod:`pyemma.coordinates`)
-=========================================================
-
 .. currentmodule:: pyemma.coordinates
-
-
-User-API
-========
-
-The class which links input (readers), transformers (PCA, TICA) and clustering
-together is the **Discretizer**. It builds up a pipeline to process your data
-into discrete state space. The API function **discretizer** creates it.
-
 
 User API
 ========

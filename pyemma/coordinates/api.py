@@ -31,7 +31,7 @@ r"""User-API for the pyemma.coordinates package
 __docformat__ = "restructuredtext en"
 
 from pyemma.util.annotators import deprecated
-from pyemma.util.log import getLogger
+from pyemma.util.log import getLogger as _getLogger
 from pyemma.util import types as _types
 
 from pyemma.coordinates.pipelines import Discretizer as _Discretizer
@@ -52,7 +52,7 @@ from pyemma.coordinates.clustering.uniform_time import UniformTimeClustering as 
 from pyemma.coordinates.clustering.regspace import RegularSpaceClustering as _RegularSpaceClustering
 from pyemma.coordinates.clustering.assign import AssignCenters as _AssignCenters
 
-logger = getLogger('coordinates.api')
+_logger = _getLogger('coordinates.api')
 
 __author__ = "Frank Noe, Martin Scherer"
 __copyright__ = "Copyright 2015, Computational Molecular Biology Group, FU-Berlin"
@@ -99,12 +99,21 @@ def featurizer(topfile):
 
     Returns
     -------
-    feat : :py:class:`Featurizer <data.MDFeaturizer>`
+    feat : :class:`Featurizer <pyemma.coordinates.data.MDFeaturizer>`
 
     See also
     --------
     data.MDFeaturizer
-        Featurizer object
+
+    Examples
+    --------
+
+    Create a featurizer and add backbone torsion angles to active features.
+    Then use it in :func:`source`
+
+    >>> feat = pyemma.coordinates.featurizer('my_protein.pdb')
+    >>> feat.add_backbone_torsions()
+    >>> reader = pyemma.coordinates.source(["my_traj01.xtc", "my_traj02.xtc"], features=feat)
 
     """
     return _MDFeaturizer(topfile)
@@ -355,7 +364,7 @@ def discretizer(reader,
 
     """
     if cluster is None:
-        logger.warning('You did not specify a cluster algorithm.'
+        _logger.warning('You did not specify a cluster algorithm.'
                        ' Defaulting to kmeans(k=100)')
         cluster = _KmeansClustering(n_clusters=100)
     disc = _Discretizer(reader, transform, cluster, param_stride=stride)
@@ -484,7 +493,7 @@ def save_traj(traj_inp, indexes, outfile, verbose=False):
     else:
         traj.save(outfile)
 
-    logger.info("Created file %s" % outfile)
+    _logger.info("Created file %s" % outfile)
 
 
 def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None, inmemory=False, verbose=False):
@@ -588,7 +597,7 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None, inmemo
             f_idx = i_idx + len(i_indexes)
             # print i_idx, f_idx
             traj[i_idx:f_idx].save(outfile)
-            logger.info("Created file %s" % outfile)
+            _logger.info("Created file %s" % outfile)
             # update the initial frame index
             i_idx = f_idx
 
