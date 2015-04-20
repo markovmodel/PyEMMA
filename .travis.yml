@@ -6,7 +6,7 @@ python:
 env:
   global:
     - PATH=$HOME/miniconda/bin:$HOME/miniconda/envs/ci/bin/:$PATH
-    - common_py_deps="pip pylint nose cython jpype1 mdtraj scikit-learn matplotlib"
+    - common_py_deps="pip pylint nose cython mdtraj scikit-learn matplotlib"
     - doc_deps="ipython ipython-notebook sphinx==1.2.3 matplotlib numpydoc"
     - deps="scipy numpy"
   matrix:
@@ -21,7 +21,6 @@ before_install:
 - conda create -q --yes -n ci -c https://conda.binstar.org/omnia
         python=$TRAVIS_PYTHON_VERSION $deps $common_py_deps 
 - source activate ci
-- python -c "import scipy; print scipy.__version__; print scipy.__numpy_version__"
 - conda list
 
 install:
