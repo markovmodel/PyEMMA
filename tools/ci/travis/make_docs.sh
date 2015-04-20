@@ -10,6 +10,8 @@ function install_deps {
 	
 	conda install -q --yes $doc_deps
 	pip install -r requirements-build-doc.txt wheel
+        # temporarily install from git, since html logo is broken in released version (0.17)
+        pip install -I git+https://github.com/snide/sphinx_rtd_theme.git
 }
 
 function build_doc {
