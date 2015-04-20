@@ -22,10 +22,7 @@ before_install:
 # before we invoke setup.py, install $common_deps with conda and let the rest
 # (currently only pystallone) be resolved by setuptools.
 - deactivate # travis python venv
-- wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O mc.sh -o /dev/null
-- bash mc.sh -b
-- conda create -q --yes -n ci -c https://conda.binstar.org/omnia
-        python=$TRAVIS_PYTHON_VERSION $deps $common_py_deps 
+- tools/ci/travis/install_miniconda.sh
 - source activate ci
 - conda list
 
