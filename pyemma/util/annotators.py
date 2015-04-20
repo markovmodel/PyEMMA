@@ -118,6 +118,7 @@ def deprecated(func):
         )
         return func(*args, **kwargs)
 
+    new_func.func_dict['__deprecated__'] = True
     return new_func
 
 
