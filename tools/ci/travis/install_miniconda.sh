@@ -14,8 +14,9 @@ function create_env {
 		conda create -q --yes -n ci -c https://conda.binstar.org/omnia \
 			python=$TRAVIS_PYTHON_VERSION $deps $common_py_deps
 	fi
-
-	conda install -qy python=$TRAVIS_PYTHON_VERSION $deps $common_py_deps
+	source activate ci
+	conda install -qy -c https://conda.binstar.org/omnia \
+		python=$TRAVIS_PYTHON_VERSION $deps $common_py_deps
 }
 
 # check if miniconda is available
