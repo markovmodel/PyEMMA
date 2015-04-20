@@ -275,19 +275,6 @@ texinfo_documents = [
 autosummary_generate = True
 autodoc_default_flags = ['members', 'inherited-members']
 
-# see https://github.com/numpy/numpydoc/issues/5
-numpydoc_class_members_toctree = False
-numpydoc_show_class_members = False
-
-# intersphinx for linking to other api's
-intersphinx_mapping = {
-    'http://docs.python.org/': None,
-    'http://docs.scipy.org/doc/numpy': None,
-    'http://docs.scipy.org/doc/scipy/reference/': None,
-    'http://matplotlib.sourceforge.net/': None,
-    'http://mdtraj.org/latest/': None,
-}
-
 # spell checking
 spelling_lang = 'en_US'
 spelling_word_list_filename = 'spelling_wordlist.txt'
@@ -314,6 +301,6 @@ napoleon_include_special_with_doc = False
 napoleon_use_admonition_for_examples = False
 napoleon_use_admonition_for_notes = False
 napoleon_use_admonition_for_references = False
-napoleon_use_ivar = False
-napoleon_use_param = False
+napoleon_use_ivar = True
+napoleon_use_param = True
 napoleon_use_rtype = True
