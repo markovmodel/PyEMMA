@@ -1,4 +1,3 @@
-
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
 # All rights reserved.
@@ -63,6 +62,17 @@ compare for
 
     if config['section'].my_bool == 'True':
         pass
+
+Members
+-------
+
+.. currentmodule:: pyemma.util.config
+
+.. autosummary::
+   :toctree: generated/
+
+    conf_values
+    used_filenames
 
 '''
 

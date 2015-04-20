@@ -47,33 +47,34 @@ from pyemma.util.discrete_trajectories import number_of_states
 # TODO: Timescales should be assigned by similar eigenvectors rather than by order
 # TODO: when requesting too long lagtimes, throw a warning and exclude lagtime from calculation, but compute the rest
 class ImpliedTimescales(object):
+    r"""Implied timescales for a series of lag times.
+
+    Parameters
+    ----------
+    dtrajs : array-like or list of array-likes
+        discrete trajectories
+    lags = None : array-like with integers
+        integer lag times at which the implied timescales will be calculated
+    k = 10 : int
+        number of implied timescales to be computed. Will compute less if the number of
+        states are smaller
+    connected = True : boolean
+        compute the connected set before transition matrix estimation at each lag
+        separately
+    reversible = True : boolean
+        estimate the transition matrix reversibly (True) or nonreversibly (False)
+    failfast = False : boolean
+        if True, will raise an error as soon as not all requested timescales can be computed at all requested
+        lagtimes. If False, will continue with a warning and compute the timescales/lagtimes that are possible.
+
+    """
+
     # estimated its. 2D-array with indexing: lagtime, its
     _its = None
     # sampled its's. 3D-array with indexing: lagtime, its, sample
     _its_samples = None
 
     def __init__(self, dtrajs, lags=None, nits=10, connected=True, reversible=True, failfast=False):
-        r"""Calculates the implied timescales for a series of lag times.
-        
-        Parameters
-        ----------
-        dtrajs : array-like or list of array-likes
-            discrete trajectories
-        lags = None : array-like with integers
-            integer lag times at which the implied timescales will be calculated
-        k = 10 : int
-            number of implied timescales to be computed. Will compute less if the number of
-            states are smaller
-        connected = True : boolean
-            compute the connected set before transition matrix estimation at each lag
-            separately
-        reversible = True : boolean
-            estimate the transition matrix reversibly (True) or nonreversibly (False)
-        failfast = False : boolean
-            if True, will raise an error as soon as not all requested timescales can be computed at all requested
-            lagtimes. If False, will continue with a warning and compute the timescales/lagtimes that are possible.
-
-        """
         # initialize
         self._dtrajs = _ensure_dtraj_list(dtrajs)
         self._connected = connected

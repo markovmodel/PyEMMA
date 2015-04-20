@@ -45,8 +45,13 @@ class RegularSpaceClustering(AbstractClustering):
     """Clusters data objects in such a way, that cluster centers are at least in
     distance of dmin to each other according to the given metric.
     The assignment of data objects to cluster centers is performed by
-    Voronoi partioning. That means, that a data object is assigned to
-    that clusters center, which has the least distance [1] Senne et al.
+    Voronoi partioning.
+
+    Regular space clustering [1]_ is very similar to Hartigan's leader algorithm [2]_. It consists of two passes through
+    the data. Initially, the first data point is added to the list of centers. For every subsequent data point, if
+    it has a greater distance than dmin from every center, it also becomes a center. In the second pass, a Voronoi
+    discretization with the computed centers is used to partition the data.
+
 
     Parameters
     ----------
@@ -55,7 +60,11 @@ class RegularSpaceClustering(AbstractClustering):
 
      References
     ----------
-    .. [1] Senne, Martin, et al. J. Chem Theory Comput. 8.7 (2012): 2223-2238
+    .. [1] Prinz J-H, Wu H, Sarich M, Keller B, Senne M, Held M, Chodera JD, Schuette Ch and Noe F. 2011.
+        Markov models of molecular kinetics: Generation and Validation.
+        J. Chem. Phys. 134, 174105.
+    .. [2] Hartigan J. Clustering algorithms.
+        New York: Wiley; 1975.
 
     """
 

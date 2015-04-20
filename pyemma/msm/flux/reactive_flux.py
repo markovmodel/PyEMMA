@@ -36,7 +36,7 @@ __all__ = ['ReactiveFlux']
 
 
 class ReactiveFlux(object):
-    r"""Reactive flux object.
+    r"""A->B reactive flux from transition path theory (TPT)
 
     This object describes a reactive flux, i.e. a network of fluxes from a set of source states A, to a set of
     sink states B, via a set of intermediate nodes. Every node has three properties: the stationary probability mu,
@@ -187,7 +187,7 @@ class ReactiveFlux(object):
             Fraction of total flux to assemble in pathway decomposition
         maxiter : int, optional
             Maximum number of pathways for decomposition
-        
+
         Returns
         -------
         paths : list
@@ -207,23 +207,23 @@ class ReactiveFlux(object):
 
     def _pathways_to_flux(self, paths, pathfluxes, n=None):
         r"""Sums up the flux from the pathways given
-        
+
         Parameters
         -----------
         paths : list of int-arrays
         list of pathways
-        
+
         pathfluxes : double-array
             array with path fluxes
-        
+
         n : int
             number of states. If not set, will be automatically determined.
-        
-        Returns:
-        --------
+
+        Returns
+        -------
         flux : (n,n) ndarray of float
             the flux containing the summed path fluxes
-        
+
         """
         if (n is None):
             n = 0

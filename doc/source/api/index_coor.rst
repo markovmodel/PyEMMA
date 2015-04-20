@@ -1,7 +1,7 @@
 .. _ref-coordinates:
 
-Coordinates API
-===============
+Coordinates package (pyemma.coordinates)
+========================================
 The *coordinates* package contains tools to select features from MD-trajectories.
 It also assigns them to a discrete state space, which will be later used in Markov
 modeling.
@@ -15,12 +15,15 @@ integers.
 .. toctree::
    :maxdepth: 1
 
-Coordinate classes
-------------------
+
+.. include impl detail here hidden, to get generate docs for these
+   as sometimes api doc links to them.
 
 .. toctree::
    :maxdepth: 1
+   :hidden:
 
-   coordinates.io
-   coordinates.transform
    coordinates.clustering
+   coordinates.data
+   coordinates.transform
+   coordinates.pipelines
