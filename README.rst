@@ -6,8 +6,6 @@ EMMA (Emma's Markov Model Algorithms)
    :target: https://travis-ci.org/markovmodel/PyEMMA
 .. image:: https://badge.fury.io/py/pyemma.svg
    :target: https://pypi.python.org/pypi/pyemma
-.. image:: https://binstar.org/omnia/pyemma/badges/version.svg
-   :target: https://binstar.org/omnia/pyemma
 .. image:: https://pypip.in/d/pyemma/badge.svg
    :target: https://pypi.python.org/pypi/pyemma
 .. image:: https://binstar.org/xavier/binstar/badges/downloads.svg
