@@ -20,13 +20,14 @@ function create_env {
 }
 
 # check if miniconda is available
-if [[ -d $TARGET ]]; then
-	if [[ ! -x $TARGET/bin/conda ]]; then
-		echo "conda not available, install miniconda now..."
-		install_miniconda
-	fi
-fi
+#if [[ -d $TARGET ]]; then
+#	if [[ ! -x $TARGET/bin/conda ]]; then
+#		echo "conda not available, install miniconda now..."
+#		install_miniconda
+#	fi
+#fi
 
 export PATH=$TARGET/bin:$PATH
 
+install_miniconda
 create_env
