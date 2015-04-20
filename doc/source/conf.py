@@ -102,7 +102,7 @@ pygments_style = 'sphinx'
 # -- options for mathjax
 # note there is no protocol given here to avoid mixing http with https
 # see: http://docs.mathjax.org/en/latest/start.html#secure-cdn-access
-mathjax_path = ("//cdn.mathjax.org/mathjax/latest/MathJax.js?"
+mathjax_path = ("https://cdn.mathjax.org/mathjax/latest/MathJax.js?"
                 "config=TeX-AMS-MML_HTMLorMML")
 
 # -- Options for HTML output ---------------------------------------------
