@@ -13,14 +13,15 @@ env:
   matrix:
     secure: "byk9bmnGvP3qDfpYvPKX4909KeS6pJQtfW+GkSsuHy4vnp++gu2IsXC/CJeCB0r7hpoRp7Z+XlOtYmJLvb585LZmGaqIs5LKs1DimJniAg5anpywOnaXodspeFcz6UWtLlIAQQS3SvP9SXvvrlIiF8IwXqWfEewtoGbpiCj3dEo="
 
-cache:
-  directories:
-  - $HOME/miniconda
-  - $HOME/.cache/pip
+#cache:
+#  directories:
+#  - $HOME/miniconda
+#  - $HOME/.cache/pip
 
 before_install:
 # before we invoke setup.py, install $common_deps with conda and let the rest
 # (currently only pystallone) be resolved by setuptools.
+- du -sh /home/travis/.cache/pip
 - deactivate # travis python venv
 - tools/ci/travis/install_miniconda.sh
 - source activate ci
