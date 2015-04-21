@@ -5,8 +5,8 @@ Installation
 ============
 
 To install the PyEMMA Python package, you need a few Python package dependencies. If these dependencies are not
-available in their right versions, the installation will fail. We recommend a way that is relatively safe,
-but you are welcome to try another approach if you know what you are doing.
+available in their required versions, the installation will fail. We recommend one particular way for the installation
+that is relatively safe, but you are welcome to try another approaches if you know what you are doing.
 
 
 Anaconda install (Recommended)
@@ -72,9 +72,9 @@ various problems have arisen with pip in compiling the packages that pyEMMA depe
 
       pip install wheel
 
-   Now you are able to install binaries if you are have MacOSX or Windows. At the
+   Now you are able to install binaries if you use MacOSX or Windows. At the
    moment of writing PyPI does not support Linux binaries at all, so Linux users
-   have to compile by themselfs.
+   have to compile by themselves.
 
 3. Install pyEMMA using
 
