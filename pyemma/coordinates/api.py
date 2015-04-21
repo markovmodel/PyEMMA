@@ -680,7 +680,10 @@ def pca(data=None, dim=2, stride=1):
 
     Returns
     -------
-    obj : a :class:`PCA <pyemma.coordinates.transform.PCA>` transformation object
+    pca : :class:PCA <pyemma.coordinates.transform.PCA> object
+    Object for Principle component analysis (PCA) analysis.
+    PCA eigenvalues and eigenvectors, and the projection of input data to the dominant PCA
+
 
     Notes
     -----
@@ -718,23 +721,23 @@ def pca(data=None, dim=2, stride=1):
 
 
 def tica(data=None, lag=10, dim=2, stride=1, force_eigenvalues_le_one=False):
-    r"""Time-lagged independent component analysis (TICA).
+    r""" Time-lagged independent component analysis (TICA).
 
-    TICA is a linear transformation method. In contrast to PCA that finds
+    TICA is a linear transformation method. In contrast to PCA, which finds
     coordinates of maximal variance, TICA finds coordinates of maximal autocorrelation
-    at the given lag time. Thus, TICA is useful to find the *slow* components
+    at the given lag time. Therefore, TICA is useful in order to find the *slow* components
     in a dataset and thus an excellent choice to transform molecular dynamics
     data before clustering data for the construction of a Markov model.
     When the input data is the result of a Markov process (such as thermostatted
     molecular dynamics), TICA finds in fact an approximation to the eigenfunctions and
     eigenvalues of the underlying Markov operator [1]_.
 
-    Estimates a TICA transformation from data. When input data is given as an
-    argument, the estimation will be carried out right away, and the resulting
+    It estimates a TICA transformation from *data*. When input data is given as an
+    argument, the estimation will be carried out straight away, and the resulting
     object can be used to obtain eigenvalues, eigenvectors or project input data
-    onto the slowest TICA components. If data is not given, this object is an
+    onto the slowest TICA components. If no data is given, this object is an
     empty estimator and can be put into a :func:`pipeline` in order to use TICA
-    in streaming mode.
+    in the streaming mode.
 
     Parameters
     ----------
@@ -749,7 +752,7 @@ def tica(data=None, lag=10, dim=2, stride=1, force_eigenvalues_le_one=False):
         the number of dimensions (independent components) to project onto. A call to the
         :func:`map <pyemma.coordinates.transform.TICA.map>` function reduces the d-dimensional
         input to only dim dimensions such that the data preserves the maximum possible autocorrelation
-        amonst dim-dimensional linear projections.
+        amongst dim-dimensional linear projections.
 
     stride : int, optional, default = 1
         If set to 1, all input data will be used for estimation. Note that this could cause this calculation
@@ -765,13 +768,14 @@ def tica(data=None, lag=10, dim=2, stride=1, force_eigenvalues_le_one=False):
 
     Returns
     -------
-    tica : a :class:`TICA <pyemma.coordinates.transform.TICA>` transformation object.
-        Can be used to obtain the TICA eigenvalues and eigenvectors, and to
-        perform a projection of input data to the dominant TICA eigenvectors.
+    tica : :class:TICA <pyemma.coordinates.transform.TICA> object
+        Object for time-lagged independent component (TICA) analysis.
+        TICA eigenvalues and eigenvectors, and the projection of input data to the dominant TICA
+
 
     Notes
     -----
-    Given a sequence of multivariate data :math:`X_t`, computes the mean-free
+    Given a sequence of multivariate data :math:`X_t`, it computes the mean-free
     covariance and time-lagged covariance matrix:
 
     .. math::
@@ -781,7 +785,7 @@ def tica(data=None, lag=10, dim=2, stride=1, force_eigenvalues_le_one=False):
 
     and solves the eigenvalue problem
 
-    .. math:: C_{\tau} r_i = C_0 \lambda_i r_i
+    .. math:: C_{\tau} r_i = C_0 \lambda_i r_i,
 
     where :math:`r_i` are the independent components and :math:`\lambda_i` are
     their respective normalized time-autocorrelations. The eigenvalues are
@@ -789,7 +793,7 @@ def tica(data=None, lag=10, dim=2, stride=1, force_eigenvalues_le_one=False):
 
     .. math::
 
-        t_i = -\frac{\tau}{\ln |\lambda_i|}
+        t_i = -\frac{\tau}{\ln |\lambda_i|}.
 
     When used as a dimension reduction method, the input data is projected
     onto the dominant independent components.
@@ -836,10 +840,10 @@ def kmeans(data=None, k=100, max_iter=1000, stride=1):
 
 
 def cluster_kmeans(data=None, k=100, max_iter=10, stride=1):
-    r"""k-means clustering
+    r""" k-means clustering.
 
-    If given data, performs a k-means clustering and then assigns the data using a Voronoi discretization.
-    Returns a :class:`KmeansClustering <pyemma.coordinates.clustering.KmeansClustering>` object
+    If data is given, it performs a k-means clustering and then assigns the data using a Voronoi discretization.
+    It returns a :class:`KmeansClustering <pyemma.coordinates.clustering.KmeansClustering>` object
     that can be used to extract the discretized
     data sequences, or to assign other data points to the same partition. If data is not given, an
     empty :class:`KmeansClustering <pyemma.coordinates.clustering.KmeansClustering>` will be created that
@@ -864,16 +868,19 @@ def cluster_kmeans(data=None, k=100, max_iter=10, stride=1):
 
     Returns
     -------
-    kmeans : A :class:'KmeansClustering <pyemma.coordinates.clustering.KmeansClustering>' object
+    kmeans : :class:KmeansClustering <pyemma.coordinates.clustering.KmeansClustering> object
+        Object for kmeans clustering.
+        It holds discrete trajectories and cluster center information.
+
 
     Examples
     --------
 
     >>> import numpy as np
+    >>> import pyemma.coordinates as coor
     >>> traj_data = [np.random.random((100, 3)), np.random.random((100,3))]
-    >>> clustering = kmeans(traj_data, n_clusters=20)
-    >>> clustering.dtrajs
-
+    >>> cluster_obj = coor.cluster_kmeans(traj_data, k=20, stride=1)
+    >>> cluster_obj.get_output()
     [array([0, 0, 1, ... ])]
 
     """
@@ -887,7 +894,7 @@ def uniform_time(data=None, k=100, stride=1):
 
 
 def cluster_uniform_time(data=None, k=100, stride=1):
-    r"""Uniform time clustering
+    r""" Uniform time clustering.
 
     If given data, performs a clustering that selects data points uniformly in time and then assigns the data
     using a Voronoi discretization. Returns a
@@ -914,7 +921,10 @@ def cluster_uniform_time(data=None, k=100, stride=1):
 
     Returns
     -------
-        A :class:`UniformTimeClustering <pyemma.coordinates.clustering.UniformTimeClustering>` object
+    uniformTime : :class:UniformTimeClustering <pyemma.coordinates.clustering.UniformTimeClustering> object
+        Object for uniform time clustering.
+        It holds discrete trajectories and cluster center information.
+
 
     """
     res = _UniformTimeClustering(k)
@@ -927,9 +937,9 @@ def regspace(data=None, dmin=-1, max_centers=1000, stride=1):
 
 
 def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1):
-    r"""Regular space clustering
+    r""" Regular space clustering.
 
-    If given data, performs a regular space clustering [1]_ and returns a
+    If given data, it performs a regular space clustering [1]_ and returns a
     :class:`RegularSpaceClustering <pyemma.coordinates.clustering.RegularSpaceClustering>` object that
     can be used to extract the discretized data sequences, or to assign other data points to the same partition.
     If data is not given, an empty
@@ -964,7 +974,9 @@ def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1):
 
     Returns
     -------
-    obj : A :class:`RegularSpaceClustering <pyemma.coordinates.clustering.RegularSpaceClustering>` object
+    
+        Object for regular space clustering.
+        It holds discrete trajectories and cluster center information.
 
     References
     ----------
@@ -976,7 +988,7 @@ def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1):
 
     """
     if dmin == -1:
-        raise ValueError("provide a minimum distance for clustering")
+        raise ValueError("provide a minimum distance for clustering, e.g. 2.0")
     res = _RegularSpaceClustering(dmin, max_centers)
     return _param_stage(data, res, stride=stride)
 
@@ -987,7 +999,7 @@ def assign_centers(data=None, centers=None, stride=1):
 
 
 def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True):
-    r"""Assigns data to the nearest cluster centers
+    r""" Assigns data to the nearest cluster centers.
 
     Creates a Voronoi partition with the given cluster centers. If given trajectories as data, this function
     will by default discretize the trajectories and return discrete trajectories of corresponding lengths.
@@ -1010,7 +1022,7 @@ def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True):
         you can parametrize at a long stride, and still map all frames through the transformer.
 
     return_dtrajs : bool, optional, default = True
-        If true will return the discretized trajectories obtained from assigning the coordinates in the data
+        If True, it will return the discretized trajectories obtained from assigning the coordinates in the data
         input. This will only have effect if data is given. When data is not given or return_dtrajs is False,
         the :class:'AssignCenters <_AssignCenters>' object will be returned.
 
@@ -1030,7 +1042,6 @@ def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True):
     >>> cluster_centers = np.loadtxt('my_centers.csv')
     >>> dtrajs = assign_to_centers(data, cluster_centers)
     >>> print dtrajs
-
     [array([0, 0, 1, ... ])]
 
     """
