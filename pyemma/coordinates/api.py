@@ -121,9 +121,9 @@ def featurizer(topfile):
 
 # TODO: DOC - which topology file formats does mdtraj support? Find out and complete docstring
 def load(trajfiles, features=None, top=None, stride=1):
-    """ loads coordinate features into memory
+    """ Loads coordinate features into memory.
 
-    If your memory is not big enough consider the use of pipeline, or use the stride option to subsample the data.
+    If your memory is not big enough consider the use of **pipeline**, or use the stride option to subsample the data.
 
     Parameters
     ----------
@@ -150,7 +150,7 @@ def load(trajfiles, features=None, top=None, stride=1):
            * MDTRAJ (.hdf5)
            * LAMMPS trajectory format (.lammpstrj)
 
-        Raw data can be in following format:
+        Raw data can be in the following format:
 
            * tabulated ASCII (.dat, .txt)
            * binary python (.npy, .npz)
@@ -168,8 +168,8 @@ def load(trajfiles, features=None, top=None, stride=1):
     Returns
     -------
     data : ndarray or list of ndarray
-        If a single filename was given as an input (and unless the format is .npz) , will return a single ndarray of
-        size (T, d), where T is the number of time steps in the trajectory and d is the number of features
+        If a single filename was given as an input (and unless the format is .npz), the return will be a single ndarray
+        of size (T, d), where T is the number of time steps in the trajectory and d is the number of features
         (coordinates, observables). When reading from molecular dynamics data without a specific featurizer,
         each feature vector will have size d=3N and will hold the Cartesian coordinates in the sequence
         (x1, y1, z1, x2, y2, z2, ...).
@@ -196,27 +196,27 @@ def load(trajfiles, features=None, top=None, stride=1):
 
 
 def source(inp, features=None, top=None):
-    """ Wraps input as data source for pipeline
+    """ Wraps input as data source for pipeline.
 
-        Use this function to construct the first stage of a data processing :func:`pipeline`.
+    Use this function to construct the first stage of a data processing :func:`pipeline`.
 
     Parameters
     ----------
     inp : str or ndarray or list of strings or list of ndarrays
         The inp file names or input data. Can be given in any of these ways:
 
-        1. File name of a single trajectory. Can have any of the molecular dynamics trajectory formats or
-           raw data formats specified in :py:func:`load`
-        2. List of trajectory file names. Can have any of the molecular dynamics trajectory formats or
-           raw data formats specified in :py:func:`load`
+        1. File name of a single trajectory. It can have any of the molecular dynamics trajectory formats or
+           raw data formats specified in :py:func:`load`.
+        2. List of trajectory file names. It can have any of the molecular dynamics trajectory formats or
+           raw data formats specified in :py:func:`load`.
         3. Molecular dynamics trajectory in memory as a numpy array of shape (T, N, 3) with T time steps, N atoms
-           each having three (x,y,z) spatial coordinates
+           each having three (x,y,z) spatial coordinates.
         4. List of molecular dynamics trajectories in memory, each given as a numpy array of shape (T_i, N, 3),
            where trajectory i has T_i time steps and all trajectories have shape (N, 3).
         5. Trajectory of some features or order parameters in memory
-           as a numpy array of shape (T, N) with T time steps and N dimensions
+           as a numpy array of shape (T, N) with T time steps and N dimensions.
         6. List of trajectories of some features or order parameters in memory, each given as a numpy array
-           of shape (T_i, N), where trajectory i has T_i time steps and all trajectories have N dimensions
+           of shape (T_i, N), where trajectory i has T_i time steps and all trajectories have N dimensions.
 
     features : MDFeaturizer, optional, default = None
         a featurizer object specifying how molecular dynamics files should be read (e.g. intramolecular distances,
@@ -224,7 +224,7 @@ def source(inp, features=None, top=None):
         trajectories or data, and will otherwise create a warning and have no effect
 
     top : str, optional, default = None
-        a topology file name. This is needed when molecular dynamics trajectories are given and no featurizer is given.
+        A topology file name. This is needed when molecular dynamics trajectories are given and no featurizer is given.
         In this case, only the Cartesian coordinates will be read.
 
     See also
@@ -258,11 +258,12 @@ def source(inp, features=None, top=None):
 
 
 def pipeline(stages, run=True, stride=1):
-    """Data analysis pipeline
+    """ Data analysis pipeline.
 
     Constructs a data analysis :class:`Pipeline <pyemma.coordinates.pipelines.Pipeline>` and parametrizes it
     (unless prevented).
-    If this function takes too long, consider loading data in memory, or if this doesn't fit, use the stride parameter.
+    If this function takes too long, consider loading data in memory. Alternatively if the data is to large to be loaded
+    into memory make use of the stride parameter.
 
     Parameters
     ----------
@@ -301,7 +302,7 @@ def discretizer(reader,
                 cluster=None,
                 run=True,
                 stride=1):
-    """Specialized pipeline: From trajectories to clustering
+    """ Specialized pipeline: From trajectories to clustering.
 
     Constructs a pipeline that consists of three stages:
 
@@ -310,7 +311,7 @@ def discretizer(reader,
        3. a clustering stage (mandatory)
 
     This function is identical to calling :func:`pipeline` with the three stages, it is only meant as a guidance
-    for the (probably) most common case of using a pipeline.
+    for the (probably) most common usage cases of a pipeline.
 
     Parameters
     ----------
@@ -350,7 +351,8 @@ def discretizer(reader,
     >>> cluster = cluster_regspace(dmin=0.1)
     >>> disc = discretizer(reader, transform, cluster)
 
-    Finally you want to run the pipeline
+    Finally you want to run the pipeline:
+
     >>> disc.parametrize()
 
 
@@ -430,7 +432,7 @@ def memory_reader(data):
 
 
 def save_traj(traj_inp, indexes, outfile, verbose=False):
-    r"""Saves a sequence of frames as a trajectory
+    r""" Saves a sequence of frames as a single trajectory.
 
     Extracts the specified sequence of time/trajectory indexes from the input loader
     and saves it in a molecular dynamics trajectory. The output format will be determined
@@ -498,15 +500,15 @@ def save_traj(traj_inp, indexes, outfile, verbose=False):
 
 
 def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None, inmemory=False, verbose=False):
-    r"""Saves sequences of frames as trajectories
+    r""" Saves sequences of frames as multiple trajectories.
 
     Extracts a number of specified sequences of time/trajectory indexes from the input loader
-    and saves them in a set of molecular dynamics trajectoryies.
+    and saves them in a set of molecular dynamics trajectories.
     The output filenames are obtained by prefix + str(n) + .fmt, where n counts the output
     trajectory and extension is either set by the user, or else determined from the input.
     Example: When the input is in dcd format, and indexes is a list of length 3, the output will
     by default go to files "set_1.dcd", "set_2.dcd", "set_3.dcd". If you want files to be stored
-    in a specific subfolder, simply specify the relativ path in the prefix, e.g. prefix='~/macrostates/pcca_'
+    in a specific subfolder, simply specify the relative path in the prefix, e.g. prefix='~/macrostates/pcca_'
 
     Parameters
     ----------
@@ -522,25 +524,26 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None, inmemo
         output filename prefix. Can include an absolute or relative path name.
 
     fmt : str, optional, default = None
-        Outpuf file format. By default, the file extension and format. will be determined from the input. If a different
-        format is desired, specify the corresponding file extension here without a dot, e.g. "dcd" or "xtc"
+        Outpuf file format. By default, the file extension and format. It will be determined from the input. If a
+        different format is desired, specify the corresponding file extension here without a dot, e.g. "dcd" or "xtc".
 
     outfiles : list of str, optional, default = None
-        A list of output file names. When given, this will override the settings of prefix and fmt, and output
-        will be written to these files
+        A list of output filenames. When given, this will override the settings of prefix and fmt, and output
+        will be written to these files.
 
     inmemory : Boolean, default = False (untested for large files)
         Instead of internally calling traj_save for every (T_i,2) array in "indexes", only one call is made. Internally,
         this generates a potentially large molecular trajectory object in memory that is subsequently sliced into the
-        files of "outfiles". Should be faster for large "indexes" arrays and large files, though it is quite memory intensive.
-        The optimal situation is to avoid streaming two times through a huge file for "indexes" of type:
+        files of "outfiles". Should be faster for large "indexes" arrays and large files, though it is quite memory
+        intensive. The optimal situation is to avoid streaming two times through a huge file for "indexes" of type:
+
         indexes = [
                    [1 4000000],
                    [1 4000001]
                   ]
 
     verbose : boolean, default is False
-        Verbose output while looking for "indexes" in the "traj_inp.trajfiles"
+        Verbose output while looking for "indexes" in the "traj_inp.trajfiles".
 
     Returns
     -------
@@ -612,7 +615,7 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None, inmemo
 # =========================================================================
 
 def _param_stage(previous_stage, this_stage, stride=1):
-    """Parametrizes the given pipelining stage if a valid source is given
+    """ Parametrizes the given pipelining stage if a valid source is given.
 
     Parameters
     ----------
@@ -640,7 +643,7 @@ def _param_stage(previous_stage, this_stage, stride=1):
 
 
 def pca(data=None, dim=2, stride=1):
-    r"""Principal Component Analysis (PCA).
+    r""" Principal Component Analysis (PCA).
 
     PCA is a linear transformation method that finds coordinates of maximal variance.
     A linear projection onto the principal components thus makes a minimal error in terms
@@ -648,7 +651,7 @@ def pca(data=None, dim=2, stride=1):
     for Markov model construction because for that purpose the main objective is to
     preserve the slow processes which can sometimes be associated with small variance.
 
-    Estimates a PCA transformation from data. When input data is given as an
+    It estimates a PCA transformation from data. When input data is given as an
     argument, the estimation will be carried out right away, and the resulting
     object can be used to obtain eigenvalues, eigenvectors or project input data
     onto the principal components. If data is not given, this object is an
