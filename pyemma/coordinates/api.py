@@ -620,8 +620,8 @@ def _param_stage(previous_stage, this_stage, stride=1):
     Parameters
     ----------
     source : one of the following: None, Transformer (subclass), ndarray, list of ndarrays
-        data source from which this transformer will be parametrized. If None,
-        there is no input data and the stage will be returned without any other action.
+        data source from which this transformer will be parametrized. If None, there is no input data and the stage
+        will be returned without any other action.
     stage : the transformer object to be parametrized given the source input.
 
     """
@@ -681,7 +681,10 @@ def pca(data=None, dim=2, stride=1):
 
     Returns
     -------
-    obj : a :class:`PCA <pyemma.coordinates.transform.PCA>` transformation object
+    pca : :class:PCA <pyemma.coordinates.transform.PCA> object
+    Object for Principle component analysis (PCA) analysis.
+    PCA eigenvalues and eigenvectors, and the projection of input data to the dominant PCA
+
 
     Notes
     -----
@@ -750,7 +753,7 @@ def tica(data=None, lag=10, dim=2, stride=1, force_eigenvalues_le_one=False):
         the number of dimensions (independent components) to project onto. A call to the
         :func:`map <pyemma.coordinates.transform.TICA.map>` function reduces the d-dimensional
         input to only dim dimensions such that the data preserves the maximum possible autocorrelation
-        amonst dim-dimensional linear projections.
+        amongst dim-dimensional linear projections.
 
     stride : int, optional, default = 1
         If set to 1, all input data will be used for estimation. Note that this could cause this calculation
@@ -766,13 +769,14 @@ def tica(data=None, lag=10, dim=2, stride=1, force_eigenvalues_le_one=False):
 
     Returns
     -------
-    tica : a :class:`TICA <pyemma.coordinates.transform.TICA>` transformation object.
-        Can be used to obtain the TICA eigenvalues and eigenvectors, and to
-        perform a projection of input data to the dominant TICA eigenvectors.
+    tica : :class:TICA <pyemma.coordinates.transform.TICA> object
+        Object for time-lagged independent component (TICA) analysis.
+        TICA eigenvalues and eigenvectors, and the projection of input data to the dominant TICA
+
 
     Notes
     -----
-    Given a sequence of multivariate data :math:`X_t`, computes the mean-free
+    Given a sequence of multivariate data :math:`X_t`, it computes the mean-free
     covariance and time-lagged covariance matrix:
 
     .. math::
@@ -782,7 +786,7 @@ def tica(data=None, lag=10, dim=2, stride=1, force_eigenvalues_le_one=False):
 
     and solves the eigenvalue problem
 
-    .. math:: C_{\tau} r_i = C_0 \lambda_i r_i
+    .. math:: C_{\tau} r_i = C_0 \lambda_i r_i,
 
     where :math:`r_i` are the independent components and :math:`\lambda_i` are
     their respective normalized time-autocorrelations. The eigenvalues are
@@ -790,7 +794,7 @@ def tica(data=None, lag=10, dim=2, stride=1, force_eigenvalues_le_one=False):
 
     .. math::
 
-        t_i = -\frac{\tau}{\ln |\lambda_i|}
+        t_i = -\frac{\tau}{\ln |\lambda_i|}.
 
     When used as a dimension reduction method, the input data is projected
     onto the dominant independent components.
@@ -839,8 +843,8 @@ def kmeans(data=None, k=100, max_iter=1000, stride=1):
 def cluster_kmeans(data=None, k=100, max_iter=10, stride=1, metric='euclidean', init_strategy='kmeans++'):
     r"""k-means clustering
 
-    If given data, performs a k-means clustering and then assigns the data using a Voronoi discretization.
-    Returns a :class:`KmeansClustering <pyemma.coordinates.clustering.KmeansClustering>` object
+    If data is given, it performs a k-means clustering and then assigns the data using a Voronoi discretization.
+    It returns a :class:`KmeansClustering <pyemma.coordinates.clustering.KmeansClustering>` object
     that can be used to extract the discretized
     data sequences, or to assign other data points to the same partition. If data is not given, an
     empty :class:`KmeansClustering <pyemma.coordinates.clustering.KmeansClustering>` will be created that
@@ -871,12 +875,16 @@ def cluster_kmeans(data=None, k=100, max_iter=10, stride=1, metric='euclidean', 
 
     Returns
     -------
-    kmeans : A :class:'KmeansClustering <pyemma.coordinates.clustering.KmeansClustering>' object
+    kmeans : :class:KmeansClustering <pyemma.coordinates.clustering.KmeansClustering> object
+        Object for kmeans clustering.
+        It holds discrete trajectories and cluster center information.
+
 
     Examples
     --------
 
     >>> import numpy as np
+    >>> import pyemma.coordinates as coor
     >>> traj_data = [np.random.random((100, 3)), np.random.random((100,3))]
     >>> clustering = kmeans(traj_data, n_clusters=20)
     >>> clustering.dtrajs
@@ -921,7 +929,10 @@ def cluster_uniform_time(data=None, k=100, stride=1, metric='euclidean'):
 
     Returns
     -------
-        A :class:`UniformTimeClustering <pyemma.coordinates.clustering.UniformTimeClustering>` object
+    uniformTime : :class:UniformTimeClustering <pyemma.coordinates.clustering.UniformTimeClustering> object
+        Object for uniform time clustering.
+        It holds discrete trajectories and cluster center information.
+
 
     """
     res = _UniformTimeClustering(k, metric=metric)
@@ -986,7 +997,7 @@ def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1, metric='euc
 
     """
     if dmin == -1:
-        raise ValueError("provide a minimum distance for clustering")
+        raise ValueError("provide a minimum distance for clustering, e.g. 2.0")
     res = _RegularSpaceClustering(dmin, max_centers, metric=metric)
     return _param_stage(data, res, stride=stride)
 
@@ -1021,7 +1032,7 @@ def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True,
         you can parametrize at a long stride, and still map all frames through the transformer.
 
     return_dtrajs : bool, optional, default = True
-        If true will return the discretized trajectories obtained from assigning the coordinates in the data
+        If True, it will return the discretized trajectories obtained from assigning the coordinates in the data
         input. This will only have effect if data is given. When data is not given or return_dtrajs is False,
         the :class:'AssignCenters <_AssignCenters>' object will be returned.
 
