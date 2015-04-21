@@ -24,7 +24,7 @@
 doc=r'''
 Runtime Configuration
 =====================
-To configure the runtime behavior such as logging the system or other parameters,
+To configure the runtime behavior such as the logging system or other parameters,
 the configuration module reads several config files to build
 its final set of settings. It searches for the file 'pyemma.cfg' in several
 locations with different priorities:
