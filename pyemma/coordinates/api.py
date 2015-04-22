@@ -344,9 +344,10 @@ def discretizer(reader,
     "traj01.xtc" with a PCA transformation and cluster the principal components
     with uniform time clustering:
 
-    >>> reader = feature_reader('traj01.xtc', 'topology.pdb')
+    >>> from pyemma.coordinates import source, pca, cluster_regspace, discretizer
+    >>> reader = source('traj01.xtc', top='topology.pdb')
     >>> transform = pca(dim=2)
-    >>> cluster = uniform_time(n_clusters=100)
+    >>> cluster = cluster_regspace(dmin=0.1)
     >>> disc = discretizer(reader, transform, cluster)
 
     Finally you want to run the pipeline
