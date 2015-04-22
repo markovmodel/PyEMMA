@@ -46,10 +46,9 @@ class TestPCAExtensive(unittest.TestCase):
     def setUpClass(cls):
         import pyemma.msm.generation as msmgen
 
-        # set random state
+        # set random state, remember old one and set it back in tearDownClass
         cls.old_state = np.random.get_state()
-        from pyemma.coordinates.tests.random_states import state_pca
-        np.random.set_state(state_pca)
+        np.random.seed(0)
 
         # generate HMM with two Gaussians
         cls.P = np.array([[0.99, 0.01],
@@ -137,11 +136,11 @@ class TestPCAExtensive(unittest.TestCase):
 
     def test_n_frames_total(self):
         # map not defined for source
-        self.pca_obj.n_frames_total() == self.T
+        assert self.pca_obj.n_frames_total() == self.T
 
     def test_number_of_trajectories(self):
         # map not defined for source
-        self.pca_obj.number_of_trajectories() == 1
+        assert self.pca_obj.number_of_trajectories() == 1
 
     def test_output_type(self):
         assert self.pca_obj.output_type() == np.float32
