@@ -48,5 +48,5 @@ test_script:
   # run testsuite and upload test results to AppVeyor; return exit code of testsuite
   - "powershell ./tools/ci/appveyor/runTestsuite.ps1"
 
-deploy_script:
-  - "powershell ./tools/ci/appveyor/deploy.ps1"
+#deploy_script:
+#  - "powershell ./tools/ci/appveyor/deploy.ps1"
