@@ -619,8 +619,8 @@ class Transformer(object):
         last_itraj = -1
         t = 0  # first time point
         assert self._parametrized, "has to be parametrized before getting output!"
-        progress = ProgressBar(self._n_chunks(stride))
-        #self._logger.info("getting output...")
+        progress = ProgressBar(self._n_chunks(stride), description=
+                               'getting output of ' + self._name)
 
         for itraj, chunk in self.iterator(stride=stride):
             if itraj != last_itraj:
@@ -633,5 +633,5 @@ class Transformer(object):
             # update progress
             progress.numerator += 1
             self._show_progressbar(progress)
-        
+
         return trajs
