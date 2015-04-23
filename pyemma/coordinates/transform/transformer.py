@@ -297,7 +297,6 @@ class Transformer(object):
             of this transformer. If called with a list of trajectories, Y will also be a corresponding list of
             trajectories
         """
-        # TODO: This is a very naive implementation of case switching. Please check and make more robust if needed.
         if isinstance(X, np.ndarray):
             if X.ndim == 2:
                 mapped = self._map_array(X)
@@ -350,7 +349,7 @@ class Transformer(object):
 
     @abstractmethod
     def _param_add_data(self, *args, **kwargs):
-        """ add data to prameterization """
+        """ add data to parameterization """
         pass
 
     def _map_to_memory(self):
@@ -555,9 +554,9 @@ class Transformer(object):
                  for l in self.trajectory_lengths(stride=stride)]
 
         if __debug__:
+            self._logger.debug("get_output(): dimensions=%s" % str(dimensions))
             self._logger.debug("get_output(): created output trajs with shapes: %s"
                                % [x.shape for x in trajs])
-
         # fetch data
         last_itraj = -1
         t = 0  # first time point
