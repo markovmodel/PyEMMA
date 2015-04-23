@@ -1,4 +1,3 @@
-
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
 # All rights reserved.
@@ -40,10 +39,13 @@ class UniformTimeClustering(AbstractClustering):
     Parameters
     ----------
     k : int
+        TODO: super unknown parameter
+    metric : str
+        metric to use during clustering ('euclidean', 'minRMSD')
     """
 
-    def __init__(self, k=2):
-        super(UniformTimeClustering, self).__init__()
+    def __init__(self, k=2, metric='euclidean'):
+        super(UniformTimeClustering, self).__init__(metric=metric)
         self.n_clusters = k
 
     def describe(self):

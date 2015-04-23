@@ -617,8 +617,8 @@ def _param_stage(previous_stage, this_stage, stride=1):
     Parameters
     ----------
     source : one of the following: None, Transformer (subclass), ndarray, list of ndarrays
-        data source from which this transformer will be parametrized. If None, there is no input data and the stage
-        will be returned without any other action.
+        data source from which this transformer will be parametrized. If None,
+        there is no input data and the stage will be returned without any other action.
     stage : the transformer object to be parametrized given the source input.
 
     """
@@ -627,7 +627,7 @@ def _param_stage(previous_stage, this_stage, stride=1):
         return this_stage
     # this is a pipelining stage, so let's parametrize from it
     elif isinstance(previous_stage, _Transformer) or issubclass(previous_stage.__class__, _Transformer):
-            inputstage = previous_stage
+        inputstage = previous_stage
     # second option: data is array or list of arrays
     else:
         data = _types.ensure_traj_list(previous_stage)
@@ -833,7 +833,7 @@ def kmeans(data=None, k=100, max_iter=1000, stride=1):
     return cluster_kmeans(data, k, max_iter, stride=stride)
 
 
-def cluster_kmeans(data=None, k=100, max_iter=10, stride=1):
+def cluster_kmeans(data=None, k=100, max_iter=10, stride=1, metric='euclidean'):
     r"""k-means clustering
 
     If given data, performs a k-means clustering and then assigns the data using a Voronoi discretization.
@@ -860,6 +860,9 @@ def cluster_kmeans(data=None, k=100, max_iter=10, stride=1):
         Note that the stride option in the get_output() function of the returned object is independent, so
         you can parametrize at a long stride, and still map all frames through the transformer.
 
+    metric : str
+        metric to use during clustering ('euclidean', 'minRMSD')
+
     Returns
     -------
     kmeans : A :class:'KmeansClustering <pyemma.coordinates.clustering.KmeansClustering>' object
@@ -875,7 +878,7 @@ def cluster_kmeans(data=None, k=100, max_iter=10, stride=1):
     [array([0, 0, 1, ... ])]
 
     """
-    res = _KmeansClustering(n_clusters=k, max_iter=max_iter)
+    res = _KmeansClustering(n_clusters=k, max_iter=max_iter, metric=metric)
     return _param_stage(data, res, stride=stride)
 
 
@@ -884,7 +887,7 @@ def uniform_time(data=None, k=100, stride=1):
     return cluster_uniform_time(data, k, stride=stride)
 
 
-def cluster_uniform_time(data=None, k=100, stride=1):
+def cluster_uniform_time(data=None, k=100, stride=1, metric='euclidean'):
     r"""Uniform time clustering
 
     If given data, performs a clustering that selects data points uniformly in time and then assigns the data
@@ -915,7 +918,7 @@ def cluster_uniform_time(data=None, k=100, stride=1):
         A :class:`UniformTimeClustering <pyemma.coordinates.clustering.UniformTimeClustering>` object
 
     """
-    res = _UniformTimeClustering(k)
+    res = _UniformTimeClustering(k, metric=metric)
     return _param_stage(data, res)
 
 
@@ -924,7 +927,7 @@ def regspace(data=None, dmin=-1, max_centers=1000, stride=1):
     return cluster_regspace(data, dmin, max_centers, stride=stride)
 
 
-def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1):
+def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1, metric='euclidean'):
     r"""Regular space clustering
 
     If given data, performs a regular space clustering [1]_ and returns a
@@ -960,6 +963,9 @@ def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1):
         Note that the stride option in the get_output() function of the returned object is independent, so
         you can parametrize at a long stride, and still map all frames through the transformer.
 
+    metric : str
+        metric to use during clustering ('euclidean', 'minRMSD')
+
     Returns
     -------
     obj : A :class:`RegularSpaceClustering <pyemma.coordinates.clustering.RegularSpaceClustering>` object
@@ -975,7 +981,7 @@ def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1):
     """
     if dmin == -1:
         raise ValueError("provide a minimum distance for clustering")
-    res = _RegularSpaceClustering(dmin, max_centers)
+    res = _RegularSpaceClustering(dmin, max_centers, metric=metric)
     return _param_stage(data, res, stride=stride)
 
 
@@ -984,7 +990,8 @@ def assign_centers(data=None, centers=None, stride=1):
     return assign_to_centers(data, centers, stride=stride)
 
 
-def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True):
+def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True,
+                      metric='euclidean'):
     r"""Assigns data to the nearest cluster centers
 
     Creates a Voronoi partition with the given cluster centers. If given trajectories as data, this function
@@ -1012,6 +1019,10 @@ def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True):
         input. This will only have effect if data is given. When data is not given or return_dtrajs is False,
         the :class:'AssignCenters <_AssignCenters>' object will be returned.
 
+    metric : str
+        metric to use during clustering ('euclidean', 'minRMSD')
+
+
     Returns
     -------
     assignment : list of integer arrays or an :class:`AssignCenters <pyemma.coordinates.clustering.AssignCenters>` object
@@ -1035,7 +1046,7 @@ def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True):
     if centers is None:
         raise ValueError('You have to provide centers in form of a filename'
                          ' or NumPy array')
-    res = _AssignCenters(centers)
+    res = _AssignCenters(centers, metric=metric)
     parametrized_stage = _param_stage(data, res, stride=stride)
     if return_dtrajs and data is not None:
         return parametrized_stage.dtrajs
