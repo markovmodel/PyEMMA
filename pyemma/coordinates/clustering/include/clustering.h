@@ -82,9 +82,9 @@ extern "C" {
 "This function uses the minRMSD implementation of mdtraj."
 
 // euclidean metric
-float euclidean_distance(float *a, float *b, size_t n, float *buffer_a, float *buffer_b);
+float euclidean_distance(float *SKP_restrict a, float *SKP_restrict b, size_t n, float *buffer_a, float *buffer_b);
 // minRMSD metric
-float minRMSD_distance(float *a, float *b, size_t n, float *buffer_a, float *buffer_b);
+float minRMSD_distance(float *SKP_restrict a, float *SKP_restrict b, size_t n, float *SKP_restrict buffer_a, float *SKP_restrict buffer_b);
 
 // assignment to cluster centers from python
 PyObject *assign(PyObject *self, PyObject *args);

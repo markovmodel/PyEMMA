@@ -169,8 +169,7 @@ static PyMethodDef regspatialMethods[] =
      {NULL, NULL, 0, NULL}
 };
 
-PyMODINIT_FUNC
-initregspatial(void)
+PyMODINIT_FUNC initregspatial(void)
 {
   (void)Py_InitModule3("regspatial", regspatialMethods, MOD_USAGE);
   import_array();
