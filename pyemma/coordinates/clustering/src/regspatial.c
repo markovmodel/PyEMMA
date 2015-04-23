@@ -23,16 +23,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <Python.h>
-#define PY_ARRAY_UNIQUE_SYMBOL pyemma_clustering_ARRAY_API
-#include <numpy/arrayobject.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
-#include <theobald_rmsd.h>
-#include <center.h>
-#include <stdio.h>
-#include <float.h>
 #include <clustering.h>
 
 static PyObject *cluster(PyObject *self, PyObject *args) {

@@ -23,17 +23,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <Python.h>
 #define NO_IMPORT_ARRAY
-#define PY_ARRAY_UNIQUE_SYMBOL pyemma_clustering_ARRAY_API
-#include <numpy/arrayobject.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
-#include <theobald_rmsd.h>
-#include <center.h>
-#include <stdio.h>
-#include <float.h>
+#include <clustering.h>
 
 float euclidean_distance(float *a, float *b, size_t n, float *buffer_a, float *buffer_b)
 {
@@ -61,25 +52,62 @@ float minRMSD_distance(float *a, float *b, size_t n, float *buffer_a, float *buf
     return sqrt(msd);
 }
 
+int c_assign(float *chunk, float *centers, npy_int64 *dtraj, char* metric, Py_ssize_t N_frames, Py_ssize_t N_centers, Py_ssize_t dim) {
+    int ret;
+    float d, mindist;
+    Py_ssize_t i, j;
+    size_t argmin;
+    float *buffer_a, *buffer_b;
+    float (*distance)(float*, float*, size_t, float*, float*);
+
+    buffer_a = NULL; buffer_b = NULL;
+    ret = ASSIGN_SUCCESS;
+
+    /* init metric */
+    if(strcmp(metric,"euclidean")==0) {
+        distance = euclidean_distance;
+    } else if(strcmp(metric,"minRMSD")==0) {
+        distance = minRMSD_distance;
+        buffer_a = malloc(dim*sizeof(float));
+        buffer_b = malloc(dim*sizeof(float));
+        if(!buffer_a || !buffer_b) {
+            ret = ASSIGN_ERR_NO_MEMORY; goto error;
+        }
+    } else {
+        ret = ASSIGN_ERR_INVALID_METRIC;
+        goto error;
+    }
+
+    /* do the assignment */
+    for(i = 0; i < N_frames; ++i) {
+        mindist = FLT_MAX;
+        argmin = -1;
+        for(j = 0; j < N_centers; ++j) {
+            d = distance(&chunk[i*dim], &centers[j*dim], dim, buffer_a, buffer_b);
+            if(d<mindist) { mindist = d; argmin = j; }
+        }
+        dtraj[i]= argmin;
+    }
+
+error:
+    free(buffer_a);
+    free(buffer_b);
+    return ret;
+}
+
 PyObject *assign(PyObject *self, PyObject *args) {
 
     PyObject *py_centers, *py_res;
     PyArrayObject *np_chunk, *np_centers, *np_dtraj;
-    Py_ssize_t N_centers, N_frames, dim, i, j;
+    Py_ssize_t N_centers, N_frames, dim;
     float *chunk;
     float *centers;
     npy_int64 *dtraj;
     char *metric;
-    float mindist;
-    size_t argmin;
-    float d;
-    float *buffer_a, *buffer_b;
-    float (*distance)(float*, float*, size_t, float*, float*);
 
     py_centers = NULL; py_res = NULL;
     np_chunk = NULL; np_dtraj = NULL;
     centers = NULL; metric=""; chunk = NULL; dtraj = NULL;
-    buffer_a = NULL; buffer_b = NULL;
 
     if (!PyArg_ParseTuple(args, "O!OO!s", &PyArray_Type, &np_chunk, &py_centers, &PyArray_Type, &np_dtraj, &metric)) goto error; /* ref:borr. */
 
@@ -105,20 +133,6 @@ PyObject *assign(PyObject *self, PyObject *args) {
     }
     dtraj = (npy_int64*)PyArray_DATA(np_dtraj);
 
-    /* init metric */
-    if(strcmp(metric,"euclidean")==0)
-        distance = euclidean_distance;
-    else if(strcmp(metric,"minRMSD")==0) {
-        distance = minRMSD_distance;
-        buffer_a = malloc(dim*sizeof(float));
-        buffer_b = malloc(dim*sizeof(float));
-        if(!buffer_a || !buffer_b) { PyErr_NoMemory(); goto error; }
-    }
-    else {
-        PyErr_SetString(PyExc_ValueError, "metric must be one of \"euclidean\" or \"minRMSD\".");
-        goto error;
-    }
-
     /* import list of cluster centers */
     np_centers = (PyArrayObject*)PyArray_ContiguousFromAny(py_centers, NPY_FLOAT32, 2, 2);
     if(!np_centers) {
@@ -137,20 +151,17 @@ PyObject *assign(PyObject *self, PyObject *args) {
     centers = (float*)PyArray_DATA(np_centers);
 
     /* do the assignment */
-    for(i = 0; i < N_frames; ++i) {
-        mindist = FLT_MAX;
-        argmin = -1;
-        for(j = 0; j < N_centers; ++j) {
-            d = distance(&chunk[i*dim], &centers[j*dim], dim, buffer_a, buffer_b);
-            if(d<mindist) { mindist = d; argmin = j; }
-        }
-        dtraj[i] = argmin;
+    switch(c_assign(chunk, centers, dtraj, metric, N_frames, N_centers, dim)) {
+        case ASSIGN_ERR_INVALID_METRIC:
+            PyErr_SetString(PyExc_ValueError, "metric must be one of \"euclidean\" or \"minRMSD\".");
+            goto error;
+        case ASSIGN_ERR_NO_MEMORY:
+            PyErr_NoMemory();
+            goto error;
     }
 
     py_res = Py_BuildValue(""); /* =None */
     /* fall through */
 error:
-    free(buffer_a);
-    free(buffer_b);
     return py_res;
 }

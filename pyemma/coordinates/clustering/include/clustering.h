@@ -30,6 +30,20 @@ extern "C" {
 #endif
 
 #include <Python.h>
+#define PY_ARRAY_UNIQUE_SYMBOL pyemma_clustering_ARRAY_API
+#include <numpy/arrayobject.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <theobald_rmsd.h>
+#include <center.h>
+#include <stdio.h>
+#include <float.h>
+
+static const int ASSIGN_SUCCESS = 0;
+static const int ASSIGN_ERR_NO_MEMORY = 1;
+static const int ASSIGN_ERR_INVALID_METRIC = 2;
+
 #define ASSIGN_USAGE "assign(chunk, centers, dtraj, metric)\n"\
 "Assigns frames in `chunk` to the closest cluster centers.\n"\
 "\n"\
@@ -59,9 +73,10 @@ float euclidean_distance(float *a, float *b, size_t n, float *buffer_a, float *b
 // minRMSD metric
 float minRMSD_distance(float *a, float *b, size_t n, float *buffer_a, float *buffer_b);
 
-// assignment to cluster centers
+// assignment to cluster centers from python
 PyObject *assign(PyObject *self, PyObject *args);
-//void c_assign(float *chunk, float *centers, char *metric, )
+// assignment to cluster centers from c
+int c_assign(float *chunk, float *centers, npy_int64 *dtraj, char* metric, Py_ssize_t N_frames, Py_ssize_t N_centers, Py_ssize_t dim)
 
 #ifdef __cplusplus
 }
