@@ -45,6 +45,14 @@ extern "C" {
 #include <stdio.h>
 #include <float.h>
 
+#if defined(__GNUC__) && ((__GNUC__ > 3) || (__GNUC__ == 3 && __GNUC_MINOR__ >= 1))
+#   define SKP_restrict __restrict
+#elif defined(_MSC_VER) && _MSC_VER >= 1400
+#   define SKP_restrict __restrict
+#else
+#   define SKP_restrict
+#endif
+
 #define ASSIGN_SUCCESS 0
 #define ASSIGN_ERR_NO_MEMORY 1
 #define ASSIGN_ERR_INVALID_METRIC 2
