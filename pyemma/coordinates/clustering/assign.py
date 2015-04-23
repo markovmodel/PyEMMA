@@ -42,6 +42,10 @@ class AssignCenters(AbstractClustering):
     clustercenters : path to file (csv) or ndarray
         cluster centers to use in assignment of data
 
+    metric : str
+        metric to use during clustering ('euclidean', 'minRMSD')
+
+
     Examples
     --------
     Assuming you have stored your centers in a CSV file:
@@ -55,8 +59,8 @@ class AssignCenters(AbstractClustering):
 
     """
 
-    def __init__(self, clustercenters):
-        super(AssignCenters, self).__init__()
+    def __init__(self, clustercenters, metric='euclidean'):
+        super(AssignCenters, self).__init__(metric=metric)
 
         if isinstance(clustercenters, basestring):
             self.clustercenters = np.loadtxt(clustercenters)

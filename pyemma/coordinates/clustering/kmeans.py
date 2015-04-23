@@ -47,11 +47,13 @@ class KmeansClustering(AbstractClustering):
         amount of cluster centers
     max_iter : int 
         how many iterations per chunk?
+    metric : str
+        metric to use during clustering ('euclidean', 'minRMSD')
 
     """
 
-    def __init__(self, n_clusters, max_iter=5):
-        super(KmeansClustering, self).__init__()
+    def __init__(self, n_clusters, max_iter=5, metric='euclidean'):
+        super(KmeansClustering, self).__init__(metric=metric)
         self.n_clusters = n_clusters
         self.max_iter = max_iter
         self._algo = _sklearn_kmeans(n_clusters=self.n_clusters, max_iter=self.max_iter)

@@ -57,6 +57,8 @@ class RegularSpaceClustering(AbstractClustering):
     ----------
     dmin : float
         minimum distance between all clusters.
+    metric : str
+        metric to use during clustering ('euclidean', 'minRMSD')
 
      References
     ----------
@@ -68,8 +70,8 @@ class RegularSpaceClustering(AbstractClustering):
 
     """
 
-    def __init__(self, dmin, max_clusters=1000):
-        super(RegularSpaceClustering, self).__init__()
+    def __init__(self, dmin, max_clusters=1000, metric='euclidean'):
+        super(RegularSpaceClustering, self).__init__(metric=metric)
 
         self._dmin = dmin
         # temporary list to store cluster centers
