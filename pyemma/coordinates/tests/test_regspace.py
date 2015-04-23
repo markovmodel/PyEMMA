@@ -112,5 +112,15 @@ class TestRegSpaceClustering(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.clustering.parametrize()
 
+    def test_minRMSD_metric(self):
+        self.clustering.data_producer = RandomDataSource(a=-2, b=2)
+        self.clustering.dmin = 2
+        self.clustering.metric = "minRMSD"
+        self.clustering.parametrize()
+
+        data_to_cluster = np.random.random((1000, 3))
+
+        self.clustering.assign(data_to_cluster, stride=1)
+
 if __name__ == "__main__":
     unittest.main()

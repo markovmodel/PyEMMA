@@ -141,7 +141,8 @@ def extensions():
         ],
         export_include=['pyemma/coordinates/clustering/include/clustering.h'],
         libraries=[lib_prefix+'theobald'],
-        library_dirs=[mdtraj.capi()['lib_dir']]
+        library_dirs=[mdtraj.capi()['lib_dir']],
+        extra_compile_args=['-std=c99']
     )
 
     regspatial_module = \
@@ -155,7 +156,8 @@ def extensions():
                       'pyemma/coordinates/clustering/include'
                   ],
                   libraries=[lib_prefix+'theobald'],
-                  library_dirs=[mdtraj.capi()['lib_dir']])
+                  library_dirs=[mdtraj.capi()['lib_dir']],
+                  extra_compile_args=['-std=c99'])
 
     exts += [mle_trev_given_pi_dense_module,
              mle_trev_given_pi_sparse_module,

@@ -26,7 +26,7 @@
 #define NO_IMPORT_ARRAY
 #include <clustering.h>
 
-float euclidean_distance(float *a, float *b, size_t n, float *buffer_a, float *buffer_b)
+float euclidean_distance(float *restrict a, float *restrict b, size_t n, float *buffer_a, float *buffer_b)
 {
     double sum;
     size_t i;
@@ -38,7 +38,7 @@ float euclidean_distance(float *a, float *b, size_t n, float *buffer_a, float *b
     return sqrt(sum);
 }
 
-float minRMSD_distance(float *a, float *b, size_t n, float *buffer_a, float *buffer_b)
+float minRMSD_distance(float *restrict a, float *restrict b, size_t n, float *restrict buffer_a, float *restrict buffer_b)
 {
     float msd;
     float trace_a, trace_b;
@@ -55,7 +55,6 @@ float minRMSD_distance(float *a, float *b, size_t n, float *buffer_a, float *buf
 int c_assign(float *chunk, float *centers, npy_int64 *dtraj, char* metric, Py_ssize_t N_frames, Py_ssize_t N_centers, Py_ssize_t dim) {
     int ret;
     float d, mindist;
-    Py_ssize_t i, j;
     size_t argmin;
     float *buffer_a, *buffer_b;
     float (*distance)(float*, float*, size_t, float*, float*);
@@ -79,14 +78,18 @@ int c_assign(float *chunk, float *centers, npy_int64 *dtraj, char* metric, Py_ss
     }
 
     /* do the assignment */
-    for(i = 0; i < N_frames; ++i) {
-        mindist = FLT_MAX;
-        argmin = -1;
-        for(j = 0; j < N_centers; ++j) {
-            d = distance(&chunk[i*dim], &centers[j*dim], dim, buffer_a, buffer_b);
-            if(d<mindist) { mindist = d; argmin = j; }
+    {
+        Py_ssize_t i,j;
+        #pragma omp parallel for private(i,j)
+        for(i = 0; i < N_frames; ++i) {
+            mindist = FLT_MAX;
+            argmin = -1;
+            for(j = 0; j < N_centers; ++j) {
+                d = distance(&chunk[i*dim], &centers[j*dim], dim, buffer_a, buffer_b);
+                if(d<mindist) { mindist = d; argmin = j; }
+            }
+            dtraj[i] = argmin;
         }
-        dtraj[i]= argmin;
     }
 
 error:
