@@ -80,7 +80,7 @@ int c_assign(float *chunk, float *centers, npy_int64 *dtraj, char* metric, Py_ss
     /* do the assignment */
     {
         Py_ssize_t i,j;
-        //#pragma omp parallel for private(i,j)
+        #pragma omp parallel for private(i,j,mindist,argmin)
         for(i = 0; i < N_frames; ++i) {
             mindist = FLT_MAX;
             argmin = -1;
@@ -88,7 +88,6 @@ int c_assign(float *chunk, float *centers, npy_int64 *dtraj, char* metric, Py_ss
                 d = distance(&chunk[i*dim], &centers[j*dim], dim, buffer_a, buffer_b);
                 if(d<mindist) { mindist = d; argmin = j; }
             }
-            //#pragma omp critical
             dtraj[i] = argmin;
         }
     }
