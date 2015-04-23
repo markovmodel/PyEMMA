@@ -98,7 +98,7 @@ def iterload(filename, chunk=100, **kwargs):
         yield load(filename, **kwargs)
     # If chunk was 0 then we want to avoid filetype-specific code in case of undefined behavior in various file parsers.
     else:
-        skip = kwargs.get('skip', 0)
+        skip = kwargs.pop('skip', 0)
         if filename.endswith('.h5'):
             if 'top' in kwargs:
                 warnings.warn('top= kwarg ignored since file contains topology information')
