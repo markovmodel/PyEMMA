@@ -131,16 +131,36 @@ def extensions():
         lib_prefix = 'lib'
     else:
         lib_prefix = ''
+
+    lib_clustering = Extension(
+        'pyemma.coordinates.clustering.clustering',
+        sources=['pyemma/coordinates/clustering/src/clustering.c'],
+        include_dirs=[
+            'pyemma/coordinates/clustering/include',
+            mdtraj.capi()['include_dir']
+        ],
+        export_include=['pyemma/coordinates/clustering/include/clustering.h'],
+        libraries=[lib_prefix+'theobald'],
+        library_dirs=[mdtraj.capi()['lib_dir']]
+    )
+
     regspatial_module = \
-        Extension('pyemma.coordinates.clustering.regspatial',
-                  sources = ['pyemma/coordinates/clustering/regspatial.c'],
-                  include_dirs = [mdtraj.capi()['include_dir']],
-                  libraries = [lib_prefix+'theobald'],
-                  library_dirs = [mdtraj.capi()['lib_dir']])
+        Extension('pyemma.coordinates.clustering.regspatial', 
+                  sources=[
+                      'pyemma/coordinates/clustering/src/regspatial.c',
+                      'pyemma/coordinates/clustering/src/clustering.c'
+                  ],
+                  include_dirs=[
+                      mdtraj.capi()['include_dir'],
+                      'pyemma/coordinates/clustering/include'
+                  ],
+                  libraries=[lib_prefix+'theobald'],
+                  library_dirs=[mdtraj.capi()['lib_dir']])
 
     exts += [mle_trev_given_pi_dense_module,
              mle_trev_given_pi_sparse_module,
              mle_trev_sparse_module,
+             lib_clustering,
              regspatial_module]
 
     if USE_CYTHON: # if we have cython available now, cythonize module
