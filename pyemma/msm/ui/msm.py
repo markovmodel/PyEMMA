@@ -32,12 +32,7 @@ and provides them for later access.
 import numpy as np
 from itertools import count
 from math import ceil
-from pyemma.util.annotators import shortcut
-from pyemma.util.log import getLogger
 
-
-__docformat__ = "restructuredtext en"
-__all__ = ['MSM', 'EstimatedMSM']
 
 # TODO: Explain concept of an active set
 
@@ -326,6 +321,14 @@ class MSM(object):
         """
         assert np.max(A) < self._nstates, 'Chosen set contains states that are not included in the active set.'
 
+    def _mfpt(self, P, A, B, mu=None):
+        self._assert_estimated()
+        self._assert_in_active(A)
+        self._assert_in_active(B)
+        from pyemma.msm.analysis import mfpt as __mfpt
+        # scale mfpt by lag time
+        return self._tau * __mfpt(P, B, origin=A, mu=mu)
+
     def mfpt(self, A, B):
         """Mean first passage times from set A to set B, in units of the input trajectory time step
 
@@ -336,13 +339,14 @@ class MSM(object):
         B : int or int array
             set of target states
         """
+        return self._mfpt(self._T, A, B, mu=self.stationary_distribution)
+
+    def _committor_forward(self, P, A, B):
         self._assert_estimated()
         self._assert_in_active(A)
         self._assert_in_active(B)
-        from pyemma.msm.analysis import mfpt as _mfpt
-        # scale mfpt by lag time
-        return self._tau * _mfpt(self._T, B, origin=A, mu=self.stationary_distribution)
-
+        from pyemma.msm.analysis import committor as __committor
+        return __committor(P, A, B, forward=True)
 
     def committor_forward(self, A, B):
         """Forward committor (also known as p_fold or splitting probability) from set A to set B
@@ -354,12 +358,14 @@ class MSM(object):
         B : int or int array
             set of target states
         """
+        return self._committor_forward(self._T, A, B)
+
+    def _committor_backward(self, P, A, B, mu=None):
         self._assert_estimated()
         self._assert_in_active(A)
         self._assert_in_active(B)
-        from pyemma.msm.analysis import committor as _committor
-
-        return _committor(self._T, A, B, forward=True)
+        from pyemma.msm.analysis import committor as __committor
+        return __committor(P, A, B, forward=False, mu=mu)
 
     def committor_backward(self, A, B):
         """Backward committor from set A to set B
@@ -371,12 +377,7 @@ class MSM(object):
         B : int or int array
             set of target states
         """
-        self._assert_estimated()
-        self._assert_in_active(A)
-        self._assert_in_active(B)
-        from pyemma.msm.analysis import committor as _committor
-
-        return _committor(self._T, A, B, forward=False, mu=self.stationary_distribution)
+        return self._committor_backward(self._T, A,B, mu=self.stationary_distribution)
 
     def expectation(self, a):
         r"""Equilibrium expectation value of a given observable.
@@ -891,6 +892,7 @@ class MSM(object):
         self._assert_pcca()
         return self._pcca.metastable_assignment
 
+<<<<<<< HEAD
 
 class EstimatedMSM(MSM):
     r"""Estimates a Markov model from discrete trajectories.
@@ -1417,3 +1419,5 @@ class EstimatedMSM(MSM):
         import pyemma.util.discrete_trajectories as dt
 
         return dt.sample_indexes_by_distribution(self.active_state_indexes, distributions, nsample)
+=======
+>>>>>>> [msm.ui]: refactored MSM hierarchy into MSM, EstimatedMSM and SampledMSM
