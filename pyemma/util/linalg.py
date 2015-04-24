@@ -28,6 +28,8 @@ __author__ = 'noe'
 import numpy as np
 import scipy.linalg
 import scipy.sparse
+import copy
+import math
 
 def submatrix(M, sel):
     """Returns a submatrix of the quadratic matrix M, given by the selected columns and row
@@ -94,8 +96,18 @@ def _sort_by_norm(evals, evecs):
 
 
 def eig_corr(C0, Ct, epsilon=1e-6):
-    """
-    Solve the generalized eigenvalues problem with correlation matrices C0 and Ct
+    r""" Solve generalized eigenvalues problem with correlation matrices C0 and Ct
+
+    Numerically robust solution of a generalized eigenvalue problem of the form
+
+    .. math::
+        \mathbf{C}_t \mathbf{r}_i = \mathbf{C}_0 \mathbf{r}_i l_i
+
+    Computes :math:`m` dominant eigenvalues :math:`l_i` and eigenvectors :math:`\mathbf{r}_i`, where
+    :math:`m` is the numerical rank of the problem. This is done by first conducting a Schur decomposition
+    of the symmetric positive matrix :math:`\mathbf{C}_0`, then truncating its spectrum to retain only eigenvalues
+    that are numerically greater than zero, then using this decomposition to define an ordinary eigenvalue
+    Problem for :math:`\mathbf{C}_t` of size :math:`m`, and then solving this eigenvalue problem.
 
     Parameters
     ----------
@@ -153,3 +165,77 @@ def eig_corr(C0, Ct, epsilon=1e-6):
 
     # return result
     return (l, R)
+
+
+def match_eigenvectors(R_ref, R, w1=None, w2=None):
+    """Matches eigenvectors in :math:`R` onto the reference eigenvectors in :math:`R_ref`.
+
+    Finds an optimal matching of the eigenvectors in :math:`R` onto the reference eigenvectors in :math:`R`.
+    It is assumed that the eigenvectors in each set are orthogonal with respect to the weights, i.e.
+
+    .. math::
+        \langle r_i r_j \rangle_w = 0  \:\:\: \mathrm{if}\:\: i \neq j
+
+    where :math:`w = weights` are the weights if given (if not the weights are uniformly 1).
+    :math:`r_i` runs over vectors in :math:`R` or over vectors in :math:`R_ref`.
+    This function returns a permutation :math:`I=(i_1,...,i_m)` such that
+
+    .. math::
+        \sum_k \langle r^mathrm{ref}_i_k, r_k \rangle_w = \max
+
+    Parameters
+    ----------
+    R_ref : ndarray (n,M)
+        column matrix of :math:`M` reference eigenvectors of length :math:`n`.
+    R_ref : ndarray (n,m)
+        column matrix of :math:`m \le M` eigenvectors to match of length :math:`n`.
+    weights : ndarray (n)
+        weight array for computing scalar products
+
+    Returns
+    -------
+    I : ndarray (m)
+        a permutation array, telling which indexes of :math:`R_ref` each vector of :math:`R` should be assigned to.
+
+    """
+    # work on copies because we want to normalize
+    R_ref = copy.deepcopy(R_ref)
+    R = copy.deepcopy(R)
+    # sizes
+    n, M = R_ref.shape
+    n2, m = R.shape
+    assert n == n2, 'R_ref and R have inconsistent numbers of rows'
+    assert m <= M, 'R must have less or equal columns than R'
+    # weights
+    if w1 is None:
+        w1 = np.ones((n))
+    if w2 is None:
+        w2 = np.ones((n))
+    # mixed weights
+    w = np.sqrt(w1 * w2)
+    # normalize
+    for i in range(M):
+        R_ref[:,i] /= math.sqrt(np.dot(w1*R_ref[:,i], R_ref[:,i]))
+    for i in range(m):
+        R[:,i] /= math.sqrt(np.dot(w2*R[:,i], R[:,i]))
+    # projection amplitude matrix
+    P = np.zeros((m,M))
+    for i in range(m):
+        for j in range(M):
+            P[i,j] = np.dot(w*R[:,i], R_ref[:,j])
+            P[j,i] = P[i,j]
+    P = np.abs(P)
+    # select assignment
+    I = np.zeros((m), dtype=int)
+    # stationary vectors are always assigned
+    I[0] = 0
+    P[:,0] = 0
+    # other assignments
+    for i in range(1,m):
+        # select best
+        I[i] = np.argmax(P[i,:])
+        # prohibit this selection in the future
+        P[:,I[i]] = 0
+    # done
+    return I
+
