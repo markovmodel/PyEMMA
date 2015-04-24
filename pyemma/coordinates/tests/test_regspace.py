@@ -67,7 +67,7 @@ class TestRegSpaceClustering(unittest.TestCase):
         self.clustering.parametrize()
 
         # correct type of dtrajs
-        assert types.is_int_array(self.clustering.dtrajs[0])
+        assert types.is_int_vector(self.clustering.dtrajs[0])
 
         # assert distance for each centroid is at least dmin
         for c in itertools.combinations(self.clustering.clustercenters, 2):
