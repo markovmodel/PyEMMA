@@ -25,8 +25,12 @@
 __author__ = 'noe, marscher'
 
 from pyemma.util.log import getLogger
+from pyemma.util.progressbar import ProgressBar
+from pyemma.util.progressbar.gui import show_progressbar
 
+from itertools import count
 import numpy as np
+from math import ceil
 
 from abc import ABCMeta, abstractmethod
 
@@ -71,12 +75,15 @@ class Transformer(object):
 
     """
     __metaclass__ = ABCMeta
+    # count instances
+    _ids = count(0)
 
     def __init__(self, chunksize=100):
         self.chunksize = chunksize
         self._in_memory = False
         self._dataproducer = None
         self._parametrized = False
+        self._param_with_stride = 1
 
         self.__create_logger()
 
@@ -100,6 +107,15 @@ class Transformer(object):
     def chunksize(self, size):
         assert size >= 0, "chunksize has to be positive"
         self._chunksize = int(size)
+
+    def _n_chunks(self, stride=1):
+        """ rough estimate of how many chunks will be processed """
+        if self._chunksize != 0:
+            chunks = sum([ceil(l / float(self._chunksize))
+                          for l in self.trajectory_lengths(stride)])
+        else:
+            chunks = 1
+        return chunks
 
     @property
     def in_memory(self):
@@ -131,7 +147,12 @@ class Transformer(object):
         pass
 
     def __create_logger(self):
-        name = "%s[%s]" % (self.__class__.__name__, hex(id(self)))
+        count = self._ids.next()
+        i = self.__module__.rfind(".")
+        j = self.__module__.find(".") +1
+        package = self.__module__[j:i]
+        name = "%s.%s[%i]" % (package, self.__class__.__name__, count)
+        self._name = name
         self._logger = getLogger(name)
 
     def number_of_trajectories(self):
@@ -221,6 +242,13 @@ class Transformer(object):
             raise RuntimeError('Called parametrize of %s while data producer is not'
                                ' yet set. Ensure "data_producer" attribute is set!'
                                % self.describe())
+
+        # if stride is not equal to one and does not match to a previous call
+        # retrigger parametrization
+        if stride != self._param_with_stride:
+            self._parametrized = False
+
+        self._param_with_stride = stride
 
         if self._parametrized:
             return
@@ -561,6 +589,9 @@ class Transformer(object):
         last_itraj = -1
         t = 0  # first time point
         assert self._parametrized, "has to be parametrized before getting output!"
+        progress = ProgressBar(self._n_chunks(stride), description=
+                               'getting output of ' + self.__class__.__name__)
+
         for itraj, chunk in self.iterator(stride=stride):
             if itraj != last_itraj:
                 last_itraj = itraj
@@ -568,5 +599,9 @@ class Transformer(object):
             L = chunk.shape[0]
             trajs[itraj][t:t + L, :] = chunk[:, dimensions]
             t += L
+
+            # update progress
+            progress.numerator += 1
+            show_progressbar(progress)
 
         return trajs

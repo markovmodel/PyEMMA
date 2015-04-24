@@ -35,6 +35,8 @@ locations with different priorities:
 3. ~/pyemma.cfg
 4. $PYTHONPATH/pyemma/pyemma.cfg (always taken as default configuration file)
 
+The same applies for the filename ".pyemma.cfg" (hidden file).
+
 The default values are stored in later file to ensure these values are always
 defined. This is preferred over hardcoding them somewhere in the Python code.
 
@@ -56,7 +58,7 @@ To access the config at runtime eg. the logging section:
 Notes
 -----
 All values are being stored as strings, so to compare eg. if a value is True,
-compare for
+compare for:
 
 .. code-block:: python
 
@@ -119,11 +121,18 @@ def readConfiguration():
     # use these files to extend/overwrite the conf_values.
     # Last red file always overwrites existing values!
     cfg = 'pyemma.cfg'
+    cfg_hidden = '.pyemma.cfg'
     filenames = [
         cfg,  # conf_values in current dir
         '/etc/' + cfg,  # conf_values in global installation
         os.path.join(os.path.expanduser(
-                     '~' + os.path.sep), cfg),  # config in user dir
+                     '~' + os.path.sep), cfg)  # config in user dir
+    ]
+    filenames += [
+        cfg_hidden,
+        '/etc/' + cfg_hidden,
+        os.path.join(os.path.expanduser(
+                     '~' + os.path.sep), cfg_hidden)
     ]
 
     # read defaults from default_pyemma_conf first.

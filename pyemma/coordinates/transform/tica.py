@@ -1,4 +1,3 @@
-
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
 # All rights reserved.
@@ -22,13 +21,15 @@
 # ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 '''
 Created on 19.01.2015
 
 @author: marscher
 '''
 from .transformer import Transformer
+
+from pyemma.util.progressbar import ProgressBar
+from pyemma.util.progressbar.gui import show_progressbar
 from pyemma.util.linalg import eig_corr
 from pyemma.util.annotators import doc_inherit
 
@@ -101,8 +102,12 @@ class TICA(Transformer):
         self.eigenvalues = None
         self.eigenvectors = None
 
+        self._progress_mean = None
+        self._progress_cov = None
+
     @property
     def lag(self):
+        """ lag time of correlation matrix :math:`C_\tau` """
         return self._lag
 
     @lag.setter
@@ -143,6 +148,7 @@ class TICA(Transformer):
 
     @property
     def mean(self):
+        """ mean of input data """
         return self.mu
 
     @doc_inherit
@@ -164,6 +170,11 @@ class TICA(Transformer):
 
         self._logger.info("Running TICA with tau=%i; Estimating two covariance matrices"
                           " with dimension (%i, %i)" % (self._lag, dim, dim))
+
+        # amount of chunks
+        denom = self._n_chunks(self._param_with_stride)
+        self._progress_mean = ProgressBar(denom, description="calculate mean")
+        self._progress_cov = ProgressBar(denom, description="calculate covariances")
 
         return 0  # in zero'th pass don't request lagged data
 
@@ -194,10 +205,11 @@ class TICA(Transformer):
         :return:
         """
         if ipass == 0:
-            # TODO: maybe use stable sum here, since small chunksizes
-            # accumulate more errors
             self.mu += np.sum(X, axis=0, dtype=np.float64)
             self._N_mean += np.shape(X)[0]
+            # counting chunks and log of eta
+            self._progress_mean.numerator += 1
+            show_progressbar(self._progress_mean)
 
             if last_chunk:
                 self.mu /= self._N_mean
@@ -208,13 +220,17 @@ class TICA(Transformer):
                 return False, self._lag
 
         elif ipass == 1:
+            if first_chunk:
+                self._logger.info("start to calculate covariance...")
+
             if self.trajectory_length(itraj, stride=stride) > self._lag:
-                self._N_cov_tau += 2.0*np.shape(Y)[0]
+                self._N_cov_tau += 2.0 * np.shape(Y)[0]
                 X_meanfree = X - self.mu
                 Y_meanfree = Y - self.mu
                 # update the time-lagged covariance matrix
                 end = min(X_meanfree.shape[0], Y_meanfree.shape[0])
-                self.cov_tau += 2.0*np.dot(X_meanfree[0:end].T, Y_meanfree[0:end])
+                self.cov_tau += 2.0 * np.dot(X_meanfree[0:end].T,
+                                             Y_meanfree[0:end])
 
                 # update the instantaneous covariance matrix
                 if self._force_eigenvalues_le_one:
@@ -230,19 +246,25 @@ class TICA(Transformer):
                     # update covariance matrix
                     start2 = min(Zptau, Nmtau)
                     end2 = max(Zptau, Nmtau)
-                    self.cov += np.dot(X_meanfree[0:start2, :].T, X_meanfree[0:start2, :])
+                    self.cov += np.dot(X_meanfree[0:start2, :].T,
+                                       X_meanfree[0:start2, :])
                     self._N_cov += start2
 
                     if Nmtau > Zptau:
-                        self.cov += 2.0*np.dot(X_meanfree[start2:end2, :].T, X_meanfree[start2:end2, :])
-                        self._N_cov += 2.0*(end2-start2)
+                        self.cov += 2.0 * np.dot(X_meanfree[start2:end2, :].T,
+                                                 X_meanfree[start2:end2, :])
+                        self._N_cov += 2.0 * (end2 - start2)
 
-                    self.cov += np.dot(X_meanfree[end2:, :].T, X_meanfree[end2:, :])
-                    self._N_cov += (size-end2)
+                    self.cov += np.dot(X_meanfree[end2:, :].T,
+                                       X_meanfree[end2:, :])
+                    self._N_cov += (size - end2)
                 else:
                     # traditional counting
-                    self.cov += 2.0*np.dot(X_meanfree.T, X_meanfree)
-                    self._N_cov += 2.0*np.shape(X)[0]
+                    self.cov += 2.0 * np.dot(X_meanfree.T, X_meanfree)
+                    self._N_cov += 2.0 * np.shape(X)[0]
+
+                self._progress_cov.numerator += 1
+                show_progressbar(self._progress_cov)
 
             else:
                 self._logger.warning("trajectory nr %i too short, skipping it" % itraj)
@@ -270,7 +292,7 @@ class TICA(Transformer):
         self.cov_tau /= self._N_cov_tau - 1
 
         # diagonalize with low rank approximation
-        self._logger.info("diagonalize Cov and Cov_tau")
+        self._logger.info("diagonalize Cov and Cov_tau.")
         self.eigenvalues, self.eigenvectors = \
             eig_corr(self.cov, self.cov_tau, self._epsilon)
         self._logger.info("finished diagonalisation.")

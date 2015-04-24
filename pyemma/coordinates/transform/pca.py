@@ -1,4 +1,3 @@
-
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
 # All rights reserved.
@@ -26,8 +25,12 @@
 __author__ = 'noe'
 
 import numpy as np
+
 from .transformer import Transformer
+
 from pyemma.util.annotators import doc_inherit
+from pyemma.util.progressbar import ProgressBar
+from pyemma.util.progressbar.gui import show_progressbar
 
 __all__ = ['PCA']
 
@@ -63,6 +66,9 @@ class PCA(Transformer):
         self._output_dimension = output_dimension
         self._dot_prod_tmp = None
         self.Y = None
+
+        self._progress_mean = None
+        self._progress_cov = None
 
     @doc_inherit
     def describe(self):
@@ -119,6 +125,11 @@ class PCA(Transformer):
         self.mu = np.zeros(dim)
         self.cov = np.zeros((dim, dim))
 
+        # amount of chunks
+        denom = self._n_chunks(self._param_with_stride)
+        self._progress_mean = ProgressBar(denom, description="calculate mean")
+        self._progress_cov = ProgressBar(denom, description="calculate covariances")
+
     def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
                         last_chunk, ipass, Y=None, stride=1):
         """
@@ -152,6 +163,11 @@ class PCA(Transformer):
             np.sum(X, axis=0, out=self._sum_tmp)
             self.mu += self._sum_tmp
             self.N += np.shape(X)[0]
+
+            # counting chunks and log of eta
+            self._progress_mean.numerator += 1
+            show_progressbar(self._progress_mean)
+
             if last_chunk:
                 self.mu /= self.N
 
@@ -163,6 +179,10 @@ class PCA(Transformer):
             Xm = X - self.mu
             np.dot(Xm.T, Xm, self._dot_prod_tmp)
             self.cov += self._dot_prod_tmp
+
+            self._progress_cov.numerator += 1
+            show_progressbar(self._progress_cov)
+
             if last_chunk:
                 self.cov /= self.N - 1
                 self._logger.debug("finished")
