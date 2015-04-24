@@ -104,7 +104,7 @@ class TestCluster(unittest.TestCase):
     def test_return_dtrajs(self):
         dtrajs = coor.assign_to_centers(data=self.X, centers=self.centers)
         for dtraj in dtrajs:
-            assert types.is_int_array(dtraj)
+            assert types.is_int_vector(dtraj)
 
     def test_get_output(self):
         c = self.ass
