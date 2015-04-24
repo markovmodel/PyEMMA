@@ -132,18 +132,3 @@ def terminal_width():
     except IOError:
         return 80
 
-
-def __attached_to_ipy_notebook():
-    import warnings
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        try:
-            from IPython.html.widgets import IntProgress
-            IntProgress(100)
-        except:
-            return False
-        else:
-            return True
-
-interactive_session = __attached_to_ipy_notebook()
-""" are we running an interactive IPython notebook session """
