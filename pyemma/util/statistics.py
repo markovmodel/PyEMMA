@@ -31,6 +31,8 @@ Created on Jul 25, 2014
 
 import numpy as np
 import math
+import itertools
+import types
 
 def confidence_interval(data, alpha):
     """
@@ -75,3 +77,56 @@ def confidence_interval(data, alpha):
 
     # return
     return (m, l, r)
+
+def _indexes(arr):
+    """
+    Returns the list of all indexes of the given array. Currently works for one and two-dimensional arrays
+
+    """
+    myarr = np.array(arr)
+    if myarr.ndim == 1:
+        return range(len(myarr))
+    elif myarr.ndim == 2:
+        return itertools.product(range(arr.shape[0]), range(arr.shape[1]))
+    else:
+        raise NotImplementedError('Only supporting arrays of dimension 1 and 2 as yet.')
+
+def confidence_interval_arr(data, alpha=0.95):
+    r""" Computes element-wise confidence intervals from a sample of ndarrays
+
+    Given a sample of arbitrarily shaped ndarrays, computes element-wise confidence intervals
+
+    Parameters
+    ----------
+    data : ndarray (K, (shape))
+        ndarray of ndarrays, the first index is a sample index, the remaining indexes are specific to the
+        array of interest
+    alpha : float, optional, default = 0.95
+        confidence interval
+
+    Return
+    ------
+    lower : ndarray(shape)
+        element-wise lower bounds
+    upper : ndarray(shape)
+        element-wise upper bounds
+
+    """
+    if (alpha < 0 or alpha > 1):
+        raise ValueError('Not a meaningful confidence level: '+str(alpha))
+
+    # list? then stack it
+    if types.is_list(data):
+        data = np.vstack(data)
+
+    # do we have an array now? if yes go, if no fail
+    if types.is_float_array(data):
+        I = _indexes(data[0])
+        lower = np.zeros(data[0].shape)
+        upper = np.zeros(data[0].shape)
+        for i in I:
+            m, lower[I], upper[I] = confidence_interval(data[I], alpha)
+        # return
+        return (lower, upper)
+    else:
+        raise TypeError('data cannot be converted to an ndarray')
