@@ -681,9 +681,9 @@ def pca(data=None, dim=2, stride=1):
 
     Returns
     -------
-    pca : :class:PCA <pyemma.coordinates.transform.PCA> object
-    Object for Principle component analysis (PCA) analysis.
-    PCA eigenvalues and eigenvectors, and the projection of input data to the dominant PCA
+    pca : a :class:PCA `<pyemma.coordinates.transform.PCA>` transformation object
+        Object for Principle component analysis (PCA) analysis.
+        it contains PCA eigenvalues and eigenvectors, and the projection of input data to the dominant PCA
 
 
     Notes
@@ -769,9 +769,9 @@ def tica(data=None, lag=10, dim=2, stride=1, force_eigenvalues_le_one=False):
 
     Returns
     -------
-    tica : :class:TICA <pyemma.coordinates.transform.TICA> object
+    tica : a :class:`TICA <pyemma.coordinates.transform.TICA>` transformation  object
         Object for time-lagged independent component (TICA) analysis.
-        TICA eigenvalues and eigenvectors, and the projection of input data to the dominant TICA
+        it contains TICA eigenvalues and eigenvectors, and the projection of input data to the dominant TICA
 
 
     Notes
@@ -799,9 +799,9 @@ def tica(data=None, lag=10, dim=2, stride=1, force_eigenvalues_le_one=False):
     When used as a dimension reduction method, the input data is projected
     onto the dominant independent components.
 
-    TICA was originally introduced for signal processing in [3]_. It was introduced
+    TICA was originally introduced for signal processing in [2]_. It was introduced
     to molecular dynamics and as a method for the construction of Markov models in
-    [1]_ and [2]_. It was shown in [2]_ that when applied to molecular dynamics data,
+    [1]_ and [3]_. It was shown in [3]_ that when applied to molecular dynamics data,
     TICA is an approximation to the eigenvalues and eigenvectors of the true underlying
     dynamics.
 
@@ -815,12 +815,12 @@ def tica(data=None, lag=10, dim=2, stride=1, force_eigenvalues_le_one=False):
     .. [1] Perez-Hernandez G, F Paul, T Giorgino, G De Fabritiis and F Noe. 2013.
         Identification of slow molecular order parameters for Markov model construction
         J. Chem. Phys. 139, 015102. doi:10.1063/1.4811489
-    .. [2] Schwantes C, V S Pande. 2013.
-        Improvements in Markov State Model Construction Reveal Many Non-Native Interactions in the Folding of NTL9
-        J. Chem. Theory. Comput. 9, 2000-2009. doi:10.1021/ct300878a
-    .. [3] L. Molgedey and H. G. Schuster. 1994.
+    .. [2] L. Molgedey and H. G. Schuster. 1994.
         Separation of a mixture of independent signals using time delayed correlations
         Phys. Rev. Lett. 72, 3634.
+    .. [3] Schwantes C, V S Pande. 2013.
+        Improvements in Markov State Model Construction Reveal Many Non-Native Interactions in the Folding of NTL9
+        J. Chem. Theory. Comput. 9, 2000-2009. doi:10.1021/ct300878a
 
     """
     # don't expose this until we know what this is doing.
