@@ -167,7 +167,7 @@ def eig_corr(C0, Ct, epsilon=1e-6):
     return (l, R)
 
 
-def match_eigenvectors(R_ref, R, w1=None, w2=None):
+def match_eigenvectors(R_ref, R, w_ref=None, w=None):
     """Matches eigenvectors in :math:`R` onto the reference eigenvectors in :math:`R_ref`.
 
     Finds an optimal matching of the eigenvectors in :math:`R` onto the reference eigenvectors in :math:`R`.
@@ -183,14 +183,18 @@ def match_eigenvectors(R_ref, R, w1=None, w2=None):
     .. math::
         \sum_k \langle r^mathrm{ref}_i_k, r_k \rangle_w = \max
 
+    where :math:`w_i = \sqrt{w_{i,\mathrm{ref}} w_i}`
+
     Parameters
     ----------
     R_ref : ndarray (n,M)
         column matrix of :math:`M` reference eigenvectors of length :math:`n`.
     R_ref : ndarray (n,m)
         column matrix of :math:`m \le M` eigenvectors to match of length :math:`n`.
-    weights : ndarray (n)
-        weight array for computing scalar products
+    w_ref : ndarray (n)
+        weight array for R_ref
+    w : ndarray (n)
+        weight array for R
 
     Returns
     -------
@@ -207,22 +211,22 @@ def match_eigenvectors(R_ref, R, w1=None, w2=None):
     assert n == n2, 'R_ref and R have inconsistent numbers of rows'
     assert m <= M, 'R must have less or equal columns than R'
     # weights
-    if w1 is None:
-        w1 = np.ones((n))
-    if w2 is None:
-        w2 = np.ones((n))
+    if w_ref is None:
+        w_ref = np.ones((n))
+    if w is None:
+        w = np.ones((n))
     # mixed weights
-    w = np.sqrt(w1 * w2)
+    wmix = np.sqrt(w_ref * w)
     # normalize
     for i in range(M):
-        R_ref[:,i] /= math.sqrt(np.dot(w1*R_ref[:,i], R_ref[:,i]))
+        R_ref[:,i] /= math.sqrt(np.dot(w_ref*R_ref[:,i], R_ref[:,i]))
     for i in range(m):
-        R[:,i] /= math.sqrt(np.dot(w2*R[:,i], R[:,i]))
+        R[:,i] /= math.sqrt(np.dot(w*R[:,i], R[:,i]))
     # projection amplitude matrix
     P = np.zeros((m,M))
     for i in range(m):
         for j in range(M):
-            P[i,j] = np.dot(w*R[:,i], R_ref[:,j])
+            P[i,j] = np.dot(wmix*R[:,i], R_ref[:,j])
             P[j,i] = P[i,j]
     P = np.abs(P)
     # select assignment
