@@ -86,6 +86,8 @@ def sample_rev(C, nsample=1, return_statdist=False, T_init=None):
         count matrix
     nsample : int, optional, default=1
         number of samples to be generated
+    return_statdist : bool, optional, default = False
+        if true, will also return the stationary distribution.
     T_init : ndarray (n,n), optional, default=None
         initial transition matrix to seed the sampler.
 
@@ -272,31 +274,34 @@ class TransitionMatrixSamplerRev(TransitionMatrixSampler):
             self.X /= self.X.sum()
 
 
-    def sample(self, nsample = 1, return_statdist = False):
+    def sample(self, nsample = 1, return_statdist = False, nstep = 1):
         """
         Runs n_step Gibbs sampling steps and returns a new transition matrix. For each step, every element of the
         transition matrix is updated.
 
-        Parameters:
-        -----------
-        n_step : int
-            number of Gibbs sampling steps. Every step samples from the conditional distribution of that element.
-        T_init : ndarray (n,n)
-            initial transition matrix. If not given, will start from C+C.T, row-normalized
+        Parameters
+        ----------
+        nsample : int
+            number transition matrices sampled.
+        return_statdist : bool, optional, default = False
+            if true, will also return the stationary distribution.
+        nstep : int
+            number of Gibbs sampling steps per sample.
+            Every step samples from the conditional distribution of that element.
 
         Returns
         -------
         P : ndarray (n,n)
             sample of a transition matrix with respect to the likelihood p(C|P)
 
-        Raises:
-        -------
+        Raises
+        ------
         ValueError
             if T_init is not a reversible transition matrix
 
         """
         if nsample==1:
-            self._update(nsample)
+            self._update(nstep)
             Xsum = self.X.sum(axis=1)
             T = self.X/Xsum[:,None]
             if return_statdist:
@@ -308,7 +313,7 @@ class TransitionMatrixSamplerRev(TransitionMatrixSampler):
             Ts = np.empty((nsample), dtype=object)
             mus = np.empty((nsample), dtype=object)
             for i in range(nsample):
-                self._update(nsample)
+                self._update(nstep)
                 Xsum = self.X.sum(axis=1)
                 Ts[i] = self.X/Xsum[:,None]
                 mus[i] = Xsum / Xsum.sum()
