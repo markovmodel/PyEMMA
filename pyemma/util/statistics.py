@@ -91,6 +91,21 @@ def _indexes(arr):
     else:
         raise NotImplementedError('Only supporting arrays of dimension 1 and 2 as yet.')
 
+def _column(arr, indexes):
+    """
+    Returns a column with given indexes from a deep array
+
+    For example, if the array is a matrix and indexes is a single int, will return arr[:,indexes].
+    If the array is an order 3 tensor and indexes is a pair of ints, will return arr[:,indexes[0],indexes[1]], etc.
+
+    """
+    if arr.ndim == 2 and types.is_int(indexes):
+        return arr[:,indexes]
+    elif arr.ndim == 3 and len(indexes) == 2:
+        return arr[:,indexes[0],indexes[1]]
+    else:
+        raise NotImplementedError('Only supporting arrays of dimension 2 and 3 as yet.')
+
 def confidence_interval_arr(data, alpha=0.95):
     r""" Computes element-wise confidence intervals from a sample of ndarrays
 
@@ -115,17 +130,24 @@ def confidence_interval_arr(data, alpha=0.95):
     if (alpha < 0 or alpha > 1):
         raise ValueError('Not a meaningful confidence level: '+str(alpha))
 
-    # list? then stack it
-    if types.is_list(data):
-        data = np.vstack(data)
+    # list or 1D-array? then fuse it
+    if types.is_list(data) or (isinstance(data, np.ndarray) and np.ndim(data) == 1):
+        newshape = tuple([len(data)] + list(data[0].shape))
+        newdata = np.zeros(newshape)
+        for i in range(len(data)):
+            newdata[i,:] = data[i]
+        data = newdata
 
     # do we have an array now? if yes go, if no fail
     if types.is_float_array(data):
+        print "data shape: ",data.shape
+        print "sample shape: ",data[0].shape
         I = _indexes(data[0])
         lower = np.zeros(data[0].shape)
         upper = np.zeros(data[0].shape)
         for i in I:
-            m, lower[I], upper[I] = confidence_interval(data[I], alpha)
+            col = _column(data, i)
+            m, lower[i], upper[i] = confidence_interval(col, alpha)
         # return
         return (lower, upper)
     else:
