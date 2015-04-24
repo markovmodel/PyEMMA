@@ -164,26 +164,33 @@ class Transformer(object):
         if not conf_values['pyemma'].show_progress_bars == 'True':
             return
 
+        # note: this check ensures we have IPython.display and so on.
         if interactive_session:
-            # create IPython widget on first call
+            # create IPython widgets on first call
             if not hasattr(bar, 'widget'):
                 from IPython.display import display
-                from IPython.html.widgets import IntProgress
+                from IPython.html.widgets import IntProgress, Box, Text
+                box = Box()
+                text = Text()
+                progress_widget = IntProgress()
 
-                widget = IntProgress()
+                box.children = [text, progress_widget]
+                bar.widget = box
+                widget = box
+
                 # make it visible once
-                display(widget)
-                bar.widget = widget
+                display(box)
             else:
                 widget = bar.widget
 
+            # update widgets slider value and description text
             desc = bar.description
             if append_time_diff:
-                # TODO: maybe make this a method of bar
-                desc += '\t' + bar._generate_eta(bar._eta.eta_seconds) + '\t'
-
-            widget.description = desc
-            widget.value = bar.percent
+                desc += ':\tETA:' + bar._generate_eta(bar._eta.eta_seconds)
+            assert isinstance(widget.children[0], Text)
+            assert isinstance(widget.children[1], IntProgress)
+            widget.children[0].placeholder = desc
+            widget.children[1].value = bar.percent
         else:
             sys.stdout.write("\r" + str(bar))
             sys.stdout.flush()
