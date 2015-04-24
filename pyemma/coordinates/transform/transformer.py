@@ -25,6 +25,7 @@
 __author__ = 'noe, marscher'
 
 from pyemma.util.log import getLogger
+from pyemma.util.config import conf_values
 from pyemma.util.progressbar.misc import interactive_session
 from pyemma.util.progressbar import ProgressBar
 
@@ -160,6 +161,8 @@ class Transformer(object):
         """ shows given bar either using an ipython widget, if in
         interactive session or simply use the string format of it and print it
         to stdout."""
+        if not conf_values['pyemma'].show_progress_bars == 'True':
+            return
 
         if interactive_session:
             # create IPython widget on first call
