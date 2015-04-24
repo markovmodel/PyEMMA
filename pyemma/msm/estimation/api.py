@@ -1073,7 +1073,7 @@ def _showSparseConversionWarning():
                   'currently only implemented for dense matrices.', UserWarning)
 
 
-def sample_tmatrix(C, nsample=1, reversible=False, mu=None, T0=None):
+def sample_tmatrix(C, nsample=1, reversible=False, mu=None, T0=None, return_statdist=False):
     r"""samples transition matrices from the posterior distribution
 
     Parameters
@@ -1087,15 +1087,19 @@ def sample_tmatrix(C, nsample=1, reversible=False, mu=None, T0=None):
         restricted to those obeying a detailed balance condition,
         else draw from the whole ensemble of stochastic matrices.
     mu : array_like
-        The stationary distribution of the transition matrix samples.
+        A fixed stationary distribution. Transition matrices with that stationary distribution will be sampled
     T0 : ndarray, shape=(n, n) or scipy.sparse matrix
         Starting point of the MC chain of the sampling algorithm.
         Has to obey the required constraints.
+    return_statdist : bool, optional, default = False
+        if true, will also return the stationary distribution.
 
     Returns
     -------
     P : ndarray(n,n) or array of ndarray(n,n)
         sampled transition matrix (or multiple matrices if nsample > 1)
+    mu : ndarray(n) or array of ndarray(n)
+        stationary distributions of the sampled transition matrices. Only returned if return_statdist=True
 
     Notes
     -----
@@ -1110,11 +1114,27 @@ def sample_tmatrix(C, nsample=1, reversible=False, mu=None, T0=None):
         _showSparseConversionWarning()
         C = C.toarray()
 
-    if reversible:
-        raise NotImplementedError('Reversible transition matrix sampling is currently disabled')
+    if mu is not None:
+        raise NotImplementedError('Transition matrix sampling with fixed stationary dist. is currently not implemented')
 
     from dense.tmatrix_sampler import sample_nonrev
-    return sample_nonrev(C, nsample=nsample)
+    from dense.tmatrix_sampler import sample_rev
+
+    if reversible:
+        return sample_rev(C, nsample=nsample, return_statdist=return_statdist)
+    else:
+        Ps = sample_nonrev(C, nsample=nsample)
+        if return_statdist:
+            import pyemma.msm.analysis as msmana
+            if nsample == 1:
+                return Ps, msmana.stationary_distribution(Ps)
+            else:
+                mus = np.empty((nsample), dtype=object)
+                for i in range(nsample):
+                    mus[i] = msmana.stationary_distribution(Ps[i])
+                return Ps, mus
+        else:
+            return Ps
 
 
 def tmatrix_sampler(C, reversible=False, mu=None, T0=None):
@@ -1129,7 +1149,7 @@ def tmatrix_sampler(C, reversible=False, mu=None, T0=None):
         restricted to those obeying a detailed balance condition,
         else draw from the whole ensemble of stochastic matrices.
     mu : array_like
-        The stationary distribution of the transition matrix samples.
+        A fixed stationary distribution. Transition matrices with that stationary distribution will be sampled
     T0 : ndarray, shape=(n, n) or scipy.sparse matrix
         Starting point of the MC chain of the sampling algorithm.
         Has to obey the required constraints.
@@ -1146,18 +1166,22 @@ def tmatrix_sampler(C, reversible=False, mu=None, T0=None):
 
     .. math:: \mathbb{P}(T|C) \propto \prod_{i=1}^{M} \left( \prod_{j=1}^{M} p_{ij}^{c_{ij}} \right)
 
-    The method can generate samples from the posterior under the follwing two constraints
-    
+    The method can generate samples from the posterior under the following constraints
+
+    **Reversible sampling**
+
+    Using a MCMC sampler outlined in .. [1] it is ensured that samples
+    from the posterior are reversible, i.e. there is a probability
+    vector :math:`(\mu_i)` such that :math:`\mu_i t_{ij} = \mu_j
+    t_{ji}` holds for all :math:`i,j`.
+
+    References
+    ----------
+    .. [1] Noe, F. 2008. Probability distributions of molecular observables
+        computed from Markov state models. J Chem Phys 128: 244103.
+
     """
-    # TODO: re-include reversible documention when implemented
-    # The method can generate samples from the posterior under the follwing two constraints
-    #
-    # **Reversible sampling**
-    #
-    # Using a MCMC sampler outlined in .. [1] it is ensured that samples
-    # from the posterior are reversible, i.e. there is a probability
-    # vector :math:`(\mu_i)` such that :math:`\mu_i t_{ij} = \mu_j
-    # t_{ji}` holds for all :math:`i,j`.
+    # TODO: re-include fixed-pi documention when implemented
     #
     # **Reversible sampling with fixed stationary vector**
     #
@@ -1165,10 +1189,6 @@ def tmatrix_sampler(C, reversible=False, mu=None, T0=None):
     # from the posterior fulfill detailed balance with respect to a given
     # probability vector :math:`(\mu_i)`.
     #
-    # References
-    # ----------
-    # .. [1] Noe, F. 2008. Probability distributions of molecular observables
-    #     computed from Markov state models. J Chem Phys 128: 244103.
     # .. [2] Trendelkamp-Schroer, B and F Noe. 2013. Efficient Bayesian estimation
     #     of Markov model transition matrices with given stationary distribution.
     #     J Chem Phys 138: 164113.
@@ -1178,8 +1198,8 @@ def tmatrix_sampler(C, reversible=False, mu=None, T0=None):
         C = C.toarray()
 
     if reversible:
-        raise NotImplementedError('Reversible transition matrix sampling is currently disabled')
-
-    from dense.tmatrix_sampler import TransitionMatrixSamplerNonrev
-    sampler = TransitionMatrixSamplerNonrev(C)
-    return sampler
+        from dense.tmatrix_sampler import TransitionMatrixSamplerRev
+        return TransitionMatrixSamplerRev(C)
+    else:
+        from dense.tmatrix_sampler import TransitionMatrixSamplerNonrev
+        return TransitionMatrixSamplerNonrev(C)
