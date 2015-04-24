@@ -81,7 +81,7 @@ def is_tuple_of_float(l):
     """
     return is_iterable_of_float(l)
 
-def is_int_array(l):
+def is_int_vector(l):
     r"""Checks if l is a numpy array of integers
 
     """
@@ -99,8 +99,8 @@ def is_int_matrix(l):
             return True
     return False
 
-def is_float_array(l):
-    r"""Checks if l is a numpy array of floats
+def is_float_vector(l):
+    r"""Checks if l is a 1D numpy array of floats
 
     """
     if isinstance(l, np.ndarray):
@@ -109,11 +109,20 @@ def is_float_array(l):
     return False
 
 def is_float_matrix(l):
-    r"""Checks if l is a numpy array of floats
+    r"""Checks if l is a 2D numpy array of floats
 
     """
     if isinstance(l, np.ndarray):
         if l.ndim == 2 and (l.dtype.kind == 'f'):
+            return True
+    return False
+
+def is_float_array(l):
+    r"""Checks if l is a numpy array of floats (any dimension
+
+    """
+    if isinstance(l, np.ndarray):
+        if l.dtype.kind == 'f':
             return True
     return False
 
@@ -134,7 +143,7 @@ def ensure_dtraj(dtraj):
     r"""Makes sure that dtraj is a discrete trajectory (array of int)
 
     """
-    if is_int_array(dtraj):
+    if is_int_vector(dtraj):
         return dtraj
     elif is_list_of_int(dtraj):
         return np.array(dtraj, dtype=int)
@@ -158,7 +167,7 @@ def ensure_dtraj_list(dtrajs):
     else:
         return [ensure_dtraj(dtrajs)]
 
-def ensure_int_array(I, require_order = False):
+def ensure_int_vector(I, require_order = False):
     """Checks if the argument can be converted to an array of ints and does that.
 
     Parameters
@@ -173,7 +182,7 @@ def ensure_int_array(I, require_order = False):
         numpy array with the integers contained in the argument
 
     """
-    if is_int_array(I):
+    if is_int_vector(I):
         return I
     elif is_int(I):
         return np.array([I])
@@ -191,7 +200,7 @@ def ensure_int_array(I, require_order = False):
     else:
         raise TypeError('Argument is not of a type that is convertible to an array of integers.')
 
-def ensure_int_array_or_None(F, require_order = False):
+def ensure_int_vector_or_None(F, require_order = False):
     """Ensures that F is either None, or a numpy array of floats
 
     If F is already either None or a numpy array of floats, F is returned (no copied!)
@@ -210,9 +219,9 @@ def ensure_int_array_or_None(F, require_order = False):
     if F is None:
         return F
     else:
-        return ensure_int_array(F, require_order = require_order)
+        return ensure_int_vector(F, require_order = require_order)
 
-def ensure_float_array(F, require_order = False):
+def ensure_float_vector(F, require_order = False):
     """Ensures that F is a numpy array of floats
 
     If F is already a numpy array of floats, F is returned (no copied!)
@@ -230,7 +239,7 @@ def ensure_float_array(F, require_order = False):
         numpy array with the floats contained in the argument
 
     """
-    if is_float_array(F):
+    if is_float_vector(F):
         return F
     elif is_float(F):
         return np.array([F])
@@ -246,7 +255,7 @@ def ensure_float_array(F, require_order = False):
     else:
         raise TypeError('Argument is not of a type that is convertible to an array of floats.')
 
-def ensure_float_array_or_None(F, require_order = False):
+def ensure_float_vector_or_None(F, require_order = False):
     """Ensures that F is either None, or a numpy array of floats
 
     If F is already either None or a numpy array of floats, F is returned (no copied!)
@@ -265,7 +274,7 @@ def ensure_float_array_or_None(F, require_order = False):
     if F is None:
         return F
     else:
-        return ensure_float_array(F, require_order = require_order)
+        return ensure_float_vector(F, require_order = require_order)
 
 def ensure_dtype_float(x, default=np.float64):
     r"""Makes sure that x is type of float
@@ -288,7 +297,7 @@ def ensure_traj(traj):
     """
     if is_float_matrix(traj):
         return traj
-    elif is_float_array(traj):
+    elif is_float_vector(traj):
         return traj[:,None]
     else:
         try:
@@ -296,7 +305,7 @@ def ensure_traj(traj):
             arr = ensure_dtype_float(arr)
             if is_float_matrix(arr):
                 return arr
-            if is_float_array(arr):
+            if is_float_vector(arr):
                 return arr[:,None]
             else:
                 raise TypeError('Argument traj cannot be cast into a two-dimensional array. Check type.')
