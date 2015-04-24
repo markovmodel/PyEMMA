@@ -29,6 +29,7 @@ Created on 19.01.2015
 from .transformer import Transformer
 
 from pyemma.util.progressbar import ProgressBar
+from pyemma.util.progressbar.gui import show_progressbar
 from pyemma.util.linalg import eig_corr
 from pyemma.util.annotators import doc_inherit
 
@@ -208,7 +209,7 @@ class TICA(Transformer):
             self._N_mean += np.shape(X)[0]
             # counting chunks and log of eta
             self._progress_mean.numerator += 1
-            self._show_progressbar(self._progress_mean)
+            show_progressbar(self._progress_mean)
 
             if last_chunk:
                 self.mu /= self._N_mean
@@ -263,7 +264,7 @@ class TICA(Transformer):
                     self._N_cov += 2.0 * np.shape(X)[0]
 
                 self._progress_cov.numerator += 1
-                self._show_progressbar(self._progress_cov)
+                show_progressbar(self._progress_cov)
 
             else:
                 self._logger.warning("trajectory nr %i too short, skipping it" % itraj)

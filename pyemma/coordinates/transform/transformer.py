@@ -25,13 +25,11 @@
 __author__ = 'noe, marscher'
 
 from pyemma.util.log import getLogger
-from pyemma.util.config import conf_values
-from pyemma.util.progressbar.misc import interactive_session
 from pyemma.util.progressbar import ProgressBar
+from pyemma.util.progressbar.gui import show_progressbar
 
 from itertools import count
 import numpy as np
-import sys
 from math import ceil
 
 from abc import ABCMeta, abstractmethod
@@ -156,44 +154,6 @@ class Transformer(object):
         name = "%s.%s[%i]" % (package, self.__class__.__name__, count)
         self._name = name
         self._logger = getLogger(name)
-
-    def _show_progressbar(self, bar, append_time_diff=True):
-        """ shows given bar either using an ipython widget, if in
-        interactive session or simply use the string format of it and print it
-        to stdout."""
-        if not conf_values['pyemma'].show_progress_bars == 'True':
-            return
-
-        # note: this check ensures we have IPython.display and so on.
-        if interactive_session:
-            # create IPython widgets on first call
-            if not hasattr(bar, 'widget'):
-                from IPython.display import display
-                from IPython.html.widgets import IntProgress, Box, Text
-                box = Box()
-                text = Text()
-                progress_widget = IntProgress()
-
-                box.children = [text, progress_widget]
-                bar.widget = box
-                widget = box
-
-                # make it visible once
-                display(box)
-            else:
-                widget = bar.widget
-
-            # update widgets slider value and description text
-            desc = bar.description
-            if append_time_diff:
-                desc += ':\tETA:' + bar._generate_eta(bar._eta.eta_seconds)
-            assert isinstance(widget.children[0], Text)
-            assert isinstance(widget.children[1], IntProgress)
-            widget.children[0].placeholder = desc
-            widget.children[1].value = bar.percent
-        else:
-            sys.stdout.write("\r" + str(bar))
-            sys.stdout.flush()
 
     def number_of_trajectories(self):
         """
@@ -630,7 +590,7 @@ class Transformer(object):
         t = 0  # first time point
         assert self._parametrized, "has to be parametrized before getting output!"
         progress = ProgressBar(self._n_chunks(stride), description=
-                               'getting output of ' + self._name)
+                               'getting output of ' + self.__class__.__name__)
 
         for itraj, chunk in self.iterator(stride=stride):
             if itraj != last_itraj:
@@ -642,6 +602,6 @@ class Transformer(object):
 
             # update progress
             progress.numerator += 1
-            self._show_progressbar(progress)
+            show_progressbar(progress)
 
         return trajs

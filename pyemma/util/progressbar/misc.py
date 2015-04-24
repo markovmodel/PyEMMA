@@ -146,3 +146,4 @@ def __attached_to_ipy_notebook():
             return True
 
 interactive_session = __attached_to_ipy_notebook()
+""" are we running an interactive IPython notebook session """

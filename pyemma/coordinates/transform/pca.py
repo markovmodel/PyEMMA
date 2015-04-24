@@ -30,6 +30,7 @@ from .transformer import Transformer
 
 from pyemma.util.annotators import doc_inherit
 from pyemma.util.progressbar import ProgressBar
+from pyemma.util.progressbar.gui import show_progressbar
 
 __all__ = ['PCA']
 
@@ -165,7 +166,7 @@ class PCA(Transformer):
 
             # counting chunks and log of eta
             self._progress_mean.numerator += 1
-            self._show_progressbar(self._progress_mean)
+            show_progressbar(self._progress_mean)
 
             if last_chunk:
                 self.mu /= self.N
@@ -180,7 +181,7 @@ class PCA(Transformer):
             self.cov += self._dot_prod_tmp
 
             self._progress_cov.numerator += 1
-            self._show_progressbar(self._progress_cov)
+            show_progressbar(self._progress_cov)
 
             if last_chunk:
                 self.cov /= self.N - 1
