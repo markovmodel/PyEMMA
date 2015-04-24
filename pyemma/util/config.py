@@ -25,7 +25,7 @@
 r'''
 Runtime Configuration
 =====================
-To configure the runtime behavior like logging system or other parameters,
+To configure the runtime behavior such as logging the system or other parameters,
 the configuration module reads several config files to build
 its final set of settings. It searches for the file 'pyemma.cfg' in several
 locations with different priorities:
@@ -35,7 +35,7 @@ locations with different priorities:
 3. ~/pyemma.cfg
 4. $PYTHONPATH/pyemma/pyemma.cfg (always taken as default configuration file)
 
-The default values are stored in later file to ensure these values are always
+The default values are stored in the latter file to ensure these values are always
 defined. This is preferred over hardcoding them somewhere in the Python code.
 
 Default configuration file
@@ -110,7 +110,7 @@ class AttribStore(dict):
 
 def readConfiguration():
     """
-    TODO: consider using json to support arbitray python objects in ini file (if this getting more complex)
+    TODO: consider using json to support arbitrary python objects in ini file (if this getting more complex)
     """
     import pkg_resources
 

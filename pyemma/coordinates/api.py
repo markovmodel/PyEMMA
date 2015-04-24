@@ -121,9 +121,9 @@ def featurizer(topfile):
 
 # TODO: DOC - which topology file formats does mdtraj support? Find out and complete docstring
 def load(trajfiles, features=None, top=None, stride=1):
-    """ loads coordinate features into memory
+    """ Loads coordinate features into memory.
 
-    If your memory is not big enough consider the use of pipeline, or use the stride option to subsample the data.
+    If your memory is not big enough consider the use of **pipeline**, or use the stride option to subsample the data.
 
     Parameters
     ----------
@@ -150,7 +150,7 @@ def load(trajfiles, features=None, top=None, stride=1):
            * MDTRAJ (.hdf5)
            * LAMMPS trajectory format (.lammpstrj)
 
-        Raw data can be in following format:
+        Raw data can be in the following format:
 
            * tabulated ASCII (.dat, .txt)
            * binary python (.npy, .npz)
@@ -168,8 +168,8 @@ def load(trajfiles, features=None, top=None, stride=1):
     Returns
     -------
     data : ndarray or list of ndarray
-        If a single filename was given as an input (and unless the format is .npz) , will return a single ndarray of
-        size (T, d), where T is the number of time steps in the trajectory and d is the number of features
+        If a single filename was given as an input (and unless the format is .npz), the return will be a single ndarray
+        of size (T, d), where T is the number of time steps in the trajectory and d is the number of features
         (coordinates, observables). When reading from molecular dynamics data without a specific featurizer,
         each feature vector will have size d=3N and will hold the Cartesian coordinates in the sequence
         (x1, y1, z1, x2, y2, z2, ...).
@@ -196,27 +196,27 @@ def load(trajfiles, features=None, top=None, stride=1):
 
 
 def source(inp, features=None, top=None):
-    """ Wraps input as data source for pipeline
+    """ Wraps input as data source for pipeline.
 
-        Use this function to construct the first stage of a data processing :func:`pipeline`.
+    Use this function to construct the first stage of a data processing :func:`pipeline`.
 
     Parameters
     ----------
     inp : str or ndarray or list of strings or list of ndarrays
         The inp file names or input data. Can be given in any of these ways:
 
-        1. File name of a single trajectory. Can have any of the molecular dynamics trajectory formats or
-           raw data formats specified in :py:func:`load`
-        2. List of trajectory file names. Can have any of the molecular dynamics trajectory formats or
-           raw data formats specified in :py:func:`load`
+        1. File name of a single trajectory. It can have any of the molecular dynamics trajectory formats or
+           raw data formats specified in :py:func:`load`.
+        2. List of trajectory file names. It can have any of the molecular dynamics trajectory formats or
+           raw data formats specified in :py:func:`load`.
         3. Molecular dynamics trajectory in memory as a numpy array of shape (T, N, 3) with T time steps, N atoms
-           each having three (x,y,z) spatial coordinates
+           each having three (x,y,z) spatial coordinates.
         4. List of molecular dynamics trajectories in memory, each given as a numpy array of shape (T_i, N, 3),
            where trajectory i has T_i time steps and all trajectories have shape (N, 3).
         5. Trajectory of some features or order parameters in memory
-           as a numpy array of shape (T, N) with T time steps and N dimensions
+           as a numpy array of shape (T, N) with T time steps and N dimensions.
         6. List of trajectories of some features or order parameters in memory, each given as a numpy array
-           of shape (T_i, N), where trajectory i has T_i time steps and all trajectories have N dimensions
+           of shape (T_i, N), where trajectory i has T_i time steps and all trajectories have N dimensions.
 
     features : MDFeaturizer, optional, default = None
         a featurizer object specifying how molecular dynamics files should be read (e.g. intramolecular distances,
@@ -224,7 +224,7 @@ def source(inp, features=None, top=None):
         trajectories or data, and will otherwise create a warning and have no effect
 
     top : str, optional, default = None
-        a topology file name. This is needed when molecular dynamics trajectories are given and no featurizer is given.
+        A topology file name. This is needed when molecular dynamics trajectories are given and no featurizer is given.
         In this case, only the Cartesian coordinates will be read.
 
     See also
@@ -258,11 +258,12 @@ def source(inp, features=None, top=None):
 
 
 def pipeline(stages, run=True, stride=1):
-    """Data analysis pipeline
+    """ Data analysis pipeline.
 
     Constructs a data analysis :class:`Pipeline <pyemma.coordinates.pipelines.Pipeline>` and parametrizes it
     (unless prevented).
-    If this function takes too long, consider loading data in memory, or if this doesn't fit, use the stride parameter.
+    If this function takes too long, consider loading data in memory. Alternatively if the data is to large to be loaded
+    into memory make use of the stride parameter.
 
     Parameters
     ----------
@@ -301,7 +302,7 @@ def discretizer(reader,
                 cluster=None,
                 run=True,
                 stride=1):
-    """Specialized pipeline: From trajectories to clustering
+    """ Specialized pipeline: From trajectories to clustering.
 
     Constructs a pipeline that consists of three stages:
 
@@ -310,7 +311,7 @@ def discretizer(reader,
        3. a clustering stage (mandatory)
 
     This function is identical to calling :func:`pipeline` with the three stages, it is only meant as a guidance
-    for the (probably) most common case of using a pipeline.
+    for the (probably) most common usage cases of a pipeline.
 
     Parameters
     ----------
@@ -350,7 +351,8 @@ def discretizer(reader,
     >>> cluster = cluster_regspace(dmin=0.1)
     >>> disc = discretizer(reader, transform, cluster)
 
-    Finally you want to run the pipeline
+    Finally you want to run the pipeline:
+
     >>> disc.parametrize()
 
 
@@ -430,7 +432,7 @@ def memory_reader(data):
 
 
 def save_traj(traj_inp, indexes, outfile, verbose=False):
-    r"""Saves a sequence of frames as a trajectory
+    r""" Saves a sequence of frames as a single trajectory.
 
     Extracts the specified sequence of time/trajectory indexes from the input loader
     and saves it in a molecular dynamics trajectory. The output format will be determined
@@ -498,15 +500,15 @@ def save_traj(traj_inp, indexes, outfile, verbose=False):
 
 
 def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None, inmemory=False, verbose=False):
-    r"""Saves sequences of frames as trajectories
+    r""" Saves sequences of frames as multiple trajectories.
 
     Extracts a number of specified sequences of time/trajectory indexes from the input loader
-    and saves them in a set of molecular dynamics trajectoryies.
+    and saves them in a set of molecular dynamics trajectories.
     The output filenames are obtained by prefix + str(n) + .fmt, where n counts the output
     trajectory and extension is either set by the user, or else determined from the input.
     Example: When the input is in dcd format, and indexes is a list of length 3, the output will
     by default go to files "set_1.dcd", "set_2.dcd", "set_3.dcd". If you want files to be stored
-    in a specific subfolder, simply specify the relativ path in the prefix, e.g. prefix='~/macrostates/pcca_'
+    in a specific subfolder, simply specify the relative path in the prefix, e.g. prefix='~/macrostates/pcca_'
 
     Parameters
     ----------
@@ -522,25 +524,26 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None, inmemo
         output filename prefix. Can include an absolute or relative path name.
 
     fmt : str, optional, default = None
-        Outpuf file format. By default, the file extension and format. will be determined from the input. If a different
-        format is desired, specify the corresponding file extension here without a dot, e.g. "dcd" or "xtc"
+        Outpuf file format. By default, the file extension and format. It will be determined from the input. If a
+        different format is desired, specify the corresponding file extension here without a dot, e.g. "dcd" or "xtc".
 
     outfiles : list of str, optional, default = None
-        A list of output file names. When given, this will override the settings of prefix and fmt, and output
-        will be written to these files
+        A list of output filenames. When given, this will override the settings of prefix and fmt, and output
+        will be written to these files.
 
     inmemory : Boolean, default = False (untested for large files)
         Instead of internally calling traj_save for every (T_i,2) array in "indexes", only one call is made. Internally,
         this generates a potentially large molecular trajectory object in memory that is subsequently sliced into the
-        files of "outfiles". Should be faster for large "indexes" arrays and large files, though it is quite memory intensive.
-        The optimal situation is to avoid streaming two times through a huge file for "indexes" of type:
+        files of "outfiles". Should be faster for large "indexes" arrays and large files, though it is quite memory
+        intensive. The optimal situation is to avoid streaming two times through a huge file for "indexes" of type:
+
         indexes = [
                    [1 4000000],
                    [1 4000001]
                   ]
 
     verbose : boolean, default is False
-        Verbose output while looking for "indexes" in the "traj_inp.trajfiles"
+        Verbose output while looking for "indexes" in the "traj_inp.trajfiles".
 
     Returns
     -------
@@ -612,7 +615,7 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None, inmemo
 # =========================================================================
 
 def _param_stage(previous_stage, this_stage, stride=1):
-    """Parametrizes the given pipelining stage if a valid source is given
+    """ Parametrizes the given pipelining stage if a valid source is given.
 
     Parameters
     ----------
@@ -640,7 +643,7 @@ def _param_stage(previous_stage, this_stage, stride=1):
 
 
 def pca(data=None, dim=2, stride=1):
-    r"""Principal Component Analysis (PCA).
+    r""" Principal Component Analysis (PCA).
 
     PCA is a linear transformation method that finds coordinates of maximal variance.
     A linear projection onto the principal components thus makes a minimal error in terms
@@ -648,7 +651,7 @@ def pca(data=None, dim=2, stride=1):
     for Markov model construction because for that purpose the main objective is to
     preserve the slow processes which can sometimes be associated with small variance.
 
-    Estimates a PCA transformation from data. When input data is given as an
+    It estimates a PCA transformation from data. When input data is given as an
     argument, the estimation will be carried out right away, and the resulting
     object can be used to obtain eigenvalues, eigenvectors or project input data
     onto the principal components. If data is not given, this object is an
@@ -678,7 +681,10 @@ def pca(data=None, dim=2, stride=1):
 
     Returns
     -------
-    obj : a :class:`PCA <pyemma.coordinates.transform.PCA>` transformation object
+    pca : :class:PCA <pyemma.coordinates.transform.PCA> object
+    Object for Principle component analysis (PCA) analysis.
+    PCA eigenvalues and eigenvectors, and the projection of input data to the dominant PCA
+
 
     Notes
     -----
@@ -716,23 +722,23 @@ def pca(data=None, dim=2, stride=1):
 
 
 def tica(data=None, lag=10, dim=2, stride=1, force_eigenvalues_le_one=False):
-    r"""Time-lagged independent component analysis (TICA).
+    r""" Time-lagged independent component analysis (TICA).
 
-    TICA is a linear transformation method. In contrast to PCA that finds
+    TICA is a linear transformation method. In contrast to PCA, which finds
     coordinates of maximal variance, TICA finds coordinates of maximal autocorrelation
-    at the given lag time. Thus, TICA is useful to find the *slow* components
+    at the given lag time. Therefore, TICA is useful in order to find the *slow* components
     in a dataset and thus an excellent choice to transform molecular dynamics
     data before clustering data for the construction of a Markov model.
     When the input data is the result of a Markov process (such as thermostatted
     molecular dynamics), TICA finds in fact an approximation to the eigenfunctions and
     eigenvalues of the underlying Markov operator [1]_.
 
-    Estimates a TICA transformation from data. When input data is given as an
-    argument, the estimation will be carried out right away, and the resulting
+    It estimates a TICA transformation from *data*. When input data is given as an
+    argument, the estimation will be carried out straight away, and the resulting
     object can be used to obtain eigenvalues, eigenvectors or project input data
-    onto the slowest TICA components. If data is not given, this object is an
+    onto the slowest TICA components. If no data is given, this object is an
     empty estimator and can be put into a :func:`pipeline` in order to use TICA
-    in streaming mode.
+    in the streaming mode.
 
     Parameters
     ----------
@@ -747,7 +753,7 @@ def tica(data=None, lag=10, dim=2, stride=1, force_eigenvalues_le_one=False):
         the number of dimensions (independent components) to project onto. A call to the
         :func:`map <pyemma.coordinates.transform.TICA.map>` function reduces the d-dimensional
         input to only dim dimensions such that the data preserves the maximum possible autocorrelation
-        amonst dim-dimensional linear projections.
+        amongst dim-dimensional linear projections.
 
     stride : int, optional, default = 1
         If set to 1, all input data will be used for estimation. Note that this could cause this calculation
@@ -763,13 +769,14 @@ def tica(data=None, lag=10, dim=2, stride=1, force_eigenvalues_le_one=False):
 
     Returns
     -------
-    tica : a :class:`TICA <pyemma.coordinates.transform.TICA>` transformation object.
-        Can be used to obtain the TICA eigenvalues and eigenvectors, and to
-        perform a projection of input data to the dominant TICA eigenvectors.
+    tica : :class:TICA <pyemma.coordinates.transform.TICA> object
+        Object for time-lagged independent component (TICA) analysis.
+        TICA eigenvalues and eigenvectors, and the projection of input data to the dominant TICA
+
 
     Notes
     -----
-    Given a sequence of multivariate data :math:`X_t`, computes the mean-free
+    Given a sequence of multivariate data :math:`X_t`, it computes the mean-free
     covariance and time-lagged covariance matrix:
 
     .. math::
@@ -779,7 +786,7 @@ def tica(data=None, lag=10, dim=2, stride=1, force_eigenvalues_le_one=False):
 
     and solves the eigenvalue problem
 
-    .. math:: C_{\tau} r_i = C_0 \lambda_i r_i
+    .. math:: C_{\tau} r_i = C_0 \lambda_i r_i,
 
     where :math:`r_i` are the independent components and :math:`\lambda_i` are
     their respective normalized time-autocorrelations. The eigenvalues are
@@ -787,7 +794,7 @@ def tica(data=None, lag=10, dim=2, stride=1, force_eigenvalues_le_one=False):
 
     .. math::
 
-        t_i = -\frac{\tau}{\ln |\lambda_i|}
+        t_i = -\frac{\tau}{\ln |\lambda_i|}.
 
     When used as a dimension reduction method, the input data is projected
     onto the dominant independent components.
@@ -833,11 +840,12 @@ def kmeans(data=None, k=100, max_iter=1000, stride=1):
     return cluster_kmeans(data, k, max_iter, stride=stride)
 
 
+
 def cluster_kmeans(data=None, k=100, max_iter=10, stride=1, metric='euclidean'):
     r"""k-means clustering
 
-    If given data, performs a k-means clustering and then assigns the data using a Voronoi discretization.
-    Returns a :class:`KmeansClustering <pyemma.coordinates.clustering.KmeansClustering>` object
+    If data is given, it performs a k-means clustering and then assigns the data using a Voronoi discretization.
+    It returns a :class:`KmeansClustering <pyemma.coordinates.clustering.KmeansClustering>` object
     that can be used to extract the discretized
     data sequences, or to assign other data points to the same partition. If data is not given, an
     empty :class:`KmeansClustering <pyemma.coordinates.clustering.KmeansClustering>` will be created that
@@ -865,16 +873,19 @@ def cluster_kmeans(data=None, k=100, max_iter=10, stride=1, metric='euclidean'):
 
     Returns
     -------
-    kmeans : A :class:'KmeansClustering <pyemma.coordinates.clustering.KmeansClustering>' object
+    kmeans : :class:KmeansClustering <pyemma.coordinates.clustering.KmeansClustering> object
+        Object for kmeans clustering.
+        It holds discrete trajectories and cluster center information.
+
 
     Examples
     --------
 
     >>> import numpy as np
+    >>> import pyemma.coordinates as coor
     >>> traj_data = [np.random.random((100, 3)), np.random.random((100,3))]
-    >>> clustering = kmeans(traj_data, n_clusters=20)
-    >>> clustering.dtrajs
-
+    >>> cluster_obj = coor.cluster_kmeans(traj_data, k=20, stride=1)
+    >>> cluster_obj.get_output()
     [array([0, 0, 1, ... ])]
 
     """
@@ -915,7 +926,10 @@ def cluster_uniform_time(data=None, k=100, stride=1, metric='euclidean'):
 
     Returns
     -------
-        A :class:`UniformTimeClustering <pyemma.coordinates.clustering.UniformTimeClustering>` object
+    uniformTime : :class:UniformTimeClustering <pyemma.coordinates.clustering.UniformTimeClustering> object
+        Object for uniform time clustering.
+        It holds discrete trajectories and cluster center information.
+
 
     """
     res = _UniformTimeClustering(k, metric=metric)
@@ -930,7 +944,7 @@ def regspace(data=None, dmin=-1, max_centers=1000, stride=1):
 def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1, metric='euclidean'):
     r"""Regular space clustering
 
-    If given data, performs a regular space clustering [1]_ and returns a
+    If given data, it performs a regular space clustering [1]_ and returns a
     :class:`RegularSpaceClustering <pyemma.coordinates.clustering.RegularSpaceClustering>` object that
     can be used to extract the discretized data sequences, or to assign other data points to the same partition.
     If data is not given, an empty
@@ -968,7 +982,9 @@ def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1, metric='euc
 
     Returns
     -------
-    obj : A :class:`RegularSpaceClustering <pyemma.coordinates.clustering.RegularSpaceClustering>` object
+    
+        Object for regular space clustering.
+        It holds discrete trajectories and cluster center information.
 
     References
     ----------
@@ -1015,7 +1031,7 @@ def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True,
         you can parametrize at a long stride, and still map all frames through the transformer.
 
     return_dtrajs : bool, optional, default = True
-        If true will return the discretized trajectories obtained from assigning the coordinates in the data
+        If True, it will return the discretized trajectories obtained from assigning the coordinates in the data
         input. This will only have effect if data is given. When data is not given or return_dtrajs is False,
         the :class:'AssignCenters <_AssignCenters>' object will be returned.
 
@@ -1039,7 +1055,6 @@ def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True,
     >>> cluster_centers = np.loadtxt('my_centers.csv')
     >>> dtrajs = assign_to_centers(data, cluster_centers)
     >>> print dtrajs
-
     [array([0, 0, 1, ... ])]
 
     """
