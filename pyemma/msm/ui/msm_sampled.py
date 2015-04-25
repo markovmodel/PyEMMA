@@ -8,37 +8,33 @@ from pyemma.util import statistics as stat
 
 class SampledMSM(EstimatedMSM):
 
-    # TODO: check all parameters, remove redundancies
-    def __init__(self, dtrajs, lag, nsample=1000,
-                 reversible=True, sparse=False, connectivity='largest', estimate=True, sample=True,
-                 dt='1 step',
-                 **kwargs):
+    def __init__(self, count_estimator, tmatrix_estimator, tmatrix_sampler, lag,
+                 nsample=1000, conf=0.95, estimate=True, sample=True, dt='1 step'):
         # superclass constructor
-        EstimatedMSM.__init__(self, dtrajs, lag, reversible=reversible, sparse=sparse, connectivity=connectivity,
-                              estimate=estimate, dt=dt, **kwargs)
+        EstimatedMSM.__init__(self, count_estimator, tmatrix_estimator, lag, estimate=estimate, dt=dt)
 
         # set params
+        self._tmatrix_sampler = tmatrix_sampler
         self._nsample = nsample
-        # set defaults
-        self.confidence = 0.95
+        self._confidence = conf
 
-        # estimate now if requested.
+        # sample now if requested.
         self._sampled = False
         if sample:
             self.sample()
 
     def sample(self):
         # and additionally run the sampler
-        import pyemma.msm.estimation as msmest
-        self.sample_Ps,  self.sample_mus = msmest.sample_tmatrix(self.count_matrix_active, nsample=self._nsample,
-                                                                 reversible=self._reversible, return_statdist=True)
+        self.sample_Ps,  self.sample_mus = self._tmatrix_sampler.sample(C=self.count_matrix_active,
+                                                                        nsample=self._nsample,
+                                                                        return_statdist=True)
         self._sampled = True
 
     def _assert_sampled(self):
         assert self._sampled, "MSM hasn't been sampled yet, make sure to call MSM.sample()"
 
     def set_confidence(self, conf):
-        self.confidence = conf
+        self._confidence = conf
 
     def _do_sample_eigendecomposition(self, k, ncv=None):
         """Conducts the eigenvalue decompositions for all sampled matrices.
@@ -150,7 +146,7 @@ class SampledMSM(EstimatedMSM):
 
         """
         self._assert_sampled()
-        return stat.confidence_interval_arr(self.sample_mus, alpha=self.confidence)
+        return stat.confidence_interval_arr(self.sample_mus, alpha=self._confidence)
 
     def eigenvalues_mean(self, k=None, ncv=None):
         """Sample mean for the eigenvalues.
@@ -183,7 +179,7 @@ class SampledMSM(EstimatedMSM):
 
         """
         self._ensure_sample_eigendecomposition(k=k, ncv=ncv)
-        return stat.confidence_interval_arr(self.sample_eigenvalues, alpha=self.confidence)
+        return stat.confidence_interval_arr(self.sample_eigenvalues, alpha=self._confidence)
 
     def eigenvectors_left_mean(self, k=None, ncv=None):
         """Sample mean for the left eigenvectors.
@@ -216,7 +212,7 @@ class SampledMSM(EstimatedMSM):
 
         """
         self._ensure_sample_eigendecomposition(k=k, ncv=ncv)
-        return stat.confidence_interval_arr(self.sample_Ls, alpha=self.confidence)
+        return stat.confidence_interval_arr(self.sample_Ls, alpha=self._confidence)
 
     def eigenvectors_right_mean(self, k=None, ncv=None):
         """Sample mean for the right eigenvectors.
@@ -249,13 +245,13 @@ class SampledMSM(EstimatedMSM):
 
         """
         self._ensure_sample_eigendecomposition(k=k, ncv=ncv)
-        return stat.confidence_interval_arr(self.sample_Rs, alpha=self.confidence)
+        return stat.confidence_interval_arr(self.sample_Rs, alpha=self._confidence)
 
     def _sample_timescales(self):
         """Compute sample timescales from the sample eigenvalues"""
         res = np.empty((self._nsample), dtype=np.object)
         for i in range(self._nsample):
-            res[i] = -self._tau / np.log(np.abs(self.sample_eigenvalues[i][1:]))
+            res[i] = -self._lag / np.log(np.abs(self.sample_eigenvalues[i][1:]))
         return res
 
     def timescales_mean(self, k=None, ncv=None):
@@ -289,7 +285,7 @@ class SampledMSM(EstimatedMSM):
 
         """
         self._ensure_sample_eigendecomposition(k=k, ncv=ncv)
-        return stat.confidence_interval_arr(self._sample_timescales(), alpha=self.confidence)
+        return stat.confidence_interval_arr(self._sample_timescales(), alpha=self._confidence)
 
 
     def _sample_mfpt(self, A, B):
@@ -330,7 +326,7 @@ class SampledMSM(EstimatedMSM):
 
         """
         self._assert_sampled()
-        return stat.confidence_interval_arr(self._sample_mfpt(A,B), alpha=self.confidence)
+        return stat.confidence_interval_arr(self._sample_mfpt(A,B), alpha=self._confidence)
 
     def _sample_committor_forward(self, A, B):
         """Compute sample timescales from the sample eigenvalues"""
@@ -370,7 +366,7 @@ class SampledMSM(EstimatedMSM):
 
         """
         self._assert_sampled()
-        return stat.confidence_interval_arr(self._sample_committor_forward(A,B), alpha=self.confidence)
+        return stat.confidence_interval_arr(self._sample_committor_forward(A,B), alpha=self._confidence)
 
 
     def _sample_committor_backward(self, A, B):
@@ -411,4 +407,4 @@ class SampledMSM(EstimatedMSM):
 
         """
         self._assert_sampled()
-        return stat.confidence_interval_arr(self._sample_committor_backward(A,B), alpha=self.confidence)
+        return stat.confidence_interval_arr(self._sample_committor_backward(A,B), alpha=self._confidence)

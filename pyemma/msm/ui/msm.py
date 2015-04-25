@@ -75,7 +75,7 @@ class MSM(object):
         self._timeunit = TimeUnit(dt)
         # set tau to 1. This is just needed in order to make the time-based methods (timescales, mfpt) work even
         # without reference to timed data.
-        self._tau = 1
+        self._lag = 1
 
         # check connectivity
         # TODO: abusing C-connectivity test for T. Either provide separate T-connectivity test or move to a central
@@ -304,7 +304,7 @@ class MSM(object):
         self._ensure_eigendecomposition(k=neig, ncv=ncv)
         from pyemma.msm.analysis.dense.decomposition import timescales_from_eigenvalues as _timescales
 
-        ts = _timescales(self._eigenvalues, tau=self._tau)
+        ts = _timescales(self._eigenvalues, tau=self._lag)
         if neig is None:
             return ts[1:]
         else:
@@ -327,7 +327,7 @@ class MSM(object):
         self._assert_in_active(B)
         from pyemma.msm.analysis import mfpt as __mfpt
         # scale mfpt by lag time
-        return self._tau * __mfpt(P, B, origin=A, mu=mu)
+        return self._lag * __mfpt(P, B, origin=A, mu=mu)
 
     def mfpt(self, A, B):
         """Mean first passage times from set A to set B, in units of the input trajectory time step
@@ -511,7 +511,7 @@ class MSM(object):
         if maxtime is None:
             # by default, use five times the longest relaxation time, because then we have relaxed to equilibrium.
             maxtime = 5 * self.timescales()[0]
-        kmax = int(ceil(float(maxtime) / self._tau))
+        kmax = int(ceil(float(maxtime) / self._lag))
         steps = np.array(range(kmax), dtype=int)
         # compute correlation
         from pyemma.msm.analysis import correlation as _correlation
@@ -519,7 +519,7 @@ class MSM(object):
         # TODO: for this, the correlation function must accept already-available eigenvalue decompositions.
         res = _correlation(self._T, a, obs2=b, times=steps, k=k, ncv=ncv)
         # return times scaled by tau
-        times = self._tau * steps
+        times = self._lag * steps
         return times, res
 
     def fingerprint_correlation(self, a, b=None, k=None, ncv=None):
@@ -569,7 +569,7 @@ class MSM(object):
         from pyemma.msm.analysis import fingerprint_correlation as _fc
         # TODO: this could be improved. If we have already done an eigenvalue decomposition, we could provide it.
         # TODO: for this, the correlation function must accept already-available eigenvalue decompositions.
-        return _fc(self._T, a, obs2=b, tau=self._tau, k=k, ncv=ncv)
+        return _fc(self._T, a, obs2=b, tau=self._lag, k=k, ncv=ncv)
 
     def relaxation(self, p0, a, maxtime=None, k=None, ncv=None):
         r"""Simulates a perturbation-relaxation experiment.
@@ -646,7 +646,7 @@ class MSM(object):
         if maxtime is None:
             # by default, use five times the longest relaxation time, because then we have relaxed to equilibrium.
             maxtime = 5 * self.timescales()[0]
-        kmax = int(ceil(float(maxtime) / self._tau))
+        kmax = int(ceil(float(maxtime) / self._lag))
         steps = np.array(range(kmax), dtype=int)
         # compute relaxation function
         from pyemma.msm.analysis import relaxation as _relaxation
@@ -654,7 +654,7 @@ class MSM(object):
         # TODO: for this, the correlation function must accept already-available eigenvalue decompositions.
         res = _relaxation(self._T, p0, a, times=steps, k=k, ncv=ncv)
         # return times scaled by tau
-        times = self._tau * steps
+        times = self._lag * steps
         return times, res
 
     def fingerprint_relaxation(self, p0, a, k=None, ncv=None):
@@ -706,7 +706,7 @@ class MSM(object):
         from pyemma.msm.analysis import fingerprint_relaxation as _fr
         # TODO: this could be improved. If we have already done an eigenvalue decomposition, we could provide it.
         # TODO: for this, the correlation function must accept already-available eigenvalue decompositions.
-        return _fr(self._T, p0, a, tau=self._tau, k=k, ncv=ncv)
+        return _fr(self._T, p0, a, tau=self._lag, k=k, ncv=ncv)
 
     ################################################################################
     # pcca

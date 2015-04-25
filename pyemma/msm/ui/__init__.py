@@ -50,6 +50,7 @@ ITS-object
    
 """
 from .msm import MSM
-from .msm import EstimatedMSM
+from .msm_estimated import EstimatedMSM
+from .msm_sampled import SampledMSM
 from .timescales import *
 from .chapman_kolmogorov import *
