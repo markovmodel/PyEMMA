@@ -107,48 +107,82 @@ def sample_rev(C, nsample=1, return_statdist=False, T_init=None):
 
 
 class TransitionMatrixSampler:
-    def __init__(self):
-        pass
 
-    def sample(self, nsample = 1):
-        """
+    def __init__(self, C=None):
+        if C is not None:
+            self._C = np.array(C, dtype=np.float64)
+
+    @property
+    def count_matrix(self):
+        return self._C
+
+    def sample(self, C=None, nsample=1, return_statdist=False, T_init=None):
+        """ Generates a reversible sample transition probability matrix given the count matrix C
+
+        Parameters
+        ----------
+        C : ndarray (n,n)
+            count matrix
+        nsample : int, optional, default=1
+            number of samples to be generated
+        return_statdist : bool, optional, default = False
+            if true, will also return the stationary distribution.
+        T_init : ndarray (n,n), optional, default=None
+            initial transition matrix to seed the sampler.
 
         Returns
         -------
-        P : ndarray (n,n)
-            sample of a transition matrix with respect to the likelihood p(C|P)
+        P : ndarray (n,n) or array of ndarray (n,n)
+            samples of a transition matrix with respect to the likelihood p(C|P).
+            If nsample > 1, an array of nsample transition matrices is returned.
+
+        mu : ndarray (n) or array of ndarray (n)
+            stationary distribution of the sampled transition matrix. Only returned if return_statdist=True.
+            If nsample > 1, an array of nsample stationary distributions is returned.
 
         """
         pass
 
 
 class TransitionMatrixSamplerNonrev(TransitionMatrixSampler):
-    def __init__(self, C):
-        TransitionMatrixSampler.__init__(self)
-        #super(TransitionMatrixSamplerNonrev, self).__init__()
-        self._C = C
+    def __init__(self, C=None):
+        TransitionMatrixSampler.__init__(self, C)
 
-    def sample(self, nsample = 1):
-        """
+    def sample(self, C=None, nsample=1, return_statdist=False, T_init=None):
+        if C is not None:
+            self._C = C
 
-        Returns
-        -------
-        P : ndarray (n,n)
-            sample of a transition matrix with respect to the likelihood p(C|P)
-
-        """
-        return sample_nonrev(self._C, nsample=nsample)
+        if nsample==1:
+            if return_statdist:
+                P = _sample_nonrev_single(self.count_matrix)
+                from pyemma.msm.analysis import stationary_distribution
+                mu = stationary_distribution(P)
+                return (P,mu)
+            else:
+                return _sample_nonrev_single(self.count_matrix)
+        elif nsample > 1:
+            Ps = sample_nonrev(self.count_matrix, nsample=nsample)
+            if return_statdist:
+                return Ps
+            else:
+                mus = np.empty((nsample),dtype=np.object)
+                from pyemma.msm.analysis import stationary_distribution
+                for i in range(nsample):
+                    mus[i] = stationary_distribution(Ps[i])
+                return (Ps, mus)
+        else:
+            raise ValueError('nsample must be a positive integer')
 
 
 class TransitionMatrixSamplerRev(TransitionMatrixSampler):
     """
     Reversible transition matrix sampling using Hao Wu's new reversible sampling method.
     Automatically uses a -1 prior that ensures that maximum likelihood and mean are identical, i.e. you
-    get error bars that are nicely envelopping the MLE.
+    get error bars that nicely envelop the MLE.
 
     """
 
-    def __init__(self, C, T_init=None):
+    def __init__(self, C=None, T_init=None, nstep=1):
         """
         Initializes the transition matrix sampler with the observed count matrix
 
@@ -157,31 +191,48 @@ class TransitionMatrixSamplerRev(TransitionMatrixSampler):
         C : ndarray(n,n)
             count matrix containing observed counts. Do not add a prior, because this sampler intrinsically
             assumes a -1 prior!
+        T_init : ndarray(n,n)
+            initial transition matrix to seed the sampling
+        nstep : int
+            number of Gibbs sampling steps per sample
 
         """
         # superclass constructor
-        TransitionMatrixSampler.__init__(self)
+        TransitionMatrixSampler.__init__(self, C=C)
+
+        # set params
+        if T_init is None:
+            self._T_init = None
+        else:
+            self._T_init = np.array(T_init, dtype=np.float64)
+        self._nstep = nstep
         # initialize
-        self._C = np.array(C, dtype=np.float64)
-        self.n = self._C.shape[0]
-        self.sumC = self._C.sum(axis=1)+0.0
-        self.X = None
+        self._initialized = False
+        if C is not None:
+            self._initialize()
+
+    def _initialize(self):
+        # initialize the sampler
+        self._n = self._C.shape[0]
+        self._sumC = self._C.sum(axis=1)+0.0
+        self._X = None
         # check input
-        if np.min(self.sumC <= 0):
+        if np.min(self._sumC <= 0):
             raise ValueError('Count matrix has row sums of zero or less. Make sure that every state is visited!')
 
         # T_init not given? then initialize X
-        if T_init is None:
-            self.X = self._C + self._C.T
-            self.X /= np.sum(self.X)
+        if self._T_init is None:
+            self._X = self._C + self._C.T
+            self._X /= np.sum(self._X)
         # else use given T_init to initialize X
         else:
-            import pyemma.msm.analysis as msmana
-            mu = msmana.stationary_distribution(T_init)
-            self.X = np.dot(np.diag(mu), T_init)
+            from pyemma.msm.analysis import stationary_distribution
+            mu = stationary_distribution(self._T_init)
+            self._X = np.dot(np.diag(mu), self._T_init)
             # reversible?
-            if not np.allclose(self.X, self.X.T):
+            if not np.allclose(self._X, self._X.T):
                 raise ValueError('Initial transition matrix is not reversible.')
+        self._initialized = True
 
     def _is_positive(self, x):
         """
@@ -191,7 +242,6 @@ class TransitionMatrixSamplerRev(TransitionMatrixSampler):
         :return:
         """
         return x>=_eps and (not math.isinf(x)) and (not math.isnan(x))
-
 
     def _update_step(self, v0, v1, v2, c0, c1, c2, random_walk_stepsize=1):
         """
@@ -238,7 +288,6 @@ class TransitionMatrixSamplerRev(TransitionMatrixSampler):
 
         return v0
 
-
     def _update(self, n_step):
         """
         Gibbs sampler for reversible transiton matrix
@@ -257,53 +306,34 @@ class TransitionMatrixSamplerRev(TransitionMatrixSampler):
         """
 
         for iter in range(n_step):
-            for i in range(self.n):
+            for i in range(self._n):
                 for j in range(i+1):
                     if self._C[i,j]+self._C[j,i]>0:
                         if i == j:
-                            if self._is_positive(self._C[i,i]) and self._is_positive(self.sumC[i]-self._C[i,i]):
-                                tmp_t = np.random.beta(self._C[i,i], self.sumC[i]-self._C[i,i])
-                                tmp_x = tmp_t/(1-tmp_t)*(self.X[i,:].sum()-self.X[i,i])
+                            if self._is_positive(self._C[i,i]) and self._is_positive(self._sumC[i]-self._C[i,i]):
+                                tmp_t = np.random.beta(self._C[i,i], self._sumC[i]-self._C[i,i])
+                                tmp_x = tmp_t/(1-tmp_t)*(self._X[i,:].sum()-self._X[i,i])
                                 if self._is_positive(tmp_x):
-                                    self.X[i,i] = tmp_x
+                                    self._X[i,i] = tmp_x
                         else:
-                            tmpi = self.X[i,:].sum()-self.X[i,j]
-                            tmpj = self.X[j,:].sum()-self.X[j,i]
-                            self.X[i,j] = self._update_step(self.X[i,j], tmpi, tmpj, self._C[i,j]+self._C[j,i], self.sumC[i], self.sumC[j])
-                            self.X[j,i] = self.X[i,j]
-            self.X /= self.X.sum()
+                            tmpi = self._X[i,:].sum()-self._X[i,j]
+                            tmpj = self._X[j,:].sum()-self._X[j,i]
+                            self._X[i,j] = self._update_step(self._X[i,j], tmpi, tmpj, self._C[i,j]+self._C[j,i], self._sumC[i], self._sumC[j])
+                            self._X[j,i] = self._X[i,j]
+            self._X /= self._X.sum()
 
+    def sample(self, C=None, nsample=1, return_statdist=False, T_init=None):
+        if C is None:
+            if not self._initialized:
+                raise RuntimeError('Trying to sample transition matrices without a count matrix. Pass C matrix here or in constructor')
+        else:
+            self._C = C
+            self._initialize()
 
-    def sample(self, nsample = 1, return_statdist = False, nstep = 1):
-        """
-        Runs n_step Gibbs sampling steps and returns a new transition matrix. For each step, every element of the
-        transition matrix is updated.
-
-        Parameters
-        ----------
-        nsample : int
-            number transition matrices sampled.
-        return_statdist : bool, optional, default = False
-            if true, will also return the stationary distribution.
-        nstep : int
-            number of Gibbs sampling steps per sample.
-            Every step samples from the conditional distribution of that element.
-
-        Returns
-        -------
-        P : ndarray (n,n)
-            sample of a transition matrix with respect to the likelihood p(C|P)
-
-        Raises
-        ------
-        ValueError
-            if T_init is not a reversible transition matrix
-
-        """
         if nsample==1:
-            self._update(nstep)
-            Xsum = self.X.sum(axis=1)
-            T = self.X/Xsum[:,None]
+            self._update(self._nstep)
+            Xsum = self._X.sum(axis=1)
+            T = self._X/Xsum[:,None]
             if return_statdist:
                 mu = Xsum / Xsum.sum()
                 return (T,mu)
@@ -313,9 +343,9 @@ class TransitionMatrixSamplerRev(TransitionMatrixSampler):
             Ts = np.empty((nsample), dtype=object)
             mus = np.empty((nsample), dtype=object)
             for i in range(nsample):
-                self._update(nstep)
-                Xsum = self.X.sum(axis=1)
-                Ts[i] = self.X/Xsum[:,None]
+                self._update(self._nstep)
+                Xsum = self._X.sum(axis=1)
+                Ts[i] = self._X/Xsum[:,None]
                 mus[i] = Xsum / Xsum.sum()
             if return_statdist:
                 return (Ts, mus)
