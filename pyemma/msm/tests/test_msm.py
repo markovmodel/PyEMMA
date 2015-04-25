@@ -118,7 +118,7 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
         self._compute(self.msm)
 
     def _computed(self, msm):
-        assert (msm.computed)
+        assert (msm.estimated)
 
     def test_computed(self):
         self._computed(self.msmrev)

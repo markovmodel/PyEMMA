@@ -140,8 +140,6 @@ def confidence_interval_arr(data, alpha=0.95):
 
     # do we have an array now? if yes go, if no fail
     if types.is_float_array(data):
-        print "data shape: ",data.shape
-        print "sample shape: ",data[0].shape
         I = _indexes(data[0])
         lower = np.zeros(data[0].shape)
         upper = np.zeros(data[0].shape)
