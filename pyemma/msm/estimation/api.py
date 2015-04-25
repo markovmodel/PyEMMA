@@ -1137,7 +1137,7 @@ def sample_tmatrix(C, nsample=1, reversible=False, mu=None, T0=None, return_stat
             return Ps
 
 
-def tmatrix_sampler(C, reversible=False, mu=None, T0=None):
+def tmatrix_sampler(C, reversible=False, mu=None, T0=None, nstep=1):
     r"""Generate transition matrix sampler object.
     
     Parameters
@@ -1153,7 +1153,9 @@ def tmatrix_sampler(C, reversible=False, mu=None, T0=None):
     T0 : ndarray, shape=(n, n) or scipy.sparse matrix
         Starting point of the MC chain of the sampling algorithm.
         Has to obey the required constraints.
-    
+    nstep = 1 : int
+        number of Gibbs sampling steps per sample. Only for reversible sampling
+
     Returns
     -------
     sampler : A :py:class:dense.tmatrix_sampler.TransitionMatrixSampler object that can be used to generate samples.
@@ -1199,7 +1201,7 @@ def tmatrix_sampler(C, reversible=False, mu=None, T0=None):
 
     if reversible:
         from dense.tmatrix_sampler import TransitionMatrixSamplerRev
-        return TransitionMatrixSamplerRev(C)
+        return TransitionMatrixSamplerRev(C=C, T_init=T0, nstep=nstep)
     else:
         from dense.tmatrix_sampler import TransitionMatrixSamplerNonrev
-        return TransitionMatrixSamplerNonrev(C)
+        return TransitionMatrixSamplerNonrev(C=C)
