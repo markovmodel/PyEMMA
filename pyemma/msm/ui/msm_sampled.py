@@ -9,7 +9,21 @@ from pyemma.util import statistics as stat
 
 class SampledMSM(EstimatedMSM):
 
-    def __init__(self, estimator, sample_Ps, sample_mus, conf=0.95):
+    def __init__(self, estimator, sample_Ps, sample_mus, conf=0.683):
+        r""" Constructs a sampled MSM
+
+        Parameters
+        ----------
+        estimator : MSMEstimator
+            Single-point estimator, e.g. containing a maximum likelihood or mean MSM
+        sample_Ps : array-like of ndarray(n,n)
+            Sampled transition matrices. They must all have the size of the active set
+        sample_mus : array-like of ndarray(n)
+            Sampled stationary distributions. They must all have the size of the active set
+        conf : float, optional, default=0.68
+            Confidence interval. By default one-sigma (68.3%) is used. Use 95.4% for two sigma or 99.7% for three sigma.
+
+        """
         # superclass constructor
         EstimatedMSM.__init__(self, estimator)
 
