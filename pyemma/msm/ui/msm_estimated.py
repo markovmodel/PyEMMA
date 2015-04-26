@@ -1,10 +1,12 @@
 __author__ = 'noe'
 
 import numpy as np
+import copy
 
 from msm import MSM
 from pyemma.util.annotators import shortcut
 from pyemma.util.log import getLogger
+
 
 class EstimatedMSM(MSM):
     r"""Estimates a Markov model from discrete trajectories.
@@ -67,53 +69,35 @@ class EstimatedMSM(MSM):
 
     """
 
-    def __init__(self, count_estimator, tmatrix_estimator, lag, estimate=True, dt='1 step'):
+    def __init__(self, estimator):
+        # superclass constructor
+        MSM.__init__(self, estimator.transition_matrix, dt=estimator.dt)
 
-        self._count_estimator = count_estimator
-        self._tmatrix_estimator = tmatrix_estimator
+        # check if reversible option matches our reversibility check of the transition matrix
+        if estimator.is_reversible != self.is_reversible:
+            self._logger.warn('Reversible was set but transition matrix did not pass reversibility check. Check your '
+                              'settings. If they are alright this might just be a small numerical deviation from a '
+                              'truly reversible matrix. Will carefully continue with nonreversible transition matrix.')
 
-        # set superclass quantities
-        self._lag = lag
-        self._sparse = count_estimator.is_sparse
-        self._reversible = tmatrix_estimator.is_reversible
-        from pyemma.util.units import TimeUnit
-        self._timeunit = TimeUnit(dt)
+        # grab all other quantities from estimator.
+        # Making copies because we don't know what will happen to the estimator after this call
+        self._nstates_full = estimator.nstates_full
+        self._active_set = copy.deepcopy(estimator.active_set)
+        self._dtrajs_full = copy.deepcopy(estimator.dtrajs)
+        self._dtrajs_active = copy.deepcopy(estimator.dtrajs_active)
+        self._C_full = copy.deepcopy(estimator.count_matrix_full)
+        self._C_active = copy.deepcopy(estimator.count_matrix_active)
+        self._connected_sets = copy.deepcopy(estimator.connected_sets)
+        self._full2active = copy.deepcopy(estimator.full2active)
 
-        # run estimation
-        self._estimated = False
-        if estimate:
-            self.estimate()
 
     def __create_logger(self):
         name = "%s[%s]" % (self.__class__.__name__, hex(id(self)))
         self._logger = getLogger(name)
 
-    def estimate(self):
-        r"""Runs msm estimation.
-
-        Only need to call this method if the msm was initialized with compute=False - otherwise it will have
-        been called at time of initialization.
-
-        """
-        # estimate counts if needed
-        if not self._count_estimator.estimated or self._count_estimator.lag != self._lag:
-            self._count_estimator.estimate(self._lag)
-        # estimate transition matrix
-        self._T = self._tmatrix_estimator.estimate(self._count_estimator.count_matrix_active)
-        self._nstates = self._T.shape[0]
-        # done
-        self._estimated = True
-
     ################################################################################
     # Basic attributes
     ################################################################################
-
-    # TODO: Can we do a simple redirect and inherit docstrings? Similar to @shortcut.
-
-    @property
-    def estimated(self):
-        """Returns whether this msm has been estimated yet"""
-        return self._count_estimator._estimated
 
     @property
     def lagtime(self):
@@ -124,13 +108,42 @@ class EstimatedMSM(MSM):
         return self._lag
 
     @property
+    def nstates_full(self):
+        r""" Number of states in discrete trajectories """
+        return self._nstates_full
+
+    @property
+    def active_set(self):
+        """
+        The active set of states on which all computations and estimations will be done
+
+        """
+        return self._active_set
+
+    @property
+    def largest_connected_set(self):
+        """
+        The largest reversible connected set of states
+
+        """
+        return self._connected_sets[0]
+
+    @property
+    def connected_sets(self):
+        """
+        The reversible connected sets of states, sorted by size (descending)
+
+        """
+        return self._connected_sets
+
+    @property
     @shortcut('dtrajs_full')
     def discrete_trajectories_full(self):
         """
         A list of integer arrays with the original (unmapped) discrete trajectories:
 
         """
-        return self._count_estimator.discrete_trajectories_full
+        return self._dtrajs_full
 
     @property
     @shortcut('dtrajs_active')
@@ -141,7 +154,12 @@ class EstimatedMSM(MSM):
         Frames that are not in the connected set will be -1.
 
         """
-        return self._count_estimator.discrete_trajectories_active
+        # compute connected dtrajs
+        self._dtrajs_active = []
+        for dtraj in self._dtrajs_full:
+            self._dtrajs_active.append(self._full2active[dtraj])
+
+        return self._dtrajs_active
 
     @property
     def count_matrix_active(self):
@@ -160,7 +178,7 @@ class EstimatedMSM(MSM):
             For a count matrix with effective (statistically uncorrelated) counts.
 
         """
-        return self._count_estimator.count_matrix_active
+        return self._C_active
 
     @property
     def effective_count_matrix(self):
@@ -179,7 +197,7 @@ class EstimatedMSM(MSM):
         in preparation.
 
         """
-        return self._count_estimator.effective_count_matrix
+        return self._C_active / float(self._lag)
 
     @property
     def count_matrix_full(self):
@@ -197,45 +215,26 @@ class EstimatedMSM(MSM):
             For a active-set count matrix with effective (statistically uncorrelated) counts.
 
         """
-        return self._count_estimator.count_matrix_full
-
-    @property
-    def active_set(self):
-        """
-        The active set of states on which all computations and estimations will be done
-
-        """
-        return self._count_estimator.active_set
-
-    @property
-    def largest_connected_set(self):
-        """
-        The largest reversible connected set of states
-
-        """
-        return self._count_estimator.largest_connected_set
-
-    @property
-    def connected_sets(self):
-        """
-        The reversible connected sets of states, sorted by size (descending)
-
-        """
-        return self._count_estimator.connected_sets
+        return self._C_full
 
     @property
     def active_state_fraction(self):
-        """The fraction of states in the active set.
+        """The fraction of states in the largest connected set.
 
         """
-        return self._count_estimator.active_state_fraction
+        return float(self._nstates) / float(self._nstates_full)
 
     @property
     def active_count_fraction(self):
-        """The fraction of counts in the active set.
+        """The fraction of counts in the largest connected set.
 
         """
-        return self._count_estimator.active_count_fraction
+        from pyemma.util.discrete_trajectories import count_states
+
+        hist = count_states(self._dtrajs_active)
+        lcs = self._connected_sets[0]
+        hist_active = hist[lcs]
+        return float(np.sum(hist_active)) / float(np.sum(hist))
 
     ################################################################################
     # For general statistics
@@ -273,7 +272,7 @@ class EstimatedMSM(MSM):
 
         """
         # compute stationary distribution, expanded to full set
-        statdist_full = np.zeros([self._count_estimator.nstates_full])
+        statdist_full = np.zeros([self._nstates_full])
         statdist_full[self.active_set] = self.stationary_distribution
         # simply read off stationary distribution and accumulate total weight
         W = []
