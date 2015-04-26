@@ -1,6 +1,7 @@
 __author__ = 'noe'
 
 import numpy as np
+import copy
 
 # EMMA imports
 from msm_estimated import EstimatedMSM
@@ -8,30 +9,16 @@ from pyemma.util import statistics as stat
 
 class SampledMSM(EstimatedMSM):
 
-    def __init__(self, count_estimator, tmatrix_estimator, tmatrix_sampler, lag,
-                 nsample=1000, conf=0.95, estimate=True, sample=True, dt='1 step'):
+    def __init__(self, estimator, sample_Ps, sample_mus, conf=0.95):
         # superclass constructor
-        EstimatedMSM.__init__(self, count_estimator, tmatrix_estimator, lag, estimate=estimate, dt=dt)
+        EstimatedMSM.__init__(self, estimator)
 
-        # set params
-        self._tmatrix_sampler = tmatrix_sampler
-        self._nsample = nsample
+        # set params. Make a deep copy to avoid changing from outside
+        self.sample_Ps = copy.deepcopy(sample_Ps)
+        self.sample_mus = copy.deepcopy(sample_mus)
+        self._nsample = len(sample_Ps)
         self._confidence = conf
 
-        # sample now if requested.
-        self._sampled = False
-        if sample:
-            self.sample()
-
-    def sample(self):
-        # and additionally run the sampler
-        self.sample_Ps,  self.sample_mus = self._tmatrix_sampler.sample(C=self.count_matrix_active,
-                                                                        nsample=self._nsample,
-                                                                        return_statdist=True)
-        self._sampled = True
-
-    def _assert_sampled(self):
-        assert self._sampled, "MSM hasn't been sampled yet, make sure to call MSM.sample()"
 
     def set_confidence(self, conf):
         self._confidence = conf
@@ -92,8 +79,6 @@ class SampledMSM(EstimatedMSM):
             it is recommended that ncv > 2*k
 
         """
-        # are we ready?
-        self._assert_sampled()
         # check input?
         if self._sparse:
             if k is None:
@@ -121,7 +106,6 @@ class SampledMSM(EstimatedMSM):
         MSM.stationary_distribution
 
         """
-        self._assert_sampled()
         return np.mean(self.sample_mus, axis=0)
 
     @property
@@ -133,7 +117,6 @@ class SampledMSM(EstimatedMSM):
         MSM.stationary_distribution
 
         """
-        self._assert_sampled()
         return np.std(self.sample_mus, axis=0)
 
     @property
@@ -145,7 +128,6 @@ class SampledMSM(EstimatedMSM):
         MSM.stationary_distribution
 
         """
-        self._assert_sampled()
         return stat.confidence_interval_arr(self.sample_mus, alpha=self._confidence)
 
     def eigenvalues_mean(self, k=None, ncv=None):
@@ -303,7 +285,6 @@ class SampledMSM(EstimatedMSM):
         MSM.mfpt
 
         """
-        self._assert_sampled()
         return np.mean(self._sample_mfpt(A,B), axis=0)
 
     def mfpt_std(self, A, B):
@@ -314,7 +295,6 @@ class SampledMSM(EstimatedMSM):
         MSM.mfpt
 
         """
-        self._assert_sampled()
         return np.std(self._sample_mfpt(A,B), axis=0)
 
     def mfpt_conf(self, A, B):
@@ -325,7 +305,6 @@ class SampledMSM(EstimatedMSM):
         MSM.mfpt
 
         """
-        self._assert_sampled()
         return stat.confidence_interval_arr(self._sample_mfpt(A,B), alpha=self._confidence)
 
     def _sample_committor_forward(self, A, B):
@@ -343,7 +322,6 @@ class SampledMSM(EstimatedMSM):
         MSM.committor_forward
 
         """
-        self._assert_sampled()
         return np.mean(self._sample_committor_forward(A,B), axis=0)
 
     def committor_forward_std(self, A, B):
@@ -354,7 +332,6 @@ class SampledMSM(EstimatedMSM):
         MSM.committor_forward
 
         """
-        self._assert_sampled()
         return np.std(self._sample_committor_forward(A,B), axis=0)
 
     def committor_forward_conf(self, A, B):
@@ -365,7 +342,6 @@ class SampledMSM(EstimatedMSM):
         MSM.committor_forward
 
         """
-        self._assert_sampled()
         return stat.confidence_interval_arr(self._sample_committor_forward(A,B), alpha=self._confidence)
 
 
@@ -384,7 +360,6 @@ class SampledMSM(EstimatedMSM):
         MSM.committor_backward
 
         """
-        self._assert_sampled()
         return np.mean(self._sample_committor_backward(A,B), axis=0)
 
     def committor_backward_std(self, A, B):
@@ -395,7 +370,6 @@ class SampledMSM(EstimatedMSM):
         MSM.committor_backward
 
         """
-        self._assert_sampled()
         return np.std(self._sample_committor_backward(A,B), axis=0)
 
     def committor_backward_conf(self, A, B):
@@ -406,5 +380,4 @@ class SampledMSM(EstimatedMSM):
         MSM.committor_backward
 
         """
-        self._assert_sampled()
         return stat.confidence_interval_arr(self._sample_committor_backward(A,B), alpha=self._confidence)
