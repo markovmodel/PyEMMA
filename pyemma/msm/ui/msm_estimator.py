@@ -134,6 +134,11 @@ class MSMEstimator:
         return self._dtrajstats.nstates
 
     @property
+    def lagtime(self):
+        """ The lag time in steps """
+        return self._lag
+
+    @property
     def is_reversible(self):
         """Returns whether the MSM is reversible """
         return self._reversible
@@ -142,6 +147,11 @@ class MSMEstimator:
     def is_sparse(self):
         """Returns whether the MSM is sparse """
         return self._sparse
+
+    @property
+    def connectivity(self):
+        """Returns the connectivity mode of the MSM """
+        return self._connectivity
 
     @property
     def dt(self):

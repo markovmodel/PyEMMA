@@ -39,7 +39,7 @@ from pyemma.util.numeric import assert_allclose
 
 from birth_death_chain import BirthDeathChain
 
-from msm import EstimatedMSM
+from pyemma.msm import estimate_markov_model
 
 
 class TestMSM(unittest.TestCase):
@@ -81,7 +81,7 @@ class TestMSM(unittest.TestCase):
         np.random.mtrand.set_state(self.state)
 
     def test_MSM(self):
-        msm = EstimatedMSM(self.dtrajs, self.tau)
+        msm = estimate_markov_model(self.dtrajs, self.tau)
         assert_allclose(self.dtrajs, msm.discrete_trajectories_full)
         self.assertEqual(self.tau, msm.lagtime)
         assert_allclose(self.lcc_MSM, msm.largest_connected_set)

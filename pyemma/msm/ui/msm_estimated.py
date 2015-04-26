@@ -82,6 +82,8 @@ class EstimatedMSM(MSM):
         # grab all other quantities from estimator.
         # Making copies because we don't know what will happen to the estimator after this call
         self._nstates_full = estimator.nstates_full
+        self._lag = estimator.lagtime
+        self._connectivity = copy.deepcopy(estimator.connectivity)
         self._active_set = copy.deepcopy(estimator.active_set)
         self._dtrajs_full = copy.deepcopy(estimator.discrete_trajectories)
         self._dtrajs_active = copy.deepcopy(estimator.discrete_trajectories_active)
@@ -119,6 +121,11 @@ class EstimatedMSM(MSM):
 
         """
         return self._active_set
+
+    @property
+    def connectivity(self):
+        """Returns the connectivity mode of the MSM """
+        return self._connectivity
 
     @property
     def largest_connected_set(self):
@@ -231,9 +238,8 @@ class EstimatedMSM(MSM):
         """
         from pyemma.util.discrete_trajectories import count_states
 
-        hist = count_states(self._dtrajs_active)
-        lcs = self._connected_sets[0]
-        hist_active = hist[lcs]
+        hist = count_states(self._dtrajs_full)
+        hist_active = hist[self.active_set]
         return float(np.sum(hist_active)) / float(np.sum(hist))
 
     ################################################################################
