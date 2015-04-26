@@ -46,7 +46,7 @@ class DiscreteTrajectoryStats:
 
         # set sizes and count matrices on reversibly connected sets
         self._connected_set_sizes = np.zeros((len(self._connected_sets)))
-        self._C_sub = []
+        self._C_sub = np.empty((len(self._connected_sets)), dtype=np.object)
         for i in range(len(self._connected_sets)):
             # set size
             self._connected_set_sizes[i] = len(self._connected_sets[i])

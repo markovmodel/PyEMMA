@@ -83,8 +83,8 @@ class EstimatedMSM(MSM):
         # Making copies because we don't know what will happen to the estimator after this call
         self._nstates_full = estimator.nstates_full
         self._active_set = copy.deepcopy(estimator.active_set)
-        self._dtrajs_full = copy.deepcopy(estimator.dtrajs)
-        self._dtrajs_active = copy.deepcopy(estimator.dtrajs_active)
+        self._dtrajs_full = copy.deepcopy(estimator.discrete_trajectories)
+        self._dtrajs_active = copy.deepcopy(estimator.discrete_trajectories_active)
         self._C_full = copy.deepcopy(estimator.count_matrix_full)
         self._C_active = copy.deepcopy(estimator.count_matrix_active)
         self._connected_sets = copy.deepcopy(estimator.connected_sets)
