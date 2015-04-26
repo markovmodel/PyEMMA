@@ -163,13 +163,13 @@ class TransitionMatrixSamplerNonrev(TransitionMatrixSampler):
         elif nsample > 1:
             Ps = sample_nonrev(self.count_matrix, nsample=nsample)
             if return_statdist:
-                return Ps
-            else:
                 mus = np.empty((nsample),dtype=np.object)
                 from pyemma.msm.analysis import stationary_distribution
                 for i in range(nsample):
                     mus[i] = stationary_distribution(Ps[i])
                 return (Ps, mus)
+            else:
+                return Ps
         else:
             raise ValueError('nsample must be a positive integer')
 
