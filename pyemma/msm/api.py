@@ -30,7 +30,7 @@ r"""User API for the pyemma.msm package
 __docformat__ = "restructuredtext en"
 
 from flux import tpt as tpt_factory
-from pyemma.msm.estimation.obj.dtraj_stats import DiscreteTrajectoryStats
+from pyemma.msm.ui.dtraj_stats import DiscreteTrajectoryStats
 from pyemma.msm.ui.msm_estimator import MSMEstimator
 from ui import ImpliedTimescales
 from ui import MSM
