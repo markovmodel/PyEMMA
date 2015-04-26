@@ -30,8 +30,8 @@ r"""User API for the pyemma.msm package
 __docformat__ = "restructuredtext en"
 
 from flux import tpt as tpt_factory
-from pyemma.msm.estimation.obj.count_estimator import CountEstimator
-from pyemma.msm.estimation.obj.tmatrix_estimator import TransitionMatrixEstimator
+from pyemma.msm.estimation.obj.dtraj_stats import DiscreteTrajectoryStats
+from pyemma.msm.estimation.obj.msm_estimator import MSMEstimator
 from ui import ImpliedTimescales
 from ui import MSM
 from ui import EstimatedMSM
@@ -130,8 +130,7 @@ def markov_model(P, dt='1 step'):
     return MSM(P, dt=dt)
 
 
-def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivity='largest', estimate=True,
-                          dt='1 step', **kwargs):
+def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivity='largest', dt='1 step', **kwargs):
     r"""Estimates a Markov model from discrete trajectories
 
     Returns a :class:`EstimatedMSM <pyemma.msm.ui.EstimatedMSM>` that contains the estimated transition matrix
@@ -161,8 +160,6 @@ def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
             the stationary vector is only defined within subsets, etc. Currently not implemented.
         'none' : The active set is the full set of states. Estimation will be conducted on the full set of states
             without ensuring connectivity. This only permits nonreversible estimation. Currently not implemented.
-    estimate : bool, optional, default=True
-        If true estimate the MSM when creating the MSM object.
     dt : str, optional, default='1 step'
         Description of the physical time corresponding to the lag. May be used by analysis algorithms such as
         plotting tools to pretty-print the axes. By default '1 step', i.e. there is no physical time unit.
@@ -204,16 +201,18 @@ def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
 
     """
     # do count
-    countestimator = CountEstimator(dtrajs, lag=lag, sparse=sparse, connectivity=connectivity)
+    dtrajstats = DiscreteTrajectoryStats(dtrajs)
+    dtrajstats.count_lagged(lag)
     # transition matrix estimator
-    tmestimator = TransitionMatrixEstimator(reversible=reversible, sparse=sparse, connectivity=connectivity, **kwargs)
+    tmestimator = MSMEstimator(dtrajstats, lag, reversible=reversible, sparse=sparse,
+                               connectivity=connectivity, estimate=True, dt=dt, **kwargs)
     # construct MSM
-    M = EstimatedMSM(countestimator, tmestimator, lag, dt='1 step')
+    M = EstimatedMSM(tmestimator)
     return M
 
 
 def bayesian_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivity='largest',
-                          nsample=1000, conf=0.95, estimate=True, sample=True, dt='1 step', **kwargs):
+                          nsample=1000, conf=0.95, dt='1 step', **kwargs):
     r"""Bayesian Markov model estimate using Gibbs sampling of the posterior
 
     Returns a :class:`SampledMSM <pyemma.msm.ui.SampledMSM>` that contains the estimated transition matrix
@@ -248,10 +247,6 @@ def bayesian_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
         number of transition matrix samples to compute and store
     conf : float, optional, default=0.95
         size of confidence intervals
-    estimate : bool, optional, default=True
-        If true estimate the MSM when creating the MSM object.
-    sample : bool, optional, default=True
-        If true sample the MSM when creating the MSM object.
     dt : str, optional, default='1 step'
         Description of the physical time corresponding to the lag. May be used by analysis algorithms such as
         plotting tools to pretty-print the axes. By default '1 step', i.e. there is no physical time unit.
@@ -294,16 +289,19 @@ def bayesian_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
 
     """
     # do count
-    countestimator = CountEstimator(dtrajs, lag=lag, sparse=sparse, connectivity=connectivity)
+    dtrajstats = DiscreteTrajectoryStats(dtrajs)
+    dtrajstats.count_lagged(lag)
     # transition matrix estimator
-    tmestimator = TransitionMatrixEstimator(reversible=reversible, sparse=sparse, connectivity=connectivity, **kwargs)
+    tmestimator = MSMEstimator(dtrajstats, lag, reversible=reversible, sparse=sparse,
+                               connectivity=connectivity, estimate=True, dt=dt, **kwargs)
     # transition matrix sampler
     from pyemma.msm.estimation import tmatrix_sampler
     from math import sqrt
-    nstep = int(sqrt(countestimator.nstates)) # heuristic for number of steps to decorrelate
-    tsampler = tmatrix_sampler(countestimator.count_matrix_active, reversible=reversible, nstep=nstep)
+    nstep = int(sqrt(tmestimator.nstates)) # heuristic for number of steps to decorrelate
+    tsampler = tmatrix_sampler(tmestimator.count_matrix_active, reversible=reversible, nstep=nstep)
+    sample_Ps, sample_mus = tsampler.sample(nsample=nsample, return_statdist=True, T_init=tmestimator.transition_matrix)
     # construct MSM
-    M = SampledMSM(countestimator, tmestimator, tsampler, lag, dt='1 step')
+    M = SampledMSM(tmestimator, sample_Ps, sample_mus)
     return M
 
 
@@ -345,8 +343,7 @@ def cktest(msmobj, K, nsets=2, sets=None, full_output=False):
     lcc = msmobj.largest_connected_set
     dtrajs = msmobj.discrete_trajectories_full
     tau = msmobj.lagtime
-    return chapman_kolmogorov(P, lcc, dtrajs, tau, K,
-                              nsets=nsets, sets=sets, full_output=full_output)
+    return chapman_kolmogorov(P, lcc, dtrajs, tau, K, nsets=nsets, sets=sets, full_output=full_output)
 
 
 def tpt(msmobj, A, B):
