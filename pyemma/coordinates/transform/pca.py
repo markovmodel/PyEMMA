@@ -34,7 +34,7 @@ __all__ = ['PCA']
 
 class PCA(Transformer):
 
-    r"""Principal component analysis.
+    r""" Principal component analysis.
 
     Given a sequence of multivariate data :math:`X_t`,
     computes the mean-free covariance matrix.
@@ -69,8 +69,8 @@ class PCA(Transformer):
         return "[PCA, output dimension = %i]" % self._output_dimension
 
     def dimension(self):
-        """
-        Returns the number of output dimensions
+        r"""
+        Returns the number of output dimensions.
 
         :return:
         """
@@ -121,10 +121,10 @@ class PCA(Transformer):
 
     def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
                         last_chunk, ipass, Y=None, stride=1):
-        """
+        r"""
         Chunk-based parametrization of PCA. Iterates through all data twice. In the first pass, the
         data means are estimated, in the second pass the covariance matrix is estimated.
-        Finally, the eigenvalue problem is solved to determine the principal compoennts.
+        Finally, the eigenvalue problem is solved to determine the principal components.
 
         :param X:
             coordinates. axis 0: time, axes 1-..: coordinates
@@ -180,7 +180,7 @@ class PCA(Transformer):
         self.eigenvectors = R[:, I]
 
     def _map_array(self, X):
-        """
+        r"""
         Projects the data onto the dominant principal components.
 
         :param X: the input data

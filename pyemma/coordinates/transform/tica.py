@@ -50,7 +50,7 @@ class TICA(Transformer):
         how many significant TICS to use to reduce dimension of input data
     epsilon : float
         eigenvalue norm cutoff. Eigenvalues of C0 with norms <= epsilon will be
-        cut off. The remaining number of Eigenvalues define the size
+        cut off. The remaining number of eigenvalues define the size
         of the output.
     force_eigenvalues_le_one : boolean
         Compute covariance matrix and time-lagged covariance matrix such
@@ -68,13 +68,13 @@ class TICA(Transformer):
 
     and solves the eigenvalue problem
 
-    .. math:: C_{\tau} r_i = C_0 \lambda_i r_i
+    .. math:: C_{\tau} r_i = C_0 \lambda_i r_i,
 
     where :math:`r_i` are the independent components and :math:`\lambda_i` are
     their respective normalized time-autocorrelations. The eigenvalues are
     related to the relaxation timescale by
 
-    .. math:: t_i = -\tau / \ln |\lambda_i|
+    .. math:: t_i = -\tau / \ln |\lambda_i|.
 
     When used as a dimension reduction method, the input data is projected
     onto the dominant independent components.
@@ -84,7 +84,7 @@ class TICA(Transformer):
     def __init__(self, lag, output_dimension, epsilon=1e-6, force_eigenvalues_le_one=False):
         super(TICA, self).__init__()
 
-        # store lag time to set it appropriatly in second pass of parametrize
+        # store lag time to set it appropriately in second pass of parametrize
         self._lag = lag
         self._output_dimension = output_dimension
         self._epsilon = epsilon
@@ -169,7 +169,7 @@ class TICA(Transformer):
 
     def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
                         last_chunk, ipass, Y=None, stride=1):
-        """
+        r"""
         Chunk-based parameterization of TICA. Iterates through all data twice. In the first pass, the
         data means are estimated, in the second pass the covariance and time-lagged covariance
         matrices are estimated. Finally, the generalized eigenvalue problem is solved to determine
@@ -276,7 +276,7 @@ class TICA(Transformer):
         self._logger.info("finished diagonalisation.")
 
     def _map_array(self, X):
-        """Projects the data onto the dominant independent components.
+        r"""Projects the data onto the dominant independent components.
 
         Parameters
         ----------
