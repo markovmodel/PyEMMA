@@ -722,23 +722,23 @@ def pca(data=None, dim=2, stride=1):
 
 
 def tica(data=None, lag=10, dim=2, stride=1, force_eigenvalues_le_one=False):
-    r"""Time-lagged independent component analysis (TICA).
+    r""" Time-lagged independent component analysis (TICA).
 
-    TICA is a linear transformation method. In contrast to PCA that finds
+    TICA is a linear transformation method. In contrast to PCA, which finds
     coordinates of maximal variance, TICA finds coordinates of maximal autocorrelation
-    at the given lag time. Thus, TICA is useful to find the *slow* components
+    at the given lag time. Therefore, TICA is useful in order to find the *slow* components
     in a dataset and thus an excellent choice to transform molecular dynamics
     data before clustering data for the construction of a Markov model.
     When the input data is the result of a Markov process (such as thermostatted
     molecular dynamics), TICA finds in fact an approximation to the eigenfunctions and
     eigenvalues of the underlying Markov operator [1]_.
 
-    Estimates a TICA transformation from data. When input data is given as an
-    argument, the estimation will be carried out right away, and the resulting
+    It estimates a TICA transformation from *data*. When input data is given as an
+    argument, the estimation will be carried out straight away, and the resulting
     object can be used to obtain eigenvalues, eigenvectors or project input data
-    onto the slowest TICA components. If data is not given, this object is an
+    onto the slowest TICA components. If no data is given, this object is an
     empty estimator and can be put into a :func:`pipeline` in order to use TICA
-    in streaming mode.
+    in the streaming mode.
 
     Parameters
     ----------
@@ -813,14 +813,15 @@ def tica(data=None, lag=10, dim=2, stride=1, force_eigenvalues_le_one=False):
     References
     ----------
     .. [1] Perez-Hernandez G, F Paul, T Giorgino, G De Fabritiis and F Noe. 2013.
-        Identification of slow molecular order parameters for Markov model construction
-        J. Chem. Phys. 139, 015102. doi:10.1063/1.4811489
+       Identification of slow molecular order parameters for Markov model construction
+       J. Chem. Phys. 139, 015102. doi:10.1063/1.4811489
     .. [2] L. Molgedey and H. G. Schuster. 1994.
-        Separation of a mixture of independent signals using time delayed correlations
-        Phys. Rev. Lett. 72, 3634.
+       Separation of a mixture of independent signals using time delayed correlations
+       Phys. Rev. Lett. 72, 3634.
     .. [3] Schwantes C, V S Pande. 2013.
-        Improvements in Markov State Model Construction Reveal Many Non-Native Interactions in the Folding of NTL9
-        J. Chem. Theory. Comput. 9, 2000-2009. doi:10.1021/ct300878a
+       Improvements in Markov State Model Construction Reveal Many Non-Native Interactions in the Folding of NTL9
+       J. Chem. Theory. Comput. 9, 2000-2009. doi:10.1021/ct300878a
+
 
     """
     # don't expose this until we know what this is doing.
@@ -875,7 +876,7 @@ def cluster_kmeans(data=None, k=100, max_iter=10, stride=1, metric='euclidean', 
 
     Returns
     -------
-    kmeans : :class:KmeansClustering <pyemma.coordinates.clustering.KmeansClustering> object
+    kmeans : a :class:`KmeansClustering <pyemma.coordinates.clustering.KmeansClustering>` clustering object
         Object for kmeans clustering.
         It holds discrete trajectories and cluster center information.
 
@@ -947,7 +948,7 @@ def regspace(data=None, dmin=-1, max_centers=1000, stride=1):
 def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1, metric='euclidean'):
     r"""Regular space clustering
 
-    If given data, performs a regular space clustering [1]_ and returns a
+    If given data, it performs a regular space clustering [1]_ and returns a
     :class:`RegularSpaceClustering <pyemma.coordinates.clustering.RegularSpaceClustering>` object that
     can be used to extract the discretized data sequences, or to assign other data points to the same partition.
     If data is not given, an empty
@@ -985,7 +986,9 @@ def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1, metric='euc
 
     Returns
     -------
-    obj : A :class:`RegularSpaceClustering <pyemma.coordinates.clustering.RegularSpaceClustering>` object
+    regSpace : a :class:`RegularSpaceClustering <pyemma.coordinates.clustering.RegularSpaceClustering>` clustering  object
+        Object for regular space clustering.
+        It holds discrete trajectories and cluster center information.
 
     References
     ----------
