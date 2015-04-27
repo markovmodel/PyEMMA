@@ -681,7 +681,7 @@ def pca(data=None, dim=2, stride=1):
 
     Returns
     -------
-    pca : a :class:PCA `<pyemma.coordinates.transform.PCA>` transformation object
+    pca : a :class:`PCA<pyemma.coordinates.transform.PCA>` transformation object
         Object for Principle component analysis (PCA) analysis.
         it contains PCA eigenvalues and eigenvectors, and the projection of input data to the dominant PCA
 
@@ -800,8 +800,8 @@ def tica(data=None, lag=10, dim=2, stride=1, force_eigenvalues_le_one=False):
     onto the dominant independent components.
 
     TICA was originally introduced for signal processing in [2]_. It was introduced
-    to molecular dynamics and as a method for the construction of Markov models in
-    [1]_ and [3]_. It was shown in [3]_ that when applied to molecular dynamics data,
+    to molecular dynamics and as a method for the construction of Markov models in [1]_ and [3]_.
+    It was shown in [3]_ that when applied to molecular dynamics data,
     TICA is an approximation to the eigenvalues and eigenvectors of the true underlying
     dynamics.
 
@@ -812,15 +812,17 @@ def tica(data=None, lag=10, dim=2, stride=1, force_eigenvalues_le_one=False):
 
     References
     ----------
+
     .. [1] Perez-Hernandez G, F Paul, T Giorgino, G De Fabritiis and F Noe. 2013.
-        Identification of slow molecular order parameters for Markov model construction
-        J. Chem. Phys. 139, 015102. doi:10.1063/1.4811489
+       Identification of slow molecular order parameters for Markov model construction
+       J. Chem. Phys. 139, 015102. doi:10.1063/1.4811489
     .. [2] L. Molgedey and H. G. Schuster. 1994.
-        Separation of a mixture of independent signals using time delayed correlations
-        Phys. Rev. Lett. 72, 3634.
+       Separation of a mixture of independent signals using time delayed correlations
+       Phys. Rev. Lett. 72, 3634.
     .. [3] Schwantes C, V S Pande. 2013.
-        Improvements in Markov State Model Construction Reveal Many Non-Native Interactions in the Folding of NTL9
-        J. Chem. Theory. Comput. 9, 2000-2009. doi:10.1021/ct300878a
+       Improvements in Markov State Model Construction Reveal Many Non-Native Interactions in the Folding of NTL9
+       J. Chem. Theory. Comput. 9, 2000-2009. doi:10.1021/ct300878a
+
 
     """
     # don't expose this until we know what this is doing.
@@ -873,7 +875,7 @@ def cluster_kmeans(data=None, k=100, max_iter=10, stride=1, metric='euclidean'):
 
     Returns
     -------
-    kmeans : :class:KmeansClustering <pyemma.coordinates.clustering.KmeansClustering> object
+    kmeans : a :class:`KmeansClustering <pyemma.coordinates.clustering.KmeansClustering>` clustering object
         Object for kmeans clustering.
         It holds discrete trajectories and cluster center information.
 
@@ -926,7 +928,7 @@ def cluster_uniform_time(data=None, k=100, stride=1, metric='euclidean'):
 
     Returns
     -------
-    uniformTime : :class:UniformTimeClustering <pyemma.coordinates.clustering.UniformTimeClustering> object
+    uniformTime : a :class:`UniformTimeClustering <pyemma.coordinates.clustering.UniformTimeClustering>` clustering object
         Object for uniform time clustering.
         It holds discrete trajectories and cluster center information.
 
@@ -982,7 +984,7 @@ def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1, metric='euc
 
     Returns
     -------
-    
+    regSpace : a :class:`RegularSpaceClustering <pyemma.coordinates.clustering.RegularSpaceClustering>` clustering  object
         Object for regular space clustering.
         It holds discrete trajectories and cluster center information.
 
@@ -1041,7 +1043,7 @@ def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True,
 
     Returns
     -------
-    assignment : list of integer arrays or an :class:`AssignCenters <pyemma.coordinates.clustering.AssignCenters>` object
+    assignment : list of integer arrays or an :class: `AssignCenters <pyemma.coordinates.clustering.AssignCenters>` object
         assigned data
 
     Examples
