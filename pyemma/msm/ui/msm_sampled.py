@@ -7,7 +7,103 @@ import copy
 from msm_estimated import EstimatedMSM
 from pyemma.util import statistics as stat
 
+def _make_docstring(prefix, doctext, seealso=None, sample=None):
+    res = """{prefix}.
+    {doctext} """.format(prefix=prefix, doctext=doctext)
+
+    if seealso:
+        res += """See also
+                  --------
+                  %s
+               """ % seealso
+    if sample:
+        res += """Examples
+                  --------
+                  %s
+               """ % sample
+    return res
+
+def _create_function_mean(prefix, doctext, seealso, callfirst, sample):
+    from operator import isCallable
+    doc_string = _make_docstring(prefix, doctext, seealso, sample)
+
+    def calc_mean(*args, **kw):
+        """ empty """
+        if callfirst:
+            assert isCallable(callfirst)
+            callfirst(args)
+        return np.mean(sample, axis=0)
+
+    calc_mean.__doc__ = doc_string
+
+    return calc_mean
+
+
+def _create_attribute(prefix, doctext, seealso, sample, func):
+    doc_string = _make_docstring(prefix, doctext, seealso, sample)
+    #@property
+    def calc_mean(self):
+        """ empty """
+        if func != 'conf':
+            return func(self.sample, axis=0)
+        else:
+            return stat.confidence_interval_arr(self.sample, alpha=self._confidence)
+
+
+    calc_mean.__doc__ = doc_string
+    return calc_mean
+
+class sampled_msm_meta(type):
+
+    def __new__(mcls, name, bases, namespace):
+        cls = super(sampled_msm_meta, mcls).__new__(mcls, name, bases, namespace)
+
+        # consists out of attribute name prefix, first line of docstring, see also section, 
+        # function to call before returning attr and attr which shall be processes.
+        args_funcs = [('eigenvectors_right_', 'right eigenvectors', 'MSM.eigenvectors_right',
+                       '_ensure_sample_eigendecomposition', 'sample_Rs'),
+                
+                
+                ]
+
+        # 
+        args_attributes = [('stationary_distribution_', 'stationary distribution on the active set',
+                            'MSM.stationary_distribution', 'sample_mus'),
+                            
+                           
+                           ]
+
+        for name, prefix, seealso, sample in args_attributes:
+            for t in [np.mean, np.std, 'conf']:
+                attr = _create_attribute(prefix=prefix, doctext="",
+                                         seealso=seealso,
+                                         sample=sample,
+                                         func=t)
+                if not isinstance(t, str):
+                    suffix = t.__name__
+                else:
+                    suffix = t
+                attr_name = name + suffix
+                setattr(cls, attr_name, attr)
+
+        assert hasattr(cls, 'eigenvectors_right_mean')
+        assert hasattr(cls, 'eigenvectors_right_std')
+        assert hasattr(cls, 'eigenvectors_right_conf')
+
+        for name, prefix, seealso, callfirst, sample in args_funcs:
+            f_mean = _create_function_mean(prefix=prefix, doctext="",
+                                           seealso=seealso, callfirst=callfirst,
+                                           sample=sample)
+            setattr(cls, name + "mean", f_mean)
+
+        assert hasattr(cls, 'stationary_distribution_mean')
+
+        return cls
+
+
 class SampledMSM(EstimatedMSM):
+
+    __metaclass__ = sampled_msm_meta
 
     def __init__(self, estimator, sample_Ps, sample_mus, conf=0.683):
         r""" Constructs a sampled MSM
@@ -114,11 +210,11 @@ class SampledMSM(EstimatedMSM):
     @property
     def stationary_distribution_mean(self):
         """Sample mean for the stationary distribution on the active set.
-
+ 
         See also
         --------
         MSM.stationary_distribution
-
+ 
         """
         return np.mean(self.sample_mus, axis=0)
 
@@ -210,38 +306,39 @@ class SampledMSM(EstimatedMSM):
         self._ensure_sample_eigendecomposition(k=k, ncv=ncv)
         return stat.confidence_interval_arr(self.sample_Ls, alpha=self._confidence)
 
-    def eigenvectors_right_mean(self, k=None, ncv=None):
-        """Sample mean for the right eigenvectors.
 
-        See also
-        --------
-        MSM.eigenvectors_right
-
-        """
-        self._ensure_sample_eigendecomposition(k=k, ncv=ncv)
-        return np.mean(self.sample_Rs, axis=0)
-
-    def eigenvectors_right_std(self, k=None, ncv=None):
-        """Sample standard deviation for the right eigenvectors.
-
-        See also
-        --------
-        MSM.eigenvectors_right
-
-        """
-        self._ensure_sample_eigendecomposition(k=k, ncv=ncv)
-        return np.std(self.sample_Rs, axis=0)
-
-    def eigenvectors_right_conf(self, k=None, ncv=None):
-        """Sample confidence interval for the right eigenvectors.
-
-        See also
-        --------
-        MSM.eigenvectors_right
-
-        """
-        self._ensure_sample_eigendecomposition(k=k, ncv=ncv)
-        return stat.confidence_interval_arr(self.sample_Rs, alpha=self._confidence)
+#     def eigenvectors_right_mean(self, k=None, ncv=None):
+#         """Sample mean for the right eigenvectors.
+# 
+#         See also
+#         --------
+#         MSM.eigenvectors_right
+# 
+#         """
+#         self._ensure_sample_eigendecomposition(k=k, ncv=ncv)
+#         return np.mean(self.sample_Rs, axis=0)
+# 
+#     def eigenvectors_right_std(self, k=None, ncv=None):
+#         """Sample standard deviation for the right eigenvectors.
+# 
+#         See also
+#         --------
+#         MSM.eigenvectors_right
+# 
+#         """
+#         self._ensure_sample_eigendecomposition(k=k, ncv=ncv)
+#         return np.std(self.sample_Rs, axis=0)
+# 
+#     def eigenvectors_right_conf(self, k=None, ncv=None):
+#         """Sample confidence interval for the right eigenvectors.
+# 
+#         See also
+#         --------
+#         MSM.eigenvectors_right
+# 
+#         """
+#         self._ensure_sample_eigendecomposition(k=k, ncv=ncv)
+#         return stat.confidence_interval_arr(self.sample_Rs, alpha=self._confidence)
 
     def _sample_timescales(self):
         """Compute sample timescales from the sample eigenvalues"""
