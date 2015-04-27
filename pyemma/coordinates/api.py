@@ -90,7 +90,7 @@ __all__ = ['featurizer',  # IO
 # ==============================================================================
 
 def featurizer(topfile):
-    """ Featurizer to select features from MD data.
+    r""" Featurizer to select features from MD data.
 
     Parameters
     ----------
@@ -121,7 +121,7 @@ def featurizer(topfile):
 
 # TODO: DOC - which topology file formats does mdtraj support? Find out and complete docstring
 def load(trajfiles, features=None, top=None, stride=1):
-    """ Loads coordinate features into memory.
+    r""" Loads coordinate features into memory.
 
     If your memory is not big enough consider the use of **pipeline**, or use the stride option to subsample the data.
 
@@ -196,7 +196,7 @@ def load(trajfiles, features=None, top=None, stride=1):
 
 
 def source(inp, features=None, top=None):
-    """ Wraps input as data source for pipeline.
+    r""" Wraps input as data source for pipeline.
 
     Use this function to construct the first stage of a data processing :func:`pipeline`.
 
@@ -258,7 +258,7 @@ def source(inp, features=None, top=None):
 
 
 def pipeline(stages, run=True, stride=1):
-    """ Data analysis pipeline.
+    r""" Data analysis pipeline.
 
     Constructs a data analysis :class:`Pipeline <pyemma.coordinates.pipelines.Pipeline>` and parametrizes it
     (unless prevented).
@@ -302,7 +302,7 @@ def discretizer(reader,
                 cluster=None,
                 run=True,
                 stride=1):
-    """ Specialized pipeline: From trajectories to clustering.
+    r""" Specialized pipeline: From trajectories to clustering.
 
     Constructs a pipeline that consists of three stages:
 
@@ -317,13 +317,13 @@ def discretizer(reader,
     ----------
 
     reader : instance of :class:`pyemma.coordinates.data.reader.ChunkedReader`
-        the reader instance provides access to the data. If you are working with
+        The reader instance provides access to the data. If you are working with
         MD data, you most likely want to use a FeatureReader.
 
-    transform : instance of Transformer
+    transform : instance of :class: `pyemma.coordinates.Transformer`
         an optional transform like PCA/TICA etc.
 
-    cluster : instance of clustering Transformer (optional)
+    cluster : instance of :class: `pyemma.coordinates.AbstractClustering` clustering Transformer (optional)
         a cluster algorithm to assign transformed data to discrete states.
 
     stride : int, optional, default = 1
@@ -334,8 +334,9 @@ def discretizer(reader,
 
     Returns
     -------
-    pipe : :class:`Pipeline <pyemma.coordinates.pipelines.Pipeline>`
-        A pipeline object that is able to conduct big data analysis with limited memory in streaming mode.
+    pipe : a :class:`Pipeline <pyemma.coordinates.pipelines.Pipeline>` object
+        A pipeline object that is able to streamline data analysis of large amounts of input data
+        with limited memory in streaming mode.
 
 
     Examples
@@ -537,10 +538,7 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None, inmemo
         files of "outfiles". Should be faster for large "indexes" arrays and large files, though it is quite memory
         intensive. The optimal situation is to avoid streaming two times through a huge file for "indexes" of type:
 
-        indexes = [
-                   [1 4000000],
-                   [1 4000001]
-                  ]
+        indexes = [[1 4000000],[1 4000001]]
 
     verbose : boolean, default is False
         Verbose output while looking for "indexes" in the "traj_inp.trajfiles".
@@ -615,7 +613,7 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None, inmemo
 # =========================================================================
 
 def _param_stage(previous_stage, this_stage, stride=1):
-    """ Parametrizes the given pipelining stage if a valid source is given.
+    r""" Parametrizes the given pipelining stage if a valid source is given.
 
     Parameters
     ----------
