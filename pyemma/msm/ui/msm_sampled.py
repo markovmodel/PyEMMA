@@ -28,7 +28,6 @@ def _create_function_mean(prefix, doctext, seealso, callfirst, sample):
     doc_string = _make_docstring(prefix, doctext, seealso, sample)
 
     def calc_mean(*args, **kw):
-        """ empty """
         if callfirst:
             assert isCallable(callfirst)
             callfirst(args)
@@ -40,18 +39,15 @@ def _create_function_mean(prefix, doctext, seealso, callfirst, sample):
 
 
 def _create_attribute(prefix, doctext, seealso, sample, func):
-    doc_string = _make_docstring(prefix, doctext, seealso, sample)
-    #@property
-    def calc_mean(self):
-        """ empty """
+    # this calculates either mean, std or confidence interval
+    def calc_attr(self):
         if func != 'conf':
             return func(self.sample, axis=0)
         else:
             return stat.confidence_interval_arr(self.sample, alpha=self._confidence)
 
-
-    calc_mean.__doc__ = doc_string
-    return calc_mean
+    doc_string = _make_docstring(prefix, doctext, seealso, sample)
+    return property(calc_attr, doc=doc_string)
 
 class sampled_msm_meta(type):
 
@@ -84,11 +80,12 @@ class sampled_msm_meta(type):
                 else:
                     suffix = t
                 attr_name = name + suffix
+                print attr_name
                 setattr(cls, attr_name, attr)
 
-        assert hasattr(cls, 'eigenvectors_right_mean')
-        assert hasattr(cls, 'eigenvectors_right_std')
-        assert hasattr(cls, 'eigenvectors_right_conf')
+        assert hasattr(cls, 'stationary_distribution_mean'), "sd mean"
+        assert hasattr(cls, 'stationary_distribution_std'), "sd std"
+        assert hasattr(cls, 'stationary_distribution_conf'), "sd conf"
 
         for name, prefix, seealso, callfirst, sample in args_funcs:
             f_mean = _create_function_mean(prefix=prefix, doctext="",
@@ -96,7 +93,7 @@ class sampled_msm_meta(type):
                                            sample=sample)
             setattr(cls, name + "mean", f_mean)
 
-        assert hasattr(cls, 'stationary_distribution_mean')
+        assert hasattr(cls, 'eigenvectors_right_mean'), "ev mean"
 
         return cls
 
