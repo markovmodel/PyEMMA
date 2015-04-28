@@ -73,7 +73,7 @@ extern "C" {
 "metric : string\n"\
 "    (input) One of \"euclidean\" or \"minRMSD\" (case sensitive).\n"\
 "\n"\
-"Returns\n"\
+"Returns \n"\
 "-------\n"\
 "None\n"\
 "\n"\
