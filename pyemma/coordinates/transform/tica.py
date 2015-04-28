@@ -148,7 +148,7 @@ class TICA(Transformer):
 
     @property
     def mean(self):
-        """ mean of input data """
+        """ mean of input features """
         return self.mu
 
     @doc_inherit
@@ -271,6 +271,7 @@ class TICA(Transformer):
 
             if last_chunk:
                 self._logger.info("finished calculation of Cov and Cov_tau.")
+
                 return True  # finished!
 
         return False  # not finished yet.
@@ -315,20 +316,28 @@ class TICA(Transformer):
         Y = np.dot(X_meanfree, self.eigenvectors[:, 0:self._output_dimension])
         return Y
 
-    def correlation(self):
-        """Returns the correlation matrix between input parameters and TICs
+    #@property
+    #def sigma(self):
+    #    """ standard deviation (sigma) of the input features """
+    #    return np.sqrt(np.diag(self.cov))
 
-        Parameters
-        ----------
-        X : ndarray(n, m)
-            the input data
+    def feature_correlation(self):
+        r"""Instantaneous correlation matrix between input features and TICs
 
+        Denoting the input parameters f_i and the TICs theta_j, the linear correlation
+        between f_i and theta_j can be written as
+
+        .. math::
+        \mathbf{Corr}(r_i, \mathbf{\theta}_j) = \frac{1}{\sigma_{r_i}}\sum_l \sigma_{il} \mathbf{U}_{li}
+
+        The matrix U
         Returns
         -------
-        Y : ndarray(n,)
-            the projected data
+        feat_corr : ndarray(n,m)
+            correlation matrix between input features and TICs. There is a row for each feature and a column
+            for each TIC.
         """
-        # TODO: consider writing an extension to avoid temporary Xmeanfree
-        X_meanfree = X - self.mu
-        Y = np.dot(X_meanfree, self.eigenvectors[:, 0:self._output_dimension])
-        return Y
+
+        feature_sigma = np.sqrt(np.diag(self.cov))
+        feat_corr = np.dot(self.cov,self.eigenvectors[:,:self._output_dimension])/feature_sigma[:, np.newaxis]
+        return feat_corr

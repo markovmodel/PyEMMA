@@ -233,6 +233,20 @@ class TestTICAExtensive(unittest.TestCase):
         assert len(self.tica_obj.trajectory_lengths()) == 1
         assert self.tica_obj.trajectory_lengths()[0] == self.tica_obj.trajectory_length(0)
 
+    def test_feature_correlation_MD(self):
+        # Copying from the test_MD_data
+        path = os.path.join(os.path.split(__file__)[0], 'data')
+        self.pdb_file = os.path.join(path, 'bpti_ca.pdb')
+        self.xtc_file = os.path.join(path, 'bpti_mini.xtc')
+        inp = source(self.xtc_file, top=self.pdb_file)
+        ticamini = tica(inp, lag=1)
+
+        feature_traj =  ticamini.data_producer.get_output()[0]
+        tica_traj    =  ticamini.get_output()[0]
+        test_corr = ticamini.feature_correlation()
+        true_corr = np.corrcoef(feature_traj.T,
+                                y = tica_traj.T)[:ticamini.data_producer.dimension(), ticamini.data_producer.dimension():]
+        assert np.isclose(test_corr, true_corr).all()
 
 if __name__ == "__main__":
     unittest.main()
