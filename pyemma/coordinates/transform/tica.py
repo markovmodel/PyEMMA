@@ -314,3 +314,21 @@ class TICA(Transformer):
         X_meanfree = X - self.mu
         Y = np.dot(X_meanfree, self.eigenvectors[:, 0:self._output_dimension])
         return Y
+
+    def correlation(self):
+        """Returns the correlation matrix between input parameters and TICs
+
+        Parameters
+        ----------
+        X : ndarray(n, m)
+            the input data
+
+        Returns
+        -------
+        Y : ndarray(n,)
+            the projected data
+        """
+        # TODO: consider writing an extension to avoid temporary Xmeanfree
+        X_meanfree = X - self.mu
+        Y = np.dot(X_meanfree, self.eigenvectors[:, 0:self._output_dimension])
+        return Y
