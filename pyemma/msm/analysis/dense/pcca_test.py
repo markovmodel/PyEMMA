@@ -150,5 +150,45 @@ class TestPCCA(unittest.TestCase):
         assert (np.alltrue(chi >= 0))
         assert (np.alltrue(chi <= 1))
 
+    def test_pcca_coarsegrain(self):
+        # fine-grained transition matrix
+        P = np.array([[0.9,  0.1,  0.0,  0.0,  0.0],
+                      [0.1,  0.89, 0.01, 0.0,  0.0],
+                      [0.0,  0.1,  0.8,  0.1,  0.0],
+                      [0.0,  0.0,  0.01, 0.79, 0.2],
+                      [0.0,  0.0,  0.0,  0.2,  0.8]])
+        from pyemma.msm.analysis import stationary_distribution
+        pi = stationary_distribution(P)
+        Pi = np.diag(pi)
+        m = 3
+        # Susanna+Marcus' expression ------------
+        M = pcca(P, m)
+        pi_c = np.dot(M.T, pi)
+        Pi_c_inv = np.diag(1.0/pi_c)
+        # restriction and interpolation operators
+        R = M.T
+        I = np.dot(np.dot(Pi, M), Pi_c_inv)
+        # result
+        ms1 = np.linalg.inv(np.dot(R,I)).T
+        ms2 = np.dot(np.dot(I.T, P), R.T)
+        Pc_ref = np.dot(ms1,ms2)
+        # ---------------------------------------
+
+        from pcca import coarsegrain
+        Pc = coarsegrain(P, 3)
+        # test against Marcus+Susanna's expression
+        assert np.max(np.abs(Pc - Pc_ref)) < 1e-10
+        # test mass conservation
+        assert np.allclose(Pc.sum(axis=1), np.ones(m))
+
+        from pcca import PCCA
+        p = PCCA(P, m)
+        # test against Marcus+Susanna's expression
+        assert np.max(np.abs(p.coarse_grained_transition_matrix - Pc_ref)) < 1e-10
+        # test against the present coarse-grained stationary dist
+        assert np.max(np.abs(p.coarse_grained_stationary_probability - pi_c)) < 1e-10
+        # test mass conservation
+        assert np.allclose(p.coarse_grained_transition_matrix.sum(axis=1), np.ones(m))
+
 if __name__ == "__main__":
     unittest.main()

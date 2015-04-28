@@ -474,13 +474,18 @@ def coarsegrain(P, n):
         J. Chem. Phys. 139, 184114 (2013)
     """
     M = pcca(P, n)
+    # coarse-grained transition matrix
+    W = np.linalg.inv(np.dot(M.T, M))
     A = np.dot(np.dot(M.T, P), M)
-    B = np.linalg.inv(np.dot(M.T, M))
-    P = np.dot(A, B)
-    # renormalize to eliminate numerical errors
-    P /= P.sum(axis=1)[:, None]
+    P_coarse = np.dot(W, A)
 
-    return P
+    # symmetrize and renormalize to eliminate numerical errors
+    from pyemma.msm.analysis import stationary_distribution
+    pi_coarse = np.dot(M.T, stationary_distribution(P))
+    X = np.dot(np.diag(pi_coarse), P_coarse)
+    P_coarse = X / X.sum(axis=1)[:, None]
+
+    return P_coarse
 
 
 class PCCA:
@@ -504,6 +509,9 @@ class PCCA:
         application to Markov state models and data classification.
         Adv Data Anal Classif 7, 147-179 (2013).
     [2] F. Noe, multiset PCCA and HMMs, in preparation.
+    [3] F. Noe, H. Wu, J.-H. Prinz and N. Plattner:
+        Projected and hidden Markov models for calculating kinetics and metastable states of complex molecules
+        J. Chem. Phys. 139, 184114 (2013)
 
     """
 
@@ -534,11 +542,13 @@ class PCCA:
         self._B /= self._B.sum(axis=1)[:, None]
 
         # coarse-grained transition matrix
-        self._A = np.dot(np.dot(self._M.T, P), self._M)
         W = np.linalg.inv(np.dot(self._M.T, self._M))
-        self._P_coarse = np.dot(self._A, W)
-        # renormalize to eliminate numerical errors
-        self._P_coarse /= self._P_coarse.sum(axis=1)[:, None]
+        A = np.dot(np.dot(self._M.T, P), self._M)
+        self._P_coarse = np.dot(W, A)
+
+        # symmetrize and renormalize to eliminate numerical errors
+        X = np.dot(np.diag(self._pi_coarse), self._P_coarse)
+        self._P_coarse = X / X.sum(axis=1)[:, None]
 
     @property
     def transition_matrix(self):
