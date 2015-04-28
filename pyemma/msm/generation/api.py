@@ -225,9 +225,12 @@ def transition_matrix_metropolis_1d(E, d=1.0):
 
     Notes
     -----
-    Transition probabilities are computed as p_i,i+1 = 0.5 * d *
-    min(1.0, exp(-(E_i+1 - E_i))).
-        
+    Transition probabilities are computed as
+    .. math::
+        p_{i,i-1} &=& 0.5 d \min \left{ 1.0, \mathrm{e}^{-(E_{i-1} - E_i)} \right}, \\
+        p_{i,i+1} &=& 0.5 d \min \left{ 1.0, \mathrm{e}^{-(E_{i+1} - E_i)} \right}, \\
+        p_{i,i}   &=& 1.0 - p_{i,i-1} - p_{i,i+1}.
+
     """
     # check input
     if (d <= 0 or d > 1):
