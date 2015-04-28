@@ -32,9 +32,11 @@ Created on Jan 8, 2014
 import math
 import numpy as np
 import scipy.stats
+import pyemma.util.types as types
 
 __all__ = ['transition_matrix_metropolis_1d',
-           'generate_traj']
+           'generate_traj',
+           'generate_trajs']
 
 
 class MarkovChainSampler:
@@ -91,12 +93,15 @@ class MarkovChainSampler:
             once a state of the stop set is reached
 
         """
+        # check input
+        stop = types.ensure_int_array_or_None(stop, require_order=False)
+
         if start is None:
             if self.mudist is None:
                 # compute mu, the stationary distribution of P
                 import pyemma.msm.analysis as msmana
 
-                mu = msmana.statdist(self.P)
+                mu = msmana.stationary_distribution(self.P)
                 self.mudist = scipy.stats.rv_discrete(values=(range(self.n), mu ))
             # sample starting point from mu
             start = self.mudist.rvs()
@@ -111,10 +116,14 @@ class MarkovChainSampler:
         # result
         traj = np.zeros(N, dtype=int)
         traj[0] = start
+        # already at stopping state?
+        if stopat[traj[0]]:
+            return traj[:1]
+        # else run until end or stopping state
         for t in range(1, N):
             traj[t] = self.rgs[traj[t - 1]].rvs()
             if stopat[traj[t]]:
-                break
+                return traj[:t+1]
         # return
         return traj
 
