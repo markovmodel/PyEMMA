@@ -48,6 +48,18 @@ class AbstractClustering(Transformer):
         self.clustercenters = None
         self._previous_stride = -1
         self._dtrajs = []
+        self._overwrite_dtrajs = False
+
+    @property
+    def overwrite_dtrajs(self):
+        """
+        Should existing dtraj files be overwritten. Set this property to True to overwrite.
+        """
+        return self._overwrite_dtrajs
+
+    @overwrite_dtrajs.setter
+    def overwrite_dtrajs(self, value):
+        self._overwrite_dtrajs = value
 
     @property
     def dtrajs(self):
@@ -189,8 +201,9 @@ class AbstractClustering(Transformer):
             dest = path.join(output_dir, filename)
             self._logger.debug('writing dtraj to "%s"' % dest)
             try:
-                if path.exists(dest):
-                    raise EnvironmentError('Attempted to write dtraj "%s" which already existed' % dest)
+                if path.exists(dest) and not self.overwrite_dtrajs:
+                    raise EnvironmentError('Attempted to write dtraj "%s" which already existed. To automatically'
+                                           'overwrite existing files, set source.overwrite_dtrajs=True.' % dest)
                 write_dtraj(dest, dtraj)
             except IOError:
                 self._logger.exception('Exception during writing dtraj to "%s"' % dest)
