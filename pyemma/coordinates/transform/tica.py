@@ -148,7 +148,7 @@ class TICA(Transformer):
 
     @property
     def mean(self):
-        """ mean of input data """
+        """ mean of input features """
         return self.mu
 
     @doc_inherit
@@ -314,3 +314,30 @@ class TICA(Transformer):
         X_meanfree = X - self.mu
         Y = np.dot(X_meanfree, self.eigenvectors[:, 0:self._output_dimension])
         return Y
+
+
+    @property
+    def feature_TIC_correlation(self):
+        r"""Instantaneous correlation matrix between input features and TICs
+
+        Denoting the input features as :math:`X_i` and the TICs as :math:`\theta_j`, the instantaneous, linear correlation
+        between them can be written as
+
+        .. math::
+
+            \mathbf{Corr}(X_i, \mathbf{\theta}_j) = \frac{1}{\sigma_{X_i}}\sum_l \sigma_{X_iX_l} \mathbf{U}_{li}
+
+        The matrix :math:`\mathbf{U}` is the matrix containing, as column vectors, the eigenvectors of the TICA
+        generalized eigenvalue problem .
+
+        Returns
+        -------
+        feature_TIC_correlation : ndarray(n,m)
+            correlation matrix between input features and TICs. There is a row for each feature and a column
+            for each TIC.
+        """
+
+        feature_sigma = np.sqrt(np.diag(self.cov))
+        return np.dot(self.cov,self.eigenvectors[:,:self._output_dimension])/feature_sigma[:, np.newaxis]
+
+    
