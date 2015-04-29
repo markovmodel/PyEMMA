@@ -316,10 +316,6 @@ class TICA(Transformer):
         return Y
 
 
-    #def sigma(self):
-    #    """ standard deviation (sigma) of the input features """
-    #    return np.sqrt(np.diag(self.cov))
-
     @property
     def feature_TIC_correlation(self):
         r"""Instantaneous correlation matrix between input features and TICs
