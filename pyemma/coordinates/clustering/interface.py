@@ -47,12 +47,13 @@ class AbstractClustering(Transformer):
         super(AbstractClustering, self).__init__()
         self.metric = metric
         self.clustercenters = None
+        self._previous_stride = -1
         self._dtrajs = []
 
     @property
     def dtrajs(self):
         if len(self._dtrajs) == 0:  # nothing assigned yet, doing that now
-            return self.assign(stride = 1)
+            return self.assign(stride=1)
         else:
             return self._dtrajs  # returning what we have saved
 
@@ -61,7 +62,7 @@ class AbstractClustering(Transformer):
         dtraj = np.empty(X.shape[0], dtype=self.output_type())
         regspatial.assign(X.astype(np.float32, order='C', copy=False),
                           self.clustercenters, dtraj, self.metric)
-        res = dtraj[:,None] # always return a column vector in this function
+        res = dtraj[:, None]  # always return a column vector in this function
         return res
 
     def dimension(self):
@@ -102,6 +103,11 @@ class AbstractClustering(Transformer):
 
         """
         if X is None:
+            # if the stride did not change and the discrete trajectory is already present,
+            # just return it
+            if self._previous_stride is stride and len(self._dtrajs) > 0:
+                return self._dtrajs
+            self._previous_stride = stride
             # map to column vectors
             mapped = self.get_output(stride=stride)
             # flatten and save
@@ -185,9 +191,7 @@ class AbstractClustering(Transformer):
             self._logger.debug('writing dtraj to "%s"' % dest)
             try:
                 if path.exists(dest):
-                    # TODO: decide what to do if file already exists.
-                    self._logger.warn('overwriting existing dtraj "%s"' % dest)
-                    pass
+                    raise EnvironmentError('Attempted to write dtraj "%s" which already existed' % dest)
                 write_dtraj(dest, dtraj)
             except IOError:
                 self._logger.exception('Exception during writing dtraj to "%s"' % dest)
