@@ -64,7 +64,7 @@ class TestRegSpaceClustering(unittest.TestCase):
         self.clustering = RegularSpaceClustering(dmin=self.dmin)
         self.clustering.data_producer = RandomDataSource()
 
-    def testAlgo(self):
+    def test_algorithm(self):
         self.clustering.parametrize()
 
         # correct type of dtrajs
@@ -82,7 +82,7 @@ class TestRegSpaceClustering(unittest.TestCase):
                                     " distance than dmin(%f): %f"
                                     % (c[0], c[1], self.dmin, dist))
 
-    def testAssignment(self):
+    def test_assignment(self):
         self.clustering.parametrize()
 
         assert len(self.clustering.clustercenters) > 1
@@ -96,7 +96,7 @@ class TestRegSpaceClustering(unittest.TestCase):
 
         self.clustering.assign(data_to_cluster, stride=1)
 
-    def testSpreadData(self):
+    def test_spread_data(self):
         self.clustering.data_producer = RandomDataSource(a=-2, b=2)
         self.clustering.dmin = 2
         self.clustering.parametrize()
@@ -104,6 +104,23 @@ class TestRegSpaceClustering(unittest.TestCase):
     def test1d_data(self):
         data = np.random.random(100)
         cluster_regspace(data, dmin=0.3)
+
+    def test_non_existent_metric(self):
+        self.clustering.data_producer = RandomDataSource(a=-2, b=2)
+        self.clustering.dmin = 2
+        self.clustering.metric = "non_existent_metric"
+        with self.assertRaises(ValueError):
+            self.clustering.parametrize()
+
+    def test_minRMSD_metric(self):
+        self.clustering.data_producer = RandomDataSource(a=-2, b=2)
+        self.clustering.dmin = 2
+        self.clustering.metric = "minRMSD"
+        self.clustering.parametrize()
+
+        data_to_cluster = np.random.random((1000, 3))
+
+        self.clustering.assign(data_to_cluster, stride=1)
 
 if __name__ == "__main__":
     unittest.main()

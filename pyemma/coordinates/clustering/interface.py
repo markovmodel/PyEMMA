@@ -51,7 +51,7 @@ class AbstractClustering(Transformer):
 
     @property
     def dtrajs(self):
-        if (len(self._dtrajs) == 0):  # nothing assigned yet, doing that now
+        if len(self._dtrajs) == 0:  # nothing assigned yet, doing that now
             return self.assign(stride = 1)
         else:
             return self._dtrajs  # returning what we have saved
@@ -172,7 +172,7 @@ class AbstractClustering(Transformer):
                 if prefix is not '':
                     name = "%s_%i%s" % (prefix, i, extension)
                 else:
-                    name = i + extension
+                    name = str(i) + extension
                 output_files.append(name)
 
         assert len(self.dtrajs) == len(output_files)
