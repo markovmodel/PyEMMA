@@ -192,26 +192,38 @@ def regroup_DISK(trajs, topology_file, disctrajs, path, stride=1):
 
     states = np.unique(np.hstack(([np.unique(disctraj) for disctraj in disctrajs])))
     states = np.setdiff1d(states, [-1])  # exclude invalid states
+    states_length = len(states)
     writer = [None] * (max(states) + 1)
     cluster = [None] * (max(states) + 1)
-
-    for i in states:
-        cluster[i] = path + os.sep + ('%d.xtc' % i)
-        writer[i] = XTCTrajectoryFile(cluster[i], 'w', force_overwrite=True)
-
-    for disctraj, traj in zip(disctrajs, trajs):
-        reader = md.iterload(traj, top=topology_file, stride=stride)
-        start = 0
-        for chunk in reader:
-            chunk_length = chunk.xyz.shape[0]
-            for i in xrange(chunk_length):
-                cl = disctraj[i + start]
-                if cl != -1:
-                    writer[cl].write(chunk.xyz[i, :, :])  # np.newaxis?
-            start += chunk_length
-            # TODO: check that whole disctrajs was used
-    for i in states:
-        writer[i].close()
+    cl_list_writer_chunck = []
+    counter = 0
+    for j in states:
+	
+			#create a chunck of writers (of 100 writers) in order to avoid limits in the number of simultanious opened files
+			cluster[j] = path + os.sep + ('%d.xtc' % j)
+			writer[j] = XTCTrajectoryFile(cluster[j], 'w', force_overwrite=True)
+			cl_list_writer_chunck.append(j)
+			if counter % 100 == 99 or counter == states_length:
+		
+				for disctraj, traj in zip(disctrajs, trajs):
+						      
+					reader = md.iterload(traj, top=topology_file, stride=stride)
+					start = 0
+					for chunk in reader:
+						chunk_length = chunk.xyz.shape[0]
+						for i in xrange(chunk_length):
+							cl = disctraj[i + start]
+							if cl != -1 and cl in cl_list_writer_chunck:
+								writer[cl].write(chunk.xyz[i, :, :])  # np.newaxis?
+						start += chunk_length
+						# TODO: check that whole disctrajs was used
+							
+				for i in cl_list_writer_chunck:
+					writer[i].close()
+	      
+	  		cl_list_writer_chunck = []
+	  
+			counter += 1
 
     return cluster
 
