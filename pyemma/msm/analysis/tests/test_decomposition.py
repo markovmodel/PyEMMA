@@ -97,7 +97,7 @@ class TestDecompositionDense(unittest.TestCase):
         Rn = eigenvectors(P)
         assert_allclose(np.dot(P,Rn),np.dot(Rn,Dn))
         # left eigenvectors
-        Ln = eigenvectors(P, right=False)
+        Ln = eigenvectors(P, right=False).T
         assert_allclose(np.dot(Ln.T,P),np.dot(Dn,Ln.T))
         # orthogonality
         Xn = np.dot(Ln.T, Rn)
@@ -111,7 +111,7 @@ class TestDecompositionDense(unittest.TestCase):
         Rn = eigenvectors(P, k=self.k)
         assert_allclose(np.dot(P,Rn),np.dot(Rn,Dnk))
         # left eigenvectors
-        Ln = eigenvectors(P, right=False, k=self.k)
+        Ln = eigenvectors(P, right=False, k=self.k).T
         assert_allclose(np.dot(Ln.T,P),np.dot(Dnk,Ln.T))
         # orthogonality
         Xn = np.dot(Ln.T, Rn)
@@ -302,14 +302,14 @@ class TestDecompositionSparse(unittest.TestCase):
         Rn = eigenvectors(P, k=self.k)
         assert_allclose(vals[np.newaxis, :] * Rn, P.dot(Rn))
 
-        Ln = eigenvectors(P, right=False, k=self.k)
+        Ln = eigenvectors(P, right=False, k=self.k).T
         assert_allclose(P.transpose().dot(Ln), vals[np.newaxis, :] * Ln)
 
         """k is not None and ncv is not None"""
         Rn = eigenvectors(P, k=self.k, ncv=self.ncv)
         assert_allclose(vals[np.newaxis, :] * Rn, P.dot(Rn))
 
-        Ln = eigenvectors(P, right=False, k=self.k, ncv=self.ncv)
+        Ln = eigenvectors(P, right=False, k=self.k, ncv=self.ncv).T
         assert_allclose(P.transpose().dot(Ln), vals[np.newaxis, :] * Ln)
 
     def test_rdl_decomposition(self):

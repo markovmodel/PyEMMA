@@ -111,10 +111,7 @@ class CustomFeature(object):
         self._func = func
         self._args = args
         self._kwargs = kwargs
-        if 'dim' in kwargs:
-            self.dimension = kwargs['dim']
-        else:
-            self.dimension = 0
+        self.dimension = kwargs.pop('dim', 0)
 
     def describe(self):
         return ["CustomFeature calling %s with args %s" % (str(self._func),
@@ -742,9 +739,7 @@ class MDFeaturizer(object):
             total dimension due to all selection features
 
         """
-        dim = 0
-        for f in self.active_features:
-            dim += f.dimension
+        dim = sum(f.dimension for f in self.active_features)
         return dim
 
     def map(self, traj):
@@ -803,5 +798,8 @@ class MDFeaturizer(object):
                 vec = f.map(traj).astype(np.float32)
             feature_vec.append(vec)
 
-        stack = np.hstack(feature_vec)
-        return stack
+        if len(feature_vec) > 1:
+            res = np.hstack(feature_vec)
+        else:
+            res = feature_vec[0]
+        return res

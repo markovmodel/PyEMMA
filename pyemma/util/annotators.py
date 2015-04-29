@@ -44,7 +44,7 @@ Now, Bar.foo.__doc__ == Bar().foo.__doc__ == Foo.foo.__doc__ == "Frobber"
 import warnings
 from functools import wraps
 import inspect
-from pyemma.util.log import getLogger
+import numpy as np
 
 __all__ = ['doc_inherit']
 
@@ -131,13 +131,14 @@ def shortcut(name):
     Examples
     --------
     In some module you have defined a function
-    >>>@shortcut('is_tmatrix')
-    >>>def is_transition_matrix(args):
-    >>>    pass
+    >>> @shortcut('is_tmatrix')
+    >>> def is_transition_matrix(args):
+    >>>     pass
     Now you are able to call the function under its short name
     >>> is_tmatrix(args)
 
     """
+    # TODO: this does not work (is not tested with class member functions)
     # extract callers frame
     frame = inspect.stack()[1][0]
     # get caller module of decorator
