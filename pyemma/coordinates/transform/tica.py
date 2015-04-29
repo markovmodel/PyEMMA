@@ -321,24 +321,27 @@ class TICA(Transformer):
     #    return np.sqrt(np.diag(self.cov))
 
     @property
-    def feature_correlation(self):
+    def feature_TIC_correlation(self):
         r"""Instantaneous correlation matrix between input features and TICs
 
-        Denoting the input parameters f_i and the TICs theta_j, the linear correlation
-        between f_i and theta_j can be written as
+        Denoting the input features as :math:`X_i` and the TICs as :math:`\theta_j`, the instantaneous, linear correlation
+        between them can be written as
 
         .. math::
-        \mathbf{Corr}(r_i, \mathbf{\theta}_j) = \frac{1}{\sigma_{r_i}}\sum_l \sigma_{il} \mathbf{U}_{li}
 
-        The matrix U
+            \mathbf{Corr}(X_i, \mathbf{\theta}_j) = \frac{1}{\sigma_{X_i}}\sum_l \sigma_{X_iX_l} \mathbf{U}_{li}
+
+        The matrix :math:`\mathbf{U}` is the matrix containing, as column vectors, the eigenvectors of the TICA
+        generalized eigenvalue problem .
+
         Returns
         -------
-        feat_corr : ndarray(n,m)
+        feature_TIC_correlation : ndarray(n,m)
             correlation matrix between input features and TICs. There is a row for each feature and a column
             for each TIC.
         """
 
         feature_sigma = np.sqrt(np.diag(self.cov))
-        feat_corr = np.dot(self.cov,self.eigenvectors[:,:self._output_dimension])/feature_sigma[:, np.newaxis]
-        return feat_corr
+        return np.dot(self.cov,self.eigenvectors[:,:self._output_dimension])/feature_sigma[:, np.newaxis]
+
     

@@ -243,9 +243,28 @@ class TestTICAExtensive(unittest.TestCase):
 
         feature_traj =  ticamini.data_producer.get_output()[0]
         tica_traj    =  ticamini.get_output()[0]
-        test_corr = ticamini.feature_correlation()
+        test_corr = ticamini.feature_TIC_correlation
         true_corr = np.corrcoef(feature_traj.T,
-                                y = tica_traj.T)[:ticamini.data_producer.dimension(), ticamini.data_producer.dimension():]
+                                y = tica_traj.T)[:ticamini.data_producer.dimension(),
+                                                  ticamini.data_producer.dimension():]
+        assert np.isclose(test_corr, true_corr).all()
+
+    def test_feature_correlation_data(self):
+        # Create features with some correlation
+        feature_traj = np.zeros((100, 3))
+        feature_traj[:,0] = np.linspace(-.5,.5,len(feature_traj))
+        feature_traj[:,1] = (feature_traj[:,0]+np.random.randn(len(feature_traj))*.5)**1
+        feature_traj[:,2] = np.random.randn(len(feature_traj))
+
+        # Tica
+        tica_obj = tica(data = feature_traj, dim = 3)
+        tica_traj = tica_obj.get_output()[0]
+
+        # Create correlations
+        test_corr = tica_obj.feature_TIC_correlation
+        true_corr = np.corrcoef(feature_traj.T,
+                                y = tica_traj.T)[:tica_obj.data_producer.dimension(), tica_obj.data_producer.dimension():]
+
         assert np.isclose(test_corr, true_corr).all()
 
 if __name__ == "__main__":
