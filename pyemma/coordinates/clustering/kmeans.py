@@ -29,7 +29,6 @@ Created on 22.01.2015
 """
 
 import kmeans_clustering
-import warnings
 import numpy as np
 
 from pyemma.util.annotators import doc_inherit
@@ -50,15 +49,21 @@ class KmeansClustering(AbstractClustering):
         how many iterations per chunk?
     metric : str
         metric to use during clustering ('euclidean', 'minRMSD')
-
+    tolerance : float
+        if the cluster centers' change did not exceed tolerance, stop iterating
+    assign_directly: boolean
+        this flag determines if the discrete trajectory is generated directly during the clustering process
     """
 
-    def __init__(self, n_clusters, max_iter=5, metric='euclidean'):
+    def __init__(self, n_clusters, max_iter=5, metric='euclidean', tolerance=1e-5, assign_directly=True):
         super(KmeansClustering, self).__init__(metric=metric)
         self.n_clusters = n_clusters
         self.max_iter = max_iter
-        self._clustercenters = []
+        self._cluster_centers = []
         self._centers_iter_list = []
+        self._tolerance = tolerance
+        self._assign_directly = assign_directly
+        self._direct_dtraj = np.array([], dtype=int)
 
     @doc_inherit
     def describe(self):
@@ -71,7 +76,7 @@ class KmeansClustering(AbstractClustering):
         return 1
 
     def _map_to_memory(self):
-        # resutls mapped to memory during parameterize
+        # results mapped to memory during parametrize
         pass
 
     def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
@@ -79,48 +84,42 @@ class KmeansClustering(AbstractClustering):
         # first pass: gather data and run k-means
         if ipass == 0 and first_chunk:
             # initialize cluster centers
-            self._clustercenters = [
+            self._cluster_centers = [
                 np.array(X[np.random.randint(0, len(X))], dtype=np.float32) for _ in xrange(self.n_clusters)
             ]
 
         # allocate assigns
         data_assigns = [0] * len(X)
 
-        try:
-            #print "cctype=%s, assignstype=%s, metrictype=%s" % (type(self._clustercenters), type(data_assigns), type(self.metric))
-            chunk = X.astype(np.float32, order='C', copy=False)
-            #print "Feeding chunk with len=%s, type=%s, chunk=%s"%(len(chunk), type(chunk), self._clustercenters)
-            new_centers = kmeans_clustering.cluster(chunk,
-                                                    self._clustercenters, data_assigns,
-                                                    self.metric)
-            self._centers_iter_list.append(new_centers)
-        except RuntimeError:
-            msg = 'Maximum number of cluster centers reached.' \
-                  ' Consider increasing max_clusters or choose' \
-                  ' a larger minimum distance, dmin.'
-            self._logger.warning(msg)
-            warnings.warn(msg)
-            return True
-
         # run k-means in the end
+        new_centers = kmeans_clustering.cluster(X.astype(np.float32, order='C', copy=False),
+                                                self._cluster_centers, data_assigns, self.metric)
+        if self._assign_directly:
+            self._previous_stride = stride
+            self._direct_dtraj = np.append(self._direct_dtraj, data_assigns)
+        self._centers_iter_list.append(new_centers)
+
         done = ipass + 1 >= self.max_iter
+        # aggregate
         if last_chunk:
-            #center_sum = np.zeros([self.n_clusters, len(X[0])])
             center_sum = [np.zeros([len(X[0])], dtype=np.float32) for _ in range(0, self.n_clusters)]
             for chunk_center in self._centers_iter_list:
-                #print "cc=%s"%chunk_center
                 for idx, chunk_center_element in enumerate(chunk_center):
                     center_sum[idx] += chunk_center_element
 
-            old_centers = self._clustercenters
+            old_centers = self._cluster_centers
             n_centers_in_iter_list = len(self._centers_iter_list)
-            self._clustercenters = [center / n_centers_in_iter_list for center in center_sum]
+            self._cluster_centers = [center / n_centers_in_iter_list for center in center_sum]
             self._centers_iter_list = []
-            if np.allclose(old_centers, self._clustercenters, rtol=1e-5):
+            if np.allclose(old_centers, self._cluster_centers, rtol=self._tolerance):
                 done = True
+            if not done:
+                self._direct_dtraj = np.array([], dtype=int)
         return done
 
     def _param_finish(self):
-        self.clustercenters = np.array(self._clustercenters)
-        del self._clustercenters
+        self.clustercenters = np.array(self._cluster_centers)
+        self._dtrajs = self._direct_dtraj
+        del self._direct_dtraj
+        del self._cluster_centers
         del self._centers_iter_list
