@@ -51,19 +51,15 @@ class KmeansClustering(AbstractClustering):
         metric to use during clustering ('euclidean', 'minRMSD')
     tolerance : float
         if the cluster centers' change did not exceed tolerance, stop iterating
-    assign_directly: boolean
-        this flag determines if the discrete trajectory is generated directly during the clustering process
     """
 
-    def __init__(self, n_clusters, max_iter=5, metric='euclidean', tolerance=1e-5, assign_directly=True):
+    def __init__(self, n_clusters, max_iter=5, metric='euclidean', tolerance=1e-5):
         super(KmeansClustering, self).__init__(metric=metric)
         self.n_clusters = n_clusters
         self.max_iter = max_iter
         self._cluster_centers = []
         self._centers_iter_list = []
         self._tolerance = tolerance
-        self._assign_directly = assign_directly
-        self._direct_dtraj = np.array([], dtype=int)
 
     @doc_inherit
     def describe(self):
@@ -88,15 +84,9 @@ class KmeansClustering(AbstractClustering):
                 np.array(X[np.random.randint(0, len(X))], dtype=np.float32) for _ in xrange(self.n_clusters)
             ]
 
-        # allocate assigns
-        data_assigns = [0] * len(X)
-
         # run k-means in the end
         new_centers = kmeans_clustering.cluster(X.astype(np.float32, order='C', copy=False),
-                                                self._cluster_centers, data_assigns, self.metric)
-        if self._assign_directly:
-            self._previous_stride = stride
-            self._direct_dtraj = np.append(self._direct_dtraj, data_assigns)
+                                                self._cluster_centers, self.metric)
         self._centers_iter_list.append(new_centers)
 
         done = ipass + 1 >= self.max_iter
@@ -113,13 +103,9 @@ class KmeansClustering(AbstractClustering):
             self._centers_iter_list = []
             if np.allclose(old_centers, self._cluster_centers, rtol=self._tolerance):
                 done = True
-            if not done:
-                self._direct_dtraj = np.array([], dtype=int)
         return done
 
     def _param_finish(self):
         self.clustercenters = np.array(self._cluster_centers)
-        self._dtrajs = self._direct_dtraj
-        del self._direct_dtraj
         del self._cluster_centers
         del self._centers_iter_list

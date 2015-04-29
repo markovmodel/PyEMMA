@@ -32,7 +32,6 @@ static PyObject *cluster(PyObject *self, PyObject *args) {
     if(debug) printf("KMEANS: declaring variables...");
     PyObject *py_centers, *py_item, *py_res;
     PyArrayObject *np_chunk, *np_item;
-    PyObject *py_data_assigns;
     Py_ssize_t N_centers, N_frames, dim;
     float *chunk;
     float **centers;
@@ -58,7 +57,7 @@ static PyObject *cluster(PyObject *self, PyObject *args) {
     if(debug) printf("done\n");
 
     if(debug) printf("KMEANS: attempting to parse args...");
-    if (!PyArg_ParseTuple(args, "O!O!O!s", &PyArray_Type, &np_chunk, &PyList_Type, &py_centers, &PyList_Type, &py_data_assigns, &metric)) {
+    if (!PyArg_ParseTuple(args, "O!O!s", &PyArray_Type, &np_chunk, &PyList_Type, &py_centers, &metric)) {
         goto error;
     }
     if(debug) printf("done\n");
@@ -144,7 +143,6 @@ static PyObject *cluster(PyObject *self, PyObject *args) {
                 closest_center_index = j;
             }
         }
-        PyList_SetItem(py_data_assigns, i, PyInt_FromLong(closest_center_index));
         (*(centers_counter + closest_center_index))++;
 	    for (j = 0; j < dim; j++) {
 	        //printf("\t\ttest=%.6f,\t idx=%d\n", chunk[i*dim+j], closest_center_index*dim+j);
