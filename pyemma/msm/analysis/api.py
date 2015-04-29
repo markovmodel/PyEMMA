@@ -503,6 +503,9 @@ def eigenvectors(T, k=None, right=True, ncv=None):
         the corresponding eigenvalue. If k is None then n=d, if k is
         int then n=k.
 
+        If right = True, the right eigenvectors are returned as column vectors.
+        If right = False, the left eigenvectors are returned as row vectors
+
     See also
     --------
     rdl_decomposition    
@@ -541,9 +544,16 @@ def eigenvectors(T, k=None, right=True, ncv=None):
            
     """
     if _issparse(T):
-        return sparse.decomposition.eigenvectors(T, k=k, right=right, ncv=ncv)
+        if right:
+            return sparse.decomposition.eigenvectors(T, k=k, right=right, ncv=ncv)
+        else:
+            return sparse.decomposition.eigenvectors(T, k=k, right=right, ncv=ncv).T
+
     elif _isdense(T):
-        return dense.decomposition.eigenvectors(T, k=k, right=right)
+        if right:
+            return dense.decomposition.eigenvectors(T, k=k, right=right)
+        else:
+            return dense.decomposition.eigenvectors(T, k=k, right=right).T
     else:
         raise _type_not_supported
 
