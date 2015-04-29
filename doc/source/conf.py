@@ -34,7 +34,7 @@ print pyemma.__version__
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
-    'sphinxcontrib.napoleon',
+    'sphinx.ext.napoleon',
     'sphinx.ext.mathjax',
 ]
 

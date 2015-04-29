@@ -271,7 +271,6 @@ class TICA(Transformer):
 
             if last_chunk:
                 self._logger.info("finished calculation of Cov and Cov_tau.")
-
                 return True  # finished!
 
         return False  # not finished yet.
@@ -316,11 +315,12 @@ class TICA(Transformer):
         Y = np.dot(X_meanfree, self.eigenvectors[:, 0:self._output_dimension])
         return Y
 
-    #@property
+
     #def sigma(self):
     #    """ standard deviation (sigma) of the input features """
     #    return np.sqrt(np.diag(self.cov))
 
+    @property
     def feature_correlation(self):
         r"""Instantaneous correlation matrix between input features and TICs
 
@@ -341,3 +341,4 @@ class TICA(Transformer):
         feature_sigma = np.sqrt(np.diag(self.cov))
         feat_corr = np.dot(self.cov,self.eigenvectors[:,:self._output_dimension])/feature_sigma[:, np.newaxis]
         return feat_corr
+    
