@@ -160,8 +160,32 @@ def regroup_RAM(trajs, disctrajs):
             cluster[i] = md.Trajectory(cluster[i], trajs[0].topology)
     return cluster
 
-@deprecated("Please use pyemma.coordinates.save_trajs")
-def regroup_DISK(trajs, topology_file, disctrajs, path, stride=1):
+
+def _regroup_DISK_subset(states, trajs, topology_file, disctrajs, path, stride):
+    writer = [None] * (max(states) + 1)
+    out_fnames = []
+    for i in states:
+        out_fname = path + os.sep + ('%d.xtc' % i)
+        out_fnames.append(out_fname)
+        writer[i] = XTCTrajectoryFile(out_fname, 'w', force_overwrite=True)
+
+    for disctraj, traj in zip(disctrajs, trajs):
+        reader = md.iterload(traj, top=topology_file, stride=stride)
+        start = 0
+        for chunk in reader:
+            chunk_length = chunk.xyz.shape[0]
+            for i in xrange(chunk_length):
+                cl = disctraj[i + start]
+                if cl in states:
+                    writer[cl].write(chunk.xyz[i, :, :])
+            start += chunk_length
+    for i in states:
+        writer[i].close()
+
+    return out_fnames
+
+
+def regroup_DISK(trajs, topology_file, disctrajs, path, stride=1, max_writers=100):
     """Regroups MD trajectories into clusters according to discretised trajectories.
 
     Parameters
@@ -176,6 +200,8 @@ def regroup_DISK(trajs, topology_file, disctrajs, path, stride=1):
         file system path to directory where cluster trajectories are written
     stride : int
         stride of disctrajs with respect to the (original) trajs
+    max_writers : int, optional, default = 100
+        maximum number of mdtraj trajectory writers to allocate at once
 
     Returns
     -------
@@ -192,40 +218,18 @@ def regroup_DISK(trajs, topology_file, disctrajs, path, stride=1):
 
     states = np.unique(np.hstack(([np.unique(disctraj) for disctraj in disctrajs])))
     states = np.setdiff1d(states, [-1])  # exclude invalid states
-    states_length = len(states)
-    writer = [None] * (max(states) + 1)
-    cluster = [None] * (max(states) + 1)
-    cl_list_writer_chunck = []
-    counter = 0
-    for j in states:
-	
-			#create a chunck of writers (of 100 writers) in order to avoid limits in the number of simultanious opened files
-			cluster[j] = path + os.sep + ('%d.xtc' % j)
-			writer[j] = XTCTrajectoryFile(cluster[j], 'w', force_overwrite=True)
-			cl_list_writer_chunck.append(j)
-			if counter % 100 == 99 or counter == states_length:
-		
-				for disctraj, traj in zip(disctrajs, trajs):
-						      
-					reader = md.iterload(traj, top=topology_file, stride=stride)
-					start = 0
-					for chunk in reader:
-						chunk_length = chunk.xyz.shape[0]
-						for i in xrange(chunk_length):
-							cl = disctraj[i + start]
-							if cl != -1 and cl in cl_list_writer_chunck:
-								writer[cl].write(chunk.xyz[i, :, :])  # np.newaxis?
-						start += chunk_length
-						# TODO: check that whole disctrajs was used
-							
-				for i in cl_list_writer_chunck:
-					writer[i].close()
-	      
-	  		cl_list_writer_chunck = []
-	  
-			counter += 1
+    
+    out_fnames = []
+    # break list of states into smaller list of a maximal length = max_writers 
+    for i in xrange((len(states) - 1)//max_writers + 1):
+        start = i*max_writers
+        stop = start+max_writers
+        states_subset = states[start:stop]
+        out_fnames_subset = _regroup_DISK_subset(states_subset, trajs, topology_file, disctrajs, path, stride)
+        out_fnames += out_fnames_subset
+        
+    return out_fnames
 
-    return cluster
 
 @deprecated("Please use pyemma.coordinates.save_trajs")
 def PCCA_disctrajs(disctrajs, connected_set, memberships):
