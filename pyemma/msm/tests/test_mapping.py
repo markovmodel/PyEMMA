@@ -39,8 +39,9 @@ class TestMapping(unittest.TestCase):
     def setUpClass(cls):
         c = super(TestMapping, cls).setUpClass()
         
-        cls.N_frames = 5000  # length of single trajectory 
         cls.N_clusters = 200
+        cls.cluster_repeat = 25
+        cls.N_frames = cls.cluster_repeat*cls.N_clusters  # length of single trajectory 
         cls.N_trajs = 10  # number of trajectories
 
         # create topology file
@@ -51,7 +52,9 @@ class TestMapping(unittest.TestCase):
         # create disctrajs
         cls.disctrajs = []
         for i in xrange(cls.N_trajs):
-            disctraj = np.random.randint(0,high=cls.N_clusters,size=cls.N_frames)
+            #disctraj = np.random.randint(0,high=cls.N_clusters,size=cls.N_frames)
+            disctraj = np.arange(0,cls.N_clusters,dtype=int).repeat(cls.cluster_repeat)
+            np.random.shuffle(disctraj)
             cls.disctrajs.append(disctraj)
             
         # create input trajectories
@@ -79,7 +82,7 @@ class TestMapping(unittest.TestCase):
             self.assertTrue(fname in cl_fnames)
             data = mdtraj.load(fname, top=self.pdb_fname)
             self.assertTrue(np.allclose(data.xyz, i))
-            #print data.xyz.shape
+            self.assertTrue(data.xyz.shape[0]==self.cluster_repeat*self.N_trajs)
 
     @classmethod
     def tearDownClass(cls):
