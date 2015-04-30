@@ -1,4 +1,3 @@
-
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
 # All rights reserved.
@@ -22,7 +21,7 @@
 # ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
+from bokeh.deprecate import deprecated
 """
 doc_inherit decorator
 
@@ -44,7 +43,6 @@ Now, Bar.foo.__doc__ == Bar().foo.__doc__ == Foo.foo.__doc__ == "Frobber"
 import warnings
 from functools import wraps
 import inspect
-import numpy as np
 
 __all__ = ['doc_inherit']
 
@@ -99,27 +97,43 @@ class DocInherit(object):
 doc_inherit = DocInherit
 
 
-def deprecated(func):
-    '''This is a decorator which can be used to mark functions
+def deprecated(msg):
+    """This is a decorator which can be used to mark functions
     as deprecated. It will result in a warning being emitted
-    when the function is used.'''
+    when the function is used.
 
-    @wraps(func)
-    def new_func(*args, **kwargs):
-        (frame, filename, line_number, function_name, lines, index) = \
-            inspect.getouterframes(inspect.currentframe())[1]
+    Parameters
+    ----------
+    msg : str
+        a user level hint which should indicate which feature to use otherwise.
 
-        warnings.warn_explicit(
-            "Call to deprecated function %s. Called from %s line %i" %
-            (func.__name__, filename, line_number),
-            category=DeprecationWarning,
-            filename=func.func_code.co_filename,
-            lineno=func.func_code.co_firstlineno + 1
-        )
-        return func(*args, **kwargs)
+    """
+    def deprecated_decorator(func):
 
-    new_func.func_dict['__deprecated__'] = True
-    return new_func
+        def new_func(*args, **kwargs):
+            _, filename, line_number, _, _, _ = \
+                inspect.getouterframes(inspect.currentframe())[1]
+
+            user_msg = "Call to deprecated function %s. Called from %s line %i. " \
+                % (func.__name__, filename, line_number)
+            if msg:
+                user_msg += msg
+
+            warnings.warn_explicit(
+                user_msg,
+                category=DeprecationWarning,
+                filename=func.func_code.co_filename,
+                lineno=func.func_code.co_firstlineno + 1
+            )
+            return func(*args, **kwargs)
+
+        new_func.func_dict['__deprecated__'] = True
+
+        # TODO: search docstring for notes section and append deprecation notice (with msg)
+
+        return new_func
+
+    return deprecated_decorator
 
 
 def shortcut(name):
