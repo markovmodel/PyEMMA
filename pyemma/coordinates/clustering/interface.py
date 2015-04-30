@@ -67,7 +67,7 @@ class AbstractClustering(Transformer):
         return 1
 
     def output_type(self):
-        return np.int64
+        return np.int32
 
     def assign(self, X=None, stride=1):
         """

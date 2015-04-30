@@ -52,7 +52,7 @@ float minRMSD_distance(float *SKP_restrict a, float *SKP_restrict b, size_t n, f
     return sqrt(msd);
 }
 
-int c_assign(float *chunk, float *centers, npy_int64 *dtraj, char* metric, Py_ssize_t N_frames, Py_ssize_t N_centers, Py_ssize_t dim) {
+int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric, Py_ssize_t N_frames, Py_ssize_t N_centers, Py_ssize_t dim) {
     int ret;
     float d, mindist;
     size_t argmin;
@@ -105,7 +105,7 @@ PyObject *assign(PyObject *self, PyObject *args) {
     Py_ssize_t N_centers, N_frames, dim;
     float *chunk;
     float *centers;
-    npy_int64 *dtraj;
+    npy_int32 *dtraj;
     char *metric;
 
     py_centers = NULL; py_res = NULL;
@@ -127,14 +127,14 @@ PyObject *assign(PyObject *self, PyObject *args) {
     chunk = PyArray_DATA(np_chunk);
 
     /* import dtraj */
-    if(PyArray_TYPE(np_dtraj)!=NPY_INT64) { PyErr_SetString(PyExc_ValueError, "dtype of \"dtraj\" isn\'t int (64)."); goto error; };
+    if(PyArray_TYPE(np_dtraj)!=NPY_INT32) { PyErr_SetString(PyExc_ValueError, "dtype of \"dtraj\" isn\'t int (32)."); goto error; };
     if(!PyArray_ISBEHAVED_RO(np_dtraj) ) { PyErr_SetString(PyExc_ValueError, "\"dtraj\" isn\'t behaved."); goto error; };
     if(PyArray_NDIM(np_dtraj)!=1) { PyErr_SetString(PyExc_ValueError, "Number of dimensions of \"dtraj\" isn\'t 1."); goto error; };
     if(np_chunk->dimensions[0]!=N_frames) {
         PyErr_SetString(PyExc_ValueError, "Size of \"dtraj\" differs from number of frames in \"chunk\".");
         goto error;
     }
-    dtraj = (npy_int64*)PyArray_DATA(np_dtraj);
+    dtraj = (npy_int32*)PyArray_DATA(np_dtraj);
 
     /* import list of cluster centers */
     np_centers = (PyArrayObject*)PyArray_ContiguousFromAny(py_centers, NPY_FLOAT32, 2, 2);
