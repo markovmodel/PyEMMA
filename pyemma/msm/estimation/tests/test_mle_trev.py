@@ -28,6 +28,8 @@ import numpy as np
 from pyemma.util.numeric import assert_allclose
 import scipy
 import scipy.sparse
+import warnings
+import pyemma.util.exceptions
 
 from os.path import abspath, join
 from os import pardir
@@ -53,6 +55,20 @@ class Test_mle_trev(unittest.TestCase):
         assert_allclose(T_api_sparse, T_python)
         assert_allclose(T_api_dense, T_python)
 
+    def test_warnings(self):
+        C = np.loadtxt(testpath + 'C_1_lag.dat')
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            mtrs(scipy.sparse.csr_matrix(C), maxiter=1)
+            assert len(w) == 1
+            assert issubclass(w[-1].category, pyemma.util.exceptions.NotConvergedWarning)
+            
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            etmr(C, maxiter=1)
+            assert len(w) == 1
+            assert issubclass(w[-1].category, pyemma.util.exceptions.NotConvergedWarning)
+            
 
 if __name__ == '__main__':
     unittest.main()

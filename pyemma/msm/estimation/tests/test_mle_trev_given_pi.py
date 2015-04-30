@@ -28,6 +28,8 @@ import numpy as np
 from pyemma.util.numeric import assert_allclose
 import scipy
 import scipy.sparse
+import warnings
+import pyemma.util.exceptions
 
 from os.path import abspath, join
 from os import pardir
@@ -61,6 +63,22 @@ class Test_mle_trev_given_pi(unittest.TestCase):
         assert_allclose(T_cython_sparse, T_python)
         assert_allclose(T_api_sparse, T_python)
         assert_allclose(T_api_dense, T_python)
+        
+    def test_warnings(self):
+        C = np.loadtxt(testpath + 'C_1_lag.dat')
+        pi = np.loadtxt(testpath + 'pi.dat')
+        
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            mtrgps(scipy.sparse.csr_matrix(C), pi, eps=self.eps, maxiter=1)
+            assert len(w) == 1
+            assert issubclass(w[-1].category, pyemma.util.exceptions.NotConvergedWarning)
+            
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            mtrgpd(C, pi, eps=self.eps, maxiter=1)
+            assert len(w) == 1
+            assert issubclass(w[-1].category, pyemma.util.exceptions.NotConvergedWarning)        
 
 
 if __name__ == '__main__':

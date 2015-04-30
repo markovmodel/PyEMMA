@@ -30,6 +30,8 @@ Created on Jan 13, 2014
 '''
 
 import numpy as np
+import warnings
+import pyemma.util.exceptions
 
 
 def transition_matrix_non_reversible(C):
@@ -189,6 +191,8 @@ def estimate_transition_matrix_reversible(C, Xinit=None, maxiter=1000000, maxerr
         i += 1
     # finalize and return
     T = X / xsum[:, np.newaxis]
+    if not converged:
+        warnings.warn("Reversible transition matrix estimation didn't converge.", pyemma.util.exceptions.NotConvergedWarning)
     if (return_statdist and return_conv):
         return (T, xsum, lhist[0:i], diffs[0:i])
     if (return_statdist):
@@ -262,9 +266,10 @@ def transition_matrix_reversible_fixpi(Z, mu, maxerr=1e-10, maxiter=10000, retur
         l[:] = lnew[:]
         it += 1
     if (not converged) and (it >= maxiter):
-        raise ValueError('NOT CONVERGED: 2-norm of Langrange multiplier vector is still '
-                         + str(err) + ' > ' + str(maxerr) + ' after ' + str(
-            it) + ' iterations. Increase maxiter or decrease maxerr')
+        warnings.warn('NOT CONVERGED: 2-norm of Langrange multiplier vector is still ' +
+                         str(err) + ' > ' + str(maxerr) + ' after ' + str(it) +
+                         ' iterations. Increase maxiter or decrease maxerr', 
+                      pyemma.util.exceptions.NotConvergedWarning)
     # compute T from Langrangian multipliers
     T = np.divide(A, l[:, np.newaxis])
     # return
