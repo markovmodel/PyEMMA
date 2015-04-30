@@ -573,7 +573,9 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None, inmemo
         import os
 
         _, fmt = os.path.splitext(traj_inp.trajfiles[0])
-
+    else:
+      fmt = '.' + fmt
+      
     # Prepare the list of outfiles before the loop
     if outfiles is None:
         outfiles = []
