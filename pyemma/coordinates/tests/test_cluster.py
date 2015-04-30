@@ -139,7 +139,7 @@ class TestCluster(unittest.TestCase):
 
     def test_output_type(self):
         for c in self.cl:
-            assert c.output_type() == np.int64
+            assert c.output_type() == np.int32
 
     def test_parametrize(self):
         for c in self.cl:
