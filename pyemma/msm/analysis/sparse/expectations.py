@@ -1,4 +1,3 @@
-
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
 # All rights reserved.
@@ -32,19 +31,19 @@ expectation values for a given transition matrix.
 
 import numpy as np
 
-from pyemma.util.numeric import diags
 from scipy.sparse import coo_matrix
+from scipy.sparse.construct import diags
 
 import decomposition
 
 
 def expected_counts(p0, T, N):
-    r"""Compute expected transition counts for Markov chain after N steps. 
-    
+    r"""Compute expected transition counts for Markov chain after N steps.
+
     Expected counts are computed according to ..math::
-    
-    E[C_{ij}^{(n)}]=\sum_{k=0}^{N-1} (p_0^T T^{k})_{i} p_{ij}   
-    
+
+    E[C_{ij}^{(n)}]=\sum_{k=0}^{N-1} (p_0^T T^{k})_{i} p_{ij}
+
     Parameters
     ----------
     p0 : (M,) ndarray
@@ -53,12 +52,12 @@ def expected_counts(p0, T, N):
         Transition matrix of the chain.
     N : int
         Number of steps to take from initial state.
-        
+
     Returns
     --------
     EC : (M, M) sparse matrix
         Expected value for transition counts after N steps. 
-    
+
     """
     if (N <= 0):
         EC = coo_matrix(T.shape, dtype=float)
@@ -82,13 +81,13 @@ def expected_counts(p0, T, N):
 
 def expected_counts_stationary(T, n, mu=None):
     r"""Expected transition counts for Markov chain in equilibrium. 
-    
+
     Since mu is stationary for T we have 
-    
+
     .. math::
-    
+
         E(C^{(n)})=n diag(mu)*T.
-    
+
     Parameters
     ----------
     T : (M, M) sparse matrix
@@ -98,12 +97,12 @@ def expected_counts_stationary(T, n, mu=None):
     mu : (M,) ndarray (optional)
         Stationary distribution for T. If mu is not specified it will be
         computed via diagonalization of T.
-    
+
     Returns
     -------
     EC : (M, M) sparse matrix
-        Expected value for transition counts after N steps.         
-    
+        Expected value for transition counts after N steps.
+
     """
     if (n <= 0):
         EC = coo_matrix(T.shape, dtype=float)

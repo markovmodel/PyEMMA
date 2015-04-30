@@ -41,7 +41,6 @@ from scipy.sparse.linalg import factorized
 
 import warnings
 
-from pyemma.util.numeric import isclose
 from pyemma.util.exceptions import ImaginaryEigenValueWarning, SpectralWarning
 
 
@@ -339,7 +338,7 @@ def timescales(T, tau=1, k=None, ncv=None):
                       'for implied time scale computation', ImaginaryEigenValueWarning)
 
     """Check for multiple eigenvalues of magnitude one"""
-    ind_abs_one = isclose(np.abs(values), 1.0)
+    ind_abs_one = np.isclose(np.abs(values), 1.0)
     if sum(ind_abs_one) > 1:
         warnings.warn('Multiple eigenvalues with magnitude one.', SpectralWarning)
 
@@ -376,7 +375,7 @@ def timescales_from_eigenvalues(ev, tau=1):
                       'for implied time scale computation', ImaginaryEigenValueWarning)
 
     """Check for multiple eigenvalues of magnitude one"""
-    ind_abs_one = isclose(np.abs(ev), 1.0)
+    ind_abs_one = np.isclose(np.abs(ev), 1.0)
     if sum(ind_abs_one) > 1:
         warnings.warn('Multiple eigenvalues with magnitude one.', SpectralWarning)
 
