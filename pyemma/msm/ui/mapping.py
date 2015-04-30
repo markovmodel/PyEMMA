@@ -27,6 +27,7 @@ import numpy as np
 import os
 import mdtraj as md
 from mdtraj.formats import XTCTrajectoryFile
+from pyemma.util.annotators import deprecated
 
 __all__ = ['regroup_RAM',
            'regroup_DISK',
@@ -112,6 +113,7 @@ def to_lcc_labels(states, lcc):
     return mymap.map(states)
 
 
+@deprecated("Please use pyemma.coordinates.save_trajs")
 def regroup_RAM(trajs, disctrajs):
     r"""Regroups MD trajectories into clusters according to discretised trajectories.
 
@@ -158,7 +160,7 @@ def regroup_RAM(trajs, disctrajs):
             cluster[i] = md.Trajectory(cluster[i], trajs[0].topology)
     return cluster
 
-
+@deprecated("Please use pyemma.coordinates.save_trajs")
 def regroup_DISK(trajs, topology_file, disctrajs, path, stride=1):
     """Regroups MD trajectories into clusters according to discretised trajectories.
 
@@ -213,7 +215,7 @@ def regroup_DISK(trajs, topology_file, disctrajs, path, stride=1):
 
     return cluster
 
-
+@deprecated("Please use pyemma.coordinates.save_trajs")
 def PCCA_disctrajs(disctrajs, connected_set, memberships):
     r"""Compute disctrajs coarse-grained to the PCCA sets.
 

@@ -377,7 +377,7 @@ def discretizer(reader,
     return disc
 
 
-@deprecated
+@deprecated('Use either pyemma.coordinates.source() or pyemma.coordinates.load()')
 def feature_reader(trajfiles, topfile):
     r"""*Deprecated.* Constructs a molecular feature reader.
 
@@ -408,7 +408,7 @@ def feature_reader(trajfiles, topfile):
     return _FeatureReader(trajfiles, topfile)
 
 
-@deprecated
+@deprecated("Please use pyemma.coordinates.load()")
 def memory_reader(data):
     r"""*Deprecated.* Constructs a reader from an in-memory ndarray.
 
@@ -513,7 +513,7 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None, inmemo
 
     Parameters
     ----------
-    traj_inp : :py:func:`pyemma.coordinates.data.feature_reader.FeatureReader`
+    traj_inp : :py:class:`pyemma.coordinates.data.feature_reader.FeatureReader`
         A data source as provided by Please use :py:func:`pyemma.coordinates.source` to construct it.
 
     indexes : list of ndarray(T_i, 2)
@@ -834,7 +834,7 @@ def tica(data=None, lag=10, dim=2, stride=1, force_eigenvalues_le_one=False):
 #
 # =========================================================================
 
-@deprecated
+@deprecated("Please use pyemma.coordinates.cluster_kmeans()")
 def kmeans(data=None, k=100, max_iter=1000, stride=1):
     return cluster_kmeans(data, k, max_iter, stride=stride)
 
@@ -895,7 +895,7 @@ def cluster_kmeans(data=None, k=100, max_iter=10, stride=1, metric='euclidean', 
     return _param_stage(data, res, stride=stride)
 
 
-@deprecated
+@deprecated("Please use pyemma.coordinates.cluster_uniform_time()")
 def uniform_time(data=None, k=100, stride=1):
     return cluster_uniform_time(data, k, stride=stride)
 
@@ -938,7 +938,7 @@ def cluster_uniform_time(data=None, k=100, stride=1, metric='euclidean'):
     return _param_stage(data, res)
 
 
-@deprecated
+@deprecated("Please use pyemma.coordinates.cluster_regspace()")
 def regspace(data=None, dmin=-1, max_centers=1000, stride=1):
     return cluster_regspace(data, dmin, max_centers, stride=stride)
 
@@ -1003,7 +1003,7 @@ def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1, metric='euc
     return _param_stage(data, res, stride=stride)
 
 
-@deprecated
+@deprecated("Please use pyemma.coordinates.assign_to_centers()")
 def assign_centers(data=None, centers=None, stride=1):
     return assign_to_centers(data, centers, stride=stride)
 
