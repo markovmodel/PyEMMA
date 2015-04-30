@@ -7,6 +7,9 @@ r"""Cython implementation of iterative likelihood maximization.
 import numpy
 cimport numpy
 import pyemma.msm.estimation
+import warnings
+import pyemma.util.exceptions
+
 
 cdef extern from "_mle_trev_given_pi.h":
   int _mle_trev_given_pi_dense(double * const T, const long long * const C, const double * const mu, const int n, double maxerr, const int maxiter, const double eps)
@@ -51,7 +54,7 @@ def mle_trev_given_pi(
   elif err == -4:
     raise Exception('Some element of pi is zero.')
   elif err == -5:
-    raise Exception('Didn\'t converge.')
+    warnings.warn('Reversible transition matrix estimation with fixed stationary distribution didn\'t converge.', pyemma.util.exceptions.NotConvergedWarning)
   elif err == -6:
     raise Exception('Count matrix has zero diagonal elements. Can\'t guarantee convergence of algorithm. '+
                     'Suggestion: set regularization parameter eps to some small value e.g. 1E-6.')
