@@ -39,7 +39,6 @@ import warnings
 
 from scipy.linalg import eig, eigvals, solve, lu_factor, lu_solve
 from pyemma.util.exceptions import SpectralWarning, ImaginaryEigenValueWarning
-from pyemma.util.numeric import isclose
 
 
 def backward_iteration(A, mu, x0, tol=1e-14, maxiter=100):
@@ -367,7 +366,7 @@ def timescales_from_eigenvalues(evals, tau=1):
         warnings.warn('Using eigenvalues with non-zero imaginary part', ImaginaryEigenValueWarning)
 
     """Check for multiple eigenvalues of magnitude one"""
-    ind_abs_one = isclose(np.abs(evals), 1.0)
+    ind_abs_one = np.isclose(np.abs(evals), 1.0)
     if sum(ind_abs_one) > 1:
         warnings.warn('Multiple eigenvalues with magnitude one.', SpectralWarning)
 

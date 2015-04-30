@@ -1,4 +1,3 @@
-
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
 # All rights reserved.
@@ -31,15 +30,16 @@ r"""This module provides unit tests for the expectations function in API
 
 import unittest
 import numpy as np
+from numpy.random import choice
 from pyemma.util.numeric import assert_allclose
 from scipy.linalg import eig
 
 import scipy
 import scipy.linalg
 import scipy.sparse
+from scipy.sparse import diags
 import scipy.sparse.linalg
 
-from pyemma.util.numeric import diags, choice
 from pyemma.msm.analysis import expected_counts, expected_counts_stationary
 
 ################################################################################

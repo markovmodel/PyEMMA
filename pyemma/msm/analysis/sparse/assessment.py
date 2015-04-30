@@ -1,4 +1,3 @@
-
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
 # All rights reserved.
@@ -27,9 +26,9 @@
     Sparse assessment module of msm analysis package
 """
 
-from pyemma.util.numeric import diags
 from scipy.sparse.csgraph import connected_components
 from scipy.sparse.sputils import isdense
+from scipy.sparse.construct import diags
 
 from pyemma.util.numeric import allclose_sparse
 

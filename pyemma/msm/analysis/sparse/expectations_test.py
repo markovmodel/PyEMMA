@@ -1,4 +1,3 @@
-
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
 # All rights reserved.
@@ -31,11 +30,12 @@ r"""Test package for the expectations module
 import unittest
 
 import numpy as np
+from numpy.random import choice
 import scipy
 import scipy.linalg
-from pyemma.util.numeric import diags, choice
 import scipy.sparse
 import scipy.sparse.linalg
+from scipy.sparse import diags
 
 import expectations
 
