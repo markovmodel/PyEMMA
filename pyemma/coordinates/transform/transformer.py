@@ -66,7 +66,7 @@ class TransformerIterator(object):
 
 class Transformer(object):
 
-    """ Basis class for pipeline objects
+    r""" Basis class for pipeline objects
 
     Parameters
     ----------
@@ -89,7 +89,7 @@ class Transformer(object):
 
     @property
     def data_producer(self):
-        """where does this transformer gets its data from"""
+        r"""where the transformer obtains its data."""
         return self._dataproducer
 
     @data_producer.setter
@@ -119,13 +119,13 @@ class Transformer(object):
 
     @property
     def in_memory(self):
-        """are results stored in memory?"""
+        r"""are results stored in memory?"""
         return self._in_memory
 
     @in_memory.setter
     def in_memory(self, op_in_mem):
-        """
-        If called, the output will be stored in memory
+        r"""
+        If called, the output will be stored in memory.
         """
         if not self._in_memory and op_in_mem:
             self._Y = [np.zeros((self.trajectory_length(itraj), self.dimension()))
@@ -143,7 +143,7 @@ class Transformer(object):
 
     @abstractmethod
     def dimension(self):
-        """ output dimension of this transformation """
+        r""" Number of dimensions that should be used for the output of the transformer. """
         pass
 
     def __create_logger(self):
@@ -156,7 +156,7 @@ class Transformer(object):
         self._logger = getLogger(name)
 
     def number_of_trajectories(self):
-        """
+        r"""
         Returns the number of trajectories.
 
         Returns
@@ -166,16 +166,16 @@ class Transformer(object):
         return self.data_producer.number_of_trajectories()
 
     def trajectory_length(self, itraj, stride=1):
-        """
-        Returns the length of trajectory with given index.
+        r"""
+        Returns the length of trajectory of the requested index.
 
         Parameters
         ----------
         itraj : int
             trajectory index
         stride : int
-            return value is the number of frames in trajectory when
-            running through it with a step size of `stride`
+            return value is the number of frames in the trajectory when
+            running through it with a step size of `stride`.
 
         Returns
         -------
@@ -184,14 +184,14 @@ class Transformer(object):
         return self.data_producer.trajectory_length(itraj, stride=stride)
 
     def trajectory_lengths(self, stride=1):
-        """
+        r"""
         Returns the length of each trajectory.
 
         Parameters
         ----------
         stride : int
-            return value is the number of frames in trajectories when
-            running through them with a step size of `stride`
+            return value is the number of frames of the trajectories when
+            running through them with a step size of `stride`.
 
         Returns
         -------
@@ -200,14 +200,14 @@ class Transformer(object):
         return self.data_producer.trajectory_lengths(stride=stride)
 
     def n_frames_total(self, stride=1):
-        """
+        r"""
         Returns total number of frames.
 
         Parameters
         ----------
         stride : int
             return value is the number of frames in trajectories when
-            running through them with a step size of `stride`
+            running through them with a step size of `stride`.
 
         Returns
         -------
@@ -216,8 +216,8 @@ class Transformer(object):
         return self.data_producer.n_frames_total(stride=stride)
 
     def _get_memory_per_frame(self):
-        """
-        Returns the memory requirements per frame, in bytes
+        r"""
+        Returns the memory requirements per frame, in bytes.
         """
         return 4 * self.dimension()
 
@@ -227,15 +227,15 @@ class Transformer(object):
 
     @abstractmethod
     def describe(self):
-        """ get a representation of this Transformer"""
+        r""" Get a representation of this Transformer."""
         pass
 
     def output_type(self):
-        """ by default transformers return single precision floats """
+        r""" By default transformers return single precision floats. """
         return np.float32
 
     def parametrize(self, stride=1):
-        r""" parametrize this Transformer
+        r""" Parametrize this Transformer
         """
         # check if ready
         if self.data_producer is None:
@@ -309,19 +309,20 @@ class Transformer(object):
             self._map_to_memory()
 
     def map(self, X):
-        """Maps the input data through the transformer to correspondingly shaped output data.
+        r"""Maps the input data through the transformer to correspondingly shaped output data array/list.
 
         Parameters
         ----------
         X : ndarray(T, n) or list of ndarray(T_i, n)
             The input data, where T is the number of time steps and n is the number of dimensions.
-            When a list is provided they can have differently many time steps, but the number of dimensions need
-            to be consistent.
+            If a list is provided, the number of time steps is allowed to vary, but the number of dimensions are
+            required to be to be consistent.
+            required to be to be consistent.
 
         Returns
         -------
         Y : ndarray(T, d) or list of ndarray(T_i, d)
-            the mapped data, where T is the number of time steps of the input data and d is the output dimension
+            The mapped data, where T is the number of time steps of the input data and d is the output dimension
             of this transformer. If called with a list of trajectories, Y will also be a corresponding list of
             trajectories
         """
@@ -346,7 +347,7 @@ class Transformer(object):
 
     @abstractmethod
     def _map_array(self, X):
-        """
+        r"""
         Initializes the parametrization.
 
         Parameters
@@ -357,31 +358,31 @@ class Transformer(object):
         Returns
         -------
         Y : ndarray(T, d)
-            the projected data, where T is the number of time steps of the input data and d is the output dimension
+            The projected data, where T is the number of time steps of the input data and d is the output dimension
             of this transformer.
 
         """
         pass
 
     def _param_init(self):
-        """
+        r"""
         Initializes the parametrization.
         """
         pass
 
     def _param_finish(self):
-        """
+        r"""
         Finalizes the parametrization.
         """
         pass
 
     @abstractmethod
     def _param_add_data(self, *args, **kwargs):
-        """ add data to parameterization """
+        r""" Adds data to parameterization """
         pass
 
     def _map_to_memory(self):
-        """maps results to memory. Will be stored in attribute :attr:`Y`."""
+        r"""Maps results to memory. Will be stored in attribute :attr:`Y`."""
         # if operating in main memory, do all the mapping now
         self.data_producer._reset()
         # iterate over trajectories
@@ -406,7 +407,7 @@ class Transformer(object):
             itraj += 1
 
     def _reset(self, stride=1):
-        """_reset data position"""
+        r"""_reset data position"""
         # TODO: children of this do not call parametrize nor reset their data_producers.
         # check if this is an issue
         if not self._parametrized:
@@ -419,8 +420,8 @@ class Transformer(object):
             self.data_producer._reset(stride=stride)
 
     def _next_chunk(self, lag=0, stride=1):
-        """
-        transforms next available chunk from either in memory data or internal
+        r"""
+        Transforms next available chunk from either in memory data or internal
         data_producer
 
         Parameters
@@ -475,12 +476,12 @@ class Transformer(object):
                 return (self.map(X0), self.map(Xtau))
 
     def __iter__(self):
-        """
+        r"""
         Returns an iterator that allows to access the transformed data.
 
         Returns
         -------
-        iterator : `pyemma.coordinates.transfrom.TransformerIterator`
+        iterator : a :class:`pyemma.coordinates.transfrom.TransformerIterator` transformer iterator
             a call to the .next() method of this iterator will return the pair
             (itraj, X) : (int, ndarray(n, m))
             where itraj corresponds to input sequence number (eg. trajectory index)
@@ -491,7 +492,7 @@ class Transformer(object):
         return TransformerIterator(self, stride=1, lag=0)
 
     def iterator(self, stride=1, lag=0):
-        """
+        r"""
         Returns an iterator that allows to access the transformed data.
 
         Parameters
@@ -507,10 +508,10 @@ class Transformer(object):
 
         Returns
         -------
-        iterator : `pyemma.coordinates.transfrom.TransformerIterator`
+        iterator : a :class:`pyemma.coordinates.transfrom.TransformerIterator` transformer iterator
             If lag = 0, a call to the .next() method of this iterator will return
             the pair
-            (itraj, X) : (int, ndarray(n, m))
+            (itraj, X) : (int, ndarray(n, m)),
             where itraj corresponds to input sequence number (eg. trajectory index)
             and X is the transformed data, n = chunksize or n < chunksize at end
             of input.
@@ -525,7 +526,7 @@ class Transformer(object):
         return TransformerIterator(self, stride=stride, lag=lag)
 
     def get_output(self, dimensions=slice(0, None), stride=1):
-        """ Maps all input data of this transformer and returns it as an array or list of arrays
+        r""" Maps all input data of this transformer and returns it as an array or list of arrays.
 
         Parameters
         ----------

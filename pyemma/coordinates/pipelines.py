@@ -39,7 +39,7 @@ __all__ = ['Discretizer',
 
 
 class Pipeline(object):
-    """Data processing pipeline
+    """Data processing pipeline.
 
     """
 
@@ -70,9 +70,9 @@ class Pipeline(object):
             e.chunksize = cs
 
     def add_element(self, e):
-        """appends a pipeline stage
+        r""" Appends a pipeline stage.
 
-        Appends the given element to the end of the current chain
+        Appends the given element to the end of the current chain.
         """
         # TODO: sanity checks on e
 
@@ -88,9 +88,9 @@ class Pipeline(object):
         self._chain.append(e)
 
     def set_element(self, index, e):
-        """replaces a pipeline stage
+        r""" Replaces a pipeline stage.
 
-        Replace an element in chain and return replaced one.
+        Replace an element in chain and return replaced element.
         """
         if index > len(self._chain):
             raise IndexError("tried to access element %i, but chain has only %i"
@@ -145,8 +145,8 @@ class Pipeline(object):
     # TODO: (in contrast to parametrize and parameterize and parameterise that
     # are all correct in english.
     def parametrize(self):
-        """
-        reads all data and discretizes it into discrete trajectories
+        r"""
+        Reads all data and discretizes it into discrete trajectories.
         """
         for element in self._chain:
             element.parametrize(stride=self.param_stride)
@@ -154,8 +154,8 @@ class Pipeline(object):
         self._parametrized = True
 
     def _is_parametrized(self):
-        """
-        Iterates through the pipeline elements and check if every element is parametrized.
+        r"""
+        Iterates through the pipeline elements and checks if every element is parametrized.
         """
         result = self._parametrized
         for el in self._chain:
@@ -163,9 +163,9 @@ class Pipeline(object):
         return result
 
     def _estimate_chunksize_from_mem_requirement(self, reader):
-        """
-        estimate memory requirement from _chain of transformers and sets a
-        chunksize accordingly
+        r"""
+        Estimates memory requirement from _chain of transformers and sets a
+        chunksize accordingly.
         """
         if not hasattr(reader, '_get_memory_per_frame'):
             self.chunksize = 0
@@ -220,12 +220,11 @@ class Pipeline(object):
 
 class Discretizer(Pipeline):
 
-    """
+    r"""
     A Discretizer gets a FeatureReader, which extracts features (distances,
     angles etc.) of given trajectory data and passes this data in a memory
-    efficient way through the given pipeline of a Transformer and a clustering.
-    The clustering object is responsible for assigning the data to discrete
-    states.
+    efficient way through the given pipeline of a Transformer and Clustering.
+    The clustering object is responsible for assigning the data to the cluster centers.
 
     Parameters
     ----------
@@ -293,7 +292,7 @@ class Discretizer(Pipeline):
 
     def save_dtrajs(self, prefix='', output_dir='.',
                     output_format='ascii', extension='.dtraj'):
-        """saves calculated discrete trajectories. Filenames are taken from
+        r"""Saves calculated discrete trajectories. Filenames are taken from
         given reader. If data comes from memory dtrajs are written to a default
         filename.
 
