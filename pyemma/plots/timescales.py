@@ -73,7 +73,7 @@ def plot_implied_timescales(ITS, ax=None, outfile=None, xlog=False, ylog=True, c
             (lconf, rconf) = ITS.get_sample_conf(confidence, i)
             ax.fill_between(ITS.sample_lagtimes, lconf, rconf, alpha=0.2, color=colors[i % len(colors)])
         # reference available?
-        if (refs != None):
+        if (refs is not None):
             tref = refs[i]
             ax.plot([0,min(tref,xmax)], [tref,tref], color='black', linewidth=1)
     # cutoff
