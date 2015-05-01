@@ -89,15 +89,10 @@ class MSM(object):
         from scipy.sparse import issparse
 
         self._sparse = issparse(T)
-        # Since we set T by hand, this object is always computed.
-        self._estimated = True
 
     ################################################################################
     # Basic attributes
     ################################################################################
-
-    def _assert_estimated(self):
-        assert self._estimated, "MSM hasn't been computed yet, make sure to call MSM.compute()"
 
     @property
     def is_reversible(self):
@@ -120,7 +115,6 @@ class MSM(object):
         The active set of states on which all computations and estimations will be done
 
         """
-        self._assert_estimated()
         return self._nstates
 
     @property
@@ -130,7 +124,6 @@ class MSM(object):
         transition matrix amongst the largest set of reversibly connected states
 
         """
-        self._assert_estimated()
         return self._T
 
     ################################################################################
@@ -145,7 +138,6 @@ class MSM(object):
         transition matrix amongst the largest set of reversibly connected states
 
         """
-        self._assert_estimated()
         try:
             return self._mu
         except:
@@ -192,8 +184,6 @@ class MSM(object):
             it is recommended that ncv > 2*k
 
         """
-        # are we ready?
-        self._assert_estimated()
         # check input?
         if self._sparse:
             if k is None:
@@ -322,7 +312,6 @@ class MSM(object):
         assert np.max(A) < self._nstates, 'Chosen set contains states that are not included in the active set.'
 
     def _mfpt(self, P, A, B, mu=None):
-        self._assert_estimated()
         self._assert_in_active(A)
         self._assert_in_active(B)
         from pyemma.msm.analysis import mfpt as __mfpt
@@ -342,7 +331,6 @@ class MSM(object):
         return self._mfpt(self._T, A, B, mu=self.stationary_distribution)
 
     def _committor_forward(self, P, A, B):
-        self._assert_estimated()
         self._assert_in_active(A)
         self._assert_in_active(B)
         from pyemma.msm.analysis import committor as __committor
@@ -361,7 +349,6 @@ class MSM(object):
         return self._committor_forward(self._T, A, B)
 
     def _committor_backward(self, P, A, B, mu=None):
-        self._assert_estimated()
         self._assert_in_active(A)
         self._assert_in_active(B)
         from pyemma.msm.analysis import committor as __committor
@@ -402,8 +389,6 @@ class MSM(object):
 
         :math:`\mu=(\mu_i)` is the stationary vector of the transition matrix :math:`T`.
         """
-        # are we ready?
-        self._assert_estimated()
         # check input
         assert np.shape(a)[0] == self._nstates, \
             'observable vector a does not have same size like the active set. '+ 'Need len(a) = ' + str(self._nstates)
@@ -499,8 +484,6 @@ class MSM(object):
             J. Chem. Phys. 139, 175101.
 
         """
-        # are we ready?
-        self._assert_estimated()
         # check input
         assert np.shape(a)[0] == self._nstates, \
             'observable vector a does not have same size like the active set. Need len(a) = ' + str(self._nstates)
@@ -554,8 +537,6 @@ class MSM(object):
             simulations and kinetic experiments. PNAS 108 (12): 4822-4827.
 
         """
-        # are we ready?
-        self._assert_estimated()
         # will not compute for nonreversible matrices
         if (not self.is_reversible) and (self.nstates > 2):
             raise ValueError('Fingerprint calculation is not supported for nonreversible transition matrices. '+
@@ -635,8 +616,6 @@ class MSM(object):
             Array of expectation value at given times
 
         """
-        # are we ready?
-        self._assert_estimated()
         # check input
         assert np.shape(p0)[0] == self._nstates, \
             'initial distribution p0 does not have same size like the active set. Need len(p0) = ' + str(self._nstates)
@@ -692,8 +671,6 @@ class MSM(object):
             simulations and kinetic experiments. PNAS 108 (12): 4822-4827.
 
         """
-        # are we ready?
-        self._assert_estimated()
         # will not compute for nonreversible matrices
         if (not self.is_reversible) and (self.nstates > 2):
             raise ValueError('Fingerprint calculation is not supported for nonreversible transition matrices. '+
@@ -752,9 +729,6 @@ class MSM(object):
         if not self._reversible:
             raise ValueError(
                 'Cannot compute PCCA for non-reversible matrices. Set reversible=True when constructing the MSM.')
-
-        # we need to have a transition matrix
-        self._assert_estimated()
 
         from pyemma.msm.analysis.dense.pcca import PCCA
         # ensure that we have a pcca object with the right number of states
