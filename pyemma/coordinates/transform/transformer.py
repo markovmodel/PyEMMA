@@ -227,7 +227,7 @@ class Transformer(object):
 
     @abstractmethod
     def describe(self):
-        r""" Get a representation of this Transformer."""
+        r""" Get a descriptive string representation of this class."""
         pass
 
     def output_type(self):
