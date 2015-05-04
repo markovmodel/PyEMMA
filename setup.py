@@ -275,6 +275,7 @@ else:
     metadata['setup_requires'] = ['numpy>=1.6.0',
                                   'setuptools>3.6',
                                   'mdtraj>=1.2.0',
+                                  'bhmm',
                                   'nose',
                                  ]
 

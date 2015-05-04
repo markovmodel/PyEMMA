@@ -80,7 +80,7 @@ class sampled_msm_meta(type):
                 else:
                     suffix = t
                 attr_name = name + suffix
-                print attr_name
+                #print attr_name
                 setattr(cls, attr_name, attr)
 
         assert hasattr(cls, 'stationary_distribution_mean'), "sd mean"
