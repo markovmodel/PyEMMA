@@ -213,15 +213,12 @@ class TICA(Transformer):
 
             if last_chunk:
                 self.mu /= self._N_mean
-                self._logger.info("calculated mean.")
 
                 # now we request real lagged data, since we are finished
                 # with first pass
                 return False, self._lag
 
         elif ipass == 1:
-            if first_chunk:
-                self._logger.info("start to calculate covariance...")
 
             if self.trajectory_length(itraj, stride=stride) > self._lag:
                 self._N_cov_tau += 2.0 * np.shape(Y)[0]
@@ -270,7 +267,6 @@ class TICA(Transformer):
                 self._logger.warning("trajectory nr %i too short, skipping it" % itraj)
 
             if last_chunk:
-                self._logger.info("finished calculation of Cov and Cov_tau.")
                 return True  # finished!
 
         return False  # not finished yet.
@@ -315,7 +311,6 @@ class TICA(Transformer):
         Y = np.dot(X_meanfree, self.eigenvectors[:, 0:self._output_dimension])
         return Y
 
-
     @property
     def feature_TIC_correlation(self):
         r"""Instantaneous correlation matrix between input features and TICs
@@ -336,8 +331,5 @@ class TICA(Transformer):
             correlation matrix between input features and TICs. There is a row for each feature and a column
             for each TIC.
         """
-
         feature_sigma = np.sqrt(np.diag(self.cov))
-        return np.dot(self.cov,self.eigenvectors[:,:self._output_dimension])/feature_sigma[:, np.newaxis]
-
-    
+        return np.dot(self.cov, self.eigenvectors[:, : self._output_dimension]) / feature_sigma[:, np.newaxis]
