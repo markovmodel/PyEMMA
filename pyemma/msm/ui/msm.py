@@ -32,6 +32,7 @@ and provides them for later access.
 import numpy as np
 from itertools import count
 from math import ceil
+from pyemma.util import types as _types
 
 
 # TODO: Explain concept of an active set
@@ -389,9 +390,8 @@ class MSM(object):
 
         :math:`\mu=(\mu_i)` is the stationary vector of the transition matrix :math:`T`.
         """
-        # check input
-        assert np.shape(a)[0] == self._nstates, \
-            'observable vector a does not have same size like the active set. '+ 'Need len(a) = ' + str(self._nstates)
+        # check input and go
+        a = _types.ensure_ndarray(a, ndim=1, size=self.nstates, kind='numeric')
         return np.dot(a, self.stationary_distribution)
 
     def correlation(self, a, b=None, maxtime=None, k=None, ncv=None):
@@ -484,18 +484,12 @@ class MSM(object):
             J. Chem. Phys. 139, 175101.
 
         """
-        # check input
-        assert np.shape(a)[0] == self._nstates, \
-            'observable vector a does not have same size like the active set. Need len(a) = ' + str(self._nstates)
-        if b is not None:
-            assert np.shape(b)[0] == self._nstates, \
-                'observable vector b does not have same size like the active set. Need len(b) = ' + str(self._nstates)
+        # input checking is done in low-level API
         # compute number of tau steps
         if maxtime is None:
             # by default, use five times the longest relaxation time, because then we have relaxed to equilibrium.
             maxtime = 5 * self.timescales()[0]
-        kmax = int(ceil(float(maxtime) / self._lag))
-        steps = np.array(range(kmax), dtype=int)
+        steps = np.arange(int(ceil(float(maxtime) / self._lag)))
         # compute correlation
         from pyemma.msm.analysis import correlation as _correlation
         # TODO: this could be improved. If we have already done an eigenvalue decomposition, we could provide it.

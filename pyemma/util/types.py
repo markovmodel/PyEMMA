@@ -29,6 +29,9 @@ import numpy as np
 import numbers
 import collections
 
+# ======================================================================================================================
+# BASIC TYPE CHECKS
+# ======================================================================================================================
 
 def is_int(l):
     r"""Checks if l is an integer
@@ -290,6 +293,137 @@ def ensure_dtype_float(x, default=np.float64):
     else:
         raise TypeError('x is not an array')
 
+# ======================================================================================================================
+# NDARRAY AND SPARSE ARRAY CHECKS
+# ======================================================================================================================
+
+def assert_square_matrix(A):
+    r""" Asserts if A is a square matrix
+
+    Returns
+    -------
+    n : int
+        the number of rows or columns
+
+    Raises
+    ------
+    AssertionError
+        If assertions has failed
+
+    """
+    try:
+        if np.ndim(A) == 2 and np.shape(A)[0] == np.shape(A)[1]:
+            return np.shape(A)[0]
+        else:
+            raise AssertionError('Given array is not a square matrix: \n'+str(A))
+    except:
+        raise AssertionError('Given array is not a square matrix: \n'+str(A))
+
+def assert_array(A, shape=None, ndim=None, size=None, dtype=None, kind=None):
+    r"""
+    Parameters
+    ----------
+    A : ndarray or array-like
+        the array under investigation
+    shape : shape, optional, default=None
+        asserts if the array has the requested shape. Be careful with vectors because this will distinguish between
+        row vectors (1,n), column vectors (n,1) and arrays (n,). If you want to be less specific, consider using size
+    size : int, optional, default=None
+        asserts if the arrays has the requested number of elements
+    ndim : int, optional, default=None
+        asserts if the array has the requested dimension
+    dtype : type, optional, default=None
+        asserts if the array data has the requested data type. This check is strong, e.g. int and int64 are not equal
+        If you want a weaker check, consider the kind option
+    kind : string, optional, default=None
+        Checks if the array data is of the specified kind. Options include 'i' for integer types, 'f' for float types
+        Check numpy.dtype.kind for possible options. An additional option is 'numeric' for either integer or float.
+
+    Returns
+    -------
+    A* : ndarray
+        An independent copy of the array
+
+    Raises
+    ------
+    AssertionError
+        If assertions has failed
+
+    """
+    try:
+        if shape is not None:
+            if not np.array_equal(np.shape(A), shape):
+                raise AssertionError('Expected shape '+str(shape)+' but given array has shape '+str(np.shape(A)))
+        if size is not None:
+            if not np.size(A) == size:
+                raise AssertionError('Expected size '+size+' but given array has size '+str(np.size(A)))
+        if ndim is not None:
+            if not ndim == np.ndim(A):
+                raise AssertionError('Expected shape '+str(ndim)+' but given array has shape '+str(np.ndim(A)))
+        if dtype is not None:
+            # now we must create an array if we don't have one yet
+            if not isinstance(A, np.ndarray):
+                A = np.array(A)
+            if not np.dtype(dtype) == A.dtype:
+                raise AssertionError('Expected data type '+str(dtype)+' but given array has data type '+str(A.dtype))
+        if kind is not None:
+            # now we must create an array if we don't have one yet
+            if not isinstance(A, np.ndarray):
+                A = np.array(A)
+            if kind == 'numeric':
+                if not (A.dtype.kind == 'i' or A.dtype.kind == 'f'):
+                    raise AssertionError('Expected numerical data, but given array has data kind '+str(A.dtype.kind))
+            elif not A.dtype.kind == kind:
+                raise AssertionError('Expected data kind '+str(kind)
+                                     +' but given array has data kind '+str(A.dtype.kind))
+    except:
+        raise AssertionError('Given argument is not an array of the expected shape or type:\n'+
+                             'arg = '+str(A)+'\ntype = '+str(type(A)))
+
+def ensure_ndarray(A, shape=None, ndim=None, size=None, dtype=None, kind=None):
+    r""" Ensures A is an ndarray and does an assert_array with the given parameters """
+    if not isinstance(A, np.ndarray):
+        try:
+            A = np.array(A)
+        except:
+            raise AssertionError('Given argument cannot be converted to an ndarray:\n'+str(A))
+    assert_array(A, shape=shape, ndim=ndim, size=size, dtype=dtype, kind=kind)
+
+def ensure_ndarray_or_None(A, shape=None, ndim=None, size=None, dtype=None, kind=None):
+    r""" Ensures A is None or an ndarray and does an assert_array with the given parameters """
+    if A is not None:
+        ensure_ndarray(A, shape=shape, ndim=ndim, size=size, dtype=dtype, kind=kind)
+
+
+# ======================================================================================================================
+# EMMA TRAJECTORY TYPES
+# ======================================================================================================================
+
+def ensure_dtraj(dtraj):
+    r"""Makes sure that dtraj is a discrete trajectory (array of int)
+
+    """
+    if is_int_vector(dtraj):
+        return dtraj
+    elif is_list_of_int(dtraj):
+        return np.array(dtraj, dtype=int)
+    else:
+        raise TypeError('Argument dtraj is not a discrete trajectory - only list of integers or int-ndarrays are allowed. Check type.')
+
+def ensure_dtraj_list(dtrajs):
+    r"""Makes sure that dtrajs is a list of discrete trajectories (array of int)
+
+    """
+    if isinstance(dtrajs, list):
+        # elements are ints? then wrap into a list
+        if is_list_of_int(dtrajs):
+            return [np.array(dtrajs, dtype=int)]
+        else:
+            for i in range(len(dtrajs)):
+                dtrajs[i] = ensure_dtraj(dtrajs[i])
+            return dtrajs
+    else:
+        return [ensure_dtraj(dtrajs)]
 
 def ensure_traj(traj):
     r"""Makes sure that dtraj is a discrete trajectory (array of int)

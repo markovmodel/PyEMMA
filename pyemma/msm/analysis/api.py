@@ -43,10 +43,7 @@ from scipy.sparse.sputils import isdense as _isdense
 from pyemma.util.annotators import shortcut
 
 # type-checking
-from pyemma.util.types import ensure_int_vector as _ensure_int_vector
-from pyemma.util.types import ensure_float_vector as _ensure_float_vector
-from pyemma.util.types import ensure_int_vector_or_None as _ensure_int_vector_or_None
-from pyemma.util.types import ensure_float_vector_or_None as _ensure_float_vector_or_None
+from pyemma.util import types as _types
 
 import dense.assessment
 import dense.committor
@@ -323,7 +320,7 @@ def is_reversible(T, mu=None, tol=1e-12):
         
     """
     # check input
-    mu = _ensure_float_vector_or_None(mu, require_order=True)
+    mu = _types.ensure_float_vector_or_None(mu, require_order=True)
     # go
     if _issparse(T):
         return sparse.assessment.is_reversible(T, mu, tol)
@@ -717,8 +714,8 @@ def mfpt(T, target, origin=None, tau=1, mu=None):
     
     """
     # check inputs
-    target = _ensure_int_vector(target)
-    origin = _ensure_int_vector_or_None(origin)
+    target = _types.ensure_int_vector(target)
+    origin = _types.ensure_int_vector_or_None(origin)
     # go
     if _issparse(T):
         if origin is None:
@@ -753,7 +750,7 @@ def hitting_probability(P, target):
     h : ndarray(n)
         a vector with hitting probabilities
     """
-    target = _ensure_int_vector(target)
+    target = _types.ensure_int_vector(target)
     if _issparse(P):
         _showSparseConversionWarning()  # currently no sparse implementation!
         return dense.hitting_probability.hitting_probability(P.toarray(), target)
@@ -872,8 +869,8 @@ def committor(T, A, B, forward=True, mu=None):
     array([ 1.        ,  0.45454545,  0.        ])
     
     """
-    A = _ensure_int_vector(A)
-    B = _ensure_int_vector(B)
+    A = _types.ensure_int_vector(A)
+    B = _types.ensure_int_vector(B)
     if _issparse(T):
         if forward:
             return sparse.committor.forward_committor(T, A, B)
@@ -945,7 +942,7 @@ def expected_counts(T, p0, N):
         
     """
     # check input
-    p0 = _ensure_float_vector(p0, require_order=True)
+    p0 = _types.ensure_float_vector(p0, require_order=True)
     # go
     if _issparse(T):
         return sparse.expectations.expected_counts(p0, T, N)
@@ -1000,7 +997,7 @@ def expected_counts_stationary(T, N, mu=None):
     
     """
     # check input
-    mu = _ensure_float_vector_or_None(mu, require_order=True)
+    mu = _types.ensure_float_vector_or_None(mu, require_order=True)
     # go
     if _issparse(T):
         return sparse.expectations.expected_counts_stationary(T, N, mu=mu)
@@ -1110,9 +1107,11 @@ def fingerprint_correlation(T, obs1, obs2=None, tau=1, k=None, ncv=None):
     array([ 0.20661157,  0.22727273,  0.02066116])
     
     """
-    # check input
-    obs1 = _ensure_float_vector(obs1, require_order=True)
-    obs2 = _ensure_float_vector_or_None(obs2, require_order=True)
+    # check if square matrix and remember size
+    n = _types.assert_square_matrix(T)
+    T = _types.ensure_ndarray(T, kind='numeric')  # square shape and ndim=2 have been checked already
+    obs1 = _types.ensure_ndarray(obs1, ndim=1, size=n, kind='numeric')
+    obs1 = _types.ensure_ndarray_or_None(obs1, ndim=1, size=n, kind='numeric')
     # go
     if _issparse(T):
         return sparse.fingerprints.fingerprint_correlation(T, obs1, obs2=obs2, tau=tau, k=k, ncv=ncv)
@@ -1200,9 +1199,11 @@ def fingerprint_relaxation(T, p0, obs, tau=1, k=None, ncv=None):
     array([ 0.45454545,  0.5       ,  0.04545455])    
         
     """
-    # check input
-    p0 = _ensure_float_vector(p0, require_order=True)
-    obs = _ensure_float_vector(obs, require_order=True)
+    # check if square matrix and remember size
+    n = _types.assert_square_matrix(T)
+    T = _types.ensure_ndarray(T, kind='numeric')  # square shape and ndim=2 have been checked already
+    p0 = _types.ensure_ndarray(p0, ndim=1, size=n, kind='numeric')
+    obs = _types.ensure_ndarray(obs, ndim=1, size=n, kind='numeric')
     # go
     if _issparse(T):
         return sparse.fingerprints.fingerprint_relaxation(T, p0, obs, tau=tau, k=k, ncv=ncv)
@@ -1212,7 +1213,6 @@ def fingerprint_relaxation(T, p0, obs, tau=1, k=None, ncv=None):
         raise _type_not_supported
 
 
-# DONE: Frank, Ben
 def expectation(T, a, mu=None):
     r"""Equilibrium expectation value of a given observable.
 
@@ -1243,7 +1243,8 @@ def expectation(T, a, mu=None):
 
     Examples
     --------
-    
+
+    >>> import numpy as np
     >>> from pyemma.msm.analysis import expectation
 
     >>> T=np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
@@ -1252,17 +1253,18 @@ def expectation(T, a, mu=None):
     0.90909090909090917       
     
     """
-    # check input
-    a = _ensure_float_vector(a, require_order=True)
-    mu = _ensure_float_vector_or_None(mu, require_order=True)
+    # check if square matrix and remember size
+    n = _types.assert_square_matrix(T)
+    T = _types.ensure_ndarray(T, kind='numeric')  # square shape and ndim=2 have been checked already
+    a = _types.ensure_ndarray(a, ndim=1, size=n, kind='numeric')
+    mu = _types.ensure_ndarray_or_None(mu, ndim=1, size=n, kind='numeric')
     # go
     if not mu:
         mu = stationary_distribution(T)
     return _np.dot(mu, a)
 
 
-# DONE: Martin+Frank+Ben: Implement in Python directly
-def correlation(T, obs1, obs2=None, times=[1], k=None, ncv=None):
+def correlation(T, obs1, obs2=None, times=(1), maxtime=None, k=None, ncv=None, return_times=False):
     r"""Time-correlation for equilibrium experiment.
     
     Parameters
@@ -1273,8 +1275,10 @@ def correlation(T, obs1, obs2=None, times=[1], k=None, ncv=None):
         Observable, represented as vector on state space
     obs2 : (M,) ndarray (optional)
         Second observable, for cross-correlations
-    times : list of int (optional)
+    times : array-like of int (optional), default=(1)
         List of times (in tau) at which to compute correlation
+    maxtime : int, optional, default=None
+        Maximum time step to use. Equivalent to . Alternative to times.
     k : int (optional)
         Number of eigenvalues and eigenvectors to use for computation
     ncv : int (optional)
@@ -1285,6 +1289,8 @@ def correlation(T, obs1, obs2=None, times=[1], k=None, ncv=None):
     -------
     correlations : ndarray
         Correlation values at given times
+    times : ndarray, optional
+        time points at which the correlation was computed (if return_times=True)
 
     References
     ----------
@@ -1336,10 +1342,14 @@ def correlation(T, obs1, obs2=None, times=[1], k=None, ncv=None):
     array([ 0.40909091,  0.34081364,  0.28585667,  0.23424263])
     
     """
+    # check if square matrix and remember size
+    n = _types.assert_square_matrix(T)
+    T = _types.ensure_ndarray(T, kind='numeric')  # square shape and ndim=2 have been checked already
+    obs1 = _types.ensure_ndarray(obs1, ndim=1, size=n, kind='numeric')
+    obs2 = _types.ensure_ndarray_or_None(obs2, ndim=1, size=n, kind='numeric')
+    times = _types.ensure_int_vector(times, require_order=True)
+
     # check input
-    obs1 = _ensure_float_vector(obs1, require_order=True)
-    obs2 = _ensure_float_vector_or_None(obs2, require_order=True)
-    times = _ensure_int_vector(times, require_order=True)
     # go
     if _issparse(T):
         return sparse.fingerprints.correlation(T, obs1, obs2=obs2, times=times, k=k, ncv=ncv)
@@ -1350,7 +1360,7 @@ def correlation(T, obs1, obs2=None, times=[1], k=None, ncv=None):
 
 
 # DONE: Martin+Frank+Ben: Implement in Python directly
-def relaxation(T, p0, obs, times=[1], k=None, ncv=None):
+def relaxation(T, p0, obs, times=(1), k=None, ncv=None):
     r"""Relaxation experiment.
 
     The relaxation experiment describes the time-evolution
@@ -1410,10 +1420,12 @@ def relaxation(T, p0, obs, times=[1], k=None, ncv=None):
     array([ 1.        ,  0.8407    ,  0.71979377,  0.60624287])
     
     """
-    # check input
-    p0 = _ensure_float_vector(p0, require_order=True)
-    obs = _ensure_float_vector(obs, require_order=True)
-    times = _ensure_int_vector(times, require_order=True)
+    # check if square matrix and remember size
+    n = _types.assert_square_matrix(T)
+    T = _types.ensure_ndarray(T, kind='numeric')  # square shape and ndim=2 have been checked already
+    p0 = _types.ensure_ndarray(p0, ndim=1, size=n, kind='numeric')
+    obs = _types.ensure_ndarray(obs, ndim=1, size=n, kind='numeric')
+    times = _types.ensure_int_vector(times, require_order=True)
     # go
     if _issparse(T):
         return sparse.fingerprints.relaxation(T, p0, obs, k=k, times=times)
