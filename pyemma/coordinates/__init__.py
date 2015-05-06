@@ -61,8 +61,9 @@ User API
 
 Classes
 =======
-**Coordinate classes** encapsulating complex functionality. You don't need to construct these classes yourself, as this
-is done by the user API functions above. Find here a documentation how to extract features from them.
+**Coordinate classes** encapsulating complex functionality. You don't need to
+construct these classes yourself, as this is done by the user API functions above.
+Find here a documentation how to extract features from them.
 
 .. autosummary::
    :toctree: generated/
@@ -73,3 +74,13 @@ is done by the user API functions above. Find here a documentation how to extrac
 
 """
 from .api import *
+
+
+def get_test_data():
+    import tests
+    import os
+    from glob import glob
+    dir = os.path.join(tests.__path__[0], 'data')
+    trajs = glob(dir + os.sep + "*.xtc")
+    top = os.path.join(dir, 'bpti_ca.pdb')
+    return {'trajs': trajs, 'top': top}
