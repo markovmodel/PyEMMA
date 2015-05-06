@@ -28,18 +28,16 @@ microstate trajectories automatically computes important properties
 and provides them for later access.
 
 .. moduleauthor:: F. Noe <frank DOT noe AT fu-berlin DOT de>
-.. moduleauthor:: B. Trendelkamp-Schroer <benjamin DOT trendelkamp-schroer AT fu-berlin DOT de>
 
 """
 
 __docformat__ = "restructuredtext en"
 
-import numpy as np
-import copy
-from math import ceil
-from bhmm import DiscreteHMM
+import numpy as _np
+from pyemma.msm.ui.msm import MSM as _MSM
+from pyemma.util import types as _types
 
-class HMSM(object):
+class HMSM(_MSM):
     r""" Hidden Markov model on discrete states.
 
     Parameters
@@ -49,65 +47,43 @@ class HMSM(object):
 
     """
 
-    # TODO: Do we want the exact same interface like for an MSM? Then we should copy all MSM functions, even
-    # TODO: if they are not completely meaningful, such as is_sparse.
+    def __init__(self, Pcoarse, Pobs, dt='1 step'):
+        """
 
-    def __init__(self, hmm, dt='1 step'):
-        # save underlying HMM
-        self._hmm = copy.deepcopy(hmm)
-        # set time step
-        from pyemma.util.units import TimeUnit
-        self._timeunit = TimeUnit(dt)
-
-    @property
-    def is_reversible(self):
-        """Returns whether the HMSM is reversible """
-        return self._hmm.is_reversible
-
-    @property
-    def is_sparse(self):
-        """Returns False, because a HMSM is not represented by sparse matrices, although it is low-rank """
-        return False
-
-    @property
-    def timestep(self):
-        """Returns the physical time corresponding to one step of the transition matrix as string, e.g. '10 ps'"""
-        return str(self._timeunit)
-
-    @property
-    def lag(self):
-        return self._hmm.lag
-
-    @property
-    def nstates(self):
-        # TODO: This is ambiguous. We could instead use nstates_hidden and nstates_obs or similar.
-        """The number of observable states
+        Parameters
+        ----------
+        Pcoarse : ndarray (m,m)
+            coarse-grained or hidden transition matrix
+        Pobs : ndarray (m,n)
+            observation probability matrix from hidden to observable discrete states
+        dt : str, optional, default='1 step'
+            time step of the model
 
         """
-        return self._hmm.nsymbols
+        # construct superclass and check input
+        _MSM.__init__(Pcoarse, dt)
+        # check and save copy of output probability
+        assert _types.is_float_matrix(Pobs), 'Pout is not a matrix of floating numbers'
+        self._Pobs = _np.array(Pobs)
+        assert _np.allclose(self._Pobs.sum(axis=1), 1), 'Pout is not a stochastic matrix'
 
     @property
-    def transition_matrix(self):
-        # TODO: This is ambiguous. We could instead use transition_matrix_hidden and transition_matrix_obs or similar.
-        # TODO: Moreover, since an HMM is not Markovian in the observed state space it would be better to call
-        # TODO: The observed transition matrix with a lag.
-        #
-        # TODO: Alternative: convention that this is the hidden transition matrix and add the observable transition
-        # TODO: matrix in a separate function only defined for HMSMs. Downside is that then transition_matrix really
-        # TODO: means different things for MSM and HMSM.
-        """
-        The transition matrix, estimated on the active set. For example, for connectivity='largest' it will be the
-        transition matrix amongst the largest set of reversibly connected states
-
-        """
-        raise NotImplementedError('What do we do here?')
+    def nstates_obs(self):
+        return self._Pobs.shape[1]
 
     @property
-    def metastable_transition_matrix(self):
-        # TODO: Or hidden_transition_matrix? Or transition_matrix_hidden?
-        return self._hmm.transition_matrix
+    def observation_probability(self):
+        r""" returns the output probability matrix
 
-    def obs_transition_matrix(self, k=1):
+        Returns
+        -------
+        Pout : ndarray (m,n)
+            output probability matrix from hidden to observable discrete states
+
+        """
+        return self._Pobs
+
+    def transition_matrix_obs(self, k=1):
         """ Computes the transition matrix between observed states
 
         Transition matrices for longer lag times than the one used to parametrize this HMSM can be obtained by
@@ -135,182 +111,179 @@ class HMSM(object):
             If a higher power is given,
 
         """
-        Pi_c = np.diag(self._hmm.stationary_distribution)
-        P_c = self._hmm.transition_matrix
-        P_c_k = np.linalg.matrix_power(P_c, k) # take a power if needed
-        B = self._hmm.output_probabilities
-        C = np.dot(np.dot(B.T, Pi_c),np.dot(P_c_k, B))
+        Pi_c = self.stationary_distribution
+        P_c = self.transition_matrix
+        P_c_k = _np.linalg.matrix_power(P_c, k) # take a power if needed
+        B = self._Pobs
+        C = _np.dot(_np.dot(B.T, Pi_c),_np.dot(P_c_k, B))
         P = C / C[:,None] # row normalization
         return P
 
     @property
-    def stationary_distribution(self):
-        # TODO: same discussion as in transition_matrix, above
-        raise NotImplementedError('What do we do here?')
+    def stationary_distribution_obs(self):
+        return _np.dot(self.stationary_distribution, self._Pobs)
 
     @property
-    def metastable_stationary_distribution(self):
-        # TODO: Or hidden_transition_matrix? Or transition_matrix_hidden?
-        return self._hmm.transition_matrix
+    def eigenvectors_left_obs(self):
+        return _np.dot(self.eigenvectors_left(), self._Pobs)
 
     @property
-    def obs_stationary_distribution(self):
-        return np.dot(self._hmm.stationary_distribution, self._hmm.output_probabilities)
+    def eigenvectors_right_obs(self):
+        return _np.dot(self._Pobs.T, self.eigenvectors_right())
 
-    @property
-    def eigenvalues(self):
-        return self._hmm.eigenvalues
-
-    # TODO: What if we just get either a coarse-grained or a fine-grained MSM at request?
-    # TODO: That would avoid some naming confusion.
-
-    @property
-    def timescales(self):
-        return self._hmm.timescales
-
-    @property
-    def metastable_eigenvectors_left(self):
-        return self._hmm.eigenvectors_left
-
-    @property
-    def metastable_eigenvectors_right(self):
-        return self._hmm.eigenvectors_right
-
-    @property
-    def obs_eigenvectors_left(self):
-        return np.dot(self._hmm.eigenvectors_left, self._hmm.output_probabilities)
-
-    @property
-    def obs_eigenvectors_right(self):
-        return np.dot(self._hmm.output_probabilities.T, self._hmm.eigenvectors_right)
-
-    # ==================================================================================================================
-    # The rest is simply implemented by directly analyzing the observed transition matrix
-    # TODO: maybe we should save P_obs if we use it for many functions
-    #
-    # TODO: this is a lot of duplicate code. We can generalize it. Models can be generalized to providing
-    # TODO: Eigenvalues, eigenvectors and some also a transition matrix. The calculations can then be made by
-    # TODO: Algorithms which just receive this information.
-
-    def _assert_in_active(self, A):
-        """
-        Checks if set A is within the set of observed states
-
-        Parameters
-        ----------
-        A : int or int array
-            set of states
-        """
-        assert np.max(A) < self.nstates, 'Chosen set contains states that are not included in the active set.'
-
-    def _mfpt(self, P, A, B, mu=None):
-        self._assert_in_active(A)
-        self._assert_in_active(B)
-        from pyemma.msm.analysis import mfpt as __mfpt
-        # scale mfpt by lag time
-        return self._hmm.lag * __mfpt(P, B, origin=A, mu=mu)
-
-    def mfpt(self, A, B):
-        return self._mfpt(self.obs_transition_matrix(1), A, B, mu=self.obs_stationary_distribution)
-
-    def _committor_forward(self, P, A, B):
-        self._assert_in_active(A)
-        self._assert_in_active(B)
-        from pyemma.msm.analysis import committor as __committor
-        return __committor(self.obs_transition_matrix(1), A, B, forward=True)
-
-    def committor_forward(self, A, B):
-        return self._committor_forward(self.obs_transition_matrix(1), A, B)
-
-    def _committor_backward(self, P, A, B, mu=None):
-        self._assert_in_active(A)
-        self._assert_in_active(B)
-        from pyemma.msm.analysis import committor as __committor
-        return __committor(P, A, B, forward=False, mu=mu)
-
-    def committor_backward(self, A, B):
-        return self._committor_backward(self.obs_transition_matrix(1), A,B, mu=self.stationary_distribution)
+    # ================================================================================================================
+    # Experimental properties: Here we allow to use either coarse-grained or microstate observables
+    # ================================================================================================================
 
     def expectation(self, a):
-        assert np.shape(a)[0] == self.nstates, \
-            'observable vector a does not have same size like the active set. '+ 'Need len(a) = ' + str(self.nstates)
-        return np.dot(a, self.obs_stationary_distribution)
-
-
-    # TODO: First project to metastable, then compute correlation etc for small system.
+        a = _types.ensure_float_vector(a, require_order=True)
+        # are we on microstates space?
+        if len(a) == self.nstates_obs:
+            # project to hidden and compute
+            a = _np.dot(a, self._Pobs)
+        # now we are on macrostate space, or something is wrong
+        if len(a) == self.nstates:
+            return super(HMSM, self).expectation(a)
+        else:
+            raise ValueError('observable vector a has size '+len(a)+' which is incompatible with both hidden ('+
+                             self.nstates+') and observed states ('+self.nstates_obs+')')
 
     def correlation(self, a, b=None, maxtime=None, k=None, ncv=None):
-        # check input
-        assert np.shape(a)[0] == self.nstates, \
-            'observable vector a does not have same size like the active set. Need len(a) = ' + str(self.nstates)
-        if b is not None:
-            assert np.shape(b)[0] == self.nstates, \
-                'observable vector b does not have same size like the active set. Need len(b) = ' + str(self.nstates)
-        # compute number of tau steps
-        if maxtime is None:
-            # by default, use five times the longest relaxation time, because then we have relaxed to equilibrium.
-            maxtime = 5 * self.timescales()[0]
-        kmax = int(ceil(float(maxtime) / self.lag))
-        steps = np.array(range(kmax), dtype=int)
-        # compute correlation
-        from pyemma.msm.analysis import correlation as _correlation
-        # TODO: this could be improved. If we have already done an eigenvalue decomposition, we could provide it.
-        # TODO: for this, the correlation function must accept already-available eigenvalue decompositions.
-        res = _correlation(self.obs_transition_matrix(1), a, obs2=b, times=steps, k=k, ncv=ncv)
-        # return times scaled by tau
-        times = self.lag * steps
-        return times, res
+        # basic checks for a and b
+        a = _types.ensure_ndarray(a, ndim=1, kind='numeric')
+        b = _types.ensure_ndarray_or_None(b, ndim=1, kind='numeric', size=len(a))
+        # are we on microstates space?
+        if len(a) == self.nstates_obs:
+            a = _np.dot(a, self._Pobs)
+            if b is not None:
+                b = _np.dot(b, self._Pobs)
+        # now we are on macrostate space, or something is wrong
+        if len(a) == self.nstates:
+            return super(HMSM, self).correlation(a, b=b, maxtime=maxtime)
+        else:
+            raise ValueError('observable vectors have size '+len(a)+' which is incompatible with both hidden ('+
+                             self.nstates+') and observed states ('+self.nstates_obs+')')
 
     def fingerprint_correlation(self, a, b=None, k=None, ncv=None):
-        # will not compute for nonreversible matrices
-        if (not self.is_reversible) and (self.nstates > 2):
-            raise ValueError('Fingerprint calculation is not supported for nonreversible transition matrices. '+
-                             'Consider estimating the MSM with reversible = True')
-        # check input
-        assert np.shape(a)[0] == self.nstates, \
-            'observable vector a does not have same size like the active set. Need len(a) = ' + str(self.nstates)
-        if b is not None:
-            assert np.shape(b)[0] == self.nstates, \
-                'observable vector b does not have same size like the active set. Need len(b) = ' + str(self.nstates)
-        from pyemma.msm.analysis import fingerprint_correlation as _fc
-        # TODO: this could be improved. If we have already done an eigenvalue decomposition, we could provide it.
-        # TODO: for this, the correlation function must accept already-available eigenvalue decompositions.
-        return _fc(self.obs_transition_matrix(1), a, obs2=b, tau=self.lag, k=k, ncv=ncv)
+        # basic checks for a and b
+        a = _types.ensure_ndarray(a, ndim=1, kind='numeric')
+        b = _types.ensure_ndarray_or_None(b, ndim=1, kind='numeric', size=len(a))
+        # are we on microstates space?
+        if len(a) == self.nstates_obs:
+            a = _np.dot(a, self._Pobs)
+            if b is not None:
+                b = _np.dot(b, self._Pobs)
+        # now we are on macrostate space, or something is wrong
+        if len(a) == self.nstates:
+            return super(HMSM, self).fingerprint_correlation(a, b=b)
+        else:
+            raise ValueError('observable vectors have size '+len(a)+' which is incompatible with both hidden ('+
+                             self.nstates+') and observed states ('+self.nstates_obs+')')
 
     def relaxation(self, p0, a, maxtime=None, k=None, ncv=None):
-        # check input
-        assert np.shape(p0)[0] == self.nstates, \
-            'initial distribution p0 does not have same size like the active set. Need len(p0) = ' + str(self.nstates)
-        assert np.shape(a)[0] == self.nstates, \
-            'observable vector a does not have same size like the active set. Need len(a) = ' + str(self.nstates)
-        # compute number of tau steps
-        if maxtime is None:
-            # by default, use five times the longest relaxation time, because then we have relaxed to equilibrium.
-            maxtime = 5 * self.timescales()[0]
-        kmax = int(ceil(float(maxtime) / self.lag))
-        steps = np.array(range(kmax), dtype=int)
-        # compute relaxation function
-        from pyemma.msm.analysis import relaxation as _relaxation
-        # TODO: this could be improved. If we have already done an eigenvalue decomposition, we could provide it.
-        # TODO: for this, the correlation function must accept already-available eigenvalue decompositions.
-        res = _relaxation(self.obs_transition_matrix(1), p0, a, times=steps, k=k, ncv=ncv)
-        # return times scaled by tau
-        times = self.lag * steps
-        return times, res
+        # basic checks for a and b
+        p0 = _types.ensure_ndarray(p0, ndim=1, kind='numeric')
+        a = _types.ensure_ndarray(a, ndim=1, kind='numeric', size=len(p0))
+        # are we on microstates space?
+        if len(a) == self.nstates_obs:
+            p0 = _np.dot(p0, self._Pobs)
+            a = _np.dot(a, self._Pobs)
+        # now we are on macrostate space, or something is wrong
+        if len(a) == self.nstates:
+            return super(HMSM, self).relaxation(p0, a, maxtime=maxtime)
+        else:
+            raise ValueError('observable vectors have size '+len(a)+' which is incompatible with both hidden ('+
+                             self.nstates+') and observed states ('+self.nstates_obs+')')
 
     def fingerprint_relaxation(self, p0, a, k=None, ncv=None):
-        # will not compute for nonreversible matrices
-        if (not self.is_reversible) and (self.nstates > 2):
-            raise ValueError('Fingerprint calculation is not supported for nonreversible transition matrices. '+
-                             'Consider estimating the MSM with reversible = True')
-        # check input
-        assert np.shape(p0)[0] == self.nstates, \
-            'initial distribution p0 does not have same size like the active set. Need len(p0) = ' + str(self.nstates)
-        assert np.shape(a)[0] == self.nstates, \
-            'observable vector a does not have the same size like the active set. Need len(a) = ' + str(self.nstates)
-        from pyemma.msm.analysis import fingerprint_relaxation as _fr
-        # TODO: this could be improved. If we have already done an eigenvalue decomposition, we could provide it.
-        # TODO: for this, the correlation function must accept already-available eigenvalue decompositions.
-        return _fr(self.obs_transition_matrix(1), p0, a, tau=self.lag, k=k, ncv=ncv)
+        # basic checks for a and b
+        p0 = _types.ensure_ndarray(p0, ndim=1, kind='numeric')
+        a = _types.ensure_ndarray(a, ndim=1, kind='numeric', size=len(p0))
+        # are we on microstates space?
+        if len(a) == self.nstates_obs:
+            p0 = _np.dot(p0, self._Pobs)
+            a = _np.dot(a, self._Pobs)
+        # now we are on macrostate space, or something is wrong
+        if len(a) == self.nstates:
+            return super(HMSM, self).fingerprint_relaxation(p0, a)
+        else:
+            raise ValueError('observable vectors have size '+len(a)+' which is incompatible with both hidden ('+
+                             self.nstates+') and observed states ('+self.nstates_obs+')')
 
+    def pcca(self, m):
+        raise NotImplementedError('PCCA is not meaningful for Hidden Markov models. '+
+                                  'If you really want to do this, initialize an MSM with the HMSM transition matrix.')
+
+    # ================================================================================================================
+    # Metastable state stuff is overwritten, because we now have the HMM output probability matrix
+    # ================================================================================================================
+
+    @property
+    def metastable_memberships(self):
+        """ Computes the memberships of observable states to metastable sets by Bayesian inversion as described in [1]_.
+
+        Returns
+        -------
+        M : ndarray((n,m))
+            A matrix containing the probability or membership of each observable state to be assigned to each
+            metastable or hidden state. The row sums of M are 1.
+
+        References
+        ----------
+        .. [1] F. Noe, H. Wu, J.-H. Prinz and N. Plattner:
+            Projected and hidden Markov models for calculating kinetics and metastable states of complex molecules
+            J. Chem. Phys. 139, 184114 (2013)
+
+        """
+        A = _np.dot(_np.diag(self.stationary_distribution), self._Pobs)
+        return _np.dot(A, _np.diag(self.stationary_distribution_obs)).T
+
+    @property
+    def metastable_distributions(self):
+        """ Returns the output probability distributions. Identical to :meth:`observation_probability`
+
+        Returns
+        -------
+        Pout : ndarray (m,n)
+            output probability matrix from hidden to observable discrete states
+
+        See also
+        --------
+        observation_probability
+
+        """
+        return self._Pobs
+
+    @property
+    def metastable_sets(self):
+        """ Computes the metastable sets of observable states within each metastable set
+
+        This is only recommended for visualization purposes. You *cannot* compute any
+        actual quantity of the coarse-grained kinetics without employing the fuzzy memberships!
+
+        Returns
+        -------
+        A list of length equal to metastable states. Each element is an array with observable state indexes contained
+        in it
+
+        """
+        res = []
+        assignment = self.metastable_assignments
+        for i in range(self.nstates):
+            res.append(_np.where(assignment == i)[0])
+        return res
+
+    @property
+    def metastable_assignments(self):
+        """ Computes the assignment to metastable sets for observable states
+
+        This is only recommended for visualization purposes. You *cannot* compute any
+        actual quantity of the coarse-grained kinetics without employing the fuzzy memberships!
+
+        Returns
+        -------
+        For each observable state, the metastable state it is located in.
+
+        """
+        return _np.argmax(self._Pobs, axis=1)
 
