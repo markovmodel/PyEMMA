@@ -40,7 +40,7 @@ from pyemma.util import types as _types
 
 class EstimatedHMSM(_HMSM):
 
-    def __init__(estimator, self):
+    def __init__(self, estimator):
         _HMSM.__init__(self, estimator.transition_matrix, estimator.observation_probabilities, dt=estimator.timestep)
         self._lag = estimator.lagtime
         self._dtrajs = estimator.dtrajs
@@ -48,7 +48,7 @@ class EstimatedHMSM(_HMSM):
     @property
     def lagtime(self):
         """ The lag time in steps """
-        return self.hmm.lag
+        return self._lag
 
     @property
     @shortcut('dtrajs')
@@ -116,17 +116,17 @@ class EstimatedHMSM(_HMSM):
     ################################################################################
 
     @property
-    def active_state_indexes(self):
+    def observable_state_indexes(self):
         """
         Ensures that the observable states are indexed and returns the indices
         """
         try:  # if we have this attribute, return it
-            return self._active_state_indexes
+            return self._observable_state_indexes
         except:  # didn't exist? then create it.
             import pyemma.util.discrete_trajectories as dt
 
-            self._active_state_indexes = dt.index_states(self.discrete_trajectories)
-            return self._active_state_indexes
+            self._observable_state_indexes = dt.index_states(self.discrete_trajectories)
+            return self._observable_state_indexes
 
     # TODO: generate_traj. How should that be defined? Probably indexes of observable states, but should we specify
     #                      hidden or observable states as start and stop states?
@@ -152,5 +152,5 @@ class EstimatedHMSM(_HMSM):
 
         """
         import pyemma.util.discrete_trajectories as dt
-        return dt.sample_indexes_by_distribution(self.observation_probabilities, nsample)
+        return dt.sample_indexes_by_distribution(self.observable_state_indexes, self.observation_probabilities, nsample)
 
