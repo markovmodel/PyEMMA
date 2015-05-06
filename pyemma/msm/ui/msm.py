@@ -531,19 +531,10 @@ class MSM(object):
             simulations and kinetic experiments. PNAS 108 (12): 4822-4827.
 
         """
-        # will not compute for nonreversible matrices
-        if (not self.is_reversible) and (self.nstates > 2):
-            raise ValueError('Fingerprint calculation is not supported for nonreversible transition matrices. '+
-                             'Consider estimating the MSM with reversible = True')
-        # check input
-        assert np.shape(a)[0] == self._nstates, \
-            'observable vector a does not have same size like the active set. Need len(a) = ' + str(self._nstates)
-        if b is not None:
-            assert np.shape(b)[0] == self._nstates, \
-                'observable vector b does not have same size like the active set. Need len(b) = ' + str(self._nstates)
-        from pyemma.msm.analysis import fingerprint_correlation as _fc
+        # input checking is done in low-level API
         # TODO: this could be improved. If we have already done an eigenvalue decomposition, we could provide it.
         # TODO: for this, the correlation function must accept already-available eigenvalue decompositions.
+        from pyemma.msm.analysis import fingerprint_correlation as _fc
         return _fc(self._T, a, obs2=b, tau=self._lag, k=k, ncv=ncv)
 
     def relaxation(self, p0, a, maxtime=None, k=None, ncv=None):
@@ -610,11 +601,7 @@ class MSM(object):
             Array of expectation value at given times
 
         """
-        # check input
-        assert np.shape(p0)[0] == self._nstates, \
-            'initial distribution p0 does not have same size like the active set. Need len(p0) = ' + str(self._nstates)
-        assert np.shape(a)[0] == self._nstates, \
-            'observable vector a does not have same size like the active set. Need len(a) = ' + str(self._nstates)
+        # input checking is done in low-level API
         # compute number of tau steps
         if maxtime is None:
             # by default, use five times the longest relaxation time, because then we have relaxed to equilibrium.
@@ -665,18 +652,10 @@ class MSM(object):
             simulations and kinetic experiments. PNAS 108 (12): 4822-4827.
 
         """
-        # will not compute for nonreversible matrices
-        if (not self.is_reversible) and (self.nstates > 2):
-            raise ValueError('Fingerprint calculation is not supported for nonreversible transition matrices. '+
-                             'Consider estimating the MSM with reversible = True')
-        # check input
-        assert np.shape(p0)[0] == self._nstates, \
-            'initial distribution p0 does not have same size like the active set. Need len(p0) = ' + str(self._nstates)
-        assert np.shape(a)[0] == self._nstates, \
-            'observable vector a does not have the same size like the active set. Need len(a) = ' + str(self._nstates)
-        from pyemma.msm.analysis import fingerprint_relaxation as _fr
+        # input checking is done in low-level API
         # TODO: this could be improved. If we have already done an eigenvalue decomposition, we could provide it.
         # TODO: for this, the correlation function must accept already-available eigenvalue decompositions.
+        from pyemma.msm.analysis import fingerprint_relaxation as _fr
         return _fr(self._T, p0, a, tau=self._lag, k=k, ncv=ncv)
 
     ################################################################################

@@ -63,9 +63,9 @@ import sparse.committor
 import sparse.fingerprints
 import sparse.mean_first_passage_time
 
-__author__ = "Benjamin Trendelkamp-Schroer, Martin Scherer, Frank Noe"
+__author__ = "Benjamin Trendelkamp-Schroer, Martin Scherer, Jan-Hendrik Prinz, Frank Noe"
 __copyright__ = "Copyright 2014, Computational Molecular Biology Group, FU-Berlin"
-__credits__ = ["Benjamin Trendelkamp-Schroer", "Martin Scherer", "Frank Noe"]
+__credits__ = ["Benjamin Trendelkamp-Schroer", "Martin Scherer", "Jan-Hendrik Prinz", "Frank Noe"]
 __license__ = "FreeBSD"
 __version__ = "2.0.0"
 __maintainer__ = "Martin Scherer"
@@ -102,8 +102,6 @@ __all__ = ['is_transition_matrix',
            'mfpt_sensitivity',
            'committor_sensitivity',
            'expectation_sensitivity']
-# shortcuts added later:
-# ['statdist', 'is_tmatrix', 'statdist_sensitivity']
 
 _type_not_supported = \
     TypeError("T is not a numpy.ndarray or a scipy.sparse matrix.")
@@ -113,7 +111,6 @@ _type_not_supported = \
 ################################################################################
 
 
-# DONE : Martin, Ben
 @shortcut('is_tmatrix')
 def is_transition_matrix(T, tol=1e-12):
     r"""Check if the given matrix is a transition matrix.
@@ -159,7 +156,6 @@ def is_transition_matrix(T, tol=1e-12):
         raise _type_not_supported
 
 
-# DONE: Martin, Ben
 def is_rate_matrix(K, tol=1e-12):
     r"""Check if the given matrix is a rate matrix.
     
@@ -204,7 +200,6 @@ def is_rate_matrix(K, tol=1e-12):
         raise _type_not_supported
 
 
-# Done: Ben
 def is_connected(T, directed=True):
     r"""Check connectivity of the given matrix.
     
@@ -270,7 +265,6 @@ def is_connected(T, directed=True):
         raise _type_not_supported
 
 
-# DONE: Martin
 def is_reversible(T, mu=None, tol=1e-12):
     r"""Check reversibility of the given transition matrix.
     
@@ -334,7 +328,6 @@ def is_reversible(T, mu=None, tol=1e-12):
 # Eigenvalues and eigenvectors
 ################################################################################
 
-# DONE: Ben
 @shortcut('statdist')
 def stationary_distribution(T):
     r"""Compute stationary distribution of stochastic matrix T.
@@ -386,7 +379,6 @@ def stationary_distribution(T):
         raise _type_not_supported
 
 
-# DONE: Martin, Ben
 def eigenvalues(T, k=None, ncv=None, reversible=False, mu=None):
     r"""Find eigenvalues of the transition matrix.
 
@@ -435,7 +427,6 @@ def eigenvalues(T, k=None, ncv=None, reversible=False, mu=None):
         raise _type_not_supported
 
 
-# DONE: Ben
 def timescales(T, tau=1, k=None, ncv=None, reversible=False, mu=None):
     r"""Compute implied time scales of given transition matrix.
 
@@ -490,7 +481,6 @@ def timescales(T, tau=1, k=None, ncv=None, reversible=False, mu=None):
         raise _type_not_supported
 
 
-# DONE: Ben
 def eigenvectors(T, k=None, right=True, ncv=None):
     r"""Compute eigenvectors of given transition matrix.
     
@@ -567,7 +557,6 @@ def eigenvectors(T, k=None, right=True, ncv=None):
         raise _type_not_supported
 
 
-# DONE: Ben
 def rdl_decomposition(T, k=None, norm='auto', ncv=None):
     r"""Compute the decomposition into eigenvalues, left and right
     eigenvectors.
@@ -648,7 +637,6 @@ def rdl_decomposition(T, k=None, norm='auto', ncv=None):
         raise _type_not_supported
 
 
-# DONE: Ben, Chris
 def mfpt(T, target, origin=None, tau=1, mu=None):
     r"""Mean first passage times (from a set of starting states - optional)
     to a set of target states.
@@ -764,7 +752,6 @@ def hitting_probability(P, target):
 # Transition path theory
 ################################################################################
 
-# DONE: Ben
 def committor(T, A, B, forward=True, mu=None):
     r"""Compute the committor between sets of microstates.
     
@@ -900,7 +887,6 @@ def committor(T, A, B, forward=True, mu=None):
 # Expectations
 ################################################################################
 
-# DONE: Ben
 def expected_counts(T, p0, N):
     r"""Compute expected transition counts for Markov chain with n steps.    
     
@@ -952,7 +938,6 @@ def expected_counts(T, p0, N):
         raise _type_not_supported
 
 
-# DONE: Ben
 def expected_counts_stationary(T, N, mu=None):
     r"""Expected transition counts for Markov chain in equilibrium.    
     
@@ -1011,7 +996,6 @@ def expected_counts_stationary(T, N, mu=None):
 # Fingerprints
 ################################################################################
 
-# DONE: Martin+Frank+Ben: Implement in Python directly
 def fingerprint_correlation(T, obs1, obs2=None, tau=1, k=None, ncv=None):
     r"""Dynamical fingerprint for equilibrium correlation experiment.
 
@@ -1110,6 +1094,9 @@ def fingerprint_correlation(T, obs1, obs2=None, tau=1, k=None, ncv=None):
     # check if square matrix and remember size
     n = _types.assert_square_matrix(T)
     T = _types.ensure_ndarray(T, kind='numeric')  # square shape and ndim=2 have been checked already
+    # will not do fingerprint analysis for nonreversible matrices
+    if not is_reversible(T):
+        raise ValueError('Fingerprint calculation is not supported for nonreversible transition matrices. ')
     obs1 = _types.ensure_ndarray(obs1, ndim=1, size=n, kind='numeric')
     obs1 = _types.ensure_ndarray_or_None(obs1, ndim=1, size=n, kind='numeric')
     # go
@@ -1121,7 +1108,6 @@ def fingerprint_correlation(T, obs1, obs2=None, tau=1, k=None, ncv=None):
         raise _type_not_supported
 
 
-# DONE: Martin+Frank+Ben: Implement in Python directly
 def fingerprint_relaxation(T, p0, obs, tau=1, k=None, ncv=None):
     r"""Dynamical fingerprint for relaxation experiment.
 
@@ -1202,6 +1188,9 @@ def fingerprint_relaxation(T, p0, obs, tau=1, k=None, ncv=None):
     # check if square matrix and remember size
     n = _types.assert_square_matrix(T)
     T = _types.ensure_ndarray(T, kind='numeric')  # square shape and ndim=2 have been checked already
+    # will not do fingerprint analysis for nonreversible matrices
+    if not is_reversible(T):
+        raise ValueError('Fingerprint calculation is not supported for nonreversible transition matrices. ')
     p0 = _types.ensure_ndarray(p0, ndim=1, size=n, kind='numeric')
     obs = _types.ensure_ndarray(obs, ndim=1, size=n, kind='numeric')
     # go
@@ -1359,7 +1348,6 @@ def correlation(T, obs1, obs2=None, times=(1), maxtime=None, k=None, ncv=None, r
         raise _type_not_supported
 
 
-# DONE: Martin+Frank+Ben: Implement in Python directly
 def relaxation(T, p0, obs, times=(1), k=None, ncv=None):
     r"""Relaxation experiment.
 
@@ -1460,7 +1448,6 @@ def _pcca_object(T, m):
     return PCCA(T, m)
 
 
-# DONE: Jan, Frank
 def pcca(T, m):
     r"""Compute meta-stable sets using PCCA++ _[1] and return the membership of all states to these sets.
 
@@ -1497,7 +1484,6 @@ def pcca(T, m):
     return pcca_memberships(T, m)
 
 
-# DONE: Frank
 def pcca_memberships(T, m):
     r"""Compute meta-stable sets using PCCA++ _[1] and return the membership of all states to these sets.
 
@@ -1532,7 +1518,6 @@ def pcca_memberships(T, m):
     return _pcca_object(T, m).memberships
 
 
-# DONE: Frank
 def pcca_sets(T, m):
     r""" Computes the metastable sets given transition matrix T using the PCCA++ method _[1]
 
@@ -1560,7 +1545,6 @@ def pcca_sets(T, m):
     return _pcca_object(T, m).metastable_sets
 
 
-# DONE: Frank
 def pcca_assignments(T, m):
     """ Computes the assignment to metastable sets for active set states using the PCCA++ method _[1]
 
@@ -1744,7 +1728,6 @@ def eigenvector_sensitivity(T, k, j, right=True):
         raise _type_not_supported
 
 
-# DONE: Implement in Python directly
 @shortcut('statdist_sensitivity')
 def stationary_distribution_sensitivity(T, j):
     r"""Sensitivity matrix of a stationary distribution element.
@@ -1793,7 +1776,7 @@ def mfpt_sensitivity(T, target, i):
     
     """
     # check input
-    target = _ensure_int_vector(target)
+    target = _types.ensure_int_vector(target)
     # go
     if _issparse(T):
         _showSparseConversionWarning()
@@ -1804,7 +1787,6 @@ def mfpt_sensitivity(T, target, i):
         raise _type_not_supported
 
 
-# DONE: Jan (sparse implementation missing)
 def committor_sensitivity(T, A, B, i, forward=True):
     r"""Sensitivity matrix of a specified committor entry.
     
@@ -1830,8 +1812,8 @@ def committor_sensitivity(T, A, B, i, forward=True):
     
     """
     # check inputs
-    A = _ensure_int_vector(A)
-    B = _ensure_int_vector(B)
+    A = _types.ensure_int_vector(A)
+    B = _types.ensure_int_vector(B)
     if _issparse(T):
         _showSparseConversionWarning()
         committor_sensitivity(T.todense(), A, B, i, forward)
@@ -1861,7 +1843,7 @@ def expectation_sensitivity(T, a):
     
     """
     # check input
-    a = _ensure_float_vector(a, require_order=True)
+    a = _types.ensure_float_vector(a, require_order=True)
     # go
     if _issparse(T):
         _showSparseConversionWarning()
