@@ -14,16 +14,16 @@ requirements:
     - python
     - setuptools
     - cython >=0.20
-    - numpy >=1.9.2
-    - scipy >=0.15
+    - numpy >=1.7
+    - scipy
     - scikit-learn
     - mdtraj
     - matplotlib
   run:
     - python
     - setuptools
-    - numpy >=1.9.2
-    - scipy >=0.15
+    - numpy >=1.7
+    - scipy
     - scikit-learn
     - mdtraj
     - matplotlib
