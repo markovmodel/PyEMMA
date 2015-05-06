@@ -72,7 +72,7 @@ class HMSM(_MSM):
         return self._Pobs.shape[1]
 
     @property
-    def observation_probability(self):
+    def observation_probabilities(self):
         r""" returns the output probability matrix
 
         Returns
