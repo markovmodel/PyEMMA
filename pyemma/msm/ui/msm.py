@@ -29,6 +29,10 @@ and provides them for later access.
 .. moduleauthor:: B. Trendelkamp-Schroer <benjamin DOT trendelkamp-schroer AT fu-berlin DOT de>
 
 """
+
+__docformat__ = "restructuredtext en"
+
+import copy
 import numpy as np
 from itertools import count
 from math import ceil
@@ -67,7 +71,7 @@ class MSM(object):
 
         # set inputs
         # set transition matrix
-        self._T = T
+        self._T = copy.deepcopy(T)
         # nstates
         self._nstates = np.shape(T)[0]
         # set time step
@@ -839,7 +843,6 @@ class MSM(object):
         self._assert_pcca()
         return self._pcca.metastable_assignment
 
-<<<<<<< HEAD
 
 class EstimatedMSM(MSM):
     r"""Estimates a Markov model from discrete trajectories.
@@ -1366,5 +1369,3 @@ class EstimatedMSM(MSM):
         import pyemma.util.discrete_trajectories as dt
 
         return dt.sample_indexes_by_distribution(self.active_state_indexes, distributions, nsample)
-=======
->>>>>>> [msm.ui]: refactored MSM hierarchy into MSM, EstimatedMSM and SampledMSM
