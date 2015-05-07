@@ -67,6 +67,7 @@ class PCA(Transformer):
         self._dot_prod_tmp = None
         self.Y = None
 
+        self._custom_param_progress_handling = True
         self._progress_mean = None
         self._progress_cov = None
 
