@@ -1,0 +1,43 @@
+package:
+  name: pyemma
+# TODO: try to get this via setup.py version
+  version: !!str 1.2
+
+source:
+  path: ../..
+
+build:
+  preserve_egg_dir: True
+
+requirements:
+  build:
+    - python
+    - setuptools
+    - cython >=0.20
+    - numpy >=1.7
+    - scipy
+    - scikit-learn
+    - mdtraj
+    - matplotlib
+  run:
+    - python
+    - setuptools
+    - numpy >=1.7
+    - scipy
+    - scikit-learn
+    - mdtraj
+    - matplotlib
+
+test:
+  requires:
+    - nose
+  imports:
+    - pyemma
+  commands:
+    - nosetests pyemma --nocapture --verbosity=2 --with-doctest 
+about:
+  home: http://emma-project.org
+  license: BSD 2-Clause License
+  summary: "EMMA: Emma's Markov Model Algorithms"
+
+
