@@ -178,6 +178,21 @@ class TestCluster(unittest.TestCase):
         assert len(c.trajectory_lengths()) == 1
         assert c.trajectory_lengths()[0] == c.trajectory_length(0)
 
+    def test_wrong_centers_argument(self):
+        dim = 3
+        data = np.empty((100,dim))
+        centers = np.empty((5, dim+1))
+
+        with self.assertRaises(ValueError):
+            c = coor.assign_to_centers(data, centers)
+
+    def test_wrong_centers_argument2(self):
+        dim = 3
+        data = np.empty((100,dim))
+        centers = np.empty(1)
+
+        with self.assertRaises(ValueError):
+            c = coor.assign_to_centers(data, centers)
 
 if __name__ == "__main__":
     unittest.main()

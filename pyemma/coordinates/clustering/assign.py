@@ -1,3 +1,4 @@
+from pyemma.util import types
 
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
@@ -63,15 +64,28 @@ class AssignCenters(AbstractClustering):
         super(AssignCenters, self).__init__(metric=metric)
 
         if isinstance(clustercenters, basestring):
-            self.clustercenters = np.loadtxt(clustercenters)
+            from ..data import create_file_reader
+            reader = create_file_reader(clustercenters, None, None)
+            self.clustercenters = reader.get_output()[0]
 
         self.clustercenters = np.array(clustercenters, dtype=np.float32, order='C')
+        if not self.clustercenters.ndim == 2:
+            raise ValueError('cluster centers have to be 2d')
 
         # since we provided centers, this transformer is already parametrized.
         self._parametrized = True
 
     def describe(self):
         return "[AssignCenters c=%s]" % self.clustercenters
+
+    @AbstractClustering.data_producer.setter
+    def data_producer(self, dp):
+        # check dimensions
+        dim = self.clustercenters.shape[1]
+        if not dim == dp.dimension():
+            raise ValueError('cluster centers have wrong dimension. Have dim=%i'
+                             ', but input has %i' % (dim, dp.dimension()))
+        AbstractClustering.data_producer.fset(self, dp)
 
     def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
                         last_chunk, ipass, Y=None, stride=1):
