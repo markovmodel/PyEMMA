@@ -1,4 +1,3 @@
-
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
 # All rights reserved.
@@ -31,8 +30,7 @@ Created on 26.01.2015
 
 from pyemma.util.annotators import doc_inherit
 from pyemma.coordinates.clustering.interface import AbstractClustering
-
-import regspatial
+from pyemma.coordinates.clustering import regspatial
 
 import numpy as np
 import warnings
@@ -110,42 +108,34 @@ class RegularSpaceClustering(AbstractClustering):
         # memory for cluster centers and discrete trajectories
         return 4 * self.data_producer.dimension() + 4 * self.data_producer.n_frames_total()
 
-    def _param_init(self):
-        """
-        Initializes the parametrization.
-
-        :return:
-        """
-        self._logger.info("Running regular space clustering")
-
-    def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None, stride=1):
+    def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
+                        last_chunk, ipass, Y=None, stride=1):
         """
         first pass: calculate clustercenters
          1. choose first datapoint as centroid
          2. for all X: calc distances to all clustercenters
          3. add new centroid, if min(distance to all other clustercenters) >= dmin
-        second pass: assign data to discrete trajectories
         """
-        if ipass == 0:
-            try:
-                regspatial.cluster(X.astype(np.float32, order='C', copy=False),
-                                   self._clustercenters, self._dmin,
-                                   self.metric, self.max_clusters)
-                # finished regularly
-                if last_chunk:
-                    self.clustercenters = np.array(self._clustercenters)
-                    self.n_clusters = self.clustercenters.shape[0]
-                    return True  # finished!
-            except RuntimeError:
-                msg = 'Maximum number of cluster centers reached.' \
-                      ' Consider increasing max_clusters or choose' \
-                      ' a larger minimum distance, dmin.'
-                self._logger.warning(msg)
-                warnings.warn(msg)
-                # finished anyway, because we have no more space for clusters. Rest of trajectory has no effect
+        try:
+            regspatial.cluster(X.astype(np.float32, order='C', copy=False),
+                               self._clustercenters, self._dmin,
+                               self.metric, self.max_clusters)
+            # finished regularly
+            if last_chunk:
                 self.clustercenters = np.array(self._clustercenters)
                 self.n_clusters = self.clustercenters.shape[0]
-                return True
+                return True  # finished!
+        except RuntimeError:
+            msg = 'Maximum number of cluster centers reached.' \
+                  ' Consider increasing max_clusters or choose' \
+                  ' a larger minimum distance, dmin.'
+            self._logger.warning(msg)
+            warnings.warn(msg)
+            # finished anyway, because we have no more space for clusters. Rest of trajectory has no effect
+            self.clustercenters = np.array(self._clustercenters)
+            self.n_clusters = self.clustercenters.shape[0]
+
+            return True
 
         return False
 
