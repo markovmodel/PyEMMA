@@ -425,3 +425,48 @@ class EstimatedMSM(MSM):
 
         return dt.sample_indexes_by_distribution(self.active_state_indexes, distributions, nsample)
 
+    ################################################################################
+    # HMM-based coarse graining
+    ################################################################################
+
+    def hmm(self, nstates):
+        """Estimates a hidden Markov state model as described in [1]_
+
+        Returns
+        -------
+        hmsm : :class:`EstimatedHMSM <pyemma.msm.ui.hmsm_estimated.EstimatedHMSM>`
+
+        .. [1] F. Noe, H. Wu, J.-H. Prinz and N. Plattner:
+            Projected and hidden Markov models for calculating kinetics and metastable states of complex molecules
+            J. Chem. Phys. 139, 184114 (2013)
+
+        """
+        # check input
+        assert nstates > 1 and nstates < self.nstates, 'nstates but be between 2 and '+str(self.nstates)
+        timescale_ratios = self.timescales()[1:] / self.timescales()[:-1]
+        if timescale_ratios[nstates-2] < 2.0:
+            self._logger.warn('Requested coarse-grained model with '+str(nstates)+' metastable states. '+
+                              'The ratio of relaxation timescales between '+str(nstates)+' and '+str(nstates+1)+
+                              ' states is only '+str(timescale_ratios[nstates-2])+' while we recomment at '+
+                              'least 2. It is possible that the resulting HMM is inaccurate. Handle with caution.')
+        # run estimate
+        from hmsm_estimator import HMSMEstimator
+        estimator = HMSMEstimator(self, nstates)
+        from hmsm_estimated import EstimatedHMSM
+        return EstimatedHMSM(estimator)
+
+    def coarse_grain(self, nstates, method='hmm'):
+        r"""Returns a coarse-grained Markov model.
+
+        Currently only the HMM method described in [1]_ is available for coarse-graining MSMs.
+
+        Returns
+        -------
+        hmsm : :class:`EstimatedHMSM <pyemma.msm.ui.hmsm_estimated.EstimatedHMSM>`
+
+        .. [1] F. Noe, H. Wu, J.-H. Prinz and N. Plattner:
+            Projected and hidden Markov models for calculating kinetics and metastable states of complex molecules
+            J. Chem. Phys. 139, 184114 (2013)
+
+        """
+        return self.hmm(nstates)
