@@ -76,6 +76,8 @@ from . import flux
 from ui import ImpliedTimescales
 from ui import MSM
 from ui import EstimatedMSM
+from ui import HMSM
+from ui import EstimatedHMSM
 from flux import ReactiveFlux
 
 from .api import *
