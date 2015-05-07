@@ -666,12 +666,12 @@ class MSM(object):
     # pcca
     ################################################################################
 
-    def _assert_pcca(self):
+    def _assert_metastable(self):
         """ Tests if pcca object is available, or else raises a ValueError.
 
         """
         try:
-            if self._pcca is None:
+            if not self._metastable_computed:
                 raise ValueError('Metastable decomposition has not yet been computed. Please call pcca(m) first.')
         except:
             raise ValueError('Metastable decomposition has not yet been computed. Please call pcca(m) first.')
@@ -718,6 +718,13 @@ class MSM(object):
             # didn't have a pcca object yet - compute
             self._pcca = PCCA(self._T, m)
 
+        # set metastable properties
+        self._metastable_computed = True
+        self._metastable_memberships = copy.deepcopy(self._pcca.memberships)
+        self._metastable_distributions = copy.deepcopy(self._pcca.output_probabilities)
+        self._metastable_sets = copy.deepcopy(self._pcca.metastable_sets)
+        self._metastable_assignments = copy.deepcopy(self._pcca.metastable_assignment)
+
         return self._pcca
 
     @property
@@ -746,8 +753,8 @@ class MSM(object):
 
         """
         # are we ready?
-        self._assert_pcca()
-        return self._pcca.memberships
+        self._assert_metastable()
+        return self._metastable_memberships
 
     @property
     def metastable_distributions(self):
@@ -780,8 +787,8 @@ class MSM(object):
 
         """
         # are we ready?
-        self._assert_pcca()
-        return self._pcca.output_probabilities
+        self._assert_metastable()
+        return self._metastable_distributions
 
     @property
     def metastable_sets(self):
@@ -810,8 +817,8 @@ class MSM(object):
 
         """
         # are we ready?
-        self._assert_pcca()
-        return self._pcca.metastable_sets
+        self._assert_metastable()
+        return self._metastable_sets
 
     @property
     def metastable_assignments(self):
@@ -840,8 +847,9 @@ class MSM(object):
 
         """
         # are we ready?
-        self._assert_pcca()
-        return self._pcca.metastable_assignment
+        self._assert_metastable()
+        return self._metastable_assignments
+
 
 
 class EstimatedMSM(MSM):
