@@ -84,6 +84,8 @@ class Transformer(object):
         self._dataproducer = None
         self._parametrized = False
         self._param_with_stride = 1
+        # allow children of this class to implement their own progressbar handling
+        self._custom_param_progress_handling = False
 
         self.__create_logger()
 
@@ -263,6 +265,11 @@ class Transformer(object):
         add_data_finished = False
         ipass = 0
 
+        if not self._custom_param_progress_handling:
+            # NOTE: this assumes this class implements a 1-pass algo
+            progress = ProgressBar(self._n_chunks(stride),
+                                   description="parameterizing "
+                                   + self.__class__.__name__)
         # parametrize
         while not add_data_finished:
             first_chunk = True
@@ -291,6 +298,11 @@ class Transformer(object):
                     # first chunk
                     return_value = self._param_add_data(
                         X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=Y, stride=stride)
+
+                    if not self._custom_param_progress_handling:
+                        progress.numerator += 1
+                        show_progressbar(progress)
+
                     if isinstance(return_value, tuple):
                         add_data_finished, lag = return_value
                     else:
@@ -301,7 +313,13 @@ class Transformer(object):
                 # increment trajectory
                 itraj += 1
             ipass += 1
+
         # finish parametrization
+        if ((not self._custom_param_progress_handling)
+                and progress.numerator < progress.denominator):
+            progress.numerator = progress.denominator
+            show_progressbar(progress)
+
         self._param_finish()
         self._parametrized = True
         # memory mode? Then map all results
