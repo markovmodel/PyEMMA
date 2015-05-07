@@ -102,8 +102,10 @@ class TICA(Transformer):
         self.eigenvalues = None
         self.eigenvectors = None
 
+        self._custom_param_progress_handling = True
         self._progress_mean = None
         self._progress_cov = None
+
 
     @property
     def lag(self):
