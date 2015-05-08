@@ -27,6 +27,8 @@ Created on 17.02.2014
 
 @author: marscher
 '''
+from __future__ import absolute_import, print_function
+
 import os
 import errno
 import tempfile
@@ -44,17 +46,21 @@ def mkdir_p(path):
 
 
 class TemporaryDirectory(object):
-    """ use this class in context (with keyword)
+    """Create and return a temporary directory.  This has the same
+    behavior as mkdtemp but can be used as a context manager.  For
+    example:
 
     Examples
     --------
     >>> import os
     >>> with TemporaryDirectory() as tmp:
     ...    path = os.path.join(tmp, "myfile.dat")
-    ...    fh = open(path, 'w')
+    ...    fh = open(path, 'w)
     ...    fh.write('hello world')
     ...    fh.close()
 
+    Upon exiting the context, the directory and everything contained
+    in it are removed.
     """
 
     def __init__(self, prefix='', suffix='', dir=None):

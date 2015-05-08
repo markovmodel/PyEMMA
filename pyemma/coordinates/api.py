@@ -475,7 +475,12 @@ def discretizer(reader,
 
     This will store the discrete trajectory to "traj01.dtraj":
 
-    >>> disc.save_dtrajs() # doctest: +SKIP
+    >>> from pyemma.util.files import TemporaryDirectory
+    >>> import os
+    >>> with TemporaryDirectory('dtrajs') as tmpdir:
+    ...     disc.save_dtrajs(output_dir=tmpdir)
+    ...     os.listdir(tmpdir)
+    ['bpti_mini.dtraj', 'bpti_067-100.dtraj', 'bpti_034-066.dtraj', 'bpti_001-033.dtraj']
 
     """
     if cluster is None:
