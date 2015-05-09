@@ -37,7 +37,7 @@ from pyemma.util.log import getLogger
 import pkg_resources
 
 import numpy as np
-from pyemma.coordinates.api import feature_reader, discretizer, tica
+from pyemma.coordinates.api import discretizer, tica, source
 
 log = getLogger('TestFeatureReader')
 
@@ -79,6 +79,7 @@ class TestFeatureReader(unittest.TestCase):
 
     def testIteratorAccess(self):
         reader = api.source(self.trajfile, top=self.topfile)
+        assert isinstance(reader, FeatureReader)
 
         frames = 0
         data = []
@@ -139,6 +140,8 @@ class TestFeatureReader(unittest.TestCase):
 
     def test_with_pipeline_time_lagged(self):
         reader = api.source(self.trajfile, top=self.topfile)
+        assert isinstance(reader, FeatureReader)
+
         t = tica(dim=2, lag=1)
         d = discretizer(reader, t)
         d.parametrize()
