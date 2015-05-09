@@ -182,12 +182,11 @@ class TestFeatureReader(unittest.TestCase):
         reader.in_memory = True
 
         # now get output with different strides
-        strides = [1, 2, 3, 4, 5, 10, 20]
+        strides = [1, 2, 3, 4, 5]
         for s in strides:
             out = reader.get_output(stride=s)
             shape = (reader.trajectory_length(0, stride=s), reader.dimension())
-            self.assertEqual(
-                out[0].shape, shape, "not equal for stride=%i" % s)
+            self.assertEqual(out[0].shape, shape, "not equal for stride=%i" % s)
 
     def test_lagged_stridden_access(self):
         reader = api.source([self.trajfile, self.trajfile2], top=self.topfile)
