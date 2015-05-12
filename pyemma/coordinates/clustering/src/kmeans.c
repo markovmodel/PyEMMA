@@ -227,7 +227,7 @@ static PyObject* initCentersKMpp(PyObject *self, PyObject *args) {
 #ifndef _KMEANS_INIT_RANDOM_SEED
 #define _KMEANS_INIT_RANDOM_SEED
     /* set random seed */
-    srand(time(NULL));
+    srand(0); /* time(NULL));*/
 #endif
 
     /* parse python input (np_data, metric, k) */
