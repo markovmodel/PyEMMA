@@ -77,7 +77,7 @@ def propagate(W, P, n=1):
     return W_n
 
 
-def cktest(T_MSM, lcc_MSM, dtrajs, lag, K, nsets=2, sets=None, full_output=False):
+def cktest(T_MSM, lcc_MSM, dtrajs, lag, K, nsets=2, sets=None, full_output=False,reversible=False):
     r"""Perform Chapman-Kolmogorov tests for given data.
 
     Parameters
@@ -98,6 +98,8 @@ def cktest(T_MSM, lcc_MSM, dtrajs, lag, K, nsets=2, sets=None, full_output=False
         List of user defined sets for the test
     full_output : bool, optional
         Return additional information about set_factors
+    reversible : bool, optional
+        Estimate MD transition matrix as reversible
 
     Returns
     -------
@@ -173,7 +175,7 @@ def cktest(T_MSM, lcc_MSM, dtrajs, lag, K, nsets=2, sets=None, full_output=False
         """State counts for MD"""
         c_MD = Ccc_MD.sum(axis=1)
         """Transition matrix at k*tau"""
-        T_MD = tmatrix(Ccc_MD)
+        T_MD = tmatrix(Ccc_MD,reversible=reversible)
 
         """Mapping to lcc at lagtime k*tau"""
         lccmap_MD = MapToConnectedStateLabels(lcc_MD)
