@@ -124,7 +124,7 @@ def featurizer(topfile):
 
 
 # TODO: DOC - which topology file formats does mdtraj support? Find out and complete docstring
-def load(trajfiles, features=None, top=None, stride=1):
+def load(trajfiles, features=None, top=None, stride=1, chunk_size=100):
     r""" Loads coordinate features into memory.
 
     If your memory is not big enough consider the use of **pipeline**, or use the stride option to subsample the data.
@@ -169,6 +169,9 @@ def load(trajfiles, features=None, top=None, stride=1):
     stride : int, optional, default = 1
         Load only every stride'th frame. By default, every frame is loaded
 
+    chunk_size: int, optional, default = 100
+        The chunk size at which the input file is being processed.
+
     Returns
     -------
     data : ndarray or list of ndarray
@@ -189,7 +192,7 @@ def load(trajfiles, features=None, top=None, stride=1):
     if isinstance(trajfiles, basestring) or (
         isinstance(trajfiles, (list, tuple))
             and (any(isinstance(item, basestring) for item in trajfiles) or len(trajfiles) is 0)):
-        reader = _create_file_reader(trajfiles, top, features)
+        reader = _create_file_reader(trajfiles, top, features, chunk_size=chunk_size)
         trajs = reader.get_output(stride=stride)
         if len(trajs) == 1:
             return trajs[0]
@@ -199,8 +202,8 @@ def load(trajfiles, features=None, top=None, stride=1):
         raise ValueError('unsupported type (%s) of input' % type(trajfiles))
 
 
-def source(inp, features=None, top=None):
-    r""" Wraps input as data source for pipeline.
+def source(inp, features=None, top=None, chunk_size=100):
+    r""" Wraps input as data source for pipeline
 
     Use this function to construct the first stage of a data processing :func:`pipeline`.
 
@@ -228,8 +231,11 @@ def source(inp, features=None, top=None):
         trajectories or data, and will otherwise create a warning and have no effect
 
     top : str, optional, default = None
-        A topology file name. This is needed when molecular dynamics trajectories are given and no featurizer is given.
+        a topology file name. This is needed when molecular dynamics trajectories are given and no featurizer is given.
         In this case, only the Cartesian coordinates will be read.
+
+    chunk_size: int, optional, default = 100
+        The chunk size at which the input file is being processed.
 
     See also
     --------
@@ -244,7 +250,7 @@ def source(inp, features=None, top=None):
     # check: if single string create a one-element list
     if isinstance(inp, basestring) or (isinstance(inp, (list, tuple))
                                        and (any(isinstance(item, basestring) for item in inp) or len(inp) is 0)):
-        reader = _create_file_reader(inp, top, features)
+        reader = _create_file_reader(inp, top, features, chunk_size=chunk_size)
 
     elif isinstance(inp, ndarray) or (isinstance(inp, (list, tuple))
                                       and (any(isinstance(item, ndarray) for item in inp) or len(inp) is 0)):
