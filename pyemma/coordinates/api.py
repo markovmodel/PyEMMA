@@ -833,7 +833,7 @@ def kmeans(data=None, k=100, max_iter=1000, stride=1):
     return cluster_kmeans(data, k, max_iter, stride=stride)
 
 
-def cluster_kmeans(data=None, k=100, max_iter=10, stride=1, metric='euclidean'):
+def cluster_kmeans(data=None, k=100, max_iter=10, stride=1, metric='euclidean', init_strategy='kmeans++'):
     r"""k-means clustering
 
     If given data, performs a k-means clustering and then assigns the data using a Voronoi discretization.
@@ -862,6 +862,9 @@ def cluster_kmeans(data=None, k=100, max_iter=10, stride=1, metric='euclidean'):
 
     metric : str
         metric to use during clustering ('euclidean', 'minRMSD')
+    init_strategy : str
+        determines if the initial cluster centers are chosen according to the kmeans++-algorithm
+        or uniformly distributed
 
     Returns
     -------
@@ -878,7 +881,7 @@ def cluster_kmeans(data=None, k=100, max_iter=10, stride=1, metric='euclidean'):
     [array([0, 0, 1, ... ])]
 
     """
-    res = _KmeansClustering(n_clusters=k, max_iter=max_iter, metric=metric)
+    res = _KmeansClustering(n_clusters=k, max_iter=max_iter, metric=metric, init_strategy=init_strategy)
     return _param_stage(data, res, stride=stride)
 
 
