@@ -241,8 +241,9 @@ def cktest(msmobj, K, nsets=2, sets=None, full_output=False):
     lcc = msmobj.largest_connected_set
     dtrajs = msmobj.discrete_trajectories_full
     tau = msmobj.lagtime
+    reversible = msmobj.is_reversible
     return chapman_kolmogorov(P, lcc, dtrajs, tau, K,
-                              nsets=nsets, sets=sets, full_output=full_output)
+                              nsets=nsets, sets=sets, full_output=full_output, reversible=reversible)
 
 
 def tpt(msmobj, A, B):
