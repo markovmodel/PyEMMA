@@ -140,4 +140,7 @@ class RegularSpaceClustering(AbstractClustering):
         return False
 
     def _param_finish(self):
+        if len(self._clustercenters) == 1:
+            self._logger.warning('Have found only one center according to '
+                                 'minimum distance requirement of %f' % self.dmin)
         del self._clustercenters  # delete temporary
