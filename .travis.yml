@@ -7,7 +7,7 @@ sudo: false
 env:
   global:
     - PATH=$HOME/miniconda/bin:$HOME/miniconda/envs/ci/bin/:$PATH
-    - common_py_deps="pip pylint nose cython mdtraj scikit-learn matplotlib"
+    - common_py_deps="pip pylint nose cython mdtraj matplotlib"
     - doc_deps="ipython ipython-notebook sphinx==1.2.3 matplotlib"
     - deps="scipy numpy"
   matrix:
