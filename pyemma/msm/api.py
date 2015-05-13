@@ -50,7 +50,7 @@ __all__ = ['its',
            'tpt']
 
 
-def its(dtrajs, lags=None, nits=10, reversible=True, connected=True):
+def its(dtrajs, lags=None, nits=10, reversible=True, connected=True, n_procs=1):
     r"""Calculate implied timescales for a series of lag times.
 
     Parameters
@@ -69,6 +69,9 @@ def its(dtrajs, lags=None, nits=10, reversible=True, connected=True):
     reversible : boolean (optional)
         Estimate the transition matrix reversibly (True) or
         nonreversibly (False)
+    n_procs : int (default=1 CPU)
+        parallelize estimation of timescales over given count of CPU cores (subprocessess).
+        Pass None to utilize all cores.
 
     Returns
     -------
@@ -88,7 +91,9 @@ def its(dtrajs, lags=None, nits=10, reversible=True, connected=True):
         J. Phys. Chem. B 108: 6571-6581 (2004)
 
     """
-    itsobj = ImpliedTimescales(dtrajs, lags=lags, nits=nits, reversible=reversible, connected=connected)
+    itsobj = ImpliedTimescales(dtrajs, lags=lags, nits=nits, 
+                               reversible=reversible, connected=connected,
+                               n_procs=n_procs)
     return itsobj
 
 

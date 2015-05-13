@@ -1,4 +1,3 @@
-
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
 # All rights reserved.
@@ -36,9 +35,19 @@ import numpy as np
 from pyemma.msm import its as ImpliedTimescales
 from pyemma.msm.generation import generate_traj
 from pyemma.msm.analysis import timescales
+from pyemma.util.config import conf_values
 
 
 class ImpliedTimescalesTest(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        conf_values['pyemma']['show_progress_bars'] = False
+
+    @classmethod
+    def tearDownClass(cls):
+        conf_values['pyemma']['show_progress_bars'] = 'True'
+
     def setUp(self):
         self.dtrajs = []
 
@@ -53,7 +62,8 @@ class ImpliedTimescalesTest(unittest.TestCase):
         self.dtrajs.append([dtraj_disc])
 
         # multitrajectory case
-        self.dtrajs.append([[0], [1, 1, 1, 1], [0, 1, 1, 1, 0], [0, 1, 0, 1, 0, 1, 0, 1]])
+        self.dtrajs.append(
+            [[0], [1, 1, 1, 1], [0, 1, 1, 1, 0], [0, 1, 0, 1, 0, 1, 0, 1]])
 
         # large-scale case
         large_trajs = []
@@ -78,7 +88,6 @@ class ImpliedTimescalesTest(unittest.TestCase):
         self.dtrajs.append([self.dtraj4_2])
         # print "T4 ", timescales(self.P4)[1]
 
-
     def compute_nice(self, reversible):
         """
         Tests if standard its estimates run without errors
@@ -88,7 +97,7 @@ class ImpliedTimescalesTest(unittest.TestCase):
         for i in range(len(self.dtrajs)):
             its = ImpliedTimescales(self.dtrajs[i], reversible=reversible)
             # print its.get_lagtimes()
-            #print its.get_timescales()
+            # print its.get_timescales()
 
     """This does not assert anything, but causes lots of uncatched warnings"""
     # def test_nice_sliding_rev(self):
@@ -108,7 +117,9 @@ class ImpliedTimescalesTest(unittest.TestCase):
     def test_too_large_lagtime(self):
         dtraj = [[0, 1, 1, 1, 0]]
         lags = [1, 2, 3, 4, 5, 6, 7, 8]
-        expected_lags = [1, 2, 3]  # 4 is impossible because only one state remains and no finite timescales.
+        # 4 is impossible because only one state remains and no finite
+        # timescales.
+        expected_lags = [1, 2, 3]
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             its = ImpliedTimescales(dtraj, lags=lags, reversible=False)
@@ -133,6 +144,43 @@ class ImpliedTimescalesTest(unittest.TestCase):
         assert (np.alltrue(est < t4 + 20.0))
         assert (np.alltrue(est > t4 - 20.0))
 
+    def test_parallel_estimate(self):
+        states = 10
+        dtrajs = [np.random.randint(states, size=500),
+                  np.random.randint(states, size=300),
+                  np.random.randint(states, size=42)]
+
+        args = {'dtrajs': dtrajs, 'lags': [
+            1, 2, 3, 4, 5, 6, 7], 'reversible': True, 'nits': 3}
+        its_single = ImpliedTimescales(n_procs=1, **args)
+        its_parallel = ImpliedTimescales(n_procs=2, **args)
+
+        np.testing.assert_allclose(
+            its_parallel.timescales, its_single.timescales)
+
+    def test_parallel_bootstrap(self):
+        states = 3
+        n_samples = 10
+        dtrajs = [np.random.randint(states, size=100),
+                  np.random.randint(states, size=200),
+                  np.random.randint(states, size=50)]
+        args = {'dtrajs': dtrajs, 'lags': [
+            1, 2, 3, 4, 5, 6, 7], 'reversible': True, 'nits': 3}
+        its_single = ImpliedTimescales(n_procs=1, **args)
+        its_parallel = ImpliedTimescales(n_procs=2, **args)
+
+        its_single.bootstrap(n_samples)
+        its_parallel.bootstrap(n_samples)
+
+        # TODO: these tests would rely on a greate sample rate so it does converge to
+        # something meaningful
+    
+#         np.testing.assert_allclose(
+#             its_parallel.sample_mean, its_single.sample_mean)
+
+        # compare std dev for first process
+        #np.testing.assert_allclose(its_parallel.get_sample_std(0), its_single.get_sample_std(0),
+        #                           1e-2, 1e-5)
 
 if __name__ == "__main__":
     unittest.main()
