@@ -356,7 +356,7 @@ def assert_array(A, shape=None, ndim=None, size=None, dtype=None, kind=None):
                 raise AssertionError('Expected shape '+str(shape)+' but given array has shape '+str(np.shape(A)))
         if size is not None:
             if not np.size(A) == size:
-                raise AssertionError('Expected size '+size+' but given array has size '+str(np.size(A)))
+                raise AssertionError('Expected size '+str(size)+' but given array has size '+str(np.size(A)))
         if ndim is not None:
             if not ndim == np.ndim(A):
                 raise AssertionError('Expected shape '+str(ndim)+' but given array has shape '+str(np.ndim(A)))
@@ -376,9 +376,13 @@ def assert_array(A, shape=None, ndim=None, size=None, dtype=None, kind=None):
             elif not A.dtype.kind == kind:
                 raise AssertionError('Expected data kind '+str(kind)
                                      +' but given array has data kind '+str(A.dtype.kind))
-    except:
-        raise AssertionError('Given argument is not an array of the expected shape or type:\n'+
-                             'arg = '+str(A)+'\ntype = '+str(type(A)))
+    except Exception as ex:
+        if isinstance(ex, AssertionError):
+            raise ex
+        else:  # other exception raised in the test code above
+            print 'Found exception: ',ex
+            raise AssertionError('Given argument is not an array of the expected shape or type:\n'+
+                                 'arg = '+str(A)+'\ntype = '+str(type(A)))
 
 def ensure_ndarray(A, shape=None, ndim=None, size=None, dtype=None, kind=None):
     r""" Ensures A is an ndarray and does an assert_array with the given parameters """
@@ -388,11 +392,14 @@ def ensure_ndarray(A, shape=None, ndim=None, size=None, dtype=None, kind=None):
         except:
             raise AssertionError('Given argument cannot be converted to an ndarray:\n'+str(A))
     assert_array(A, shape=shape, ndim=ndim, size=size, dtype=dtype, kind=kind)
+    return A
 
 def ensure_ndarray_or_None(A, shape=None, ndim=None, size=None, dtype=None, kind=None):
     r""" Ensures A is None or an ndarray and does an assert_array with the given parameters """
     if A is not None:
-        ensure_ndarray(A, shape=shape, ndim=ndim, size=size, dtype=dtype, kind=kind)
+        return ensure_ndarray(A, shape=shape, ndim=ndim, size=size, dtype=dtype, kind=kind)
+    else:
+        return None
 
 
 # ======================================================================================================================

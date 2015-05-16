@@ -94,7 +94,7 @@ class TestMSMSimple(unittest.TestCase):
         assert_allclose(self.ts[1:], msm.timescales(self.k - 1))
 
 
-class TestMSMDoubleWellReversible(unittest.TestCase):
+class TestMSMDoubleWell(unittest.TestCase):
     def setUp(self):
         testpath = abspath(join(abspath(__file__), pardir)) + '/../../util/tests/data/'
         import pyemma.util.discrete_trajectories as dt
