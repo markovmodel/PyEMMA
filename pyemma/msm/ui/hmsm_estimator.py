@@ -4,7 +4,6 @@ import numpy as np
 
 from pyemma.msm import estimation as msmest
 from pyemma.msm.ui.msm_estimated import EstimatedMSM as _EstimatedMSM
-from pyemma.util.annotators import shortcut
 from pyemma.util.log import getLogger
 from pyemma.util import types as _types
 
@@ -12,8 +11,13 @@ class HMSMEstimator:
     """ML Estimator for a HMSM given a MSM
 
     """
-    def __init__(self, msmobj, nstates, estimate=True):
+    def __init__(self, msmobj, nstates, observe_active=True, estimate=True):
         """
+        Parameters
+        ----------
+        observe_active : bool, optional, default=True
+            True: Restricts the observation set to the active states of the MSM.
+            False: All states are in the observation set.
 
         """
         # check input
@@ -23,6 +27,8 @@ class HMSMEstimator:
         # set basic parameters
         self._msmobj = msmobj
         self._nstates = nstates
+        # restrict observation states to MSM active set
+        self._observe_active = observe_active
         # currently only support largest
         # TODO: actually we don't check for connectivity at all so far. This needs to be fixed
         self._connectivity='largest'
@@ -48,9 +54,9 @@ class HMSMEstimator:
         # HMM output matrix
         B_conn = self._msmobj.metastable_distributions
         # full state space output matrix
-        self._nstates_obs = self._msmobj.nstates_full
-        eps = 0.01 * (1.0/self._nstates_obs) # default output probability, in order to avoid zero columns
-        B = eps * np.ones((self._nstates, self._nstates_obs), dtype=np.float64)
+        self._nstates_obs_full = self._msmobj.nstates_full
+        eps = 0.01 * (1.0/self._nstates_obs_full) # default output probability, in order to avoid zero columns
+        B = eps * np.ones((self._nstates, self._nstates_obs_full), dtype=np.float64)
         # expand B_conn to full state space
         B[:,self._msmobj.active_set] = B_conn[:,:]
         # renormalize B to make it row-stochastic
@@ -75,7 +81,7 @@ class HMSMEstimator:
         self.hmm_init = bhmm.discrete_hmm(P_coarse, B, stationary=True, reversible=self._msmobj.is_reversible)
         # run EM
         hmm = bhmm.estimate_hmm(self._msmobj.discrete_trajectories_full, self._nstates,
-                                     lag=self._msmobj.lagtime, initial_model=self.hmm_init)
+                                lag=self._msmobj.lagtime, initial_model=self.hmm_init)
         self.hmm = bhmm.DiscreteHMM(hmm)
         # done
         self._estimated = True
@@ -102,7 +108,21 @@ class HMSMEstimator:
         The number of all hidden states
 
         """
-        return self._nstates_obs
+        if self._observe_active:
+            return self._msmobj.nstates
+        else:
+            return self._nstates_obs_full
+
+    @property
+    def observable_set(self):
+        """
+        Set of observed states
+
+        """
+        if self._observe_active:
+            return self._msmobj.active_set
+        else:
+            return np.arange(self._nstates_obs_full)
 
     @property
     def lagtime(self):
@@ -120,16 +140,26 @@ class HMSMEstimator:
         return self._msmobj.timestep
 
     @property
-    @shortcut('dtrajs')
-    def discrete_trajectories(self):
+    def discrete_trajectories_full(self):
         """
-        A list of integer arrays with the discrete trajectories mapped to the connectivity mode used.
-        For example, for connectivity='largest', the indexes will be given within the connected set.
-        Frames that are not in the connected set will be -1.
+        A list of integer arrays with the original trajectories.
 
         """
-        self._assert_estimated()
         return self._msmobj.discrete_trajectories_full
+
+    @property
+    def discrete_trajectories_obs(self):
+        """
+        A list of integer arrays with the discrete trajectories mapped to the observation mode used.
+        When using observe_active = True, the indexes will be given on the MSM active set. Frames that are not in the
+        observation set will be -1. When observe_active = False, this attribute is identical to
+        discrete_trajectories_full
+
+        """
+        if self._observe_active:
+            return self._msmobj.discrete_trajectories_active
+        else:
+            return self._msmobj.discrete_trajectories_full
 
     @property
     def transition_matrix(self):
@@ -149,7 +179,13 @@ class HMSMEstimator:
 
         """
         self._assert_estimated()
-        return self.hmm.output_probabilities
+        if self._observe_active:
+            Bfull = self.hmm.output_probabilities
+            Bobs = Bfull[:,self._msmobj.active_set]  # restrict to active set
+            Bobs /= Bobs.sum(axis=1)[:,None]  # renormalize
+            return Bobs
+        else:
+            return self.hmm.output_probabilities
 
     @property
     def dt(self):

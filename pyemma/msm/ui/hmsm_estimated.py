@@ -43,7 +43,10 @@ class EstimatedHMSM(_HMSM):
     def __init__(self, estimator):
         _HMSM.__init__(self, estimator.transition_matrix, estimator.observation_probabilities, dt=estimator.dt)
         self._lag = estimator.lagtime
-        self._dtrajs = estimator.discrete_trajectories
+        self._nstates_obs = estimator.nstates_obs
+        self._observable_set = estimator.observable_set
+        self._dtrajs_full = estimator.discrete_trajectories_full
+        self._dtrajs_obs = estimator.discrete_trajectories_obs
 
     @property
     def lagtime(self):
@@ -51,15 +54,38 @@ class EstimatedHMSM(_HMSM):
         return self._lag
 
     @property
-    @shortcut('dtrajs')
-    def discrete_trajectories(self):
+    def nstates_obs(self):
+        r""" Number of states in discrete trajectories """
+        return self._nstates_obs
+
+    @property
+    def observable_set(self):
         """
-        A list of integer arrays with the discrete trajectories mapped to the connectivity mode used.
-        For example, for connectivity='largest', the indexes will be given within the connected set.
-        Frames that are not in the connected set will be -1.
+        The active set of states on which all computations and estimations will be done
 
         """
-        return self._dtrajs
+        return self._observable_set
+
+    @property
+    @shortcut('dtrajs_full')
+    def discrete_trajectories_full(self):
+        """
+        A list of integer arrays with the original trajectories.
+
+        """
+        return self._dtrajs_full
+
+    @property
+    @shortcut('dtrajs_obs')
+    def discrete_trajectories_obs(self):
+        """
+        A list of integer arrays with the discrete trajectories mapped to the observation mode used.
+        When using observe_active = True, the indexes will be given on the MSM active set. Frames that are not in the
+        observation set will be -1. When observe_active = False, this attribute is identical to
+        discrete_trajectories_full
+
+        """
+        return self._dtrajs_obs
 
     ################################################################################
     # TODO: there is redundancy between this code and EstimatedMSM
@@ -101,7 +127,7 @@ class EstimatedHMSM(_HMSM):
         # simply read off stationary distribution and accumulate total weight
         W = []
         wtot = 0.0
-        for dtraj in self.discrete_trajectories:
+        for dtraj in self.discrete_trajectories_obs:
             w = statdist[dtraj]
             W.append(w)
             wtot += _np.sum(W)
@@ -125,7 +151,7 @@ class EstimatedHMSM(_HMSM):
         except:  # didn't exist? then create it.
             import pyemma.util.discrete_trajectories as dt
 
-            self._observable_state_indexes = dt.index_states(self.discrete_trajectories)
+            self._observable_state_indexes = dt.index_states(self.discrete_trajectories_obs)
             return self._observable_state_indexes
 
     # TODO: generate_traj. How should that be defined? Probably indexes of observable states, but should we specify
