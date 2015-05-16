@@ -50,7 +50,7 @@ class HMSMEstimator:
         # full state space output matrix
         self._nstates_obs = self._msmobj.nstates_full
         eps = 0.01 * (1.0/self._nstates_obs) # default output probability, in order to avoid zero columns
-        B = eps * np.ones((self._nstates_obs,self._nstates_obs), dtype=np.float64)
+        B = eps * np.ones((self._nstates, self._nstates_obs), dtype=np.float64)
         # expand B_conn to full state space
         B[:,self._msmobj.active_set] = B_conn[:,:]
         # renormalize B to make it row-stochastic
@@ -76,7 +76,7 @@ class HMSMEstimator:
         # run EM
         hmm = bhmm.estimate_hmm(self._msmobj.discrete_trajectories_full, self._nstates,
                                      lag=self._msmobj.lagtime, initial_model=self.hmm_init)
-        self.hmm = bhmm.DiscreteHMM(self.hmm)
+        self.hmm = bhmm.DiscreteHMM(hmm)
         # done
         self._estimated = True
 

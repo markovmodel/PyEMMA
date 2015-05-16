@@ -61,7 +61,7 @@ class HMSM(_MSM):
 
         """
         # construct superclass and check input
-        _MSM.__init__(Pcoarse, dt)
+        _MSM.__init__(self, Pcoarse, dt)
         # check and save copy of output probability
         assert _types.is_float_matrix(Pobs), 'Pout is not a matrix of floating numbers'
         self._Pobs = _np.array(Pobs)
