@@ -50,6 +50,7 @@ __all__ = ['its',
            'markov_model',
            'estimate_markov_model',
            'bayesian_markov_model',
+           'estimate_hidden_markov_model',
            'cktest',
            'tpt']
 

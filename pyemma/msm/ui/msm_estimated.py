@@ -73,6 +73,9 @@ class EstimatedMSM(MSM):
         # superclass constructor
         MSM.__init__(self, estimator.transition_matrix, dt=estimator.dt)
 
+        # logger
+        self.__create_logger()
+
         # check if reversible option matches our reversibility check of the transition matrix
         if estimator.is_reversible != self.is_reversible:
             self._logger.warn('Reversible was set but transition matrix did not pass reversibility check. Check your '
@@ -443,7 +446,7 @@ class EstimatedMSM(MSM):
         """
         # check input
         assert nstates > 1 and nstates < self.nstates, 'nstates but be between 2 and '+str(self.nstates)
-        timescale_ratios = self.timescales()[1:] / self.timescales()[:-1]
+        timescale_ratios = self.timescales()[:-1] / self.timescales()[1:]
         if timescale_ratios[nstates-2] < 2.0:
             self._logger.warn('Requested coarse-grained model with '+str(nstates)+' metastable states. '+
                               'The ratio of relaxation timescales between '+str(nstates)+' and '+str(nstates+1)+

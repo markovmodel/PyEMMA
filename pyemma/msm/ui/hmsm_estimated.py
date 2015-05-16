@@ -41,9 +41,9 @@ from pyemma.util import types as _types
 class EstimatedHMSM(_HMSM):
 
     def __init__(self, estimator):
-        _HMSM.__init__(self, estimator.transition_matrix, estimator.observation_probabilities, dt=estimator.timestep)
+        _HMSM.__init__(self, estimator.transition_matrix, estimator.observation_probabilities, dt=estimator.dt)
         self._lag = estimator.lagtime
-        self._dtrajs = estimator.dtrajs
+        self._dtrajs = estimator.discrete_trajectories
 
     @property
     def lagtime(self):
