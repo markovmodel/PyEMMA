@@ -27,13 +27,13 @@ Created on 22.01.2015
 
 @author: marscher, noe
 """
-
-import kmeans_clustering
 import math
 import os
 import random
 import tempfile
 import numpy as np
+
+from . import kmeans_clustering
 
 from pyemma.util.annotators import doc_inherit
 from pyemma.coordinates.clustering.interface import AbstractClustering
