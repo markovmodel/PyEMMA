@@ -126,7 +126,6 @@ class TICA(Transformer):
         """ output dimension"""
         return self._output_dimension
 
-    @doc_inherit
     def _get_memory_per_frame(self):
         # temporaries
         dim = self.data_producer.dimension()
@@ -136,7 +135,6 @@ class TICA(Transformer):
 
         return 8 * (mean_free_vectors + dot_product)
 
-    @doc_inherit
     def _get_constant_memory(self):
         dim = self.data_producer.dimension()
 
@@ -153,7 +151,6 @@ class TICA(Transformer):
         """ mean of input features """
         return self.mu
 
-    @doc_inherit
     def _param_init(self):
         dim = self.data_producer.dimension()
         assert dim > 0, "zero dimension from data producer"
@@ -273,7 +270,6 @@ class TICA(Transformer):
 
         return False  # not finished yet.
 
-    @doc_inherit
     def _param_finish(self):
         if self._force_eigenvalues_le_one:
             assert self._N_cov == self._N_cov_tau, 'inconsistency in C(0) and C(tau)'
