@@ -108,10 +108,6 @@ class KmeansClustering(AbstractClustering):
     def _get_constant_memory(self):
         return 1
 
-    def _map_to_memory(self):
-        # results mapped to memory during parametrize
-        pass
-
     @doc_inherit
     def describe(self):
         return "[Kmeans, k=%i]" % self.n_clusters

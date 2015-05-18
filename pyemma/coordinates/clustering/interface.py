@@ -28,6 +28,7 @@ Created on 18.02.2015
 @author: marscher
 '''
 from pyemma.coordinates.transform.transformer import Transformer
+from pyemma.util.annotators import doc_inherit
 from pyemma.util.files import mkdir_p
 
 import numpy as np
@@ -63,6 +64,7 @@ class AbstractClustering(Transformer):
 
     @property
     def dtrajs(self):
+        """Discrete trajectories (assigned data to cluster centers)."""
         if len(self._dtrajs) == 0:  # nothing assigned yet, doing that now
             self._dtrajs = self.assign(stride=1)
 
@@ -80,6 +82,7 @@ class AbstractClustering(Transformer):
         """output dimension of clustering algorithm (always 1)."""
         return 1
 
+    @doc_inherit
     def output_type(self):
         return np.int32
 
