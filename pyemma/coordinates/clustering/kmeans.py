@@ -108,10 +108,6 @@ class KmeansClustering(AbstractClustering):
     def _get_constant_memory(self):
         return 1
 
-    @doc_inherit
-    def describe(self):
-        return "[Kmeans, k=%i]" % self.n_clusters
-
     def _param_finish(self):
         self.clustercenters = np.array(self._cluster_centers)
         del self._cluster_centers
@@ -132,14 +128,14 @@ class KmeansClustering(AbstractClustering):
         if ipass == 0:
             # beginning - compute
             if first_chunk:
-                mem_req = 1e-6 * 2 * X[0, :].nbytes * self.n_frames_total(stride=stride)
-                self._logger.warn('K-means implementation is currently memory inefficient.'
-                                  ' This calculation needs %i megabytes of main memory.'
-                                  ' If you get a memory error, try using a larger stride.'
-                                  % mem_req)
+                mem_req = int(1.0/1024**2 * X[0, :].nbytes * self.n_frames_total(stride))
+                if mem_req > 10:
+                    self._logger.warn('K-means implementation is currently memory inefficient.'
+                                      ' This calculation needs %i megabytes of main memory.'
+                                      ' If you get a memory error, try using a larger stride.'
+                                      % mem_req)
 
             # appends a true copy
-            # self._in_memory_chunks.append(X[:, :])
             self._in_memory_chunks[self._t_total:self._t_total + len(X)] = X[:]
             self._t_total += len(X)
             # initialize uniform cluster centers
