@@ -52,6 +52,9 @@ from pyemma.coordinates.clustering.uniform_time import UniformTimeClustering as 
 from pyemma.coordinates.clustering.regspace import RegularSpaceClustering as _RegularSpaceClustering
 from pyemma.coordinates.clustering.assign import AssignCenters as _AssignCenters
 
+# stat
+from pyemma.coordinates.util.stat import histogram
+
 _logger = _getLogger('coordinates.api')
 
 __author__ = "Frank Noe, Martin Scherer"

@@ -1,4 +1,3 @@
-
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
 # All rights reserved.
@@ -24,12 +23,18 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import numpy as np
+from pyemma.util.annotators import deprecated
 
 __author__ = 'Fabian Paul'
-__all__ = ['hist']
+__all__ = ['histogram']
 
 
+@deprecated("Please use pyemma.coordinates.histogram()")
 def hist(transform, dimensions, nbins):
+    return histogram(transform, dimensions, nbins)
+
+
+def histogram(transform, dimensions, nbins):
     '''Computes the N-dimensional histogram of the transformed data.
 
     Parameters
@@ -55,10 +60,10 @@ def hist(transform, dimensions, nbins):
     >>> import matplotlib.pyplot as plt
     >>> %matplotlib inline # only for ipython notebook
 
-    >>> counts, edges=hist(transform, dimensions=(0,1), nbins=(20, 30))
+    >>> counts, edges=histogram(transform, dimensions=(0,1), nbins=(20, 30))
     >>> plt.pcolormesh(edges[0], edges[1], counts.T)
 
-    >>> counts, edges=hist(transform, dimensions=(1,), nbins=(50,))
+    >>> counts, edges=histogram(transform, dimensions=(1,), nbins=(50,))
     >>> plt.bar(edges[0][:-1], counts, width=edges[0][1:]-edges[0][:-1])
     '''
     maximum = np.ones(len(dimensions)) * (-np.inf)
