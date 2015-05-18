@@ -478,7 +478,7 @@ def save_traj(traj_inp, indexes, outfile, verbose=False, stride=1):
                                                 traj_inp.trajfiles[ff],
                                                 traj_inp.topfile,
                                                 frames, chunksize=traj_inp.chunksize,
-                                                verbose=verbose), None)
+                                                verbose=verbose, stride=stride), None)
                                         )
 
     # Iterate directly over the index of files and pick the trajectory that you need from the iterator list
