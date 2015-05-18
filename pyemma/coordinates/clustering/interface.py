@@ -1,4 +1,3 @@
-
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
 # All rights reserved.
@@ -28,7 +27,6 @@ Created on 18.02.2015
 @author: marscher
 '''
 from pyemma.coordinates.transform.transformer import Transformer
-from pyemma.util.annotators import doc_inherit
 from pyemma.util.files import mkdir_p
 
 import numpy as np
@@ -82,7 +80,8 @@ class AbstractClustering(Transformer):
         """output dimension of clustering algorithm (always 1)."""
         return 1
 
-    @doc_inherit
+    #@doc_inherit
+    # TODO: inheritance of docstring should work
     def output_type(self):
         return np.int32
 
