@@ -68,6 +68,7 @@ __email__ = "m.scherer AT fu-berlin DOT de"
 __all__ = ['featurizer',  # IO
            'load',
            'source',
+           'histogram',
            'pipeline',
            'discretizer',
            'save_traj',
