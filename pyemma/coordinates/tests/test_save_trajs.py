@@ -68,7 +68,8 @@ class TestSaveTrajs(unittest.TestCase):
 
         self.sets = [set_1, set_2]
 
-        self.subdir = tempfile.mkdtemp(suffix='save_trajs_test')
+        # note: the name does not contain a path sep, so add it manually
+        self.subdir = tempfile.mkdtemp(suffix='save_trajs_test') + os.path.sep
 
         # Instantiate the reader
         self.reader = coor.source(self.trajfiles, top=self.pdbfile)

@@ -577,6 +577,8 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None,
     # Prepare the list of outfiles before the loop
     if outfiles is None:
         outfiles = []
+        if os.path.isdir(prefix) and prefix[-1] != os.path.sep:
+            prefix += os.path.sep
         for ii in xrange(len(indexes)):
             outfiles.append(prefix + '%06u' % ii + fmt)
 
