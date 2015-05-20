@@ -88,11 +88,6 @@ __all__ = ['bootstrap_trajectories',
            'tmatrix_cov',
            'tmatrix_sampler']
 
-# append shortcuts separately in order to avoid code syntax error
-__all__.append('cmatrix')
-__all__.append('connected_cmatrix')
-__all__.append('tmatrix')
-
 ################################################################################
 # Basic counting
 ################################################################################

@@ -139,7 +139,9 @@ def ensure_dtraj(dtraj):
     elif is_list_of_int(dtraj):
         return np.array(dtraj, dtype=int)
     else:
-        raise TypeError('Argument dtraj is not a discrete trajectory - only list of integers or int-ndarrays are allowed. Check type.')
+        raise TypeError('Argument dtraj is not a discrete trajectory - '
+                        'only list of integers or int-ndarrays are allowed. '
+                        'Check type of %s' % repr(dtraj))
 
 def ensure_dtraj_list(dtrajs):
     r"""Makes sure that dtrajs is a list of discrete trajectories (array of int)
