@@ -78,7 +78,7 @@ class HMSMEstimator:
         # lazy import bhmm here in order to avoid dependency loops
         import bhmm
         # initialize discrete HMM
-        self.hmm_init = bhmm.discrete_hmm(P_coarse, B, stationary=True, reversible=self._msmobj.is_reversible)
+        self.hmm_init = bhmm.discrete_hmm(A, B, stationary=True, reversible=self._msmobj.is_reversible)
         # run EM
         hmm = bhmm.estimate_hmm(self._msmobj.discrete_trajectories_full, self._nstates,
                                 lag=self._msmobj.lagtime, initial_model=self.hmm_init)
