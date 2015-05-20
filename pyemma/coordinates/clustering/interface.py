@@ -1,4 +1,3 @@
-
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
 # All rights reserved.
@@ -63,6 +62,7 @@ class AbstractClustering(Transformer):
 
     @property
     def dtrajs(self):
+        """Discrete trajectories (assigned data to cluster centers)."""
         if len(self._dtrajs) == 0:  # nothing assigned yet, doing that now
             self._dtrajs = self.assign(stride=1)
 
@@ -80,6 +80,8 @@ class AbstractClustering(Transformer):
         """output dimension of clustering algorithm (always 1)."""
         return 1
 
+    #@doc_inherit
+    # TODO: inheritance of docstring should work
     def output_type(self):
         return np.int32
 

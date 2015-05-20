@@ -71,13 +71,13 @@ class RegularSpaceClustering(AbstractClustering):
 
     """
 
-    def __init__(self, dmin, max_clusters=1000, metric='euclidean'):
+    def __init__(self, dmin, max_centers=1000, metric='euclidean'):
         super(RegularSpaceClustering, self).__init__(metric=metric)
 
         self._dmin = dmin
         # temporary list to store cluster centers
         self._clustercenters = []
-        self.max_clusters = max_clusters
+        self._max_centers = max_centers
 
     @doc_inherit
     def describe(self):
@@ -85,6 +85,7 @@ class RegularSpaceClustering(AbstractClustering):
 
     @property
     def dmin(self):
+        """Minimum distance between cluster centers."""
         return self._dmin
 
     @dmin.setter
@@ -95,10 +96,21 @@ class RegularSpaceClustering(AbstractClustering):
         self._dmin = float(d)
         self._parametrized = False
 
-    def _map_to_memory(self):
-        # nothing to do, because memory-mapping of the discrete trajectories is
-        # done in parametrize
-        pass
+    @property
+    def max_centers(self):
+        """
+        Cutoff during clustering. If reached no more data is taken into account.
+        You might then consider a larger value or a larger dmin value.
+        """
+        return self._max_centers
+
+    @max_centers.setter
+    def max_centers(self, value):
+        if value < 0:
+            raise ValueError("max_centers has to be positive")
+
+        self._max_centers = int(value)
+        self._parametrized = False
 
     def _get_memory_per_frame(self):
         # 4 bytes per frame for an integer index
@@ -119,7 +131,7 @@ class RegularSpaceClustering(AbstractClustering):
         try:
             regspatial.cluster(X.astype(np.float32, order='C', copy=False),
                                self._clustercenters, self._dmin,
-                               self.metric, self.max_clusters)
+                               self.metric, self._max_centers)
             # finished regularly
             if last_chunk:
                 self.clustercenters = np.array(self._clustercenters)
@@ -127,7 +139,7 @@ class RegularSpaceClustering(AbstractClustering):
                 return True  # finished!
         except RuntimeError:
             msg = 'Maximum number of cluster centers reached.' \
-                  ' Consider increasing max_clusters or choose' \
+                  ' Consider increasing _max_centers or choose' \
                   ' a larger minimum distance, dmin.'
             self._logger.warning(msg)
             warnings.warn(msg)
