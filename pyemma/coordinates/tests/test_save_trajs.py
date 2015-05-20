@@ -1,4 +1,3 @@
-
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
 # All rights reserved.
@@ -69,7 +68,8 @@ class TestSaveTrajs(unittest.TestCase):
 
         self.sets = [set_1, set_2]
 
-        self.subdir = tempfile.mkdtemp(suffix='save_trajs_test')
+        # note: the name does not contain a path sep, so add it manually
+        self.subdir = tempfile.mkdtemp(suffix='save_trajs_test') + os.path.sep
 
         # Instantiate the reader
         self.reader = coor.source(self.trajfiles, top=self.pdbfile)
@@ -134,6 +134,17 @@ class TestSaveTrajs(unittest.TestCase):
                 break
 
         self.assertFalse(found_diff, errmsg)
+
+    def test_with_stride(self):
+        strides = [1, 2, 3, 5]
+
+        for stride in strides:
+            # Test that we're saving to disk alright
+            flist = save_trajs(self.reader, self.sets, prefix=self.subdir, stride=stride)
+            exist = True
+            for f in flist:
+                exist = exist and os.stat(f)
+            self.assertTrue(exist, "Could not write to disk")
 
 
 if __name__ == "__main__":
