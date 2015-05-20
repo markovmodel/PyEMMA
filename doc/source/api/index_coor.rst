@@ -19,9 +19,10 @@ integers.
 .. include impl detail here hidden, to get generate docs for these
    as sometimes api doc links to them.
 
+Implementation
+--------------
 .. toctree::
    :maxdepth: 1
-   :hidden:
 
    coordinates.clustering
    coordinates.data
