@@ -299,4 +299,4 @@ def tpt(msmobj, A, B):
     T = msmobj.transition_matrix
     mu = msmobj.stationary_distribution
     tptobj = tpt_factory(T, A, B, mu=mu)
-    return tptobj   
+    return tptobj
