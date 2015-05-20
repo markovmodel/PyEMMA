@@ -13,7 +13,8 @@
 #  shall be performed by the drawing engine associated with 'views'.
 #  (e.g. look at intersectC when the node shape is a circle)
 
-from grandalf.utils import *
+from .utils import *
+from math import sqrt
 
 #------------------------------------------------------------------------------
 class  EdgeViewer(object):

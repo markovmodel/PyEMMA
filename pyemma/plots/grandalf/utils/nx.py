@@ -19,7 +19,7 @@ def convert_grandalf_graph_to_networkx_graph(G):
 #Converts a networkx graph to a grandalf graph.
 #Note that the edge concept is the same, but a vertex in grandalf is called a node in networkx.
 def convert_nextworkx_graph_to_grandalf(G):
-    from grandalf.graphs import Graph, Vertex, Edge
+    from ..graphs import Graph, Vertex, Edge
     V = []
     data_to_V = {}
     for x in G.nodes():

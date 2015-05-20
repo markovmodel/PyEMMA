@@ -14,7 +14,7 @@
 from  bisect  import bisect
 from  sys     import getrecursionlimit,setrecursionlimit
 
-from grandalf.utils import *
+from .utils import *
 
 try:
     xrange

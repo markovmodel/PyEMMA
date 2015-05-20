@@ -1,13 +1,37 @@
-__author__ = 'noe'
-
+# Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
+# Berlin, 14195 Berlin, Germany.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without modification,
+# are permitted provided that the following conditions are met:
+#
+#  * Redistributions of source code must retain the above copyright notice, this
+# list of conditions and the following disclaimer.
+#  * Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation and/or
+# other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS ``AS IS''
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+# ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import math
 import numpy as np
 from matplotlib import pylab as plt
 from matplotlib import rcParams
 
-class NetworkPlot:
+__author__ = 'noe'
 
-    def __init__(self, A, pos = None, xpos = None, ypos = None):
+
+class NetworkPlot(object):
+
+    def __init__(self, A, pos=None, xpos=None, ypos=None):
         """
 
         Parameters
@@ -155,7 +179,7 @@ class NetworkPlot:
         """
         if (self.xpos is not None) and (self.ypos is not None):
             return np.array([self.xpos,self.ypos]), 0  # nothing to do
-        from grandalf.layouts import DigcoLayout
+        from .grandalf.layouts import DigcoLayout
         class defaultview(object):
             w,h = 10,10
         min_stress = float('infinity')
@@ -207,7 +231,7 @@ class NetworkPlot:
         n = np.shape(self.A)[0]
         I,J = np.where(self.A>0)
         # create graph object
-        from grandalf.graphs import Vertex,Edge,Graph
+        from .grandalf.graphs import Vertex,Edge,Graph
         V = [Vertex(i) for i in range(n)]
         E = [Edge(V[I[i]],V[J[i]]) for i in range(len(I))]
         g = Graph(V,E)
@@ -335,12 +359,13 @@ def plot_flux(flux, pos = None, state_sizes = None, state_scale = 1.0, state_col
     --------
     We define first define a reactive flux by taking the following transition matrix and computing TPT from state 2 to 3
 
+    >>> import numpy as np
     >>> P = np.array([[0.8,  0.15, 0.05,  0.0,  0.0], [0.1,  0.75, 0.05, 0.05, 0.05], [0.05,  0.1,  0.8,  0.0,  0.05], [0.0,  0.2, 0.0,  0.8,  0.0], [0.0,  0.02, 0.02, 0.0,  0.96]])
     >>> from pyemma import msm
     >>> F = msm.tpt(msm.markov_model(P), [2], [3])
     >>> F.flux[:] *= 100
 
-    Scale the flux by 100 is basicly a change of units to get numbers close to 1 (avoid printing many zeros).
+    Scale the flux by 100 is basically a change of units to get numbers close to 1 (avoid printing many zeros).
     Now we visualize the flux:
 
     >>> plot_flux(F)

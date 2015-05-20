@@ -38,6 +38,9 @@ User-API
    :toctree: generated/
 
    plot_implied_timescales
+   scatter_contour
+   plot_markov_model
+   plot_flux
 
 """
 
