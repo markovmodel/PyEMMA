@@ -137,8 +137,3 @@ class UniformTimeClustering(AbstractClustering):
                 return True  # done!
 
         return False  # not done yet.
-
-    def _map_to_memory(self):
-        # nothing to do, because memory-mapping of the discrete trajectories is
-        # done in parametrize
-        pass

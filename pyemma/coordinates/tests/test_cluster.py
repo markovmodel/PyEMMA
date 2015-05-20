@@ -147,10 +147,10 @@ class TestCluster(unittest.TestCase):
             c.parametrize()
 
     def test_save_dtrajs(self):
-        prefix = "test"
         extension = ".dtraj"
         outdir = self.dtraj_dir
         for c in self.cl:
+            prefix = "test_save_dtrajs_%s" % type(c).__name__
             c.save_dtrajs(trajfiles=None, prefix=prefix, output_dir=outdir, extension=extension)
 
             names = ["%s_%i%s" % (prefix, i, extension)

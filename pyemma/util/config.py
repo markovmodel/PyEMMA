@@ -21,7 +21,6 @@
 # ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 r'''
 Runtime Configuration
 =====================
@@ -31,9 +30,9 @@ its final set of settings. It searches for the file 'pyemma.cfg' in several
 locations with different priorities:
 
 1. $CWD/pyemma.cfg
-2. /etc/pyemma.cfg
-3. ~/pyemma.cfg
-4. $PYTHONPATH/pyemma/pyemma.cfg (always taken as default configuration file)
+2. $HOME/.pyemma/pyemma.cfg
+4. ~/pyemma.cfg
+5. $PYTHONPATH/pyemma/pyemma.cfg (always taken as default configuration file)
 
 The same applies for the filename ".pyemma.cfg" (hidden file).
 
@@ -58,7 +57,7 @@ To access the config at runtime eg. the logging section:
 Notes
 -----
 All values are being stored as strings, so to compare eg. if a value is True,
-compare for
+compare for:
 
 .. code-block:: python
 
@@ -82,6 +81,9 @@ __docformat__ = "restructuredtext en"
 
 import ConfigParser
 import os
+import warnings
+
+from pyemma.util.files import mkdir_p
 
 __all__ = ['configParser', 'used_filenames', 'AttribStore']
 
@@ -110,6 +112,35 @@ class AttribStore(dict):
         self[name] = value
 
 
+def create_cfg_dir(default_config):
+    home = os.path.expanduser("~")
+    pyemma_cfg_dir = os.path.join(home, ".pyemma")
+    if not os.path.exists(pyemma_cfg_dir):
+        try:
+            mkdir_p(pyemma_cfg_dir)
+        except EnvironmentError:
+            warnings.warn("could not create configuration directory '%s'" %
+                          pyemma_cfg_dir)
+
+    def touch(fname, times=None):
+        with open(fname, 'a'):
+            os.utime(fname, times)
+
+    test_fn = os.path.join(pyemma_cfg_dir, "dummy")
+    try:
+        touch(test_fn)
+        os.unlink(test_fn)
+    except:
+        raise RuntimeError("%s is not writeable" % pyemma_cfg_dir)
+
+    # give user the default cfg file, if its not there
+    import shutil
+    if not os.path.exists(os.path.join(pyemma_cfg_dir, os.path.basename(default_config))):
+        shutil.copy(default_config, pyemma_cfg_dir)
+
+    return pyemma_cfg_dir
+
+
 def readConfiguration():
     """
     TODO: consider using json to support arbitrary python objects in ini file (if this getting more complex)
@@ -118,26 +149,32 @@ def readConfiguration():
 
     global configParser, conf_values, used_filenames
 
+    cfg = 'pyemma.cfg'
+    default_pyemma_conf = pkg_resources.resource_filename('pyemma', cfg)
+
+    # create .pyemma dir in home
+    pyemma_cfg_dir = create_cfg_dir(default_pyemma_conf)
+
     # use these files to extend/overwrite the conf_values.
     # Last red file always overwrites existing values!
-    cfg = 'pyemma.cfg'
-    cfg_hidden = '.pyemma.cfg'
     filenames = [
         cfg,  # conf_values in current dir
-        '/etc/' + cfg,  # conf_values in global installation
+        os.path.join(pyemma_cfg_dir, cfg),
         os.path.join(os.path.expanduser(
                      '~' + os.path.sep), cfg)  # config in user dir
     ]
+
+    cfg_hidden = '.pyemma.cfg'
     filenames += [
         cfg_hidden,
-        '/etc/' + cfg_hidden,
+        os.path.join(pyemma_cfg_dir, cfg),
         os.path.join(os.path.expanduser(
                      '~' + os.path.sep), cfg_hidden)
     ]
 
     # read defaults from default_pyemma_conf first.
     defParser = ConfigParser.RawConfigParser()
-    default_pyemma_conf = pkg_resources.resource_filename('pyemma', cfg)
+
     try:
         with open(default_pyemma_conf) as f:
             defParser.readfp(f, default_pyemma_conf)
@@ -161,5 +198,8 @@ def readConfiguration():
         conf_values[section] = AttribStore()
         for item in configParser.items(section):
             conf_values[section][item[0]] = item[1]
+
+    # remember cfg dir
+    conf_values['pyemma']['cfg_dir'] = pyemma_cfg_dir
 
 readConfiguration()

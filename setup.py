@@ -135,8 +135,7 @@ def extensions():
         Extension('pyemma.coordinates.clustering.regspatial', 
                   sources=[
                       'pyemma/coordinates/clustering/src/regspatial.c',
-                      'pyemma/coordinates/clustering/src/clustering.c'
-                  ],
+                      'pyemma/coordinates/clustering/src/clustering.c'],
                   include_dirs=[
                       mdtraj.capi()['include_dir'],
                       'pyemma/coordinates/clustering/include'
@@ -144,11 +143,23 @@ def extensions():
                   libraries=[lib_prefix+'theobald'],
                   library_dirs=[mdtraj.capi()['lib_dir']],
                   extra_compile_args=['-std=c99'])
+    kmeans_module = \
+        Extension('pyemma.coordinates.clustering.kmeans_clustering',
+                  sources=[
+                      'pyemma/coordinates/clustering/src/kmeans.c',
+                      'pyemma/coordinates/clustering/src/clustering.c'],
+                  include_dirs=[
+                      mdtraj.capi()['include_dir'],
+                      'pyemma/coordinates/clustering/include'],
+                  libraries=[lib_prefix+'theobald'],
+                  library_dirs=[mdtraj.capi()['lib_dir']],
+                  extra_compile_args=['-std=c99'])
 
     exts += [mle_trev_given_pi_dense_module,
              mle_trev_given_pi_sparse_module,
              mle_trev_sparse_module,
-             regspatial_module]
+             regspatial_module,
+             kmeans_module]
 
     if USE_CYTHON: # if we have cython available now, cythonize module
         exts = cythonize(exts)
@@ -250,7 +261,6 @@ metadata = dict(
     install_requires=['numpy>=1.6.0',
                       'scipy>=0.11',
                       'mdtraj',
-                      'scikit-learn',
                       'matplotlib'],
     zip_safe=False,
 )

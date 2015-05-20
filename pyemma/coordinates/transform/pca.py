@@ -66,6 +66,7 @@ class PCA(Transformer):
         self._output_dimension = output_dimension
         self._dot_prod_tmp = None
         self.Y = None
+        self._N = 0
 
         self._custom_param_progress_handling = True
         self._progress_mean = None
@@ -78,12 +79,9 @@ class PCA(Transformer):
     def dimension(self):
         r"""
         Returns the number of output dimensions.
-
-        :return:
         """
         return self._output_dimension
 
-    @doc_inherit
     def _get_constant_memory(self):
         """Returns the constant memory requirements, in bytes."""
         # memory for mu, C, v, R
@@ -97,7 +95,6 @@ class PCA(Transformer):
 
         return 8 * (cov_elements + mu_elements + v_elements + R_elements)
 
-    @doc_inherit
     def _get_memory_per_frame(self):
         # memory for temporaries
         dim = self.data_producer.dimension()
@@ -116,9 +113,8 @@ class PCA(Transformer):
     def covariance_matrix(self):
         return self.cov
 
-    @doc_inherit
     def _param_init(self):
-        self.N = 0
+        self._N = 0
         # create mean array and covariance matrix
         dim = self.data_producer.dimension()
         self._logger.info("Running PCA on %i dimensional input" % dim)
@@ -163,14 +159,14 @@ class PCA(Transformer):
                 self._sum_tmp = np.empty(X.shape[1])
             np.sum(X, axis=0, out=self._sum_tmp)
             self.mu += self._sum_tmp
-            self.N += np.shape(X)[0]
+            self._N += np.shape(X)[0]
 
             # counting chunks and log of eta
             self._progress_mean.numerator += 1
             show_progressbar(self._progress_mean)
 
             if last_chunk:
-                self.mu /= self.N
+                self.mu /= self._N
 
         # pass 2: covariances
         if ipass == 1:
@@ -185,14 +181,13 @@ class PCA(Transformer):
             show_progressbar(self._progress_cov)
 
             if last_chunk:
-                self.cov /= self.N - 1
+                self.cov /= self._N - 1
                 self._logger.debug("finished")
                 return True  # finished!
 
         # by default, continue
         return False
 
-    @doc_inherit
     def _param_finish(self):
         (v, R) = np.linalg.eigh(self.cov)
         # sort

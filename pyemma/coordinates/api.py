@@ -52,6 +52,9 @@ from pyemma.coordinates.clustering.uniform_time import UniformTimeClustering as 
 from pyemma.coordinates.clustering.regspace import RegularSpaceClustering as _RegularSpaceClustering
 from pyemma.coordinates.clustering.assign import AssignCenters as _AssignCenters
 
+# stat
+from pyemma.coordinates.util.stat import histogram
+
 _logger = _getLogger('coordinates.api')
 
 __author__ = "Frank Noe, Martin Scherer"
@@ -65,6 +68,7 @@ __email__ = "m.scherer AT fu-berlin DOT de"
 __all__ = ['featurizer',  # IO
            'load',
            'source',
+           'histogram',
            'pipeline',
            'discretizer',
            'save_traj',
@@ -120,7 +124,7 @@ def featurizer(topfile):
 
 
 # TODO: DOC - which topology file formats does mdtraj support? Find out and complete docstring
-def load(trajfiles, features=None, top=None, stride=1):
+def load(trajfiles, features=None, top=None, stride=1, chunk_size=100):
     r""" Loads coordinate features into memory.
 
     If your memory is not big enough consider the use of **pipeline**, or use the stride option to subsample the data.
@@ -165,6 +169,9 @@ def load(trajfiles, features=None, top=None, stride=1):
     stride : int, optional, default = 1
         Load only every stride'th frame. By default, every frame is loaded
 
+    chunk_size: int, optional, default = 100
+        The chunk size at which the input file is being processed.
+
     Returns
     -------
     data : ndarray or list of ndarray
@@ -185,7 +192,7 @@ def load(trajfiles, features=None, top=None, stride=1):
     if isinstance(trajfiles, basestring) or (
         isinstance(trajfiles, (list, tuple))
             and (any(isinstance(item, basestring) for item in trajfiles) or len(trajfiles) is 0)):
-        reader = _create_file_reader(trajfiles, top, features)
+        reader = _create_file_reader(trajfiles, top, features, chunk_size=chunk_size)
         trajs = reader.get_output(stride=stride)
         if len(trajs) == 1:
             return trajs[0]
@@ -195,7 +202,7 @@ def load(trajfiles, features=None, top=None, stride=1):
         raise ValueError('unsupported type (%s) of input' % type(trajfiles))
 
 
-def source(inp, features=None, top=None):
+def source(inp, features=None, top=None, chunk_size=100):
     r""" Wraps input as data source for pipeline.
 
     Use this function to construct the first stage of a data processing :func:`pipeline`.
@@ -227,6 +234,9 @@ def source(inp, features=None, top=None):
         A topology file name. This is needed when molecular dynamics trajectories are given and no featurizer is given.
         In this case, only the Cartesian coordinates will be read.
 
+    chunk_size: int, optional, default = 100
+        The chunk size at which the input file is being processed.
+
     See also
     --------
     :func:`pyemma.coordinates.pipeline`
@@ -240,7 +250,7 @@ def source(inp, features=None, top=None):
     # check: if single string create a one-element list
     if isinstance(inp, basestring) or (isinstance(inp, (list, tuple))
                                        and (any(isinstance(item, basestring) for item in inp) or len(inp) is 0)):
-        reader = _create_file_reader(inp, top, features)
+        reader = _create_file_reader(inp, top, features, chunk_size=chunk_size)
 
     elif isinstance(inp, ndarray) or (isinstance(inp, (list, tuple))
                                       and (any(isinstance(item, ndarray) for item in inp) or len(inp) is 0)):
@@ -574,8 +584,8 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None, inmemo
 
         _, fmt = os.path.splitext(traj_inp.trajfiles[0])
     else:
-      fmt = '.' + fmt
-      
+        fmt = '.' + fmt
+
     # Prepare the list of outfiles before the loop
     if outfiles is None:
         outfiles = []
@@ -683,7 +693,7 @@ def pca(data=None, dim=2, stride=1):
     -------
     pca : a :class:`PCA<pyemma.coordinates.transform.PCA>` transformation object
         Object for Principle component analysis (PCA) analysis.
-        it contains PCA eigenvalues and eigenvectors, and the projection of input data to the dominant PCA
+        It contains PCA eigenvalues and eigenvectors, and the projection of input data to the dominant PCA
 
 
     Notes
@@ -842,8 +852,7 @@ def kmeans(data=None, k=100, max_iter=1000, stride=1):
     return cluster_kmeans(data, k, max_iter, stride=stride)
 
 
-
-def cluster_kmeans(data=None, k=100, max_iter=10, stride=1, metric='euclidean'):
+def cluster_kmeans(data=None, k=100, max_iter=10, stride=1, metric='euclidean', init_strategy='kmeans++'):
     r"""k-means clustering
 
     If data is given, it performs a k-means clustering and then assigns the data using a Voronoi discretization.
@@ -872,6 +881,9 @@ def cluster_kmeans(data=None, k=100, max_iter=10, stride=1, metric='euclidean'):
 
     metric : str
         metric to use during clustering ('euclidean', 'minRMSD')
+    init_strategy : str
+        determines if the initial cluster centers are chosen according to the kmeans++-algorithm
+        or uniformly distributed
 
     Returns
     -------
@@ -891,7 +903,7 @@ def cluster_kmeans(data=None, k=100, max_iter=10, stride=1, metric='euclidean'):
     [array([0, 0, 1, ... ])]
 
     """
-    res = _KmeansClustering(n_clusters=k, max_iter=max_iter, metric=metric)
+    res = _KmeansClustering(n_clusters=k, max_iter=max_iter, metric=metric, init_strategy=init_strategy)
     return _param_stage(data, res, stride=stride)
 
 
@@ -998,7 +1010,7 @@ def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1, metric='euc
 
     """
     if dmin == -1:
-        raise ValueError("provide a minimum distance for clustering")
+        raise ValueError("provide a minimum distance for clustering, e.g. 2.0")
     res = _RegularSpaceClustering(dmin, max_centers, metric=metric)
     return _param_stage(data, res, stride=stride)
 

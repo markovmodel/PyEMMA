@@ -1,4 +1,3 @@
-
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
 # All rights reserved.
@@ -23,3 +22,9 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+
+def setup_package():
+    # setup function for nose tests (for this package only)
+    from pyemma.util.config import conf_values
+    # do not cache trajectory info in user directory (temp traj files)
+    conf_values['pyemma']['use_trajectory_lengths_cache'] = False

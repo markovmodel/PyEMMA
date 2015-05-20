@@ -45,10 +45,24 @@ class AbstractClustering(Transformer):
         super(AbstractClustering, self).__init__()
         self.metric = metric
         self.clustercenters = None
+        self._previous_stride = -1
         self._dtrajs = []
+        self._overwrite_dtrajs = False
+
+    @property
+    def overwrite_dtrajs(self):
+        """
+        Should existing dtraj files be overwritten. Set this property to True to overwrite.
+        """
+        return self._overwrite_dtrajs
+
+    @overwrite_dtrajs.setter
+    def overwrite_dtrajs(self, value):
+        self._overwrite_dtrajs = value
 
     @property
     def dtrajs(self):
+        """Discrete trajectories (assigned data to cluster centers)."""
         if len(self._dtrajs) == 0:  # nothing assigned yet, doing that now
             self._dtrajs = self.assign(stride=1)
 
@@ -59,13 +73,15 @@ class AbstractClustering(Transformer):
         dtraj = np.empty(X.shape[0], dtype=self.output_type())
         regspatial.assign(X.astype(np.float32, order='C', copy=False),
                           self.clustercenters, dtraj, self.metric)
-        res = dtraj[:,None] # always return a column vector in this function
+        res = dtraj[:, None]  # always return a column vector in this function
         return res
 
     def dimension(self):
         """output dimension of clustering algorithm (always 1)."""
         return 1
 
+    #@doc_inherit
+    # TODO: inheritance of docstring should work
     def output_type(self):
         return np.int32
 
@@ -100,6 +116,11 @@ class AbstractClustering(Transformer):
 
         """
         if X is None:
+            # if the stride did not change and the discrete trajectory is already present,
+            # just return it
+            if self._previous_stride is stride and len(self._dtrajs) > 0:
+                return self._dtrajs
+            self._previous_stride = stride
             # map to column vectors
             mapped = self.get_output(stride=stride)
             # flatten and save
@@ -182,10 +203,9 @@ class AbstractClustering(Transformer):
             dest = path.join(output_dir, filename)
             self._logger.debug('writing dtraj to "%s"' % dest)
             try:
-                if path.exists(dest):
-                    # TODO: decide what to do if file already exists.
-                    self._logger.warn('overwriting existing dtraj "%s"' % dest)
-                    pass
+                if path.exists(dest) and not self.overwrite_dtrajs:
+                    raise EnvironmentError('Attempted to write dtraj "%s" which already existed. To automatically'
+                                           'overwrite existing files, set source.overwrite_dtrajs=True.' % dest)
                 write_dtraj(dest, dtraj)
             except IOError:
                 self._logger.exception('Exception during writing dtraj to "%s"' % dest)
