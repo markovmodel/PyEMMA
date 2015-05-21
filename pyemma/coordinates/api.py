@@ -443,10 +443,10 @@ def memory_reader(data):
     return _DataInMemory(data)
 
 
-def save_traj(traj_inp, indexes, outfile, verbose=False, stride=1):
+def save_traj(traj_inp, indexes, outfile, verbose = False, stride = 1):
     r""" Saves a sequence of frames as a single trajectory.
 
-    Extracts the specified sequence of time/trajectory indexes from the input loader
+    Extracts the specified sequence of time/trajectory indexes from the input reader
     and saves it in a molecular dynamics trajectory. The output format will be determined
     by the outfile name.
 
@@ -465,9 +465,21 @@ def save_traj(traj_inp, indexes, outfile, verbose=False, stride=1):
         The name of the output file. Its extension will determine the file type written. Example: "out.dcd"
         If set to None, the trajectory object is returned to memory
 
+    stride  : integer, default is 1
+        This parameter informs :py:func:`save_traj` about the stride used in :py:obj:`indexes`. Typically, :py:obj:`indexes`
+        contains frame-indexes that match exactly the frames of the files contained in :py:obj:`traj_inp.trajfiles`.
+        However, in certain situations, that might not be the case. Examples are cases in which a stride value != 1
+        was used when reading/featurizing/transforming/discretizing the files contained in :py:obj:`traj_inp.trajfiles`.
+
     verbose : boolean, default is False
         Verbose output while looking for "indexes" in the "traj_inp.trajfiles"
+
+    Returns
+    -------
+    traj : :py:obj:`mdtraj.Trajectory` object
+        Will only return this object if :py:obj:`outfile` is None
     """
+
     # Convert to index (T,2) array if parsed a list or a list of arrays
     indexes = _np.vstack(indexes)
     # Instantiate  a list of iterables that will contain mdtraj trajectory objects
@@ -484,7 +496,7 @@ def save_traj(traj_inp, indexes, outfile, verbose=False, stride=1):
                                                 traj_inp.trajfiles[ff],
                                                 traj_inp.topfile,
                                                 frames, chunksize=traj_inp.chunksize,
-                                                verbose=verbose), None)
+                                                verbose=verbose, stride = stride), None)
                                         )
 
     # Iterate directly over the index of files and pick the trajectory that you need from the iterator list
@@ -507,8 +519,8 @@ def save_traj(traj_inp, indexes, outfile, verbose=False, stride=1):
     _logger.info("Created file %s" % outfile)
 
 
-def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None,
-               inmemory=False, verbose=False, stride=1):
+def save_trajs(traj_inp, indexes, prefix = 'set_', fmt = None, outfiles = None,
+               inmemory = False, stride = 1, verbose = False):
     r""" Saves sequences of frames as multiple trajectories.
 
     Extracts a number of specified sequences of time/trajectory indexes from the input loader
@@ -529,7 +541,7 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None,
         Each row contains two indexes (i, t), where i is the index of the trajectory from the input
         and t is the index of the time step within the trajectory.
 
-    prefix : str, optional, default = 'set_'
+    prefix : str, optional, default = `set_`
         output filename prefix. Can include an absolute or relative path name.
 
     fmt : str, optional, default = None
@@ -545,11 +557,17 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None,
         this generates a potentially large molecular trajectory object in memory that is subsequently sliced into the
         files of "outfiles". Should be faster for large "indexes" arrays and large files, though it is quite memory
         intensive. The optimal situation is to avoid streaming two times through a huge file for "indexes" of type:
-
         indexes = [[1 4000000],[1 4000001]]
 
+    stride  : integer, default is 1
+        This parameter informs :py:func:`save_trajs` about the stride used in the indexes variable. Typically, the variable
+        indexes contains frame-indexes that match exactly the frames of the files contained in traj_inp.trajfiles.
+        However, in certain situations, that might not be the case. Examples of these situations are cases in
+        which stride value != 1 was used when reading/featurizing/transforming/discretizing the files contained in
+        traj_inp.trajfiles.
+
     verbose : boolean, default is False
-        Verbose output while looking for "indexes" in the "traj_inp.trajfiles".
+        Verbose output while looking for "indexes" in the "traj_inp.trajfiles"
 
     Returns
     -------
@@ -595,10 +613,11 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None,
     if not inmemory:
         for i_indexes, outfile in _itertools.izip(indexes, outfiles):
             # TODO: use kwargs** to parse to save_traj
-            save_traj(traj_inp, i_indexes, outfile, verbose=verbose)
-    # This implementation is "one file - one pass" but might temporally create huge memory objects 
+            save_traj(traj_inp, i_indexes, outfile, stride = stride, verbose=verbose)
+
+    # This implementation is "one file - one pass" but might temporally create huge memory objects
     else:
-        traj = save_traj(traj_inp, indexes, outfile=None, verbose=verbose)
+        traj = save_traj(traj_inp, indexes, outfile=None, stride = stride, verbose=verbose)
         i_idx = 0
         for i_indexes, outfile in _itertools.izip(indexes, outfiles):
             # Create indices for slicing the mdtraj trajectory object

@@ -31,8 +31,6 @@ the retrival via save_trajs
 
 import unittest
 import os
-import shutil
-import tempfile
 
 from numpy.random import randint
 from numpy import floor
@@ -51,15 +49,11 @@ class TestFramesFromFile(unittest.TestCase):
         path = os.path.join(os.path.split(__file__)[0], 'data')
         self.pdbfile = os.path.join(path, 'bpti_ca.pdb')
         self.trajfiles = os.path.join(path, 'bpti_mini.xtc')
-        self.subdir = tempfile.mkdtemp(suffix='get_frames_from_file/')
 
         # Create of frames to be retrieved from trajfiles
         self.n_frames = 50
         self.frames = randint(0, high = 100, size = self.n_frames)
         self.chunksize = 30
-
-    def tearDown(self):
-        shutil.rmtree(self.subdir, ignore_errors=True)
 
     def test_returns_trajectory(self):
         assert isinstance(_frames_from_file(self.trajfiles, self.pdbfile, self.frames),
