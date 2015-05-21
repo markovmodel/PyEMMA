@@ -36,7 +36,7 @@ __docformat__ = "restructuredtext en"
 import numpy as _np
 from pyemma.msm.ui.msm import MSM as _MSM
 from pyemma.util import types as _types
-from pyemma.util.annotators import shortcut
+
 
 class HMSM(_MSM):
     r""" Hidden Markov model on discrete states.
@@ -128,10 +128,10 @@ class HMSM(_MSM):
         """
         Pi_c = _np.diag(self.stationary_distribution)
         P_c = self.transition_matrix
-        P_c_k = _np.linalg.matrix_power(P_c, k) # take a power if needed
+        P_c_k = _np.linalg.matrix_power(P_c, k)  # take a power if needed
         B = self._Pobs
-        C = _np.dot(_np.dot(B.T, Pi_c),_np.dot(P_c_k, B))
-        P = C / C.sum(axis=1)[:,None] # row normalization
+        C = _np.dot(_np.dot(B.T, Pi_c), _np.dot(P_c_k, B))
+        P = C / C.sum(axis=1)[:, None]  # row normalization
         return P
 
     @property
@@ -160,8 +160,8 @@ class HMSM(_MSM):
         if len(a) == self.nstates:
             return super(HMSM, self).expectation(a)
         else:
-            raise ValueError('observable vector a has size '+len(a)+' which is incompatible with both hidden ('+
-                             self.nstates+') and observed states ('+self.nstates_obs+')')
+            raise ValueError('observable vector a has size ' + len(a) + ' which is incompatible with both hidden (' +
+                             self.nstates + ') and observed states (' + self.nstates_obs + ')')
 
     def correlation(self, a, b=None, maxtime=None, k=None, ncv=None):
         # basic checks for a and b
@@ -176,8 +176,8 @@ class HMSM(_MSM):
         if len(a) == self.nstates:
             return super(HMSM, self).correlation(a, b=b, maxtime=maxtime)
         else:
-            raise ValueError('observable vectors have size '+len(a)+' which is incompatible with both hidden ('+
-                             self.nstates+') and observed states ('+self.nstates_obs+')')
+            raise ValueError('observable vectors have size ' + len(a) + ' which is incompatible with both hidden (' +
+                             self.nstates + ') and observed states (' + self.nstates_obs + ')')
 
     def fingerprint_correlation(self, a, b=None, k=None, ncv=None):
         # basic checks for a and b
@@ -192,8 +192,8 @@ class HMSM(_MSM):
         if len(a) == self.nstates:
             return super(HMSM, self).fingerprint_correlation(a, b=b)
         else:
-            raise ValueError('observable vectors have size '+len(a)+' which is incompatible with both hidden ('+
-                             self.nstates+') and observed states ('+self.nstates_obs+')')
+            raise ValueError('observable vectors have size ' + len(a) + ' which is incompatible with both hidden (' +
+                             self.nstates + ') and observed states (' + self.nstates_obs + ')')
 
     def relaxation(self, p0, a, maxtime=None, k=None, ncv=None):
         # basic checks for a and b
@@ -207,8 +207,8 @@ class HMSM(_MSM):
         if len(a) == self.nstates:
             return super(HMSM, self).relaxation(p0, a, maxtime=maxtime)
         else:
-            raise ValueError('observable vectors have size '+len(a)+' which is incompatible with both hidden ('+
-                             self.nstates+') and observed states ('+self.nstates_obs+')')
+            raise ValueError('observable vectors have size ' + len(a) + ' which is incompatible with both hidden (' +
+                             self.nstates + ') and observed states (' + self.nstates_obs + ')')
 
     def fingerprint_relaxation(self, p0, a, k=None, ncv=None):
         # basic checks for a and b
@@ -222,11 +222,11 @@ class HMSM(_MSM):
         if len(a) == self.nstates:
             return super(HMSM, self).fingerprint_relaxation(p0, a)
         else:
-            raise ValueError('observable vectors have size '+len(a)+' which is incompatible with both hidden ('+
-                             self.nstates+') and observed states ('+self.nstates_obs+')')
+            raise ValueError('observable vectors have size ' + len(a) + ' which is incompatible with both hidden (' +
+                             self.nstates + ') and observed states (' + self.nstates_obs + ')')
 
     def pcca(self, m):
-        raise NotImplementedError('PCCA is not meaningful for Hidden Markov models. '+
+        raise NotImplementedError('PCCA is not meaningful for Hidden Markov models. ' +
                                   'If you really want to do this, initialize an MSM with the HMSM transition matrix.')
 
     # ================================================================================================================
@@ -253,7 +253,7 @@ class HMSM(_MSM):
         A = _np.dot(_np.diag(self.stationary_distribution), self._Pobs)
         M = _np.dot(A, _np.diag(1.0/self.stationary_distribution_obs)).T
         # renormalize
-        M /= M.sum(axis=1)[:,None]
+        M /= M.sum(axis=1)[:, None]
         return M
 
     @property
@@ -304,4 +304,3 @@ class HMSM(_MSM):
 
         """
         return _np.argmax(self._Pobs, axis=0)
-

@@ -34,9 +34,9 @@ and provides them for later access.
 __docformat__ = "restructuredtext en"
 
 import numpy as _np
-import copy
 from pyemma.msm.ui.hmsm_estimated import EstimatedHMSM as _EstimatedHMSM
 from pyemma.util.statistics import confidence_interval_arr
+
 
 class SampledHMSM(_EstimatedHMSM):
 
@@ -70,9 +70,9 @@ class SampledHMSM(_EstimatedHMSM):
         self._sample_mus = _np.empty((self._nsamples, self.nstates), dtype=float)
         self._sample_pobs = _np.empty((self._nsamples, self.nstates, self.nstates_obs), dtype=float)
         for i in range(self._nsamples):
-            self._sample_Ps[i,:,:] = sample_Ps[i][:,:]
-            self._sample_mus[i,:] = sample_mus[i][:]
-            self._sample_pobs[i,:,:] = sample_pobs[i][:,:]
+            self._sample_Ps[i, :, :] = sample_Ps[i][:, :]
+            self._sample_mus[i, :] = sample_mus[i][:]
+            self._sample_pobs[i, :, :] = sample_pobs[i][:, :]
 
         # do sample eigendecomposition by default
         self._do_sample_eigendecomposition()
@@ -105,9 +105,9 @@ class SampledHMSM(_EstimatedHMSM):
             # assign ordered
             I = linalg.match_eigenvectors(self.eigenvectors_right(), R,
                                           w_ref=self.stationary_distribution, w=self._sample_mus[i])
-            self._sample_Ls[i,:,:] = L[I,:]
-            self._sample_eigenvalues[i,:] = _np.diag(D)[I]
-            self._sample_Rs[i,:,:] = R[:,I]
+            self._sample_Ls[i, :, :] = L[I, :]
+            self._sample_eigenvalues[i, :] = _np.diag(D)[I]
+            self._sample_Rs[i, :, :] = R[:, I]
 
     def set_confidence(self, conf):
         self._confidence = conf
@@ -284,4 +284,3 @@ class SampledHMSM(_EstimatedHMSM):
     def lifetimes_conf(self):
         r""" The confidence interval of the lifetimes of the hidden states """
         return confidence_interval_arr(self.lifetimes_samples, alpha=self._confidence)
-

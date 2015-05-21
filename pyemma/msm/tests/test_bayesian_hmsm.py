@@ -4,6 +4,7 @@ from pyemma.msm import bayesian_hidden_markov_model
 from os.path import abspath, join
 from os import pardir
 
+
 class TestBHMM(unittest.TestCase):
 
     @classmethod
@@ -22,7 +23,8 @@ class TestBHMM(unittest.TestCase):
         cls.nsamples = 100
 
         cls.lag = 10
-        cls.sampled_hmm_lag10 = bayesian_hidden_markov_model([obs], cls.lag, cls.nstates, reversible=True, nsample=cls.nsamples)
+        cls.sampled_hmm_lag10 = bayesian_hidden_markov_model([obs], cls.lag, cls.nstates, reversible=True,
+                                                             nsample=cls.nsamples)
 
     def test_reversible(self):
         assert self.sampled_hmm_lag10.is_reversible
@@ -237,5 +239,5 @@ class TestBHMM(unittest.TestCase):
     # TODO: these tests can be made compact because they are almost the same. can define general functions for testing
     # TODO: samples and stats, only need to implement consistency check individually.
 
-if __name__=="__main__":
+if __name__ == "__main__":
     unittest.main()
