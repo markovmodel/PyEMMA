@@ -51,6 +51,7 @@ __all__ = ['its',
            'estimate_markov_model',
            'bayesian_markov_model',
            'estimate_hidden_markov_model',
+           'bayesian_hidden_markov_model',
            'cktest',
            'tpt']
 
@@ -277,7 +278,7 @@ def estimate_hidden_markov_model(dtrajs, lag, nstates, reversible=True, sparse=F
     Returns
     -------
     An :class:`EstimatedMSM <pyemma.msm.ui.EstimatedMSM>` object containing a transition matrix and various other
-    MSM-related quantities.
+    HMM-related quantities.
 
     Notes
     -----
@@ -391,6 +392,131 @@ def bayesian_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
     M = SampledMSM(tmestimator, sample_Ps, sample_mus)
     return M
 
+# TODO: need code examples
+def bayesian_hidden_markov_model(dtrajs, lag, nstates, reversible=True, sparse=False,
+                                 connectivity='largest', observe_active=True,
+                                 nsample=1000, conf=0.95, dt='1 step', **kwargs):
+    r"""Bayesian Hidden Markov model estimate using Gibbs sampling of the posterior
+
+    Returns a :class:`SampledHMSM <pyemma.msm.ui.SampledHMSM>` that contains the estimated hidden Markov model [1]_
+    and a Bayesian estimate [2]_ that contains samples around this estimate to estimate uncertainties.
+
+    Parameters
+    ----------
+    dtrajs : list containing ndarrays(dtype=int) or ndarray(n, dtype=int)
+        discrete trajectories, stored as integer ndarrays (arbitrary size)
+        or a single ndarray for only one trajectory.
+    lag : int
+        lagtime for the MSM estimation in multiples of trajectory steps
+    nstates : int
+        the number of metastable states in the resulting HMM
+    reversible : bool, optional, default = True
+        If true compute reversible MSM, else non-reversible MSM
+    sparse : bool, optional, default = False
+        If true compute count matrix, transition matrix and all derived quantities using sparse matrix algebra.
+        In this case python sparse matrices will be returned by the corresponding functions instead of numpy
+        arrays. This behavior is suggested for very large numbers of states (e.g. > 4000) because it is likely
+        to be much more efficient.
+    connectivity : str, optional, default = 'largest'
+        Connectivity mode. Three methods are intended (currently only 'largest' is implemented)
+        'largest' : The active set is the largest reversibly connected set. All estimation will be done on this
+            subset and all quantities (transition matrix, stationary distribution, etc) are only defined on this
+            subset and are correspondingly smaller than the full set of states
+        'all' : The active set is the full set of states. Estimation will be conducted on each reversibly connected
+            set separately. That means the transition matrix will decompose into disconnected submatrices,
+            the stationary vector is only defined within subsets, etc. Currently not implemented.
+        'none' : The active set is the full set of states. Estimation will be conducted on the full set of states
+            without ensuring connectivity. This only permits nonreversible estimation. Currently not implemented.
+    observe_active : bool, optional, default=True
+        True: Restricts the observation set to the active states of the MSM.
+        False: All states are in the observation set.
+    nsample : int, optional, default=1000
+        number of transition matrix samples to compute and store
+    conf : float, optional, default=0.95
+        size of confidence intervals
+    dt : str, optional, default='1 step'
+        Description of the physical time corresponding to the lag. May be used by analysis algorithms such as
+        plotting tools to pretty-print the axes. By default '1 step', i.e. there is no physical time unit.
+        Specify by a number, whitespace and unit. Permitted units are (* is an arbitrary string):
+
+        |  'fs',  'femtosecond*'
+        |  'ps',  'picosecond*'
+        |  'ns',  'nanosecond*'
+        |  'us',  'microsecond*'
+        |  'ms',  'millisecond*'
+        |  's',   'second*'
+
+    **kwargs: Optional algorithm-specific parameters. See below for special cases
+    maxiter = 1000000 : int
+        Optional parameter with reversible = True.
+        maximum number of iterations before the transition matrix estimation method exits
+    maxerr = 1e-8 : float
+        Optional parameter with reversible = True.
+        convergence tolerance for transition matrix estimation.
+        This specifies the maximum change of the Euclidean norm of relative
+        stationary probabilities (:math:`x_i = \sum_k x_{ik}`). The relative stationary probability changes
+        :math:`e_i = (x_i^{(1)} - x_i^{(2)})/(x_i^{(1)} + x_i^{(2)})` are used in order to track changes in small
+        probabilities. The Euclidean norm of the change vector, :math:`|e_i|_2`, is compared to maxerr.
+
+    Returns
+    -------
+    An :class:`SampledHMSM <pyemma.msm.ui.SampledHMSM>` object containing a transition matrix and various other
+    HMM-related quantities and statistical uncertainties.
+
+    Notes
+    -----
+    You can postpone the estimation of the MSM using estimate=False and initiate the estimation procedure by manually
+    calling the MSM.estimate() method.
+    Likewise, you can postpone the sampling of the MSM using sample=False and initiate the sampling procedure by
+    manually calling the MSM.sample() method.
+
+    See also
+    --------
+    EstimatedMSM : An MSM object that has been estimated from data
+
+    References
+    ----------
+    .. [1] F. Noe, H. Wu, J.-H. Prinz and N. Plattner:
+        Projected and hidden Markov models for calculating kinetics and metastable states of complex molecules
+        J. Chem. Phys. 139, 184114 (2013)
+    .. [2] J. D. Chodera Et Al:
+        Bayesian hidden Markov model analysis of single-molecule force spectroscopy:
+        Characterizing kinetics under measurement uncertainty
+        arXiv:1108.1430 (2011)
+
+    """
+    # estimate MSM
+    # TODO: This is duplicate code with MSM object. Remove redundancy!
+    # TODO: The problem is that we need the HMM estimator in the SampledHMM. I think this can be avoided.
+    msm_mle = estimate_markov_model(dtrajs, lag, reversible=reversible, sparse=sparse,
+                                    connectivity=connectivity, dt=dt, **kwargs)
+    # check input
+    assert nstates > 1 and nstates < msm_mle.nstates, 'nstates but be between 2 and '+str(msm_mle.nstates)
+    timescale_ratios = msm_mle.timescales()[:-1] / msm_mle.timescales()[1:]
+    import warnings
+    if timescale_ratios[nstates-2] < 2.0:
+        warnings.warn('Requested coarse-grained model with '+str(nstates)+' metastable states. '+
+                      'The ratio of relaxation timescales between '+str(nstates)+' and '+str(nstates+1)+
+                      ' states is only '+str(timescale_ratios[nstates-2])+' while we recomment at '+
+                     'least 2. It is possible that the resulting HMM is inaccurate. Handle with caution.')
+    # estimate HMM
+    from ui.hmsm_estimator import HMSMEstimator
+    hmm_estimator = HMSMEstimator(msm_mle, nstates)
+    # HMM sampler
+    from bhmm import estimate_hmm, bayesian_hmm
+    hmm_mle = estimate_hmm(dtrajs, nstates, lag=lag, type='discrete', reversible=reversible, stationary=True)
+    sampled_hmm = bayesian_hmm(dtrajs, hmm_mle, nsample=nsample)
+    sample_Ps = [sampled_hmm.sampled_hmms[i].transition_matrix for i in range(nsample)]
+    sample_mus = [sampled_hmm.sampled_hmms[i].stationary_distribution for i in range(nsample)]
+    sample_pobs = [sampled_hmm.sampled_hmms[i].output_model.output_probabilities for i in range(nsample)]
+    if observe_active:
+        for i in range(nsample):
+            Bobs = sample_pobs[i][:,msm_mle.active_set]  # restrict to active set
+            sample_pobs[i] = Bobs / Bobs.sum(axis=1)[:,None]  # renormalize
+    # construct our HMM object
+    from ui.hmsm_sampled import SampledHMSM
+    sampled_hmsm = SampledHMSM(hmm_estimator, sample_Ps, sample_mus, sample_pobs, conf=conf)
+    return sampled_hmsm
 
 # TODO: need code examples
 def cktest(msmobj, K, nsets=2, sets=None, full_output=False):
