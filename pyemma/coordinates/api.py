@@ -227,8 +227,8 @@ def source(inp, features=None, top=None, chunk_size=100):
            as a numpy array of shape (T, N) with T time steps and N dimensions.
         6. List of trajectories of some features or order parameters in memory, each given as a numpy array
            of shape (T_i, N), where trajectory i has T_i time steps and all trajectories have N dimensions.
-        7. List of NumPy array files (.npy, .npz) of shape (T, N). Note these
-           arrays are not being loaded completely, but memory mapped (read-only).
+        7. List of NumPy array files (.npy) of shape (T, N). Note these
+           arrays are not being loaded completely, but mapped into memory (read-only).
         8. List of tabulated ASCII files of shape (T, N).
 
     features : MDFeaturizer, optional, default = None
