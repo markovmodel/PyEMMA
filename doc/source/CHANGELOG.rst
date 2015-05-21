@@ -8,6 +8,7 @@ Changelog
 - coordinates package: cache trajectory lengths by default.
   This avoids re-reading e.g XTC files to determine their lengths.
 - coordinates package: enable passing chunk size to readers in API.
+- coordinates package: save_traj(s) now handles stride parameter.
 - Time consuming algorithms now display progressbars (optional)
 
 - Bugfixes:
