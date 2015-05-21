@@ -55,6 +55,9 @@ from pyemma.coordinates.clustering.assign import AssignCenters as _AssignCenters
 # stat
 from pyemma.coordinates.util.stat import histogram
 
+import numpy as _np
+import itertools as _itertools
+
 _logger = _getLogger('coordinates.api')
 
 __author__ = "Frank Noe, Martin Scherer"
@@ -244,16 +247,14 @@ def source(inp, features=None, top=None, chunk_size=100):
         to analyze big data in streaming mode.
 
     """
-    from numpy import ndarray
-
     # CASE 1: input is a string or list of strings
     # check: if single string create a one-element list
     if isinstance(inp, basestring) or (isinstance(inp, (list, tuple))
                                        and (any(isinstance(item, basestring) for item in inp) or len(inp) is 0)):
         reader = _create_file_reader(inp, top, features, chunk_size=chunk_size)
 
-    elif isinstance(inp, ndarray) or (isinstance(inp, (list, tuple))
-                                      and (any(isinstance(item, ndarray) for item in inp) or len(inp) is 0)):
+    elif isinstance(inp, _np.ndarray) or (isinstance(inp, (list, tuple))
+                                      and (any(isinstance(item, _np.ndarray) for item in inp) or len(inp) is 0)):
         # CASE 2: input is a (T, N, 3) array or list of (T_i, N, 3) arrays
         # check: if single array, create a one-element list
         # check: do all arrays have compatible dimensions (*, N, 3)? If not: raise ValueError.
@@ -442,10 +443,10 @@ def memory_reader(data):
     return _DataInMemory(data)
 
 
-def save_traj(traj_inp, indexes, outfile, verbose=False):
+def save_traj(traj_inp, indexes, outfile, verbose = False, stride = 1):
     r""" Saves a sequence of frames as a single trajectory.
 
-    Extracts the specified sequence of time/trajectory indexes from the input loader
+    Extracts the specified sequence of time/trajectory indexes from the input reader
     and saves it in a molecular dynamics trajectory. The output format will be determined
     by the outfile name.
 
@@ -464,30 +465,38 @@ def save_traj(traj_inp, indexes, outfile, verbose=False):
         The name of the output file. Its extension will determine the file type written. Example: "out.dcd"
         If set to None, the trajectory object is returned to memory
 
+    stride  : integer, default is 1
+        This parameter informs :py:func:`save_traj` about the stride used in :py:obj:`indexes`. Typically, :py:obj:`indexes`
+        contains frame-indexes that match exactly the frames of the files contained in :py:obj:`traj_inp.trajfiles`.
+        However, in certain situations, that might not be the case. Examples are cases in which a stride value != 1
+        was used when reading/featurizing/transforming/discretizing the files contained in :py:obj:`traj_inp.trajfiles`.
+
     verbose : boolean, default is False
         Verbose output while looking for "indexes" in the "traj_inp.trajfiles"
+
+    Returns
+    -------
+    traj : :py:obj:`mdtraj.Trajectory` object
+        Will only return this object if :py:obj:`outfile` is None
     """
 
-    from itertools import islice
-    from numpy import vstack, unique
-
     # Convert to index (T,2) array if parsed a list or a list of arrays
-    indexes = vstack(indexes)
+    indexes = _np.vstack(indexes)
     # Instantiate  a list of iterables that will contain mdtraj trajectory objects
     trajectory_iterator_list = []
 
     # Cycle only over files that are actually mentioned in "indexes"
-    file_idxs, file_pos = unique(indexes[:, 0], return_inverse=True)
+    file_idxs, file_pos = _np.unique(indexes[:, 0], return_inverse=True)
     for ii, ff in enumerate(file_idxs):
         # Slice the indexes array (frame column) where file ff was mentioned
         frames = indexes[file_pos == ii, 1]
         # Store the trajectory object that comes out of _frames_from_file
         # directly as an iterator in trajectory_iterator_list
-        trajectory_iterator_list.append(islice(_frames_from_file(traj_inp.trajfiles[ff],
-                                                                 traj_inp.topfile,
-                                                                 frames, chunksize=traj_inp.chunksize,
-                                                                 verbose=verbose), None
-                                               )
+        trajectory_iterator_list.append(_itertools.islice(_frames_from_file(
+                                                traj_inp.trajfiles[ff],
+                                                traj_inp.topfile,
+                                                frames, chunksize=traj_inp.chunksize,
+                                                verbose=verbose, stride = stride), None)
                                         )
 
     # Iterate directly over the index of files and pick the trajectory that you need from the iterator list
@@ -500,7 +509,7 @@ def save_traj(traj_inp, indexes, outfile, verbose=False):
         else:
             traj = traj.join(trajectory_iterator_list[traj_idx].next())
 
-    # Return to memory as an mdtraj trajectory object 
+    # Return to memory as an mdtraj trajectory object
     if outfile is None:
         return traj
     # or to disk as a molecular trajectory file
@@ -510,7 +519,8 @@ def save_traj(traj_inp, indexes, outfile, verbose=False):
     _logger.info("Created file %s" % outfile)
 
 
-def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None, inmemory=False, verbose=False):
+def save_trajs(traj_inp, indexes, prefix = 'set_', fmt = None, outfiles = None,
+               inmemory = False, stride = 1, verbose = False):
     r""" Saves sequences of frames as multiple trajectories.
 
     Extracts a number of specified sequences of time/trajectory indexes from the input loader
@@ -531,7 +541,7 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None, inmemo
         Each row contains two indexes (i, t), where i is the index of the trajectory from the input
         and t is the index of the time step within the trajectory.
 
-    prefix : str, optional, default = 'set_'
+    prefix : str, optional, default = `set_`
         output filename prefix. Can include an absolute or relative path name.
 
     fmt : str, optional, default = None
@@ -547,11 +557,17 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None, inmemo
         this generates a potentially large molecular trajectory object in memory that is subsequently sliced into the
         files of "outfiles". Should be faster for large "indexes" arrays and large files, though it is quite memory
         intensive. The optimal situation is to avoid streaming two times through a huge file for "indexes" of type:
-
         indexes = [[1 4000000],[1 4000001]]
 
+    stride  : integer, default is 1
+        This parameter informs :py:func:`save_trajs` about the stride used in the indexes variable. Typically, the variable
+        indexes contains frame-indexes that match exactly the frames of the files contained in traj_inp.trajfiles.
+        However, in certain situations, that might not be the case. Examples of these situations are cases in
+        which stride value != 1 was used when reading/featurizing/transforming/discretizing the files contained in
+        traj_inp.trajfiles.
+
     verbose : boolean, default is False
-        Verbose output while looking for "indexes" in the "traj_inp.trajfiles".
+        Verbose output while looking for "indexes" in the "traj_inp.trajfiles"
 
     Returns
     -------
@@ -559,20 +575,16 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None, inmemo
         The list of absolute paths that the output files have been written to.
 
     """
-
-    from itertools import izip
-    from numpy import ndarray
-
     # Make sure indexes is iterable
     assert _types.is_iterable(indexes), "Indexes must be an iterable of matrices."
     # only if 2d-array, convert into a list
-    if isinstance(indexes, ndarray):
+    if isinstance(indexes, _np.ndarray):
         if indexes.ndim == 2:
             indexes = [indexes]
 
     # Make sure the elements of that lists are arrays, and that they are shaped properly
     for i_indexes in indexes:
-        assert isinstance(i_indexes, ndarray), "The elements in the 'indexes' variable must be numpy.ndarrays"
+        assert isinstance(i_indexes, _np.ndarray), "The elements in the 'indexes' variable must be numpy.ndarrays"
         assert i_indexes.ndim == 2, \
             "The elements in the 'indexes' variable are must have ndim = 2, and not %u" % i_indexes.ndim
         assert i_indexes.shape[1] == 2, \
@@ -599,14 +611,15 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None, inmemo
     # This implementation looks for "i_indexes" separately, and thus one traj_inp.trajfile 
     # might be accessed more than once (less memory intensive)
     if not inmemory:
-        for i_indexes, outfile in izip(indexes, outfiles):
+        for i_indexes, outfile in _itertools.izip(indexes, outfiles):
             # TODO: use kwargs** to parse to save_traj
-            save_traj(traj_inp, i_indexes, outfile, verbose=verbose)
-    # This implementation is "one file - one pass" but might temporally create huge memory objects 
+            save_traj(traj_inp, i_indexes, outfile, stride = stride, verbose=verbose)
+
+    # This implementation is "one file - one pass" but might temporally create huge memory objects
     else:
-        traj = save_traj(traj_inp, indexes, outfile=None, verbose=verbose)
+        traj = save_traj(traj_inp, indexes, outfile=None, stride = stride, verbose=verbose)
         i_idx = 0
-        for i_indexes, outfile in izip(indexes, outfiles):
+        for i_indexes, outfile in _itertools.izip(indexes, outfiles):
             # Create indices for slicing the mdtraj trajectory object
             f_idx = i_idx + len(i_indexes)
             # print i_idx, f_idx
@@ -810,8 +823,8 @@ def tica(data=None, lag=10, dim=2, stride=1, force_eigenvalues_le_one=False):
     onto the dominant independent components.
 
     TICA was originally introduced for signal processing in [2]_. It was introduced
-    to molecular dynamics and as a method for the construction of Markov models in [1]_ and [3]_.
-    It was shown in [3]_ that when applied to molecular dynamics data,
+    to molecular dynamics and as a method for the construction of Markov models in
+    [1]_ and [3]_. It was shown in [3]_ that when applied to molecular dynamics data,
     TICA is an approximation to the eigenvalues and eigenvectors of the true underlying
     dynamics.
 
@@ -1055,7 +1068,7 @@ def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True,
 
     Returns
     -------
-    assignment : list of integer arrays or an :class: `AssignCenters <pyemma.coordinates.clustering.AssignCenters>` object
+    assignment : list of integer arrays or an :class:`AssignCenters <pyemma.coordinates.clustering.AssignCenters>` object
         assigned data
 
     Examples
