@@ -212,7 +212,7 @@ def source(inp, features=None, top=None, chunk_size=100):
 
     Parameters
     ----------
-    inp : str or ndarray or list of strings or list of ndarrays
+    inp : str (file name) or ndarray or list of strings (file names) or list of ndarrays
         The inp file names or input data. Can be given in any of these ways:
 
         1. File name of a single trajectory. It can have any of the molecular dynamics trajectory formats or
@@ -227,6 +227,9 @@ def source(inp, features=None, top=None, chunk_size=100):
            as a numpy array of shape (T, N) with T time steps and N dimensions.
         6. List of trajectories of some features or order parameters in memory, each given as a numpy array
            of shape (T_i, N), where trajectory i has T_i time steps and all trajectories have N dimensions.
+        7. List of NumPy array files (.npy, .npz) of shape (T, N). Note these
+           arrays are not being loaded completely, but memory mapped (read-only).
+        8. List of tabulated ASCII files of shape (T, N).
 
     features : MDFeaturizer, optional, default = None
         a featurizer object specifying how molecular dynamics files should be read (e.g. intramolecular distances,
