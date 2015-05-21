@@ -36,7 +36,7 @@ __docformat__ = "restructuredtext en"
 import numpy as _np
 from pyemma.msm.ui.hmsm import HMSM as _HMSM
 from pyemma.util.annotators import shortcut
-from pyemma.util import types as _types
+
 
 class EstimatedHMSM(_HMSM):
 
@@ -166,8 +166,8 @@ class EstimatedHMSM(_HMSM):
         distributions : list or array of ndarray ( (n) )
             m distributions over states. Each distribution must be of length n and must sum up to 1.0
         nsample : int
-            Number of samples per distribution. If replace = False, the number of returned samples per state could be smaller
-            if less than nsample indexes are available for a state.
+            Number of samples per distribution. If replace = False, the number of returned samples per state could be
+            smaller if less than nsample indexes are available for a state.
 
         Returns
         -------
@@ -179,4 +179,3 @@ class EstimatedHMSM(_HMSM):
         """
         import pyemma.util.discrete_trajectories as dt
         return dt.sample_indexes_by_distribution(self.observable_state_indexes, self.observation_probabilities, nsample)
-

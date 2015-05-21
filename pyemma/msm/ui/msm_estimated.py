@@ -95,7 +95,6 @@ class EstimatedMSM(MSM):
         self._connected_sets = copy.deepcopy(estimator.connected_sets)
         self._full2active = copy.deepcopy(estimator.full2active)
 
-
     def __create_logger(self):
         name = "%s[%s]" % (self.__class__.__name__, hex(id(self)))
         self._logger = getLogger(name)
@@ -412,8 +411,8 @@ class EstimatedMSM(MSM):
         distributions : list or array of ndarray ( (n) )
             m distributions over states. Each distribution must be of length n and must sum up to 1.0
         nsample : int
-            Number of samples per distribution. If replace = False, the number of returned samples per state could be smaller
-            if less than nsample indexes are available for a state.
+            Number of samples per distribution. If replace = False, the number of returned samples per state could be
+            smaller if less than nsample indexes are available for a state.
 
         Returns
         -------
@@ -445,12 +444,12 @@ class EstimatedMSM(MSM):
 
         """
         # check input
-        assert nstates > 1 and nstates < self.nstates, 'nstates but be between 2 and '+str(self.nstates)
+        assert nstates > 1 and nstates < self.nstates, 'nstates but be between 2 and ' + str(self.nstates)
         timescale_ratios = self.timescales()[:-1] / self.timescales()[1:]
         if timescale_ratios[nstates-2] < 2.0:
-            self._logger.warn('Requested coarse-grained model with '+str(nstates)+' metastable states. '+
-                              'The ratio of relaxation timescales between '+str(nstates)+' and '+str(nstates+1)+
-                              ' states is only '+str(timescale_ratios[nstates-2])+' while we recomment at '+
+            self._logger.warn('Requested coarse-grained model with ' + str(nstates) + ' metastable states. ' +
+                              'The ratio of relaxation timescales between ' + str(nstates) + ' and ' + str(nstates+1) +
+                              ' states is only ' + str(timescale_ratios[nstates-2]) + ' while we recomment at ' +
                               'least 2. It is possible that the resulting HMM is inaccurate. Handle with caution.')
         # run estimate
         from hmsm_estimator import HMSMEstimator

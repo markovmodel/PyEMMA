@@ -300,7 +300,7 @@ def estimate_hidden_markov_model(dtrajs, lag, nstates, reversible=True, sparse=F
 
 # TODO: need code examples
 def bayesian_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivity='largest',
-                          nsample=1000, conf=0.95, dt='1 step', **kwargs):
+                          nsample=1000, conf=0.683, dt='1 step', **kwargs):
     r"""Bayesian Markov model estimate using Gibbs sampling of the posterior
 
     Returns a :class:`SampledMSM <pyemma.msm.ui.SampledMSM>` that contains the estimated transition matrix
@@ -333,7 +333,7 @@ def bayesian_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
             without ensuring connectivity. This only permits nonreversible estimation. Currently not implemented.
     nsample : int, optional, default=1000
         number of transition matrix samples to compute and store
-    conf : float, optional, default=0.95
+    conf : float, optional, default=0.683
         size of confidence intervals
     dt : str, optional, default='1 step'
         Description of the physical time corresponding to the lag. May be used by analysis algorithms such as
@@ -385,17 +385,17 @@ def bayesian_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
     # transition matrix sampler
     from pyemma.msm.estimation import tmatrix_sampler
     from math import sqrt
-    nstep = int(sqrt(tmestimator.nstates)) # heuristic for number of steps to decorrelate
+    nstep = int(sqrt(tmestimator.nstates))  # heuristic for number of steps to decorrelate
     tsampler = tmatrix_sampler(tmestimator.count_matrix_active, reversible=reversible, nstep=nstep)
     sample_Ps, sample_mus = tsampler.sample(nsample=nsample, return_statdist=True, T_init=tmestimator.transition_matrix)
     # construct MSM
-    M = SampledMSM(tmestimator, sample_Ps, sample_mus)
+    M = SampledMSM(tmestimator, sample_Ps, sample_mus, conf=conf)
     return M
 
 # TODO: need code examples
 def bayesian_hidden_markov_model(dtrajs, lag, nstates, reversible=True, sparse=False,
                                  connectivity='largest', observe_active=True,
-                                 nsample=1000, conf=0.95, dt='1 step', **kwargs):
+                                 nsample=1000, conf=0.683, dt='1 step', **kwargs):
     r"""Bayesian Hidden Markov model estimate using Gibbs sampling of the posterior
 
     Returns a :class:`SampledHMSM <pyemma.msm.ui.SampledHMSM>` that contains the estimated hidden Markov model [1]_
@@ -432,7 +432,7 @@ def bayesian_hidden_markov_model(dtrajs, lag, nstates, reversible=True, sparse=F
         False: All states are in the observation set.
     nsample : int, optional, default=1000
         number of transition matrix samples to compute and store
-    conf : float, optional, default=0.95
+    conf : float, optional, default=0.683
         size of confidence intervals
     dt : str, optional, default='1 step'
         Description of the physical time corresponding to the lag. May be used by analysis algorithms such as
@@ -491,14 +491,14 @@ def bayesian_hidden_markov_model(dtrajs, lag, nstates, reversible=True, sparse=F
     msm_mle = estimate_markov_model(dtrajs, lag, reversible=reversible, sparse=sparse,
                                     connectivity=connectivity, dt=dt, **kwargs)
     # check input
-    assert nstates > 1 and nstates < msm_mle.nstates, 'nstates but be between 2 and '+str(msm_mle.nstates)
+    assert nstates > 1 and nstates < msm_mle.nstates, 'nstates but be between 2 and ' + str(msm_mle.nstates)
     timescale_ratios = msm_mle.timescales()[:-1] / msm_mle.timescales()[1:]
     import warnings
     if timescale_ratios[nstates-2] < 2.0:
-        warnings.warn('Requested coarse-grained model with '+str(nstates)+' metastable states. '+
-                      'The ratio of relaxation timescales between '+str(nstates)+' and '+str(nstates+1)+
-                      ' states is only '+str(timescale_ratios[nstates-2])+' while we recomment at '+
-                     'least 2. It is possible that the resulting HMM is inaccurate. Handle with caution.')
+        warnings.warn('Requested coarse-grained model with ' + str(nstates) + ' metastable states. ' +
+                      'The ratio of relaxation timescales between ' + str(nstates) + ' and ' + str(nstates+1) +
+                      ' states is only ' + str(timescale_ratios[nstates-2]) + ' while we recomment at ' +
+                      'least 2. It is possible that the resulting HMM is inaccurate. Handle with caution.')
     # estimate HMM
     from ui.hmsm_estimator import HMSMEstimator
     hmm_estimator = HMSMEstimator(msm_mle, nstates)
@@ -511,8 +511,8 @@ def bayesian_hidden_markov_model(dtrajs, lag, nstates, reversible=True, sparse=F
     sample_pobs = [sampled_hmm.sampled_hmms[i].output_model.output_probabilities for i in range(nsample)]
     if observe_active:
         for i in range(nsample):
-            Bobs = sample_pobs[i][:,msm_mle.active_set]  # restrict to active set
-            sample_pobs[i] = Bobs / Bobs.sum(axis=1)[:,None]  # renormalize
+            Bobs = sample_pobs[i][:, msm_mle.active_set]  # restrict to active set
+            sample_pobs[i] = Bobs / Bobs.sum(axis=1)[:, None]  # renormalize
     # construct our HMM object
     from ui.hmsm_sampled import SampledHMSM
     sampled_hmsm = SampledHMSM(hmm_estimator, sample_Ps, sample_mus, sample_pobs, conf=conf)
