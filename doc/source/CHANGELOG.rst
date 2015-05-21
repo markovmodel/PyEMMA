@@ -4,9 +4,10 @@ Changelog
 1.2.1 (to be released)
 ----------------------
 - coordinates package: new and faster implementation of Kmeans (10x faster than scikit-learn).
-- coordinates package: allow metrics to be passed to cluster algorithms in 
+- coordinates package: allow metrics to be passed to cluster algorithms. 
 - coordinates package: cache trajectory lengths by default.
   This avoids re-reading e.g XTC files to determine their lengths.
+- coordinates package: enable passing chunk size to readers in API.
 
 1.2 (4-14-2015)
 ---------------
