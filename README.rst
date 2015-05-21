@@ -48,8 +48,24 @@ For a complete guide to installation, please have a look at the version
 `online <http://pythonhosted.org/pyEMMA/INSTALL.html>`__ or offline in file
 doc/source/INSTALL.rst
 
-Support
--------
-For support/bug reports/sugguestions/complains please file an issue on GitHub.
-http://github.com/markovmodel/PyEMMA
+To build the documentation offline you should install the requirements with::
+   
+   pip install -r requirements-build-doc.txt
+
+Then build with make::
+
+   cd doc; make html
+
+Support and development
+-----------------------
+For bug reports/sugguestions/complains please file an issue on 
+`GitHub <http://github.com/markovmodel/PyEMMA>`__.
+
+Or start a discussion on our mailing list: pyemma-users@lists.fu-berlin.de
+
+
+External Libraries
+------------------
+* mdtraj (LGPLv3): https://mdtraj.org
+* grandalf (GPLv2, EPLv1): https://github.com/bdcht/grandalf
 
