@@ -84,6 +84,20 @@ class HMSM(_MSM):
         """
         return self._Pobs
 
+    @property
+    def lifetimes(self):
+        r""" Lifetimes of states of the hidden transition matrix
+
+        Returns
+        -------
+        l : ndarray(nstates)
+            state lifetimes in units of the input trajectory time step,
+            defined by :math:`-tau / ln | p_{ii} |, i = 1,...,nstates`, where
+            :math:`p_{ii}` are the diagonal entries of the hidden transition matrix.
+
+        """
+        return -self._lag / _np.log(_np.diag(self.transition_matrix))
+
     def transition_matrix_obs(self, k=1):
         """ Computes the transition matrix between observed states
 
