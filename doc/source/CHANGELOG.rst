@@ -8,6 +8,11 @@ Changelog
 - coordinates package: cache trajectory lengths by default.
   This avoids re-reading e.g XTC files to determine their lengths.
 - coordinates package: enable passing chunk size to readers in API.
+- Time consuming algorithms now display progressbars (optional)
+
+- Bugfixes:
+    - [msm.MSM.pcca]: coarse-grained transition matrix corrected
+    - [msm.generation]: stopping states option fixed
 
 1.2 (4-14-2015)
 ---------------
