@@ -1,4 +1,3 @@
-
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
 # All rights reserved.
@@ -22,7 +21,6 @@
 # ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 '''
 Created on 07.04.2015
 
@@ -37,7 +35,7 @@ from pyemma.util.log import getLogger
 import shutil
 
 
-class TestFileReader(unittest.TestCase):
+class TestNumPyFileReader(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -45,6 +43,7 @@ class TestFileReader(unittest.TestCase):
         cls.logger = getLogger(cls.__class__.__name__)
 
         d = np.arange(3 * 100).reshape((100, 3))
+        d2 = np.arange(300, 900).reshape((200,3))
         d_1d = np.random.random(100)
 
         cls.dir = tempfile.mkdtemp(prefix='pyemma_npyreader')
@@ -52,16 +51,19 @@ class TestFileReader(unittest.TestCase):
         cls.f1 = tempfile.mktemp(suffix='.npy', dir=cls.dir)
         cls.f2 = tempfile.mktemp(suffix='.npy', dir=cls.dir)
         cls.f3 = tempfile.mktemp(suffix='.npz', dir=cls.dir)
+        cls.f4 = tempfile.mktemp(suffix='.npy', dir=cls.dir)
+
 
         # 2d
         np.save(cls.f1, d)
+        np.save(cls.f4, d2)
 
         # 1d
         np.save(cls.f2, d_1d)
 
         np.savez(cls.f3, d, d)
 
-        cls.files2d = [cls.f1, cls.f3]
+        cls.files2d = [cls.f1, cls.f4] #cls.f3]
         cls.files1d = [cls.f2]
         cls.d = d
         cls.d_1d = d_1d
@@ -146,6 +148,24 @@ class TestFileReader(unittest.TestCase):
                     chunks.append(Y)
                 chunks = np.vstack(chunks)
                 np.testing.assert_equal(chunks, self.d[lag::stride])
+
+    def test_lagged_stridden_access_multiple_files(self):
+        reader = NumPyFileReader(self.files2d)
+        print reader.trajectory_lengths()
+        strides = [2, 3, 5, 7, 15]
+        lags = [1, 3, 7, 10, 30]
+        for stride in strides:
+            for lag in lags:
+                chunks = {i: [] for i in xrange(reader.number_of_trajectories())}
+                for itraj, _, Y in reader.iterator(stride, lag):
+                    chunks[itraj].append(Y)
+
+                for i, k in enumerate(chunks.itervalues()):
+                    stack = np.vstack(k)
+                    d = np.load(self.files2d[i])
+                    np.testing.assert_equal(stack, d[lag::stride],
+                                            "not equal for stride=%i"
+                                            " and lag=%i" % (stride, lag))
 
 if __name__ == "__main__":
     unittest.main()
