@@ -34,8 +34,6 @@ import pyemma.coordinates as coor
 class TestStride(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        c = super(TestStride, cls).setUpClass()
-
         cls.dim = 99  # dimension (must be divisible by 3) # 99
         N_trajs = 10  # number of trajectories
 
@@ -44,7 +42,7 @@ class TestStride(unittest.TestCase):
         with open(cls.temppdb, 'w') as f:
             for i in xrange(cls.dim//3):
                 print>>f, ('ATOM  %5d C    ACE A   1      28.490  31.600  33.379  0.00  1.00' % i)
-        
+
         cls.trajnames = []  # list of xtc file names
         cls.data = []
         for i in xrange(N_trajs):
@@ -63,27 +61,27 @@ class TestStride(unittest.TestCase):
 
     def test_length_and_content_feature_reader_and_TICA(self):
         for stride in xrange(1, 100, 20):
-            r = coor.feature_reader(self.trajnames, self.temppdb)
+            r = coor.source(self.trajnames, top=self.temppdb)
             t = coor.tica(data=r, lag=2, dim=2, force_eigenvalues_le_one=True)
             # t.data_producer = r
             t.parametrize()
-            
+
             # subsample data
             out_tica = t.get_output(stride=stride)
             out_reader = r.get_output(stride=stride)
-            
+
             # get length in different ways
             len_tica = [x.shape[0] for x in out_tica]
             len_reader = [x.shape[0] for x in out_reader]
             len_trajs = t.trajectory_lengths(stride=stride)
             len_ref = [(x.shape[0]-1)//stride+1 for x in self.data]
             # print 'len_ref', len_ref
-            
+
             # compare length
             self.assertTrue(len_ref == len_trajs)
             self.assertTrue(len_ref == len_tica)
             self.assertTrue(len_ref == len_reader)
-            
+
             # compare content (reader)
             for ref_data, test_data in zip(self.data, out_reader):
                 ref_data_reshaped = ref_data.reshape((ref_data.shape[0], ref_data.shape[1]*3))
@@ -96,20 +94,20 @@ class TestStride(unittest.TestCase):
         for _ in xrange(N_trajs):
             N = int(np.random.rand()*1000+10)
             d.append(np.random.randn(N, 10).astype(np.float32))
-        
+
         # read data
-        reader = coor.memory_reader(d)
-        
+        reader = coor.source(d)
+
         # compare
         for stride in xrange(1, 10):
             out_reader = reader.get_output(stride=stride)
             for ref_data, test_data in zip(d, out_reader):
                 self.assertTrue(np.all(ref_data[::stride] == test_data))  # here we can test exact equality
-                
+
     def test_parametrize_with_stride(self):
         # for stride in xrange(1,100,20):
         for stride in xrange(1, 100, 5):
-            r = coor.feature_reader(self.trajnames, self.temppdb)
+            r = coor.source(self.trajnames, top=self.temppdb)
             # print 'expected total length of trajectories:', r.trajectory_lengths(stride=stride)
             tau = 5
             # print 'expected inner frames', [max(l-2*tau,0) for l in r.trajectory_lengths(stride=stride)]
@@ -129,7 +127,7 @@ class TestStride(unittest.TestCase):
         for fname in cls.trajnames:
             os.unlink(fname)
         os.unlink(cls.temppdb)
-        super(TestStride, cls).tearDownClass()            
+        super(TestStride, cls).tearDownClass()
 
 if __name__ == "__main__":
     unittest.main()
