@@ -1,5 +1,6 @@
 __author__ = 'noe'
 
+import numpy as _np
 from pyemma.msm.ui.hmsm_estimator import HMSMEstimator as _HMSMEstimator
 from pyemma.msm.ui.hmsm_estimated import EstimatedHMSM as _EstimatedHMSM
 from pyemma.util.log import getLogger
@@ -21,6 +22,8 @@ class BayesianHMSMEstimator:
         """
         # MSM estimation parameters
         self._dtrajs = dtrajs
+        from pyemma.msm.estimation import number_of_states
+        self._nstates_obs_full = number_of_states(self._dtrajs)
         self._reversible = reversible
         self._msm_sparse = sparse
         self._msm_connectivity = connectivity
@@ -69,10 +72,15 @@ class BayesianHMSMEstimator:
             # check input
             assert isinstance(hmsm, _EstimatedHMSM), 'hmsm must be of type EstimatedHMSM'
 
+        # if needed, blow up output matrix
+        if self._observe_active:
+            pobs = _np.zeros((hmsm.nstates, self._nstates_obs_full))
+            pobs[:, hmsm.observable_set] = hmsm.observation_probabilities
+        else:
+            pobs = hmsm.observation_probabilities
         # HMM sampler
         from bhmm import discrete_hmm, bayesian_hmm
-        hmm_mle = discrete_hmm(hmsm.transition_matrix, hmsm.observation_probabilities,
-                               stationary=True, reversible=self._reversible)
+        hmm_mle = discrete_hmm(hmsm.transition_matrix, pobs, stationary=True, reversible=self._reversible)
         sampled_hmm = bayesian_hmm(self._dtrajs, hmm_mle, nsample=nsample)
 
         # Samples
@@ -84,6 +92,6 @@ class BayesianHMSMEstimator:
             sample_pobs[i] = Bobs / Bobs.sum(axis=1)[:, None]  # renormalize
 
         # construct our HMM object
-        from ui.hmsm_sampled import SampledHMSM
-        sampled_hmsm = SampledHMSM(hmsm, sample_Ps, sample_mus, sample_pobs, conf=conf)
+        from hmsm_sampled import SampledHMSM
+        sampled_hmsm = SampledHMSM(hmsm, sample_Ps, sample_mus, sample_pobs, conf=self._conf)
         return sampled_hmsm
