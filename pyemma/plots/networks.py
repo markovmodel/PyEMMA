@@ -46,6 +46,11 @@ class NetworkPlot(object):
             user-defined y-positions
 
         """
+        if A.shape[0] >= 50:
+            import warnings
+            warnings.warn("The layout optimization method will take a long"
+                          " time for large networks! It is recommended to"
+                          " coarse grain your model first!")
         self.A = A
         self.pos = pos
         self.xpos = xpos
