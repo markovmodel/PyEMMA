@@ -37,7 +37,7 @@ script:
 - pylint -j 4 --rcfile=.pylintrc pyemma || true
 
 after_success:
-- coveralls
+- pip install coveralls; coveralls
 - tools/ci/travis/make_docs.sh
 
 deploy:
