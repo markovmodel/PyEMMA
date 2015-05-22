@@ -38,8 +38,12 @@ User-API
    :toctree: generated/
 
    plot_implied_timescales
+   scatter_contour
+   plot_markov_model
+   plot_flux
 
 """
 
 from .timescales import plot_implied_timescales
 from .plots2d import scatter_contour
+from .networks import plot_markov_model, plot_flux
