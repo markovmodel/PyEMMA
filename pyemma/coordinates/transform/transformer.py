@@ -127,19 +127,21 @@ class Transformer(object):
         r"""
         If called, the output will be stored in memory.
         """
-        if not self._in_memory and op_in_mem:
-            self._Y = [np.zeros((self.trajectory_length(itraj), self.dimension()))
-                       for itraj in xrange(self.number_of_trajectories())]
+        old_state = self._in_memory
+        if not old_state and op_in_mem:
+            self._in_memory = op_in_mem
+            self._Y = [np.empty((l, self.dimension()), dtype=self.output_type())
+                       for l in self.trajectory_lengths()]
             self._map_to_memory()
-        elif not op_in_mem and self._in_memory:
+        elif not op_in_mem and old_state:
             self._clear_in_memory()
-
-        self._in_memory = op_in_mem
+            self._in_memory = op_in_mem
 
     def _clear_in_memory(self):
+        if __debug__:
+            self._logger.debug("clear memory")
         assert self.in_memory, "tried to delete in memory results which are not set"
-        for y in self._Y:
-            del y
+        self._Y = None
 
     @abstractmethod
     def dimension(self):
@@ -149,7 +151,7 @@ class Transformer(object):
     def __create_logger(self):
         count = self._ids.next()
         i = self.__module__.rfind(".")
-        j = self.__module__.find(".") +1
+        j = self.__module__.find(".") + 1
         package = self.__module__[j:i]
         name = "%s.%s[%i]" % (package, self.__class__.__name__, count)
         self._name = name
@@ -214,16 +216,6 @@ class Transformer(object):
         int : n_frames_total
         """
         return self.data_producer.n_frames_total(stride=stride)
-
-    def _get_memory_per_frame(self):
-        r"""
-        Returns the memory requirements per frame, in bytes.
-        """
-        return 4 * self.dimension()
-
-    def _get_constant_memory(self):
-        """Returns the constant memory requirements, in bytes."""
-        return 0
 
     @abstractmethod
     def describe(self):
@@ -399,28 +391,8 @@ class Transformer(object):
 
     def _map_to_memory(self):
         r"""Maps results to memory. Will be stored in attribute :attr:`Y`."""
-        # if operating in main memory, do all the mapping now
-        self.data_producer._reset()
-        # iterate over trajectories
-        last_chunk = False
-        itraj = 0
-        while not last_chunk:
-            last_chunk_in_traj = False
-            t = 0
-            while not last_chunk_in_traj:
-                X = self.data_producer._next_chunk()
-                L = np.shape(X)[0]
-                # last chunk in traj?
-                last_chunk_in_traj = (t + L >= self.trajectory_length(itraj))
-                # last chunk?
-                last_chunk = (
-                    last_chunk_in_traj and itraj >= self.number_of_trajectories() - 1)
-                # write
-                self._Y[itraj][t:t + L] = self.map(X)
-                # increment time
-                t += L
-            # increment trajectory
-            itraj += 1
+        assert self._in_memory
+        self._Y = self.get_output()
 
     def _reset(self, stride=1):
         r"""_reset data position"""
@@ -483,6 +455,7 @@ class Transformer(object):
                     self._itraj += 1
                     self._t = 0
                 return self.map(X)
+            # TODO: this seems to be a dead branch of code
             else:
                 (X0, Xtau) = self.data_producer._next_chunk(lag=lag, stride=stride)
                 self._t += X0.shape[0]
@@ -605,7 +578,11 @@ class Transformer(object):
         # fetch data
         last_itraj = -1
         t = 0  # first time point
-        assert self._parametrized, "has to be parametrized before getting output!"
+        if not self._parametrized:
+            self._logger.warning("has to be parametrized before getting output!"
+                                 "Doing it now.")
+            self.parametrize(stride)
+
         progress = ProgressBar(self._n_chunks(stride), description=
                                'getting output of ' + self.__class__.__name__)
 

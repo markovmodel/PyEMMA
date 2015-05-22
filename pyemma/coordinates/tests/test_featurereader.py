@@ -145,8 +145,11 @@ class TestFeatureReader(unittest.TestCase):
         np.testing.assert_equal(reader._Y[0], out[0])
         np.testing.assert_equal(reader.get_output(), out)
 
+        # reset in_memory
+        reader.in_memory = False
+        assert reader._Y is None
 
-    # @unittest.skip("")
+
     def testTimeLaggedAccess(self):
         # each frame has 2 atoms with 3 coords = 6 coords per frame.
         # coords are sequential through all frames and start with 0.

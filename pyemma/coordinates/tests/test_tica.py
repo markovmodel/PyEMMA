@@ -44,7 +44,7 @@ logger = getLogger('TestTICA')
 
 class TestTICA_Basic(unittest.TestCase):
     def test(self):
-        np.random.seed(0)
+        #np.random.seed(0)
 
         data = np.random.randn(100, 10)
         tica_obj = api.tica(data=data, lag=10, dim=1)
@@ -107,6 +107,17 @@ class TestTICA_Basic(unittest.TestCase):
 
         np.testing.assert_allclose(tica_obj.mu, mean)
         np.testing.assert_allclose(tica_obj.cov, cov)
+
+    def test_in_memory(self):
+        data = np.random.random((100, 10))
+        tica_obj = api.tica(lag=10, dim=1)
+        reader = source(data)
+        tica_obj.data_producer = reader
+
+        tica_obj.in_memory = True
+        tica_obj.parametrize()
+        tica_obj.get_output()
+
 
 
 class TestTICAExtensive(unittest.TestCase):
