@@ -7,7 +7,8 @@ sudo: false
 env:
   global:
     - PATH=$HOME/miniconda/bin:$HOME/miniconda/envs/ci/bin/:$PATH
-    - common_py_deps="pip pylint nose cython mdtraj matplotlib"
+     # note: mdtraj and coveralls are provided by omnia binstar repo
+    - common_py_deps="pip pylint nose coveralls cython mdtraj matplotlib"
     - doc_deps="ipython ipython-notebook sphinx==1.2.3 matplotlib"
     - deps="scipy numpy"
   matrix:
@@ -37,7 +38,7 @@ script:
 - pylint -j 4 --rcfile=.pylintrc pyemma || true
 
 after_success:
-- pip install coveralls; coveralls
+- coveralls
 - tools/ci/travis/make_docs.sh
 
 deploy:
