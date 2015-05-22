@@ -31,6 +31,10 @@ class DiscreteTrajectoryStats:
         # number of states
         self._nstates = msmest.number_of_states(dtrajs)
 
+        # not yet estimated
+        self._counted_at_lag = False
+
+
     def count_lagged(self, lag):
         r""" Counts transitions at given lag time
 
@@ -119,15 +123,6 @@ class DiscreteTrajectoryStats:
         """
         self._assert_counted_at_lag()
         return self._lag
-
-    @property
-    def nstates(self):
-        """
-        The active set of states on which all computations and estimations will be done
-
-        """
-        self._assert_counted_at_lag()
-        return self._nstates
 
     def count_matrix(self, connected_set=None, subset=None, effective=False):
         """The count matrix

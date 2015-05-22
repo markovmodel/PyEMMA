@@ -207,7 +207,7 @@ def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
     """
     # transition matrix estimator
     tmestimator = _MSMEstimator(dtrajs, reversible=reversible, sparse=sparse,
-                                connectivity=connectivity, estimate=True, dt=dt, **kwargs)
+                                connectivity=connectivity, dt=dt, **kwargs)
     # estimate and return
     return tmestimator.estimate(lag)
 
