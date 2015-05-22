@@ -1,4 +1,3 @@
-
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
 # All rights reserved.
@@ -22,30 +21,30 @@
 # ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 '''
 Created on May 26, 2014
 
 @author: marscher
 '''
 
-__all__ = ['ImaginaryWarning', 'SpectralWarning', 'PrecisionWarning']
-
 
 class SpectralWarning(RuntimeWarning):
     pass
 
+
 class ImaginaryEigenValueWarning(SpectralWarning):
     pass
 
+
 class PrecisionWarning(RuntimeWarning):
-    r"""    
+    r"""
     This warning indicates that some operation in your code leads
     to a conversion of datatypes, which involves a loss/gain in
     precision.
 
     """
     pass
+
 
 class NotConvergedWarning(RuntimeWarning):
     r"""
