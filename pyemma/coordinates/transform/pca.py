@@ -21,9 +21,6 @@
 # ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-__author__ = 'noe'
-
 import numpy as np
 
 from .transformer import Transformer
@@ -33,6 +30,7 @@ from pyemma.util.progressbar import ProgressBar
 from pyemma.util.progressbar.gui import show_progressbar
 
 __all__ = ['PCA']
+__author__ = 'noe'
 
 
 class PCA(Transformer):
@@ -81,29 +79,6 @@ class PCA(Transformer):
         Returns the number of output dimensions.
         """
         return self._output_dimension
-
-    def _get_constant_memory(self):
-        """Returns the constant memory requirements, in bytes."""
-        # memory for mu, C, v, R
-        dim = self.data_producer.dimension()
-
-        cov_elements = dim ** 2
-        mu_elements = dim
-
-        v_elements = dim
-        R_elements = cov_elements
-
-        return 8 * (cov_elements + mu_elements + v_elements + R_elements)
-
-    def _get_memory_per_frame(self):
-        # memory for temporaries
-        dim = self.data_producer.dimension()
-
-        x_meanfree_elements = self.chunksize * dim
-
-        dot_prod_elements = dim
-
-        return 8 * (x_meanfree_elements + dot_prod_elements)
 
     @property
     def mean(self):

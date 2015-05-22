@@ -126,26 +126,6 @@ class TICA(Transformer):
         """ output dimension"""
         return self._output_dimension
 
-    def _get_memory_per_frame(self):
-        # temporaries
-        dim = self.data_producer.dimension()
-
-        mean_free_vectors = 2 * dim * self.chunksize
-        dot_product = 2 * dim * self.chunksize
-
-        return 8 * (mean_free_vectors + dot_product)
-
-    def _get_constant_memory(self):
-        dim = self.data_producer.dimension()
-
-        # memory for covariance matrices (lagged, non-lagged)
-        cov_elements = 2 * dim ** 2
-        mu_elements = dim
-
-        # TODO: shall memory req of diagonalize method go here?
-
-        return 8 * (cov_elements + mu_elements)
-
     @property
     def mean(self):
         """ mean of input features """

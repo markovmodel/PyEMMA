@@ -102,12 +102,6 @@ class KmeansClustering(AbstractClustering):
     def describe(self):
         return "[Kmeans, k=%i]" % self.n_clusters
 
-    def _get_memory_per_frame(self):
-        return 1
-
-    def _get_constant_memory(self):
-        return 1
-
     def _param_finish(self):
         self.clustercenters = np.array(self._cluster_centers)
         del self._cluster_centers

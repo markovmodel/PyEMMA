@@ -51,24 +51,6 @@ class UniformTimeClustering(AbstractClustering):
     def describe(self):
         return "[Uniform time clustering, k = %i]" % self.n_clusters
 
-    def _get_memory_per_frame(self):
-        """
-        Returns the memory requirements per frame, in bytes
-
-        :return:
-        """
-        # 4 bytes per frame for an integer index
-        return 0
-
-    def _get_constant_memory(self):
-        """
-        Returns the constant memory requirements, in bytes
-
-        :return:
-        """
-        # memory for cluster centers and discrete trajectories
-        return self.n_clusters * 4 * self.data_producer.dimension() + 4 * self.data_producer.n_frames_total()
-
     def _param_init(self):
         """
         Initializes the parametrization.

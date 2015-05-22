@@ -162,61 +162,6 @@ class Pipeline(object):
             result &= el._parametrized
         return result
 
-    def _estimate_chunksize_from_mem_requirement(self, reader):
-        r"""
-        Estimates memory requirement from _chain of transformers and sets a
-        chunksize accordingly.
-        """
-        if not hasattr(reader, '_get_memory_per_frame'):
-            self.chunksize = 0
-            return
-
-        try:
-            import psutil
-        except ImportError:
-            self._logger.warning(
-                "psutil not available. Can not estimate mem requirements")
-            return
-
-        M = psutil.virtual_memory()[1]  # available RAM in bytes
-        self._logger.info("available RAM: %i" % M)
-        const_mem = long(0)
-        mem_per_frame = long(0)
-
-        for trans in self._chain:
-            mem_per_frame += trans._get_memory_per_frame()
-            const_mem += trans._get_constant_memory()
-        self._logger.info("per-frame memory requirements: %i" % mem_per_frame)
-
-        # maximum allowed chunk size
-        self._logger.info("const mem: %i" % const_mem)
-        chunksize = (M - const_mem) / mem_per_frame
-        if chunksize < 0:
-            raise MemoryError(
-                'Not enough memory for desired transformation _chain!')
-
-        # is this chunksize sufficient to store full trajectories?
-        chunksize = min(chunksize, np.max(reader.trajectory_lengths()))
-        self._logger.info("resulting chunk size: %i" % chunksize)
-
-        # set chunksize
-        self.chunksize = chunksize
-
-        # any memory unused? if yes, we can store results
-        Mfree = M - const_mem - chunksize * mem_per_frame
-        self._logger.info("free memory: %i" % Mfree)
-
-        # starting from the back of the pipeline, store outputs if possible
-        for trans in reversed(self._chain):
-            mem_req_trans = trans.n_frames_total() * \
-                trans._get_memory_per_frame()
-            if Mfree > mem_req_trans:
-                Mfree -= mem_req_trans
-                # TODO: before we are allowed to call this method, we have to ensure all memory requirements are correct
-                # trans.operate_in_memory()
-                self._logger.info("spending %i bytes to operate in main memory: %s "
-                                  % (mem_req_trans,  trans.describe()))
-
 
 class Discretizer(Pipeline):
 
@@ -270,15 +215,6 @@ class Discretizer(Pipeline):
             self.add_element(transform)
 
         self.add_element(cluster)
-
-# currently heuristical chunksize estimation is turned off.
-#         if chunksize is not None:
-#             build_chain(self.transformers, chunksize)
-#             self._chunksize = chunksize
-#         else:
-#             self._chunksize = None
-#             build_chain(self.transformers)
-#             self._estimate_chunksize_from_mem_requirement(reader)
 
         self._parametrized = False
 
