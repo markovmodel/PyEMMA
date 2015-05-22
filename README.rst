@@ -12,6 +12,8 @@ EMMA (Emma's Markov Model Algorithms)
    :target: https://binstar.org/omnia/pyemma
 .. image:: https://binstar.org/omnia/pyemma/badges/installer/conda.svg
    :target: https://conda.binstar.org/omnia
+.. image:: https://coveralls.io/repos/markovmodel/PyEMMA/badge.svg?branch=devel
+   :target: https://coveralls.io/r/markovmodel/PyEMMA?branch=devel
 
 What is it?
 -----------
