@@ -2,16 +2,19 @@ __author__ = 'noe'
 
 import numpy as np
 
-from pyemma.msm import estimation as msmest
 from pyemma.msm.ui.msm_estimated import EstimatedMSM as _EstimatedMSM
+from pyemma.msm.ui.msm_estimator import MSMEstimator as _MSMEstimator
+from pyemma.msm.ui.hmsm_estimated import EstimatedHMSM as _EstimatedHMSM
 from pyemma.util.log import getLogger
 from pyemma.util import types as _types
+
 
 class HMSMEstimator:
     """ML Estimator for a HMSM given a MSM
 
     """
-    def __init__(self, msmobj, nstates, observe_active=True, estimate=True):
+    def __init__(self, dtrajs, reversible=True, sparse=False, connectivity='largest',
+                 observe_active=True, dt='1 step', **kwargs):
         """
         Parameters
         ----------
@@ -20,47 +23,90 @@ class HMSMEstimator:
             False: All states are in the observation set.
 
         """
-        # check input
-        assert isinstance(msmobj, _EstimatedMSM), 'msmobj must be ob type EstimatedMSM'
-        assert _types.is_int(nstates) and nstates > 1 and nstates <= msmobj.nstates, 'nstates must be an int in [2,msmobj.nstates]'
-
-        # set basic parameters
-        self._msmobj = msmobj
-        self._nstates = nstates
-        # restrict observation states to MSM active set
+        # MSM estimation parameters
+        self._dtrajs = dtrajs
+        self._reversible = reversible
+        self._msm_sparse = sparse
+        self._msm_connectivity = connectivity
+        self._dt = dt
+        self._kwargs = kwargs
+        # HMM estimation parameters
         self._observe_active = observe_active
-        # currently only support largest
-        # TODO: actually we don't check for connectivity at all so far. This needs to be fixed
-        self._connectivity='largest'
-
-        # run estimation
+        # other parameters
         self._estimated = False
-        if estimate:
-            self.estimate()
 
     def __create_logger(self):
         name = "%s[%s]" % (self.__class__.__name__, hex(id(self)))
         self._logger = getLogger(name)
 
-    def estimate(self):
+    def estimate(self, lag=1, nstates=2, msm_init=None):
+        """
+
+        Parameters
+        ----------
+        lag : int, optional, default=1
+            lagtime to estimate the HMSM at
+        nstates : int, optional, default=2
+            number of hidden states
+        msm_init : :class:`MSM <pyemma.msm.ui.msm_estimated.MSM>`
+            MSM object to initialize the estimation
+
+        Return
+        ------
+        hmsm : :class:`EstimatedHMSM <pyemma.msm.ui.hmsm_estimated.EstimatedHMSM>`
+            Estimated Hidden Markov state model
+
+        """
+        # set estimation parameters
+        self._lag = lag
+        self._nstates = nstates
+
+        # if no initial MSM is given, estimate it now
+        if msm_init is None:
+            msm_estimator = _MSMEstimator(self._dtrajs, reversible=self._reversible, sparse=self._msm_sparse,
+                                          connectivity=self._msm_connectivity, dt=self._dt, **self._kwargs)
+            msm_init = msm_estimator.estimate(lag=lag)
+        else:
+            assert isinstance(msm_init, _EstimatedMSM), 'msm_init must be of type EstimatedMSM'
+
+        # check input
+        assert _types.is_int(nstates) and nstates > 1 and nstates <= msm_init.nstates, \
+            'nstates must be an int in [2,msmobj.nstates]'
+        timescale_ratios = msm_init.timescales()[:-1] / msm_init.timescales()[1:]
+        if timescale_ratios[nstates-2] < 2.0:
+            self._logger.warn('Requested coarse-grained model with ' + str(nstates) + ' metastable states. ' +
+                              'The ratio of relaxation timescales between ' + str(nstates) + ' and ' + str(nstates+1) +
+                              ' states is only ' + str(timescale_ratios[nstates-2]) + ' while we recomment at ' +
+                              'least 2. It is possible that the resulting HMM is inaccurate. Handle with caution.')
+
+        # set things from MSM
+        self._nstates_obs_full = msm_init.nstates_full
+        if self._observe_active:
+            nstates_obs = msm_init.nstates
+            observable_set = msm_init.active_set
+            dtrajs_obs = msm_init.discrete_trajectories_active
+        else:
+            nstates_obs = msm_init.nstates_full
+            observable_set = np.arange(self._nstates_obs_full)
+            dtrajs_obs = msm_init.discrete_trajectories_full
+
         # TODO: this is redundant with BHMM code because that code is currently not easily accessible and
         # TODO: we don't want to re-estimate. Should be reengineered in bhmm.
         # ---------------------------------------------------------------------------------------
         # PCCA-based coarse-graining
         # ---------------------------------------------------------------------------------------
         # pcca- to number of metastable states
-        pcca = self._msmobj.pcca(self._nstates)
+        pcca = msm_init.pcca(self._nstates)
 
         # HMM output matrix
-        B_conn = self._msmobj.metastable_distributions
+        B_conn = msm_init.metastable_distributions
         # full state space output matrix
-        self._nstates_obs_full = self._msmobj.nstates_full
-        eps = 0.01 * (1.0/self._nstates_obs_full) # default output probability, in order to avoid zero columns
+        eps = 0.01 * (1.0/self._nstates_obs_full)  # default output probability, in order to avoid zero columns
         B = eps * np.ones((self._nstates, self._nstates_obs_full), dtype=np.float64)
         # expand B_conn to full state space
-        B[:,self._msmobj.active_set] = B_conn[:,:]
+        B[:, msm_init.active_set] = B_conn[:, :]
         # renormalize B to make it row-stochastic
-        B /= B.sum(axis=1)[:,None]
+        B /= B.sum(axis=1)[:, None]
 
         # coarse-grained transition matrix
         P_coarse = pcca.coarse_grained_transition_matrix
@@ -78,115 +124,22 @@ class HMSMEstimator:
         # lazy import bhmm here in order to avoid dependency loops
         import bhmm
         # initialize discrete HMM
-        self.hmm_init = bhmm.discrete_hmm(A, B, stationary=True, reversible=self._msmobj.is_reversible)
+        self.hmm_init = bhmm.discrete_hmm(A, B, stationary=True, reversible=self._reversible)
         # run EM
-        hmm = bhmm.estimate_hmm(self._msmobj.discrete_trajectories_full, self._nstates,
-                                lag=self._msmobj.lagtime, initial_model=self.hmm_init)
+        hmm = bhmm.estimate_hmm(msm_init.discrete_trajectories_full, self._nstates,
+                                lag=msm_init.lagtime, initial_model=self.hmm_init)
         self.hmm = bhmm.DiscreteHMM(hmm)
-        # done
-        self._estimated = True
 
-    def _assert_estimated(self):
-        assert self._estimated, "MSM hasn't been estimated yet, make sure to call estimate()"
+        # find observable set
+        transition_matrix = self.hmm.transition_matrix
+        observation_probabilities = self.hmm.output_probabilities
+        if self._observe_active:  # cut down observation probabilities to active set
+            observation_probabilities = observation_probabilities[:, msm_init.active_set]
+            observation_probabilities /= observation_probabilities.sum(axis=1)[:,None]  # renormalize
 
-    @property
-    def estimated(self):
-        """Returns whether this msm has been estimated yet"""
-        return self._estimated
+        # construct result
+        self._hmsm = _EstimatedHMSM(self._dtrajs, self._dt, lag,
+                                    nstates_obs, observable_set, dtrajs_obs, transition_matrix,
+                                    observation_probabilities)
+        return self._hmsm
 
-    @property
-    def nstates(self):
-        """
-        The number of all hidden states
-
-        """
-        return self._nstates
-
-    @property
-    def nstates_obs(self):
-        """
-        The number of all hidden states
-
-        """
-        if self._observe_active:
-            return self._msmobj.nstates
-        else:
-            return self._nstates_obs_full
-
-    @property
-    def observable_set(self):
-        """
-        Set of observed states
-
-        """
-        if self._observe_active:
-            return self._msmobj.active_set
-        else:
-            return np.arange(self._nstates_obs_full)
-
-    @property
-    def lagtime(self):
-        """ The lag time in steps """
-        return self.hmm.lag
-
-    @property
-    def is_reversible(self):
-        """Returns whether the HMSM is reversible """
-        return self.hmm.is_reversible
-
-    @property
-    def dt(self):
-        """Returns the time step"""
-        return self._msmobj.timestep
-
-    @property
-    def discrete_trajectories_full(self):
-        """
-        A list of integer arrays with the original trajectories.
-
-        """
-        return self._msmobj.discrete_trajectories_full
-
-    @property
-    def discrete_trajectories_obs(self):
-        """
-        A list of integer arrays with the discrete trajectories mapped to the observation mode used.
-        When using observe_active = True, the indexes will be given on the MSM active set. Frames that are not in the
-        observation set will be -1. When observe_active = False, this attribute is identical to
-        discrete_trajectories_full
-
-        """
-        if self._observe_active:
-            return self._msmobj.discrete_trajectories_active
-        else:
-            return self._msmobj.discrete_trajectories_full
-
-    @property
-    def transition_matrix(self):
-        """
-        The transition matrix, estimated on the active set. For example, for connectivity='largest' it will be the
-        transition matrix amongst the largest set of reversibly connected states
-
-        """
-        self._assert_estimated()
-        return self.hmm.transition_matrix
-
-    @property
-    def observation_probabilities(self):
-        """
-        The transition matrix, estimated on the active set. For example, for connectivity='largest' it will be the
-        transition matrix amongst the largest set of reversibly connected states
-
-        """
-        self._assert_estimated()
-        if self._observe_active:
-            Bfull = self.hmm.output_probabilities
-            Bobs = Bfull[:,self._msmobj.active_set]  # restrict to active set
-            Bobs /= Bobs.sum(axis=1)[:,None]  # renormalize
-            return Bobs
-        else:
-            return self.hmm.output_probabilities
-
-    @property
-    def dt(self):
-        return self._msmobj.timestep

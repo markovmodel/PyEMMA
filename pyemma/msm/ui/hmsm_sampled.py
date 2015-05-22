@@ -40,13 +40,13 @@ from pyemma.util.statistics import confidence_interval_arr
 
 class SampledHMSM(_EstimatedHMSM):
 
-    def __init__(self, estimator, sample_Ps, sample_mus, sample_pobs, conf=0.683):
+    def __init__(self, hmsm, sample_Ps, sample_mus, sample_pobs, conf=0.683):
         r""" Constructs a sampled MSM
 
         Parameters
         ----------
-        estimator : HMSMEstimator
-            Single-point estimator, usually a maximum likelihood estimator around which the sample is constructed
+        hmsm : EstimatedHMSM
+            Single-point estimate, usually a maximum likelihood estimator around which the sample is constructed
         sample_Ps : array-like of ndarray(m,m)
             Sampled transition matrices. They must all have the size of the number of hidden states
         sample_mus : array-like of ndarray(m,)
@@ -59,7 +59,9 @@ class SampledHMSM(_EstimatedHMSM):
 
         """
         # superclass constructor
-        _EstimatedHMSM.__init__(self, estimator)
+        _EstimatedHMSM.__init__(self, hmsm.discrete_trajectories_full, hmsm.timestep, hmsm.lagtime, hmsm.nstates_obs,
+                                hmsm.observable_set, hmsm.discrete_trajectories_obs,
+                                hmsm.transition_matrix, hmsm.observation_probabilities)
 
         # set parameters
         self._nsamples = len(sample_Ps)

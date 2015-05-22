@@ -40,13 +40,14 @@ from pyemma.util.annotators import shortcut
 
 class EstimatedHMSM(_HMSM):
 
-    def __init__(self, estimator):
-        _HMSM.__init__(self, estimator.transition_matrix, estimator.observation_probabilities, dt=estimator.dt)
-        self._lag = estimator.lagtime
-        self._nstates_obs = estimator.nstates_obs
-        self._observable_set = estimator.observable_set
-        self._dtrajs_full = estimator.discrete_trajectories_full
-        self._dtrajs_obs = estimator.discrete_trajectories_obs
+    def __init__(self, dtrajs_full, dt, lagtime, nstates_obs, observable_set, dtrajs_obs,
+                 transition_matrix, observation_probabilities):
+        _HMSM.__init__(self, transition_matrix, observation_probabilities, dt=dt)
+        self._lag = lagtime
+        self._nstates_obs = nstates_obs
+        self._observable_set = observable_set
+        self._dtrajs_full = dtrajs_full
+        self._dtrajs_obs = dtrajs_obs
 
     @property
     def lagtime(self):
