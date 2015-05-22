@@ -30,14 +30,12 @@ r"""User API for the pyemma.msm package
 __docformat__ = "restructuredtext en"
 
 from flux import tpt as tpt_factory
-from pyemma.msm.ui.dtraj_stats import DiscreteTrajectoryStats
 from pyemma.msm.ui.msm_estimator import MSMEstimator as _MSMEstimator
 from pyemma.msm.ui.hmsm_estimator import HMSMEstimator as _HMSMEstimator
+from pyemma.msm.ui.msm_bayesian_estimator import BayesianMSMEstimator as _BayesianMSMEstimator
 from pyemma.msm.ui.hmsm_bayesian_estimator import BayesianHMSMEstimator as _BayesianHMSMEstimator
 from ui import ImpliedTimescales
 from ui import MSM
-from ui import EstimatedMSM
-from ui import SampledMSM
 from ui import cktest as chapman_kolmogorov
 
 __author__ = "Benjamin Trendelkamp-Schroer, Martin Scherer, Frank Noe"
@@ -376,21 +374,9 @@ def bayesian_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
     EstimatedMSM : An MSM object that has been estimated from data
 
     """
-    # do count
-    dtrajstats = DiscreteTrajectoryStats(dtrajs)
-    dtrajstats.count_lagged(lag)
-    # transition matrix estimator
-    tmestimator = MSMEstimator(dtrajstats, lag, reversible=reversible, sparse=sparse,
-                               connectivity=connectivity, estimate=True, dt=dt, **kwargs)
-    # transition matrix sampler
-    from pyemma.msm.estimation import tmatrix_sampler
-    from math import sqrt
-    nstep = int(sqrt(tmestimator.nstates))  # heuristic for number of steps to decorrelate
-    tsampler = tmatrix_sampler(tmestimator.count_matrix_active, reversible=reversible, nstep=nstep)
-    sample_Ps, sample_mus = tsampler.sample(nsample=nsample, return_statdist=True, T_init=tmestimator.transition_matrix)
-    # construct MSM
-    M = SampledMSM(tmestimator, sample_Ps, sample_mus, conf=conf)
-    return M
+    bmsm_estimator = _BayesianMSMEstimator(dtrajs, reversible=reversible, sparse=sparse, connectivity=connectivity,
+                                           dt=dt, conf=conf, **kwargs)
+    return bmsm_estimator.estimate(lag=lag, nsample=nsample)
 
 # TODO: need code examples
 def bayesian_hidden_markov_model(dtrajs, lag, nstates, reversible=True, sparse=False,
@@ -486,7 +472,7 @@ def bayesian_hidden_markov_model(dtrajs, lag, nstates, reversible=True, sparse=F
 
     """
     bhmsm_estimator = _BayesianHMSMEstimator(dtrajs, reversible=reversible, sparse=sparse, connectivity=connectivity,
-                                             observe_active=observe_active, dt=dt, conf=cont, **kwargs)
+                                             observe_active=observe_active, dt=dt, conf=conf, **kwargs)
     return bhmsm_estimator.estimate(lag=lag, nstates=nstates, nsample=nsample)
 
 # TODO: need code examples
