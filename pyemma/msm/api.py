@@ -31,7 +31,9 @@ __docformat__ = "restructuredtext en"
 
 from flux import tpt as tpt_factory
 from pyemma.msm.ui.dtraj_stats import DiscreteTrajectoryStats
-from pyemma.msm.ui.msm_estimator import MSMEstimator
+from pyemma.msm.ui.msm_estimator import MSMEstimator as _MSMEstimator
+from pyemma.msm.ui.hmsm_estimator import HMSMEstimator as _HMSMEstimator
+from pyemma.msm.ui.hmsm_bayesian_estimator import BayesianHMSMEstimator as _BayesianHMSMEstimator
 from ui import ImpliedTimescales
 from ui import MSM
 from ui import EstimatedMSM
@@ -205,20 +207,16 @@ def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
     EstimatedMSM : An MSM object that has been estimated from data
 
     """
-    # do count
-    dtrajstats = DiscreteTrajectoryStats(dtrajs)
-    dtrajstats.count_lagged(lag)
     # transition matrix estimator
-    tmestimator = MSMEstimator(dtrajstats, lag, reversible=reversible, sparse=sparse,
-                               connectivity=connectivity, estimate=True, dt=dt, **kwargs)
-    # construct MSM
-    M = EstimatedMSM(tmestimator)
-    return M
+    tmestimator = _MSMEstimator(dtrajs, reversible=reversible, sparse=sparse,
+                                connectivity=connectivity, estimate=True, dt=dt, **kwargs)
+    # estimate and return
+    return tmestimator.estimate(lag)
 
 
 # TODO: need code examples
 def estimate_hidden_markov_model(dtrajs, lag, nstates, reversible=True, sparse=False,
-                                 connectivity='largest', dt='1 step', **kwargs):
+                                 connectivity='largest', observe_active=True, dt='1 step', **kwargs):
     r"""Estimates a Markov model from discrete trajectories
 
     Returns a :class:`EstimatedHMSM <pyemma.msm.ui.EstimatedHMSM>` that contains the estimated hidden transition matrix,
@@ -251,6 +249,9 @@ def estimate_hidden_markov_model(dtrajs, lag, nstates, reversible=True, sparse=F
             the stationary vector is only defined within subsets, etc. Currently not implemented.
         'none' : The active set is the full set of states. Estimation will be conducted on the full set of states
             without ensuring connectivity. This only permits nonreversible estimation. Currently not implemented.
+    observe_active : bool, optional, default=True
+        True: Restricts the observation set to the active states of the MSM.
+        False: All states are in the observation set.
     dt : str, optional, default='1 step'
         Description of the physical time corresponding to the lag. May be used by analysis algorithms such as
         plotting tools to pretty-print the axes. By default '1 step', i.e. there is no physical time unit.
@@ -292,10 +293,9 @@ def estimate_hidden_markov_model(dtrajs, lag, nstates, reversible=True, sparse=F
 
     """
     # estimate MSM
-    M = estimate_markov_model(dtrajs, lag, reversible=reversible, sparse=sparse,
-                              connectivity=connectivity, dt=dt, **kwargs)
-    H = M.hmm(nstates)
-    return H
+    hmsm_estimator = _HMSMEstimator(dtrajs, reversible=reversible, sparse=sparse, connectivity=connectivity,
+                                    observe_active=observe_active, dt=dt, **kwargs)
+    return hmsm_estimator.estimate(lag=lag, nstates=nstates)
 
 
 # TODO: need code examples
@@ -485,38 +485,9 @@ def bayesian_hidden_markov_model(dtrajs, lag, nstates, reversible=True, sparse=F
         arXiv:1108.1430 (2011)
 
     """
-    # estimate MSM
-    # TODO: This is duplicate code with MSM object. Remove redundancy!
-    # TODO: The problem is that we need the HMM estimator in the SampledHMM. I think this can be avoided.
-    msm_mle = estimate_markov_model(dtrajs, lag, reversible=reversible, sparse=sparse,
-                                    connectivity=connectivity, dt=dt, **kwargs)
-    # check input
-    assert nstates > 1 and nstates < msm_mle.nstates, 'nstates but be between 2 and ' + str(msm_mle.nstates)
-    timescale_ratios = msm_mle.timescales()[:-1] / msm_mle.timescales()[1:]
-    import warnings
-    if timescale_ratios[nstates-2] < 2.0:
-        warnings.warn('Requested coarse-grained model with ' + str(nstates) + ' metastable states. ' +
-                      'The ratio of relaxation timescales between ' + str(nstates) + ' and ' + str(nstates+1) +
-                      ' states is only ' + str(timescale_ratios[nstates-2]) + ' while we recomment at ' +
-                      'least 2. It is possible that the resulting HMM is inaccurate. Handle with caution.')
-    # estimate HMM
-    from ui.hmsm_estimator import HMSMEstimator
-    hmm_estimator = HMSMEstimator(msm_mle, nstates)
-    # HMM sampler
-    from bhmm import estimate_hmm, bayesian_hmm
-    hmm_mle = estimate_hmm(dtrajs, nstates, lag=lag, type='discrete', reversible=reversible, stationary=True)
-    sampled_hmm = bayesian_hmm(dtrajs, hmm_mle, nsample=nsample)
-    sample_Ps = [sampled_hmm.sampled_hmms[i].transition_matrix for i in range(nsample)]
-    sample_mus = [sampled_hmm.sampled_hmms[i].stationary_distribution for i in range(nsample)]
-    sample_pobs = [sampled_hmm.sampled_hmms[i].output_model.output_probabilities for i in range(nsample)]
-    if observe_active:
-        for i in range(nsample):
-            Bobs = sample_pobs[i][:, msm_mle.active_set]  # restrict to active set
-            sample_pobs[i] = Bobs / Bobs.sum(axis=1)[:, None]  # renormalize
-    # construct our HMM object
-    from ui.hmsm_sampled import SampledHMSM
-    sampled_hmsm = SampledHMSM(hmm_estimator, sample_Ps, sample_mus, sample_pobs, conf=conf)
-    return sampled_hmsm
+    bhmsm_estimator = _BayesianHMSMEstimator(dtrajs, reversible=reversible, sparse=sparse, connectivity=connectivity,
+                                             observe_active=observe_active, dt=dt, conf=cont, **kwargs)
+    return bhmsm_estimator.estimate(lag=lag, nstates=nstates, nsample=nsample)
 
 # TODO: need code examples
 def cktest(msmobj, K, nsets=2, sets=None, full_output=False):

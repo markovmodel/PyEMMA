@@ -102,12 +102,12 @@ class SampledMSM(EstimatedMSM):
 
     __metaclass__ = sampled_msm_meta
 
-    def __init__(self, estimator, sample_Ps, sample_mus, conf=0.683):
+    def __init__(self, msm, sample_Ps, sample_mus, conf=0.683):
         r""" Constructs a sampled MSM
 
         Parameters
         ----------
-        estimator : MSMEstimator
+        msm : EstimatedMSM
             Single-point estimator, e.g. containing a maximum likelihood or mean MSM
         sample_Ps : array-like of ndarray(n,n)
             Sampled transition matrices. They must all have the size of the active set
@@ -118,7 +118,9 @@ class SampledMSM(EstimatedMSM):
 
         """
         # superclass constructor
-        EstimatedMSM.__init__(self, estimator)
+        EstimatedMSM.__init__(self, msm.discrete_trajectories_full, msm.timestep, msm.lagtime, msm.connectivity,
+                              msm.active_set, msm.connected_sets, msm.count_matrix_full, msm.count_matrix_active,
+                              msm.transition_matrix)
 
         # set params. Make a deep copy to avoid changing from outside
         self.sample_Ps = copy.deepcopy(sample_Ps)
