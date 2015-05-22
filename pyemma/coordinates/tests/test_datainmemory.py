@@ -1,4 +1,3 @@
-
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
 # All rights reserved.
@@ -29,13 +28,10 @@ Created on 04.02.2015
 @author: marscher
 '''
 import unittest
+import numpy as np
 
 from pyemma.coordinates.data.data_in_memory import DataInMemory
 from pyemma.util.log import getLogger
-import numpy as np
-
-import tempfile
-import os
 
 logger = getLogger('TestDataInMemory')
 
@@ -47,45 +43,13 @@ class TestDataInMemory(unittest.TestCase):
         d = np.random.random((100, 3))
         d_1d = np.random.random(100)
 
-        f1 = tempfile.mktemp()
-        f2 = tempfile.mktemp(suffix='.npy')
-        f3 = tempfile.mktemp()
-        f4 = tempfile.mktemp(suffix='.npy')
-
-        npz = tempfile.mktemp(suffix='.npz')
-
-        np.savetxt(f1, d)
-        np.save(f2, d)
-
-        np.savetxt(f3, d_1d)
-        np.save(f4, d_1d)
-
-        np.savez(npz, d, d)
-
-        cls.files2d = [f1, f2]
-        cls.files1d = [f3, f4]
         cls.d = d
         cls.d_1d = d_1d
-
-        cls.npz = npz
         return cls
 
-    @classmethod
-    def tearDownClass(cls):
-        # try to clean temporary files
-        try:
-            for f in cls.files1d:
-                os.remove(f)
-            for f in cls.files2d:
-                os.remove(f)
-
-            os.remove(cls.npz)
-        except:
-            pass
-
-    def testWrongArgsuments(self):
+    def testWrongArguments(self):
         with self.assertRaises(ValueError):
-            reader = DataInMemory(self.files2d[0])
+            reader = DataInMemory("foo")
 
     def testListOfArrays(self):
 
@@ -186,20 +150,22 @@ class TestDataInMemory(unittest.TestCase):
             # increment trajectory
             itraj += 1
 
+    def test_stride(self):
+        reader = DataInMemory(self.d)
+        stride = [1, 2, 3, 4, 5, 6, 7, 10, 11, 21, 23]
+        for s in stride:
+            output = reader.get_output(stride=s)[0]
+            expected = self.d[::s]
+            np.testing.assert_allclose(output, expected,
+                                       err_msg="not equal for stride=%i" % s)
+
     def test_lagged_iterator_1d(self):
         n = 57
         chunksize = 10
         lag = 1
 
-#         data = [np.random.random((n, 3)),
-#                 np.zeros((29, 3)),
-#                 np.random.random((n - 50, 3))]
-#         data = [np.arange(300).reshape((n,3)),
-#                 np.arange(29*3).reshape((29,3)),
-#                 np.arange(150).reshape(50,3)]
         data = [np.arange(n), np.arange(50), np.arange(30)]
         input_lens = [x.shape[0] for x in data]
-        # print data[0].shape
         reader = DataInMemory(data)
         reader.chunksize = chunksize
 
@@ -228,13 +194,9 @@ class TestDataInMemory(unittest.TestCase):
             np.testing.assert_equal(traj.reshape(input_traj.shape), input_traj)
 
     def test_lagged_iterator_2d(self):
-        n = 57
         chunksize = 10
         lag = 1
 
-#         data = [np.random.random((n, 3)),
-#                 np.zeros((29, 3)),
-#                 np.random.random((n - 50, 3))]
         data = [np.arange(300).reshape((100, 3)),
                 np.arange(29 * 3).reshape((29, 3)),
                 np.arange(150).reshape(50, 3)]
