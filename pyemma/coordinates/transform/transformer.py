@@ -21,9 +21,6 @@
 # ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-__author__ = 'noe, marscher'
-
 from pyemma.util.log import getLogger
 from pyemma.util.progressbar import ProgressBar
 from pyemma.util.progressbar.gui import show_progressbar
@@ -35,6 +32,7 @@ from math import ceil
 from abc import ABCMeta, abstractmethod
 
 __all__ = ['Transformer']
+__author__ = 'noe, marscher'
 
 
 class TransformerIterator(object):
