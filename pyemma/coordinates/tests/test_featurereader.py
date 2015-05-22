@@ -126,13 +126,25 @@ class TestFeatureReader(unittest.TestCase):
 
         self.assertEqual(frames, reader.trajectory_lengths()[0])
         self.assertTrue(np.allclose(data, self.xyz))
-        
+
     def test_with_pipeline_time_lagged(self):
         reader = feature_reader(self.trajfile, self.topfile)
         #reader.featurizer.distances([[0, 1], [0, 2]])
         t = tica(dim=2, lag=1)
         d = discretizer(reader, t)
         d.parametrize()
+
+    def test_in_memory(self):
+        # map "results" to memory
+        reader = api.source(self.trajfile, top=self.topfile)
+        reader.in_memory = True
+
+        reader2 = api.source(self.trajfile, top=self.topfile)
+        out = reader2.get_output()
+
+        np.testing.assert_equal(reader._Y[0], out[0])
+        np.testing.assert_equal(reader.get_output(), out)
+
 
     # @unittest.skip("")
     def testTimeLaggedAccess(self):
