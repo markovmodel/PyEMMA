@@ -41,7 +41,7 @@ import pyemma.util.types as types
 
 class RandomDataSource(DataInMemory):
 
-    def __init__(self, a=None, b=None, chunksize=1000, n_samples=5, dim=3):
+    def __init__(self, a=None, b=None, chunksize=100, n_samples=1000, dim=3):
         """
         creates random values in interval [a,b]
         """
@@ -57,7 +57,6 @@ class TestRegSpaceClustering(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         super(TestRegSpaceClustering, cls).setUpClass()
-        np.random.seed(0)
 
     def setUp(self):
         self.dmin = 0.3
@@ -121,6 +120,17 @@ class TestRegSpaceClustering(unittest.TestCase):
         data_to_cluster = np.random.random((1000, 3))
 
         self.clustering.assign(data_to_cluster, stride=1)
+
+    def test_too_small_dmin_should_warn(self):
+        self.clustering.dmin = 1e-8
+        self.clustering.max_centers = 50
+        import warnings
+        with warnings.catch_warnings(record=True) as w:
+            # Cause all warnings to always be triggered.
+            warnings.simplefilter("always")
+            # Trigger a warning.
+            self.clustering.parametrize()
+            assert w
 
 if __name__ == "__main__":
     unittest.main()
