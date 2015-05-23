@@ -165,7 +165,7 @@ def bootstrap_counts(dtrajs, lagtime):
     cols = np.zeros((nsample))
     ones = np.ones((nsample))
     ncur = 0
-    for i in range(len(n_from_traj)):
+    for i in xrange(len(n_from_traj)):
         if n_from_traj[i] > 0:
             (r, c) = bootstrap_counts_singletraj(dtrajs[i], lagtime, n_from_traj[i])
             rows[ncur:ncur + n_from_traj[i]] = r
