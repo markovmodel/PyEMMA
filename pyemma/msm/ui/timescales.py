@@ -127,10 +127,12 @@ class ImpliedTimescales(object):
         
         """
         # connected set
-        C = (connected_cmatrix(C)).toarray()
-        if (len(C) > 1):
+        C = connected_cmatrix(C)
+        if (np.shape(C)[0] > 1):
             # estimate transition matrix
             T = tmatrix(C, reversible=self._reversible)
+            # make it dense
+            T = T.toarray()
             # timescales
             ts = timescales(T, tau, k=min(self._nits, len(T)) + 1, reversible=self._reversible)[1:]
             return ts
