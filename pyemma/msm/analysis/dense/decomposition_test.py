@@ -89,6 +89,21 @@ class TestDecomposition(unittest.TestCase):
         evn = eigenvalues(P, k=self.k)
         assert_allclose(ev[0:self.k], evn)
 
+    def test_eigenvalues_reversible(self):
+        P = self.bdc.transition_matrix()
+        ev = eigvals(P)
+        """Sort with decreasing magnitude"""
+        ev = ev[np.argsort(np.abs(ev))[::-1]]
+
+
+        """reversible without given mu"""
+        evn = eigenvalues(P, reversible=True)
+        assert_allclose(ev, evn)
+
+        """reversible with given mu"""
+        evn = eigenvalues(P, reversible=True, mu=self.bdc.stationary_distribution())
+        assert_allclose(ev, evn)
+
     def test_eigenvectors(self):
         P = self.bdc.transition_matrix()
 

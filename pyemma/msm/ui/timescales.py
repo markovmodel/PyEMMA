@@ -132,7 +132,7 @@ class ImpliedTimescales(object):
             # estimate transition matrix
             T = tmatrix(C, reversible=self._reversible)
             # timescales
-            ts = timescales(T, tau, k=min(self._nits, len(T)) + 1)[1:]
+            ts = timescales(T, tau, k=min(self._nits, len(T)) + 1, reversible=self._reversible)[1:]
             return ts
         else:
             return None  # no timescales available

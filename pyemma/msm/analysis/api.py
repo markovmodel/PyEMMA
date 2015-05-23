@@ -390,7 +390,7 @@ def stationary_distribution(T):
 
 
 # DONE: Martin, Ben
-def eigenvalues(T, k=None, ncv=None):
+def eigenvalues(T, k=None, ncv=None, reversible=False, mu=None):
     r"""Find eigenvalues of the transition matrix.
 
     Parameters
@@ -402,6 +402,12 @@ def eigenvalues(T, k=None, ncv=None):
     ncv : int (optional)
         The number of Lanczos vectors generated, `ncv` must be greater than k;
         it is recommended that ncv > 2*k
+    reversible : bool (optional)
+        Indicate that transition matrix is reversible. Will compute its stationary distribution `\mu` (unless given)
+        and then compute the eigenvalues of the symmetric matrix `\sqrt(\mu_i / \mu_j)` which is equivalent but
+        much faster
+    mu : numpy.ndarray, shape=(d)
+        Stationary distribution of T. Will only be used if reversible=True in order to symmetrize T.
 
     Returns
     -------
@@ -427,13 +433,13 @@ def eigenvalues(T, k=None, ncv=None):
     if _issparse(T):
         return sparse.decomposition.eigenvalues(T, k, ncv=ncv)
     elif _isdense(T):
-        return dense.decomposition.eigenvalues(T, k)
+        return dense.decomposition.eigenvalues(T, k, reversible=reversible, mu=mu)
     else:
         raise _type_not_supported
 
 
 # DONE: Ben
-def timescales(T, tau=1, k=None, ncv=None):
+def timescales(T, tau=1, k=None, ncv=None, reversible=False, mu=None):
     r"""Compute implied time scales of given transition matrix.
 
     Parameters
@@ -449,6 +455,12 @@ def timescales(T, tau=1, k=None, ncv=None):
     ncv : int (optional, for sparse T only)
         The number of Lanczos vectors generated, `ncv` must be greater than k;
         it is recommended that ncv > 2*k
+    reversible : bool (optional)
+        Indicate that transition matrix is reversible. Will compute its stationary distribution `\mu` (unless given)
+        and then compute the eigenvalues of the symmetric matrix `\sqrt(\mu_i / \mu_j)` which is equivalent but
+        much faster
+    mu : numpy.ndarray, shape=(d)
+        Stationary distribution of T. Will only be used if reversible=True in order to symmetrize T.
 
     Returns
     -------
@@ -476,7 +488,7 @@ def timescales(T, tau=1, k=None, ncv=None):
     if _issparse(T):
         return sparse.decomposition.timescales(T, tau=tau, k=k, ncv=ncv)
     elif _isdense(T):
-        return dense.decomposition.timescales(T, tau=tau, k=k)
+        return dense.decomposition.timescales(T, tau=tau, k=k, reversible=reversible, mu=mu)
     else:
         raise _type_not_supported
 

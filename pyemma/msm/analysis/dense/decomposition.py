@@ -37,7 +37,7 @@ import numpy as np
 import numbers
 import warnings
 
-from scipy.linalg import eig, eigvals, solve, lu_factor, lu_solve
+from scipy.linalg import eig, eigh, eigvals, eigvalsh, solve, lu_factor, lu_solve
 from pyemma.util.exceptions import SpectralWarning, ImaginaryEigenValueWarning
 
 
@@ -135,7 +135,7 @@ def stationary_distribution_from_eigenvector(T):
     return mu
 
 
-def eigenvalues(T, k=None):
+def eigenvalues(T, k=None, reversible=False, mu=None):
     r"""Compute eigenvalues of given transition matrix.
     
     Eigenvalues are computed using the numpy.linalg interface 
@@ -147,6 +147,12 @@ def eigenvalues(T, k=None):
         Transition matrix (stochastic matrix).
     k : int (optional) or tuple of ints
         Compute the first k eigenvalues of T.
+    reversible : bool (optional)
+        Indicate that transition matrix is reversible. Will compute its stationary distribution `\mu` (unless given)
+        and then compute the eigenvalues of the symmetric matrix `\sqrt(\mu_i / \mu_j)` which is equivalent but
+        much faster
+    mu : numpy.ndarray, shape=(d)
+        Stationary distribution of T. Will only be used if reversible=True in order to symmetrize T.
 
     Returns
     -------
@@ -156,7 +162,18 @@ def eigenvalues(T, k=None):
         n is the length of the given tuple of eigenvalue indices.
 
     """
-    evals = eigvals(T)
+    if reversible:
+        # compute stationary distribution if not given
+        if mu is None:
+            mu = stationary_distribution_from_backward_iteration(T)
+        # symmetrize T
+        smu = np.sqrt(mu)
+        S = smu[:,None] * T / smu
+        # symmetric eigenvalue problem
+        evals = eigvalsh(S)
+    else:
+        evals = eigvals(T)
+
     """Sort by decreasing absolute value"""
     ind = np.argsort(np.abs(evals))[::-1]
     evals = evals[ind]
@@ -165,7 +182,7 @@ def eigenvalues(T, k=None):
         try:
             return [evals[n] for n in k]
         except IndexError:
-            raise ValueError("given indices do not exist: ", n)
+            raise ValueError("given indices do not exist: ", k)
     elif k is not None:
         return evals[: k]
     else:
@@ -314,7 +331,7 @@ def rdl_decomposition(T, k=None, norm='standard'):
         raise ValueError("Keyword 'norm' has to be either 'standard' or 'reversible'")
 
 
-def timescales(T, tau=1, k=None):
+def timescales(T, tau=1, k=None, reversible=False, mu=None):
     r"""Compute implied time scales of given transition matrix
     
     Parameters
@@ -323,6 +340,12 @@ def timescales(T, tau=1, k=None):
     tau : lag time
     k : int (optional)
         Compute the first k implied time scales.
+    reversible : bool (optional)
+        Indicate that transition matrix is reversible. Will compute its stationary distribution `\mu` (unless given)
+        and then compute the eigenvalues of the symmetric matrix `\sqrt(\mu_i / \mu_j)` which is equivalent but
+        much faster
+    mu : numpy.ndarray, shape=(d)
+        Stationary distribution of T. Will only be used if reversible=True in order to symmetrize T.
 
     Returns
     -------
@@ -330,7 +353,7 @@ def timescales(T, tau=1, k=None):
         The implied time scales of the transition matrix.          
     
     """
-    values = eigvals(T)
+    values = eigenvalues(T, reversible=reversible, mu=mu)
 
     """Sort by absolute value"""
     ind = np.argsort(np.abs(values))[::-1]
