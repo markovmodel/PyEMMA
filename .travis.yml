@@ -21,7 +21,10 @@ before_install:
 - tools/ci/travis/install_miniconda.sh
 - source activate ci
 - conda list
-
+# use a headless plotting backend for matplotlib
+- mkdir -p ~/.config/matplotlib/
+- touch ~/.config/matplotlib/matplotlibrc
+- "echo 'backend: Agg' >> ~/.config/matplotlib/matplotlibrc"
 install:
 - python setup.py develop 
 

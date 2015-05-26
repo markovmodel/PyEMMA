@@ -131,18 +131,19 @@ class NetworkPlot(object):
         ymin -= Dy*figpadding; ymax += Dy*figpadding; Dy *= 1+figpadding;
         # sizes of nodes
         if state_sizes is None:
-            state_sizes = 0.5 * state_scale * min(Dx,Dy)**2 * np.ones(n) / float(n)
+            state_sizes = 0.5 * state_scale * min(Dx, Dy)**2 * np.ones(n) / float(n)
         else:
-            state_sizes = 0.5 * state_scale * min(Dx,Dy)**2 * state_sizes / (np.max(state_sizes) * float(n))
+            state_sizes = 0.5 * state_scale * min(Dx, Dy)**2 * state_sizes / (np.max(state_sizes) * float(n))
         # automatic arrow rescaling
         arrow_scale *= 1.0 / (np.max(self.A - np.diag(np.diag(self.A))) * math.sqrt(n))
         # size figure
         if (Dx/max_width > Dy/max_height):
-            plt.figure(figsize=(max_width,Dy*(max_width/Dx)))
+            plt.figure(figsize=(max_width, Dy*(max_width/Dx)))
         else:
-            plt.figure(figsize=(Dx*(max_height/Dy),max_height))
+            plt.figure(figsize=(Dx*(max_height/Dy), max_height))
         # font sizes
-        rcParams.update({'font.size': 20})
+        old_fontsize = rcParams['font.size']
+        rcParams['font.size'] = 20
         # remove axis labels
         frame = plt.gca()
         if not xticks:
@@ -168,6 +169,7 @@ class NetworkPlot(object):
                 for j in xrange(n):
                     L[i,j] = arrow_label_format % self.A[i,j]
         else:
+            rcParams['font.size'] = old_fontsize
             raise ValueError('invalid arrow label format')
 
         # draw circles
@@ -197,19 +199,22 @@ class NetworkPlot(object):
         # plot
         plt.xlim(xmin,xmax)
         plt.ylim(ymin,ymax)
+        rcParams['font.size'] = old_fontsize
+        return plt
 
     def _find_best_positions(self, V, g, nexplore, nstep_explore):
         """Finds best positions for the given grandalf graph nodes by minimizing a network potential
 
         """
         if (self.xpos is not None) and (self.ypos is not None):
-            return np.array([self.xpos,self.ypos]), 0  # nothing to do
+            return np.array([self.xpos, self.ypos]), 0  # nothing to do
         from .grandalf.layouts import DigcoLayout
         class defaultview(object):
-            w, h = 10, 10
-            xy = None
+            def __init__(self):
+                self.w = self.h = 10
+                self.xy = (np.random.randn(), np.random.randn())
         min_stress = float('infinity')
-        best_pos = np.zeros((len(V),2))
+        best_pos = np.zeros((len(V), 2))
         # explore
         for i in xrange(nexplore):
             for v in V:
@@ -229,38 +234,39 @@ class NetworkPlot(object):
             # print i, dig.stress
             if dig.stress < min_stress:
                 for j in xrange(len(V)):
-                    best_pos[j,:] = V[j].view.xy
+                    best_pos[j, :] = V[j].view.xy
                 min_stress = dig.stress
+        return best_pos, min_stress
         # rescale fixed to user settings and balance the other coordinate
-        if self.xpos is not None:
-            # rescale x to fixed value
-            best_pos[:,0] *= (np.max(self.xpos) - np.min(self.xpos)) / (np.max(best_pos[:,0]) - np.min(best_pos[:,0]))
-            best_pos[:,0] += np.min(self.xpos) - np.min(best_pos[:,0])
-            # rescale y to balance
-            if np.max(best_pos[:,1])-np.min(best_pos[:,1]) > 0.01:
-                best_pos[:,1] *= (np.max(self.xpos) - np.min(self.xpos)) / (np.max(best_pos[:,1]) - np.min(best_pos[:,1]))
-        if self.ypos is not None:
-            best_pos[:,1] *= (np.max(self.ypos) - np.min(self.ypos)) / (np.max(best_pos[:,1]) - np.min(best_pos[:,1]))
-            best_pos[:,1] += np.min(self.ypos) - np.min(best_pos[:,1])
-            # rescale x to balance
-            if np.max(best_pos[:,0])-np.min(best_pos[:,0]) > 0.01:
-                best_pos[:,0] *= (np.max(self.ypos) - np.min(self.ypos)) / (np.max(best_pos[:,0]) - np.min(best_pos[:,0]))
+#         if self.xpos is not None:
+#             # rescale x to fixed value
+#             best_pos[:, 0] *= (np.max(self.xpos) - np.min(self.xpos)) / (np.max(best_pos[:, 0]) - np.min(best_pos[:, 0]))
+#             best_pos[:, 0] += np.min(self.xpos) - np.min(best_pos[:, 0])
+#             # rescale y to balance
+#             if np.max(best_pos[:,1])-np.min(best_pos[:,1]) > 0.01:
+#                 best_pos[:,1] *= (np.max(self.xpos) - np.min(self.xpos)) / (np.max(best_pos[:,1]) - np.min(best_pos[:,1]))
+#         if self.ypos is not None:
+#             best_pos[:,1] *= (np.max(self.ypos) - np.min(self.ypos)) / (np.max(best_pos[:,1]) - np.min(best_pos[:,1]))
+#             best_pos[:,1] += np.min(self.ypos) - np.min(best_pos[:,1])
+#             # rescale x to balance
+#             if np.max(best_pos[:,0])-np.min(best_pos[:,0]) > 0.01:
+#                 best_pos[:,0] *= (np.max(self.ypos) - np.min(self.ypos)) / (np.max(best_pos[:,0]) - np.min(best_pos[:,0]))
         # re-order
-        neworder = np.zeros(len(V),dtype=int)
-        for i,v in enumerate(g.C[0].sV):
+        neworder = np.zeros(len(V), dtype=int)
+        for i, v in enumerate(g.C[0].sV):
             neworder[i] = v.data
-        best_pos = best_pos[neworder,:]
+        best_pos = best_pos[neworder, :]
         # done
         return best_pos, min_stress
 
     def layout_automatic(self):
         n = np.shape(self.A)[0]
-        I,J = np.where(self.A>0)
+        I, J = np.where(self.A > 0)
         # create graph object
-        from .grandalf.graphs import Vertex,Edge,Graph
+        from .grandalf.graphs import Vertex, Edge, Graph
         V = [Vertex(i) for i in xrange(n)]
-        E = [Edge(V[I[i]],V[J[i]]) for i in xrange(len(I))]
-        g = Graph(V,E)
+        E = [Edge(V[I[i]], V[J[i]]) for i in xrange(len(I))]
+        g = Graph(V, E)
         # layout
         self.pos, self.stress = self._find_best_positions(V, g, 10, 25)
         # print 'best stress = ',stress
@@ -330,8 +336,8 @@ def plot_markov_model(P, pos = None, state_sizes = None, state_scale = 1.0, stat
         state_sizes = msmana.stationary_distribution(P)
     if minflux > 0:
         F = np.dot(np.diag(msmana.stationary_distribution(P)), P)
-        I,J = np.where(F < minflux)
-        P[I,J] = 0.0
+        I, J = np.where(F < minflux)
+        P[I, J] = 0.0
     plot = NetworkPlot(P, pos=pos)
     if pos is not None:
         plot.layout_automatic()
