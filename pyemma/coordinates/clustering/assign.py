@@ -40,7 +40,7 @@ class AssignCenters(AbstractClustering):
 
     Parameters
     ----------
-    clustercenters : path to file (csv) or ndarray
+    clustercenters : path to file or ndarray
         cluster centers to use in assignment of data
 
     metric : str

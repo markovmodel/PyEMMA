@@ -687,7 +687,7 @@ def pca(data=None, dim=2, stride=1):
     Parameters
     ----------
 
-    data : ndarray (T, d) or list of ndarray (T_i, d)
+    data : ndarray (T, d) or list of ndarray (T_i, d) or a reader created by source function
         data array or list of data arrays. T or T_i are the number of time steps in a
         trajectory. When data is given, the PCA is immediately parametrized by estimating
         the covariance matrix and computing its eigenvectors.
@@ -768,7 +768,7 @@ def tica(data=None, lag=10, dim=2, stride=1, force_eigenvalues_le_one=False):
 
     Parameters
     ----------
-    data : ndarray(N, d), optional
+    data : ndarray (T, d) or list of ndarray (T_i, d) or a reader created by source function
         array with the data, if available. When given, the TICA transformation
         is immediately computed and can be used to transform data.
 
@@ -882,7 +882,7 @@ def cluster_kmeans(data=None, k=100, max_iter=10, stride=1, metric='euclidean', 
 
     Parameters
     ----------
-    data: ndarray
+    data: ndarray (T, d) or list of ndarray (T_i, d) or a reader created by source function
         input data, if available in memory
 
     k: int
@@ -941,7 +941,7 @@ def cluster_uniform_time(data=None, k=100, stride=1, metric='euclidean'):
 
     Parameters
     ----------
-    data : ndarray(N, d)
+    data : ndarray (T, d) or list of ndarray (T_i, d) or a reader created by source function
         input data, if available in memory
 
     k : int
@@ -988,7 +988,7 @@ def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1, metric='euc
 
     Parameters
     ----------
-    data : ndarray(N, d)
+    data : ndarray (T, d) or list of ndarray (T_i, d) or a reader created by source function
         input data, if available in memory
 
     dmin : float
@@ -1047,10 +1047,10 @@ def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True,
 
     Parameters
     ----------
-    data : list of arrays, list of file names or single array/filename
+    data : ndarray or list of arrays or reader created by source function
         data to be assigned
 
-    centers : path to file (csv) or ndarray
+    centers : path to file or ndarray or a reader created by source function
         cluster centers to use in assignment of data
 
     stride : int, optional, default = 1
@@ -1090,7 +1090,7 @@ def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True,
     """
     if centers is None:
         raise ValueError('You have to provide centers in form of a filename'
-                         ' or NumPy array')
+                         ' or NumPy array or a reader created by source function')
     res = _AssignCenters(centers, metric=metric)
     parametrized_stage = _param_stage(data, res, stride=stride)
     if return_dtrajs and data is not None:
