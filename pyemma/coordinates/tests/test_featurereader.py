@@ -1,4 +1,3 @@
-
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
 # All rights reserved.
@@ -52,7 +51,8 @@ class TestFeatureReader(unittest.TestCase):
         # over all frames.
         cls.trajfile = tempfile.mktemp('.xtc')
         cls.n_frames = 1000
-        cls.xyz = np.random.random(cls.n_frames * 3 * 3).reshape((cls.n_frames, 3, 3))
+        cls.xyz = np.random.random(
+            cls.n_frames * 3 * 3).reshape((cls.n_frames, 3, 3))
         log.debug("shape traj: %s" % str(cls.xyz.shape))
         cls.topfile = pkg_resources.resource_filename(
             'pyemma.coordinates.tests.test_featurereader', 'data/test.pdb')
@@ -112,11 +112,12 @@ class TestFeatureReader(unittest.TestCase):
             lagged.append(Y)
 
         assert len(data) == len(lagged)
-        merged_lagged = np.concatenate(lagged, axis=0)  # .reshape(self.xyz.shape)
+        # .reshape(self.xyz.shape)
+        merged_lagged = np.concatenate(lagged, axis=0)
 
         # reproduce outcome
         xyz_s = self.xyz.shape
-        fake_lagged = np.empty((xyz_s[0]-lag, xyz_s[1]*xyz_s[2]))
+        fake_lagged = np.empty((xyz_s[0] - lag, xyz_s[1] * xyz_s[2]))
         fake_lagged = self.xyz.reshape((xyz_s[0], -1))[lag:]
 
         self.assertTrue(np.allclose(merged_lagged, fake_lagged))
@@ -135,20 +136,48 @@ class TestFeatureReader(unittest.TestCase):
         d.parametrize()
 
     def test_in_memory(self):
-        # map "results" to memory
         reader = api.source(self.trajfile, top=self.topfile)
+        out1 = reader.get_output()
+        # now map stuff to memory
         reader.in_memory = True
+
+        print len(reader._Y)
+        print reader._Y[0].shape
 
         reader2 = api.source(self.trajfile, top=self.topfile)
         out = reader2.get_output()
 
+        assert len(out) == len(reader._Y) == 1
+        np.testing.assert_equal(out1, out)
         np.testing.assert_equal(reader._Y[0], out[0])
         np.testing.assert_equal(reader.get_output(), out)
 
-        # reset in_memory
+        # reset in_memory and check output gets deleted
         reader.in_memory = False
         assert reader._Y is None
 
+    def test_in_memory_with_stride(self):
+        # map "results" to memory
+        reader = api.source(self.trajfile, top=self.topfile)
+        reader.in_memory = True
+        assert reader._parametrized
+        reader.parametrize(stride=2)
+
+        reader2 = api.source(self.trajfile, top=self.topfile)
+        out = reader2.get_output(stride=2)
+
+        np.testing.assert_equal(reader._Y[0], out[0])
+
+    def test_in_memory_switch_stride_dim(self):
+        reader = api.source(self.trajfile, top=self.topfile)
+        reader.in_memory = True
+
+        # now get output with different strides
+        strides = [1, 2, 3, 4, 5]
+        for s in strides:
+            out = reader.get_output(stride=s)
+            shape = (reader.trajectory_length(0, stride=s), reader.dimension())
+            self.assertEqual(out[0].shape, shape, "not equal for stride=%i" % s)
 
     def testTimeLaggedAccess(self):
         # each frame has 2 atoms with 3 coords = 6 coords per frame.

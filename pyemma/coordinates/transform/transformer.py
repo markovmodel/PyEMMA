@@ -130,8 +130,7 @@ class Transformer(object):
         old_state = self._in_memory
         if not old_state and op_in_mem:
             self._in_memory = op_in_mem
-            self._Y = [np.empty((l, self.dimension()), dtype=self.output_type())
-                       for l in self.trajectory_lengths()]
+            self._Y = []
             self._map_to_memory()
         elif not op_in_mem and old_state:
             self._clear_in_memory()
@@ -312,8 +311,9 @@ class Transformer(object):
 
         self._param_finish()
         self._parametrized = True
-        # memory mode? Then map all results
-        if self.in_memory:
+        # memory mode? Then map all results. Avoid recursion here, if parametrization
+        # is triggered from get_output
+        if self.in_memory and not self._mapping_to_mem_active:
             self._map_to_memory()
 
     def map(self, X):
@@ -389,10 +389,13 @@ class Transformer(object):
         r""" Adds data to parameterization """
         pass
 
-    def _map_to_memory(self):
+    def _map_to_memory(self, stride=1):
         r"""Maps results to memory. Will be stored in attribute :attr:`Y`."""
+        self._logger.debug("mapping to mem")
         assert self._in_memory
-        self._Y = self.get_output()
+        self._mapping_to_mem_active = True
+        self._Y = self.get_output(stride=stride)
+        del self._mapping_to_mem_active
 
     def _reset(self, stride=1):
         r"""_reset data position"""
@@ -422,7 +425,7 @@ class Transformer(object):
         X, (Y if lag > 0) : array_like
             mapped (transformed) data
         """
-        if self.in_memory:
+        if self.in_memory and not self._mapping_to_mem_active:
             if self._itraj >= self.number_of_trajectories():
                 return None
             # operate in memory, implement iterator here
@@ -532,8 +535,9 @@ class Transformer(object):
 
         Notes
         -----
-        This function may be RAM intensive if stride is too large or
+        * This function may be RAM intensive if stride is too large or
         too many dimensions are selected.
+        * if in_memory attribute is True, then results of this methods are cached.
 
         Example
         -------
@@ -566,9 +570,25 @@ class Transformer(object):
 
         assert ndim > 0, "ndim was zero in %s" % self.__class__.__name__
 
+        if not self._parametrized:
+            self._logger.warning("has to be parametrized before getting output!"
+                                 " Doing it now.")
+            self.parametrize(stride)
+
+        # if we are in memory and have results already computed, return them
+        if self._in_memory:
+            # ensure stride and dimensions are same of cached result
+            if self._Y and all(self._Y[i].shape == (self.trajectory_length(i, stride=stride), ndim)
+                               for i in xrange(self.number_of_trajectories())):
+                return self._Y
+
         # allocate memory
-        trajs = [np.empty((l, ndim), dtype=self.output_type())
-                 for l in self.trajectory_lengths(stride=stride)]
+        try:
+            trajs = [np.empty((l, ndim), dtype=self.output_type())
+                     for l in self.trajectory_lengths(stride=stride)]
+        except MemoryError:
+            self._logger.error("Could not allocate enough memory to map all data."
+                               " Consider using a larger stride.")
 
         if __debug__:
             self._logger.debug("get_output(): dimensions=%s" % str(dimensions))
@@ -577,10 +597,6 @@ class Transformer(object):
         # fetch data
         last_itraj = -1
         t = 0  # first time point
-        if not self._parametrized:
-            self._logger.warning("has to be parametrized before getting output!"
-                                 "Doing it now.")
-            self.parametrize(stride)
 
         progress = ProgressBar(self._n_chunks(stride), description=
                                'getting output of ' + self.__class__.__name__)
@@ -596,5 +612,8 @@ class Transformer(object):
             # update progress
             progress.numerator += 1
             show_progressbar(progress)
+
+        if self._in_memory:
+            self._Y = trajs
 
         return trajs
