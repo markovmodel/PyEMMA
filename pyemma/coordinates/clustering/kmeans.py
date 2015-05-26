@@ -165,8 +165,8 @@ class KmeansClustering(AbstractClustering):
                         break
                     it += 1
                 if not converged_in_max_iter:
-                    self._logger.info("Algorithm did reach convergence criterion"
-                                      " of %f in %i iterations. Consider increasing max_iter."
+                    self._logger.info("Algorithm did not reach convergence criterion"
+                                      " of %g in %i iterations. Consider increasing max_iter."
                                       % (self._tolerance, self.max_iter))
 
             # done
