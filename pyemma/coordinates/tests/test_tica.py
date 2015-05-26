@@ -44,7 +44,8 @@ logger = getLogger('TestTICA')
 
 class TestTICA_Basic(unittest.TestCase):
     def test(self):
-        #np.random.seed(0)
+        # FIXME: this ugly workaround is necessary...
+        np.random.seed(0)
 
         data = np.random.randn(100, 10)
         tica_obj = api.tica(data=data, lag=10, dim=1)
