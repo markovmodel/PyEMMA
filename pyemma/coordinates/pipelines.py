@@ -1,4 +1,3 @@
-
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
 # All rights reserved.
@@ -22,11 +21,6 @@
 # ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-__author__ = 'noe, marscher'
-
-import numpy as np
-
 from pyemma.coordinates.clustering.interface import AbstractClustering
 from pyemma.coordinates.transform.transformer import Transformer
 from pyemma.coordinates.data.feature_reader import FeatureReader
@@ -37,17 +31,28 @@ __all__ = ['Discretizer',
            'Pipeline',
            ]
 
+__author__ = 'noe, marscher'
+
 
 class Pipeline(object):
-    """Data processing pipeline.
+    r"""Data processing pipeline.
+
+    Parameters
+    ----------
+    chain : list of transformers like objects
+        the order in the list defines the direction of data flow.
+    chunksize : int, optional
+        how many frames shall be processed at once.
+    param_stride : int, optional
+        omit every n'th data point
 
     """
 
     def __init__(self, chain, chunksize=100, param_stride=1):
-        # TODO:chunksize should be estimated from memory requirements (max memory usage)
         self._chain = []
         self.chunksize = chunksize
         self.param_stride = param_stride
+        self.chunksize = chunksize
 
         # add given elements in chain
         for e in chain:
@@ -74,7 +79,8 @@ class Pipeline(object):
 
         Appends the given element to the end of the current chain.
         """
-        # TODO: sanity checks on e
+        if not isinstance(e, Transformer):
+            raise TypeError("given element is not a transformer.")
 
         # set data producer
         if len(self._chain) == 0:
@@ -82,7 +88,9 @@ class Pipeline(object):
         else:
             data_producer = self._chain[-1]
 
-        e.data_producer = data_producer
+        # avoid calling the setter of Transformer.data_producer, since this
+        # triggers a re-parametrization even on readers (where it makes not sense)
+        e._data_producer = data_producer
         e.chunksize = self.chunksize
 
         self._chain.append(e)

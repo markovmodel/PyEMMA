@@ -38,10 +38,7 @@ __author__ = 'noe, marscher'
 class TransformerIterator(object):
     def __init__(self, transformer, stride=1, lag=0):
         # reset transformer iteration
-
-        # TODO: I think it might be necessary to reset the transformer before starting to iterate. If not, can you
-        # TODO: guarantee it is set to the correct initial settings such as _itraj=0?
-        # transformer._reset()
+        transformer._reset(stride)
         self._stride = stride
         self._lag = lag
         self._transformer = transformer
@@ -79,7 +76,7 @@ class Transformer(object):
     def __init__(self, chunksize=100):
         self.chunksize = chunksize
         self._in_memory = False
-        self._dataproducer = None
+        self._data_producer = None
         self._parametrized = False
         self._param_with_stride = 1
         # allow children of this class to implement their own progressbar handling
@@ -90,13 +87,15 @@ class Transformer(object):
     @property
     def data_producer(self):
         r"""where the transformer obtains its data."""
-        return self._dataproducer
+        return self._data_producer
 
     @data_producer.setter
     def data_producer(self, dp):
-        if dp is not self._dataproducer:
+        if dp is not self._data_producer:
+            self._logger.info("reset (previous) parametrization state, since"
+                              " data producer has been changed.")
             self._parametrized = False
-        self._dataproducer = dp
+        self._data_producer = dp
 
     @property
     def chunksize(self):
@@ -105,7 +104,8 @@ class Transformer(object):
 
     @chunksize.setter
     def chunksize(self, size):
-        assert size >= 0, "chunksize has to be positive"
+        if not size >= 0:
+            raise ValueError("chunksize has to be positive")
         self._chunksize = int(size)
 
     def _n_chunks(self, stride=1):
@@ -399,7 +399,7 @@ class Transformer(object):
         # TODO: children of this do not call parametrize nor reset their data_producers.
         # check if this is an issue
         if not self._parametrized:
-            self._logger.warning("reset(): not yet parametrized!")
+            self._logger.warning("reset(): not yet parametrized! Performing now.")
             self.parametrize()
         self._itraj = 0
         self._t = 0
@@ -511,7 +511,6 @@ class Transformer(object):
             where itraj and X are the same as above and Y contain the time-lagged
             data.
         """
-        self._reset(stride=stride)
         return TransformerIterator(self, stride=stride, lag=lag)
 
     def get_output(self, dimensions=slice(0, None), stride=1):
