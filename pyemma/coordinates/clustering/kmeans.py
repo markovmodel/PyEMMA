@@ -153,7 +153,7 @@ class KmeansClustering(AbstractClustering):
                 it = 0
                 converged_in_max_iter = False
                 while it < self.max_iter:
-                    self._logger.info("step %i" % it + 1)
+                    self._logger.info("step %i" % (it + 1))
                     old_centers = self._cluster_centers
                     self._cluster_centers = kmeans_clustering.cluster(self._in_memory_chunks,
                                                                       self._cluster_centers, self.metric)
@@ -161,7 +161,7 @@ class KmeansClustering(AbstractClustering):
                     if np.allclose(old_centers, self._cluster_centers, rtol=self._tolerance):
                         converged_in_max_iter = True
                         self._logger.info("Cluster centers converged after %i steps."
-                                          % it + 1)
+                                          % (it + 1))
                         break
                     it += 1
                 if not converged_in_max_iter:
