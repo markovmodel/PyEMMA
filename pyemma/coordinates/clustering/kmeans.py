@@ -74,6 +74,7 @@ class KmeansClustering(AbstractClustering):
         self._tolerance = tolerance
         self._init_strategy = init_strategy
         self._oom_strategy = oom_strategy
+        self._custom_param_progress_handling = True
 
     def _param_init(self):
         self._cluster_centers = []
@@ -141,8 +142,6 @@ class KmeansClustering(AbstractClustering):
 
             # run k-means in the end
             if last_chunk:
-                # concatenate all data
-                #all_data = np.vstack(self._in_memory_chunks)
                 # free part of the memory
 
                 if self._init_strategy == 'kmeans++':
@@ -152,14 +151,23 @@ class KmeansClustering(AbstractClustering):
                 # run k-means with all the data
                 self._logger.info("Accumulated all data, running kmeans on " + str(self._in_memory_chunks.shape))
                 it = 0
+                converged_in_max_iter = False
                 while it < self.max_iter:
+                    self._logger.info("step %i" % it + 1)
                     old_centers = self._cluster_centers
                     self._cluster_centers = kmeans_clustering.cluster(self._in_memory_chunks,
                                                                       self._cluster_centers, self.metric)
                     self._cluster_centers = [row for row in self._cluster_centers]
                     if np.allclose(old_centers, self._cluster_centers, rtol=self._tolerance):
+                        converged_in_max_iter = True
+                        self._logger.info("Cluster centers converged after %i steps."
+                                          % it + 1)
                         break
                     it += 1
+                if not converged_in_max_iter:
+                    self._logger.info("Algorithm did reach convergence criterion"
+                                      " of %f in %i iterations. Consider increasing max_iter."
+                                      % (self._tolerance, self.max_iter))
 
             # done
             if last_chunk:
