@@ -10,7 +10,7 @@ Changelog
 - coordinates package: enable passing chunk size to readers in API.
 - coordinates package: save_traj(s) now handles stride parameter.
 - Time consuming algorithms now display progressbars (optional)
-
+- plots package: added functions to plot flux and msm models.
 - Bugfixes:
     - [msm.MSM.pcca]: coarse-grained transition matrix corrected
     - [msm.generation]: stopping states option fixed
