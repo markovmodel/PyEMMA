@@ -60,7 +60,7 @@ def its(dtrajs, lags=None, nits=10, reversible=True, connected=True):
     lags : array-like of integers (optional)
         integer lag times at which the implied timescales will be
         calculated
-    k : int (optional)
+    nits : int (optional)
         number of implied timescales to be computed. Will compute less
         if the number of states are smaller
     connected : boolean (optional)
