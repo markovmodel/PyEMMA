@@ -38,6 +38,14 @@ __all__ = ['MDFeaturizer',
            'CustomFeature',
            ]
 
+def _get_indices_chi1(traj):
+        rids, indices = zip(*(_atom_sequence(traj, atoms) for atoms in CHI1_ATOMS))
+        id_sort = np.argsort(np.concatenate(rids))
+        if not any(x.size for x in indices):
+                return np.empty(shape=(0, 4), dtype=np.int)
+
+        indices = np.vstack(x for x in indices if x.size)[id_sort]
+        return id_sort, indices
 
 def _describe_atom(topology, index):
     """
@@ -189,10 +197,11 @@ class DistanceFeature(object):
         self.periodic = periodic
 
     def describe(self):
-        labels = ["%s %s - %s" % (self.prefix_label,
-                                  _describe_atom(self.top, pair[0]),
-                                  _describe_atom(self.top, pair[1]))
-                  for pair in self.distance_indexes]
+        getlbl = lambda at: [at.residue.chain.index, at.residue.name,
+                    at.residue.resSeq, at.name, at.index]
+        labels = [[self.prefix_label] + getlbl(self.top.atom(pair[0])) 
+                    + getlbl(self.top.atom(pair[1])) 
+                    for pair in self.distance_indexes]
         return labels
 
     @property
@@ -329,9 +338,10 @@ class DihedralFeature(object):
 class BackboneTorsionFeature(object):
     # TODO: maybe consider this as a special case of DihedralFeature?
 
-    def __init__(self, topology, deg=False):
+    def __init__(self, topology, selstr="", deg=False, cossin=False):
         self.topology = topology
         self.deg = deg
+        self.cossin = cossin
 
         # this is needed for get_indices functions, since they expect a Trajectory,
         # not a Topology
@@ -342,22 +352,30 @@ class BackboneTorsionFeature(object):
 
         ft = fake_traj(topology)
         _, indices = _get_indices_phi(ft)
-        self._phi_inds = indices
 
-        _, indices = _get_indices_psi(ft)
-        self._psi_inds = indices
+        if selstr=="":
+            self._phi_inds = indices
+        else:
+            self._phi_inds = indices[np.in1d(indices[:,1],
+                    topology.select(selstr), assume_unique=True)]
 
-        self._dim = len(self._phi_inds) + len(self._psi_inds)
+            _, indices = _get_indices_psi(ft)
+        if selstr=="":
+            self._psi_inds = indices
+        else:
+            self._psi_inds = indices[np.in1d(indices[:,1], 
+                    topology.select(selstr), assume_unique=True)]
+
+        if self.cossin:
+            self._dim = 2*(len(self._phi_inds) + len(self._psi_inds))
+        else:
+            self._dim = len(self._phi_inds) + len(self._psi_inds)
 
     def describe(self):
         top = self.topology
-        labels_phi = ["PHI %s" % _describe_atom(top, i)
-                      for ires in self._phi_inds
-                      for i in ires]
-
-        labels_psi = ["PSI %s" % _describe_atom(top, i)
-                      for ires in self._psi_inds
-                      for i in ires]
+        getlbl = lambda at: [at.residue.chain.index, at.residue.name, at.residue.resSeq]
+        labels_phi = [["PHI"]+getlbl(top.atom(ires[1])) for ires in self._phi_inds]
+        labels_psi = [["PSI"]+getlbl(top.atom(ires[1])) for ires in self._psi_inds]
 
         return labels_phi + labels_psi
 
@@ -370,11 +388,14 @@ class BackboneTorsionFeature(object):
         # compute_dihedrals once?
         y1 = compute_dihedrals(traj, self._phi_inds).astype(np.float32)
         y2 = compute_dihedrals(traj, self._psi_inds).astype(np.float32)
-        rad = np.hstack((y1, y2))
-        if self.deg:
-            return np.rad2deg(rad)
+        if self.cossin:
+            return np.hstack((np.cos(y1), np.sin(y1), np.cos(y2), np.sin(y2)))
         else:
-            return rad
+            rad = np.hstack((y1, y2))
+            if self.deg:
+                return np.rad2deg(rad)
+            else:
+                return rad
 
     def __hash__(self):
         hash_value = _hash_numpy_array(self._phi_inds)
@@ -386,6 +407,67 @@ class BackboneTorsionFeature(object):
     def __eq__(self, other):
         return self.__hash__() == other.__hash__()
 
+class Chi1TorsionFeature(object):
+    # TODO: maybe consider this as a special case of DihedralFeature?
+
+    def __init__(self, topology, selstr="", deg=False, cossin=False):
+        self.topology = topology
+        self.deg = deg
+        self.cossin = cossin
+
+        # this is needed for get_indices functions, since they expect a Trajectory,
+        # not a Topology
+        class fake_traj():
+
+            def __init__(self, top):
+                self.top = top
+
+        ft = fake_traj(topology)
+        _, indices = _get_indices_chi1(ft)
+        if selstr=="":
+            self._chi1_inds = indices
+        else:
+            self._chi1_inds = indices[np.in1d(indices[:,1],
+                topology.select(selstr),assume_unique=True)]
+
+        if self.cossin:
+                self._dim = 2*len(self._chi1_inds)
+        else:
+                self._dim = len(self._chi1_inds)
+
+    def describe(self):
+        top = self.topology
+        getlbl = lambda at: [at.residue.chain.index, at.residue.name, at.residue.resSeq]
+        labels_chi1 = [["CHI1"]+getlbl(top.atom(ires[1])) for ires in self._chi1_inds]
+
+        return labels_chi1
+
+    @property
+    def dimension(self):
+        return self._dim
+
+    def map(self, traj):
+        # TODO: can we merge phi_inds and psi_inds to only call
+        # compute_dihedrals once?
+        y1 = compute_dihedrals(traj, self._chi1_inds).astype(np.float32)
+
+        if self.cossin:
+            return np.hstack((np.cos(y1), np.sin(y1)))
+        else:
+            rad = y1
+            if self.deg:
+                return np.rad2deg(rad)
+            else:
+                return rad
+
+    def __hash__(self):
+        hash_value = _hash_numpy_array(self._chi1_inds)
+        hash_value ^= hash(self.topology)
+
+        return hash_value
+
+    def __eq__(self, other):
+        return self.__hash__() == other.__hash__()
 
 class MDFeaturizer(object):
 
@@ -670,19 +752,44 @@ class MDFeaturizer(object):
     def backbone_torsions(self):
         return self.add_backbone_torsions()
 
-    def add_backbone_torsions(self, deg=False):
+    def add_backbone_torsions(self, selstr="", deg=False, cossin=False):
         """
-        Adds all backbone phi/psi angles to the feature list.
+        Adds all backbone phi/psi angles or the ones specified in selstr to the feature list.
 
         Parameters
         ----------
+        selstr : str, optional, default = ""
+            selection string specifying the atom selection used to specify a specific set of backbone angles
+            If "" (default), all chi1 angles found in the topology will be computed
         deg : bool, optional, default = False
             If False (default), angles will be computed in radians.
             If True, angles will be computed in degrees.
-
+        cossin : bool, optional, default = False
+            If False (default), raw angles will be computed
+            If True, cosine and sine components of the angles will be computed
         """
-        f = BackboneTorsionFeature(self.topology, deg=deg)
+        f = BackboneTorsionFeature(self.topology, selstr=selstr, deg=deg, cossin=cossin)
         self.__add_feature(f)
+
+    def add_chi1_torsions(self, selstr="", deg=False, cossin=False):
+        """
+        Adds all chi1 angles or the ones specified in selstr to the feature list.
+
+        Parameters
+        ----------
+        selstr : str, optional, default = ""
+            selection string specifying the atom selection used to specify a specific set of backbone angles
+            If "" (default), all chi1 angles found in the topology will be computed
+        deg : bool, optional, default = False
+            If False (default), angles will be computed in radians.
+            If True, angles will be computed in degrees.
+        cossin : bool, optional, default = False
+            If False (default), raw angles will be computed
+            If True, cosine and sine components of the angles will be computed
+        """
+        f = Chi1TorsionFeature(self.topology, selstr=selstr, deg=deg, cossin=cossin)
+        self.__add_feature(f)
+
 
     def add_custom_feature(self, feature):
         """
