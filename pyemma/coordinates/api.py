@@ -28,8 +28,6 @@ r"""User-API for the pyemma.coordinates package
 .. currentmodule:: pyemma.coordinates.api
 """
 
-__docformat__ = "restructuredtext en"
-
 from pyemma.util.annotators import deprecated
 from pyemma.util.log import getLogger as _getLogger
 from pyemma.util import types as _types
@@ -60,11 +58,11 @@ import itertools as _itertools
 
 _logger = _getLogger('coordinates.api')
 
+__docformat__ = "restructuredtext en"
 __author__ = "Frank Noe, Martin Scherer"
 __copyright__ = "Copyright 2015, Computational Molecular Biology Group, FU-Berlin"
 __credits__ = ["Benjamin Trendelkamp-Schroer", "Martin Scherer", "Frank Noe"]
 __license__ = "FreeBSD"
-__version__ = "2.0.0"
 __maintainer__ = "Martin Scherer"
 __email__ = "m.scherer AT fu-berlin DOT de"
 
@@ -733,8 +731,9 @@ def pca(data=None, dim=2, stride=1):
 
     See also
     --------
-    tica
-        for time-lagged independent component analysis
+    :class:`PCA <pyemma.coordinates.transform.PCA>` : tica object
+
+    :func:`tica <pyemma.coordinates.tica>` : for time-lagged independent component analysis
 
     References
     ----------
@@ -833,8 +832,9 @@ def tica(data=None, lag=10, dim=2, stride=1, force_eigenvalues_le_one=False):
 
     See also
     --------
-    pca
-        for principal component analysis
+    :class:`TICA <pyemma.coordinates.transform.TICA>` : tica object
+
+    :func:`pca <pyemma.coordinates.pca>` : for principal component analysis
 
     References
     ----------
@@ -848,7 +848,6 @@ def tica(data=None, lag=10, dim=2, stride=1, force_eigenvalues_le_one=False):
     .. [3] Schwantes C, V S Pande. 2013.
        Improvements in Markov State Model Construction Reveal Many Non-Native Interactions in the Folding of NTL9
        J. Chem. Theory. Comput. 9, 2000-2009. doi:10.1021/ct300878a
-
 
     """
     # don't expose this until we know what this is doing.
