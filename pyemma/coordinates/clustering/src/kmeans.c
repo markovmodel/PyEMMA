@@ -26,6 +26,33 @@
 #include <time.h>
 #include <clustering.h>
 
+static PyObject *set_callback = NULL;
+
+static PyObject *c_set_callback(PyObject *dummy, PyObject *args) {
+    PyObject *result;
+    PyObject *temp;
+
+    result = NULL;
+    temp = NULL;
+
+    if (PyArg_ParseTuple(args, "O:set_callback", &temp)) {
+        if (!PyCallable_Check(temp)) {
+            PyErr_SetString(PyExc_TypeError, "parameter must be callable");
+            return NULL;
+        }
+        /* Add a reference to new callback */
+        Py_XINCREF(temp);
+        /* Dispose of previous callback */
+        Py_XDECREF(set_callback);
+        /* Remember new callback */
+        set_callback = temp;
+        /* Boilerplate to return "None" */
+        Py_INCREF(Py_None);
+        result = Py_None;
+    }
+    return result;
+}
+
 static PyObject *cluster(PyObject *self, PyObject *args) {
     int debug;
     PyObject *py_centers, *py_item, *py_res;
@@ -200,6 +227,7 @@ static PyObject* initCentersKMpp(PyObject *self, PyObject *args) {
     Py_ssize_t dim, n_frames;
     PyObject *ret_init_centers;
     PyArrayObject *np_data;
+    PyObject *py_callback_result;
     char *metric;
     npy_intp dims[2];
     int *taken_points;
@@ -215,6 +243,7 @@ static PyObject* initCentersKMpp(PyObject *self, PyObject *args) {
     float (*distance)(float*, float*, size_t, float*, float*);
 
     ret_init_centers = Py_BuildValue("");
+    py_callback_result = NULL;
     np_data = NULL; metric = NULL; data = NULL;
     init_centers = NULL; taken_points = NULL;
     centers_found = 0; squared_distances = NULL;
@@ -224,10 +253,11 @@ static PyObject* initCentersKMpp(PyObject *self, PyObject *args) {
     next_center_candidates_potential = NULL;
     dist_sum = 0.0;
 
+
 #ifndef _KMEANS_INIT_RANDOM_SEED
 #define _KMEANS_INIT_RANDOM_SEED
     /* set random seed */
-    srand(0); /* time(NULL));*/
+    srand(time(NULL));
 #endif
 
     /* parse python input (np_data, metric, k) */
@@ -275,6 +305,11 @@ static PyObject* initCentersKMpp(PyObject *self, PyObject *args) {
     }
     /* increase number of found centers */
     centers_found++;
+    /* perform callback */
+    if(set_callback) {
+        py_callback_result = PyObject_CallObject(set_callback, NULL);
+        if(py_callback_result) Py_DECREF(py_callback_result);
+    }
 
     /* iterate over all data points j, measuring the squared distance between j and the initial center i: */
     /* squared_distances[i] = distance(x_j, x_i)*distance(x_j, x_i) */
@@ -361,6 +396,11 @@ static PyObject* initCentersKMpp(PyObject *self, PyObject *args) {
             }
             /* increase centers_found */
             centers_found++;
+            /* perform the callback */
+            if(set_callback) {
+                py_callback_result = PyObject_CallObject(set_callback, NULL);
+                if(py_callback_result) Py_DECREF(py_callback_result);
+            }
             /* mark the data point as assigned center */
             taken_points[best_candidate] = 1;
             /* update the sum of squared distances by removing the assigned center */
@@ -465,11 +505,11 @@ static PyMethodDef kmeansMethods[] =
      {"cluster", cluster, METH_VARARGS, CLUSTER_USAGE},
      {"assign",  assign,  METH_VARARGS, ASSIGN_USAGE},
      {"init_centers", initCentersKMpp, METH_VARARGS, INIT_CENTERS_USAGE},
+     {"set_callback", c_set_callback, METH_VARARGS, "For setting a callback."},
      {NULL, NULL, 0, NULL}
 };
 
-PyMODINIT_FUNC
-initkmeans_clustering(void)
+PyMODINIT_FUNC initkmeans_clustering(void)
 {
   (void)Py_InitModule3("kmeans_clustering", kmeansMethods, MOD_USAGE);
   import_array();

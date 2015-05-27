@@ -57,6 +57,12 @@ def show_progressbar(bar, show_eta=True):
 
             # make it visible once
             display(box)
+
+            # update css for a more compact view
+            progress_widget._css = [
+                ("div", "margin-top", "0px")
+            ]
+            progress_widget.height = "8px"
         else:
             widget = bar.widget
 
