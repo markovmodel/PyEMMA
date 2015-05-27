@@ -1,4 +1,3 @@
-
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
 # All rights reserved.
@@ -39,11 +38,12 @@ __all__ = ['transition_matrix_metropolis_1d',
            'generate_trajs']
 
 
-class MarkovChainSampler:
+class MarkovChainSampler(object):
     """
     Class for generation of trajectories from a transition matrix P.
-    If many trajectories will be sampled from P, using this class is much more efficient than individual calls to
-    generate_traj because that avoid costly multiple construction of random variable objects.
+    If many trajectories will be sampled from P, using this class is much more 
+    efficient than individual calls to generate_traj because that avoid costly
+    multiple construction of random variable objects.
 
     """
 
@@ -74,7 +74,7 @@ class MarkovChainSampler:
 
         # generate discrete random value generators for each line
         self.rgs = np.ndarray((self.n), dtype=object)
-        for i in range(self.n):
+        for i in xrange(self.n):
             nz = np.nonzero(self.P[i])
             self.rgs[i] = scipy.stats.rv_discrete(values=(nz, self.P[i, nz]))
 
@@ -120,7 +120,7 @@ class MarkovChainSampler:
         if stopat[traj[0]]:
             return traj[:1]
         # else run until end or stopping state
-        for t in range(1, N):
+        for t in xrange(1, N):
             traj[t] = self.rgs[traj[t - 1]].rvs()
             if stopat[traj[t]]:
                 return traj[:t+1]
@@ -144,8 +144,9 @@ class MarkovChainSampler:
             once a state of the stop set is reached
 
         """
-        trajs = [self.trajectory(N, start=start, stop=stop) for i in range(M)]
+        trajs = [self.trajectory(N, start=start, stop=stop) for _ in xrange(M)]
         return trajs
+
 
 def generate_traj(P, N, start=None, stop=None, dt=1):
     """
@@ -210,14 +211,14 @@ def generate_trajs(P, M, N, start=None, stop=None, dt=1):
 def transition_matrix_metropolis_1d(E, d=1.0):
     r"""Transition matrix describing the Metropolis chain jumping
     between neighbors in a discrete 1D energy landscape.
-    
+
     Parameters
     ----------
     E : (M,) ndarray
         Energies in units of kT
     d : float (optional)
         Diffusivity of the chain, d in (0, 1]
-        
+
     Returns
     -------
     P : (M, M) ndarray
@@ -240,7 +241,7 @@ def transition_matrix_metropolis_1d(E, d=1.0):
     P = np.zeros((n, n))
     # set offdiagonals
     P[0, 1] = 0.5 * d * min(1.0, math.exp(-(E[1] - E[0])))
-    for i in range(1, n - 1):
+    for i in xrange(1, n - 1):
         P[i, i - 1] = 0.5 * d * min(1.0, math.exp(-(E[i - 1] - E[i])))
         P[i, i + 1] = 0.5 * d * min(1.0, math.exp(-(E[i + 1] - E[i])))
     P[n - 1, n - 2] = 0.5 * d * min(1.0, math.exp(-(E[n - 2] - E[n - 1])))
