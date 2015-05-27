@@ -826,7 +826,7 @@ def tica(data=None, lag=10, dim=2, stride=1, force_eigenvalues_le_one=False):
 
     TICA was originally introduced for signal processing in [2]_. It was introduced
     to molecular dynamics and as a method for the construction of Markov models in
-    [1]_ and [3]_. It was shown in [3]_ that when applied to molecular dynamics data,
+    [1]_ and [3]_. It was shown in [1]_ that when applied to molecular dynamics data,
     TICA is an approximation to the eigenvalues and eigenvectors of the true underlying
     dynamics.
 
