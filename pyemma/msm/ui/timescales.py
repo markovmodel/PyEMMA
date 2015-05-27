@@ -1,4 +1,3 @@
-
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
 # All rights reserved.
@@ -28,10 +27,6 @@ Created on Jul 26, 2014
 
 @author: noe
 '''
-__docformat__ = "restructuredtext en"
-
-__all__ = ['ImpliedTimescales']
-
 import numpy as np
 import warnings
 
@@ -40,6 +35,11 @@ from pyemma.msm.analysis import timescales
 from pyemma.util.statistics import confidence_interval
 from pyemma.util.types import ensure_dtraj_list as _ensure_dtraj_list
 from pyemma.util.discrete_trajectories import number_of_states
+from pyemma.util.progressbar._impl import ProgressBar
+from pyemma.util.progressbar.gui import show_progressbar
+
+__docformat__ = "restructuredtext en"
+__all__ = ['ImpliedTimescales']
 
 
 # TODO: connectivity flag is currently not used. Introduce different connectivity modes (lag, minimal, set)
@@ -178,18 +178,20 @@ class ImpliedTimescales(object):
 
     def bootstrap(self, nsample=10):
         r"""Samples ITS using bootstrapping
-        
+
         """
         # initialize
         self._its_samples = np.zeros((len(self._lags), self._nits, nsample))
         self._nits_sample = self._nits
         maxnits = self._nits_sample
         maxnlags = len(self._lags)
-        for i in range(len(self._lags)):
+        pg = ProgressBar(len(self._lags) * nsample, 
+                         description="bootstrapping timescales")
+        for i in xrange(len(self._lags)):
             tau = self._lags[i]
             all_ts = True
             any_ts = True
-            for k in range(nsample):
+            for k in xrange(nsample):
                 # sample count matrix
                 C = bootstrap_counts(self._dtrajs, tau)
                 # estimate timescales
@@ -205,6 +207,8 @@ class ImpliedTimescales(object):
                 else:
                     any_ts = False
                     maxnlags = i
+                pg.numerator += 1
+                show_progressbar(pg)
             if (not all_ts):
                 warnings.warn('Could not compute all requested timescales at tau = ' + str(tau) +
                               '. Bootstrap is incomplete and might be non-representative.' +
