@@ -125,7 +125,7 @@ class Transformer(object):
     @in_memory.setter
     def in_memory(self, op_in_mem):
         r"""
-        If called, the output will be stored in memory.
+        If set to True, the output will be stored in memory.
         """
         old_state = self._in_memory
         if not old_state and op_in_mem:
@@ -230,9 +230,8 @@ class Transformer(object):
         """
         # check if ready
         if self.data_producer is None:
-            raise RuntimeError('Called parametrize of %s while data producer is not'
-                               ' yet set. Ensure "data_producer" attribute is set!'
-                               % self.describe())
+            raise RuntimeError('Called parametrize while data producer is not'
+                               ' yet set. Ensure "data_producer" attribute is set!')
 
         # if stride is not equal to one and does not match to a previous call
         # retrigger parametrization
@@ -395,7 +394,7 @@ class Transformer(object):
         assert self._in_memory
         self._mapping_to_mem_active = True
         self._Y = self.get_output(stride=stride)
-        del self._mapping_to_mem_active
+        self._mapping_to_mem_active = False
 
     def _reset(self, stride=1):
         r"""_reset data position"""
@@ -536,7 +535,7 @@ class Transformer(object):
         Notes
         -----
         * This function may be RAM intensive if stride is too large or
-        too many dimensions are selected.
+          too many dimensions are selected.
         * if in_memory attribute is True, then results of this methods are cached.
 
         Example
@@ -587,8 +586,9 @@ class Transformer(object):
             trajs = [np.empty((l, ndim), dtype=self.output_type())
                      for l in self.trajectory_lengths(stride=stride)]
         except MemoryError:
-            self._logger.error("Could not allocate enough memory to map all data."
-                               " Consider using a larger stride.")
+            self._logger.exception("Could not allocate enough memory to map all data."
+                                   " Consider using a larger stride.")
+            return
 
         if __debug__:
             self._logger.debug("get_output(): dimensions=%s" % str(dimensions))
