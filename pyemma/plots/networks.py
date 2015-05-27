@@ -187,6 +187,7 @@ class NetworkPlot(object):
         from .grandalf.layouts import DigcoLayout
         class defaultview(object):
             w,h = 10,10
+            xy = None
         min_stress = float('infinity')
         best_pos = np.zeros((len(V),2))
         # explore
@@ -327,7 +328,7 @@ def plot_flux(flux, pos = None, state_sizes = None, state_scale = 1.0, state_col
 
     Parameters
     ----------
-    flux : :class:'ReactiveFlux <pyemma.msm.ReactiveFlux>'
+    flux : :class:`ReactiveFlux <pyemma.msm.flux.ReactiveFlux>`
         reactive flux object
     pos : ndarray(n,2), optional, default=None
         User-defined positions to draw the states on. If not given, will set the x coordinates equal to the
@@ -349,11 +350,11 @@ def plot_flux(flux, pos = None, state_sizes = None, state_scale = 1.0, state_col
         be used. If a matrix of strings is given by the user these will be used.
     arrow_label_format : str, optional, default='%10.2f'
         The numeric format to print the arrow labels
-    max_width = 12
+    max_width : int (default = 12)
         The maximum figure width
-    max_height = 12
+    max_height: int (default = 12)
         The maximum figure height
-    figpadding = 0.2
+    figpadding: float (default = 0.2)
         The relative figure size used for the padding
 
     Returns
