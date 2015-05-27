@@ -32,7 +32,7 @@ __author__ = 'noe'
 class NetworkPlot(object):
 
     def __init__(self, A, pos=None, xpos=None, ypos=None):
-        """
+        r"""
 
         Parameters
         ----------
@@ -45,6 +45,24 @@ class NetworkPlot(object):
         ypos : ndarray(n,)
             user-defined y-positions
 
+        Examples
+        --------
+        We define first define a reactive flux by taking the following transition
+        matrix and computing TPT from state 2 to 3.
+
+        >>> import numpy as np
+        >>> P = np.array([[0.8,  0.15, 0.05,  0.0,  0.0],
+        ...               [0.1,  0.75, 0.05, 0.05, 0.05],
+        ...               [0.05,  0.1,  0.8,  0.0,  0.05],
+        ...               [0.0,  0.2, 0.0,  0.8,  0.0],
+        ...               [0.0,  0.02, 0.02, 0.0,  0.96]])
+        >>> from pyemma import msm
+        >>> F = msm.tpt(msm.markov_model(P), [2], [3])
+
+        now plot the gross flux
+        >>> NetworkPlot(F.gross_flux).plot_network() # doctest:+ELLIPSIS
+        ...
+
         """
         if A.shape[0] >= 50:
             import warnings
@@ -56,10 +74,12 @@ class NetworkPlot(object):
         self.xpos = xpos
         self.ypos = ypos
 
-    def _draw_arrow(self, x1, y1, x2, y2, Dx, Dy, label="", width=1.0, arrow_curvature=1.0, color="grey",
+    def _draw_arrow(self, x1, y1, x2, y2, Dx, Dy, label="", width=1.0,
+                    arrow_curvature=1.0, color="grey",
                     patchA=None, patchB=None, shrinkA=0, shrinkB=0):
         """
-        Draws a slightly curved arrow from (x1,y1) to (x2,y2). Will allow the given patches at start end end.
+        Draws a slightly curved arrow from (x1,y1) to (x2,y2).
+        Will allow the given patches at start end end.
 
         """
         # set arrow properties
@@ -133,9 +153,9 @@ class NetworkPlot(object):
         if state_colors is None:
             state_colors = '#ff5500'  # None is not acceptable
         if isinstance(state_colors, str):
-            state_colors = [state_colors for i in range(n)]
+            state_colors = [state_colors for i in xrange(n)]
         else:
-            state_colors = [plt.cm.binary(int(256.0*state_colors[i])) for i in range(n)]  # transfrom from [0,1] to 255-scale
+            state_colors = [plt.cm.binary(int(256.0*state_colors[i])) for i in xrange(n)]  # transfrom from [0,1] to 255-scale
         # set arrow labels
         if isinstance(arrow_labels, np.ndarray):
             L = arrow_labels
@@ -144,15 +164,15 @@ class NetworkPlot(object):
         if arrow_labels is None:
             L[:,:] = ''
         elif arrow_labels.lower() == 'weights':
-            for i in range(n):
-                for j in range(n):
+            for i in xrange(n):
+                for j in xrange(n):
                     L[i,j] = arrow_label_format % self.A[i,j]
         else:
             raise ValueError('invalid arrow label format')
 
         # draw circles
         circles = []
-        for i in range(n):
+        for i in xrange(n):
             fig = plt.gcf()
             # choose color
             c = plt.Circle(self.pos[i], radius=math.sqrt(0.5*state_sizes[i])/2.0 ,color=state_colors[i], zorder=2)
@@ -163,8 +183,8 @@ class NetworkPlot(object):
                      color='black', zorder=3)
 
         # draw arrows
-        for i in range(n):
-            for j in range(i+1,n):
+        for i in xrange(n):
+            for j in xrange(i+1,n):
                 if (abs(self.A[i,j]) > 0):
                     self._draw_arrow(self.pos[i,0], self.pos[i,1], self.pos[j,0], self.pos[j,1], Dx, Dy, label=str(L[i,j]),
                                width=arrow_scale*self.A[i,j], arrow_curvature=arrow_curvature,
@@ -186,12 +206,12 @@ class NetworkPlot(object):
             return np.array([self.xpos,self.ypos]), 0  # nothing to do
         from .grandalf.layouts import DigcoLayout
         class defaultview(object):
-            w,h = 10,10
+            w, h = 10, 10
             xy = None
         min_stress = float('infinity')
         best_pos = np.zeros((len(V),2))
         # explore
-        for i in range(nexplore):
+        for i in xrange(nexplore):
             for v in V:
                 v.view = defaultview()
             dig = DigcoLayout(g.C[0], opt_x=(self.xpos is None), opt_y=(self.ypos is None))
@@ -208,7 +228,7 @@ class NetworkPlot(object):
             dig.draw(N=nstep_explore)
             # print i, dig.stress
             if dig.stress < min_stress:
-                for j in range(len(V)):
+                for j in xrange(len(V)):
                     best_pos[j,:] = V[j].view.xy
                 min_stress = dig.stress
         # rescale fixed to user settings and balance the other coordinate
@@ -238,8 +258,8 @@ class NetworkPlot(object):
         I,J = np.where(self.A>0)
         # create graph object
         from .grandalf.graphs import Vertex,Edge,Graph
-        V = [Vertex(i) for i in range(n)]
-        E = [Edge(V[I[i]],V[J[i]]) for i in range(len(I))]
+        V = [Vertex(i) for i in xrange(n)]
+        E = [Edge(V[I[i]],V[J[i]]) for i in xrange(len(I))]
         g = Graph(V,E)
         # layout
         self.pos, self.stress = self._find_best_positions(V, g, 10, 25)
@@ -291,8 +311,13 @@ def plot_markov_model(P, pos = None, state_sizes = None, state_scale = 1.0, stat
 
     Examples
     --------
-    >>> P = np.array([[0.8,  0.15, 0.05,  0.0,  0.0], [0.1,  0.75, 0.05, 0.05, 0.05], [0.05,  0.1,  0.8,  0.0,  0.05], [0.0,  0.2, 0.0,  0.8,  0.0], [0.0,  0.02, 0.02, 0.0,  0.96]])
-    >>> plot_markov_model(P)
+    >>> P = np.array([[0.8,  0.15, 0.05,  0.0,  0.0],
+    ...              [0.1,  0.75, 0.05, 0.05, 0.05],
+    ...              [0.05,  0.1,  0.8,  0.0,  0.05],
+    ...              [0.0,  0.2, 0.0,  0.8,  0.0],
+    ...              [0.0,  0.02, 0.02, 0.0,  0.96]])
+    >>> plot_markov_model(P) # doctest:+ELLIPSIS
+    array...
 
     """
     from pyemma.msm import analysis as msmana
@@ -319,7 +344,7 @@ def plot_markov_model(P, pos = None, state_sizes = None, state_scale = 1.0, stat
 
 def plot_flux(flux, pos = None, state_sizes = None, state_scale = 1.0, state_colors = '#ff5500', minflux = 1e-9,
               arrow_scale = 1.0, arrow_curvature = 1.0, arrow_labels = 'weights', arrow_label_format='%10.2f',
-              max_width = 12, max_height = 12, figpadding = 0.2):
+              max_width = 12, max_height = 12, figpadding = 0.2, attribute_to_plot='net_flux'):
     r"""Plots a network representation of the reactive flux
 
     This visualization is not optimized for large fluxes. It is meant to be used for the visualization of small
@@ -366,7 +391,11 @@ def plot_flux(flux, pos = None, state_sizes = None, state_scale = 1.0, state_col
     We define first define a reactive flux by taking the following transition matrix and computing TPT from state 2 to 3
 
     >>> import numpy as np
-    >>> P = np.array([[0.8,  0.15, 0.05,  0.0,  0.0], [0.1,  0.75, 0.05, 0.05, 0.05], [0.05,  0.1,  0.8,  0.0,  0.05], [0.0,  0.2, 0.0,  0.8,  0.0], [0.0,  0.02, 0.02, 0.0,  0.96]])
+    >>> P = np.array([[0.8,  0.15, 0.05,  0.0,  0.0],
+    ...               [0.1,  0.75, 0.05, 0.05, 0.05],
+    ...               [0.05,  0.1,  0.8,  0.0,  0.05],
+    ...               [0.0,  0.2, 0.0,  0.8,  0.0],
+    ...               [0.0,  0.02, 0.02, 0.0,  0.96]])
     >>> from pyemma import msm
     >>> F = msm.tpt(msm.markov_model(P), [2], [3])
     >>> F.flux[:] *= 100
@@ -374,13 +403,14 @@ def plot_flux(flux, pos = None, state_sizes = None, state_scale = 1.0, state_col
     Scale the flux by 100 is basically a change of units to get numbers close to 1 (avoid printing many zeros).
     Now we visualize the flux:
 
-    >>> plot_flux(F)
+    >>> plot_flux(F) # doctest:+ELLIPSIS
+    array...
 
     """
-    F = flux.net_flux
+    F = getattr(flux, attribute_to_plot)
     if minflux > 0:
-        I,J = np.where(F < minflux)
-        F[I,J] = 0.0
+        I, J = np.where(F < minflux)
+        F[I, J] = 0.0
     c = flux.committor
     if state_sizes is None:
         state_sizes = flux.stationary_distribution
