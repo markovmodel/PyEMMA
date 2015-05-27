@@ -459,17 +459,26 @@ def memory_reader(data):
     return _DataInMemory(data)
 
 
-def save_traj(traj_inp, indexes, outfile, verbose = False, stride = 1):
+def save_traj(traj_inp, indexes, outfile, topfile=None, stride = 1, chunksize=1000, verbose=False):
     r""" Saves a sequence of frames as a single trajectory.
 
-    Extracts the specified sequence of time/trajectory indexes from the input reader
-    and saves it in a molecular dynamics trajectory. The output format will be determined
+    Extracts the specified sequence of time/trajectory indexes from traj_inp
+    and saves it to one single molecular dynamics trajectory file. The output format will be determined
     by the outfile name.
 
     Parameters
     ----------
-    traj_inp : :py:func:`pyemma.coordinates.data.feature_reader.FeatureReader`
-        An input reader. Please use :py:func:`pyemma.coordinates.source` to construct it.
+
+    traj_inp :
+        traj_inp can be of two types.
+
+            1. a python list of strings containing the filenames associated with the indices in
+            :py:obj:`indexes`. With this type of input, a :py:obj:`topfile` is mandatory.
+
+            2. a :py:func:`pyemma.coordinates.data.feature_reader.FeatureReader` object containing the filename
+            list in :py:obj:`traj_inp.trajfiles`. Please use :py:func:`pyemma.coordinates.source` to construct it.
+            With this type of input, the input :py:obj:`topfile` will be ignored. and :py:obj:`traj_inp.topfile` will
+            be used instead
 
     indexes : ndarray(T, 2) or list of ndarray(T_i, 2)
         A (T x 2) array for writing a trajectory of T time steps. Each row contains two indexes (i, t), where
@@ -481,14 +490,23 @@ def save_traj(traj_inp, indexes, outfile, verbose = False, stride = 1):
         The name of the output file. Its extension will determine the file type written. Example: "out.dcd"
         If set to None, the trajectory object is returned to memory
 
+    topfile : str.
+        The topology file needed to read the files in the list :py:obj:`traj_inp`. If :py:obj:`traj_inp` is not a list,
+        this parameter is ignored.
+
     stride  : integer, default is 1
         This parameter informs :py:func:`save_traj` about the stride used in :py:obj:`indexes`. Typically, :py:obj:`indexes`
         contains frame-indexes that match exactly the frames of the files contained in :py:obj:`traj_inp.trajfiles`.
         However, in certain situations, that might not be the case. Examples are cases in which a stride value != 1
         was used when reading/featurizing/transforming/discretizing the files contained in :py:obj:`traj_inp.trajfiles`.
 
+    chunksize : int. Default 1000.
+        The chunksize for reading input trajectory files. If :py:obj:`traj_inp` is a
+        :py:func:`pyemma.coordinates.data.feature_reader.FeatureReader` object, this input variable will be ignored and
+        :py:obj:`traj_inp.chunksize` will be used instead.
+
     verbose : boolean, default is False
-        Verbose output while looking for "indexes" in the "traj_inp.trajfiles"
+        Verbose output while looking for :py:obj`indexes` in the :py:obj:`traj_inp.trajfiles`
 
     Returns
     -------
@@ -496,8 +514,26 @@ def save_traj(traj_inp, indexes, outfile, verbose = False, stride = 1):
         Will only return this object if :py:obj:`outfile` is None
     """
 
+    # Determine the type of input and extract necessary parameters
+    if isinstance(traj_inp, _FeatureReader):
+        trajfiles = traj_inp.trajfiles
+        topfile  = traj_inp.topfile
+        chunksize = traj_inp.chunksize
+    else:
+        # Do we have what we need?
+        assert isinstance(traj_inp, list), "traj_inp has to be of type list, not %"%type(traj_inp)
+        assert isinstance(topfile,str), "traj_inp cannot be a list without an input " \
+                                        "topology file. " \
+                                        "Did you forget to parse the topology file?"
+        trajfiles = traj_inp
+
     # Convert to index (T,2) array if parsed a list or a list of arrays
     indexes = _np.vstack(indexes)
+
+    # Check that we've been given enough filenames
+    assert (len(trajfiles) >= indexes[:,0].max()), "traj_inp contains %u trajfiles, " \
+                                                   "but indexes will ask for file nr. %u"%(len(trajfiles), indexes[0].max())
+
     # Instantiate  a list of iterables that will contain mdtraj trajectory objects
     trajectory_iterator_list = []
 
@@ -509,9 +545,9 @@ def save_traj(traj_inp, indexes, outfile, verbose = False, stride = 1):
         # Store the trajectory object that comes out of _frames_from_file
         # directly as an iterator in trajectory_iterator_list
         trajectory_iterator_list.append(_itertools.islice(_frames_from_file(
-                                                traj_inp.trajfiles[ff],
-                                                traj_inp.topfile,
-                                                frames, chunksize=traj_inp.chunksize,
+                                                trajfiles[ff],
+                                                topfile,
+                                                frames, chunksize=chunksize,
                                                 verbose=verbose, stride = stride), None)
                                         )
 
