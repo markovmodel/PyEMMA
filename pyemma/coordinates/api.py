@@ -324,7 +324,8 @@ def discretizer(reader,
                 transform=None,
                 cluster=None,
                 run=True,
-                stride=1):
+                stride=1,
+                chunksize=100):
     r""" Specialized pipeline: From trajectories to clustering.
 
     Constructs a pipeline that consists of three stages:
@@ -354,6 +355,9 @@ def discretizer(reader,
         could cause the parametrization step to be very slow for large data sets. Since molecular dynamics data is
         usually correlated at short timescales, it is often sufficient to parametrize the pipeline at a longer stride.
         See also stride option in the output functions of the pipeline.
+
+    chunksize : int, optiona, default = 100
+        how many datapoints to process as a batch at one step
 
     Returns
     -------
