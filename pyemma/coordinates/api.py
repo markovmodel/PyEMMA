@@ -241,6 +241,15 @@ def source(inp, features=None, top=None, chunk_size=100):
     chunk_size: int, optional, default = 100
         The chunk size at which the input file is being processed.
 
+    Returns
+    -------
+    reader obj: type depends on input data
+
+        1. :class:`FeatureReader <pyemma.coordinates.data.feature_reader.FeatureReader>` for MD-data
+        2. :class:`NumPyFileReader <pyemma.coordinates.data.numpy_filereader.NumPyFileReader>` for .npy files
+        3. :class:`PyCSVReader <pyemma.coordinates.data.py_csv_reader.PyCSVReader>` for csv files.
+        4. :class:`DataInMemory <pyemma.coordinates.data.data_in_memory.DataInMemory>` for already loaded data (e.g NumPy arrays)
+
     See also
     --------
     :func:`pyemma.coordinates.pipeline`
@@ -269,7 +278,7 @@ def source(inp, features=None, top=None, chunk_size=100):
     return reader
 
 
-def pipeline(stages, run=True, stride=1):
+def pipeline(stages, run=True, stride=1, chunksize=100):
     r""" Data analysis pipeline.
 
     Constructs a data analysis :class:`Pipeline <pyemma.coordinates.pipelines.Pipeline>` and parametrizes it
@@ -293,6 +302,8 @@ def pipeline(stages, run=True, stride=1):
         could cause the parametrization step to be very slow for large data sets. Since molecular dynamics data is
         usually correlated at short timescales, it is often sufficient to parametrize the pipeline at a longer stride.
         See also stride option in the output functions of the pipeline.
+    chunksize : int, optiona, default = 100
+        how many datapoints to process as a batch at one step
 
     Returns
     -------
@@ -346,7 +357,7 @@ def discretizer(reader,
 
     Returns
     -------
-    pipe : a :class:`Pipeline <pyemma.coordinates.pipelines.Pipeline>` object
+    pipe : a :class:`Pipeline <pyemma.coordinates.pipelines.Discretizer>` object
         A pipeline object that is able to streamline data analysis of large amounts of input data
         with limited memory in streaming mode.
 
