@@ -13,6 +13,8 @@ Changelog
 - coordinates package: enable passing chunk size to readers and pipelines in API.
 - coordinates package: assign_to_centers now allows all supported file formats as centers input.
 - coordinates package: save_traj(s) now handles stride parameter.
+- coordinates package: save_traj    now accepts also lists of files as an input 
+  In this case, an extra parameter topfile has to be parsed as well.
 - plots package: added functions to plot flux and msm models.
 - Bugfixes:
     - [msm.MSM.pcca]: coarse-grained transition matrix corrected
