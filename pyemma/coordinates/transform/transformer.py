@@ -234,8 +234,8 @@ class Transformer(object):
                                ' yet set. Ensure "data_producer" attribute is set!')
 
         # if stride is not equal to one and does not match to a previous call
-        # retrigger parametrization
-        if stride != self._param_with_stride:
+        # retrigger parametrization (but not for readers).
+        if stride != self._param_with_stride and not self._data_producer is self:
             self._parametrized = False
 
         self._param_with_stride = stride

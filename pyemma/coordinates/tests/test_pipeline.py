@@ -32,6 +32,7 @@ from pyemma.coordinates.data import DataInMemory
 from pyemma.coordinates.data import MDFeaturizer
 from pyemma.coordinates import api
 import pyemma.msm.generation as msmgen
+import tempfile
 
 
 class TestPipeline(unittest.TestCase):
@@ -78,13 +79,26 @@ class TestPipeline(unittest.TestCase):
         p.parametrize()
         self.assertTrue(p._is_parametrized(), "If parametrized was called, the pipeline should be parametrized.")
 
+    def test_np_reader_in_pipeline(self):
+        with tempfile.NamedTemporaryFile(suffix='.npy', delete=False) as f:
+            data = np.random.random((100, 3))
+            np.save(f.name, data)
+            reader = api.source(f.name)
+            p = api.pipeline(reader, run=False, stride=2, chunksize=5)
+            assert reader._parametrized
+            p.parametrize()
+            assert reader._parametrized
+
     def test_add_element(self):
         # start with empty pipeline without auto-parametrization
         p = api.pipeline([], run=False)
         # add some reader
         reader = api.source(self.traj_files, top=self.pdb_file)
         p.add_element(reader)
+        assert reader._parametrized
         p.parametrize()
+        assert reader._parametrized
+
         # get the result immediately
         out1 = reader.get_output()
 
