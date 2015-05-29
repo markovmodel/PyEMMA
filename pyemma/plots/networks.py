@@ -236,26 +236,29 @@ class NetworkPlot(object):
                 for j in xrange(len(V)):
                     best_pos[j, :] = V[j].view.xy
                 min_stress = dig.stress
-        return best_pos, min_stress
         # rescale fixed to user settings and balance the other coordinate
-#         if self.xpos is not None:
-#             # rescale x to fixed value
-#             best_pos[:, 0] *= (np.max(self.xpos) - np.min(self.xpos)) / (np.max(best_pos[:, 0]) - np.min(best_pos[:, 0]))
-#             best_pos[:, 0] += np.min(self.xpos) - np.min(best_pos[:, 0])
-#             # rescale y to balance
-#             if np.max(best_pos[:,1])-np.min(best_pos[:,1]) > 0.01:
-#                 best_pos[:,1] *= (np.max(self.xpos) - np.min(self.xpos)) / (np.max(best_pos[:,1]) - np.min(best_pos[:,1]))
-#         if self.ypos is not None:
-#             best_pos[:,1] *= (np.max(self.ypos) - np.min(self.ypos)) / (np.max(best_pos[:,1]) - np.min(best_pos[:,1]))
-#             best_pos[:,1] += np.min(self.ypos) - np.min(best_pos[:,1])
-#             # rescale x to balance
-#             if np.max(best_pos[:,0])-np.min(best_pos[:,0]) > 0.01:
-#                 best_pos[:,0] *= (np.max(self.ypos) - np.min(self.ypos)) / (np.max(best_pos[:,0]) - np.min(best_pos[:,0]))
+        if self.xpos is not None:
+            print "scaling xpos"
+            # rescale x to fixed value
+            best_pos[:, 0] *= (np.max(self.xpos) - np.min(self.xpos)) / (np.max(best_pos[:, 0]) - np.min(best_pos[:, 0]))
+            best_pos[:, 0] += np.min(self.xpos) - np.min(best_pos[:, 0])
+            # rescale y to balance
+            if True:#if np.max(best_pos[:, 1]) - np.min(best_pos[:, 1]) > 0.01:
+                print "hi there"
+                best_pos[:, 1] *= (np.max(self.xpos) - np.min(self.xpos)) / (np.max(best_pos[:, 1]) - np.min(best_pos[:, 1]))
+        if self.ypos is not None:
+            print "scaling y pos"
+            best_pos[:,1] *= (np.max(self.ypos) - np.min(self.ypos)) / (np.max(best_pos[:,1]) - np.min(best_pos[:,1]))
+            best_pos[:,1] += np.min(self.ypos) - np.min(best_pos[:,1])
+            # rescale x to balance
+            if np.max(best_pos[:,0])-np.min(best_pos[:,0]) > 0.01:
+                best_pos[:,0] *= (np.max(self.ypos) - np.min(self.ypos)) / (np.max(best_pos[:,0]) - np.min(best_pos[:,0]))
+        # TODO: code below caused clashes, please review.
         # re-order
-        neworder = np.zeros(len(V), dtype=int)
-        for i, v in enumerate(g.C[0].sV):
-            neworder[i] = v.data
-        best_pos = best_pos[neworder, :]
+#         neworder = np.zeros(len(V), dtype=int)
+#         for i, v in enumerate(g.C[0].sV):
+#             neworder[i] = v.data
+#         best_pos = best_pos[:, :]
         # done
         return best_pos, min_stress
 
