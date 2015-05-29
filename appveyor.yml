@@ -35,6 +35,10 @@ install:
   # Check that we have the expected version and architecture for Python
   - "python --version"
   - "python -c \"import struct; print(struct.calcsize('P') * 8)\""
+  # use agg backend in matplotlib to avoid gui popup, which can not be closed.
+  - echo %userprofile%
+  - mkdir %userprofile%\\.matplotlib
+  - "echo backend: agg > %userprofile%\\.matplotlib\\matplotlibrc"
   # install dependencies
   - conda install -q --yes -c https://conda.binstar.org/omnia scipy numpy nose cython mdtraj matplotlib
 
