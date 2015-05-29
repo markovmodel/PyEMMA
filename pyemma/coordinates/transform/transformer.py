@@ -265,11 +265,16 @@ class Transformer(object):
             # iterate over trajectories
             last_chunk = False
             itraj = 0
-            # lag = self._lag
+
             while not last_chunk:
                 last_chunk_in_traj = False
                 t = 0
                 while not last_chunk_in_traj:
+                    # we check status of add_data_finished again, since some algorithms
+                    # (eg. regspace, may return before all data has been seen).
+                    if add_data_finished:
+                        last_chunk = True
+                        last_chunk_in_traj = True
                     # iterate over times within trajectory
                     if lag == 0:
                         X = self.data_producer._next_chunk(stride=stride)
@@ -295,6 +300,7 @@ class Transformer(object):
                         add_data_finished, lag = return_value
                     else:
                         add_data_finished = return_value
+
                     first_chunk = False
                     # increment time
                     t += L
