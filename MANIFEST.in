@@ -40,6 +40,7 @@ include pyemma/msm/estimation/dense/*.h
 include pyemma/msm/estimation/sparse/*.h
 include pyemma/msm/estimation/dense/mle_trev_given_pi.c
 include pyemma/msm/estimation/sparse/mle_trev_given_pi.c
+include pyemma/coordinates/clustering/include/clustering.h
 
 #include cython files
 recursive-include pyemma *.pyx
