@@ -34,6 +34,8 @@ class HMSMEstimator:
         self._observe_active = observe_active
         # other parameters
         self._estimated = False
+        # logger
+        self.__create_logger()
 
     def __create_logger(self):
         name = "%s[%s]" % (self.__class__.__name__, hex(id(self)))
