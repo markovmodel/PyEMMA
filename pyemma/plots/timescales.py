@@ -28,7 +28,8 @@ __author__ = 'noe'
 import numpy as _np
 import matplotlib.pylab as _plt
 
-def plot_implied_timescales(ITS, ax=None, outfile=None, xlog=False, ylog=True, confidence=0.95, refs=None):
+def plot_implied_timescales(ITS, ax=None, outfile=None, xlog=False, ylog=True, confidence=0.95, refs=None, units='steps',
+                            dt=1.):
     r""" Generate a pretty implied timescale plot
 
     Parameters
@@ -49,6 +50,13 @@ def plot_implied_timescales(ITS, ax=None, outfile=None, xlog=False, ylog=True, c
     refs : ndarray((m), dtype=float), optional, default = None
         Reference (exact solution or other reference) timescales if known. The number of timescales must match those
         in the ITS object
+    units: str, optional, default = 'steps'
+        Affects the labeling of the axes. Used with :py:obj:`dt`, allows for changing the physical units of the axes.
+        Accepts simple LaTeX math strings, eg. '$\mu$s'
+    dt: float, optional, default = 1.0
+        Physical meaning of the string in units. E.g, if you know that each frame corresponds to .010 ns, you can use the
+        combination of parameters :py:obj:`dt` =0.01, :py:obj:`units` ='ns' to display the implied timescales
+        in ns (instead of frames)
 
     Returns
     -------
@@ -65,25 +73,25 @@ def plot_implied_timescales(ITS, ax=None, outfile=None, xlog=False, ylog=True, c
     #ymax = 1.5*_np.min(ITS.get_timescales())
     for i in range(ITS.number_of_timescales):
         # plot estimate
-        ax.plot(lags, ITS.get_timescales(process=i), color = colors[i % len(colors)])
+        ax.plot(lags*dt, ITS.get_timescales(process=i)*dt, color = colors[i % len(colors)])
         # sample available?
         if (ITS.samples_available and ITS.sample_number_of_timescales > i):
             # plot sample mean
-            ax.plot(ITS.sample_lagtimes, ITS.get_sample_mean(process=i), marker='o', color = colors[i % len(colors)], linestyle = 'dashed')
+            ax.plot(ITS.sample_lagtimes*dt, ITS.get_sample_mean(process=i)*dt, marker='o', color = colors[i % len(colors)], linestyle = 'dashed')
             (lconf, rconf) = ITS.get_sample_conf(confidence, i)
-            ax.fill_between(ITS.sample_lagtimes, lconf, rconf, alpha=0.2, color=colors[i % len(colors)])
+            ax.fill_between(ITS.sample_lagtimes*dt, lconf*dt, rconf*dt, alpha=0.2, color=colors[i % len(colors)])
         # reference available?
         if (refs is not None):
             tref = refs[i]
-            ax.plot([0,min(tref,xmax)], [tref,tref], color='black', linewidth=1)
+            ax.plot([0,min(tref,xmax)]*dt, [tref,tref]*dt, color='black', linewidth=1)
     # cutoff
-    ax.fill_between(lags, ax.get_ylim()[0]*_np.ones(len(lags)), lags, alpha=0.5, color='grey')
-    ax.plot(lags, lags, linewidth=2, color='black')
-    ax.set_xlim([1,xmax])
+    ax.fill_between(lags*dt, ax.get_ylim()[0]*_np.ones(len(lags))*dt, lags*dt, alpha=0.5, color='grey')
+    ax.plot(lags*dt, lags*dt, linewidth=2, color='black')
+    ax.set_xlim([1*dt,xmax*dt])
     #ax.set_ylim([ymin,ymax])
     # formatting
-    ax.set_xlabel('lag time (steps)')
-    ax.set_ylabel('timescale (steps)')
+    ax.set_xlabel('lag time / %s'%units)
+    ax.set_ylabel('timescale / %s'%units)
     if (xlog):
         ax.set_xscale('log')
     if (ylog):
