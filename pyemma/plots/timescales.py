@@ -54,9 +54,9 @@ def plot_implied_timescales(ITS, ax=None, outfile=None, xlog=False, ylog=True, c
         Affects the labeling of the axes. Used with :py:obj:`dt`, allows for changing the physical units of the axes.
         Accepts simple LaTeX math strings, eg. '$\mu$s'
     dt: float, optional, default = 1.0
-        Physical meaning of the string in units. E.g, if you know that each frame corresponds to .010 ns, you can use the
-        combination of parameters :py:obj:`dt` =0.01, :py:obj:`units` ='ns' to display the implied timescales
-        in ns (instead of frames)
+        Physical time between frames, expressed the units given in :py:obj:`units`. E.g, if you know that each
+        frame corresponds to .010 ns, you can use the combination of parameters :py:obj:`dt` =0.01,
+        :py:obj:`units` ='ns' to display the implied timescales in ns (instead of frames)
 
     Returns
     -------
