@@ -16,7 +16,8 @@ coordinate transformations etc). For documentation of the API, please have a
 look at the :ref:`ref_api`. To install this software and additional
 dependencies refer to the :ref:`Installation Guide <ref_install>`. For
 support/bug reports/sugguestions/complains please visit us at
-`GitHub <http://github.com/markovmodel/PyEMMA/>`_
+`GitHub <http://github.com/markovmodel/PyEMMA/>` or post to the PyEMMA mailing
+list: pyemma-users@lists.fu-berlin.de
 
 Installation
 ============
