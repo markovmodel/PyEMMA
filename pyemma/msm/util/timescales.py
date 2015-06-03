@@ -30,7 +30,7 @@ Created on Jul 26, 2014
 import numpy as np
 import warnings
 
-from pyemma.msm.estimation import cmatrix, connected_cmatrix, tmatrix, bootstrap_counts
+from pyemma.msm.estimation import count_matrix, largest_connected_submatrix, transition_matrix, bootstrap_counts
 from pyemma.msm.analysis import timescales
 from pyemma.util.statistics import confidence_interval
 from pyemma.util.types import ensure_dtraj_list as _ensure_dtraj_list
@@ -40,6 +40,25 @@ from pyemma.util.progressbar.gui import show_progressbar
 
 __docformat__ = "restructuredtext en"
 __all__ = ['ImpliedTimescales']
+
+# ====================================================================
+# Helper functions
+# ====================================================================
+
+def _generate_lags(maxlag, multiplier):
+    r"""Generate a set of lag times starting from 1 to maxlag,
+    using the given multiplier between successive lags
+
+    """
+    # determine lag times
+    lags = []
+    # build default lag list
+    lags.append(1)
+    lag = 1.0
+    while (lag <= maxlag):
+        lag = round(lag * multiplier)
+        lags.append(int(lag))
+    return lags
 
 
 # TODO: connectivity flag is currently not used. Introduce different connectivity modes (lag, minimal, set)
@@ -68,17 +87,16 @@ class ImpliedTimescales(object):
         lagtimes. If False, will continue with a warning and compute the timescales/lagtimes that are possible.
 
     """
-
-    # estimated its. 2D-array with indexing: lagtime, its
-    _its = None
-    # sampled its's. 3D-array with indexing: lagtime, its, sample
-    _its_samples = None
-
     def __init__(self, dtrajs, lags=None, nits=10, connected=True, reversible=True, failfast=False):
         # initialize
         self._dtrajs = _ensure_dtraj_list(dtrajs)
         self._connected = connected
         self._reversible = reversible
+
+        # estimated its. 2D-array with indexing: lagtime, its
+        self._its = None
+        # sampled its's. 3D-array with indexing: lagtime, its, sample
+        self._its_samples = None
 
         # maximum number of timescales
         nstates = number_of_states(self._dtrajs)
@@ -91,9 +109,9 @@ class ImpliedTimescales(object):
         self.maxlength = np.max(self.lengths)
 
         # lag time
-        if (lags is None):
+        if lags is None:
             maxlag = 0.5 * np.sum(self.lengths) / float(len(self.lengths))
-            self._lags = self._generate_lags(maxlag, 1.5)
+            self._lags = _generate_lags(maxlag, 1.5)
         else:
             self._lags = np.array(lags)
             # check if some lag times are forbidden.
@@ -107,30 +125,15 @@ class ImpliedTimescales(object):
         # estimate
         self._estimate()
 
-    def _generate_lags(self, maxlag, multiplier):
-        r"""Generate a set of lag times starting from 1 to maxlag, 
-        using the given multiplier between successive lags
-        
-        """
-        # determine lag times
-        lags = []
-        # build default lag list
-        lags.append(1)
-        lag = 1.0
-        while (lag <= maxlag):
-            lag = round(lag * multiplier)
-            lags.append(int(lag))
-        return lags
-
     def _estimate_ts_tau(self, C, tau):
         r"""Estimate timescales from the given count matrix.
         
         """
         # connected set
-        C = connected_cmatrix(C)
+        C = largest_connected_submatrix(C)
         if (np.shape(C)[0] > 1):
             # estimate transition matrix
-            T = tmatrix(C, reversible=self._reversible)
+            T = transition_matrix(C, reversible=self._reversible)
             # make it dense
             T = T.toarray()
             # timescales
@@ -151,15 +154,15 @@ class ImpliedTimescales(object):
             # get lag time to be used
             tau = self._lags[i]
             # unconnected C matrix
-            C = cmatrix(self._dtrajs, tau)
+            C = count_matrix(self._dtrajs, tau)
             # estimate timescales
             ts = self._estimate_ts_tau(C, tau)
-            if (ts is None):
+            if ts is None:
                 maxnlags = i
                 warnings.warn('Could not compute a single timescale at tau = ' + str(tau) +
                               '. Probably a connectivity problem. Try using smaller lagtimes')
                 break
-            elif (len(ts) < self._nits):
+            elif len(ts) < self._nits:
                 maxnits = min(maxnits, len(ts))
                 warnings.warn('Could only compute ' + str(len(ts)) + ' timescales at tau = ' + str(tau) +
                               ' instead of the requested ' + str(self._nits) + '. Probably a ' +
@@ -209,18 +212,17 @@ class ImpliedTimescales(object):
                     maxnlags = i
                 pg.numerator += 1
                 show_progressbar(pg)
-            if (not all_ts):
+            if not all_ts:
                 warnings.warn('Could not compute all requested timescales at tau = ' + str(tau) +
                               '. Bootstrap is incomplete and might be non-representative.' +
                               ' Request less timescales or smaller lagtimes')
-            if (not any_ts):
+            if not any_ts:
                 warnings.warn('Could not compute a single timescale at tau = ' + str(tau) +
                               '. Probably a connectivity problem. Try using smaller lagtimes')
         # clean up
         self._nits_sample = maxnits
         self._lags_sample = self._lags[:maxnlags]
         self._its_samples = self._its_samples[:maxnlags, :, :][:, :maxnits, :]
-
 
     @property
     def lagtimes(self):
@@ -273,7 +275,7 @@ class ImpliedTimescales(object):
         for every lag time
         
         """
-        if (process is None):
+        if process is None:
             return self._its
         else:
             return self._its[:, process]
@@ -285,7 +287,7 @@ class ImpliedTimescales(object):
         obtained
         
         """
-        return (self._its_samples is not None)
+        return self._its_samples is not None
 
     @property
     def sample_lagtimes(self):
@@ -300,7 +302,6 @@ class ImpliedTimescales(object):
 
         """
         return self._nits_sample
-
 
     @property
     def sample_mean(self):
@@ -334,11 +335,11 @@ class ImpliedTimescales(object):
         for every lag time
         
         """
-        if (self._its_samples is None):
+        if self._its_samples is None:
             raise RuntimeError('Cannot compute sample mean, because no samples were generated ' +
                                ' try calling bootstrap() before')
         # OK, go:
-        if (process is None):
+        if process is None:
             return np.mean(self._its_samples, axis=2)
         else:
             return np.mean(self._its_samples[:, process, :], axis=1)
@@ -378,11 +379,11 @@ class ImpliedTimescales(object):
         for every lag time
         
         """
-        if (self._its_samples is None):
+        if self._its_samples is None:
             raise RuntimeError('Cannot compute sample mean, because no samples were generated ' +
                                ' try calling bootstrap() before')
         # OK, go:
-        if (process is None):
+        if process is None:
             return np.std(self._its_samples, axis=2)
         else:
             return np.std(self._its_samples[:, process, :], axis=1)
@@ -406,11 +407,11 @@ class ImpliedTimescales(object):
         selected process time scale for every lag time
         
         """
-        if (self._its_samples is None):
+        if self._its_samples is None:
             raise RuntimeError('Cannot compute sample mean, because no samples were generated ' +
                                ' try calling bootstrap() before')
         # OK, go:
-        if (process is None):
+        if process is None:
             L = np.zeros((len(self._lags), self._nits))
             R = np.zeros((len(self._lags), self._nits))
             for i in range(len(self._lags)):
@@ -418,7 +419,7 @@ class ImpliedTimescales(object):
                     conf = confidence_interval(self._its_samples[i, j], alpha)
                     L[i, j] = conf[1]
                     R[i, j] = conf[2]
-            return (L, R)
+            return L, R
         else:
             L = np.zeros(len(self._lags))
             R = np.zeros(len(self._lags))
@@ -426,7 +427,7 @@ class ImpliedTimescales(object):
                 conf = confidence_interval(self._its_samples[i, process], alpha)
                 L[i] = conf[1]
                 R[i] = conf[2]
-            return (L, R)
+            return L, R
 
     @property
     def fraction_of_frames(self):
