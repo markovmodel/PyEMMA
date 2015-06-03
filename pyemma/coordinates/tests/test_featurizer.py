@@ -166,6 +166,40 @@ class TestFeaturizer(unittest.TestCase):
         # TODO: test me
         pass
 
+    def test_MinRmsd(self):
+        ref_frame = np.random.randint(0, self.traj.n_atoms, size=1)[0]
+
+        # Test the Trajectory-input variant and the file-input variant
+        self.feat.add_minrmsd_to_ref(self.traj[ref_frame])
+        self.feat.add_minrmsd_to_ref(xtcfile, ref_frame=ref_frame)
+        test_Y  = self.feat.map(self.traj).squeeze()
+        ref_Y = mdtraj.rmsd(self.traj, self.traj[ref_frame])
+        assert np.allclose(ref_Y, test_Y[:,0], atol=1e-5)
+        assert np.allclose(ref_Y, test_Y[:,0], atol=1e-5)
+
+    def test_MinRmsd_with_atom_indices(self):
+        ref_frame = np.random.randint(0, self.traj.n_atoms, size=1)[0]
+        atom_indices = np.unique(np.random.randint(0, self.traj.n_atoms, size=self.traj.n_atoms/2))
+
+        # Test the Trajectory-input variant and the file-input variant
+        self.feat.add_minrmsd_to_ref(self.traj[ref_frame], atom_indices=atom_indices)
+        self.feat.add_minrmsd_to_ref(xtcfile, ref_frame=ref_frame, atom_indices=atom_indices)
+        test_Y  = self.feat.map(self.traj).squeeze()
+        ref_Y = mdtraj.rmsd(self.traj, self.traj[ref_frame], atom_indices=atom_indices)
+        assert np.allclose(ref_Y, test_Y[:,0], atol=1e-5)
+        assert np.allclose(ref_Y, test_Y[:,1], atol=1e-5)
+
+    def test_MinRmsd_with_atom_indices_precentered(self):
+        ref_frame = np.random.randint(0, self.traj.n_atoms, size=1)[0]
+        atom_indices = np.unique(np.random.randint(0, self.traj.n_atoms, size=self.traj.n_atoms/2))
+
+        # Test the Trajectory-input variant and the file-input variant
+        self.feat.add_minrmsd_to_ref(self.traj[ref_frame], atom_indices=atom_indices, precentered=True)
+        self.feat.add_minrmsd_to_ref(xtcfile, ref_frame=ref_frame, atom_indices=atom_indices, precentered=True)
+        test_Y  = self.feat.map(self.traj).squeeze()
+        ref_Y = mdtraj.rmsd(self.traj, self.traj[ref_frame], atom_indices=atom_indices, precentered=True)
+        assert np.allclose(ref_Y, test_Y[:,0], atol=1e-5)
+        assert np.allclose(ref_Y, test_Y[:,1], atol=1e-5)
 
 class TestFeaturizerNoDubs(unittest.TestCase):
 
@@ -224,6 +258,15 @@ class TestFeaturizerNoDubs(unittest.TestCase):
         featurizer.add_custom_feature(foo_feat)
         self.assertEqual(len(featurizer.active_features), 8)
 
+        ref = mdtraj.load(xtcfile, top=pdbfile)
+        featurizer.add_minrmsd_to_ref(ref)
+        featurizer.add_minrmsd_to_ref(ref)
+        self.assertEquals(len(featurizer.active_features), 9)
+
+        featurizer.add_minrmsd_to_ref(pdbfile)
+        featurizer.add_minrmsd_to_ref(pdbfile)
+        self.assertEquals(len(featurizer.active_features), 10)
+
     def test_labels(self):
         """ just checks for exceptions """
         featurizer = MDFeaturizer(pdbfile)
@@ -235,9 +278,9 @@ class TestFeaturizerNoDubs(unittest.TestCase):
         cs = CustomFeature(lambda x: x - 1)
         cs.dimension = lambda: 3
         featurizer.add_custom_feature(cs)
+        featurizer.add_minrmsd_to_ref(pdbfile)
 
         featurizer.describe()
-
 
 if __name__ == "__main__":
     unittest.main()
