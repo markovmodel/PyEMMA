@@ -34,7 +34,8 @@ and provides them for later access.
 __docformat__ = "restructuredtext en"
 
 import numpy as _np
-from pyemma.msm.ui.hmsm_estimated import EstimatedHMSM as _EstimatedHMSM
+
+from pyemma.msm.models.hmsm_estimated import EstimatedHMSM as _EstimatedHMSM
 from pyemma.util.statistics import confidence_interval_arr
 
 

@@ -6,7 +6,7 @@ from pyemma.msm import estimation as msmest
 from pyemma.util.annotators import shortcut
 from pyemma.util.log import getLogger
 from pyemma.msm.ui.dtraj_stats import DiscreteTrajectoryStats as _DiscreteTrajectoryStats
-from pyemma.msm.ui.msm_estimated import EstimatedMSM as _EstimatedMSM
+from pyemma.msm.models.msm_estimated import EstimatedMSM as _EstimatedMSM
 
 
 # TODO: We can probably get rid of most functions, because we produce an EstimatedMSM object that has all the info.

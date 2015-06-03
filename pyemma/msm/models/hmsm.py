@@ -34,7 +34,8 @@ and provides them for later access.
 __docformat__ = "restructuredtext en"
 
 import numpy as _np
-from pyemma.msm.ui.msm import MSM as _MSM
+
+from pyemma.msm.models.msm import MSM as _MSM
 from pyemma.util import types as _types
 
 

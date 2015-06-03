@@ -4,12 +4,14 @@ Test MLHMM.
 """
 
 import unittest
-import numpy as np
 from os.path import abspath, join
 from os import pardir
 
+import numpy as np
+
 from pyemma import msm
 from pyemma.msm import analysis as msmana
+
 
 class TestMLHMM(unittest.TestCase):
 
@@ -35,7 +37,7 @@ class TestMLHMM(unittest.TestCase):
     # =============================================================================
 
     def test_hmm_type(self):
-        from pyemma.msm.ui.hmsm_estimated import EstimatedHMSM
+        from pyemma.msm.models.hmsm_estimated import EstimatedHMSM
         assert isinstance(self.hmsm_lag1, EstimatedHMSM)
         assert isinstance(self.hmsm_lag10, EstimatedHMSM)
 

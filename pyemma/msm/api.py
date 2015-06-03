@@ -29,14 +29,16 @@ r"""User API for the pyemma.msm package
 
 __docformat__ = "restructuredtext en"
 
-from flux import tpt as tpt_factory
-from pyemma.msm.ui.msm_estimator import MSMEstimator as _MSMEstimator
 from pyemma.msm.ui.hmsm_estimator import HMSMEstimator as _HMSMEstimator
 from pyemma.msm.ui.msm_bayesian_estimator import BayesianMSMEstimator as _BayesianMSMEstimator
 from pyemma.msm.ui.hmsm_bayesian_estimator import BayesianHMSMEstimator as _BayesianHMSMEstimator
+
+from flux import tpt as tpt_factory
+from pyemma.msm.estimators.msm_estimator import MSMEstimator as _MSMEstimator
 from ui import ImpliedTimescales
 from ui import MSM
 from ui import cktest as chapman_kolmogorov
+
 
 __author__ = "Benjamin Trendelkamp-Schroer, Martin Scherer, Frank Noe"
 __copyright__ = "Copyright 2014, Computational Molecular Biology Group, FU-Berlin"

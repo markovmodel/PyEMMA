@@ -1,8 +1,9 @@
 __author__ = 'noe'
 
 import numpy as _np
-from pyemma.msm.ui.hmsm_estimator import HMSMEstimator as _HMSMEstimator
-from pyemma.msm.ui.hmsm_estimated import EstimatedHMSM as _EstimatedHMSM
+
+from pyemma.msm.estimators.hmsm_estimator import HMSMEstimator as _HMSMEstimator
+from pyemma.msm.models.hmsm_estimated import EstimatedHMSM as _EstimatedHMSM
 from pyemma.util.log import getLogger
 
 

@@ -1,10 +1,12 @@
 __author__ = 'noe'
 
-import numpy as np
 import copy
 
+import numpy as np
+
+
 # EMMA imports
-from msm_estimated import EstimatedMSM
+from pyemma.msm.models.msm_estimated import EstimatedMSM
 from pyemma.util import statistics as stat
 
 def _make_docstring(prefix, doctext, seealso=None, sample=None):

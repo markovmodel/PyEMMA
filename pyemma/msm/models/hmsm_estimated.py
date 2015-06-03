@@ -34,7 +34,8 @@ and provides them for later access.
 __docformat__ = "restructuredtext en"
 
 import numpy as _np
-from pyemma.msm.ui.hmsm import HMSM as _HMSM
+
+from pyemma.msm.models.hmsm import HMSM as _HMSM
 from pyemma.util.annotators import shortcut
 
 

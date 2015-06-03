@@ -1,11 +1,11 @@
 __author__ = 'noe'
 
-import numpy as np
 import copy
 
-from msm import MSM
+import numpy as np
+
+from pyemma.msm.models.msm import MSM
 from pyemma.util.annotators import shortcut
-from pyemma.util.log import getLogger
 
 
 class EstimatedMSM(MSM):
@@ -416,7 +416,7 @@ class EstimatedMSM(MSM):
 
         """
         # run estimate
-        from hmsm_estimator import HMSMEstimator
+        from pyemma.msm.estimators.hmsm_estimator import HMSMEstimator
         estimator = HMSMEstimator(self, nstates, observe_active=True)
         HMSMEstimator(self.discrete_trajectories_full, reversible=self.is_reversible, sparse=self.is_sparse,
                       connectivity=self.connectivity, dt=self.timestep, observe_active=True)
