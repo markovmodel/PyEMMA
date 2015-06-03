@@ -2,7 +2,7 @@ __author__ = 'noe'
 
 import numpy as _np
 
-from pyemma.msm.estimators.hmsm_estimator import HMSMEstimator as _HMSMEstimator
+from pyemma.msm.estimators.maximum_likelihood_hmsm import MaximumLikelihoodHMSM as _HMSMEstimator
 from pyemma.msm.models.hmsm_estimated import EstimatedHMSM as _EstimatedHMSM
 from pyemma.util.log import getLogger
 

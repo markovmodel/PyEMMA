@@ -13,12 +13,12 @@ class MaximumLikelihoodMSM(Estimator):
     """ Maximum likelihood estimator for MSMs given discrete trajectory statistics
 
     """
-    def __init__(self, lag=None, reversible=True, sparse=False, connectivity='largest', dt='1 step',
+    def __init__(self, lag=1, reversible=True, sparse=False, connectivity='largest', dt='1 step',
                  maxiter=1000000, maxerr=1e-8, store_data=True):
         """
             Parameters
             ----------
-            lagtime : int
+            lag : int
                 lag time at which transitions are counted and the transition matrix is estimated.
             reversible : bool, optional, default = True
                 If true compute reversible MSM, else non-reversible MSM

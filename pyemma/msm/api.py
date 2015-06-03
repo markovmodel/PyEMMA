@@ -29,7 +29,7 @@ r"""User API for the pyemma.msm package
 
 __docformat__ = "restructuredtext en"
 
-from pyemma.msm.estimators.hmsm_estimator import HMSMEstimator as _HMSMEstimator
+from pyemma.msm.estimators.maximum_likelihood_hmsm import MaximumLikelihoodHMSM as _HMSMEstimator
 from pyemma.msm.estimators.msm_bayesian_estimator import BayesianMSMEstimator as _BayesianMSMEstimator
 from pyemma.msm.estimators.hmsm_bayesian_estimator import BayesianHMSMEstimator as _BayesianHMSMEstimator
 
