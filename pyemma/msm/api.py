@@ -35,9 +35,9 @@ from pyemma.msm.ui.hmsm_bayesian_estimator import BayesianHMSMEstimator as _Baye
 
 from flux import tpt as tpt_factory
 from pyemma.msm.estimators.msm_estimator import MSMEstimator as _MSMEstimator
-from ui import ImpliedTimescales
-from ui import MSM
-from ui import cktest as chapman_kolmogorov
+from util import ImpliedTimescales
+from models import MSM
+from util import cktest as chapman_kolmogorov
 
 
 __author__ = "Benjamin Trendelkamp-Schroer, Martin Scherer, Frank Noe"
