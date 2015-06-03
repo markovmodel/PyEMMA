@@ -1,14 +1,9 @@
 __author__ = 'noe'
 
-import numpy as np
-
-from pyemma.msm import estimation as msmest
-from pyemma.util.annotators import shortcut
 from pyemma.util.log import getLogger
-from pyemma.msm.ui.dtraj_stats import DiscreteTrajectoryStats as _DiscreteTrajectoryStats
-from pyemma.msm.ui.msm_estimator import MSMEstimator as _MSMEstimator
-from pyemma.msm.ui.msm_estimated import EstimatedMSM as _EstimatedMSM
-from pyemma.msm.ui.msm_sampled import SampledMSM as _SampledMSM
+from pyemma.msm.estimators.msm_estimator import MSMEstimator as _MSMEstimator
+from pyemma.msm.models.msm_estimated import EstimatedMSM as _EstimatedMSM
+from pyemma.msm.models.msm_sampled import SampledMSM as _SampledMSM
 
 
 class BayesianMSMEstimator:
