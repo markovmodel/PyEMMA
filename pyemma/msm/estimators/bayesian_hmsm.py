@@ -51,21 +51,24 @@ class BayesianHMSM(_Estimator):
             hmsm_estimator = _HMSMEstimator(lag=self.lag, nstates=self.nstates, reversible=self.reversible,
                                             connectivity=self.connectivity, observe_active=self.observe_active,
                                             dt=self.dt, store_data=True)
-            self.init_hmsm = hmsm_estimator.estimate(dtrajs)
+            init_hmsm = hmsm_estimator.estimate(dtrajs)
         else:
             # check input
             assert isinstance(self.init_hmsm, _EstimatedHMSM), 'hmsm must be of type EstimatedHMSM'
+            init_hmsm = self.init_hmsm
+            self.nstates = init_hmsm.nstates
+            self.reversible = init_hmsm.is_reversible
 
         # if needed, blow up output matrix
         if self.observe_active:
-            pobs = _np.zeros((self.init_hmsm.nstates, self.init_hmsm.nstates_obs))
-            pobs[:, self.init_hmsm.observable_set] = self.init_hmsm.observation_probabilities
+            pobs = _np.zeros((init_hmsm.nstates, init_hmsm.nstates_obs))
+            pobs[:, init_hmsm.observable_set] = init_hmsm.observation_probabilities
         else:
-            pobs = self.init_hmsm.observation_probabilities
+            pobs = init_hmsm.observation_probabilities
 
         # HMM sampler
         from bhmm import discrete_hmm, bayesian_hmm
-        hmm_mle = discrete_hmm(self.init_hmsm.transition_matrix, pobs, stationary=True, reversible=self.reversible)
+        hmm_mle = discrete_hmm(init_hmsm.transition_matrix, pobs, stationary=True, reversible=self.reversible)
         sampled_hmm = bayesian_hmm(dtrajs, hmm_mle, nsample=self.nsample)
 
         # Samples
@@ -73,10 +76,10 @@ class BayesianHMSM(_Estimator):
         sample_mus = [sampled_hmm.sampled_hmms[i].stationary_distribution for i in range(self.nsample)]
         sample_pobs = [sampled_hmm.sampled_hmms[i].output_model.output_probabilities for i in range(self.nsample)]
         for i in range(self.nsample):  # restrict to observable set if necessary
-            Bobs = sample_pobs[i][:, self.init_hmsm.observable_set]
+            Bobs = sample_pobs[i][:, init_hmsm.observable_set]
             sample_pobs[i] = Bobs / Bobs.sum(axis=1)[:, None]  # renormalize
 
         # construct our HMM object
         from pyemma.msm.models.hmsm_sampled import SampledHMSM
-        sampled_hmsm = SampledHMSM(self.init_hmsm, sample_Ps, sample_mus, sample_pobs, conf=self.conf)
+        sampled_hmsm = SampledHMSM(init_hmsm, sample_Ps, sample_mus, sample_pobs, conf=self.conf)
         return sampled_hmsm

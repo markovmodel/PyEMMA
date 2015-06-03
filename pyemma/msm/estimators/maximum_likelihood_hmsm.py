@@ -89,14 +89,16 @@ class MaximumLikelihoodHMSM(_Estimator):
             # estimate with store_data=True, because we need an EstimatedMSM
             msm_estimator = _MSMEstimator(lag=self.lag, reversible=self.reversible, sparse=False,
                                           connectivity=self.connectivity, dt=self.dt, store_data=True)
-            self.msm_init = msm_estimator.estimate(dtrajs)
+            msm_init = msm_estimator.estimate(dtrajs)
         else:
             assert isinstance(self.msm_init, _EstimatedMSM), 'msm_init must be of type EstimatedMSM'
+            msm_init = self.msm_init
+            self.reversible = msm_init.is_reversible
 
         # check input
         assert _types.is_int(self.nstates) and self.nstates > 1 and self.nstates <= self.msm_init.nstates, \
             'nstates must be an int in [2,msmobj.nstates]'
-        timescale_ratios = self.msm_init.timescales()[:-1] / self.msm_init.timescales()[1:]
+        timescale_ratios = msm_init.timescales()[:-1] / msm_init.timescales()[1:]
         if timescale_ratios[self.nstates-2] < 2.0:
             self.logger.warn('Requested coarse-grained model with ' + str(self.nstates) + ' metastable states. ' +
                              'The ratio of relaxation timescales between ' + str(self.nstates) + ' and ' +
@@ -105,15 +107,15 @@ class MaximumLikelihoodHMSM(_Estimator):
                              ' Handle with caution.')
 
         # set things from MSM
-        nstates_obs_full = self.msm_init.nstates_full
+        nstates_obs_full = msm_init.nstates_full
         if self.observe_active:
-            nstates_obs = self.msm_init.nstates
-            observable_set = self.msm_init.active_set
-            dtrajs_obs = self.msm_init.discrete_trajectories_active
+            nstates_obs = msm_init.nstates
+            observable_set = msm_init.active_set
+            dtrajs_obs = msm_init.discrete_trajectories_active
         else:
-            nstates_obs = self.msm_init.nstates_full
+            nstates_obs = msm_init.nstates_full
             observable_set = np.arange(nstates_obs_full)
-            dtrajs_obs = self.msm_init.discrete_trajectories_full
+            dtrajs_obs = msm_init.discrete_trajectories_full
 
         # TODO: this is redundant with BHMM code because that code is currently not easily accessible and
         # TODO: we don't want to re-estimate. Should be reengineered in bhmm.
@@ -121,15 +123,15 @@ class MaximumLikelihoodHMSM(_Estimator):
         # PCCA-based coarse-graining
         # ---------------------------------------------------------------------------------------
         # pcca- to number of metastable states
-        pcca = self.msm_init.pcca(self.nstates)
+        pcca = msm_init.pcca(self.nstates)
 
         # HMM output matrix
-        B_conn = self.msm_init.metastable_distributions
+        B_conn = msm_init.metastable_distributions
         # full state space output matrix
         eps = 0.01 * (1.0/nstates_obs_full)  # default output probability, in order to avoid zero columns
         B = eps * np.ones((self.nstates, nstates_obs_full), dtype=np.float64)
         # expand B_conn to full state space
-        B[:, self.msm_init.active_set] = B_conn[:, :]
+        B[:, msm_init.active_set] = B_conn[:, :]
         # renormalize B to make it row-stochastic
         B /= B.sum(axis=1)[:, None]
 
@@ -149,17 +151,17 @@ class MaximumLikelihoodHMSM(_Estimator):
         # lazy import bhmm here in order to avoid dependency loops
         import bhmm
         # initialize discrete HMM
-        self.hmm_init = bhmm.discrete_hmm(A, B, stationary=True, reversible=self.reversible)
+        hmm_init = bhmm.discrete_hmm(A, B, stationary=True, reversible=self.reversible)
         # run EM
         hmm = bhmm.estimate_hmm(self.msm_init.discrete_trajectories_full, self.nstates,
-                                lag=self.msm_init.lagtime, initial_model=self.hmm_init)
+                                lag=msm_init.lagtime, initial_model=hmm_init)
         self.hmm = bhmm.DiscreteHMM(hmm)
 
         # find observable set
         transition_matrix = self.hmm.transition_matrix
         observation_probabilities = self.hmm.output_probabilities
         if self.observe_active:  # cut down observation probabilities to active set
-            observation_probabilities = observation_probabilities[:, self.msm_init.active_set]
+            observation_probabilities = observation_probabilities[:, msm_init.active_set]
             observation_probabilities /= observation_probabilities.sum(axis=1)[:,None]  # renormalize
 
         # construct result
