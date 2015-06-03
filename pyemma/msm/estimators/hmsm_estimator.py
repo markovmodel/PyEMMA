@@ -3,7 +3,7 @@ __author__ = 'noe'
 import numpy as np
 
 from pyemma.msm.models.msm_estimated import EstimatedMSM as _EstimatedMSM
-from pyemma.msm.estimators.msm_estimator import MSMEstimator as _MSMEstimator
+from pyemma.msm.estimators.maximum_likelihood_msm import MaximumLikelihoodMSM as _MSMEstimator
 from pyemma.msm.models.hmsm_estimated import EstimatedHMSM as _EstimatedHMSM
 from pyemma.util.log import getLogger
 from pyemma.util import types as _types

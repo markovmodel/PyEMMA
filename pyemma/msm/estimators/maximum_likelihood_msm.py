@@ -5,15 +5,16 @@ import numpy as np
 from pyemma._base.estimator import Estimator
 from pyemma.msm import estimation as msmest
 from pyemma.msm.util.dtraj_stats import DiscreteTrajectoryStats as _DiscreteTrajectoryStats
+from pyemma.msm.models.msm import MSM as _MSM
 from pyemma.msm.models.msm_estimated import EstimatedMSM as _EstimatedMSM
 
 
-class MSMEstimator(Estimator):
+class MaximumLikelihoodMSM(Estimator):
     """ Maximum likelihood estimator for MSMs given discrete trajectory statistics
 
     """
     def __init__(self, lag=None, reversible=True, sparse=False, connectivity='largest', dt='1 step',
-                 maxiter = 1000000, maxerr = 1e-8):
+                 maxiter=1000000, maxerr=1e-8, store_data=True):
         """
             Parameters
             ----------
@@ -58,6 +59,10 @@ class MSMEstimator(Estimator):
                 stationary probabilities (:math:`x_i = \sum_k x_{ik}`). The relative stationary probability changes
                 :math:`e_i = (x_i^{(1)} - x_i^{(2)})/(x_i^{(1)} + x_i^{(2)})` are used in order to track changes in
                 small probabilities. The Euclidean norm of the change vector, :math:`|e_i|_2`, is compared to maxerr.
+            store_data : bool
+                True: estimate() returns an :class:`pyemma.msm.EstimatedMSM` object with discrete trajectories and
+                counts stored. False: estimate() returns a plain :class:`pyemma.msm.MSM` object that only contains
+                the transition matrix and quantities derived from it.
 
         """
         self.lag = lag
@@ -89,8 +94,8 @@ class MSMEstimator(Estimator):
         self.maxiter = maxiter
         self.maxerr = maxerr
 
-        # run estimation
-        self._estimated = False
+        # return parameters
+        self.store_data = store_data
 
 
     def _estimate(self, dtrajs):
@@ -162,8 +167,12 @@ class MSMEstimator(Estimator):
             T = T.toarray()
 
         # construct MSM
-        msm = _EstimatedMSM(dtrajstats.discrete_trajectories, self.dt, self.lag, self.connectivity,
-                            active_set, dtrajstats.connected_sets, C_full, C_active, T)
+        if self.store_data:
+            msm = _EstimatedMSM(dtrajstats.discrete_trajectories, self.dt, self.lag, self.connectivity,
+                                active_set, dtrajstats.connected_sets, C_full, C_active, T)
+        else:
+            msm = _MSM(T, self.dt)
+            msm._lag = self.lag  # TODO: setting a hidden attribute is intrusive. We should refactor the time management
 
         # check consistency of estimated transition matrix
         if self.reversible != self.reversible:

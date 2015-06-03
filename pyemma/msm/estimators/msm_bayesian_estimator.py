@@ -1,7 +1,7 @@
 __author__ = 'noe'
 
 from pyemma.util.log import getLogger
-from pyemma.msm.estimators.msm_estimator import MSMEstimator as _MSMEstimator
+from pyemma.msm.estimators.maximum_likelihood_msm import MaximumLikelihoodMSM as _MSMEstimator
 from pyemma.msm.models.msm_estimated import EstimatedMSM as _EstimatedMSM
 from pyemma.msm.models.msm_sampled import SampledMSM as _SampledMSM
 
