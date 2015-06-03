@@ -78,7 +78,7 @@ class TestStride(unittest.TestCase):
             # print 'len_ref', len_ref
 
             # compare length
-            self.assertTrue(len_ref == len_trajs)
+            np.testing.assert_equal(len_trajs, len_ref)
             self.assertTrue(len_ref == len_tica)
             self.assertTrue(len_ref == len_reader)
 
