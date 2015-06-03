@@ -416,9 +416,9 @@ class EstimatedMSM(MSM):
 
         """
         # run estimate
-        from pyemma.msm.estimators.hmsm_estimator import HMSMEstimator
-        estimator = HMSMEstimator(self, nstates, observe_active=True)
-        HMSMEstimator(self.discrete_trajectories_full, reversible=self.is_reversible, sparse=self.is_sparse,
+        from pyemma.msm.estimators.maximum_likelihood_hmsm import MaximumLikelihoodHMSM
+        estimator = MaximumLikelihoodHMSM(self, nstates, observe_active=True)
+        MaximumLikelihoodHMSM(self.discrete_trajectories_full, reversible=self.is_reversible, sparse=self.is_sparse,
                       connectivity=self.connectivity, dt=self.timestep, observe_active=True)
         return estimator.estimate(lag=self.lagtime, nstates=nstates, msm_init=self)
 
