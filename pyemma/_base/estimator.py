@@ -1,6 +1,8 @@
 __author__ = 'noe'
 
-class Estimator:
+from pyemma._ext.sklearn.base import BaseEstimator as SklearnEstimator
+
+class Estimator(SklearnEstimator):
     """ Base class for pyEMMA estimators
 
     """
