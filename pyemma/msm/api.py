@@ -34,7 +34,7 @@ from pyemma.msm.estimators.msm_bayesian_estimator import BayesianMSMEstimator as
 from pyemma.msm.estimators.hmsm_bayesian_estimator import BayesianHMSMEstimator as _BayesianHMSMEstimator
 
 from flux import tpt as tpt_factory
-from pyemma.msm.estimators.msm_estimator import MSMEstimator as _MSMEstimator
+from pyemma.msm.estimators.maximum_likelihood_msm import MaximumLikelihoodMSM as _MSMEstimator
 from util import ImpliedTimescales
 from models import MSM
 from util import cktest as chapman_kolmogorov

@@ -45,7 +45,7 @@ class Estimator(SklearnEstimator):
         self._model = self._estimate(X)
 
     def _estimate(self, X):
-        raise NotImplementedError('The _estimate() method is not implemented for this Estimator.')
+        raise NotImplementedError('You need to overload the _estimate() method in your Estimator implementation!')
 
     def fit(self, X):
         """ For compatibility with sklearn. Requires that X has been announced in the constructor
