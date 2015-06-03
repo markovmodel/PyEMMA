@@ -6,11 +6,11 @@ from pyemma.msm.models.msm_estimated import EstimatedMSM as _EstimatedMSM
 from pyemma.msm.models.msm_sampled import SampledMSM as _SampledMSM
 
 
-class BayesianMSMEstimator:
+class BayesianMSM:
     """ Maximum likelihood estimator for MSMs given discrete trajectory statistics
 
     """
-    def __init__(self, dtrajs, reversible=True, sparse=False, connectivity='largest', dt='1 step', conf=0.683, **kwargs):
+    def __init__(self, dtrajs, reversible=True, sparse=False, connectivity='largest', dt='1 step', conf=0.683):
         """
             Parameters
             ----------
