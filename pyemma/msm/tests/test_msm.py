@@ -32,16 +32,15 @@ r"""Unit test for the MSM module
 import unittest
 
 import numpy as np
-import warnings
 
 from os.path import abspath, join
 from os import pardir
 
 from pyemma.msm.generation import generate_traj
-from pyemma.msm.estimation import cmatrix, largest_connected_set, connected_cmatrix, tmatrix
-from pyemma.msm.analysis import statdist, timescales
+from pyemma.msm.estimation import count_matrix, largest_connected_set, largest_connected_submatrix, transition_matrix
+from pyemma.msm.analysis import stationary_distribution, timescales
 from pyemma.util.numeric import assert_allclose
-from pyemma.msm.ui.birth_death_chain import BirthDeathChain
+from pyemma.msm.util.birth_death_chain import BirthDeathChain
 from pyemma.msm import estimate_markov_model
 
 
@@ -70,11 +69,11 @@ class TestMSMSimple(unittest.TestCase):
         self.tau = 1
 
         """Estimate MSM"""
-        self.C_MSM = cmatrix(self.dtraj, self.tau, sliding=True)
+        self.C_MSM = count_matrix(self.dtraj, self.tau, sliding=True)
         self.lcc_MSM = largest_connected_set(self.C_MSM)
-        self.Ccc_MSM = connected_cmatrix(self.C_MSM, lcc=self.lcc_MSM)
-        self.P_MSM = tmatrix(self.Ccc_MSM, reversible=True)
-        self.mu_MSM = statdist(self.P_MSM)
+        self.Ccc_MSM = largest_connected_submatrix(self.C_MSM, lcc=self.lcc_MSM)
+        self.P_MSM = transition_matrix(self.Ccc_MSM, reversible=True)
+        self.mu_MSM = stationary_distribution(self.P_MSM)
         self.k = 3
         self.ts = timescales(self.P_MSM, k=self.k, tau=self.tau)
 
@@ -128,19 +127,19 @@ class TestMSMDoubleWell(unittest.TestCase):
 
     def test_reversible(self):
         # NONREVERSIBLE
-        assert (self.msmrev.is_reversible)
+        assert self.msmrev.is_reversible
         # REVERSIBLE
-        assert (not self.msm.is_reversible)
+        assert not self.msm.is_reversible
 
     def _sparse(self, msm):
-        assert (not msm.is_sparse)
+        assert not msm.is_sparse
 
     def test_sparse(self):
         self._sparse(self.msmrev)
         self._sparse(self.msm)
 
     def _lagtime(self, msm):
-        assert (self.msm.lagtime == self.tau)
+        assert (msm.lagtime == self.tau)
 
     def test_lagtime(self):
         self._lagtime(self.msmrev)
@@ -262,7 +261,7 @@ class TestMSMDoubleWell(unittest.TestCase):
 
     def _active_count_fraction(self, msm):
         # should always be a fraction
-        assert (msm.active_count_fraction >= 0.0 and msm.active_count_fraction <= 1.0)
+        assert (0.0 <= msm.active_count_fraction <= 1.0)
         # special case for this data set:
         assert (msm.active_count_fraction == 1.0)
 
@@ -272,7 +271,7 @@ class TestMSMDoubleWell(unittest.TestCase):
 
     def _active_state_fraction(self, msm):
         # should always be a fraction
-        assert (msm.active_state_fraction >= 0.0 and msm.active_state_fraction <= 1.0)
+        assert (0.0 <= msm.active_state_fraction <= 1.0)
 
     def test_active_state_fraction(self):
         # should always be a fraction
@@ -445,7 +444,6 @@ class TestMSMDoubleWell(unittest.TestCase):
         else:
             with self.assertRaises(ValueError):
                 msm.pcca(2)
-                ass = msm.metastable_assignments
 
     def test_pcca_assignment(self):
         self._pcca_assignment(self.msmrev)
@@ -466,7 +464,6 @@ class TestMSMDoubleWell(unittest.TestCase):
         else:
             with self.assertRaises(ValueError):
                 msm.pcca(2)
-                pccadist = msm.metastable_distributions
 
     def test_pcca_distributions(self):
         self._pcca_distributions(self.msmrev)
@@ -485,7 +482,6 @@ class TestMSMDoubleWell(unittest.TestCase):
         else:
             with self.assertRaises(ValueError):
                 msm.pcca(2)
-                M = msm.metastable_memberships
 
     def test_pcca_memberships(self):
         self._pcca_memberships(self.msmrev)
@@ -503,8 +499,6 @@ class TestMSMDoubleWell(unittest.TestCase):
         else:
             with self.assertRaises(ValueError):
                 msm.pcca(2)
-                S = msm.metastable_sets
-                assignment = msm.metastable_assignments
 
     def test_pcca_sets(self):
         self._pcca_sets(self.msmrev)
