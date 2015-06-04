@@ -61,8 +61,9 @@ class MSM(object):
         |  'ms',  'millisecond*'
         |  's',   'second*'
 
+
     """
-    def __init__(self, T, dt='1 step'):
+    def __init__(self, T, dt='1 step', neig=None, ncv=None):
         import pyemma.msm.analysis as msmana
         import pyemma.msm.estimation as msmest
         # check input
@@ -92,8 +93,34 @@ class MSM(object):
         # set basic attributes
         self._reversible = msmana.is_reversible(T)
         from scipy.sparse import issparse
-
         self._sparse = issparse(T)
+
+        # set eigenvalue decomposition parameters
+        self.set_eig_params(neig, ncv)
+
+    def set_eig_params(self, neig, ncv=None):
+        """ Sets parameters for eigendecomposition
+
+        Parameters
+        ----------
+        k : int or None
+            The number of eigenvalues / eigenvectors to be kept. If set to None, defaults will be used.
+            For a dense MSM the default is all eigenvalues. For a sparse MSM the default is 10.
+        ncv : int (optional)
+            Relevant for eigenvalue decomposition of reversible transition matrices.
+            ncv is the number of Lanczos vectors generated, `ncv` must be greater than k;
+            it is recommended that ncv > 2*k
+
+        """
+        if neig is None:
+            if self._sparse:
+                self._neig = 10
+            else:
+                self._neig = self._nstates
+        else:
+            self._neig = neig
+        self._ncv = ncv
+
 
     ################################################################################
     # Basic attributes
@@ -151,32 +178,21 @@ class MSM(object):
             self._mu = _statdist(self._T)
             return self._mu
 
-    def _do_eigendecomposition(self, k, ncv=None):
-        """Conducts the eigenvalue decomposition and stores k eigenvalues, left and right eigenvectors
-
-        Parameters
-        ----------
-        k : int
-            The number of eigenvalues / eigenvectors to be kept
-        ncv : int (optional)
-            Relevant for eigenvalue decomposition of reversible transition matrices.
-            ncv is the number of Lanczos vectors generated, `ncv` must be greater than k;
-            it is recommended that ncv > 2*k
-
-        """
+    def _do_eigendecomposition(self):
+        """ Conducts the eigenvalue decomposition and stores k eigenvalues, left and right eigenvectors """
         from pyemma.msm.analysis import rdl_decomposition
 
         if self._reversible:
-            self._R, self._D, self._L = rdl_decomposition(self._T, k=k, norm='reversible', ncv=ncv)
+            self._R, self._D, self._L = rdl_decomposition(self._T, k=self._neig, norm='reversible', ncv=self._ncv)
             # everything must be real-valued
             self._R = self._R.real
             self._D = self._D.real
             self._L = self._L.real
         else:
-            self._R, self._D, self._L = rdl_decomposition(self._T, k=k, norm='standard', ncv=ncv)
+            self._R, self._D, self._L = rdl_decomposition(self._T, k=self._neig, norm='standard', ncv=self._ncv)
         self._eigenvalues = np.diag(self._D)
 
-    def _ensure_eigendecomposition(self, k=None, ncv=None):
+    def _ensure_eigendecomposition(self):
         """Ensures that eigendecomposition has been performed with at least k eigenpairs
 
         k : int
@@ -189,36 +205,19 @@ class MSM(object):
             it is recommended that ncv > 2*k
 
         """
-        # check input?
-        if self._sparse:
-            if k is None:
-                raise ValueError(
-                    'You have requested sparse=True, then the number of eigenvalues neig must also be set.')
-        else:
-            # override setting - we anyway have to compute all eigenvalues, so we'll also store them.
-            k = self._nstates
         # ensure that eigenvalue decomposition with k components is done.
         try:
             m = len(self._eigenvalues)  # this will raise and exception if self._eigenvalues doesn't exist yet.
-            if m < k:
+            if m < self._neig:
                 # not enough eigenpairs present - recompute:
-                self._do_eigendecomposition(k, ncv=ncv)
+                self._do_eigendecomposition()
         except:
             # no eigendecomposition yet - compute:
-            self._do_eigendecomposition(k, ncv=ncv)
+            self._do_eigendecomposition()
 
-
-    def eigenvalues(self, k=None, ncv=None):
-        """Compute the transition matrix eigenvalues
-
-        Parameters
-        ----------
-        k : int
-            number of timescales to be computed. By default identical to the number of eigenvalues computed minus 1
-        ncv : int (optional)
-            Relevant for eigenvalue decomposition of reversible transition matrices.
-            ncv is the number of Lanczos vectors generated, `ncv` must be greater than k;
-            it is recommended that ncv > 2*k
+    @property
+    def eigenvalues(self):
+        """ Transition matrix eigenvalues
 
         Returns
         -------
@@ -226,21 +225,13 @@ class MSM(object):
             transition matrix eigenvalues :math:`\lambda_i, i = 1,...,k`., sorted by descending norm.
 
         """
-        self._ensure_eigendecomposition(k=k, ncv=ncv)
-        return self._eigenvalues[:k]
+        self._ensure_eigendecomposition()
+        return self._eigenvalues
+        # return self._eigenvalues[:k]
 
-
-    def eigenvectors_left(self, k=None, ncv=None):
-        """Compute the left transition matrix eigenvectors
-
-        Parameters
-        ----------
-        k : int
-            number of timescales to be computed. By default identical to the number of eigenvalues computed minus 1
-        ncv : int (optional)
-            Relevant for eigenvalue decomposition of reversible transition matrices.
-            ncv is the number of Lanczos vectors generated, `ncv` must be greater than k;
-            it is recommended that ncv > 2*k
+    @property
+    def eigenvectors_left(self):
+        """ Left transition matrix eigenvectors
 
         Returns
         -------
@@ -248,21 +239,13 @@ class MSM(object):
             left eigenvectors in a row matrix. l_ij is the j'th component of the i'th left eigenvector
 
         """
-        self._ensure_eigendecomposition(k=k, ncv=ncv)
-        return self._L[:k, :]
+        self._ensure_eigendecomposition()
+        return self._L
+        # return self._L[:k, :]
 
-
-    def eigenvectors_right(self, k=None, ncv=None):
-        """Compute the right transition matrix eigenvectors
-
-        Parameters
-        ----------
-        k : int
-            number of timescales to be computed. By default identical to the number of eigenvalues computed minus 1
-        ncv : int (optional)
-            Relevant for eigenvalue decomposition of reversible transition matrices.
-            ncv is the number of Lanczos vectors generated, `ncv` must be greater than k;
-            it is recommended that ncv > 2*k
+    @property
+    def eigenvectors_right(self):
+        """ Right transition matrix eigenvectors
 
         Returns
         -------
@@ -270,21 +253,14 @@ class MSM(object):
             right eigenvectors in a column matrix. r_ij is the i'th component of the j'th right eigenvector
 
         """
-        self._ensure_eigendecomposition(k=k, ncv=ncv)
-        return self._R[:, :k]
+        self._ensure_eigendecomposition()
+        return self._R
+        # return self._R[:, :k]
 
-    def timescales(self, k=None, ncv=None):
+    @property
+    def timescales(self):
         """
         The relaxation timescales corresponding to the eigenvalues
-
-        Parameters
-        ----------
-        k : int
-            number of timescales to be computed. As a result, k+1 eigenvalues will be computed
-        ncv : int (optional)
-            Relevant for eigenvalue decomposition of reversible transition matrices.
-            ncv is the number of Lanczos vectors generated, `ncv` must be greater than k;
-            it is recommended that ncv > 2*k
 
         Returns
         -------
@@ -293,17 +269,18 @@ class MSM(object):
             defined by :math:`-\tau / ln | \lambda_i |, i = 2,...,k+1`.
 
         """
-        neig = k
-        if k is not None:
-            neig += 1
-        self._ensure_eigendecomposition(k=neig, ncv=ncv)
+        # neig = k
+        # if k is not None:
+        #     neig += 1
+        self._ensure_eigendecomposition()
         from pyemma.msm.analysis.dense.decomposition import timescales_from_eigenvalues as _timescales
 
         ts = _timescales(self._eigenvalues, tau=self._lag)
-        if neig is None:
-            return ts[1:]
-        else:
-            return ts[1:neig]  # exclude the stationary process
+        return ts[1:]
+        # if neig is None:
+        #     return ts[1:]
+        # else:
+        #     return ts[1:neig]  # exclude the stationary process
 
     def _assert_in_active(self, A):
         """

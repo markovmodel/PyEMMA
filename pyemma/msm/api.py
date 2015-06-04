@@ -38,7 +38,7 @@ from pyemma.msm.estimators.maximum_likelihood_msm import MaximumLikelihoodMSM as
 from util import ImpliedTimescales
 from models import MSM
 from util import cktest as chapman_kolmogorov
-
+from pyemma.util import types as _types
 
 __author__ = "Benjamin Trendelkamp-Schroer, Martin Scherer, Frank Noe"
 __copyright__ = "Copyright 2014, Computational Molecular Biology Group, FU-Berlin"
@@ -97,6 +97,7 @@ def its(dtrajs, lags=None, nits=10, reversible=True, connected=True):
         J. Phys. Chem. B 108: 6571-6581 (2004)
 
     """
+    dtrajs = _types.ensure_dtraj_list(dtrajs)
     itsobj = ImpliedTimescales(dtrajs, lags=lags, nits=nits, reversible=reversible, connected=connected)
     return itsobj
 

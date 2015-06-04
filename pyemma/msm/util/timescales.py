@@ -41,6 +41,7 @@ from pyemma.util.progressbar.gui import show_progressbar
 __docformat__ = "restructuredtext en"
 __all__ = ['ImpliedTimescales']
 
+
 # ====================================================================
 # Helper functions
 # ====================================================================
