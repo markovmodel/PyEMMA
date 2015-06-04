@@ -61,8 +61,8 @@ class TestDataInMemory(unittest.TestCase):
 
         self.assertEqual(d.dimension(), dim)
 
-        self.assertEqual(
-            d.trajectory_lengths(), [frames_per_traj for _ in xrange(3)])
+        np.testing.assert_equal(
+            d.trajectory_lengths(), np.array([frames_per_traj for _ in xrange(3)]))
 
     def testDataArray(self):
         frames_per_traj = 100
@@ -71,15 +71,15 @@ class TestDataInMemory(unittest.TestCase):
         data = np.random.random((frames_per_traj, dim))
         d = DataInMemory(data)
 
-        self.assertEqual(
-            d.trajectory_lengths(), [frames_per_traj for _ in xrange(1)])
+        np.testing.assert_equal(
+            d.trajectory_lengths(), np.array([frames_per_traj for _ in xrange(1)]))
 
     def test1dData(self):
         n = 3
         data = np.arange(n)
         reader = DataInMemory(data)
 
-        self.assertEqual(reader.trajectory_lengths(), [n])
+        self.assertEqual(reader.trajectory_lengths(), np.array([n]))
         self.assertEqual(reader.dimension(), 1)
         self.assertEqual(reader.number_of_trajectories(), 1)
         self.assertEqual(reader.n_frames_total(), n)
@@ -89,7 +89,7 @@ class TestDataInMemory(unittest.TestCase):
         data = [np.arange(n), np.arange(n)]
         reader = DataInMemory(data)
 
-        self.assertEqual(reader.trajectory_lengths(), [n, n])
+        np.testing.assert_equal(reader.trajectory_lengths(), np.array([n, n]))
         self.assertEqual(reader.dimension(), 1)
         self.assertEqual(reader.number_of_trajectories(), 2)
         self.assertEqual(reader.n_frames_total(), 2 * n)
@@ -109,8 +109,8 @@ class TestDataInMemory(unittest.TestCase):
         self.assertEqual(reader.dimension(), 2 * 2 * 2)
         self.assertEqual(reader.number_of_trajectories(), 1)
         self.assertEqual(reader.n_frames_total(), 4)
-        self.assertEqual(
-            reader.trajectory_lengths(), [reader.n_frames_total()])
+        np.testing.assert_equal(
+            reader.trajectory_lengths(), np.array([reader.n_frames_total()]))
 
     def test_time_lagged_chunked_access(self):
         n = 100

@@ -196,7 +196,7 @@ class Transformer(object):
 
         Returns
         -------
-        int : length of each trajectory
+        array(dtype=int) : containing length of each trajectory
         """
         return self.data_producer.trajectory_lengths(stride=stride)
 
