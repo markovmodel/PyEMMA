@@ -41,8 +41,9 @@ class Estimator(SklearnEstimator):
         """
         # set params
         if params:
-            self.set_params(params)
+            self.set_params(**params)
         self._model = self._estimate(X)
+        return self._model
 
     def _estimate(self, X):
         raise NotImplementedError('You need to overload the _estimate() method in your Estimator implementation!')

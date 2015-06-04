@@ -433,7 +433,7 @@ def ensure_dtraj_list(dtrajs):
         return [ensure_dtraj(dtrajs)]
 
 def ensure_traj(traj):
-    r"""Makes sure that dtraj is a discrete trajectory (array of int)
+    r"""Makes sure that dtraj is a discrete trajectory (array of float)
 
     """
     if is_float_matrix(traj):
