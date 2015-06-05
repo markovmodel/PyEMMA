@@ -1,4 +1,3 @@
-
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
 # All rights reserved.
@@ -22,7 +21,6 @@
 # ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 r"""Implement a MSM class that builds a Markov state models from
 microstate trajectories automatically computes important properties
 and provides them for later access.
@@ -31,15 +29,13 @@ and provides them for later access.
 .. moduleauthor:: B. Trendelkamp-Schroer <benjamin DOT trendelkamp-schroer AT fu-berlin DOT de>
 
 """
-
-__docformat__ = "restructuredtext en"
-
 import numpy as np
 from math import ceil
 from pyemma.util.annotators import shortcut
 from pyemma.util.log import getLogger
 
 
+__docformat__ = "restructuredtext en"
 __all__ = ['MSM', 'EstimatedMSM']
 
 # TODO: Explain concept of an active set
@@ -304,7 +300,7 @@ class MSM(object):
         -------
         ts : ndarray(m)
             relaxation timescales in units of the input trajectory time step,
-            defined by :math:`-tau / ln | \lambda_i |, i = 2,...,k+1`.
+            defined by :math:`-\tau / ln | \lambda_i |, i = 2,...,k+1`.
 
         """
         neig = k
@@ -419,7 +415,7 @@ class MSM(object):
         neutron scattering [2]_, ...), first compute the mean values of your experimental observable :math:`a`
         by MSM state:
 
-        .. :math:
+        .. math::
             a_i = \frac{1}{N_i} \sum_{x_t \in S_i} f(x_t)
 
         where :math:`S_i` is the set of configurations belonging to MSM state :math:`i` and :math:`f()` is a function
@@ -670,7 +666,8 @@ class MSM(object):
         a : (n,) ndarray
             Observable, represented as vector on state space
         lag : int or int array
-            List of lag time or lag times (in units of the transition matrix lag time tau) at which to compute
+            List of lag time or lag times (in units of the transition matrix 
+            lag time :math:`\tau`) at which to compute
             correlation
         k : int (optional)
             Number of eigenvalues and eigenvectors to use for computation
@@ -1124,8 +1121,9 @@ class EstimatedMSM(MSM):
         """The count matrix on the active set given the connectivity mode used.
 
         For example, for connectivity='largest', the count matrix is given only on the largest reversibly connected set.
-        Attention: This count matrix has been obtained by sliding a window of length tau across the data. It contains
-        a factor of tau more counts than are statistically uncorrelated. It's fine to use this matrix for maximum
+        Attention: This count matrix has been obtained by sliding a window of 
+        length :math:`\tau` across the data. It contains a factor of :math:`\tau` more
+        counts than are statistically uncorrelated. It's fine to use this matrix for maximum
         likelihood estimated, but it will give far too small errors if you use it for uncertainty calculations. In order
         to do uncertainty calculations, use the effective count matrix, see:
         :meth:`effective_count_matrix`
@@ -1148,8 +1146,9 @@ class EstimatedMSM(MSM):
 
         The effective count matrix is obtained by dividing the sliding-window count matrix by the lag time. This
         can be shown to provide a likelihood that is the geometrical average over shifted subsamples of the trajectory,
-        :math:`(s_1,\:s_{tau+1},\:...),\:(s_2,\:t_{tau+2},\:...),` etc. This geometrical average converges to the
-        correct likelihood in the statistical limit _[1].
+        :math:`(s_1,\:s_{\tau+1},\:...),\:(s_2,\:t_{\tau+2},\:...),` etc.
+        This geometrical average converges to the correct likelihood in the 
+        statistical limit _[1].
 
         [1] Trendelkamp-Schroer B, H Wu, F Paul and F Noe. 2015:
         Reversible Markov models of molecular kinetics: Estimation and uncertainty.
@@ -1396,7 +1395,8 @@ class EstimatedMSM(MSM):
         distributions : list or array of ndarray ( (n) )
             m distributions over states. Each distribution must be of length n and must sum up to 1.0
         nsample : int
-            Number of samples per distribution. If replace = False, the number of returned samples per state could be smaller
+            Number of samples per distribution. If replace = False, the number
+            of returned samples per state could be smaller
             if less than nsample indexes are available for a state.
 
         Returns
