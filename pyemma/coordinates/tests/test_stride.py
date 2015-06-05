@@ -34,7 +34,7 @@ import pyemma.coordinates as coor
 class TestStride(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.dim = 99  # dimension (must be divisible by 3) # 99
+        cls.dim = 33  # dimension (must be divisible by 3)
         N_trajs = 10  # number of trajectories
 
         # create topology file
@@ -47,7 +47,7 @@ class TestStride(unittest.TestCase):
         cls.data = []
         for i in xrange(N_trajs):
             # set up data
-            N = int(np.random.rand()*1000+10)
+            N = int(np.random.rand()*1000+1000)
             xyz = np.random.randn(N, cls.dim//3, 3).astype(np.float32)
             cls.data.append(xyz)
             t = np.arange(0, N)
@@ -105,21 +105,12 @@ class TestStride(unittest.TestCase):
                 self.assertTrue(np.all(ref_data[::stride] == test_data))  # here we can test exact equality
 
     def test_parametrize_with_stride(self):
-        # for stride in xrange(1,100,20):
         for stride in xrange(1, 100, 5):
             r = coor.source(self.trajnames, top=self.temppdb)
-            # print 'expected total length of trajectories:', r.trajectory_lengths(stride=stride)
             tau = 5
-            # print 'expected inner frames', [max(l-2*tau,0) for l in r.trajectory_lengths(stride=stride)]
             t = coor.tica(r, lag=tau, dim=2, force_eigenvalues_le_one=True)
             # force_eigenvalues_le_one=True enables an internal consitency check in TICA
-            # t.data_producer = r
-            # print 'STRIDE:', stride
-            # print 'theoretical result 2*(N-tau):', sum([2*(x-5) for x in r.trajectory_lengths(stride=stride) if x > 5])
-            # print 'theoretical result N:', sum(r.trajectory_lengths(stride=stride))
             t.parametrize(stride=stride)
-            # print 'TICA', t.N_cov, 2*t.N_cov_tau
-            # print 'eigenvalues', sorted(t.eigenvalues)[::-1][0:5]
             self.assertTrue(np.all(t.eigenvalues <= 1.0+1.E-12))
 
     @classmethod
