@@ -161,8 +161,8 @@ class ImpliedTimescales(Estimator):
                 if ts is None:
                     self._log_no_ts(self.lags[i])
                 else:
-                    ts = ts[:nits]
-                    self._its_samples[i, :ts.shape[1], :] = ts  # copy into array. Leave 0 if there is no timescales
+                    ts = ts[:,:nits]
+                    self._its_samples[i, :ts.shape[1], :] = ts.T  # copy into array. Leave 0 if there is no timescales
 
     @property
     def lagtimes(self):
