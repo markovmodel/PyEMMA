@@ -55,7 +55,7 @@ def _generate_lags(maxlag, multiplier):
     # build default lag list
     lags.append(1)
     lag = 1.0
-    while (lag <= maxlag):
+    while lag <= maxlag:
         lag = round(lag * multiplier)
         lags.append(int(lag))
     return lags
@@ -147,7 +147,7 @@ class ImpliedTimescales(Estimator):
                 self._log_no_ts(self.lags[i])
             else:
                 ts = ts[:nits]
-                self._its[i,:len(ts)] = ts  # copy into array. Leave 0 if there is no timescales
+                self._its[i, :len(ts)] = ts  # copy into array. Leave 0 if there is no timescales
 
         # store timescales samples (if available)
         timescales_samples = [est[1] for est in estimates]
@@ -162,7 +162,7 @@ class ImpliedTimescales(Estimator):
                     self._log_no_ts(self.lags[i])
                 else:
                     ts = ts[:nits]
-                    self._its_samples[i,:ts.shape[1],:] = ts  # copy into array. Leave 0 if there is no timescales
+                    self._its_samples[i, :ts.shape[1], :] = ts  # copy into array. Leave 0 if there is no timescales
 
     @property
     def lagtimes(self):
