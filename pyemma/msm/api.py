@@ -38,6 +38,7 @@ from estimators import ImpliedTimescales as _ImpliedTimescales
 from flux import tpt as tpt_factory
 from models import MSM
 from util import cktest as chapman_kolmogorov
+from pyemma.util.annotators import shortcut
 from pyemma.util import types as _types
 
 __author__ = "Benjamin Trendelkamp-Schroer, Martin Scherer, Frank Noe"
@@ -48,17 +49,20 @@ __version__ = "2.0.0"
 __maintainer__ = "Martin Scherer"
 __email__ = "m.scherer AT fu-berlin DOT de"
 
-__all__ = ['its',
-           'markov_model',
+__all__ = ['markov_model',
+           'timescales_msm',
+           'its',
            'estimate_markov_model',
            'bayesian_markov_model',
+           'timescales_hmsm',
            'estimate_hidden_markov_model',
            'bayesian_hidden_markov_model',
            'cktest',
            'tpt']
 
 
-def its(dtrajs, lags=None, nits=10, reversible=True, connected=True):
+@shortcut('its')
+def timescales_msm(dtrajs, lags=None, nits=10, reversible=True, connected=True, errors=None, nsamples=50):
     r""" Calculate implied timescales from Markov state models estimated at a series of lag times.
 
     Parameters
@@ -77,6 +81,15 @@ def its(dtrajs, lags=None, nits=10, reversible=True, connected=True):
     reversible : boolean (optional)
         Estimate the transition matrix reversibly (True) or
         nonreversibly (False)
+    errors : None or str
+        Specifies whether to compute statistical uncertainties (by default not), an which algorithm to use if yes.
+        Options are 'bayes' for Bayesian sampling of the posterior and 'bootstrap' for bootstrapping of the discrete
+        trajectories. Attention: Computing errors can be *very* slow if the MSM has many states. Moreover there are
+        still unsolved theoretical problems, and therefore the uncertainty interval and the maximum likelihood
+        estimator can be inconsistent. Use this as a rough guess for statistical uncertainties.
+    nsamples : int
+        The number of approximately independent transition matrix samples generated for each lag time for uncertainty
+        quantification. Only used if errors is not None.
 
     Returns
     -------
@@ -91,9 +104,22 @@ def its(dtrajs, lags=None, nits=10, reversible=True, connected=True):
 
     References
     ----------
-    .. [1] Swope, W. C. and J. W. Pitera and F. Suits
+    Implied timescales as a lagtime-selection and MSM-validation approach were suggested in [1]_. Error estimation
+    is done either using moving block bootstrapping [2]_ or a Bayesian analysis using Metropolis-Hastings Monte Carlo
+    sampling of the posterior. Nonreversible Bayesian sampling is done by independently sampling Dirichtlet
+    distributions of the transition matrix rows. A Monte Carlo method for sampling reversible MSMs
+    was introduced in [3]_. Here we employ a much more efficient algorithm introduced in [4]_.
+    .. [1] Swope, W. C. and J. W. Pitera and F. Suits:
         Describing protein folding kinetics by molecular dynamics simulations: 1. Theory.
         J. Phys. Chem. B 108: 6571-6581 (2004)
+    .. [2] Kuensch, H. R.:
+        The jackknife and the bootstrap for general stationary observations.
+        Ann. Stat. 17, 1217-1241 (1989)
+    .. [3] Noe, F.:
+        Probability Distributions of Molecular Observables computed from Markov Models.
+        J. Chem. Phys. 128, 244103 (2008)
+    .. [4] Trendelkamp-Schroer et al:
+        in preparation (2015)
 
     Example
     -------
@@ -108,12 +134,23 @@ def its(dtrajs, lags=None, nits=10, reversible=True, connected=True):
      [ 5.13829397  2.59477703]]
 
     """
+    # format data
     dtrajs = _types.ensure_dtraj_list(dtrajs)
+
     if connected:
         connectivity = 'largest'
     else:
         connectivity = 'none'
-    estimator = _ML_MSM(reversible=reversible, connectivity=connectivity)
+
+    # MLE or error estimation?
+    if errors is None:
+        estimator = _ML_MSM(reversible=reversible, connectivity=connectivity)
+    elif errors == 'bayes':
+        estimator = _Bayes_MSM(reversible=reversible, connectivity=connectivity)
+    else:
+        raise NotImplementedError('Error estimation method'+errors+'currently not implemented')
+
+    # go
     itsobj = _ImpliedTimescales(dtrajs, estimator, lags=lags, nits=nits)
     itsobj.estimate(dtrajs)
     return itsobj
@@ -366,7 +403,102 @@ def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
     return tmestimator.estimate(dtrajs)
 
 
-def estimate_hidden_markov_model(dtrajs, lag, nstates, reversible=True, connectivity='largest', observe_active=True,
+def timescales_hmsm(dtrajs, nstates, lags=None, nits=10, reversible=True, connected=True, errors=None, nsamples=100):
+    r""" Calculate implied timescales from Hidden Markov state models estimated at a series of lag times.
+
+    Warning: this can be slow!
+
+    Parameters
+    ----------
+    dtrajs : array-like or list of array-likes
+        discrete trajectories
+    nstates : int
+        number of hidden states
+    lags : array-like of integers (optional)
+        integer lag times at which the implied timescales will be
+        calculated
+    nits : int (optional)
+        number of implied timescales to be computed. Will compute less
+        if the number of states are smaller
+    connected : boolean (optional)
+        If true compute the connected set before transition matrix
+        estimation at each lag separately
+    reversible : boolean (optional)
+        Estimate the transition matrix reversibly (True) or
+        nonreversibly (False)
+    errors : None or str
+        Specifies whether to compute statistical uncertainties (by default not), an which algorithm to use if yes.
+        The only option is currently 'bayes'. This algorithm is much faster than MSM-based error calculation because
+        the involved matrices are much smaller.
+    nsamples : int
+        The number of approximately independent HMSM samples generated for each lag time for uncertainty
+        quantification. Only used if errors is not None.
+
+    Returns
+    -------
+    itsobj : :class:`ImpliedTimescales <pyemma.msm.ui.ImpliedTimescales>` object
+
+    See also
+    --------
+    ImpliedTimescales
+        The object returned by this function.
+    pyemma.plots.plot_implied_timescales
+        Plotting function for the :class:`ImpliedTimescales <pyemma.msm.ui.ImpliedTimescales>` object
+
+    References
+    ----------
+    Implied timescales as a lagtime-selection and MSM-validation approach were suggested in [1]_. Hidden Markov
+    state model estimation is done here as described in [2]_. For uncertainty quantification we employ the
+    Bayesian sampling algorithm described in [3]_.
+
+    .. [1] Swope, W. C. and J. W. Pitera and F. Suits:
+        Describing protein folding kinetics by molecular dynamics simulations: 1. Theory.
+        J. Phys. Chem. B 108: 6571-6581 (2004)
+
+    .. [2] F. Noe, H. Wu, J.-H. Prinz and N. Plattner:
+        Projected and hidden Markov models for calculating kinetics and metastable states of complex molecules
+        J. Chem. Phys. 139, 184114 (2013)
+
+    .. [3] J. D. Chodera Et Al:
+        Bayesian hidden Markov model analysis of single-molecule force spectroscopy:
+        Characterizing kinetics under measurement uncertainty
+        arXiv:1108.1430 (2011)
+
+    Example
+    -------
+    >>> from pyemma import msm
+    >>> dtraj = [0,1,1,2,2,2,1,2,2,2,1,0,0,1,1,1,2,2,1,1,2,1,1,0,0,0,1,1,2,2,1]   # mini-trajectory
+    >>> ts = msm.its(dtraj, [1,2,3,4,5])
+    >>> print ts.timescales
+    [[ 1.50167143  0.20039813]
+     [ 3.17036301  1.06407436]
+     [ 2.03222416  1.02489382]
+     [ 4.63599356  3.42346576]
+     [ 5.13829397  2.59477703]]
+
+    """
+    # format data
+    dtrajs = _types.ensure_dtraj_list(dtrajs)
+
+    if connected:
+        connectivity = 'largest'
+    else:
+        connectivity = 'none'
+
+    # MLE or error estimation?
+    if errors is None:
+        estimator = _ML_HMSM(nstates=nstates, reversible=reversible, connectivity=connectivity)
+    elif errors == 'bayes':
+        estimator = _Bayes_HMSM(nstates=nstates, reversible=reversible, connectivity=connectivity)
+    else:
+        raise NotImplementedError('Error estimation method'+errors+'currently not implemented')
+
+    # go
+    itsobj = _ImpliedTimescales(dtrajs, estimator, lags=lags, nits=nits)
+    itsobj.estimate(dtrajs)
+    return itsobj
+
+def estimate_hidden_markov_model(dtrajs, nstates, lag, reversible=True, connectivity='largest', observe_active=True,
                                  dt='1 step', accuracy=1e-3, maxit=1000, store_data=True):
     r""" Estimates a Hidden Markov state model from discrete trajectories
 
