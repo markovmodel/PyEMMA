@@ -29,13 +29,13 @@ r"""User API for the pyemma.msm package
 
 __docformat__ = "restructuredtext en"
 
-from pyemma.msm.estimators.maximum_likelihood_hmsm import MaximumLikelihoodHMSM as _HMSMEstimator
-from pyemma.msm.estimators.bayesian_msm import BayesianMSM as _BayesianMSMEstimator
-from pyemma.msm.estimators.bayesian_hmsm import BayesianHMSM as _BayesianHMSMEstimator
+from estimators import MaximumLikelihoodHMSM as _ML_HMSM
+from estimators import BayesianMSM as _Bayes_MSM
+from estimators import BayesianHMSM as _Bayes_HMSM
+from estimators import MaximumLikelihoodMSM as _ML_MSM
+from estimators import ImpliedTimescales as _ImpliedTimescales
 
 from flux import tpt as tpt_factory
-from pyemma.msm.estimators.maximum_likelihood_msm import MaximumLikelihoodMSM as _MSMEstimator
-from util import ImpliedTimescales
 from models import MSM
 from util import cktest as chapman_kolmogorov
 from pyemma.util import types as _types
@@ -58,9 +58,8 @@ __all__ = ['its',
            'tpt']
 
 
-# TODO: need code examples
 def its(dtrajs, lags=None, nits=10, reversible=True, connected=True):
-    r"""Calculate implied timescales for a series of lag times.
+    r""" Calculate implied timescales from Markov state models estimated at a series of lag times.
 
     Parameters
     ----------
@@ -96,15 +95,32 @@ def its(dtrajs, lags=None, nits=10, reversible=True, connected=True):
         Describing protein folding kinetics by molecular dynamics simulations: 1. Theory.
         J. Phys. Chem. B 108: 6571-6581 (2004)
 
+    Example
+    -------
+    >>> from pyemma import msm
+    >>> dtraj = [0,1,1,2,2,2,1,2,2,2,1,0,0,1,1,1,2,2,1,1,2,1,1,0,0,0,1,1,2,2,1]   # mini-trajectory
+    >>> ts = msm.its(dtraj, [1,2,3,4,5])
+    >>> print ts.timescales
+    [[ 1.50167143  0.20039813]
+     [ 3.17036301  1.06407436]
+     [ 2.03222416  1.02489382]
+     [ 4.63599356  3.42346576]
+     [ 5.13829397  2.59477703]]
+
     """
     dtrajs = _types.ensure_dtraj_list(dtrajs)
-    itsobj = ImpliedTimescales(dtrajs, lags=lags, nits=nits, reversible=reversible, connected=connected)
+    if connected:
+        connectivity = 'largest'
+    else:
+        connectivity = 'none'
+    estimator = _ML_MSM(reversible=reversible, connectivity=connectivity)
+    itsobj = _ImpliedTimescales(dtrajs, estimator, lags=lags, nits=nits)
+    itsobj.estimate(dtrajs)
     return itsobj
 
 
-# TODO: need code examples
 def markov_model(P, dt='1 step'):
-    r"""Markov model with a given transition matrix
+    r""" Markov model with a given transition matrix
 
     Returns a :class:`MSM <pyemma.msm.ui.MSM>` that contains the transition matrix
     and allows to compute a large number of quantities related to Markov models.
@@ -133,13 +149,38 @@ def markov_model(P, dt='1 step'):
     --------
     MSM : A MSM object
 
+    Example
+    -------
+    >>> from pyemma import msm
+    >>> import numpy as np
+    >>>
+    >>> P = np.array([[0.9, 0.1, 0.0], [0.05, 0.94, 0.01], [0.0, 0.02, 0.98]])
+    >>> mm = msm.markov_model(P)
+
+    Now we can compute various quantities, e.g. the stationary (equilibrium) distribution:
+
+    >>> print mm.stationary_distribution
+    [ 0.25  0.5   0.25]
+
+    The (implied) relaxation timescales
+
+    >>> print mm.timescales
+    [ 38.00561796   5.9782565 ]
+
+    The mean first passage time from state 0 to 2
+
+    >>> print mm.mfpt(0, 2)
+    160.0
+
+    And many more. See :class:`MSM <pyemma.msm.ui.MSM>` for a full documentation.
+
     """
     return MSM(P, dt=dt)
 
 
-# TODO: need code examples
-def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivity='largest', dt='1 step', **kwargs):
-    r"""Estimates a Markov model from discrete trajectories
+def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivity='largest', dt='1 step',
+                          maxiter=1000000, maxerr=1e-8, store_data=True):
+    r""" Estimates a Markov model from discrete trajectories
 
     Returns a :class:`EstimatedMSM <pyemma.msm.ui.EstimatedMSM>` that contains the estimated transition matrix
     and allows to compute a large number of quantities related to Markov models.
@@ -150,7 +191,7 @@ def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
         discrete trajectories, stored as integer ndarrays (arbitrary size)
         or a single ndarray for only one trajectory.
     lag : int
-        lagtime for the MSM estimation in multiples of trajectory steps
+        lag time at which transitions are counted and the transition matrix is estimated.
     reversible : bool, optional, default = True
         If true compute reversible MSM, else non-reversible MSM
     sparse : bool, optional, default = False
@@ -163,11 +204,12 @@ def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
         'largest' : The active set is the largest reversibly connected set. All estimation will be done on this
             subset and all quantities (transition matrix, stationary distribution, etc) are only defined on this
             subset and are correspondingly smaller than the full set of states
-        'all' : The active set is the full set of states. Estimation will be conducted on each reversibly connected
-            set separately. That means the transition matrix will decompose into disconnected submatrices,
-            the stationary vector is only defined within subsets, etc. Currently not implemented.
-        'none' : The active set is the full set of states. Estimation will be conducted on the full set of states
-            without ensuring connectivity. This only permits nonreversible estimation. Currently not implemented.
+        'all' : The active set is the full set of states. Estimation will be conducted on each reversibly
+            connected set separately. That means the transition matrix will decompose into disconnected
+            submatrices, the stationary vector is only defined within subsets, etc. Currently not implemented.
+        'none' : The active set is the full set of states. Estimation will be conducted on the full set of
+            states without ensuring connectivity. This only permits nonreversible estimation. Currently not
+            implemented.
     dt : str, optional, default='1 step'
         Description of the physical time corresponding to the lag. May be used by analysis algorithms such as
         plotting tools to pretty-print the axes. By default '1 step', i.e. there is no physical time unit.
@@ -179,8 +221,6 @@ def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
         |  'us',  'microsecond*'
         |  'ms',  'millisecond*'
         |  's',   'second*'
-
-    **kwargs: Optional algorithm-specific parameters. See below for special cases
     maxiter = 1000000 : int
         Optional parameter with reversible = True.
         maximum number of iterations before the transition matrix estimation method exits
@@ -189,8 +229,12 @@ def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
         convergence tolerance for transition matrix estimation.
         This specifies the maximum change of the Euclidean norm of relative
         stationary probabilities (:math:`x_i = \sum_k x_{ik}`). The relative stationary probability changes
-        :math:`e_i = (x_i^{(1)} - x_i^{(2)})/(x_i^{(1)} + x_i^{(2)})` are used in order to track changes in small
-        probabilities. The Euclidean norm of the change vector, :math:`|e_i|_2`, is compared to maxerr.
+        :math:`e_i = (x_i^{(1)} - x_i^{(2)})/(x_i^{(1)} + x_i^{(2)})` are used in order to track changes in
+        small probabilities. The Euclidean norm of the change vector, :math:`|e_i|_2`, is compared to maxerr.
+    store_data : bool
+        True: estimate() returns an :class:`pyemma.msm.EstimatedMSM` object with discrete trajectories and
+        counts stored. False: estimate() returns a plain :class:`pyemma.msm.MSM` object that only contains
+        the transition matrix and quantities derived from it.
 
     Returns
     -------
@@ -207,22 +251,68 @@ def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
     --------
     EstimatedMSM : An MSM object that has been estimated from data
 
+    Example
+    -------
+    >>> from pyemma import msm
+    >>> dtrajs = [[0,1,2,2,2,2,1,2,2,2,1,0,0,0,0,0,0,0], [0,0,0,0,1,1,2,2,2,2,2,2,2,1,0,0]]  # two trajectories
+    >>> mm = msm.estimate_markov_model(dtrajs, 2)
+
+    Which is the active set of states we are working on?
+
+    >>> print mm.active_set
+    [0 1 2]
+
+    Show the count matrix
+
+
+    >>> print mm.count_matrix_active
+    [[ 7.  2.  1.]
+     [ 2.  0.  4.]
+     [ 2.  3.  9.]]
+
+    Show the estimated transition matrix
+
+    >>> print mm.transition_matrix
+    [[ 0.69999998  0.16727717  0.13272284]
+     [ 0.38787137  0.          0.61212863]
+     [ 0.11948368  0.23765916  0.64285715]]
+
+    Is this model reversible (i.e. does it fulfill detailed balance)?
+
+    >>> print mm.is_reversible
+    True
+
+    What is the equilibrium distribution of states?
+
+    >>> print mm.stationary_distribution
+    [ 0.39337976  0.16965278  0.43696746]
+
+    Relaxation timescales?
+
+    >>> print mm.timescales
+    [ 3.41494424  1.29673294]
+
+    Mean first passage time from state 0 to 2:
+
+    >>> print mm.mfpt(0, 2)
+    9.92928837718
+
     """
     # transition matrix estimator
-    tmestimator = _MSMEstimator(dtrajs, reversible=reversible, sparse=sparse,
-                                connectivity=connectivity, dt=dt, **kwargs)
+    tmestimator = _ML_MSM(lag=lag, reversible=reversible, sparse=sparse, connectivity=connectivity, dt=dt,
+                          maxiter=1000000, maxerr=1e-8, store_data=True)
     # estimate and return
-    return tmestimator.estimate(lag)
+    return tmestimator.estimate(dtrajs)
 
 
-# TODO: need code examples
-def estimate_hidden_markov_model(dtrajs, lag, nstates, reversible=True, sparse=False,
-                                 connectivity='largest', observe_active=True, dt='1 step', **kwargs):
-    r"""Estimates a Markov model from discrete trajectories
+def estimate_hidden_markov_model(dtrajs, lag, nstates, reversible=True, connectivity='largest', observe_active=True,
+                                 dt='1 step', accuracy=1e-3, maxit=1000, store_data=True):
+    r""" Estimates a Hidden Markov state model from discrete trajectories
 
-    Returns a :class:`EstimatedHMSM <pyemma.msm.ui.EstimatedHMSM>` that contains the estimated hidden transition matrix,
-    observation probabilities to the discrete states in dtrajs and allows to compute a large number of quantities
-    related to discrete Hidden Markov models.
+    Returns a :class:`EstimatedHMSM <pyemma.msm.ui.EstimatedHMSM>` that contains a transition matrix between a few
+    (hidden) metastable states. Each metastable state has a probability distribution of visiting the discrete
+    'microstates' contained in the input trajectories. The resulting object is a hidden Markov model that
+    allows to compute a large number of quantities.
 
     Parameters
     ----------
@@ -235,11 +325,6 @@ def estimate_hidden_markov_model(dtrajs, lag, nstates, reversible=True, sparse=F
         the number of metastable states in the resulting HMM
     reversible : bool, optional, default = True
         If true compute reversible MSM, else non-reversible MSM
-    sparse : bool, optional, default = False
-        If true compute count matrix, transition matrix and all derived quantities using sparse matrix algebra.
-        In this case python sparse matrices will be returned by the corresponding functions instead of numpy
-        arrays. This behavior is suggested for very large numbers of states (e.g. > 4000) because it is likely
-        to be much more efficient.
     connectivity : str, optional, default = 'largest'
         Connectivity mode. Three methods are intended (currently only 'largest' is implemented)
         'largest' : The active set is the largest reversibly connected set. All estimation will be done on this
@@ -264,18 +349,16 @@ def estimate_hidden_markov_model(dtrajs, lag, nstates, reversible=True, sparse=F
         |  'us',  'microsecond*'
         |  'ms',  'millisecond*'
         |  's',   'second*'
-
-    **kwargs: Optional algorithm-specific parameters. See below for special cases
-    maxiter = 1000000 : int
-        Optional parameter with reversible = True.
-        maximum number of iterations before the transition matrix estimation method exits
-    maxerr = 1e-8 : float
-        Optional parameter with reversible = True.
-        convergence tolerance for transition matrix estimation.
-        This specifies the maximum change of the Euclidean norm of relative
-        stationary probabilities (:math:`x_i = \sum_k x_{ik}`). The relative stationary probability changes
-        :math:`e_i = (x_i^{(1)} - x_i^{(2)})/(x_i^{(1)} + x_i^{(2)})` are used in order to track changes in small
-        probabilities. The Euclidean norm of the change vector, :math:`|e_i|_2`, is compared to maxerr.
+    accuracy : float
+        convergence threshold for EM iteration. When two the likelihood does not increase by more than accuracy, the
+        iteration is stopped successfully.
+    maxit : int
+        stopping criterion for EM iteration. When so many iterations are performed without reaching the requested
+        accuracy, the iteration is stopped without convergence (a warning is given)
+    store_data : bool
+        True: estimate() returns an :class:`pyemma.msm.EstimatedMSM` object with discrete trajectories and
+        counts stored. False: estimate() returns a plain :class:`pyemma.msm.MSM` object that only contains
+        the transition matrix and quantities derived from it.
 
     Returns
     -------
@@ -292,17 +375,84 @@ def estimate_hidden_markov_model(dtrajs, lag, nstates, reversible=True, sparse=F
     --------
     EstimatedHMSM : A discrete HMM object that has been estimated from data
 
+    References
+    ----------
+    [1]_ is an excellent review of estimation algorithms for discrete Hidden Markov Models. This function estimates
+    a discrete HMM on the discrete input states using the Baum-Welch algorithm [2]_. We use a maximum-likelihood
+    Markov state model to initialize the HMM estimation as described in [3]_.
+
+    .. [1] L. R. Rabiner:
+        A Tutorial on Hidden Markov Models and Selected Applications in Speech Recognition
+        Proc. IEEE 77, 257-286 (1989)
+    .. [2] L. Baum, T. Petrie, G. Soules and N. Weiss N:
+        A maximization technique occurring in the statistical analysis of probabilistic functions of Markov chains.
+        Ann. Math. Statist. 41, 164-171 (1970)
+    .. [3] F. Noe, H. Wu, J.-H. Prinz and N. Plattner:
+        Projected and hidden Markov models for calculating kinetics and metastable states of complex molecules
+        J. Chem. Phys. 139, 184114 (2013)
+
+    Example
+    -------
+    >>> from pyemma import msm
+    >>> dtrajs = [[0,1,2,2,2,2,1,2,2,2,1,0,0,0,0,0,0,0], [0,0,0,0,1,1,2,2,2,2,2,2,2,1,0,0]]  # two trajectories
+    >>> mm = msm.estimate_hidden_markov_model(dtrajs, 2, 2)
+
+    We have estimated a 2x2 hidden transition matrix between the metastable states:
+
+    >>> print mm.transition_matrix
+    [[ 0.75703873  0.24296127]
+     [ 0.20628204  0.79371796]]
+
+    With the equilibrium distribution:
+
+    >>> print mm.stationary_distribution
+    [ 0.45917665  0.54082335]
+
+    The observed states are the three discrete clusters that we have in our discrete trajectory:
+
+    >>> print mm.observable_set
+    [0 1 2]
+
+    The metastable distributions (mm.metastable_distributions), or equivalently the observation probabilities are
+    the probability to be in a given cluster ('microstate') if we are in one of the hidden metastable states.
+    So it's a 2 x 3 matrix:
+
+    >>> print mm.observation_probabilities
+    [[ 0.9620883   0.0379117   0.        ]
+     [ 0.          0.28014352  0.71985648]]
+
+    The first metastable state ist mostly in cluster 0, and a little bit in the transition state cluster 1. The
+    second metastable state is less well defined, but mostly in cluster 2 and less prominently in the transition
+    state cluster 1.
+
+    We can print the lifetimes of the metastable states:
+
+    >>> print mm.lifetimes
+    [ 7.18543435  8.65699332]
+
+    And the timescale of the hidden transition matrix - now we only have one relaxation timescale:
+
+    >>> print mm.timescales
+    [ 3.35310468]
+
+    The mean first passage times can also be computed between metastable states:
+
+    >>> print mm.mfpt(0, 1)
+    8.23176470249
+
     """
-    # estimate MSM
-    hmsm_estimator = _HMSMEstimator(dtrajs, reversible=reversible, sparse=sparse, connectivity=connectivity,
-                                    observe_active=observe_active, dt=dt, **kwargs)
-    return hmsm_estimator.estimate(lag=lag, nstates=nstates)
+    # initialize HMSM estimator
+    hmsm_estimator = _ML_HMSM(lag=lag, nstates=nstates, reversible=reversible, connectivity=connectivity,
+                              observe_active=observe_active, dt=dt, accuracy=accuracy, maxit=maxit,
+                              store_data=store_data)
+    # run estimation
+    return hmsm_estimator.estimate(dtrajs)
 
 
 # TODO: need code examples
 def bayesian_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivity='largest',
-                          nsample=1000, conf=0.683, dt='1 step', **kwargs):
-    r"""Bayesian Markov model estimate using Gibbs sampling of the posterior
+                          nsample=1000, conf=0.683, dt='1 step', store_data=True):
+    r""" Bayesian Markov model estimate using Gibbs sampling of the posterior
 
     Returns a :class:`SampledMSM <pyemma.msm.ui.SampledMSM>` that contains the estimated transition matrix
     and allows to compute a large number of quantities related to Markov models as well as their statistical
@@ -348,18 +498,6 @@ def bayesian_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
         |  'ms',  'millisecond*'
         |  's',   'second*'
 
-    **kwargs: Optional algorithm-specific parameters. See below for special cases
-    maxiter = 1000000 : int
-        Optional parameter with reversible = True.
-        maximum number of iterations before the transition matrix estimation method exits
-    maxerr = 1e-8 : float
-        Optional parameter with reversible = True.
-        convergence tolerance for transition matrix estimation.
-        This specifies the maximum change of the Euclidean norm of relative
-        stationary probabilities (:math:`x_i = \sum_k x_{ik}`). The relative stationary probability changes
-        :math:`e_i = (x_i^{(1)} - x_i^{(2)})/(x_i^{(1)} + x_i^{(2)})` are used in order to track changes in small
-        probabilities. The Euclidean norm of the change vector, :math:`|e_i|_2`, is compared to maxerr.
-
     Returns
     -------
     An :class:`SampledMSM <pyemma.msm.ui.SampledMSM>` object containing a transition matrix and various other
@@ -377,15 +515,15 @@ def bayesian_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
     EstimatedMSM : An MSM object that has been estimated from data
 
     """
-    bmsm_estimator = _BayesianMSMEstimator(dtrajs, reversible=reversible, sparse=sparse, connectivity=connectivity,
-                                           dt=dt, conf=conf, **kwargs)
-    return bmsm_estimator.estimate(lag=lag, nsample=nsample)
+    # TODO: store_data=True
+    bmsm_estimator = _Bayes_MSM(lag=lag, reversible=reversible, sparse=sparse, connectivity=connectivity, dt=dt,
+                                nsample=nsample, conf=conf)
+    return bmsm_estimator.estimate(dtrajs)
 
-# TODO: need code examples
-def bayesian_hidden_markov_model(dtrajs, lag, nstates, reversible=True, sparse=False,
-                                 connectivity='largest', observe_active=True,
-                                 nsample=1000, conf=0.683, dt='1 step', **kwargs):
-    r"""Bayesian Hidden Markov model estimate using Gibbs sampling of the posterior
+
+def bayesian_hidden_markov_model(dtrajs, lag, nstates, nsample=1000, reversible=True, connectivity='largest',
+                                 observe_active=True, conf=0.683, dt='1 step'):
+    r""" Bayesian Hidden Markov model estimate using Gibbs sampling of the posterior
 
     Returns a :class:`SampledHMSM <pyemma.msm.ui.SampledHMSM>` that contains the estimated hidden Markov model [1]_
     and a Bayesian estimate [2]_ that contains samples around this estimate to estimate uncertainties.
@@ -401,11 +539,6 @@ def bayesian_hidden_markov_model(dtrajs, lag, nstates, reversible=True, sparse=F
         the number of metastable states in the resulting HMM
     reversible : bool, optional, default = True
         If true compute reversible MSM, else non-reversible MSM
-    sparse : bool, optional, default = False
-        If true compute count matrix, transition matrix and all derived quantities using sparse matrix algebra.
-        In this case python sparse matrices will be returned by the corresponding functions instead of numpy
-        arrays. This behavior is suggested for very large numbers of states (e.g. > 4000) because it is likely
-        to be much more efficient.
     connectivity : str, optional, default = 'largest'
         Connectivity mode. Three methods are intended (currently only 'largest' is implemented)
         'largest' : The active set is the largest reversibly connected set. All estimation will be done on this
@@ -435,18 +568,6 @@ def bayesian_hidden_markov_model(dtrajs, lag, nstates, reversible=True, sparse=F
         |  'ms',  'millisecond*'
         |  's',   'second*'
 
-    **kwargs: Optional algorithm-specific parameters. See below for special cases
-    maxiter = 1000000 : int
-        Optional parameter with reversible = True.
-        maximum number of iterations before the transition matrix estimation method exits
-    maxerr = 1e-8 : float
-        Optional parameter with reversible = True.
-        convergence tolerance for transition matrix estimation.
-        This specifies the maximum change of the Euclidean norm of relative
-        stationary probabilities (:math:`x_i = \sum_k x_{ik}`). The relative stationary probability changes
-        :math:`e_i = (x_i^{(1)} - x_i^{(2)})/(x_i^{(1)} + x_i^{(2)})` are used in order to track changes in small
-        probabilities. The Euclidean norm of the change vector, :math:`|e_i|_2`, is compared to maxerr.
-
     Returns
     -------
     An :class:`SampledHMSM <pyemma.msm.ui.SampledHMSM>` object containing a transition matrix and various other
@@ -473,14 +594,52 @@ def bayesian_hidden_markov_model(dtrajs, lag, nstates, reversible=True, sparse=F
         Characterizing kinetics under measurement uncertainty
         arXiv:1108.1430 (2011)
 
+    Example
+    -------
+
+    >>> from pyemma import msm
+    >>> dtrajs = [[0,1,2,2,2,2,1,2,2,2,1,0,0,0,0,0,0,0], [0,0,0,0,1,1,2,2,2,2,2,2,2,1,0,0]]  # two trajectories
+    >>> mm = msm.bayesian_hidden_markov_model(dtrajs, 2, 2)
+
+    We compute the stationary distribution (here given by the maximum likelihood estimate), and the 1-sigma
+    uncertainty interval. You can see that the uncertainties are quite large (we have seen only very few transitions
+    between the metastable states:
+
+    >>> pi = mm.stationary_distribution
+    >>> piL,piR = mm.stationary_distribution_conf
+    >>> for i in range(2): print pi[i],' -',piL[i],'+',piR[i]
+    0.459176653019  - 0.268314552886 + 0.715326151685
+    0.540823346981  - 0.284761476984 + 0.731730375713
+
+    Let's look at the lifetimes of metastable states. Now we have really huge uncertainties. In states where
+    one state is more probable than the other, the mean first passage time from the more probable to the less
+    probable state is much higher than the reverse:
+
+    >>> l = mm.lifetimes
+    >>> lL, lR = mm.lifetimes_conf
+    >>> for i in range(2): print l[i],' -',lL[i],'+',lR[i]
+    7.18543434854  - 6.03617757784 + 80.1298222741
+    8.65699332061  - 5.35089540896 + 30.1719505772
+
+    In contrast the relaxation timescale is less uncertain. This is because for a two-state system the relaxation
+    timescale is dominated by the faster passage, which is less uncertain than the slower passage time:
+
+    >>> ts = mm.timescales
+    >>> tsL,tsR = mm.timescales_conf
+    >>> print ts[0],' -',tsL[0],'+',tsR[0]
+    3.35310468086  - 2.24574587978 + 8.34383177258
+
+
     """
-    bhmsm_estimator = _BayesianHMSMEstimator(dtrajs, reversible=reversible, sparse=sparse, connectivity=connectivity,
-                                             observe_active=observe_active, dt=dt, conf=conf, **kwargs)
-    return bhmsm_estimator.estimate(lag=lag, nstates=nstates, nsample=nsample)
+
+    bhmsm_estimator = _Bayes_HMSM(lag=lag, nstates=nstates, nsample=nsample, reversible=reversible,
+                                  connectivity=connectivity, observe_active=observe_active, dt=dt, conf=conf)
+    return bhmsm_estimator.estimate(dtrajs)
+
 
 # TODO: need code examples
 def cktest(msmobj, K, nsets=2, sets=None, full_output=False):
-    r"""Chapman-Kolmogorov test for the given MSM
+    r""" Chapman-Kolmogorov test for the given MSM
 
     Parameters
     ----------
@@ -508,10 +667,16 @@ def cktest(msmobj, K, nsets=2, sets=None, full_output=False):
 
     References
     ----------
-    .. [1] Prinz, J H, H Wu, M Sarich, B Keller, M Senne, M Held, J D
+    This test was suggested in [1]_ and described in detail in [2]_.
+    .. [1] F. Noe, Ch. Schuette, E. Vanden-Eijnden, L. Reich and
+        T. Weikl: Constructing the Full Ensemble of Folding Pathways
+        from Short Off-Equilibrium Simulations.
+        Proc. Natl. Acad. Sci. USA, 106, 19011-19016 (2009)
+    .. [2] Prinz, J H, H Wu, M Sarich, B Keller, M Senne, M Held, J D
         Chodera, C Schuette and F Noe. 2011. Markov models of
         molecular kinetics: Generation and validation. J Chem Phys
         134: 174105
+
     """
     P = msmobj.transition_matrix
     lcc = msmobj.largest_connected_set
@@ -522,7 +687,7 @@ def cktest(msmobj, K, nsets=2, sets=None, full_output=False):
 
 # TODO: need code examples
 def tpt(msmobj, A, B):
-    r"""A->B reactive flux from transition path theory (TPT)
+    r""" A->B reactive flux from transition path theory (TPT)
 
     The returned :class:`ReactiveFlux <pyemma.msm.flux.ReactiveFlux>` object can be used to extract various quantities
     of the flux, as well as to compute A -> B transition pathways, their weights, and to coarse-grain the flux onto
