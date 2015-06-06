@@ -233,15 +233,28 @@ def match_eigenvectors(R_ref, R, w_ref=None, w=None):
     # weights
     if w_ref is None:
         w_ref = np.ones((n))
+    else:  # safeguard against numerical negatives
+        w_ref = np.maximum(w_ref, 0)
+        w_ref /= w_ref.sum()
     if w is None:
         w = np.ones((n))
+    else:  # safeguard against numerical negatives
+        w = np.maximum(w_ref, 0)
+        w /= w_ref.sum()
     # mixed weights
     wmix = np.sqrt(w_ref * w)
     # normalize
     for i in range(M):
         R_ref[:,i] /= math.sqrt(np.dot(w_ref*R_ref[:,i], R_ref[:,i]))
     for i in range(m):
-        R[:,i] /= math.sqrt(np.dot(w*R[:,i], R[:,i]))
+        try:
+            R[:,i] /= math.sqrt(np.dot(w*R[:,i], R[:,i]))
+        except:
+            print 'Exception'
+            print 'w ',w
+            print 'R ',R
+            import sys
+            sys.exit(0)
     # projection amplitude matrix
     P = np.zeros((m,M))
     for i in range(m):

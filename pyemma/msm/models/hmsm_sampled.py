@@ -106,7 +106,7 @@ class SampledHMSM(_EstimatedHMSM):
             else:
                 R, D, L = rdl_decomposition(self._sample_Ps[i], norm='standard')
             # assign ordered
-            I = linalg.match_eigenvectors(self.eigenvectors_right(), R,
+            I = linalg.match_eigenvectors(self.eigenvectors_right, R,
                                           w_ref=self.stationary_distribution, w=self._sample_mus[i])
             self._sample_Ls[i, :, :] = L[I, :]
             self._sample_eigenvalues[i, :] = _np.diag(D)[I]
