@@ -6,6 +6,22 @@ from pyemma.util.log import getLogger
 import inspect
 from pyemma.util import types as _types
 
+def get_estimator(estimator):
+    """ Returns an estimator object given an estimator object or class
+
+    Parameters
+    ----------
+    estimator : Estimator class or object
+
+    Returns
+    -------
+    estimator : Estimator object
+
+    """
+    if inspect.isclass(estimator):
+        estimator = estimator()  # construct the estimator with default settings
+    return estimator
+
 def param_grid(pargrid):
     """ Generates an iterable over all possible parameter combinations from the grid
 
@@ -120,8 +136,7 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, failfast=True):
     """
     # TODO: parallelization should first clone estimators and dispatch estimation routines.
     # make sure we have an estimator object
-    if inspect.isclass(estimator):
-        estimator = estimator()  # construct the estimator with default settings
+    estimator = get_estimator(estimator)
     res = []  # prepare results
 
     # if we evaluate, make sure we have a list of functions to evaluate
