@@ -149,6 +149,15 @@ def markov_model(P, dt='1 step'):
     --------
     MSM : A MSM object
 
+    References
+    ----------
+    Markov chains and theory for analyzing them have been pioneered by A. A. Markov. There are many excellent books
+    on the topic, such as [1]_
+
+    .. [1] Norris, J. R.:
+        Markov Chains
+        Cambridge Series in Statistical and Probabilistic Mathematics, Cambridge University Press (1997)
+
     Example
     -------
     >>> from pyemma import msm
@@ -263,43 +272,43 @@ def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
     methodological basics of Markov state modeling today. [10]_ is a more extensive review book of theory, methods
     and applications.
 
-    .. [1] C. Schuette, A. Fischer, W. Huisinga and P. Deuflhard:
+    .. [1] Schuette, C. , A. Fischer, W. Huisinga and P. Deuflhard:
         A Direct Approach to Conformational Dynamics based on Hybrid Monte Carlo (article)
         J. Comput. Phys., 151, 146-168 (1999)
 
-    .. [2] W. C. Swope, J. W. Pitera and F. Suits:
+    .. [2] Swope, W. C., J. W. Pitera and F. Suits:
         Describing protein folding kinetics by molecular dynamics simulations: 1. Theory
         J. Phys. Chem. B 108, 6571-6581 (2004)
 
-    .. [4]_ N. Singhal, C. D. Snow, V. S. Pande:
+    .. [3] Singhal, N., C. D. Snow, V. S. Pande:
         Using path sampling to build better Markovian state models: Predicting the folding rate and mechanism of a
         tryptophan zipper beta hairpin.
         J. Chem. Phys. 121, 415 (2004).
 
-    .. [4] S. Sriraman and I. G. Kevrekidis and G. Hummer, G.
+    .. [4] Sriraman, S., I. G. Kevrekidis and G. Hummer, G.
         J. Phys. Chem. B 109, 6479-6484 (2005)
 
-    .. [5] F. Noe:
+    .. [5] Noe, F.:
         Probability Distributions of Molecular Observables computed from Markov Models
         J. Chem. Phys. 128, 244103 (2008)
 
-    .. [6] N.-V. Buchete and G. Hummer:
+    .. [6] Buchete, N.-V. and Hummer, G.:
         Coarse master equations for peptide folding dynamics
         J. Phys. Chem. B 112, 6057--6069 (2008)
 
-    .. [7] G. R. Bowman, K. A. Beauchamp, G. Boxer and V. S. Pande:
+    .. [7] Bowman, G. R., K. A. Beauchamp, G. Boxer and V. S. Pande:
         Progress and challenges in the automated construction of Markov state models for full protein systems. (article)
         J. Chem. Phys. 131, 124101 (2009)
 
-    .. [8] M. Sarich, F. Noe and C. Schuette:
+    .. [8] Sarich, M., F. Noe and C. Schuette:
         SIAM Multiscale Model. Simul. 8, 1154-1177 (2010)
         On the approximation quality of Markov state models
 
-    .. [9] J.-H. Prinz, H. Wu, M. Sarich, B. Keller, M. Senne, M. Held, J. D. Chodera, C. Schuette and F. Noe:
+    .. [9] Prinz, J.-H., H. Wu, M. Sarich, B. Keller, M. Senne, M. Held, J. D. Chodera, C. Schuette and F. Noe:
         Markov models of molecular kinetics: Generation and Validation
         J. Chem. Phys. 134, 174105 (2011)
 
-    .. [10] G. R. Bowman, V. S. Pande and F. Noe:
+    .. [10] Bowman, G. R., V. S. Pande and F. Noe:
         An Introduction to Markov State Models and Their Application to Long Timescale Molecular Simulation.
         Advances in Experimental Medicine and Biology 797, Springer, Heidelberg (2014)
 
