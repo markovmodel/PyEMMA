@@ -61,8 +61,7 @@ def _generate_lags(maxlag, multiplier):
     return lags
 
 
-# TODO: connectivity flag is currently not used. Introduce different connectivity modes (lag, minimal, set)
-# TODO: if not connected, might add infinity timescales.
+# TODO: build a generic implied timescales estimate in _base, and make this a subclass (for dtrajs)
 # TODO: Timescales should be assigned by similar eigenvectors rather than by order
 # TODO: when requesting too long lagtimes, throw a warning and exclude lagtime from calculation, but compute the rest
 class ImpliedTimescales(Estimator):
