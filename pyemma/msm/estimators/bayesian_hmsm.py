@@ -69,8 +69,7 @@ class BayesianHMSM(_Estimator):
         # HMM sampler
         from bhmm import discrete_hmm, bayesian_hmm
         hmm_mle = discrete_hmm(init_hmsm.transition_matrix, pobs, stationary=True, reversible=self.reversible)
-        print dtrajs
-        sampled_hmm = bayesian_hmm(dtrajs, hmm_mle, nsample=self.nsample, transition_matrix_prior='init')
+        sampled_hmm = bayesian_hmm(dtrajs, hmm_mle, nsample=self.nsample, transition_matrix_prior='init-connect')
 
         # Samples
         sample_Ps = [sampled_hmm.sampled_hmms[i].transition_matrix for i in range(self.nsample)]
