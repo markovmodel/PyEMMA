@@ -38,6 +38,7 @@ import warnings
 from pyemma.util.statistics import confidence_interval
 from pyemma.util.discrete_trajectories import number_of_states
 from pyemma.util import types as _types
+from pyemma._base.estimator import Estimator, param_grid, estimate_param_scan
 
 
 # ====================================================================
@@ -122,80 +123,49 @@ class ImpliedTimescales(object):
         # estimate
         self._estimate()
 
+    def _log_no_ts(self, tau):
+        warnings.warn('Could not compute a single timescale at tau = ' + str(tau) +
+                      '. Probably a connectivity problem. Try using smaller lagtimes')
 
     def _estimate(self):
         r"""Estimates ITS at set of lagtimes
         
         """
-        # initialize
-        self._its = np.zeros((len(self._lags), self._nits))
-        maxnits = self._nits
-        maxnlags = len(self._lags)
-        havesamples = False
+        # construct all parameter sets for the estimator
+        param_sets = param_grid({'lag': self._lags})
 
-        for i in range(len(self._lags)):
-            # get lag time to be used
-            tau = self._lags[i]
-            # estimate
-            model = self._estimator.estimate(self._data, lag=tau)
-            # estimate timescales
-            ts = model.timescales[:self._nits]
+        # run estimation on all lag times
+        estimates = estimate_param_scan(self._estimator, self._data, param_sets,
+                                        evaluate=['timescales', 'timescales_samples'], failfast=False)
+
+        # store timescales
+        timescales = [est[0] for est in estimates]
+        if all(ts is None for ts in timescales):
+            raise RuntimeError('Could not compute any timescales. Make sure that your estimator object does provide'
+                               'the timescales method or property')
+        nits = min(max([len(ts) for ts in timescales]), self._nits)
+        self._its = np.zeros((len(self._lags), nits))
+        for i, ts in enumerate(timescales):
             if ts is None:
-                maxnlags = i
-                warnings.warn('Could not compute a single timescale at tau = ' + str(tau) +
-                              '. Probably a connectivity problem. Try using smaller lagtimes')
-                break
-            elif len(ts) < self._nits:
-                maxnits = min(maxnits, len(ts))
-                warnings.warn('Could only compute ' + str(len(ts)) + ' timescales at tau = ' + str(tau) +
-                              ' instead of the requested ' + str(self._nits) + '. Probably a ' +
-                              ' connectivity problem. Request less timescales or smaller lagtimes')
-            self._its[i, :] = ts
+                self._log_no_ts(self._lags[i])
+            else:
+                ts = ts[:nits]
+                self._its[i,:len(ts)] = ts  # copy into array. Leave 0 if there is no timescales
 
-            if i == 0 and hasattr(model, 'timescales_samples'):
-                havesamples = True
-            # if samples available, store them too
-            if havesamples:
-                tssamples = model.timescales_samples
-                all_ts = True
-                any_ts = True
-                if (ts is None):
-                    any_ts = False
-                    maxnlags = i
+        # store timescales samples (if available)
+        timescales_samples = [est[1] for est in estimates]
+        if all(ts is None for ts in timescales_samples):
+            self._its_samples = None
+        else:
+            nits = min(max([np.shape(ts)[1] for ts in timescales_samples]), self._nits)
+            nsamples = np.shape(timescales_samples[0])[0]
+            self._its_samples = np.zeros((len(self._lags), nits, nsamples))
+            for i, ts in enumerate(timescales_samples):
+                if ts is None:
+                    self._log_no_ts(self._lags[i])
                 else:
-                    for k in range(tssamples):
-                        # estimate timescales
-                        ts = tssamples[k,:self._nits]
-                        # only use ts if we get all requested timescales
-                        if (len(ts) == self._nits):
-                            self._its_samples[i, :, k] = ts
-                        else:
-                            all_ts = False
-                            maxnits = min(maxnits, len(ts))
-                            self._its_samples[i, :maxnits, k] = ts[:maxnits]
-                if not all_ts:
-                    warnings.warn('Could not compute all requested timescales at tau = ' + str(tau) +
-                                  '. Sample is incomplete and might be non-representative.' +
-                                  ' Request less timescales or smaller lagtimes')
-                if not any_ts:
-                    warnings.warn('Could not compute a single timescale at tau = ' + str(tau) +
-                                  '. Probably a connectivity problem. Try using smaller lagtimes')
-        # clean up
-        self._nits = maxnits
-        self._lags = self._lags[:maxnlags]
-        self._its = self._its[:maxnlags][:, :maxnits]
-        # any infinities?
-        if np.any(np.isinf(self._its)):
-            warnings.warn('Timescales contain infinities, indicating that the data is disconnected at some lag time')
-
-        if havesamples:
-            # clean up
-            self._nits_sample = maxnits
-            self._lags_sample = self._lags[:maxnlags]
-            self._its_samples = self._its_samples[:maxnlags, :, :][:, :maxnits, :]
-            # any infinities?
-            if np.any(np.isinf(self._its_samples)):
-                warnings.warn('Timescales contain infinities, indicating that the data is disconnected at some lag time')
+                    ts = ts[:nits]
+                    self._its_samples[i,:ts.shape[1],:] = ts  # copy into array. Leave 0 if there is no timescales
 
     @property
     def lagtimes(self):
@@ -267,14 +237,16 @@ class ImpliedTimescales(object):
         r"""Return the list of lag times for which sample data is available
 
         """
-        return self._lags_sample
+        return self._lags
+        # return self._lags_sample
 
     @property
     def sample_number_of_timescales(self):
         r"""Return the number of timescales for which sample data is available
 
         """
-        return self._nits_sample
+        return self._nits
+        # return self._nits_sample
 
     @property
     def sample_mean(self):
