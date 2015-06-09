@@ -29,10 +29,10 @@ import numpy as np
 import os
 import mdtraj
 
-from itertools import combinations
+from itertools import combinations, product
 
 # from pyemma.coordinates.data import featurizer as ft
-from pyemma.coordinates.data.featurizer import MDFeaturizer, CustomFeature
+from pyemma.coordinates.data.featurizer import MDFeaturizer, CustomFeature, _parse_pairwise_input
 # from pyemma.coordinates.tests.test_discretizer import create_water_topology_on_disc
 
 path = os.path.join(os.path.split(__file__)[0], 'data')
@@ -73,26 +73,6 @@ class TestFeaturizer(unittest.TestCase):
         assert(self.feat.dimension() == pairs_expected.shape[0])
         X = self.traj.xyz[:, pairs_expected[:, 0], :]
         Y = self.traj.xyz[:, pairs_expected[:, 1], :]
-        D = np.sqrt(np.sum((X - Y) ** 2, axis=2))
-        assert(np.allclose(D, self.feat.map(self.traj)))
-
-    def test_distances_alt_input_1D_array(self):
-        sel_array = np.array([1, 2, 5, 20], dtype=int)
-        ref_pairs = np.array(list(combinations(sel_array, 2)))
-        self.feat.add_distances(sel_array, periodic=False)  # unperiodic distances such that we can compare
-        assert(self.feat.dimension() == ref_pairs.shape[0])
-        X = self.traj.xyz[:, ref_pairs[:, 0], :]
-        Y = self.traj.xyz[:, ref_pairs[:, 1], :]
-        D = np.sqrt(np.sum((X - Y) ** 2, axis=2))
-        assert(np.allclose(D, self.feat.map(self.traj)))
-
-    def test_distances_alt_input_list(self):
-        sel_list = [1, 2, 5, 20]
-        ref_pairs = np.array(list(combinations(sel_list, 2)))
-        self.feat.add_distances(sel_list, periodic=False)  # unperiodic distances such that we can compare
-        assert(self.feat.dimension() == ref_pairs.shape[0])
-        X = self.traj.xyz[:, ref_pairs[:, 0], :]
-        Y = self.traj.xyz[:, ref_pairs[:, 1], :]
         D = np.sqrt(np.sum((X - Y) ** 2, axis=2))
         assert(np.allclose(D, self.feat.map(self.traj)))
 
@@ -303,6 +283,50 @@ class TestFeaturizerNoDubs(unittest.TestCase):
         featurizer.add_minrmsd_to_ref(pdbfile)
 
         featurizer.describe()
+
+class TestPairwiseInputParser(unittest.TestCase):
+
+    def setUp(self):
+        self.feat = MDFeaturizer(pdbfile)
+
+    def test_trivial(self):
+        dist_list = np.array([[0, 1],
+                              [0, 2],
+                              [0, 3]])
+
+        assert np.allclose(dist_list, _parse_pairwise_input(dist_list, None, self.feat._logger))
+
+    def test_one_unique(self):
+        # As a list
+        group1 = [0, 1, 2]
+        dist_list = np.asarray(list(combinations(group1, 2)))
+        assert np.allclose(dist_list, _parse_pairwise_input(group1, None, self.feat._logger))
+
+        # As an array
+        group1 = np.array([0, 1, 2])
+        dist_list = np.asarray(list(combinations(group1, 2)))
+        assert np.allclose(dist_list, _parse_pairwise_input(group1, None, self.feat._logger))
+
+    def test_two_uniques(self):
+        # As a list
+        group1 = [0, 1, 2]
+        group2 = [3, 4, 5]
+        dist_list = np.asarray(list(product(group1, group2)))
+        assert np.allclose(dist_list, _parse_pairwise_input(group1, group2, self.feat._logger))
+
+        # As an array
+        group1 = np.array([0, 1, 2])
+        group2 = np.array([3, 4, 5])
+        dist_list = np.asarray(list(product(group1, group2)))
+        assert np.allclose(dist_list, _parse_pairwise_input(group1, group2, self.feat._logger))
+
+    def test_two_redundants(self):
+        group1 = np.array([0, 1, 2, 0])
+        group2 = np.array([3, 4, 5, 4])
+        dist_list = np.asarray(list(product(np.unique(group1),
+                                            np.unique(group2)
+                                            )))
+        assert np.allclose(dist_list, _parse_pairwise_input(group1, group2, self.feat._logger))
 
 if __name__ == "__main__":
     unittest.main()
