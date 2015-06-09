@@ -328,5 +328,13 @@ class TestPairwiseInputParser(unittest.TestCase):
                                             )))
         assert np.allclose(dist_list, _parse_pairwise_input(group1, group2, self.feat._logger))
 
+    def test_two_redundants_overlap(self):
+        group1 = np.array([0, 1, 2, 0])
+        group2 = np.array([3, 4, 5, 4, 0, 1])
+        dist_list = np.asarray(list(product(np.unique(group1),
+                                            np.unique(group2[:-2])
+                                            )))
+        assert np.allclose(dist_list, _parse_pairwise_input(group1, group2, self.feat._logger))
+
 if __name__ == "__main__":
     unittest.main()
