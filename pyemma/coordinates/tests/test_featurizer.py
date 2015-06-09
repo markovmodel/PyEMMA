@@ -29,6 +29,8 @@ import numpy as np
 import os
 import mdtraj
 
+from itertools import combinations
+
 # from pyemma.coordinates.data import featurizer as ft
 from pyemma.coordinates.data.featurizer import MDFeaturizer, CustomFeature
 # from pyemma.coordinates.tests.test_discretizer import create_water_topology_on_disc
@@ -71,6 +73,26 @@ class TestFeaturizer(unittest.TestCase):
         assert(self.feat.dimension() == pairs_expected.shape[0])
         X = self.traj.xyz[:, pairs_expected[:, 0], :]
         Y = self.traj.xyz[:, pairs_expected[:, 1], :]
+        D = np.sqrt(np.sum((X - Y) ** 2, axis=2))
+        assert(np.allclose(D, self.feat.map(self.traj)))
+
+    def test_distances_alt_input_1D_array(self):
+        sel_array = np.array([1, 2, 5, 20], dtype=int)
+        ref_pairs = np.array(list(combinations(sel_array, 2)))
+        self.feat.add_distances(sel_array, periodic=False)  # unperiodic distances such that we can compare
+        assert(self.feat.dimension() == ref_pairs.shape[0])
+        X = self.traj.xyz[:, ref_pairs[:, 0], :]
+        Y = self.traj.xyz[:, ref_pairs[:, 1], :]
+        D = np.sqrt(np.sum((X - Y) ** 2, axis=2))
+        assert(np.allclose(D, self.feat.map(self.traj)))
+
+    def test_distances_alt_input_list(self):
+        sel_list = [1, 2, 5, 20]
+        ref_pairs = np.array(list(combinations(sel_list, 2)))
+        self.feat.add_distances(sel_list, periodic=False)  # unperiodic distances such that we can compare
+        assert(self.feat.dimension() == ref_pairs.shape[0])
+        X = self.traj.xyz[:, ref_pairs[:, 0], :]
+        Y = self.traj.xyz[:, ref_pairs[:, 1], :]
         D = np.sqrt(np.sum((X - Y) ** 2, axis=2))
         assert(np.allclose(D, self.feat.map(self.traj)))
 
