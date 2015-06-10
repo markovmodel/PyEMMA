@@ -780,6 +780,24 @@ def pca(data=None, dim=2, stride=1):
 
     See `Wiki page <http://en.wikipedia.org/wiki/Principal_component_analysis>`_ for more theory and references.
 
+    .. autoclass:: pyemma.coordinates.transform.pca.PCA
+        :members:
+        :undoc-members:
+
+        .. rubric:: Methods
+
+        .. autoautosummary::
+           :methods:
+
+           pyemma.coordinates.transform.pca.PCA
+
+        .. rubric:: Attributes
+
+        .. autoautosummary::
+            :attributes:
+
+            pyemma.coordinates.transform.pca.PCA
+
     See also
     --------
     :class:`PCA <pyemma.coordinates.transform.PCA>` : tica object
