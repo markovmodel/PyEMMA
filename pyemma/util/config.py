@@ -119,8 +119,8 @@ def create_cfg_dir(default_config):
         try:
             mkdir_p(pyemma_cfg_dir)
         except EnvironmentError:
-            warnings.warn("could not create configuration directory '%s'" %
-                          pyemma_cfg_dir)
+            raise RuntimeError("could not create configuration directory '%s'" %
+                               pyemma_cfg_dir)
 
     def touch(fname, times=None):
         with open(fname, 'a'):
@@ -153,7 +153,11 @@ def readConfiguration():
     default_pyemma_conf = pkg_resources.resource_filename('pyemma', cfg)
 
     # create .pyemma dir in home
-    pyemma_cfg_dir = create_cfg_dir(default_pyemma_conf)
+    pyemma_cfg_dir = ''
+    try:
+        pyemma_cfg_dir = create_cfg_dir(default_pyemma_conf)
+    except RuntimeError as re:
+        warnings.warn(str(re))
 
     # use these files to extend/overwrite the conf_values.
     # Last red file always overwrites existing values!

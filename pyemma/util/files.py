@@ -29,6 +29,8 @@ Created on 17.02.2014
 '''
 import os
 import errno
+import tempfile
+import shutil
 
 
 def mkdir_p(path):
@@ -39,3 +41,32 @@ def mkdir_p(path):
             pass
         else:
             raise
+
+
+class TemporaryDirectory(object):
+    """ use this class in context (with keyword)
+
+    Examples
+    --------
+    >>> import os
+    >>> with TemporaryDirectory() as tmp:
+    ...    path = os.path.join(tmp, "myfile.dat")
+    ...    fh = open(path, 'w)
+    ...    fh.write('hello world')
+    ...    fh.close()
+
+    """
+
+    def __init__(self, prefix='', suffix='', dir=None):
+        self.prefix = prefix
+        self.suffix = suffix
+        self.dir = dir
+        self.tmpdir = None
+
+    def __enter__(self):
+        self.tmpdir = tempfile.mkdtemp(suffix=self.suffix, prefix=self.prefix,
+                                       dir=self.dir)
+        return self.tmpdir
+
+    def __exit__(self, *args):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
