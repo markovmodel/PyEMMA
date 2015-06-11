@@ -897,7 +897,7 @@ class MSM(object):
 
 class EstimatedMSM(MSM):
 
-    def __init__(self, dtrajs, lag, T, reversible=True, sparse=False, connectivity='largest', estimate=True,
+    def __init__(self, dtrajs, lag, reversible=True, sparse=False, connectivity='largest', estimate=True,
                  dt='1 step', **kwargs):
         r"""Estimates a Markov model from discrete trajectories.
 
