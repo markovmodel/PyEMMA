@@ -44,30 +44,30 @@ __all__ = ['KmeansClustering']
 
 
 class KmeansClustering(AbstractClustering):
-    r"""
-    Kmeans clustering
-
-    Parameters
-    ----------
-    n_clusters : int
-        amount of cluster centers
-    max_iter : int 
-        how many iterations per chunk?
-    metric : str
-        metric to use during clustering ('euclidean', 'minRMSD')
-    tolerance : float
-        if the cluster centers' change did not exceed tolerance, stop iterating
-    init_strategy : string
-        can be either 'kmeans++' or 'uniform', determining how the initial cluster centers are being chosen
-    oom_strategy : string
-        how to deal with out of memory situation during accumulation of all data.
-        Currently if no memory is available to store all data, a memory mapped
-        file is created and written to, if set to 'memmap'.
-        Set it to 'raise', to raise the exception then. 
-    """
 
     def __init__(self, n_clusters, max_iter=5, metric='euclidean',
                  tolerance=1e-5, init_strategy='kmeans++', oom_strategy='memmap'):
+        r"""
+        Kmeans clustering
+
+        Parameters
+        ----------
+        n_clusters : int
+            amount of cluster centers
+        max_iter : int
+            how many iterations per chunk?
+        metric : str
+            metric to use during clustering ('euclidean', 'minRMSD')
+        tolerance : float
+            if the cluster centers' change did not exceed tolerance, stop iterating
+        init_strategy : string
+            can be either 'kmeans++' or 'uniform', determining how the initial cluster centers are being chosen
+        oom_strategy : string
+            how to deal with out of memory situation during accumulation of all data.
+            Currently if no memory is available to store all data, a memory mapped
+            file is created and written to, if set to 'memmap'.
+            Set it to 'raise', to raise the exception then.
+        """
         super(KmeansClustering, self).__init__(metric=metric)
         self.n_clusters = n_clusters
         self.max_iter = max_iter

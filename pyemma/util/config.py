@@ -29,10 +29,10 @@ the configuration module reads several config files to build
 its final set of settings. It searches for the file 'pyemma.cfg' in several
 locations with different priorities:
 
-1. $CWD/pyemma.cfg
+1. $CWD\/pyemma.cfg
 2. $HOME/.pyemma/pyemma.cfg
-4. ~/pyemma.cfg
-5. $PYTHONPATH/pyemma/pyemma.cfg (always taken as default configuration file)
+3. ~/pyemma.cfg
+4. $PYTHONPATH/pyemma/pyemma.cfg (always taken as default configuration file)
 
 The same applies for the filename ".pyemma.cfg" (hidden file).
 

@@ -40,49 +40,48 @@ __all__ = ['TICA']
 
 class TICA(Transformer):
 
-    r"""
-    Time-lagged independent component analysis (TICA)
-
-    Parameters
-    ----------
-    tau : int
-        lag time
-    output_dimension : int
-        how many significant TICS to use to reduce dimension of input data
-    epsilon : float
-        eigenvalue norm cutoff. Eigenvalues of C0 with norms <= epsilon will be
-        cut off. The remaining number of eigenvalues define the size
-        of the output.
-    force_eigenvalues_le_one : boolean
-        Compute covariance matrix and time-lagged covariance matrix such
-        that the generalized eigenvalues are always guaranteed to be <= 1.
-
-    Notes
-    -----
-    Given a sequence of multivariate data :math:`X_t`, computes the mean-free
-    covariance and time-lagged covariance matrix:
-
-    .. math::
-
-        C_0 &=      (X_t - \mu)^T (X_t - \mu) \\
-        C_{\tau} &= (X_t - \mu)^T (X_t + \tau - \mu)
-
-    and solves the eigenvalue problem
-
-    .. math:: C_{\tau} r_i = C_0 \lambda_i r_i,
-
-    where :math:`r_i` are the independent components and :math:`\lambda_i` are
-    their respective normalized time-autocorrelations. The eigenvalues are
-    related to the relaxation timescale by
-
-    .. math:: t_i = -\tau / \ln |\lambda_i|.
-
-    When used as a dimension reduction method, the input data is projected
-    onto the dominant independent components.
-
-    """
-
     def __init__(self, lag, output_dimension, epsilon=1e-6, force_eigenvalues_le_one=False):
+        r"""
+        Time-lagged independent component analysis (TICA)
+
+        Parameters
+        ----------
+        tau : int
+            lag time
+        output_dimension : int
+            how many significant TICS to use to reduce dimension of input data
+        epsilon : float
+            eigenvalue norm cutoff. Eigenvalues of C0 with norms <= epsilon will be
+            cut off. The remaining number of eigenvalues define the size
+            of the output.
+        force_eigenvalues_le_one : boolean
+            Compute covariance matrix and time-lagged covariance matrix such
+            that the generalized eigenvalues are always guaranteed to be <= 1.
+
+        Notes
+        -----
+        Given a sequence of multivariate data :math:`X_t`, computes the mean-free
+        covariance and time-lagged covariance matrix:
+
+        .. math::
+
+            C_0 &=      (X_t - \mu)^T (X_t - \mu) \\
+            C_{\tau} &= (X_t - \mu)^T (X_t + \tau - \mu)
+
+        and solves the eigenvalue problem
+
+        .. math:: C_{\tau} r_i = C_0 \lambda_i r_i,
+
+        where :math:`r_i` are the independent components and :math:`\lambda_i` are
+        their respective normalized time-autocorrelations. The eigenvalues are
+        related to the relaxation timescale by
+
+        .. math:: t_i = -\tau / \ln |\lambda_i|.
+
+        When used as a dimension reduction method, the input data is projected
+        onto the dominant independent components.
+
+        """
         super(TICA, self).__init__()
 
         # store lag time to set it appropriately in second pass of parametrize

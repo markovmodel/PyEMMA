@@ -35,31 +35,30 @@ __author__ = 'noe'
 
 class PCA(Transformer):
 
-    r""" Principal component analysis.
-
-    Given a sequence of multivariate data :math:`X_t`,
-    computes the mean-free covariance matrix.
-
-    .. math:: C = (X - \mu)^T (X - \mu)
-
-    and solves the eigenvalue problem
-
-    .. math:: C r_i = \sigma_i r_i,
-
-    where :math:`r_i` are the principal components and :math:`\sigma_i` are
-    their respective variances.
-
-    When used as a dimension reduction method, the input data is projected onto
-    the dominant principal components.
-
-    Parameters
-    ----------
-    output_dimension : int
-        number of principal components to project onto
-
-    """
-
     def __init__(self, output_dimension):
+        r""" Principal component analysis.
+
+        Given a sequence of multivariate data :math:`X_t`,
+        computes the mean-free covariance matrix.
+
+        .. math:: C = (X - \mu)^T (X - \mu)
+
+        and solves the eigenvalue problem
+
+        .. math:: C r_i = \sigma_i r_i,
+
+        where :math:`r_i` are the principal components and :math:`\sigma_i` are
+        their respective variances.
+
+        When used as a dimension reduction method, the input data is projected onto
+        the dominant principal components.
+
+        Parameters
+        ----------
+        output_dimension : int
+            number of principal components to project onto
+
+        """
         super(PCA, self).__init__()
         self._output_dimension = output_dimension
         self._dot_prod_tmp = None

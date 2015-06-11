@@ -896,97 +896,85 @@ class MSM(object):
 
 
 class EstimatedMSM(MSM):
-    r"""Estimates a Markov model from discrete trajectories.
 
-    Parameters
-    ----------
-    dtrajs : list containing ndarrays(dtype=int) or ndarray(n, dtype=int)
-        discrete trajectories, stored as integer ndarrays (arbitrary size)
-        or a single ndarray for only one trajectory.
-    lag : int
-        lagtime for the MSM estimation in multiples of trajectory steps
-    reversible : bool, optional, default = True
-        If true compute reversible MSM, else non-reversible MSM
-    sparse : bool, optional, default = False
-        If true compute count matrix, transition matrix and all derived quantities using sparse matrix algebra.
-        In this case python sparse matrices will be returned by the corresponding functions instead of numpy
-        arrays. This behavior is suggested for very large numbers of states (e.g. > 4000) because it is likely
-        to be much more efficient.
-    connectivity : str, optional, default = 'largest'
-        Connectivity mode. Three methods are intended (currently only 'largest' is implemented)
-        'largest' : The active set is the largest reversibly connected set. All estimation will be done on this
-            subset and all quantities (transition matrix, stationary distribution, etc) are only defined on this
-            subset and are correspondingly smaller than the full set of states
-        'all' : The active set is the full set of states. Estimation will be conducted on each reversibly connected
-            set separately. That means the transition matrix will decompose into disconnected submatrices,
-            the stationary vector is only defined within subsets, etc. Currently not implemented.
-        'none' : The active set is the full set of states. Estimation will be conducted on the full set of states
-            without ensuring connectivity. This only permits nonreversible estimation. Currently not implemented.
-    estimate : bool, optional, default=True
-        If true estimate the MSM when creating the MSM object.
-    dt : str, optional, default='1 step'
-        Description of the physical time corresponding to the lag. May be used by analysis algorithms such as
-        plotting tools to pretty-print the axes. By default '1 step', i.e. there is no physical time unit.
-        Specify by a number, whitespace and unit. Permitted units are (* is an arbitrary string):
+    def __init__(self, dtrajs, lag, T, reversible=True, sparse=False, connectivity='largest', estimate=True,
+                 dt='1 step', **kwargs):
+        r"""Estimates a Markov model from discrete trajectories.
 
-        |  'fs',  'femtosecond*'
-        |  'ps',  'picosecond*'
-        |  'ns',  'nanosecond*'
-        |  'us',  'microsecond*'
-        |  'ms',  'millisecond*'
-        |  's',   'second*'
+        Parameters
+        ----------
+        dtrajs : list containing ndarrays(dtype=int) or ndarray(n, dtype=int)
+            discrete trajectories, stored as integer ndarrays (arbitrary size)
+            or a single ndarray for only one trajectory.
+        lag : int
+            lagtime for the MSM estimation in multiples of trajectory steps
+        reversible : bool, optional, default = True
+            If true compute reversible MSM, else non-reversible MSM
+        sparse : bool, optional, default = False
+            If true compute count matrix, transition matrix and all derived quantities using sparse matrix algebra.
+            In this case python sparse matrices will be returned by the corresponding functions instead of numpy
+            arrays. This behavior is suggested for very large numbers of states (e.g. > 4000) because it is likely
+            to be much more efficient.
+        connectivity : str, optional, default = 'largest'
+            Connectivity mode. Three methods are intended (currently only 'largest' is implemented)
+            'largest' : The active set is the largest reversibly connected set. All estimation will be done on this
+                subset and all quantities (transition matrix, stationary distribution, etc) are only defined on this
+                subset and are correspondingly smaller than the full set of states
+            'all' : The active set is the full set of states. Estimation will be conducted on each reversibly connected
+                set separately. That means the transition matrix will decompose into disconnected submatrices,
+                the stationary vector is only defined within subsets, etc. Currently not implemented.
+            'none' : The active set is the full set of states. Estimation will be conducted on the full set of states
+                without ensuring connectivity. This only permits nonreversible estimation. Currently not implemented.
+        estimate : bool, optional, default=True
+            If true estimate the MSM when creating the MSM object.
+        dt : str, optional, default='1 step'
+            Description of the physical time corresponding to the lag. May be used by analysis algorithms such as
+            plotting tools to pretty-print the axes. By default '1 step', i.e. there is no physical time unit.
+            Specify by a number, whitespace and unit. Permitted units are (* is an arbitrary string):
 
-    **kwargs: Optional algorithm-specific parameters. See below for special cases
-    maxiter = 1000000 : int
-        Optional parameter with reversible = True.
-        maximum number of iterations before the transition matrix estimation method exits
-    maxerr = 1e-8 : float
-        Optional parameter with reversible = True.
-        convergence tolerance for transition matrix estimation.
-        This specifies the maximum change of the Euclidean norm of relative
-        stationary probabilities (:math:`x_i = \sum_k x_{ik}`). The relative stationary probability changes
-        :math:`e_i = (x_i^{(1)} - x_i^{(2)})/(x_i^{(1)} + x_i^{(2)})` are used in order to track changes in small
-        probabilities. The Euclidean norm of the change vector, :math:`|e_i|_2`, is compared to maxerr.
+            |  'fs',  'femtosecond*'
+            |  'ps',  'picosecond*'
+            |  'ns',  'nanosecond*'
+            |  'us',  'microsecond*'
+            |  'ms',  'millisecond*'
+            |  's',   'second*'
 
-    Notes
-    -----
-    You can postpone the estimation of the MSM using estimate=False and
-    initiate the estimation procedure by manually calling the MSM.estimate()
-    method.
+        **kwargs: Optional algorithm-specific parameters. See below for special cases
+        maxiter = 1000000 : int
+            Optional parameter with reversible = True.
+            maximum number of iterations before the transition matrix estimation method exits
+        maxerr = 1e-8 : float
+            Optional parameter with reversible = True.
+            convergence tolerance for transition matrix estimation.
+            This specifies the maximum change of the Euclidean norm of relative
+            stationary probabilities (:math:`x_i = \sum_k x_{ik}`). The relative stationary probability changes
+            :math:`e_i = (x_i^{(1)} - x_i^{(2)})/(x_i^{(1)} + x_i^{(2)})` are used in order to track changes in small
+            probabilities. The Euclidean norm of the change vector, :math:`|e_i|_2`, is compared to maxerr.
 
-    """
+        Notes
+        -----
+        You can postpone the estimation of the MSM using estimate=False and
+        initiate the estimation procedure by manually calling the MSM.estimate()
+        method.
 
-    def __init__(self, dtrajs, lag,
-                 reversible=True, sparse=False, connectivity='largest', estimate=True,
-                 dt='1 step',
-                 **kwargs):
-        # TODO: extensive input checking!
+        """
         from pyemma.util.types import ensure_dtraj_list
 
-        # start logging
         self.__create_logger()
-
         self._dtrajs_full = ensure_dtraj_list(dtrajs)
         self._tau = lag
-
         self._reversible = reversible
-        # self.sliding = sliding
-
-        # count states
         import pyemma.msm.estimation as msmest
 
         self._n_full = msmest.number_of_states(dtrajs)
-
-        # sparse matrix computation wanted?
         self._sparse = sparse
         if sparse:
             self._logger.warn('Sparse mode is currently untested and might lead to errors. '
-                               'I strongly suggest to use sparse=False unless you know what you are doing.')
+                              'I strongly suggest to use sparse=False unless you know what you are doing.')
         if self._n_full > 4000 and not sparse:
             self._logger.warn('Building a dense MSM with ' + str(self._n_full) + ' states. This can be inefficient or '
-                              'unfeasible in terms of both runtime and memory consumption. Consider using sparse=True.')
+                                                                                 'unfeasible in terms of both runtime and memory consumption. Consider using sparse=True.')
 
-        # store connectivity mode (lowercase)
         self.connectivity = connectivity.lower()
         if self.connectivity == 'largest':
             pass  # this is the current default. no need to do anything
@@ -997,13 +985,11 @@ class EstimatedMSM(MSM):
         else:
             raise ValueError('connectivity mode ' + str(connectivity) + ' is unknown.')
 
-        # run estimation unless suppressed
         self._estimated = False
         self._kwargs = kwargs
         if estimate:
             self.estimate()
 
-        # set time step
         from pyemma.util.units import TimeUnit
 
         self._timeunit = TimeUnit(dt)
@@ -1241,27 +1227,33 @@ class EstimatedMSM(MSM):
         Returns a list of weight arrays, one for each trajectory, and with a number of elements equal to
         trajectory frames. Given :math:`N` trajectories of lengths :math:`T_1` to :math:`T_N`, this function
         returns corresponding weights:
-        .. math::
-            (w_{1,1}, ..., w_{1,T_1}), (w_{N,1}, ..., w_{N,T_N})
+
+        .. math:: (w_{1,1}, ..., w_{1,T_1}), (w_{N,1}, ..., w_{N,T_N})
+
         that are normalized to one:
-        .. math::
-            \sum_{i=1}^N \sum_{t=1}^{T_i} w_{i,t} = 1
+
+        .. math:: \sum_{i=1}^N \sum_{t=1}^{T_i} w_{i,t} = 1
+
         Suppose you are interested in computing the expectation value of a function :math:`a(x)`, where :math:`x`
         are your input configurations. Use this function to compute the weights of all input configurations and
         obtain the estimated expectation by:
+
         .. math::
-            \langle a \rangle = \sum_{i=1}^N \sum_{t=1}^{T_i} w_{i,t} a(x_{i,t})
+
+            \langle a \\rangle = \sum_{i=1}^N \sum_{t=1}^{T_i} w_{i,t} a(x_{i,t})
+
         Or if you are interested in computing the time-lagged correlation between functions :math:`a(x)` and
         :math:`b(x)` you could do:
-        .. math::
-            \langle a(t) b(t+\tau) \rangle_t = \sum_{i=1}^N \sum_{t=1}^{T_i} w_{i,t} a(x_{i,t}) a(x_{i,t+\tau})
+
+        .. math:: \langle a(t) b(t+\tau) \\rangle_t = \sum_{i=1}^N \sum_{t=1}^{T_i} w_{i,t} a(x_{i,t}) a(x_{i,t+\tau})
 
         Returns
         -------
-        The normalized trajectory weights. Given :math:`N` trajectories of lengths :math:`T_1` to :math:`T_N`,
-        returns the corresponding weights:
-        .. math::
-            (w_{1,1}, ..., w_{1,T_1}), (w_{N,1}, ..., w_{N,T_N})
+        list :
+            The normalized trajectory weights. Given :math:`N` trajectories of lengths :math:`T_1` to :math:`T_N`,
+            returns the corresponding weights:
+
+            .. math:: (w_{1,1}, ..., w_{1,T_1}), (w_{N,1}, ..., w_{N,T_N})
 
         """
         # compute stationary distribution, expanded to full set
