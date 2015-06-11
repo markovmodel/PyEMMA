@@ -116,7 +116,22 @@ def markov_model(P, dt='1 step'):
 
     Returns
     -------
-    A :class:`MSM <pyemma.msm.ui.MSM>` object containing a transition matrix and various other MSM-related quantities.
+    msm : A :class:`MSM <pyemma.msm.ui.msm.MSM>` object containing a transition matrix and various other MSM-related quantities.
+
+
+    .. autoclass:: pyemma.msm.ui.msm.MSM
+        :members:
+        :undoc-members:
+
+        .. rubric:: Methods
+
+        .. autoautosummary:: pyemma.msm.ui.msm.MSM
+           :methods:
+
+        .. rubric:: Attributes
+
+        .. autoautosummary:: pyemma.msm.ui.msm.MSM
+            :attributes:
 
     See also
     --------
@@ -193,6 +208,21 @@ def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
     You can postpone the estimation of the MSM using compute=False and
     initiate the estimation procedure by manually calling the MSM.estimate()
     method.
+
+
+    .. autoclass:: pyemma.msm.ui.msm.EstimatedMSM
+        :members:
+        :undoc-members:
+
+        .. rubric:: Methods
+
+        .. autoautosummary:: pyemma.msm.ui.msm.EstimatedMSM
+           :methods:
+
+        .. rubric:: Attributes
+
+        .. autoautosummary:: pyemma.msm.ui.msm.EstimatedMSM
+            :attributes:
 
     See also
     --------

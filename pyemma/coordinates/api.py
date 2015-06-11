@@ -786,17 +786,13 @@ def pca(data=None, dim=2, stride=1):
 
         .. rubric:: Methods
 
-        .. autoautosummary::
+        .. autoautosummary:: pyemma.coordinates.transform.pca.PCA
            :methods:
-
-           pyemma.coordinates.transform.pca.PCA
 
         .. rubric:: Attributes
 
-        .. autoautosummary::
+        .. autoautosummary:: pyemma.coordinates.transform.pca.PCA
             :attributes:
-
-            pyemma.coordinates.transform.pca.PCA
 
     See also
     --------

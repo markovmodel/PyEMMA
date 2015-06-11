@@ -304,7 +304,10 @@ def setup(app):
                 'attributes': directives.unchanged
             }
 
-            def get_members(self, obj, typ, include_public=None):
+            required_arguments = 1
+
+            @staticmethod
+            def get_members(obj, typ, include_public=None):
                 if not include_public:
                     include_public = []
                 items = []
@@ -315,12 +318,11 @@ def setup(app):
                         continue
                     if documenter.objtype == typ:
                         items.append(name)
-                public = [x for x in items
-                          if x in include_public or not x.startswith('_')]
+                public = [x for x in items if x in include_public or not x.startswith('_')]
                 return public, items
 
             def run(self):
-                clazz = self.content[0]
+                clazz = self.arguments[0]
                 try:
                     (module_name, class_name) = clazz.rsplit('.', 1)
                     m = __import__(module_name, globals(), locals(), [class_name])
