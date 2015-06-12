@@ -804,7 +804,7 @@ def pca(data=None, dim=2, var_cutoff=1.0, stride=1):
     return _param_stage(data, res, stride=stride)
 
 
-def tica(data=None, lag=10, dim=-1, var_cutoff=1.0, kinetic_map=True, stride=1, force_eigenvalues_le_one=False):
+def tica(data=None, lag=10, dim=-1, var_cutoff=1.0, kinetic_map=False, stride=1, force_eigenvalues_le_one=False):
     r""" Time-lagged independent component analysis (TICA).
 
     TICA is a linear transformation method. In contrast to PCA, which finds
