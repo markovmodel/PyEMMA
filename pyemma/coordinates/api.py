@@ -847,7 +847,7 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=1.0, kinetic_map=False, stride=1,
 
     kinetic_map : bool, optional, default False
         Eigenvectors will be scaled by eigenvalues. As a result, Euclidean distances in the transformed data
-        approximate kinetic distances [1]_. This is a good choice when the data is further processed by clustering.
+        approximate kinetic distances [4]_. This is a good choice when the data is further processed by clustering.
 
     stride : int, optional, default = 1
         If set to 1, all input data will be used for estimation. Note that this could cause this calculation
