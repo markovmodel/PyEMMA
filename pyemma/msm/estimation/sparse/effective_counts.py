@@ -151,7 +151,8 @@ def statistical_inefficiencies(dtrajs, lag, C=None):
     # split sequences
     splitseq = _split_sequences_multitraj(dtrajs, lag)
     # compute inefficiencies
-    res = C.copy()  # copy count matrix and use its sparsity structure
+    n = C.shape[0]
+    res = scipy.sparse.csr_matrix((n, n))
     I,J = C.nonzero()
     for k in range(len(I)):
         i = I[k]
