@@ -91,6 +91,14 @@ __all__ = ['bootstrap_trajectories',
            'tmatrix_cov',
            'tmatrix_sampler']
 
+# append shortcuts separately in order to avoid code syntax error
+__all__.append('histogram')
+__all__.append('nstates')
+__all__.append('cmatrix')
+__all__.append('effective_cmatrix')
+__all__.append('connected_cmatrix')
+__all__.append('tmatrix')
+
 ################################################################################
 # Basic counting
 ################################################################################
@@ -225,6 +233,7 @@ def count_matrix(dtraj, lag, sliding=True, sparse_return=True, nstates=None):
     return sparse.count_matrix.count_matrix_mult(dtraj, lag, sliding=sliding, sparse=sparse_return, nstates=nstates)
 
 
+@shortcut('effective_cmatrix')
 def effective_count_matrix(dtrajs, lag):
     """ Computes the statistically effective transition count matrix
 
