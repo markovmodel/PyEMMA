@@ -42,6 +42,7 @@ from scipy.sparse import issparse
 from scipy.sparse.sputils import isdense
 
 import sparse.count_matrix
+import sparse.effective_counts
 import sparse.connectivity
 import sparse.likelihood
 import sparse.transition_matrix
@@ -220,6 +221,45 @@ def count_matrix(dtraj, lag, sliding=True, sparse_return=True, nstates=None):
     # a list of int ndarrays.
     dtraj = _ensure_dtraj_list(dtraj)
     return sparse.count_matrix.count_matrix_mult(dtraj, lag, sliding=sliding, sparse=sparse_return, nstates=nstates)
+
+
+def effective_count_matrix(dtrajs, lag):
+    """ Computes the statistically effective transition count matrix
+
+    Given a list of discrete trajectories, compute the effective number of statistically uncorrelated transition
+    counts at the given lag time. First computes the full sliding-window counts :math:`c_{ij}(tau)`. Then uses
+    :func:`statistical_inefficiencies` to compute statistical inefficiencies :math:`I_{ij}(tau)`. The number of
+    effective counts in a row is then computed as
+
+    .. math:
+        c_i^{\mathrm{eff}}(tau) = \sum_j I_{ij}(tau) c_{ij}(tau)
+
+    and the effective transition counts are obtained by scaling the rows accordingly:
+
+    .. math:
+        c_{ij}^{\mathrm{eff}}(tau) = \frac{c_i^{\mathrm{eff}}(tau)}{c_i(tau)} c_{ij}(tau)
+
+    This procedure is not yet published, but a manuscript is in preparation [1]_.
+
+    Parameters
+    ----------
+    dtrajs : list of int-iterables
+        discrete trajectories
+    lag : int
+        lag time
+
+    See also
+    --------
+    statistical_inefficiencies
+        is used for computing the statistical inefficiences of sliding window transition counts
+
+    References
+    ----------
+    .. [1] Noe, F. and H. Wu: in preparation (2015)
+
+    """
+    dtrajs = _ensure_dtraj_list(dtrajs)
+    return sparse.effective_counts.effective_count_matrix(dtrajs, lag)
 
 
 # # TODO: Implement in Python directly
