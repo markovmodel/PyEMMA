@@ -200,7 +200,6 @@ def statistical_inefficiency(X, truncate_acf=True):
 
     """
     # check input
-    X = types.ensure_traj_list(X)
     assert np.ndim(X[0]) == 1, 'Data must be 1-dimensional'
     N = _maxlength(X)  # length
     # moments
