@@ -133,6 +133,21 @@ class ImpliedTimescalesTest(unittest.TestCase):
         assert (np.alltrue(est < t4 + 20.0))
         assert (np.alltrue(est > t4 - 20.0))
 
+    def test_fraction_of_frames(self):
+        dtrajs = [
+            [0, 1, 0], # These two will fail for lag >2
+            [1, 0, 1], # These two will fail for lag >2
+            [0, 1, 1, 1],
+            [1, 0, 0, 0],
+            [0, 1, 0, 1, 0],
+            [1, 0, 1, 0, 1],
+            ]
+        lags = [1, 2, 3]
+        its = ImpliedTimescales(dtrajs, lags=lags)
+        all_frames = its.lengths.sum()
+        longer_than_3 = its.lengths[2:].sum()
+        test_frac = longer_than_3/all_frames
+        assert np.allclose(its.fraction_of_frames, np.array([1, 1, test_frac]))
 
 if __name__ == "__main__":
     unittest.main()
