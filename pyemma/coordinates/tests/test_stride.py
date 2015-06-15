@@ -30,11 +30,10 @@ import numpy as np
 import mdtraj
 import pyemma.coordinates as coor
 
-
 class TestStride(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.dim = 33  # dimension (must be divisible by 3)
+        cls.dim = 3  # dimension (must be divisible by 3)
         N_trajs = 10  # number of trajectories
 
         # create topology file
@@ -60,7 +59,7 @@ class TestStride(unittest.TestCase):
             cls.trajnames.append(tempfname)
 
     def test_length_and_content_feature_reader_and_TICA(self):
-        for stride in xrange(1, 100, 20):
+        for stride in xrange(1, 100, 23):
             r = coor.source(self.trajnames, top=self.temppdb)
             t = coor.tica(data=r, lag=2, dim=2, force_eigenvalues_le_one=True)
             # t.data_producer = r
@@ -99,13 +98,13 @@ class TestStride(unittest.TestCase):
         reader = coor.source(d)
 
         # compare
-        for stride in xrange(1, 10):
+        for stride in xrange(1, 10, 3):
             out_reader = reader.get_output(stride=stride)
             for ref_data, test_data in zip(d, out_reader):
                 self.assertTrue(np.all(ref_data[::stride] == test_data))  # here we can test exact equality
 
     def test_parametrize_with_stride(self):
-        for stride in xrange(1, 100, 5):
+        for stride in xrange(1, 100, 23):
             r = coor.source(self.trajnames, top=self.temppdb)
             tau = 5
             t = coor.tica(r, lag=tau, dim=2, force_eigenvalues_le_one=True)
