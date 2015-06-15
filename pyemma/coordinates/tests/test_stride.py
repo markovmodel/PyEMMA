@@ -30,17 +30,6 @@ import numpy as np
 import mdtraj
 import pyemma.coordinates as coor
 
-from pyemma.util.config import conf_values
-class NoProgressBars:
-    def __enter__(self):
-        self._show_progress_bars = conf_values['pyemma'].show_progress_bars
-        conf_values['pyemma'].show_progress_bars = 'False'
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        conf_values['pyemma'].show_progress_bars = self._show_progress_bars
-        return False
-
 class TestStride(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -70,33 +59,32 @@ class TestStride(unittest.TestCase):
             cls.trajnames.append(tempfname)
 
     def test_length_and_content_feature_reader_and_TICA(self):
-        with NoProgressBars():
-            for stride in xrange(1, 100, 23):
-                r = coor.source(self.trajnames, top=self.temppdb)
-                t = coor.tica(data=r, lag=2, dim=2, force_eigenvalues_le_one=True)
-                # t.data_producer = r
-                t.parametrize()
+        for stride in xrange(1, 100, 23):
+            r = coor.source(self.trajnames, top=self.temppdb)
+            t = coor.tica(data=r, lag=2, dim=2, force_eigenvalues_le_one=True)
+            # t.data_producer = r
+            t.parametrize()
 
-                # subsample data
-                out_tica = t.get_output(stride=stride)
-                out_reader = r.get_output(stride=stride)
+            # subsample data
+            out_tica = t.get_output(stride=stride)
+            out_reader = r.get_output(stride=stride)
 
-                # get length in different ways
-                len_tica = [x.shape[0] for x in out_tica]
-                len_reader = [x.shape[0] for x in out_reader]
-                len_trajs = t.trajectory_lengths(stride=stride)
-                len_ref = [(x.shape[0]-1)//stride+1 for x in self.data]
-                # print 'len_ref', len_ref
+            # get length in different ways
+            len_tica = [x.shape[0] for x in out_tica]
+            len_reader = [x.shape[0] for x in out_reader]
+            len_trajs = t.trajectory_lengths(stride=stride)
+            len_ref = [(x.shape[0]-1)//stride+1 for x in self.data]
+            # print 'len_ref', len_ref
 
-                # compare length
-                np.testing.assert_equal(len_trajs, len_ref)
-                self.assertTrue(len_ref == len_tica)
-                self.assertTrue(len_ref == len_reader)
+            # compare length
+            np.testing.assert_equal(len_trajs, len_ref)
+            self.assertTrue(len_ref == len_tica)
+            self.assertTrue(len_ref == len_reader)
 
-                # compare content (reader)
-                for ref_data, test_data in zip(self.data, out_reader):
-                    ref_data_reshaped = ref_data.reshape((ref_data.shape[0], ref_data.shape[1]*3))
-                    self.assertTrue(np.allclose(ref_data_reshaped[::stride, :], test_data, atol=1E-3))
+            # compare content (reader)
+            for ref_data, test_data in zip(self.data, out_reader):
+                ref_data_reshaped = ref_data.reshape((ref_data.shape[0], ref_data.shape[1]*3))
+                self.assertTrue(np.allclose(ref_data_reshaped[::stride, :], test_data, atol=1E-3))
 
     def test_content_data_in_memory(self):
         # prepare test data
@@ -110,21 +98,19 @@ class TestStride(unittest.TestCase):
         reader = coor.source(d)
 
         # compare
-        with NoProgressBars():
-            for stride in xrange(1, 10, 3):
-                out_reader = reader.get_output(stride=stride)
-                for ref_data, test_data in zip(d, out_reader):
-                    self.assertTrue(np.all(ref_data[::stride] == test_data))  # here we can test exact equality
+        for stride in xrange(1, 10, 3):
+            out_reader = reader.get_output(stride=stride)
+            for ref_data, test_data in zip(d, out_reader):
+                self.assertTrue(np.all(ref_data[::stride] == test_data))  # here we can test exact equality
 
     def test_parametrize_with_stride(self):
-        with NoProgressBars():
-            for stride in xrange(1, 100, 23):
-                r = coor.source(self.trajnames, top=self.temppdb)
-                tau = 5
-                t = coor.tica(r, lag=tau, dim=2, force_eigenvalues_le_one=True)
-                # force_eigenvalues_le_one=True enables an internal consitency check in TICA
-                t.parametrize(stride=stride)
-                self.assertTrue(np.all(t.eigenvalues <= 1.0+1.E-12))
+        for stride in xrange(1, 100, 23):
+            r = coor.source(self.trajnames, top=self.temppdb)
+            tau = 5
+            t = coor.tica(r, lag=tau, dim=2, force_eigenvalues_le_one=True)
+            # force_eigenvalues_le_one=True enables an internal consitency check in TICA
+            t.parametrize(stride=stride)
+            self.assertTrue(np.all(t.eigenvalues <= 1.0+1.E-12))
 
     @classmethod
     def tearDownClass(cls):
