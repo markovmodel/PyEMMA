@@ -74,6 +74,17 @@ class TestPCAExtensive(unittest.TestCase):
     def test_chunksize(self):
         assert types.is_int(self.pca_obj.chunksize)
 
+    def test_variances(self):
+        obj = pca(data = self.X)
+        O = obj.get_output()[0]
+        vars = np.var(O, axis=0)
+        refs = obj.eigenvalues
+        assert np.max(np.abs(vars - refs)) < 0.01
+
+    def test_cumvar(self):
+        assert len(self.pca_obj.cumvar) == 2
+        assert np.allclose(self.pca_obj.cumvar[-1], 1.0)
+
     def test_cov(self):
         cov_ref = np.dot(self.X.T, self.X) / float(self.T)
         assert(np.all(self.pca_obj.cov.shape == cov_ref.shape))
@@ -90,6 +101,13 @@ class TestPCAExtensive(unittest.TestCase):
         assert types.is_int(self.pca_obj.dimension())
         # Here:
         assert self.pca_obj.dimension() == 1
+        # Test other variants
+        obj = pca(data=self.X, dim=-1, var_cutoff=1.0)
+        assert obj.dimension() == 2
+        obj = pca(data=self.X, dim=-1, var_cutoff=0.8)
+        assert obj.dimension() == 1
+        with self.assertRaises(ValueError):  # trying to set both dim and subspace_variance is forbidden
+            pca(data=self.X, dim=1, var_cutoff=0.8)
 
     def test_eigenvalues(self):
         eval = self.pca_obj.eigenvalues

@@ -54,31 +54,60 @@ class PCA(Transformer):
 
     Parameters
     ----------
-    output_dimension : int
-        number of principal components to project onto
+    dim : int, optional, default -1
+        the number of dimensions (independent components) to project onto. A call to the
+        :func:`map <pyemma.coordinates.transform.TICA.map>` function reduces the d-dimensional
+        input to only dim dimensions such that the data preserves the maximum possible autocorrelation
+        amongst dim-dimensional linear projections.
+        -1 means all numerically available dimensions will be used unless reduced by var_cutoff.
+        Setting dim to a positive value is exclusive with var_cutoff.
+
+    var_cutoff : float in the range [0,1], optional, default 1
+        Determines the number of output dimensions by including dimensions until their cumulative kinetic variance
+        exceeds the fraction subspace_variance. var_cutoff=1.0 means all numerically available dimensions
+        (see epsilon) will be used, unless set by dim. Setting var_cutoff smaller than 1.0 is exclusive with dim
+
 
     """
 
-    def __init__(self, output_dimension):
+    def __init__(self, dim=-1, var_cutoff=1.0):
         super(PCA, self).__init__()
-        self._output_dimension = output_dimension
+        self._dim = dim
+        self._var_cutoff = var_cutoff
+        if dim != -1 and var_cutoff < 1.0:
+            raise ValueError('Trying to set both the number of dimension and the subspace variance. Use either or.')
         self._dot_prod_tmp = None
         self.Y = None
         self._N = 0
 
+        # set up result variables
+        self.eigenvalues = None
+        self.eigenvectors = None
+        self.cumvar = None
+
+        # output options
         self._custom_param_progress_handling = True
         self._progress_mean = None
         self._progress_cov = None
 
     @doc_inherit
     def describe(self):
-        return "[PCA, output dimension = %i]" % self._output_dimension
+        return "[PCA, output dimension = %i]" % self._dim
 
     def dimension(self):
-        r"""
-        Returns the number of output dimensions.
-        """
-        return self._output_dimension
+        """ output dimension """
+        if self._dim != -1:  # fixed parametrization
+            return self._dim
+        elif self._parametrized:  # parametrization finished. Dimension is known
+            dim = len(self.eigenvalues)
+            if self._var_cutoff < 1.0:  # if subspace_variance, reduce the output dimension if needed
+                dim = min(dim, np.searchsorted(self.cumvar, self._var_cutoff)+1)
+            return dim
+        elif self._var_cutoff == 1.0:  # We only know that all dimensions are wanted, so return input dim
+            return self.data_producer.dimension()
+        else:  # We know nothing. Give up
+            raise RuntimeError('Requested dimension, but the dimension depends on the cumulative variance and the '
+                               'transformer has not yet been parametrized. Call parametrize() before.')
 
     @property
     def mean(self):
@@ -91,11 +120,11 @@ class PCA(Transformer):
     def _param_init(self):
         self._N = 0
         # create mean array and covariance matrix
-        dim = self.data_producer.dimension()
-        self._logger.info("Running PCA on %i dimensional input" % dim)
-        assert dim > 0, "Incoming data of PCA has 0 dimension!"
-        self.mu = np.zeros(dim)
-        self.cov = np.zeros((dim, dim))
+        indim = self.data_producer.dimension()
+        self._logger.info("Running PCA on %i dimensional input" % indim)
+        assert indim > 0, "Incoming data of PCA has 0 dimension!"
+        self.mu = np.zeros(indim)
+        self.cov = np.zeros((indim, indim))
 
         # amount of chunks
         denom = self._n_chunks(self._param_with_stride)
@@ -170,6 +199,10 @@ class PCA(Transformer):
         self.eigenvalues = v[I]
         self.eigenvectors = R[:, I]
 
+        # compute cumulative variance
+        self.cumvar = np.cumsum(self.eigenvalues)
+        self.cumvar /= self.cumvar[-1]
+
     def _map_array(self, X):
         r"""
         Projects the data onto the dominant principal components.
@@ -178,5 +211,5 @@ class PCA(Transformer):
         :return: the projected data
         """
         X_meanfree = X - self.mu
-        Y = np.dot(X_meanfree, self.eigenvectors[:, 0:self._output_dimension])
+        Y = np.dot(X_meanfree, self.eigenvectors[:, 0:self._dim])
         return Y
