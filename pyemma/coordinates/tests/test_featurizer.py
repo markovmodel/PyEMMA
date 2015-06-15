@@ -38,7 +38,7 @@ xtcfile = os.path.join(path, 'bpti_mini.xtc')
 pdbfile = os.path.join(path, 'bpti_ca.pdb')
 
 
-def verbose_assertion_minrmsd(ref_Y, test_Y, name, test_obj):
+def verbose_assertion_minrmsd(ref_Y, test_Y, test_obj):
     for jj in np.arange(test_Y.shape[1]):
         ii = np.argmax(np.abs(ref_Y-test_Y[:,jj]))
         assert np.allclose(ref_Y, test_Y[:,jj], atol=test_obj.atol), 'Largest discrepancy between reference (ref_frame %u)' \
@@ -53,7 +53,7 @@ class TestFeaturizer(unittest.TestCase):
         self.pdbfile = pdbfile
         self.traj = mdtraj.load(xtcfile, top=self.pdbfile)
         self.feat = MDFeaturizer(self.pdbfile)
-        self.atol = 1e-5
+        self.atol = 1e-3
         self.ref_frame = np.random.randint(0, self.traj.n_atoms, size=1)[0]
         self.atom_indices = np.unique(np.random.randint(0, self.traj.n_atoms, size=self.traj.n_atoms/2))
 
@@ -186,7 +186,7 @@ class TestFeaturizer(unittest.TestCase):
         test_Y  = self.feat.map(self.traj).squeeze()
         # now the reference
         ref_Y = mdtraj.rmsd(self.traj, self.traj[self.ref_frame])
-        verbose_assertion_minrmsd(ref_Y, test_Y, self._testMethodName, self)
+        verbose_assertion_minrmsd(ref_Y, test_Y, self)
 
     def test_MinRmsd_with_atom_indices(self):
         # Test the Trajectory-input variant
@@ -196,7 +196,7 @@ class TestFeaturizer(unittest.TestCase):
         test_Y  = self.feat.map(self.traj).squeeze()
         # now the reference
         ref_Y = mdtraj.rmsd(self.traj, self.traj[self.ref_frame], atom_indices=self.atom_indices)
-        verbose_assertion_minrmsd(ref_Y, test_Y, self._testMethodName,self)
+        verbose_assertion_minrmsd(ref_Y, test_Y, self)
 
     def test_MinRmsd_with_atom_indices_precentered(self):
         # Test the Trajectory-input variant
@@ -206,7 +206,7 @@ class TestFeaturizer(unittest.TestCase):
         test_Y  = self.feat.map(self.traj).squeeze()
         # now the reference
         ref_Y = mdtraj.rmsd(self.traj, self.traj[self.ref_frame], atom_indices=self.atom_indices, precentered=True)
-        verbose_assertion_minrmsd(ref_Y, test_Y, self._testMethodName, self)
+        verbose_assertion_minrmsd(ref_Y, test_Y, self)
 
 
 class TestFeaturizerNoDubs(unittest.TestCase):
