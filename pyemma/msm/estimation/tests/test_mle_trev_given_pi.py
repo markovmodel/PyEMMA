@@ -45,7 +45,7 @@ testpath = abspath(join(abspath(__file__), pardir)) + '/testfiles/'
 
 class Test_mle_trev_given_pi(unittest.TestCase):
     def setUp(self):
-        self.eps = 1.0E-6
+        self.eps = 0
 
     def test_mle_trev_given_pi(self):
         C = np.loadtxt(testpath + 'C_1_lag.dat')
