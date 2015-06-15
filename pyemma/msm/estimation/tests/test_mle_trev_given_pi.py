@@ -38,7 +38,7 @@ from pyemma.msm.estimation.dense.mle_trev_given_pi import mle_trev_given_pi as m
 from pyemma.msm.estimation.sparse.mle_trev_given_pi import mle_trev_given_pi as mtrgps
 from pyemma.msm.estimation.dense.transition_matrix import transition_matrix_reversible_fixpi as tmrfp
 from pyemma.msm.estimation import tmatrix as apicall
-from pyemma.msm.analysis import statdist
+from pyemma.msm.analysis import statdist, is_transition_matrix
 
 testpath = abspath(join(abspath(__file__), pardir)) + '/testfiles/'
 
@@ -61,10 +61,14 @@ class Test_mle_trev_given_pi(unittest.TestCase):
         assert_allclose(T_cython_sparse, T_python)
         assert_allclose(T_api_sparse, T_python)
         assert_allclose(T_api_dense, T_python)
-        
+
+        assert is_transition_matrix(T_cython_dense)
+        assert is_transition_matrix(T_cython_sparse)
+        assert is_transition_matrix(T_python)
         assert_allclose(statdist(T_cython_dense), pi)
         assert_allclose(statdist(T_cython_sparse), pi)
-        
+        assert_allclose(statdist(T_python), pi)
+
     def test_warnings(self):
         C = np.loadtxt(testpath + 'C_1_lag.dat')
         pi = np.loadtxt(testpath + 'pi.dat')
