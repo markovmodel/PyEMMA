@@ -73,12 +73,6 @@ except:
     print getSetuptoolsError()
     sys.exit(24)
 
-versioneer.VCS = 'git'
-versioneer.versionfile_source = 'pyemma/_version.py'
-versioneer.versionfile_build = 'pyemma/_version.py'
-versioneer.tag_prefix = 'v'  # tags are like v1.2.0
-versioneer.parentdir_prefix = 'pyemma-'
-
 ###############################################################################
 # Extensions
 ###############################################################################
@@ -176,9 +170,11 @@ def extensions():
 
     return exts
 
-def get_cmdclass():
 
-    from setuptools.command.build_ext import build_ext
+def get_cmdclass():
+    vervsioneer_cmds = versioneer.get_cmdclass()
+
+    from distutils.command.build_ext import build_ext
     class np_build(build_ext):
         """
         Sets numpy include path for extensions. Its ensured, that numpy exists
@@ -198,7 +194,8 @@ def get_cmdclass():
             from numpy import get_include
             self.include_dirs = [get_include()]
 
-    class sdist(versioneer.cmd_sdist):
+    sdist_class = vervsioneer_cmds['sdist']
+    class sdist(sdist_class):
         """ensure cython files are compiled to c, when distributing"""
 
         def run(self):
@@ -208,19 +205,18 @@ def get_cmdclass():
 
             try:
                 from Cython.Build import cythonize
+                print "cythonizing sources"
                 cythonize(extensions())
             except ImportError:
-                warnings.warn('at sdist cythonize failed')
-
-            return versioneer.cmd_sdist.run(self)
+                warnings.warn('sdist cythonize failed')
+            return sdist_class.run(self)
 
     cmdclass = dict(build_ext=np_build,
-                    version=versioneer.cmd_version,
-                    versioneer=versioneer.cmd_update_files,
-                    build=versioneer.cmd_build,
                     sdist=sdist,
                     )
-    return cmdclass
+
+    vervsioneer_cmds.update(cmdclass)
+    return vervsioneer_cmds
 
 
 def script_entry_points():
