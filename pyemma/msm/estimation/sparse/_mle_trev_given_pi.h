@@ -23,4 +23,4 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-int _mle_trev_given_pi_sparse(double * const T_data, const double * const CCt_data, const long long * const i_indices, const long long * const j_indices, const int len_CCt,  const double * const mu, const int len_mu, double maxerr, const int maxiter);
+int _mle_trev_given_pi_sparse(double * const T_unnormalized_data, const double * const CCt_data, const int * const i_indices, const int * const j_indices, const int len_CCt,  const double * const mu, const int len_mu, const double maxerr, const int maxiter);
