@@ -29,8 +29,10 @@ import numpy as np
 import os
 import mdtraj
 
+from itertools import combinations, product
+
 # from pyemma.coordinates.data import featurizer as ft
-from pyemma.coordinates.data.featurizer import MDFeaturizer, CustomFeature
+from pyemma.coordinates.data.featurizer import MDFeaturizer, CustomFeature, _parse_pairwise_input
 # from pyemma.coordinates.tests.test_discretizer import create_water_topology_on_disc
 
 path = os.path.join(os.path.split(__file__)[0], 'data')
@@ -289,6 +291,58 @@ class TestFeaturizerNoDubs(unittest.TestCase):
         featurizer.add_minrmsd_to_ref(pdbfile)
 
         featurizer.describe()
+
+class TestPairwiseInputParser(unittest.TestCase):
+
+    def setUp(self):
+        self.feat = MDFeaturizer(pdbfile)
+
+    def test_trivial(self):
+        dist_list = np.array([[0, 1],
+                              [0, 2],
+                              [0, 3]])
+
+        assert np.allclose(dist_list, _parse_pairwise_input(dist_list, None, self.feat._logger))
+
+    def test_one_unique(self):
+        # As a list
+        group1 = [0, 1, 2]
+        dist_list = np.asarray(list(combinations(group1, 2)))
+        assert np.allclose(dist_list, _parse_pairwise_input(group1, None, self.feat._logger))
+
+        # As an array
+        group1 = np.array([0, 1, 2])
+        dist_list = np.asarray(list(combinations(group1, 2)))
+        assert np.allclose(dist_list, _parse_pairwise_input(group1, None, self.feat._logger))
+
+    def test_two_uniques(self):
+        # As a list
+        group1 = [0, 1, 2]
+        group2 = [3, 4, 5]
+        dist_list = np.asarray(list(product(group1, group2)))
+        assert np.allclose(dist_list, _parse_pairwise_input(group1, group2, self.feat._logger))
+
+        # As an array
+        group1 = np.array([0, 1, 2])
+        group2 = np.array([3, 4, 5])
+        dist_list = np.asarray(list(product(group1, group2)))
+        assert np.allclose(dist_list, _parse_pairwise_input(group1, group2, self.feat._logger))
+
+    def test_two_redundants(self):
+        group1 = np.array([0, 1, 2, 0])
+        group2 = np.array([3, 4, 5, 4])
+        dist_list = np.asarray(list(product(np.unique(group1),
+                                            np.unique(group2)
+                                            )))
+        assert np.allclose(dist_list, _parse_pairwise_input(group1, group2, self.feat._logger))
+
+    def test_two_redundants_overlap(self):
+        group1 = np.array([0, 1, 2, 0])
+        group2 = np.array([3, 4, 5, 4, 0, 1])
+        dist_list = np.asarray(list(product(np.unique(group1),
+                                            np.unique(group2[:-2])
+                                            )))
+        assert np.allclose(dist_list, _parse_pairwise_input(group1, group2, self.feat._logger))
 
 if __name__ == "__main__":
     unittest.main()
