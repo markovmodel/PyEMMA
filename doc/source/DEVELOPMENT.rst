@@ -88,8 +88,24 @@ the function does, a clear description of the input parameters, and the return v
 and any relevant cross-references or citations. You can include Latex-style math
 in the docstring.
 
+For a deeper understanding and reference please have a look at the Sphinx documentation
+
+    http://sphinx-doc.org/
+
 In particular, the API functions (those publicly visible to the external user) should
 be well documented.
+
+To build the documentation you need the dependencies from the file 
+requirements-build-docs.txt which you can install via pip::
+
+   pip install -r requirements-build-docs.txt
+    
+afterwards you are ready to build the documentation::
+
+   cd doc
+   make html
+
+The HTML docs can then be found in the doc/build/html directory.
 
 
 Workflow
