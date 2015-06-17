@@ -49,10 +49,12 @@ the Python package:
 
 To access the config at runtime eg. the logging section:
 
-.. code-block:: python
+>>> from pyemma import config
+>>> print config.Logging.level
+... INFO
+>>> print config.show_progress_bars
+... 'True'
 
-    from pyemma.util.config import config
-    print config.Logging.level
 
 Notes
 -----
@@ -61,30 +63,18 @@ compare for:
 
 .. code-block:: python
 
-    if config['section'].my_bool == 'True':
-        pass
-
-Members
--------
-
-.. currentmodule:: pyemma.util.config
-
-.. autosummary::
-   :toctree: generated/
-
-    conf_values
-    used_filenames
+    if pyemma.config.show_progress_bars == 'True':
+        ...
 
 '''
-
-__docformat__ = "restructuredtext en"
-
 import ConfigParser
 import os
+import sys
 import warnings
 
 from pyemma.util.files import mkdir_p
 
+__docformat__ = "restructuredtext en"
 __all__ = ['configParser', 'used_filenames', 'AttribStore']
 
 configParser = None
@@ -97,7 +87,6 @@ conf_values = None
 """holds all value pairs of a conf_values file section in a dict under its section name
 eg. { 'Java' : { 'initheap' : '32m', ... }, ... }
 """
-
 
 class AttribStore(dict):
 
@@ -206,4 +195,23 @@ def readConfiguration():
     # remember cfg dir
     conf_values['pyemma']['cfg_dir'] = pyemma_cfg_dir
 
+# read configuration once at import time
 readConfiguration()
+
+
+class Wrapper(object):
+    # wrap attribute access for this module to enable shortcuts to config values
+    def __init__(self, wrapped):
+        self.wrapped = wrapped
+
+    def __getattr__(self, name):
+        # try to lookup in conf_values first, then fall back to module attributes
+        try:
+            return conf_values['pyemma'][name]
+        except KeyError:
+            try:
+                return conf_values[name]
+            except KeyError:
+                return getattr(self.wrapped, name)
+
+sys.modules[__name__] = Wrapper(sys.modules[__name__])

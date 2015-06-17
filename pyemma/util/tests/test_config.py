@@ -52,5 +52,13 @@ class TestConfig(unittest.TestCase):
                 assert issubclass(w[-1].category, UserWarning)
                 assert "is not writeable" in str(w[-1].message)
 
+    def test_shortcuts(self):
+        import pyemma
+        pyemma.util.config.show_progress_bars = False
+
+    def test_shortcuts2(self):
+        import pyemma
+        pyemma.config.show_progress_bars = 'True'
+
 if __name__ == "__main__":
     unittest.main()
