@@ -137,7 +137,7 @@ class TICA(Transformer):
 
     @property
     def lag(self):
-        """ lag time of correlation matrix :math:`C_\tau` """
+        """ lag time of correlation matrix :math:`C_{\tau}` """
         return self._lag
 
     @lag.setter
@@ -308,15 +308,14 @@ class TICA(Transformer):
         self.cov_tau /= self._N_cov_tau - 1
 
         # diagonalize with low rank approximation
-        self._logger.info("diagonalize Cov and Cov_tau.")
+        self._logger.debug("diagonalize Cov and Cov_tau.")
         self.eigenvalues, self.eigenvectors = \
             eig_corr(self.cov, self.cov_tau, self._epsilon)
-        self._logger.info("finished diagonalisation.")
+        self._logger.debug("finished diagonalisation.")
 
         # compute cumulative variance
         self.cumvar = np.cumsum(self.eigenvalues ** 2)
         self.cumvar /= self.cumvar[-1]
-
 
     def _map_array(self, X):
         r"""Projects the data onto the dominant independent components.

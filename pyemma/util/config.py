@@ -214,4 +214,10 @@ class Wrapper(object):
             except KeyError:
                 return getattr(self.wrapped, name)
 
+    def __getitem__(self, name):
+        try:
+            return conf_values['pyemma'][name]
+        except KeyError:
+            return conf_values[name]
+
 sys.modules[__name__] = Wrapper(sys.modules[__name__])
