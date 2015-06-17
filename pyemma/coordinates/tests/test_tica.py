@@ -129,7 +129,7 @@ class TestTICAExtensive(unittest.TestCase):
         # generate HMM with two Gaussians
         cls.P = np.array([[0.99, 0.01],
                           [0.01, 0.99]])
-        cls.T = 10000
+        cls.T = 40000
         means = [np.array([-1, 1]), np.array([1, -1])]
         widths = [np.array([0.3, 2]), np.array([0.3, 2])]
         # continuous trajectory
@@ -171,13 +171,13 @@ class TestTICAExtensive(unittest.TestCase):
     def test_cov(self):
         cov_ref = np.dot(self.X.T, self.X) / float(self.T)
         assert (np.all(self.tica_obj.cov.shape == cov_ref.shape))
-        assert (np.max(self.tica_obj.cov - cov_ref) < 3e-2)
+        assert (np.max(self.tica_obj.cov - cov_ref) < 5e-2)
 
     def test_cov_tau(self):
         cov_tau_ref = np.dot(self.X[self.lag:].T, self.X[:self.T - self.lag]) / float(self.T - self.lag)
         cov_tau_ref = 0.5 * (cov_tau_ref + cov_tau_ref.T)
         assert (np.all(self.tica_obj.cov_tau.shape == cov_tau_ref.shape))
-        assert (np.max(self.tica_obj.cov_tau - cov_tau_ref) < 3e-2)
+        assert (np.max(self.tica_obj.cov_tau - cov_tau_ref) < 5e-2)
 
     def test_data_producer(self):
         assert self.tica_obj.data_producer is not None
