@@ -39,54 +39,82 @@ __all__ = ['TICA']
 
 
 class TICA(Transformer):
+    r""" Time-lagged independent component analysis (TICA) [1]_, [2]_, [3]_.
 
-    def __init__(self, lag, output_dimension, epsilon=1e-6, force_eigenvalues_le_one=False):
-        r"""
-        Time-lagged independent component analysis (TICA)
+    Parameters
+    ----------
+    tau : int
+        lag time
+    dim : int, optional, default -1
+        Maximum number of significant independent components to use to reduce dimension of input data. -1 means
+        all numerically available dimensions (see epsilon) will be used unless reduced by var_cutoff.
+        Setting dim to a positive value is exclusive with var_cutoff.
+    var_cutoff : float in the range [0,1], optional, default 1
+        Determines the number of output dimensions by including dimensions until their cumulative kinetic variance
+        exceeds the fraction subspace_variance. var_cutoff=1.0 means all numerically available dimensions
+        (see epsilon) will be used, unless set by dim. Setting var_cutoff smaller than 1.0 is exclusive with dim
+    kinetic_map : bool, optional, default False
+        Eigenvectors will be scaled by eigenvalues. As a result, Euclidean distances in the transformed data
+        approximate kinetic distances [4]_. This is a good choice when the data is further processed by clustering.
+    epsilon : float
+        eigenvalue norm cutoff. Eigenvalues of C0 with norms <= epsilon will be
+        cut off. The remaining number of eigenvalues define the size
+        of the output.
+    force_eigenvalues_le_one : boolean
+        Compute covariance matrix and time-lagged covariance matrix such
+        that the generalized eigenvalues are always guaranteed to be <= 1.
 
-        Parameters
-        ----------
-        tau : int
-            lag time
-        output_dimension : int
-            how many significant TICS to use to reduce dimension of input data
-        epsilon : float
-            eigenvalue norm cutoff. Eigenvalues of C0 with norms <= epsilon will be
-            cut off. The remaining number of eigenvalues define the size
-            of the output.
-        force_eigenvalues_le_one : boolean
-            Compute covariance matrix and time-lagged covariance matrix such
-            that the generalized eigenvalues are always guaranteed to be <= 1.
+    Notes
+    -----
+    Given a sequence of multivariate data :math:`X_t`, computes the mean-free
+    covariance and time-lagged covariance matrix:
 
-        Notes
-        -----
-        Given a sequence of multivariate data :math:`X_t`, computes the mean-free
-        covariance and time-lagged covariance matrix:
+    .. math::
 
-        .. math::
+        C_0 &=      (X_t - \mu)^T (X_t - \mu) \\
+        C_{\tau} &= (X_t - \mu)^T (X_{t + \tau} - \mu)
 
-            C_0 &=      (X_t - \mu)^T (X_t - \mu) \\
-            C_{\tau} &= (X_t - \mu)^T (X_t + \tau - \mu)
+    and solves the eigenvalue problem
 
-        and solves the eigenvalue problem
+    .. math:: C_{\tau} r_i = C_0 \lambda_i(tau) r_i,
 
-        .. math:: C_{\tau} r_i = C_0 \lambda_i r_i,
+    where :math:`r_i` are the independent components and :math:`\lambda_i(tau)` are
+    their respective normalized time-autocorrelations. The eigenvalues are
+    related to the relaxation timescale by
 
-        where :math:`r_i` are the independent components and :math:`\lambda_i` are
-        their respective normalized time-autocorrelations. The eigenvalues are
-        related to the relaxation timescale by
+    .. math:: t_i(tau) = -\tau / \ln |\lambda_i|.
 
-        .. math:: t_i = -\tau / \ln |\lambda_i|.
+    When used as a dimension reduction method, the input data is projected
+    onto the dominant independent components.
 
-        When used as a dimension reduction method, the input data is projected
-        onto the dominant independent components.
+    References
+    ----------
+    .. [1] Perez-Hernandez G, F Paul, T Giorgino, G De Fabritiis and F Noe. 2013.
+       Identification of slow molecular order parameters for Markov model construction
+       J. Chem. Phys. 139, 015102. doi:10.1063/1.4811489
+    .. [2] Schwantes C, V S Pande. 2013.
+       Improvements in Markov State Model Construction Reveal Many Non-Native Interactions in the Folding of NTL9
+       J. Chem. Theory. Comput. 9, 2000-2009. doi:10.1021/ct300878a
+    .. [3] L. Molgedey and H. G. Schuster. 1994.
+       Separation of a mixture of independent signals using time delayed correlations
+       Phys. Rev. Lett. 72, 3634.
+    .. [4] Noe, F. and C. Clementi. 2015.
+        Kinetic distance and kinetic maps from molecular dynamics simulation
+        (in preparation).
 
-        """
+    """
+
+    def __init__(self, lag, dim=-1, var_cutoff=1.0, kinetic_map=False, epsilon=1e-6,
+                 force_eigenvalues_le_one=False):
         super(TICA, self).__init__()
 
         # store lag time to set it appropriately in second pass of parametrize
         self._lag = lag
-        self._output_dimension = output_dimension
+        self._dim = dim
+        self._var_cutoff = var_cutoff
+        if dim != -1 and var_cutoff < 1.0:
+            raise ValueError('Trying to set both the number of dimension and the subspace variance. Use either or.')
+        self._kinetic_map = kinetic_map
         self._epsilon = epsilon
         self._force_eigenvalues_le_one = force_eigenvalues_le_one
 
@@ -100,6 +128,7 @@ class TICA(Transformer):
         self._N_cov_tau = 0
         self.eigenvalues = None
         self.eigenvectors = None
+        self.cumvar = None
 
         self._custom_param_progress_handling = True
         self._progress_mean = None
@@ -118,12 +147,27 @@ class TICA(Transformer):
 
     @doc_inherit
     def describe(self):
-        return "[TICA, tau = %i; output dimension = %i]" \
-            % (self._lag, self._output_dimension)
+        dim = self._dim
+        try:
+            dim = self.dimension()
+        except:
+            pass
+        return "[TICA, lag = %i; max. output dim. = %i]" % (self._lag, dim)
 
     def dimension(self):
-        """ output dimension"""
-        return self._output_dimension
+        """ output dimension """
+        if self._dim != -1:  # fixed parametrization
+            return self._dim
+        elif self._parametrized:  # parametrization finished. Dimension is known
+            dim = len(self.eigenvalues)
+            if self._var_cutoff < 1.0:  # if subspace_variance, reduce the output dimension if needed
+                dim = min(dim, np.searchsorted(self.cumvar, self._var_cutoff)+1)
+            return dim
+        elif self._var_cutoff == 1.0:  # We only know that all dimensions are wanted, so return input dim
+            return self.data_producer.dimension()
+        else:  # We know nothing. Give up
+            raise RuntimeError('Requested dimension, but the dimension depends on the cumulative variance and the '
+                               'transformer has not yet been parametrized. Call parametrize() before.')
 
     @property
     def mean(self):
@@ -131,23 +175,22 @@ class TICA(Transformer):
         return self.mu
 
     def _param_init(self):
-        dim = self.data_producer.dimension()
-        assert dim > 0, "zero dimension from data producer"
-        assert self._output_dimension <= dim, \
-            ("requested more output dimensions (%i) than dimension"
-             " of input data (%i)" % (self._output_dimension, dim))
+        indim = self.data_producer.dimension()
+        assert indim > 0, "zero dimension from data producer"
+        assert self._dim <= indim, ("requested more output dimensions (%i) than dimension"
+                                    " of input data (%i)" % (self._dim, indim))
 
         self._N_mean = 0
         self._N_cov = 0
         self._N_cov_tau = 0
         # create mean array and covariance matrices
-        self.mu = np.zeros(dim)
+        self.mu = np.zeros(indim)
 
-        self.cov = np.zeros((dim, dim))
+        self.cov = np.zeros((indim, indim))
         self.cov_tau = np.zeros_like(self.cov)
 
         self._logger.info("Running TICA with tau=%i; Estimating two covariance matrices"
-                          " with dimension (%i, %i)" % (self._lag, dim, dim))
+                          " with dimension (%i, %i)" % (self._lag, indim, indim))
 
         # amount of chunks
         denom = self._n_chunks(self._param_with_stride)
@@ -270,6 +313,11 @@ class TICA(Transformer):
             eig_corr(self.cov, self.cov_tau, self._epsilon)
         self._logger.info("finished diagonalisation.")
 
+        # compute cumulative variance
+        self.cumvar = np.cumsum(self.eigenvalues ** 2)
+        self.cumvar /= self.cumvar[-1]
+
+
     def _map_array(self, X):
         r"""Projects the data onto the dominant independent components.
 
@@ -285,7 +333,9 @@ class TICA(Transformer):
         """
         # TODO: consider writing an extension to avoid temporary Xmeanfree
         X_meanfree = X - self.mu
-        Y = np.dot(X_meanfree, self.eigenvectors[:, 0:self._output_dimension])
+        Y = np.dot(X_meanfree, self.eigenvectors[:, 0:self.dimension()])
+        if self._kinetic_map:  # scale by eigenvalues
+            Y *= self.eigenvalues[0:self.dimension()]
         return Y
 
     @property
@@ -309,4 +359,4 @@ class TICA(Transformer):
             for each TIC.
         """
         feature_sigma = np.sqrt(np.diag(self.cov))
-        return np.dot(self.cov, self.eigenvectors[:, : self._output_dimension]) / feature_sigma[:, np.newaxis]
+        return np.dot(self.cov, self.eigenvectors[:, : self.dimension()]) / feature_sigma[:, np.newaxis]

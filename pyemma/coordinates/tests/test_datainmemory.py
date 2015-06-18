@@ -21,6 +21,7 @@
 # ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import pyemma
 
 '''
 Created on 04.02.2015
@@ -158,6 +159,14 @@ class TestDataInMemory(unittest.TestCase):
             expected = self.d[::s]
             np.testing.assert_allclose(output, expected,
                                        err_msg="not equal for stride=%i" % s)
+
+    def test_chunksize(self):
+        data = np.random.randn(200,2)
+        cs = 100
+        source = pyemma.coordinates.source(data,chunk_size=cs)
+        source.chunksize = 100
+        for i,ch in source.iterator():
+            assert ch.shape[0] <=cs, ch.shape
 
     def test_lagged_iterator_1d(self):
         n = 57

@@ -29,8 +29,10 @@ import numpy as np
 import os
 import mdtraj
 
+from itertools import combinations, product
+
 # from pyemma.coordinates.data import featurizer as ft
-from pyemma.coordinates.data.featurizer import MDFeaturizer, CustomFeature
+from pyemma.coordinates.data.featurizer import MDFeaturizer, CustomFeature, _parse_pairwise_input
 # from pyemma.coordinates.tests.test_discretizer import create_water_topology_on_disc
 
 path = os.path.join(os.path.split(__file__)[0], 'data')
@@ -38,12 +40,25 @@ xtcfile = os.path.join(path, 'bpti_mini.xtc')
 pdbfile = os.path.join(path, 'bpti_ca.pdb')
 
 
+def verbose_assertion_minrmsd(ref_Y, test_Y, test_obj):
+    for jj in np.arange(test_Y.shape[1]):
+        ii = np.argmax(np.abs(ref_Y-test_Y[:,jj]))
+        assert np.allclose(ref_Y, test_Y[:,jj], atol=test_obj.atol), \
+            'Largest discrepancy between reference (ref_frame %u)' \
+            ' and test: %8.2e, for the pair %f, %f at frame %u'%\
+            (test_obj.ref_frame,
+             (ref_Y-test_Y[:,jj])[ii],
+             ref_Y[ii], test_Y[ii,jj], ii)
+
 class TestFeaturizer(unittest.TestCase):
 
     def setUp(self):
         self.pdbfile = pdbfile
         self.traj = mdtraj.load(xtcfile, top=self.pdbfile)
         self.feat = MDFeaturizer(self.pdbfile)
+        self.atol = 1e-5
+        self.ref_frame = 0
+        self.atom_indices = np.arange(0, self.traj.n_atoms/2)
 
     def test_select_backbone(self):
         inds = self.feat.select_Backbone()
@@ -167,39 +182,34 @@ class TestFeaturizer(unittest.TestCase):
         pass
 
     def test_MinRmsd(self):
-        ref_frame = np.random.randint(0, self.traj.n_atoms, size=1)[0]
-
-        # Test the Trajectory-input variant and the file-input variant
-        self.feat.add_minrmsd_to_ref(self.traj[ref_frame])
-        self.feat.add_minrmsd_to_ref(xtcfile, ref_frame=ref_frame)
+        # Test the Trajectory-input variant
+        self.feat.add_minrmsd_to_ref(self.traj[self.ref_frame])
+        # and the file-input variant
+        self.feat.add_minrmsd_to_ref(xtcfile, ref_frame=self.ref_frame)
         test_Y  = self.feat.map(self.traj).squeeze()
-        ref_Y = mdtraj.rmsd(self.traj, self.traj[ref_frame])
-        assert np.allclose(ref_Y, test_Y[:,0], atol=1e-5)
-        assert np.allclose(ref_Y, test_Y[:,0], atol=1e-5)
+        # now the reference
+        ref_Y = mdtraj.rmsd(self.traj, self.traj[self.ref_frame])
+        verbose_assertion_minrmsd(ref_Y, test_Y, self)
 
     def test_MinRmsd_with_atom_indices(self):
-        ref_frame = np.random.randint(0, self.traj.n_atoms, size=1)[0]
-        atom_indices = np.unique(np.random.randint(0, self.traj.n_atoms, size=self.traj.n_atoms/2))
-
-        # Test the Trajectory-input variant and the file-input variant
-        self.feat.add_minrmsd_to_ref(self.traj[ref_frame], atom_indices=atom_indices)
-        self.feat.add_minrmsd_to_ref(xtcfile, ref_frame=ref_frame, atom_indices=atom_indices)
+        # Test the Trajectory-input variant
+        self.feat.add_minrmsd_to_ref(self.traj[self.ref_frame], atom_indices=self.atom_indices)
+        # and the file-input variant
+        self.feat.add_minrmsd_to_ref(xtcfile, ref_frame=self.ref_frame, atom_indices=self.atom_indices)
         test_Y  = self.feat.map(self.traj).squeeze()
-        ref_Y = mdtraj.rmsd(self.traj, self.traj[ref_frame], atom_indices=atom_indices)
-        assert np.allclose(ref_Y, test_Y[:,0], atol=1e-5)
-        assert np.allclose(ref_Y, test_Y[:,1], atol=1e-5)
+        # now the reference
+        ref_Y = mdtraj.rmsd(self.traj, self.traj[self.ref_frame], atom_indices=self.atom_indices)
+        verbose_assertion_minrmsd(ref_Y, test_Y, self)
 
     def test_MinRmsd_with_atom_indices_precentered(self):
-        ref_frame = np.random.randint(0, self.traj.n_atoms, size=1)[0]
-        atom_indices = np.unique(np.random.randint(0, self.traj.n_atoms, size=self.traj.n_atoms/2))
-
-        # Test the Trajectory-input variant and the file-input variant
-        self.feat.add_minrmsd_to_ref(self.traj[ref_frame], atom_indices=atom_indices, precentered=True)
-        self.feat.add_minrmsd_to_ref(xtcfile, ref_frame=ref_frame, atom_indices=atom_indices, precentered=True)
+        # Test the Trajectory-input variant
+        self.feat.add_minrmsd_to_ref(self.traj[self.ref_frame], atom_indices=self.atom_indices, precentered=True)
+        # and the file-input variant
+        self.feat.add_minrmsd_to_ref(xtcfile, ref_frame=self.ref_frame, atom_indices=self.atom_indices, precentered=True)
         test_Y  = self.feat.map(self.traj).squeeze()
-        ref_Y = mdtraj.rmsd(self.traj, self.traj[ref_frame], atom_indices=atom_indices, precentered=True)
-        assert np.allclose(ref_Y, test_Y[:,0], atol=1e-5)
-        assert np.allclose(ref_Y, test_Y[:,1], atol=1e-5)
+        # now the reference
+        ref_Y = mdtraj.rmsd(self.traj, self.traj[self.ref_frame], atom_indices=self.atom_indices, precentered=True)
+        verbose_assertion_minrmsd(ref_Y, test_Y, self)
 
 class TestFeaturizerNoDubs(unittest.TestCase):
 
@@ -281,6 +291,58 @@ class TestFeaturizerNoDubs(unittest.TestCase):
         featurizer.add_minrmsd_to_ref(pdbfile)
 
         featurizer.describe()
+
+class TestPairwiseInputParser(unittest.TestCase):
+
+    def setUp(self):
+        self.feat = MDFeaturizer(pdbfile)
+
+    def test_trivial(self):
+        dist_list = np.array([[0, 1],
+                              [0, 2],
+                              [0, 3]])
+
+        assert np.allclose(dist_list, _parse_pairwise_input(dist_list, None, self.feat._logger))
+
+    def test_one_unique(self):
+        # As a list
+        group1 = [0, 1, 2]
+        dist_list = np.asarray(list(combinations(group1, 2)))
+        assert np.allclose(dist_list, _parse_pairwise_input(group1, None, self.feat._logger))
+
+        # As an array
+        group1 = np.array([0, 1, 2])
+        dist_list = np.asarray(list(combinations(group1, 2)))
+        assert np.allclose(dist_list, _parse_pairwise_input(group1, None, self.feat._logger))
+
+    def test_two_uniques(self):
+        # As a list
+        group1 = [0, 1, 2]
+        group2 = [3, 4, 5]
+        dist_list = np.asarray(list(product(group1, group2)))
+        assert np.allclose(dist_list, _parse_pairwise_input(group1, group2, self.feat._logger))
+
+        # As an array
+        group1 = np.array([0, 1, 2])
+        group2 = np.array([3, 4, 5])
+        dist_list = np.asarray(list(product(group1, group2)))
+        assert np.allclose(dist_list, _parse_pairwise_input(group1, group2, self.feat._logger))
+
+    def test_two_redundants(self):
+        group1 = np.array([0, 1, 2, 0])
+        group2 = np.array([3, 4, 5, 4])
+        dist_list = np.asarray(list(product(np.unique(group1),
+                                            np.unique(group2)
+                                            )))
+        assert np.allclose(dist_list, _parse_pairwise_input(group1, group2, self.feat._logger))
+
+    def test_two_redundants_overlap(self):
+        group1 = np.array([0, 1, 2, 0])
+        group2 = np.array([3, 4, 5, 4, 0, 1])
+        dist_list = np.asarray(list(product(np.unique(group1),
+                                            np.unique(group2[:-2])
+                                            )))
+        assert np.allclose(dist_list, _parse_pairwise_input(group1, group2, self.feat._logger))
 
 if __name__ == "__main__":
     unittest.main()

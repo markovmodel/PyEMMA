@@ -6,7 +6,7 @@ Created on 24.04.2015
 import sys
 from pyemma.util.config import conf_values
 
-__all__ = ('interactive_session', 'show_progressbar')
+__all__ = ('is_interactive_session', 'show_progressbar')
 
 
 def __attached_to_ipy_notebook():
@@ -21,10 +21,26 @@ def __attached_to_ipy_notebook():
         else:
             return True
 
-interactive_session = __attached_to_ipy_notebook()
+
+def __is_interactive():
+    # started by main function or interactive from python shell?
+    import __main__ as main
+    return not hasattr(main, '__file__')
+
+
+def __is_tty_or_interactive_session():
+    is_tty = sys.stdout.isatty()
+    is_interactive = __is_interactive()
+    result = is_tty or is_interactive
+    return result
+
+ipython_notebook_session = __attached_to_ipy_notebook()
 """ are we running an interactive IPython notebook session """
 
-if interactive_session:
+is_interactive_session = __is_tty_or_interactive_session()
+""" do we have a tty or an interactive session? """
+
+if ipython_notebook_session:
     from IPython.display import display
     from IPython.html.widgets import IntProgress, Box, Text
 
@@ -40,11 +56,12 @@ def show_progressbar(bar, show_eta=True):
     show_eta : bool (optional)
 
     """
-    if not conf_values['pyemma'].show_progress_bars == 'True':
+    if not (conf_values['pyemma'].show_progress_bars == 'True' and
+            is_interactive_session):
         return
 
     # note: this check ensures we have IPython.display and so on.
-    if interactive_session:
+    if ipython_notebook_session:
         # create IPython widgets on first call
         if not hasattr(bar, 'widget'):
             box = Box()

@@ -129,7 +129,7 @@ class TestTICAExtensive(unittest.TestCase):
         # generate HMM with two Gaussians
         cls.P = np.array([[0.99, 0.01],
                           [0.01, 0.99]])
-        cls.T = 10000
+        cls.T = 40000
         means = [np.array([-1, 1]), np.array([1, -1])]
         widths = [np.array([0.3, 2]), np.array([0.3, 2])]
         # continuous trajectory
@@ -141,10 +141,29 @@ class TestTICAExtensive(unittest.TestCase):
             cls.X[t, 0] = widths[s][0] * np.random.randn() + means[s][0]
             cls.X[t, 1] = widths[s][1] * np.random.randn() + means[s][1]
         cls.lag = 10
-        cls.tica_obj = api.tica(data=cls.X, lag=cls.lag, dim=1)
+        # do unscaled TICA
+        cls.tica_obj = api.tica(data=cls.X, lag=cls.lag, dim=1, kinetic_map=False)
 
     def setUp(self):
         pass
+
+    def test_variances(self):
+        # test unscaled TICA:
+        O = self.tica_obj.get_output()[0]
+        vars = np.var(O, axis=0)
+        assert np.max(np.abs(vars - 1.0)) < 0.01
+
+    def test_kinetic_map(self):
+        # test kinetic map variances:
+        tica_kinmap = api.tica(data=self.X, lag=self.lag, dim=-1, kinetic_map=True)
+        O = tica_kinmap.get_output()[0]
+        vars = np.var(O, axis=0)
+        refs = tica_kinmap.eigenvalues ** 2
+        assert np.max(np.abs(vars - refs)) < 0.01
+
+    def test_cumvar(self):
+        assert len(self.tica_obj.cumvar) == 2
+        assert np.allclose(self.tica_obj.cumvar[-1], 1.0)
 
     def test_chunksize(self):
         assert types.is_int(self.tica_obj.chunksize)
@@ -152,12 +171,13 @@ class TestTICAExtensive(unittest.TestCase):
     def test_cov(self):
         cov_ref = np.dot(self.X.T, self.X) / float(self.T)
         assert (np.all(self.tica_obj.cov.shape == cov_ref.shape))
-        assert (np.max(self.tica_obj.cov - cov_ref) < 3e-2)
+        assert (np.max(self.tica_obj.cov - cov_ref) < 5e-2)
 
     def test_cov_tau(self):
         cov_tau_ref = np.dot(self.X[self.lag:].T, self.X[:self.T - self.lag]) / float(self.T - self.lag)
+        cov_tau_ref = 0.5 * (cov_tau_ref + cov_tau_ref.T)
         assert (np.all(self.tica_obj.cov_tau.shape == cov_tau_ref.shape))
-        assert (np.max(self.tica_obj.cov_tau - cov_tau_ref) < 3e-2)
+        assert (np.max(self.tica_obj.cov_tau - cov_tau_ref) < 5e-2)
 
     def test_data_producer(self):
         assert self.tica_obj.data_producer is not None
@@ -170,6 +190,13 @@ class TestTICAExtensive(unittest.TestCase):
         assert types.is_int(self.tica_obj.dimension())
         # Here:
         assert self.tica_obj.dimension() == 1
+        # Test other variants
+        tica = api.tica(data=self.X, lag=self.lag, dim=-1, var_cutoff=1.0)
+        assert tica.dimension() == 2
+        tica = api.tica(data=self.X, lag=self.lag, dim=-1, var_cutoff=0.9)
+        assert tica.dimension() == 1
+        with self.assertRaises(ValueError):  # trying to set both dim and subspace_variance is forbidden
+            api.tica(data=self.X, lag=self.lag, dim=1, var_cutoff=0.9)
 
     def test_eigenvalues(self):
         eval = self.tica_obj.eigenvalues
@@ -251,7 +278,7 @@ class TestTICAExtensive(unittest.TestCase):
         self.pdb_file = os.path.join(path, 'bpti_ca.pdb')
         self.xtc_file = os.path.join(path, 'bpti_mini.xtc')
         inp = source(self.xtc_file, top=self.pdb_file)
-        ticamini = tica(inp, lag=1)
+        ticamini = tica(inp, lag=1, kinetic_map=False)
 
         feature_traj =  ticamini.data_producer.get_output()[0]
         tica_traj    =  ticamini.get_output()[0]
@@ -269,7 +296,7 @@ class TestTICAExtensive(unittest.TestCase):
         feature_traj[:,2] = np.random.randn(len(feature_traj))
 
         # Tica
-        tica_obj = tica(data = feature_traj, dim = 3)
+        tica_obj = tica(data = feature_traj, dim = 3, kinetic_map=False)
         tica_traj = tica_obj.get_output()[0]
 
         # Create correlations

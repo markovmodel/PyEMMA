@@ -746,7 +746,7 @@ def _param_stage(previous_stage, this_stage, stride=1):
     return this_stage
 
 
-def pca(data=None, dim=2, stride=1):
+def pca(data=None, dim=2, var_cutoff=1.0, stride=1):
     r""" Principal Component Analysis (PCA).
 
     PCA is a linear transformation method that finds coordinates of maximal variance.
@@ -770,11 +770,18 @@ def pca(data=None, dim=2, stride=1):
         trajectory. When data is given, the PCA is immediately parametrized by estimating
         the covariance matrix and computing its eigenvectors.
 
-    dim : int
+    dim : int, optional, default -1
         the number of dimensions (principal components) to project onto. A call to the
         :func:`map <pyemma.coordinates.transform.PCA.map>` function reduces the d-dimensional
         input to only dim dimensions such that the data preserves the maximum possible variance
-        amonst dim-dimensional linear projections.
+        amongst dim-dimensional linear projections.
+        -1 means all numerically available dimensions will be used unless reduced by var_cutoff.
+        Setting dim to a positive value is exclusive with var_cutoff.
+
+    var_cutoff : float in the range [0,1], optional, default 1
+        Determines the number of output dimensions by including dimensions until their cumulative kinetic variance
+        exceeds the fraction subspace_variance. var_cutoff=1.0 means all numerically available dimensions
+        (see epsilon) will be used, unless set by dim. Setting var_cutoff smaller than 1.0 is exclusive with dim
 
     stride : int, optional, default = 1
         If set to 1, all input data will be used for estimation. Note that this could cause this calculation
@@ -837,11 +844,11 @@ def pca(data=None, dim=2, stride=1):
         J. Edu. Psych. 24, 417-441 and 498-520.
 
     """
-    res = _PCA(dim)
+    res = _PCA(dim=dim, var_cutoff=var_cutoff)
     return _param_stage(data, res, stride=stride)
 
 
-def tica(data=None, lag=10, dim=2, stride=1, force_eigenvalues_le_one=False):
+def tica(data=None, lag=10, dim=-1, var_cutoff=1.0, kinetic_map=False, stride=1, force_eigenvalues_le_one=False):
     r""" Time-lagged independent component analysis (TICA).
 
     TICA is a linear transformation method. In contrast to PCA, which finds
@@ -869,11 +876,22 @@ def tica(data=None, lag=10, dim=2, stride=1, force_eigenvalues_le_one=False):
     lag : int, optional, default = 10
         the lag time, in multiples of the input time step
 
-    dim : int, optional, default = 2
+    dim : int, optional, default -1
         the number of dimensions (independent components) to project onto. A call to the
         :func:`map <pyemma.coordinates.transform.TICA.map>` function reduces the d-dimensional
         input to only dim dimensions such that the data preserves the maximum possible autocorrelation
         amongst dim-dimensional linear projections.
+        -1 means all numerically available dimensions will be used unless reduced by var_cutoff.
+        Setting dim to a positive value is exclusive with var_cutoff.
+
+    var_cutoff : float in the range [0,1], optional, default 1
+        Determines the number of output dimensions by including dimensions until their cumulative kinetic variance
+        exceeds the fraction subspace_variance. var_cutoff=1.0 means all numerically available dimensions
+        (see epsilon) will be used, unless set by dim. Setting var_cutoff smaller than 1.0 is exclusive with dim
+
+    kinetic_map : bool, optional, default False
+        Eigenvectors will be scaled by eigenvalues. As a result, Euclidean distances in the transformed data
+        approximate kinetic distances [4]_. This is a good choice when the data is further processed by clustering.
 
     stride : int, optional, default = 1
         If set to 1, all input data will be used for estimation. Note that this could cause this calculation
@@ -958,11 +976,13 @@ def tica(data=None, lag=10, dim=2, stride=1, force_eigenvalues_le_one=False):
     .. [3] Schwantes C, V S Pande. 2013.
        Improvements in Markov State Model Construction Reveal Many Non-Native Interactions in the Folding of NTL9
        J. Chem. Theory. Comput. 9, 2000-2009. doi:10.1021/ct300878a
+    .. [4] Noe, F. and C. Clementi. 2015.
+        Kinetic distance and kinetic maps from molecular dynamics simulation
+        (in preparation).
 
     """
-    # don't expose this until we know what this is doing.
-    #force_eigenvalues_le_one = False
-    res = _TICA(lag, dim, force_eigenvalues_le_one=force_eigenvalues_le_one)
+    res = _TICA(lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map,
+                force_eigenvalues_le_one=force_eigenvalues_le_one)
     return _param_stage(data, res, stride=stride)
 
 
