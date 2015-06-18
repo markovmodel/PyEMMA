@@ -1364,8 +1364,6 @@ class EstimatedMSM(MSM):
             array of states to be indexed. By default all states in the connected set will be used
         replace : boolean, optional
             Whether the sample is with or without replacement
-        start : int, optional, default = None
-            starting state. If not given, will sample from the stationary distribution of P
 
         Returns
         -------
