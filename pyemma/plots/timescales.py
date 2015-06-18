@@ -29,7 +29,7 @@ import numpy as _np
 import matplotlib.pylab as _plt
 
 def plot_implied_timescales(ITS, ax=None, outfile=None, xlog=False, ylog=True, confidence=0.95, refs=None, units='steps',
-                            dt=1.):
+                            dt=1., marker=None, markersize=5):
     r""" Generate a pretty implied timescale plot
 
     Parameters
@@ -58,6 +58,13 @@ def plot_implied_timescales(ITS, ax=None, outfile=None, xlog=False, ylog=True, c
         frame corresponds to .010 ns, you can use the combination of parameters :py:obj:`dt` =0.01,
         :py:obj:`units` ='ns' to display the implied timescales in ns (instead of frames)
 
+    marker: str, default = None.
+        marker type for the datapoints of the MLE timescales (not the bootstrappend means). Will be parsed to pyplot.plot.
+        Examples are or 'o' or 'd'. See the doc of pyplot for more options
+    markersize: int, default = 5.
+        marker size for the datapoints of the MLE timescales. Has no effect if :py:obj:`marker` is None.
+
+
     Returns
     -------
     ax : Axes object containing the plot
@@ -73,7 +80,7 @@ def plot_implied_timescales(ITS, ax=None, outfile=None, xlog=False, ylog=True, c
     #ymax = 1.5*_np.min(ITS.get_timescales())
     for i in range(ITS.number_of_timescales):
         # plot estimate
-        ax.plot(lags*dt, ITS.get_timescales(process=i)*dt, color = colors[i % len(colors)])
+        ax.plot(lags*dt, ITS.get_timescales(process=i)*dt, color = colors[i % len(colors)], marker=marker, markersize=markersize)
         # sample available?
         if (ITS.samples_available and ITS.sample_number_of_timescales > i):
             # plot sample mean
