@@ -21,7 +21,7 @@
 # ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-r'''
+doc=r'''
 Runtime Configuration
 =====================
 To configure the runtime behavior such as logging the system or other parameters,
@@ -29,10 +29,10 @@ the configuration module reads several config files to build
 its final set of settings. It searches for the file 'pyemma.cfg' in several
 locations with different priorities:
 
-1. $CWD/pyemma.cfg
-2. $HOME/.pyemma/pyemma.cfg
-4. ~/pyemma.cfg
-5. $PYTHONPATH/pyemma/pyemma.cfg (always taken as default configuration file)
+#. $CWD/pyemma.cfg
+#. $HOME/.pyemma/pyemma.cfg
+#. ~/pyemma.cfg
+#. $PYTHONPATH/pyemma/pyemma.cfg (always taken as default configuration file)
 
 The same applies for the filename ".pyemma.cfg" (hidden file).
 
@@ -200,6 +200,9 @@ readConfiguration()
 
 
 class Wrapper(object):
+
+    __doc__ = doc
+
     # wrap attribute access for this module to enable shortcuts to config values
     def __init__(self, wrapped):
         self.wrapped = wrapped
