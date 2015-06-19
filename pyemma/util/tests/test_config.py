@@ -60,5 +60,10 @@ class TestConfig(unittest.TestCase):
         import pyemma
         pyemma.config.show_progress_bars = 'True'
 
+    def test_shortcut3(self):
+        import pyemma
+        pyemma.config['show_progress_bars'] = 'True'
+
+
 if __name__ == "__main__":
     unittest.main()

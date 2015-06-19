@@ -220,4 +220,12 @@ class Wrapper(object):
         except KeyError:
             return conf_values[name]
 
+    def __setitem__(self, name, value):
+        if name in conf_values['pyemma']:
+            conf_values['pyemma'][name] = value
+        elif name in conf_values:
+            conf_values[name] = value
+        else:
+            raise KeyError('"%s" is not a valid config section.' % name)
+
 sys.modules[__name__] = Wrapper(sys.modules[__name__])
