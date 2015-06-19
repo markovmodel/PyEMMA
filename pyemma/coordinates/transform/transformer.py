@@ -148,6 +148,7 @@ class Transformer(object):
         pass
 
     def __create_logger(self):
+        # note this is private, since it should only be called (once) from this class.
         count = self._ids.next()
         i = self.__module__.rfind(".")
         j = self.__module__.find(".") + 1

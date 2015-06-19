@@ -1006,7 +1006,13 @@ class EstimatedMSM(MSM):
         self._timeunit = TimeUnit(dt)
 
     def __create_logger(self):
-        name = "%s[%s]" % (self.__class__.__name__, hex(id(self)))
+        # note this is private, since it should only be called (once) from this class.
+        count = self._ids.next()
+        i = self.__module__.rfind(".")
+        j = self.__module__.find(".") + 1
+        package = self.__module__[j:i]
+        name = "%s.%s[%i]" % (package, self.__class__.__name__, count)
+        self._name = name
         self._logger = getLogger(name)
 
     def estimate(self):
