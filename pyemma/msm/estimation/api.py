@@ -739,8 +739,9 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
         space of stochastic matrices.
     mu : array_like
         The stationary distribution of the MLE transition matrix.
-    **kwargs: Optional algorithm-specific parameters. See below for special cases
-    eps = 1E-6 : float
+    **kwargs:
+        Optional algorithm-specific parameters. See below for special cases
+    eps : 1E-6 : float
         Optional parameter with reversible = True and mu!=None.
         Regularization parameter for the interior point method. This value is added
         to the diagonal elements of C that are zero.
@@ -749,20 +750,20 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
         initial value for the matrix of absolute transition probabilities. Unless set otherwise,
         will use X = diag(pi) t, where T is a nonreversible transition matrix estimated from C,
         i.e. T_ij = c_ij / sum_k c_ik, and pi is its stationary distribution.
-    maxiter = 1000000 : int
+    maxiter : 1000000 : int
         Optional parameter with reversible = True.
         maximum number of iterations before the method exits
-    maxerr = 1e-8 : float
+    maxerr : 1e-8 : float
         Optional parameter with reversible = True.
         convergence tolerance for transition matrix estimation.
         This specifies the maximum change of the Euclidean norm of relative
         stationary probabilities (:math:`x_i = \sum_k x_{ik}`). The relative stationary probability changes
         :math:`e_i = (x_i^{(1)} - x_i^{(2)})/(x_i^{(1)} + x_i^{(2)})` are used in order to track changes in small
         probabilities. The Euclidean norm of the change vector, :math:`|e_i|_2`, is compared to maxerr.
-    return_statdist = False : Boolean
+    return_statdist : False : Boolean
         Optional parameter with reversible = True.
         If set to true, the stationary distribution is also returned
-    return_conv = False : Boolean
+    return_conv : False : Boolean
         Optional parameter with reversible = True.
         If set to true, the likelihood history and the pi_change history is returned.
     
