@@ -37,32 +37,23 @@ path = os.path.join(os.path.split(__file__)[0], 'data')
 xtcfile = os.path.join(path, 'bpti_mini.xtc')
 pdbfile = os.path.join(path, 'bpti_ca.pdb')
 
-ala_dipetide_pdb = \
-""" REMARK  ACE
-ATOM      1 1HH3 ACE     1       2.000   1.000  -0.000
-ATOM      2  CH3 ACE     1       2.000   2.090   0.000
-ATOM      3 2HH3 ACE     1       1.486   2.454   0.890
-ATOM      4 3HH3 ACE     1       1.486   2.454  -0.890
-ATOM      5  C   ACE     1       3.427   2.641  -0.000
-ATOM      6  O   ACE     1       4.391   1.877  -0.000
-ATOM      7  N   ALA     2       3.555   3.970  -0.000
-ATOM      8  H   ALA     2       2.733   4.556  -0.000
-ATOM      9  CA  ALA     2       4.853   4.614  -0.000
-ATOM     10  HA  ALA     2       5.408   4.316   0.890
-ATOM     11  CB  ALA     2       5.661   4.221  -1.232
-ATOM     12 1HB  ALA     2       5.123   4.521  -2.131
-ATOM     13 2HB  ALA     2       6.630   4.719  -1.206
-ATOM     14 3HB  ALA     2       5.809   3.141  -1.241
-ATOM     15  C   ALA     2       4.713   6.129   0.000
-ATOM     16  O   ALA     2       3.601   6.653   0.000
-ATOM     17  N   NME     3       5.846   6.835   0.000
-ATOM     18  H   NME     3       6.737   6.359  -0.000
-ATOM     19  CH3 NME     3       5.846   8.284   0.000
-ATOM     20 1HH3 NME     3       4.819   8.648   0.000
-ATOM     21 2HH3 NME     3       6.360   8.648   0.890
-ATOM     22 3HH3 NME     3       6.360   8.648  -0.890
-TER
-END
+asn_leu_pdb = """
+ATOM    559  N   ASN A  69      19.168  -0.936 -10.274  1.00 27.50           N  
+ATOM    560  CA  ASN A  69      20.356  -0.049 -10.419  1.00 25.52           C  
+ATOM    561  C   ASN A  69      21.572  -0.418  -9.653  1.00 24.26           C  
+ATOM    562  O   ASN A  69      22.687  -0.336 -10.171  1.00 24.33           O  
+ATOM    563  CB  ASN A  69      19.965   1.410 -10.149  1.00 26.49           C  
+ATOM    564  CG  ASN A  69      18.932   1.881 -11.124  1.00 26.35           C  
+ATOM    565  OD1 ASN A  69      18.835   1.322 -12.224  1.00 26.77           O  
+ATOM    566  ND2 ASN A  69      18.131   2.864 -10.745  1.00 24.85           N  
+ATOM    567  N   LEU A  70      21.419  -0.824  -8.404  1.00 23.02           N  
+ATOM    568  CA  LEU A  70      22.592  -1.275  -7.656  1.00 23.37           C  
+ATOM    569  C   LEU A  70      23.391  -2.325  -8.448  1.00 25.78           C  
+ATOM    570  O   LEU A  70      24.647  -2.315  -8.430  1.00 25.47           O  
+ATOM    571  CB  LEU A  70      22.202  -1.897  -6.306  1.00 22.17           C  
+ATOM    572  CG  LEU A  70      23.335  -2.560  -5.519  1.00 22.49           C  
+ATOM    573  CD1 LEU A  70      24.578  -1.665  -5.335  1.00 22.56           C  
+ATOM    574  CD2 LEU A  70      22.853  -3.108  -4.147  1.00 24.47           C
 """
 
 
@@ -84,7 +75,7 @@ class TestFeaturizer(unittest.TestCase):
         import tempfile
         cls.ala_pdb = tempfile.mkstemp(suffix=".pdb")[1]
         with open(cls.ala_pdb, 'w') as fh:
-            fh.write(ala_dipetide_pdb)
+            fh.write(asn_leu_pdb)
 
         super(TestFeaturizer, cls).setUpClass()
 
@@ -174,6 +165,8 @@ class TestFeaturizer(unittest.TestCase):
         Y = self.feat.map(self.traj)
         assert(np.alltrue(Y >= -np.pi))
         assert(np.alltrue(Y <= np.pi))
+        self.assertEqual(len(self.feat.describe()), self.feat.dimension())
+
 
     def test_angles_deg(self):
         sel = np.array([[1, 2, 5],
@@ -195,7 +188,8 @@ class TestFeaturizer(unittest.TestCase):
         assert(np.alltrue(Y >= -np.pi))
         assert(np.alltrue(Y <= np.pi))
 
-        self.feat.describe()
+        desc = self.feat.describe()
+        self.assertEqual(len(desc), self.feat.dimension())
 
     def test_dihedrals(self):
         sel = np.array([[1, 2, 5, 6],
@@ -206,6 +200,7 @@ class TestFeaturizer(unittest.TestCase):
         Y = self.feat.map(self.traj)
         assert(np.alltrue(Y >= -np.pi))
         assert(np.alltrue(Y <= np.pi))
+        self.assertEqual(len(self.feat.describe()), self.feat.dimension())
 
     def test_dihedrals_deg(self):
         sel = np.array([[1, 2, 5, 6],
@@ -216,6 +211,19 @@ class TestFeaturizer(unittest.TestCase):
         Y = self.feat.map(self.traj)
         assert(np.alltrue(Y >= -180.0))
         assert(np.alltrue(Y <= 180.0))
+        self.assertEqual(len(self.feat.describe()), self.feat.dimension())
+
+    def test_dihedrials_cossin(self):
+        sel = np.array([[1, 2, 5, 6],
+                        [1, 3, 8, 9],
+                        [2, 9, 10, 12]], dtype=int)
+        self.feat.add_dihedrals(sel, cossin=True)
+        assert(self.feat.dimension() == 2 * sel.shape[0])
+        Y = self.feat.map(self.traj)
+        assert(np.alltrue(Y >= -np.pi))
+        assert(np.alltrue(Y <= np.pi))
+        desc = self.feat.describe()
+        self.assertEqual(len(desc), self.feat.dimension())
 
     def test_backbone_dihedrals(self):
         self.feat = MDFeaturizer(topfile=self.ala_pdb)
@@ -226,7 +234,8 @@ class TestFeaturizer(unittest.TestCase):
         assert(np.alltrue(Y >= -np.pi))
         assert(np.alltrue(Y <= np.pi))
 
-        self.feat.describe()
+        desc = self.feat.describe()
+        self.assertEqual(len(desc), self.feat.dimension())
 
     def test_backbone_dihedrals_deg(self):
         self.feat = MDFeaturizer(topfile=self.ala_pdb)
@@ -237,6 +246,7 @@ class TestFeaturizer(unittest.TestCase):
         assert(np.alltrue(Y >= -180.0))
         assert(np.alltrue(Y <= 180.0))
         desc = self.feat.describe()
+        self.assertEqual(len(desc), self.feat.dimension())
 
     def test_backbone_dihedrals_cossin(self):
         self.feat = MDFeaturizer(topfile=self.ala_pdb)
@@ -247,8 +257,33 @@ class TestFeaturizer(unittest.TestCase):
         assert(np.alltrue(Y >= -np.pi))
         assert(np.alltrue(Y <= np.pi))
         desc = self.feat.describe()
-        assert "SIN" in desc[0]
         assert "COS" in desc[0]
+        assert "SIN" in desc[1]
+        self.assertEqual(len(desc), self.feat.dimension())
+
+    def test_backbone_dihedrials_chi(self):
+        self.feat = MDFeaturizer(topfile=self.ala_pdb)
+        self.feat.add_chi1_torsions()
+
+        traj = mdtraj.load(self.ala_pdb)
+        Y = self.feat.map(traj)
+        assert(np.alltrue(Y >= -np.pi))
+        assert(np.alltrue(Y <= np.pi))
+        desc = self.feat.describe()
+        self.assertEqual(len(desc), self.feat.dimension())
+
+    def test_backbone_dihedrials_chi_cossin(self):
+        self.feat = MDFeaturizer(topfile=self.ala_pdb)
+        self.feat.add_chi1_torsions(cossin=True)
+
+        traj = mdtraj.load(self.ala_pdb)
+        Y = self.feat.map(traj)
+        assert(np.alltrue(Y >= -np.pi))
+        assert(np.alltrue(Y <= np.pi))
+        desc = self.feat.describe()
+        assert "COS" in desc[0]
+        assert "SIN" in desc[1]
+        self.assertEqual(len(desc), self.feat.dimension())
 
     def test_custom_feature(self):
         # TODO: test me
