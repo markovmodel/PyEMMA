@@ -1,4 +1,3 @@
-
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
 # All rights reserved.
@@ -22,7 +21,6 @@
 # ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 import unittest
 import numpy as np
 
@@ -39,6 +37,34 @@ path = os.path.join(os.path.split(__file__)[0], 'data')
 xtcfile = os.path.join(path, 'bpti_mini.xtc')
 pdbfile = os.path.join(path, 'bpti_ca.pdb')
 
+ala_dipetide_pdb = \
+""" REMARK  ACE
+ATOM      1 1HH3 ACE     1       2.000   1.000  -0.000
+ATOM      2  CH3 ACE     1       2.000   2.090   0.000
+ATOM      3 2HH3 ACE     1       1.486   2.454   0.890
+ATOM      4 3HH3 ACE     1       1.486   2.454  -0.890
+ATOM      5  C   ACE     1       3.427   2.641  -0.000
+ATOM      6  O   ACE     1       4.391   1.877  -0.000
+ATOM      7  N   ALA     2       3.555   3.970  -0.000
+ATOM      8  H   ALA     2       2.733   4.556  -0.000
+ATOM      9  CA  ALA     2       4.853   4.614  -0.000
+ATOM     10  HA  ALA     2       5.408   4.316   0.890
+ATOM     11  CB  ALA     2       5.661   4.221  -1.232
+ATOM     12 1HB  ALA     2       5.123   4.521  -2.131
+ATOM     13 2HB  ALA     2       6.630   4.719  -1.206
+ATOM     14 3HB  ALA     2       5.809   3.141  -1.241
+ATOM     15  C   ALA     2       4.713   6.129   0.000
+ATOM     16  O   ALA     2       3.601   6.653   0.000
+ATOM     17  N   NME     3       5.846   6.835   0.000
+ATOM     18  H   NME     3       6.737   6.359  -0.000
+ATOM     19  CH3 NME     3       5.846   8.284   0.000
+ATOM     20 1HH3 NME     3       4.819   8.648   0.000
+ATOM     21 2HH3 NME     3       6.360   8.648   0.890
+ATOM     22 3HH3 NME     3       6.360   8.648  -0.890
+TER
+END
+"""
+
 
 def verbose_assertion_minrmsd(ref_Y, test_Y, test_obj):
     for jj in np.arange(test_Y.shape[1]):
@@ -50,7 +76,17 @@ def verbose_assertion_minrmsd(ref_Y, test_Y, test_obj):
              (ref_Y-test_Y[:,jj])[ii],
              ref_Y[ii], test_Y[ii,jj], ii)
 
+
 class TestFeaturizer(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        import tempfile
+        cls.ala_pdb = tempfile.mkstemp(suffix=".pdb")[1]
+        with open(cls.ala_pdb, 'w') as fh:
+            fh.write(ala_dipetide_pdb)
+
+        super(TestFeaturizer, cls).setUpClass()
 
     def setUp(self):
         self.pdbfile = pdbfile
@@ -149,6 +185,18 @@ class TestFeaturizer(unittest.TestCase):
         assert(np.alltrue(Y >= -180.0))
         assert(np.alltrue(Y <= 180.0))
 
+    def test_angles_cossin(self):
+        sel = np.array([[1, 2, 5],
+                        [1, 3, 8],
+                        [2, 9, 10]], dtype=int)
+        self.feat.add_angles(sel, cossin=True)
+        assert(self.feat.dimension() == 2 * sel.shape[0])
+        Y = self.feat.map(self.traj)
+        assert(np.alltrue(Y >= -np.pi))
+        assert(np.alltrue(Y <= np.pi))
+
+        self.feat.describe()
+
     def test_dihedrals(self):
         sel = np.array([[1, 2, 5, 6],
                         [1, 3, 8, 9],
@@ -170,12 +218,37 @@ class TestFeaturizer(unittest.TestCase):
         assert(np.alltrue(Y <= 180.0))
 
     def test_backbone_dihedrals(self):
-        # TODO: test me
-        pass
+        self.feat = MDFeaturizer(topfile=self.ala_pdb)
+        self.feat.add_backbone_torsions()
+
+        traj = mdtraj.load(self.ala_pdb)
+        Y = self.feat.map(traj)
+        assert(np.alltrue(Y >= -np.pi))
+        assert(np.alltrue(Y <= np.pi))
+
+        self.feat.describe()
 
     def test_backbone_dihedrals_deg(self):
-        # TODO: test me
-        pass
+        self.feat = MDFeaturizer(topfile=self.ala_pdb)
+        self.feat.add_backbone_torsions(deg=True)
+
+        traj = mdtraj.load(self.ala_pdb)
+        Y = self.feat.map(traj)
+        assert(np.alltrue(Y >= -180.0))
+        assert(np.alltrue(Y <= 180.0))
+        desc = self.feat.describe()
+
+    def test_backbone_dihedrals_cossin(self):
+        self.feat = MDFeaturizer(topfile=self.ala_pdb)
+        self.feat.add_backbone_torsions(cossin=True)
+
+        traj = mdtraj.load(self.ala_pdb)
+        Y = self.feat.map(traj)
+        assert(np.alltrue(Y >= -np.pi))
+        assert(np.alltrue(Y <= np.pi))
+        desc = self.feat.describe()
+        assert "SIN" in desc[0]
+        assert "COS" in desc[0]
 
     def test_custom_feature(self):
         # TODO: test me
