@@ -30,6 +30,7 @@ and provides them for later access.
 
 """
 import numpy as np
+from itertools import count
 from math import ceil
 from pyemma.util.annotators import shortcut
 from pyemma.util.log import getLogger
@@ -61,7 +62,6 @@ class MSM(object):
         |  's',   'second*'
 
     """
-
     def __init__(self, T, dt='1 step'):
         import pyemma.msm.analysis as msmana
         import pyemma.msm.estimation as msmest
@@ -952,6 +952,8 @@ class EstimatedMSM(MSM):
     method.
 
     """
+
+    _ids = count(0)
 
     def __init__(self, dtrajs, lag,
                  reversible=True, sparse=False, connectivity='largest', estimate=True,
