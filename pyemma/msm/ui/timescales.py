@@ -30,7 +30,7 @@ Created on Jul 26, 2014
 import numpy as np
 import warnings
 
-from pyemma.msm.estimation import cmatrix, connected_cmatrix, tmatrix, bootstrap_counts
+from pyemma.msm.estimation import cmatrix, connected_cmatrix, tmatrix, bootstrap_counts, effective_count_matrix
 from pyemma.msm.analysis import timescales
 from pyemma.util.statistics import confidence_interval
 from pyemma.util.types import ensure_dtraj_list as _ensure_dtraj_list
@@ -192,9 +192,13 @@ class ImpliedTimescales(object):
             tau = self._lags[i]
             all_ts = True
             any_ts = True
+            # compute effective counts
+            Cfull = cmatrix(self._dtrajs, tau)
+            Ceff = effective_count_matrix(self._dtrajs, tau)
+            corrlength = Cfull.sum() / Ceff.sum() # correlation length
             for k in xrange(nsample):
                 # sample count matrix
-                C = bootstrap_counts(self._dtrajs, tau)
+                C = bootstrap_counts(self._dtrajs, tau, corrlength=corrlength)
                 # estimate timescales
                 ts = self._estimate_ts_tau(C, tau)
                 # only use ts if we get all requested timescales
