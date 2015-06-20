@@ -202,25 +202,27 @@ def statistical_inefficiency(X, truncate_acf=True):
     # check input
     assert np.ndim(X[0]) == 1, 'Data must be 1-dimensional'
     N = _maxlength(X)  # length
-    # moments
+    # mean-free data
     xflat = np.concatenate(X)
-    xm2 = np.mean(xflat) ** 2
+    Xmean  = np.mean(xflat)
+    X0 = [x-Xmean for x in X]
+    # moments
     x2m = np.mean(xflat ** 2)
     # integrate damped autocorrelation
     corrsum = 0.0
     for lag in range(N):
         acf = 0.0
         n = 0.0
-        for x in X:
+        for x in X0:
             Nx = len(x)  # length of this trajectory
             if (Nx > lag):  # only use trajectories that are long enough
                 acf += np.sum(x[0:Nx-lag] * x[lag:Nx])
                 n += float(Nx-lag)
         acf /= n
-        if acf <= xm2 and truncate_acf:  # zero autocorrelation. Exit
+        if acf <= 0 and truncate_acf:  # zero autocorrelation. Exit
             break
         else:
-            corrsum += (acf - xm2) * (1.0 - float(lag/N))
+            corrsum += acf * (1.0 - (float(lag)/float(N)))
     # compute damped correlation time
     corrtime = 0.5 + corrsum / x2m
     # return statistical inefficiency
