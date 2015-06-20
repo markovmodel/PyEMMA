@@ -130,7 +130,7 @@ def bootstrap_counts_singletraj(dtraj, lagtime, n):
     return (dtraj[I], dtraj[J])
 
 
-def bootstrap_counts(dtrajs, lagtime):
+def bootstrap_counts(dtrajs, lagtime, corrlength=None):
     """
     Generates a randomly resampled count matrix given the input coordinates.
     
@@ -148,7 +148,11 @@ def bootstrap_counts(dtrajs, lagtime):
     if (lagtime >= Lmax):
         raise ValueError('Cannot estimate count matrix: lag time '
                          + str(lagtime) + ' is longer than the longest trajectory length ' + str(Lmax))
-    nsample = int(Ltot / lagtime)
+
+    # how many counts can we sample?
+    if corrlength is None:
+        corrlength = lagtime
+    nsample = int(Ltot / corrlength)
 
     # determine number of states n
     n = number_of_states(dtrajs)
