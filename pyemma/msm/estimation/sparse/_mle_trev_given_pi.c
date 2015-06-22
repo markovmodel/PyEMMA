@@ -52,14 +52,14 @@ static double distsq(const int n, const double *const a, const double *const b)
 }
 
 int _mle_trev_given_pi_sparse(
-		double * const T_data,
+		double * const T_unnormalized_data,
 		const double * const CCt_data,
-		const long long * const i_indices,
-		const long long * const j_indices,
+		const int * const i_indices,
+		const int * const j_indices,
 		const int len_CCt,
 		const double * const mu,
 		const int len_mu,
-		double maxerr,
+		const double maxerr,
 		const int maxiter)
 {
   double d_sq;
@@ -71,7 +71,7 @@ int _mle_trev_given_pi_sparse(
 
   lam= (double*)malloc(len_mu*sizeof(double));
   lam_new= (double*)malloc(len_mu*sizeof(double));
-  if(!(lam&&lam_new)) { err=1; goto error; }
+  if(!(lam && lam_new)) { err=1; goto error; }
 
   /* check mu */
   for(i=0; i<len_mu; i++) {
@@ -85,7 +85,8 @@ int _mle_trev_given_pi_sparse(
     j = j_indices[t];
     if(i<j) continue;
     lam_new[i] += 0.5*CCt_data[t];
-    lam_new[j] += 0.5*CCt_data[t];
+    if(i!=j) 
+      lam_new[j] += 0.5*CCt_data[t];
   }
   for(i=0; i<len_mu; i++) if(lam_new[i]==0) { err=3; goto error; }
 
@@ -105,13 +106,12 @@ int _mle_trev_given_pi_sparse(
       j = j_indices[t];
       if(i<j) continue;
       CCt_ij = CCt_data[t];
-      assert(CCt_ij!=0);
+      assert(CCt_ij!=0); /* should never fail */
       lam_new[i] += CCt_ij / ((mu[i]*lam[j])/(mu[j]*lam[i])+1.0);
       if(i!=j)
         lam_new[j] += CCt_ij / ((mu[j]*lam[i])/(mu[i]*lam[j])+1.0);
     }
     for(i=0; i<len_mu; i++) {
-       if(lam_new[i]==0) { err=2; goto error; }
        if(isnan(lam_new[i])) { err=2; goto error; }
     }
 
@@ -125,8 +125,11 @@ int _mle_trev_given_pi_sparse(
   for(t=0; t<len_CCt; t++) {
       i = i_indices[t];
       j = j_indices[t];
-      CCt_ij = CCt_data[t];
-      T_data[t] = CCt_ij / (lam_new[i] + lam_new[j]*mu[i]/mu[j]);
+      if(i==j) T_unnormalized_data[t] = 0; /* handle normalization later */
+      else {
+        CCt_ij = CCt_data[t];
+        T_unnormalized_data[t] = CCt_ij / (lam_new[i] + lam_new[j]*mu[i]/mu[j]);
+      }
   }
 
   if(lam) free(lam);
