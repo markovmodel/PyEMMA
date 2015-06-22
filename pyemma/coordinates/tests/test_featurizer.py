@@ -1,4 +1,3 @@
-
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
 # All rights reserved.
@@ -22,7 +21,6 @@
 # ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 import unittest
 import numpy as np
 
@@ -39,6 +37,25 @@ path = os.path.join(os.path.split(__file__)[0], 'data')
 xtcfile = os.path.join(path, 'bpti_mini.xtc')
 pdbfile = os.path.join(path, 'bpti_ca.pdb')
 
+asn_leu_pdb = """
+ATOM    559  N   ASN A  69      19.168  -0.936 -10.274  1.00 27.50           N  
+ATOM    560  CA  ASN A  69      20.356  -0.049 -10.419  1.00 25.52           C  
+ATOM    561  C   ASN A  69      21.572  -0.418  -9.653  1.00 24.26           C  
+ATOM    562  O   ASN A  69      22.687  -0.336 -10.171  1.00 24.33           O  
+ATOM    563  CB  ASN A  69      19.965   1.410 -10.149  1.00 26.49           C  
+ATOM    564  CG  ASN A  69      18.932   1.881 -11.124  1.00 26.35           C  
+ATOM    565  OD1 ASN A  69      18.835   1.322 -12.224  1.00 26.77           O  
+ATOM    566  ND2 ASN A  69      18.131   2.864 -10.745  1.00 24.85           N  
+ATOM    567  N   LEU A  70      21.419  -0.824  -8.404  1.00 23.02           N  
+ATOM    568  CA  LEU A  70      22.592  -1.275  -7.656  1.00 23.37           C  
+ATOM    569  C   LEU A  70      23.391  -2.325  -8.448  1.00 25.78           C  
+ATOM    570  O   LEU A  70      24.647  -2.315  -8.430  1.00 25.47           O  
+ATOM    571  CB  LEU A  70      22.202  -1.897  -6.306  1.00 22.17           C  
+ATOM    572  CG  LEU A  70      23.335  -2.560  -5.519  1.00 22.49           C  
+ATOM    573  CD1 LEU A  70      24.578  -1.665  -5.335  1.00 22.56           C  
+ATOM    574  CD2 LEU A  70      22.853  -3.108  -4.147  1.00 24.47           C
+"""
+
 
 def verbose_assertion_minrmsd(ref_Y, test_Y, test_obj):
     for jj in np.arange(test_Y.shape[1]):
@@ -50,7 +67,25 @@ def verbose_assertion_minrmsd(ref_Y, test_Y, test_obj):
              (ref_Y-test_Y[:,jj])[ii],
              ref_Y[ii], test_Y[ii,jj], ii)
 
+
 class TestFeaturizer(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        import tempfile
+        cls.asn_leu_pdbfile = tempfile.mkstemp(suffix=".pdb")[1]
+        with open(cls.asn_leu_pdbfile, 'w') as fh:
+            fh.write(asn_leu_pdb)
+
+        super(TestFeaturizer, cls).setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        try:
+            os.unlink(cls.asn_leu_pdbfile)
+        except EnvironmentError:
+            pass
+        super(TestFeaturizer, cls).tearDownClass()
 
     def setUp(self):
         self.pdbfile = pdbfile
@@ -138,6 +173,8 @@ class TestFeaturizer(unittest.TestCase):
         Y = self.feat.map(self.traj)
         assert(np.alltrue(Y >= -np.pi))
         assert(np.alltrue(Y <= np.pi))
+        self.assertEqual(len(self.feat.describe()), self.feat.dimension())
+
 
     def test_angles_deg(self):
         sel = np.array([[1, 2, 5],
@@ -149,6 +186,19 @@ class TestFeaturizer(unittest.TestCase):
         assert(np.alltrue(Y >= -180.0))
         assert(np.alltrue(Y <= 180.0))
 
+    def test_angles_cossin(self):
+        sel = np.array([[1, 2, 5],
+                        [1, 3, 8],
+                        [2, 9, 10]], dtype=int)
+        self.feat.add_angles(sel, cossin=True)
+        assert(self.feat.dimension() == 2 * sel.shape[0])
+        Y = self.feat.map(self.traj)
+        assert(np.alltrue(Y >= -np.pi))
+        assert(np.alltrue(Y <= np.pi))
+
+        desc = self.feat.describe()
+        self.assertEqual(len(desc), self.feat.dimension())
+
     def test_dihedrals(self):
         sel = np.array([[1, 2, 5, 6],
                         [1, 3, 8, 9],
@@ -158,6 +208,7 @@ class TestFeaturizer(unittest.TestCase):
         Y = self.feat.map(self.traj)
         assert(np.alltrue(Y >= -np.pi))
         assert(np.alltrue(Y <= np.pi))
+        self.assertEqual(len(self.feat.describe()), self.feat.dimension())
 
     def test_dihedrals_deg(self):
         sel = np.array([[1, 2, 5, 6],
@@ -168,14 +219,79 @@ class TestFeaturizer(unittest.TestCase):
         Y = self.feat.map(self.traj)
         assert(np.alltrue(Y >= -180.0))
         assert(np.alltrue(Y <= 180.0))
+        self.assertEqual(len(self.feat.describe()), self.feat.dimension())
+
+    def test_dihedrials_cossin(self):
+        sel = np.array([[1, 2, 5, 6],
+                        [1, 3, 8, 9],
+                        [2, 9, 10, 12]], dtype=int)
+        self.feat.add_dihedrals(sel, cossin=True)
+        assert(self.feat.dimension() == 2 * sel.shape[0])
+        Y = self.feat.map(self.traj)
+        assert(np.alltrue(Y >= -np.pi))
+        assert(np.alltrue(Y <= np.pi))
+        desc = self.feat.describe()
+        self.assertEqual(len(desc), self.feat.dimension())
 
     def test_backbone_dihedrals(self):
-        # TODO: test me
-        pass
+        self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
+        self.feat.add_backbone_torsions()
+
+        traj = mdtraj.load(self.asn_leu_pdbfile)
+        Y = self.feat.map(traj)
+        assert(np.alltrue(Y >= -np.pi))
+        assert(np.alltrue(Y <= np.pi))
+
+        desc = self.feat.describe()
+        self.assertEqual(len(desc), self.feat.dimension())
 
     def test_backbone_dihedrals_deg(self):
-        # TODO: test me
-        pass
+        self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
+        self.feat.add_backbone_torsions(deg=True)
+
+        traj = mdtraj.load(self.asn_leu_pdbfile)
+        Y = self.feat.map(traj)
+        assert(np.alltrue(Y >= -180.0))
+        assert(np.alltrue(Y <= 180.0))
+        desc = self.feat.describe()
+        self.assertEqual(len(desc), self.feat.dimension())
+
+    def test_backbone_dihedrals_cossin(self):
+        self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
+        self.feat.add_backbone_torsions(cossin=True)
+
+        traj = mdtraj.load(self.asn_leu_pdbfile)
+        Y = self.feat.map(traj)
+        assert(np.alltrue(Y >= -np.pi))
+        assert(np.alltrue(Y <= np.pi))
+        desc = self.feat.describe()
+        assert "COS" in desc[0]
+        assert "SIN" in desc[1]
+        self.assertEqual(len(desc), self.feat.dimension())
+
+    def test_backbone_dihedrials_chi(self):
+        self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
+        self.feat.add_chi1_torsions()
+
+        traj = mdtraj.load(self.asn_leu_pdbfile)
+        Y = self.feat.map(traj)
+        assert(np.alltrue(Y >= -np.pi))
+        assert(np.alltrue(Y <= np.pi))
+        desc = self.feat.describe()
+        self.assertEqual(len(desc), self.feat.dimension())
+
+    def test_backbone_dihedrials_chi_cossin(self):
+        self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
+        self.feat.add_chi1_torsions(cossin=True)
+
+        traj = mdtraj.load(self.asn_leu_pdbfile)
+        Y = self.feat.map(traj)
+        assert(np.alltrue(Y >= -np.pi))
+        assert(np.alltrue(Y <= np.pi))
+        desc = self.feat.describe()
+        assert "COS" in desc[0]
+        assert "SIN" in desc[1]
+        self.assertEqual(len(desc), self.feat.dimension())
 
     def test_custom_feature(self):
         # TODO: test me
