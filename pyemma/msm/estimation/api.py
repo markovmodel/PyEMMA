@@ -726,7 +726,7 @@ def prior_rev(C, alpha=-1.0):
 ################################################################################
 
 @shortcut('tmatrix')
-def transition_matrix(C, reversible=False, mu=None, auto_sparse=True, **kwargs):
+def transition_matrix(C, reversible=False, mu=None, method='auto', **kwargs):
     r"""Estimate the transition matrix from the given countmatrix.   
     
     Parameters
@@ -740,18 +740,15 @@ def transition_matrix(C, reversible=False, mu=None, auto_sparse=True, **kwargs):
         space of stochastic matrices.
     mu : array_like
         The stationary distribution of the MLE transition matrix.
-    auto_sparse : bool (optional, default=True)
-        Tf true: automatically choose the sparse or the dense
-        implementation, whichever is more efficient. If false, choose
-        the implementation that matches the input type.
-        The criterion to select the sparse implementation is 3*n<dim^2
-        where n is the number of non-zero elements in C and dim is the
-        dimension of C.
+    method : string (one of 'auto', 'dense' and 'sparse', optional, default='auto')
+        Select which implementation to use for the estimation. 'dense' always
+        selects the dense implementation, 'sparse' always selects the sparse
+        one. 'auto' selectes the most efficient implementation according to
+        the sparsity structure of the matrix: if the occupation of the C
+        matrix is less then one third, select sparse. Else select dense.
+        The type of the T matrix returned always matches the type of the 
+        C matrix, irrespective of the method that was used to compute it.
     **kwargs: Optional algorithm-specific parameters. See below for special cases
-    eps = 1E-6 : float
-        Optional parameter with reversible = True and mu!=None.
-        Regularization parameter for the interior point method. This value is added
-        to the diagonal elements of C that are zero.
     Xinit : (M, M) ndarray 
         Optional parameter with reversible = True.
         initial value for the matrix of absolute transition probabilities. Unless set otherwise,
@@ -848,7 +845,11 @@ def transition_matrix(C, reversible=False, mu=None, auto_sparse=True, **kwargs):
     else:
         raise NotImplementedError('C has an unknown type.')
 
-    if auto_sparse:
+    if method == 'dense':
+        sparse_computation = False
+    elif method == 'sparse':
+        sparse_computation = True
+    elif method == 'auto':
         # heuristically determine whether is't more efficient to do a dense of sparse computation
         if sparse_input_type:
             dof = C.getnnz()
@@ -860,7 +861,8 @@ def transition_matrix(C, reversible=False, mu=None, auto_sparse=True, **kwargs):
         else:
             sparse_computation = True
     else:
-        sparse_computation = sparse_input_type
+        raise ValueError(('method="%s" is no valid choice. It should be one of'
+                          '"dense", "sparse" or "auto".')%method)
 
     # convert input type
     if sparse_computation and not sparse_input_type:
