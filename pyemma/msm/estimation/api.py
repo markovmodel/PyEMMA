@@ -38,6 +38,7 @@ import warnings
 import numpy as np
 
 from scipy.sparse import csr_matrix
+from scipy.sparse import coo_matrix
 from scipy.sparse import issparse
 from scipy.sparse.sputils import isdense
 
@@ -725,7 +726,7 @@ def prior_rev(C, alpha=-1.0):
 ################################################################################
 
 @shortcut('tmatrix')
-def transition_matrix(C, reversible=False, mu=None, **kwargs):
+def transition_matrix(C, reversible=False, mu=None, auto_sparse=True, **kwargs):
     r"""Estimate the transition matrix from the given countmatrix.   
     
     Parameters
@@ -739,9 +740,15 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
         space of stochastic matrices.
     mu : array_like
         The stationary distribution of the MLE transition matrix.
-    **kwargs:
-        Optional algorithm-specific parameters. See below for special cases
-    eps : 1E-6 : float
+    auto_sparse : bool (optional, default=True)
+        Tf true: automatically choose the sparse or the dense
+        implementation, whichever is more efficient. If false, choose
+        the implementation that matches the input type.
+        The criterion to select the sparse implementation is 3*n<dim^2
+        where n is the number of non-zero elements in C and dim is the
+        dimension of C.
+    **kwargs: Optional algorithm-specific parameters. See below for special cases
+    eps = 1E-6 : float
         Optional parameter with reversible = True and mu!=None.
         Regularization parameter for the interior point method. This value is added
         to the diagonal elements of C that are zero.
@@ -835,34 +842,62 @@ def transition_matrix(C, reversible=False, mu=None, **kwargs):
 
     """
     if issparse(C):
-        sparse_mode = True
+        sparse_input_type = True
     elif isdense(C):
-        sparse_mode = False
+        sparse_input_type = False
     else:
         raise NotImplementedError('C has an unknown type.')
 
+    if auto_sparse:
+        # heuristically determine whether is't more efficient to do a dense of sparse computation
+        if sparse_input_type:
+            dof = C.getnnz()
+        else:
+            dof = np.count_nonzero(C)
+        dimension = C.shape[0]
+        if dimension*dimension < 3*dof:
+            sparse_computation = False
+        else:
+            sparse_computation = True
+    else:
+        sparse_computation = sparse_input_type
+
+    # convert input type
+    if sparse_computation and not sparse_input_type:
+        C = coo_matrix(C)
+    if not sparse_computation and sparse_input_type:
+        C = C.toarray()
+
     if reversible:
         if mu is None:
-            if sparse_mode:
-                return sparse.mle_trev.mle_trev(C, **kwargs)
+            if sparse_computation:
+                T = sparse.mle_trev.mle_trev(C, **kwargs)
             else:
-                return dense.transition_matrix.estimate_transition_matrix_reversible(C, **kwargs)
+                T = dense.transition_matrix.estimate_transition_matrix_reversible(C, **kwargs)
         else:
-            if sparse_mode:
+            if sparse_computation:
                 # Sparse, reversible, fixed pi (currently using dense with sparse conversion)
-                return sparse.mle_trev_given_pi.mle_trev_given_pi(C, mu, **kwargs)
+                T = sparse.mle_trev_given_pi.mle_trev_given_pi(C, mu, **kwargs)
             else:
-                return dense.mle_trev_given_pi.mle_trev_given_pi(C, mu, **kwargs)
+                T = dense.mle_trev_given_pi.mle_trev_given_pi(C, mu, **kwargs)
     else:  # nonreversible estimation
         if mu is None:
-            if sparse_mode:
+            if sparse_computation:
                 # Sparse,  nonreversible
-                return sparse.transition_matrix.transition_matrix_non_reversible(C)
+                T = sparse.transition_matrix.transition_matrix_non_reversible(C)
             else:
                 # Dense,  nonreversible
-                return dense.transition_matrix.transition_matrix_non_reversible(C)
+                T = dense.transition_matrix.transition_matrix_non_reversible(C)
         else:
             raise NotImplementedError('nonreversible mle with fixed stationary distribution not implemented.')
+
+    # convert return type
+    if sparse_computation and not sparse_input_type:
+        return T.toarray()
+    elif not sparse_computation and sparse_input_type:
+        return csr_matrix(T)
+    else:
+        return T
 
 
 # DONE: FN+Jan+Ben Implement in Python directly
