@@ -6,8 +6,10 @@ Created on 22.05.2015
 import unittest
 import numpy as np
 
-from pyemma.plots.networks import plot_flux
+from pyemma.plots.networks import plot_flux, plot_markov_model
 from pyemma.msm.flux.api import tpt
+import pyemma
+import matplotlib
 
 
 class TestNetworkPlot(unittest.TestCase):
@@ -26,8 +28,24 @@ class TestNetworkPlot(unittest.TestCase):
 
     def test_flux(self):
         r = tpt(self.P, self.A, self.B)
-        plot_flux(r)
+        fig, pos = plot_flux(r)
+        assert type(fig) is matplotlib.figure.Figure
+#        matplotlib.pyplot.show(fig)
+        # x values should be close to committor
+        np.testing.assert_allclose(pos[:,0], r.committor)
 
+    def test_random(self):
+        C = np.random.randint(0, 1000, size=(10, 10))
+        P = pyemma.msm.estimation.transition_matrix(C, reversible=True)
+        r = tpt(P, [0], [len(C)-1])
+        fig, pos = plot_flux(r)
+
+    def test_plot_markov_model(self):
+        from pyemma.msm.analysis import stationary_distribution
+        fig, pos = plot_markov_model(self.P)
+        assert type(fig) is matplotlib.figure.Figure
+
+        #matplotlib.pyplot.show(fig)
 
 if __name__ == "__main__":
     unittest.main()
