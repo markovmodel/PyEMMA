@@ -11,7 +11,7 @@ from pyemma.util import types as _types
 
 
 class MaximumLikelihoodHMSM(_Estimator):
-    """ML Estimator for a HMSM given a MSM
+    """Maximum likelihood estimator for a Hidden MSM given a MSM
 
     Parameters
     ----------
