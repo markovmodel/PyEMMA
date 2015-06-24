@@ -18,8 +18,8 @@ class BayesianMSM(_Estimator):
     nstep : int, optional, default=None
         number of Gibbs sampling steps for each transition matrix used.
         If None, nstep will be determined automatically
-    msm : :class:`HMSM <pyemma.msm.ui.hmsm.HMSM>`
-        Single-point estimate of HMSM object around which errors will be evaluated
+    msm : :class:`MSM <pyemma.msm.models.MSM>`
+        Single-point estimate of MSM object around which errors will be evaluated
     reversible : bool, optional, default = True
         If true compute reversible MSM, else non-reversible MSM
     sparse : bool, optional, default = False
