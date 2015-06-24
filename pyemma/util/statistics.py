@@ -221,7 +221,7 @@ def statistical_inefficiency(X, truncate_acf=True):
         acf /= n
         if acf <= 0 and truncate_acf:  # zero autocorrelation. Exit
             break
-        else:
+        elif lag > 0:  # start integrating at lag 1 (effect of lag 0 is contained in the 0.5 below
             corrsum += acf * (1.0 - (float(lag)/float(N)))
     # compute damped correlation time
     corrtime = 0.5 + corrsum / x2m
