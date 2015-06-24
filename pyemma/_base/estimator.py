@@ -221,7 +221,7 @@ class Estimator(_SklearnEstimator):
         raise NotImplementedError('You need to overload the _estimate() method in your Estimator implementation!')
 
     def fit(self, X):
-        """ For compatibility with sklearn. Requires that X has been announced in the constructor
+        """ For compatibility with sklearn.
         :param X:
         :return:
         """

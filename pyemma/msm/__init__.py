@@ -29,26 +29,48 @@ r"""
 
 User API
 ========
+For most users, the following high-level functions provide are sufficient to estimate msm models from data.
+Expert users may want to construct Estimators or Models (see below) directly.
 
 .. autosummary::
    :toctree: generated/
 
-   its
    markov_model
+   timescales_msm
+   its
    estimate_markov_model
+   bayesian_markov_model
    tpt
    cktest
+   timescales_hmsm
+   estimate_hidden_markov_model
+   bayesian_hidden_markov_model
 
-**MSM classes** encapsulating complex functionality. You don't need to construct these classes yourself, as this
-is done by the user API functions above. Find here a documentation how to extract features from them.
+
+**Estimators** to generate models from data. If you are not an expert user, use the API functions above.
 
 .. autosummary::
    :toctree: generated/
 
-   ui.MSM
-   ui.EstimatedMSM
-   ui.ImpliedTimescales
-   flux.ReactiveFlux
+   estimators.ImpliedTimescales
+   estimators.MaximumLikelihoodMSM
+   estimators.BayesianMSM
+   estimators.MaximumLikelihoodHMSM
+   estimators.BayesianHMSM
+
+
+**Models** of the kinetics or stationary properties of the data. If you are not an expert user, use API functions above.
+
+.. autosummary::
+   :toctree: generated/
+
+   MSM
+   EstimatedMSM
+   SampledMSM
+   HMSM
+   EstimatedHMSM
+   SampledHMSM
+   ReactiveFlux
 
 
 MSM functions (low-level API)
