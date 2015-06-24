@@ -173,9 +173,9 @@ class MSM(object):
 
         if self._reversible:
             # TODO: this should be using reversible eigenvalue decomposition!
-            self._eigenvalues = anaeig(self._T, k=neig, ncv=self._ncv)
+            self._eigenvalues = anaeig(self._T, k=neig, ncv=self._ncv, reversible=True, mu=self.stationary_distribution)
         else:
-            self._eigenvalues = anaeig(self._T, k=neig, ncv=self._ncv)
+            self._eigenvalues = anaeig(self._T, k=neig, ncv=self._ncv, reversible=False)
 
     def _ensure_eigenvalues(self, neig=None):
         """ Ensures that at least neig eigenvalues have been computed """
