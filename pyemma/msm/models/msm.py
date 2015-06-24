@@ -167,66 +167,87 @@ class MSM(object):
             self._mu = _statdist(self._T)
             return self._mu
 
-    def _compute_eigenvalues(self):
+    def _compute_eigenvalues(self, neig):
         """ Conducts the eigenvalue decomposition and stores k eigenvalues, left and right eigenvectors """
         from pyemma.msm.analysis import eigenvalues as anaeig
 
         if self._reversible:
             # TODO: this should be using reversible eigenvalue decomposition!
-            self._eigenvalues = anaeig(self._T, k=self._neig, ncv=self._ncv)
+            self._eigenvalues = anaeig(self._T, k=neig, ncv=self._ncv)
         else:
-            self._eigenvalues = anaeig(self._T, k=self._neig, ncv=self._ncv)
+            self._eigenvalues = anaeig(self._T, k=neig, ncv=self._ncv)
 
-    def _compute_eigendecomposition(self):
+    def _ensure_eigenvalues(self, neig=None):
+        """ Ensures that at least neig eigenvalues have been computed """
+        if neig is None:
+            neig = self._neig
+        # ensure that eigenvalue decomposition with k components is done.
+        try:
+            m = len(self._eigenvalues)  # this will raise and exception if self._eigenvalues doesn't exist yet.
+            if m < neig:
+                # not enough eigenpairs present - recompute:
+                self._compute_eigenvalues(neig)
+        except:
+            # no eigendecomposition yet - compute:
+            self._compute_eigenvalues(neig)
+
+    def _compute_eigendecomposition(self, neig):
         """ Conducts the eigenvalue decomposition and stores k eigenvalues, left and right eigenvectors """
         from pyemma.msm.analysis import rdl_decomposition
 
         if self._reversible:
-            self._R, self._D, self._L = rdl_decomposition(self._T, k=self._neig, norm='reversible', ncv=self._ncv)
+            self._R, self._D, self._L = rdl_decomposition(self._T, k=neig, norm='reversible', ncv=self._ncv)
             # everything must be real-valued
             self._R = self._R.real
             self._D = self._D.real
             self._L = self._L.real
         else:
-            self._R, self._D, self._L = rdl_decomposition(self._T, k=self._neig, norm='standard', ncv=self._ncv)
+            self._R, self._D, self._L = rdl_decomposition(self._T, k=neig, norm='standard', ncv=self._ncv)
         self._eigenvalues = np.diag(self._D)
 
-    def _ensure_eigendecomposition(self, neig):
+    def _ensure_eigendecomposition(self, neig=None):
         """Ensures that eigendecomposition has been performed with at least neig eigenpairs
 
         neig : int
-            number of eigenpairs needed. This setting is mandatory for sparse transition matrices
-            (if you set sparse=True in the initialization). For dense matrices, k will be ignored
-            as all eigenvalues and eigenvectors will be computed and stored.
+            number of eigenpairs needed. If not given the default value will be used - see __init__()
 
         """
+        if neig is None:
+            neig = self._neig
         # ensure that eigenvalue decomposition with k components is done.
         try:
-            m = len(self._eigenvalues)  # this will raise and exception if self._eigenvalues doesn't exist yet.
-            if m < self._neig:
+            m = self._D.shape[0]  # this will raise and exception if self._D doesn't exist yet.
+            if m < neig:
                 # not enough eigenpairs present - recompute:
-                self._compute_eigendecomposition()
+                self._compute_eigendecomposition(neig)
         except:
             # no eigendecomposition yet - compute:
-            self._compute_eigendecomposition()
+            self._compute_eigendecomposition(neig)
 
-    @property
-    def eigenvalues(self):
-        """ Transition matrix eigenvalues
+    def eigenvalues(self, k=None):
+        """Compute the transition matrix eigenvalues
+
+        Parameters
+        ----------
+        k : int
+            number of eigenvalues to be returned. By default will return all available eigenvalues
 
         Returns
         -------
         ts : ndarray(m)
-            transition matrix eigenvalues :math:`\lambda_i, i = 1,...,k`., sorted by descending norm.
+            transition matrix eigenvalues :math:`\lambda_i, i = 1,...,neig`., sorted by descending norm.
 
         """
-        self._ensure_eigendecomposition()
-        return self._eigenvalues
-        # return self._eigenvalues[:k]
+        self._ensure_eigenvalues(neig=k)
+        return self._eigenvalues[:k]
 
-    @property
-    def eigenvectors_left(self):
-        """ Left transition matrix eigenvectors
+    def eigenvectors_left(self, k=None):
+        """Compute the left transition matrix eigenvectors
+
+        Parameters
+        ----------
+        k : int
+            number of eigenvectors to be returned. By default all available eigenvectors.
 
         Returns
         -------
@@ -234,28 +255,34 @@ class MSM(object):
             left eigenvectors in a row matrix. l_ij is the j'th component of the i'th left eigenvector
 
         """
-        self._ensure_eigendecomposition()
-        return self._L
-        # return self._L[:k, :]
+        self._ensure_eigendecomposition(neig=k)
+        return self._L[:k, :]
 
-    @property
-    def eigenvectors_right(self):
-        """ Right transition matrix eigenvectors
+    def eigenvectors_right(self, k=None):
+        """Compute the right transition matrix eigenvectors
+
+        Parameters
+        ----------
+        k : int
+            number of eigenvectors to be computed. By default all available eigenvectors.
 
         Returns
         -------
-        R : ndarray(n,k)
+        R : ndarray(n,neig)
             right eigenvectors in a column matrix. r_ij is the i'th component of the j'th right eigenvector
 
         """
-        self._ensure_eigendecomposition()
-        return self._R
-        # return self._R[:, :k]
+        self._ensure_eigendecomposition(neig=k)
+        return self._R[:, :k]
 
-    @property
-    def timescales(self):
+    def timescales(self, k=None):
         """
         The relaxation timescales corresponding to the eigenvalues
+
+        Parameters
+        ----------
+        k : int
+            number of timescales to be returned. By default all available eigenvalues, minus 1.
 
         Returns
         -------
@@ -264,18 +291,17 @@ class MSM(object):
             defined by :math:`-\tau / ln | \lambda_i |, i = 2,...,k+1`.
 
         """
-        # neig = k
-        # if k is not None:
-        #     neig += 1
-        self._ensure_eigendecomposition()
+        if k is None:
+            self._ensure_eigenvalues()
+        else:
+            self._ensure_eigenvalues(neig=k+1)
         from pyemma.msm.analysis.dense.decomposition import timescales_from_eigenvalues as _timescales
 
         ts = _timescales(self._eigenvalues, tau=self._lag)
-        return ts[1:]
-        # if neig is None:
-        #     return ts[1:]
-        # else:
-        #     return ts[1:neig]  # exclude the stationary process
+        if k is None:
+            return ts[1:]
+        else:
+            return ts[1:k]  # exclude the stationary process
 
     def _assert_in_active(self, A):
         """
