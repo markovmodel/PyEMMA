@@ -60,7 +60,13 @@ class MSM(object):
         |  'us',  'microsecond*'
         |  'ms',  'millisecond*'
         |  's',   'second*'
-
+    neig : int or None
+        The number of eigenvalues / eigenvectors to be kept. If set to None, defaults will be used.
+        For a dense MSM the default is all eigenvalues. For a sparse MSM the default is 10.
+    ncv : int (optional)
+        Relevant for eigenvalue decomposition of reversible transition matrices.
+        ncv is the number of Lanczos vectors generated, `ncv` must be greater than k;
+        it is recommended that ncv > 2*k
 
     """
     def __init__(self, T, dt='1 step', neig=None, ncv=None):
@@ -96,22 +102,6 @@ class MSM(object):
         self._sparse = issparse(T)
 
         # set eigenvalue decomposition parameters
-        self.set_eig_params(neig, ncv)
-
-    def set_eig_params(self, neig, ncv=None):
-        """ Sets parameters for eigendecomposition
-
-        Parameters
-        ----------
-        k : int or None
-            The number of eigenvalues / eigenvectors to be kept. If set to None, defaults will be used.
-            For a dense MSM the default is all eigenvalues. For a sparse MSM the default is 10.
-        ncv : int (optional)
-            Relevant for eigenvalue decomposition of reversible transition matrices.
-            ncv is the number of Lanczos vectors generated, `ncv` must be greater than k;
-            it is recommended that ncv > 2*k
-
-        """
         if neig is None:
             if self._sparse:
                 self._neig = 10
@@ -174,11 +164,20 @@ class MSM(object):
             return self._mu
         except:
             from pyemma.msm.analysis import stationary_distribution as _statdist
-
             self._mu = _statdist(self._T)
             return self._mu
 
-    def _do_eigendecomposition(self):
+    def _compute_eigenvalues(self):
+        """ Conducts the eigenvalue decomposition and stores k eigenvalues, left and right eigenvectors """
+        from pyemma.msm.analysis import eigenvalues as anaeig
+
+        if self._reversible:
+            # TODO: this should be using reversible eigenvalue decomposition!
+            self._eigenvalues = anaeig(self._T, k=self._neig, ncv=self._ncv)
+        else:
+            self._eigenvalues = anaeig(self._T, k=self._neig, ncv=self._ncv)
+
+    def _compute_eigendecomposition(self):
         """ Conducts the eigenvalue decomposition and stores k eigenvalues, left and right eigenvectors """
         from pyemma.msm.analysis import rdl_decomposition
 
@@ -192,17 +191,13 @@ class MSM(object):
             self._R, self._D, self._L = rdl_decomposition(self._T, k=self._neig, norm='standard', ncv=self._ncv)
         self._eigenvalues = np.diag(self._D)
 
-    def _ensure_eigendecomposition(self):
-        """Ensures that eigendecomposition has been performed with at least k eigenpairs
+    def _ensure_eigendecomposition(self, neig):
+        """Ensures that eigendecomposition has been performed with at least neig eigenpairs
 
-        k : int
+        neig : int
             number of eigenpairs needed. This setting is mandatory for sparse transition matrices
             (if you set sparse=True in the initialization). For dense matrices, k will be ignored
             as all eigenvalues and eigenvectors will be computed and stored.
-        ncv : int (optional)
-            Relevant for eigenvalue decomposition of reversible transition matrices.
-            ncv is the number of Lanczos vectors generated, `ncv` must be greater than k;
-            it is recommended that ncv > 2*k
 
         """
         # ensure that eigenvalue decomposition with k components is done.
@@ -210,10 +205,10 @@ class MSM(object):
             m = len(self._eigenvalues)  # this will raise and exception if self._eigenvalues doesn't exist yet.
             if m < self._neig:
                 # not enough eigenpairs present - recompute:
-                self._do_eigendecomposition()
+                self._compute_eigendecomposition()
         except:
             # no eigendecomposition yet - compute:
-            self._do_eigendecomposition()
+            self._compute_eigendecomposition()
 
     @property
     def eigenvalues(self):
