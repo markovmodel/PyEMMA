@@ -107,7 +107,7 @@ class TestStride(unittest.TestCase):
         for stride in xrange(1, 100, 23):
             r = coor.source(self.trajnames, top=self.temppdb)
             tau = 5
-            t = coor.tica(r, lag=tau, dim=2, force_eigenvalues_le_one=True)
+            t = coor.tica(r, lag=tau, dim=2, force_eigenvalues_le_one=False)
             # force_eigenvalues_le_one=True enables an internal consitency check in TICA
             t.parametrize(stride=stride)
             self.assertTrue(np.all(t.eigenvalues <= 1.0+1.E-12))

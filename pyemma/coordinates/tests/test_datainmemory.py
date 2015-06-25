@@ -239,5 +239,18 @@ class TestDataInMemory(unittest.TestCase):
         for traj, input_traj in zip(lagged_trajs, lagged_0):
             np.testing.assert_equal(traj.reshape(input_traj.shape), input_traj)
 
+    def test_lagged_stridden_access(self):
+        data = np.random.random((1000, 2))
+        reader = DataInMemory(data)
+        strides = [2, 3, 5, 7, 15]
+        lags = [1, 3, 7, 10, 30]
+        for stride in strides:
+            for lag in lags:
+                chunks = []
+                for _, _, Y in reader.iterator(stride, lag):
+                    chunks.append(Y)
+                chunks = np.vstack(chunks)
+                np.testing.assert_equal(chunks, data[lag::stride])
+
 if __name__ == "__main__":
     unittest.main()
