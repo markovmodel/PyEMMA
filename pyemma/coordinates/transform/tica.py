@@ -134,7 +134,8 @@ class TICA(Transformer):
         self._progress_mean = None
         self._progress_cov = None
 
-
+        # skipped trajectories
+        self._skipped_trajs = []
     @property
     def lag(self):
         """ lag time of correlation matrix :math:`C_{\tau}` """
@@ -285,7 +286,7 @@ class TICA(Transformer):
                 show_progressbar(self._progress_cov)
 
             else:
-                self._logger.warning("trajectory nr %i too short, skipping it" % itraj)
+                self._skipped_trajs.append(itraj)
 
             if last_chunk:
                 return True  # finished!
@@ -316,6 +317,12 @@ class TICA(Transformer):
         # compute cumulative variance
         self.cumvar = np.cumsum(self.eigenvalues ** 2)
         self.cumvar /= self.cumvar[-1]
+
+
+        if len(self._skipped_trajs) >= 1:
+            self._skipped_trajs = np.asarray(self._skipped_trajs)
+            self._logger.warn("Had to skip %u trajectories for being too short. "
+                              "Their indexes are in self._skipped_trajs."%len(self._skipped_trajs))
 
     def _map_array(self, X):
         r"""Projects the data onto the dominant independent components.
