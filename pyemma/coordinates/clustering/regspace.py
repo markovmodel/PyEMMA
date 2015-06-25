@@ -21,6 +21,7 @@
 # ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+from pyemma.util.exceptions import NotConvergedWarning
 
 '''
 Created on 26.01.2015
@@ -128,8 +129,6 @@ class RegularSpaceClustering(AbstractClustering):
                                self.metric, self._max_centers)
             # finished regularly
             if last_chunk:
-                self.clustercenters = np.array(self._clustercenters)
-                self.n_clusters = self.clustercenters.shape[0]
                 return True  # finished!
         except RuntimeError:
             msg = 'Maximum number of cluster centers reached.' \
@@ -140,12 +139,15 @@ class RegularSpaceClustering(AbstractClustering):
             # finished anyway, because we have no more space for clusters. Rest of trajectory has no effect
             self.clustercenters = np.array(self._clustercenters)
             self.n_clusters = self.clustercenters.shape[0]
-
-            return True
+            # TODO: pass amount of processed data
+            raise NotConvergedWarning
 
         return False
 
     def _param_finish(self):
+        self.clustercenters = np.array(self._clustercenters)
+        self.n_clusters = self.clustercenters.shape[0]
+
         if len(self._clustercenters) == 1:
             self._logger.warning('Have found only one center according to '
                                  'minimum distance requirement of %f' % self.dmin)

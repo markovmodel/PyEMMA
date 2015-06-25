@@ -123,7 +123,8 @@ class TestRegSpaceClustering(unittest.TestCase):
 
     def test_too_small_dmin_should_warn(self):
         self.clustering.dmin = 1e-8
-        self.clustering.max_centers = 50
+        max_centers = 50
+        self.clustering.max_centers = max_centers
         import warnings
         with warnings.catch_warnings(record=True) as w:
             # Cause all warnings to always be triggered.
@@ -131,6 +132,14 @@ class TestRegSpaceClustering(unittest.TestCase):
             # Trigger a warning.
             self.clustering.parametrize()
             assert w
+            assert len(w) == 1
+
+            assert len(self.clustering.clustercenters) == max_centers
+
+            # assign data
+            out = self.clustering.get_output()
+            assert len(out) == self.clustering.number_of_trajectories()
+            assert len(out[0]) == self.clustering.trajectory_lengths()[0]
 
 if __name__ == "__main__":
     unittest.main()
