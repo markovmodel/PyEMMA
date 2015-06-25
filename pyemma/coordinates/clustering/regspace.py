@@ -81,6 +81,7 @@ class RegularSpaceClustering(AbstractClustering):
         # temporary list to store cluster centers
         self._clustercenters = []
         self._max_centers = max_centers
+        self._has_reached_max = False
 
     @doc_inherit
     def describe(self):
@@ -136,8 +137,12 @@ class RegularSpaceClustering(AbstractClustering):
             msg = 'Maximum number of cluster centers reached.' \
                   ' Consider increasing max_centers or choose' \
                   ' a larger minimum distance, dmin.'
-            self._logger.warning(msg)
             warnings.warn(msg)
+
+            if not self._has_reached_max:
+                self._logger.warning(msg)
+                self._has_reached_max = True
+
             # finished anyway, because we have no more space for clusters. Rest of trajectory has no effect
             self.clustercenters = np.array(self._clustercenters)
             self.n_clusters = self.clustercenters.shape[0]
