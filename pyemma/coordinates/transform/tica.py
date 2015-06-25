@@ -272,7 +272,7 @@ class TICA(Transformer):
 
         elif ipass == 1:
 
-            if self.trajectory_length(itraj, stride=stride) > self._lag:
+            if self.trajectory_length(itraj, stride=stride) - self._lag > 0:
                 self._N_cov_tau += 2.0 * np.shape(Y)[0]
                 # _N_cov_tau is muliplied by 2, because we later symmetrize
                 # cov_tau, so we are actually using twice the number of samples
