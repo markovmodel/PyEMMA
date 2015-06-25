@@ -306,5 +306,16 @@ class TestTICAExtensive(unittest.TestCase):
 
         assert np.isclose(test_corr, true_corr).all()
 
+    def test_skipped_trajs(self):
+
+        feature_trajs = [np.arange(10),
+                         np.arange(11),
+                         np.arange(12),
+                         np.arange(13)]
+
+        tica_obj = tica(data=feature_trajs, lag=11)
+        assert (len(tica_obj._skipped_trajs)==2)
+        assert np.allclose(tica_obj._skipped_trajs, [0,1])
+
 if __name__ == "__main__":
     unittest.main()
