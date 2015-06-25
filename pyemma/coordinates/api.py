@@ -830,7 +830,8 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=1.0, kinetic_map=False, stride=1,
         is immediately computed and can be used to transform data.
 
     lag : int, optional, default = 10
-        the lag time, in multiples of the input time step
+        the lag time, in multiples of the input time step. Be aware that the actual lag will
+        be :py:obj:`lag` :math:`\times` :py:obj:`stride`
 
     dim : int, optional, default -1
         the number of dimensions (independent components) to project onto. A call to the
