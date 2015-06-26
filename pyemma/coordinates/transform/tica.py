@@ -227,8 +227,37 @@ class TICA(Transformer):
         :return:
         """
         if ipass == 0:
-            self.mu += np.sum(X, axis=0, dtype=np.float64)
-            self._N_mean += np.shape(X)[0]
+
+            if self._force_eigenvalues_le_one:
+                # MSM-like counting
+                # find the "tails" of the trajectory relative to the current chunk
+                Zptau = self._lag-t  # zero plus tau
+                Nmtau = self.trajectory_length(itraj, stride=stride)-t-self._lag  # N minus tau
+
+                # restrict them to valid block indices
+                size = X.shape[0]
+                Zptau = min(max(Zptau, 0), size)
+                Nmtau = min(max(Nmtau, 0), size)
+
+                # find start and end of double-counting region
+                start2 = min(Zptau, Nmtau)
+                end2 = max(Zptau, Nmtau)
+
+                # update mean
+                self.mu += np.sum(X[0:start2, :], axis=0, dtype=np.float64)
+                self._N_mean += start2
+
+                if Nmtau > Zptau: # only if trajectory length > 2*tau, there is double-counting
+                    self.mu += 2.0 * np.sum(X[start2:end2, :], axis=0, dtype=np.float64)
+                    self._N_mean += 2.0 * (end2 - start2)
+
+                self.mu += np.sum(X[end2:, :], axis=0, dtype=np.float64)
+                self._N_mean += (size - end2)
+            else:
+                # traditional counting
+                self.mu += np.sum(X, axis=0, dtype=np.float64)
+                self._N_mean += np.shape(X)[0]
+
             # counting chunks and log of eta
             self._progress_mean.numerator += 1
             show_progressbar(self._progress_mean)
@@ -244,6 +273,9 @@ class TICA(Transformer):
 
             if self.trajectory_length(itraj, stride=stride) > self._lag:
                 self._N_cov_tau += 2.0 * np.shape(Y)[0]
+                # _N_cov_tau is muliplied by 2, because we later symmetrize
+                # cov_tau, so we are actually using twice the number of samples
+                # for every element.
                 X_meanfree = X - self.mu
                 Y_meanfree = Y - self.mu
                 # update the time-lagged covariance matrix
@@ -295,6 +327,7 @@ class TICA(Transformer):
 
     def _param_finish(self):
         if self._force_eigenvalues_le_one:
+            assert self._N_mean == self._N_cov, 'inconsistency in C(0) and mu'
             assert self._N_cov == self._N_cov_tau, 'inconsistency in C(0) and C(tau)'
 
         # symmetrize covariance matrices
