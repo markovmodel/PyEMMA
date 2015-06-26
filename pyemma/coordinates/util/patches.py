@@ -29,7 +29,7 @@ Created on 13.03.2015
 @author: marscher
 '''
 from mdtraj.utils.validation import cast_indices
-from mdtraj.core.trajectory import load, _parse_topology, _TOPOLOGY_EXTS, _get_extension
+from mdtraj.core.trajectory import load, _parse_topology, _TOPOLOGY_EXTS, _get_extension, open
 
 
 def iterload(filename, chunk=100, **kwargs):
