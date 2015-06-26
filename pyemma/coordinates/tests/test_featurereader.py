@@ -43,7 +43,7 @@ log = getLogger('TestFeatureReader')
 
 
 def create_traj(top):
-    trajfile = tempfile.mktemp('.dcd')
+    trajfile = tempfile.mktemp('.xtc')
     n_frames = np.random.randint(500, 1500)
     log.debug("create traj with %i frames" % n_frames)
     xyz = np.arange(n_frames * 3 * 3).reshape((n_frames, 3, 3))
