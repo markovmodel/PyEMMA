@@ -170,66 +170,30 @@ class TestFeatureReader(unittest.TestCase):
 
     def test_in_memory_switch_stride_dim(self):
         reader = api.source(self.trajfile, top=self.topfile)
+        reader.chunksize = 360
         reader.in_memory = True
 
         # now get output with different strides
-        strides = [1, 2, 3, 4, 5]
+        strides = [1, 2, 3, 4, 5, 10, 20]
         for s in strides:
+            if reader.chunksize % s != 0:
+                continue
             out = reader.get_output(stride=s)
             shape = (reader.trajectory_length(0, stride=s), reader.dimension())
             self.assertEqual(out[0].shape, shape, "not equal for stride=%i" % s)
 
-    def testTimeLaggedAccess(self):
-        # each frame has 2 atoms with 3 coords = 6 coords per frame.
-        # coords are sequential through all frames and start with 0.
-
-        lags = [2, 200]
-
-        chunksizes = [1, 100]
-
-        for lag in lags:
-            for chunksize in chunksizes:
-                log.info("chunksize=%i\tlag=%i" % (chunksize, lag))
-
-                lagged_chunks = []
-                reader = api.source(self.trajfile, top=self.topfile)
-                reader.chunksize = chunksize
-                for _, _, y in reader.iterator(lag=lag):
-                    lagged_chunks.append(y)
-
-                coords = self.xyz.reshape((self.xyz.shape[0], -1))
-
-                for ii, c in enumerate(lagged_chunks[:-1]):
-                    # all despite last chunk shall have chunksize
-                    self.assertTrue(c.shape[0] <= chunksize)
-                    # first lagged chunk should start at lag and stop at chunksize +
-                    # lag
-                    ind1 = ii * chunksize + lag
-                    ind2 = ind1 + chunksize
-                    #log.debug("coor slice[%i: %i]" % (ind1, ind2))
-                    np.testing.assert_allclose(c, coords[ind1:ind2])
-
-                # TODO: check last lagged frame
-
-                # last lagged chunk should miss "lag" frames of input! e.g
-                # padded to maintain chunksize
-
-                last_chunk = lagged_chunks[-1]
-                # print last_chunk
-                # when is last_chunk padded?
-                # if
-                # how many zeros are going to be used?
-
-
-#                 expected = np.empty((chunksize, 2, 3))
-#                 for ii, c in enumerate(xrange(chunksize)):
-#                     c += 1
-#                     expected[ii] = coords[-c]
-# expected  = np.array((coords[-2], coords[-1]))
-#                 print last_chunk
-#                 print "-"*10
-#                 print expected
-                # np.testing.assert_allclose(last_chunk, expected)
+    def test_lagged_stridden_access(self):
+        reader = api.source(self.trajfile, top=self.topfile)
+        reader.chunksize = 210
+        strides = [2, 3, 5, 7, 15]
+        lags = [1, 3, 7, 10, 30]
+        for stride in strides:
+            for lag in lags:
+                chunks = []
+                for _, _, Y in reader.iterator(stride, lag):
+                    chunks.append(Y)
+                chunks = np.vstack(chunks)
+                np.testing.assert_almost_equal(chunks, self.xyz.reshape(-1, 9)[lag::stride])
 
 if __name__ == "__main__":
     unittest.main()
