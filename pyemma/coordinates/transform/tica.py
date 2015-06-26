@@ -38,6 +38,10 @@ import numpy as np
 __all__ = ['TICA']
 
 
+class MeaningOfLagWithStrideWarning(UserWarning):
+    pass
+
+
 class TICA(Transformer):
 
     def __init__(self, lag, dim=-1, var_cutoff=1.0, kinetic_map=False, epsilon=1e-6,
@@ -180,6 +184,15 @@ class TICA(Transformer):
         assert indim > 0, "zero dimension from data producer"
         assert self._dim <= indim, ("requested more output dimensions (%i) than dimension"
                                     " of input data (%i)" % (self._dim, indim))
+        if self._force_eigenvalues_le_one and self._lag % self._param_with_stride != 0:
+            raise RuntimeError("When using TICA with force_eigenvalues_le_one, lag must be a multiple of stride.")
+
+        if self._param_with_stride > 1:
+            import warnings
+            warnings.simplefilter('once', MeaningOfLagWithStrideWarning, append=True)
+            warnings.warn("Since version 1.3 lag is measured in time steps of your"
+                          " trajectory, no matter what value of stride is used.",
+                          MeaningOfLagWithStrideWarning)
 
         self._N_mean = 0
         self._N_cov = 0
@@ -272,7 +285,7 @@ class TICA(Transformer):
 
         elif ipass == 1:
 
-            if self.trajectory_length(itraj, stride=stride) - self._lag > 0:
+            if self.trajectory_length(itraj, stride=1) - self._lag > 0:
                 self._N_cov_tau += 2.0 * np.shape(Y)[0]
                 # _N_cov_tau is muliplied by 2, because we later symmetrize
                 # cov_tau, so we are actually using twice the number of samples
@@ -287,8 +300,8 @@ class TICA(Transformer):
                 # update the instantaneous covariance matrix
                 if self._force_eigenvalues_le_one:
                     # MSM-like counting
-                    Zptau = self._lag-t  # zero plus tau
-                    Nmtau = self.trajectory_length(itraj, stride=stride)-t-self._lag  # N minus tau
+                    Zptau = self._lag/stride-t  # zero plus tau
+                    Nmtau = self.trajectory_length(itraj, stride=stride)-t-self._lag/stride  # N minus tau
 
                     # restrict to valid block indices
                     size = X_meanfree.shape[0]
