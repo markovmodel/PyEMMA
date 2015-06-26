@@ -230,29 +230,30 @@ class TICA(Transformer):
 
             if self._force_eigenvalues_le_one:
                 # MSM-like counting
-                # find the "tails" of the trajectory relative to the current chunk
-                Zptau = self._lag-t  # zero plus tau
-                Nmtau = self.trajectory_length(itraj, stride=stride)-t-self._lag  # N minus tau
+                if self.trajectory_length(itraj, stride=stride) > self._lag:
+                    # find the "tails" of the trajectory relative to the current chunk
+                    Zptau = self._lag-t  # zero plus tau
+                    Nmtau = self.trajectory_length(itraj, stride=stride)-t-self._lag  # N minus tau
 
-                # restrict them to valid block indices
-                size = X.shape[0]
-                Zptau = min(max(Zptau, 0), size)
-                Nmtau = min(max(Nmtau, 0), size)
+                    # restrict them to valid block indices
+                    size = X.shape[0]
+                    Zptau = min(max(Zptau, 0), size)
+                    Nmtau = min(max(Nmtau, 0), size)
 
-                # find start and end of double-counting region
-                start2 = min(Zptau, Nmtau)
-                end2 = max(Zptau, Nmtau)
+                    # find start and end of double-counting region
+                    start2 = min(Zptau, Nmtau)
+                    end2 = max(Zptau, Nmtau)
 
-                # update mean
-                self.mu += np.sum(X[0:start2, :], axis=0, dtype=np.float64)
-                self._N_mean += start2
+                    # update mean
+                    self.mu += np.sum(X[0:start2, :], axis=0, dtype=np.float64)
+                    self._N_mean += start2
 
-                if Nmtau > Zptau: # only if trajectory length > 2*tau, there is double-counting
-                    self.mu += 2.0 * np.sum(X[start2:end2, :], axis=0, dtype=np.float64)
-                    self._N_mean += 2.0 * (end2 - start2)
+                    if Nmtau > Zptau: # only if trajectory length > 2*tau, there is double-counting
+                        self.mu += 2.0 * np.sum(X[start2:end2, :], axis=0, dtype=np.float64)
+                        self._N_mean += 2.0 * (end2 - start2)
 
-                self.mu += np.sum(X[end2:, :], axis=0, dtype=np.float64)
-                self._N_mean += (size - end2)
+                    self.mu += np.sum(X[end2:, :], axis=0, dtype=np.float64)
+                    self._N_mean += (size - end2)
             else:
                 # traditional counting
                 self.mu += np.sum(X, axis=0, dtype=np.float64)
