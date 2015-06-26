@@ -87,8 +87,9 @@ def iterload(filename, chunk=100, **kwargs):
         topology = _parse_topology(top)
 
     if chunk % stride != 0:
-        raise ValueError('Stride must be a divisor of chunk. stride=%d does not go '
-                         'evenly into chunk=%d' % (stride, chunk))
+        pass
+        #raise ValueError('Stride must be a divisor of chunk. stride=%d does not go '
+        #                 'evenly into chunk=%d' % (stride, chunk))
     if chunk == 0:
         # If chunk was 0 then we want to avoid filetype-specific code
         # in case of undefined behavior in various file parsers.
