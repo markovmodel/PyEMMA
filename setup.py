@@ -256,7 +256,7 @@ metadata = dict(
     # runtime dependencies
     install_requires=['numpy>=1.6.0',
                       'scipy>=0.11',
-                      'mdtraj',
+                      'mdtraj>=1.4.0',
                       'matplotlib'],
     zip_safe=False,
 )
@@ -274,9 +274,9 @@ else:
     # setuptools>=2.2 can handle setup_requires
     metadata['setup_requires'] = ['numpy>=1.6.0',
                                   'setuptools>3.6',
-                                  'mdtraj>=1.2.0',
+                                  'mdtraj>=1.4.0',
                                   'nose',
-                                 ]
+                                  ]
 
     # when on git, we require cython
     if os.path.exists('.git'):
