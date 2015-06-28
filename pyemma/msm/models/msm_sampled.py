@@ -46,7 +46,7 @@ def _create_attribute(prefix, doctext, seealso, sample, func):
         if func != 'conf':
             return func(self.sample, axis=0)
         else:
-            return stat.confidence_interval_arr(self.sample, alpha=self._confidence)
+            return stat.confidence_interval(self.sample, alpha=self._confidence)
 
     doc_string = _make_docstring(prefix, doctext, seealso, sample)
     return property(calc_attr, doc=doc_string)
@@ -239,7 +239,7 @@ class SampledMSM(EstimatedMSM):
         MSM.stationary_distribution
 
         """
-        return stat.confidence_interval_arr(self.sample_mus, alpha=self._confidence)
+        return stat.confidence_interval(self.sample_mus, alpha=self._confidence)
 
     def eigenvalues_mean(self, k=None, ncv=None):
         """Sample mean for the eigenvalues.
@@ -272,7 +272,7 @@ class SampledMSM(EstimatedMSM):
 
         """
         self._ensure_sample_eigendecomposition(k=k, ncv=ncv)
-        return stat.confidence_interval_arr(self.sample_eigenvalues, alpha=self._confidence)
+        return stat.confidence_interval(self.sample_eigenvalues, alpha=self._confidence)
 
     def eigenvectors_left_mean(self, k=None, ncv=None):
         """Sample mean for the left eigenvectors.
@@ -305,7 +305,7 @@ class SampledMSM(EstimatedMSM):
 
         """
         self._ensure_sample_eigendecomposition(k=k, ncv=ncv)
-        return stat.confidence_interval_arr(self.sample_Ls, alpha=self._confidence)
+        return stat.confidence_interval(self.sample_Ls, alpha=self._confidence)
 
 
 #     def eigenvectors_right_mean(self, k=None, ncv=None):
@@ -379,7 +379,7 @@ class SampledMSM(EstimatedMSM):
 
         """
         self._ensure_sample_eigendecomposition(k=k, ncv=ncv)
-        return stat.confidence_interval_arr(self._sample_timescales(), alpha=self._confidence)
+        return stat.confidence_interval(self._sample_timescales(), alpha=self._confidence)
 
 
     def _sample_mfpt(self, A, B):
@@ -417,7 +417,7 @@ class SampledMSM(EstimatedMSM):
         MSM.mfpt
 
         """
-        return stat.confidence_interval_arr(self._sample_mfpt(A,B), alpha=self._confidence)
+        return stat.confidence_interval(self._sample_mfpt(A,B), alpha=self._confidence)
 
     def _sample_committor_forward(self, A, B):
         """Compute sample timescales from the sample eigenvalues"""
@@ -454,7 +454,7 @@ class SampledMSM(EstimatedMSM):
         MSM.committor_forward
 
         """
-        return stat.confidence_interval_arr(self._sample_committor_forward(A,B), alpha=self._confidence)
+        return stat.confidence_interval(self._sample_committor_forward(A,B), alpha=self._confidence)
 
 
     def _sample_committor_backward(self, A, B):
@@ -492,4 +492,4 @@ class SampledMSM(EstimatedMSM):
         MSM.committor_backward
 
         """
-        return stat.confidence_interval_arr(self._sample_committor_backward(A,B), alpha=self._confidence)
+        return stat.confidence_interval(self._sample_committor_backward(A,B), alpha=self._confidence)

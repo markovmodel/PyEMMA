@@ -406,32 +406,6 @@ def ensure_ndarray_or_None(A, shape=None, ndim=None, size=None, dtype=None, kind
 # EMMA TRAJECTORY TYPES
 # ======================================================================================================================
 
-def ensure_dtraj(dtraj):
-    r"""Makes sure that dtraj is a discrete trajectory (array of int)
-
-    """
-    if is_int_vector(dtraj):
-        return dtraj
-    elif is_list_of_int(dtraj):
-        return np.array(dtraj, dtype=int)
-    else:
-        raise TypeError('Argument dtraj is not a discrete trajectory - only list of integers or int-ndarrays are allowed. Check type.')
-
-def ensure_dtraj_list(dtrajs):
-    r"""Makes sure that dtrajs is a list of discrete trajectories (array of int)
-
-    """
-    if isinstance(dtrajs, list):
-        # elements are ints? then wrap into a list
-        if is_list_of_int(dtrajs):
-            return [np.array(dtrajs, dtype=int)]
-        else:
-            for i in range(len(dtrajs)):
-                dtrajs[i] = ensure_dtraj(dtrajs[i])
-            return dtrajs
-    else:
-        return [ensure_dtraj(dtrajs)]
-
 def ensure_traj(traj):
     r"""Makes sure that dtraj is a discrete trajectory (array of float)
 

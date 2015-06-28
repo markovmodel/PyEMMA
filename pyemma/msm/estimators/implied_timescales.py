@@ -357,15 +357,11 @@ class ImpliedTimescales(Estimator):
             R = np.zeros((len(self.lags), self.nits))
             for i in range(len(self.lags)):
                 for j in range(self.nits):
-                    conf = confidence_interval(self._its_samples[i, j], alpha)
-                    L[i, j] = conf[1]
-                    R[i, j] = conf[2]
+                    L[i, j], R[i, j] = confidence_interval(self._its_samples[i, j], alpha)
             return L, R
         else:
             L = np.zeros(len(self.lags))
             R = np.zeros(len(self.lags))
             for i in range(len(self.lags)):
-                conf = confidence_interval(self._its_samples[i, process], alpha)
-                L[i] = conf[1]
-                R[i] = conf[2]
+                L[i], R[i] = confidence_interval(self._its_samples[i, process], alpha)
             return L, R

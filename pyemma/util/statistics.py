@@ -35,7 +35,7 @@ import itertools
 import types
 
 
-def confidence_interval(data, alpha):
+def _confidence_interval_1d(data, alpha):
     """
     Computes the mean and alpha-confidence interval of the given sample set
 
@@ -59,7 +59,6 @@ def confidence_interval(data, alpha):
     # sort data
     sdata = np.sort(data)
     # index of the mean
-    # FIXME: this function has been introduced in numpy 1.7, but we want to be compatible with 1.6
     im = np.searchsorted(sdata, m)
     if (im == 0 or im == len(sdata)):
         pm = im
@@ -107,17 +106,17 @@ def _column(arr, indexes):
     else:
         raise NotImplementedError('Only supporting arrays of dimension 2 and 3 as yet.')
 
-def confidence_interval_arr(data, alpha=0.95):
+def confidence_interval(data, conf=0.95):
     r""" Computes element-wise confidence intervals from a sample of ndarrays
 
     Given a sample of arbitrarily shaped ndarrays, computes element-wise confidence intervals
 
     Parameters
     ----------
-    data : ndarray (K, (shape))
-        ndarray of ndarrays, the first index is a sample index, the remaining indexes are specific to the
-        array of interest
-    alpha : float, optional, default = 0.95
+    data : array-like of dimension 1 to 3
+        array of numbers or arrays. The first index is used as the sample index, the remaining indexes are
+        specific to the array of interest
+    conf : float, optional, default = 0.95
         confidence interval
 
     Return
@@ -128,29 +127,34 @@ def confidence_interval_arr(data, alpha=0.95):
         element-wise upper bounds
 
     """
-    if (alpha < 0 or alpha > 1):
-        raise ValueError('Not a meaningful confidence level: '+str(alpha))
+    if (conf < 0 or conf > 1):
+        raise ValueError('Not a meaningful confidence level: '+str(conf))
 
-    # list or 1D-array? then fuse it
-    if types.is_list(data) or (isinstance(data, np.ndarray) and np.ndim(data) == 1):
-        newshape = tuple([len(data)] + list(data[0].shape))
-        newdata = np.zeros(newshape)
-        for i in range(len(data)):
-            newdata[i,:] = data[i]
-        data = newdata
+    try:
+        data = types.ensure_ndarray(data, kind='numeric')
+    except:
+        # if 1D array of arrays try to fuse it
+        if isinstance(data, np.ndarray) and np.ndim(data) == 1:
+            newshape = tuple([len(data)] + list(data[0].shape))
+            newdata = np.zeros(newshape)
+            for i in range(len(data)):
+                newdata[i,:] = data[i]
+            data = newdata
 
-    # do we have an array now? if yes go, if no fail
-    if types.is_float_array(data):
+    types.assert_array(data, kind='numeric')
+
+    if np.ndim(data) == 1:
+        m, lower, upper = _confidence_interval_1d(data, conf)
+        return lower, upper
+    else:
         I = _indexes(data[0])
         lower = np.zeros(data[0].shape)
         upper = np.zeros(data[0].shape)
         for i in I:
             col = _column(data, i)
-            m, lower[i], upper[i] = confidence_interval(col, alpha)
+            m, lower[i], upper[i] = _confidence_interval_1d(col, conf)
         # return
         return (lower, upper)
-    else:
-        raise TypeError('data cannot be converted to an ndarray')
 
 def _maxlength(X):
     """ Returns the maximum length of signal trajectories X """

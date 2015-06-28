@@ -36,7 +36,7 @@ __docformat__ = "restructuredtext en"
 import numpy as _np
 
 from pyemma.msm.models.hmsm_estimated import EstimatedHMSM as _EstimatedHMSM
-from pyemma.util.statistics import confidence_interval_arr
+from pyemma.util.statistics import confidence_interval
 
 
 class SampledHMSM(_EstimatedHMSM):
@@ -143,7 +143,7 @@ class SampledHMSM(_EstimatedHMSM):
     @property
     def stationary_distribution_conf(self):
         r""" The confidence interval of the initial distribution of the hidden states """
-        return confidence_interval_arr(self.stationary_distribution_samples, alpha=self._confidence)
+        return confidence_interval(self.stationary_distribution_samples, alpha=self._confidence)
 
     @property
     def transition_matrix_samples(self):
@@ -163,7 +163,7 @@ class SampledHMSM(_EstimatedHMSM):
     @property
     def transition_matrix_conf(self):
         r""" The confidence interval of the transition_matrix of the hidden states """
-        return confidence_interval_arr(self.transition_matrix_samples, alpha=self._confidence)
+        return confidence_interval(self.transition_matrix_samples, alpha=self._confidence)
 
     @property
     def output_probabilities_samples(self):
@@ -183,7 +183,7 @@ class SampledHMSM(_EstimatedHMSM):
     @property
     def output_probabilities_conf(self):
         r""" The standard deviation of the output probability matrix """
-        return confidence_interval_arr(self.output_probabilities_samples, alpha=self._confidence)
+        return confidence_interval(self.output_probabilities_samples, alpha=self._confidence)
 
     @property
     def eigenvalues_samples(self):
@@ -203,7 +203,7 @@ class SampledHMSM(_EstimatedHMSM):
     @property
     def eigenvalues_conf(self):
         r""" The confidence interval of the eigenvalues of the hidden states """
-        return confidence_interval_arr(self.eigenvalues_samples, alpha=self._confidence)
+        return confidence_interval(self.eigenvalues_samples, alpha=self._confidence)
 
     @property
     def eigenvectors_left_samples(self):
@@ -223,7 +223,7 @@ class SampledHMSM(_EstimatedHMSM):
     @property
     def eigenvectors_left_conf(self):
         r""" The confidence interval of the left eigenvectors of the hidden transition matrix """
-        return confidence_interval_arr(self.eigenvectors_left_samples, alpha=self._confidence)
+        return confidence_interval(self.eigenvectors_left_samples, alpha=self._confidence)
 
     @property
     def eigenvectors_right_samples(self):
@@ -243,7 +243,7 @@ class SampledHMSM(_EstimatedHMSM):
     @property
     def eigenvectors_right_conf(self):
         r""" The confidence interval of the right eigenvectors of the hidden transition matrix """
-        return confidence_interval_arr(self.eigenvectors_right_samples, alpha=self._confidence)
+        return confidence_interval(self.eigenvectors_right_samples, alpha=self._confidence)
 
     @property
     def timescales_samples(self):
@@ -263,7 +263,7 @@ class SampledHMSM(_EstimatedHMSM):
     @property
     def timescales_conf(self):
         r""" The confidence interval of the timescales of the hidden states """
-        return confidence_interval_arr(self.timescales_samples, alpha=self._confidence)
+        return confidence_interval(self.timescales_samples, alpha=self._confidence)
 
     @property
     def lifetimes_samples(self):
@@ -286,4 +286,4 @@ class SampledHMSM(_EstimatedHMSM):
     @property
     def lifetimes_conf(self):
         r""" The confidence interval of the lifetimes of the hidden states """
-        return confidence_interval_arr(self.lifetimes_samples, alpha=self._confidence)
+        return confidence_interval(self.lifetimes_samples, alpha=self._confidence)
