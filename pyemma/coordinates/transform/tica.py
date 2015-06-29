@@ -339,8 +339,8 @@ class TICA(Transformer):
         self.cov_tau *= 0.5
 
         # norm
-        self.cov /= self._N_cov - 1
-        self.cov_tau /= self._N_cov_tau - 1
+        self.cov /= self._N_cov - 2
+        self.cov_tau /= self._N_cov_tau - 2
 
         # diagonalize with low rank approximation
         self._logger.debug("diagonalize Cov and Cov_tau.")
