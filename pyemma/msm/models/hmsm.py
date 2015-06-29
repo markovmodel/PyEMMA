@@ -49,7 +49,7 @@ class HMSM(_MSM):
 
     """
 
-    def __init__(self, Pcoarse, Pobs, dt='1 step'):
+    def __init__(self, P, pobs, dt='1 step'):
         """
 
         Parameters
@@ -63,15 +63,15 @@ class HMSM(_MSM):
 
         """
         # construct superclass and check input
-        _MSM.__init__(self, Pcoarse, dt)
+        _MSM.__init__(self, P, dt)
         # check and save copy of output probability
-        assert _types.is_float_matrix(Pobs), 'Pout is not a matrix of floating numbers'
-        self._Pobs = _np.array(Pobs)
-        assert _np.allclose(self._Pobs.sum(axis=1), 1), 'Pout is not a stochastic matrix'
+        assert _types.is_float_matrix(pobs), 'pobs is not a matrix of floating numbers'
+        self.pobs = _np.array(pobs)
+        assert _np.allclose(self.pobs.sum(axis=1), 1), 'pobs is not a stochastic matrix'
 
     @property
     def nstates_obs(self):
-        return self._Pobs.shape[1]
+        return self.pobs.shape[1]
 
     @property
     def observation_probabilities(self):
@@ -83,7 +83,7 @@ class HMSM(_MSM):
             output probability matrix from hidden to observable discrete states
 
         """
-        return self._Pobs
+        return self.pobs
 
     @property
     def lifetimes(self):
@@ -130,18 +130,18 @@ class HMSM(_MSM):
         Pi_c = _np.diag(self.stationary_distribution)
         P_c = self.transition_matrix
         P_c_k = _np.linalg.matrix_power(P_c, k)  # take a power if needed
-        B = self._Pobs
+        B = self.pobs
         C = _np.dot(_np.dot(B.T, Pi_c), _np.dot(P_c_k, B))
         P = C / C.sum(axis=1)[:, None]  # row normalization
         return P
 
     @property
     def stationary_distribution_obs(self):
-        return _np.dot(self.stationary_distribution, self._Pobs)
+        return _np.dot(self.stationary_distribution, self.pobs)
 
     @property
     def eigenvectors_left_obs(self):
-        return _np.dot(self.eigenvectors_left(), self._Pobs)
+        return _np.dot(self.eigenvectors_left(), self.pobs)
 
     @property
     def eigenvectors_right_obs(self):
@@ -156,7 +156,7 @@ class HMSM(_MSM):
         # are we on microstates space?
         if len(a) == self.nstates_obs:
             # project to hidden and compute
-            a = _np.dot(self._Pobs, a)
+            a = _np.dot(self.pobs, a)
         # now we are on macrostate space, or something is wrong
         if len(a) == self.nstates:
             return super(HMSM, self).expectation(a)
@@ -170,9 +170,9 @@ class HMSM(_MSM):
         b = _types.ensure_ndarray_or_None(b, ndim=1, kind='numeric', size=len(a))
         # are we on microstates space?
         if len(a) == self.nstates_obs:
-            a = _np.dot(self._Pobs, a)
+            a = _np.dot(self.pobs, a)
             if b is not None:
-                b = _np.dot(self._Pobs, b)
+                b = _np.dot(self.pobs, b)
         # now we are on macrostate space, or something is wrong
         if len(a) == self.nstates:
             return super(HMSM, self).correlation(a, b=b, maxtime=maxtime)
@@ -186,9 +186,9 @@ class HMSM(_MSM):
         b = _types.ensure_ndarray_or_None(b, ndim=1, kind='numeric', size=len(a))
         # are we on microstates space?
         if len(a) == self.nstates_obs:
-            a = _np.dot(self._Pobs, a)
+            a = _np.dot(self.pobs, a)
             if b is not None:
-                b = _np.dot(self._Pobs, b)
+                b = _np.dot(self.pobs, b)
         # now we are on macrostate space, or something is wrong
         if len(a) == self.nstates:
             return super(HMSM, self).fingerprint_correlation(a, b=b)
@@ -202,8 +202,8 @@ class HMSM(_MSM):
         a = _types.ensure_ndarray(a, ndim=1, kind='numeric', size=len(p0))
         # are we on microstates space?
         if len(a) == self.nstates_obs:
-            p0 = _np.dot(self._Pobs, p0)
-            a = _np.dot(self._Pobs, a)
+            p0 = _np.dot(self.pobs, p0)
+            a = _np.dot(self.pobs, a)
         # now we are on macrostate space, or something is wrong
         if len(a) == self.nstates:
             return super(HMSM, self).relaxation(p0, a, maxtime=maxtime)
@@ -217,8 +217,8 @@ class HMSM(_MSM):
         a = _types.ensure_ndarray(a, ndim=1, kind='numeric', size=len(p0))
         # are we on microstates space?
         if len(a) == self.nstates_obs:
-            p0 = _np.dot(self._Pobs, p0)
-            a = _np.dot(self._Pobs, a)
+            p0 = _np.dot(self.pobs, p0)
+            a = _np.dot(self.pobs, a)
         # now we are on macrostate space, or something is wrong
         if len(a) == self.nstates:
             return super(HMSM, self).fingerprint_relaxation(p0, a)
@@ -251,7 +251,7 @@ class HMSM(_MSM):
             J. Chem. Phys. 139, 184114 (2013)
 
         """
-        A = _np.dot(_np.diag(self.stationary_distribution), self._Pobs)
+        A = _np.dot(_np.diag(self.stationary_distribution), self.pobs)
         M = _np.dot(A, _np.diag(1.0/self.stationary_distribution_obs)).T
         # renormalize
         M /= M.sum(axis=1)[:, None]
@@ -271,7 +271,7 @@ class HMSM(_MSM):
         observation_probability
 
         """
-        return self._Pobs
+        return self.pobs
 
     @property
     def metastable_sets(self):
@@ -304,4 +304,4 @@ class HMSM(_MSM):
         For each observable state, the metastable state it is located in.
 
         """
-        return _np.argmax(self._Pobs, axis=0)
+        return _np.argmax(self.pobs, axis=0)

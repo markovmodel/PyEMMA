@@ -34,15 +34,15 @@ __docformat__ = "restructuredtext en"
 
 import copy
 import numpy as np
-from itertools import count
 from math import ceil
+from pyemma._base.model import Model as _Model
 from pyemma.util import types as _types
 
 
 # TODO: Explain concept of an active set
 
 
-class MSM(object):
+class MSM(_Model):
     r"""Markov model with a given transition matrix
 
     Parameters
@@ -69,18 +69,19 @@ class MSM(object):
         it is recommended that ncv > 2*k
 
     """
-    def __init__(self, T, dt='1 step', neig=None, ncv=None):
+    def __init__(self, P, dt='1 step', neig=None, ncv=None):
         import pyemma.msm.analysis as msmana
         import pyemma.msm.estimation as msmest
         # check input
-        if not msmana.is_transition_matrix(T):
+        if not msmana.is_transition_matrix(P):
             raise ValueError('T is not a transition matrix.')
 
-        # set inputs
-        # set transition matrix
-        self._T = copy.deepcopy(T)
+        # set primary parameters
+        self.P = copy.deepcopy(P)
+        self.dt = dt
+
         # nstates
-        self._nstates = np.shape(T)[0]
+        self._nstates = np.shape(P)[0]
         # set time step
         from pyemma.util.units import TimeUnit
 
@@ -92,24 +93,24 @@ class MSM(object):
         # check connectivity
         # TODO: abusing C-connectivity test for T. Either provide separate T-connectivity test or move to a central
         # TODO: location because it's the same code.
-        if not msmest.is_connected(T):
+        if not msmest.is_connected(P):
             raise NotImplementedError('Transition matrix T is disconnected. ' +
                                       'This is currently not supported in the MSM object.')
 
         # set basic attributes
-        self._reversible = msmana.is_reversible(T)
+        self._reversible = msmana.is_reversible(P)
         from scipy.sparse import issparse
-        self._sparse = issparse(T)
+        self._sparse = issparse(P)
 
         # set eigenvalue decomposition parameters
         if neig is None:
             if self._sparse:
-                self._neig = 10
+                self.neig = 10
             else:
-                self._neig = self._nstates
+                self.neig = self._nstates
         else:
-            self._neig = neig
-        self._ncv = ncv
+            self.neig = neig
+        self.ncv = ncv
 
 
     ################################################################################
@@ -146,7 +147,7 @@ class MSM(object):
         transition matrix amongst the largest set of reversibly connected states
 
         """
-        return self._T
+        return self.P
 
     ################################################################################
     # Compute derived quantities
@@ -164,7 +165,7 @@ class MSM(object):
             return self._mu
         except:
             from pyemma.msm.analysis import stationary_distribution as _statdist
-            self._mu = _statdist(self._T)
+            self._mu = _statdist(self.P)
             return self._mu
 
     def _compute_eigenvalues(self, neig):
@@ -173,14 +174,14 @@ class MSM(object):
 
         if self._reversible:
             # TODO: this should be using reversible eigenvalue decomposition!
-            self._eigenvalues = anaeig(self._T, k=neig, ncv=self._ncv, reversible=True, mu=self.stationary_distribution)
+            self._eigenvalues = anaeig(self.P, k=neig, ncv=self.ncv, reversible=True, mu=self.stationary_distribution)
         else:
-            self._eigenvalues = anaeig(self._T, k=neig, ncv=self._ncv, reversible=False)
+            self._eigenvalues = anaeig(self.P, k=neig, ncv=self.ncv, reversible=False)
 
     def _ensure_eigenvalues(self, neig=None):
         """ Ensures that at least neig eigenvalues have been computed """
         if neig is None:
-            neig = self._neig
+            neig = self.neig
         # ensure that eigenvalue decomposition with k components is done.
         try:
             m = len(self._eigenvalues)  # this will raise and exception if self._eigenvalues doesn't exist yet.
@@ -196,13 +197,13 @@ class MSM(object):
         from pyemma.msm.analysis import rdl_decomposition
 
         if self._reversible:
-            self._R, self._D, self._L = rdl_decomposition(self._T, k=neig, norm='reversible', ncv=self._ncv)
+            self._R, self._D, self._L = rdl_decomposition(self.P, k=neig, norm='reversible', ncv=self.ncv)
             # everything must be real-valued
             self._R = self._R.real
             self._D = self._D.real
             self._L = self._L.real
         else:
-            self._R, self._D, self._L = rdl_decomposition(self._T, k=neig, norm='standard', ncv=self._ncv)
+            self._R, self._D, self._L = rdl_decomposition(self.P, k=neig, norm='standard', ncv=self.ncv)
         self._eigenvalues = np.diag(self._D)
 
     def _ensure_eigendecomposition(self, neig=None):
@@ -213,7 +214,7 @@ class MSM(object):
 
         """
         if neig is None:
-            neig = self._neig
+            neig = self.neig
         # ensure that eigenvalue decomposition with k components is done.
         try:
             m = self._D.shape[0]  # this will raise and exception if self._D doesn't exist yet.
@@ -331,7 +332,7 @@ class MSM(object):
         B : int or int array
             set of target states
         """
-        return self._mfpt(self._T, A, B, mu=self.stationary_distribution)
+        return self._mfpt(self.P, A, B, mu=self.stationary_distribution)
 
     def _committor_forward(self, P, A, B):
         self._assert_in_active(A)
@@ -349,7 +350,7 @@ class MSM(object):
         B : int or int array
             set of target states
         """
-        return self._committor_forward(self._T, A, B)
+        return self._committor_forward(self.P, A, B)
 
     def _committor_backward(self, P, A, B, mu=None):
         self._assert_in_active(A)
@@ -367,7 +368,7 @@ class MSM(object):
         B : int or int array
             set of target states
         """
-        return self._committor_backward(self._T, A,B, mu=self.stationary_distribution)
+        return self._committor_backward(self.P, A,B, mu=self.stationary_distribution)
 
     def expectation(self, a):
         r"""Equilibrium expectation value of a given observable.
@@ -496,7 +497,7 @@ class MSM(object):
         from pyemma.msm.analysis import correlation as _correlation
         # TODO: this could be improved. If we have already done an eigenvalue decomposition, we could provide it.
         # TODO: for this, the correlation function must accept already-available eigenvalue decompositions.
-        res = _correlation(self._T, a, obs2=b, times=steps, k=k, ncv=ncv)
+        res = _correlation(self.P, a, obs2=b, times=steps, k=k, ncv=ncv)
         # return times scaled by tau
         times = self._lag * steps
         return times, res
@@ -537,7 +538,7 @@ class MSM(object):
         # TODO: this could be improved. If we have already done an eigenvalue decomposition, we could provide it.
         # TODO: for this, the correlation function must accept already-available eigenvalue decompositions.
         from pyemma.msm.analysis import fingerprint_correlation as _fc
-        return _fc(self._T, a, obs2=b, tau=self._lag, k=k, ncv=ncv)
+        return _fc(self.P, a, obs2=b, tau=self._lag, k=k, ncv=ncv)
 
     def relaxation(self, p0, a, maxtime=None, k=None, ncv=None):
         r"""Simulates a perturbation-relaxation experiment.
@@ -614,7 +615,7 @@ class MSM(object):
         from pyemma.msm.analysis import relaxation as _relaxation
         # TODO: this could be improved. If we have already done an eigenvalue decomposition, we could provide it.
         # TODO: for this, the correlation function must accept already-available eigenvalue decompositions.
-        res = _relaxation(self._T, p0, a, times=steps, k=k, ncv=ncv)
+        res = _relaxation(self.P, p0, a, times=steps, k=k, ncv=ncv)
         # return times scaled by tau
         times = self._lag * steps
         return times, res
@@ -658,7 +659,7 @@ class MSM(object):
         # TODO: this could be improved. If we have already done an eigenvalue decomposition, we could provide it.
         # TODO: for this, the correlation function must accept already-available eigenvalue decompositions.
         from pyemma.msm.analysis import fingerprint_relaxation as _fr
-        return _fr(self._T, p0, a, tau=self._lag, k=k, ncv=ncv)
+        return _fr(self.P, p0, a, tau=self._lag, k=k, ncv=ncv)
 
     ################################################################################
     # pcca
@@ -711,10 +712,10 @@ class MSM(object):
             # this will except if we don't have a pcca object
             if self._pcca.n_metastable != m:
                 # incorrect number of states - recompute
-                self._pcca = PCCA(self._T, m)
+                self._pcca = PCCA(self.P, m)
         except:
             # didn't have a pcca object yet - compute
-            self._pcca = PCCA(self._T, m)
+            self._pcca = PCCA(self.P, m)
 
         # set metastable properties
         self._metastable_computed = True
