@@ -98,7 +98,7 @@ class MaximumLikelihoodHMSM(_Estimator):
         # check input
         assert _types.is_int(self.nstates) and self.nstates > 1 and self.nstates <= msm_init.nstates, \
             'nstates must be an int in [2,msmobj.nstates]'
-        timescale_ratios = msm_init.timescales[:-1] / msm_init.timescales[1:]
+        timescale_ratios = msm_init.timescales()[:-1] / msm_init.timescales()[1:]
         if timescale_ratios[self.nstates-2] < 2.0:
             self.logger.warn('Requested coarse-grained model with ' + str(self.nstates) + ' metastable states. ' +
                              'The ratio of relaxation timescales between ' + str(self.nstates) + ' and ' +

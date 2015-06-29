@@ -417,10 +417,11 @@ class EstimatedMSM(MSM):
         """
         # run estimate
         from pyemma.msm.estimators.maximum_likelihood_hmsm import MaximumLikelihoodHMSM
-        estimator = MaximumLikelihoodHMSM(self, nstates, observe_active=True)
-        MaximumLikelihoodHMSM(self.discrete_trajectories_full, reversible=self.is_reversible, sparse=self.is_sparse,
-                      connectivity=self.connectivity, dt=self.timestep, observe_active=True)
-        return estimator.estimate(lag=self.lagtime, nstates=nstates, msm_init=self)
+        estimator = MaximumLikelihoodHMSM(lag=self.lagtime, nstates=nstates, msm_init=self,
+                                          reversible=self.is_reversible, connectivity=self.connectivity,
+                                          observe_active=True, dt=self.timestep)
+        estimator.estimate(self.discrete_trajectories_full)
+        return estimator.model
 
     def coarse_grain(self, nstates, method='hmm'):
         r"""Returns a coarse-grained Markov model.
