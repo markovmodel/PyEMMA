@@ -34,6 +34,7 @@ import math
 import itertools
 import types
 
+
 def _confidence_interval_1d(data, alpha):
     """
     Computes the mean and alpha-confidence interval of the given sample set
@@ -47,10 +48,10 @@ def _confidence_interval_1d(data, alpha):
         
     Returns
     -------
-    [m,l,r] where m is the mean of the data, and (l,r) are the m-alpha/2 and m+alpha/2 
-    confidence interval boundaries.
+    (m, l, r) : m is the mean of the data, and (l, r) are the m-alpha/2
+        and m+alpha/2 confidence interval boundaries.
     """
-    if (alpha < 0 or alpha > 1):
+    if alpha < 0 or alpha > 1:
         raise ValueError('Not a meaningful confidence level: '+str(alpha))
     
     # compute mean
@@ -59,12 +60,12 @@ def _confidence_interval_1d(data, alpha):
     sdata = np.sort(data)
     # index of the mean
     im = np.searchsorted(sdata, m)
-    if (im == 0 or im == len(sdata)):
+    if im == 0 or im == len(sdata):
         pm = im
     else:
         pm = (im-1) + (m-sdata[im-1])/(sdata[im]-sdata[im-1])
     # left interval boundary
-    pl = pm - alpha*(pm)
+    pl = pm - alpha*pm
     il1 = max(0, int(math.floor(pl)))
     il2 = min(len(sdata)-1, int(math.ceil(pl)))
     l = sdata[il1] + (pl - il1)*(sdata[il2] - sdata[il1])
@@ -75,11 +76,13 @@ def _confidence_interval_1d(data, alpha):
     r = sdata[ir1] + (pr - ir1)*(sdata[ir2] - sdata[ir1])
 
     # return
-    return (m, l, r)
+    return m, l, r
+
 
 def _indexes(arr):
-    """
-    Returns the list of all indexes of the given array. Currently works for one and two-dimensional arrays
+    """ Returns the list of all indexes of the given array.
+
+    Currently works for one and two-dimensional arrays
 
     """
     myarr = np.array(arr)
@@ -90,31 +93,34 @@ def _indexes(arr):
     else:
         raise NotImplementedError('Only supporting arrays of dimension 1 and 2 as yet.')
 
-def _column(arr, indexes):
-    """
-    Returns a column with given indexes from a deep array
 
-    For example, if the array is a matrix and indexes is a single int, will return arr[:,indexes].
-    If the array is an order 3 tensor and indexes is a pair of ints, will return arr[:,indexes[0],indexes[1]], etc.
+def _column(arr, indexes):
+    """ Returns a column with given indexes from a deep array
+
+    For example, if the array is a matrix and indexes is a single int, will
+    return arr[:,indexes]. If the array is an order 3 tensor and indexes is a
+    pair of ints, will return arr[:,indexes[0],indexes[1]], etc.
 
     """
     if arr.ndim == 2 and types.is_int(indexes):
-        return arr[:,indexes]
+        return arr[:, indexes]
     elif arr.ndim == 3 and len(indexes) == 2:
-        return arr[:,indexes[0],indexes[1]]
+        return arr[:, indexes[0], indexes[1]]
     else:
         raise NotImplementedError('Only supporting arrays of dimension 2 and 3 as yet.')
+
 
 def confidence_interval(data, conf=0.95):
     r""" Computes element-wise confidence intervals from a sample of ndarrays
 
-    Given a sample of arbitrarily shaped ndarrays, computes element-wise confidence intervals
+    Given a sample of arbitrarily shaped ndarrays, computes element-wise
+    confidence intervals
 
     Parameters
     ----------
     data : array-like of dimension 1 to 3
-        array of numbers or arrays. The first index is used as the sample index, the remaining indexes are
-        specific to the array of interest
+        array of numbers or arrays. The first index is used as the sample
+        index, the remaining indexes are specific to the array of interest
     conf : float, optional, default = 0.95
         confidence interval
 
@@ -126,7 +132,7 @@ def confidence_interval(data, conf=0.95):
         element-wise upper bounds
 
     """
-    if (conf < 0 or conf > 1):
+    if conf < 0 or conf > 1:
         raise ValueError('Not a meaningful confidence level: '+str(conf))
 
     try:
@@ -137,7 +143,7 @@ def confidence_interval(data, conf=0.95):
             newshape = tuple([len(data)] + list(data[0].shape))
             newdata = np.zeros(newshape)
             for i in range(len(data)):
-                newdata[i,:] = data[i]
+                newdata[i, :] = data[i]
             data = newdata
 
     types.assert_array(data, kind='numeric')
@@ -153,5 +159,4 @@ def confidence_interval(data, conf=0.95):
             col = _column(data, i)
             m, lower[i], upper[i] = _confidence_interval_1d(col, conf)
         # return
-        return (lower, upper)
-
+        return lower, upper

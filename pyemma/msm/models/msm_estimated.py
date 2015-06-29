@@ -161,6 +161,7 @@ class EstimatedMSM(MSM):
         """
         return self._C_active
 
+    # TODO: change to statistically effective count matrix!
     @property
     def effective_count_matrix(self):
         """Statistically uncorrelated transition counts within the active set of states
@@ -375,6 +376,7 @@ class EstimatedMSM(MSM):
 
         return dt.sample_indexes_by_state(self.active_state_indexes, nsample, subset=subset, replace=replace)
 
+    # TODO: add sample_metastable() for sampling from metastable (pcca or hmm) states.
     def sample_by_distributions(self, distributions, nsample):
         """Generates samples according to given probability distributions
 
