@@ -896,6 +896,8 @@ class EstimatedMSM(MSM):
 
     _ids = count(0)
 
+    _ids = count(0)
+
     def __init__(self, dtrajs, lag,
                  reversible=True, sparse=False, connectivity='largest', estimate=True,
                  dt='1 step',
