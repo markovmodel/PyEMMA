@@ -35,42 +35,41 @@ __author__ = 'noe'
 
 class PCA(Transformer):
 
-    r""" Principal component analysis.
-
-    Given a sequence of multivariate data :math:`X_t`,
-    computes the mean-free covariance matrix.
-
-    .. math:: C = (X - \mu)^T (X - \mu)
-
-    and solves the eigenvalue problem
-
-    .. math:: C r_i = \sigma_i r_i,
-
-    where :math:`r_i` are the principal components and :math:`\sigma_i` are
-    their respective variances.
-
-    When used as a dimension reduction method, the input data is projected onto
-    the dominant principal components.
-
-    Parameters
-    ----------
-    dim : int, optional, default -1
-        the number of dimensions (independent components) to project onto. A call to the
-        :func:`map <pyemma.coordinates.transform.TICA.map>` function reduces the d-dimensional
-        input to only dim dimensions such that the data preserves the maximum possible autocorrelation
-        amongst dim-dimensional linear projections.
-        -1 means all numerically available dimensions will be used unless reduced by var_cutoff.
-        Setting dim to a positive value is exclusive with var_cutoff.
-
-    var_cutoff : float in the range [0,1], optional, default 1
-        Determines the number of output dimensions by including dimensions until their cumulative kinetic variance
-        exceeds the fraction subspace_variance. var_cutoff=1.0 means all numerically available dimensions
-        (see epsilon) will be used, unless set by dim. Setting var_cutoff smaller than 1.0 is exclusive with dim
-
-
-    """
-
     def __init__(self, dim=-1, var_cutoff=1.0):
+        r""" Principal component analysis.
+
+        Given a sequence of multivariate data :math:`X_t`,
+        computes the mean-free covariance matrix.
+
+        .. math:: C = (X - \mu)^T (X - \mu)
+
+        and solves the eigenvalue problem
+
+        .. math:: C r_i = \sigma_i r_i,
+
+        where :math:`r_i` are the principal components and :math:`\sigma_i` are
+        their respective variances.
+
+        When used as a dimension reduction method, the input data is projected onto
+        the dominant principal components.
+
+        Parameters
+        ----------
+        dim : int, optional, default -1
+            the number of dimensions (independent components) to project onto. A call to the
+            :func:`map <pyemma.coordinates.transform.TICA.map>` function reduces the d-dimensional
+            input to only dim dimensions such that the data preserves the maximum possible autocorrelation
+            amongst dim-dimensional linear projections.
+            -1 means all numerically available dimensions will be used unless reduced by var_cutoff.
+            Setting dim to a positive value is exclusive with var_cutoff.
+
+        var_cutoff : float in the range [0,1], optional, default 1
+            Determines the number of output dimensions by including dimensions until their cumulative kinetic variance
+            exceeds the fraction subspace_variance. var_cutoff=1.0 means all numerically available dimensions
+            (see epsilon) will be used, unless set by dim. Setting var_cutoff smaller than 1.0 is exclusive with dim
+
+
+        """
         super(PCA, self).__init__()
         self._dim = dim
         self._var_cutoff = var_cutoff
