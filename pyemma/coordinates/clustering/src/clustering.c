@@ -25,6 +25,7 @@
 
 #define NO_IMPORT_ARRAY
 #include <clustering.h>
+#include <assert.h>
 
 float euclidean_distance(float *SKP_restrict a, float *SKP_restrict b, size_t n, float *buffer_a, float *buffer_b)
 {
@@ -80,13 +81,16 @@ int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric, Py_ss
     /* do the assignment */
     {
         Py_ssize_t i,j;
-        #pragma omp parallel for private(i,j,mindist,argmin)
+//        #pragma omp for private(j, argmin, mindist)
         for(i = 0; i < N_frames; ++i) {
-            mindist = FLT_MAX;
+			mindist = FLT_MAX;
             argmin = -1;
             for(j = 0; j < N_centers; ++j) {
                 d = distance(&chunk[i*dim], &centers[j*dim], dim, buffer_a, buffer_b);
-                if(d<mindist) { mindist = d; argmin = j; }
+//				#pragma omp critical
+            	{
+                	if(d<mindist) { mindist = d; argmin = j; }
+            	}
             }
             dtraj[i] = argmin;
         }
