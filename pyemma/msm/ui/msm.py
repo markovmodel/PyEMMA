@@ -30,6 +30,7 @@ and provides them for later access.
 
 """
 import numpy as np
+from itertools import count
 from math import ceil
 from pyemma.util.annotators import shortcut
 from pyemma.util.log import getLogger
@@ -61,7 +62,6 @@ class MSM(object):
         |  's',   'second*'
 
     """
-
     def __init__(self, T, dt='1 step'):
         import pyemma.msm.analysis as msmana
         import pyemma.msm.estimation as msmest
@@ -894,8 +894,12 @@ class MSM(object):
 
 class EstimatedMSM(MSM):
 
-    def __init__(self, dtrajs, lag, reversible=True, sparse=False, connectivity='largest', estimate=True,
-                 dt='1 step', **kwargs):
+    _ids = count(0)
+
+    def __init__(self, dtrajs, lag,
+                 reversible=True, sparse=False, connectivity='largest', estimate=True,
+                 dt='1 step',
+                 **kwargs):
         r"""Estimates a Markov model from discrete trajectories.
 
         Parameters
@@ -928,14 +932,14 @@ class EstimatedMSM(MSM):
             Description of the physical time corresponding to the lag. May be used by analysis algorithms such as
             plotting tools to pretty-print the axes. By default '1 step', i.e. there is no physical time unit.
             Specify by a number, whitespace and unit. Permitted units are (* is an arbitrary string):
-
+    
             |  'fs',  'femtosecond*'
             |  'ps',  'picosecond*'
             |  'ns',  'nanosecond*'
             |  'us',  'microsecond*'
             |  'ms',  'millisecond*'
             |  's',   'second*'
-
+    
         **kwargs: Optional algorithm-specific parameters. See below for special cases
         maxiter = 1000000 : int
             Optional parameter with reversible = True.
@@ -947,31 +951,40 @@ class EstimatedMSM(MSM):
             stationary probabilities (:math:`x_i = \sum_k x_{ik}`). The relative stationary probability changes
             :math:`e_i = (x_i^{(1)} - x_i^{(2)})/(x_i^{(1)} + x_i^{(2)})` are used in order to track changes in small
             probabilities. The Euclidean norm of the change vector, :math:`|e_i|_2`, is compared to maxerr.
-
+    
         Notes
         -----
         You can postpone the estimation of the MSM using estimate=False and
         initiate the estimation procedure by manually calling the MSM.estimate()
         method.
-
+    
         """
+        # TODO: extensive input checking!
         from pyemma.util.types import ensure_dtraj_list
 
+        # start logging
         self.__create_logger()
         self._dtrajs_full = ensure_dtraj_list(dtrajs)
         self._tau = lag
+
         self._reversible = reversible
+        # self.sliding = sliding
+
+        # count states
         import pyemma.msm.estimation as msmest
 
         self._n_full = msmest.number_of_states(dtrajs)
+
+        # sparse matrix computation wanted?
         self._sparse = sparse
         if sparse:
             self._logger.warn('Sparse mode is currently untested and might lead to errors. '
-                              'I strongly suggest to use sparse=False unless you know what you are doing.')
+                               'I strongly suggest to use sparse=False unless you know what you are doing.')
         if self._n_full > 4000 and not sparse:
             self._logger.warn('Building a dense MSM with ' + str(self._n_full) + ' states. This can be inefficient or '
-                                                                                 'unfeasible in terms of both runtime and memory consumption. Consider using sparse=True.')
+                              'unfeasible in terms of both runtime and memory consumption. Consider using sparse=True.')
 
+        # store connectivity mode (lowercase)
         self.connectivity = connectivity.lower()
         if self.connectivity == 'largest':
             pass  # this is the current default. no need to do anything
@@ -982,17 +995,25 @@ class EstimatedMSM(MSM):
         else:
             raise ValueError('connectivity mode ' + str(connectivity) + ' is unknown.')
 
+        # run estimation unless suppressed
         self._estimated = False
         self._kwargs = kwargs
         if estimate:
             self.estimate()
 
+        # set time step
         from pyemma.util.units import TimeUnit
 
         self._timeunit = TimeUnit(dt)
 
     def __create_logger(self):
-        name = "%s[%s]" % (self.__class__.__name__, hex(id(self)))
+        # note this is private, since it should only be called (once) from this class.
+        count = self._ids.next()
+        i = self.__module__.rfind(".")
+        j = self.__module__.find(".") + 1
+        package = self.__module__[j:i]
+        name = "%s.%s[%i]" % (package, self.__class__.__name__, count)
+        self._name = name
         self._logger = getLogger(name)
 
     def estimate(self):
@@ -1356,8 +1377,6 @@ class EstimatedMSM(MSM):
             array of states to be indexed. By default all states in the connected set will be used
         replace : boolean, optional
             Whether the sample is with or without replacement
-        start : int, optional, default = None
-            starting state. If not given, will sample from the stationary distribution of P
 
         Returns
         -------

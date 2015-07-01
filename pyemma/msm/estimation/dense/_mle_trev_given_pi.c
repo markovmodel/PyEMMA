@@ -54,33 +54,26 @@ static double distsq(const int n, const double *const a, const double *const b)
 #define C(i,j) (C [(i)*n+(j)])
 #define T(i,j) (T[(i)*n+(j)])
 
-int _mle_trev_given_pi_dense(double * const T, const long long * const C, const double * const mu, const int n, double maxerr, const int maxiter, const double eps)
+int _mle_trev_given_pi_dense(double * const T, const double * const C, const double * const mu, const int n, const double maxerr, const int maxiter)
 {
-  double d_sq;
-  int i, k, l, err, iteration;
+  double d_sq, norm, C_ij;
+  int i, j, err, iteration;
   double *lam, *lam_new, *temp;
   
   lam= (double*)malloc(n*sizeof(double));
   lam_new= (double*)malloc(n*sizeof(double));
-  if(!(lam&&lam_new)) { err=1; goto error; }
-  
+  if(!(lam && lam_new)) { err=1; goto error; }
+
   /* check mu */
   for(i=0; i<n; i++) {
     if(mu[i]==0) { err=4; goto error; }
   }
-  
-  /* check C */
-  if(eps==0) {
-    for(i=0; i<n; i++) {
-      if(C(i,i) == 0) { err=6; goto error; }
-    }
-  }
-  
+
   /* initialise lambdas */
   for(i=0; i<n; i++) {
     lam_new[i] = 0.0;
-    for(k=0; k<n; k++) {
-      lam_new[i] += 0.5*(C(i,k)+C(k,i));
+    for(j=0; j<n; j++) {
+      lam_new[i] += 0.5*(C(i,j)+C(j,i));
     }
     if(lam_new[i]==0) { err=3; goto error; }
   }
@@ -95,15 +88,15 @@ int _mle_trev_given_pi_dense(double * const T, const long long * const C, const 
     
     err = 0;
 
-#pragma omp parallel for private(i)
-    for(k=0; k<n; k++) {
-      lam_new[k] = 0.0;
+#pragma omp parallel for private(i,C_ij)
+    for(j=0; j<n; j++) {
+      lam_new[j] = 0.0;
       for(i=0; i<n; i++) {
-        double C_ik = C(i,k)+C(k,i);
-        if(i==k && C_ik==0) C_ik = eps;
-        lam_new[k] += C_ik / ((mu[k]*lam[i])/(mu[i]*lam[k])+1);
+        C_ij = C(i,j)+C(j,i);
+        if(C_ij==0) continue;
+        lam_new[j] += C_ij / ((mu[j]*lam[i])/(mu[i]*lam[j])+1);
       }
-      if(isnan(lam_new[k]) && err==0) err=2; 
+      if(isnan(lam_new[j]) && err==0) err=2; 
     }
     
     if(err!=0) goto error;
@@ -114,13 +107,17 @@ int _mle_trev_given_pi_dense(double * const T, const long long * const C, const 
   if(iteration==maxiter) { err=5; goto error; } 
 
   /* calculate T */
-  for(k=0; k<n; k++) {
-     for(l=0; l<n; l++) {
-        double C_kl = C(k,l)+C(l,k);
-        if(k==l && C_kl==0) C_kl = eps;
-        T(k,l) = C_kl / (lam_new[k] + lam_new[l]*mu[k]/mu[l]);
-     }
-   }
+  for(i=0; i<n; i++) {
+    norm = 0;
+    for(j=0; j<n; j++) {
+      C_ij = C(i,j)+C(j,i);
+      if(i!=j) {
+        T(i,j) = C_ij / (lam_new[i] + lam_new[j]*mu[i]/mu[j]);
+        norm += T(i,j);
+      }
+    }
+    if(norm>1.0) T(i,i) = 0.0; else T(i,i) = 1.0-norm;
+  }
 
   if(lam) free(lam);
   if(lam_new) free(lam_new);

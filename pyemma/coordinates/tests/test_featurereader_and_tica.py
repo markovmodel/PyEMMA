@@ -38,19 +38,14 @@ from pyemma.util.log import getLogger
 
 log = getLogger('TestFeatureReaderAndTICA')
 
-from nose.plugins.attrib import attr
 
-
-@attr(slow=True)
 class TestFeatureReaderAndTICA(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        c = super(TestFeatureReaderAndTICA, cls).setUpClass()
-
-        cls.dim = 99  # dimension (must be divisible by 3)
+        cls.dim = 9 # dimension (must be divisible by 3)
         N = 50000  # length of single trajectory # 500000
         N_trajs = 10  # number of trajectories
-        
+
         cls.w = 2.0*np.pi*1000.0/N  # have 1000 cycles in each trajectory
 
         # get random amplitudes and phases
@@ -86,9 +81,9 @@ class TestFeatureReaderAndTICA(unittest.TestCase):
             os.unlink(fname)
         os.unlink(cls.temppdb)
         super(TestFeatureReaderAndTICA, cls).tearDownClass()
-        
+
     def test_covariances_and_eigenvalues(self):
-        reader = FeatureReader(self.trajnames, self.temppdb)
+        reader = FeatureReader(self.trajnames, self.temppdb, chunksize=10000)
         trans = api.tica(data=reader, dim=self.dim, lag=1)
         #TICA(tau=1, output_dimension=self.dim)
         for lag in [1, 11, 101, 1001, 2001]:  # avoid cos(w*tau)==0
@@ -100,7 +95,7 @@ class TestFeatureReaderAndTICA(unittest.TestCase):
             # analytical solution for C_ij(lag) is 0.5*A[i]*A[j]*cos(phi[i]-phi[j])*cos(w*lag)
             ana_cov = 0.5*self.A[:, np.newaxis]*self.A*np.cos(self.phi[:, np.newaxis]-self.phi)
             ana_cov_tau = ana_cov*np.cos(self.w*lag)
-        
+
             self.assertTrue(np.allclose(ana_cov, trans.cov, atol=1.E-3))
             self.assertTrue(np.allclose(ana_cov_tau, trans.cov_tau, atol=1.E-3))
             log.info('max. eigenvalue: %f' % np.max(trans.eigenvalues))

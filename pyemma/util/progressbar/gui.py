@@ -4,7 +4,7 @@ Created on 24.04.2015
 @author: marscher
 '''
 import sys
-from pyemma.util.config import conf_values
+from pyemma import config
 
 __all__ = ('is_interactive_session', 'show_progressbar')
 
@@ -56,7 +56,7 @@ def show_progressbar(bar, show_eta=True):
     show_eta : bool (optional)
 
     """
-    if not (conf_values['pyemma'].show_progress_bars == 'True' and
+    if not (config['show_progress_bars'] == 'True' and
             is_interactive_session):
         return
 
