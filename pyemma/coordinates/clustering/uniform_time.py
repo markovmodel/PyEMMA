@@ -33,18 +33,17 @@ __all__ = ['UniformTimeClustering']
 
 class UniformTimeClustering(AbstractClustering):
 
-    """
-    Uniform time clustering
-
-    Parameters
-    ----------
-    k : int
-        TODO: super unknown parameter
-    metric : str
-        metric to use during clustering ('euclidean', 'minRMSD')
-    """
-
     def __init__(self, k=2, metric='euclidean'):
+        """r
+        Uniform time clustering
+
+        Parameters
+        ----------
+        k : int
+            TODO: super unknown parameter
+        metric : str
+            metric to use during clustering ('euclidean', 'minRMSD')
+        """
         super(UniformTimeClustering, self).__init__(metric=metric)
         self.n_clusters = k
 

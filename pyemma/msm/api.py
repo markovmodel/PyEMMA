@@ -74,6 +74,21 @@ def its(dtrajs, lags=None, nits=10, reversible=True, connected=True):
     -------
     itsobj : :class:`ImpliedTimescales <pyemma.msm.ui.ImpliedTimescales>` object
 
+
+    .. autoclass:: pyemma.msm.ui.timescales.ImpliedTimescales
+        :members:
+        :undoc-members:
+
+        .. rubric:: Methods
+
+        .. autoautosummary:: pyemma.msm.ui.timescales.ImpliedTimescales
+           :methods:
+
+        .. rubric:: Attributes
+
+        .. autoautosummary:: pyemma.msm.ui.timescales.ImpliedTimescales
+            :attributes:
+
     See also
     --------
     ImpliedTimescales
@@ -116,7 +131,22 @@ def markov_model(P, dt='1 step'):
 
     Returns
     -------
-    A :class:`MSM <pyemma.msm.ui.MSM>` object containing a transition matrix and various other MSM-related quantities.
+    msm : A :class:`MSM <pyemma.msm.ui.msm.MSM>` object containing a transition matrix and various other MSM-related quantities.
+
+
+    .. autoclass:: pyemma.msm.ui.msm.MSM
+        :members:
+        :undoc-members:
+
+        .. rubric:: Methods
+
+        .. autoautosummary:: pyemma.msm.ui.msm.MSM
+           :methods:
+
+        .. rubric:: Attributes
+
+        .. autoautosummary:: pyemma.msm.ui.msm.MSM
+            :attributes:
 
     See also
     --------
@@ -149,14 +179,20 @@ def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
         to be much more efficient.
     connectivity : str, optional, default = 'largest'
         Connectivity mode. Three methods are intended (currently only 'largest' is implemented)
-        'largest' : The active set is the largest reversibly connected set. All estimation will be done on this
-            subset and all quantities (transition matrix, stationary distribution, etc) are only defined on this
-            subset and are correspondingly smaller than the full set of states
-        'all' : The active set is the full set of states. Estimation will be conducted on each reversibly connected
-            set separately. That means the transition matrix will decompose into disconnected submatrices,
-            the stationary vector is only defined within subsets, etc. Currently not implemented.
-        'none' : The active set is the full set of states. Estimation will be conducted on the full set of states
-            without ensuring connectivity. This only permits nonreversible estimation. Currently not implemented.
+
+        * 'largest' : The active set is the largest reversibly connected set. All estimation will be done on this
+          subset and all quantities (transition matrix, stationary distribution, etc) are only defined on this
+          subset and are correspondingly smaller than the full set of states
+
+        * 'all' :
+          The active set is the full set of states. Estimation will be conducted on each reversibly connected
+          set separately. That means the transition matrix will decompose into disconnected submatrices,
+          the stationary vector is only defined within subsets, etc. Currently not implemented.
+
+        * 'none' :
+          The active set is the full set of states. Estimation will be conducted on the full set of states
+          without ensuring connectivity. This only permits nonreversible estimation. Currently not implemented.
+
     estimate : bool, optional, default=True
         If true estimate the MSM when creating the MSM object.
     dt : str, optional, default='1 step'
@@ -193,6 +229,22 @@ def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
     You can postpone the estimation of the MSM using compute=False and
     initiate the estimation procedure by manually calling the MSM.estimate()
     method.
+
+
+    .. autoclass:: pyemma.msm.ui.msm.EstimatedMSM
+        :members:
+        :undoc-members:
+
+        .. rubric:: Methods
+
+        .. autoautosummary:: pyemma.msm.ui.msm.EstimatedMSM
+           :methods:
+
+        .. rubric:: Attributes
+
+        .. autoautosummary:: pyemma.msm.ui.msm.EstimatedMSM
+            :attributes:
+
 
     See also
     --------
@@ -277,10 +329,26 @@ def tpt(msmobj, A, B):
     discrete version outlined in [2]_. Here, we use the transition
     matrix formulation described in [3]_.
     
+
+    .. autoclass:: pyemma.msm.flux.reactive_flux.ReactiveFlux
+        :members:
+        :undoc-members:
+
+        .. rubric:: Methods
+
+        .. autoautosummary:: pyemma.msm.flux.reactive_flux.ReactiveFlux
+           :methods:
+
+        .. rubric:: Attributes
+
+        .. autoautosummary:: pyemma.msm.flux.reactive_flux.ReactiveFlux
+            :attributes:
+
     See also
     --------
-    ReactiveFlux
+    :class:`ReactiveFlux <pyemma.msm.flux.ReactiveFlux>`
         Reactive Flux object
+
     
     References
     ----------
