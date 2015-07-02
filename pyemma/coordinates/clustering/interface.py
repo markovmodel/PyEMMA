@@ -71,14 +71,14 @@ class AbstractClustering(Transformer):
         return self._dtrajs  # returning what we have saved
 
     @property
-    def index_states(self):
-        """Returns trajectory/time indexes for all the microstates.
+    def index_cluster(self):
+        """Returns trajectory/time indexes for all the clusters
 
         Returns
         -------
         indexes : list of ndarray( (N_i, 2) )
-            For each state, all trajectory and time indexes where this state occurs.
-            Each matrix has a number of rows equal to the number of occurances of the corresponding state,
+            For each state, all trajectory and time indexes where this cluster occurs.
+            Each matrix has a number of rows equal to the number of occurrences of the corresponding state,
             with rows consisting of a tuple (i, t), where i is the index of the trajectory and t is the time index
             within the trajectory.
         """
@@ -90,17 +90,17 @@ class AbstractClustering(Transformer):
 
         return self._index_states
 
-    def sample_indexes_by_state(self, states, nsample, replace=True):
+    def sample_indexes_by_cluster(self, clusters, nsample, replace=True):
         """Samples trajectory/time indexes according to the given sequence of states.
 
         Parameters
         ----------
-        states : iterable of integers
-            It contains the state indexes to be sampled
+        clusters : iterable of integers
+            It contains the cluster indexes to be sampled
 
         nsample : int
-            Number of samples per state. If replace = False, the number of returned samples per state could be smaller
-            if less than nsample indexes are available for a state.
+            Number of samples per cluster. If replace = False, the number of returned samples per cluster could be smaller
+            if less than nsample indexes are available for a cluster.
 
         replace : boolean, optional
             Whether the sample is with or without replacement
@@ -108,7 +108,7 @@ class AbstractClustering(Transformer):
         Returns
         -------
         indexes : list of ndarray( (N, 2) )
-            List of the sampled indices by state.
+            List of the sampled indices by cluster.
             Each element is an index array with a number of rows equal to N=len(sequence), with rows consisting of a
             tuple (i, t), where i is the index of the trajectory and t is the time index within the trajectory.
         """
@@ -117,7 +117,7 @@ class AbstractClustering(Transformer):
         if len(self._index_states) == 0: # has never been run
             self._index_states = index_states(self.dtrajs)
 
-        return sample_indexes_by_state(self._index_states[states], nsample, replace=replace)
+        return sample_indexes_by_state(self._index_states[clusters], nsample, replace=replace)
 
     def _map_array(self, X):
         """get closest index of point in :attr:`clustercenters` to x."""
