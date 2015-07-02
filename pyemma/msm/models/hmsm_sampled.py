@@ -36,63 +36,60 @@ __docformat__ = "restructuredtext en"
 import numpy as _np
 
 from pyemma.msm.models.hmsm import HMSM as _HMSM
-from pyemma.msm.models.hmsm_estimated import EstimatedHMSM as _EstimatedHMSM
 from pyemma._base.model import SampledModel as _SampledModel
-from pyemma.util.statistics import confidence_interval
+from pyemma.util.types import is_iterable
 
 
-class SampledHMSM(_EstimatedHMSM, _SampledModel):
+class SampledHMSM(_HMSM, _SampledModel):
 
-    def __init__(self, hmsm, sample_Ps, sample_mus, sample_pobs, conf=0.683):
-        r""" Constructs a sampled MSM
+    def __init__(self, samples, ref=None, conf=0.95):
+        r""" Constructs a sampled HMSM
 
         Parameters
         ----------
-        hmsm : EstimatedHMSM
-            Single-point estimate, usually a maximum likelihood estimator around which the sample is constructed
-        sample_Ps : array-like of ndarray(m,m)
-            Sampled transition matrices. They must all have the size of the number of hidden states
-        sample_mus : array-like of ndarray(m,)
-            Sampled stationary distributions. They must all have the size of the number of hidden states
-        sample_pobs : array-like of ndarray(m,n)
-            Sampled observation probabilities. They must all have number of hidden states rows and number of
-            observed states columns.
+        samples : list of HMSM
+            Sampled HMSM objects
+
+        ref : HMSM
+            Single-point estimator, e.g. containing a maximum likelihood HMSM.
+            If not given, the sample mean will be used.
+
+        conf : float, optional, default=0.95
+            Confidence interval. By default two-sigma (95.4%) is used.
+            Use 95.4% for two sigma or 99.7% for three sigma.
+
+        """
+        # validate input
+        assert is_iterable(samples), 'samples must be a list of MSM objects, but is not.'
+        assert isinstance(samples[0], _HMSM), 'samples must be a list of MSM objects, but is not.'
+        # construct superclass 1
+        _SampledModel.__init__(self, samples, conf=conf)
+        # construct superclass 2
+        if ref is None:
+            Pref = self.sample_mean('P')
+            pobsref = self.sample_mean('pobs')
+            _HMSM.__init__(self, Pref, pobsref, dt_model=samples[0].dt_model)
+        else:
+            _HMSM.__init__(self, ref.Pref, ref.pobs, dt_model=ref.dt_model)
+
+
+    # TODO: maybe rename to parametrize in order to avoid confusion with set_params that has a different behavior?
+    def set_model_params(self, samples=None, conf=0.95,
+                         P=None, pobs=None, pi=None, reversible=None, dt_model='1 step', neig=None):
+        """
+
+        Parameters
+        ----------
+        samples : list of MSM objects
+            sampled MSMs
         conf : float, optional, default=0.68
             Confidence interval. By default one-sigma (68.3%) is used. Use 95.4% for two sigma or 99.7% for three sigma.
 
         """
-        # superclass constructor
-        _EstimatedHMSM.__init__(self, hmsm.discrete_trajectories_full, hmsm.timestep, hmsm.lagtime, hmsm.nstates_obs,
-                                hmsm.observable_set, hmsm.discrete_trajectories_obs,
-                                hmsm.transition_matrix, hmsm.observation_probabilities)
+        # set model parameters of superclass
+        _SampledModel.set_model_params(self, samples=samples, conf=conf)
+        _HMSM.set_model_params(self, P=P, pobs=pobs, pi=pi, reversible=reversible, dt_model=dt_model, neig=neig)
 
-        # set parameters
-        self._nsamples = len(sample_Ps)
-        self._confidence = conf
-
-        # set params. Make a deep copy to avoid changing from outside
-        self._sample_Ps = _np.empty((self._nsamples, self.nstates, self.nstates), dtype=float)
-        self._sample_mus = _np.empty((self._nsamples, self.nstates), dtype=float)
-        self._sample_pobs = _np.empty((self._nsamples, self.nstates, self.nstates_obs), dtype=float)
-        for i in range(self._nsamples):
-            self._sample_Ps[i, :, :] = sample_Ps[i][:, :]
-            self._sample_mus[i, :] = sample_mus[i][:]
-            self._sample_pobs[i, :, :] = sample_pobs[i][:, :]
-
-        # do sample eigendecomposition by default
-        self._do_sample_eigendecomposition()
-
-
-    def mean_model(self):
-        """ Computes the sample mean HMSM
-
-        This mean is computed by trivially averaging P and pobs.
-        Careful, this might not preserve detailed balance
-
-        """
-        P_mean = self.sample_mean('P')
-        pobs_mean = self.sample_mean('pobs')
-        return _HMSM(P_mean, pobs_mean, dt=self.dt)
 
     # def _do_sample_eigendecomposition(self):
     #     """Conducts the eigenvalue decompositions for all sampled matrices.

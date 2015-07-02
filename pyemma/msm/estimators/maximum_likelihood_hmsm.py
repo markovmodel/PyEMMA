@@ -1,16 +1,16 @@
 __author__ = 'noe'
 
 import numpy as np
+from pyemma.msm.estimators.estimated_hmsm import EstimatedHMSM as _EstimatedHMSM
 
-from pyemma.msm.models.msm_estimated import EstimatedMSM as _EstimatedMSM
+from pyemma.msm.estimators.estimated_msm import EstimatedMSM as _EstimatedMSM
 from pyemma.msm.estimators.maximum_likelihood_msm import MaximumLikelihoodMSM as _MSMEstimator
-from pyemma.msm.models.hmsm import HMSM as _HMSM
-from pyemma.msm.models.hmsm_estimated import EstimatedHMSM as _EstimatedHMSM
 from pyemma._base.estimator import Estimator as _Estimator
 from pyemma.util import types as _types
+from pyemma.util.units import TimeUnit
 
 
-class MaximumLikelihoodHMSM(_Estimator):
+class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
     """Maximum likelihood estimator for a Hidden MSM given a MSM
 
     Parameters
@@ -37,10 +37,12 @@ class MaximumLikelihoodHMSM(_Estimator):
     observe_active : bool, optional, default=True
         True: Restricts the observation set to the active states of the MSM.
         False: All states are in the observation set.
-    dt : str, optional, default='1 step'
-        Description of the physical time corresponding to the lag. May be used by analysis algorithms such as
-        plotting tools to pretty-print the axes. By default '1 step', i.e. there is no physical time unit.
-        Specify by a number, whitespace and unit. Permitted units are (* is an arbitrary string):
+    dt_traj : str, optional, default='1 step'
+        Description of the physical time corresponding to the trajectory time
+        step.  May be used by analysis algorithms such as plotting tools to
+        pretty-print the axes. By default '1 step', i.e. there is no physical
+        time unit. Specify by a number, whitespace and unit. Permitted units
+        are (* is an arbitrary string):
 
         |  'fs',  'femtosecond*'
         |  'ps',  'picosecond*'
@@ -49,27 +51,29 @@ class MaximumLikelihoodHMSM(_Estimator):
         |  'ms',  'millisecond*'
         |  's',   'second*'
     accuracy : float
-        convergence threshold for EM iteration. When two the likelihood does not increase by more than accuracy, the
-        iteration is stopped successfully.
+        convergence threshold for EM iteration. When two the likelihood does
+        not increase by more than accuracy, the iteration is stopped
+        successfully.
     maxit : int
-        stopping criterion for EM iteration. When so many iterations are performed without reaching the requested
-        accuracy, the iteration is stopped without convergence (a warning is given)
+        stopping criterion for EM iteration. When so many iterations are
+        performed without reaching the requested accuracy, the iteration is
+        stopped without convergence (a warning is given)
     store_data : bool
-        True: estimate() returns an :class:`pyemma.msm.EstimatedMSM` object with discrete trajectories and
-        counts stored. False: estimate() returns a plain :class:`pyemma.msm.MSM` object that only contains
-        the transition matrix and quantities derived from it.
+        True: estimate() returns an :class:`pyemma.msm.EstimatedMSM` object
+        with discrete trajectories and counts stored. False: estimate() returns
+        a plain :class:`pyemma.msm.MSM` object that only contains the
+        transition matrix and quantities derived from it.
 
     """
     def __init__(self, lag=1, nstates=2, msm_init=None, reversible=True, connectivity='largest',
-                 observe_active=True, dt='1 step', accuracy=1e-3, maxit=1000, store_data=True):
+                 observe_active=True, dt_traj='1 step', accuracy=1e-3, maxit=1000):
         self.lag = lag
         self.nstates = nstates
         self.msm_init = msm_init
         self.reversible = reversible
         self.connectivity = connectivity
         self.observe_active = observe_active
-        self.dt = dt
-        self.store_data = store_data
+        self.timestep_traj = TimeUnit(dt_traj)
 
     def _estimate(self, dtrajs):
         """
@@ -83,12 +87,14 @@ class MaximumLikelihoodHMSM(_Estimator):
             Estimated Hidden Markov state model
 
         """
+        # ensure right format
+        dtrajs = _types.ensure_dtraj_list(dtrajs)
         # if no initial MSM is given, estimate it now
         if self.msm_init is None:
             # estimate with sparse=False, because we need to do PCCA which is currently not implemented for sparse
             # estimate with store_data=True, because we need an EstimatedMSM
             msm_estimator = _MSMEstimator(lag=self.lag, reversible=self.reversible, sparse=False,
-                                          connectivity=self.connectivity, dt=self.dt, store_data=True)
+                                          connectivity=self.connectivity, dt_traj=self.dt_traj)
             msm_init = msm_estimator.estimate(dtrajs)
         else:
             assert isinstance(self.msm_init, _EstimatedMSM), 'msm_init must be of type EstimatedMSM'
@@ -164,13 +170,12 @@ class MaximumLikelihoodHMSM(_Estimator):
             observation_probabilities = observation_probabilities[:, msm_init.active_set]
             observation_probabilities /= observation_probabilities.sum(axis=1)[:,None]  # renormalize
 
-        # construct result
-        if self.store_data:
-            hmsm = _EstimatedHMSM(dtrajs, self.dt, self.lag, nstates_obs, observable_set, dtrajs_obs,
-                                  transition_matrix, observation_probabilities)
-        else:
-            hmsm = _HMSM(transition_matrix, observation_probabilities, self.dt)
-            hmsm._lag = self.lag
+        # parametrize self
+        self._dtrajs_full = dtrajs
+        self._observable_set = observable_set
+        self._dtrajs_obs = dtrajs_obs
+        self.set_model_params(P=transition_matrix, pobs=observation_probabilities,
+                              reversible=self.reversible, dt_model=self.timestep_traj.get_scaled(self.lag))
 
-        return hmsm
+        return self
 

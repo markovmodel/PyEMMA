@@ -55,41 +55,59 @@ class TimeUnit:
             's',   'second*'
 
         """
-        lunit = unit.lower()
-        words = lunit.split(' ')
+        if isinstance(unit, TimeUnit):  # copy constructor
+            self._factor = unit._factor
+            self._unit = unit._unit
+        else:  # construct from string
+            lunit = unit.lower()
+            words = lunit.split(' ')
 
+            if len(words) == 1:
+                self._factor = 1.0
+                unitstring = words[0]
+            elif len(words) == 2:
+                self._factor = float(words[0])
+                unitstring = words[1]
+            else:
+                raise ValueError('Illegal input string: '+str(unit))
 
-        if len(words) == 1:
-            self._factor = 1.0
-            unitstring = words[0]
-        elif len(words) == 2:
-            self._factor = float(words[0])
-            unitstring = words[1]
-        else:
-            raise ValueError('Illegal input string: '+str(unit))
-
-        if unitstring == 'step':
-            self._unit = self._UNIT_STEP
-        elif unitstring == 'fs' or unitstring.startswith('femtosecond'):
-            self._unit = self._UNIT_FS
-        elif unitstring == 'ps' or unitstring.startswith('picosecond'):
-            self._unit = self._UNIT_PS
-        elif unitstring == 'ns' or unitstring.startswith('nanosecond'):
-            self._unit = self._UNIT_NS
-        elif unitstring == 'us' or unitstring.startswith('microsecond'):
-            self._unit = self._UNIT_US
-        elif unitstring == 'ms' or unitstring.startswith('millisecond'):
-            self._unit = self._UNIT_MS
-        elif unitstring == 's' or unitstring.startswith('second'):
-            self._unit = self._UNIT_S
-        else:
-            raise ValueError('Time unit is not understood: '+unit)
+            if unitstring == 'step':
+                self._unit = self._UNIT_STEP
+            elif unitstring == 'fs' or unitstring.startswith('femtosecond'):
+                self._unit = self._UNIT_FS
+            elif unitstring == 'ps' or unitstring.startswith('picosecond'):
+                self._unit = self._UNIT_PS
+            elif unitstring == 'ns' or unitstring.startswith('nanosecond'):
+                self._unit = self._UNIT_NS
+            elif unitstring == 'us' or unitstring.startswith('microsecond'):
+                self._unit = self._UNIT_US
+            elif unitstring == 'ms' or unitstring.startswith('millisecond'):
+                self._unit = self._UNIT_MS
+            elif unitstring == 's' or unitstring.startswith('second'):
+                self._unit = self._UNIT_S
+            else:
+                raise ValueError('Time unit is not understood: '+unit)
 
     def __str__(self):
         if self._unit == -1:
             return str(self._factor)+' step'
         else:
             return str(self._factor)+' '+self._unit_names[self._unit]
+
+    @property
+    def dt(self):
+        return self._factor
+
+    @property
+    def unit(self):
+        return self._unit
+
+    def get_scaled(self, factor):
+        """ Get a new time unit, scaled by the given factor """
+        import copy
+        res = copy.deepcopy(self)
+        res._factor *= factor
+        return res
 
     def rescale_around1(self, times):
         """

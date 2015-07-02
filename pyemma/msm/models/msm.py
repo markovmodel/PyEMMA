@@ -49,10 +49,19 @@ class MSM(_Model):
     ----------
     P : ndarray(n,n)
         transition matrix
+    pi : ndarray(n), optional, default=None
+        stationary distribution. Can be optionally given in case if it was
+        already computed, e.g. by the estimator.
+    reversible : bool, optional, default=None
+        whether P is reversible with respect to its stationary distribution.
+        If None (default), will be determined from P
     dt : str, optional, default='1 step'
-        Description of the physical time corresponding to the lag. May be used by analysis algorithms such as
-        plotting tools to pretty-print the axes. By default '1 step', i.e. there is no physical time unit.
-        Specify by a number, whitespace and unit. Permitted units are (* is an arbitrary string):
+        Description of the physical time corresponding to one time step of the
+        MSM (aka lag time). May be used by analysis algorithms such as plotting
+        tools to pretty-print the axes.
+        By default '1 step', i.e. there is no physical time unit. Specify by a
+        number, whitespace and unit. Permitted units are
+        (* is an arbitrary string):
 
         |  'fs',  'femtosecond*'
         |  'ps',  'picosecond*'
@@ -61,57 +70,103 @@ class MSM(_Model):
         |  'ms',  'millisecond*'
         |  's',   'second*'
     neig : int or None
-        The number of eigenvalues / eigenvectors to be kept. If set to None, defaults will be used.
-        For a dense MSM the default is all eigenvalues. For a sparse MSM the default is 10.
+        The number of eigenvalues / eigenvectors to be kept. If set to None,
+        defaults will be used. For a dense MSM the default is all eigenvalues.
+        For a sparse MSM the default is 10.
     ncv : int (optional)
-        Relevant for eigenvalue decomposition of reversible transition matrices.
-        ncv is the number of Lanczos vectors generated, `ncv` must be greater than k;
-        it is recommended that ncv > 2*k
+        Relevant for eigenvalue decomposition of reversible transition
+        matrices. ncv is the number of Lanczos vectors generated, `ncv` must
+        be greater than k; it is recommended that ncv > 2*k.
 
     """
-    def __init__(self, P, dt='1 step', neig=None, ncv=None):
-        import pyemma.msm.analysis as msmana
-        import pyemma.msm.estimation as msmest
-        # check input
-        if not msmana.is_transition_matrix(P):
-            raise ValueError('T is not a transition matrix.')
-
-        # set primary parameters
-        self.P = copy.deepcopy(P)
-        self.dt = dt
-
-        # nstates
-        self._nstates = np.shape(P)[0]
-        # set time step
-        from pyemma.util.units import TimeUnit
-
-        self._timeunit = TimeUnit(dt)
-        # set tau to 1. This is just needed in order to make the time-based methods (timescales, mfpt) work even
-        # without reference to timed data.
-        self._lag = 1
-
-        # check connectivity
-        # TODO: abusing C-connectivity test for T. Either provide separate T-connectivity test or move to a central
-        # TODO: location because it's the same code.
-        if not msmest.is_connected(P):
-            raise NotImplementedError('Transition matrix T is disconnected. ' +
-                                      'This is currently not supported in the MSM object.')
-
-        # set basic attributes
-        self._reversible = msmana.is_reversible(P)
-        from scipy.sparse import issparse
-        self._sparse = issparse(P)
-
-        # set eigenvalue decomposition parameters
-        if neig is None:
-            if self._sparse:
-                self.neig = 10
-            else:
-                self.neig = self._nstates
-        else:
-            self.neig = neig
+    def __init__(self, P, pi=None, reversible=None, dt_model='1 step', neig=None, ncv=None):
+        self.set_model_params(P=P, pi=pi, reversible=reversible, dt_model=dt_model, neig=neig)
         self.ncv = ncv
 
+
+    # TODO: maybe rename to parametrize in order to avoid confusion with set_params that has a different behavior?
+    def set_model_params(self, P=None, pi=None, reversible=None, dt_model='1 step', neig=None):
+        """ Call to set all basic model parameters.
+
+        Sets or updates given model parameters. This argument list of this method must contain the full list of
+        essential, or independent model parameters. It can additionally contain derived parameters, e.g. in order to
+        save computational costs of re-computing them.
+
+        Parameters
+        ----------
+        P : ndarray(n,n)
+            transition matrix
+
+        pi : ndarray(n), optional, default=None
+            stationary distribution. Can be optionally given in case if it was
+            already computed, e.g. by the estimator.
+
+        reversible : bool, optional, default=None
+            whether P is reversible with respect to its stationary distribution.
+            If None (default), will be determined from P
+
+        dt : str, optional, default='1 step'
+            Description of the physical time corresponding to the model time
+            step.  May be used by analysis algorithms such as plotting tools to
+            pretty-print the axes. By default '1 step', i.e. there is no
+            physical time unit. Specify by a number, whitespace and unit.
+            Permitted units are (* is an arbitrary string):
+
+            |  'fs',  'femtosecond*'
+            |  'ps',  'picosecond*'
+            |  'ns',  'nanosecond*'
+            |  'us',  'microsecond*'
+            |  'ms',  'millisecond*'
+            |  's',   'second*'
+
+        neig : int or None
+            The number of eigenvalues / eigenvectors to be kept. If set to None,
+            defaults will be used. For a dense MSM the default is all eigenvalues.
+            For a sparse MSM the default is 10.
+
+        Notes
+        -----
+        Explicitly define all independent model parameters in the argument list of this function (by mandatory or
+        keyword arguments)
+
+        """
+        import pyemma.msm.analysis as msmana
+        # check input
+        if P is not None:
+            import pyemma.msm.estimation as msmest
+            if not msmana.is_transition_matrix(P):
+                raise ValueError('T is not a transition matrix.')
+            # check connectivity
+            # TODO: abusing C-connectivity test for T. Either provide separate T-connectivity test or move to a central
+            # TODO: location because it's the same code.
+            if not msmest.is_connected(P):
+                raise NotImplementedError('Transition matrix T is disconnected. ' +
+                                          'This is currently not supported in the MSM object.')
+
+        # update all parameters
+        self.update_model_params(P=P, pi=pi, reversible=reversible, dt_model=dt_model, neig=neig)
+        # set ncv for consistency
+        if not hasattr(self, 'ncv'):
+            self.ncv = None
+        # update derived quantities
+        from pyemma.util.units import TimeUnit
+        self._timeunit_model = TimeUnit(self.dt_model)
+
+        # set P and derived quantities if available
+        if P is not None:
+            from scipy.sparse import issparse
+            # set states
+            self._nstates = np.shape(P)[0]
+            if self.reversible is None:
+                self.reversible = msmana.is_reversible(P)
+            self.sparse = issparse(P)
+
+            # set or correct eig param
+            if neig is None:
+                if self.sparse:
+                    self.neig = 10
+                else:
+                    self.neig = self._nstates
 
     ################################################################################
     # Basic attributes
@@ -120,17 +175,17 @@ class MSM(_Model):
     @property
     def is_reversible(self):
         """Returns whether the MSM is reversible """
-        return self._reversible
+        return self.reversible
 
     @property
     def is_sparse(self):
         """Returns whether the MSM is sparse """
-        return self._sparse
+        return self.sparse
 
     @property
-    def timestep(self):
+    def timestep_model(self):
         """Returns the physical time corresponding to one step of the transition matrix as string, e.g. '10 ps'"""
-        return str(self._timeunit)
+        return str(self._timeunit_model)
 
     @property
     def nstates(self):
@@ -140,6 +195,10 @@ class MSM(_Model):
         """
         return self._nstates
 
+    @nstates.setter
+    def nstates(self, n):
+        self._nstates = n
+
     @property
     def transition_matrix(self):
         """
@@ -147,7 +206,10 @@ class MSM(_Model):
         transition matrix amongst the largest set of reversibly connected states
 
         """
-        return self.P
+        try:
+            return self.P
+        except:
+            raise AttributeError('MSM has not yet been parametrized. Call __init__ or set transition matrix')
 
     ################################################################################
     # Compute derived quantities
@@ -162,21 +224,22 @@ class MSM(_Model):
 
         """
         try:
-            return self._mu
+            return self._pi
         except:
             from pyemma.msm.analysis import stationary_distribution as _statdist
-            self._mu = _statdist(self.P)
-            return self._mu
+            self._pi = _statdist(self.transition_matrix)
+            return self._pi
 
     def _compute_eigenvalues(self, neig):
         """ Conducts the eigenvalue decomposition and stores k eigenvalues, left and right eigenvectors """
         from pyemma.msm.analysis import eigenvalues as anaeig
 
-        if self._reversible:
+        if self.reversible:
             # TODO: this should be using reversible eigenvalue decomposition!
-            self._eigenvalues = anaeig(self.P, k=neig, ncv=self.ncv, reversible=True, mu=self.stationary_distribution)
+            self._eigenvalues = anaeig(self.transition_matrix, k=neig, ncv=self.ncv,
+                                       reversible=True, mu=self.stationary_distribution)
         else:
-            self._eigenvalues = anaeig(self.P, k=neig, ncv=self.ncv, reversible=False)
+            self._eigenvalues = anaeig(self.transition_matrix, k=neig, ncv=self.ncv, reversible=False)
 
     def _ensure_eigenvalues(self, neig=None):
         """ Ensures that at least neig eigenvalues have been computed """
@@ -196,14 +259,15 @@ class MSM(_Model):
         """ Conducts the eigenvalue decomposition and stores k eigenvalues, left and right eigenvectors """
         from pyemma.msm.analysis import rdl_decomposition
 
-        if self._reversible:
-            self._R, self._D, self._L = rdl_decomposition(self.P, k=neig, norm='reversible', ncv=self.ncv)
+        if self.reversible:
+            self._R, self._D, self._L = rdl_decomposition(self.transition_matrix, norm='reversible',
+                                                          k=neig, ncv=self.ncv)
             # everything must be real-valued
             self._R = self._R.real
             self._D = self._D.real
             self._L = self._L.real
         else:
-            self._R, self._D, self._L = rdl_decomposition(self.P, k=neig, norm='standard', ncv=self.ncv)
+            self._R, self._D, self._L = rdl_decomposition(self.transition_matrix, k=neig, norm='standard', ncv=self.ncv)
         self._eigenvalues = np.diag(self._D)
 
     def _ensure_eigendecomposition(self, neig=None):
@@ -298,11 +362,11 @@ class MSM(_Model):
             self._ensure_eigenvalues(neig=k+1)
         from pyemma.msm.analysis.dense.decomposition import timescales_from_eigenvalues as _timescales
 
-        ts = _timescales(self._eigenvalues, tau=self._lag)
+        ts = _timescales(self._eigenvalues, tau=self._timeunit_model.dt)
         if k is None:
             return ts[1:]
         else:
-            return ts[1:k]  # exclude the stationary process
+            return ts[1:k+1]  # exclude the stationary process
 
     def _assert_in_active(self, A):
         """
@@ -320,7 +384,7 @@ class MSM(_Model):
         self._assert_in_active(B)
         from pyemma.msm.analysis import mfpt as __mfpt
         # scale mfpt by lag time
-        return self._lag * __mfpt(P, B, origin=A, mu=mu)
+        return self._timeunit_model.dt * __mfpt(P, B, origin=A, mu=mu)
 
     def mfpt(self, A, B):
         """Mean first passage times from set A to set B, in units of the input trajectory time step
@@ -332,7 +396,7 @@ class MSM(_Model):
         B : int or int array
             set of target states
         """
-        return self._mfpt(self.P, A, B, mu=self.stationary_distribution)
+        return self._mfpt(self.transition_matrix, A, B, mu=self.stationary_distribution)
 
     def _committor_forward(self, P, A, B):
         self._assert_in_active(A)
@@ -350,7 +414,7 @@ class MSM(_Model):
         B : int or int array
             set of target states
         """
-        return self._committor_forward(self.P, A, B)
+        return self._committor_forward(self.transition_matrix, A, B)
 
     def _committor_backward(self, P, A, B, mu=None):
         self._assert_in_active(A)
@@ -368,7 +432,7 @@ class MSM(_Model):
         B : int or int array
             set of target states
         """
-        return self._committor_backward(self.P, A,B, mu=self.stationary_distribution)
+        return self._committor_backward(self.transition_matrix, A, B, mu=self.stationary_distribution)
 
     def expectation(self, a):
         r"""Equilibrium expectation value of a given observable.
@@ -492,14 +556,14 @@ class MSM(_Model):
         if maxtime is None:
             # by default, use five times the longest relaxation time, because then we have relaxed to equilibrium.
             maxtime = 5 * self.timescales()[0]
-        steps = np.arange(int(ceil(float(maxtime) / self._lag)))
+        steps = np.arange(int(ceil(float(maxtime) / self._timeunit_model.dt)))
         # compute correlation
         from pyemma.msm.analysis import correlation as _correlation
         # TODO: this could be improved. If we have already done an eigenvalue decomposition, we could provide it.
         # TODO: for this, the correlation function must accept already-available eigenvalue decompositions.
-        res = _correlation(self.P, a, obs2=b, times=steps, k=k, ncv=ncv)
+        res = _correlation(self.transition_matrix, a, obs2=b, times=steps, k=k, ncv=ncv)
         # return times scaled by tau
-        times = self._lag * steps
+        times = self._timeunit_model.dt * steps
         return times, res
 
     def fingerprint_correlation(self, a, b=None, k=None, ncv=None):
@@ -538,7 +602,7 @@ class MSM(_Model):
         # TODO: this could be improved. If we have already done an eigenvalue decomposition, we could provide it.
         # TODO: for this, the correlation function must accept already-available eigenvalue decompositions.
         from pyemma.msm.analysis import fingerprint_correlation as _fc
-        return _fc(self.P, a, obs2=b, tau=self._lag, k=k, ncv=ncv)
+        return _fc(self.transition_matrix, a, obs2=b, tau=self._timeunit_model.dt, k=k, ncv=ncv)
 
     def relaxation(self, p0, a, maxtime=None, k=None, ncv=None):
         r"""Simulates a perturbation-relaxation experiment.
@@ -609,15 +673,15 @@ class MSM(_Model):
         if maxtime is None:
             # by default, use five times the longest relaxation time, because then we have relaxed to equilibrium.
             maxtime = 5 * self.timescales()[0]
-        kmax = int(ceil(float(maxtime) / self._lag))
+        kmax = int(ceil(float(maxtime) / self._timeunit_model.dt))
         steps = np.array(range(kmax), dtype=int)
         # compute relaxation function
         from pyemma.msm.analysis import relaxation as _relaxation
         # TODO: this could be improved. If we have already done an eigenvalue decomposition, we could provide it.
         # TODO: for this, the correlation function must accept already-available eigenvalue decompositions.
-        res = _relaxation(self.P, p0, a, times=steps, k=k, ncv=ncv)
+        res = _relaxation(self.transition_matrix, p0, a, times=steps, k=k, ncv=ncv)
         # return times scaled by tau
-        times = self._lag * steps
+        times = self._timeunit_model.dt * steps
         return times, res
 
     def fingerprint_relaxation(self, p0, a, k=None, ncv=None):
@@ -659,7 +723,7 @@ class MSM(_Model):
         # TODO: this could be improved. If we have already done an eigenvalue decomposition, we could provide it.
         # TODO: for this, the correlation function must accept already-available eigenvalue decompositions.
         from pyemma.msm.analysis import fingerprint_relaxation as _fr
-        return _fr(self.P, p0, a, tau=self._lag, k=k, ncv=ncv)
+        return _fr(self.transition_matrix, p0, a, tau=self._timeunit_model.dt, k=k, ncv=ncv)
 
     ################################################################################
     # pcca
@@ -702,7 +766,7 @@ class MSM(_Model):
 
         """
         # can we do it?
-        if not self._reversible:
+        if not self.reversible:
             raise ValueError(
                 'Cannot compute PCCA for non-reversible matrices. Set reversible=True when constructing the MSM.')
 
@@ -712,10 +776,10 @@ class MSM(_Model):
             # this will except if we don't have a pcca object
             if self._pcca.n_metastable != m:
                 # incorrect number of states - recompute
-                self._pcca = PCCA(self.P, m)
+                self._pcca = PCCA(self.transition_matrix, m)
         except:
             # didn't have a pcca object yet - compute
-            self._pcca = PCCA(self.P, m)
+            self._pcca = PCCA(self.transition_matrix, m)
 
         # set metastable properties
         self._metastable_computed = True

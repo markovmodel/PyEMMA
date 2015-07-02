@@ -1,6 +1,6 @@
 __author__ = 'noe'
 
-from pyemma._ext.sklearn.base import Parametric as _Parametric
+from pyemma._ext.sklearn.base import BaseEstimator as _BaseEstimator
 from pyemma._ext.sklearn.parameter_search import ParameterGrid
 from pyemma.util.log import getLogger
 import inspect
@@ -173,7 +173,7 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, failfast=True):
     return res
 
 
-class Estimator(_Parametric):
+class Estimator(_BaseEstimator):
     """ Base class for pyEMMA estimators
 
     """

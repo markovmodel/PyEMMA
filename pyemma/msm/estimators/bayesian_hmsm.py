@@ -2,16 +2,19 @@ __author__ = 'noe'
 
 import numpy as _np
 
+from pyemma.util.types import ensure_dtraj_list
 from pyemma.msm.estimators.maximum_likelihood_hmsm import MaximumLikelihoodHMSM as _HMSMEstimator
-from pyemma.msm.models.hmsm_estimated import EstimatedHMSM as _EstimatedHMSM
+from pyemma.msm.models.hmsm import HMSM as _HMSM
+from pyemma.msm.estimators.estimated_hmsm import EstimatedHMSM as _EstimatedHMSM
+from pyemma.msm.models.hmsm_sampled import SampledHMSM as _SampledHMSM
 from pyemma._base.estimator import Estimator as _Estimator
 
-class BayesianHMSM(_Estimator):
+class BayesianHMSM(_Estimator, _SampledHMSM):
     """Estimator for a Bayesian HMSM
 
     """
-    def __init__(self, lag=1, nstates=2, nsample=1000, init_hmsm=None, reversible=True, connectivity='largest',
-                 observe_active=True, dt='1 step', conf=0.683):
+    def __init__(self, lag=1, nstates=2, nsamples=100, init_hmsm=None, reversible=True, connectivity='largest',
+                 observe_active=True, dt_traj='1 step', conf=0.95):
         """
         Parameters
         ----------
@@ -28,12 +31,12 @@ class BayesianHMSM(_Estimator):
         """
         self.lag = lag
         self.nstates = nstates
-        self.nsample = nsample
+        self.nsamples = nsamples
         self.init_hmsm = init_hmsm
         self.reversible = reversible
         self.connectivity = connectivity
         self.observe_active = observe_active
-        self.dt = dt
+        self.dt_traj = dt_traj
         self.conf = conf
 
     def _estimate(self, dtrajs):
@@ -45,12 +48,14 @@ class BayesianHMSM(_Estimator):
             Estimated Hidden Markov state model
 
         """
+        # ensure right format
+        dtrajs = ensure_dtraj_list(dtrajs)
         # if no initial MSM is given, estimate it now
         if self.init_hmsm is None:
             # estimate with store_data=True, because we need an EstimatedHMSM
             hmsm_estimator = _HMSMEstimator(lag=self.lag, nstates=self.nstates, reversible=self.reversible,
                                             connectivity=self.connectivity, observe_active=self.observe_active,
-                                            dt=self.dt, store_data=True)
+                                            dt_traj=self.dt_traj)
             init_hmsm = hmsm_estimator.estimate(dtrajs)
         else:
             # check input
@@ -69,17 +74,22 @@ class BayesianHMSM(_Estimator):
         # HMM sampler
         from bhmm import discrete_hmm, bayesian_hmm
         hmm_mle = discrete_hmm(init_hmsm.transition_matrix, pobs, stationary=True, reversible=self.reversible)
-        sampled_hmm = bayesian_hmm(dtrajs, hmm_mle, nsample=self.nsample, transition_matrix_prior='init-connect')
+        sampled_hmm = bayesian_hmm(dtrajs, hmm_mle, nsample=self.nsamples, transition_matrix_prior='init-connect')
 
         # Samples
-        sample_Ps = [sampled_hmm.sampled_hmms[i].transition_matrix for i in range(self.nsample)]
-        sample_mus = [sampled_hmm.sampled_hmms[i].stationary_distribution for i in range(self.nsample)]
-        sample_pobs = [sampled_hmm.sampled_hmms[i].output_model.output_probabilities for i in range(self.nsample)]
-        for i in range(self.nsample):  # restrict to observable set if necessary
+        sample_Ps = [sampled_hmm.sampled_hmms[i].transition_matrix for i in range(self.nsamples)]
+        sample_pis = [sampled_hmm.sampled_hmms[i].stationary_distribution for i in range(self.nsamples)]
+        sample_pobs = [sampled_hmm.sampled_hmms[i].output_model.output_probabilities for i in range(self.nsamples)]
+        samples = []
+        for i in range(self.nsamples):  # restrict to observable set if necessary
             Bobs = sample_pobs[i][:, init_hmsm.observable_set]
             sample_pobs[i] = Bobs / Bobs.sum(axis=1)[:, None]  # renormalize
+            samples.append(_HMSM(sample_Ps[i], sample_pobs[i], pi=sample_pis[i], dt_model=self.dt_model))
 
-        # construct our HMM object
-        from pyemma.msm.models.hmsm_sampled import SampledHMSM
-        sampled_hmsm = SampledHMSM(init_hmsm, sample_Ps, sample_mus, sample_pobs, conf=self.conf)
-        return sampled_hmsm
+        # parametrize self
+        self._dtrajs_full = dtrajs
+        self._observable_set = init_hmsm._observable_set
+        self._dtrajs_obs = init_hmsm._dtrajs_obs
+        self.set_model_params(samples=samples, P=init_hmsm.transition_matrix, pobs=init_hmsm.observation_probabilities)
+
+        return self

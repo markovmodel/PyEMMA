@@ -95,11 +95,12 @@ from . import generation
 from . import io
 from . import flux
 
-from util import ImpliedTimescales
+from estimators import MaximumLikelihoodMSM, BayesianMSM
+from estimators import MaximumLikelihoodHMSM, BayesianHMSM
+from estimators import ImpliedTimescales
+
 from models import MSM
-from models import EstimatedMSM
 from models import HMSM
-from models import EstimatedHMSM
 from flux import ReactiveFlux
 
 from .api import *
