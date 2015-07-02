@@ -65,7 +65,7 @@ class TestClusterSamples(unittest.TestCase):
                ]
 
         for cc in np.arange(self.cluster_obj.n_clusters):
-            assert np.allclose(self.cluster_obj.index_cluster[cc], ref[cc])
+            assert np.allclose(self.cluster_obj.index_clusters[cc], ref[cc])
 
     def test_sample_indexes_by_state(self):
         samples = self.cluster_obj.sample_indexes_by_cluster(np.arange(self.cluster_obj.n_clusters), 10)

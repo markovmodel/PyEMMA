@@ -71,7 +71,7 @@ class AbstractClustering(Transformer):
         return self._dtrajs  # returning what we have saved
 
     @property
-    def index_cluster(self):
+    def index_clusters(self):
         """Returns trajectory/time indexes for all the clusters
 
         Returns
