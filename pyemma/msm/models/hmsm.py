@@ -49,29 +49,57 @@ class HMSM(_MSM):
 
     """
 
-    def __init__(self, P, pobs, dt='1 step'):
+    def __init__(self, P, pobs, pi=None, dt_model='1 step'):
         """
 
         Parameters
         ----------
         Pcoarse : ndarray (m,m)
             coarse-grained or hidden transition matrix
+
         Pobs : ndarray (m,n)
             observation probability matrix from hidden to observable discrete states
-        dt : str, optional, default='1 step'
+
+        dt_model : str, optional, default='1 step'
             time step of the model
 
         """
         # construct superclass and check input
-        _MSM.__init__(self, P, dt)
-        # check and save copy of output probability
-        assert _types.is_float_matrix(pobs), 'pobs is not a matrix of floating numbers'
-        self.pobs = _np.array(pobs)
-        assert _np.allclose(self.pobs.sum(axis=1), 1), 'pobs is not a stochastic matrix'
+        _MSM.__init__(self, P, dt_model=dt_model)
+        self.set_model_params(pobs=pobs, pi=pi)
 
-    @property
-    def nstates_obs(self):
-        return self.pobs.shape[1]
+    def set_model_params(self, P=None, pobs=None, pi=None, reversible=None, dt_model='1 step', neig=None):
+        """
+
+        Parameters
+        ----------
+        P : ndarray(m,m)
+            coarse-grained or hidden transition matrix
+
+        pobs : ndarray (m,n)
+            observation probability matrix from hidden to observable discrete
+            states
+
+        pi : ndarray(m), optional, default=None
+            stationary or distribution. Can be optionally given in case if
+            it was already computed, e.g. by the estimator.
+
+        dt_model : str, optional, default='1 step'
+            time step of the model
+
+        neig : int or None
+            The number of eigenvalues / eigenvectors to be kept. If set to
+            None, all eigenvalues will be used.
+
+        """
+        _MSM.set_model_params(self, P=P, pi=pi, reversible=reversible, dt_model=dt_model, neig=neig)
+        # set P and derived quantities if available
+        if pobs is not None:
+            # check and save copy of output probability
+            assert _types.is_float_matrix(pobs), 'pobs is not a matrix of floating numbers'
+            assert _np.allclose(pobs.sum(axis=1), 1), 'pobs is not a stochastic matrix'
+            self._nstates_obs = pobs.shape[1]
+            self.update_model_params(pobs=pobs)
 
     @property
     def observation_probabilities(self):
@@ -86,6 +114,10 @@ class HMSM(_MSM):
         return self.pobs
 
     @property
+    def nstates_obs(self):
+        return self.observation_probabilities.shape[1]
+
+    @property
     def lifetimes(self):
         r""" Lifetimes of states of the hidden transition matrix
 
@@ -97,51 +129,54 @@ class HMSM(_MSM):
             :math:`p_{ii}` are the diagonal entries of the hidden transition matrix.
 
         """
-        return -self._lag / _np.log(_np.diag(self.transition_matrix))
+        return -self._timeunit_model.dt / _np.log(_np.diag(self.transition_matrix))
 
     def transition_matrix_obs(self, k=1):
         """ Computes the transition matrix between observed states
 
-        Transition matrices for longer lag times than the one used to parametrize this HMSM can be obtained by
-        setting the k option. Note that a HMSM is not Markovian, thus we cannot compute transition matrices at longer
-        lag times using the Chapman-Kolmogorow equality. I.e.:
+        Transition matrices for longer lag times than the one used to
+        parametrize this HMSM can be obtained by setting the k option.
+        Note that a HMSM is not Markovian, thus we cannot compute transition
+        matrices at longer lag times using the Chapman-Kolmogorow equality.
+        I.e.:
 
         .. math::
             P (k \tau) \neq P^k (\tau)
 
-        This function computes the correct transition matrix using the metastable (coarse) transition matrix
-        :math:`P_c` as:
+        This function computes the correct transition matrix using the
+        metastable (coarse) transition matrix :math:`P_c` as:
 
         .. math::
             P (k \tau) = {\Pi}^-1 \chi^{\top} ({\Pi}_c) P_c^k (\tau) \chi
 
-        where :math:`\chi` is the output probability matrix, :math:`\Pi_c` is a diagonal matrix with the
-        metastable-state (coarse) stationary distribution and :math:`\Pi` is a diagonal matrix with the
+        where :math:`\chi` is the output probability matrix, :math:`\Pi_c` is
+        a diagonal matrix with the metastable-state (coarse) stationary
+        distribution and :math:`\Pi` is a diagonal matrix with the
         observable-state stationary distribution.
 
         Parameters
         ----------
         k : int, optional, default=1
             Multiple of the lag time for which the
-            By default (k=1), the transition matrix at the lag time used to construct this HMSM will be returned.
-            If a higher power is given,
+            By default (k=1), the transition matrix at the lag time used to
+            construct this HMSM will be returned. If a higher power is given,
 
         """
         Pi_c = _np.diag(self.stationary_distribution)
         P_c = self.transition_matrix
         P_c_k = _np.linalg.matrix_power(P_c, k)  # take a power if needed
-        B = self.pobs
+        B = self.observation_probabilities
         C = _np.dot(_np.dot(B.T, Pi_c), _np.dot(P_c_k, B))
         P = C / C.sum(axis=1)[:, None]  # row normalization
         return P
 
     @property
     def stationary_distribution_obs(self):
-        return _np.dot(self.stationary_distribution, self.pobs)
+        return _np.dot(self.stationary_distribution, self.observation_probabilities)
 
     @property
     def eigenvectors_left_obs(self):
-        return _np.dot(self.eigenvectors_left(), self.pobs)
+        return _np.dot(self.eigenvectors_left(), self.observation_probabilities)
 
     @property
     def eigenvectors_right_obs(self):
@@ -156,10 +191,10 @@ class HMSM(_MSM):
         # are we on microstates space?
         if len(a) == self.nstates_obs:
             # project to hidden and compute
-            a = _np.dot(self.pobs, a)
+            a = _np.dot(self.observation_probabilities, a)
         # now we are on macrostate space, or something is wrong
         if len(a) == self.nstates:
-            return super(HMSM, self).expectation(a)
+            return _MSM.expectation(self, a)
         else:
             raise ValueError('observable vector a has size ' + len(a) + ' which is incompatible with both hidden (' +
                              self.nstates + ') and observed states (' + self.nstates_obs + ')')
@@ -170,12 +205,12 @@ class HMSM(_MSM):
         b = _types.ensure_ndarray_or_None(b, ndim=1, kind='numeric', size=len(a))
         # are we on microstates space?
         if len(a) == self.nstates_obs:
-            a = _np.dot(self.pobs, a)
+            a = _np.dot(self.observation_probabilities, a)
             if b is not None:
-                b = _np.dot(self.pobs, b)
+                b = _np.dot(self.observation_probabilities, b)
         # now we are on macrostate space, or something is wrong
         if len(a) == self.nstates:
-            return super(HMSM, self).correlation(a, b=b, maxtime=maxtime)
+            return _MSM.correlation(self, a, b=b, maxtime=maxtime)
         else:
             raise ValueError('observable vectors have size ' + len(a) + ' which is incompatible with both hidden (' +
                              self.nstates + ') and observed states (' + self.nstates_obs + ')')
@@ -186,12 +221,12 @@ class HMSM(_MSM):
         b = _types.ensure_ndarray_or_None(b, ndim=1, kind='numeric', size=len(a))
         # are we on microstates space?
         if len(a) == self.nstates_obs:
-            a = _np.dot(self.pobs, a)
+            a = _np.dot(self.observation_probabilities, a)
             if b is not None:
-                b = _np.dot(self.pobs, b)
+                b = _np.dot(self.observation_probabilities, b)
         # now we are on macrostate space, or something is wrong
         if len(a) == self.nstates:
-            return super(HMSM, self).fingerprint_correlation(a, b=b)
+            return _MSM.fingerprint_correlation(self, a, b=b)
         else:
             raise ValueError('observable vectors have size ' + len(a) + ' which is incompatible with both hidden (' +
                              self.nstates + ') and observed states (' + self.nstates_obs + ')')
@@ -202,11 +237,11 @@ class HMSM(_MSM):
         a = _types.ensure_ndarray(a, ndim=1, kind='numeric', size=len(p0))
         # are we on microstates space?
         if len(a) == self.nstates_obs:
-            p0 = _np.dot(self.pobs, p0)
-            a = _np.dot(self.pobs, a)
+            p0 = _np.dot(self.observation_probabilities, p0)
+            a = _np.dot(self.observation_probabilities, a)
         # now we are on macrostate space, or something is wrong
         if len(a) == self.nstates:
-            return super(HMSM, self).relaxation(p0, a, maxtime=maxtime)
+            return _MSM.relaxation(self, p0, a, maxtime=maxtime)
         else:
             raise ValueError('observable vectors have size ' + len(a) + ' which is incompatible with both hidden (' +
                              self.nstates + ') and observed states (' + self.nstates_obs + ')')
@@ -217,11 +252,11 @@ class HMSM(_MSM):
         a = _types.ensure_ndarray(a, ndim=1, kind='numeric', size=len(p0))
         # are we on microstates space?
         if len(a) == self.nstates_obs:
-            p0 = _np.dot(self.pobs, p0)
-            a = _np.dot(self.pobs, a)
+            p0 = _np.dot(self.observation_probabilities, p0)
+            a = _np.dot(self.observation_probabilities, a)
         # now we are on macrostate space, or something is wrong
         if len(a) == self.nstates:
-            return super(HMSM, self).fingerprint_relaxation(p0, a)
+            return _MSM.fingerprint_relaxation(self, p0, a)
         else:
             raise ValueError('observable vectors have size ' + len(a) + ' which is incompatible with both hidden (' +
                              self.nstates + ') and observed states (' + self.nstates_obs + ')')
@@ -236,22 +271,24 @@ class HMSM(_MSM):
 
     @property
     def metastable_memberships(self):
-        """ Computes the memberships of observable states to metastable sets by Bayesian inversion as described in [1]_.
+        """ Computes the memberships of observable states to metastable sets by
+            Bayesian inversion as described in [1]_.
 
         Returns
         -------
         M : ndarray((n,m))
-            A matrix containing the probability or membership of each observable state to be assigned to each
-            metastable or hidden state. The row sums of M are 1.
+            A matrix containing the probability or membership of each
+            observable state to be assigned to each metastable or hidden state.
+            The row sums of M are 1.
 
         References
         ----------
-        .. [1] F. Noe, H. Wu, J.-H. Prinz and N. Plattner:
-            Projected and hidden Markov models for calculating kinetics and metastable states of complex molecules
-            J. Chem. Phys. 139, 184114 (2013)
+        .. [1] F. Noe, H. Wu, J.-H. Prinz and N. Plattner: Projected and hidden
+            Markov models for calculating kinetics and metastable states of
+            complex molecules. J. Chem. Phys. 139, 184114 (2013)
 
         """
-        A = _np.dot(_np.diag(self.stationary_distribution), self.pobs)
+        A = _np.dot(_np.diag(self.stationary_distribution), self.observation_probabilities)
         M = _np.dot(A, _np.diag(1.0/self.stationary_distribution_obs)).T
         # renormalize
         M /= M.sum(axis=1)[:, None]
@@ -259,7 +296,8 @@ class HMSM(_MSM):
 
     @property
     def metastable_distributions(self):
-        """ Returns the output probability distributions. Identical to :meth:`observation_probability`
+        """ Returns the output probability distributions. Identical to
+            :meth:`observation_probability`
 
         Returns
         -------
@@ -271,19 +309,21 @@ class HMSM(_MSM):
         observation_probability
 
         """
-        return self.pobs
+        return self.observation_probabilities
 
     @property
     def metastable_sets(self):
-        """ Computes the metastable sets of observable states within each metastable set
+        """ Computes the metastable sets of observable states within each
+            metastable set
 
-        This is only recommended for visualization purposes. You *cannot* compute any
-        actual quantity of the coarse-grained kinetics without employing the fuzzy memberships!
+        This is only recommended for visualization purposes. You *cannot*
+        compute any actual quantity of the coarse-grained kinetics without
+        employing the fuzzy memberships!
 
         Returns
         -------
-        A list of length equal to metastable states. Each element is an array with observable state indexes contained
-        in it
+        A list of length equal to metastable states. Each element is an array
+        with observable state indexes contained in it
 
         """
         res = []
@@ -296,12 +336,13 @@ class HMSM(_MSM):
     def metastable_assignments(self):
         """ Computes the assignment to metastable sets for observable states
 
-        This is only recommended for visualization purposes. You *cannot* compute any
-        actual quantity of the coarse-grained kinetics without employing the fuzzy memberships!
+        This is only recommended for visualization purposes. You *cannot*
+        compute any actual quantity of the coarse-grained kinetics without
+        employing the fuzzy memberships!
 
         Returns
         -------
         For each observable state, the metastable state it is located in.
 
         """
-        return _np.argmax(self.pobs, axis=0)
+        return _np.argmax(self.observation_probabilities, axis=0)

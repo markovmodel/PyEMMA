@@ -160,7 +160,7 @@ def _pprint(params, offset=0, printer=repr):
 
 ###############################################################################
 # NOTE: I have renamed this from BaseEstimator to Parametric in order to also use it for Models
-class Parametric(object):
+class BaseEstimator(object):
     """Base class for all estimators in scikit-learn
     Notes
     -----

@@ -37,7 +37,7 @@ class TestMLHMM(unittest.TestCase):
     # =============================================================================
 
     def test_hmm_type(self):
-        from pyemma.msm.models.hmsm_estimated import EstimatedHMSM
+        from pyemma.msm.estimators.estimated_hmsm import EstimatedHMSM
         assert isinstance(self.hmsm_lag1, EstimatedHMSM)
         assert isinstance(self.hmsm_lag10, EstimatedHMSM)
 

@@ -2,14 +2,14 @@ __author__ = 'noe'
 
 import numpy as np
 
-from pyemma._base.estimator import Estimator
+from pyemma.util.types import ensure_dtraj_list
+from pyemma._base.estimator import Estimator as _Estimator
 from pyemma.msm import estimation as msmest
 from pyemma.msm.util.dtraj_stats import DiscreteTrajectoryStats as _DiscreteTrajectoryStats
-from pyemma.msm.models.msm import MSM as _MSM
-from pyemma.msm.models.msm_estimated import EstimatedMSM as _EstimatedMSM
+from pyemma.msm.estimators.estimated_msm import EstimatedMSM as _EstimatedMSM
+from pyemma.util.units import TimeUnit
 
-
-class MaximumLikelihoodMSM(Estimator):
+class MaximumLikelihoodMSM(_Estimator, _EstimatedMSM):
     """ Maximum likelihood estimator for MSMs given discrete trajectory statistics
 
     Parameters
@@ -34,10 +34,12 @@ class MaximumLikelihoodMSM(Estimator):
         'none' : The active set is the full set of states. Estimation will be conducted on the full set of
             states without ensuring connectivity. This only permits nonreversible estimation. Currently not
             implemented.
-    dt : str, optional, default='1 step'
-        Description of the physical time corresponding to the lag. May be used by analysis algorithms such as
-        plotting tools to pretty-print the axes. By default '1 step', i.e. there is no physical time unit.
-        Specify by a number, whitespace and unit. Permitted units are (* is an arbitrary string):
+    dt_traj : str, optional, default='1 step'
+        Description of the physical time of the input trajectories. May be used
+        by analysis algorithms such as plotting tools to pretty-print the axes.
+        By default '1 step', i.e. there is no physical time unit. Specify by a
+        number, whitespace and unit. Permitted units are (* is an arbitrary
+        string):
 
         |  'fs',  'femtosecond*'
         |  'ps',  'picosecond*'
@@ -45,24 +47,24 @@ class MaximumLikelihoodMSM(Estimator):
         |  'us',  'microsecond*'
         |  'ms',  'millisecond*'
         |  's',   'second*'
+
     maxiter = 1000000 : int
-        Optional parameter with reversible = True.
-        maximum number of iterations before the transition matrix estimation method exits
+        Optional parameter with reversible = True. maximum number of iterations
+        before the transition matrix estimation method exits
+
     maxerr = 1e-8 : float
         Optional parameter with reversible = True.
         convergence tolerance for transition matrix estimation.
         This specifies the maximum change of the Euclidean norm of relative
-        stationary probabilities (:math:`x_i = \sum_k x_{ik}`). The relative stationary probability changes
-        :math:`e_i = (x_i^{(1)} - x_i^{(2)})/(x_i^{(1)} + x_i^{(2)})` are used in order to track changes in
-        small probabilities. The Euclidean norm of the change vector, :math:`|e_i|_2`, is compared to maxerr.
-    store_data : bool
-        True: estimate() returns an :class:`pyemma.msm.EstimatedMSM` object with discrete trajectories and
-        counts stored. False: estimate() returns a plain :class:`pyemma.msm.MSM` object that only contains
-        the transition matrix and quantities derived from it.
+        stationary probabilities (:math:`x_i = \sum_k x_{ik}`). The relative
+        stationary probability changes
+        :math:`e_i = (x_i^{(1)} - x_i^{(2)})/(x_i^{(1)} + x_i^{(2)})` are used
+        in order to track changes in small probabilities. The Euclidean norm
+        of the change vector, :math:`|e_i|_2`, is compared to maxerr.
 
     """
-    def __init__(self, lag=1, reversible=True, sparse=False, connectivity='largest', dt='1 step',
-                 maxiter=1000000, maxerr=1e-8, store_data=True):
+    def __init__(self, lag=1, reversible=True, sparse=False, connectivity='largest', dt_traj='1 step',
+                 maxiter=1000000, maxerr=1e-8):
         self.lag = lag
 
         # set basic parameters
@@ -86,14 +88,11 @@ class MaximumLikelihoodMSM(Estimator):
             raise ValueError('connectivity mode ' + str(connectivity) + ' is unknown.')
 
         # time step
-        self.dt = dt
+        self.timestep_traj = TimeUnit(dt_traj)
 
         # convergence parameters
         self.maxiter = maxiter
         self.maxerr = maxerr
-
-        # return parameters
-        self.store_data = store_data
 
 
     def _estimate(self, dtrajs):
@@ -111,6 +110,9 @@ class MaximumLikelihoodMSM(Estimator):
             MSM : :class:`pyemma.msm.EstimatedMSM` or :class:`pyemma.msm.MSM`
 
         """
+        # ensure right format
+        dtrajs = ensure_dtraj_list(dtrajs)
+        # harvest discrete statistics
         if isinstance(dtrajs, _DiscreteTrajectoryStats):
             dtrajstats = dtrajs
         else:
@@ -128,30 +130,38 @@ class MaximumLikelihoodMSM(Estimator):
         # set active set
         if self.connectivity == 'largest':
             # the largest connected set is the active set. This is at the same time a mapping from active to full
-            active_set = dtrajstats.largest_connected_set
+            self.active_set = dtrajstats.largest_connected_set
         else:
             # for 'None' and 'all' all visited states are active
-            active_set = dtrajstats.visited_set
+            self.active_set = dtrajstats.visited_set
 
-        # count matrices
-        C_full = dtrajstats.count_matrix()
-        C_active = dtrajstats.count_matrix(subset=active_set)
+        # FIXME: setting is_estimated before so that we can start using the parameters just set, but this is not clean!
+        # is estimated
+        self._is_estimated = True
+
+        # count matrices and numbers of states
+        self._C_full = dtrajstats.count_matrix()
+        self._nstates_full = self._C_full.shape[0]
+        self._C_active = dtrajstats.count_matrix(subset=self.active_set)
+        self._nstates = self._C_active.shape[0]
 
         # computed derived quantities
         # back-mapping from full to lcs
-        full2active = -1 * np.ones((dtrajstats.nstates), dtype=int)
-        full2active[active_set] = np.array(range(len(active_set)), dtype=int)
+        self._full2active = -1 * np.ones((dtrajstats.nstates), dtype=int)
+        self._full2active[self.active_set] = np.array(range(len(self.active_set)), dtype=int)
 
         # Estimate transition matrix
         if self.connectivity == 'largest':
-            T = msmest.transition_matrix(C_active, reversible=self.reversible, maxiter=self.maxiter, maxerr=self.maxerr)
+            P = msmest.transition_matrix(self._C_active, reversible=self.reversible,
+                                         maxiter=self.maxiter, maxerr=self.maxerr)
         elif self.connectivity == 'none':
             # reversible mode only possible if active set is connected - in this case all visited states are connected
             # and thus this mode is identical to 'largest'
-            if self.reversible and not msmest.is_connected(C_active):
+            if self.reversible and not msmest.is_connected(self._C_active):
                 raise ValueError('Reversible MSM estimation is not possible with connectivity mode \'none\', '+
                                  'because the set of all visited states is not reversibly connected')
-            T = msmest.transition_matrix(C_active, reversible=self.reversible, maxiter=self.maxiter, maxerr=self.maxerr)
+            P = msmest.transition_matrix(self._C_active, reversible=self.reversible,
+                                         maxiter=self.maxiter, maxerr=self.maxerr)
         else:
             raise NotImplementedError(
                 'MSM estimation with connectivity=\'self.connectivity\' is currently not implemented.')
@@ -160,23 +170,17 @@ class MaximumLikelihoodMSM(Estimator):
         if not self.sparse:
             # converting count matrices to arrays. As a result the transition matrix and all subsequent properties
             # will be computed using dense arrays and dense matrix algebra.
-            C_full = C_full.toarray()
-            C_active = C_active.toarray()
-            T = T.toarray()
+            self._C_full = self._C_full.toarray()
+            self._C_active = self._C_active.toarray()
+            P = P.toarray()
 
-        # construct MSM
-        if self.store_data:
-            msm = _EstimatedMSM(dtrajstats.discrete_trajectories, self.dt, self.lag, self.connectivity,
-                                active_set, dtrajstats.connected_sets, C_full, C_active, T)
-        else:
-            msm = _MSM(T, self.dt)
-            msm._lag = self.lag  # TODO: setting a hidden attribute is intrusive. We should refactor the time management
+        # Done. We set our own model parameters, so this estimator is equal to the estimated model.
+        self._dtrajs_full = dtrajs
+        self._connected_sets = msmest.connected_sets(self._C_full)
+        self._dtrajs_active = []
+        for dtraj in dtrajs:
+            self._dtrajs_active.append(self._full2active[dtraj])
+        self.set_model_params(P=P, reversible=self.reversible, dt_model=self.timestep_traj.get_scaled(self.lag))
 
-        # check consistency of estimated transition matrix
-        if self.reversible != self.reversible:
-            self._logger.warn('Reversible was set but transition matrix did not pass reversibility check. Check your '
-                              'settings. If they are alright this might just be a small numerical deviation from a '
-                              'truly reversible matrix. Will carefully continue with nonreversible transition matrix.')
-
-        return msm
+        return self
 

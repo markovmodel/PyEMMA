@@ -47,15 +47,14 @@ class EstimatedMSM(MSM):
 
     """
 
-    def __init__(self, dtrajs, dt, lagtime, connectivity, active_set, connected_sets,
-                 C_full, C_active, transition_matrix):
+    def __init__(self, dtrajs, dt_model, lag, connectivity, active_set, connected_sets, C_full, C_active, transition_matrix):
         # superclass constructor
-        MSM.__init__(self, transition_matrix, dt=dt)
+        MSM.__init__(self, transition_matrix, dt_model=dt_model)
 
         # Making copies because we don't know what will happen to the arguments after this call
-        self._lag = lagtime
-        self._connectivity = copy.deepcopy(connectivity)
-        self._active_set = copy.deepcopy(active_set)
+        self.lag = lag
+        self.connectivity = copy.deepcopy(connectivity)
+        self.active_set = copy.deepcopy(active_set)
         self._dtrajs_full = copy.deepcopy(dtrajs)
         self._C_full = copy.deepcopy(C_full)
         self._C_active = copy.deepcopy(C_active)
@@ -71,6 +70,12 @@ class EstimatedMSM(MSM):
         for dtraj in dtrajs:
             self._dtrajs_active.append(self._full2active[dtraj])
 
+        # is estimated
+        self._is_estimated = True
+
+    def _check_is_estimated(self):
+        assert self._is_estimated, 'You tried to access model parameters before estimating it - run estimate first!'
+
     ################################################################################
     # Basic attributes
     ################################################################################
@@ -81,11 +86,12 @@ class EstimatedMSM(MSM):
         The lag time at which the Markov model was estimated
 
         """
-        return self._lag
+        return self.lag
 
     @property
     def nstates_full(self):
         r""" Number of states in discrete trajectories """
+        self._check_is_estimated()
         return self._nstates_full
 
     @property
@@ -94,12 +100,21 @@ class EstimatedMSM(MSM):
         The active set of states on which all computations and estimations will be done
 
         """
+        self._check_is_estimated()
         return self._active_set
+
+    @active_set.setter
+    def active_set(self, value):
+        self._active_set = value
 
     @property
     def connectivity(self):
         """Returns the connectivity mode of the MSM """
         return self._connectivity
+
+    @connectivity.setter
+    def connectivity(self, value):
+        self._connectivity = value
 
     @property
     def largest_connected_set(self):
@@ -107,6 +122,7 @@ class EstimatedMSM(MSM):
         The largest reversible connected set of states
 
         """
+        self._check_is_estimated()
         return self._connected_sets[0]
 
     @property
@@ -115,6 +131,7 @@ class EstimatedMSM(MSM):
         The reversible connected sets of states, sorted by size (descending)
 
         """
+        self._check_is_estimated()
         return self._connected_sets
 
     @property
@@ -124,6 +141,7 @@ class EstimatedMSM(MSM):
         A list of integer arrays with the original (unmapped) discrete trajectories:
 
         """
+        self._check_is_estimated()
         return self._dtrajs_full
 
     @property
@@ -135,6 +153,7 @@ class EstimatedMSM(MSM):
         Frames that are not in the connected set will be -1.
 
         """
+        self._check_is_estimated()
         # compute connected dtrajs
         self._dtrajs_active = []
         for dtraj in self._dtrajs_full:
@@ -159,6 +178,7 @@ class EstimatedMSM(MSM):
             For a count matrix with effective (statistically uncorrelated) counts.
 
         """
+        self._check_is_estimated()
         return self._C_active
 
     # TODO: change to statistically effective count matrix!
@@ -179,7 +199,8 @@ class EstimatedMSM(MSM):
         in preparation.
 
         """
-        return self._C_active / float(self._lag)
+        self._check_is_estimated()
+        return self._C_active / float(self.lag)
 
     @property
     def count_matrix_full(self):
@@ -197,6 +218,7 @@ class EstimatedMSM(MSM):
             For a active-set count matrix with effective (statistically uncorrelated) counts.
 
         """
+        self._check_is_estimated()
         return self._C_full
 
     @property
@@ -204,6 +226,7 @@ class EstimatedMSM(MSM):
         """The fraction of states in the largest connected set.
 
         """
+        self._check_is_estimated()
         return float(self._nstates) / float(self._nstates_full)
 
     @property
@@ -211,6 +234,7 @@ class EstimatedMSM(MSM):
         """The fraction of counts in the largest connected set.
 
         """
+        self._check_is_estimated()
         from pyemma.util.discrete_trajectories import count_states
 
         hist = count_states(self._dtrajs_full)
@@ -252,6 +276,7 @@ class EstimatedMSM(MSM):
             (w_{1,1}, ..., w_{1,T_1}), (w_{N,1}, ..., w_{N,T_N})
 
         """
+        self._check_is_estimated()
         # compute stationary distribution, expanded to full set
         statdist_full = np.zeros([self._nstates_full])
         statdist_full[self.active_set] = self.stationary_distribution
@@ -277,6 +302,7 @@ class EstimatedMSM(MSM):
         """
         Ensures that the connected states are indexed and returns the indices
         """
+        self._check_is_estimated()
         try:  # if we have this attribute, return it
             return self._active_state_indexes
         except:  # didn't exist? then create it.
@@ -325,10 +351,11 @@ class EstimatedMSM(MSM):
         # TODO: we could generate dt-strided trajectories by sampling tau times from the current state, but that would
         # TODO: probably lead to a weird-looking trajectory. Maybe we could use a HMM to generate intermediate 'hidden'
         # TODO: frames. Anyway, this is a nontrivial issue.
+        self._check_is_estimated()
         # generate synthetic states
         from pyemma.msm.generation import generate_traj as _generate_traj
 
-        syntraj = _generate_traj(self._T, N, start=start, stop=stop, dt=stride)
+        syntraj = _generate_traj(self.transition_matrix, N, start=start, stop=stop, dt=stride)
         # result
         from pyemma.util.discrete_trajectories import sample_indexes_by_sequence
 
@@ -371,6 +398,7 @@ class EstimatedMSM(MSM):
             in order to save the sampled frames in nconnected trajectory files with molecular structures
 
         """
+        self._check_is_estimated()
         # generate connected state indexes
         import pyemma.util.discrete_trajectories as dt
 
@@ -396,6 +424,7 @@ class EstimatedMSM(MSM):
             tuple (i, t), where i is the index of the trajectory and t is the time index within the trajectory.
 
         """
+        self._check_is_estimated()
         # generate connected state indexes
         import pyemma.util.discrete_trajectories as dt
 
@@ -417,11 +446,12 @@ class EstimatedMSM(MSM):
             J. Chem. Phys. 139, 184114 (2013)
 
         """
+        self._check_is_estimated()
         # run estimate
         from pyemma.msm.estimators.maximum_likelihood_hmsm import MaximumLikelihoodHMSM
         estimator = MaximumLikelihoodHMSM(lag=self.lagtime, nstates=nstates, msm_init=self,
                                           reversible=self.is_reversible, connectivity=self.connectivity,
-                                          observe_active=True, dt=self.timestep)
+                                          observe_active=True, dt=self.timestep_model)
         estimator.estimate(self.discrete_trajectories_full)
         return estimator.model
 
@@ -439,4 +469,5 @@ class EstimatedMSM(MSM):
             J. Chem. Phys. 139, 184114 (2013)
 
         """
+        self._check_is_estimated()
         return self.hmm(nstates)

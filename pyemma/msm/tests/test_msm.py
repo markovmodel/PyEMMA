@@ -109,22 +109,6 @@ class TestMSMDoubleWell(unittest.TestCase):
     # BASIC PROPERTIES
     # ---------------------------------
 
-    # def _compute(self, msm):
-    #     # should give warning
-    #     with warnings.catch_warnings(record=True) as w:
-    #         msm.estimate()
-    #
-    # def test_compute(self):
-    #     self._compute(self.msmrev)
-    #     self._compute(self.msm)
-    #
-    # def _computed(self, msm):
-    #     assert (msm.estimated)
-    #
-    # def test_computed(self):
-    #     self._computed(self.msmrev)
-    #     self._computed(self.msm)
-
     def test_reversible(self):
         # NONREVERSIBLE
         assert self.msmrev.is_reversible
@@ -229,8 +213,8 @@ class TestMSMDoubleWell(unittest.TestCase):
         self._discrete_trajectories_active(self.msm)
 
     def _timestep(self, msm):
-        assert (msm.timestep.startswith('1'))
-        assert (msm.timestep.endswith('step'))
+        assert (msm.timestep_model.startswith('1'))
+        assert (msm.timestep_model.endswith('step'))
 
     def test_timestep(self):
         self._timestep(self.msmrev)
