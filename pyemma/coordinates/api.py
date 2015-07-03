@@ -53,6 +53,9 @@ from pyemma.coordinates.clustering.assign import AssignCenters as _AssignCenters
 # stat
 from pyemma.coordinates.util.stat import histogram
 
+# types
+from mdtraj import Topology as _Topology, Trajectory as _Trajectory
+
 import numpy as _np
 import itertools as _itertools
 
@@ -488,7 +491,7 @@ def memory_reader(data):
     return _DataInMemory(data)
 
 
-def save_traj(traj_inp, indexes, outfile, topfile=None, stride = 1, chunksize=1000, verbose=False):
+def save_traj(traj_inp, indexes, outfile, topology=None, stride = 1, chunksize=1000, verbose=False):
     r""" Saves a sequence of frames as a single trajectory.
 
     Extracts the specified sequence of time/trajectory indexes from traj_inp
@@ -519,8 +522,8 @@ def save_traj(traj_inp, indexes, outfile, topfile=None, stride = 1, chunksize=10
         The name of the output file. Its extension will determine the file type written. Example: "out.dcd"
         If set to None, the trajectory object is returned to memory
 
-    topfile : str.
-        The topology file needed to read the files in the list :py:obj:`traj_inp`. If :py:obj:`traj_inp` is not a list,
+    topology : str, mdtraj.Trajectory, or mdtraj.Topology
+        The topology needed to read the files in the list :py:obj:`traj_inp`. If :py:obj:`traj_inp` is not a list,
         this parameter is ignored.
 
     stride  : integer, default is 1
@@ -546,14 +549,14 @@ def save_traj(traj_inp, indexes, outfile, topfile=None, stride = 1, chunksize=10
     # Determine the type of input and extract necessary parameters
     if isinstance(traj_inp, _FeatureReader):
         trajfiles = traj_inp.trajfiles
-        topfile  = traj_inp.topfile
+        topology  = traj_inp.topfile
         chunksize = traj_inp.chunksize
     else:
         # Do we have what we need?
         assert isinstance(traj_inp, list), "traj_inp has to be of type list, not %"%type(traj_inp)
-        assert isinstance(topfile,str), "traj_inp cannot be a list without an input " \
-                                        "topology file. " \
-                                        "Did you forget to parse the topology file?"
+        assert isinstance(topology,(str,_Topology, _Trajectory)), "traj_inp cannot be a list of files without an input " \
+                                        "topology of type str (eg filename.pdb), mdtraj.Trajectory or mdtraj.Topology. " \
+                                        "Got type %s instead"%type(topology)
         trajfiles = traj_inp
 
     # Convert to index (T,2) array if parsed a list or a list of arrays
@@ -575,7 +578,7 @@ def save_traj(traj_inp, indexes, outfile, topfile=None, stride = 1, chunksize=10
         # directly as an iterator in trajectory_iterator_list
         trajectory_iterator_list.append(_itertools.islice(_frames_from_file(
                                                 trajfiles[ff],
-                                                topfile,
+                                                topology,
                                                 frames, chunksize=chunksize,
                                                 verbose=verbose, stride = stride), None)
                                         )
