@@ -15,14 +15,18 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
 
     Parameters
     ----------
-    lag : int, optional, default=1
-        lagtime to estimate the HMSM at
     nstates : int, optional, default=2
         number of hidden states
+
+    lag : int, optional, default=1
+        lagtime to estimate the HMSM at
+
     msm_init : :class:`MSM <pyemma.msm.ui.msm_estimated.MSM>`
         MSM object to initialize the estimation
+
     reversible : bool, optional, default = True
         If true compute reversible MSM, else non-reversible MSM
+
     connectivity : str, optional, default = 'largest'
         Connectivity mode. Three methods are intended (currently only 'largest' is implemented)
         'largest' : The active set is the largest reversibly connected set. All estimation will be done on this
@@ -34,9 +38,11 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
         'none' : The active set is the full set of states. Estimation will be conducted on the full set of
             states without ensuring connectivity. This only permits nonreversible estimation. Currently not
             implemented.
+
     observe_active : bool, optional, default=True
         True: Restricts the observation set to the active states of the MSM.
         False: All states are in the observation set.
+
     dt_traj : str, optional, default='1 step'
         Description of the physical time corresponding to the trajectory time
         step.  May be used by analysis algorithms such as plotting tools to
@@ -50,14 +56,17 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
         |  'us',  'microsecond*'
         |  'ms',  'millisecond*'
         |  's',   'second*'
+
     accuracy : float
         convergence threshold for EM iteration. When two the likelihood does
         not increase by more than accuracy, the iteration is stopped
         successfully.
+
     maxit : int
         stopping criterion for EM iteration. When so many iterations are
         performed without reaching the requested accuracy, the iteration is
         stopped without convergence (a warning is given)
+
     store_data : bool
         True: estimate() returns an :class:`pyemma.msm.EstimatedMSM` object
         with discrete trajectories and counts stored. False: estimate() returns
@@ -65,10 +74,10 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
         transition matrix and quantities derived from it.
 
     """
-    def __init__(self, lag=1, nstates=2, msm_init=None, reversible=True, connectivity='largest',
+    def __init__(self, nstates=2, lag=1, msm_init=None, reversible=True, connectivity='largest',
                  observe_active=True, dt_traj='1 step', accuracy=1e-3, maxit=1000):
-        self.lag = lag
         self.nstates = nstates
+        self.lag = lag
         self.msm_init = msm_init
         self.reversible = reversible
         self.connectivity = connectivity
@@ -94,7 +103,7 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
             # estimate with sparse=False, because we need to do PCCA which is currently not implemented for sparse
             # estimate with store_data=True, because we need an EstimatedMSM
             msm_estimator = _MSMEstimator(lag=self.lag, reversible=self.reversible, sparse=False,
-                                          connectivity=self.connectivity, dt_traj=self.dt_traj)
+                                          connectivity=self.connectivity, dt_traj=self.timestep_traj)
             msm_init = msm_estimator.estimate(dtrajs)
         else:
             assert isinstance(self.msm_init, _EstimatedMSM), 'msm_init must be of type EstimatedMSM'

@@ -44,7 +44,7 @@ class EstimatedHMSM(_HMSM):
     def __init__(self, dtrajs_full, dt_model, lagtime, nstates_obs, observable_set, dtrajs_obs,
                  transition_matrix, observation_probabilities):
         _HMSM.__init__(self, transition_matrix, observation_probabilities, dt_model=dt_model)
-        self._lag = lagtime
+        self.lag = lagtime
         self._nstates_obs = nstates_obs
         self._observable_set = observable_set
         self._dtrajs_full = dtrajs_full
@@ -53,7 +53,7 @@ class EstimatedHMSM(_HMSM):
     @property
     def lagtime(self):
         """ The lag time in steps """
-        return self._lag
+        return self.lag
 
     @property
     def nstates_obs(self):
