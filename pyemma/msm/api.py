@@ -553,6 +553,7 @@ def estimate_hidden_markov_model(dtrajs, nstates, lag, reversible=True, connecti
 
     lag : int
         lagtime for the MSM estimation in multiples of trajectory steps
+
     nstates : int
         the number of metastable states in the resulting HMM
 
@@ -623,9 +624,11 @@ def estimate_hidden_markov_model(dtrajs, nstates, lag, reversible=True, connecti
 
     .. [1] L. R. Rabiner: A Tutorial on Hidden Markov Models and Selected
         Applications in Speech Recognition. Proc. IEEE 77, 257-286 (1989)
+
     .. [2] L. Baum, T. Petrie, G. Soules and N. Weiss N: A maximization
         technique occurring in the statistical analysis of probabilistic
         functions of Markov chains. Ann. Math. Statist. 41, 164-171 (1970)
+
     .. [3] F. Noe, H. Wu, J.-H. Prinz and N. Plattner: Projected and hidden
         Markov models for calculating kinetics and  metastable states of
         complex molecules. J. Chem. Phys. 139, 184114 (2013)
@@ -772,7 +775,7 @@ def bayesian_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
     return bmsm_estimator.estimate(dtrajs)
 
 
-def bayesian_hidden_markov_model(dtrajs, lag, nstates, nsamples=100, reversible=True, connectivity='largest',
+def bayesian_hidden_markov_model(dtrajs, nstates, lag, nsamples=100, reversible=True, connectivity='largest',
                                  observe_active=True, conf=0.95, dt_traj='1 step'):
     r""" Bayesian Hidden Markov model estimate using Gibbs sampling of the posterior
 

@@ -28,9 +28,9 @@ class TestMLHMM(unittest.TestCase):
 
         # run with lag 1 and 10
         cls.msm_lag1 = msm.estimate_markov_model([obs], 1, reversible=True, connectivity='largest')
-        cls.hmsm_lag1 = msm.estimate_hidden_markov_model([obs], 1, nstates, reversible=True, connectivity='largest')
+        cls.hmsm_lag1 = msm.estimate_hidden_markov_model([obs], nstates, 1, reversible=True, connectivity='largest')
         cls.msm_lag10 = msm.estimate_markov_model([obs], 10, reversible=True, connectivity='largest')
-        cls.hmsm_lag10 = msm.estimate_hidden_markov_model([obs], 10, nstates, reversible=True, connectivity='largest')
+        cls.hmsm_lag10 = msm.estimate_hidden_markov_model([obs], nstates, 10, reversible=True, connectivity='largest')
 
     # =============================================================================
     # Test basic HMM properties

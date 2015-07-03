@@ -13,17 +13,20 @@ class BayesianHMSM(_Estimator, _SampledHMSM):
     """Estimator for a Bayesian HMSM
 
     """
-    def __init__(self, lag=1, nstates=2, nsamples=100, init_hmsm=None, reversible=True, connectivity='largest',
+    def __init__(self, nstates=2, lag=1, nsamples=100, init_hmsm=None, reversible=True, connectivity='largest',
                  observe_active=True, dt_traj='1 step', conf=0.95):
         """
         Parameters
         ----------
-        lag : int, optional, default=1
-            lagtime to estimate the HMSM at
         nstates : int, optional, default=2
             number of hidden states
+
+        lag : int, optional, default=1
+            lagtime to estimate the HMSM at
+
         hmsm : :class:`HMSM <pyemma.msm.ui.hmsm.HMSM>`
             Single-point estimate of HMSM object around which errors will be evaluated
+
         observe_active : bool, optional, default=True
             True: Restricts the observation set to the active states of the MSM.
             False: All states are in the observation set.
