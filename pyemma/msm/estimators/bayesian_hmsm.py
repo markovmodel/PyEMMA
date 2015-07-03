@@ -9,7 +9,7 @@ from pyemma.msm.estimators.estimated_hmsm import EstimatedHMSM as _EstimatedHMSM
 from pyemma.msm.models.hmsm_sampled import SampledHMSM as _SampledHMSM
 from pyemma._base.estimator import Estimator as _Estimator
 
-class BayesianHMSM(_Estimator, _SampledHMSM):
+class BayesianHMSM(_HMSMEstimator, _SampledHMSM):
     """Estimator for a Bayesian HMSM
 
     """
@@ -67,9 +67,12 @@ class BayesianHMSM(_Estimator, _SampledHMSM):
             self.nstates = init_hmsm.nstates
             self.reversible = init_hmsm.is_reversible
 
-        # if needed, blow up output matrix
+        # here we blow up the output matrix (if needed) to the FULL state space because we want to use dtrajs in the
+        # Bayesian HMM sampler
         if self.observe_active:
-            pobs = _np.zeros((init_hmsm.nstates, init_hmsm.nstates_obs))
+            import pyemma.msm.estimation as msmest
+            nstates_full = msmest.number_of_states(dtrajs)
+            pobs = _np.zeros((init_hmsm.nstates, nstates_full))
             pobs[:, init_hmsm.observable_set] = init_hmsm.observation_probabilities
         else:
             pobs = init_hmsm.observation_probabilities
@@ -87,7 +90,7 @@ class BayesianHMSM(_Estimator, _SampledHMSM):
         for i in range(self.nsamples):  # restrict to observable set if necessary
             Bobs = sample_pobs[i][:, init_hmsm.observable_set]
             sample_pobs[i] = Bobs / Bobs.sum(axis=1)[:, None]  # renormalize
-            samples.append(_HMSM(sample_Ps[i], sample_pobs[i], pi=sample_pis[i], dt_model=self.dt_model))
+            samples.append(_HMSM(sample_Ps[i], sample_pobs[i], pi=sample_pis[i], dt_model=init_hmsm.dt_model))
 
         # parametrize self
         self._dtrajs_full = dtrajs

@@ -88,6 +88,7 @@ class MaximumLikelihoodMSM(_Estimator, _EstimatedMSM):
             raise ValueError('connectivity mode ' + str(connectivity) + ' is unknown.')
 
         # time step
+        self.dt_traj = dt_traj
         self.timestep_traj = TimeUnit(dt_traj)
 
         # convergence parameters
