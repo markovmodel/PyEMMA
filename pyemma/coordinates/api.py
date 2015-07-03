@@ -491,7 +491,7 @@ def memory_reader(data):
     return _DataInMemory(data)
 
 
-def save_traj(traj_inp, indexes, outfile, topology=None, stride = 1, chunksize=1000, verbose=False):
+def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=1000, verbose=False):
     r""" Saves a sequence of frames as a single trajectory.
 
     Extracts the specified sequence of time/trajectory indexes from traj_inp
@@ -522,7 +522,7 @@ def save_traj(traj_inp, indexes, outfile, topology=None, stride = 1, chunksize=1
         The name of the output file. Its extension will determine the file type written. Example: "out.dcd"
         If set to None, the trajectory object is returned to memory
 
-    topology : str, mdtraj.Trajectory, or mdtraj.Topology
+    top : str, mdtraj.Trajectory, or mdtraj.Topology
         The topology needed to read the files in the list :py:obj:`traj_inp`. If :py:obj:`traj_inp` is not a list,
         this parameter is ignored.
 
@@ -549,14 +549,14 @@ def save_traj(traj_inp, indexes, outfile, topology=None, stride = 1, chunksize=1
     # Determine the type of input and extract necessary parameters
     if isinstance(traj_inp, _FeatureReader):
         trajfiles = traj_inp.trajfiles
-        topology  = traj_inp.topfile
+        top  = traj_inp.topfile
         chunksize = traj_inp.chunksize
     else:
         # Do we have what we need?
         assert isinstance(traj_inp, list), "traj_inp has to be of type list, not %"%type(traj_inp)
-        assert isinstance(topology,(str,_Topology, _Trajectory)), "traj_inp cannot be a list of files without an input " \
-                                        "topology of type str (eg filename.pdb), mdtraj.Trajectory or mdtraj.Topology. " \
-                                        "Got type %s instead"%type(topology)
+        assert isinstance(top,(str,_Topology, _Trajectory)), "traj_inp cannot be a list of files without an input " \
+                                        "top of type str (eg filename.pdb), mdtraj.Trajectory or mdtraj.Topology. " \
+                                        "Got type %s instead"%type(top)
         trajfiles = traj_inp
 
     # Convert to index (T,2) array if parsed a list or a list of arrays
@@ -578,7 +578,7 @@ def save_traj(traj_inp, indexes, outfile, topology=None, stride = 1, chunksize=1
         # directly as an iterator in trajectory_iterator_list
         trajectory_iterator_list.append(_itertools.islice(_frames_from_file(
                                                 trajfiles[ff],
-                                                topology,
+                                                top,
                                                 frames, chunksize=chunksize,
                                                 verbose=verbose, stride = stride), None)
                                         )
