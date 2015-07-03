@@ -118,7 +118,7 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
             self.logger.warn('Requested coarse-grained model with ' + str(self.nstates) + ' metastable states. ' +
                              'The ratio of relaxation timescales between ' + str(self.nstates) + ' and ' +
                              str(self.nstates+1) + ' states is only ' + str(timescale_ratios[self.nstates-2]) +
-                             ' while we recomment at least 2. It is possible that the resulting HMM is inaccurate. ' +
+                             ' while we recommend at least 2. It is possible that the resulting HMM is inaccurate. ' +
                              ' Handle with caution.')
 
         # set things from MSM

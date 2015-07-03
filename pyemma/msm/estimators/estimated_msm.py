@@ -6,6 +6,7 @@ import numpy as np
 
 from pyemma.msm.models.msm import MSM
 from pyemma.util.annotators import shortcut
+from pyemma.util.units import TimeUnit
 
 
 class EstimatedMSM(MSM):
@@ -16,10 +17,13 @@ class EstimatedMSM(MSM):
     dtrajs : list containing ndarrays(dtype=int) or ndarray(n, dtype=int)
         discrete trajectories, stored as integer ndarrays (arbitrary size)
         or a single ndarray for only one trajectory.
-    dt : str, optional, default='1 step'
-        Description of the physical time corresponding to the lag. May be used by analysis algorithms such as
-        plotting tools to pretty-print the axes. By default '1 step', i.e. there is no physical time unit.
-        Specify by a number, whitespace and unit. Permitted units are (* is an arbitrary string):
+
+    dt_traj : str, optional, default='1 step'
+        Description of the physical time corresponding to the trajectory time
+        step. May be used by analysis algorithms such as plotting tools to
+        pretty-print the axes. By default '1 step', i.e. there is no physical
+        time unit. Specify by a number, whitespace and unit. Permitted units
+        are (* is an arbitrary string):
 
         |  'fs',  'femtosecond*'
         |  'ps',  'picosecond*'
@@ -27,8 +31,10 @@ class EstimatedMSM(MSM):
         |  'us',  'microsecond*'
         |  'ms',  'millisecond*'
         |  's',   'second*'
+
     lagtime : int
         lagtime for the MSM estimation in multiples of trajectory steps
+
     connectivity : str, optional, default = 'largest'
         Connectivity mode. Three methods are intended (currently only 'largest' is implemented)
         'largest' : The active set is the largest reversibly connected set. All estimation will be done on this
@@ -39,6 +45,7 @@ class EstimatedMSM(MSM):
             the stationary vector is only defined within subsets, etc. Currently not implemented.
         'none' : The active set is the full set of states. Estimation will be conducted on the full set of states
             without ensuring connectivity. This only permits nonreversible estimation. Currently not implemented.
+
     active_set :
     connected_sets :
     C_full :
@@ -47,15 +54,17 @@ class EstimatedMSM(MSM):
 
     """
 
-    def __init__(self, dtrajs, dt_model, lag, connectivity, active_set, connected_sets, C_full, C_active, transition_matrix):
+    def __init__(self, dtrajs, dt_traj, lag, connectivity, active_set, connected_sets,
+                 C_full, C_active, transition_matrix):
         # superclass constructor
-        MSM.__init__(self, transition_matrix, dt_model=dt_model)
+        MSM.__init__(self, transition_matrix, dt_model=TimeUnit(dt_traj).get_scaled(lag))
 
         # Making copies because we don't know what will happen to the arguments after this call
         self.lag = lag
         self.connectivity = copy.deepcopy(connectivity)
         self.active_set = copy.deepcopy(active_set)
         self._dtrajs_full = copy.deepcopy(dtrajs)
+        self.dt_traj = dt_traj
         self._C_full = copy.deepcopy(C_full)
         self._C_active = copy.deepcopy(C_active)
         self._connected_sets = copy.deepcopy(connected_sets)
@@ -451,7 +460,7 @@ class EstimatedMSM(MSM):
         from pyemma.msm.estimators.maximum_likelihood_hmsm import MaximumLikelihoodHMSM
         estimator = MaximumLikelihoodHMSM(lag=self.lagtime, nstates=nstates, msm_init=self,
                                           reversible=self.is_reversible, connectivity=self.connectivity,
-                                          observe_active=True, dt=self.timestep_model)
+                                          observe_active=True, dt_traj=self.dt_traj)
         estimator.estimate(self.discrete_trajectories_full)
         return estimator.model
 
