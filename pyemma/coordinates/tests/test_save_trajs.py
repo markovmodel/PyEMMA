@@ -163,6 +163,29 @@ class TestSaveTrajs(unittest.TestCase):
             (found_diff, errmsg) = compare_coords_md_trajectory_objects(traj_1_pass, traj_ref, atom=0)
             self.assertFalse(found_diff, errmsg)
 
+    def test_save_SaveTrajs_multipass_with_stride_copy_not_join(self):
+        # With the inmemory option = True
+
+        for stride in self.strides[:]:
+            # Since none of the trajfiles have more than 30 frames, the frames have to be re-drawn for every stride
+            sets = np.copy(self.sets)
+            sets[0][:, 1] = np.random.randint(0, high=30 / stride, size=np.shape(sets[0])[0])
+            sets[1][:, 1] = np.random.randint(0, high=30 / stride, size=np.shape(sets[1])[0])
+
+            __ = save_trajs(self.reader, sets,
+                            outfiles=self.one_pass_files, inmemory=False, stride=stride, copy_not_join=True)
+
+            traj_1_pass = single_traj_from_n_files(self.one_pass_files, top=self.pdbfile)
+
+            # Also the reference has to be re-drawn using the stride. For this, we use the re-scale the strided
+            # frame-indexes to the unstrided value
+            sets[0][:, 1] *= stride
+            sets[1][:, 1] *= stride
+            traj_ref = save_traj_w_md_load_frame(self.reader, sets)
+
+            # Check for diffs
+            (found_diff, errmsg) = compare_coords_md_trajectory_objects(traj_1_pass, traj_ref, atom=0)
+            self.assertFalse(found_diff, errmsg)
 
 if __name__ == "__main__":
     unittest.main()
