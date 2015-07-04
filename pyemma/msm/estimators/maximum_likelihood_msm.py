@@ -178,9 +178,6 @@ class MaximumLikelihoodMSM(_Estimator, _EstimatedMSM):
         # Done. We set our own model parameters, so this estimator is equal to the estimated model.
         self._dtrajs_full = dtrajs
         self._connected_sets = msmest.connected_sets(self._C_full)
-        self._dtrajs_active = []
-        for dtraj in dtrajs:
-            self._dtrajs_active.append(self._full2active[dtraj])
         self.set_model_params(P=P, reversible=self.reversible, dt_model=self.timestep_traj.get_scaled(self.lag))
 
         return self

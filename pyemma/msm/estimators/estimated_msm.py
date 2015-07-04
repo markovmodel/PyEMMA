@@ -74,10 +74,6 @@ class EstimatedMSM(MSM):
         # full2active mapping
         self._full2active = -1 * np.ones(self._nstates_full, dtype=int)
         self._full2active[self._active_set] = np.array(range(len(self._active_set)), dtype=int)
-        # compute connected dtrajs
-        self._dtrajs_active = []
-        for dtraj in dtrajs:
-            self._dtrajs_active.append(self._full2active[dtraj])
 
         # is estimated
         self._is_estimated = True

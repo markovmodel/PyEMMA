@@ -82,6 +82,7 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
         self.reversible = reversible
         self.connectivity = connectivity
         self.observe_active = observe_active
+        self.dt_traj = dt_traj
         self.timestep_traj = TimeUnit(dt_traj)
 
     def _estimate(self, dtrajs):

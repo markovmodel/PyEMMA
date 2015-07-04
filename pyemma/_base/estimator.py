@@ -6,6 +6,9 @@ from pyemma.util.log import getLogger
 import inspect
 from pyemma.util import types as _types
 
+# imports for external usage
+from pyemma._ext.sklearn.base import clone as clone_estimator
+
 def get_estimator(estimator):
     """ Returns an estimator object given an estimator object or class
 
@@ -56,7 +59,7 @@ def param_grid(pargrid):
     """
     return ParameterGrid(pargrid)
 
-def _call_member(obj, name, failfast=True):
+def _call_member(obj, name, args=None, failfast=True):
     """ Calls the specified method, property or attribute of the given object
 
     Parameters
@@ -65,6 +68,8 @@ def _call_member(obj, name, failfast=True):
         The object that will be used
     name : str
         Name of method, property or attribute
+    args : dict, optional, default=None
+        Arguments to be passed to the method (if any)
     failfast : bool
         If True, will raise an exception when trying a method that doesn't exist. If False, will simply return None
         in that case
@@ -76,14 +81,18 @@ def _call_member(obj, name, failfast=True):
             raise e
         else:
             return None
-    if str(type(method)) == '<type \'instancemethod\'>':  # call function without params
-        return obj.method()
+    if str(type(method)) == '<type \'instancemethod\'>':  # call function
+        if args is None:
+            return method()
+        else:
+            return method(*args)
     elif str(type(method)) == '<type \'property\'>':  # call property
-        return obj.method
+        return method
     else:  # now it's an Attribute, so we can just return its value
         return method
 
-def estimate_param_scan(estimator, X, param_sets, evaluate=None, failfast=True):
+def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=None, failfast=True,
+                        return_estimators=False):
     # TODO: parallelize. For options see http://scikit-learn.org/stable/modules/grid_search.html
     # TODO: allow to specify method parameters in evaluate
     """ Runs multiple estimations using a list of parameter settings
@@ -91,26 +100,37 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, failfast=True):
     Parameters
     ----------
     estimator : Estimator object or class
-        An estimator object that provides an estimate(X, **params) function. If only a class is provided here,
-        the Estimator objects will be constructed with default parameter settings, and the parameter settings
-        from param_sets for each estimation. If you want to specify other parameter settings for those parameters
-        not specified in param_sets, construct an Estimator before and pass the object.
+        An estimator object that provides an estimate(X, **params) function.
+        If only a class is provided here, the Estimator objects will be
+        constructed with default parameter settings, and the parameter settings
+        from param_sets for each estimation. If you want to specify other
+        parameter settings for those parameters not specified in param_sets,
+        construct an Estimator before and pass the object.
+
     param_sets : iterable over dictionaries
-        An iterable that provides parameter settings. Each element defines a parameter set, for which an estimation
-        will be run using these parameters in estimate(X, **params). All other parameter settings will be taken from
-        the default settings in the estimator object.
+        An iterable that provides parameter settings. Each element defines a
+        parameter set, for which an estimation will be run using these
+        parameters in estimate(X, **params). All other parameter settings will
+        be taken from the default settings in the estimator object.
+
     evaluate : str or list of str
-        The given methods or properties will be called on the estimated models, and their results will be returned
-        instead of the full models. This may be useful for reducing memory overhead.
+        The given methods or properties will be called on the estimated
+        models, and their results will be returned instead of the full models.
+        This may be useful for reducing memory overhead.
+
     failfast : bool
-        If True, will raise an exception when trying a method that doesn't exist. If False, will simply return None
-        in that case
+        If True, will raise an exception when trying a method that doesn't
+        exist. If False, will simply return None.
 
     Return
     ------
     models : list of model objects or evaluated function values
-        A list of estimated models in the same order as param_sets. If evaluate is given, each element will contain
-        the results from these method evaluations.
+        A list of estimated models in the same order as param_sets. If evaluate
+        is given, each element will contain the results from these method
+        evaluations.
+
+    estimators (optional) : list of estimator ojbects. These are returned only
+        if return_estimators=True
 
     Examples
     --------
@@ -137,25 +157,40 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, failfast=True):
     # TODO: parallelization should first clone estimators and dispatch estimation routines.
     # make sure we have an estimator object
     estimator = get_estimator(estimator)
-    res = []  # prepare results
+    # if we want to return estimators, make clones. Otherwise just copy references
+    # TODO: for parallel processing we always need clones
+    if return_estimators:
+        estimators = [clone_estimator(estimator) for p in param_sets]
+    else:
+        estimators = [estimator for p in param_sets]
+
+    res = []  # container for model or function evaluations
 
     # if we evaluate, make sure we have a list of functions to evaluate
     if _types.is_string(evaluate):
         evaluate = [evaluate]
 
     # iterate over parameter settings
-    for p in param_sets:
+    for i in range(len(param_sets)):
+        params = param_sets[i]
+        estimator = estimators[i]
         # run estimation
-        model = estimator.estimate(X, **p)
+        model = estimator.estimate(X, **params)
 
         # deal with result
         if evaluate is None:  # we want full models
             res.append(model)
         elif _types.is_iterable(evaluate):  # we want to evaluate function(s) for each model
             values = []  # the function values fo each model
-            for name in evaluate:
+            for ieval in range(len(evaluate)):
+                # get method/attribute name and arguments to be evaluated
+                name = evaluate[ieval]
+                args = None
+                if evaluate_args is not None:
+                    args = evaluate_args[ieval]
+                # evaluate
                 try:
-                    value = _call_member(model, name)  # try calling method/property/attribute
+                    value = _call_member(model, name, args=args)  # try calling method/property/attribute
                 except AttributeError as e:  # couldn't find method/property/attribute
                     if failfast:
                         raise e  # raise an AttributeError
@@ -170,7 +205,10 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, failfast=True):
             raise ValueError('Invalid setting for evaluate: '+str(evaluate))
 
     # done
-    return res
+    if return_estimators:
+        return res, estimators
+    else:
+        return res
 
 
 class Estimator(_BaseEstimator):
