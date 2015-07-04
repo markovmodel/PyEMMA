@@ -36,9 +36,9 @@ import numpy as np
 import warnings
 
 from pyemma.util.statistics import confidence_interval
-from pyemma.util.discrete_trajectories import number_of_states
 from pyemma.util import types as _types
 from pyemma._base.estimator import Estimator, get_estimator, param_grid, estimate_param_scan
+from pyemma._base.model import SampledModel
 
 
 # ====================================================================
@@ -57,8 +57,9 @@ def _generate_lags(maxlag, multiplier):
     lag = 1.0
     while lag <= maxlag:
         lag = round(lag * multiplier)
-        lags.append(int(lag))
-    return lags
+        if lag <= maxlag:
+            lags.append(int(lag))
+    return np.array(lags)
 
 
 # TODO: build a generic implied timescales estimate in _base, and make this a subclass (for dtrajs)
@@ -71,97 +72,118 @@ class ImpliedTimescales(Estimator):
     ----------
     dtrajs : array-like or list of array-likes
         discrete trajectories
+
     lags = None : array-like with integers
         integer lag times at which the implied timescales will be calculated
-    k = 10 : int
-        number of implied timescales to be computed. Will compute less if the number of
-        states are smaller
+
+    nits = 10 : int
+        maximum number of implied timescales to be computed and stored. If less
+        timescales are available, nits will be set to a smaller value during
+        estimation
+
     failfast = False : boolean
         if True, will raise an error as soon as not all requested timescales can be computed at all requested
         lagtimes. If False, will continue with a warning and compute the timescales/lagtimes that are possible.
 
     """
-    def __init__(self, data, estimator, lags=None, nits=10, failfast=False):
+    def __init__(self, estimator, lags=None, nits=10, failfast=False):
         # initialize
-        self.data = data
         self.estimator = get_estimator(estimator)
+        self.nits = nits
+        self.failfast = failfast
+
+        # set lag times
+        if _types.is_int(lags):  # got a single integer. We create a list
+            self._lags = _generate_lags(lags, 1.5)
+        else:  # got a list of ints or None - otherwise raise exception.
+            self._lags = _types.ensure_int_vector_or_None(lags, require_order=True)
+
+        print 'Generated lags: ', self._lags
 
         # estimated its. 2D-array with indexing: lagtime, its
         self._its = None
         # sampled its's. 3D-array with indexing: lagtime, its, sample
         self._its_samples = None
 
-        # trajectory lengths
-        try:
-            self.data = _types.ensure_dtraj_list(data)
-            # maximum number of timescales
-            nstates = number_of_states(self.data)
-            self.nits = min(nits, nstates - 1)
-            #
-            self.lengths = np.zeros(nits)
-            for i in range(len(self.data)):
-                self.lengths[i] = len(self.data[i])
-            self.maxlength = np.max(self.lengths)
-        except:
-            raise NotImplementedError('Currently only discrete trajectories are implemented')
-
-        # lag time
-        if lags is None:
-            maxlag = 0.5 * np.sum(self.lengths) / float(len(self.lengths))
-            self.lags = _generate_lags(maxlag, 1.5)
-        else:
-            self.lags = np.array(lags)
-            # check if some lag times are forbidden.
-            if np.max(self.lags) >= self.maxlength:
-                Ifit = np.where(self.lags < self.maxlength)[0]
-                Inofit = np.where(self.lags >= self.maxlength)[0]
-                warnings.warn(
-                    'Some lag times exceed the longest trajectories. Will ignore lag times: ' + str(self.lags[Inofit]))
-                self.lags = self.lags[Ifit]
-
-    def _log_no_ts(self, tau):
-        warnings.warn('Could not compute a single timescale at tau = ' + str(tau) +
-                      '. Probably a connectivity problem. Try using smaller lagtimes')
 
     def _estimate(self, data):
         r"""Estimates ITS at set of lagtimes
         
         """
+        ### PREPARE AND CHECK DATA
+        # TODO: Currenlty only discrete trajectories are implemented. For a general class this needs to be changed.
+        data = _types.ensure_dtraj_list(data)
+
+        # check trajectory lengths
+        self._trajlengths = np.array([len(traj) for traj in data])
+        maxlength = np.max(self._trajlengths)
+
+        # set lag times by data if not yet set
+        if self._lags is None:
+            maxlag = 0.5 * np.sum(self._trajlengths) / float(len(self._trajlengths))
+            self._lags = _generate_lags(maxlag, 1.5)
+
+        # check if some lag times are forbidden.
+        if np.max(self._lags) >= maxlength:
+            Ifit = np.where(self._lags < maxlength)[0]
+            Inofit = np.where(self._lags >= maxlength)[0]
+            self.logger.warn('Ignoring lag times that exceed the longest trajectory: ' + str(self._lags[Inofit]))
+            self._lags = self._lags[Ifit]
+
+        ### RUN ESTIMATION
+
         # construct all parameter sets for the estimator
-        param_sets = param_grid({'lag': self.lags})
+        param_sets = param_grid({'lag': self._lags})
+        param_sets = [p for p in param_sets]
 
         # run estimation on all lag times
-        estimates = estimate_param_scan(self.estimator, data, param_sets,
-                                        evaluate=['timescales', 'timescales_samples'], failfast=False)
+        self._models, self._estimators = estimate_param_scan(self.estimator, data, param_sets, return_estimators=True)
 
-        # store timescales
-        timescales = [est[0] for est in estimates]
-        if all(ts is None for ts in timescales):
-            raise RuntimeError('Could not compute any timescales. Make sure that your estimator object does provide'
-                               'the timescales method or property')
-        nits = min(max([len(ts) for ts in timescales]), self.nits)
-        self._its = np.zeros((len(self.lags), nits))
+        ### PROCESS RESULTS
+
+        # timescales
+        timescales = [m.timescales() for m in self._models]
+
+        # how many finity timescales do we really have?
+        maxnts = max([len(ts[np.isfinite(ts)]) for ts in timescales])
+        if maxnts < self.nits:
+            self.nits = maxnts
+            self.logger.warn('Changed user setting nits to the number of available timescales nits=' + str(self.nits))
+
+        # sort timescales into matrix
+        computed_all = True  # flag if we have found any problems
+        self._its = np.empty((len(self._lags), self.nits))
+        self._its[:] = np.NAN  # initialize with NaN in order to point out timescales that were not computed
+        self._successful_lag_indexes = []
         for i, ts in enumerate(timescales):
-            if ts is None:
-                self._log_no_ts(self.lags[i])
-            else:
-                ts = ts[:nits]
-                self._its[i, :len(ts)] = ts  # copy into array. Leave 0 if there is no timescales
+            if ts is not None:
+                if np.any(np.isfinite(ts)):  # if there are any finite timescales available, add them
+                    self._its[i, :len(ts)] = ts[:self.nits]  # copy into array. Leave NaN if there is no timescale
+                    self._successful_lag_indexes.append(i)
 
-        # store timescales samples (if available)
-        timescales_samples = [est[1] for est in estimates]
-        if all(ts is None for ts in timescales_samples):
-            self._its_samples = None
-        else:
-            nits = min(max([np.shape(ts)[1] for ts in timescales_samples]), self.nits)
-            nsamples = np.shape(timescales_samples[0])[0]
-            self._its_samples = np.zeros((len(self.lags), nits, nsamples))
+        if len(self._successful_lag_indexes) < len(self._lags):
+            computed_all = False
+        if np.any(np.isnan(self._its)):
+            computed_all = False
+
+        # timescales samples if available
+        if issubclass(self._models[0].__class__, SampledModel):
+            # samples
+            timescales_samples = [m.sample_f('timescales') for m in self._models]
+            self._its_samples = np.zeros((len(timescales_samples), len(self._lags), self.nits))
+
             for i, ts in enumerate(timescales_samples):
-                if ts is None:
-                    self._log_no_ts(self.lags[i])
-                else:
-                    ts = ts[:,:nits]
-                    self._its_samples[i, :ts.shape[1], :] = ts.T  # copy into array. Leave 0 if there is no timescales
+                if ts is not None:
+                    ts = ts[:,:self.nits]
+                    self._its_samples[:, i, :ts.shape[1]] = ts.T  # copy into array. Leave 0 if there is no timescales
+
+            if np.any(np.isnan(self._its_samples)):
+                computed_all = False
+
+        if not computed_all:
+            self.logger.warn('Some timescales could not be computed. Timescales array is smaller than '
+                             'expected or contains NaNs')
+
 
     @property
     def lagtimes(self):
@@ -170,12 +192,12 @@ class ImpliedTimescales(Estimator):
         """
         return self.lags
 
-    def get_lagtimes(self):
+    @property
+    def lags(self):
         r"""Return the list of lag times for which timescales were computed.
-        
+
         """
-        warnings.warn('get_lagtimes() is deprecated. Use lagtimes', DeprecationWarning)
-        return self.lags
+        return self._lags[self._successful_lag_indexes]
 
     @property
     def number_of_timescales(self):
@@ -215,9 +237,9 @@ class ImpliedTimescales(Estimator):
         
         """
         if process is None:
-            return self._its
+            return self._its[self._successful_lag_indexes, :]
         else:
-            return self._its[:, process]
+            return self._its[self._successful_lag_indexes, process]
 
     @property
     def samples_available(self):
@@ -227,22 +249,6 @@ class ImpliedTimescales(Estimator):
         
         """
         return self._its_samples is not None
-
-    @property
-    def sample_lagtimes(self):
-        r"""Return the list of lag times for which sample data is available
-
-        """
-        return self.lags
-        # return self._lags_sample
-
-    @property
-    def sample_number_of_timescales(self):
-        r"""Return the number of timescales for which sample data is available
-
-        """
-        return self.nits
-        # return self._nits_sample
 
     @property
     def sample_mean(self):
@@ -281,9 +287,9 @@ class ImpliedTimescales(Estimator):
                                ' try calling bootstrap() before')
         # OK, go:
         if process is None:
-            return np.mean(self._its_samples, axis=2)
+            return np.mean(self._its_samples[self._successful_lag_indexes, :, :], axis=2)
         else:
-            return np.mean(self._its_samples[:, process, :], axis=1)
+            return np.mean(self._its_samples[self._successful_lag_indexes, process, :], axis=1)
 
     @property
     def sample_std(self):
@@ -325,17 +331,17 @@ class ImpliedTimescales(Estimator):
                                ' try calling bootstrap() before')
         # OK, go:
         if process is None:
-            return np.std(self._its_samples, axis=2)
+            return np.std(self._its_samples[self._successful_lag_indexes, :, :], axis=2)
         else:
-            return np.std(self._its_samples[:, process, :], axis=1)
+            return np.std(self._its_samples[self._successful_lag_indexes, process, :], axis=1)
 
-    def get_sample_conf(self, alpha=0.6827, process=None):
+    def get_sample_conf(self, conf=0.95, process=None):
         r"""Returns the confidence interval that contains alpha % of the sample data
         
         Use:
-        alpha = 0.6827 for 1-sigma confidence interval
-        alpha = 0.9545 for 2-sigma confidence interval
-        alpha = 0.9973 for 3-sigma confidence interval
+        conf = 0.6827 for 1-sigma confidence interval
+        conf = 0.9545 for 2-sigma confidence interval
+        conf = 0.9973 for 3-sigma confidence interval
         etc.
         
         Returns
@@ -353,15 +359,49 @@ class ImpliedTimescales(Estimator):
                                ' try calling bootstrap() before')
         # OK, go:
         if process is None:
-            L = np.zeros((len(self.lags), self.nits))
-            R = np.zeros((len(self.lags), self.nits))
-            for i in range(len(self.lags)):
-                for j in range(self.nits):
-                    L[i, j], R[i, j] = confidence_interval(self._its_samples[i, j], alpha)
-            return L, R
+            return confidence_interval(self._its_samples[self._successful_lag_indexes, :, :], conf=conf)
         else:
-            L = np.zeros(len(self.lags))
-            R = np.zeros(len(self.lags))
-            for i in range(len(self.lags)):
-                L[i], R[i] = confidence_interval(self._its_samples[i, process], alpha)
-            return L, R
+            return confidence_interval(self._its_samples[self._successful_lag_indexes, :, process], conf=conf)
+
+    @property
+    def estimators(self):
+        r"""Returns the estimators for all lagtimes .
+
+        """
+        return [self._estimators[i] for i in self._successful_lag_indexes]
+
+    @property
+    def models(self):
+        r"""Returns the models for all lagtimes .
+
+        """
+        return [self._models[i] for i in self._successful_lag_indexes]
+
+    @property
+    def fraction_of_frames(self):
+        r"""Returns the fraction of frames used to compute the count matrix at each lagtime.
+
+        Notes
+        -------
+        In a list of discrete trajectories with varying lengths, the estimation at longer lagtimes will mean
+        discarding some trajectories for which not even one count can be computed. This function returns the fraction
+        of frames that was actually used in computing the count matrix.
+
+        **Be aware**: this fraction refers to the **full count matrix**, and not that of the largest connected
+        set. Hence, the output is not necessarily the **active** fraction. For that, use the
+        :py:func:`EstimatedMSM.active_count_fraction` function of the :py:class:`EstimatedMSM` class object.
+        """
+
+        # TODO : implement fraction_of_active_frames
+
+        # Are we computing this for the first time?
+        if not hasattr(self,'_fraction'):
+            self._fraction = np.zeros_like(self.lagtimes, dtype='float32')
+            self._nframes = self._trajlengths.sum()
+
+            # Iterate over lagtimes and find trajectories that contributed with at least one count
+            for ii, lag in enumerate(self.lagtimes):
+                long_enough = np.argwhere(self._trajlengths-lag >= 1).squeeze()
+                self._fraction[ii] = self._trajlengths[long_enough].sum()/self._nframes
+
+        return self._fraction

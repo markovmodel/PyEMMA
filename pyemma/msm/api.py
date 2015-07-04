@@ -163,7 +163,7 @@ def timescales_msm(dtrajs, lags=None, nits=10, reversible=True, connected=True, 
         raise NotImplementedError('Error estimation method'+errors+'currently not implemented')
 
     # go
-    itsobj = _ImpliedTimescales(dtrajs, estimator, lags=lags, nits=nits)
+    itsobj = _ImpliedTimescales(estimator, lags=lags, nits=nits)
     itsobj.estimate(dtrajs)
     return itsobj
 
@@ -532,7 +532,7 @@ def timescales_hmsm(dtrajs, nstates, lags=None, nits=10, reversible=True, connec
         raise NotImplementedError('Error estimation method'+errors+'currently not implemented')
 
     # go
-    itsobj = _ImpliedTimescales(dtrajs, estimator, lags=lags, nits=nits)
+    itsobj = _ImpliedTimescales(estimator, lags=lags, nits=nits)
     itsobj.estimate(dtrajs)
     return itsobj
 
