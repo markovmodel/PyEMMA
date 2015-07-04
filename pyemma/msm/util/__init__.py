@@ -49,5 +49,4 @@ ITS-object
    ImpliedTimescales - ITS-object
    
 """
-from .timescales import *
 from .chapman_kolmogorov import *
