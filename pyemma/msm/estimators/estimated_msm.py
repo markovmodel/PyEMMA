@@ -199,7 +199,7 @@ class EstimatedMSM(MSM):
         :math:`(s_1,\:s_{tau+1},\:...),\:(s_2,\:t_{tau+2},\:...),` etc. This geometrical average converges to the
         correct likelihood in the statistical limit _[1].
 
-        [1] Trendelkamp-Schroer B, H Wu, F Paul and F Noe. 2015:
+        [1] Trendelkamp-Schroer B., H. Wu, F. Paul and F. Noe. 2015:
         Reversible Markov models of molecular kinetics: Estimation and uncertainty.
         in preparation.
 

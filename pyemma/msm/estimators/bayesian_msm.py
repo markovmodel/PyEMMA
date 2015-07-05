@@ -103,7 +103,7 @@ class BayesianMSM(_MLMSM, _SampledMSM):
         from math import sqrt
         if self.nstep is None:
             self.nstep = int(sqrt(self.nstates))  # heuristic for number of steps to decorrelate
-        tsampler = tmatrix_sampler(self.count_matrix_active, reversible=self.reversible, nstep=self.nstep)
+        tsampler = tmatrix_sampler(self.effective_count_matrix, reversible=self.reversible, nstep=self.nstep)
         sample_Ps, sample_mus = tsampler.sample(nsample=self.nsamples, return_statdist=True,
                                                 T_init=self.transition_matrix)
         # construct sampled MSMs

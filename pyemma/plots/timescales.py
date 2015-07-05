@@ -78,11 +78,11 @@ def plot_implied_timescales(ITS, ax=None, outfile=None, xlog=False, ylog=True, c
         # plot estimate
         ax.plot(lags*dt, ITS.get_timescales(process=i)*dt, color = colors[i % len(colors)],**kwargs)
         # sample available?
-        if (ITS.samples_available and ITS.sample_number_of_timescales > i):
+        if (ITS.samples_available):# and ITS.sample_number_of_timescales > i):
             # plot sample mean
-            ax.plot(ITS.sample_lagtimes*dt, ITS.get_sample_mean(process=i)*dt, marker='o', color = colors[i % len(colors)], linestyle = 'dashed')
+            ax.plot(lags*dt, ITS.get_sample_mean(process=i)*dt, marker='o', color = colors[i % len(colors)], linestyle = 'dashed')
             (lconf, rconf) = ITS.get_sample_conf(confidence, i)
-            ax.fill_between(ITS.sample_lagtimes*dt, lconf*dt, rconf*dt, alpha=0.2, color=colors[i % len(colors)])
+            ax.fill_between(lags*dt, lconf*dt, rconf*dt, alpha=0.2, color=colors[i % len(colors)])
         # reference available?
         if (refs is not None):
             tref = refs[i]

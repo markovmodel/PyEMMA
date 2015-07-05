@@ -7,7 +7,22 @@ from pyemma.msm.estimators.maximum_likelihood_hmsm import MaximumLikelihoodHMSM 
 from pyemma.msm.models.hmsm import HMSM as _HMSM
 from pyemma.msm.estimators.estimated_hmsm import EstimatedHMSM as _EstimatedHMSM
 from pyemma.msm.models.hmsm_sampled import SampledHMSM as _SampledHMSM
-from pyemma._base.estimator import Estimator as _Estimator
+from pyemma.util.units import TimeUnit
+
+def _lag_observations(observations, lag):
+    """ Create new trajectories that are subsampled at lag but shifted
+
+    Given a trajectory (s0, s1, s2, s3, s4, ...) and lag 3, this function will generate 3 trajectories
+    (s0, s3, s6, ...), (s1, s4, s7, ...) and (s2, s5, s8, ...). Use this function in order to parametrize a MLE
+    at lag times larger than 1 without discarding data. Do not use this function for Bayesian estimators, where
+    data must be given such that subsequent transitions are uncorrelated.
+
+    """
+    obsnew = []
+    for obs in observations:
+        for shift in range(0, lag):
+            obsnew.append(obs[shift:][::lag])
+    return obsnew
 
 class BayesianHMSM(_HMSMEstimator, _SampledHMSM):
     """Estimator for a Bayesian HMSM
@@ -40,6 +55,7 @@ class BayesianHMSM(_HMSMEstimator, _SampledHMSM):
         self.connectivity = connectivity
         self.observe_active = observe_active
         self.dt_traj = dt_traj
+        self.timestep_traj = TimeUnit(dt_traj)
         self.conf = conf
 
     def _estimate(self, dtrajs):
@@ -80,7 +96,9 @@ class BayesianHMSM(_HMSMEstimator, _SampledHMSM):
         # HMM sampler
         from bhmm import discrete_hmm, bayesian_hmm
         hmm_mle = discrete_hmm(init_hmsm.transition_matrix, pobs, stationary=True, reversible=self.reversible)
-        sampled_hmm = bayesian_hmm(dtrajs, hmm_mle, nsample=self.nsamples, transition_matrix_prior='init-connect')
+        dtrajs_lagged = _lag_observations(dtrajs, self.lag)  # rewrite discrete traj to lagged observations
+        sampled_hmm = bayesian_hmm(dtrajs_lagged, hmm_mle, nsample=self.nsamples,
+                                   transition_matrix_prior='init-connect')
 
         # Samples
         sample_Ps = [sampled_hmm.sampled_hmms[i].transition_matrix for i in range(self.nsamples)]
@@ -96,6 +114,7 @@ class BayesianHMSM(_HMSMEstimator, _SampledHMSM):
         self._dtrajs_full = dtrajs
         self._observable_set = init_hmsm._observable_set
         self._dtrajs_obs = init_hmsm._dtrajs_obs
-        self.set_model_params(samples=samples, P=init_hmsm.transition_matrix, pobs=init_hmsm.observation_probabilities)
+        self.set_model_params(samples=samples, P=init_hmsm.transition_matrix, pobs=init_hmsm.observation_probabilities,
+                              dt_model=init_hmsm.dt_model)
 
         return self
