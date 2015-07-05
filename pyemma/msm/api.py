@@ -84,7 +84,7 @@ def timescales_msm(dtrajs, lags=None, nits=10, reversible=True, connected=True, 
     reversible : boolean (optional)
         Estimate the transition matrix reversibly (True) or
         nonreversibly (False)
-    errors : None or str
+    errors : None | 'bayes' | 'bootstrap'
         Specifies whether to compute statistical uncertainties (by default
         not), an which algorithm to use if yes.
         Options are 'bayes' for Bayesian sampling of the posterior and
@@ -463,9 +463,10 @@ def timescales_hmsm(dtrajs, nstates, lags=None, nits=10, reversible=True, connec
         Estimate the transition matrix reversibly (True) or
         nonreversibly (False)
 
-    errors : None or str
-        Specifies whether to compute statistical uncertainties (by default not), an which algorithm to use if yes.
-        The only option is currently 'bayes'. This algorithm is much faster than MSM-based error calculation because
+    errors : None | 'bayes'
+        Specifies whether to compute statistical uncertainties (by default not),
+        an which algorithm to use if yes. The only option is currently 'bayes'.
+        This algorithm is much faster than MSM-based error calculation because
         the involved matrices are much smaller.
 
     nsamples : int

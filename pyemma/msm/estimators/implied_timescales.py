@@ -33,7 +33,6 @@ __docformat__ = "restructuredtext en"
 __all__ = ['ImpliedTimescales']
 
 import numpy as np
-import warnings
 
 from pyemma.util.statistics import confidence_interval
 from pyemma.util import types as _types
@@ -97,8 +96,6 @@ class ImpliedTimescales(Estimator):
             self._lags = _generate_lags(lags, 1.5)
         else:  # got a list of ints or None - otherwise raise exception.
             self._lags = _types.ensure_int_vector_or_None(lags, require_order=True)
-
-        print 'Generated lags: ', self._lags
 
         # estimated its. 2D-array with indexing: lagtime, its
         self._its = None
@@ -170,12 +167,14 @@ class ImpliedTimescales(Estimator):
         if issubclass(self._models[0].__class__, SampledModel):
             # samples
             timescales_samples = [m.sample_f('timescales') for m in self._models]
-            self._its_samples = np.zeros((len(timescales_samples), len(self._lags), self.nits))
+            nsamples = np.shape(timescales_samples[0])[0]
+            self._its_samples = np.zeros((nsamples, len(self._lags), self.nits))
 
             for i, ts in enumerate(timescales_samples):
                 if ts is not None:
-                    ts = ts[:,:self.nits]
-                    self._its_samples[:, i, :ts.shape[1]] = ts.T  # copy into array. Leave 0 if there is no timescales
+                    ts = np.vstack(ts)
+                    ts = ts[:, :self.nits]
+                    self._its_samples[:, i, :ts.shape[1]] = ts  # copy into array. Leave 0 if there is no timescales
 
             if np.any(np.isnan(self._its_samples)):
                 computed_all = False
@@ -287,9 +286,9 @@ class ImpliedTimescales(Estimator):
                                ' try calling bootstrap() before')
         # OK, go:
         if process is None:
-            return np.mean(self._its_samples[self._successful_lag_indexes, :, :], axis=2)
+            return np.mean(self._its_samples[self._successful_lag_indexes, :, :], axis=0)
         else:
-            return np.mean(self._its_samples[self._successful_lag_indexes, process, :], axis=1)
+            return np.mean(self._its_samples[self._successful_lag_indexes, :, process], axis=0)
 
     @property
     def sample_std(self):
@@ -331,9 +330,9 @@ class ImpliedTimescales(Estimator):
                                ' try calling bootstrap() before')
         # OK, go:
         if process is None:
-            return np.std(self._its_samples[self._successful_lag_indexes, :, :], axis=2)
+            return np.std(self._its_samples[self._successful_lag_indexes, :, :], axis=0)
         else:
-            return np.std(self._its_samples[self._successful_lag_indexes, process, :], axis=1)
+            return np.std(self._its_samples[self._successful_lag_indexes, :, process], axis=0)
 
     def get_sample_conf(self, conf=0.95, process=None):
         r"""Returns the confidence interval that contains alpha % of the sample data
