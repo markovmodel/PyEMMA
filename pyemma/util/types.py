@@ -26,6 +26,7 @@
 __author__ = 'noe'
 
 import numpy as np
+import scipy.sparse as scisp
 import numbers
 import collections
 
@@ -311,38 +312,42 @@ def assert_square_matrix(A):
         If assertions has failed
 
     """
-    try:
-        if np.ndim(A) == 2 and np.shape(A)[0] == np.shape(A)[1]:
-            return np.shape(A)[0]
-        else:
-            raise AssertionError('Given array is not a square matrix: \n'+str(A))
-    except:
-        raise AssertionError('Given array is not a square matrix: \n'+str(A))
+    assert_array(A, ndim=2, uniform=True)
 
-def assert_array(A, shape=None, ndim=None, size=None, dtype=None, kind=None):
-    r"""
+def assert_array(A, shape=None, uniform=None, ndim=None, size=None, dtype=None, kind=None):
+    r""" Asserts whether the given array or sparse matrix has the given properties
+
     Parameters
     ----------
-    A : ndarray or array-like
+    A : ndarray, scipy.sparse matrix or array-like
         the array under investigation
+
     shape : shape, optional, default=None
-        asserts if the array has the requested shape. Be careful with vectors because this will distinguish between
-        row vectors (1,n), column vectors (n,1) and arrays (n,). If you want to be less specific, consider using size
+        asserts if the array has the requested shape. Be careful with vectors
+        because this will distinguish between row vectors (1,n), column vectors
+        (n,1) and arrays (n,). If you want to be less specific, consider using
+        size
+
+    square : None | True | False
+        if not None, asserts whether the array dimensions are uniform (e.g.
+        square for a ndim=2 array) (True), or not uniform (False).
+
     size : int, optional, default=None
         asserts if the arrays has the requested number of elements
+
     ndim : int, optional, default=None
         asserts if the array has the requested dimension
-    dtype : type, optional, default=None
-        asserts if the array data has the requested data type. This check is strong, e.g. int and int64 are not equal
-        If you want a weaker check, consider the kind option
-    kind : string, optional, default=None
-        Checks if the array data is of the specified kind. Options include 'i' for integer types, 'f' for float types
-        Check numpy.dtype.kind for possible options. An additional option is 'numeric' for either integer or float.
 
-    Returns
-    -------
-    A* : ndarray
-        An independent copy of the array
+    dtype : type, optional, default=None
+        asserts if the array data has the requested data type. This check is
+        strong, e.g. int and int64 are not equal. If you want a weaker check,
+        consider the kind option
+
+    kind : string, optional, default=None
+        Checks if the array data is of the specified kind. Options include 'i'
+        for integer types, 'f' for float types Check numpy.dtype.kind for
+        possible options. An additional option is 'numeric' for either integer
+        or float.
 
     Raises
     ------
@@ -354,6 +359,13 @@ def assert_array(A, shape=None, ndim=None, size=None, dtype=None, kind=None):
         if shape is not None:
             if not np.array_equal(np.shape(A), shape):
                 raise AssertionError('Expected shape '+str(shape)+' but given array has shape '+str(np.shape(A)))
+        if uniform is not None:
+            shapearr = np.array(np.shape(A))
+            is_uniform = np.count_nonzero(shapearr-shapearr[0]) == 0
+            if uniform and not is_uniform:
+                raise AssertionError('Given array is not uniform \n'+str(shapearr))
+            elif not uniform and is_uniform:
+                raise AssertionError('Given array is not nonuniform: \n'+str(shapearr))
         if size is not None:
             if not np.size(A) == size:
                 raise AssertionError('Expected size '+str(size)+' but given array has size '+str(np.size(A)))
@@ -362,13 +374,13 @@ def assert_array(A, shape=None, ndim=None, size=None, dtype=None, kind=None):
                 raise AssertionError('Expected shape '+str(ndim)+' but given array has shape '+str(np.ndim(A)))
         if dtype is not None:
             # now we must create an array if we don't have one yet
-            if not isinstance(A, np.ndarray):
+            if not isinstance(A, (np.ndarray)) and not scisp.issparse(A):
                 A = np.array(A)
             if not np.dtype(dtype) == A.dtype:
                 raise AssertionError('Expected data type '+str(dtype)+' but given array has data type '+str(A.dtype))
         if kind is not None:
             # now we must create an array if we don't have one yet
-            if not isinstance(A, np.ndarray):
+            if not isinstance(A, (np.ndarray)) and not scisp.issparse(A):
                 A = np.array(A)
             if kind == 'numeric':
                 if not (A.dtype.kind == 'i' or A.dtype.kind == 'f'):
@@ -384,20 +396,44 @@ def assert_array(A, shape=None, ndim=None, size=None, dtype=None, kind=None):
             raise AssertionError('Given argument is not an array of the expected shape or type:\n'+
                                  'arg = '+str(A)+'\ntype = '+str(type(A)))
 
-def ensure_ndarray(A, shape=None, ndim=None, size=None, dtype=None, kind=None):
-    r""" Ensures A is an ndarray and does an assert_array with the given parameters """
+def ensure_ndarray(A, shape=None, uniform=None, ndim=None, size=None, dtype=None, kind=None):
+    r""" Ensures A is an ndarray and does an assert_array with the given parameters
+
+    Returns
+    -------
+    A : ndarray
+        If A is already an ndarray, it is just returned. Otherwise this is an independent copy as an ndarray
+
+    """
     if not isinstance(A, np.ndarray):
         try:
             A = np.array(A)
         except:
             raise AssertionError('Given argument cannot be converted to an ndarray:\n'+str(A))
-    assert_array(A, shape=shape, ndim=ndim, size=size, dtype=dtype, kind=kind)
+    assert_array(A, shape=shape, uniform=uniform, ndim=ndim, size=size, dtype=dtype, kind=kind)
     return A
 
-def ensure_ndarray_or_None(A, shape=None, ndim=None, size=None, dtype=None, kind=None):
+def ensure_ndarray_or_sparse(A, shape=None, uniform=None, ndim=None, size=None, dtype=None, kind=None):
+    r""" Ensures A is an ndarray or a scipy sparse matrix and does an assert_array with the given parameters
+
+    Returns
+    -------
+    A : ndarray
+        If A is already an ndarray, it is just returned. Otherwise this is an independent copy as an ndarray
+
+    """
+    if not isinstance(A, np.ndarray) and not scisp.issparse(A):
+        try:
+            A = np.array(A)
+        except:
+            raise AssertionError('Given argument cannot be converted to an ndarray:\n'+str(A))
+    assert_array(A, shape=shape, uniform=uniform, ndim=ndim, size=size, dtype=dtype, kind=kind)
+    return A
+
+def ensure_ndarray_or_None(A, shape=None, uniform=None, ndim=None, size=None, dtype=None, kind=None):
     r""" Ensures A is None or an ndarray and does an assert_array with the given parameters """
     if A is not None:
-        return ensure_ndarray(A, shape=shape, ndim=ndim, size=size, dtype=dtype, kind=kind)
+        return ensure_ndarray(A, shape=shape, uniform=uniform, ndim=ndim, size=size, dtype=dtype, kind=kind)
     else:
         return None
 

@@ -31,7 +31,7 @@ import tempfile
 import os
 import numpy as np
 import mdtraj
-import pyemma.msm.ui.mapping
+import pyemma.msm.util.mapping
 
 
 class TestMapping(unittest.TestCase):
@@ -74,7 +74,7 @@ class TestMapping(unittest.TestCase):
 
     def test_regroup_DISK(self):
         # run function
-        cl_fnames = pyemma.msm.ui.mapping.regroup_DISK(self.xtc_fnames, self.pdb_fname, self.disctrajs, self.outdir)
+        cl_fnames = pyemma.msm.util.mapping.regroup_DISK(self.xtc_fnames, self.pdb_fname, self.disctrajs, self.outdir)
         
         # check xtcs
         for i in xrange(self.N_clusters):

@@ -38,7 +38,6 @@ import warnings
 import numpy as _np
 from scipy.sparse import issparse as _issparse
 from scipy.sparse import csr_matrix as _csr_matrix
-from scipy.sparse.sputils import isdense as _isdense
 
 from pyemma.util.annotators import shortcut
 
@@ -136,7 +135,7 @@ def is_transition_matrix(T, tol=1e-12):
 
     Examples
     --------
-  
+    >>> import numpy as np
     >>> from pyemma.msm.analysis import is_transition_matrix
 
     >>> A = np.array([[0.4, 0.5, 0.3], [0.2, 0.4, 0.4], [-1, 1, 1]])
@@ -148,12 +147,11 @@ def is_transition_matrix(T, tol=1e-12):
     True
         
     """
+    T = _types.ensure_ndarray_or_sparse(T, ndim=2, uniform=True, kind='numeric')
     if _issparse(T):
         return sparse.assessment.is_transition_matrix(T, tol)
-    elif _isdense(T):
-        return dense.assessment.is_transition_matrix(T, tol)
     else:
-        raise _type_not_supported
+        return dense.assessment.is_transition_matrix(T, tol)
 
 
 def is_rate_matrix(K, tol=1e-12):
@@ -180,7 +178,7 @@ def is_rate_matrix(K, tol=1e-12):
 
     Examples
     --------
-    
+    >>> import numpy as np
     >>> from pyemma.msm.analysis import is_rate_matrix
 
     >>> A = np.array([[0.5, -0.5, -0.2], [-0.3, 0.6, -0.3], [-0.2, 0.2, 0.0]])
@@ -192,12 +190,11 @@ def is_rate_matrix(K, tol=1e-12):
     True
         
     """
+    K = _types.ensure_ndarray_or_sparse(K, ndim=2, uniform=True, kind='numeric')
     if _issparse(K):
         return sparse.assessment.is_rate_matrix(K, tol)
-    elif _isdense(K):
-        return dense.assessment.is_rate_matrix(K, tol)
     else:
-        raise _type_not_supported
+        return dense.assessment.is_rate_matrix(K, tol)
 
 
 def is_connected(T, directed=True):
@@ -244,7 +241,7 @@ def is_connected(T, directed=True):
 
     Examples
     --------
-    
+    >>> import numpy as np
     >>> from pyemma.msm.analysis import is_connected
 
     >>> A = np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.0, 1.0]])
@@ -256,13 +253,12 @@ def is_connected(T, directed=True):
     True
     
     """
+    T = _types.ensure_ndarray_or_sparse(T, ndim=2, uniform=True, kind='numeric')
     if _issparse(T):
         return sparse.assessment.is_connected(T, directed=directed)
-    elif _isdense(T):
+    else:
         T = _csr_matrix(T)
         return sparse.assessment.is_connected(T, directed=directed)
-    else:
-        raise _type_not_supported
 
 
 def is_reversible(T, mu=None, tol=1e-12):
@@ -301,7 +297,7 @@ def is_reversible(T, mu=None, tol=1e-12):
 
     Examples
     --------
-    
+    >>> import numpy as np
     >>> from pyemma.msm.analysis import is_reversible
 
     >>> P = np.array([[0.8, 0.1, 0.1], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
@@ -314,14 +310,13 @@ def is_reversible(T, mu=None, tol=1e-12):
         
     """
     # check input
+    T = _types.ensure_ndarray_or_sparse(T, ndim=2, uniform=True, kind='numeric')
     mu = _types.ensure_float_vector_or_None(mu, require_order=True)
     # go
     if _issparse(T):
         return sparse.assessment.is_reversible(T, mu, tol)
-    elif _isdense(T):
-        return dense.assessment.is_reversible(T, mu, tol)
     else:
-        raise _type_not_supported
+        return dense.assessment.is_reversible(T, mu, tol)
 
 
 ################################################################################
@@ -351,7 +346,7 @@ def stationary_distribution(T):
 
     Examples
     --------
-
+    >>> import numpy as np
     >>> from pyemma.msm.analysis import stationary_distribution
 
     >>> T = np.array([[0.9, 0.1, 0.0], [0.4, 0.2, 0.4], [0.0, 0.1, 0.9]])
@@ -373,10 +368,8 @@ def stationary_distribution(T):
     # we're good to go...
     if _issparse(T):
         return sparse.decomposition.stationary_distribution_from_backward_iteration(T)
-    elif _isdense(T):
-        return dense.decomposition.stationary_distribution_from_backward_iteration(T)
     else:
-        raise _type_not_supported
+        return dense.decomposition.stationary_distribution_from_backward_iteration(T)
 
 
 def eigenvalues(T, k=None, ncv=None, reversible=False, mu=None):
@@ -410,7 +403,7 @@ def eigenvalues(T, k=None, ncv=None, reversible=False, mu=None):
 
     Examples
     --------
-
+    >>> import numpy as np
     >>> from pyemma.msm.analysis import eigenvalues
 
     >>> T = np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
@@ -419,12 +412,11 @@ def eigenvalues(T, k=None, ncv=None, reversible=False, mu=None):
     array([1.0+0.j, 0.9+0.j, -0.1+0.j]) 
 
     """
+    T = _types.ensure_ndarray_or_sparse(T, ndim=2, uniform=True, kind='numeric')
     if _issparse(T):
         return sparse.decomposition.eigenvalues(T, k, ncv=ncv)
-    elif _isdense(T):
-        return dense.decomposition.eigenvalues(T, k, reversible=reversible, mu=mu)
     else:
-        raise _type_not_supported
+        return dense.decomposition.eigenvalues(T, k, reversible=reversible, mu=mu)
 
 
 def timescales(T, tau=1, k=None, ncv=None, reversible=False, mu=None):
@@ -464,7 +456,7 @@ def timescales(T, tau=1, k=None, ncv=None, reversible=False, mu=None):
 
     Examples
     --------
-    
+    >>> import numpy as np
     >>> from pyemma.msm.analysis import timescales
 
     >>> T = np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
@@ -473,12 +465,11 @@ def timescales(T, tau=1, k=None, ncv=None, reversible=False, mu=None):
     array([        inf,  9.49122158,  0.43429448])
     
     """
+    T = _types.ensure_ndarray_or_sparse(T, ndim=2, uniform=True, kind='numeric')
     if _issparse(T):
         return sparse.decomposition.timescales(T, tau=tau, k=k, ncv=ncv)
-    elif _isdense(T):
-        return dense.decomposition.timescales(T, tau=tau, k=k, reversible=reversible, mu=mu)
     else:
-        raise _type_not_supported
+        return dense.decomposition.timescales(T, tau=tau, k=k, reversible=reversible, mu=mu)
 
 
 def eigenvectors(T, k=None, right=True, ncv=None):
@@ -529,6 +520,7 @@ def eigenvectors(T, k=None, right=True, ncv=None):
     Examples
     --------
 
+    >>> import numpy as np
     >>> from pyemma.msm.analysis import eigenvalues
 
     >>> T = np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
@@ -542,19 +534,18 @@ def eigenvectors(T, k=None, right=True, ncv=None):
            [  5.77350269e-01,  -7.07106781e-01,   9.90147543e-02]])
            
     """
+    T = _types.ensure_ndarray_or_sparse(T, ndim=2, uniform=True, kind='numeric')
     if _issparse(T):
         if right:
             return sparse.decomposition.eigenvectors(T, k=k, right=right, ncv=ncv)
         else:
             return sparse.decomposition.eigenvectors(T, k=k, right=right, ncv=ncv).T
 
-    elif _isdense(T):
+    else:
         if right:
             return dense.decomposition.eigenvectors(T, k=k, right=right)
         else:
             return dense.decomposition.eigenvectors(T, k=k, right=right).T
-    else:
-        raise _type_not_supported
 
 
 def rdl_decomposition(T, k=None, norm='auto', ncv=None):
@@ -601,7 +592,8 @@ def rdl_decomposition(T, k=None, norm='auto', ncv=None):
         
     Examples
     --------
-    
+
+    >>> import numpy as np
     >>> from pyemma.msm.analysis import rdl_decomposition
     
     >>> T = np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
@@ -629,12 +621,11 @@ def rdl_decomposition(T, k=None, norm='auto', ncv=None):
            [  4.59068406e-01,  -9.18136813e-01,   4.59068406e-01]])    
            
     """
+    T = _types.ensure_ndarray_or_sparse(T, ndim=2, uniform=True, kind='numeric')
     if _issparse(T):
         return sparse.decomposition.rdl_decomposition(T, k=k, norm=norm, ncv=ncv)
-    elif _isdense(T):
-        return dense.decomposition.rdl_decomposition(T, k=k, norm=norm)
     else:
-        raise _type_not_supported
+        return dense.decomposition.rdl_decomposition(T, k=k, norm=norm)
 
 
 def mfpt(T, target, origin=None, tau=1, mu=None):
@@ -692,7 +683,7 @@ def mfpt(T, target, origin=None, tau=1, mu=None):
     
     Examples
     --------
-    
+    >>> import numpy as np
     >>> from pyemma.msm.analysis import mfpt
     
     >>> T = np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
@@ -702,6 +693,7 @@ def mfpt(T, target, origin=None, tau=1, mu=None):
     
     """
     # check inputs
+    T = _types.ensure_ndarray_or_sparse(T, ndim=2, uniform=True, kind='numeric')
     target = _types.ensure_int_vector(target)
     origin = _types.ensure_int_vector_or_None(origin)
     # go
@@ -710,19 +702,17 @@ def mfpt(T, target, origin=None, tau=1, mu=None):
             t_tau = sparse.mean_first_passage_time.mfpt(T, target)
         else:
             t_tau = sparse.mean_first_passage_time.mfpt_between_sets(T, target, origin, mu=mu)
-    elif _isdense(T):
+    else:
         if origin is None:
             t_tau = dense.mean_first_passage_time.mfpt(T, target)
         else:
             t_tau = dense.mean_first_passage_time.mfpt_between_sets(T, target, origin, mu=mu)
-    else:
-        raise _type_not_supported
 
     # scale answer by lag time used.
     return tau * t_tau
 
 
-def hitting_probability(P, target):
+def hitting_probability(T, target):
     """
     Computes the hitting probabilities for all states to the target states.
     
@@ -732,20 +722,27 @@ def hitting_probability(P, target):
     .. math::
         h_i^A &= 1                    \:\:\:\:  i\in A \\
         h_i^A &= \sum_j p_{ij} h_i^A  \:\:\:\:  i \notin A
-    
+
+    Parameters
+    ----------
+    T : (M, M) ndarray or scipy.sparse matrix
+        Transition matrix
+    B : array_like
+        List of integer state labels for the target set
+
     Returns
-    =======
+    -------
     h : ndarray(n)
         a vector with hitting probabilities
+
     """
+    T = _types.ensure_ndarray_or_sparse(T, ndim=2, uniform=True, kind='numeric')
     target = _types.ensure_int_vector(target)
-    if _issparse(P):
+    if _issparse(T):
         _showSparseConversionWarning()  # currently no sparse implementation!
-        return dense.hitting_probability.hitting_probability(P.toarray(), target)
-    elif _isdense(P):
-        return dense.hitting_probability.hitting_probability(P, target)
+        return dense.hitting_probability.hitting_probability(T.toarray(), target)
     else:
-        raise _type_not_supported
+        return dense.hitting_probability.hitting_probability(T, target)
 
 
 ################################################################################
@@ -841,7 +838,7 @@ def committor(T, A, B, forward=True, mu=None):
 
     Examples
     --------
-
+    >>> import numpy as np
     >>> from pyemma.msm.analysis import committor
     >>> T = np.array([[0.89, 0.1, 0.01], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
     >>> A = [0]
@@ -856,6 +853,7 @@ def committor(T, A, B, forward=True, mu=None):
     array([ 1.        ,  0.45454545,  0.        ])
     
     """
+    T = _types.ensure_ndarray_or_sparse(T, ndim=2, uniform=True, kind='numeric')
     A = _types.ensure_int_vector(A)
     B = _types.ensure_int_vector(B)
     if _issparse(T):
@@ -869,7 +867,7 @@ def committor(T, A, B, forward=True, mu=None):
             else:
                 return sparse.committor.backward_committor(T, A, B)
 
-    elif _isdense(T):
+    else:
         if forward:
             return dense.committor.forward_committor(T, A, B)
         else:
@@ -878,9 +876,6 @@ def committor(T, A, B, forward=True, mu=None):
                 return 1.0 - dense.committor.forward_committor(T, A, B)
             else:
                 return dense.committor.backward_committor(T, A, B)
-
-    else:
-        raise _type_not_supported
 
 
 ################################################################################
@@ -914,6 +909,7 @@ def expected_counts(T, p0, N):
 
     Examples
     --------
+    >>> import numpy as np
     >>> from pyemma.msm.analysis import expected_counts
 
     >>> T = np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
@@ -928,14 +924,13 @@ def expected_counts(T, p0, N):
         
     """
     # check input
+    T = _types.ensure_ndarray_or_sparse(T, ndim=2, uniform=True, kind='numeric')
     p0 = _types.ensure_float_vector(p0, require_order=True)
     # go
     if _issparse(T):
         return sparse.expectations.expected_counts(p0, T, N)
-    elif _isdense(T):
-        return dense.expectations.expected_counts(p0, T, N)
     else:
-        raise _type_not_supported
+        return dense.expectations.expected_counts(p0, T, N)
 
 
 def expected_counts_stationary(T, N, mu=None):
@@ -969,6 +964,8 @@ def expected_counts_stationary(T, N, mu=None):
         
     Examples
     --------
+
+    >>> import numpy as np
     >>> from pyemma.msm.analysis import expected_counts_stationary
     
     >>> T = np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
@@ -982,14 +979,13 @@ def expected_counts_stationary(T, N, mu=None):
     
     """
     # check input
+    T = _types.ensure_ndarray_or_sparse(T, ndim=2, uniform=True, kind='numeric')
     mu = _types.ensure_float_vector_or_None(mu, require_order=True)
     # go
     if _issparse(T):
         return sparse.expectations.expected_counts_stationary(T, N, mu=mu)
-    elif _isdense(T):
-        return dense.expectations.expected_counts_stationary(T, N, mu=mu)
     else:
-        raise _type_not_supported
+        return dense.expectations.expected_counts_stationary(T, N, mu=mu)
 
 
 ################################################################################
@@ -1078,6 +1074,7 @@ def fingerprint_correlation(T, obs1, obs2=None, tau=1, k=None, ncv=None):
     Examples
     --------
     
+    >>> import numpy as np
     >>> from pyemma.msm.analysis import fingerprint_correlation
 
     >>> T = np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
@@ -1092,8 +1089,8 @@ def fingerprint_correlation(T, obs1, obs2=None, tau=1, k=None, ncv=None):
     
     """
     # check if square matrix and remember size
-    n = _types.assert_square_matrix(T)
-    T = _types.ensure_ndarray(T, kind='numeric')  # square shape and ndim=2 have been checked already
+    T = _types.ensure_ndarray_or_sparse(T, ndim=2, uniform=True, kind='numeric')
+    n = T.shape[0]
     # will not do fingerprint analysis for nonreversible matrices
     if not is_reversible(T):
         raise ValueError('Fingerprint calculation is not supported for nonreversible transition matrices. ')
@@ -1102,10 +1099,8 @@ def fingerprint_correlation(T, obs1, obs2=None, tau=1, k=None, ncv=None):
     # go
     if _issparse(T):
         return sparse.fingerprints.fingerprint_correlation(T, obs1, obs2=obs2, tau=tau, k=k, ncv=ncv)
-    elif _isdense(T):
-        return dense.fingerprints.fingerprint_correlation(T, obs1, obs2, tau=tau, k=k)
     else:
-        raise _type_not_supported
+        return dense.fingerprints.fingerprint_correlation(T, obs1, obs2, tau=tau, k=k)
 
 
 def fingerprint_relaxation(T, p0, obs, tau=1, k=None, ncv=None):
@@ -1170,7 +1165,8 @@ def fingerprint_relaxation(T, p0, obs, tau=1, k=None, ncv=None):
 
     Examples
     --------
-    
+
+    >>> import numpy as np
     >>> from pyemma.msm.analysis import fingerprint_relaxation
 
     >>> T = np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
@@ -1186,8 +1182,8 @@ def fingerprint_relaxation(T, p0, obs, tau=1, k=None, ncv=None):
         
     """
     # check if square matrix and remember size
-    n = _types.assert_square_matrix(T)
-    T = _types.ensure_ndarray(T, kind='numeric')  # square shape and ndim=2 have been checked already
+    T = _types.ensure_ndarray_or_sparse(T, ndim=2, uniform=True, kind='numeric')
+    n = T.shape[0]
     # will not do fingerprint analysis for nonreversible matrices
     if not is_reversible(T):
         raise ValueError('Fingerprint calculation is not supported for nonreversible transition matrices. ')
@@ -1196,10 +1192,8 @@ def fingerprint_relaxation(T, p0, obs, tau=1, k=None, ncv=None):
     # go
     if _issparse(T):
         return sparse.fingerprints.fingerprint_relaxation(T, p0, obs, tau=tau, k=k, ncv=ncv)
-    elif _isdense(T):
-        return dense.fingerprints.fingerprint_relaxation(T, p0, obs, tau=tau, k=k)
     else:
-        raise _type_not_supported
+        return dense.fingerprints.fingerprint_relaxation(T, p0, obs, tau=tau, k=k)
 
 
 def expectation(T, a, mu=None):
@@ -1236,15 +1230,15 @@ def expectation(T, a, mu=None):
     >>> import numpy as np
     >>> from pyemma.msm.analysis import expectation
 
-    >>> T=np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
-    >>> a=np.array([1.0, 0.0, 1.0])
-    >>> m_a=expectation(T, a)
+    >>> T = np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
+    >>> a = np.array([1.0, 0.0, 1.0])
+    >>> m_a = expectation(T, a)
     0.90909090909090917       
     
     """
     # check if square matrix and remember size
-    n = _types.assert_square_matrix(T)
-    T = _types.ensure_ndarray(T, kind='numeric')  # square shape and ndim=2 have been checked already
+    T = _types.ensure_ndarray_or_sparse(T, ndim=2, uniform=True, kind='numeric')
+    n = T.shape[0]
     a = _types.ensure_ndarray(a, ndim=1, size=n, kind='numeric')
     mu = _types.ensure_ndarray_or_None(mu, ndim=1, size=n, kind='numeric')
     # go
@@ -1320,6 +1314,7 @@ def correlation(T, obs1, obs2=None, times=(1), maxtime=None, k=None, ncv=None, r
     Examples
     --------
     
+    >>> import numpy as np
     >>> from pyemma.msm.analysis import correlation
 
     >>> T = np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
@@ -1332,8 +1327,8 @@ def correlation(T, obs1, obs2=None, times=(1), maxtime=None, k=None, ncv=None, r
     
     """
     # check if square matrix and remember size
-    n = _types.assert_square_matrix(T)
-    T = _types.ensure_ndarray(T, kind='numeric')  # square shape and ndim=2 have been checked already
+    T = _types.ensure_ndarray_or_sparse(T, ndim=2, uniform=True, kind='numeric')
+    n = T.shape[0]
     obs1 = _types.ensure_ndarray(obs1, ndim=1, size=n, kind='numeric')
     obs2 = _types.ensure_ndarray_or_None(obs2, ndim=1, size=n, kind='numeric')
     times = _types.ensure_int_vector(times, require_order=True)
@@ -1342,10 +1337,8 @@ def correlation(T, obs1, obs2=None, times=(1), maxtime=None, k=None, ncv=None, r
     # go
     if _issparse(T):
         return sparse.fingerprints.correlation(T, obs1, obs2=obs2, times=times, k=k, ncv=ncv)
-    elif _isdense(T):
-        return dense.fingerprints.correlation(T, obs1, obs2=obs2, times=times, k=k)
     else:
-        raise _type_not_supported
+        return dense.fingerprints.correlation(T, obs1, obs2=obs2, times=times, k=k)
 
 
 def relaxation(T, p0, obs, times=(1), k=None, ncv=None):
@@ -1396,7 +1389,8 @@ def relaxation(T, p0, obs, times=(1), k=None, ncv=None):
     Examples
     --------
 
-    >>> from pyemma.msm.analysis import correlation
+    >>> import numpy as np
+    >>> from pyemma.msm.analysis import relaxation
 
     >>> T = np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
     >>> p0 = np.array([1.0, 0.0, 0.0])
@@ -1409,18 +1403,16 @@ def relaxation(T, p0, obs, times=(1), k=None, ncv=None):
     
     """
     # check if square matrix and remember size
-    n = _types.assert_square_matrix(T)
-    T = _types.ensure_ndarray(T, kind='numeric')  # square shape and ndim=2 have been checked already
+    T = _types.ensure_ndarray_or_sparse(T, ndim=2, uniform=True, kind='numeric')
+    n = T.shape[0]
     p0 = _types.ensure_ndarray(p0, ndim=1, size=n, kind='numeric')
     obs = _types.ensure_ndarray(obs, ndim=1, size=n, kind='numeric')
     times = _types.ensure_int_vector(times, require_order=True)
     # go
     if _issparse(T):
         return sparse.fingerprints.relaxation(T, p0, obs, k=k, times=times)
-    elif _isdense(T):
-        return dense.fingerprints.relaxation(T, p0, obs, k=k, times=times)
     else:
-        raise _type_not_supported
+        return dense.fingerprints.relaxation(T, p0, obs, k=k, times=times)
 
 # ========================
 # PCCA
@@ -1445,6 +1437,7 @@ def _pcca_object(T, m):
     if _issparse(T):
         _showSparseConversionWarning()
         T = T.toarray()
+    T = _types.ensure_ndarray(T, ndim=2, uniform=True, kind='numeric')
     return PCCA(T, m)
 
 
@@ -1665,13 +1658,12 @@ def eigenvalue_sensitivity(T, k):
         Sensitivity matrix for k-th eigenvalue.
     
     """
+    T = _types.ensure_ndarray_or_sparse(T, ndim=2, uniform=True, kind='numeric')
     if _issparse(T):
         _showSparseConversionWarning()
         eigenvalue_sensitivity(T.todense(), k)
-    elif _isdense(T):
-        return dense.sensitivity.eigenvalue_sensitivity(T, k)
     else:
-        raise _type_not_supported
+        return dense.sensitivity.eigenvalue_sensitivity(T, k)
 
 
 def timescale_sensitivity(T, k):
@@ -1690,13 +1682,12 @@ def timescale_sensitivity(T, k):
         Sensitivity matrix for the k-th time-scale.
         
     """
+    T = _types.ensure_ndarray_or_sparse(T, ndim=2, uniform=True, kind='numeric')
     if _issparse(T):
         _showSparseConversionWarning()
         timescale_sensitivity(T.todense(), k)
-    elif _isdense(T):
-        return dense.sensitivity.timescale_sensitivity(T, k)
     else:
-        raise _type_not_supported
+        return dense.sensitivity.timescale_sensitivity(T, k)
 
 
 def eigenvector_sensitivity(T, k, j, right=True):
@@ -1719,13 +1710,12 @@ def eigenvector_sensitivity(T, k, j, right=True):
         Sensitivity matrix for the j-th element of the k-th eigenvector.
     
     """
+    T = _types.ensure_ndarray_or_sparse(T, ndim=2, uniform=True, kind='numeric')
     if _issparse(T):
         _showSparseConversionWarning()
         eigenvector_sensitivity(T.todense(), k, j, right=right)
-    elif _isdense(T):
-        return dense.sensitivity.eigenvector_sensitivity(T, k, j, right=right)
     else:
-        raise _type_not_supported
+        return dense.sensitivity.eigenvector_sensitivity(T, k, j, right=right)
 
 
 @shortcut('statdist_sensitivity')
@@ -1748,13 +1738,12 @@ def stationary_distribution_sensitivity(T, j):
         of the stationary distribution.
     
     """
+    T = _types.ensure_ndarray_or_sparse(T, ndim=2, uniform=True, kind='numeric')
     if _issparse(T):
         _showSparseConversionWarning()
         stationary_distribution_sensitivity(T.todense(), j)
-    elif _isdense(T):
-        return dense.sensitivity.stationary_distribution_sensitivity(T, j)
     else:
-        raise _type_not_supported
+        return dense.sensitivity.stationary_distribution_sensitivity(T, j)
 
 
 def mfpt_sensitivity(T, target, i):
@@ -1776,15 +1765,14 @@ def mfpt_sensitivity(T, target, i):
     
     """
     # check input
+    T = _types.ensure_ndarray_or_sparse(T, ndim=2, uniform=True, kind='numeric')
     target = _types.ensure_int_vector(target)
     # go
     if _issparse(T):
         _showSparseConversionWarning()
         mfpt_sensitivity(T.todense(), target, i)
-    elif _isdense(T):
-        return dense.sensitivity.mfpt_sensitivity(T, target, i)
     else:
-        raise _type_not_supported
+        return dense.sensitivity.mfpt_sensitivity(T, target, i)
 
 
 def committor_sensitivity(T, A, B, i, forward=True):
@@ -1812,18 +1800,17 @@ def committor_sensitivity(T, A, B, i, forward=True):
     
     """
     # check inputs
+    T = _types.ensure_ndarray_or_sparse(T, ndim=2, uniform=True, kind='numeric')
     A = _types.ensure_int_vector(A)
     B = _types.ensure_int_vector(B)
     if _issparse(T):
         _showSparseConversionWarning()
         committor_sensitivity(T.todense(), A, B, i, forward)
-    elif _isdense(T):
+    else:
         if forward:
             return dense.sensitivity.forward_committor_sensitivity(T, A, B, i)
         else:
             return dense.sensitivity.backward_committor_sensitivity(T, A, B, i)
-    else:
-        raise _type_not_supported
 
 
 def expectation_sensitivity(T, a):
@@ -1843,12 +1830,11 @@ def expectation_sensitivity(T, a):
     
     """
     # check input
+    T = _types.ensure_ndarray_or_sparse(T, ndim=2, uniform=True, kind='numeric')
     a = _types.ensure_float_vector(a, require_order=True)
     # go
     if _issparse(T):
         _showSparseConversionWarning()
         return dense.sensitivity.expectation_sensitivity(T.toarray(), a)
-    elif _isdense(T):
-        return dense.sensitivity.expectation_sensitivity(T, a)
     else:
-        raise _type_not_supported
+        return dense.sensitivity.expectation_sensitivity(T, a)
