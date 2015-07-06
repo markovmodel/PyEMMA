@@ -37,7 +37,7 @@ from os import pardir
 from pyemma.msm.generation import generate_traj
 from pyemma.msm.estimation import cmatrix, largest_connected_set, connected_cmatrix, tmatrix
 from pyemma.util.numeric import assert_allclose
-from pyemma.msm.ui.birth_death_chain import BirthDeathChain
+from pyemma.msm.util.birth_death_chain import BirthDeathChain
 
 from pyemma.msm import estimate_markov_model, cktest
 
