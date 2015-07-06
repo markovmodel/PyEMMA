@@ -8,7 +8,7 @@ env:
   global:
     - PATH=$HOME/miniconda/bin:$HOME/miniconda/envs/ci/bin/:$PATH
      # note: mdtraj and coveralls are provided by omnia binstar repo
-    - common_py_deps="pip pylint nose python-coveralls cython mdtraj matplotlib"
+    - common_py_deps="pip pylint nose python-coveralls cython mdtraj bhmm matplotlib"
     - doc_deps="ipython ipython-notebook sphinx==1.2.3 matplotlib"
     - deps="scipy numpy"
   matrix:
