@@ -257,7 +257,9 @@ metadata = dict(
     install_requires=['numpy>=1.6.0',
                       'scipy>=0.11',
                       'mdtraj>=1.4.0',
-                      'matplotlib'],
+                      'matplotlib',
+                      'joblib',
+                      ],
     zip_safe=False,
 )
 
@@ -277,6 +279,7 @@ else:
                                   'mdtraj>=1.4.0',
                                   'bhmm',
                                   'nose',
+                                  'joblib',
                                   ]
 
     # when on git, we require cython
