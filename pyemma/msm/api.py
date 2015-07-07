@@ -62,7 +62,8 @@ __all__ = ['markov_model',
 
 
 @shortcut('its')
-def timescales_msm(dtrajs, lags=None, nits=10, reversible=True, connected=True, errors=None, nsamples=50):
+def timescales_msm(dtrajs, lags=None, nits=10, reversible=True, connected=True,
+                   errors=None, nsamples=50, n_jobs=1):
     r""" Calculate implied timescales from Markov state models estimated at a series of lag times.
 
     Parameters
@@ -98,6 +99,8 @@ def timescales_msm(dtrajs, lags=None, nits=10, reversible=True, connected=True, 
         The number of approximately independent transition matrix samples
         generated for each lag time for uncertainty quantification.
         Only used if errors is not None.
+    n_jobs = 1 : int
+        how many subprocesses to start to estimate the models for each lag time.
 
     Returns
     -------
@@ -178,7 +181,7 @@ def timescales_msm(dtrajs, lags=None, nits=10, reversible=True, connected=True, 
         raise NotImplementedError('Error estimation method'+errors+'currently not implemented')
 
     # go
-    itsobj = _ImpliedTimescales(estimator, lags=lags, nits=nits)
+    itsobj = _ImpliedTimescales(estimator, lags=lags, nits=nits, n_jobs=n_jobs)
     itsobj.estimate(dtrajs)
     return itsobj
 
