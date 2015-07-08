@@ -30,6 +30,7 @@ import numpy as np
 from math import ceil
 
 from abc import ABCMeta, abstractmethod
+from pyemma.util.exceptions import NotConvergedWarning
 
 __all__ = ['Transformer']
 __author__ = 'noe, marscher'
@@ -116,6 +117,10 @@ class Transformer(object):
         else:
             chunks = 1
         return chunks
+
+    def _close(self):
+        if self.data_producer is not self:
+            self.data_producer._close()
 
     @property
     def in_memory(self):
@@ -260,54 +265,54 @@ class Transformer(object):
                                    description="parameterizing "
                                    + self.__class__.__name__)
         # parametrize
-        while not add_data_finished:
-            first_chunk = True
-            self.data_producer._reset(stride=stride)
-            # iterate over trajectories
-            last_chunk = False
-            itraj = 0
+        try:
+            while not add_data_finished:
+                first_chunk = True
+                self.data_producer._reset(stride=stride)
+                # iterate over trajectories
+                last_chunk = False
+                itraj = 0
 
-            while not last_chunk:
-                last_chunk_in_traj = False
-                t = 0
-                while not last_chunk_in_traj:
-                    # we check status of add_data_finished again, since some algorithms
-                    # (eg. regspace, may return before all data has been seen).
-                    if add_data_finished:
-                        last_chunk = True
-                        last_chunk_in_traj = True
-                    # iterate over times within trajectory
-                    if lag == 0:
-                        X = self.data_producer._next_chunk(stride=stride)
-                        Y = None
-                    else:
-                        X, Y = self.data_producer._next_chunk(lag=lag, stride=stride)
-                    L = np.shape(X)[0]
-                    # last chunk in traj?
-                    last_chunk_in_traj = (
-                        t + L >= self.trajectory_length(itraj, stride=stride))
-                    # last chunk?
-                    last_chunk = (
-                        last_chunk_in_traj and itraj >= self.number_of_trajectories() - 1)
-                    # first chunk
-                    return_value = self._param_add_data(
-                        X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=Y, stride=stride)
+                while not last_chunk:
+                    last_chunk_in_traj = False
+                    t = 0
+                    while not last_chunk_in_traj:
+                        # iterate over times within trajectory
+                        if lag == 0:
+                            X = self.data_producer._next_chunk(stride=stride)
+                            Y = None
+                        else:
+                            X, Y = self.data_producer._next_chunk(lag=lag, stride=stride)
+                        L = np.shape(X)[0]
+                        # last chunk in traj?
+                        last_chunk_in_traj = (
+                            t + L >= self.trajectory_length(itraj, stride=stride))
+                        # last chunk?
+                        last_chunk = (
+                            last_chunk_in_traj and itraj >= self.number_of_trajectories() - 1)
+                        # pass chunks to algorithm and respect its return value
+                        return_value = self._param_add_data(
+                            X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=Y, stride=stride)
 
-                    if not self._custom_param_progress_handling:
-                        progress.numerator += 1
-                        show_progressbar(progress)
+                        if not self._custom_param_progress_handling:
+                            progress.numerator += 1
+                            show_progressbar(progress)
 
-                    if isinstance(return_value, tuple):
-                        add_data_finished, lag = return_value
-                    else:
-                        add_data_finished = return_value
+                        if isinstance(return_value, tuple):
+                            add_data_finished, lag = return_value
+                        else:
+                            add_data_finished = return_value
 
-                    first_chunk = False
-                    # increment time
-                    t += L
-                # increment trajectory
-                itraj += 1
-            ipass += 1
+                        first_chunk = False
+                        # increment time
+                        t += L
+
+                    # increment trajectory
+                    itraj += 1
+                ipass += 1
+        except NotConvergedWarning:
+            self._logger.info("presumely finished parameterization.")
+            self._close()
 
         # finish parametrization
         if ((not self._custom_param_progress_handling)

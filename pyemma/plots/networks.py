@@ -239,10 +239,11 @@ class NetworkPlot(object):
             (np.max(self.A - np.diag(np.diag(self.A))) * math.sqrt(n))
         # size figure
         if (Dx / max_width > Dy / max_height):
-            plt.figure(figsize=(max_width, Dy * (max_width / Dx)))
+            figsize = (max_width, Dy * (max_width / Dx))
         else:
-            figsize = [Dx / Dy * max_height, max_height]
-            plt.figure(figsize=figsize)
+            figsize = (Dx / Dy * max_height, max_height)
+        fig = plt.gcf()
+        fig.set_size_inches(figsize, forward=True)
         # font sizes
         old_fontsize = rcParams['font.size']
         rcParams['font.size'] = 20

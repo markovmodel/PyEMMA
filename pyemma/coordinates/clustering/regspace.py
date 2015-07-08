@@ -21,6 +21,7 @@
 # ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+from pyemma.util.exceptions import NotConvergedWarning
 
 '''
 Created on 26.01.2015
@@ -40,41 +41,40 @@ __all__ = ['RegularSpaceClustering']
 
 class RegularSpaceClustering(AbstractClustering):
 
-    """Clusters data objects in such a way, that cluster centers are at least in
-    distance of dmin to each other according to the given metric.
-    The assignment of data objects to cluster centers is performed by
-    Voronoi partioning.
-
-    Regular space clustering [Prinz_2011]_ is very similar to Hartigan's leader
-    algorithm [Hartigan_1975]_. It consists of two passes through
-    the data. Initially, the first data point is added to the list of centers.
-    For every subsequent data point, if it has a greater distance than dmin from
-    every center, it also becomes a center. In the second pass, a Voronoi
-    discretization with the computed centers is used to partition the data.
-
-
-    Parameters
-    ----------
-    dmin : float
-        minimum distance between all clusters.
-    metric : str
-        metric to use during clustering ('euclidean', 'minRMSD')
-    max_centers : int
-        if this cutoff is hit during finding the centers,
-        the algorithm will abort.
-
-    References
-    ----------
-
-    .. [Prinz_2011] Prinz J-H, Wu H, Sarich M, Keller B, Senne M, Held M, Chodera JD, Schuette Ch and Noe F. 2011.
-        Markov models of molecular kinetics: Generation and Validation.
-        J. Chem. Phys. 134, 174105.
-    .. [Hartigan_1975] Hartigan J. Clustering algorithms.
-        New York: Wiley; 1975.
-
-    """
-
     def __init__(self, dmin, max_centers=1000, metric='euclidean'):
+        """Clusters data objects in such a way, that cluster centers are at least in
+        distance of dmin to each other according to the given metric.
+        The assignment of data objects to cluster centers is performed by
+        Voronoi partioning.
+
+        Regular space clustering [Prinz_2011]_ is very similar to Hartigan's leader
+        algorithm [Hartigan_1975]_. It consists of two passes through
+        the data. Initially, the first data point is added to the list of centers.
+        For every subsequent data point, if it has a greater distance than dmin from
+        every center, it also becomes a center. In the second pass, a Voronoi
+        discretization with the computed centers is used to partition the data.
+
+
+        Parameters
+        ----------
+        dmin : float
+            minimum distance between all clusters.
+        metric : str
+            metric to use during clustering ('euclidean', 'minRMSD')
+        max_centers : int
+            if this cutoff is hit during finding the centers,
+            the algorithm will abort.
+
+        References
+        ----------
+
+        .. [Prinz_2011] Prinz J-H, Wu H, Sarich M, Keller B, Senne M, Held M, Chodera JD, Schuette Ch and Noe F. 2011.
+            Markov models of molecular kinetics: Generation and Validation.
+            J. Chem. Phys. 134, 174105.
+        .. [Hartigan_1975] Hartigan J. Clustering algorithms.
+            New York: Wiley; 1975.
+
+        """
         super(RegularSpaceClustering, self).__init__(metric=metric)
 
         self._dmin = dmin
@@ -129,8 +129,6 @@ class RegularSpaceClustering(AbstractClustering):
                                self.metric, self._max_centers)
             # finished regularly
             if last_chunk:
-                self.clustercenters = np.array(self._clustercenters)
-                self.n_clusters = self.clustercenters.shape[0]
                 return True  # finished!
         except RuntimeError:
             msg = 'Maximum number of cluster centers reached.' \
@@ -141,12 +139,15 @@ class RegularSpaceClustering(AbstractClustering):
             # finished anyway, because we have no more space for clusters. Rest of trajectory has no effect
             self.clustercenters = np.array(self._clustercenters)
             self.n_clusters = self.clustercenters.shape[0]
-
-            return True
+            # TODO: pass amount of processed data
+            raise NotConvergedWarning
 
         return False
 
     def _param_finish(self):
+        self.clustercenters = np.array(self._clustercenters)
+        self.n_clusters = self.clustercenters.shape[0]
+
         if len(self._clustercenters) == 1:
             self._logger.warning('Have found only one center according to '
                                  'minimum distance requirement of %f' % self.dmin)

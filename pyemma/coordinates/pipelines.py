@@ -35,20 +35,20 @@ __author__ = 'noe, marscher'
 
 
 class Pipeline(object):
-    r"""Data processing pipeline.
-
-    Parameters
-    ----------
-    chain : list of transformers like objects
-        the order in the list defines the direction of data flow.
-    chunksize : int, optional
-        how many frames shall be processed at once.
-    param_stride : int, optional
-        omit every n'th data point
-
-    """
 
     def __init__(self, chain, chunksize=100, param_stride=1):
+        r"""Data processing pipeline.
+
+        Parameters
+        ----------
+        chain : list of transformers like objects
+            the order in the list defines the direction of data flow.
+        chunksize : int, optional
+            how many frames shall be processed at once.
+        param_stride : int, optional
+            omit every n'th data point
+
+        """
         self._chain = []
         self.chunksize = chunksize
         self.param_stride = param_stride

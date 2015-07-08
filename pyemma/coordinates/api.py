@@ -53,6 +53,9 @@ from pyemma.coordinates.clustering.assign import AssignCenters as _AssignCenters
 # stat
 from pyemma.coordinates.util.stat import histogram
 
+# types
+from mdtraj import Topology as _Topology, Trajectory as _Trajectory
+
 import numpy as _np
 import itertools as _itertools
 
@@ -104,7 +107,7 @@ def featurizer(topfile):
 
     Returns
     -------
-    feat : :class:`Featurizer <pyemma.coordinates.data.MDFeaturizer>`
+    feat : :class:`Featurizer <pyemma.coordinates.data.featurizer.MDFeaturizer>`
 
     See also
     --------
@@ -120,6 +123,20 @@ def featurizer(topfile):
     >>> feat.add_backbone_torsions()
     >>> reader = pyemma.coordinates.source(["my_traj01.xtc", "my_traj02.xtc"], features=feat)
 
+
+    .. autoclass:: pyemma.coordinates.data.featurizer.MDFeaturizer
+        :members:
+        :undoc-members:
+
+        .. rubric:: Methods
+
+        .. autoautosummary:: pyemma.coordinates.data.featurizer.MDFeaturizer
+           :methods:
+
+        .. rubric:: Attributes
+
+        .. autoautosummary:: pyemma.coordinates.data.featurizer.MDFeaturizer
+            :attributes:
     """
     return _MDFeaturizer(topfile)
 
@@ -310,11 +327,26 @@ def pipeline(stages, run=True, stride=1, chunksize=100):
     pipe : :class:`Pipeline <pyemma.coordinates.pipelines.Pipeline>`
         A pipeline object that is able to conduct big data analysis with limited memory in streaming mode.
 
+
+    .. autoclass:: pyemma.coordinates.pipelines.Pipeline
+        :members:
+        :undoc-members:
+
+        .. rubric:: Methods
+
+        .. autoautosummary:: pyemma.coordinates.pipelines.Pipeline
+           :methods:
+
+        .. rubric:: Attributes
+
+        .. autoautosummary:: pyemma.coordinates.pipelines.Pipeline
+            :attributes:
+
     """
 
     if not isinstance(stages, list):
         stages = [stages]
-    p = _Pipeline(stages, param_stride=stride)
+    p = _Pipeline(stages, param_stride=stride, chunksize=chunksize)
     if run:
         p.parametrize()
     return p
@@ -459,7 +491,7 @@ def memory_reader(data):
     return _DataInMemory(data)
 
 
-def save_traj(traj_inp, indexes, outfile, topfile=None, stride = 1, chunksize=1000, verbose=False):
+def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=1000, verbose=False):
     r""" Saves a sequence of frames as a single trajectory.
 
     Extracts the specified sequence of time/trajectory indexes from traj_inp
@@ -490,8 +522,8 @@ def save_traj(traj_inp, indexes, outfile, topfile=None, stride = 1, chunksize=10
         The name of the output file. Its extension will determine the file type written. Example: "out.dcd"
         If set to None, the trajectory object is returned to memory
 
-    topfile : str.
-        The topology file needed to read the files in the list :py:obj:`traj_inp`. If :py:obj:`traj_inp` is not a list,
+    top : str, mdtraj.Trajectory, or mdtraj.Topology
+        The topology needed to read the files in the list :py:obj:`traj_inp`. If :py:obj:`traj_inp` is not a list,
         this parameter is ignored.
 
     stride  : integer, default is 1
@@ -517,14 +549,14 @@ def save_traj(traj_inp, indexes, outfile, topfile=None, stride = 1, chunksize=10
     # Determine the type of input and extract necessary parameters
     if isinstance(traj_inp, _FeatureReader):
         trajfiles = traj_inp.trajfiles
-        topfile  = traj_inp.topfile
+        top  = traj_inp.topfile
         chunksize = traj_inp.chunksize
     else:
         # Do we have what we need?
         assert isinstance(traj_inp, list), "traj_inp has to be of type list, not %"%type(traj_inp)
-        assert isinstance(topfile,str), "traj_inp cannot be a list without an input " \
-                                        "topology file. " \
-                                        "Did you forget to parse the topology file?"
+        assert isinstance(top,(str,_Topology, _Trajectory)), "traj_inp cannot be a list of files without an input " \
+                                        "top of type str (eg filename.pdb), mdtraj.Trajectory or mdtraj.Topology. " \
+                                        "Got type %s instead"%type(top)
         trajfiles = traj_inp
 
     # Convert to index (T,2) array if parsed a list or a list of arrays
@@ -546,7 +578,7 @@ def save_traj(traj_inp, indexes, outfile, topfile=None, stride = 1, chunksize=10
         # directly as an iterator in trajectory_iterator_list
         trajectory_iterator_list.append(_itertools.islice(_frames_from_file(
                                                 trajfiles[ff],
-                                                topfile,
+                                                top,
                                                 frames, chunksize=chunksize,
                                                 verbose=verbose, stride = stride), None)
                                         )
@@ -581,7 +613,7 @@ def save_trajs(traj_inp, indexes, prefix = 'set_', fmt = None, outfiles = None,
     trajectory and extension is either set by the user, or else determined from the input.
     Example: When the input is in dcd format, and indexes is a list of length 3, the output will
     by default go to files "set_1.dcd", "set_2.dcd", "set_3.dcd". If you want files to be stored
-    in a specific subfolder, simply specify the relative path in the prefix, e.g. prefix='~/macrostates/pcca_'
+    in a specific subfolder, simply specify the relative path in the prefix, e.g. prefix='~/macrostates/\pcca_'
 
     Parameters
     ----------
@@ -787,9 +819,24 @@ def pca(data=None, dim=2, var_cutoff=1.0, stride=1):
 
     See `Wiki page <http://en.wikipedia.org/wiki/Principal_component_analysis>`_ for more theory and references.
 
+
+    .. autoclass:: pyemma.coordinates.transform.pca.PCA
+        :members:
+        :undoc-members:
+
+        .. rubric:: Methods
+
+        .. autoautosummary:: pyemma.coordinates.transform.pca.PCA
+           :methods:
+
+        .. rubric:: Attributes
+
+        .. autoautosummary:: pyemma.coordinates.transform.pca.PCA
+            :attributes:
+
     See also
     --------
-    :class:`PCA <pyemma.coordinates.transform.PCA>` : tica object
+    :class:`PCA <pyemma.coordinates.transform.PCA>` : pca object
 
     :func:`tica <pyemma.coordinates.tica>` : for time-lagged independent component analysis
 
@@ -899,6 +946,21 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=1.0, kinetic_map=False, stride=1,
     TICA is an approximation to the eigenvalues and eigenvectors of the true underlying
     dynamics.
 
+
+    .. autoclass:: pyemma.coordinates.transform.tica.TICA
+        :members:
+        :undoc-members:
+
+        .. rubric:: Methods
+
+        .. autoautosummary:: pyemma.coordinates.transform.tica.TICA
+           :methods:
+
+        .. rubric:: Attributes
+
+        .. autoautosummary:: pyemma.coordinates.transform.tica.TICA
+            :attributes:
+
     See also
     --------
     :class:`TICA <pyemma.coordinates.transform.TICA>` : tica object
@@ -988,6 +1050,21 @@ def cluster_kmeans(data=None, k=100, max_iter=10, stride=1, metric='euclidean', 
     >>> cluster_obj.get_output()
     [array([0, 0, 1, ... ])]
 
+
+    .. autoclass:: pyemma.coordinates.clustering.kmeans.KmeansClustering
+        :members:
+        :undoc-members:
+
+        .. rubric:: Methods
+
+        .. autoautosummary:: pyemma.coordinates.clustering.kmeans.KmeansClustering
+           :methods:
+
+        .. rubric:: Attributes
+
+        .. autoautosummary:: pyemma.coordinates.clustering.kmeans.KmeansClustering
+            :attributes:
+
     """
     res = _KmeansClustering(n_clusters=k, max_iter=max_iter, metric=metric, init_strategy=init_strategy)
     return _param_stage(data, res, stride=stride)
@@ -1030,6 +1107,20 @@ def cluster_uniform_time(data=None, k=100, stride=1, metric='euclidean'):
         Object for uniform time clustering.
         It holds discrete trajectories and cluster center information.
 
+
+    .. autoclass:: pyemma.coordinates.clustering.uniform_time.UniformTimeClustering
+         :members:
+         :undoc-members:
+
+         .. rubric:: Methods
+
+         .. autoautosummary:: pyemma.coordinates.clustering.uniform_time.UniformTimeClustering
+            :methods:
+
+         .. rubric:: Attributes
+
+         .. autoautosummary:: pyemma.coordinates.clustering.uniform_time.UniformTimeClustering
+             :attributes:
 
     """
     res = _UniformTimeClustering(k, metric=metric)
@@ -1085,6 +1176,22 @@ def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1, metric='euc
     regSpace : a :class:`RegularSpaceClustering <pyemma.coordinates.clustering.RegularSpaceClustering>` clustering  object
         Object for regular space clustering.
         It holds discrete trajectories and cluster center information.
+
+
+    .. autoclass:: pyemma.coordinates.clustering.regspace.RegularSpaceClustering
+        :members:
+        :undoc-members:
+
+        .. rubric:: Methods
+
+        .. autoautosummary:: pyemma.coordinates.clustering.regspace.RegularSpaceClustering
+           :methods:
+
+        .. rubric:: Attributes
+
+        .. autoautosummary:: pyemma.coordinates.clustering.regspace.RegularSpaceClustering
+            :attributes:
+
 
     References
     ----------

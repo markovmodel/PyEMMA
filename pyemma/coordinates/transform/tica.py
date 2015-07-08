@@ -38,74 +38,78 @@ import numpy as np
 __all__ = ['TICA']
 
 
+class MeaningOfLagWithStrideWarning(UserWarning):
+    pass
+
+
 class TICA(Transformer):
-    r""" Time-lagged independent component analysis (TICA) [1]_, [2]_, [3]_.
-
-    Parameters
-    ----------
-    tau : int
-        lag time
-    dim : int, optional, default -1
-        Maximum number of significant independent components to use to reduce dimension of input data. -1 means
-        all numerically available dimensions (see epsilon) will be used unless reduced by var_cutoff.
-        Setting dim to a positive value is exclusive with var_cutoff.
-    var_cutoff : float in the range [0,1], optional, default 1
-        Determines the number of output dimensions by including dimensions until their cumulative kinetic variance
-        exceeds the fraction subspace_variance. var_cutoff=1.0 means all numerically available dimensions
-        (see epsilon) will be used, unless set by dim. Setting var_cutoff smaller than 1.0 is exclusive with dim
-    kinetic_map : bool, optional, default False
-        Eigenvectors will be scaled by eigenvalues. As a result, Euclidean distances in the transformed data
-        approximate kinetic distances [4]_. This is a good choice when the data is further processed by clustering.
-    epsilon : float
-        eigenvalue norm cutoff. Eigenvalues of C0 with norms <= epsilon will be
-        cut off. The remaining number of eigenvalues define the size
-        of the output.
-    force_eigenvalues_le_one : boolean
-        Compute covariance matrix and time-lagged covariance matrix such
-        that the generalized eigenvalues are always guaranteed to be <= 1.
-
-    Notes
-    -----
-    Given a sequence of multivariate data :math:`X_t`, computes the mean-free
-    covariance and time-lagged covariance matrix:
-
-    .. math::
-
-        C_0 &=      (X_t - \mu)^T (X_t - \mu) \\
-        C_{\tau} &= (X_t - \mu)^T (X_{t + \tau} - \mu)
-
-    and solves the eigenvalue problem
-
-    .. math:: C_{\tau} r_i = C_0 \lambda_i(tau) r_i,
-
-    where :math:`r_i` are the independent components and :math:`\lambda_i(tau)` are
-    their respective normalized time-autocorrelations. The eigenvalues are
-    related to the relaxation timescale by
-
-    .. math:: t_i(tau) = -\tau / \ln |\lambda_i|.
-
-    When used as a dimension reduction method, the input data is projected
-    onto the dominant independent components.
-
-    References
-    ----------
-    .. [1] Perez-Hernandez G, F Paul, T Giorgino, G De Fabritiis and F Noe. 2013.
-       Identification of slow molecular order parameters for Markov model construction
-       J. Chem. Phys. 139, 015102. doi:10.1063/1.4811489
-    .. [2] Schwantes C, V S Pande. 2013.
-       Improvements in Markov State Model Construction Reveal Many Non-Native Interactions in the Folding of NTL9
-       J. Chem. Theory. Comput. 9, 2000-2009. doi:10.1021/ct300878a
-    .. [3] L. Molgedey and H. G. Schuster. 1994.
-       Separation of a mixture of independent signals using time delayed correlations
-       Phys. Rev. Lett. 72, 3634.
-    .. [4] Noe, F. and C. Clementi. 2015.
-        Kinetic distance and kinetic maps from molecular dynamics simulation
-        (in preparation).
-
-    """
 
     def __init__(self, lag, dim=-1, var_cutoff=1.0, kinetic_map=False, epsilon=1e-6,
                  force_eigenvalues_le_one=False):
+        r""" Time-lagged independent component analysis (TICA) [1]_, [2]_, [3]_.
+
+        Parameters
+        ----------
+        tau : int
+            lag time
+        dim : int, optional, default -1
+            Maximum number of significant independent components to use to reduce dimension of input data. -1 means
+            all numerically available dimensions (see epsilon) will be used unless reduced by var_cutoff.
+            Setting dim to a positive value is exclusive with var_cutoff.
+        var_cutoff : float in the range [0,1], optional, default 1
+            Determines the number of output dimensions by including dimensions until their cumulative kinetic variance
+            exceeds the fraction subspace_variance. var_cutoff=1.0 means all numerically available dimensions
+            (see epsilon) will be used, unless set by dim. Setting var_cutoff smaller than 1.0 is exclusive with dim
+        kinetic_map : bool, optional, default False
+            Eigenvectors will be scaled by eigenvalues. As a result, Euclidean distances in the transformed data
+            approximate kinetic distances [4]_. This is a good choice when the data is further processed by clustering.
+        epsilon : float
+            eigenvalue norm cutoff. Eigenvalues of C0 with norms <= epsilon will be
+            cut off. The remaining number of eigenvalues define the size
+            of the output.
+        force_eigenvalues_le_one : boolean
+            Compute covariance matrix and time-lagged covariance matrix such
+            that the generalized eigenvalues are always guaranteed to be <= 1.
+
+        Notes
+        -----
+        Given a sequence of multivariate data :math:`X_t`, computes the mean-free
+        covariance and time-lagged covariance matrix:
+
+        .. math::
+
+            C_0 &=      (X_t - \mu)^T (X_t - \mu) \\
+            C_{\tau} &= (X_t - \mu)^T (X_{t + \tau} - \mu)
+
+        and solves the eigenvalue problem
+
+        .. math:: C_{\tau} r_i = C_0 \lambda_i(tau) r_i,
+
+        where :math:`r_i` are the independent components and :math:`\lambda_i(tau)` are
+        their respective normalized time-autocorrelations. The eigenvalues are
+        related to the relaxation timescale by
+
+        .. math:: t_i(tau) = -\tau / \ln |\lambda_i|.
+
+        When used as a dimension reduction method, the input data is projected
+        onto the dominant independent components.
+
+        References
+        ----------
+        .. [1] Perez-Hernandez G, F Paul, T Giorgino, G De Fabritiis and F Noe. 2013.
+           Identification of slow molecular order parameters for Markov model construction
+           J. Chem. Phys. 139, 015102. doi:10.1063/1.4811489
+        .. [2] Schwantes C, V S Pande. 2013.
+           Improvements in Markov State Model Construction Reveal Many Non-Native Interactions in the Folding of NTL9
+           J. Chem. Theory. Comput. 9, 2000-2009. doi:10.1021/ct300878a
+        .. [3] L. Molgedey and H. G. Schuster. 1994.
+           Separation of a mixture of independent signals using time delayed correlations
+           Phys. Rev. Lett. 72, 3634.
+        .. [4] Noe, F. and C. Clementi. 2015.
+            Kinetic distance and kinetic maps from molecular dynamics simulation
+            (in preparation).
+
+        """
         super(TICA, self).__init__()
 
         # store lag time to set it appropriately in second pass of parametrize
@@ -134,7 +138,8 @@ class TICA(Transformer):
         self._progress_mean = None
         self._progress_cov = None
 
-
+        # skipped trajectories
+        self._skipped_trajs = []
     @property
     def lag(self):
         """ lag time of correlation matrix :math:`C_{\tau}` """
@@ -179,6 +184,15 @@ class TICA(Transformer):
         assert indim > 0, "zero dimension from data producer"
         assert self._dim <= indim, ("requested more output dimensions (%i) than dimension"
                                     " of input data (%i)" % (self._dim, indim))
+        if self._force_eigenvalues_le_one and self._lag % self._param_with_stride != 0:
+            raise RuntimeError("When using TICA with force_eigenvalues_le_one, lag must be a multiple of stride.")
+
+        if self._param_with_stride > 1:
+            import warnings
+            warnings.simplefilter('once', MeaningOfLagWithStrideWarning, append=True)
+            warnings.warn("Since version 1.3 lag is measured in time steps of your"
+                          " trajectory, no matter what value of stride is used.",
+                          MeaningOfLagWithStrideWarning)
 
         self._N_mean = 0
         self._N_cov = 0
@@ -226,8 +240,38 @@ class TICA(Transformer):
         :return:
         """
         if ipass == 0:
-            self.mu += np.sum(X, axis=0, dtype=np.float64)
-            self._N_mean += np.shape(X)[0]
+
+            if self._force_eigenvalues_le_one:
+                # MSM-like counting
+                if self.trajectory_length(itraj, stride=1) - self._lag > 0:
+                    # find the "tails" of the trajectory relative to the current chunk
+                    Zptau = self._lag/stride - t  # zero plus tau
+                    Nmtau = self.trajectory_length(itraj, stride=stride)-t-self._lag/stride  # N minus tau
+
+                    # restrict them to valid block indices
+                    size = X.shape[0]
+                    Zptau = min(max(Zptau, 0), size)
+                    Nmtau = min(max(Nmtau, 0), size)
+
+                    # find start and end of double-counting region
+                    start2 = min(Zptau, Nmtau)
+                    end2 = max(Zptau, Nmtau)
+
+                    # update mean
+                    self.mu += np.sum(X[0:start2, :], axis=0, dtype=np.float64)
+                    self._N_mean += start2
+
+                    if Nmtau > Zptau: # only if trajectory length > 2*tau, there is double-counting
+                        self.mu += 2.0 * np.sum(X[start2:end2, :], axis=0, dtype=np.float64)
+                        self._N_mean += 2.0 * (end2 - start2)
+
+                    self.mu += np.sum(X[end2:, :], axis=0, dtype=np.float64)
+                    self._N_mean += (size - end2)
+            else:
+                # traditional counting
+                self.mu += np.sum(X, axis=0, dtype=np.float64)
+                self._N_mean += np.shape(X)[0]
+
             # counting chunks and log of eta
             self._progress_mean.numerator += 1
             show_progressbar(self._progress_mean)
@@ -241,8 +285,11 @@ class TICA(Transformer):
 
         elif ipass == 1:
 
-            if self.trajectory_length(itraj, stride=stride) > self._lag:
+            if self.trajectory_length(itraj, stride=1) - self._lag > 0:
                 self._N_cov_tau += 2.0 * np.shape(Y)[0]
+                # _N_cov_tau is muliplied by 2, because we later symmetrize
+                # cov_tau, so we are actually using twice the number of samples
+                # for every element.
                 X_meanfree = X - self.mu
                 Y_meanfree = Y - self.mu
                 # update the time-lagged covariance matrix
@@ -253,8 +300,8 @@ class TICA(Transformer):
                 # update the instantaneous covariance matrix
                 if self._force_eigenvalues_le_one:
                     # MSM-like counting
-                    Zptau = self._lag-t  # zero plus tau
-                    Nmtau = self.trajectory_length(itraj, stride=stride)-t-self._lag  # N minus tau
+                    Zptau = self._lag/stride-t  # zero plus tau
+                    Nmtau = self.trajectory_length(itraj, stride=stride)-t-self._lag/stride  # N minus tau
 
                     # restrict to valid block indices
                     size = X_meanfree.shape[0]
@@ -285,7 +332,7 @@ class TICA(Transformer):
                 show_progressbar(self._progress_cov)
 
             else:
-                self._logger.warning("trajectory nr %i too short, skipping it" % itraj)
+                self._skipped_trajs.append(itraj)
 
             if last_chunk:
                 return True  # finished!
@@ -294,6 +341,7 @@ class TICA(Transformer):
 
     def _param_finish(self):
         if self._force_eigenvalues_le_one:
+            assert self._N_mean == self._N_cov, 'inconsistency in C(0) and mu'
             assert self._N_cov == self._N_cov_tau, 'inconsistency in C(0) and C(tau)'
 
         # symmetrize covariance matrices
@@ -304,8 +352,8 @@ class TICA(Transformer):
         self.cov_tau *= 0.5
 
         # norm
-        self.cov /= self._N_cov - 1
-        self.cov_tau /= self._N_cov_tau - 1
+        self.cov /= self._N_cov - 2
+        self.cov_tau /= self._N_cov_tau - 2
 
         # diagonalize with low rank approximation
         self._logger.debug("diagonalize Cov and Cov_tau.")
@@ -316,6 +364,12 @@ class TICA(Transformer):
         # compute cumulative variance
         self.cumvar = np.cumsum(self.eigenvalues ** 2)
         self.cumvar /= self.cumvar[-1]
+
+
+        if len(self._skipped_trajs) >= 1:
+            self._skipped_trajs = np.asarray(self._skipped_trajs)
+            self._logger.warn("Had to skip %u trajectories for being too short. "
+                              "Their indexes are in self._skipped_trajs."%len(self._skipped_trajs))
 
     def _map_array(self, X):
         r"""Projects the data onto the dominant independent components.

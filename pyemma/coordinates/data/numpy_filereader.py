@@ -73,7 +73,7 @@ class NumPyFileReader(ReaderInterface):
     def _reset(self, stride=1):
         self._t = 0
         self._itraj = 0
-        self._close_file()
+        self._close()
 
     def describe(self):
         return "[NumpyFileReader arrays with shape %s]" % [np.shape(x)
@@ -98,7 +98,7 @@ class NumPyFileReader(ReaderInterface):
         return array
 
     def __load_file(self, filename):
-        self._close_file()
+        self._close()
         self._logger.debug("opening file %s" % filename)
 
         if filename.endswith('.npy'):
@@ -110,7 +110,7 @@ class NumPyFileReader(ReaderInterface):
         self._array = arr
         return arr
 
-    def _close_file(self):
+    def _close(self):
         if self._array is None:
             return
 
@@ -129,7 +129,7 @@ class NumPyFileReader(ReaderInterface):
             array = self.__load_file(f)
             self._lengths.append(np.shape(array)[0])
             ndims.append(np.shape(array)[1])
-            self._close_file()
+            self._close()
             pg.numerator += 1
             show_progressbar(pg)
 
@@ -159,17 +159,21 @@ class NumPyFileReader(ReaderInterface):
             if lag == 0:
                 return X
             else:
-                Y = traj[lag * stride:traj_len:stride]
-                return (X, Y)
+                Y = traj[lag::stride]
+                return X, Y
         # chunked mode
         else:
-            upper_bound = min(
-                self._t + (self._chunksize + 1) * stride, traj_len)
+            upper_bound = min(self._t + self._chunksize * stride, traj_len)
             slice_x = slice(self._t, upper_bound, stride)
-
             X = traj[slice_x]
 
-            last_t = self._t
+            if lag != 0:
+                upper_bound_Y = min(
+                     self._t + lag + self._chunksize * stride, traj_len)
+                slice_y = slice(self._t + lag, upper_bound_Y, stride)
+                Y = traj[slice_y]
+
+            # set new time position
             self._t = upper_bound
 
             if self._t >= traj_len:
@@ -180,16 +184,8 @@ class NumPyFileReader(ReaderInterface):
                 # if time index scope ran out of len of current trajectory, open next file.
                 if self._itraj <= self.number_of_trajectories() - 1:
                     self.__load_file(self._filenames[self._itraj])
-                # we open self._mditer2 only if requested due lag parameter!
-                self._curr_lag = 0
 
             if lag == 0:
                 return X
             else:
-                # its okay to return empty chunks
-                upper_bound = min(
-                    last_t + (lag + self._chunksize + 1) * stride, traj_len)
-                slice_y = slice(last_t + lag, upper_bound, stride)
-
-                Y = traj[slice_y]
                 return X, Y
