@@ -353,22 +353,6 @@ def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
     initiate the estimation procedure by manually calling the MSM.estimate()
     method.
 
-
-    .. autoclass:: pyemma.msm.ui.msm.EstimatedMSM
-        :members:
-        :undoc-members:
-
-        .. rubric:: Methods
-
-        .. autoautosummary:: pyemma.msm.ui.msm.EstimatedMSM
-           :methods:
-
-        .. rubric:: Attributes
-
-        .. autoautosummary:: pyemma.msm.ui.msm.EstimatedMSM
-            :attributes:
-
-
     See also
     --------
     EstimatedMSM : An MSM object that has been estimated from data
@@ -941,11 +925,9 @@ def bayesian_hidden_markov_model(dtrajs, nstates, lag, nsamples=100, reversible=
 
 
     """
-
     bhmsm_estimator = _Bayes_HMSM(lag=lag, nstates=nstates, nsamples=nsamples, reversible=reversible,
                                   connectivity=connectivity, observe_active=observe_active, dt_traj=dt_traj, conf=conf)
     return bhmsm_estimator.estimate(dtrajs)
-
 
 # TODO: need code examples
 def cktest(msmobj, K, nsets=2, sets=None, full_output=False):
