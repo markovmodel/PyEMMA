@@ -3,6 +3,7 @@
 build*
 *.log
 *.egg
+.eggs
 /.settings
 /.tox
 *.pyc
