@@ -117,9 +117,8 @@ def tpt(T, A, B, mu=None, qminus=None, qplus=None, rate_matrix=False):
     .. [2] P. Metzner, C. Schuette and E. Vanden-Eijnden.
         Transition Path Theory for Markov Jump Processes. 
         Multiscale Model Simul 7: 1192-1219 (2009)
-    .. [3] F. Noe, Ch. Schuette, E. Vanden-Eijnden, L. Reich and
-        T. Weikl: Constructing the Full Ensemble of Folding Pathways
-        from Short Off-Equilibrium Simulations.
+    .. [3] F. Noe, Ch. Schuette, E. Vanden-Eijnden, L. Reich and T. Weikl:
+        Constructing the Full Ensemble of Folding Pathways from Short Off-Equilibrium Simulations.
         Proc. Natl. Acad. Sci. USA, 106, 19011-19016 (2009)
         
     """

@@ -79,7 +79,7 @@ class TestReactiveFluxFunctions(unittest.TestCase):
 
         msmobj = markov_model(self.P)
         msmobj.mu = msmana.statdist(self.P)
-        msmobj.computed = True
+        msmobj.estimated = True
         msmobj1 = msmobj
 
         # Testing:
@@ -141,7 +141,7 @@ class TestReactiveFluxFunctions(unittest.TestCase):
 
         msmobj = markov_model(self.P2)
         msmobj.mu = msmana.statdist(self.P2)
-        msmobj.computed = True
+        msmobj.estimated = True
         msmobj2 = msmobj
 
         # Testing

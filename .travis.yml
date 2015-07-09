@@ -25,6 +25,8 @@ before_install:
 - mkdir -p ~/.config/matplotlib/
 - touch ~/.config/matplotlib/matplotlibrc
 - "echo 'backend: Agg' >> ~/.config/matplotlib/matplotlibrc"
+# temporarily install bhmm from git, as recent pyemma development uses not yet released features of bhmm
+- pip install git+https://github.com/bhmm/bhmm@master
 install:
 - python setup.py develop 
 

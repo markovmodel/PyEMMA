@@ -49,7 +49,4 @@ ITS-object
    ImpliedTimescales - ITS-object
    
 """
-from .msm import MSM
-from .msm import EstimatedMSM
-from .timescales import *
 from .chapman_kolmogorov import *

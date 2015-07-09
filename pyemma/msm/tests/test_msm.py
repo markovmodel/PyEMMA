@@ -32,17 +32,16 @@ r"""Unit test for the MSM module
 import unittest
 
 import numpy as np
-import warnings
 
 from os.path import abspath, join
 from os import pardir
 
 from pyemma.msm.generation import generate_traj
-from pyemma.msm.estimation import cmatrix, largest_connected_set, connected_cmatrix, tmatrix
-from pyemma.msm.analysis import statdist, timescales
+from pyemma.msm.estimation import count_matrix, largest_connected_set, largest_connected_submatrix, transition_matrix
+from pyemma.msm.analysis import stationary_distribution, timescales
 from pyemma.util.numeric import assert_allclose
-from pyemma.msm.ui.birth_death_chain import BirthDeathChain
-from pyemma.msm import estimate_markov_model as markov_state_model
+from pyemma.msm.util.birth_death_chain import BirthDeathChain
+from pyemma.msm import estimate_markov_model
 
 
 class TestMSMSimple(unittest.TestCase):
@@ -70,11 +69,11 @@ class TestMSMSimple(unittest.TestCase):
         self.tau = 1
 
         """Estimate MSM"""
-        self.C_MSM = cmatrix(self.dtraj, self.tau, sliding=True)
+        self.C_MSM = count_matrix(self.dtraj, self.tau, sliding=True)
         self.lcc_MSM = largest_connected_set(self.C_MSM)
-        self.Ccc_MSM = connected_cmatrix(self.C_MSM, lcc=self.lcc_MSM)
-        self.P_MSM = tmatrix(self.Ccc_MSM, reversible=True)
-        self.mu_MSM = statdist(self.P_MSM)
+        self.Ccc_MSM = largest_connected_submatrix(self.C_MSM, lcc=self.lcc_MSM)
+        self.P_MSM = transition_matrix(self.Ccc_MSM, reversible=True)
+        self.mu_MSM = stationary_distribution(self.P_MSM)
         self.k = 3
         self.ts = timescales(self.P_MSM, k=self.k, tau=self.tau)
 
@@ -83,7 +82,7 @@ class TestMSMSimple(unittest.TestCase):
         np.random.mtrand.set_state(self.state)
 
     def test_MSM(self):
-        msm = markov_state_model(self.dtraj, self.tau)
+        msm = estimate_markov_model(self.dtraj, self.tau)
         assert_allclose(self.dtraj, msm.discrete_trajectories_full[0])
         self.assertEqual(self.tau, msm.lagtime)
         assert_allclose(self.lcc_MSM, msm.largest_connected_set)
@@ -94,51 +93,37 @@ class TestMSMSimple(unittest.TestCase):
         assert_allclose(self.ts[1:], msm.timescales(self.k - 1))
 
 
-class TestMSMDoubleWellReversible(unittest.TestCase):
-    def setUp(self):
+class TestMSMDoubleWell(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
         testpath = abspath(join(abspath(__file__), pardir)) + '/../../util/tests/data/'
         import pyemma.util.discrete_trajectories as dt
 
-        self.dtraj = dt.read_discrete_trajectory(testpath + '2well_traj_100K.dat')
-        self.tau = 10
-        self.msmrev = markov_state_model(self.dtraj, self.tau)
-        self.msm = markov_state_model(self.dtraj, self.tau, reversible=False)
+        cls.dtraj = dt.read_discrete_trajectory(testpath + '2well_traj_100K.dat')
+        cls.tau = 10
+        cls.msmrev = estimate_markov_model(cls.dtraj, cls.tau)
+        cls.msm = estimate_markov_model(cls.dtraj, cls.tau, reversible=False)
 
     # ---------------------------------
     # BASIC PROPERTIES
     # ---------------------------------
 
-    def _compute(self, msm):
-        # should give warning
-        with warnings.catch_warnings(record=True) as w:
-            msm.estimate()
-
-    def test_compute(self):
-        self._compute(self.msmrev)
-        self._compute(self.msm)
-
-    def _computed(self, msm):
-        assert (msm.computed)
-
-    def test_computed(self):
-        self._computed(self.msmrev)
-        self._computed(self.msm)
-
     def test_reversible(self):
         # NONREVERSIBLE
-        assert (self.msmrev.is_reversible)
+        assert self.msmrev.is_reversible
         # REVERSIBLE
-        assert (not self.msm.is_reversible)
+        assert not self.msm.is_reversible
 
     def _sparse(self, msm):
-        assert (not msm.is_sparse)
+        assert not msm.is_sparse
 
     def test_sparse(self):
         self._sparse(self.msmrev)
         self._sparse(self.msm)
 
     def _lagtime(self, msm):
-        assert (self.msm.lagtime == self.tau)
+        assert (msm.lagtime == self.tau)
 
     def test_lagtime(self):
         self._lagtime(self.msmrev)
@@ -146,7 +131,7 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
 
     def _active_set(self, msm):
         # should always be <= full set
-        assert (len(msm.active_set) <= self.msm._n_full)
+        assert (len(msm.active_set) <= self.msm.nstates_full)
         # should be length of nstates
         assert (len(msm.active_set) == self.msm.nstates)
 
@@ -167,7 +152,7 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
 
     def _nstates(self, msm):
         # should always be <= full
-        assert (msm.nstates <= msm._n_full)
+        assert (msm.nstates <= msm.nstates_full)
         # THIS DATASET:
         assert (msm.nstates == 66)
 
@@ -203,7 +188,7 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
 
     def _count_matrix_full(self, msm):
         C = msm.count_matrix_full
-        assert (np.all(C.shape == (msm._n_full, msm._n_full)))
+        assert (np.all(C.shape == (msm.nstates_full, msm.nstates_full)))
 
     def test_count_matrix_full(self):
         self._count_matrix_full(self.msmrev)
@@ -228,8 +213,8 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
         self._discrete_trajectories_active(self.msm)
 
     def _timestep(self, msm):
-        assert (msm.timestep.startswith('1'))
-        assert (msm.timestep.endswith('step'))
+        assert (msm.timestep_model.startswith('1'))
+        assert (msm.timestep_model.endswith('step'))
 
     def test_timestep(self):
         self._timestep(self.msmrev)
@@ -260,7 +245,7 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
 
     def _active_count_fraction(self, msm):
         # should always be a fraction
-        assert (msm.active_count_fraction >= 0.0 and msm.active_count_fraction <= 1.0)
+        assert (0.0 <= msm.active_count_fraction <= 1.0)
         # special case for this data set:
         assert (msm.active_count_fraction == 1.0)
 
@@ -270,7 +255,7 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
 
     def _active_state_fraction(self, msm):
         # should always be a fraction
-        assert (msm.active_state_fraction >= 0.0 and msm.active_state_fraction <= 1.0)
+        assert (0.0 <= msm.active_state_fraction <= 1.0)
 
     def test_active_state_fraction(self):
         # should always be a fraction
@@ -443,7 +428,6 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
         else:
             with self.assertRaises(ValueError):
                 msm.pcca(2)
-                ass = msm.metastable_assignments
 
     def test_pcca_assignment(self):
         self._pcca_assignment(self.msmrev)
@@ -464,7 +448,6 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
         else:
             with self.assertRaises(ValueError):
                 msm.pcca(2)
-                pccadist = msm.metastable_distributions
 
     def test_pcca_distributions(self):
         self._pcca_distributions(self.msmrev)
@@ -483,7 +466,6 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
         else:
             with self.assertRaises(ValueError):
                 msm.pcca(2)
-                M = msm.metastable_memberships
 
     def test_pcca_memberships(self):
         self._pcca_memberships(self.msmrev)
@@ -501,8 +483,6 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
         else:
             with self.assertRaises(ValueError):
                 msm.pcca(2)
-                S = msm.metastable_sets
-                assignment = msm.metastable_assignments
 
     def test_pcca_sets(self):
         self._pcca_sets(self.msmrev)
@@ -530,8 +510,8 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
         # should decrease
         a = range(msm.nstates)
         times, corr1 = msm.correlation(a, maxtime=maxtime)
-        assert (len(corr1) == maxtime / msm._tau)
-        assert (len(times) == maxtime / msm._tau)
+        assert (len(corr1) == maxtime / msm.lagtime)
+        assert (len(times) == maxtime / msm.lagtime)
         assert (corr1[0] > corr1[-1])
         a = range(msm.nstates)
         times, corr2 = msm.correlation(a, a, maxtime=maxtime, )
@@ -540,8 +520,8 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
         # Test: should be increasing in time
         b = range(msm.nstates)[::-1]
         times, corr3 = msm.correlation(a, b, maxtime=maxtime, )
-        assert (len(times) == maxtime / msm._tau)
-        assert (len(corr3) == maxtime / msm._tau)
+        assert (len(times) == maxtime / msm.lagtime)
+        assert (len(corr3) == maxtime / msm.lagtime)
         assert (corr3[0] < corr3[-1])
 
     def test_correlation(self):
@@ -558,8 +538,8 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
         assert (np.allclose(rel1 - rel1[0], np.zeros((np.shape(rel1)[0]))))
         times, rel2 = msm.relaxation(pi_perturbed, a, maxtime=maxtime)
         # should relax
-        assert (len(times) == maxtime / msm._tau)
-        assert (len(rel2) == maxtime / msm._tau)
+        assert (len(times) == maxtime / msm.lagtime)
+        assert (len(rel2) == maxtime / msm.lagtime)
         assert (rel2[0] < rel2[-1])
 
     def test_relaxation(self):

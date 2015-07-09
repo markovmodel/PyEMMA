@@ -94,7 +94,7 @@ class MarkovChainSampler(object):
 
         """
         # check input
-        stop = types.ensure_int_array_or_None(stop, require_order=False)
+        stop = types.ensure_int_vector_or_None(stop, require_order=False)
 
         if start is None:
             if self.mudist is None:
