@@ -35,15 +35,43 @@ class DiscreteTrajectoryStats:
         self._counted_at_lag = False
 
 
-    def count_lagged(self, lag):
+    def count_lagged(self, lag, count_mode='sliding'):
         r""" Counts transitions at given lag time
+
+        Parameters
+        ----------
+        count_mode : str, optional, default='sliding'
+            mode to obtain count matrices from discrete trajectories. Should be one of:
+
+            * 'sliding' : A trajectory of length T will have :math:`T-tau` counts
+                at time indexes
+                .. math:
+                    (0 \rightarray \tau), (1 \rightarray \tau+1), ..., (T-\tau-1 \rightarray T-1)
+
+            * 'effective' : Uses an estimate of the transition counts that are
+                statistically uncorrelated. Recommended when used with a
+                Bayesian MSM.
+
+            * 'sample' : A trajectory of length T will have :math:`T/tau` counts
+                at time indexes
+                .. math:
+                    (0 \rightarray \tau), (\tau \rightarray 2 \tau), ..., (((T/tau)-1) \tau \rightarray T)
+
 
         """
         # store lag time
         self._lag = lag
 
         # Compute count matrix
-        self._C = msmest.count_matrix(self._dtrajs, lag, sliding=True)
+        count_mode = count_mode.lower()
+        if count_mode == 'sliding':
+            self._C = msmest.count_matrix(self._dtrajs, lag, sliding=True)
+        elif count_mode == 'sample':
+            self._C = msmest.count_matrix(self._dtrajs, lag, sliding=False)
+        elif count_mode == 'effective':
+            self._C = msmest.effective_count_matrix(self._dtrajs, lag)
+        else:
+            raise ValueError('Count mode ' + count_mode + ' is unknown.')
 
         # Compute reversibly connected sets
         self._connected_sets = msmest.connected_sets(self._C)
