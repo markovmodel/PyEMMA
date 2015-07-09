@@ -89,7 +89,7 @@ class BayesianMSM(_MLMSM, _SampledMSM):
         for two sigma or 99.7% for three sigma.
 
     """
-    def __init__(self, lag=1, nsamples=100, nstep=None, reversible=True, count_mode='sliding', sparse=False,
+    def __init__(self, lag=1, nsamples=100, nstep=None, reversible=True, count_mode='effective', sparse=False,
                  connectivity='largest', dt_traj='1 step', conf=0.95):
         _MLMSM.__init__(self, lag=lag, reversible=reversible, count_mode=count_mode, sparse=sparse,
                         connectivity=connectivity, dt_traj=dt_traj)

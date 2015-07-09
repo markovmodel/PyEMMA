@@ -116,11 +116,11 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
             'nstates must be an int in [2,msmobj.nstates]'
         timescale_ratios = msm_init.timescales()[:-1] / msm_init.timescales()[1:]
         if timescale_ratios[self.nstates-2] < 2.0:
-            self.logger.warn('Requested coarse-grained model with ' + str(self.nstates) + ' metastable states. ' +
-                             'The ratio of relaxation timescales between ' + str(self.nstates) + ' and ' +
-                             str(self.nstates+1) + ' states is only ' + str(timescale_ratios[self.nstates-2]) +
-                             ' while we recommend at least 2. It is possible that the resulting HMM is inaccurate. ' +
-                             ' Handle with caution.')
+            self.logger.warn('Requested coarse-grained model with ' + str(self.nstates) + ' metastable states at ' +
+                             'lag=' + str(self.lag) + '.' + 'The ratio of relaxation timescales between ' +
+                             str(self.nstates) + ' and ' + str(self.nstates+1) + ' states is only ' +
+                             str(timescale_ratios[self.nstates-2]) + ' while we recommend at least 2. ' +
+                             ' It is possible that the resulting HMM is inaccurate. Handle with caution.')
 
         # set things from MSM
         nstates_obs_full = msm_init.nstates_full
