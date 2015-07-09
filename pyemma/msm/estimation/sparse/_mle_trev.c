@@ -107,8 +107,6 @@ int _mle_trev_sparse(double * const T_data, const double * const CCt_data, const
     d_sq = distsq(len_CCt,x,x_new);
   } while(d_sq > maxerr*maxerr && iteration < maxiter);
   
-  if(iteration==maxiter) { err=5; goto error; } 
-
   /* calculate T */
   for(t=0; t<len_CCt; t++) {
       i = i_indices[t];
@@ -116,11 +114,13 @@ int _mle_trev_sparse(double * const T_data, const double * const CCt_data, const
       T_data[t] = x[t] / sum_x[i];
   }
 
+  if(iteration==maxiter) { err=5; goto error; }
+
   free(x);
   free(x_new);
   free(sum_x);
   return 0;
-  
+
 error:
   free(x);
   free(x_new);
