@@ -1,5 +1,3 @@
-__author__ = 'noe'
-
 import copy
 import numpy as _np
 import inspect
@@ -10,7 +8,10 @@ from pyemma._ext.sklearn.base import _pprint
 from pyemma.util.statistics import confidence_interval
 from pyemma.util.reflection import call_member
 
-class Model:
+__author__ = 'noe'
+
+
+class Model(object):
     """ Base class for pyEMMA models
 
     This class is inspired by sklearn's BaseEstimator class. However, we define parameter names not by the
@@ -144,18 +145,18 @@ class SampledModel(Model):
 #        """Computes the mean model from the given samples"""
 #        raise NotImplementedError('mean_model is not implemented in class '+str(self.__class__))
 
-    def sample_f(self, f, *args):
+    def sample_f(self, f, *args, **kw):
         self._check_samples_available()
-        return [call_member(M, f, *args) for M in self.samples]
+        return [call_member(M, f, *args, **kw) for M in self.samples]
 
-    def sample_mean(self, f, *args):
-        vals = self.sample_f(f, *args)
+    def sample_mean(self, f, *args, **kw):
+        vals = self.sample_f(f, *args, **kw)
         return _np.mean(vals, axis=0)
 
-    def sample_std(self, f, *args):
-        vals = self.sample_f(f, *args)
+    def sample_std(self, f, *args, **kw):
+        vals = self.sample_f(f, *args, **kw)
         return _np.std(vals, axis=0)
 
-    def sample_conf(self, f, *args):
-        vals = self.sample_f(f, *args)
+    def sample_conf(self, f, *args, **kw):
+        vals = self.sample_f(f, *args, **kw)
         return confidence_interval(vals, conf=self.conf)
