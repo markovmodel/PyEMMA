@@ -1,4 +1,3 @@
-
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
 # All rights reserved.
@@ -22,14 +21,14 @@
 # ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-__author__ = 'noe'
-
 import numpy as np
 import scipy.linalg
 import scipy.sparse
 import copy
 import math
+
+__author__ = 'noe'
+
 
 def mdot(*args):
     """Computes a matrix product of multiple ndarrays
@@ -50,6 +49,7 @@ def mdot(*args):
         return np.dot(args[0],args[1])
     else:
         return np.dot(args[0], mdot(*args[1:]))
+
 
 def submatrix(M, sel):
     """Returns a submatrix of the quadratic matrix M, given by the selected columns and row
@@ -75,17 +75,18 @@ def submatrix(M, sel):
         C_cc = M.tocsr()
     else:
         C_cc = M
-    C_cc=C_cc[sel, :]
+    C_cc = C_cc[sel, :]
 
     """Column slicing"""
     if scipy.sparse.issparse(M):
         C_cc = C_cc.tocsc()
-    C_cc=C_cc[:, sel]
+    C_cc = C_cc[:, sel]
 
     if scipy.sparse.issparse(M):
         return C_cc.tocoo()
     else:
         return C_cc
+
 
 def _sort_by_norm(evals, evecs):
     """
@@ -250,11 +251,10 @@ def match_eigenvectors(R_ref, R, w_ref=None, w=None):
         try:
             R[:,i] /= math.sqrt(np.dot(w*R[:,i], R[:,i]))
         except:
-            print 'Exception'
-            print 'w ',w
-            print 'R ',R
-            import sys
-            sys.exit(0)
+            from logging import getLogger
+            log = getLogger(__name__)
+            log.exception("w: %s\nR: %s" % (w, R))
+            raise
     # projection amplitude matrix
     P = np.zeros((m,M))
     for i in range(m):
