@@ -111,7 +111,7 @@ class TestPipeline(unittest.TestCase):
 
         # get reader output again
         out2 = reader.get_output()
-        p.add_element(api.kmeans(k=2))
+        p.add_element(api.cluster_kmeans(k=2))
         p.parametrize()
 
         # get kmeans output again
@@ -143,7 +143,7 @@ class TestPipeline(unittest.TestCase):
         reader_xtc = api.source(self.traj_files, top=self.pdb_file)
         reader_gen = DataInMemory(data=self.generated_data)
 
-        kmeans = api.kmeans(k=10)
+        kmeans = api.cluster_kmeans(k=10)
         assert hasattr(kmeans, '_chunks')
         p = api.pipeline([reader_xtc, kmeans])
         out1 = kmeans.get_output()

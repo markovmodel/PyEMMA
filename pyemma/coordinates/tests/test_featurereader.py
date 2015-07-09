@@ -138,7 +138,7 @@ class TestFeatureReader(unittest.TestCase):
         self.assertTrue(np.allclose(data, self.xyz))
 
     def test_with_pipeline_time_lagged(self):
-        reader = feature_reader(self.trajfile, self.topfile)
+        reader = api.source(self.trajfile, top=self.topfile)
         t = tica(dim=2, lag=1)
         d = discretizer(reader, t)
         d.parametrize()
