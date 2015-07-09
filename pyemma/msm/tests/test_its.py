@@ -29,7 +29,6 @@ r"""Unit test for the its method
 .. moduleauthor:: B.Trendelkamp-Schroer <benjamin DOT trendelkamp-schroer AT fu-berlin DOT de>
 
 """
-import warnings
 import unittest
 import numpy as np
 
@@ -124,6 +123,14 @@ class ImpliedTimescalesTest(unittest.TestCase):
         t2 = timescales(self.P2)[1]
         lags = [1, 2, 3, 4, 5]
         its = timescales_msm([self.dtraj2], lags=lags)
+        est = its.timescales[0]
+        assert (np.alltrue(est < t2 + 2.0))
+        assert (np.alltrue(est > t2 - 2.0))
+
+    def test_2_parallel(self):
+        t2 = timescales(self.P2)[1]
+        lags = [1, 2, 3, 4, 5]
+        its = timescales_msm([self.dtraj2], lags=lags, n_jobs=2)
         est = its.timescales[0]
         assert (np.alltrue(est < t2 + 2.0))
         assert (np.alltrue(est > t2 - 2.0))
