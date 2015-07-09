@@ -46,19 +46,21 @@ Expert users may want to construct Estimators or Models (see below) directly.
    bayesian_hidden_markov_model
 
 
-**Estimators** to generate models from data. If you are not an expert user, use the API functions above.
+**Estimators** to generate models from data. If you are not an expert user,
+use the API functions above.
 
 .. autosummary::
    :toctree: generated/
 
-   estimators.ImpliedTimescales
-   estimators.MaximumLikelihoodMSM
-   estimators.BayesianMSM
-   estimators.MaximumLikelihoodHMSM
-   estimators.BayesianHMSM
+   ImpliedTimescales
+   MaximumLikelihoodMSM
+   BayesianMSM
+   MaximumLikelihoodHMSM
+   BayesianHMSM
 
 
-**Models** of the kinetics or stationary properties of the data. If you are not an expert user, use API functions above.
+**Models** of the kinetics or stationary properties of the data. 
+If you are not an expert user, use API functions above.
 
 .. autosummary::
    :toctree: generated/
@@ -86,19 +88,63 @@ Low-level functions for estimation and analysis of transition matrices and io.
    msm.flux
 
 """
+#####################################################
+# Low-level MSM functions (imported from msmtools)
 
-from msmtools import analysis
-from msmtools import estimation
-from msmtools import generation
-from msmtools import io
-from msmtools import flux
+import sys as _sys
+import imp as _imp
+import msmtools as _msmtools
 
+
+class _RedirectMSMToolsImport(object):
+    # this class redirects all imports into pyemma.msm package into msmtools.*
+    lookup_path = _msmtools.__path__
+
+    def __init__(self, *args):
+        self.module_names = args
+
+    def find_module(self, fullname, path=None):
+        if fullname in self.module_names:
+            self.path = path
+            return self
+        return None
+
+    def load_module(self, name):
+        if name in _sys.modules:
+            return _sys.modules[name]
+
+        # lookup the package in msmtools, if it starts with "pyemma.msm."
+        assert name.startswith('pyemma.msm.')
+        package = name[len('pyemma.msm.'):]
+        module_info = _imp.find_module(package, self.lookup_path)
+
+        # load, cache and return redirected module
+        module = _imp.load_module(package, *module_info)
+        _sys.modules[name] = module
+        return module
+
+_sys.meta_path = [_RedirectMSMToolsImport('pyemma.msm.analysis'),
+                  _RedirectMSMToolsImport('pyemma.msm.estimation'),
+                  _RedirectMSMToolsImport('pyemma.msm.generation'),
+                  _RedirectMSMToolsImport('pyemma.msm.io'),
+                  _RedirectMSMToolsImport('pyemma.msm.flux')]
+
+
+import analysis
+import estimation
+import generation
+import io as io
+import flux
+from flux import ReactiveFlux
+#####################################################
+# Estimators and models
 from estimators import MaximumLikelihoodMSM, BayesianMSM
 from estimators import MaximumLikelihoodHMSM, BayesianHMSM
 from estimators import ImpliedTimescales
+from estimators import EstimatedMSM
+from estimators import EstimatedHMSM
 
-from models import MSM
-from models import HMSM
-from msmtools.flux import ReactiveFlux
+from models import *
 
-from .api import *
+# high-level api
+from api import *
