@@ -228,6 +228,7 @@ metadata = dict(
                       'matplotlib',
                       'msmtools',
                       'bhmm',
+                      'joblib',
                       ],
     zip_safe=False,
 )

@@ -99,6 +99,8 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
         The number of approximately independent transition matrix samples
         generated for each lag time for uncertainty quantification.
         Only used if errors is not None.
+    n_jobs = 1 : int
+        how many subprocesses to start to estimate the models for each lag time.
 
     Returns
     -------
@@ -178,7 +180,7 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
         raise NotImplementedError('Error estimation method'+errors+'currently not implemented')
 
     # go
-    itsobj = _ImpliedTimescales(estimator, lags=lags, nits=nits)
+    itsobj = _ImpliedTimescales(estimator, lags=lags, nits=nits, n_jobs=n_jobs)
     itsobj.estimate(dtrajs)
     return itsobj
 

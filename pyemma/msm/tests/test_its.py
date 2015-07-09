@@ -126,6 +126,14 @@ class TestITS_MSM(unittest.TestCase):
         assert (np.alltrue(est < t2 + 2.0))
         assert (np.alltrue(est > t2 - 2.0))
 
+    def test_2_parallel(self):
+        t2 = timescales(self.P2)[1]
+        lags = [1, 2, 3, 4, 5]
+        its = timescales_msm([self.dtraj2], lags=lags, n_jobs=2)
+        est = its.timescales[0]
+        assert (np.alltrue(est < t2 + 2.0))
+        assert (np.alltrue(est > t2 - 2.0))
+
     def test_4_2(self):
         t4 = timescales(self.P4)[1]
         lags = [int(t4)]

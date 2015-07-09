@@ -85,12 +85,16 @@ class ImpliedTimescales(Estimator):
         if True, will raise an error as soon as not all requested timescales can be computed at all requested
         lagtimes. If False, will continue with a warning and compute the timescales/lagtimes that are possible.
 
+    n_jobs = 1 : int
+        how many subprocesses to start to estimate the models for each lag time.
+
     """
-    def __init__(self, estimator, lags=None, nits=None, failfast=False):
+    def __init__(self, estimator, lags=None, nits=None, failfast=False, n_jobs=1):
         # initialize
         self.estimator = get_estimator(estimator)
         self.nits = nits
         self.failfast = failfast
+        self.n_jobs = n_jobs
 
         # set lag times
         if _types.is_int(lags):  # got a single integer. We create a list
@@ -135,7 +139,10 @@ class ImpliedTimescales(Estimator):
         param_sets = [p for p in param_sets]
 
         # run estimation on all lag times
-        self._models, self._estimators = estimate_param_scan(self.estimator, data, param_sets, return_estimators=True)
+        self._models, self._estimators = estimate_param_scan(self.estimator,
+                                                             data, param_sets,
+                                                             return_estimators=True,
+                                                             n_jobs=self.n_jobs)
 
         ### PROCESS RESULTS
 
