@@ -62,7 +62,8 @@ __all__ = ['markov_model',
 
 
 @shortcut('its')
-def timescales_msm(dtrajs, lags=None, nits=10, reversible=True, connected=True, errors=None, nsamples=50):
+def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True, errors=None, nsamples=50):
+    # format data
     r""" Calculate implied timescales from Markov state models estimated at a series of lag times.
 
     Parameters
@@ -71,29 +72,34 @@ def timescales_msm(dtrajs, lags=None, nits=10, reversible=True, connected=True, 
         discrete trajectories
 
     lags : array-like of integers (optional)
-        integer lag times at which the implied timescales will be
-        calculated
+        integer lag times at which the implied timescales will be calculated
 
     nits : int (optional)
         number of implied timescales to be computed. Will compute less
-        if the number of states are smaller
+        if the number of states are smaller. If None, the number of timescales
+        will be automatically determined.
 
     connected : boolean (optional)
-        If true compute the connected set before transition matrix
-        estimation at each lag separately
+        If true compute the connected set before transition matrix estimation
+        at each lag separately
+
     reversible : boolean (optional)
-        Estimate the transition matrix reversibly (True) or
-        nonreversibly (False)
+        Estimate transition matrix reversibly (True) or nonreversibly (False)
+
     errors : None | 'bayes' | 'bootstrap'
         Specifies whether to compute statistical uncertainties (by default
-        not), an which algorithm to use if yes.
-        Options are 'bayes' for Bayesian sampling of the posterior and
-        'bootstrap' for bootstrapping of the discrete trajectories.
+        not), an which algorithm to use if yes. Options are:
+
+        * 'bayes' for Bayesian sampling of the posterior
+
+        * 'bootstrap' for bootstrapping of the discrete trajectories.
+
         Attention: Computing errors can be *very* slow if the MSM has many
         states. Moreover there are still unsolved theoretical problems, and
-        therefore the uncertainty interval and the maximum likelihood
-        estimator can be inconsistent. Use this as a rough guess for
-        statistical uncertainties.
+        therefore the uncertainty interval and the maximum likelihood estimator
+        can be inconsistent. Use this as a rough guess for statistical
+        uncertainties.
+
     nsamples : int
         The number of approximately independent transition matrix samples
         generated for each lag time for uncertainty quantification.
@@ -161,7 +167,6 @@ def timescales_msm(dtrajs, lags=None, nits=10, reversible=True, connected=True, 
      [ 5.13829397  2.59477703]]
 
     """
-    # format data
     dtrajs = _types.ensure_dtraj_list(dtrajs)
 
     if connected:
@@ -173,7 +178,7 @@ def timescales_msm(dtrajs, lags=None, nits=10, reversible=True, connected=True, 
     if errors is None:
         estimator = _ML_MSM(reversible=reversible, connectivity=connectivity)
     elif errors == 'bayes':
-        estimator = _Bayes_MSM(reversible=reversible, connectivity=connectivity)
+        estimator = _Bayes_MSM(reversible=reversible, connectivity=connectivity, nsamples=nsamples)
     else:
         raise NotImplementedError('Error estimation method'+errors+'currently not implemented')
 
@@ -464,7 +469,7 @@ def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
     return mlmsm.estimate(dtrajs)
 
 
-def timescales_hmsm(dtrajs, nstates, lags=None, nits=10, reversible=True, connected=True, errors=None, nsamples=100):
+def timescales_hmsm(dtrajs, nstates, lags=None, nits=None, reversible=True, connected=True, errors=None, nsamples=100):
     r""" Calculate implied timescales from Hidden Markov state models estimated at a series of lag times.
 
     Warning: this can be slow!
@@ -478,20 +483,19 @@ def timescales_hmsm(dtrajs, nstates, lags=None, nits=10, reversible=True, connec
         number of hidden states
 
     lags : array-like of integers (optional)
-        integer lag times at which the implied timescales will be
-        calculated
+        integer lag times at which the implied timescales will be calculated
 
     nits : int (optional)
-        number of implied timescales to be computed. Will compute less
-        if the number of states are smaller
+        number of implied timescales to be computed. Will compute less if the
+        number of states are smaller. None means the number of timescales will
+        be determined automatically.
 
     connected : boolean (optional)
         If true compute the connected set before transition matrix
         estimation at each lag separately
 
     reversible : boolean (optional)
-        Estimate the transition matrix reversibly (True) or
-        nonreversibly (False)
+        Estimate transition matrix reversibly (True) or nonreversibly (False)
 
     errors : None | 'bayes'
         Specifies whether to compute statistical uncertainties (by default not),
@@ -500,12 +504,12 @@ def timescales_hmsm(dtrajs, nstates, lags=None, nits=10, reversible=True, connec
         the involved matrices are much smaller.
 
     nsamples : int
-        The number of approximately independent HMSM samples generated for each lag time for uncertainty
-        quantification. Only used if errors is not None.
+        Number of approximately independent HMSM samples generated for each lag
+        time for uncertainty quantification. Only used if errors is not None.
 
     Returns
     -------
-    itsobj : :class:`ImpliedTimescales <pyemma.msm.ui.ImpliedTimescales>` object
+    itsobj : :class:`ImpliedTimescales <pyemma.msm.ImpliedTimescales>` object
 
     See also
     --------
