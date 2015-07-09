@@ -1,4 +1,3 @@
-
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
 # All rights reserved.
@@ -22,30 +21,27 @@
 # ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 r"""User API for the pyemma.msm package
 
 """
-
-__docformat__ = "restructuredtext en"
-
 from estimators import MaximumLikelihoodHMSM as _ML_HMSM
 from estimators import BayesianMSM as _Bayes_MSM
 from estimators import BayesianHMSM as _Bayes_HMSM
 from estimators import MaximumLikelihoodMSM as _ML_MSM
 from estimators import ImpliedTimescales as _ImpliedTimescales
 
-from flux import tpt as tpt_factory
+from msmtools.flux import tpt as tpt_factory
 from models import MSM
 from util import cktest as chapman_kolmogorov
 from pyemma.util.annotators import shortcut
 from pyemma.util import types as _types
 
+__docformat__ = "restructuredtext en"
+
 __author__ = "Benjamin Trendelkamp-Schroer, Martin Scherer, Frank Noe"
 __copyright__ = "Copyright 2014, Computational Molecular Biology Group, FU-Berlin"
 __credits__ = ["Benjamin Trendelkamp-Schroer", "Martin Scherer", "Frank Noe"]
 __license__ = "FreeBSD"
-__version__ = "2.0.0"
 __maintainer__ = "Martin Scherer"
 __email__ = "m.scherer AT fu-berlin DOT de"
 

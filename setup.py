@@ -105,22 +105,6 @@ def extensions():
 
     exts = []
 
-    mle_trev_given_pi_dense_module = \
-        Extension('pyemma.msm.estimation.dense.mle_trev_given_pi',
-                  sources=['pyemma/msm/estimation/dense/mle_trev_given_pi.pyx',
-                           'pyemma/msm/estimation/dense/_mle_trev_given_pi.c'],
-                  include_dirs=['pyemma/msm/estimation/dense'])
-
-    mle_trev_given_pi_sparse_module = \
-        Extension('pyemma.msm.estimation.sparse.mle_trev_given_pi',
-                  sources=['pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx',
-                           'pyemma/msm/estimation/sparse/_mle_trev_given_pi.c'],
-                  include_dirs=['pyemma/msm/estimation/dense'])
-
-    mle_trev_sparse_module = \
-        Extension('pyemma.msm.estimation.sparse.mle_trev',
-                  sources=['pyemma/msm/estimation/sparse/mle_trev.pyx',
-                           'pyemma/msm/estimation/sparse/_mle_trev.c'])
     if sys.platform.startswith('win'):
         lib_prefix = 'lib'
     else:
@@ -149,10 +133,7 @@ def extensions():
                   library_dirs=[mdtraj.capi()['lib_dir']],
                   extra_compile_args=['-std=c99'])
 
-    exts += [mle_trev_given_pi_dense_module,
-             mle_trev_given_pi_sparse_module,
-             mle_trev_sparse_module,
-             regspatial_module,
+    exts += [regspatial_module,
              kmeans_module]
 
     if USE_CYTHON: # if we have cython available now, cythonize module

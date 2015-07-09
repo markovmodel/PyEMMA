@@ -1,4 +1,3 @@
-
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
 # All rights reserved.
@@ -86,14 +85,13 @@ Low-level functions for estimation and analysis of transition matrices and io.
    msm.analysis
    msm.flux
 
-
 """
 
-from . import analysis
-from . import estimation
-from . import generation
-from . import io
-from . import flux
+from msmtools import analysis
+from msmtools import estimation
+from msmtools import generation
+from msmtools import io
+from msmtools import flux
 
 from estimators import MaximumLikelihoodMSM, BayesianMSM
 from estimators import MaximumLikelihoodHMSM, BayesianHMSM
@@ -101,6 +99,6 @@ from estimators import ImpliedTimescales
 
 from models import MSM
 from models import HMSM
-from flux import ReactiveFlux
+from msmtools.flux import ReactiveFlux
 
 from .api import *

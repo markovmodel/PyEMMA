@@ -33,11 +33,7 @@ import warnings
 import numpy as np
 from scipy.sparse import issparse
 
-from pyemma.msm.estimation import cmatrix, connected_cmatrix, largest_connected_set, tmatrix
-from pyemma.msm.analysis import statdist
-from pyemma.msm.analysis import pcca_sets
-
-from mapping import MapToConnectedStateLabels
+from .mapping import MapToConnectedStateLabels
 
 __all__ = ['cktest']
 
@@ -58,7 +54,7 @@ def propagate(W, P, n=1):
     -------
     W_n : (K, M) ndarray
         Matrix of propagated vectors
-        
+
     """
     if issparse(P):
         """Ensure csr format"""
@@ -66,13 +62,13 @@ def propagate(W, P, n=1):
         """Transpose W and P"""
         WT = W.T
         PT = P.T
-        for i in range(n):
+        for _ in range(n):
             WT = PT.dot(WT)
         """Transpose propgated WT"""
         W_n = WT.T
     else:
         W_n = 1.0 * W
-        for i in range(n):
+        for _ in range(n):
             W_n = np.dot(W_n, P)
     return W_n
 
@@ -118,8 +114,12 @@ def cktest(T_MSM, lcc_MSM, dtrajs, lag, K, nsets=2, sets=None, full_output=False
         Chodera, C Schuette and F Noe. 2011. Markov models of
         molecular kinetics: Generation and validation. J Chem Phys
         134: 174105
-        
+
     """
+    from pyemma.msm.estimation import cmatrix, connected_cmatrix, largest_connected_set, tmatrix
+    from pyemma.msm.analysis import statdist
+    from pyemma.msm.analysis import pcca_sets
+
     p_MD = np.zeros((K, nsets))
     p_MSM = np.zeros((K, nsets))
     eps_MD = np.zeros((K, nsets))
