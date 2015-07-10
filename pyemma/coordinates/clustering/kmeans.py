@@ -193,3 +193,13 @@ class KmeansClustering(AbstractClustering):
             if last_chunk:
                 return True
         return True
+
+
+class MiniBatchKmeansClustering(KmeansClustering):
+
+    def __init__(self, n_clusters, max_iter=5, metric='euclidean', tolerance=1e-5, init_strategy='kmeans++',
+                 oom_strategy='memmap'):
+        super(MiniBatchKmeansClustering, self).__init__(n_clusters, max_iter, metric, tolerance, init_strategy,
+                                                        oom_strategy)
+
+    pass
