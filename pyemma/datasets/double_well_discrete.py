@@ -13,11 +13,10 @@ class DoubleWell_Discrete_Data:
     """
 
     def __init__(self):
-        self._datapath = abspath(join(abspath(__file__), pardir, 'double_well_discrete_data'))
-        self._dtraj_T100K_dt10 = dt.read_discrete_trajectory(join(self._datapath, '2well_traj_100K.dat'))
-        self._P = np.zeros((100, 100))
-        A = np.loadtxt(join(self._datapath, '2well.T'))
-        self._P[A[:, 0].astype('int'), A[:, 1].astype('int')] = A[:, 2]
+        cwd = abspath(join(abspath(__file__), pardir))
+        datafile = np.load(join(cwd, 'double_well_discrete.npz'))
+        self._dtraj_T100K_dt10 = datafile['dtraj']
+        self._P = datafile['P']
         self._msm = markov_model(self._P)
 
     @property
@@ -52,10 +51,12 @@ class DoubleWell_Discrete_Data:
             disc[divides[i]:divides[i+1]] = i+1
         return disc[self.dtraj_T100K_dt10]
 
+    @property
     def transition_matrix(self):
         """ Exact transition matrix used to generate the data """
         return self._P
 
+    @property
     def msm(self):
         """ Returns an MSM object with the exact transition matrix """
         return self._msm
