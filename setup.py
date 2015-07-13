@@ -200,18 +200,6 @@ def get_cmdclass():
     return vervsioneer_cmds
 
 
-def script_entry_points():
-    import pkgutil
-    path = os.path.join('pyemma', 'cli')
-    names = [name for _, name, _ in pkgutil.iter_modules([path])]
-    s = ['%s = pyemma.cli.%s:main' % (script, script) for script in names]
-    entry_points = {
-        'console_scripts': s
-    }
-
-    return entry_points
-
-
 metadata = dict(
     name='pyEMMA',
     maintainer='Martin K. Scherer',
@@ -230,7 +218,6 @@ metadata = dict(
     packages=find_packages(),
     # install default emma.cfg into package.
     package_data=dict(pyemma=['pyemma.cfg']),
-    entry_points=script_entry_points(),
     cmdclass=get_cmdclass(),
     tests_require=['nose'],
     test_suite='nose.collector',
@@ -238,7 +225,9 @@ metadata = dict(
     install_requires=['numpy>=1.6.0',
                       'scipy>=0.11',
                       'mdtraj>=1.4.0',
-                      'matplotlib'],
+                      'matplotlib',
+                      'msmtools',
+                      ],
     zip_safe=False,
 )
 
