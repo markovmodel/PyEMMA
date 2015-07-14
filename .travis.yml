@@ -8,7 +8,7 @@ env:
   global:
     - PATH=$HOME/miniconda/bin:$HOME/miniconda/envs/ci/bin/:$PATH
      # note: mdtraj and coveralls are provided by omnia binstar repo
-    - common_py_deps="pip pylint nose python-coveralls cython mdtraj matplotlib"
+    - common_py_deps="pip pylint nose python-coveralls cython mdtraj matplotlib bhmm"
     - doc_deps="ipython ipython-notebook sphinx==1.2.3 matplotlib"
     - deps="scipy numpy"
   matrix:
@@ -26,7 +26,7 @@ before_install:
 - touch ~/.config/matplotlib/matplotlibrc
 - "echo 'backend: Agg' >> ~/.config/matplotlib/matplotlibrc"
 # temporarily install bhmm from git, as recent pyemma development uses not yet released features of bhmm
-- pip install git+https://github.com/bhmm/bhmm@master
+#- pip install git+https://github.com/bhmm/bhmm@master
 install:
 - python setup.py develop 
 

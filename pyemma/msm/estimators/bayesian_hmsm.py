@@ -3,33 +3,19 @@ __author__ = 'noe'
 import numpy as _np
 
 from pyemma.util.types import ensure_dtraj_list
-from pyemma.msm.estimators.maximum_likelihood_hmsm import MaximumLikelihoodHMSM as _HMSMEstimator
+from pyemma.msm.estimators.maximum_likelihood_hmsm import MaximumLikelihoodHMSM as _MaximumLikelihoodHMSM
 from pyemma.msm.models.hmsm import HMSM as _HMSM
 from pyemma.msm.estimators.estimated_hmsm import EstimatedHMSM as _EstimatedHMSM
 from pyemma.msm.models.hmsm_sampled import SampledHMSM as _SampledHMSM
 from pyemma.util.units import TimeUnit
 
-def _lag_observations(observations, lag):
-    """ Create new trajectories that are subsampled at lag but shifted
 
-    Given a trajectory (s0, s1, s2, s3, s4, ...) and lag 3, this function will generate 3 trajectories
-    (s0, s3, s6, ...), (s1, s4, s7, ...) and (s2, s5, s8, ...). Use this function in order to parametrize a MLE
-    at lag times larger than 1 without discarding data. Do not use this function for Bayesian estimators, where
-    data must be given such that subsequent transitions are uncorrelated.
-
-    """
-    obsnew = []
-    for obs in observations:
-        for shift in range(0, lag):
-            obsnew.append(obs[shift:][::lag])
-    return obsnew
-
-class BayesianHMSM(_HMSMEstimator, _SampledHMSM):
+class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM):
     """Estimator for a Bayesian HMSM
 
     """
-    def __init__(self, nstates=2, lag=1, nsamples=100, init_hmsm=None, reversible=True, connectivity='largest',
-                 observe_active=True, dt_traj='1 step', conf=0.95):
+    def __init__(self, nstates=2, lag=1, stride='effective', nsamples=100, init_hmsm=None, reversible=True,
+                 connectivity='largest', observe_active=True, dt_traj='1 step', conf=0.95):
         """
         Parameters
         ----------
@@ -38,6 +24,18 @@ class BayesianHMSM(_HMSMEstimator, _SampledHMSM):
 
         lag : int, optional, default=1
             lagtime to estimate the HMSM at
+
+        stride : str or int, default=1
+            stride between two lagged trajectories extracted from the input
+            trajectories. Given trajectory s[t], stride and lag will result
+            in trajectories
+                s[0], s[tau], s[2 tau], ...
+                s[stride], s[stride + tau], s[stride + 2 tau], ...
+            Setting stride = 1 will result in using all data (useful for maximum
+            likelihood estimator), while a Bayesian estimator requires a longer
+            stride in order to have statistically uncorrelated trajectories.
+            Setting stride = None 'effective' uses the largest neglected timescale as
+            an estimate for the correlation time and sets the stride accordingly
 
         hmsm : :class:`HMSM <pyemma.msm.ui.hmsm.HMSM>`
             Single-point estimate of HMSM object around which errors will be evaluated
@@ -48,6 +46,7 @@ class BayesianHMSM(_HMSMEstimator, _SampledHMSM):
 
         """
         self.lag = lag
+        self.stride = stride
         self.nstates = nstates
         self.nsamples = nsamples
         self.init_hmsm = init_hmsm
@@ -69,13 +68,14 @@ class BayesianHMSM(_HMSMEstimator, _SampledHMSM):
         """
         # ensure right format
         dtrajs = ensure_dtraj_list(dtrajs)
+
         # if no initial MSM is given, estimate it now
         if self.init_hmsm is None:
             # estimate with store_data=True, because we need an EstimatedHMSM
-            hmsm_estimator = _HMSMEstimator(lag=self.lag, nstates=self.nstates, reversible=self.reversible,
-                                            connectivity=self.connectivity, observe_active=self.observe_active,
-                                            dt_traj=self.dt_traj)
-            init_hmsm = hmsm_estimator.estimate(dtrajs)
+            hmsm_estimator = _MaximumLikelihoodHMSM(lag=self.lag, stride=self.stride, nstates=self.nstates,
+                                            reversible=self.reversible, connectivity=self.connectivity,
+                                            observe_active=self.observe_active, dt_traj=self.dt_traj)
+            init_hmsm = hmsm_estimator.estimate(dtrajs)  # estimate with lagged trajectories
         else:
             # check input
             assert isinstance(self.init_hmsm, _EstimatedHMSM), 'hmsm must be of type EstimatedHMSM'
@@ -96,8 +96,8 @@ class BayesianHMSM(_HMSMEstimator, _SampledHMSM):
         # HMM sampler
         from bhmm import discrete_hmm, bayesian_hmm
         hmm_mle = discrete_hmm(init_hmsm.transition_matrix, pobs, stationary=True, reversible=self.reversible)
-        dtrajs_lagged = _lag_observations(dtrajs, self.lag)  # rewrite discrete traj to lagged observations
-        sampled_hmm = bayesian_hmm(dtrajs_lagged, hmm_mle, nsample=self.nsamples,
+        # using the lagged discrete trajectories that have been found in the MLHMM
+        sampled_hmm = bayesian_hmm(init_hmsm.discrete_trajectories_lagged, hmm_mle, nsample=self.nsamples,
                                    transition_matrix_prior='init-connect')
 
         # Samples
