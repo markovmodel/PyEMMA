@@ -40,9 +40,9 @@ install:
   - mkdir %userprofile%\\.matplotlib
   - "echo backend: agg > %userprofile%\\.matplotlib\\matplotlibrc"
   # install dependencies
-  - conda install -q --yes -c https://conda.binstar.org/omnia scipy numpy nose cython mdtraj matplotlib bhmm 
+  - conda install -q --yes -c https://conda.binstar.org/omnia scipy numpy nose cython mdtraj matplotlib 
   # temporarily install bhmm from git, as recent pyemma development uses not yet released features of bhmm
-  # - pip install git+https://github.com/bhmm/bhmm@master
+  - pip install git+https://github.com/bhmm/bhmm@master
   # Build the compiled extension and run the project tests
   - "%CMD_IN_ENV% python setup.py develop"
 
