@@ -167,6 +167,7 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
      [ 5.13829397  2.59477703]]
 
     """
+    # format data
     dtrajs = _types.ensure_dtraj_list(dtrajs)
 
     if connected:
@@ -191,9 +192,8 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
 def markov_model(P, dt_model='1 step'):
     r""" Markov model with a given transition matrix
 
-    Returns a :class:`MSM <pyemma.msm.ui.MSM>` that contains the transition
-    matrix and allows to compute a large number of quantities related to
-    Markov models.
+    Returns a :class:`MSM <pyemma.msm.models.MSM>` that contains the transition matrix
+    and allows to compute a large number of quantities related to Markov models.
 
     Parameters
     ----------
@@ -215,22 +215,21 @@ def markov_model(P, dt_model='1 step'):
 
     Returns
     -------
-    msm : A :class:`MSM <pyemma.msm.model.MSM>` object containing a transition
-        matrix and various other MSM-related quantities.
+    msm : A :class:`MSM <pyemma.msm.models.MSM>` object containing a transition matrix and various other MSM-related quantities.
 
 
-    .. autoclass:: pyemma.msm.ui.msm.MSM
+    .. autoclass:: pyemma.msm.models.MSM
         :members:
         :undoc-members:
 
         .. rubric:: Methods
 
-        .. autoautosummary:: pyemma.msm.ui.msm.MSM
+        .. autoautosummary:: pyemma.msm.models.MSM
            :methods:
 
         .. rubric:: Attributes
 
-        .. autoautosummary:: pyemma.msm.ui.msm.MSM
+        .. autoautosummary:: pyemma.msm.models.MSM
             :attributes:
 
     See also
@@ -748,7 +747,7 @@ def bayesian_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
                           nsamples=100, conf=0.95, dt_traj='1 step'):
     r""" Bayesian Markov model estimate using Gibbs sampling of the posterior
 
-    Returns a :class:`SampledMSM <pyemma.msm.ui.SampledMSM>` that contains the
+    Returns a :class:`SampledMSM <pyemma.msm.models.SampledMSM>` that contains the
     estimated transition matrix and allows to compute a large number of
     quantities related to Markov models as well as their statistical
     uncertainties.
@@ -909,7 +908,7 @@ def bayesian_hidden_markov_model(dtrajs, nstates, lag, nsamples=100, reversible=
                                  observe_active=True, conf=0.95, dt_traj='1 step'):
     r""" Bayesian Hidden Markov model estimate using Gibbs sampling of the posterior
 
-    Returns a :class:`SampledHMSM <pyemma.msm.ui.SampledHMSM>` that contains
+    Returns a :class:`SampledHMSM <pyemma.msm.model.SampledHMSM>` that contains
     the estimated hidden Markov model [1]_ and a Bayesian estimate [2]_ that
     contains samples around this estimate to estimate uncertainties.
 
@@ -1046,7 +1045,7 @@ def cktest(msmobj, K, nsets=2, sets=None, full_output=False):
 
     Parameters
     ----------
-    msmobj : :class:`MSM <pyemma.msm.ui.MSM>` object
+    msmobj : :class:`MSM <pyemma.msm.models.MSM>` object
         Markov state model (MSM) object
     K : int 
         number of time points for the test
@@ -1099,7 +1098,7 @@ def tpt(msmobj, A, B):
 
     Parameters
     ----------
-    msmobj : :class:`MSM <pyemma.msm.ui.MSM>` object
+    msmobj : :class:`MSM <pyemma.msm.models.MSM>` object
         Markov state model (MSM) object
     A : array_like
         List of integer state labels for set A
