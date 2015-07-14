@@ -117,8 +117,12 @@ class Transformer(ProgressReporter):
     def _n_chunks(self, stride=1):
         """ rough estimate of how many chunks will be processed """
         if self._chunksize != 0:
-            chunks = sum([ceil(l / float(self._chunksize))
-                          for l in self.trajectory_lengths(stride)])
+            if isinstance(stride, dict):
+                # TODO
+                chunks = 1
+            else:
+                chunks = sum([ceil(l / float(self._chunksize))
+                              for l in self.trajectory_lengths(stride)])
         else:
             chunks = 1
         return chunks
@@ -491,6 +495,7 @@ class Transformer(ProgressReporter):
                         self._Y[self._itraj][k] for k in stride[self._itraj][
                                                          lag + self._t:min(self._t + self.chunksize, traj_len)]
                         ]
+                    self._t += self.chunksize
                     self._itraj += 1
                 else:
                     Y0 = self._Y[self._itraj][self._t:min(self._t + self.chunksize * stride, traj_len):stride]

@@ -48,6 +48,7 @@ from pyemma.coordinates.transform.pca import PCA as _PCA
 from pyemma.coordinates.transform.tica import TICA as _TICA
 # clustering
 from pyemma.coordinates.clustering.kmeans import KmeansClustering as _KmeansClustering
+from pyemma.coordinates.clustering.kmeans import MiniBatchKmeansClustering as _MiniBatchKmeansClustering
 from pyemma.coordinates.clustering.uniform_time import UniformTimeClustering as _UniformTimeClustering
 from pyemma.coordinates.clustering.regspace import RegularSpaceClustering as _RegularSpaceClustering
 from pyemma.coordinates.clustering.assign import AssignCenters as _AssignCenters
@@ -1105,6 +1106,11 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=1.0, kinetic_map=False, stride=1,
 @deprecated("Please use pyemma.coordinates.cluster_kmeans()")
 def kmeans(data=None, k=100, max_iter=1000, stride=1):
     return cluster_kmeans(data, k, max_iter, stride=stride)
+
+
+def cluster_mini_batch_kmeans(data=None, k=100, max_iter=10, batch_size=0.2, metric='euclidean', init_strategy='kmeans++'):
+    res = _MiniBatchKmeansClustering(n_clusters=k, max_iter=max_iter, metric=metric, init_strategy=init_strategy, batch_size=batch_size)
+    return _param_stage(data, res, stride=1)
 
 
 def cluster_kmeans(data=None, k=100, max_iter=10, stride=1, metric='euclidean', init_strategy='kmeans++'):
