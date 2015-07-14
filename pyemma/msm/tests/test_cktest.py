@@ -148,10 +148,8 @@ class TestCkTest(unittest.TestCase):
 
 class TestCkTestDoubleWell(unittest.TestCase):
     def setUp(self):
-        testpath = abspath(join(abspath(__file__), pardir)) + '/../../util/tests/data/'
-        import pyemma.util.discrete_trajectories as dt
-
-        self.dtraj = dt.read_discrete_trajectory(testpath + '2well_traj_100K.dat')
+        import pyemma.datasets
+        self.dtraj = pyemma.datasets.load_2well_discrete().dtraj_T100K_dt10
         self.tau = 10
         self.msm = markov_state_model(self.dtraj, self.tau)
 
