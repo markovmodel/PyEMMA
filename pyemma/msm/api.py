@@ -36,7 +36,6 @@ from pyemma.util.annotators import shortcut
 from pyemma.util import types as _types
 
 __docformat__ = "restructuredtext en"
-
 __author__ = "Benjamin Trendelkamp-Schroer, Martin Scherer, Frank Noe"
 __copyright__ = "Copyright 2014, Computational Molecular Biology Group, FU-Berlin"
 __credits__ = ["Benjamin Trendelkamp-Schroer", "Martin Scherer", "Frank Noe"]
@@ -57,7 +56,8 @@ __all__ = ['markov_model',
 
 
 @shortcut('its')
-def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True, errors=None, nsamples=50):
+def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True,
+                   errors=None, nsamples=50, n_jobs=1):
     # format data
     r""" Calculate implied timescales from Markov state models estimated at a series of lag times.
 
@@ -99,6 +99,7 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
         The number of approximately independent transition matrix samples
         generated for each lag time for uncertainty quantification.
         Only used if errors is not None.
+
     n_jobs = 1 : int
         how many subprocesses to start to estimate the models for each lag time.
 
@@ -164,6 +165,7 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
      [ 5.13829397  2.59477703]]
 
     """
+    # format data
     dtrajs = _types.ensure_dtraj_list(dtrajs)
 
     if connected:
@@ -461,13 +463,15 @@ def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
 
     """
     # transition matrix estimator
-    mlmsm = _ML_MSM(lag=lag, reversible=reversible, sparse=sparse, connectivity=connectivity, dt_traj=dt_traj,
-                          maxiter=maxiter, maxerr=maxerr)
+    mlmsm = _ML_MSM(lag=lag, reversible=reversible, sparse=sparse,
+                    connectivity=connectivity, dt_traj=dt_traj,
+                    maxiter=maxiter, maxerr=maxerr)
     # estimate and return
     return mlmsm.estimate(dtrajs)
 
 
-def timescales_hmsm(dtrajs, nstates, lags=None, nits=None, reversible=True, connected=True, errors=None, nsamples=100):
+def timescales_hmsm(dtrajs, nstates, lags=None, nits=None, reversible=True,
+                    connected=True, errors=None, nsamples=100, n_jobs=1):
     r""" Calculate implied timescales from Hidden Markov state models estimated at a series of lag times.
 
     Warning: this can be slow!
@@ -504,6 +508,9 @@ def timescales_hmsm(dtrajs, nstates, lags=None, nits=None, reversible=True, conn
     nsamples : int
         Number of approximately independent HMSM samples generated for each lag
         time for uncertainty quantification. Only used if errors is not None.
+
+    n_jobs = 1 : int
+        how many subprocesses to start to estimate the models for each lag time.
 
     Returns
     -------
@@ -566,7 +573,7 @@ def timescales_hmsm(dtrajs, nstates, lags=None, nits=None, reversible=True, conn
         raise NotImplementedError('Error estimation method'+errors+'currently not implemented')
 
     # go
-    itsobj = _ImpliedTimescales(estimator, lags=lags, nits=nits)
+    itsobj = _ImpliedTimescales(estimator, lags=lags, nits=nits, n_jobs=n_jobs)
     itsobj.estimate(dtrajs)
     return itsobj
 
