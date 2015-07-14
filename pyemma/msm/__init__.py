@@ -110,6 +110,8 @@ class _RedirectMSMToolsImport(object):
         return None
 
     def load_module(self, name):
+        if name == 'pyemma.msm.io':
+            name = 'pyemma.msm.dtraj'
         if name in _sys.modules:
             return _sys.modules[name]
 
@@ -126,6 +128,7 @@ class _RedirectMSMToolsImport(object):
 _sys.meta_path = [_RedirectMSMToolsImport('pyemma.msm.analysis'),
                   _RedirectMSMToolsImport('pyemma.msm.estimation'),
                   _RedirectMSMToolsImport('pyemma.msm.generation'),
+                  _RedirectMSMToolsImport('pyemma.msm.dtraj'),
                   _RedirectMSMToolsImport('pyemma.msm.io'),
                   _RedirectMSMToolsImport('pyemma.msm.flux')]
 
@@ -133,7 +136,9 @@ _sys.meta_path = [_RedirectMSMToolsImport('pyemma.msm.analysis'),
 import analysis
 import estimation
 import generation
-import io as io
+import dtraj
+# backward compatibility
+import io
 import flux
 from flux import ReactiveFlux
 #####################################################
