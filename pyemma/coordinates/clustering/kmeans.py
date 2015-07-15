@@ -198,8 +198,18 @@ class KmeansClustering(AbstractClustering):
 class MiniBatchKmeansClustering(KmeansClustering):
 
     def __init__(self, n_clusters, max_iter=5, metric='euclidean', tolerance=1e-5, init_strategy='kmeans++',
-                 oom_strategy='memmap'):
-        super(MiniBatchKmeansClustering, self).__init__(n_clusters, max_iter, metric, tolerance, init_strategy,
-                                                        oom_strategy)
+                 batch_size=0.2, oom_strategy='memmap'):
+        super(MiniBatchKmeansClustering, self).__init__(n_clusters, max_iter, metric, tolerance, init_strategy, oom_strategy)
+        self._batch_size=0.2
 
-    pass
+    def _param_init(self):
+        super(MiniBatchKmeansClustering, self)._param_init()
+        return 0, {1: [1,2,3,4]}
+
+    def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None, stride=1):
+        add_data_finished = super(MiniBatchKmeansClustering, self)._param_add_data(X, itraj, t, first_chunk, last_chunk_in_traj,
+                                                               last_chunk, ipass, Y, stride)
+        return add_data_finished, 0, {1: [1,2,3,4]}
+
+
+
