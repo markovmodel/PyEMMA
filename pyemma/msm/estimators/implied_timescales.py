@@ -402,6 +402,6 @@ class ImpliedTimescales(Estimator):
             # Iterate over lagtimes and find trajectories that contributed with at least one count
             for ii, lag in enumerate(self.lagtimes):
                 long_enough = np.argwhere(self._trajlengths-lag >= 1).squeeze()
-                self._fraction[ii] = self._trajlengths[long_enough].sum()/self._nframes
+                self._fraction[ii] = float(self._trajlengths[long_enough].sum())/self._nframes
 
         return self._fraction
