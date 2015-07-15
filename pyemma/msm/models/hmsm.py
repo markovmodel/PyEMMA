@@ -182,6 +182,53 @@ class HMSM(_MSM):
     def eigenvectors_right_obs(self):
         return _np.dot(self.metastable_memberships, self.eigenvectors_right())
 
+    def propagate(self, p0, k):
+        """ Propagates the initial distribution p0 k times
+
+        Computes the product
+
+        .. math:
+            p_k = p_0^T P^k
+
+        If the lag time of transition matrix :math:`P` is :math:`\tau`, this
+        will provide the probability distribution at time :math:`k \tau`.
+
+        Parameters
+        ----------
+        p0 : ndarray(n)
+            Initial distribution. Vector of size of the active set.
+
+        k : int
+            Number of time steps
+
+        Returns
+        ----------
+        pk : ndarray(n)
+            Distribution after k steps. Vector of size of the active set.
+
+        """
+        p0 = _types.ensure_ndarray(p0, ndim=1, kind='numeric')
+        assert _types.is_int(k) and k>=0, 'k must be a non-negative integer'
+        if k == 0:  # simply return p0 normalized
+            return p0 / p0.sum()
+
+        micro = False
+        # are we on microstates space?
+        if len(p0) == self.nstates_obs:
+            micro = True
+            # project to hidden and compute
+            p0 = _np.dot(self.observation_probabilities, p0)
+
+        self._ensure_eigendecomposition(self.nstates)
+        from pyemma.util.linalg import mdot
+        pk = mdot(p0.T, self.eigenvectors_right(), _np.diag(_np.power(self.eigenvalues(), k)), self.eigenvectors_left())
+
+        if micro:
+            pk = _np.dot(pk, self.observation_probabilities)  # convert back to microstate space
+
+        # normalize to 1.0 and return
+        return pk / pk.sum()
+
     # ================================================================================================================
     # Experimental properties: Here we allow to use either coarse-grained or microstate observables
     # ================================================================================================================

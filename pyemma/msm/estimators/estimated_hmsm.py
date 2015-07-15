@@ -62,6 +62,14 @@ class EstimatedHMSM(_HMSM):
         return self._nstates_obs
 
     @property
+    def active_set(self):
+        """
+        The active set of hidden states on which all hidden state computations are done
+
+        """
+        return _np.arange(self.nstates)  # currently assume all hidden states are active.
+
+    @property
     def observable_set(self):
         """
         The active set of states on which all computations and estimations will be done
