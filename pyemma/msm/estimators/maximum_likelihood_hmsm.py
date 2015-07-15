@@ -249,6 +249,21 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
             mlags=range(10). The setting None will choose mlags automatically
             according to the longest available trajectory
 
+
+        References
+        ----------
+        This is an adaption of the Chapman-Kolmogorov Test described in detail
+        in [1]_ to Hidden MSMs as described in [2]_.
+
+        .. [1] Prinz, J H, H Wu, M Sarich, B Keller, M Senne, M Held, J D
+            Chodera, C Schuette and F Noe. 2011. Markov models of
+            molecular kinetics: Generation and validation. J Chem Phys
+            134: 174105
+
+        .. [2] F. Noe, H. Wu, J.-H. Prinz and N. Plattner: Projected and hidden
+            Markov models for calculating kinetics and metastable states of complex
+            molecules. J. Chem. Phys. 139, 184114 (2013)
+
         """
         from pyemma.msm.estimators import ChapmanKolmogorovValidator
         ck = ChapmanKolmogorovValidator(self, self, np.eye(self.nstates), mlags=mlags)

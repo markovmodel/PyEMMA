@@ -230,6 +230,21 @@ class MaximumLikelihoodMSM(_Estimator, _EstimatedMSM):
             mlags=range(10). The setting None will choose mlags automatically
             according to the longest available trajectory
 
+
+        References
+        ----------
+        This test was suggested in [1]_ and described in detail in [2]_.
+
+        .. [1] F. Noe, Ch. Schuette, E. Vanden-Eijnden, L. Reich and
+            T. Weikl: Constructing the Full Ensemble of Folding Pathways
+            from Short Off-Equilibrium Simulations.
+            Proc. Natl. Acad. Sci. USA, 106, 19011-19016 (2009)
+
+        .. [2] Prinz, J H, H Wu, M Sarich, B Keller, M Senne, M Held, J D
+            Chodera, C Schuette and F Noe. 2011. Markov models of
+            molecular kinetics: Generation and validation. J Chem Phys
+            134: 174105
+
         """
         from pyemma.msm.estimators import ChapmanKolmogorovValidator
         if memberships is None:

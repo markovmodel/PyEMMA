@@ -42,6 +42,7 @@ __author__ = "Benjamin Trendelkamp-Schroer, Martin Scherer, Frank Noe"
 __copyright__ = "Copyright 2014, Computational Molecular Biology Group, FU-Berlin"
 __credits__ = ["Benjamin Trendelkamp-Schroer", "Martin Scherer", "Frank Noe"]
 __license__ = "FreeBSD"
+__version__ = "2.0.0"
 __maintainer__ = "Martin Scherer"
 __email__ = "m.scherer AT fu-berlin DOT de"
 
@@ -53,7 +54,6 @@ __all__ = ['markov_model',
            'timescales_hmsm',
            'estimate_hidden_markov_model',
            'bayesian_hidden_markov_model',
-           'cktest',
            'tpt']
 
 
@@ -163,7 +163,6 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
      [ 5.13829397  2.59477703]]
 
     """
-    # format data
     dtrajs = _types.ensure_dtraj_list(dtrajs)
 
     if connected:
@@ -211,7 +210,8 @@ def markov_model(P, dt_model='1 step'):
 
     Returns
     -------
-    msm : A :class:`MSM <pyemma.msm.models.MSM>` object containing a transition matrix and various other MSM-related quantities.
+    msm : A :class:`MSM <pyemma.msm.model.MSM>` object containing a transition
+        matrix and various other MSM-related quantities.
 
 
     .. autoclass:: pyemma.msm.models.MSM
@@ -987,6 +987,7 @@ def bayesian_hidden_markov_model(dtrajs, nstates, lag, nsamples=100, reversible=
     .. [1] F. Noe, H. Wu, J.-H. Prinz and N. Plattner: Projected and hidden
         Markov models for calculating kinetics and metastable states of complex
         molecules. J. Chem. Phys. 139, 184114 (2013)
+
     .. [2] J. D. Chodera Et Al: Bayesian hidden Markov model analysis of
         single-molecule force spectroscopy: Characterizing kinetics under
         measurement uncertainty. arXiv:1108.1430 (2011)
@@ -1034,54 +1035,6 @@ def bayesian_hidden_markov_model(dtrajs, nstates, lag, nsamples=100, reversible=
     bhmsm_estimator = _Bayes_HMSM(lag=lag, nstates=nstates, nsamples=nsamples, reversible=reversible,
                                   connectivity=connectivity, observe_active=observe_active, dt_traj=dt_traj, conf=conf)
     return bhmsm_estimator.estimate(dtrajs)
-
-# TODO: need code examples
-def cktest(msmobj, K, nsets=2, sets=None, full_output=False):
-    r""" Chapman-Kolmogorov test for the given MSM
-
-    Parameters
-    ----------
-    msmobj : :class:`MSM <pyemma.msm.models.MSM>` object
-        Markov state model (MSM) object
-    K : int 
-        number of time points for the test
-    nsets : int, optional
-        number of PCCA sets on which to perform the test
-    sets : list, optional
-        List of user defined sets for the test
-
-    Returns
-    -------
-    p_MSM : (K, n_sets) ndarray
-        p_MSM[k, l] is the probability of making a transition from
-        set l to set l after k*lag steps for the MSM computed at 1*lag
-    p_MD : (K, n_sets) ndarray
-        p_MD[k, l] is the probability of making a transition from
-        set l to set l after k*lag steps as estimated from the given data
-    eps_MD : (K, n_sets)
-        eps_MD[k, l] is an estimate for the statistical error of p_MD[k, l]   
-    set_factors : (K, nsets) ndarray, optional
-        set_factor[k, i] is the quotient of the MD and the MSM set probabilities
-
-    References
-    ----------
-    This test was suggested in [1]_ and described in detail in [2]_.
-    .. [1] F. Noe, Ch. Schuette, E. Vanden-Eijnden, L. Reich and
-        T. Weikl: Constructing the Full Ensemble of Folding Pathways
-        from Short Off-Equilibrium Simulations.
-        Proc. Natl. Acad. Sci. USA, 106, 19011-19016 (2009)
-    .. [2] Prinz, J H, H Wu, M Sarich, B Keller, M Senne, M Held, J D
-        Chodera, C Schuette and F Noe. 2011. Markov models of
-        molecular kinetics: Generation and validation. J Chem Phys
-        134: 174105
-
-    """
-    P = msmobj.transition_matrix
-    lcc = msmobj.largest_connected_set
-    dtrajs = msmobj.discrete_trajectories_full
-    tau = msmobj.lagtime
-    return chapman_kolmogorov(P, lcc, dtrajs, tau, K, nsets=nsets, sets=sets, full_output=full_output)
-
 
 # TODO: need code examples
 def tpt(msmobj, A, B):

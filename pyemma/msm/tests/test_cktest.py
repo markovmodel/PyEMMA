@@ -31,19 +31,13 @@ r"""Unit test for Chapman-Kolmogorov-Test module
 import unittest
 
 import numpy as np
+
 from pyemma import msm
-from os.path import abspath, join
-from os import pardir
-
 from pyemma.msm.generation import generate_traj
-from pyemma.msm.estimation import cmatrix, largest_connected_set, connected_cmatrix, tmatrix
+from pyemma.msm.estimation import count_matrix, largest_connected_set, largest_connected_submatrix, transition_matrix
 from pyemma.util.numeric import assert_allclose
-from pyemma.msm.util.birth_death_chain import BirthDeathChain
-
-from pyemma.msm import estimate_markov_model, cktest
-
-from pyemma.msm import estimate_markov_model as markov_state_model
-from pyemma.msm import cktest as api_cktest
+from pyemma.msm.tests.birth_death_chain import BirthDeathChain
+from pyemma.msm import estimate_markov_model
 
 
 class TestCkTest(unittest.TestCase):
@@ -105,11 +99,11 @@ class TestCkTest(unittest.TestCase):
         eps_MD[0, :] = 0.0
         for k in range(1, K):
             """Build MSM at lagtime k*tau"""
-            C_MD = cmatrix(dtraj, k * tau, sliding=True) / (k * tau)
+            C_MD = count_matrix(dtraj, k * tau, sliding=True) / (k * tau)
             lcc_MD = largest_connected_set(C_MD)
-            Ccc_MD = connected_cmatrix(C_MD, lcc=lcc_MD)
+            Ccc_MD = largest_connected_submatrix(C_MD, lcc=lcc_MD)
             c_MD = Ccc_MD.sum(axis=1)
-            P_MD = tmatrix(Ccc_MD).toarray()
+            P_MD = transition_matrix(Ccc_MD).toarray()
             w_MD_k = np.dot(w_MD, P_MD)
 
             """Set A"""
