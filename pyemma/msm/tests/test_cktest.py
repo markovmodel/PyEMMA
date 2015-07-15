@@ -40,7 +40,7 @@ from pyemma.msm.tests.birth_death_chain import BirthDeathChain
 from pyemma.msm import estimate_markov_model
 
 
-class TestCkTest(unittest.TestCase):
+class TestCK_MSM(unittest.TestCase):
     def setUp(self):
         """Store state of the rng"""
         self.state = np.random.mtrand.get_state()
@@ -151,9 +151,7 @@ class TestCkTest(unittest.TestCase):
         #assert_allclose(eps_MD, self.eps_MD)
 
 
-
-
-class TestITS_AllEstimators(unittest.TestCase):
+class TestCK_AllEstimators(unittest.TestCase):
     """ Integration tests for various estimators
     """
 
