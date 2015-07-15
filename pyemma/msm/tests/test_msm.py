@@ -91,7 +91,24 @@ class TestMSMSimple(unittest.TestCase):
         self.assertTrue(np.allclose(self.P_MSM.toarray(), msm.transition_matrix))
         assert_allclose(self.mu_MSM, msm.stationary_distribution)
         assert_allclose(self.ts[1:], msm.timescales(self.k - 1))
+        assert msm.fraction_of_frames == 1
 
+        #def test_fraction_of_frames(self):
+    def test_fraction_of_frames(self):
+        dtrajs = [
+            [0, 1, 0], # These two will fail for lag >2
+            [1, 0, 1], # These two will fail for lag >2
+            [0, 1, 1, 1],
+            [1, 0, 0, 1],
+            [0, 1, 0, 1, 0],
+            [1, 0, 1, 0, 1],
+            ]
+        lengths = [len(traj) for traj in dtrajs]
+        lags = [1, 2, 3]
+        all_frames = np.sum(lengths)
+        for lag, frac in zip(lags,[1, 1, .75]):
+            msm = estimate_markov_model(dtrajs,lag)
+            assert msm.fraction_of_frames == frac
 
 class TestMSMDoubleWell(unittest.TestCase):
 
