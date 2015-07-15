@@ -289,7 +289,7 @@ def source(inp, features=None, top=None, chunk_size=100):
         # check: if single array, create a one-element list
         # check: do all arrays have compatible dimensions (*, N)? If not: raise ValueError.
         # create MemoryReader
-        reader = _DataInMemory(inp)
+        reader = _DataInMemory(inp, chunksize=chunk_size)
     else:
         raise ValueError('unsupported type (%s) of input' % type(inp))
 
