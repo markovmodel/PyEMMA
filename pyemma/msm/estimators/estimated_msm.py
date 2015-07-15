@@ -248,18 +248,16 @@ class EstimatedMSM(MSM):
 
     @property
     def fraction_of_frames(self):
-        r"""Returns the fraction of frames used to compute the count matrix at each lagtime.
+        r"""Returns the fraction of the input data used to compute the full count matrix.
 
-               Notes
-               -------
-               In a list of discrete trajectories with varying lengths, the estimation at longer lagtimes will mean
-               discarding some trajectories for which not even one count can be computed. This function returns the fraction
-               of frames that was actually used in computing the count matrix.
+        In a list of discrete trajectories with varying lengths, the estimation at longer lagtimes will mean
+        discarding some trajectories for which not even one count can be computed. This function returns the fraction
+        of frames that was actually used in computing the count matrix.
 
-               **Be aware**: this fraction refers to the **full count matrix**, and not that of the largest connected
-               set. Hence, the output is not necessarily the **active** fraction. For that, use the
-               :py:func:`EstimatedMSM.active_count_fraction` function of the :py:class:`EstimatedMSM` class object.
-               """
+        Be aware: this fraction refers to the full count matrix, and not that of the largest connected
+        set. Hence, the output is not necessarily the active fraction. For that, use the
+        :py:func:`active_count_fraction`.
+        """
 
         # Are we computing this for the first time?
         if not hasattr(self, '_trajlengths'):

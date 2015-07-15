@@ -147,7 +147,7 @@ class TestITS_MSM(unittest.TestCase):
         lags = [1, 2, 3]
         its = msm.timescales_msm(dtrajs, lags=lags)
         all_frames = np.sum(lengths)
-        longer_than_3 = np.sum(lengths[2:])
+        longer_than_3 = float(np.sum(lengths[2:]))
         test_frac = longer_than_3/all_frames
         assert np.allclose(its.fraction_of_frames, np.array([1, 1, test_frac]))
 
