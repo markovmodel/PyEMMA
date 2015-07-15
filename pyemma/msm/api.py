@@ -32,7 +32,6 @@ from estimators import ImpliedTimescales as _ImpliedTimescales
 
 from msmtools.flux import tpt as tpt_factory
 from models import MSM
-from util import cktest as chapman_kolmogorov
 from pyemma.util.annotators import shortcut
 from pyemma.util import types as _types
 
