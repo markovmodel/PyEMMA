@@ -49,12 +49,15 @@ class MSM(_Model):
     ----------
     P : ndarray(n,n)
         transition matrix
+
     pi : ndarray(n), optional, default=None
         stationary distribution. Can be optionally given in case if it was
         already computed, e.g. by the estimator.
+
     reversible : bool, optional, default=None
         whether P is reversible with respect to its stationary distribution.
         If None (default), will be determined from P
+
     dt : str, optional, default='1 step'
         Description of the physical time corresponding to one time step of the
         MSM (aka lag time). May be used by analysis algorithms such as plotting
@@ -69,10 +72,12 @@ class MSM(_Model):
         |  'us',  'microsecond*'
         |  'ms',  'millisecond*'
         |  's',   'second*'
+
     neig : int or None
         The number of eigenvalues / eigenvectors to be kept. If set to None,
         defaults will be used. For a dense MSM the default is all eigenvalues.
         For a sparse MSM the default is 10.
+
     ncv : int (optional)
         Relevant for eigenvalue decomposition of reversible transition
         matrices. ncv is the number of Lanczos vectors generated, `ncv` must
@@ -88,9 +93,10 @@ class MSM(_Model):
     def set_model_params(self, P=None, pi=None, reversible=None, dt_model='1 step', neig=None):
         """ Call to set all basic model parameters.
 
-        Sets or updates given model parameters. This argument list of this method must contain the full list of
-        essential, or independent model parameters. It can additionally contain derived parameters, e.g. in order to
-        save computational costs of re-computing them.
+        Sets or updates given model parameters. This argument list of this
+        method must contain the full list of essential, or independent model
+        parameters. It can additionally contain derived parameters, e.g. in
+        order to save computational costs of re-computing them.
 
         Parameters
         ----------
@@ -120,14 +126,14 @@ class MSM(_Model):
             |  's',   'second*'
 
         neig : int or None
-            The number of eigenvalues / eigenvectors to be kept. If set to None,
-            defaults will be used. For a dense MSM the default is all eigenvalues.
-            For a sparse MSM the default is 10.
+            The number of eigenvalues / eigenvectors to be kept. If set to
+            None, defaults will be used. For a dense MSM the default is all
+            eigenvalues. For a sparse MSM the default is 10.
 
         Notes
         -----
-        Explicitly define all independent model parameters in the argument list of this function (by mandatory or
-        keyword arguments)
+        Explicitly define all independent model parameters in the argument
+        list of this function (by mandatory or keyword arguments)
 
         """
         import pyemma.msm.analysis as msmana
@@ -184,13 +190,12 @@ class MSM(_Model):
 
     @property
     def timestep_model(self):
-        """Returns the physical time corresponding to one step of the transition matrix as string, e.g. '10 ps'"""
+        """Physical time corresponding to one transition matrix step, e.g. '10 ps'"""
         return str(self._timeunit_model)
 
     @property
     def nstates(self):
-        """
-        The active set of states on which all computations and estimations will be done
+        """Number of active states on which all computations and estimations are done
 
         """
         return self._nstates
@@ -202,8 +207,9 @@ class MSM(_Model):
     @property
     def transition_matrix(self):
         """
-        The transition matrix, estimated on the active set. For example, for connectivity='largest' it will be the
-        transition matrix amongst the largest set of reversibly connected states
+        The transition matrix, estimated on the active set. For example, for
+        connectivity='largest' it will be the transition matrix amongst the
+        largest set of reversibly connected states
 
         """
         try:
@@ -212,7 +218,7 @@ class MSM(_Model):
             raise AttributeError('MSM has not yet been parametrized. Call __init__ or set transition matrix')
 
     ################################################################################
-    # Compute derived quantities
+    # Spectral quantities
     ################################################################################
 
     @property
@@ -274,14 +280,15 @@ class MSM(_Model):
         """Ensures that eigendecomposition has been performed with at least neig eigenpairs
 
         neig : int
-            number of eigenpairs needed. If not given the default value will be used - see __init__()
+            number of eigenpairs needed. If not given the default value will
+            be used - see __init__()
 
         """
         if neig is None:
             neig = self.neig
         # ensure that eigenvalue decomposition with k components is done.
         try:
-            m = self._D.shape[0]  # this will raise and exception if self._D doesn't exist yet.
+            m = self._D.shape[0]  # this will raise and exception if self._D # doesn't exist yet.
             if m < neig:
                 # not enough eigenpairs present - recompute:
                 self._compute_eigendecomposition(neig)
@@ -295,12 +302,14 @@ class MSM(_Model):
         Parameters
         ----------
         k : int
-            number of eigenvalues to be returned. By default will return all available eigenvalues
+            number of eigenvalues to be returned. By default will return all
+            available eigenvalues
 
         Returns
         -------
         ts : ndarray(m)
-            transition matrix eigenvalues :math:`\lambda_i, i = 1,...,neig`., sorted by descending norm.
+            transition matrix eigenvalues :math:`\lambda_i, i = 1,...,neig`.,
+            sorted by descending norm.
 
         """
         self._ensure_eigenvalues(neig=k)
@@ -312,12 +321,14 @@ class MSM(_Model):
         Parameters
         ----------
         k : int
-            number of eigenvectors to be returned. By default all available eigenvectors.
+            number of eigenvectors to be returned. By default all available
+            eigenvectors.
 
         Returns
         -------
         L : ndarray(k,n)
-            left eigenvectors in a row matrix. l_ij is the j'th component of the i'th left eigenvector
+            left eigenvectors in a row matrix. l_ij is the j'th component of
+            the i'th left eigenvector
 
         """
         self._ensure_eigendecomposition(neig=k)
@@ -329,12 +340,14 @@ class MSM(_Model):
         Parameters
         ----------
         k : int
-            number of eigenvectors to be computed. By default all available eigenvectors.
+            number of eigenvectors to be computed. By default all available
+            eigenvectors.
 
         Returns
         -------
         R : ndarray(n,neig)
-            right eigenvectors in a column matrix. r_ij is the i'th component of the j'th right eigenvector
+            right eigenvectors in a column matrix. r_ij is the i'th component
+            of the j'th right eigenvector
 
         """
         self._ensure_eigendecomposition(neig=k)
@@ -347,7 +360,8 @@ class MSM(_Model):
         Parameters
         ----------
         k : int
-            number of timescales to be returned. By default all available eigenvalues, minus 1.
+            number of timescales to be returned. By default all available
+            eigenvalues, minus 1.
 
         Returns
         -------
@@ -367,6 +381,53 @@ class MSM(_Model):
             return ts[1:]
         else:
             return ts[1:k+1]  # exclude the stationary process
+
+    def propagate(self, p0, k):
+        """ Propagates the initial distribution p0 k times
+
+        Computes the product
+
+        .. math:
+            p_k = p_0^T P^k
+
+        If the lag time of transition matrix :math:`P` is :math:`\tau`, this
+        will provide the probability distribution at time :math:`k \tau`.
+
+        Parameters
+        ----------
+        p0 : ndarray(n)
+            Initial distribution. Vector of size of the active set.
+
+        k : int
+            Number of time steps
+
+        Returns
+        ----------
+        pk : ndarray(n)
+            Distribution after k steps. Vector of size of the active set.
+
+        """
+        p0 = _types.ensure_ndarray(p0, ndim=1, size=self.nstates, kind='numeric')
+        assert _types.is_int(k) and k>=0, 'k must be a non-negative integer'
+
+        if k == 0:  # simply return p0 normalized
+            return p0 / p0.sum()
+
+        if self.is_sparse:  # sparse: we don't have a full eigenvalue set, so just propagate
+            pk = np.array(p0)
+            for i in range(k):
+                pk = np.dot(pk.T, self.transition_matrix)
+        else:  # dense: employ eigenvalue decomposition
+            self._ensure_eigendecomposition(self.nstates)
+            from pyemma.util.linalg import mdot
+            pk = mdot(p0.T,
+                      self.eigenvectors_right(), np.diag(np.power(self.eigenvalues(), k)), self.eigenvectors_left())
+        # normalize to 1.0 and return
+        return pk / pk.sum()
+
+    ################################################################################
+    # Hitting problems
+    ################################################################################
 
     def _assert_in_active(self, A):
         """
