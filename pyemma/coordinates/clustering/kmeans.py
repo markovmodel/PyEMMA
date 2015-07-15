@@ -44,7 +44,6 @@ __all__ = ['KmeansClustering']
 
 
 class KmeansClustering(AbstractClustering):
-
     def __init__(self, n_clusters, max_iter=5, metric='euclidean',
                  tolerance=1e-5, init_strategy='kmeans++', oom_strategy='memmap'):
         r"""
@@ -87,15 +86,8 @@ class KmeansClustering(AbstractClustering):
         self._progress_iters = ProgressBar(self.max_iter, description="kmeans iterations")
         traj_lengths = self.trajectory_lengths(stride=self._param_with_stride)
         total_length = sum(traj_lengths)
-        try:
-            self._in_memory_chunks = np.empty(shape=(total_length, self.data_producer.dimension()),
-                                              order='C', dtype=np.float32)
-        except MemoryError:
-            if self._oom_strategy == 'raise':
-                raise
-            self._in_memory_chunks = np.memmap(tempfile.mkstemp()[1], mode="w+",
-                                               shape=(total_length, self.data_producer.dimension()), order='C',
-                                               dtype=np.float32)
+
+        self._init_in_memory_chunks(total_length)
 
         if self._init_strategy == 'uniform':
             # gives random samples from each trajectory such that the cluster centers are distributed percentage-wise
@@ -103,6 +95,17 @@ class KmeansClustering(AbstractClustering):
             for idx, traj_len in enumerate(traj_lengths):
                 self._init_centers_indices[idx] = random.sample(range(0, traj_len), int(
                     math.ceil((traj_len / float(total_length)) * self.n_clusters)))
+
+    def _init_in_memory_chunks(self, size):
+        try:
+            self._in_memory_chunks = np.empty(shape=(size, self.data_producer.dimension()),
+                                              order='C', dtype=np.float32)
+        except MemoryError:
+            if self._oom_strategy == 'raise':
+                raise
+            self._in_memory_chunks = np.memmap(tempfile.mkstemp()[1], mode="w+",
+                                               shape=(size, self.data_producer.dimension()), order='C',
+                                               dtype=np.float32)
 
     @doc_inherit
     def describe(self):
@@ -138,7 +141,7 @@ class KmeansClustering(AbstractClustering):
         if ipass == 0:
             # beginning - compute
             if first_chunk:
-                mem_req = int(1.0/1024**2 * X[0, :].nbytes * self.n_frames_total(stride))
+                mem_req = int(1.0 / 1024 ** 2 * X[0, :].nbytes * self.n_frames_total(stride))
                 if mem_req > 10:
                     self._logger.warn('K-means implementation is currently memory inefficient.'
                                       ' This calculation needs %i megabytes of main memory.'
@@ -196,20 +199,40 @@ class KmeansClustering(AbstractClustering):
 
 
 class MiniBatchKmeansClustering(KmeansClustering):
-
     def __init__(self, n_clusters, max_iter=5, metric='euclidean', tolerance=1e-5, init_strategy='kmeans++',
                  batch_size=0.2, oom_strategy='memmap'):
-        super(MiniBatchKmeansClustering, self).__init__(n_clusters, max_iter, metric, tolerance, init_strategy, oom_strategy)
-        self._batch_size=0.2
+        super(MiniBatchKmeansClustering, self).__init__(n_clusters, max_iter, metric, tolerance, init_strategy,
+                                                        oom_strategy)
+        self._batch_size = batch_size
+        if self._batch_size > 1:
+            raise ValueError("batch_size should be less or equal to 1, but was %s" % batch_size)
+
+    def _init_in_memory_chunks(self, size):
+        return super(MiniBatchKmeansClustering, self)._init_in_memory_chunks(self._n_samples)
+
+    def _draw_mini_batch_sample(self):
+        stride = {}
+        for idx, traj_len in enumerate(self._traj_lengths):
+            stride[idx] = random.sample(range(0, traj_len), self._n_samples_traj[idx])
+        return stride
 
     def _param_init(self):
+        self._traj_lengths = self.trajectory_lengths(stride=self._param_with_stride)
+        self._total_length = sum(self._traj_lengths)
+        samples = int(math.ceil(self._total_length * self._batch_size))
+        self._n_samples = 0
+        self._n_samples_traj = {}
+        for idx, traj_len in enumerate(self._traj_lengths):
+            traj_samples = int(math.floor(traj_len / float(self._total_length) * samples))
+            self._n_samples_traj[idx] = traj_samples
+            self._n_samples += traj_samples
+
         super(MiniBatchKmeansClustering, self)._param_init()
-        return 0, {1: [1,2,3,4]}
+
+        return 0, self._draw_mini_batch_sample()
 
     def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None, stride=1):
-        add_data_finished = super(MiniBatchKmeansClustering, self)._param_add_data(X, itraj, t, first_chunk, last_chunk_in_traj,
-                                                               last_chunk, ipass, Y, stride)
-        return add_data_finished, 0, {1: [1,2,3,4]}
-
-
-
+        add_data_finished = super(MiniBatchKmeansClustering, self)._param_add_data(X, itraj, t, first_chunk,
+                                                                                   last_chunk_in_traj,
+                                                                                   last_chunk, ipass, Y, stride)
+        return add_data_finished, 0, self._draw_mini_batch_sample()

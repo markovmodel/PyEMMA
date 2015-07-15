@@ -113,8 +113,7 @@ class Transformer(object):
         """ rough estimate of how many chunks will be processed """
         if self._chunksize != 0:
             if isinstance(stride, dict):
-                # TODO
-                chunks = 1
+                chunks = ceil(sum([len(x) for x in stride.values()]) / float(self._chunksize))
             else:
                 chunks = sum([ceil(l / float(self._chunksize))
                               for l in self.trajectory_lengths(stride)])
@@ -448,19 +447,20 @@ class Transformer(object):
             if self._itraj >= self.number_of_trajectories():
                 return None
             # operate in memory, implement iterator here
-            traj_len = self.trajectory_length(self._itraj)
+            traj_len = self.trajectory_length(self._itraj, stride=stride)
+            traj = self._Y[self._itraj]
             if lag == 0:
                 if isinstance(stride, dict):
                     # TODO: respect chunksize (does this work?)
-                    while self._itraj not in stride.keys() and self._itraj < self.number_of_trajectories():
-                        self._itraj += 1
-                        self._t = 0
-                    Y = [self._Y[self._itraj][k] for k in stride[self._itraj][
-                                                          self._t:min(self._t + self.chunksize, traj_len)]
-                         ]
+                    if self._itraj not in stride.keys() or not stride[self._itraj]:
+                        # modify shape such that empty array is really just empty.
+                        s = list(traj.shape); s[0] = 0
+                        Y = np.empty(shape=tuple(s), dtype=traj.dtype)
+                    else:
+                        Y = traj[np.array(stride[self._itraj][self._t:min(self._t + self.chunksize, traj_len)])]
                     self._t += self.chunksize
                 else:
-                    Y = self._Y[self._itraj][self._t:min(self._t + self.chunksize * stride, traj_len):stride]
+                    Y = traj[self._t:min(self._t + self.chunksize * stride, traj_len):stride]
                     # increment counters
                     self._t += self.chunksize * stride
                 if self._t >= traj_len:
@@ -469,23 +469,23 @@ class Transformer(object):
                 return Y
             else:
                 if isinstance(stride, dict):
-                    # TODO: respect chunksize (does this work?)
-                    while self._itraj not in stride.keys() and self._itraj < self.number_of_trajectories():
-                        self._itraj += 1
-                        self._t = 0
-                    Y0 = [self._Y[self._itraj][k] for k in stride[self._itraj][
-                                                           self._t:min(self._t + self.chunksize, traj_len)]
-                          ]
-                    Ytau = [
-                        self._Y[self._itraj][k] for k in stride[self._itraj][
-                                                         lag + self._t:min(self._t + self.chunksize, traj_len)]
-                        ]
+                    if self._itraj not in stride.keys() or not stride[self._itraj]:
+                        # modify shape such that empty array is really just empty.
+                        s = list(traj.shape); s[0] = 0
+                        Y0 = np.empty(shape=tuple(s), dtype=traj.dtype)
+                        Ytau = np.empty(shape=tuple(s), dtype=traj.dtype)
+                    else:
+                        Y0 = traj[np.array(stride[self._itraj][self._t:min(self._t + self.chunksize, traj_len)])]
+                        lagged_stride = stride[self._itraj][lag + self._t:min(lag + self._t + self.chunksize, traj_len)]
+                        if lagged_stride:
+                            Ytau = traj[np.array(lagged_stride)]
+                        else:
+                            s = list(traj.shape); s[0] = 0
+                            Ytau = np.empty(shape=tuple(s), dtype=traj.dtype)
                     self._t += self.chunksize
-                    self._itraj += 1
                 else:
-                    Y0 = self._Y[self._itraj][self._t:min(self._t + self.chunksize * stride, traj_len):stride]
-                    Ytau = self._Y[self._itraj][
-                           self._t + lag * stride:min(self._t + (self.chunksize + lag) * stride, traj_len):stride]
+                    Y0 = traj[self._t:min(self._t + self.chunksize * stride, traj_len):stride]
+                    Ytau = traj[self._t + lag * stride:min(self._t + (self.chunksize + lag) * stride, traj_len):stride]
                     # increment counters
                     self._t += self.chunksize * stride
                 if self._t >= traj_len:
@@ -642,8 +642,7 @@ class Transformer(object):
         last_itraj = -1
         t = 0  # first time point
 
-        progress = ProgressBar(self._n_chunks(stride), description=
-                               'getting output of ' + self.__class__.__name__)
+        progress = ProgressBar(self._n_chunks(stride), description='getting output of ' + self.__class__.__name__)
 
         for itraj, chunk in self.iterator(stride=stride):
             if itraj != last_itraj:
