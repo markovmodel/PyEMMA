@@ -11,3 +11,4 @@ from estimated_msm import EstimatedMSM
 from estimated_hmsm import EstimatedHMSM
 
 from implied_timescales import ImpliedTimescales
+from lagged_model_validators import ChapmanKolmogorovValidator, EigenvalueDecayValidator
