@@ -97,10 +97,8 @@ class TestMSMDoubleWell(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        testpath = abspath(join(abspath(__file__), pardir)) + '/../../util/tests/data/'
-        import pyemma.util.discrete_trajectories as dt
-
-        cls.dtraj = dt.read_discrete_trajectory(testpath + '2well_traj_100K.dat')
+        import pyemma.datasets
+        cls.dtraj = pyemma.datasets.load_2well_discrete().dtraj_T100K_dt10
         cls.tau = 10
         cls.msmrev = estimate_markov_model(cls.dtraj, cls.tau)
         cls.msm = estimate_markov_model(cls.dtraj, cls.tau, reversible=False)

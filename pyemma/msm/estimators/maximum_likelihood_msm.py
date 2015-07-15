@@ -16,24 +16,48 @@ class MaximumLikelihoodMSM(_Estimator, _EstimatedMSM):
     ----------
     lag : int
         lag time at which transitions are counted and the transition matrix is estimated.
+
     reversible : bool, optional, default = True
         If true compute reversible MSM, else non-reversible MSM
+
+    count_mode : str, optional, default='sliding'
+        mode to obtain count matrices from discrete trajectories. Should be one of:
+
+        * 'sliding' : A trajectory of length T will have :math:`T-tau` counts
+            at time indexes
+            .. math:
+                (0 \rightarray \tau), (1 \rightarray \tau+1), ..., (T-\tau-1 \rightarray T-1)
+
+        * 'effective' : Uses an estimate of the transition counts that are
+            statistically uncorrelated. Recommended when used with a
+            Bayesian MSM.
+
+        * 'sample' : A trajectory of length T will have :math:`T/tau` counts
+            at time indexes
+            .. math:
+                (0 \rightarray \tau), (\tau \rightarray 2 \tau), ..., (((T/tau)-1) \tau \rightarray T)
+
     sparse : bool, optional, default = False
         If true compute count matrix, transition matrix and all derived quantities using sparse matrix algebra.
         In this case python sparse matrices will be returned by the corresponding functions instead of numpy
         arrays. This behavior is suggested for very large numbers of states (e.g. > 4000) because it is likely
         to be much more efficient.
+
     connectivity : str, optional, default = 'largest'
         Connectivity mode. Three methods are intended (currently only 'largest' is implemented)
-        'largest' : The active set is the largest reversibly connected set. All estimation will be done on this
+
+        * 'largest' : The active set is the largest reversibly connected set. All estimation will be done on this
             subset and all quantities (transition matrix, stationary distribution, etc) are only defined on this
             subset and are correspondingly smaller than the full set of states
-        'all' : The active set is the full set of states. Estimation will be conducted on each reversibly
+
+        * 'all' : The active set is the full set of states. Estimation will be conducted on each reversibly
             connected set separately. That means the transition matrix will decompose into disconnected
             submatrices, the stationary vector is only defined within subsets, etc. Currently not implemented.
-        'none' : The active set is the full set of states. Estimation will be conducted on the full set of
+
+        * 'none' : The active set is the full set of states. Estimation will be conducted on the full set of
             states without ensuring connectivity. This only permits nonreversible estimation. Currently not
             implemented.
+
     dt_traj : str, optional, default='1 step'
         Description of the physical time of the input trajectories. May be used
         by analysis algorithms such as plotting tools to pretty-print the axes.
@@ -63,8 +87,8 @@ class MaximumLikelihoodMSM(_Estimator, _EstimatedMSM):
         of the change vector, :math:`|e_i|_2`, is compared to maxerr.
 
     """
-    def __init__(self, lag=1, reversible=True, sparse=False, connectivity='largest', dt_traj='1 step',
-                 maxiter=1000000, maxerr=1e-8):
+    def __init__(self, lag=1, reversible=True, count_mode='sliding', sparse=False, connectivity='largest',
+                 dt_traj='1 step', maxiter=1000000, maxerr=1e-8):
         self.lag = lag
 
         # set basic parameters
@@ -75,6 +99,11 @@ class MaximumLikelihoodMSM(_Estimator, _EstimatedMSM):
         if sparse:
             self.logger.warn('Sparse mode is currently untested and might lead to errors. '
                              'I strongly suggest to use sparse=False unless you know what you are doing.')
+
+        # store counting mode (lowercase)
+        self.count_mode = count_mode.lower()
+        if not any([count_mode == count_option for count_option in ['sliding', 'effective', 'sample']]):
+            raise ValueError('count mode ' + count_mode + ' is unknown.')
 
         # store connectivity mode (lowercase)
         self.connectivity = connectivity.lower()
@@ -126,7 +155,7 @@ class MaximumLikelihoodMSM(_Estimator, _EstimatedMSM):
                                   'Consider using sparse=True.')
 
         # count lagged
-        dtrajstats.count_lagged(self.lag)
+        dtrajstats.count_lagged(self.lag, count_mode=self.count_mode)
 
         # set active set
         if self.connectivity == 'largest':

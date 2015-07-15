@@ -41,13 +41,14 @@ from pyemma.util.annotators import shortcut
 
 class EstimatedHMSM(_HMSM):
 
-    def __init__(self, dtrajs_full, dt_model, lagtime, nstates_obs, observable_set, dtrajs_obs,
+    def __init__(self, dtrajs_full, dtrajs_lagged, dt_model, lagtime, nstates_obs, observable_set, dtrajs_obs,
                  transition_matrix, observation_probabilities):
         _HMSM.__init__(self, transition_matrix, observation_probabilities, dt_model=dt_model)
         self.lag = lagtime
         self._nstates_obs = nstates_obs
         self._observable_set = observable_set
         self._dtrajs_full = dtrajs_full
+        self._dtrajs_lagged = dtrajs_lagged
         self._dtrajs_obs = dtrajs_obs
 
     @property
@@ -76,6 +77,15 @@ class EstimatedHMSM(_HMSM):
 
         """
         return self._dtrajs_full
+
+    @property
+    @shortcut('dtrajs_lagged')
+    def discrete_trajectories_lagged(self):
+        """
+        Transformed original trajectories that are used as an input into the HMM estimation
+
+        """
+        return self._dtrajs_lagged
 
     @property
     @shortcut('dtrajs_obs')
