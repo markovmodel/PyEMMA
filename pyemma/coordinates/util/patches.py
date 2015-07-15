@@ -31,6 +31,9 @@ Created on 13.03.2015
 from mdtraj.utils.validation import cast_indices
 from mdtraj.core.trajectory import load, _parse_topology, _TOPOLOGY_EXTS, _get_extension, open
 
+from itertools import groupby
+from operator import itemgetter
+
 
 def iterload(filename, chunk=100, **kwargs):
     """An iterator over a trajectory from one or more files on disk, in fragments
@@ -86,7 +89,7 @@ def iterload(filename, chunk=100, **kwargs):
     if extension not in _TOPOLOGY_EXTS:
         topology = _parse_topology(top)
 
-    if chunk % stride != 0:
+    if not isinstance(stride, dict) and chunk % stride != 0:
         pass
         #raise ValueError('Stride must be a divisor of chunk. stride=%d does not go '
         #                 'evenly into chunk=%d' % (stride, chunk))
@@ -104,6 +107,48 @@ def iterload(filename, chunk=100, **kwargs):
         for i in range(0, len(t), chunk):
             yield t[i:i+chunk]
 
+    elif isinstance(stride, list):
+        with (lambda x: open(x, n_atoms=topology.n_atoms)
+              if extension in ('.crd', '.mdcrd')
+              else open(filename))(filename) as f:
+            sorted_stride = sorted(stride)
+            x_prev = 0
+            curr_size = 0
+            traj = None
+            leftovers = []
+            for k, g in groupby(enumerate(sorted_stride), lambda (a, b): a-b):
+                grouped_stride = map(itemgetter(1), g)
+                f.seek(grouped_stride[0]-x_prev, whence=1)
+                x_prev = grouped_stride[-1]
+                group_size = len(grouped_stride)
+                if curr_size + group_size > chunk:
+                    leftovers = grouped_stride[chunk - curr_size:]
+                else:
+                    local_traj = _get_local_traj_object(atom_indices, extension, f, group_size, topology, **kwargs)
+                    if traj:
+                        traj.join(local_traj, check_topology=False)
+                    else:
+                        traj = local_traj
+
+                    curr_size += len(grouped_stride)
+                if curr_size == chunk:
+                    yield traj
+                    curr_size = 0
+                    traj = None
+                while leftovers:
+                    local_chunk = leftovers[:min(chunk, len(leftovers))]
+                    local_traj = _get_local_traj_object(atom_indices, extension, f, group_size, topology, **kwargs)
+                    if traj:
+                        traj.join(local_traj, check_topology=False)
+                    else:
+                        traj = local_traj
+                    leftovers = leftovers[min(chunk, len(leftovers)):]
+                    curr_size += len(local_chunk)
+                    if curr_size == chunk:
+                        yield traj
+                        curr_size = 0
+                        traj = None
+
     else:
         with (lambda x: open(x, n_atoms=topology.n_atoms)
               if extension in ('.crd', '.mdcrd')
@@ -120,3 +165,11 @@ def iterload(filename, chunk=100, **kwargs):
                     raise StopIteration()
 
                 yield traj
+
+
+def _get_local_traj_object(atom_indices, extension, f, n_frames, topology, **kwargs):
+    if extension not in _TOPOLOGY_EXTS:
+        traj = f.read_as_traj(topology, n_frames=n_frames, stride=1, atom_indices=atom_indices, **kwargs)
+    else:
+        traj = f.read_as_traj(n_frames=n_frames, stride=1, atom_indices=atom_indices, **kwargs)
+    return traj
