@@ -17,7 +17,7 @@ class BayesianMSM(_MLMSM, _SampledMSM):
     nsamples : int, optional, default=100
         number of sampled transition matrices used
 
-    nstep : int, optional, default=None
+    nsteps : int, optional, default=None
         number of Gibbs sampling steps for each transition matrix used.
         If None, nstep will be determined automatically
 
@@ -89,12 +89,12 @@ class BayesianMSM(_MLMSM, _SampledMSM):
         for two sigma or 99.7% for three sigma.
 
     """
-    def __init__(self, lag=1, nsamples=100, nstep=None, reversible=True, count_mode='effective', sparse=False,
+    def __init__(self, lag=1, nsamples=100, nsteps=None, reversible=True, count_mode='effective', sparse=False,
                  connectivity='largest', dt_traj='1 step', conf=0.95):
         _MLMSM.__init__(self, lag=lag, reversible=reversible, count_mode=count_mode, sparse=sparse,
                         connectivity=connectivity, dt_traj=dt_traj)
         self.nsamples = nsamples
-        self.nstep = nstep
+        self.nsteps = nsteps
         self.conf = conf
 
     def _estimate(self, dtrajs):
@@ -120,12 +120,12 @@ class BayesianMSM(_MLMSM, _SampledMSM):
         # transition matrix sampler
         from pyemma.msm.estimation import tmatrix_sampler
         from math import sqrt
-        if self.nstep is None:
-            self.nstep = int(sqrt(self.nstates))  # heuristic for number of steps to decorrelate
+        if self.nsteps is None:
+            self.nsteps = int(sqrt(self.nstates))  # heuristic for number of steps to decorrelate
         # use the same count matrix as the MLE. This is why we have effective as a default
-        tsampler = tmatrix_sampler(self.count_matrix_active, reversible=self.reversible, nstep=self.nstep)
-        sample_Ps, sample_mus = tsampler.sample(nsample=self.nsamples, return_statdist=True,
-                                                T_init=self.transition_matrix)
+        tsampler = tmatrix_sampler(self.count_matrix_active, reversible=self.reversible, T0=self.transition_matrix,
+                                   nsteps=self.nsteps)
+        sample_Ps, sample_mus = tsampler.sample(nsamples=self.nsamples, return_statdist=True)
         # construct sampled MSMs
         samples = []
         for i in range(self.nsamples):
