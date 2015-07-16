@@ -230,11 +230,11 @@ class MSM(_Model):
 
         """
         try:
-            return self._pi
+            return self.pi
         except:
             from pyemma.msm.analysis import stationary_distribution as _statdist
-            self._pi = _statdist(self.transition_matrix)
-            return self._pi
+            self.pi = _statdist(self.transition_matrix)
+            return self.pi
 
     def _compute_eigenvalues(self, neig):
         """ Conducts the eigenvalue decomposition and stores k eigenvalues, left and right eigenvectors """

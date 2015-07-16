@@ -1089,7 +1089,6 @@ def tpt(msmobj, A, B):
     :class:`ReactiveFlux <pyemma.msm.flux.ReactiveFlux>`
         Reactive Flux object
 
-    
     References
     ----------
     Transition path theory was introduced for space-continuous dynamical
@@ -1111,6 +1110,10 @@ def tpt(msmobj, A, B):
         T. Weikl: Constructing the Full Ensemble of Folding Pathways
         from Short Off-Equilibrium Simulations.
         Proc. Natl. Acad. Sci. USA, 106, 19011-19016 (2009)
+
+    Examples
+    --------
+
         
     """
     T = msmobj.transition_matrix
