@@ -4,6 +4,7 @@ from unittest import TestCase
 import numpy as np
 import pyemma.coordinates.api as coor
 import pkg_resources
+import mdtraj
 
 
 class TestRandomAccessStride(TestCase):
@@ -12,7 +13,7 @@ class TestRandomAccessStride(TestCase):
         self.data = [np.random.random((100, self.dim)),
                      np.random.random((1, self.dim)),
                      np.random.random((2, self.dim))]
-        self.stride = {0: [1, 2, 3], 2: [1]}
+        self.stride = {0: [1, 3, 5, 6, 7], 2: [1]}
 
     def test_data_in_memory_random_access(self):
         # TODO: lagged?
@@ -51,17 +52,23 @@ class TestRandomAccessStride(TestCase):
     def test_feature_reader_random_access(self):
         from pyemma.coordinates.tests.test_featurereader import create_traj
         topfile = pkg_resources.resource_filename('pyemma.coordinates.tests.test_featurereader', 'data/test.pdb')
-        trajfile = None
+        trajfiles = []
+        for _ in range(3):
+            f, _, _ = create_traj(topfile)
+            trajfiles.append(f)
         try:
-            trajfile, xyz, nframes = create_traj(topfile)
-            source = coor.source(trajfile, top=topfile)
+            source = coor.source(trajfiles, top=topfile)
+            source.chunksize = 2
 
             out = source.get_output(stride=self.stride)
-            print out
+            for i, coords in enumerate(out):
+                if i in self.stride.keys():
+                    traj = mdtraj.load(trajfiles[i], top=topfile)
+                    np.testing.assert_equal(coords, traj.xyz[np.array(self.stride[i])].reshape(-1, 9))
         finally:
-            if trajfile:
+            for t in trajfiles:
                 try:
-                    os.unlink(trajfile)
+                    os.unlink(t)
                 except EnvironmentError:
                     pass
 
