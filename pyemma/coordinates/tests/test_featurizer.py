@@ -54,7 +54,8 @@ ATOM    571  CB  LEU A  70      22.202  -1.897  -6.306  1.00 22.17           C
 ATOM    572  CG  LEU A  70      23.335  -2.560  -5.519  1.00 22.49           C  
 ATOM    573  CD1 LEU A  70      24.578  -1.665  -5.335  1.00 22.56           C  
 ATOM    574  CD2 LEU A  70      22.853  -3.108  -4.147  1.00 24.47           C
-"""
+
+""" *2 ### asn-leu-asn-leu
 
 
 def verbose_assertion_minrmsd(ref_Y, test_Y, test_obj):
@@ -76,6 +77,19 @@ class TestFeaturizer(unittest.TestCase):
         cls.asn_leu_pdbfile = tempfile.mkstemp(suffix=".pdb")[1]
         with open(cls.asn_leu_pdbfile, 'w') as fh:
             fh.write(asn_leu_pdb)
+
+        cls.asn_leu_traj = tempfile.mkstemp(suffix='.xtc')[1]
+
+        # create traj for asn_leu
+        n_frames = 4001
+        traj = mdtraj.load(cls.asn_leu_pdbfile)
+        ref = traj.xyz
+        new_xyz = np.empty((n_frames, ref.shape[1], 3))
+        noise = np.random.random(new_xyz.shape)
+        new_xyz[:, :,: ] = noise + ref
+        traj.xyz=new_xyz
+        traj.time=np.arange(n_frames)
+        traj.save(cls.asn_leu_traj)
 
         super(TestFeaturizer, cls).setUpClass()
 
@@ -260,8 +274,9 @@ class TestFeaturizer(unittest.TestCase):
         self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
         self.feat.add_backbone_torsions(cossin=True)
 
-        traj = mdtraj.load(self.asn_leu_pdbfile)
+        traj = mdtraj.load(self.asn_leu_traj, top=self.asn_leu_pdbfile)
         Y = self.feat.map(traj)
+        self.assertEqual(Y.shape, (len(traj), 3*4)) # (3 phi + 3 psi)*2 [cos, sin]
         assert(np.alltrue(Y >= -np.pi))
         assert(np.alltrue(Y <= np.pi))
         desc = self.feat.describe()
