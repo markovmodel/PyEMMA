@@ -229,9 +229,9 @@ class MSM(_Model):
         transition matrix amongst the largest set of reversibly connected states
 
         """
-        try:
+        if self.pi is not None:
             return self.pi
-        except:
+        else:
             from pyemma.msm.analysis import stationary_distribution as _statdist
             self.pi = _statdist(self.transition_matrix)
             return self.pi
