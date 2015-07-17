@@ -4,9 +4,11 @@ from pyemma.msm.models.msm import MSM as _MSM
 from pyemma.msm.estimators.maximum_likelihood_msm import MaximumLikelihoodMSM as _MLMSM
 from pyemma.msm.models.msm_sampled import SampledMSM as _SampledMSM
 from pyemma.util.types import ensure_dtraj_list
+from pyemma._base.progress import ProgressReporter
+from pyemma._ext.six.moves import range
 
 
-class BayesianMSM(_MLMSM, _SampledMSM):
+class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporter):
     """ Bayesian estimator for MSMs given discrete trajectory statistics
 
     Parameters
@@ -118,14 +120,24 @@ class BayesianMSM(_MLMSM, _SampledMSM):
         _MLMSM._estimate(self, dtrajs)
 
         # transition matrix sampler
-        from pyemma.msm.estimation import tmatrix_sampler
+        from msmtools.estimation import tmatrix_sampler
         from math import sqrt
         if self.nsteps is None:
             self.nsteps = int(sqrt(self.nstates))  # heuristic for number of steps to decorrelate
         # use the same count matrix as the MLE. This is why we have effective as a default
         tsampler = tmatrix_sampler(self.count_matrix_active, reversible=self.reversible, T0=self.transition_matrix,
                                    nsteps=self.nsteps)
-        sample_Ps, sample_mus = tsampler.sample(nsamples=self.nsamples, return_statdist=True)
+
+        self._progress_register(self.nsamples, description="Sampling models", stage=0)
+
+        def call_back():
+            self._progress_update(1, stage=0)
+
+        sample_Ps, sample_mus = tsampler.sample(nsamples=self.nsamples,
+                                                return_statdist=True,
+                                                call_back=call_back)
+        self._progress_force_finish(0)
+
         # construct sampled MSMs
         samples = []
         for i in range(self.nsamples):

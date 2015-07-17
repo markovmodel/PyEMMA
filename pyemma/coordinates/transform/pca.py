@@ -26,8 +26,6 @@ import numpy as np
 from .transformer import Transformer
 
 from pyemma.util.annotators import doc_inherit
-from pyemma.util.progressbar import ProgressBar
-from pyemma.util.progressbar.gui import show_progressbar
 from pyemma.coordinates.transform.transformer import SkipPassException
 from pyemma.util import types
 
@@ -93,8 +91,6 @@ class PCA(Transformer):
 
         # output options
         self._custom_param_progress_handling = True
-        self._progress_mean = None
-        self._progress_cov = None
 
     @doc_inherit
     def describe(self):
@@ -141,8 +137,8 @@ class PCA(Transformer):
 
         # amount of chunks
         denom = self._n_chunks(self._param_with_stride)
-        self._progress_mean = ProgressBar(denom, description="calculate mean")
-        self._progress_cov = ProgressBar(denom, description="calculate covariances")
+        self._progress_register(denom, description="calculate mean", stage=0)
+        self._progress_register(denom, description="calculate covariances", stage=1)
 
     def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
                         last_chunk, ipass, Y=None, stride=1):
@@ -181,8 +177,7 @@ class PCA(Transformer):
             self._N += np.shape(X)[0]
 
             # counting chunks and log of eta
-            self._progress_mean.numerator += 1
-            show_progressbar(self._progress_mean)
+            self._progress_update(1, 0)
 
             if last_chunk:
                 self.mu /= self._N
@@ -196,8 +191,7 @@ class PCA(Transformer):
             np.dot(Xm.T, Xm, self._dot_prod_tmp)
             self.cov += self._dot_prod_tmp
 
-            self._progress_cov.numerator += 1
-            show_progressbar(self._progress_cov)
+            self._progress_update(1, stage=1)
 
             if last_chunk:
                 self.cov /= self._N - 1

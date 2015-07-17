@@ -11,6 +11,8 @@ import joblib
 
 # imports for external usage
 from pyemma._ext.sklearn.base import clone as clone_estimator
+from pyemma._ext.six.moves import range
+from pyemma._base.progress import ProgressReporter
 
 def get_estimator(estimator):
     """ Returns an estimator object given an estimator object or class
@@ -95,7 +97,8 @@ def _call_member(obj, name, args=None, failfast=True):
         return method
 
 
-def _estimate_param_scan_worker(estimator, params, X, evaluate, evaluate_args, failfast):
+def _estimate_param_scan_worker(estimator, params, X, evaluate, evaluate_args,
+                                failfast, progress_reporter=None):
     # run estimation
     model = estimator.estimate(X, **params)
     # deal with results
@@ -133,7 +136,7 @@ def _estimate_param_scan_worker(estimator, params, X, evaluate, evaluate_args, f
 
 
 def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=None, failfast=True,
-                        return_estimators=False, n_jobs=1):
+                        return_estimators=False, n_jobs=1, progress_reporter=None):
     # TODO: parallelize. For options see http://scikit-learn.org/stable/modules/grid_search.html
     # TODO: allow to specify method parameters in evaluate
     """ Runs multiple estimations using a list of parameter settings
@@ -204,22 +207,21 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
     else:
         estimators = [estimator for _ in param_sets]
 
-    res = None  # container for model or function evaluations
-
     # if we evaluate, make sure we have a list of functions to evaluate
     if _types.is_string(evaluate):
         evaluate = [evaluate]
 
     # iterate over parameter settings
     pool = joblib.Parallel(n_jobs=n_jobs)
-    #task_iter = (delayed(_estimate)(counts[tau], tau, self._reversible, self._nits) for tau in self._lags)
     task_iter = (joblib.delayed(_estimate_param_scan_worker)(estimators[i],
                                                              param_sets[i], X,
                                                              evaluate,
                                                              evaluate_args,
-                                                             failfast)
-                for i in xrange(len(param_sets)))
+                                                             failfast,
+                                                             progress_reporter)
+                for i in range(len(param_sets)))
 
+    # container for model or function evaluations
     res = pool(task_iter)
 
     # done

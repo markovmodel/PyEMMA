@@ -3,6 +3,8 @@ __author__ = 'noe'
 import numpy as np
 from pyemma._base.estimator import Estimator, estimate_param_scan, param_grid
 from pyemma._base.model import SampledModel
+#from pyemma._base.progress import ProgressReporter
+from pyemma._ext.six.moves import range
 from pyemma.util.statistics import confidence_interval
 from pyemma.util import types
 import math
@@ -88,8 +90,13 @@ class LaggedModelValidator(Estimator):
         self._est_L = []
         self._est_R = []
 
+        #self._register(len(pargrid), stage=0, description="estimating models")
+        #self._register(len(self.mlags), stage=1, description="validating quantities")
+
         # clone estimators and run estimates
-        estimated_models, estimators = estimate_param_scan(self.test_estimator, data, pargrid, return_estimators=True)
+        estimated_models, estimators = \
+            estimate_param_scan(self.test_estimator, data, pargrid,
+                                return_estimators=True, progress_reporter=None)
         if include0:
             estimated_models = [None] + estimated_models
             estimators = [None] + estimators
@@ -306,7 +313,6 @@ class ChapmanKolmogorovValidator(LaggedModelValidator):
         """
         LaggedModelValidator.__init__(self, model, estimator, mlags=mlags, conf=conf)
         # check and store parameters
-        from pyemma.util import types
         self.memberships = types.ensure_ndarray(memberships, ndim=2, kind='numeric')
         self.nstates, self.nsets = memberships.shape
         assert np.allclose(memberships.sum(axis=1), np.ones(self.nstates))  # stochastic matrix?
@@ -322,7 +328,7 @@ class ChapmanKolmogorovValidator(LaggedModelValidator):
 
     def _compute_observables(self, model, estimator, mlag=1):
         # for lag time 0 we return an identity matrix
-        if mlag==0 or model is None:
+        if mlag == 0 or model is None:
             return np.eye(self.nsets)
         # otherwise compute or predict them by model.propagate
         pk_on_set = np.zeros((self.nsets, self.nsets))
@@ -338,7 +344,7 @@ class ChapmanKolmogorovValidator(LaggedModelValidator):
 
     def _compute_observables_conf(self, model, estimator, mlag=1):
         # for lag time 0 we return an identity matrix
-        if mlag==0 or model is None:
+        if mlag == 0 or model is None:
             return np.eye(self.nsets), np.eye(self.nsets)
         # otherwise compute or predict them by model.propagate
         subset = self._full2active[estimator.active_set]  # find subset we are now working on
