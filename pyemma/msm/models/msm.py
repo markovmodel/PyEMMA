@@ -229,12 +229,12 @@ class MSM(_Model):
         transition matrix amongst the largest set of reversibly connected states
 
         """
-        try:
-            return self._pi
-        except:
+        if self.pi is not None:
+            return self.pi
+        else:
             from pyemma.msm.analysis import stationary_distribution as _statdist
-            self._pi = _statdist(self.transition_matrix)
-            return self._pi
+            self.pi = _statdist(self.transition_matrix)
+            return self.pi
 
     def _compute_eigenvalues(self, neig):
         """ Conducts the eigenvalue decomposition and stores k eigenvalues, left and right eigenvectors """

@@ -40,7 +40,6 @@ Expert users may want to construct Estimators or Models (see below) directly.
    estimate_markov_model
    bayesian_markov_model
    tpt
-   cktest
    timescales_hmsm
    estimate_hidden_markov_model
    bayesian_hidden_markov_model
@@ -146,10 +145,8 @@ from flux import ReactiveFlux
 from estimators import MaximumLikelihoodMSM, BayesianMSM
 from estimators import MaximumLikelihoodHMSM, BayesianHMSM
 from estimators import ImpliedTimescales
-from estimators import EstimatedMSM
-from estimators import EstimatedHMSM
 
-from models import *
+from models import MSM, HMSM, SampledMSM, SampledHMSM
 
 # high-level api
 from api import *
