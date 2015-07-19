@@ -241,7 +241,6 @@ class MSM(_Model):
         from pyemma.msm.analysis import eigenvalues as anaeig
 
         if self.reversible:
-            # TODO: this should be using reversible eigenvalue decomposition!
             self._eigenvalues = anaeig(self.transition_matrix, k=neig, ncv=self.ncv,
                                        reversible=True, mu=self.stationary_distribution)
         else:

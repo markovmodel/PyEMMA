@@ -5,7 +5,7 @@ import numpy as np
 from pyemma.util.types import ensure_dtraj_list
 from pyemma._base.estimator import Estimator as _Estimator
 from pyemma.msm import estimation as msmest
-from pyemma.msm.util.dtraj_stats import DiscreteTrajectoryStats as _DiscreteTrajectoryStats
+from pyemma.msm.estimators._dtraj_stats import DiscreteTrajectoryStats as _DiscreteTrajectoryStats
 from pyemma.msm.estimators.estimated_msm import EstimatedMSM as _EstimatedMSM
 from pyemma.util.units import TimeUnit
 

@@ -52,12 +52,12 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
         stride between two lagged trajectories extracted from the input
         trajectories. Given trajectory s[t], stride and lag will result
         in trajectories
-            s[0], s[tau], s[2 tau], ...
-            s[stride], s[stride + tau], s[stride + 2 tau], ...
+            s[0], s[lag], s[2 lag], ...
+            s[stride], s[stride + lag], s[stride + 2 lag], ...
         Setting stride = 1 will result in using all data (useful for maximum
         likelihood estimator), while a Bayesian estimator requires a longer
         stride in order to have statistically uncorrelated trajectories.
-        Setting stride = None 'effective' uses the largest neglected timescale as
+        Setting stride = 'effective' uses the largest neglected timescale as
         an estimate for the correlation time and sets the stride accordingly
 
     msm_init : :class:`MSM <pyemma.msm.ui.msm_estimated.MSM>`
@@ -156,19 +156,29 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
 
         # generate lagged observations
         if self.stride == 'effective':
-            self.stride = int(max(1, msm_init.timescales()[self.nstates-1]))
+            # by default use lag as stride (=lag sampling), because we currently have no better theory for deciding
+            # how many uncorrelated counts we can make
+            self.stride = self.lag
+            # if we have more than nstates timescales in our MSM, we use the next (neglected) timescale as an
+            # estimate of the decorrelation time
+            if msm_init.nstates > self.nstates:
+                corrtime = int(max(1, msm_init.timescales()[self.nstates-1]))
+                # use the smaller of these two pessimistic estimates
+                self.stride = min(self.stride, 2*corrtime)
         dtrajs_lagged = _lag_observations(dtrajs, self.lag, stride=self.stride)
 
         # check input
         assert _types.is_int(self.nstates) and self.nstates > 1 and self.nstates <= msm_init.nstates, \
             'nstates must be an int in [2,msmobj.nstates]'
-        timescale_ratios = msm_init.timescales()[:-1] / msm_init.timescales()[1:]
-        if timescale_ratios[self.nstates-2] < 2.0:
-            self.logger.warn('Requested coarse-grained model with ' + str(self.nstates) + ' metastable states at ' +
-                             'lag=' + str(self.lag) + '.' + 'The ratio of relaxation timescales between ' +
-                             str(self.nstates) + ' and ' + str(self.nstates+1) + ' states is only ' +
-                             str(timescale_ratios[self.nstates-2]) + ' while we recommend at least 2. ' +
-                             ' It is possible that the resulting HMM is inaccurate. Handle with caution.')
+        # if hmm.nstates = msm.nstates there is no problem. Otherwise, check spectral gap
+        if msm_init.nstates > self.nstates:
+            timescale_ratios = msm_init.timescales()[:-1] / msm_init.timescales()[1:]
+            if timescale_ratios[self.nstates-2] < 2.0:
+                self.logger.warn('Requested coarse-grained model with ' + str(self.nstates) + ' metastable states at ' +
+                                 'lag=' + str(self.lag) + '.' + 'The ratio of relaxation timescales between ' +
+                                 str(self.nstates) + ' and ' + str(self.nstates+1) + ' states is only ' +
+                                 str(timescale_ratios[self.nstates-2]) + ' while we recommend at least 2. ' +
+                                 ' It is possible that the resulting HMM is inaccurate. Handle with caution.')
 
         # set things from MSM
         nstates_obs_full = msm_init.nstates_full
@@ -190,9 +200,10 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
         pcca = msm_init.pcca(self.nstates)
 
         # HMM output matrix
-        B_conn = msm_init.metastable_distributions
-        # full state space output matrix
         eps = 0.01 * (1.0/nstates_obs_full)  # default output probability, in order to avoid zero columns
+        # Use PCCA distributions, but at least eps to avoid 100% assignment to any state (breaks convergence)
+        B_conn = np.maximum(msm_init.metastable_distributions, eps)
+        # full state space output matrix
         B = eps * np.ones((self.nstates, nstates_obs_full), dtype=np.float64)
         # expand B_conn to full state space
         B[:, msm_init.active_set] = B_conn[:, :]

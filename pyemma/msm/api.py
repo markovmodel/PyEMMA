@@ -81,13 +81,11 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
     reversible : boolean (optional)
         Estimate transition matrix reversibly (True) or nonreversibly (False)
 
-    errors : None | 'bayes' | 'bootstrap'
+    errors : None | 'bayes'
         Specifies whether to compute statistical uncertainties (by default
-        not), an which algorithm to use if yes. Options are:
+        not), an which algorithm to use if yes. Currently the only option is:
 
         * 'bayes' for Bayesian sampling of the posterior
-
-        * 'bootstrap' for bootstrapping of the discrete trajectories.
 
         Attention: Computing errors can be *very* slow if the MSM has many
         states. Moreover there are still unsolved theoretical problems, and
@@ -146,8 +144,8 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
     .. [3] Noe, F.: Probability Distributions of Molecular Observables computed
         from Markov Models. J. Chem. Phys. 128, 244103 (2008)
 
-    .. [4] Trendelkamp-Schroer et al:
-        in preparation (2015)
+    .. [4] Trendelkamp-Schroer, B, H. Wu, F. Paul and F. Noe:
+        Estimation and uncertainty of reversible Markov models. Submitted
 
     Example
     -------
