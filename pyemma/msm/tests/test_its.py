@@ -1,4 +1,3 @@
-
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
 # All rights reserved.
@@ -33,6 +32,7 @@ import unittest
 import numpy as np
 from pyemma import msm
 from pyemma.msm.analysis import timescales
+from pyemma.msm.api import timescales_msm
 
 
 class TestITS_MSM(unittest.TestCase):
