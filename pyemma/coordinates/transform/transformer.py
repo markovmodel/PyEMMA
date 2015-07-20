@@ -43,6 +43,9 @@ class TransformerIterator(object):
         self._stride = stride
         self._lag = lag
         self._transformer = transformer
+        # for dict stride mode: skip the first empty trajectories
+        if isinstance(stride, dict):
+            self._transformer._itraj = min(stride.keys())
 
     def __iter__(self):
         return self
@@ -493,6 +496,10 @@ class Transformer(object):
                     self._t = 0
                 return Y0, Ytau
         else:
+            if isinstance(stride, dict):
+                while (self._itraj not in stride.keys() or not stride[self._itraj]) and self._itraj < self.number_of_trajectories():
+                    self._itraj += 1
+                    self._t = 0
             # operate in pipeline
             if lag == 0:
                 X = self.data_producer._next_chunk(stride=stride)
@@ -649,7 +656,8 @@ class Transformer(object):
                 last_itraj = itraj
                 t = 0  # reset time to 0 for new trajectory
             L = chunk.shape[0]
-            trajs[itraj][t:t + L, :] = chunk[:, dimensions]
+            if L > 0:
+                trajs[itraj][t:t + L, :] = chunk[:, dimensions]
             t += L
 
             # update progress
