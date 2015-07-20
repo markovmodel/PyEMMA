@@ -13,10 +13,10 @@ class TestRandomAccessStride(TestCase):
         self.data = [np.random.random((100, self.dim)),
                      np.random.random((1, self.dim)),
                      np.random.random((2, self.dim))]
-        self.stride = {0: [1, 3, 5, 6, 7], 2: [1]}
+        self.stride = {0: [1, 3, 3, 5, 6, 7], 2: [1,1]}
+        self.stride2 = {2: [0]}
 
     def test_data_in_memory_random_access(self):
-        # TODO: lagged?
         # access with a chunk_size that is larger than the largest index list of stride
         data_in_memory = coor.source(self.data, chunk_size=10)
         out1 = data_in_memory.get_output(stride=self.stride)
@@ -30,11 +30,16 @@ class TestRandomAccessStride(TestCase):
         out3 = data_in_memory.get_output(stride=self.stride)
 
         for idx in self.stride.keys():
-            np.testing.assert_array_equal(out1[idx], out2[idx])
-            np.testing.assert_array_equal(out2[idx], out3[idx])
+            np.testing.assert_array_almost_equal(self.data[idx][np.array(self.stride[idx])], out1[idx])
+            np.testing.assert_array_almost_equal(out1[idx], out2[idx])
+            np.testing.assert_array_almost_equal(out2[idx], out3[idx])
+
+    def test_data_in_memory_without_first_two_trajs(self):
+        data_in_memory = coor.source(self.data, chunk_size=10)
+        out = data_in_memory.get_output(stride=self.stride2)
+        np.testing.assert_array_almost_equal(out[2], self.data[2][np.array(self.stride2[2])])
 
     def test_transformer_iterator_random_access(self):
-        # TODO: lagged?
         kmeans = coor.cluster_kmeans(self.data, k=2)
         kmeans.in_memory = True
 
