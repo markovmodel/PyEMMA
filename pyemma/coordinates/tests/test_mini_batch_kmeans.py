@@ -10,7 +10,7 @@ class TestMiniBatchKmeans(TestCase):
         self.k = 20
         self.dim = 5
         self.data = [np.random.random((600, self.dim)),
-                     np.random.random((1, self.dim)),
+                     np.random.random((100, self.dim)),
                      np.random.random((2, self.dim))]
 
     def test_cluster_centers(self):
@@ -24,12 +24,14 @@ class TestMiniBatchKmeans(TestCase):
 
     def test_cluster_centers_in_memory(self):
         kmeans = cluster_mini_batch_kmeans(self.data, k=self.k, batch_size=0.5)
-        kmeans.chunksize=1
         kmeans.in_memory = True
         cc = kmeans.clustercenters
         print cc
-        for x in kmeans.iterator(stride={0: [1,2,3,4,5,6], 2:[1]}, lag=5):
-            print x
+        for c in range(1, 8):
+            kmeans.chunksize=c
+            for x in kmeans.iterator(stride={1: [1,2,3,4,5,6], 2: [1]}):
+                print x
+            print "***"*15
 
 
 if __name__ == '__main__':

@@ -281,6 +281,11 @@ class Transformer(object):
                 last_chunk = False
                 itraj = 0
 
+                # in dict mode skip leading trajectories which are not included
+                while isinstance(stride, dict) and (itraj not in stride.keys() or not stride[itraj]) \
+                        and itraj < self.number_of_trajectories():
+                    itraj += 1
+
                 while not last_chunk:
                     last_chunk_in_traj = False
                     t = 0
@@ -319,6 +324,10 @@ class Transformer(object):
 
                     # increment trajectory
                     itraj += 1
+                    # skip missing trajectories in dict mode
+                    while isinstance(stride, dict) and (itraj not in stride.keys() or not stride[itraj]) \
+                            and itraj < self.number_of_trajectories():
+                        itraj += 1
                 ipass += 1
         except NotConvergedWarning:
             self._logger.info("presumely finished parameterization.")
@@ -455,45 +464,42 @@ class Transformer(object):
             if lag == 0:
                 if isinstance(stride, dict):
                     # TODO: respect chunksize (does this work?)
-                    if self._itraj not in stride.keys() or not stride[self._itraj]:
-                        # modify shape such that empty array is really just empty.
-                        s = list(traj.shape); s[0] = 0
-                        Y = np.empty(shape=tuple(s), dtype=traj.dtype)
-                    else:
-                        Y = traj[np.array(stride[self._itraj][self._t:min(self._t + self.chunksize, traj_len)])]
+                    Y = traj[np.array(stride[self._itraj][self._t:min(self._t + self.chunksize, traj_len)])]
                     self._t += self.chunksize
+                    while (self._itraj not in stride.keys() or not stride[self._itraj][self._t:min(self._t + self.chunksize, traj_len)]) \
+                            and self._itraj < self.number_of_trajectories():
+                        self._itraj += 1
+                        self._t = 0
                 else:
                     Y = traj[self._t:min(self._t + self.chunksize * stride, traj_len):stride]
                     # increment counters
                     self._t += self.chunksize * stride
-                if self._t >= traj_len:
-                    self._itraj += 1
-                    self._t = 0
+                    if self._t >= traj_len:
+                        self._itraj += 1
+                        self._t = 0
                 return Y
             else:
                 if isinstance(stride, dict):
-                    if self._itraj not in stride.keys() or not stride[self._itraj]:
-                        # modify shape such that empty array is really just empty.
-                        s = list(traj.shape); s[0] = 0
-                        Y0 = np.empty(shape=tuple(s), dtype=traj.dtype)
-                        Ytau = np.empty(shape=tuple(s), dtype=traj.dtype)
+                    Y0 = traj[np.array(stride[self._itraj][self._t:min(self._t + self.chunksize, traj_len)])]
+                    lagged_stride = stride[self._itraj][lag + self._t:min(lag + self._t + self.chunksize, traj_len)]
+                    if lagged_stride:
+                        Ytau = traj[np.array(lagged_stride)]
                     else:
-                        Y0 = traj[np.array(stride[self._itraj][self._t:min(self._t + self.chunksize, traj_len)])]
-                        lagged_stride = stride[self._itraj][lag + self._t:min(lag + self._t + self.chunksize, traj_len)]
-                        if lagged_stride:
-                            Ytau = traj[np.array(lagged_stride)]
-                        else:
-                            s = list(traj.shape); s[0] = 0
-                            Ytau = np.empty(shape=tuple(s), dtype=traj.dtype)
+                        s = list(traj.shape); s[0] = 0
+                        Ytau = np.empty(shape=tuple(s), dtype=traj.dtype)
                     self._t += self.chunksize
+                    while (self._itraj not in stride.keys() or not stride[self._itraj][self._t:min(self._t + self.chunksize, traj_len)]) \
+                            and self._itraj < self.number_of_trajectories():
+                        self._itraj += 1
+                        self._t = 0
                 else:
                     Y0 = traj[self._t:min(self._t + self.chunksize * stride, traj_len):stride]
                     Ytau = traj[self._t + lag * stride:min(self._t + (self.chunksize + lag) * stride, traj_len):stride]
                     # increment counters
                     self._t += self.chunksize * stride
-                if self._t >= traj_len:
-                    self._itraj += 1
-                    self._t = 0
+                    if self._t >= traj_len:
+                        self._itraj += 1
+                        self._t = 0
                 return Y0, Ytau
         else:
             if isinstance(stride, dict):

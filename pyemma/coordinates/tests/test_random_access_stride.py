@@ -1,4 +1,5 @@
 import os
+import tempfile
 import unittest
 from unittest import TestCase
 import numpy as np
@@ -38,6 +39,35 @@ class TestRandomAccessStride(TestCase):
         data_in_memory = coor.source(self.data, chunk_size=10)
         out = data_in_memory.get_output(stride=self.stride2)
         np.testing.assert_array_almost_equal(out[2], self.data[2][np.array(self.stride2[2])])
+
+    def test_numpy_filereader_random_access(self):
+        tmpfiles = [tempfile.mktemp(suffix='.npy') for _ in xrange(0, len(self.data))]
+        try:
+            for idx, tmp in enumerate(tmpfiles):
+                np.save(tmp, self.data[idx])
+            # large enough chunk size
+            np_fr = coor.source(tmpfiles, chunk_size=10)
+            out1 = np_fr.get_output(stride=self.stride)
+
+            # small chunk size
+            np_fr = coor.source(tmpfiles, chunk_size=1)
+            out2 = np_fr.get_output(stride=self.stride)
+
+            # full traj mode
+            np_fr = coor.source(tmpfiles, chunk_size=0)
+            out3 = np_fr.get_output(stride=self.stride)
+
+            for idx in self.stride.keys():
+                np.testing.assert_array_almost_equal(self.data[idx][np.array(self.stride[idx])], out1[idx])
+                np.testing.assert_array_almost_equal(out1[idx], out2[idx])
+                np.testing.assert_array_almost_equal(out2[idx], out3[idx])
+
+        finally:
+            for tmp in tmpfiles:
+                try:
+                    os.unlink(tmp)
+                except EnvironmentError:
+                    pass
 
     def test_transformer_iterator_random_access(self):
         kmeans = coor.cluster_kmeans(self.data, k=2)
