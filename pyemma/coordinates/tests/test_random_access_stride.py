@@ -12,9 +12,9 @@ class TestRandomAccessStride(TestCase):
     def setUp(self):
         self.dim = 5
         self.data = [np.random.random((100, self.dim)),
-                     np.random.random((1, self.dim)),
-                     np.random.random((2, self.dim))]
-        self.stride = {0: [1, 3, 3, 5, 6, 7], 2: [1,1]}
+                     np.random.random((20, self.dim)),
+                     np.random.random((20, self.dim))]
+        self.stride = {0: [1, 3, 3, 5, 6, 7], 2: [1, 1]}
         self.stride2 = {2: [0]}
 
     def test_data_in_memory_random_access(self):
@@ -39,6 +39,30 @@ class TestRandomAccessStride(TestCase):
         data_in_memory = coor.source(self.data, chunk_size=10)
         out = data_in_memory.get_output(stride=self.stride2)
         np.testing.assert_array_almost_equal(out[2], self.data[2][np.array(self.stride2[2])])
+
+    def test_csv_filereader_random_access(self):
+        tmpfiles = [tempfile.mktemp(suffix='.dat') for _ in xrange(0, len(self.data))]
+        try:
+            for idx, tmp in enumerate(tmpfiles):
+                np.savetxt(tmp, self.data[idx])
+
+            # large enough chunksize
+            csv_fr = coor.source(tmpfiles, chunk_size=10)
+            out1 = csv_fr.get_output(stride=self.stride)
+
+            # small chunk size
+            np_fr = coor.source(tmpfiles, chunk_size=1)
+            out2 = np_fr.get_output(stride=self.stride)
+
+            for idx in self.stride.keys():
+                np.testing.assert_array_almost_equal(self.data[idx][np.array(self.stride[idx])], out1[idx])
+                np.testing.assert_array_almost_equal(out1[idx], out2[idx])
+        finally:
+            for tmp in tmpfiles:
+                try:
+                    os.unlink(tmp)
+                except EnvironmentError:
+                    pass
 
     def test_numpy_filereader_random_access(self):
         tmpfiles = [tempfile.mktemp(suffix='.npy') for _ in xrange(0, len(self.data))]
@@ -86,6 +110,7 @@ class TestRandomAccessStride(TestCase):
 
     def test_feature_reader_random_access(self):
         from pyemma.coordinates.tests.test_featurereader import create_traj
+
         topfile = pkg_resources.resource_filename('pyemma.coordinates.tests.test_featurereader', 'data/test.pdb')
         trajfiles = []
         for _ in range(3):
