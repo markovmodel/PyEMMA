@@ -125,11 +125,12 @@ class KmeansClustering(AbstractClustering):
         if self._init_strategy == 'uniform':
             del self._centers_iter_list
             del self._init_centers_indices
-        self._progress_init.numerator = self._progress_init.denominator
-        self._progress_init._eta.eta_epoch = 0
+        if self._init_strategy == 'kmeans++':
+            self._progress_init.numerator = self._progress_init.denominator
+            self._progress_init._eta.eta_epoch = 0
+            show_progressbar(self._progress_init)
         self._progress_iters.numerator = self._progress_iters.denominator
         self._progress_iters._eta.eta_epoch = 0
-        show_progressbar(self._progress_init)
         show_progressbar(self._progress_iters)
 
     def kmeanspp_center_assigned(self):
