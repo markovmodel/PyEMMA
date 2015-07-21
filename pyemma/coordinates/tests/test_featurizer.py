@@ -333,6 +333,15 @@ class TestFeaturizer(unittest.TestCase):
         Dref = mdtraj.compute_contacts(self.traj, scheme='ca')[0]
         assert np.allclose(D, Dref)
 
+    def test_Residue_Mindist_Ca_all_threshold(self):
+        threshold = .7
+        self.feat.add_residue_mindist(scheme='ca', threshold=threshold)
+        D = self.feat.map(self.traj)
+        Dref = mdtraj.compute_contacts(self.traj, scheme='ca')[0]
+        Dbinary = np.zeros_like(Dref)
+        I = np.argwhere(Dref <= threshold)
+        Dbinary[I[:, 0], I[:, 1]] = 1
+        assert np.allclose(D, Dbinary)
 
     def test_Residue_Mindist_Ca_array(self):
         contacts=np.array([[20,10,], [10,0]])
@@ -366,6 +375,30 @@ class TestFeaturizer(unittest.TestCase):
         Dref = np.vstack((Dref_01,Dref_02,Dref_12)).T
 
         assert np.allclose(D.squeeze(), Dref)
+
+    def test_Group_Mindist_All_Three_Groups_threshold(self):
+        threshold = .7
+        group0 = [0, 20, 30, 0]
+        group1 = [1, 21, 31, 1]
+        group2 = [2, 22, 32, 2]
+        self.feat.add_group_mindist(group_definitions=[group0, group1, group2], threshold=threshold)
+        D = self.feat.map(self.traj)
+
+        # Now the references, computed separately for each combination of groups
+        dist_list_01 = np.array(list(product(np.unique(group0), np.unique(group1))))
+        dist_list_02 = np.array(list(product(np.unique(group0), np.unique(group2))))
+        dist_list_12 = np.array(list(product(np.unique(group1), np.unique(group2))))
+        Dref_01 = mdtraj.compute_distances(self.traj, dist_list_01).min(1)
+        Dref_02 = mdtraj.compute_distances(self.traj, dist_list_02).min(1)
+        Dref_12 = mdtraj.compute_distances(self.traj, dist_list_12).min(1)
+        Dref = np.vstack((Dref_01, Dref_02, Dref_12)).T
+
+        Dbinary = np.zeros_like(Dref)
+        I = np.argwhere(Dref <= threshold)
+        Dbinary[I[:, 0], I[:, 1]] = 1
+
+        assert np.allclose(D, Dbinary)
+
 
     def test_Group_Mindist_Some_Three_Groups(self):
         group0 = [0,20,30,0]
