@@ -105,16 +105,15 @@ def iterload(filename, chunk=100, **kwargs):
         for i in range(0, len(t), chunk):
             yield t[i:i+chunk]
 
-    elif isinstance(stride, list):
+    elif isinstance(stride, np.ndarray):
         with (lambda x: open(x, n_atoms=topology.n_atoms)
               if extension in ('.crd', '.mdcrd')
               else open(filename))(filename) as f:
-            sorted_stride = sorted(stride)
             x_prev = 0
             curr_size = 0
             traj = []
             leftovers = []
-            for k, g in groupby(enumerate(sorted_stride), lambda (a, b): a-b):
+            for k, g in groupby(enumerate(stride), lambda (a, b): a-b):
                 grouped_stride = map(itemgetter(1), g)
                 seek_offset = (1 if x_prev != 0 else 0)
                 seek_to = grouped_stride[0] - x_prev - seek_offset
