@@ -7,22 +7,24 @@ action and also describe the workflow of Markov model building.
 
 
 
-.. Trajectory IO and transformation
-   ===================================
-
-..
-.. toctree::
-
-..   generated/coordinates
-..   generated/clustering
-
-MSM estimation and validation
+BPTI
 =============================
 
 .. toctree::
-   generated/estimation
-   generated/analysis
-   generated/its
-   generated/fingerprints
-   generated/tpt
-..   generated/sampling
+   generated/Estimate_BPTI_MSM
+   generated/TPT_BPTI
+
+
+Alanine dipeptide
+=============================
+
+.. toctree::
+   generated/Analyze_MSM_AlanineDiP
+   generated/TPT_AlanineDiP
+
+
+Pentapeptide
+=============================
+
+.. toctree::
+   generated/md2msm_penta_peptide
