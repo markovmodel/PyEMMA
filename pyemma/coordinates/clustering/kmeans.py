@@ -126,8 +126,8 @@ class KmeansClustering(AbstractClustering):
         if self._init_strategy == 'uniform':
             del self._centers_iter_list
             del self._init_centers_indices
-
-        self._progress_force_finish(0)
+        if self._init_strategy == 'kmeans++':
+            self._progress_force_finish(0)
         self._progress_force_finish(1)
 
     def kmeanspp_center_assigned(self):
