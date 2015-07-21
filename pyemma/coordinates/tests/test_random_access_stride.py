@@ -14,8 +14,37 @@ class TestRandomAccessStride(TestCase):
         self.data = [np.random.random((100, self.dim)),
                      np.random.random((20, self.dim)),
                      np.random.random((20, self.dim))]
-        self.stride = {0: [1, 3, 3, 5, 6, 7], 2: [1, 1]}
-        self.stride2 = {2: [0]}
+        self.stride = np.asarray([
+            [0, 1], [0, 3], [0, 3], [0, 5], [0, 6], [0, 7],
+            [2, 1], [2, 1]
+        ])
+        self.stride2 = np.asarray([[2, 0]])
+
+    def test_iterator_context(self):
+        from pyemma.coordinates.transform.transformer import TransformerIteratorContext
+
+        ctx = TransformerIteratorContext(stride=1, lag=5)
+        assert ctx.stride == 1
+        assert ctx.lag == 5
+        assert ctx.uniform_stride
+        assert ctx.is_stride_sorted()
+        assert ctx.traj_keys is None
+
+        ctx = TransformerIteratorContext(stride=np.asarray([[0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [1, 3]]))
+        assert not ctx.uniform_stride
+        assert ctx.is_stride_sorted()
+        np.testing.assert_array_equal(ctx.traj_keys, np.array([0, 1]))
+
+        # sorted within trajectory, not sorted by trajectory key
+        ctx = TransformerIteratorContext(stride=np.asarray([[1, 1], [1, 2], [1, 3], [0, 0], [0, 1], [0, 2]]))
+        assert not ctx.is_stride_sorted()
+
+        # sorted by trajectory key, not within trajectory
+        ctx = TransformerIteratorContext(stride=np.asarray([[0, 0], [0, 1], [0, 2], [1, 1], [1, 5], [1, 3]]))
+        assert not ctx.is_stride_sorted()
+
+        np.testing.assert_array_equal(ctx.ra_indices_for_traj(0), np.array([0, 1, 2]))
+        np.testing.assert_array_equal(ctx.ra_indices_for_traj(1), np.array([1, 5, 3]))
 
     def test_data_in_memory_random_access(self):
         # access with a chunk_size that is larger than the largest index list of stride
@@ -30,15 +59,15 @@ class TestRandomAccessStride(TestCase):
         data_in_memory = coor.source(self.data, chunk_size=0)
         out3 = data_in_memory.get_output(stride=self.stride)
 
-        for idx in self.stride.keys():
-            np.testing.assert_array_almost_equal(self.data[idx][np.array(self.stride[idx])], out1[idx])
+        for idx in np.unique(self.stride[:, 0]):
+            np.testing.assert_array_almost_equal(self.data[idx][self.stride[self.stride[:,0] == idx][:,1]], out1[idx])
             np.testing.assert_array_almost_equal(out1[idx], out2[idx])
             np.testing.assert_array_almost_equal(out2[idx], out3[idx])
 
     def test_data_in_memory_without_first_two_trajs(self):
         data_in_memory = coor.source(self.data, chunk_size=10)
         out = data_in_memory.get_output(stride=self.stride2)
-        np.testing.assert_array_almost_equal(out[2], self.data[2][np.array(self.stride2[2])])
+        np.testing.assert_array_almost_equal(out[2], [self.data[2][0]])
 
     def test_csv_filereader_random_access(self):
         tmpfiles = [tempfile.mktemp(suffix='.dat') for _ in xrange(0, len(self.data))]
@@ -54,8 +83,8 @@ class TestRandomAccessStride(TestCase):
             np_fr = coor.source(tmpfiles, chunk_size=1)
             out2 = np_fr.get_output(stride=self.stride)
 
-            for idx in self.stride.keys():
-                np.testing.assert_array_almost_equal(self.data[idx][np.array(self.stride[idx])], out1[idx])
+            for idx in np.unique(self.stride[:, 0]):
+                np.testing.assert_array_almost_equal(self.data[idx][self.stride[self.stride[:, 0] == idx][:, 1]], out1[idx])
                 np.testing.assert_array_almost_equal(out1[idx], out2[idx])
         finally:
             for tmp in tmpfiles:
@@ -81,8 +110,8 @@ class TestRandomAccessStride(TestCase):
             np_fr = coor.source(tmpfiles, chunk_size=0)
             out3 = np_fr.get_output(stride=self.stride)
 
-            for idx in self.stride.keys():
-                np.testing.assert_array_almost_equal(self.data[idx][np.array(self.stride[idx])], out1[idx])
+            for idx in np.unique(self.stride[:,0]):
+                np.testing.assert_array_almost_equal(self.data[idx][self.stride[self.stride[:,0] == idx][:,1]], out1[idx])
                 np.testing.assert_array_almost_equal(out1[idx], out2[idx])
                 np.testing.assert_array_almost_equal(out2[idx], out3[idx])
 
@@ -100,10 +129,11 @@ class TestRandomAccessStride(TestCase):
         for cs in xrange(1, 5):
             kmeans.chunksize = cs
             ref_stride = {0: 0, 1: 0, 2: 0}
-            for x in kmeans.iterator(stride=self.stride):
+            it = kmeans.iterator(stride=self.stride)
+            for x in it:
                 ref_stride[x[0]] += len(x[1])
             for key in ref_stride.keys():
-                expected = (len(self.stride[key]) if key in self.stride.keys() else 0)
+                expected = len(it._ctx.ra_indices_for_traj(key))
                 assert ref_stride[key] == expected, \
                     "Expected to get exactly %s elements of trajectory %s, but got %s for chunksize=%s" \
                     % (expected, key, ref_stride[key], cs)
@@ -121,10 +151,11 @@ class TestRandomAccessStride(TestCase):
             source.chunksize = 2
 
             out = source.get_output(stride=self.stride)
+            keys = np.unique(self.stride[:,0])
             for i, coords in enumerate(out):
-                if i in self.stride.keys():
+                if i in keys:
                     traj = mdtraj.load(trajfiles[i], top=topfile)
-                    np.testing.assert_equal(coords, traj.xyz[np.array(self.stride[i])].reshape(-1, 9))
+                    np.testing.assert_equal(coords, traj.xyz[np.array(self.stride[self.stride[:, 0] == i][:,1])].reshape(-1, 9))
         finally:
             for t in trajfiles:
                 try:

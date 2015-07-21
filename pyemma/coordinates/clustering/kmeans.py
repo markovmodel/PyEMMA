@@ -212,9 +212,12 @@ class MiniBatchKmeansClustering(KmeansClustering):
         return super(MiniBatchKmeansClustering, self)._init_in_memory_chunks(self._n_samples)
 
     def _draw_mini_batch_sample(self):
-        stride = {}
+        stride = np.empty(shape=(0, 2), dtype=int)
         for idx, traj_len in enumerate(self._traj_lengths):
-            stride[idx] = random.sample(range(0, traj_len), self._n_samples_traj[idx])
+            stride = np.vstack((stride, np.vstack(
+                (idx * np.ones(self._n_samples_traj[idx], dtype=int),
+                 random.sample(xrange(traj_len), self._n_samples_traj[idx]))
+            ).T))
         return stride
 
     def _param_init(self):
