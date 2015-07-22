@@ -312,7 +312,8 @@ class ChapmanKolmogorovValidator(LaggedModelValidator):
         assert np.allclose(memberships.sum(axis=1), np.ones(self.nstates))  # stochastic matrix?
         # active set
         self.active_set = types.ensure_ndarray(np.array(estimator.active_set), kind='i')  # create a copy
-        self._full2active = np.zeros(self.nstates, dtype=int)
+        # map from the full set (here defined by the largest state index in active set) to active
+        self._full2active = np.zeros(np.max(self.active_set)+1, dtype=int)
         self._full2active[self.active_set] = np.arange(self.nstates)
         # define starting distribution
         self.P0 = memberships * model.stationary_distribution[:, None]

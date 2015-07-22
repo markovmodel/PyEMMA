@@ -124,7 +124,7 @@ class TestMLHMM(unittest.TestCase):
         assert tab > 0
         assert tba > 0
         # HERE:
-        err = np.minimum(np.abs(tab - 680.708754626), np.abs(tba - 680.708754626))
+        err = np.minimum(np.abs(tab - 680.708752214), np.abs(tba - 699.560589099))
         assert (err < 1e-6)
 
     # =============================================================================
