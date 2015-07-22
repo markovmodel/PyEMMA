@@ -93,8 +93,8 @@ class Transformer(object):
     @data_producer.setter
     def data_producer(self, dp):
         if dp is not self._data_producer:
-            self._logger.info("reset (previous) parametrization state, since"
-                              " data producer has been changed.")
+            self._logger.debug("reset (previous) parametrization state, since"
+                               " data producer has been changed.")
             self._parametrized = False
         self._data_producer = dp
 

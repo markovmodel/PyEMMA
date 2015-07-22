@@ -190,8 +190,8 @@ class TICA(Transformer):
         self.cov = np.zeros((indim, indim))
         self.cov_tau = np.zeros_like(self.cov)
 
-        self._logger.info("Running TICA with tau=%i; Estimating two covariance matrices"
-                          " with dimension (%i, %i)" % (self._lag, indim, indim))
+        self._logger.debug("Running TICA with tau=%i; Estimating two covariance matrices"
+                           " with dimension (%i, %i)" % (self._lag, indim, indim))
 
         # amount of chunks
         denom = self._n_chunks(self._param_with_stride)
