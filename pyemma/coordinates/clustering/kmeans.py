@@ -139,7 +139,7 @@ class KmeansClustering(AbstractClustering):
             # beginning - compute
             if first_chunk:
                 mem_req = int(1.0/1024**2 * X[0, :].nbytes * self.n_frames_total(stride))
-                if mem_req > 10:
+                if mem_req > 200:
                     self._logger.warn('K-means implementation is currently memory inefficient.'
                                       ' This calculation needs %i megabytes of main memory.'
                                       ' If you get a memory error, try using a larger stride.'
@@ -165,7 +165,7 @@ class KmeansClustering(AbstractClustering):
                                                         self.metric, self.n_clusters)
                     self._cluster_centers = [c for c in cc]
                 # run k-means with all the data
-                self._logger.info("Accumulated all data, running kmeans on " + str(self._in_memory_chunks.shape))
+                self._logger.debug("Accumulated all data, running kmeans on " + str(self._in_memory_chunks.shape))
                 it = 0
                 converged_in_max_iter = False
                 while it < self.max_iter:
