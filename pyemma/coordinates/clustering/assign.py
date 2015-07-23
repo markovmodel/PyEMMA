@@ -53,10 +53,10 @@ class AssignCenters(AbstractClustering):
 
     >>> from pyemma.coordinates.clustering import AssignCenters
     >>> from pyemma.coordinates import pipeline
-    >>> reader = ...
-    >>> assign = AssignCenters('my_centers.dat')
-    >>> disc = pipeline(reader, cluster=assign)
-    >>> disc.parametrize()
+    >>> reader = ... # doctest: +SKIP
+    >>> assign = AssignCenters('my_centers.dat') # doctest: +SKIP
+    >>> disc = pipeline(reader, cluster=assign) # doctest: +SKIP
+    >>> disc.parametrize() # doctest: +SKIP
 
     """
 
