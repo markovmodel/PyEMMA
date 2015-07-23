@@ -13,7 +13,7 @@ class TestMiniBatchKmeans(TestCase):
              np.random.randn(300),
              np.random.randn(400) + 2.0]
         X = np.hstack(X)
-        kmeans = cluster_mini_batch_kmeans(X, batch_size=0.5, k=10)
+        kmeans = cluster_mini_batch_kmeans(X, batch_size=0.7, k=10, max_iter=1000)
         cc = kmeans.clustercenters
         assert (np.any(cc < 1.0))
         assert (np.any((cc > -1.0) * (cc < 1.0)))
@@ -28,7 +28,7 @@ class TestMiniBatchKmeans(TestCase):
         X3 = np.zeros((400, 2))
         X3[:, 0] = np.random.randn(400) + 2.0
         X = [X1, X2, X3]
-        kmeans = cluster_mini_batch_kmeans(X, batch_size=0.5, k=10)
+        kmeans = cluster_mini_batch_kmeans(X, batch_size=0.7, k=10, max_iter=1000)
         cc = kmeans.clustercenters
         assert (np.any(cc < 1.0))
         assert (np.any((cc > -1.0) * (cc < 1.0)))

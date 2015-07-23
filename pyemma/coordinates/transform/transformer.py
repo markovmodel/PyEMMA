@@ -49,6 +49,8 @@ class TransformerIteratorContext(object):
         else:
             self._trajectory_keys = None
         self._uniform_stride = TransformerIteratorContext.is_uniform_stride(stride)
+        if not self.uniform_stride and not self.is_stride_sorted():
+            raise ValueError("Currently only sorted arrays allowed for random access")
 
     def ra_indices_for_traj(self, traj):
         """
@@ -114,8 +116,6 @@ class TransformerIterator(object):
 
         # for random access stride mode: skip the first empty trajectories
         if not self._ctx.uniform_stride:
-            if not self._ctx.is_stride_sorted():
-                raise ValueError("Currently only sorted arrays allowed for random access")
             self._transformer._itraj = min(self._ctx.traj_keys)
 
     def __iter__(self):
