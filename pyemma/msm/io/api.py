@@ -1,4 +1,3 @@
-
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
 # All rights reserved.
@@ -97,9 +96,10 @@ def read_discrete_trajectory(filename):
 
     Examples
     --------
-
+    
+    >>> import numpy as np
     >>> from tempfile import NamedTemporaryFile    
-    >>> from pyemma.msm.io import write_discrete_trajectory, load_discrete_trajectory
+    >>> from pyemma.msm.io import write_discrete_trajectory, read_discrete_trajectory
 
     Use temporary file
     
@@ -148,8 +148,9 @@ def write_discrete_trajectory(filename, dtraj):
     Examples
     --------
 
+    >>> import numpy as np
     >>> from tempfile import NamedTemporaryFile    
-    >>> from pyemma.msm.io import write_discrete_trajectory, load_discrete_trajectory
+    >>> from pyemma.msm.io import write_discrete_trajectory, read_discrete_trajectory
 
     Use temporary file
     
@@ -205,18 +206,19 @@ def load_discrete_trajectory(filename):
     Examples
     --------
 
+    >>> import numpy as np
     >>> from tempfile import NamedTemporaryFile    
     >>> from pyemma.msm.io import load_discrete_trajectory, save_discrete_trajectory
 
     Use temporary file
     
-    >>> tmpfile = NamedTemporaryFile()
+    >>> tmpfile = NamedTemporaryFile(suffix='.npy')
 
     Discrete trajectory
     
     >>> dtraj = np.array([0, 1, 0, 0, 1, 1, 0])
 
-    Write to disk (as ascii file)
+    Write to disk (as npy file)
     
     >>> save_discrete_trajectory(tmpfile.name, dtraj)
 
@@ -224,7 +226,7 @@ def load_discrete_trajectory(filename):
 
     >>> X = load_discrete_trajectory(tmpfile.name)
     >>> X
-    array([0, 1, 0, 0, 1, 1, 0])       
+    array([0, 1, 0, 0, 1, 1, 0])
     
     """
     return trajectory.load_discrete_trajectory(filename)
@@ -255,18 +257,19 @@ def save_discrete_trajectory(filename, dtraj):
     Examples
     --------
 
+    >>> import numpy as np
     >>> from tempfile import NamedTemporaryFile    
     >>> from pyemma.msm.io import load_discrete_trajectory, save_discrete_trajectory
 
     Use temporary file
     
-    >>> tmpfile = NamedTemporaryFile()
+    >>> tmpfile = NamedTemporaryFile(suffix='.npy')
 
     Discrete trajectory
     
     >>> dtraj = np.array([0, 1, 0, 0, 1, 1, 0])
 
-    Write to disk (as ascii file)
+    Write to disk (as npy file)
     
     >>> save_discrete_trajectory(tmpfile.name, dtraj)
 
@@ -333,6 +336,7 @@ def read_matrix(filename, mode='default', dtype=float, comments='#'):
     Examples
     --------
 
+    >>> import numpy as np
     >>> from tempfile import NamedTemporaryFile    
     >>> from pyemma.msm.io import read_matrix, write_matrix
 
@@ -349,7 +353,7 @@ def read_matrix(filename, mode='default', dtype=float, comments='#'):
 
     Load from disk
 
-    >>> X = load_matrix(tmpfile.name)
+    >>> X = read_matrix(tmpfile.name)
     >>> X
     array([[ 3.,  1.],
            [ 2.,  1.],
@@ -370,8 +374,8 @@ def read_matrix(filename, mode='default', dtype=float, comments='#'):
 
     Load from disk
 
-    >>> X = load_matrix(tmpfile.name)
-    >>> X
+    >>> X = read_matrix(tmpfile.name)
+    >>> X.toarray()
     array([[ 1.,  0.,  0.],
            [ 0.,  1.,  0.],
            [ 0.,  0.,  1.]])
@@ -440,6 +444,7 @@ def write_matrix(filename, A, mode='default', fmt='%.18e', header='', comments='
     Examples
     --------
 
+    >>> import numpy as np
     >>> from tempfile import NamedTemporaryFile    
     >>> from pyemma.msm.io import read_matrix, write_matrix
 
@@ -456,7 +461,7 @@ def write_matrix(filename, A, mode='default', fmt='%.18e', header='', comments='
 
     Load from disk
 
-    >>> X = load_matrix(tmpfile.name)
+    >>> X = read_matrix(tmpfile.name)
     >>> X
     array([[ 3.,  1.],
            [ 2.,  1.],
@@ -477,8 +482,8 @@ def write_matrix(filename, A, mode='default', fmt='%.18e', header='', comments='
 
     Load from disk
 
-    >>> X = load_matrix(tmpfile.name)
-    >>> X
+    >>> X = read_matrix(tmpfile.name)
+    >>> X.toarray()
     array([[ 1.,  0.,  0.],
            [ 0.,  1.,  0.],
            [ 0.,  0.,  1.]])
@@ -544,6 +549,7 @@ def save_matrix(filename, A, mode='default'):
     Examples
     --------
 
+    >>> import numpy as np
     >>> from tempfile import NamedTemporaryFile    
     >>> from pyemma.msm.io import load_matrix, save_matrix
 
@@ -556,33 +562,33 @@ def save_matrix(filename, A, mode='default'):
     Dense (3, 2) matrix
 
     >>> A = np.array([[3, 1], [2, 1], [1, 1]])
-    >>> write_matrix(tmpfile.name, A)
+    >>> save_matrix(tmpfile.name, A)
 
     Load from disk
 
     >>> X = load_matrix(tmpfile.name)
     >>> X
-    array([[ 3.,  1.],
-           [ 2.,  1.],
-           [ 1.,  1.]])
+    array([[3,  1],
+           [2,  1],
+           [1,  1]])
            
     **sparse**
     
     >>> from scipy.sparse import csr_matrix
 
-    Use temporary file with ending '.coo.dat'
+    Use temporary file with ending '.coo.npy'
 
     >>> tmpfile = NamedTemporaryFile(suffix='.coo.npy')
 
     Sparse (3, 3) matrix
 
     >>> A = csr_matrix(np.eye(3))
-    >>> write_matrix(tmpfile.name, A)
+    >>> save_matrix(tmpfile.name, A)
 
     Load from disk
 
     >>> X = load_matrix(tmpfile.name)
-    >>> X
+    >>> X.toarray()
     array([[ 1.,  0.,  0.],
            [ 0.,  1.,  0.],
            [ 0.,  0.,  1.]])
@@ -635,6 +641,7 @@ def load_matrix(filename, mode='default'):
     Examples
     --------
 
+    >>> import numpy as np
     >>> from tempfile import NamedTemporaryFile    
     >>> from pyemma.msm.io import load_matrix, save_matrix
 
@@ -653,27 +660,27 @@ def load_matrix(filename, mode='default'):
 
     >>> X = load_matrix(tmpfile.name)
     >>> X
-    array([[ 3.,  1.],
-           [ 2.,  1.],
-           [ 1.,  1.]])
+    array([[3,  1],
+           [2,  1],
+           [1,  1]])
            
     **sparse**
     
     >>> from scipy.sparse import csr_matrix
     
-    Use temporary file with ending '.coo.dat'
+    Use temporary file with ending '.coo.npy'
     
     >>> tmpfile = NamedTemporaryFile(suffix='.coo.npy')
     
     Sparse (3, 3) matrix
     
     >>> A = csr_matrix(np.eye(3))
-    >>> write_matrix(tmpfile.name, A)
+    >>> save_matrix(tmpfile.name, A)
     
     Load from disk
     
     >>> X = load_matrix(tmpfile.name)
-    >>> X
+    >>> X.toarray()
     array([[ 1.,  0.,  0.],
            [ 0.,  1.,  0.],
            [ 0.,  0.,  1.]])
