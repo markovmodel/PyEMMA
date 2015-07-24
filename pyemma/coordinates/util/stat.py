@@ -57,14 +57,16 @@ def histogram(transform, dimensions, nbins):
     Examples
     --------
 
-    >>> import matplotlib.pyplot as plt
-    >>> %matplotlib inline # only for ipython notebook
+    >>> import matplotlib.pyplot as plt # doctest: +SKIP
 
-    >>> counts, edges=histogram(transform, dimensions=(0,1), nbins=(20, 30))
-    >>> plt.pcolormesh(edges[0], edges[1], counts.T)
+    Only for ipython notebook
+    >> %matplotlib inline  # doctest: +SKIP
 
-    >>> counts, edges=histogram(transform, dimensions=(1,), nbins=(50,))
-    >>> plt.bar(edges[0][:-1], counts, width=edges[0][1:]-edges[0][:-1])
+    >>> counts, edges=histogram(transform, dimensions=(0,1), nbins=(20, 30)) # doctest: +SKIP
+    >>> plt.pcolormesh(edges[0], edges[1], counts.T) # doctest: +SKIP
+
+    >>> counts, edges=histogram(transform, dimensions=(1,), nbins=(50,)) # doctest: +SKIP
+    >>> plt.bar(edges[0][:-1], counts, width=edges[0][1:]-edges[0][:-1]) # doctest: +SKIP
     '''
     maximum = np.ones(len(dimensions)) * (-np.inf)
     minimum = np.ones(len(dimensions)) * np.inf

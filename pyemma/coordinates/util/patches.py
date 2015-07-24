@@ -67,8 +67,8 @@ def iterload(filename, chunk=100, **kwargs):
     --------
 
     >>> import mdtraj as md
-    >>> for chunk in md.iterload('output.xtc', top='topology.pdb')
-    >>>     print chunk
+    >>> for chunk in md.iterload('output.xtc', top='topology.pdb') # doctest: +SKIP
+    ...     print chunk # doctest: +SKIP
 
     <mdtraj.Trajectory with 100 frames, 423 atoms at 0x110740a90>
     <mdtraj.Trajectory with 100 frames, 423 atoms at 0x110740a90>

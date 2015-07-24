@@ -554,15 +554,15 @@ class Transformer(object):
         -------
         plotting trajectories
 
-        >>> import pyemma.coordinates as coor
-        >>> import matplotlib.pyplot as plt
-        >>> %matplotlib inline # only for ipython notebook
-        >>>
-        >>> tica = coor.tica() # fill with some actual data!
-        >>> trajs = tica.get_output(dimensions=(0,), stride=100)
-        >>> for traj in trajs:
-        >>>     plt.figure()
-        >>>     plt.plot(traj[:, 0])
+        >>> import pyemma.coordinates as coor # doctest: +SKIP
+        >>> import matplotlib.pyplot as plt # doctest: +SKIP
+
+        Fill with some actual data!
+        >>> tica = coor.tica() # doctest: +SKIP
+        >>> trajs = tica.get_output(dimensions=(0,), stride=100) # doctest: +SKIP
+        >>> for traj in trajs: # doctest: +SKIP
+        ...     plt.figure() # doctest: +SKIP
+        ...     plt.plot(traj[:, 0]) # doctest: +SKIP
 
         """
 
