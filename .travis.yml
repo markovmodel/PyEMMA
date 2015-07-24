@@ -29,8 +29,10 @@ install:
 - python setup.py develop 
 
 script:
-# run tests omiting slow attributed tests.
+# run tests
 - nosetests --with-coverage --cover-inclusive --cover-package=pyemma
+# run doctests of coordinates package
+- nosetests --with-doctest --exclude ".*test.*" pyemma/coordinates/ --verbosity=2
 # run pylint (non fatal exit and show only errors)
 - pylint -j 4 --rcfile=.pylintrc pyemma || true
 
