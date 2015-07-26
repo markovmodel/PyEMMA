@@ -46,7 +46,7 @@ __all__ = ['KmeansClustering']
 class KmeansClustering(AbstractClustering):
 
     def __init__(self, n_clusters, max_iter=5, metric='euclidean',
-                 tolerance=1e-4, init_strategy='kmeans++', oom_strategy='memmap'):
+                 tolerance=1e-5, init_strategy='kmeans++', oom_strategy='memmap'):
         r"""
         Kmeans clustering
 
