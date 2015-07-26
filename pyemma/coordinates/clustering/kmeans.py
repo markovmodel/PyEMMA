@@ -45,7 +45,7 @@ __all__ = ['KmeansClustering']
 
 class KmeansClustering(AbstractClustering):
     def __init__(self, n_clusters, max_iter=5, metric='euclidean',
-                 tolerance=1e-5, init_strategy='kmeans++', oom_strategy='memmap'):
+                 tolerance=1e-4, init_strategy='kmeans++', oom_strategy='memmap'):
         r"""
         Kmeans clustering
 
@@ -78,6 +78,7 @@ class KmeansClustering(AbstractClustering):
         self._custom_param_progress_handling = True
 
     def _param_init(self):
+        self._prev_cost = 0
         self._cluster_centers = []
         self._init_centers_indices = {}
         self._t_total = 0
@@ -137,6 +138,7 @@ class KmeansClustering(AbstractClustering):
         self._progress_init.numerator += 1
         show_progressbar(self._progress_init)
 
+    # @profile
     def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None, stride=1):
         # first pass: gather data and run k-means
         if ipass == 0:
@@ -146,13 +148,7 @@ class KmeansClustering(AbstractClustering):
             self._initialize_centers(X, itraj, t, last_chunk, ipass)
             # run k-means in the end
             if last_chunk:
-                # free part of the memory
 
-                if self._init_strategy == 'kmeans++':
-                    kmeans_clustering.set_callback(self.kmeanspp_center_assigned)
-                    cc = kmeans_clustering.init_centers(self._in_memory_chunks,
-                                                        self.metric, self.n_clusters)
-                    self._cluster_centers = [c for c in cc]
                 # run k-means with all the data
                 self._logger.info("Accumulated all data, running kmeans on " + str(self._in_memory_chunks.shape))
                 it = 0
@@ -163,7 +159,14 @@ class KmeansClustering(AbstractClustering):
                     self._cluster_centers = kmeans_clustering.cluster(self._in_memory_chunks,
                                                                       self._cluster_centers, self.metric)
                     self._cluster_centers = [row for row in self._cluster_centers]
-                    if np.allclose(old_centers, self._cluster_centers, rtol=self._tolerance):
+
+                    cost = kmeans_clustering.cost_function(self._in_memory_chunks, self._cluster_centers, self.metric,
+                                                           self.n_clusters)
+                    rel_change = np.abs(cost - self._prev_cost) / cost
+                    self._prev_cost = cost
+
+                    #if np.allclose(old_centers, self._cluster_centers, rtol=self._tolerance):
+                    if rel_change <= self._tolerance:
                         converged_in_max_iter = True
                         self._logger.info("Cluster centers converged after %i steps."
                                           % (it + 1))
@@ -191,10 +194,10 @@ class KmeansClustering(AbstractClustering):
                         if len(self._cluster_centers) < self.n_clusters and t + l in self._init_centers_indices[itraj]:
                             self._cluster_centers.append(X[l].astype(np.float32, order='C'))
             elif last_chunk and self._init_strategy == 'kmeans++':
-                    kmeans_clustering.set_callback(self.kmeanspp_center_assigned)
-                    cc = kmeans_clustering.init_centers(self._in_memory_chunks,
-                                                        self.metric, self.n_clusters)
-                    self._cluster_centers = [c for c in cc]
+                kmeans_clustering.set_callback(self.kmeanspp_center_assigned)
+                cc = kmeans_clustering.init_centers(self._in_memory_chunks,
+                                                    self.metric, self.n_clusters)
+                self._cluster_centers = [c for c in cc]
 
     def _collect_data(self, X, first_chunk, stride):
         # beginning - compute
@@ -225,13 +228,14 @@ class MiniBatchKmeansClustering(KmeansClustering):
         return super(MiniBatchKmeansClustering, self)._init_in_memory_chunks(self._n_samples)
 
     def _draw_mini_batch_sample(self):
-        stride = np.empty(shape=(0, 2), dtype=int)
+        offset = 0
         for idx, traj_len in enumerate(self._traj_lengths):
-            stride = np.vstack((stride, np.vstack(
-                (idx * np.ones(self._n_samples_traj[idx], dtype=int),
-                 np.sort(random.sample(xrange(traj_len), self._n_samples_traj[idx])))
-            ).T))
-        return stride
+            self._random_access_stride[offset:offset + self._n_samples_traj[idx], 0] = idx * np.ones(
+                self._n_samples_traj[idx], dtype=int)
+            self._random_access_stride[offset:offset + self._n_samples_traj[idx], 1] = np.sort(
+                random.sample(xrange(traj_len), self._n_samples_traj[idx])).T
+            offset += self._n_samples_traj[idx]
+        return self._random_access_stride
 
     def _param_init(self):
         self._traj_lengths = self.trajectory_lengths(stride=self._param_with_stride)
@@ -239,15 +243,19 @@ class MiniBatchKmeansClustering(KmeansClustering):
         samples = int(math.ceil(self._total_length * self._batch_size))
         self._n_samples = 0
         self._n_samples_traj = {}
+        self._prev_cost = 0
         for idx, traj_len in enumerate(self._traj_lengths):
             traj_samples = int(math.floor(traj_len / float(self._total_length) * samples))
             self._n_samples_traj[idx] = traj_samples
             self._n_samples += traj_samples
 
+        self._random_access_stride = np.empty(shape=(self._n_samples, 2), dtype=int)
+
         super(MiniBatchKmeansClustering, self)._param_init()
 
         return 0, self._draw_mini_batch_sample()
 
+    # @profile
     def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None, stride=1):
         # collect data
         self._collect_data(X, first_chunk, stride)
@@ -256,18 +264,23 @@ class MiniBatchKmeansClustering(KmeansClustering):
         converged_in_max_iter = False
 
         if last_chunk:
-            old_centers = self._cluster_centers
             self._cluster_centers = kmeans_clustering.cluster(self._in_memory_chunks,
                                                               self._cluster_centers, self.metric)
             self._cluster_centers = [row for row in self._cluster_centers]
-            if np.allclose(old_centers, self._cluster_centers, rtol=self._tolerance):
+
+            cost = kmeans_clustering.cost_function(self._in_memory_chunks, self._cluster_centers, self.metric,
+                                                   self.n_clusters)
+            rel_change = np.abs(cost - self._prev_cost) / cost
+            self._prev_cost = cost
+
+            if rel_change <= self._tolerance:
                 converged_in_max_iter = True
                 self._logger.info("Cluster centers converged after %i steps." % (ipass + 1))
                 self._progress_iters.numerator = self.max_iter
             else:
                 self._progress_iters.numerator += 1
             show_progressbar(self._progress_iters)
-            if converged_in_max_iter or ipass+1 >= self.max_iter:
+            if converged_in_max_iter or ipass + 1 >= self.max_iter:
                 if not converged_in_max_iter:
                     self._logger.info("Algorithm did not reach convergence criterion"
                                       " of %g in %i iterations. Consider increasing max_iter."
