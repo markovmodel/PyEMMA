@@ -979,9 +979,9 @@ class EstimatedMSM(MSM):
 
         # sparse matrix computation wanted?
         self._sparse = sparse
-        if sparse:
-            self._logger.warn('Sparse mode is currently untested and might lead to errors. '
-                               'I strongly suggest to use sparse=False unless you know what you are doing.')
+        # if sparse:
+        #     self._logger.warn('Sparse mode is currently untested and might lead to errors. '
+        #                        'I strongly suggest to use sparse=False unless you know what you are doing.')
         if self._n_full > 4000 and not sparse:
             self._logger.warn('Building a dense MSM with ' + str(self._n_full) + ' states. This can be inefficient or '
                               'unfeasible in terms of both runtime and memory consumption. Consider using sparse=True.')
