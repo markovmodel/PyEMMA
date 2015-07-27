@@ -155,12 +155,12 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
     >>> from pyemma import msm
     >>> dtraj = [0,1,1,2,2,2,1,2,2,2,1,0,0,1,1,1,2,2,1,1,2,1,1,0,0,0,1,1,2,2,1]   # mini-trajectory
     >>> ts = msm.its(dtraj, [1,2,3,4,5])
-    >>> print ts.timescales
-    [[ 1.50167143  0.20039813]
-     [ 3.17036301  1.06407436]
-     [ 2.03222416  1.02489382]
-     [ 4.63599356  3.42346576]
-     [ 5.13829397  2.59477703]]
+    >>> print ts.timescales # doctest: +ELLIPSIS
+    [[ 1.5...  0.2...]
+     [ 3.1...  1.0...]
+     [ 2.03...  1.02...]
+     [ 4.63...  3.42...]
+     [ 5.13...  2.59...]]
 
     """
     # format data
@@ -256,7 +256,7 @@ def markov_model(P, dt_model='1 step'):
 
     The (implied) relaxation timescales
 
-    >>> print mm.timescales
+    >>> print mm.timescales()
     [ 38.00561796   5.9782565 ]
 
     The mean first passage time from state 0 to 2
@@ -456,8 +456,8 @@ def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
 
     Mean first passage time from state 0 to 2:
 
-    >>> print mm.mfpt(0, 2)
-    9.92928837718
+    >>> print mm.mfpt(0, 2) # doctest: +ELLIPSIS
+    9.929288...
 
     """
     # transition matrix estimator
@@ -546,12 +546,12 @@ def timescales_hmsm(dtrajs, nstates, lags=None, nits=None, reversible=True,
     >>> from pyemma import msm
     >>> dtraj = [0,1,1,2,2,2,1,2,2,2,1,0,0,1,1,1,2,2,1,1,2,1,1,0,0,0,1,1,2,2,1]   # mini-trajectory
     >>> ts = msm.its(dtraj, [1,2,3,4,5])
-    >>> print ts.timescales
-    [[ 1.50167143  0.20039813]
-     [ 3.17036301  1.06407436]
-     [ 2.03222416  1.02489382]
-     [ 4.63599356  3.42346576]
-     [ 5.13829397  2.59477703]]
+    >>> print ts.timescales # doctest: +ELLIPSIS
+    [[ 1.5...  0.2...]
+     [ 3.1...  1.0...]
+     [ 2.0...  1.0...]
+     [ 4.6...  3.4...]
+     [ 5.1...  2.5...]]
 
     """
     # format data
@@ -698,8 +698,8 @@ def estimate_hidden_markov_model(dtrajs, nstates, lag, reversible=True, connecti
 
     With the equilibrium distribution:
 
-    >>> print mm.stationary_distribution
-    [ 0.45917665  0.54082335]
+    >>> print mm.stationary_distribution # doctest: +ELLIPSIS
+    [ 0.45...  0.54...]
 
     The observed states are the three discrete clusters that we have in our
     discrete trajectory:
@@ -723,19 +723,19 @@ def estimate_hidden_markov_model(dtrajs, nstates, lag, reversible=True, connecti
 
     We can print the lifetimes of the metastable states:
 
-    >>> print mm.lifetimes
-    [ 7.18543435  8.65699332]
+    >>> print mm.lifetimes # doctest: +ELLIPSIS
+    [ 7...  8...]
 
     And the timescale of the hidden transition matrix - now we only have one
     relaxation timescale:
 
-    >>> print mm.timescales
-    [ 3.35310468]
+    >>> print mm.timescales() # doctest: +ELLIPSIS
+    [ 3.35...]
 
     The mean first passage times can also be computed between metastable states:
 
-    >>> print mm.mfpt(0, 1)
-    8.23176470249
+    >>> print mm.mfpt(0, 1) # doctest: +ELLIPSIS
+    8...
 
     """
     # initialize HMSM estimator
@@ -870,6 +870,9 @@ def bayesian_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
 
     >>> L, R = mm.sample_conf('transition_matrix')
     >>> print L
+    [[ 0.4374864   0.02624466  0.00715102]
+     [ 0.12500024  0.          0.25430151]
+     [ 0.00948607  0.08363049  0.36714474]]
     >>> print R
     [[ 0.44083423  0.03926518  0.0242113 ]
      [ 0.14102544  0.          0.30729828]
@@ -881,8 +884,8 @@ def bayesian_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
     If you wanna compute expectations of functions that require arguments,
     just pass these arguments as well:
 
-    >>> print mm.sample_std('mfpt', 0, 2)
-    8.33664461244
+    >>> print mm.sample_std('mfpt', 0, 2) # doctest: +ELLIPSIS
+    19.73755...
 
     And if you want to histogram the distribution or compute more complex
     statistical moment such as the covariance between different quantities,

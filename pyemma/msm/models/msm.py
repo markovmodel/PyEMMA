@@ -599,7 +599,7 @@ class MSM(_Model):
         >>> times, acf = M.correlation(a)
         >>>
         >>> import matplotlib.pylab as plt
-        >>> plt.plot(times, acf)
+        >>> plt.plot(times, acf) # doctest: +SKIP
 
         References
         ----------
