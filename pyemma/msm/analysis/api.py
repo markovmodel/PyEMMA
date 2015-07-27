@@ -557,10 +557,8 @@ def eigenvectors(T, k=None, right=True, ncv=None):
     
     Matrix with right eigenvectors as columns
     
-    >>> R
-    array([[  5.77350269e-01,   7.07106781e-01,   9.90147543e-02],
-           [  5.77350269e-01,  -5.50368425e-16,  -9.90147543e-01],
-           [  5.77350269e-01,  -7.07106781e-01,   9.90147543e-02]])
+    >>> R # doctest: +ELLIPSIS
+    array([[  5.77350269e-01,   7.07106781e-01,   9.90147543e-02],...
            
     """
     if _issparse(T):
@@ -632,13 +630,11 @@ def rdl_decomposition(T, k=None, norm='auto', ncv=None):
     
     Matrix with right eigenvectors as columns
     
-    >>> R
-    array([[  1.00000000e+00,   1.04880885e+00,   3.16227766e-01],
-           [  1.00000000e+00,  -8.16328297e-16,  -3.16227766e+00],
-           [  1.00000000e+00,  -1.04880885e+00,   3.16227766e-01]])    
+    >>> R # doctest: +ELLIPSIS
+    array([[  1.00000000e+00,   1.04880885e+00,   3.16227766e-01], ...
            
     Diagonal matrix with eigenvalues
-    
+
     >>> D
     array([[ 1.0+0.j,  0.0+0.j,  0.0+0.j],
            [ 0.0+0.j,  0.9+0.j,  0.0+0.j],
@@ -646,10 +642,8 @@ def rdl_decomposition(T, k=None, norm='auto', ncv=None):
            
     Matrix with left eigenvectors as rows
     
-    >>> L
-    array([[  4.54545455e-01,   9.09090909e-02,   4.54545455e-01],
-           [  4.76731295e-01,  -7.42116634e-17,  -4.76731295e-01],
-           [  1.43739894e-01,  -2.87479787e-01,   1.43739894e-01]])
+    >>> L # +doctest: +ELLIPSIS
+    array([[  4.54545455e-01,   9.09090909e-02,   4.54545455e-01], ...
     
     """
     if _issparse(T):
@@ -1267,8 +1261,8 @@ def expectation(T, a, mu=None):
     >>> T = np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
     >>> a = np.array([1.0, 0.0, 1.0])
     >>> m_a = expectation(T, a)
-    >>> m_a
-    0.90909090909090917       
+    >>> m_a # doctest: +ELLIPSIS
+    0.909090909...
     
     """
     # check input
