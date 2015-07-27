@@ -484,9 +484,6 @@ class MSM(object):
         >>> a = np.array([0.0, 0.5, 1.0])
         >>> M = msm.markov_model(P)
         >>> times, acf = M.correlation(a)
-        >>>
-        >>> import matplotlib.pylab as plt
-        >>> plt.plot(times, acf)
 
         References
         ----------

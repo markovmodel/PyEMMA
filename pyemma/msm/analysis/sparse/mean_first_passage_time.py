@@ -77,10 +77,11 @@ def mfpt(T, target):
     Examples
     --------
     
+    >>> import numpy as np
     >>> from pyemma.msm.analysis import mfpt
     
     >>> T = np.array([[0.9, 0.1, 0.0], [0.5, 0.0, 0.5], [0.0, 0.1, 0.9]])
-    >>> m_t = mfpt(T)
+    >>> m_t = mfpt(T, 0)
     >>> m_t
     array([  0.,  12.,  22.])
     
