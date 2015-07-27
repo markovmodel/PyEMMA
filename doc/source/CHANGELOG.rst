@@ -5,17 +5,17 @@ Changelog
 -----------------
 - msm estimation: new fast transition matrix sampler
 - msm estimation: new feature "auto-sparse": automatically decide which datatype 
-                  to use for transition matrix estimation.
+  to use for transition matrix estimation.
 - coordinates package: kinetic map feature for TICA (arXiv:1506.06259 [physics.comp-ph])
 - coordinates package: better examples for API functions.
 - coordinates package: cluster assignment bugfix in parallel environments (OpenMP). 
 - coordinates package: added cos/sin transformations for angle based features to
-                       featurizer. This is recommended for PCA/TICA transformations.
+  featurizer. This is recommended for PCA/TICA transformations.
 - coordinates package: added minimum RMSD feature to featurizer.
 - coordinates package: Regular space clustering terminates early now, when it reaches
-                       max_clusters cutoff.
+  max_clusters cutoff.
 - plots package: use Fruchterman Reingold spring algorithm to calculate positions
-                 in network plots.
+  in network plots.
 - ipython notebooks: new real-world examples, which show the complete workflow
 - general: made all example codes in documentation work.
 
