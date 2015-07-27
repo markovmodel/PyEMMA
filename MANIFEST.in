@@ -29,21 +29,14 @@ prune doc/source/generated
 prune doc/source/api/generated
 
 # ipython notebooks
-graft pyemma-ipython
-recursive-exclude pyemma-ipython .ipynb_checkpoints
+#graft pyemma-ipython
+#recursive-exclude pyemma-ipython .ipynb_checkpoints
 
 # exclude git related files
 recursive-exclude * git .git*
 
 # sources of extensions (incl. cython)
-include pyemma/msm/estimation/dense/*.h
-include pyemma/msm/estimation/sparse/*.h
-include pyemma/msm/estimation/dense/mle_trev_given_pi.c
-include pyemma/msm/estimation/sparse/mle_trev_given_pi.c
-include pyemma/coordinates/clustering/include/clustering.h
-
-#include cython files
-recursive-include pyemma *.pyx
+recursive-include pyemma *.pyx *.h *.c
 
 # do not include eventually present eggs (installed during setup runtime)
 prune .eggs
