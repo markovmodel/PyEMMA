@@ -36,7 +36,7 @@ script:
 
 after_success:
 - coveralls
-- tools/ci/travis/make_docs.sh
+#- tools/ci/travis/make_docs.sh
 
 deploy:
   edge: true # testing bleeding edge git deployment code
