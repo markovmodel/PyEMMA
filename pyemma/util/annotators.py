@@ -144,11 +144,11 @@ def shortcut(name):
     Examples
     --------
     In some module you have defined a function
-    >>> @shortcut('is_tmatrix') # doctest: +SKIP
-    >>> def is_transition_matrix(args): # doctest: +SKIP
-    >>>     pass # doctest: +SKIP
+    >>> @shortcut('is_tmatrix')
+    >>> def is_transition_matrix(args):
+    >>>     pass
     Now you are able to call the function under its short name
-    >>> is_tmatrix(args) # doctest: +SKIP
+    >>> is_tmatrix(args)
 
     """
     # TODO: this does not work (is not tested with class member functions)

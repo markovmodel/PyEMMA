@@ -50,9 +50,9 @@ the Python package:
 To access the config at runtime eg. the logging section:
 
 >>> from pyemma import config
->>> print config.Logging.level # doctest: +SKIP
+>>> print config.Logging.level
 ... INFO
->>> print config.show_progress_bars # doctest: +SKIP
+>>> print config.show_progress_bars
 ... 'True'
 
 
