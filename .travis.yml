@@ -36,8 +36,8 @@ install:
 - python setup.py develop 
 
 script:
-# run tests omiting slow attributed tests.
-- nosetests --with-coverage --cover-inclusive --cover-package=pyemma
+# run tests
+- nosetests --with-coverage --cover-inclusive --cover-package=pyemma --with-doctest --doctest-options="+NORMALIZE_WHITESPACE,+ELLIPSIS"
 # run pylint (non fatal exit and show only errors)
 - pylint -j 4 --rcfile=.pylintrc pyemma || true
 
