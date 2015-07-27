@@ -142,7 +142,7 @@ class NetworkPlot(object):
 
         now plot the gross flux
         >>> NetworkPlot(F.gross_flux).plot_network() # doctest:+ELLIPSIS
-        ...
+        <matplotlib.figure.Figure...
 
         """
         if A.shape[0] >= 50:
@@ -430,7 +430,7 @@ def plot_markov_model(P, pos=None, state_sizes=None, state_scale=1.0,
     ...              [0.0,  0.2, 0.0,  0.8,  0.0],
     ...              [0.0,  0.02, 0.02, 0.0,  0.96]])
     >>> plot_markov_model(P) # doctest:+ELLIPSIS
-    array...
+    (<matplotlib.figure.Figure..., array...)
 
     """
     from pyemma.msm import analysis as msmana
@@ -530,7 +530,7 @@ def plot_flux(flux, pos=None, state_sizes=None, state_scale=1.0,
     to 1 (avoid printing many zeros). Now we visualize the flux:
 
     >>> plot_flux(F) # doctest:+ELLIPSIS
-    array...
+    (<matplotlib.figure.Figure..., array...)
 
     """
     F = getattr(flux, attribute_to_plot)
