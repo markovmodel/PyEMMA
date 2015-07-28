@@ -149,26 +149,32 @@ def save_discrete_trajectory(filename, dtraj):
 
 
 @shortcut('histogram')
-def count_states(dtrajs):
+def count_states(dtrajs, ignore_negative=False):
     r"""returns a histogram count
 
     Parameters
     ----------
-    dtraj : array_like or list of array_like
+    dtrajs : array_like or list of array_like
         Discretized trajectory or list of discretized trajectories
+    ignore_negative, bool, default=False
+        Ignore negative elements. By default, a negative element will cause an
+        exception
 
     Returns
     -------
     count : ndarray((n), dtype=int)
         the number of occurrances of each state. n=max+1 where max is the largest state index found.
+
     """
     # format input
     dtrajs = _ensure_dtraj_list(dtrajs)
     # make bincounts for each input trajectory
     nmax = 0
     bcs = []
-    for i in range(len(dtrajs)):
-        bc = np.bincount(dtrajs[i])
+    for dtraj in dtrajs:
+        if ignore_negative:
+            dtraj = dtraj[np.where(dtraj >= 0)]
+        bc = np.bincount(dtraj)
         nmax = max(nmax, bc.shape[0])
         bcs.append(bc)
     # construct total bincount
@@ -229,7 +235,7 @@ def index_states(dtrajs, subset = None):
     Parameters
     ----------
     dtraj : array_like or list of array_like
-        Discretized trajectory or list of discretized trajectories
+        Discretized trajectory or list of discretized trajectories. Negative elements will be ignored
     subset : ndarray((n)), optional, default = None
         array of states to be indexed. By default all states in dtrajs will be used
 
@@ -252,7 +258,7 @@ def index_states(dtrajs, subset = None):
         if np.max(subset) >= n:
             raise ValueError('Selected subset is not a subset of the states in dtrajs.')
     # histogram states
-    hist = count_states(dtrajs)
+    hist = count_states(dtrajs, ignore_negative=True)
     # efficient access to which state are accessible
     is_requested = np.ndarray((n), dtype=bool)
     is_requested[:] = False
