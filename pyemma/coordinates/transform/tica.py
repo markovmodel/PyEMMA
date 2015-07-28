@@ -255,6 +255,9 @@ class TICA(Transformer):
 
             # if we have a user-given mean, skip ipass 0 now:
             if self._given_mean:
+                if self._force_eigenvalues_le_one:
+                    self._logger.warning("Constraint of eigenvalues <= 1 is active,"
+                                         "so the mean also depends on the lag time!")
                 raise SkipPassException(self._lag)
 
             if self._force_eigenvalues_le_one:
@@ -380,7 +383,6 @@ class TICA(Transformer):
         # compute cumulative variance
         self.cumvar = np.cumsum(self.eigenvalues ** 2)
         self.cumvar /= self.cumvar[-1]
-
 
         if len(self._skipped_trajs) >= 1:
             self._skipped_trajs = np.asarray(self._skipped_trajs)
