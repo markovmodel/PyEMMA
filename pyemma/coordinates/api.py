@@ -231,7 +231,7 @@ def load(trajfiles, features=None, top=None, stride=1, chunk_size=100):
         raise ValueError('unsupported type (%s) of input' % type(trajfiles))
 
 
-def source(inp, features=None, top=None, chunk_size=100):
+def source(inp, features=None, top=None, chunk_size=None):
     r""" Wraps input as data source for pipeline.
 
     Use this function to construct the first stage of a data processing :func:`pipeline`.
@@ -266,7 +266,7 @@ def source(inp, features=None, top=None, chunk_size=100):
         A topology file name. This is needed when molecular dynamics trajectories are given and no featurizer is given.
         In this case, only the Cartesian coordinates will be read.
 
-    chunk_size: int, optional, default = 100
+    chunk_size: int, optional, default = 100 for file readers and 5000 for already loaded data
         The chunk size at which the input file is being processed.
 
     Returns
@@ -312,7 +312,7 @@ def source(inp, features=None, top=None, chunk_size=100):
     # check: if single string create a one-element list
     if isinstance(inp, basestring) or (isinstance(inp, (list, tuple))
                                        and (any(isinstance(item, basestring) for item in inp) or len(inp) is 0)):
-        reader = _create_file_reader(inp, top, features, chunk_size=chunk_size)
+        reader = _create_file_reader(inp, top, features, chunk_size=chunk_size if chunk_size else 100)
 
     elif isinstance(inp, _np.ndarray) or (isinstance(inp, (list, tuple))
                                       and (any(isinstance(item, _np.ndarray) for item in inp) or len(inp) is 0)):
@@ -322,7 +322,7 @@ def source(inp, features=None, top=None, chunk_size=100):
         # check: if single array, create a one-element list
         # check: do all arrays have compatible dimensions (*, N)? If not: raise ValueError.
         # create MemoryReader
-        reader = _DataInMemory(inp, chunksize=chunk_size)
+        reader = _DataInMemory(inp, chunksize=chunk_size if chunk_size else 5000)
     else:
         raise ValueError('unsupported type (%s) of input' % type(inp))
 

@@ -199,7 +199,7 @@ class KmeansClustering(AbstractClustering):
         if first_chunk:
             self._t_total = 0
             mem_req = int(1.0 / 1024 ** 2 * X[0, :].nbytes * self.n_frames_total(stride))
-            if mem_req > 10:
+            if mem_req > 100:
                 self._logger.warn('K-means implementation is currently memory inefficient.'
                                   ' This calculation needs %i megabytes of main memory.'
                                   ' If you get a memory error, try using a larger stride.'
@@ -249,6 +249,8 @@ class MiniBatchKmeansClustering(KmeansClustering):
 
         super(MiniBatchKmeansClustering, self)._param_init()
 
+        # Drawing mini batch sample on initialization such that sampled data is available upon the first call of
+        # _param_add_data. Returning the below 2-tuple ensures that this is happening.
         return 0, self._draw_mini_batch_sample()
 
     # @profile
