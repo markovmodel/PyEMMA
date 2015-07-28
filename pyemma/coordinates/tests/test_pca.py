@@ -37,7 +37,7 @@ from pyemma.util.log import getLogger
 import pyemma.util.types as types
 
 
-logger = getLogger('TestTICA')
+logger = getLogger('TestPCA')
 
 
 class TestPCAExtensive(unittest.TestCase):
@@ -175,6 +175,15 @@ class TestPCAExtensive(unittest.TestCase):
     def test_trajectory_lengths(self):
         assert len(self.pca_obj.trajectory_lengths()) == 1
         assert self.pca_obj.trajectory_lengths()[0] == self.pca_obj.trajectory_length(0)
+    
+    def test_provided_means(self):
+        data = np.random.random((300, 3))
+        mean = data.mean(axis=0)
+        tica_obj = pca(data, mean=mean)
+
+        tica_calc_mean = pca(data)
+        np.testing.assert_allclose(tica_obj.mean, tica_calc_mean.mean)
+        np.testing.assert_allclose(tica_obj.cov, tica_calc_mean.cov)
 
 if __name__ == "__main__":
     unittest.main()
