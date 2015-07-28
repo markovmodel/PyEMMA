@@ -35,6 +35,7 @@ from pyemma.util.exceptions import NotConvergedWarning
 __all__ = ['Transformer']
 __author__ = 'noe, marscher'
 
+
 class TransformerIteratorContext(object):
 
     def __init__(self, stride=1, lag=0):
@@ -54,9 +55,9 @@ class TransformerIteratorContext(object):
 
     def ra_indices_for_traj(self, traj):
         """
-        Gives the indices for a trajectory file (without changing the order within the trajectory itself).
-        :param traj:
-        :return:
+        Gives the indices for a trajectory file index (without changing the order within the trajectory itself).
+        :param traj: a trajectory file index
+        :return: a Nx1 - np.array of the indices corresponding to the trajectory index
         """
         assert not self.uniform_stride, "requested random access indices, but is in uniform stride mode"
         return self._stride[self._stride[:, 0] == traj][:, 1] if traj in self.traj_keys else np.array([])
@@ -104,6 +105,7 @@ class TransformerIteratorContext(object):
                     # traj indices were not sorted
                     return False
         return True
+
 
 class TransformerIterator(object):
 
