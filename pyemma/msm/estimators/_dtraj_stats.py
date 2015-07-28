@@ -8,7 +8,7 @@ from pyemma.util.linalg import submatrix
 from pyemma.util.discrete_trajectories import visited_set
 
 
-class DiscreteTrajectoryStats:
+class DiscreteTrajectoryStats(object):
     r""" Statistics, count matrices and connectivity from discrete trajectories
 
     Operates sparse by default.

@@ -7,7 +7,7 @@ import numpy as np
 import pyemma.util.discrete_trajectories as dt
 from pyemma.msm import markov_model
 
-class DoubleWell_Discrete_Data:
+class DoubleWell_Discrete_Data(object):
     """ MCMC process in a symmetric double well potential, spatially discretized to 100 bins
 
     """
