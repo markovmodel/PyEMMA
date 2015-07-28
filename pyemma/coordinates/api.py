@@ -204,6 +204,13 @@ def load(trajfiles, features=None, top=None, stride=1, chunk_size=100):
     :func:`pyemma.coordinates.pipeline`
         if your memory is not big enough, use pipeline to process it in a streaming manner
 
+    Examples
+    --------
+
+    >>> from pyemma.coordinates import load
+    >>> files = ['traj01.xtc', 'traj02.xtc'] # doctest: +SKIP
+    >>> output = load(files, top='my_structure.pdb') # doctest: +SKIP
+
     """
     if isinstance(trajfiles, basestring) or (
         isinstance(trajfiles, (list, tuple))
@@ -271,6 +278,29 @@ def source(inp, features=None, top=None, chunk_size=100):
         The data input is the first stage for your pipeline. Add other stages to it and build a pipeline
         to analyze big data in streaming mode.
 
+    Examples
+    --------
+
+    Create a reader for NumPy files:
+    >>> import numpy as np
+    >>> from pyemma.coordinates import source
+    >>> reader = source(['001.npy', '002.npy'] # doctest: +SKIP
+
+    Create a reader for trajectory files and select some distance as feature:
+    >>> reader = source(['traj01.xtc', 'traj02.xtc'], top='my_structure.pdb') # doctest: +SKIP
+    >>> reader.featurizer.add_distances([[0, 1], [5, 6]]) # doctest: +SKIP
+    >>> calculated_features = reader.get_output() # doctest: +SKIP
+
+    create a reader for a csv file:
+    >>> reader = source('data.csv') # doctest: +SKIP
+
+    Create a reader for huge NumPy in-memory arrays to process them in huge chunks
+    to avoid memory issues:
+    >>> data = np.random.random(int(1e7))
+    >>> reader = source(data, chunk_size=5000)
+    >>> from pyemma.coordinates import cluster_regspace
+    >>> regspace = cluster_regspace(reader, dmin=0.1)
+
     """
     # CASE 1: input is a string or list of strings
     # check: if single string create a one-element list
@@ -325,6 +355,23 @@ def pipeline(stages, run=True, stride=1, chunksize=100):
     pipe : :class:`Pipeline <pyemma.coordinates.pipelines.Pipeline>`
         A pipeline object that is able to conduct big data analysis with limited memory in streaming mode.
 
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from pyemma.coordinates import source, tica, assign_to_centers, pipeline
+
+    Create some random data and cluster centers:
+    >>> data = np.random.random((1000, 3))
+    >>> centers = data[np.random.choice(1000, 10)]
+    >>> reader = source(data)
+
+    Define a TICA transformation with lag time 10:
+    >>> tica_obj = tica(lag=10)
+
+    Assign any input to given centers:
+    >>> assign = assign_to_centers(centers=centers)
+    >>> pipe = pipeline([reader, tica_obj, assign])
+    >>> pipe.parametrize()
 
     .. autoclass:: pyemma.coordinates.pipelines.Pipeline
         :members:
@@ -415,7 +462,6 @@ def discretizer(reader,
 
     >>> disc.parametrize()
 
-
     Access the the discrete trajectories and saving them to files:
 
     >>> disc.dtrajs # doctest: +ELLIPSIS
@@ -428,7 +474,7 @@ def discretizer(reader,
     """
     if cluster is None:
         _logger.warning('You did not specify a cluster algorithm.'
-                       ' Defaulting to kmeans(k=100)')
+                        ' Defaulting to kmeans(k=100)')
         cluster = _KmeansClustering(n_clusters=100)
     disc = _Discretizer(reader, transform, cluster, param_stride=stride)
     if run:
@@ -491,7 +537,7 @@ def memory_reader(data):
     return _DataInMemory(data)
 
 
-def save_traj(traj_inp, indexes, outfile, topfile=None, stride = 1, chunksize=1000, verbose=False):
+def save_traj(traj_inp, indexes, outfile, topfile=None, stride=1, chunksize=1000, verbose=False):
     r""" Saves a sequence of frames as a single trajectory.
 
     Extracts the specified sequence of time/trajectory indexes from traj_inp
@@ -819,6 +865,23 @@ def pca(data=None, dim=2, var_cutoff=1.0, stride=1):
 
     See `Wiki page <http://en.wikipedia.org/wiki/Principal_component_analysis>`_ for more theory and references.
 
+    Examples
+    --------
+    Create some input data:
+
+    >>> import numpy as np
+    >>> from pyemma.coordinates import pca
+    >>> data = np.ones((1000, 2))
+    >>> data[0, -1] = 0
+
+    Project all input data on the first principal component:
+
+    >>> pca_obj = pca(data, dim=1)
+    >>> pca_obj.get_output() # doctest: +ELLIPSIS
+    [array([[-0.99900001],
+           [ 0.001     ],
+           [ 0.001     ],...
+
 
     .. autoclass:: pyemma.coordinates.transform.pca.PCA
         :members:
@@ -945,6 +1008,19 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=1.0, kinetic_map=False, stride=1,
     [1]_ and [3]_. It was shown in [1]_ that when applied to molecular dynamics data,
     TICA is an approximation to the eigenvalues and eigenvectors of the true underlying
     dynamics.
+
+    Examples
+    --------
+    Invoke TICA transformation with a given lag time and output dimension:
+
+    >>> import numpy as np
+    >>> from pyemma.coordinates import tica
+    >>> data = np.random.random((100,3))
+    >>> projected_data = tica(data, lag=2, dim=1).get_output()[0]
+
+    For a brief explaination why TICA outperforms PCA to extract a good reaction
+    coordinate have a look `here
+    <http://docs.markovmodel.org/lecture_tica.html#Example:-TICA-versus-PCA-in-a-stretched-double-well-potential>`_.
 
 
     .. autoclass:: pyemma.coordinates.transform.tica.TICA
