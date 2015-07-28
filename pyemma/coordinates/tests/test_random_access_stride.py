@@ -36,15 +36,15 @@ class TestRandomAccessStride(TestCase):
         np.testing.assert_array_equal(ctx.traj_keys, np.array([0, 1]))
 
         # sorted within trajectory, not sorted by trajectory key
-        ctx = TransformerIteratorContext(stride=np.asarray([[1, 1], [1, 2], [1, 3], [0, 0], [0, 1], [0, 2]]))
-        assert not ctx.is_stride_sorted()
+        with self.assertRaises(ValueError):
+            TransformerIteratorContext(stride=np.asarray([[1, 1], [1, 2], [1, 3], [0, 0], [0, 1], [0, 2]]))
 
         # sorted by trajectory key, not within trajectory
-        ctx = TransformerIteratorContext(stride=np.asarray([[0, 0], [0, 1], [0, 2], [1, 1], [1, 5], [1, 3]]))
-        assert not ctx.is_stride_sorted()
+        with self.assertRaises(ValueError):
+            TransformerIteratorContext(stride=np.asarray([[0, 0], [0, 1], [0, 2], [1, 1], [1, 5], [1, 3]]))
 
         np.testing.assert_array_equal(ctx.ra_indices_for_traj(0), np.array([0, 1, 2]))
-        np.testing.assert_array_equal(ctx.ra_indices_for_traj(1), np.array([1, 5, 3]))
+        np.testing.assert_array_equal(ctx.ra_indices_for_traj(1), np.array([1, 2, 3]))
 
     def test_data_in_memory_random_access(self):
         # access with a chunk_size that is larger than the largest index list of stride
