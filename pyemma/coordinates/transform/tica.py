@@ -210,6 +210,8 @@ class TICA(Transformer):
         self._N_mean = 0
         self._N_cov = 0
         self._N_cov_tau = 0
+        # create mean array and covariance matrices
+        self.mu = np.zeros(indim)
 
         # create covariance matrices
         self.cov = np.zeros((indim, indim))
@@ -431,6 +433,31 @@ class TICA(Transformer):
         """
         feature_sigma = np.sqrt(np.diag(self.cov))
         return np.dot(self.cov, self._eigenvectors[:, : self.dimension()]) / feature_sigma[:, np.newaxis]
+@property
+    def timescales(self):
+        r"""Implied timescales of the TICA transformation
+
+
+        For each :math:`i`-th eigenvalue, this returns
+
+        .. math::
+
+            t_i = -\frac{\tau}{\log(|\lambda_i|)}
+
+        where :math:`\tau` is the :py:obj:`lag` of the TICA object and :math:`\lambda_i` is the `i`-th
+        :py:obj:`eigenvalue <eigenvalues>` of the TICA object.
+
+        Returns
+        -------
+        timescales: 1D np.array
+            numpy array with the implied timescales. In principle, one should expect as many timescales as
+            input coordinates were available. However, less eigenvalues will be returned if the TICA matrices
+            were not full rank or :py:obj:`var_cutoff` was parsed
+        """
+        if self._parametrized:
+            return -self.lag/np.log(np.abs(self.eigenvalues))
+        else:
+            self._logger.info("TICA not yet parametrized")
 
     @property
     def eigenvalues(self):
