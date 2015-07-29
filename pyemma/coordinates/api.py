@@ -48,6 +48,7 @@ from pyemma.coordinates.transform.pca import PCA as _PCA
 from pyemma.coordinates.transform.tica import TICA as _TICA
 # clustering
 from pyemma.coordinates.clustering.kmeans import KmeansClustering as _KmeansClustering
+from pyemma.coordinates.clustering.kmeans import MiniBatchKmeansClustering as _MiniBatchKmeansClustering
 from pyemma.coordinates.clustering.uniform_time import UniformTimeClustering as _UniformTimeClustering
 from pyemma.coordinates.clustering.regspace import RegularSpaceClustering as _RegularSpaceClustering
 from pyemma.coordinates.clustering.assign import AssignCenters as _AssignCenters
@@ -223,7 +224,7 @@ def load(trajfiles, features=None, top=None, stride=1, chunk_size=100):
         raise ValueError('unsupported type (%s) of input' % type(trajfiles))
 
 
-def source(inp, features=None, top=None, chunk_size=100):
+def source(inp, features=None, top=None, chunk_size=None):
     r""" Wraps input as data source for pipeline.
 
     Use this function to construct the first stage of a data processing :func:`pipeline`.
@@ -258,7 +259,7 @@ def source(inp, features=None, top=None, chunk_size=100):
         A topology file name. This is needed when molecular dynamics trajectories are given and no featurizer is given.
         In this case, only the Cartesian coordinates will be read.
 
-    chunk_size: int, optional, default = 100
+    chunk_size: int, optional, default = 100 for file readers and 5000 for already loaded data
         The chunk size at which the input file is being processed.
 
     Returns
@@ -281,7 +282,7 @@ def source(inp, features=None, top=None, chunk_size=100):
     # check: if single string create a one-element list
     if isinstance(inp, basestring) or (isinstance(inp, (list, tuple))
                                        and (any(isinstance(item, basestring) for item in inp) or len(inp) is 0)):
-        reader = _create_file_reader(inp, top, features, chunk_size=chunk_size)
+        reader = _create_file_reader(inp, top, features, chunk_size=chunk_size if chunk_size else 100)
 
     elif isinstance(inp, _np.ndarray) or (isinstance(inp, (list, tuple))
                                       and (any(isinstance(item, _np.ndarray) for item in inp) or len(inp) is 0)):
@@ -291,7 +292,7 @@ def source(inp, features=None, top=None, chunk_size=100):
         # check: if single array, create a one-element list
         # check: do all arrays have compatible dimensions (*, N)? If not: raise ValueError.
         # create MemoryReader
-        reader = _DataInMemory(inp)
+        reader = _DataInMemory(inp, chunksize=chunk_size if chunk_size else 5000)
     else:
         raise ValueError('unsupported type (%s) of input' % type(inp))
 
@@ -1006,6 +1007,11 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=1.0, kinetic_map=False, stride=1,
 @deprecated("Please use pyemma.coordinates.cluster_kmeans()")
 def kmeans(data=None, k=100, max_iter=1000, stride=1):
     return cluster_kmeans(data, k, max_iter, stride=stride)
+
+
+def cluster_mini_batch_kmeans(data=None, k=100, max_iter=10, batch_size=0.2, metric='euclidean', init_strategy='kmeans++'):
+    res = _MiniBatchKmeansClustering(n_clusters=k, max_iter=max_iter, metric=metric, init_strategy=init_strategy, batch_size=batch_size)
+    return _param_stage(data, res, stride=1)
 
 
 def cluster_kmeans(data=None, k=100, max_iter=10, stride=1, metric='euclidean', init_strategy='kmeans++'):
