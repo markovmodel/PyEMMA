@@ -36,7 +36,7 @@ from mdtraj.core.trajectory import load, _parse_topology, _TOPOLOGY_EXTS, _get_e
 from itertools import groupby
 from operator import itemgetter
 
-
+#@profile
 def iterload(filename, chunk=100, **kwargs):
     """An iterator over a trajectory from one or more files on disk, in fragments
 
@@ -90,6 +90,8 @@ def iterload(filename, chunk=100, **kwargs):
     extension = _get_extension(filename)
     if extension not in _TOPOLOGY_EXTS:
         topology = _parse_topology(top)
+    else:
+        topology = top
 
     if chunk == 0:
         # If chunk was 0 then we want to avoid filetype-specific code
@@ -182,5 +184,5 @@ def _efficient_traj_join(trajs):
         xyz[t:n+t] = traj.xyz
         t += n
         # TODO: what about time?
-    return Trajectory(xyz, top, None, unitcell_angles=trajs[0].unitcell_angles,
-                      unitcell_lengths=trajs[0].unitcell_lengths)
+    return Trajectory(xyz, top, None, None, None)#unitcell_angles=trajs[0].unitcell_angles,
+                      #unitcell_lengths=trajs[0].unitcell_lengths)
