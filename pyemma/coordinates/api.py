@@ -497,7 +497,6 @@ def memory_reader(data):
 
 
 def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=1000, verbose=False,
-              copy_not_join = False
               ):
     r""" Saves a sequence of frames as a single trajectory.
 
@@ -543,13 +542,6 @@ def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=1000, 
         The chunksize for reading input trajectory files. If :py:obj:`traj_inp` is a
         :py:func:`pyemma.coordinates.data.feature_reader.FeatureReader` object, this input variable will be ignored and
         :py:obj:`traj_inp.chunksize` will be used instead.
-
-    copy_not_join : boolean, default is False
-        This parameter decides how geometry objects are appended. If left to False, mdtraj's own
-        :py:obj:`join` method will be used, which is the recommended method. However, for some combinations of
-        py:obj:`chunksizes` and :py:obj:`frames` this might be not very effective. If one sets :py:obj:`copy_not_join`
-        to True, the returned :py:obj:`traj` is preallocated and the important attributes (currently traj.xyz, traj.time,
-        traj.unit_lengths, traj.unit_angles) are broadcasted onto it on the fly.
 
     verbose : boolean, default is False
         Verbose output while looking for :py:obj`indexes` in the :py:obj:`traj_inp.trajfiles`
@@ -597,25 +589,17 @@ def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=1000, 
                                                                             top,
                                                                             frames, chunksize=chunksize,
                                                                             verbose=verbose, stride = stride,
-                                                                            copy_not_join=copy_not_join),
+                                                                            copy_not_join=True),
                                                           None)
                                         )
     # Prepare the trajectory object
-    if copy_not_join:
-        traj = _preallocate_empty_trajectory(top, indexes.shape[0])
-    else:
-        traj = None
+    traj = _preallocate_empty_trajectory(top, indexes.shape[0])
 
     # Iterate directly over the index of files and pick the trajectory that you need from the iterator list
     for ii, traj_idx in enumerate(file_pos):
         # Append the trajectory from the respective list of iterators
         # and advance that iterator
-        if copy_not_join:   # => traj has been already preallocated, see above
-            traj = _copy_traj_attributes(traj, trajectory_iterator_list[traj_idx].next(), ii)
-        elif traj is None: # => copy_not_join is False AND 1st run
-            traj = trajectory_iterator_list[traj_idx].next()
-        else: # => copy_not_join is False AND we're not on the 1st run
-            traj = traj.join(trajectory_iterator_list[traj_idx].next())
+        traj = _copy_traj_attributes(traj, trajectory_iterator_list[traj_idx].next(), ii)
 
     # Return to memory as an mdtraj trajectory object
     if outfile is None:
@@ -628,7 +612,7 @@ def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=1000, 
 
 
 def save_trajs(traj_inp, indexes, prefix = 'set_', fmt = None, outfiles = None,
-               inmemory = False, stride = 1, copy_not_join = False, verbose = False):
+               inmemory = False, stride = 1, verbose = False):
     r""" Saves sequences of frames as multiple trajectories.
 
     Extracts a number of specified sequences of time/trajectory indexes from the input loader
@@ -673,13 +657,6 @@ def save_trajs(traj_inp, indexes, prefix = 'set_', fmt = None, outfiles = None,
         However, in certain situations, that might not be the case. Examples of these situations are cases in
         which stride value != 1 was used when reading/featurizing/transforming/discretizing the files contained in
         traj_inp.trajfiles.
-
-    copy_not_join : boolean, default is False
-        This parameter decides how geometry objects are appended. If left to False, mdtraj's own
-        :py:obj:`join` method will be used, which is the recommended method. However, for some combinations of
-        py:obj:`chunksizes` and :py:obj:`frames` this might be not very effective. If one sets :py:obj:`copy_not_join`
-        to True, the returned :py:obj:`traj` is preallocated and the important attributes (currently traj.xyz, traj.time,
-        traj.unit_lengths, traj.unit_angles) are broadcasted onto it on the fly.
 
     verbose : boolean, default is False
         Verbose output while looking for "indexes" in the "traj_inp.trajfiles"
@@ -728,11 +705,11 @@ def save_trajs(traj_inp, indexes, prefix = 'set_', fmt = None, outfiles = None,
     if not inmemory:
         for i_indexes, outfile in _itertools.izip(indexes, outfiles):
             # TODO: use **kwargs to parse to save_traj
-            save_traj(traj_inp, i_indexes, outfile, stride = stride, verbose=verbose, copy_not_join = False )
+            save_traj(traj_inp, i_indexes, outfile, stride = stride, verbose=verbose)
 
     # This implementation is "one file - one pass" but might temporally create huge memory objects
     else:
-        traj = save_traj(traj_inp, indexes, outfile=None, stride = stride, verbose=verbose, copy_not_join = False)
+        traj = save_traj(traj_inp, indexes, outfile=None, stride = stride, verbose=verbose)
         i_idx = 0
         for i_indexes, outfile in _itertools.izip(indexes, outfiles):
             # Create indices for slicing the mdtraj trajectory object
