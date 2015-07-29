@@ -88,10 +88,10 @@ def plot_implied_timescales(ITS, ax=None, outfile=None, xlog=False, ylog=True, c
             tref = refs[i]
             ax.plot([0,min(tref,xmax)]*dt, [tref,tref]*dt, color='black', linewidth=1)
     # cutoff
-    ax.fill_between(lags*dt, ax.get_ylim()[0]*_np.ones(len(lags))*dt, lags*dt, alpha=0.5, color='grey')
     ax.plot(lags*dt, lags*dt, linewidth=2, color='black')
     ax.set_xlim([1*dt,xmax*dt])
     #ax.set_ylim([ymin,ymax])
+    ax.fill_between(lags*dt, ax.get_ylim()[0]*_np.ones(len(lags))*dt, lags*dt, alpha=0.5, color='grey')
     # formatting
     ax.set_xlabel('lag time / %s'%units)
     ax.set_ylabel('timescale / %s'%units)

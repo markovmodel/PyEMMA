@@ -111,7 +111,7 @@ class TICA(Transformer):
            Phys. Rev. Lett. 72, 3634.
         .. [4] Noe, F. and C. Clementi. 2015.
             Kinetic distance and kinetic maps from molecular dynamics simulation
-            (in preparation).
+            http://arxiv.org/abs/1506.06259
 
         """
         super(TICA, self).__init__()

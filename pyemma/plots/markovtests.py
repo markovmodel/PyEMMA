@@ -94,10 +94,10 @@ def plot_cktest(cktest, figsize=None, diag=False, y01=True, layout=None, padding
             j = int(k%cktest.nsets)
             lest, lpred = _add_ck_subplot(cktest, ax, i, j, y01=y01)
     # figure legend
-    predlabel = 'predictions'
-    estlabel = 'estimates'
+    predlabel = 'predict'
+    estlabel = 'estimate'
     if cktest.has_errors:
-        predlabel += '     confidence {:3.1f}%'.format(100.0*cktest.conf)
+        predlabel += '     conf. {:3.1f}%'.format(100.0*cktest.conf)
     fig.legend((lest[0], lpred[0]), (estlabel, predlabel), 'upper center', ncol=2, frameon=False)
     # change subplot padding
     plt.subplots_adjust(top=1.0-padding_top, wspace=padding_between, hspace=padding_between)
