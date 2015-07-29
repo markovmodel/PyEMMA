@@ -210,9 +210,6 @@ class TICA(Transformer):
         self._N_mean = 0
         self._N_cov = 0
         self._N_cov_tau = 0
-        # create mean array and covariance matrices
-        self.mu = np.zeros(indim)
-
         # create covariance matrices
         self.cov = np.zeros((indim, indim))
         self.cov_tau = np.zeros_like(self.cov)
@@ -433,7 +430,8 @@ class TICA(Transformer):
         """
         feature_sigma = np.sqrt(np.diag(self.cov))
         return np.dot(self.cov, self._eigenvectors[:, : self.dimension()]) / feature_sigma[:, np.newaxis]
-@property
+
+    @property
     def timescales(self):
         r"""Implied timescales of the TICA transformation
 
