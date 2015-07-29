@@ -75,21 +75,26 @@ class ImpliedTimescales(Estimator):
     lags = None : array-like with integers
         integer lag times at which the implied timescales will be calculated
 
-    nits = 10 : int
+    nits = None : int
         maximum number of implied timescales to be computed and stored. If less
         timescales are available, nits will be set to a smaller value during
-        estimation
+        estimation. None means the number of timescales will be automatically
+        determined.
 
     failfast = False : boolean
         if True, will raise an error as soon as not all requested timescales can be computed at all requested
         lagtimes. If False, will continue with a warning and compute the timescales/lagtimes that are possible.
 
+    n_jobs = 1 : int
+        how many subprocesses to start to estimate the models for each lag time.
+
     """
-    def __init__(self, estimator, lags=None, nits=10, failfast=False):
+    def __init__(self, estimator, lags=None, nits=None, failfast=False, n_jobs=1):
         # initialize
         self.estimator = get_estimator(estimator)
         self.nits = nits
         self.failfast = failfast
+        self.n_jobs = n_jobs
 
         # set lag times
         if _types.is_int(lags):  # got a single integer. We create a list
@@ -134,7 +139,10 @@ class ImpliedTimescales(Estimator):
         param_sets = [p for p in param_sets]
 
         # run estimation on all lag times
-        self._models, self._estimators = estimate_param_scan(self.estimator, data, param_sets, return_estimators=True)
+        self._models, self._estimators = estimate_param_scan(self.estimator,
+                                                             data, param_sets,
+                                                             return_estimators=True,
+                                                             n_jobs=self.n_jobs)
 
         ### PROCESS RESULTS
 
@@ -143,6 +151,8 @@ class ImpliedTimescales(Estimator):
 
         # how many finity timescales do we really have?
         maxnts = max([len(ts[np.isfinite(ts)]) for ts in timescales])
+        if self.nits is None:
+            self.nits = maxnts
         if maxnts < self.nits:
             self.nits = maxnts
             self.logger.warn('Changed user setting nits to the number of available timescales nits=' + str(self.nits))
@@ -286,9 +296,9 @@ class ImpliedTimescales(Estimator):
                                ' try calling bootstrap() before')
         # OK, go:
         if process is None:
-            return np.mean(self._its_samples[self._successful_lag_indexes, :, :], axis=0)
+            return np.mean(self._its_samples[:, self._successful_lag_indexes, :], axis=0)
         else:
-            return np.mean(self._its_samples[self._successful_lag_indexes, :, process], axis=0)
+            return np.mean(self._its_samples[:, self._successful_lag_indexes, process], axis=0)
 
     @property
     def sample_std(self):
@@ -330,9 +340,9 @@ class ImpliedTimescales(Estimator):
                                ' try calling bootstrap() before')
         # OK, go:
         if process is None:
-            return np.std(self._its_samples[self._successful_lag_indexes, :, :], axis=0)
+            return np.std(self._its_samples[:, self._successful_lag_indexes, :], axis=0)
         else:
-            return np.std(self._its_samples[self._successful_lag_indexes, :, process], axis=0)
+            return np.std(self._its_samples[:, self._successful_lag_indexes, process], axis=0)
 
     def get_sample_conf(self, conf=0.95, process=None):
         r"""Returns the confidence interval that contains alpha % of the sample data
@@ -358,9 +368,9 @@ class ImpliedTimescales(Estimator):
                                ' try calling bootstrap() before')
         # OK, go:
         if process is None:
-            return confidence_interval(self._its_samples[self._successful_lag_indexes, :, :], conf=conf)
+            return confidence_interval(self._its_samples[:, self._successful_lag_indexes, :], conf=conf)
         else:
-            return confidence_interval(self._its_samples[self._successful_lag_indexes, :, process], conf=conf)
+            return confidence_interval(self._its_samples[:, self._successful_lag_indexes, process], conf=conf)
 
     @property
     def estimators(self):
@@ -390,9 +400,7 @@ class ImpliedTimescales(Estimator):
         set. Hence, the output is not necessarily the **active** fraction. For that, use the
         :py:func:`EstimatedMSM.active_count_fraction` function of the :py:class:`EstimatedMSM` class object.
         """
-
         # TODO : implement fraction_of_active_frames
-
         # Are we computing this for the first time?
         if not hasattr(self,'_fraction'):
             self._fraction = np.zeros_like(self.lagtimes, dtype='float32')

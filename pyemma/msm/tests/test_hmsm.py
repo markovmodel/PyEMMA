@@ -18,10 +18,8 @@ class TestMLHMM(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # load observations
-        testfile = abspath(join(abspath(__file__), pardir))
-        testfile = join(testfile, '../../util/tests/data/')
-        testfile = join(testfile, '2well_traj_100K.dat')
-        obs = np.loadtxt(testfile, dtype=int)
+        import pyemma.datasets
+        obs = pyemma.datasets.load_2well_discrete().dtraj_T100K_dt10
 
         # hidden states
         nstates = 2
@@ -126,7 +124,7 @@ class TestMLHMM(unittest.TestCase):
         assert tab > 0
         assert tba > 0
         # HERE:
-        err = np.minimum(np.abs(tab - 680.708754626), np.abs(tba - 680.708754626))
+        err = np.minimum(np.abs(tab - 680.708752214), np.abs(tba - 699.560589099))
         assert (err < 1e-6)
 
     # =============================================================================

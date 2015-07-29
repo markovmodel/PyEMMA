@@ -8,7 +8,7 @@ env:
   global:
     - PATH=$HOME/miniconda/bin:$HOME/miniconda/envs/ci/bin/:$PATH
      # note: mdtraj and coveralls are provided by omnia binstar repo
-    - common_py_deps="pip pylint nose python-coveralls cython mdtraj matplotlib"
+    - common_py_deps="pip pylint nose python-coveralls cython mdtraj matplotlib numpy scipy"
     - doc_deps="ipython ipython-notebook sphinx==1.2.3 matplotlib"
     - deps="scipy numpy"
   matrix:
@@ -25,14 +25,19 @@ before_install:
 - mkdir -p ~/.config/matplotlib/
 - touch ~/.config/matplotlib/matplotlibrc
 - "echo 'backend: Agg' >> ~/.config/matplotlib/matplotlibrc"
-# temporarily install bhmm from git, as recent pyemma development uses not yet released features of bhmm
+
+# always test against msmtools@devel
+- pip install git+https://github.com/markovmodel/msmtools@devel 
+
+# install bhmm from git, as recent pyemma development uses not yet released features of bhmm
 - pip install git+https://github.com/bhmm/bhmm@master
+
 install:
 - python setup.py develop 
 
 script:
-# run tests omiting slow attributed tests.
-- nosetests --with-coverage --cover-inclusive --cover-package=pyemma
+# run tests
+- nosetests --with-coverage --cover-inclusive --cover-package=pyemma --with-doctest --doctest-options="+NORMALIZE_WHITESPACE,+ELLIPSIS"
 # run pylint (non fatal exit and show only errors)
 - pylint -j 4 --rcfile=.pylintrc pyemma || true
 

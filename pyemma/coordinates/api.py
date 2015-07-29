@@ -121,9 +121,10 @@ def featurizer(topfile):
     Create a featurizer and add backbone torsion angles to active features.
     Then use it in :func:`source`
 
-    >>> feat = pyemma.coordinates.featurizer('my_protein.pdb')
-    >>> feat.add_backbone_torsions()
-    >>> reader = pyemma.coordinates.source(["my_traj01.xtc", "my_traj02.xtc"], features=feat)
+    >>> import pyemma.coordinates # doctest: +SKIP
+    >>> feat = pyemma.coordinates.featurizer('my_protein.pdb') # doctest: +SKIP
+    >>> feat.add_backbone_torsions() # doctest: +SKIP
+    >>> reader = pyemma.coordinates.source(["my_traj01.xtc", "my_traj02.xtc"], features=feat) # doctest: +SKIP
 
 
     .. autoclass:: pyemma.coordinates.data.featurizer.MDFeaturizer
@@ -403,12 +404,14 @@ def discretizer(reader,
     Examples
     --------
 
-    Construct a discretizer pipeline processing all coordinates of trajectory
-    "traj01.xtc" with a PCA transformation and cluster the principal components
+    Construct a discretizer pipeline processing all data
+    with a PCA transformation and cluster the principal components
     with uniform time clustering:
 
+    >>> import numpy as np
     >>> from pyemma.coordinates import source, pca, cluster_regspace, discretizer
-    >>> reader = source('traj01.xtc', top='topology.pdb')
+    >>> data = np.random.random((1000, 3))
+    >>> reader = source(data)
     >>> transform = pca(dim=2)
     >>> cluster = cluster_regspace(dmin=0.1)
     >>> disc = discretizer(reader, transform, cluster)
@@ -420,12 +423,12 @@ def discretizer(reader,
 
     Access the the discrete trajectories and saving them to files:
 
-    >>> disc.dtrajs
-    [array([0, 0, 1, 1, 2, ... ])]
+    >>> disc.dtrajs # doctest: +ELLIPSIS
+    [array([...
 
     This will store the discrete trajectory to "traj01.dtraj":
 
-    >>> disc.save_dtrajs()
+    >>> disc.save_dtrajs() # doctest: +SKIP
 
     """
     if cluster is None:
@@ -1075,8 +1078,8 @@ def cluster_kmeans(data=None, k=100, max_iter=10, stride=1, metric='euclidean', 
     >>> import pyemma.coordinates as coor
     >>> traj_data = [np.random.random((100, 3)), np.random.random((100,3))]
     >>> cluster_obj = coor.cluster_kmeans(traj_data, k=20, stride=1)
-    >>> cluster_obj.get_output()
-    [array([0, 0, 1, ... ])]
+    >>> cluster_obj.get_output() # doctest: +ELLIPSIS
+    [array([...
 
 
     .. autoclass:: pyemma.coordinates.clustering.kmeans.KmeansClustering
@@ -1286,11 +1289,13 @@ def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True,
     centers from file 'my_centers.csv'
 
     >>> import numpy as np
-    >>> data = np.loadtxt('my_data.csv')
-    >>> cluster_centers = np.loadtxt('my_centers.csv')
+
+    Generate some random data and choose 10 random centers:
+    >>> data = np.random.random((100, 3))
+    >>> cluster_centers = data[np.random.randint(0, 99, size=10)]
     >>> dtrajs = assign_to_centers(data, cluster_centers)
-    >>> print dtrajs
-    [array([0, 0, 1, ... ])]
+    >>> print dtrajs # doctest: +ELLIPSIS
+    [array([...
 
     """
     if centers is None:

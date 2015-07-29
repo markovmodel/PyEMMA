@@ -33,14 +33,11 @@ import unittest
 
 import numpy as np
 
-from os.path import abspath, join
-from os import pardir
-
 from pyemma.msm.generation import generate_traj
 from pyemma.msm.estimation import count_matrix, largest_connected_set, largest_connected_submatrix, transition_matrix
 from pyemma.msm.analysis import stationary_distribution, timescales
 from pyemma.util.numeric import assert_allclose
-from pyemma.msm.util.birth_death_chain import BirthDeathChain
+from pyemma.msm.tests.birth_death_chain import BirthDeathChain
 from pyemma.msm import estimate_markov_model
 
 
@@ -97,10 +94,8 @@ class TestMSMDoubleWell(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        testpath = abspath(join(abspath(__file__), pardir)) + '/../../util/tests/data/'
-        import pyemma.util.discrete_trajectories as dt
-
-        cls.dtraj = dt.read_discrete_trajectory(testpath + '2well_traj_100K.dat')
+        import pyemma.datasets
+        cls.dtraj = pyemma.datasets.load_2well_discrete().dtraj_T100K_dt10
         cls.tau = 10
         cls.msmrev = estimate_markov_model(cls.dtraj, cls.tau)
         cls.msm = estimate_markov_model(cls.dtraj, cls.tau, reversible=False)

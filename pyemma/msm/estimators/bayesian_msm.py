@@ -5,6 +5,7 @@ from pyemma.msm.estimators.maximum_likelihood_msm import MaximumLikelihoodMSM as
 from pyemma.msm.models.msm_sampled import SampledMSM as _SampledMSM
 from pyemma.util.types import ensure_dtraj_list
 
+
 class BayesianMSM(_MLMSM, _SampledMSM):
     """ Bayesian estimator for MSMs given discrete trajectory statistics
 
@@ -16,7 +17,7 @@ class BayesianMSM(_MLMSM, _SampledMSM):
     nsamples : int, optional, default=100
         number of sampled transition matrices used
 
-    nstep : int, optional, default=None
+    nsteps : int, optional, default=None
         number of Gibbs sampling steps for each transition matrix used.
         If None, nstep will be determined automatically
 
@@ -26,6 +27,23 @@ class BayesianMSM(_MLMSM, _SampledMSM):
 
     reversible : bool, optional, default = True
         If true compute reversible MSM, else non-reversible MSM
+
+    count_mode : str, optional, default='effective'
+        mode to obtain count matrices from discrete trajectories. Should be one of:
+
+        * 'sliding' : A trajectory of length T will have :math:`T-tau` counts
+            at time indexes
+            .. math:
+                (0 \rightarray \tau), (1 \rightarray \tau+1), ..., (T-\tau-1 \rightarray T-1)
+
+        * 'effective' : Uses an estimate of the transition counts that are
+            statistically uncorrelated. Recommended when used with a
+            Bayesian MSM.
+
+        * 'sample' : A trajectory of length T will have :math:`T/tau` counts
+            at time indexes
+            .. math:
+                (0 \rightarray \tau), (\tau \rightarray 2 \tau), ..., (((T/tau)-1) \tau \rightarray T)
 
     sparse : bool, optional, default = False
         If true compute count matrix, transition matrix and all derived
@@ -71,11 +89,12 @@ class BayesianMSM(_MLMSM, _SampledMSM):
         for two sigma or 99.7% for three sigma.
 
     """
-    def __init__(self, lag=1, nsamples=100, nstep=None, reversible=True, sparse=False,
+    def __init__(self, lag=1, nsamples=100, nsteps=None, reversible=True, count_mode='effective', sparse=False,
                  connectivity='largest', dt_traj='1 step', conf=0.95):
-        _MLMSM.__init__(self, lag=lag, reversible=reversible, sparse=sparse, connectivity=connectivity, dt_traj=dt_traj)
+        _MLMSM.__init__(self, lag=lag, reversible=reversible, count_mode=count_mode, sparse=sparse,
+                        connectivity=connectivity, dt_traj=dt_traj)
         self.nsamples = nsamples
-        self.nstep = nstep
+        self.nsteps = nsteps
         self.conf = conf
 
     def _estimate(self, dtrajs):
@@ -101,11 +120,12 @@ class BayesianMSM(_MLMSM, _SampledMSM):
         # transition matrix sampler
         from pyemma.msm.estimation import tmatrix_sampler
         from math import sqrt
-        if self.nstep is None:
-            self.nstep = int(sqrt(self.nstates))  # heuristic for number of steps to decorrelate
-        tsampler = tmatrix_sampler(self.effective_count_matrix, reversible=self.reversible, nstep=self.nstep)
-        sample_Ps, sample_mus = tsampler.sample(nsample=self.nsamples, return_statdist=True,
-                                                T_init=self.transition_matrix)
+        if self.nsteps is None:
+            self.nsteps = int(sqrt(self.nstates))  # heuristic for number of steps to decorrelate
+        # use the same count matrix as the MLE. This is why we have effective as a default
+        tsampler = tmatrix_sampler(self.count_matrix_active, reversible=self.reversible, T0=self.transition_matrix,
+                                   nsteps=self.nsteps)
+        sample_Ps, sample_mus = tsampler.sample(nsamples=self.nsamples, return_statdist=True)
         # construct sampled MSMs
         samples = []
         for i in range(self.nsamples):

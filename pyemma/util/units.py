@@ -27,7 +27,7 @@ __author__ = 'noe'
 
 import numpy as np
 
-class TimeUnit:
+class TimeUnit(object):
 
     _UNIT_STEP = -1
     _UNIT_FS = 0

@@ -105,22 +105,6 @@ def extensions():
 
     exts = []
 
-    mle_trev_given_pi_dense_module = \
-        Extension('pyemma.msm.estimation.dense.mle_trev_given_pi',
-                  sources=['pyemma/msm/estimation/dense/mle_trev_given_pi.pyx',
-                           'pyemma/msm/estimation/dense/_mle_trev_given_pi.c'],
-                  include_dirs=['pyemma/msm/estimation/dense'])
-
-    mle_trev_given_pi_sparse_module = \
-        Extension('pyemma.msm.estimation.sparse.mle_trev_given_pi',
-                  sources=['pyemma/msm/estimation/sparse/mle_trev_given_pi.pyx',
-                           'pyemma/msm/estimation/sparse/_mle_trev_given_pi.c'],
-                  include_dirs=['pyemma/msm/estimation/dense'])
-
-    mle_trev_sparse_module = \
-        Extension('pyemma.msm.estimation.sparse.mle_trev',
-                  sources=['pyemma/msm/estimation/sparse/mle_trev.pyx',
-                           'pyemma/msm/estimation/sparse/_mle_trev.c'])
     if sys.platform.startswith('win'):
         lib_prefix = 'lib'
     else:
@@ -149,10 +133,7 @@ def extensions():
                   library_dirs=[mdtraj.capi()['lib_dir']],
                   extra_compile_args=['-std=c99'])
 
-    exts += [mle_trev_given_pi_dense_module,
-             mle_trev_given_pi_sparse_module,
-             mle_trev_sparse_module,
-             regspatial_module,
+    exts += [regspatial_module,
              kmeans_module]
 
     if USE_CYTHON: # if we have cython available now, cythonize module
@@ -219,18 +200,6 @@ def get_cmdclass():
     return vervsioneer_cmds
 
 
-def script_entry_points():
-    import pkgutil
-    path = os.path.join('pyemma', 'cli')
-    names = [name for _, name, _ in pkgutil.iter_modules([path])]
-    s = ['%s = pyemma.cli.%s:main' % (script, script) for script in names]
-    entry_points = {
-        'console_scripts': s
-    }
-
-    return entry_points
-
-
 metadata = dict(
     name='pyEMMA',
     maintainer='Martin K. Scherer',
@@ -249,7 +218,6 @@ metadata = dict(
     packages=find_packages(),
     # install default emma.cfg into package.
     package_data=dict(pyemma=['pyemma.cfg']),
-    entry_points=script_entry_points(),
     cmdclass=get_cmdclass(),
     tests_require=['nose'],
     test_suite='nose.collector',
@@ -257,7 +225,11 @@ metadata = dict(
     install_requires=['numpy>=1.6.0',
                       'scipy>=0.11',
                       'mdtraj>=1.4.0',
-                      'matplotlib'],
+                      'matplotlib',
+                      'msmtools',
+                      'bhmm',
+                      'joblib',
+                      ],
     zip_safe=False,
 )
 
@@ -275,7 +247,6 @@ else:
     metadata['setup_requires'] = ['numpy>=1.6.0',
                                   'setuptools>3.6',
                                   'mdtraj>=1.4.0',
-                                  'bhmm',
                                   'nose',
                                   ]
 

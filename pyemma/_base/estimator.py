@@ -3,8 +3,11 @@ __author__ = 'noe'
 from pyemma._ext.sklearn.base import BaseEstimator as _BaseEstimator
 from pyemma._ext.sklearn.parameter_search import ParameterGrid
 from pyemma.util.log import getLogger
-import inspect
 from pyemma.util import types as _types
+
+import inspect
+import joblib
+
 
 # imports for external usage
 from pyemma._ext.sklearn.base import clone as clone_estimator
@@ -91,8 +94,46 @@ def _call_member(obj, name, args=None, failfast=True):
     else:  # now it's an Attribute, so we can just return its value
         return method
 
+
+def _estimate_param_scan_worker(estimator, params, X, evaluate, evaluate_args, failfast):
+    # run estimation
+    model = estimator.estimate(X, **params)
+    # deal with results
+    res = []
+
+    # deal with result
+    if evaluate is None:  # we want full models
+        res.append(model)
+    elif _types.is_iterable(evaluate):  # we want to evaluate function(s) of the model
+        values = []  # the function values the model
+        for ieval in range(len(evaluate)):
+            # get method/attribute name and arguments to be evaluated
+            name = evaluate[ieval]
+            args = None
+            if evaluate_args is not None:
+                args = evaluate_args[ieval]
+            # evaluate
+            try:
+                value = _call_member(model, name, args=args)  # try calling method/property/attribute
+            except AttributeError as e:  # couldn't find method/property/attribute
+                if failfast:
+                    raise e  # raise an AttributeError
+                else:
+                    value = None  # we just ignore it and return None
+            values.append(value)
+        # if we only have one value, unpack it
+        if len(values) == 1:
+            values = values[0]
+    else:
+        raise ValueError('Invalid setting for evaluate: '+str(evaluate))
+
+    if len(res) == 1:
+        res = res[0]
+    return res
+
+
 def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=None, failfast=True,
-                        return_estimators=False):
+                        return_estimators=False, n_jobs=1):
     # TODO: parallelize. For options see http://scikit-learn.org/stable/modules/grid_search.html
     # TODO: allow to specify method parameters in evaluate
     """ Runs multiple estimations using a list of parameter settings
@@ -154,55 +195,32 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
     a Bayesian estimator for that.
 
     """
-    # TODO: parallelization should first clone estimators and dispatch estimation routines.
     # make sure we have an estimator object
     estimator = get_estimator(estimator)
-    # if we want to return estimators, make clones. Otherwise just copy references
-    # TODO: for parallel processing we always need clones
-    if return_estimators:
-        estimators = [clone_estimator(estimator) for p in param_sets]
+    # if we want to return estimators, make clones. Otherwise just copy references.
+    # For parallel processing we always need clones
+    if return_estimators or n_jobs > 1 or n_jobs is None:
+        estimators = [clone_estimator(estimator) for _ in param_sets]
     else:
-        estimators = [estimator for p in param_sets]
+        estimators = [estimator for _ in param_sets]
 
-    res = []  # container for model or function evaluations
+    res = None  # container for model or function evaluations
 
     # if we evaluate, make sure we have a list of functions to evaluate
     if _types.is_string(evaluate):
         evaluate = [evaluate]
 
     # iterate over parameter settings
-    for i in range(len(param_sets)):
-        params = param_sets[i]
-        estimator = estimators[i]
-        # run estimation
-        model = estimator.estimate(X, **params)
+    pool = joblib.Parallel(n_jobs=n_jobs)
+    #task_iter = (delayed(_estimate)(counts[tau], tau, self._reversible, self._nits) for tau in self._lags)
+    task_iter = (joblib.delayed(_estimate_param_scan_worker)(estimators[i],
+                                                             param_sets[i], X,
+                                                             evaluate,
+                                                             evaluate_args,
+                                                             failfast)
+                for i in xrange(len(param_sets)))
 
-        # deal with result
-        if evaluate is None:  # we want full models
-            res.append(model)
-        elif _types.is_iterable(evaluate):  # we want to evaluate function(s) for each model
-            values = []  # the function values fo each model
-            for ieval in range(len(evaluate)):
-                # get method/attribute name and arguments to be evaluated
-                name = evaluate[ieval]
-                args = None
-                if evaluate_args is not None:
-                    args = evaluate_args[ieval]
-                # evaluate
-                try:
-                    value = _call_member(model, name, args=args)  # try calling method/property/attribute
-                except AttributeError as e:  # couldn't find method/property/attribute
-                    if failfast:
-                        raise e  # raise an AttributeError
-                    else:
-                        value = None  # we just ignore it and return None
-                values.append(value)
-            # if we only have one value, unpack it
-            if len(values) == 1:
-                values = values[0]
-            res.append(values)
-        else:
-            raise ValueError('Invalid setting for evaluate: '+str(evaluate))
+    res = pool(task_iter)
 
     # done
     if return_estimators:

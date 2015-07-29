@@ -54,7 +54,8 @@ ATOM    571  CB  LEU A  70      22.202  -1.897  -6.306  1.00 22.17           C
 ATOM    572  CG  LEU A  70      23.335  -2.560  -5.519  1.00 22.49           C  
 ATOM    573  CD1 LEU A  70      24.578  -1.665  -5.335  1.00 22.56           C  
 ATOM    574  CD2 LEU A  70      22.853  -3.108  -4.147  1.00 24.47           C
-"""
+
+""" *2 ### asn-leu-asn-leu
 
 
 def verbose_assertion_minrmsd(ref_Y, test_Y, test_obj):
@@ -76,6 +77,19 @@ class TestFeaturizer(unittest.TestCase):
         cls.asn_leu_pdbfile = tempfile.mkstemp(suffix=".pdb")[1]
         with open(cls.asn_leu_pdbfile, 'w') as fh:
             fh.write(asn_leu_pdb)
+
+        cls.asn_leu_traj = tempfile.mkstemp(suffix='.xtc')[1]
+
+        # create traj for asn_leu
+        n_frames = 4001
+        traj = mdtraj.load(cls.asn_leu_pdbfile)
+        ref = traj.xyz
+        new_xyz = np.empty((n_frames, ref.shape[1], 3))
+        noise = np.random.random(new_xyz.shape)
+        new_xyz[:, :,: ] = noise + ref
+        traj.xyz=new_xyz
+        traj.time=np.arange(n_frames)
+        traj.save(cls.asn_leu_traj)
 
         super(TestFeaturizer, cls).setUpClass()
 
@@ -260,8 +274,9 @@ class TestFeaturizer(unittest.TestCase):
         self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
         self.feat.add_backbone_torsions(cossin=True)
 
-        traj = mdtraj.load(self.asn_leu_pdbfile)
+        traj = mdtraj.load(self.asn_leu_traj, top=self.asn_leu_pdbfile)
         Y = self.feat.map(traj)
+        self.assertEqual(Y.shape, (len(traj), 3*4)) # (3 phi + 3 psi)*2 [cos, sin]
         assert(np.alltrue(Y >= -np.pi))
         assert(np.alltrue(Y <= np.pi))
         desc = self.feat.describe()
@@ -326,6 +341,103 @@ class TestFeaturizer(unittest.TestCase):
         # now the reference
         ref_Y = mdtraj.rmsd(self.traj, self.traj[self.ref_frame], atom_indices=self.atom_indices, precentered=True)
         verbose_assertion_minrmsd(ref_Y, test_Y, self)
+
+    def test_Residue_Mindist_Ca_all(self):
+        self.feat.add_residue_mindist(scheme='ca')
+        D = self.feat.map(self.traj)
+        Dref = mdtraj.compute_contacts(self.traj, scheme='ca')[0]
+        assert np.allclose(D, Dref)
+
+    def test_Residue_Mindist_Ca_all_threshold(self):
+        threshold = .7
+        self.feat.add_residue_mindist(scheme='ca', threshold=threshold)
+        D = self.feat.map(self.traj)
+        Dref = mdtraj.compute_contacts(self.traj, scheme='ca')[0]
+        Dbinary = np.zeros_like(Dref)
+        I = np.argwhere(Dref <= threshold)
+        Dbinary[I[:, 0], I[:, 1]] = 1
+        assert np.allclose(D, Dbinary)
+
+    def test_Residue_Mindist_Ca_array(self):
+        contacts=np.array([[20,10,], [10,0]])
+        self.feat.add_residue_mindist(scheme='ca', residue_pairs=contacts)
+        D = self.feat.map(self.traj)
+        Dref = mdtraj.compute_contacts(self.traj, scheme='ca', contacts=contacts)[0]
+        assert np.allclose(D, Dref)
+
+    def test_Group_Mindist_One_Group(self):
+        group0= [0,20,30,0]
+        self.feat.add_group_mindist(group_definitions=[group0]) # Even with duplicates
+        D = self.feat.map(self.traj)
+        dist_list = list(combinations(np.unique(group0),2))
+        Dref = mdtraj.compute_distances(self.traj, dist_list)
+        assert np.allclose(D.squeeze(), Dref.min(1))
+
+    def test_Group_Mindist_All_Three_Groups(self):
+        group0 = [0,20,30,0]
+        group1 = [1,21,31,1]
+        group2 = [2,22,32,2]
+        self.feat.add_group_mindist(group_definitions=[group0, group1, group2])
+        D = self.feat.map(self.traj)
+
+        # Now the references, computed separately for each combination of groups
+        dist_list_01 = np.array(list(product(np.unique(group0),np.unique(group1))))
+        dist_list_02 = np.array(list(product(np.unique(group0),np.unique(group2))))
+        dist_list_12 = np.array(list(product(np.unique(group1),np.unique(group2))))
+        Dref_01 = mdtraj.compute_distances(self.traj, dist_list_01).min(1)
+        Dref_02 = mdtraj.compute_distances(self.traj, dist_list_02).min(1)
+        Dref_12 = mdtraj.compute_distances(self.traj, dist_list_12).min(1)
+        Dref = np.vstack((Dref_01,Dref_02,Dref_12)).T
+
+        assert np.allclose(D.squeeze(), Dref)
+
+    def test_Group_Mindist_All_Three_Groups_threshold(self):
+        threshold = .7
+        group0 = [0, 20, 30, 0]
+        group1 = [1, 21, 31, 1]
+        group2 = [2, 22, 32, 2]
+        self.feat.add_group_mindist(group_definitions=[group0, group1, group2], threshold=threshold)
+        D = self.feat.map(self.traj)
+
+        # Now the references, computed separately for each combination of groups
+        dist_list_01 = np.array(list(product(np.unique(group0), np.unique(group1))))
+        dist_list_02 = np.array(list(product(np.unique(group0), np.unique(group2))))
+        dist_list_12 = np.array(list(product(np.unique(group1), np.unique(group2))))
+        Dref_01 = mdtraj.compute_distances(self.traj, dist_list_01).min(1)
+        Dref_02 = mdtraj.compute_distances(self.traj, dist_list_02).min(1)
+        Dref_12 = mdtraj.compute_distances(self.traj, dist_list_12).min(1)
+        Dref = np.vstack((Dref_01, Dref_02, Dref_12)).T
+
+        Dbinary = np.zeros_like(Dref)
+        I = np.argwhere(Dref <= threshold)
+        Dbinary[I[:, 0], I[:, 1]] = 1
+
+        assert np.allclose(D, Dbinary)
+
+
+    def test_Group_Mindist_Some_Three_Groups(self):
+        group0 = [0,20,30,0]
+        group1 = [1,21,31,1]
+        group2 = [2,22,32,2]
+
+        group_pairs=np.array([[0,1],
+                              [2,2],
+                              [0,2]])
+
+        self.feat.add_group_mindist(group_definitions=[group0, group1, group2], group_pairs=group_pairs)
+        D = self.feat.map(self.traj)
+
+        # Now the references, computed separately for each combination of groups
+        dist_list_01 = np.array(list(product(np.unique(group0),np.unique(group1))))
+        dist_list_02 = np.array(list(product(np.unique(group0),np.unique(group2))))
+        dist_list_22 = np.array(list(combinations(np.unique(group2),2)))
+        Dref_01 = mdtraj.compute_distances(self.traj, dist_list_01).min(1)
+        Dref_02 = mdtraj.compute_distances(self.traj, dist_list_02).min(1)
+        Dref_22 = mdtraj.compute_distances(self.traj, dist_list_22).min(1)
+        Dref = np.vstack((Dref_01,Dref_22,Dref_02)).T
+
+        assert np.allclose(D.squeeze(), Dref)
+
 
 class TestFeaturizerNoDubs(unittest.TestCase):
 
@@ -393,6 +505,14 @@ class TestFeaturizerNoDubs(unittest.TestCase):
         featurizer.add_minrmsd_to_ref(pdbfile)
         self.assertEquals(len(featurizer.active_features), 10)
 
+        featurizer.add_residue_mindist()
+        featurizer.add_residue_mindist()
+        self.assertEquals(len(featurizer.active_features), 11)
+
+        featurizer.add_group_mindist([[0,1],[0,2]])
+        featurizer.add_group_mindist([[0,1],[0,2]])
+        self.assertEquals(len(featurizer.active_features), 12)
+
     def test_labels(self):
         """ just checks for exceptions """
         featurizer = MDFeaturizer(pdbfile)
@@ -405,6 +525,8 @@ class TestFeaturizerNoDubs(unittest.TestCase):
         cs.dimension = lambda: 3
         featurizer.add_custom_feature(cs)
         featurizer.add_minrmsd_to_ref(pdbfile)
+        featurizer.add_residue_mindist()
+        featurizer.add_group_mindist([[0,1],[0,2]])
 
         featurizer.describe()
 

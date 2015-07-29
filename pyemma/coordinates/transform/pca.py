@@ -209,6 +209,7 @@ class PCA(Transformer):
         :param X: the input data
         :return: the projected data
         """
+        # TODO: consider writing an extension to avoid temporary Xmeanfree
         X_meanfree = X - self.mu
-        Y = np.dot(X_meanfree, self.eigenvectors[:, 0:self._dim])
+        Y = np.dot(X_meanfree, self.eigenvectors[:, 0:self.dimension()])
         return Y

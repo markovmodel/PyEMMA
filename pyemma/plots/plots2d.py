@@ -29,6 +29,34 @@ import numpy as _np
 import matplotlib.pylab as _plt
 from scipy.interpolate import griddata as gd
 
+def contour(x, y, z, ncontours = 50, colorbar=True, fig=None, ax=None, method='linear', zlim=None, cmap=None):
+    # check input
+    if (ax is None):
+        if fig is None:
+            ax = _plt.gca()
+        else:
+            ax = fig.gca()
+
+    # grid data
+    points = _np.hstack([x[:,None],y[:,None]])
+    xi, yi = _np.mgrid[x.min():x.max():100j, y.min():y.max():100j]
+    zi = gd(points, z, (xi, yi), method=method)
+    # contour level levels
+    if zlim is None:
+        zlim = (z.min(), z.max())
+    eps = (zlim[1] - zlim[0]) / float(ncontours)
+    levels = _np.linspace(zlim[0] - eps, zlim[1] + eps)
+    # contour plot
+    if cmap is None:
+        cmap=_plt.cm.jet
+    cf = ax.contourf(xi, yi, zi, ncontours, cmap=cmap, levels=levels)
+    # color bar if requested
+    if colorbar:
+        _plt.colorbar(cf, ax=ax)
+
+    return ax
+
+
 def scatter_contour(x, y, z, ncontours = 50, colorbar=True, fig=None, ax=None, cmap=None, outfile=None):
     """Shows a contour plot on scattered data (x,y,z) and the plots the positions of the points (x,y) on top.
 
@@ -56,34 +84,14 @@ def scatter_contour(x, y, z, ncontours = 50, colorbar=True, fig=None, ax=None, c
     ax : Axes object containing the plot
 
     """
-    # check input
-    if (ax is None):
-        if fig is None:
-            ax = _plt.gca()
-        else:
-            ax = fig.gca()
+    ax = contour(x, y, z, ncontours=ncontours, colorbar=colorbar, fig=fig, ax=ax, cmap=cmap)
 
-    # grid data
-    points = _np.hstack([x[:,None],y[:,None]])
-    xi, yi = _np.mgrid[x.min():x.max():100j, y.min():y.max():200j]
-    zi = gd(points, z, (xi, yi), method='cubic')
-    # contour level levels
-    eps = (z.max() - z.min()) / float(ncontours)
-    levels = _np.linspace(z.min() - eps, z.max() + eps)
-    # contour plot
-    if cmap is None:
-        cmap=_plt.cm.jet
-    cf = ax.contourf(xi, yi, zi, 15, cmap=cmap, levels=levels)
-    # color bar if requested
-    if colorbar:
-        _plt.colorbar(cf, ax=ax)
     # scatter points
     ax.scatter(x,y,marker='o',c='b',s=5)
 
     # show or save
-    #if outfile is None:
-    #    _plt.show()
     if outfile is not None:
         _plt.savefig(outfile)
 
     return ax
+

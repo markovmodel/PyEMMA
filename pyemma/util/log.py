@@ -39,7 +39,7 @@ from logging import CRITICAL, FATAL, ERROR, WARNING, WARN, INFO, DEBUG, NOTSET
 enabled = False
 
 
-class dummyLogger:
+class dummyLogger(object):
 
     """ set up a dummy logger if logging is disabled"""
 

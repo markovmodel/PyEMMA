@@ -10,9 +10,8 @@ class TestBMSM(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # load observations
-        testpath = abspath(join(abspath(__file__), pardir)) + '/../../util/tests/data/'
-        import pyemma.util.discrete_trajectories as dt
-        obs_micro = dt.read_discrete_trajectory(testpath + '2well_traj_100K.dat')
+        import pyemma.datasets
+        obs_micro = pyemma.datasets.load_2well_discrete().dtraj_T100K_dt10
         # coarse-grain microstates to two metastable states
         cg = np.zeros(100, dtype=int)
         cg[50:] = 1
