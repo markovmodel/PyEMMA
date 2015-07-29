@@ -33,7 +33,7 @@ import unittest
 import os
 
 from numpy.random import randint
-from numpy import floor
+from numpy import floor, allclose
 import mdtraj as md
 from pyemma.coordinates.data.frames_from_file import frames_from_file as _frames_from_file
 from pyemma.coordinates.data.util.reader_utils import compare_coords_md_trajectory_objects
@@ -135,6 +135,27 @@ class TestFramesFromFile(unittest.TestCase):
 
             (found_diff, errmsg) = compare_coords_md_trajectory_objects(traj_test, traj_ref, atom=0, mess=False)
             self.assertFalse(found_diff, errmsg)
+	
+    def test_gets_the_right_frames_with_stride_with_copy(self):
+
+        for stride in [2, 3, 5, 6, 10, 15]:
+            # Make sure we don't overshoot the number of available frames (100)
+            frames = randint(0, high = floor(100/stride), size = self.n_frames)
+
+            traj_test = _frames_from_file(self.trajfiles, self.pdbfile, frames,
+                                          chunksize=self.chunksize,
+                                          stride = stride,
+                                          verbose=False,
+                                          copy_not_join=True
+                                          )
+            traj_ref = md.load(self.trajfiles, top=self.pdbfile, stride = stride)[frames]
+
+            (found_diff, errmsg) = compare_coords_md_trajectory_objects(traj_test, traj_ref, atom=0, mess=False)
+            self.assertFalse(found_diff, errmsg)
+            assert allclose(traj_test.time, traj_ref.time)
+            assert allclose(traj_test.unitcell_lengths, traj_ref.unitcell_lengths)
+            assert allclose(traj_test.unitcell_angles, traj_ref.unitcell_angles)
+
 
 if __name__ == "__main__":
     unittest.main()
