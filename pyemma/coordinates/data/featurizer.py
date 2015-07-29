@@ -355,9 +355,25 @@ class InverseDistanceFeature(DistanceFeature):
 
 class ResidueMinDistanceFeature(DistanceFeature):
 
-    def __init__(self, top, contacts, scheme, ignore_nonprotein, threshold):
+    def __init__(self, top, residue_indices, scheme, ignore_nonprotein, threshold, residue_indices_2):
         self.top = top
-        self.contacts = contacts
+
+        # This is the default input
+        if residue_indices_2 is None and not _is_iterable_of_int(residue_indices):
+            self.contacts = residue_indices
+        # This is the "2 groups of of residues"-input
+        elif _is_iterable_of_int(residue_indices) and _is_iterable_of_int(residue_indices_2):
+            assert len(np.intersect1d(residue_indices,residue_indices_2))==0,\
+                "residue_indices and residue_indices_2 have overlapping elements: %s"\
+                %np.intersect1d(residue_indices,residue_indices_2)
+            self.contacts = np.array(list(_product(np.unique(residue_indices),
+                                                   np.unique(residue_indices_2))))
+        # Any other combination is illegal
+        else:
+            raise ValueError, "Parsed values for residue_indices and residue_indices_2 are incompatible. " \
+                              "Please read the documentation for these arguments "
+
+
         self.scheme = scheme
         self.threshold = threshold
         self.prefix_label = "RES_DIST (%s)"%scheme
@@ -366,7 +382,7 @@ class ResidueMinDistanceFeature(DistanceFeature):
         # produce a warning. I think it is more robust to let it run once on a dummy trajectory to
         # see what the actual size of the output is:
         dummy_traj = mdtraj.Trajectory(np.zeros((top.n_atoms, 3)), top)
-        dummy_dist, dummy_pairs = mdtraj.compute_contacts(dummy_traj, contacts=contacts,
+        dummy_dist, dummy_pairs = mdtraj.compute_contacts(dummy_traj, contacts=self.contacts,
                                                           scheme=scheme,
                                                           ignore_nonprotein=ignore_nonprotein)
         self._dimension = dummy_dist.shape[1]
@@ -1015,23 +1031,28 @@ class MDFeaturizer(object):
         self.__add_feature(f)
 
     def add_residue_mindist(self,
-                            residue_pairs='all',
+                            residue_indices='all',
                             scheme='closest-heavy',
                             ignore_nonprotein=True,
-                            threshold=None):
+                            threshold=None,
+                            residue_indices_2=None):
         r"""
         Adds the minimum distance between residues to the feature list. See below how
         the minimum distance can be defined.
 
         Parameters
         ----------
-        residue_pairs : can be of two types:
+        residue_indices : can be of three types:
 
             'all'
                 Computes distances between all pairs of residues excluding first and second neighbors
 
             ndarray((n, 2), dtype=int):
-                n x 2 array with the pairs residues for which distances will be computed
+                n x 2 array with the pairs residues for which the distances will be computed
+
+            ndarray (n), dtype=int):
+               1D ndarray (or list) with residue indices for the first group of residues.
+               Only works together with :obj:`residue_indices_2`, see below.
 
         scheme : 'ca', 'closest', 'closest-heavy', default is closest-heavy
                 Within a residue, determines the sub-group atoms that will be considered when computing distances
@@ -1043,18 +1064,26 @@ class MDFeaturizer(object):
             distances below this threshold (in nm) will result in a feature 1.0, distances above will result in 0.0. If
             left to None, the numerical value will be returned
 
-        .. note::
+        residue_indices_2: ((m), dtype=int):
+            1D iterable with the residue indices of a second group of residues. Only works if :obj:`residue_indices`
+            is a 1D iterable of integers containing the first group of residues. A list of length (n*m)
+            will be created, containing all :obj:`residue_indices` x :obj:`residue_indices_2` residue pairs for which
+            the distances will be computed. Please note that :obj:`residue_indices` and :obj:`residue_indices_2` will
+            be made unique before creating the list.
+
+
+        .. Note::
             Using :py:obj:`scheme` = 'closest' or 'closest-heavy' with :py:obj:`residue pairs` = 'all'
             will compute nearly all interatomic distances, for every frame, before extracting the closest pairs.
             This can be very time consuming. Those schemes are intended to be used with a subset of residues chosen
             via :py:obj:`residue_pairs`.
         """
 
-        if scheme != 'ca' and residue_pairs == 'all':
+        if scheme != 'ca' and residue_indices == 'all':
             self._logger.warning("Using all residue pairs with schemes like closest or closest-heavy is "
                                  "very time consuming. Consider reducing the residue pairs")
 
-        f = ResidueMinDistanceFeature(self.topology, residue_pairs, scheme, ignore_nonprotein, threshold)
+        f = ResidueMinDistanceFeature(self.topology, residue_indices, scheme, ignore_nonprotein, threshold, residue_indices_2)
         self.__add_feature(f)
 
     def add_group_mindist(self,
@@ -1069,7 +1098,7 @@ class MDFeaturizer(object):
         Parameters
         ----------
 
-        group_definition : list of 1D-arrays/iterables containing the group definitions via atom indices.
+        group_definitions : list of 1D-arrays/iterables containing the group definitions via atom indices.
             If there is only one group_definition, it is assumed the minimum distance within this group (excluding the
             self-distance) is wanted. In this case, :py:obj:`group_pairs` is ignored.
 

@@ -360,9 +360,18 @@ class TestFeaturizer(unittest.TestCase):
 
     def test_Residue_Mindist_Ca_array(self):
         contacts=np.array([[20,10,], [10,0]])
-        self.feat.add_residue_mindist(scheme='ca', residue_pairs=contacts)
+        self.feat.add_residue_mindist(scheme='ca', residue_indices=contacts)
         D = self.feat.map(self.traj)
         Dref = mdtraj.compute_contacts(self.traj, scheme='ca', contacts=contacts)[0]
+        assert np.allclose(D, Dref)
+
+    def test_Residue_Mindist_Ca_groups_of_residues(self):
+        residue_group_1 = [1, 3]
+        residue_group_2 = [4, 4, 5, 6]
+        contacts=np.array(list(product(np.unique(residue_group_1), np.unique(residue_group_2))))
+        Dref = mdtraj.compute_contacts(self.traj, scheme='ca', contacts=contacts)[0]
+        self.feat.add_residue_mindist(scheme='ca', residue_indices=residue_group_1, residue_indices_2=residue_group_2)
+        D = self.feat.map(self.traj)
         assert np.allclose(D, Dref)
 
     def test_Group_Mindist_One_Group(self):
