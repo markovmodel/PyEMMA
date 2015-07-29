@@ -433,7 +433,7 @@ def discretizer(reader,
     """
     if cluster is None:
         _logger.warning('You did not specify a cluster algorithm.'
-                       ' Defaulting to kmeans(k=100)')
+                        ' Defaulting to kmeans(k=100)')
         cluster = _KmeansClustering(n_clusters=100)
     disc = _Discretizer(reader, transform, cluster, param_stride=stride)
     if run:
@@ -729,6 +729,17 @@ def save_trajs(traj_inp, indexes, prefix = 'set_', fmt = None, outfiles = None,
 #
 # =========================================================================
 
+def _get_input_stage(previous_stage):
+    # this is a pipelining stage, so let's parametrize from it
+    if isinstance(previous_stage, _Transformer):
+        inputstage = previous_stage
+    # second option: data is array or list of arrays
+    else:
+        data = _types.ensure_traj_list(previous_stage)
+        inputstage = _DataInMemory(data)
+
+    return inputstage
+
 def _param_stage(previous_stage, this_stage, stride=1):
     r""" Parametrizes the given pipelining stage if a valid source is given.
 
@@ -743,13 +754,8 @@ def _param_stage(previous_stage, this_stage, stride=1):
     # no input given - nothing to do
     if previous_stage is None:
         return this_stage
-    # this is a pipelining stage, so let's parametrize from it
-    elif isinstance(previous_stage, _Transformer) or issubclass(previous_stage.__class__, _Transformer):
-        inputstage = previous_stage
-    # second option: data is array or list of arrays
-    else:
-        data = _types.ensure_traj_list(previous_stage)
-        inputstage = _DataInMemory(data)
+
+    inputstage = _get_input_stage(previous_stage)
     # parametrize transformer
     this_stage.data_producer = inputstage
     this_stage.chunksize = inputstage.chunksize
@@ -757,7 +763,7 @@ def _param_stage(previous_stage, this_stage, stride=1):
     return this_stage
 
 
-def pca(data=None, dim=2, var_cutoff=1.0, stride=1):
+def pca(data=None, dim=2, var_cutoff=1.0, stride=1, mean=None):
     r""" Principal Component Analysis (PCA).
 
     PCA is a linear transformation method that finds coordinates of maximal variance.
@@ -800,6 +806,10 @@ def pca(data=None, dim=2, var_cutoff=1.0, stride=1):
         correlated at short timescales, it is often sufficient to estimate transformations at a longer stride.
         Note that the stride option in the get_output() function of the returned object is independent, so
         you can parametrize at a long stride, and still map all frames through the transformer.
+
+    mean : ndarray, optional, default None
+        Optionally pass pre-calculated means to avoid their re-computation.
+        The shape has to match the input dimension.
 
     Returns
     -------
@@ -855,11 +865,17 @@ def pca(data=None, dim=2, var_cutoff=1.0, stride=1):
         J. Edu. Psych. 24, 417-441 and 498-520.
 
     """
+    if mean is not None:
+        data = _get_input_stage(data)
+        indim = data.dimension()
+        mean = _types.ensure_ndarray(mean, shape=(indim,), dtype=_np.float)
+
     res = _PCA(dim=dim, var_cutoff=var_cutoff)
     return _param_stage(data, res, stride=stride)
 
 
-def tica(data=None, lag=10, dim=-1, var_cutoff=1.0, kinetic_map=False, stride=1, force_eigenvalues_le_one=False):
+def tica(data=None, lag=10, dim=-1, var_cutoff=1.0, kinetic_map=False, stride=1,
+         force_eigenvalues_le_one=False, mean=None):
     r""" Time-lagged independent component analysis (TICA).
 
     TICA is a linear transformation method. In contrast to PCA, which finds
@@ -914,6 +930,10 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=1.0, kinetic_map=False, stride=1,
     force_eigenvalues_le_one : boolean
         Compute covariance matrix and time-lagged covariance matrix such
         that the generalized eigenvalues are always guaranteed to be <= 1.
+
+    mean : ndarray, optional, default None
+        Optionally pass pre-calculated means to avoid their re-computation.
+        The shape has to match the input dimension.
 
 
     Returns
@@ -992,8 +1012,12 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=1.0, kinetic_map=False, stride=1,
         (in preparation).
 
     """
+    if mean is not None:
+        data = _get_input_stage(data)
+        indim = data.dimension()
+        mean = _types.ensure_ndarray(mean, shape=(indim,), dtype=_np.float)
     res = _TICA(lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map,
-                force_eigenvalues_le_one=force_eigenvalues_le_one)
+                force_eigenvalues_le_one=force_eigenvalues_le_one, mean=mean)
     return _param_stage(data, res, stride=stride)
 
 

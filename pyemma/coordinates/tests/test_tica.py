@@ -317,5 +317,15 @@ class TestTICAExtensive(unittest.TestCase):
         assert (len(tica_obj._skipped_trajs)==2)
         assert np.allclose(tica_obj._skipped_trajs, [0,1])
 
+    def test_provided_means(self):
+        data = np.random.random((300, 3))
+        mean = data.mean(axis=0)
+        tica_obj = tica(data, mean=mean)
+        tica_calc_mean = tica(data)
+
+        np.testing.assert_allclose(tica_obj.mu, tica_calc_mean.mu)
+        np.testing.assert_allclose(tica_obj.cov, tica_calc_mean.cov)
+        np.testing.assert_allclose(tica_obj.cov_tau, tica_calc_mean.cov_tau)
+
 if __name__ == "__main__":
     unittest.main()

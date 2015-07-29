@@ -21,12 +21,13 @@
 # ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+from pyemma.util import types
 '''
 Created on 19.01.2015
 
 @author: marscher
 '''
-from .transformer import Transformer
+from .transformer import Transformer, SkipPassException
 
 from pyemma.util.progressbar import ProgressBar
 from pyemma.util.progressbar.gui import show_progressbar
@@ -45,7 +46,7 @@ class MeaningOfLagWithStrideWarning(UserWarning):
 class TICA(Transformer):
 
     def __init__(self, lag, dim=-1, var_cutoff=1.0, kinetic_map=False, epsilon=1e-6,
-                 force_eigenvalues_le_one=False):
+                 force_eigenvalues_le_one=False, mean=None):
         r""" Time-lagged independent component analysis (TICA) [1]_, [2]_, [3]_.
 
         Parameters
@@ -70,6 +71,9 @@ class TICA(Transformer):
         force_eigenvalues_le_one : boolean
             Compute covariance matrix and time-lagged covariance matrix such
             that the generalized eigenvalues are always guaranteed to be <= 1.
+        mean : ndarray, optional, default None
+            Optionally pass pre-calculated means to avoid their re-computation.
+            The shape has to match the input dimension.
 
         Notes
         -----
@@ -126,7 +130,8 @@ class TICA(Transformer):
         self.cov = None
         self.cov_tau = None
         # mean
-        self.mu = None
+        self.mu = mean
+
         self._N_mean = 0
         self._N_cov = 0
         self._N_cov_tau = 0
@@ -140,6 +145,7 @@ class TICA(Transformer):
 
         # skipped trajectories
         self._skipped_trajs = []
+
     @property
     def lag(self):
         """ lag time of correlation matrix :math:`C_{\tau}` """
@@ -194,12 +200,18 @@ class TICA(Transformer):
                           " trajectory, no matter what value of stride is used.",
                           MeaningOfLagWithStrideWarning)
 
+        if self.mu is not None:
+            self.mu = types.ensure_ndarray(self.mu, shape=(indim,))
+            self._given_mean = True
+        else:
+            self.mu = np.zeros(indim)
+            self._given_mean = False
+
         self._N_mean = 0
         self._N_cov = 0
         self._N_cov_tau = 0
-        # create mean array and covariance matrices
-        self.mu = np.zeros(indim)
 
+        # create covariance matrices
         self.cov = np.zeros((indim, indim))
         self.cov_tau = np.zeros_like(self.cov)
 
@@ -240,6 +252,13 @@ class TICA(Transformer):
         :return:
         """
         if ipass == 0:
+
+            # if we have a user-given mean, skip ipass 0 now:
+            if self._given_mean:
+                if self._force_eigenvalues_le_one:
+                    self._logger.warning("Constraint of eigenvalues <= 1 is active,"
+                                         "so the mean also depends on the lag time!")
+                raise SkipPassException(self._lag)
 
             if self._force_eigenvalues_le_one:
                 # MSM-like counting
@@ -364,7 +383,6 @@ class TICA(Transformer):
         # compute cumulative variance
         self._cumvar = np.cumsum(self._eigenvalues ** 2)
         self._cumvar /= self._cumvar[-1]
-
 
         if len(self._skipped_trajs) >= 1:
             self._skipped_trajs = np.asarray(self._skipped_trajs)
