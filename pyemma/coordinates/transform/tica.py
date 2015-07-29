@@ -130,9 +130,9 @@ class TICA(Transformer):
         self._N_mean = 0
         self._N_cov = 0
         self._N_cov_tau = 0
-        self.eigenvalues = None
-        self.eigenvectors = None
-        self.cumvar = None
+        self._eigenvalues = None
+        self._eigenvectors = None
+        self._cumvar = None
 
         self._custom_param_progress_handling = True
         self._progress_mean = None
@@ -164,9 +164,9 @@ class TICA(Transformer):
         if self._dim != -1:  # fixed parametrization
             return self._dim
         elif self._parametrized:  # parametrization finished. Dimension is known
-            dim = len(self.eigenvalues)
+            dim = len(self._eigenvalues)
             if self._var_cutoff < 1.0:  # if subspace_variance, reduce the output dimension if needed
-                dim = min(dim, np.searchsorted(self.cumvar, self._var_cutoff)+1)
+                dim = min(dim, np.searchsorted(self._cumvar, self._var_cutoff)+1)
             return dim
         elif self._var_cutoff == 1.0:  # We only know that all dimensions are wanted, so return input dim
             return self.data_producer.dimension()
@@ -357,13 +357,13 @@ class TICA(Transformer):
 
         # diagonalize with low rank approximation
         self._logger.debug("diagonalize Cov and Cov_tau.")
-        self.eigenvalues, self.eigenvectors = \
+        self._eigenvalues, self._eigenvectors = \
             eig_corr(self.cov, self.cov_tau, self._epsilon)
         self._logger.debug("finished diagonalisation.")
 
         # compute cumulative variance
-        self.cumvar = np.cumsum(self.eigenvalues ** 2)
-        self.cumvar /= self.cumvar[-1]
+        self._cumvar = np.cumsum(self._eigenvalues ** 2)
+        self._cumvar /= self._cumvar[-1]
 
 
         if len(self._skipped_trajs) >= 1:
@@ -386,9 +386,9 @@ class TICA(Transformer):
         """
         # TODO: consider writing an extension to avoid temporary Xmeanfree
         X_meanfree = X - self.mu
-        Y = np.dot(X_meanfree, self.eigenvectors[:, 0:self.dimension()])
+        Y = np.dot(X_meanfree, self._eigenvectors[:, 0:self.dimension()])
         if self._kinetic_map:  # scale by eigenvalues
-            Y *= self.eigenvalues[0:self.dimension()]
+            Y *= self._eigenvalues[0:self.dimension()]
         return Y
 
     @property
@@ -412,4 +412,46 @@ class TICA(Transformer):
             for each TIC.
         """
         feature_sigma = np.sqrt(np.diag(self.cov))
-        return np.dot(self.cov, self.eigenvectors[:, : self.dimension()]) / feature_sigma[:, np.newaxis]
+        return np.dot(self.cov, self._eigenvectors[:, : self.dimension()]) / feature_sigma[:, np.newaxis]
+
+    @property
+    def eigenvalues(self):
+        r"""Eigenvalues of the TICA problem (usually denoted :math:`\lambda`
+
+        Returns
+        -----
+        eigenvalues: 1D np.array
+        """
+
+        if self._parametrized:
+            return(self._eigenvalues)
+        else:
+            self._logger.info("TICA not yet parametrized")
+
+    @property
+    def eigenvectors(self):
+        r"""Eigenvectors of the TICA problem, columnwise
+
+        Returns
+        -----
+        eigenvectors: (N,M) ndarray
+        """
+
+        if self._parametrized:
+            return(self._eigenvectors)
+        else:
+            self._logger.info("TICA not yet parametrized")
+
+    @property
+    def cumvar(self):
+        r"""Cumulative sum of the the TICA eigenvalues
+
+        Returns
+        -----
+        cumvar: 1D np.array
+        """
+
+        if self._parametrized:
+            return(self._cumvar)
+        else:
+            self._logger.info("TICA not yet parametrized")
