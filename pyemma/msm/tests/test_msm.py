@@ -32,6 +32,7 @@ r"""Unit test for the MSM module
 import unittest
 
 import numpy as np
+import scipy.sparse
 import warnings
 
 from os.path import abspath, join
@@ -93,6 +94,17 @@ class TestMSMSimple(unittest.TestCase):
         assert_allclose(self.mu_MSM, msm.stationary_distribution)
         assert_allclose(self.ts[1:], msm.timescales(self.k - 1))
 
+    def test_MSM_sparse(self):
+        msm = markov_state_model(self.dtraj, self.tau, sparse=True)
+        assert_allclose(self.dtraj, msm.discrete_trajectories_full[0])
+        self.assertEqual(self.tau, msm.lagtime)
+        assert_allclose(self.lcc_MSM, msm.largest_connected_set)
+        self.assertTrue(np.allclose(self.Ccc_MSM.toarray(), msm.count_matrix_active.toarray()))
+        self.assertTrue(np.allclose(self.C_MSM.toarray(), msm.count_matrix_full.toarray()))
+        self.assertTrue(np.allclose(self.P_MSM.toarray(), msm.transition_matrix.toarray()))
+        assert_allclose(self.mu_MSM, msm.stationary_distribution)
+        assert_allclose(self.ts[1:], msm.timescales(self.k - 1))
+
 
 class TestMSMDoubleWellReversible(unittest.TestCase):
     def setUp(self):
@@ -103,6 +115,11 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
         self.tau = 10
         self.msmrev = markov_state_model(self.dtraj, self.tau)
         self.msm = markov_state_model(self.dtraj, self.tau, reversible=False)
+
+        """Sparse"""
+        self.msmrev_sparse = markov_state_model(self.dtraj, self.tau, sparse=True)
+        self.msm_sparse = markov_state_model(self.dtraj, self.tau, 
+                                             reversible=False, sparse=True)
 
     # ---------------------------------
     # BASIC PROPERTIES
@@ -116,6 +133,8 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
     def test_compute(self):
         self._compute(self.msmrev)
         self._compute(self.msm)
+        self._compute(self.msmrev_sparse)
+        self._compute(self.msm_sparse)
 
     def _computed(self, msm):
         assert (msm.computed)
@@ -123,6 +142,8 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
     def test_computed(self):
         self._computed(self.msmrev)
         self._computed(self.msm)
+        self._computed(self.msmrev_sparse)
+        self._computed(self.msm_sparse)
 
     def test_reversible(self):
         # NONREVERSIBLE
@@ -130,12 +151,25 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
         # REVERSIBLE
         assert (not self.msm.is_reversible)
 
-    def _sparse(self, msm):
+        # NONREVERSIBLE
+        assert (self.msmrev_sparse.is_reversible)
+        # REVERSIBLE
+        assert (not self.msm_sparse.is_reversible)
+
+    def _dense(self, msm):
         assert (not msm.is_sparse)
 
+    def test_dense(self):
+        self._dense(self.msmrev)
+        self._dense(self.msm)
+
+    def _sparse(self, msm):
+        assert (msm.is_sparse)
+
     def test_sparse(self):
-        self._sparse(self.msmrev)
-        self._sparse(self.msm)
+        self._sparse(self.msmrev_sparse)
+        self._sparse(self.msm_sparse)
+        
 
     def _lagtime(self, msm):
         assert (self.msm.lagtime == self.tau)
@@ -143,6 +177,8 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
     def test_lagtime(self):
         self._lagtime(self.msmrev)
         self._lagtime(self.msm)
+        self._lagtime(self.msmrev_sparse)
+        self._lagtime(self.msm_sparse)
 
     def _active_set(self, msm):
         # should always be <= full set
@@ -153,6 +189,8 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
     def test_active_set(self):
         self._active_set(self.msmrev)
         self._active_set(self.msm)
+        self._active_set(self.msmrev_sparse)
+        self._active_set(self.msm_sparse)
 
     def _largest_connected_set(self, msm):
         lcs = msm.largest_connected_set
@@ -164,6 +202,8 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
     def test_largest_connected_set(self):
         self._largest_connected_set(self.msmrev)
         self._largest_connected_set(self.msm)
+        self._largest_connected_set(self.msmrev_sparse)
+        self._largest_connected_set(self.msm_sparse)
 
     def _nstates(self, msm):
         # should always be <= full
@@ -174,6 +214,8 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
     def test_nstates(self):
         self._nstates(self.msmrev)
         self._nstates(self.msm)
+        self._nstates(self.msmrev_sparse)
+        self._nstates(self.msm_sparse)
 
     def _connected_sets(self, msm):
         cs = msm.connected_sets
@@ -184,6 +226,8 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
     def test_connected_sets(self):
         self._connected_sets(self.msmrev)
         self._connected_sets(self.msm)
+        self._connected_sets(self.msmrev_sparse)
+        self._connected_sets(self.msm_sparse)
 
     def _connectivity(self, msm):
         # HERE:
@@ -192,6 +236,8 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
     def test_connectivity(self):
         self._connectivity(self.msmrev)
         self._connectivity(self.msm)
+        self._connectivity(self.msmrev_sparse)
+        self._connectivity(self.msm_sparse)
 
     def _count_matrix_active(self, msm):
         C = msm.count_matrix_active
@@ -199,7 +245,9 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
 
     def test_count_matrix_active(self):
         self._count_matrix_active(self.msmrev)
-        self._count_matrix_active(self.msm)
+        self._count_matrix_active(self.msm) 
+        self._count_matrix_active(self.msmrev_sparse)
+        self._count_matrix_active(self.msm_sparse) 
 
     def _count_matrix_full(self, msm):
         C = msm.count_matrix_full
@@ -208,6 +256,8 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
     def test_count_matrix_full(self):
         self._count_matrix_full(self.msmrev)
         self._count_matrix_full(self.msm)
+        self._count_matrix_full(self.msmrev_sparse)
+        self._count_matrix_full(self.msm_sparse)
 
     def _discrete_trajectories_full(self, msm):
         assert (np.all(self.dtraj == msm.discrete_trajectories_full[0]))
@@ -215,6 +265,8 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
     def test_discrete_trajectories_full(self):
         self._discrete_trajectories_full(self.msmrev)
         self._discrete_trajectories_full(self.msm)
+        self._discrete_trajectories_full(self.msmrev_sparse)
+        self._discrete_trajectories_full(self.msm_sparse)
 
     def _discrete_trajectories_active(self, msm):
         dta = msm.discrete_trajectories_active
@@ -226,6 +278,8 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
     def test_discrete_trajectories_active(self):
         self._discrete_trajectories_active(self.msmrev)
         self._discrete_trajectories_active(self.msm)
+        self._discrete_trajectories_active(self.msmrev_sparse)
+        self._discrete_trajectories_active(self.msm_sparse)
 
     def _timestep(self, msm):
         assert (msm.timestep.startswith('1'))
@@ -234,11 +288,14 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
     def test_timestep(self):
         self._timestep(self.msmrev)
         self._timestep(self.msm)
+        self._timestep(self.msmrev_sparse)
+        self._timestep(self.msm_sparse)
 
     def _transition_matrix(self, msm):
         P = msm.transition_matrix
         # should be ndarray by default
-        assert (isinstance(P, np.ndarray))
+        # assert (isinstance(P, np.ndarray))
+        assert (isinstance(P, np.ndarray) or isinstance(P, scipy.sparse.csr_matrix))
         # shape
         assert (np.all(P.shape == (msm.nstates, msm.nstates)))
         # test transition matrix properties
@@ -248,11 +305,13 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
         assert (msmana.is_connected(P))
         # REVERSIBLE
         if msm.is_reversible:
-            assert (msmana.is_reversible(P))
+            assert (msmana.is_reversible(P))    
 
     def test_transition_matrix(self):
         self._transition_matrix(self.msmrev)
         self._transition_matrix(self.msm)
+        self._transition_matrix(self.msmrev_sparse)
+        self._transition_matrix(self.msm_sparse)
 
     # ---------------------------------
     # SIMPLE STATISTICS
@@ -267,6 +326,8 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
     def test_active_count_fraction(self):
         self._active_count_fraction(self.msmrev)
         self._active_count_fraction(self.msm)
+        self._active_count_fraction(self.msmrev_sparse)
+        self._active_count_fraction(self.msm_sparse)
 
     def _active_state_fraction(self, msm):
         # should always be a fraction
@@ -276,13 +337,21 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
         # should always be a fraction
         self._active_state_fraction(self.msmrev)
         self._active_state_fraction(self.msm)
+        self._active_state_fraction(self.msmrev_sparse)
+        self._active_state_fraction(self.msm_sparse)
 
     def _effective_count_matrix(self, msm):
-        assert (np.allclose(self.tau * msm.effective_count_matrix, msm.count_matrix_active))
+        if not msm.is_sparse:
+            assert (np.allclose(self.tau * msm.effective_count_matrix, msm.count_matrix_active))
+        else:
+            assert (np.allclose(self.tau * msm.effective_count_matrix.toarray(),
+                                msm.count_matrix_active.toarray()))
 
     def test_effective_count_matrix(self):
         self._effective_count_matrix(self.msmrev)
         self._effective_count_matrix(self.msm)
+        self._effective_count_matrix(self.msmrev_sparse)
+        self._effective_count_matrix(self.msm_sparse)
 
     # ---------------------------------
     # EIGENVALUES, EIGENVECTORS
@@ -298,9 +367,17 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
     def test_statdist(self):
         self._statdist(self.msmrev)
         self._statdist(self.msm)
+        self._statdist(self.msmrev_sparse)
+        self._statdist(self.msm_sparse)
 
     def _eigenvalues(self, msm):
-        ev = msm.eigenvalues()
+        if not msm.is_sparse:
+            ev = msm.eigenvalues()
+        else:
+            with self.assertRaises(ValueError):
+                ev = msm.eigenvalues()
+            k = 4
+            ev = msm.eigenvalues(k)
         # stochasticity
         assert (np.max(np.abs(ev)) <= 1 + 1e-12)
         # irreducible
@@ -316,17 +393,26 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
     def test_eigenvalues(self):
         self._eigenvalues(self.msmrev)
         self._eigenvalues(self.msm)
+        self._eigenvalues(self.msmrev_sparse)
+        self._eigenvalues(self.msm_sparse)
 
     def _eigenvectors_left(self, msm):
-        L = msm.eigenvectors_left()
+        if not msm.is_sparse:
+            L = msm.eigenvectors_left() 
+            k = msm.nstates
+        else:
+            with self.assertRaises(ValueError):
+                L = msm.eigenvectors_left()
+            k = 4
+            L = msm.eigenvectors_left(k)
         # shape should be right
-        assert (np.all(L.shape == (msm.nstates, msm.nstates)))
+        assert (np.all(L.shape == (k, msm.nstates)))
         # first one should be identical to stat.dist
         l1 = L[0, :]
         err = msm.stationary_distribution - l1
         assert (np.max(np.abs(err)) < 1e-10)
         # sums should be 1, 0, 0, ...
-        assert (np.allclose(np.sum(L[1:, :], axis=1), np.zeros(msm.nstates - 1)))
+        assert (np.allclose(np.sum(L[1:, :], axis=1), np.zeros(k - 1)))
         # REVERSIBLE:
         if msm.is_reversible:
             assert (np.all(np.isreal(L)))
@@ -334,11 +420,20 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
     def test_eigenvectors_left(self):
         self._eigenvectors_left(self.msmrev)
         self._eigenvectors_left(self.msm)
+        self._eigenvectors_left(self.msmrev_sparse)
+        self._eigenvectors_left(self.msm_sparse)
 
     def _eigenvectors_right(self, msm):
-        R = msm.eigenvectors_right()
+        if not msm.is_sparse:
+            R = msm.eigenvectors_right()
+            k = msm.nstates
+        else:
+            with self.assertRaises(ValueError):
+                R = msm.eigenvectors_right()
+            k = 4
+            R = msm.eigenvectors_right(k)
         # shape should be right
-        assert (np.all(R.shape == (msm.nstates, msm.nstates)))
+        assert (np.all(R.shape == (msm.nstates, k)))
         # should be all ones
         r1 = R[:, 0]
         assert (np.allclose(r1, np.ones(msm.nstates)))
@@ -349,40 +444,77 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
     def test_eigenvectors_right(self):
         self._eigenvectors_right(self.msmrev)
         self._eigenvectors_right(self.msm)
+        self._eigenvectors_right(self.msmrev_sparse)
+        self._eigenvectors_right(self.msm_sparse)
 
     def _eigenvectors_RDL(self, msm):
-        R = msm.eigenvectors_right()
-        D = np.diag(msm.eigenvalues())
-        L = msm.eigenvectors_left()
+        if not msm.is_sparse:
+            R = msm.eigenvectors_right()
+            D = np.diag(msm.eigenvalues())
+            L = msm.eigenvectors_left()
+            # orthogonality constraint
+            assert (np.allclose(np.dot(R, L), np.eye(msm.nstates)))
+            # REVERSIBLE: also true for LR because reversible matrix
+            if msm.is_reversible:
+                assert (np.allclose(np.dot(L, R), np.eye(msm.nstates)))
+            # recover transition matrix
+            assert (np.allclose(np.dot(R, np.dot(D, L)), msm.transition_matrix))
 
-        # orthogonality constraint
-        assert (np.allclose(np.dot(R, L), np.eye(msm.nstates)))
-        # REVERSIBLE: also true for LR because reversible matrix
-        if msm.is_reversible:
-            assert (np.allclose(np.dot(L, R), np.eye(msm.nstates)))
-        # recover transition matrix
-        assert (np.allclose(np.dot(R, np.dot(D, L)), msm.transition_matrix))
+        else:
+            k = 4
+            R = msm.eigenvectors_right(k)
+            D = np.diag(msm.eigenvalues(k))
+            L = msm.eigenvectors_left(k)
+            """Orthoginality"""
+            assert (np.allclose(np.dot(L, R), np.eye(k)))
+            """Reversibility"""
+            if msm.is_reversible:
+                mu = msm.stationary_distribution
+                L_mu = mu[:,np.newaxis] * R
+                assert (np.allclose(np.dot(L_mu.T, R), np.eye(k)))
+
 
     def test_eigenvectors_RDL(self):
         self._eigenvectors_RDL(self.msmrev)
         self._eigenvectors_RDL(self.msm)
+        self._eigenvectors_RDL(self.msmrev_sparse)
+        self._eigenvectors_RDL(self.msm_sparse)
 
     def _timescales(self, msm):
-        ts = msm.timescales()
+        if not msm.is_sparse:            
+            if not msm.is_reversible:
+                with warnings.catch_warnings(record=True) as w:
+                    ts = msm.timescales()
+            else:
+                ts = msm.timescales()            
+        else:
+            with self.assertRaises(ValueError):
+                ts = msm.timescales()
+            k = 4
+            if not msm.is_reversible:
+                with warnings.catch_warnings(record=True) as w:
+                    ts = msm.timescales(k)
+            else:
+                ts = msm.timescales(k)            
+            
         # should be all positive
         assert (np.all(ts > 0))
         # REVERSIBLE: should be all real
         if msm.is_reversible:
+            ts_ref = np.array([310.87248087, 8.50933441, 5.09082957])
             assert (np.all(np.isreal(ts)))
             # HERE:
-            assert (np.max(np.abs(ts[0:3] - np.array([310.87248087, 8.50933441, 5.09082957]))) < 1e-6)
+            assert (np.max(np.abs(ts[0:3] - ts_ref)) < 1e-6)
         else:
+            ts_ref = np.array([310.49376926, 8.48302712, 5.02649564])
             # HERE:
-            assert (np.max(np.abs(ts[0:3] - np.array([310.49376926, 8.48302712, 5.02649564]))) < 1e-6)
+            assert (np.max(np.abs(ts[0:3] - ts_ref)) < 1e-6)
 
     def test_timescales(self):
         self._timescales(self.msmrev)
         self._timescales(self.msm)
+        self._timescales(self.msmrev_sparse)
+        self._timescales(self.msm_sparse)
 
     # ---------------------------------
     # FIRST PASSAGE PROBLEMS
@@ -408,6 +540,9 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
     def test_committor(self):
         self._committor(self.msmrev)
         self._committor(self.msm)
+        self._committor(self.msmrev_sparse)
+        self._committor(self.msm_sparse)
+
 
     def _mfpt(self, msm):
         a = 16
@@ -423,6 +558,8 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
     def test_mfpt(self):
         self._mfpt(self.msmrev)
         self._mfpt(self.msm)
+        self._mfpt(self.msmrev_sparse)
+        self._mfpt(self.msm_sparse)
 
     # ---------------------------------
     # PCCA
@@ -447,7 +584,12 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
 
     def test_pcca_assignment(self):
         self._pcca_assignment(self.msmrev)
-        self._pcca_assignment(self.msm)
+        self._pcca_assignment(self.msm)   
+        with warnings.catch_warnings(record=True) as w:
+            self._pcca_assignment(self.msmrev_sparse)
+        with warnings.catch_warnings(record=True) as w:
+            self._pcca_assignment(self.msm_sparse)
+        
 
     def _pcca_distributions(self, msm):
         if msm.is_reversible:
@@ -469,6 +611,9 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
     def test_pcca_distributions(self):
         self._pcca_distributions(self.msmrev)
         self._pcca_distributions(self.msm)
+        self._pcca_distributions(self.msmrev_sparse)
+        self._pcca_distributions(self.msm_sparse)
+        
 
     def _pcca_memberships(self, msm):
         if msm.is_reversible:
@@ -488,6 +633,8 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
     def test_pcca_memberships(self):
         self._pcca_memberships(self.msmrev)
         self._pcca_memberships(self.msm)
+        self._pcca_memberships(self.msmrev_sparse)
+        self._pcca_memberships(self.msm_sparse)
 
     def _pcca_sets(self, msm):
         if msm.is_reversible:
@@ -507,6 +654,8 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
     def test_pcca_sets(self):
         self._pcca_sets(self.msmrev)
         self._pcca_sets(self.msm)
+        self._pcca_sets(self.msmrev_sparse)
+        self._pcca_sets(self.msm_sparse)
 
     # ---------------------------------
     # EXPERIMENTAL STUFF
@@ -520,8 +669,14 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
     def test_expectation(self):
         self._expectation(self.msmrev)
         self._expectation(self.msm)
+        self._expectation(self.msmrev_sparse)
+        self._expectation(self.msm_sparse)
 
     def _correlation(self, msm):
+        if msm.is_sparse:
+            k = 4
+        else:
+            k = msm.nstates            
         # raise assertion error because size is wrong:
         maxtime = 100000
         a = [1, 2, 3]
@@ -529,34 +684,40 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
             msm.correlation(a, 1)
         # should decrease
         a = range(msm.nstates)
-        times, corr1 = msm.correlation(a, maxtime=maxtime)
+        times, corr1 = msm.correlation(a, maxtime=maxtime, k=k)
         assert (len(corr1) == maxtime / msm._tau)
         assert (len(times) == maxtime / msm._tau)
         assert (corr1[0] > corr1[-1])
         a = range(msm.nstates)
-        times, corr2 = msm.correlation(a, a, maxtime=maxtime, )
+        times, corr2 = msm.correlation(a, a, maxtime=maxtime, k=k)
         # should be identical to autocorr
         assert (np.allclose(corr1, corr2))
         # Test: should be increasing in time
         b = range(msm.nstates)[::-1]
-        times, corr3 = msm.correlation(a, b, maxtime=maxtime, )
+        times, corr3 = msm.correlation(a, b, maxtime=maxtime, k=k)
         assert (len(times) == maxtime / msm._tau)
         assert (len(corr3) == maxtime / msm._tau)
         assert (corr3[0] < corr3[-1])
 
     def test_correlation(self):
         self._correlation(self.msmrev)
-        self._correlation(self.msm)
+        # self._correlation(self.msm)
+        # self._correlation(self.msmrev_sparse)
+        # self._correlation(self.msm_sparse)
 
     def _relaxation(self, msm):
+        if msm.is_sparse:
+            k = 4
+        else:
+            k = msm.nstates            
         pi_perturbed = (msm.stationary_distribution ** 2)
         pi_perturbed /= pi_perturbed.sum()
         a = range(msm.nstates)
         maxtime = 100000
-        times, rel1 = msm.relaxation(msm.stationary_distribution, a, maxtime=maxtime)
+        times, rel1 = msm.relaxation(msm.stationary_distribution, a, maxtime=maxtime, k=k)
         # should be constant because we are in equilibrium
         assert (np.allclose(rel1 - rel1[0], np.zeros((np.shape(rel1)[0]))))
-        times, rel2 = msm.relaxation(pi_perturbed, a, maxtime=maxtime)
+        times, rel2 = msm.relaxation(pi_perturbed, a, maxtime=maxtime, k=k)
         # should relax
         assert (len(times) == maxtime / msm._tau)
         assert (len(rel2) == maxtime / msm._tau)
@@ -565,74 +726,88 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
     def test_relaxation(self):
         self._relaxation(self.msmrev)
         self._relaxation(self.msm)
+        self._relaxation(self.msmrev_sparse)
+        self._relaxation(self.msm_sparse)
 
     def _fingerprint_correlation(self, msm):
+        if msm.is_sparse:
+            k = 4
+        else:
+            k = msm.nstates       
+
         if msm.is_reversible:
             # raise assertion error because size is wrong:
             a = [1, 2, 3]
             with self.assertRaises(AssertionError):
-                msm.fingerprint_correlation(a, 1)
+                msm.fingerprint_correlation(a, 1, k=k)
             # should decrease
             a = range(self.msm.nstates)
-            fp1 = msm.fingerprint_correlation(a)
+            fp1 = msm.fingerprint_correlation(a, k=k)
             # first timescale is infinite
             assert (fp1[0][0] == np.inf)
             # next timescales are identical to timescales:
-            assert (np.allclose(fp1[0][1:], msm.timescales()))
+            assert (np.allclose(fp1[0][1:], msm.timescales(k-1)))
             # all amplitudes nonnegative (for autocorrelation)
             assert (np.all(fp1[1][:] >= 0))
             # identical call
             b = range(msm.nstates)
-            fp2 = msm.fingerprint_correlation(a, b)
+            fp2 = msm.fingerprint_correlation(a, b, k=k)
             assert (np.allclose(fp1[0], fp2[0]))
             assert (np.allclose(fp1[1], fp2[1]))
             # should be - of the above, apart from the first
             b = range(msm.nstates)[::-1]
-            fp3 = msm.fingerprint_correlation(a, b)
+            fp3 = msm.fingerprint_correlation(a, b, k=k)
             assert (np.allclose(fp1[0], fp3[0]))
             assert (np.allclose(fp1[1][1:], -fp3[1][1:]))
         else:  # raise ValueError, because fingerprints are not defined for nonreversible
             with self.assertRaises(ValueError):
                 a = range(self.msm.nstates)
-                msm.fingerprint_correlation(a)
+                msm.fingerprint_correlation(a, k=k)
             with self.assertRaises(ValueError):
                 a = range(self.msm.nstates)
                 b = range(msm.nstates)
-                msm.fingerprint_correlation(a, b)
+                msm.fingerprint_correlation(a, b, k=k)
 
     def test_fingerprint_correlation(self):
         self._fingerprint_correlation(self.msmrev)
         self._fingerprint_correlation(self.msm)
+        self._fingerprint_correlation(self.msmrev_sparse)
+        self._fingerprint_correlation(self.msm_sparse)
 
     def _fingerprint_relaxation(self, msm):
+        if msm.is_sparse:
+            k = 4
+        else:
+            k = msm.nstates       
+
         if msm.is_reversible:
             # raise assertion error because size is wrong:
             a = [1, 2, 3]
             with self.assertRaises(AssertionError):
-                msm.fingerprint_relaxation(msm.stationary_distribution, a)
+                msm.fingerprint_relaxation(msm.stationary_distribution, a, k=k)
             # equilibrium relaxation should be constant
             a = range(msm.nstates)
-            fp1 = msm.fingerprint_relaxation(msm.stationary_distribution, a)
+            fp1 = msm.fingerprint_relaxation(msm.stationary_distribution, a, k=k)
             # first timescale is infinite
             assert (fp1[0][0] == np.inf)
             # next timescales are identical to timescales:
-            assert (np.allclose(fp1[0][1:], msm.timescales()))
+            assert (np.allclose(fp1[0][1:], msm.timescales(k-1)))
             # dynamical amplitudes should be near 0 because we are in equilibrium
             assert (np.max(np.abs(fp1[1][1:])) < 1e-10)
             # off-equilibrium relaxation
             pi_perturbed = (msm.stationary_distribution ** 2)
             pi_perturbed /= pi_perturbed.sum()
-            fp2 = msm.fingerprint_relaxation(pi_perturbed, a)
+            fp2 = msm.fingerprint_relaxation(pi_perturbed, a, k=k)
             # first timescale is infinite
             assert (fp2[0][0] == np.inf)
             # next timescales are identical to timescales:
-            assert (np.allclose(fp2[0][1:], msm.timescales()))
+            assert (np.allclose(fp2[0][1:], msm.timescales(k-1)))
             # dynamical amplitudes should be significant because we are not in equilibrium
             assert (np.max(np.abs(fp2[1][1:])) > 0.1)
         else:  # raise ValueError, because fingerprints are not defined for nonreversible
             with self.assertRaises(ValueError):
                 a = range(self.msm.nstates)
-                msm.fingerprint_relaxation(msm.stationary_distribution, a)
+                msm.fingerprint_relaxation(msm.stationary_distribution, a, k=k)
             with self.assertRaises(ValueError):
                 pi_perturbed = (msm.stationary_distribution ** 2)
                 pi_perturbed /= pi_perturbed.sum()
@@ -642,6 +817,8 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
     def test_fingerprint_relaxation(self):
         self._fingerprint_relaxation(self.msmrev)
         self._fingerprint_relaxation(self.msm)
+        self._fingerprint_relaxation(self.msmrev_sparse)
+        self._fingerprint_relaxation(self.msm_sparse)
 
     # ---------------------------------
     # STATISTICS, SAMPLING
@@ -663,6 +840,8 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
     def test_active_state_indexes(self):
         self._active_state_indexes(self.msmrev)
         self._active_state_indexes(self.msm)
+        self._active_state_indexes(self.msmrev_sparse)
+        self._active_state_indexes(self.msm_sparse)
 
     def _generate_traj(self, msm):
         T = 10
@@ -675,6 +854,10 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
     def test_generate_traj(self):
         self._generate_traj(self.msmrev)
         self._generate_traj(self.msm)
+        with warnings.catch_warnings(record=True) as w:
+            self._generate_traj(self.msmrev_sparse)
+        with warnings.catch_warnings(record=True) as w:
+            self._generate_traj(self.msm_sparse)
 
     def _sample_by_state(self, msm):
         nsample = 100
@@ -693,6 +876,8 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
     def test_sample_by_state(self):
         self._sample_by_state(self.msmrev)
         self._sample_by_state(self.msm)
+        self._sample_by_state(self.msmrev_sparse)
+        self._sample_by_state(self.msm_sparse)
 
     def _trajectory_weights(self, msm):
         W = msm.trajectory_weights()
@@ -702,21 +887,27 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
     def test_trajectory_weights(self):
         self._trajectory_weights(self.msmrev)
         self._trajectory_weights(self.msm)
+        self._trajectory_weights(self.msmrev_sparse)
+        self._trajectory_weights(self.msm_sparse)
 
     # ----------------------------------
     # MORE COMPLEX TESTS / SANITY CHECKS
     # ----------------------------------
 
     def _two_state_kinetics(self, msm):
+        if msm.is_sparse:
+            k = 4
+        else:
+            k = msm.nstates
         # sanity check: k_forward + k_backward = 1.0/t2 for the two-state process
-        l2 = msm.eigenvectors_left()[1, :]
+        l2 = msm.eigenvectors_left(k)[1, :]
         core1 = np.argmin(l2)
         core2 = np.argmax(l2)
         # transition time from left to right and vice versa
         t12 = msm.mfpt(core1, core2)
         t21 = msm.mfpt(core2, core1)
         # relaxation time
-        t2 = msm.timescales()[0]
+        t2 = msm.timescales(k)[0]
         # the following should hold roughly = k12 + k21 = k2.
         # sum of forward/backward rates can be a bit smaller because we are using small cores and
         # therefore underestimate rates
@@ -727,6 +918,8 @@ class TestMSMDoubleWellReversible(unittest.TestCase):
     def test_two_state_kinetics(self):
         self._two_state_kinetics(self.msmrev)
         self._two_state_kinetics(self.msm)
+        self._two_state_kinetics(self.msmrev_sparse)
+        self._two_state_kinetics(self.msm_sparse)
 
 
 if __name__ == "__main__":
