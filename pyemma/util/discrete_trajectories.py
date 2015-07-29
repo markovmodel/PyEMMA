@@ -274,11 +274,12 @@ def index_states(dtrajs, subset = None):
     # walk through trajectories and remember requested state indexes
     for i,dtraj in enumerate(dtrajs):
         for t,s in enumerate(dtraj):
-            if is_requested[s]:
-                k = full2states[s]
-                res[k][counts[k],0] = i
-                res[k][counts[k],1] = t
-                counts[k] += 1
+            if s >= 0:  # only index nonnegative state indexes
+                if is_requested[s]:
+                    k = full2states[s]
+                    res[k][counts[k],0] = i
+                    res[k][counts[k],1] = t
+                    counts[k] += 1
     return res
 
 ################################################################################
