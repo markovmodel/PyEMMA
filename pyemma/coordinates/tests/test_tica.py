@@ -327,5 +327,9 @@ class TestTICAExtensive(unittest.TestCase):
         np.testing.assert_allclose(tica_obj.cov, tica_calc_mean.cov)
         np.testing.assert_allclose(tica_obj.cov_tau, tica_calc_mean.cov_tau)
 
+    def test_timescales(self):
+        its = -self.tica_obj.lag/np.log(np.abs(self.tica_obj.eigenvalues))
+        assert np.allclose(self.tica_obj.timescales, its)
+
 if __name__ == "__main__":
     unittest.main()
