@@ -4,33 +4,38 @@ import math
 import numpy as np
 import matplotlib.pylab as plt
 
-def _add_ck_subplot(cktest, ax, i, j, y01=True):
+def _add_ck_subplot(cktest, ax, i, j, ipos=None, jpos=None, y01=True, units='steps', dt=1.):
     # plot estimates
-    lest = ax.plot(cktest.lagtimes, cktest.estimates[:, i, j], color='black')
+    lest = ax.plot(dt*cktest.lagtimes, cktest.estimates[:, i, j], color='black')
     # plot error of estimates if available
     if cktest.has_errors and cktest.err_est:
-        ax.fill_between(cktest.lagtimes, cktest.estimates_conf[0][:, i, j], cktest.estimates_conf[1][:, i, j],
+        ax.fill_between(dt*cktest.lagtimes, cktest.estimates_conf[0][:, i, j], cktest.estimates_conf[1][:, i, j],
                         color='black', alpha=0.2)
     # plot predictions
-    lpred = ax.plot(cktest.lagtimes, cktest.predictions[:, i, j], color='blue', linestyle='dashed')
+    lpred = ax.plot(dt*cktest.lagtimes, cktest.predictions[:, i, j], color='blue', linestyle='dashed')
     # plot error of predictions if available
     if cktest.has_errors:
-        ax.fill_between(cktest.lagtimes, cktest.predictions_conf[0][:, i, j], cktest.predictions_conf[1][:, i, j],
+        ax.fill_between(dt*cktest.lagtimes, cktest.predictions_conf[0][:, i, j], cktest.predictions_conf[1][:, i, j],
                         color='blue', alpha=0.2)
     # add label
-    ax.text(0.05*cktest.lagtimes[-1], 0.05, str(i+1)+' -> '+str(j+1), weight='bold')
+    ax.text(0.05, 0.05, str(i+1)+' -> '+str(j+1), transform=ax.transAxes, weight='bold')
     if y01:
         ax.set_ylim(0, 1)
     # Axes labels
-    if (j == 0):
+    if ipos is None:
+        ipos = i
+    if jpos is None:
+        jpos = j
+    if (jpos == 0):
         ax.set_ylabel('probability')
-    if (i == cktest.nsets-1):
-        ax.set_xlabel('lag time')
+    if (ipos == cktest.nsets-1):
+        ax.set_xlabel('lag time (' + units + ')')
     # return line objects
     return lest, lpred
 
 
-def plot_cktest(cktest, figsize=None, diag=False, y01=True, layout=None, padding_between=0.1, padding_top=0.075):
+def plot_cktest(cktest, figsize=None, diag=False,  y01=True, layout=None,
+                padding_between=0.1, padding_top=0.075, units='steps', dt=1.):
     """Plots the result of a Chapman-Kolmogorov test
 
     Parameters:
@@ -87,17 +92,19 @@ def plot_cktest(cktest, figsize=None, diag=False, y01=True, layout=None, padding
     # plot
     for (k, ax) in enumerate(axeslist):
         if diag and k < cktest.nsets:
-            lest, lpred = _add_ck_subplot(cktest, ax, k, k, y01=y01)
+            ipos = int(k/layout[1])
+            jpos = int(k%layout[1])
+            lest, lpred = _add_ck_subplot(cktest, ax, k, k, ipos=ipos, jpos=jpos, y01=y01, units=units, dt=dt)
             k += 1
         else:
             i = int(k/cktest.nsets)
             j = int(k%cktest.nsets)
-            lest, lpred = _add_ck_subplot(cktest, ax, i, j, y01=y01)
+            lest, lpred = _add_ck_subplot(cktest, ax, i, j, y01=y01, units=units, dt=dt)
     # figure legend
-    predlabel = 'predictions'
-    estlabel = 'estimates'
+    predlabel = 'predict'
+    estlabel = 'estimate'
     if cktest.has_errors:
-        predlabel += '     confidence {:3.1f}%'.format(100.0*cktest.conf)
+        predlabel += '     conf. {:3.1f}%'.format(100.0*cktest.conf)
     fig.legend((lest[0], lpred[0]), (estlabel, predlabel), 'upper center', ncol=2, frameon=False)
     # change subplot padding
     plt.subplots_adjust(top=1.0-padding_top, wspace=padding_between, hspace=padding_between)

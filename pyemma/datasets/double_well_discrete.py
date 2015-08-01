@@ -41,7 +41,7 @@ class DoubleWell_Discrete_Data(object):
     @property
     def dtraj_T100K_dt10_n6good(self):
         """ 100K frames trajectory at timestep 10, good 6-state discretization. """
-        return self.dtraj_T100K_dt10_n([25, 45, 50, 55, 60])
+        return self.dtraj_T100K_dt10_n([40, 45, 50, 55, 60])
 
     def dtraj_T100K_dt10_n(self, divides):
         """ 100K frames trajectory at timestep 10, arbitrary n-state discretization. """
