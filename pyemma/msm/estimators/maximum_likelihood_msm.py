@@ -211,24 +211,27 @@ class MaximumLikelihoodMSM(_Estimator, _EstimatedMSM):
 
         return self
 
-    def cktest(self, nsets, memberships=None, mlags=10):
+    def cktest(self, nsets, memberships=None, mlags=10, conf=0.95, err_est=False):
         """ Conducts a Chapman-Kolmogorow test.
 
         Parameters
         ----------
-
         nsets : int
             number of sets to test on
-
         memberships : ndarray(nstates, nsets), optional, default=None
             optional state memberships. By default (None) will conduct a cktest
             on PCCA (metastable) sets.
-
         mlags : int or int-array, default=10
             multiples of lag times for testing the Model, e.g. range(10).
             A single int will trigger a range, i.e. mlags=10 maps to
             mlags=range(10). The setting None will choose mlags automatically
             according to the longest available trajectory
+        conf : float, optional, default = 0.95
+            confidence interval
+        err_est : bool, default=False
+            compute errors also for all estimations (computationally expensive)
+            If False, only the prediction will get error bars, which is often
+            sufficient to validate a model.
 
 
         References
@@ -250,6 +253,6 @@ class MaximumLikelihoodMSM(_Estimator, _EstimatedMSM):
         if memberships is None:
             self.pcca(nsets)
             memberships = self.metastable_memberships
-        ck = ChapmanKolmogorovValidator(self, self, memberships, mlags=mlags)
+        ck = ChapmanKolmogorovValidator(self, self, memberships, mlags=mlags, conf=conf, err_est=err_est)
         ck.estimate(self._dtrajs_full)
         return ck

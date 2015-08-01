@@ -28,8 +28,9 @@ __author__ = 'noe'
 import numpy as _np
 import matplotlib.pylab as _plt
 
-def plot_implied_timescales(ITS, ax=None, outfile=None, xlog=False, ylog=True, confidence=0.95, refs=None, units='steps',
-                            dt=1., **kwargs):
+def plot_implied_timescales(ITS, ax=None, outfile=None, show_mle=True, show_mean=True,
+                            xlog=False, ylog=True, confidence=0.95, refs=None,
+                            units='steps', dt=1., **kwargs):
     r""" Generate a pretty implied timescale plot
 
     Parameters
@@ -41,6 +42,10 @@ def plot_implied_timescales(ITS, ax=None, outfile=None, xlog=False, ylog=True, c
         the axes to plot to. When set to None the default Axes object will be used.
     outfile : str, optional, default = None
         output file to write the figure to. When not given, the plot will be displayed
+    show_mean : bool, default = True
+        Line for mean value will be shown, if available
+    show_mle : bool, default = True
+        Line for maximum likelihood estimate will be shown
     xlog : bool, optional, default = False
         Iff true, the x-Axis is logarithmized
     ylog : bool, optional, default = True
@@ -76,11 +81,14 @@ def plot_implied_timescales(ITS, ax=None, outfile=None, xlog=False, ylog=True, c
     #ymax = 1.5*_np.min(ITS.get_timescales())
     for i in range(ITS.number_of_timescales):
         # plot estimate
-        ax.plot(lags*dt, ITS.get_timescales(process=i)*dt, color = colors[i % len(colors)],**kwargs)
+        if show_mle:
+            ax.plot(lags*dt, ITS.get_timescales(process=i)*dt, color=colors[i % len(colors)], **kwargs)
         # sample available?
         if (ITS.samples_available):# and ITS.sample_number_of_timescales > i):
             # plot sample mean
-            ax.plot(lags*dt, ITS.get_sample_mean(process=i)*dt, marker='o', color = colors[i % len(colors)], linestyle = 'dashed')
+            if show_mean:
+                ax.plot(lags*dt, ITS.get_sample_mean(process=i)*dt, marker='o',
+                        color=colors[i % len(colors)], linestyle='dashed')
             (lconf, rconf) = ITS.get_sample_conf(confidence, i)
             ax.fill_between(lags*dt, lconf*dt, rconf*dt, alpha=0.2, color=colors[i % len(colors)])
         # reference available?

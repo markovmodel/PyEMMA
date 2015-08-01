@@ -249,7 +249,7 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
 
         return self
 
-    def cktest(self, mlags=10):
+    def cktest(self, mlags=10, conf=0.95, err_est=False):
         """ Conducts a Chapman-Kolmogorow test.
 
         Parameters
@@ -259,6 +259,12 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
             A single int will trigger a range, i.e. mlags=10 maps to
             mlags=range(10). The setting None will choose mlags automatically
             according to the longest available trajectory
+        conf : float, optional, default = 0.95
+            confidence interval
+        err_est : bool, default=False
+            compute errors also for all estimations (computationally expensive)
+            If False, only the prediction will get error bars, which is often
+            sufficient to validate a model.
 
 
         References
@@ -277,6 +283,6 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
 
         """
         from pyemma.msm.estimators import ChapmanKolmogorovValidator
-        ck = ChapmanKolmogorovValidator(self, self, np.eye(self.nstates), mlags=mlags)
+        ck = ChapmanKolmogorovValidator(self, self, np.eye(self.nstates), mlags=mlags, conf=conf, err_est=err_est)
         ck.estimate(self._dtrajs_full)
         return ck
