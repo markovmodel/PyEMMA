@@ -321,6 +321,8 @@ class TestFeaturizer(unittest.TestCase):
         # now the reference
         ref_Y = mdtraj.rmsd(self.traj, self.traj[self.ref_frame])
         verbose_assertion_minrmsd(ref_Y, test_Y, self)
+        assert self.feat.dimension() == 2
+        assert len(self.feat.describe())==2
 
     def test_MinRmsd_with_atom_indices(self):
         # Test the Trajectory-input variant
@@ -331,6 +333,8 @@ class TestFeaturizer(unittest.TestCase):
         # now the reference
         ref_Y = mdtraj.rmsd(self.traj, self.traj[self.ref_frame], atom_indices=self.atom_indices)
         verbose_assertion_minrmsd(ref_Y, test_Y, self)
+        assert self.feat.dimension() == 2
+        assert len(self.feat.describe())==2
 
     def test_MinRmsd_with_atom_indices_precentered(self):
         # Test the Trajectory-input variant
@@ -341,12 +345,16 @@ class TestFeaturizer(unittest.TestCase):
         # now the reference
         ref_Y = mdtraj.rmsd(self.traj, self.traj[self.ref_frame], atom_indices=self.atom_indices, precentered=True)
         verbose_assertion_minrmsd(ref_Y, test_Y, self)
+        assert self.feat.dimension() == 2
+        assert len(self.feat.describe())==2
 
     def test_Residue_Mindist_Ca_all(self):
+        n_ca = self.feat.topology.n_atoms
         self.feat.add_residue_mindist(scheme='ca')
         D = self.feat.map(self.traj)
         Dref = mdtraj.compute_contacts(self.traj, scheme='ca')[0]
         assert np.allclose(D, Dref)
+        assert len(self.feat.describe())==self.feat.dimension()
 
     def test_Residue_Mindist_Ca_all_threshold(self):
         threshold = .7
@@ -357,6 +365,7 @@ class TestFeaturizer(unittest.TestCase):
         I = np.argwhere(Dref <= threshold)
         Dbinary[I[:, 0], I[:, 1]] = 1
         assert np.allclose(D, Dbinary)
+        assert len(self.feat.describe())==self.feat.dimension()
 
     def test_Residue_Mindist_Ca_array(self):
         contacts=np.array([[20,10,], [10,0]])
@@ -364,6 +373,7 @@ class TestFeaturizer(unittest.TestCase):
         D = self.feat.map(self.traj)
         Dref = mdtraj.compute_contacts(self.traj, scheme='ca', contacts=contacts)[0]
         assert np.allclose(D, Dref)
+        assert len(self.feat.describe())==self.feat.dimension()
 
     def test_Group_Mindist_One_Group(self):
         group0= [0,20,30,0]
@@ -372,6 +382,7 @@ class TestFeaturizer(unittest.TestCase):
         dist_list = list(combinations(np.unique(group0),2))
         Dref = mdtraj.compute_distances(self.traj, dist_list)
         assert np.allclose(D.squeeze(), Dref.min(1))
+        assert len(self.feat.describe())==self.feat.dimension()
 
     def test_Group_Mindist_All_Three_Groups(self):
         group0 = [0,20,30,0]
@@ -390,6 +401,7 @@ class TestFeaturizer(unittest.TestCase):
         Dref = np.vstack((Dref_01,Dref_02,Dref_12)).T
 
         assert np.allclose(D.squeeze(), Dref)
+        assert len(self.feat.describe())==self.feat.dimension()
 
     def test_Group_Mindist_All_Three_Groups_threshold(self):
         threshold = .7
@@ -413,7 +425,7 @@ class TestFeaturizer(unittest.TestCase):
         Dbinary[I[:, 0], I[:, 1]] = 1
 
         assert np.allclose(D, Dbinary)
-
+        assert len(self.feat.describe())==self.feat.dimension()
 
     def test_Group_Mindist_Some_Three_Groups(self):
         group0 = [0,20,30,0]
@@ -437,7 +449,7 @@ class TestFeaturizer(unittest.TestCase):
         Dref = np.vstack((Dref_01,Dref_22,Dref_02)).T
 
         assert np.allclose(D.squeeze(), Dref)
-
+        assert len(self.feat.describe())==self.feat.dimension()
 
 class TestFeaturizerNoDubs(unittest.TestCase):
 
