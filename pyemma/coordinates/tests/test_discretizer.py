@@ -1,4 +1,3 @@
-
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
 # All rights reserved.
@@ -22,7 +21,6 @@
 # ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 '''
 Created on 19.01.2015
 
@@ -41,7 +39,8 @@ from mdtraj.core.topology import Topology
 
 from pyemma.coordinates.clustering.uniform_time import UniformTimeClustering
 from pyemma.coordinates.pipelines import Discretizer
-from pyemma.coordinates.api import kmeans, feature_reader, pca
+from pyemma.coordinates.data.data_in_memory import DataInMemory
+from pyemma.coordinates.api import cluster_kmeans, pca, source
 
 
 def create_water_topology_on_disc(n):
@@ -107,13 +106,7 @@ class TestDiscretizer(unittest.TestCase):
         shutil.rmtree(cls.dest_dir, ignore_errors=True)
 
     def test(self):
-        reader = feature_reader(self.trajfiles, self.topfile)
-        # select all possible distances
-        pairs = np.array(
-            [x for x in itertools.combinations(range(self.n_residues), 2)])
-
-        #reader.featurizer.distances(pairs)
-
+        reader = source(self.trajfiles, top=self.topfile)
         pcat = pca(dim=2)
 
         n_clusters = 2
@@ -134,12 +127,13 @@ class TestDiscretizer(unittest.TestCase):
         data = [np.random.random((100, 50)),
                 np.random.random((103, 50)),
                 np.random.random((33, 50))]
-        reader = api.memory_reader(data)
+        reader = source(data)
+        assert isinstance(reader, DataInMemory)
 
         tpca = api.pca(dim=2)
 
         n_centers = 10
-        km = api.kmeans(k=n_centers)
+        km = api.cluster_kmeans(k=n_centers)
 
         disc = api.discretizer(reader, tpca, km)
         disc.parametrize()
@@ -151,13 +145,12 @@ class TestDiscretizer(unittest.TestCase):
                                     "dtraj has more states than cluster centers")
 
     def test_save_dtrajs(self):
-        reader = feature_reader(self.trajfiles, self.topfile)
+        reader = source(self.trajfiles, top=self.topfile)
         # select all possible distances
         pairs = np.array(
             [x for x in itertools.combinations(range(self.n_residues), 2)])
 
-        #reader.featurizer.distances(pairs)
-        cluster = kmeans(k=2)
+        cluster = cluster_kmeans(k=2)
         d = Discretizer(reader, cluster=cluster)
         d.parametrize()
         d.save_dtrajs(output_dir=self.dest_dir)

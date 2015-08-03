@@ -95,3 +95,23 @@ def scatter_contour(x, y, z, ncontours = 50, colorbar=True, fig=None, ax=None, c
 
     return ax
 
+
+def plot_free_energy(xall, yall, weights=None, ax=None, nbins=100, offset=0.1, cmap=_plt.cm.spectral, cbar=True, cbar_label=None):
+    """
+    """
+    # histogram data
+    z,x,y = _np.histogram2d(xall, yall, bins=nbins, weights=weights)
+    z += offset
+    # compute free energies
+    F = -_np.log(z)
+    # do a contour plot
+    extent = [x[0], x[-1], y[0], y[-1]]
+    if ax is None:
+        ax = _plt.gca()
+    ax.contourf(F.T, 100, extent=extent, cmap=cmap)
+    if cbar:
+        cbar = _plt.colorbar()
+        if cbar_label is not None:
+            cbar.ax.set_ylabel(cbar_label)
+
+    return ax

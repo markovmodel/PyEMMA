@@ -36,6 +36,12 @@ __all__ = ['Transformer']
 __author__ = 'noe, marscher'
 
 
+class SkipPassException(Exception):
+    """ raise this to skip a pass during parametrization """
+    def __init__(self, next_pass_lagtime=0):
+        self.next_pass_lagtime = next_pass_lagtime
+
+
 class TransformerIterator(object):
     def __init__(self, transformer, stride=1, lag=0):
         # reset transformer iteration
@@ -272,7 +278,6 @@ class Transformer(object):
                 # iterate over trajectories
                 last_chunk = False
                 itraj = 0
-
                 while not last_chunk:
                     last_chunk_in_traj = False
                     t = 0
@@ -290,9 +295,20 @@ class Transformer(object):
                         # last chunk?
                         last_chunk = (
                             last_chunk_in_traj and itraj >= self.number_of_trajectories() - 1)
-                        # pass chunks to algorithm and respect its return value
-                        return_value = self._param_add_data(
-                            X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=Y, stride=stride)
+                        # pass chunks to algorithm and respect its return values
+                        # and possible SkipPassException
+                        try:
+                            return_value = self._param_add_data(
+                                X, itraj, t, first_chunk, last_chunk_in_traj,
+                                last_chunk, ipass, Y=Y, stride=stride)
+                        except SkipPassException as spe:
+                            self._logger.debug("got skip pass exception."
+                                               "Skipping pass %i" % ipass)
+                            # break the inner loops
+                            last_chunk_in_traj = True
+                            last_chunk = True
+                            # set lag time for next pass
+                            lag = spe.next_pass_lagtime
 
                         if not self._custom_param_progress_handling:
                             progress.numerator += 1

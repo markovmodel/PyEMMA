@@ -38,7 +38,9 @@ from pyemma.coordinates.pipelines import Pipeline as _Pipeline
 from pyemma.coordinates.data.featurizer import MDFeaturizer as _MDFeaturizer
 from pyemma.coordinates.data.feature_reader import FeatureReader as _FeatureReader
 from pyemma.coordinates.data.data_in_memory import DataInMemory as _DataInMemory
-from pyemma.coordinates.data.util.reader_utils import create_file_reader as _create_file_reader
+from pyemma.coordinates.data.util.reader_utils import create_file_reader as _create_file_reader, \
+    preallocate_empty_trajectory as _preallocate_empty_trajectory, enforce_top as _enforce_top, \
+    copy_traj_attributes as _copy_traj_attributes
 from pyemma.coordinates.data.frames_from_file import frames_from_file as _frames_from_file
 # transforms
 from pyemma.coordinates.transform.transformer import Transformer as _Transformer
@@ -52,6 +54,9 @@ from pyemma.coordinates.clustering.assign import AssignCenters as _AssignCenters
 
 # stat
 from pyemma.coordinates.util.stat import histogram
+
+# types
+from mdtraj import Topology as _Topology, Trajectory as _Trajectory
 
 import numpy as _np
 import itertools as _itertools
@@ -537,7 +542,7 @@ def memory_reader(data):
     return _DataInMemory(data)
 
 
-def save_traj(traj_inp, indexes, outfile, topfile=None, stride=1, chunksize=1000, verbose=False):
+def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=1000, verbose=False):
     r""" Saves a sequence of frames as a single trajectory.
 
     Extracts the specified sequence of time/trajectory indexes from traj_inp
@@ -568,8 +573,8 @@ def save_traj(traj_inp, indexes, outfile, topfile=None, stride=1, chunksize=1000
         The name of the output file. Its extension will determine the file type written. Example: "out.dcd"
         If set to None, the trajectory object is returned to memory
 
-    topfile : str.
-        The topology file needed to read the files in the list :py:obj:`traj_inp`. If :py:obj:`traj_inp` is not a list,
+    top : str, mdtraj.Trajectory, or mdtraj.Topology
+        The topology needed to read the files in the list :py:obj:`traj_inp`. If :py:obj:`traj_inp` is not a list,
         this parameter is ignored.
 
     stride  : integer, default is 1
@@ -595,15 +600,18 @@ def save_traj(traj_inp, indexes, outfile, topfile=None, stride=1, chunksize=1000
     # Determine the type of input and extract necessary parameters
     if isinstance(traj_inp, _FeatureReader):
         trajfiles = traj_inp.trajfiles
-        topfile  = traj_inp.topfile
+        top  = traj_inp.topfile
         chunksize = traj_inp.chunksize
     else:
         # Do we have what we need?
         assert isinstance(traj_inp, list), "traj_inp has to be of type list, not %"%type(traj_inp)
-        assert isinstance(topfile,str), "traj_inp cannot be a list without an input " \
-                                        "topology file. " \
-                                        "Did you forget to parse the topology file?"
+        assert isinstance(top,(str,_Topology, _Trajectory)), "traj_inp cannot be a list of files without an input " \
+                                        "top of type str (eg filename.pdb), mdtraj.Trajectory or mdtraj.Topology. " \
+                                        "Got type %s instead"%type(top)
         trajfiles = traj_inp
+
+    # Enforce the input topology to actually be an md.Topology object
+    top = _enforce_top(top)
 
     # Convert to index (T,2) array if parsed a list or a list of arrays
     indexes = _np.vstack(indexes)
@@ -622,22 +630,21 @@ def save_traj(traj_inp, indexes, outfile, topfile=None, stride=1, chunksize=1000
         frames = indexes[file_pos == ii, 1]
         # Store the trajectory object that comes out of _frames_from_file
         # directly as an iterator in trajectory_iterator_list
-        trajectory_iterator_list.append(_itertools.islice(_frames_from_file(
-                                                trajfiles[ff],
-                                                topfile,
-                                                frames, chunksize=chunksize,
-                                                verbose=verbose, stride = stride), None)
+        trajectory_iterator_list.append(_itertools.islice(_frames_from_file(trajfiles[ff],
+                                                                            top,
+                                                                            frames, chunksize=chunksize,
+                                                                            verbose=verbose, stride = stride,
+                                                                            copy_not_join=True),
+                                                          None)
                                         )
+    # Prepare the trajectory object
+    traj = _preallocate_empty_trajectory(top, indexes.shape[0])
 
     # Iterate directly over the index of files and pick the trajectory that you need from the iterator list
-    traj = None
-    for traj_idx in file_pos:
+    for ii, traj_idx in enumerate(file_pos):
         # Append the trajectory from the respective list of iterators
         # and advance that iterator
-        if traj is None:
-            traj = trajectory_iterator_list[traj_idx].next()
-        else:
-            traj = traj.join(trajectory_iterator_list[traj_idx].next())
+        traj = _copy_traj_attributes(traj, trajectory_iterator_list[traj_idx].next(), ii)
 
     # Return to memory as an mdtraj trajectory object
     if outfile is None:
@@ -716,9 +723,9 @@ def save_trajs(traj_inp, indexes, prefix = 'set_', fmt = None, outfiles = None,
     for i_indexes in indexes:
         assert isinstance(i_indexes, _np.ndarray), "The elements in the 'indexes' variable must be numpy.ndarrays"
         assert i_indexes.ndim == 2, \
-            "The elements in the 'indexes' variable are must have ndim = 2, and not %u" % i_indexes.ndim
+            "The elements in the 'indexes' variable must have ndim = 2, and not %u" % i_indexes.ndim
         assert i_indexes.shape[1] == 2, \
-            "The elements in the 'indexes' variable are must be of shape (T_i,2), and not (%u,%u)" % i_indexes.shape
+            "The elements in the 'indexes' variable must be of shape (T_i,2), and not (%u,%u)" % i_indexes.shape
 
     # Determine output format of the molecular trajectory file
     if fmt is None:
@@ -742,7 +749,7 @@ def save_trajs(traj_inp, indexes, prefix = 'set_', fmt = None, outfiles = None,
     # might be accessed more than once (less memory intensive)
     if not inmemory:
         for i_indexes, outfile in _itertools.izip(indexes, outfiles):
-            # TODO: use kwargs** to parse to save_traj
+            # TODO: use **kwargs to parse to save_traj
             save_traj(traj_inp, i_indexes, outfile, stride = stride, verbose=verbose)
 
     # This implementation is "one file - one pass" but might temporally create huge memory objects
@@ -767,6 +774,17 @@ def save_trajs(traj_inp, indexes, prefix = 'set_', fmt = None, outfiles = None,
 #
 # =========================================================================
 
+def _get_input_stage(previous_stage):
+    # this is a pipelining stage, so let's parametrize from it
+    if isinstance(previous_stage, _Transformer):
+        inputstage = previous_stage
+    # second option: data is array or list of arrays
+    else:
+        data = _types.ensure_traj_list(previous_stage)
+        inputstage = _DataInMemory(data)
+
+    return inputstage
+
 def _param_stage(previous_stage, this_stage, stride=1):
     r""" Parametrizes the given pipelining stage if a valid source is given.
 
@@ -781,13 +799,8 @@ def _param_stage(previous_stage, this_stage, stride=1):
     # no input given - nothing to do
     if previous_stage is None:
         return this_stage
-    # this is a pipelining stage, so let's parametrize from it
-    elif isinstance(previous_stage, _Transformer) or issubclass(previous_stage.__class__, _Transformer):
-        inputstage = previous_stage
-    # second option: data is array or list of arrays
-    else:
-        data = _types.ensure_traj_list(previous_stage)
-        inputstage = _DataInMemory(data)
+
+    inputstage = _get_input_stage(previous_stage)
     # parametrize transformer
     this_stage.data_producer = inputstage
     this_stage.chunksize = inputstage.chunksize
@@ -795,7 +808,7 @@ def _param_stage(previous_stage, this_stage, stride=1):
     return this_stage
 
 
-def pca(data=None, dim=2, var_cutoff=1.0, stride=1):
+def pca(data=None, dim=2, var_cutoff=1.0, stride=1, mean=None):
     r""" Principal Component Analysis (PCA).
 
     PCA is a linear transformation method that finds coordinates of maximal variance.
@@ -838,6 +851,10 @@ def pca(data=None, dim=2, var_cutoff=1.0, stride=1):
         correlated at short timescales, it is often sufficient to estimate transformations at a longer stride.
         Note that the stride option in the get_output() function of the returned object is independent, so
         you can parametrize at a long stride, and still map all frames through the transformer.
+
+    mean : ndarray, optional, default None
+        Optionally pass pre-calculated means to avoid their re-computation.
+        The shape has to match the input dimension.
 
     Returns
     -------
@@ -910,11 +927,17 @@ def pca(data=None, dim=2, var_cutoff=1.0, stride=1):
         J. Edu. Psych. 24, 417-441 and 498-520.
 
     """
+    if mean is not None:
+        data = _get_input_stage(data)
+        indim = data.dimension()
+        mean = _types.ensure_ndarray(mean, shape=(indim,), dtype=_np.float)
+
     res = _PCA(dim=dim, var_cutoff=var_cutoff)
     return _param_stage(data, res, stride=stride)
 
 
-def tica(data=None, lag=10, dim=-1, var_cutoff=1.0, kinetic_map=False, stride=1, force_eigenvalues_le_one=False):
+def tica(data=None, lag=10, dim=-1, var_cutoff=1.0, kinetic_map=False, stride=1,
+         force_eigenvalues_le_one=False, mean=None):
     r""" Time-lagged independent component analysis (TICA).
 
     TICA is a linear transformation method. In contrast to PCA, which finds
@@ -969,6 +992,10 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=1.0, kinetic_map=False, stride=1,
     force_eigenvalues_le_one : boolean
         Compute covariance matrix and time-lagged covariance matrix such
         that the generalized eigenvalues are always guaranteed to be <= 1.
+
+    mean : ndarray, optional, default None
+        Optionally pass pre-calculated means to avoid their re-computation.
+        The shape has to match the input dimension.
 
 
     Returns
@@ -1060,8 +1087,12 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=1.0, kinetic_map=False, stride=1,
         (in preparation).
 
     """
+    if mean is not None:
+        data = _get_input_stage(data)
+        indim = data.dimension()
+        mean = _types.ensure_ndarray(mean, shape=(indim,), dtype=_np.float)
     res = _TICA(lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map,
-                force_eigenvalues_le_one=force_eigenvalues_le_one)
+                force_eigenvalues_le_one=force_eigenvalues_le_one, mean=mean)
     return _param_stage(data, res, stride=stride)
 
 
