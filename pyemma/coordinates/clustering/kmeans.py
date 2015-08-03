@@ -289,7 +289,7 @@ class MiniBatchKmeansClustering(KmeansClustering):
             if rel_change <= self._tolerance:
                 converged_in_max_iter = True
                 self._logger.info("Cluster centers converged after %i steps." % (ipass + 1))
-                self._force_finish_progress(stage=1)
+                self._progress_force_finish(stage=1)
             else:
                 self._progress_update(1, stage=1)
             if converged_in_max_iter or ipass + 1 >= self.max_iter:
