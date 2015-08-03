@@ -78,7 +78,7 @@ class TestFeaturizer(unittest.TestCase):
         with open(cls.asn_leu_pdbfile, 'w') as fh:
             fh.write(asn_leu_pdb)
 
-        cls.asn_leu_traj = tempfile.mkstemp(suffix='.xtc')[1]
+        cls.asn_leu_traj = tempfile.mktemp(suffix='.xtc')
 
         # create traj for asn_leu
         n_frames = 4001
