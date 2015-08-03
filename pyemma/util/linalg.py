@@ -1,4 +1,3 @@
-
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
 # All rights reserved.
@@ -22,12 +21,35 @@
 # ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-__author__ = 'noe'
-
 import numpy as np
 import scipy.linalg
 import scipy.sparse
+import copy
+import math
+
+__author__ = 'noe'
+
+
+def mdot(*args):
+    """Computes a matrix product of multiple ndarrays
+
+    This is a convenience function to avoid constructs such as np.dot(A, np.dot(B, np.dot(C, D))) and instead
+    use mdot(A, B, C, D).
+
+    Parameters
+    ----------
+    *args : an arbitrarily long list of ndarrays that must be compatible for multiplication,
+        i.e. args[i].shape[1] = args[i+1].shape[0].
+    """
+    if len(args) < 1:
+        raise ValueError('need at least one argument')
+    elif len(args) == 1:
+        return args[0]
+    elif len(args) == 2:
+        return np.dot(args[0],args[1])
+    else:
+        return np.dot(args[0], mdot(*args[1:]))
+
 
 def submatrix(M, sel):
     """Returns a submatrix of the quadratic matrix M, given by the selected columns and row
@@ -53,17 +75,18 @@ def submatrix(M, sel):
         C_cc = M.tocsr()
     else:
         C_cc = M
-    C_cc=C_cc[sel, :]
+    C_cc = C_cc[sel, :]
 
     """Column slicing"""
     if scipy.sparse.issparse(M):
         C_cc = C_cc.tocsc()
-    C_cc=C_cc[:, sel]
+    C_cc = C_cc[:, sel]
 
     if scipy.sparse.issparse(M):
         return C_cc.tocoo()
     else:
         return C_cc
+
 
 def _sort_by_norm(evals, evecs):
     """
@@ -94,8 +117,18 @@ def _sort_by_norm(evals, evecs):
 
 
 def eig_corr(C0, Ct, epsilon=1e-6):
-    """
-    Solve the generalized eigenvalues problem with correlation matrices C0 and Ct
+    r""" Solve generalized eigenvalues problem with correlation matrices C0 and Ct
+
+    Numerically robust solution of a generalized eigenvalue problem of the form
+
+    .. math::
+        \mathbf{C}_t \mathbf{r}_i = \mathbf{C}_0 \mathbf{r}_i l_i
+
+    Computes :math:`m` dominant eigenvalues :math:`l_i` and eigenvectors :math:`\mathbf{r}_i`, where
+    :math:`m` is the numerical rank of the problem. This is done by first conducting a Schur decomposition
+    of the symmetric positive matrix :math:`\mathbf{C}_0`, then truncating its spectrum to retain only eigenvalues
+    that are numerically greater than zero, then using this decomposition to define an ordinary eigenvalue
+    Problem for :math:`\mathbf{C}_t` of size :math:`m`, and then solving this eigenvalue problem.
 
     Parameters
     ----------
@@ -153,3 +186,93 @@ def eig_corr(C0, Ct, epsilon=1e-6):
 
     # return result
     return (l, R)
+
+
+def match_eigenvectors(R_ref, R, w_ref=None, w=None):
+    """Matches eigenvectors in :math:`R` onto the reference eigenvectors in :math:`R_ref`.
+
+    Finds an optimal matching of the eigenvectors in :math:`R` onto the reference eigenvectors in :math:`R`.
+    It is assumed that the eigenvectors in each set are orthogonal with respect to the weights, i.e.
+
+    .. math::
+        \langle r_i r_j \rangle_w = 0  \:\:\: \mathrm{if}\:\: i \neq j
+
+    where :math:`w = weights` are the weights if given (if not the weights are uniformly 1).
+    :math:`r_i` runs over vectors in :math:`R` or over vectors in :math:`R_ref`.
+    This function returns a permutation :math:`I=(i_1,...,i_m)` such that
+
+    .. math::
+        \sum_k \langle r^mathrm{ref}_i_k, r_k \rangle_w = \max
+
+    where :math:`w_i = \sqrt{w_{i,\mathrm{ref}} w_i}`
+
+    Parameters
+    ----------
+    R_ref : ndarray (n,M)
+        column matrix of :math:`M` reference eigenvectors of length :math:`n`.
+    R_ref : ndarray (n,m)
+        column matrix of :math:`m \le M` eigenvectors to match of length :math:`n`.
+    w_ref : ndarray (n)
+        weight array for R_ref
+    w : ndarray (n)
+        weight array for R
+
+    Returns
+    -------
+    I : ndarray (m)
+        a permutation array, telling which indexes of :math:`R_ref` each vector of :math:`R` should be assigned to.
+
+    """
+    # work on copies because we want to normalize
+    R_ref = copy.deepcopy(R_ref)
+    R = copy.deepcopy(R)
+    # sizes
+    n, M = R_ref.shape
+    n2, m = R.shape
+    assert n == n2, 'R_ref and R have inconsistent numbers of rows'
+    assert m <= M, 'R must have less or equal columns than R'
+    # weights
+    if w_ref is None:
+        w_ref = np.ones((n))
+    else:  # safeguard against numerical negatives
+        w_ref = np.maximum(w_ref, 0)
+        w_ref /= w_ref.sum()
+    if w is None:
+        w = np.ones((n))
+    else:  # safeguard against numerical negatives
+        w = np.maximum(w_ref, 0)
+        w /= w_ref.sum()
+    # mixed weights
+    wmix = np.sqrt(w_ref * w)
+    # normalize
+    for i in range(M):
+        R_ref[:,i] /= math.sqrt(np.dot(w_ref*R_ref[:,i], R_ref[:,i]))
+    for i in range(m):
+        try:
+            R[:,i] /= math.sqrt(np.dot(w*R[:,i], R[:,i]))
+        except:
+            from logging import getLogger
+            log = getLogger(__name__)
+            log.exception("w: %s\nR: %s" % (w, R))
+            raise
+    # projection amplitude matrix
+    P = np.zeros((m,M))
+    for i in range(m):
+        for j in range(M):
+            P[i,j] = np.dot(wmix*R[:,i], R_ref[:,j])
+            P[j,i] = P[i,j]
+    P = np.abs(P)
+    # select assignment
+    I = np.zeros((m), dtype=int)
+    # stationary vectors are always assigned
+    I[0] = 0
+    P[:,0] = 0
+    # other assignments
+    for i in range(1,m):
+        # select best
+        I[i] = np.argmax(P[i,:])
+        # prohibit this selection in the future
+        P[:,I[i]] = 0
+    # done
+    return I
+

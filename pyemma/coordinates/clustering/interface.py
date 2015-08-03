@@ -28,6 +28,7 @@ Created on 18.02.2015
 '''
 from pyemma.coordinates.transform.transformer import Transformer
 from pyemma.util.files import mkdir_p
+from pyemma.util.discrete_trajectories import index_states, sample_indexes_by_state
 
 import numpy as np
 import os
@@ -48,6 +49,7 @@ class AbstractClustering(Transformer):
         self._previous_stride = -1
         self._dtrajs = []
         self._overwrite_dtrajs = False
+        self._index_states = []
 
     @property
     def overwrite_dtrajs(self):
@@ -67,6 +69,55 @@ class AbstractClustering(Transformer):
             self._dtrajs = self.assign(stride=1)
 
         return self._dtrajs  # returning what we have saved
+
+    @property
+    def index_clusters(self):
+        """Returns trajectory/time indexes for all the clusters
+
+        Returns
+        -------
+        indexes : list of ndarray( (N_i, 2) )
+            For each state, all trajectory and time indexes where this cluster occurs.
+            Each matrix has a number of rows equal to the number of occurrences of the corresponding state,
+            with rows consisting of a tuple (i, t), where i is the index of the trajectory and t is the time index
+            within the trajectory.
+        """
+        if len(self._dtrajs) == 0:  # nothing assigned yet, doing that now
+            self._dtrajs = self.assign()
+
+        if len(self._index_states) == 0: # has never been run
+            self._index_states = index_states(self._dtrajs)
+
+        return self._index_states
+
+    def sample_indexes_by_cluster(self, clusters, nsample, replace=True):
+        """Samples trajectory/time indexes according to the given sequence of states.
+
+        Parameters
+        ----------
+        clusters : iterable of integers
+            It contains the cluster indexes to be sampled
+
+        nsample : int
+            Number of samples per cluster. If replace = False, the number of returned samples per cluster could be smaller
+            if less than nsample indexes are available for a cluster.
+
+        replace : boolean, optional
+            Whether the sample is with or without replacement
+
+        Returns
+        -------
+        indexes : list of ndarray( (N, 2) )
+            List of the sampled indices by cluster.
+            Each element is an index array with a number of rows equal to N=len(sequence), with rows consisting of a
+            tuple (i, t), where i is the index of the trajectory and t is the time index within the trajectory.
+        """
+
+        # Check if the catalogue (index_states)
+        if len(self._index_states) == 0: # has never been run
+            self._index_states = index_states(self.dtrajs)
+
+        return sample_indexes_by_state(self._index_states[clusters], nsample, replace=replace)
 
     def _map_array(self, X):
         """get closest index of point in :attr:`clustercenters` to x."""

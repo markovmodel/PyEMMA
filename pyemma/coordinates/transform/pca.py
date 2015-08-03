@@ -28,6 +28,8 @@ from .transformer import Transformer
 from pyemma.util.annotators import doc_inherit
 from pyemma.util.progressbar import ProgressBar
 from pyemma.util.progressbar.gui import show_progressbar
+from pyemma.coordinates.transform.transformer import SkipPassException
+from pyemma.util import types
 
 __all__ = ['PCA']
 __author__ = 'noe'
@@ -35,7 +37,7 @@ __author__ = 'noe'
 
 class PCA(Transformer):
 
-    def __init__(self, dim=-1, var_cutoff=1.0):
+    def __init__(self, dim=-1, var_cutoff=1.0, mean=None):
         r""" Principal component analysis.
 
         Given a sequence of multivariate data :math:`X_t`,
@@ -68,6 +70,9 @@ class PCA(Transformer):
             exceeds the fraction subspace_variance. var_cutoff=1.0 means all numerically available dimensions
             (see epsilon) will be used, unless set by dim. Setting var_cutoff smaller than 1.0 is exclusive with dim
 
+        mean : ndarray, optional, default None
+            Optionally pass pre-calculated means to avoid their re-computation.
+            The shape has to match the input dimension.
 
         """
         super(PCA, self).__init__()
@@ -78,6 +83,8 @@ class PCA(Transformer):
         self._dot_prod_tmp = None
         self.Y = None
         self._N = 0
+
+        self.mu = mean
 
         # set up result variables
         self.eigenvalues = None
@@ -122,7 +129,14 @@ class PCA(Transformer):
         indim = self.data_producer.dimension()
         self._logger.info("Running PCA on %i dimensional input" % indim)
         assert indim > 0, "Incoming data of PCA has 0 dimension!"
-        self.mu = np.zeros(indim)
+
+        if self.mu is not None:
+            self.mu = types.ensure_ndarray(self.mu, shape=(indim,))
+            self._given_mean = True
+        else:
+            self.mu = np.zeros(indim)
+            self._given_mean = False
+
         self.cov = np.zeros((indim, indim))
 
         # amount of chunks
@@ -158,6 +172,8 @@ class PCA(Transformer):
         # pass 1: means
         if ipass == 0:
             if t == 0:
+                if self._given_mean:
+                    raise SkipPassException()
                 self._logger.debug("start to calculate mean for traj nr %i" % itraj)
                 self._sum_tmp = np.empty(X.shape[1])
             np.sum(X, axis=0, out=self._sum_tmp)
@@ -209,6 +225,7 @@ class PCA(Transformer):
         :param X: the input data
         :return: the projected data
         """
+        # TODO: consider writing an extension to avoid temporary Xmeanfree
         X_meanfree = X - self.mu
-        Y = np.dot(X_meanfree, self.eigenvectors[:, 0:self._dim])
+        Y = np.dot(X_meanfree, self.eigenvectors[:, 0:self.dimension()])
         return Y

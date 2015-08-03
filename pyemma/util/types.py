@@ -26,9 +26,13 @@
 __author__ = 'noe'
 
 import numpy as np
+import scipy.sparse as scisp
 import numbers
 import collections
 
+# ======================================================================================================================
+# BASIC TYPE CHECKS
+# ======================================================================================================================
 
 def is_int(l):
     r"""Checks if l is an integer
@@ -81,7 +85,7 @@ def is_tuple_of_float(l):
     """
     return is_iterable_of_float(l)
 
-def is_int_array(l):
+def is_int_vector(l):
     r"""Checks if l is a numpy array of integers
 
     """
@@ -99,8 +103,8 @@ def is_int_matrix(l):
             return True
     return False
 
-def is_float_array(l):
-    r"""Checks if l is a numpy array of floats
+def is_float_vector(l):
+    r"""Checks if l is a 1D numpy array of floats
 
     """
     if isinstance(l, np.ndarray):
@@ -109,11 +113,20 @@ def is_float_array(l):
     return False
 
 def is_float_matrix(l):
-    r"""Checks if l is a numpy array of floats
+    r"""Checks if l is a 2D numpy array of floats
 
     """
     if isinstance(l, np.ndarray):
         if l.ndim == 2 and (l.dtype.kind == 'f'):
+            return True
+    return False
+
+def is_float_array(l):
+    r"""Checks if l is a numpy array of floats (any dimension
+
+    """
+    if isinstance(l, np.ndarray):
+        if l.dtype.kind == 'f':
             return True
     return False
 
@@ -134,7 +147,7 @@ def ensure_dtraj(dtraj):
     r"""Makes sure that dtraj is a discrete trajectory (array of int)
 
     """
-    if is_int_array(dtraj):
+    if is_int_vector(dtraj):
         return dtraj
     elif is_list_of_int(dtraj):
         return np.array(dtraj, dtype=int)
@@ -158,7 +171,7 @@ def ensure_dtraj_list(dtrajs):
     else:
         return [ensure_dtraj(dtrajs)]
 
-def ensure_int_array(I, require_order = False):
+def ensure_int_vector(I, require_order = False):
     """Checks if the argument can be converted to an array of ints and does that.
 
     Parameters
@@ -173,7 +186,7 @@ def ensure_int_array(I, require_order = False):
         numpy array with the integers contained in the argument
 
     """
-    if is_int_array(I):
+    if is_int_vector(I):
         return I
     elif is_int(I):
         return np.array([I])
@@ -191,7 +204,7 @@ def ensure_int_array(I, require_order = False):
     else:
         raise TypeError('Argument is not of a type that is convertible to an array of integers.')
 
-def ensure_int_array_or_None(F, require_order = False):
+def ensure_int_vector_or_None(F, require_order = False):
     """Ensures that F is either None, or a numpy array of floats
 
     If F is already either None or a numpy array of floats, F is returned (no copied!)
@@ -210,9 +223,9 @@ def ensure_int_array_or_None(F, require_order = False):
     if F is None:
         return F
     else:
-        return ensure_int_array(F, require_order = require_order)
+        return ensure_int_vector(F, require_order = require_order)
 
-def ensure_float_array(F, require_order = False):
+def ensure_float_vector(F, require_order = False):
     """Ensures that F is a numpy array of floats
 
     If F is already a numpy array of floats, F is returned (no copied!)
@@ -230,7 +243,7 @@ def ensure_float_array(F, require_order = False):
         numpy array with the floats contained in the argument
 
     """
-    if is_float_array(F):
+    if is_float_vector(F):
         return F
     elif is_float(F):
         return np.array([F])
@@ -246,7 +259,7 @@ def ensure_float_array(F, require_order = False):
     else:
         raise TypeError('Argument is not of a type that is convertible to an array of floats.')
 
-def ensure_float_array_or_None(F, require_order = False):
+def ensure_float_vector_or_None(F, require_order = False):
     """Ensures that F is either None, or a numpy array of floats
 
     If F is already either None or a numpy array of floats, F is returned (no copied!)
@@ -265,7 +278,7 @@ def ensure_float_array_or_None(F, require_order = False):
     if F is None:
         return F
     else:
-        return ensure_float_array(F, require_order = require_order)
+        return ensure_float_vector(F, require_order = require_order)
 
 def ensure_dtype_float(x, default=np.float64):
     r"""Makes sure that x is type of float
@@ -281,14 +294,161 @@ def ensure_dtype_float(x, default=np.float64):
     else:
         raise TypeError('x is not an array')
 
+# ======================================================================================================================
+# NDARRAY AND SPARSE ARRAY CHECKS
+# ======================================================================================================================
+
+def assert_square_matrix(A):
+    r""" Asserts if A is a square matrix
+
+    Returns
+    -------
+    n : int
+        the number of rows or columns
+
+    Raises
+    ------
+    AssertionError
+        If assertions has failed
+
+    """
+    assert_array(A, ndim=2, uniform=True)
+
+def assert_array(A, shape=None, uniform=None, ndim=None, size=None, dtype=None, kind=None):
+    r""" Asserts whether the given array or sparse matrix has the given properties
+
+    Parameters
+    ----------
+    A : ndarray, scipy.sparse matrix or array-like
+        the array under investigation
+
+    shape : shape, optional, default=None
+        asserts if the array has the requested shape. Be careful with vectors
+        because this will distinguish between row vectors (1,n), column vectors
+        (n,1) and arrays (n,). If you want to be less specific, consider using
+        size
+
+    square : None | True | False
+        if not None, asserts whether the array dimensions are uniform (e.g.
+        square for a ndim=2 array) (True), or not uniform (False).
+
+    size : int, optional, default=None
+        asserts if the arrays has the requested number of elements
+
+    ndim : int, optional, default=None
+        asserts if the array has the requested dimension
+
+    dtype : type, optional, default=None
+        asserts if the array data has the requested data type. This check is
+        strong, e.g. int and int64 are not equal. If you want a weaker check,
+        consider the kind option
+
+    kind : string, optional, default=None
+        Checks if the array data is of the specified kind. Options include 'i'
+        for integer types, 'f' for float types Check numpy.dtype.kind for
+        possible options. An additional option is 'numeric' for either integer
+        or float.
+
+    Raises
+    ------
+    AssertionError
+        If assertions has failed
+
+    """
+    try:
+        if shape is not None:
+            if not np.array_equal(np.shape(A), shape):
+                raise AssertionError('Expected shape '+str(shape)+' but given array has shape '+str(np.shape(A)))
+        if uniform is not None:
+            shapearr = np.array(np.shape(A))
+            is_uniform = np.count_nonzero(shapearr-shapearr[0]) == 0
+            if uniform and not is_uniform:
+                raise AssertionError('Given array is not uniform \n'+str(shapearr))
+            elif not uniform and is_uniform:
+                raise AssertionError('Given array is not nonuniform: \n'+str(shapearr))
+        if size is not None:
+            if not np.size(A) == size:
+                raise AssertionError('Expected size '+str(size)+' but given array has size '+str(np.size(A)))
+        if ndim is not None:
+            if not ndim == np.ndim(A):
+                raise AssertionError('Expected shape '+str(ndim)+' but given array has shape '+str(np.ndim(A)))
+        if dtype is not None:
+            # now we must create an array if we don't have one yet
+            if not isinstance(A, (np.ndarray)) and not scisp.issparse(A):
+                A = np.array(A)
+            if not np.dtype(dtype) == A.dtype:
+                raise AssertionError('Expected data type '+str(dtype)+' but given array has data type '+str(A.dtype))
+        if kind is not None:
+            # now we must create an array if we don't have one yet
+            if not isinstance(A, (np.ndarray)) and not scisp.issparse(A):
+                A = np.array(A)
+            if kind == 'numeric':
+                if not (A.dtype.kind == 'i' or A.dtype.kind == 'f'):
+                    raise AssertionError('Expected numerical data, but given array has data kind '+str(A.dtype.kind))
+            elif not A.dtype.kind == kind:
+                raise AssertionError('Expected data kind '+str(kind)
+                                     +' but given array has data kind '+str(A.dtype.kind))
+    except Exception as ex:
+        if isinstance(ex, AssertionError):
+            raise ex
+        else:  # other exception raised in the test code above
+            print 'Found exception: ',ex
+            raise AssertionError('Given argument is not an array of the expected shape or type:\n'+
+                                 'arg = '+str(A)+'\ntype = '+str(type(A)))
+
+def ensure_ndarray(A, shape=None, uniform=None, ndim=None, size=None, dtype=None, kind=None):
+    r""" Ensures A is an ndarray and does an assert_array with the given parameters
+
+    Returns
+    -------
+    A : ndarray
+        If A is already an ndarray, it is just returned. Otherwise this is an independent copy as an ndarray
+
+    """
+    if not isinstance(A, np.ndarray):
+        try:
+            A = np.array(A)
+        except:
+            raise AssertionError('Given argument cannot be converted to an ndarray:\n'+str(A))
+    assert_array(A, shape=shape, uniform=uniform, ndim=ndim, size=size, dtype=dtype, kind=kind)
+    return A
+
+def ensure_ndarray_or_sparse(A, shape=None, uniform=None, ndim=None, size=None, dtype=None, kind=None):
+    r""" Ensures A is an ndarray or a scipy sparse matrix and does an assert_array with the given parameters
+
+    Returns
+    -------
+    A : ndarray
+        If A is already an ndarray, it is just returned. Otherwise this is an independent copy as an ndarray
+
+    """
+    if not isinstance(A, np.ndarray) and not scisp.issparse(A):
+        try:
+            A = np.array(A)
+        except:
+            raise AssertionError('Given argument cannot be converted to an ndarray:\n'+str(A))
+    assert_array(A, shape=shape, uniform=uniform, ndim=ndim, size=size, dtype=dtype, kind=kind)
+    return A
+
+def ensure_ndarray_or_None(A, shape=None, uniform=None, ndim=None, size=None, dtype=None, kind=None):
+    r""" Ensures A is None or an ndarray and does an assert_array with the given parameters """
+    if A is not None:
+        return ensure_ndarray(A, shape=shape, uniform=uniform, ndim=ndim, size=size, dtype=dtype, kind=kind)
+    else:
+        return None
+
+
+# ======================================================================================================================
+# EMMA TRAJECTORY TYPES
+# ======================================================================================================================
 
 def ensure_traj(traj):
-    r"""Makes sure that dtraj is a discrete trajectory (array of int)
+    r"""Makes sure that dtraj is a discrete trajectory (array of float)
 
     """
     if is_float_matrix(traj):
         return traj
-    elif is_float_array(traj):
+    elif is_float_vector(traj):
         return traj[:,None]
     else:
         try:
@@ -296,7 +456,7 @@ def ensure_traj(traj):
             arr = ensure_dtype_float(arr)
             if is_float_matrix(arr):
                 return arr
-            if is_float_array(arr):
+            if is_float_vector(arr):
                 return arr[:,None]
             else:
                 raise TypeError('Argument traj cannot be cast into a two-dimensional array. Check type.')
