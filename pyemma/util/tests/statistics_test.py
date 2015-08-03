@@ -41,7 +41,7 @@ class TestStatistics(unittest.TestCase):
 
         n_in = 0.0
         for i in range(len(sample)):
-            if sample[i] > conf[1] and sample[i] < conf[2]:
+            if sample[i] > conf[0] and sample[i] < conf[1]:
                 n_in += 1.0
 
         assert(alpha - (n_in/len(sample)) < precision)

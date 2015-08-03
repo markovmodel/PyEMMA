@@ -45,5 +45,7 @@ User-API
 """
 
 from .timescales import plot_implied_timescales
-from .plots2d import contour, scatter_contour
+from .plots2d import contour, scatter_contour, plot_free_energy
 from .networks import plot_markov_model, plot_flux, NetworkPlot
+from .markovtests import plot_cktest
+

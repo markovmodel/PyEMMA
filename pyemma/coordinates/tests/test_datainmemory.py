@@ -32,6 +32,7 @@ import unittest
 import numpy as np
 
 from pyemma.coordinates.data.data_in_memory import DataInMemory
+from pyemma.coordinates.transform.transformer import TransformerIteratorContext
 from pyemma.util.log import getLogger
 
 logger = getLogger('TestDataInMemory')
@@ -121,7 +122,7 @@ class TestDataInMemory(unittest.TestCase):
         self.assertEqual(reader.n_frames_total(), n + n - 50 + 29)
 
         # iterate over data
-        lag = 30
+        ctx = TransformerIteratorContext(lag=30)
         t = 0
         itraj = 0
         last_chunk = False
@@ -129,7 +130,7 @@ class TestDataInMemory(unittest.TestCase):
             last_chunk_in_traj = False
             t = 0
             while not last_chunk_in_traj:
-                X, Y = reader._next_chunk(lag=lag)
+                X, Y = reader._next_chunk(ctx)
                 if itraj == 0:
                     self.assertEqual(X.shape, (100, 3))
                     self.assertEqual(Y.shape, (70, 3))
@@ -238,6 +239,19 @@ class TestDataInMemory(unittest.TestCase):
 
         for traj, input_traj in zip(lagged_trajs, lagged_0):
             np.testing.assert_equal(traj.reshape(input_traj.shape), input_traj)
+
+    def test_lagged_stridden_access(self):
+        data = np.random.random((1000, 2))
+        reader = DataInMemory(data)
+        strides = [2, 3, 5, 7, 15]
+        lags = [1, 3, 7, 10, 30]
+        for stride in strides:
+            for lag in lags:
+                chunks = []
+                for _, _, Y in reader.iterator(stride, lag):
+                    chunks.append(Y)
+                chunks = np.vstack(chunks)
+                np.testing.assert_equal(chunks, data[lag::stride])
 
 if __name__ == "__main__":
     unittest.main()

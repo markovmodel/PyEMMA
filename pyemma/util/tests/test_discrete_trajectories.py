@@ -124,8 +124,8 @@ class TestDiscreteTrajectoryStatistics(unittest.TestCase):
         assert(np.allclose(dt.count_states([S1,S2]),H))
 
     def test_count_big(self):
-        dtraj = dt.read_discrete_trajectory(testpath+'2well_traj_100K.dat')
-        # just run these to see if there's any exception
+        import pyemma.datasets
+        dtraj = pyemma.datasets.load_2well_discrete().dtraj_T100K_dt10
         dt.number_of_states(dtraj)
         dt.count_states(dtraj)
 
@@ -168,7 +168,8 @@ class TestIndexStates(unittest.TestCase):
             assert(np.alltrue(res[i] == expected[i]))
 
     def test_big(self):
-        dtraj = dt.read_discrete_trajectory(testpath+'2well_traj_100K.dat')
+        import pyemma.datasets
+        dtraj = pyemma.datasets.load_2well_discrete().dtraj_T100K_dt10
         # just run these to see if there's any exception
         dt.index_states(dtraj)
 

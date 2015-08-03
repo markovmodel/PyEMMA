@@ -163,6 +163,5 @@ class TestSaveTrajs(unittest.TestCase):
             (found_diff, errmsg) = compare_coords_md_trajectory_objects(traj_1_pass, traj_ref, atom=0)
             self.assertFalse(found_diff, errmsg)
 
-
 if __name__ == "__main__":
     unittest.main()

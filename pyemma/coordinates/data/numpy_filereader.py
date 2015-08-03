@@ -29,12 +29,11 @@ Created on 07.04.2015
 import numpy as np
 import functools
 
+from pyemma._base.progress import ProgressReporter
 from pyemma.coordinates.data.interface import ReaderInterface
-from pyemma.util.progressbar._impl import ProgressBar
-from pyemma.util.progressbar.gui import show_progressbar
 
 
-class NumPyFileReader(ReaderInterface):
+class NumPyFileReader(ReaderInterface, ProgressReporter):
 
     """reads NumPy files in chunks. Supports .npy files
 
@@ -59,7 +58,7 @@ class NumPyFileReader(ReaderInterface):
         for f in self._filenames:
             if not f.endswith('.npy'):
                 raise ValueError('given file "%s" is not supported by this'
-                                 ' reader. Since it does end with .npy' % f)
+                                 ' reader, since it does not end with .npy' % f)
 
         self.mmap_mode = mmap_mode
 
@@ -122,16 +121,14 @@ class NumPyFileReader(ReaderInterface):
     def __set_dimensions_and_lenghts(self):
         ndims = []
         n = len(self._filenames)
-        pg = ProgressBar(n, description="get lengths/dim")
-        pg.eta_every = 1
+        self._progress_register(n, description="get lengths/dim")
 
         for f in self._filenames:
             array = self.__load_file(f)
             self._lengths.append(np.shape(array)[0])
             ndims.append(np.shape(array)[1])
             self._close()
-            pg.numerator += 1
-            show_progressbar(pg)
+            self._progress_update(1)
 
         # ensure all trajs have same dim
         if not np.unique(ndims).size == 1:
@@ -142,7 +139,7 @@ class NumPyFileReader(ReaderInterface):
 
         self._ntraj = len(self._filenames)
 
-    def _next_chunk(self, lag=0, stride=1):
+    def _next_chunk(self, context=None):
 
         # if no file is open currently, open current index.
         if self._array is None:
@@ -151,25 +148,50 @@ class NumPyFileReader(ReaderInterface):
         traj_len = self._lengths[self._itraj]
         traj = self._array
 
+        # if stride by dict, update traj length accordingly
+        if not context.uniform_stride:
+            traj_len = context.ra_trajectory_length(self._itraj)
+
         # complete trajectory mode
         if self._chunksize == 0:
-            X = traj[::stride]
-            self._itraj += 1
+            if not context.uniform_stride:
+                X = traj[context.ra_indices_for_traj(self._itraj)]
+                self._itraj += 1
 
-            if lag == 0:
+                # skip the trajs that are not in the stride dict
+                while self._itraj < self.number_of_trajectories() \
+                        and (self._itraj not in context.traj_keys):
+                    self._itraj += 1
+                self._array = None
+            else:
+                X = traj[::context.stride]
+                self._itraj += 1
+
+            if context.lag == 0:
                 return X
             else:
-                Y = traj[lag * stride:traj_len:stride]
-                return (X, Y)
+                if not context.uniform_stride:
+                    raise ValueError("Requested lagged data but was in random access mode. This is not supported.")
+                else:
+                    Y = traj[context.lag::context.stride]
+                return X, Y
+
         # chunked mode
         else:
-            upper_bound = min(
-                self._t + (self._chunksize + 1) * stride, traj_len)
-            slice_x = slice(self._t, upper_bound, stride)
+            if not context.uniform_stride:
+                X = traj[context.ra_indices_for_traj(self._itraj)[self._t:min(self._t + self.chunksize, traj_len)]]
+                upper_bound = min(self._t + self.chunksize, traj_len)
+            else:
+                upper_bound = min(self._t + self._chunksize * context.stride, traj_len)
+                slice_x = slice(self._t, upper_bound, context.stride)
+                X = traj[slice_x]
 
-            X = traj[slice_x]
+            if context.lag != 0:
+                upper_bound_Y = min(self._t + context.lag + self._chunksize * context.stride, traj_len)
+                slice_y = slice(self._t + context.lag, upper_bound_Y, context.stride)
+                Y = traj[slice_y]
 
-            last_t = self._t
+            # set new time position
             self._t = upper_bound
 
             if self._t >= traj_len:
@@ -177,19 +199,17 @@ class NumPyFileReader(ReaderInterface):
                     self._logger.debug("reached bounds of array, open next.")
                 self._itraj += 1
                 self._t = 0
+
+                # if we have a dictionary, skip trajectories that are not in the key set
+                while not context.uniform_stride and self._itraj < self.number_of_trajectories() \
+                        and (self._itraj not in context.traj_keys):
+                    self._itraj += 1
+
                 # if time index scope ran out of len of current trajectory, open next file.
                 if self._itraj <= self.number_of_trajectories() - 1:
                     self.__load_file(self._filenames[self._itraj])
-                # we open self._mditer2 only if requested due lag parameter!
-                self._curr_lag = 0
 
-            if lag == 0:
+            if context.lag == 0:
                 return X
             else:
-                # its okay to return empty chunks
-                upper_bound = min(
-                    last_t + (lag + self._chunksize + 1) * stride, traj_len)
-                slice_y = slice(last_t + lag, upper_bound, stride)
-
-                Y = traj[slice_y]
                 return X, Y
