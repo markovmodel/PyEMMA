@@ -41,13 +41,160 @@ class SkipPassException(Exception):
         self.next_pass_lagtime = next_pass_lagtime
 
 
+class TransformerIteratorContext(object):
+
+    def __init__(self, stride=1, lag=0):
+        self._lag = lag
+        self.__init_stride(stride)
+
+    def __init_stride(self, stride):
+        self._stride = stride
+        if isinstance(stride, np.ndarray):
+            keys = stride[:, 0]
+            self._trajectory_keys, self._trajectory_lengths = np.unique(keys, return_counts=True)
+        else:
+            self._trajectory_keys = None
+        self._uniform_stride = TransformerIteratorContext.is_uniform_stride(stride)
+        if not self.uniform_stride and not self.is_stride_sorted():
+            raise ValueError("Currently only sorted arrays allowed for random access")
+
+    def ra_indices_for_traj(self, traj):
+        """
+        Gives the indices for a trajectory file index (without changing the order within the trajectory itself).
+        :param traj: a trajectory file index
+        :return: a Nx1 - np.array of the indices corresponding to the trajectory index
+        """
+        assert not self.uniform_stride, "requested random access indices, but is in uniform stride mode"
+        return self._stride[self._stride[:, 0] == traj][:, 1] if traj in self.traj_keys else np.array([])
+
+    def ra_trajectory_length(self, traj):
+        assert not self.uniform_stride, "requested random access trajectory length, but is in uniform stride mode"
+        return int(self._trajectory_lengths[np.where(self.traj_keys == traj)]) if traj in self.traj_keys else 0
+
+    @property
+    def stride(self):
+        return self._stride
+
+    @stride.setter
+    def stride(self, value):
+        self.__init_stride(value)
+
+    @property
+    def lag(self):
+        return self._lag
+
+    @lag.setter
+    def lag(self, value):
+        self._lag = value
+
+    @property
+    def traj_keys(self):
+        return self._trajectory_keys
+
+    @property
+    def uniform_stride(self):
+        return self._uniform_stride
+
+    @staticmethod
+    def is_uniform_stride(stride):
+        return not isinstance(stride, np.ndarray)
+
+    def is_stride_sorted(self):
+        if not self.uniform_stride:
+            stride_traj_keys = self.stride[:, 0]
+            if not all(np.diff(stride_traj_keys) >= 0):
+                # traj keys were not sorted
+                return False
+            for idx in self.traj_keys:
+                if not all(np.diff(self.stride[stride_traj_keys == idx][:, 1]) >= 0):
+                    # traj indices were not sorted
+                    return False
+        return True
+
+
+class TransformerIteratorContext(object):
+
+    def __init__(self, stride=1, lag=0):
+        self._lag = lag
+        self.__init_stride(stride)
+
+    def __init_stride(self, stride):
+        self._stride = stride
+        if isinstance(stride, np.ndarray):
+            keys = stride[:, 0]
+            self._trajectory_keys, self._trajectory_lengths = np.unique(keys, return_counts=True)
+        else:
+            self._trajectory_keys = None
+        self._uniform_stride = TransformerIteratorContext.is_uniform_stride(stride)
+        if not self.uniform_stride and not self.is_stride_sorted():
+            raise ValueError("Currently only sorted arrays allowed for random access")
+
+    def ra_indices_for_traj(self, traj):
+        """
+        Gives the indices for a trajectory file index (without changing the order within the trajectory itself).
+        :param traj: a trajectory file index
+        :return: a Nx1 - np.array of the indices corresponding to the trajectory index
+        """
+        assert not self.uniform_stride, "requested random access indices, but is in uniform stride mode"
+        return self._stride[self._stride[:, 0] == traj][:, 1] if traj in self.traj_keys else np.array([])
+
+    def ra_trajectory_length(self, traj):
+        assert not self.uniform_stride, "requested random access trajectory length, but is in uniform stride mode"
+        return int(self._trajectory_lengths[np.where(self.traj_keys == traj)]) if traj in self.traj_keys else 0
+
+    @property
+    def stride(self):
+        return self._stride
+
+    @stride.setter
+    def stride(self, value):
+        self.__init_stride(value)
+
+    @property
+    def lag(self):
+        return self._lag
+
+    @lag.setter
+    def lag(self, value):
+        self._lag = value
+
+    @property
+    def traj_keys(self):
+        return self._trajectory_keys
+
+    @property
+    def uniform_stride(self):
+        return self._uniform_stride
+
+    @staticmethod
+    def is_uniform_stride(stride):
+        return not isinstance(stride, np.ndarray)
+
+    def is_stride_sorted(self):
+        if not self.uniform_stride:
+            stride_traj_keys = self.stride[:, 0]
+            if not all(np.diff(stride_traj_keys) >= 0):
+                # traj keys were not sorted
+                return False
+            for idx in self.traj_keys:
+                if not all(np.diff(self.stride[stride_traj_keys == idx][:, 1]) >= 0):
+                    # traj indices were not sorted
+                    return False
+        return True
+
+
 class TransformerIterator(object):
+
     def __init__(self, transformer, stride=1, lag=0):
         # reset transformer iteration
-        transformer._reset(stride)
-        self._stride = stride
-        self._lag = lag
         self._transformer = transformer
+
+        self._ctx = TransformerIteratorContext(stride=stride, lag=lag)
+        self._transformer._reset(self._ctx)
+
+        # for random access stride mode: skip the first empty trajectories
+        if not self._ctx.uniform_stride:
+            self._transformer._itraj = min(self._ctx.traj_keys)
 
     def __iter__(self):
         return self
@@ -57,11 +204,11 @@ class TransformerIterator(object):
             raise StopIteration
 
         last_itraj = self._transformer._itraj
-        if self._lag == 0:
-            X = self._transformer._next_chunk(lag=self._lag, stride=self._stride)
+        if self._ctx.lag == 0:
+            X = self._transformer._next_chunk(self._ctx)
             return (last_itraj, X)
         else:
-            X, Y = self._transformer._next_chunk(lag=self._lag, stride=self._stride)
+            X, Y = self._transformer._next_chunk(self._ctx)
             return (last_itraj, X, Y)
 
 
@@ -117,8 +264,11 @@ class Transformer(ProgressReporter):
     def _n_chunks(self, stride=1):
         """ rough estimate of how many chunks will be processed """
         if self._chunksize != 0:
-            chunks = sum([ceil(l / float(self._chunksize))
-                          for l in self.trajectory_lengths(stride)])
+            if not TransformerIteratorContext.is_uniform_stride(stride):
+                chunks = ceil(len(stride[:, 0]) / float(self._chunksize))
+            else:
+                chunks = sum([ceil(l / float(self._chunksize))
+                              for l in self.trajectory_lengths(stride)])
         else:
             chunks = 1
         return chunks
@@ -246,7 +396,7 @@ class Transformer(ProgressReporter):
 
         # if stride is not equal to one and does not match to a previous call
         # retrigger parametrization (but not for readers).
-        if stride != self._param_with_stride and not self._data_producer is self:
+        if stride != self._param_with_stride and self._data_producer is not self:
             self._parametrized = False
 
         self._param_with_stride = stride
@@ -257,42 +407,58 @@ class Transformer(ProgressReporter):
         # init
         return_value = self._param_init()
         if return_value is not None:
-            lag = return_value
+            if isinstance(return_value, tuple):
+                lag, stride = return_value
+            else:
+                lag = return_value
         else:
             lag = 0
+
+        # create iterator context
+        ctx = TransformerIteratorContext(stride, lag)
+
         # feed data, until finished
         add_data_finished = False
         ipass = 0
 
         if not self._custom_param_progress_handling:
             # NOTE: this assumes this class implements a 1-pass algo
-            self._progress_register(self._n_chunks(stride), "parameterizing "
+            self._progress_register(self._n_chunks(ctx.stride), "parameterizing "
                            + self.__class__.__name__, 0)
         # parametrize
         try:
             while not add_data_finished:
                 first_chunk = True
-                self.data_producer._reset(stride=stride)
+                self.data_producer._reset(ctx)
                 # iterate over trajectories
                 last_chunk = False
                 itraj = 0
+                if not ctx.uniform_stride:
+                    # in random access mode skip leading trajectories which are not included
+                    while itraj not in ctx.traj_keys and itraj < self.number_of_trajectories():
+                        itraj += 1
+
+                if not ctx.uniform_stride:
+                    # in random access mode skip leading trajectories which are not included
+                    while itraj not in ctx.traj_keys and itraj < self.number_of_trajectories():
+                        itraj += 1
+
                 while not last_chunk:
                     last_chunk_in_traj = False
                     t = 0
                     while not last_chunk_in_traj:
                         # iterate over times within trajectory
-                        if lag == 0:
-                            X = self.data_producer._next_chunk(stride=stride)
+                        if ctx.lag == 0:
+                            X = self.data_producer._next_chunk(ctx)
                             Y = None
                         else:
-                            X, Y = self.data_producer._next_chunk(lag=lag, stride=stride)
+                            X, Y = self.data_producer._next_chunk(ctx)
                         L = np.shape(X)[0]
+
                         # last chunk in traj?
-                        last_chunk_in_traj = (
-                            t + L >= self.trajectory_length(itraj, stride=stride))
+                        last_chunk_in_traj = (t + L >= self.trajectory_length(itraj, stride=ctx.stride))
                         # last chunk?
-                        last_chunk = (
-                            last_chunk_in_traj and itraj >= self.number_of_trajectories() - 1)
+                        last_chunk = (last_chunk_in_traj and itraj >= self.number_of_trajectories() - 1)
                         # pass chunks to algorithm and respect its return values
                         # and possible SkipPassException
                         try:
@@ -312,7 +478,10 @@ class Transformer(ProgressReporter):
                             self._progress_update(1, 0)
 
                         if isinstance(return_value, tuple):
-                            add_data_finished, lag = return_value
+                            if len(return_value) == 2:
+                                add_data_finished, ctx.lag = return_value
+                            else:
+                                add_data_finished, ctx.lag, ctx.stride = return_value
                         else:
                             add_data_finished = return_value
 
@@ -419,7 +588,7 @@ class Transformer(ProgressReporter):
         self._Y = self.get_output(stride=stride)
         self._mapping_to_mem_active = False
 
-    def _reset(self, stride=1):
+    def _reset(self, context=None):
         r"""_reset data position"""
         # TODO: children of this do not call parametrize nor reset their data_producers.
         # check if this is an issue
@@ -430,9 +599,9 @@ class Transformer(ProgressReporter):
         self._t = 0
         if not self.in_memory and self.data_producer is not self:
             # operate in pipeline
-            self.data_producer._reset(stride=stride)
+            self.data_producer._reset(context)
 
-    def _next_chunk(self, lag=0, stride=1):
+    def _next_chunk(self, ctx):
         r"""
         Transforms next available chunk from either in memory data or internal
         data_producer
@@ -451,43 +620,55 @@ class Transformer(ProgressReporter):
             if self._itraj >= self.number_of_trajectories():
                 return None
             # operate in memory, implement iterator here
-            traj_len = self.trajectory_length(self._itraj)
-            if lag == 0:
-                Y = self._Y[self._itraj][
-                    self._t:min(self._t + self.chunksize*stride, traj_len):stride]
+            traj_len = self.trajectory_length(self._itraj, stride=ctx.stride)
+            traj = self._Y[self._itraj]
+            if ctx.lag == 0:
+                if not ctx.uniform_stride:
+                    Y = traj[ctx.ra_indices_for_traj(self._itraj)[self._t:min(self._t + self.chunksize, traj_len)]]
+                    self._t += self.chunksize
+                    while (self._itraj not in ctx.traj_keys
+                           or ctx.ra_indices_for_traj(self._itraj)[self._t:min(self._t + self.chunksize, traj_len)].size == 0) \
+                            and self._itraj < self.number_of_trajectories():
+                        self._itraj += 1
+                        self._t = 0
+                else:
+                    Y = traj[self._t:min(self._t + self.chunksize * ctx.stride, traj_len):ctx.stride]
+                    # increment counters
+                    self._t += self.chunksize * ctx.stride
+                    if self._t >= traj_len:
+                        self._itraj += 1
+                        self._t = 0
+                return Y
+            else:
+                Y0 = traj[self._t:min(self._t + self.chunksize * ctx.stride, traj_len):ctx.stride]
+                Ytau = traj[self._t + ctx.lag * ctx.stride:min(self._t + (self.chunksize + ctx.lag) * ctx.stride, traj_len):ctx.stride]
                 # increment counters
-                self._t += self.chunksize*stride
+                self._t += self.chunksize * ctx.stride
                 if self._t >= traj_len:
                     self._itraj += 1
                     self._t = 0
-                return Y
-            else:
-                Y0 = self._Y[self._itraj][
-                    self._t:min(self._t + self.chunksize*stride, traj_len):stride]
-                Ytau = self._Y[self._itraj][
-                    self._t + lag*stride:min(self._t + (self.chunksize + lag)*stride, traj_len):stride]
-                # increment counters
-                self._t += self.chunksize*stride
-                if self._t >= traj_len:
-                    self._itraj += 1
-                return (Y0, Ytau)
+                return Y0, Ytau
         else:
+            if not ctx.uniform_stride:
+                while self._itraj not in ctx.traj_keys and self._itraj < self.number_of_trajectories():
+                    self._itraj += 1
+                    self._t = 0
             # operate in pipeline
-            if lag == 0:
-                X = self.data_producer._next_chunk(stride=stride)
+            if ctx.lag == 0:
+                X = self.data_producer._next_chunk(ctx)
                 self._t += X.shape[0]
-                if self._t >= self.trajectory_length(self._itraj, stride=stride):
+                if self._t >= self.trajectory_length(self._itraj, stride=ctx.stride):
                     self._itraj += 1
                     self._t = 0
                 return self.map(X)
             # TODO: this seems to be a dead branch of code
             else:
-                (X0, Xtau) = self.data_producer._next_chunk(lag=lag, stride=stride)
+                (X0, Xtau) = self.data_producer._next_chunk(ctx)
                 self._t += X0.shape[0]
-                if self._t >= self.trajectory_length(self._itraj, stride=stride):
+                if self._t >= self.trajectory_length(self._itraj, stride=ctx.stride):
                     self._itraj += 1
                     self._t = 0
-                return (self.map(X0), self.map(Xtau))
+                return self.map(X0), self.map(Xtau)
 
     def __iter__(self):
         r"""
@@ -579,7 +760,7 @@ class Transformer(ProgressReporter):
 
         if isinstance(dimensions, int):
             ndim = 1
-            dimensions = slice(dimensions, dimensions+1)
+            dimensions = slice(dimensions, dimensions + 1)
         elif isinstance(dimensions, list):
             ndim = len(np.zeros(self.dimension())[dimensions])
         elif isinstance(dimensions, np.ndarray):
@@ -629,7 +810,8 @@ class Transformer(ProgressReporter):
                 last_itraj = itraj
                 t = 0  # reset time to 0 for new trajectory
             L = chunk.shape[0]
-            trajs[itraj][t:t + L, :] = chunk[:, dimensions]
+            if L > 0:
+                trajs[itraj][t:t + L, :] = chunk[:, dimensions]
             t += L
 
             # update progress
