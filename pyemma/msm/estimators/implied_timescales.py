@@ -37,6 +37,7 @@ import numpy as np
 from pyemma.util.statistics import confidence_interval
 from pyemma.util import types as _types
 from pyemma._base.estimator import Estimator, get_estimator, param_grid, estimate_param_scan
+from pyemma._base.progress import ProgressReporter
 from pyemma._base.model import SampledModel
 
 
@@ -64,7 +65,7 @@ def _generate_lags(maxlag, multiplier):
 # TODO: build a generic implied timescales estimate in _base, and make this a subclass (for dtrajs)
 # TODO: Timescales should be assigned by similar eigenvectors rather than by order
 # TODO: when requesting too long lagtimes, throw a warning and exclude lagtime from calculation, but compute the rest
-class ImpliedTimescales(Estimator):
+class ImpliedTimescales(Estimator, ProgressReporter):
     r"""Implied timescales for a series of lag times.
 
     Parameters
@@ -106,11 +107,13 @@ class ImpliedTimescales(Estimator):
         self._its = None
         # sampled its's. 3D-array with indexing: lagtime, its, sample
         self._its_samples = None
+        
+        ProgressReporter.__init__(self)
 
 
     def _estimate(self, data):
         r"""Estimates ITS at set of lagtimes
-        
+
         """
         ### PREPARE AND CHECK DATA
         # TODO: Currenlty only discrete trajectories are implemented. For a general class this needs to be changed.
@@ -145,9 +148,16 @@ class ImpliedTimescales(Estimator):
                                                              n_jobs=self.n_jobs)
 
         ### PROCESS RESULTS
+        print self._models
 
         # timescales
-        timescales = [m.timescales() for m in self._models]
+        timescales = []
+        self._progress_register(len(self._models), stage=1, description="calc timescales")
+        for m in self._models:
+            timescales.append(m.timescales())
+            self._progress_update(1, stage=1)
+
+        print timescales
 
         # how many finity timescales do we really have?
         maxnts = max([len(ts[np.isfinite(ts)]) for ts in timescales])

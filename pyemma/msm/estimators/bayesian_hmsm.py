@@ -1,5 +1,3 @@
-__author__ = 'noe'
-
 import numpy as _np
 
 from pyemma.util.types import ensure_dtraj_list
@@ -8,9 +6,12 @@ from pyemma.msm.models.hmsm import HMSM as _HMSM
 from pyemma.msm.estimators.estimated_hmsm import EstimatedHMSM as _EstimatedHMSM
 from pyemma.msm.models.hmsm_sampled import SampledHMSM as _SampledHMSM
 from pyemma.util.units import TimeUnit
+from pyemma._base.progress import ProgressReporter
+from pyemma._ext.six.moves import range
 
+__author__ = 'noe'
 
-class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM):
+class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporter):
     """Estimator for a Bayesian HMSM
 
     """
@@ -86,7 +87,7 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM):
         # here we blow up the output matrix (if needed) to the FULL state space because we want to use dtrajs in the
         # Bayesian HMM sampler
         if self.observe_active:
-            import pyemma.msm.estimation as msmest
+            import msmtools.estimation as msmest
             nstates_full = msmest.number_of_states(dtrajs)
             pobs = _np.zeros((init_hmsm.nstates, nstates_full))
             pobs[:, init_hmsm.observable_set] = init_hmsm.observation_probabilities
@@ -94,11 +95,16 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM):
             pobs = init_hmsm.observation_probabilities
 
         # HMM sampler
+        self._progress_register(self.nsamples, description='Sampling models', stage=0)
+
+        def call_back():
+            self._progress_update(1, stage=0)
+
         from bhmm import discrete_hmm, bayesian_hmm
         hmm_mle = discrete_hmm(init_hmsm.transition_matrix, pobs, stationary=True, reversible=self.reversible)
         # using the lagged discrete trajectories that have been found in the MLHMM
         sampled_hmm = bayesian_hmm(init_hmsm.discrete_trajectories_lagged, hmm_mle, nsample=self.nsamples,
-                                   transition_matrix_prior='init-connect')
+                                   transition_matrix_prior='init-connect', call_back=call_back)
 
         # Samples
         sample_Ps = [sampled_hmm.sampled_hmms[i].transition_matrix for i in range(self.nsamples)]
