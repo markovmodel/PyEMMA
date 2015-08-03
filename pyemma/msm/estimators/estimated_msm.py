@@ -358,9 +358,11 @@ class EstimatedMSM(MSM):
         # TODO: frames. Anyway, this is a nontrivial issue.
         self._check_is_estimated()
         # generate synthetic states
-        from pyemma.msm.generation import generate_traj as _generate_traj
+        from msmtools.generation import generate_traj as _generate_traj
+        
+        T = self.transition_matrix.toarray() if self.is_sparse else self.transition_matrix
 
-        syntraj = _generate_traj(self.transition_matrix, N, start=start, stop=stop, dt=stride)
+        syntraj = _generate_traj(T, N, start=start, stop=stop, dt=stride)
         # result
         from pyemma.util.discrete_trajectories import sample_indexes_by_sequence
 
@@ -467,7 +469,7 @@ class EstimatedMSM(MSM):
 
         Returns
         -------
-        hmsm : :class:`EstimatedHMSM <pyemma.msm.ui.hmsm_estimated.EstimatedHMSM>`
+        hmsm : :class:`EstimatedHMSM <pyemma.msm.models.hmsm_estimated.EstimatedHMSM>`
 
         .. [1] F. Noe, H. Wu, J.-H. Prinz and N. Plattner:
             Projected and hidden Markov models for calculating kinetics and metastable states of complex molecules

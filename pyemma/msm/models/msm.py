@@ -832,14 +832,17 @@ class MSM(_Model):
 
         from msmtools.analysis.dense.pcca import PCCA
         # ensure that we have a pcca object with the right number of states
+        T = self.transition_matrix
+        if self.is_sparse:
+            T = T.toarray()
         try:
             # this will except if we don't have a pcca object
             if self._pcca.n_metastable != m:
                 # incorrect number of states - recompute
-                self._pcca = PCCA(self.transition_matrix, m)
+                self._pcca = PCCA(T, m)
         except AttributeError:
             # didn't have a pcca object yet - compute
-            self._pcca = PCCA(self.transition_matrix, m)
+            self._pcca = PCCA(T, m)
 
         # set metastable properties
         self._metastable_computed = True
