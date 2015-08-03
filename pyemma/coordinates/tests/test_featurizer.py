@@ -594,5 +594,30 @@ class TestPairwiseInputParser(unittest.TestCase):
                                             )))
         assert np.allclose(dist_list, _parse_pairwise_input(group1, group2, self.feat._logger))
 
+class TestStaticMethods(unittest.TestCase):
+
+    def setUp(self):
+        self.feat = MDFeaturizer(pdbfile)
+
+    def test_pairs(self):
+        n_at = 5
+        pairs = self.feat.pairs(np.arange(n_at), excluded_neighbors=3)
+        assert np.allclose(pairs, [0,4])
+
+        pairs = self.feat.pairs(np.arange(n_at), excluded_neighbors=2)
+        assert np.allclose(pairs, [[0,3],[0,4],
+                                   [1,4]])
+
+        pairs = self.feat.pairs(np.arange(n_at), excluded_neighbors=1)
+        assert np.allclose(pairs, [[0,2], [0,3],[0,4],
+                                   [1,3], [1,4],
+                                   [2,4]])
+
+        pairs = self.feat.pairs(np.arange(n_at), excluded_neighbors=0)
+        assert np.allclose(pairs, [[0,1], [0,2], [0,3],[0,4],
+                                   [1,2], [1,3], [1,4],
+                                   [2,3], [2,4],
+                                   [3,4]])
+
 if __name__ == "__main__":
     unittest.main()
