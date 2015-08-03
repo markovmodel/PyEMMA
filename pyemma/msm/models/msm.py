@@ -136,10 +136,10 @@ class MSM(_Model):
         list of this function (by mandatory or keyword arguments)
 
         """
-        import pyemma.msm.analysis as msmana
+        import msmtools.analysis as msmana
         # check input
         if P is not None:
-            import pyemma.msm.estimation as msmest
+            import msmtools.estimation as msmest
             if not msmana.is_transition_matrix(P):
                 raise ValueError('T is not a transition matrix.')
             # check connectivity
@@ -232,13 +232,13 @@ class MSM(_Model):
         if self.pi is not None:
             return self.pi
         else:
-            from pyemma.msm.analysis import stationary_distribution as _statdist
+            from msmtools.analysis import stationary_distribution as _statdist
             self.pi = _statdist(self.transition_matrix)
             return self.pi
 
     def _compute_eigenvalues(self, neig):
         """ Conducts the eigenvalue decomposition and stores k eigenvalues, left and right eigenvectors """
-        from pyemma.msm.analysis import eigenvalues as anaeig
+        from msmtools.analysis import eigenvalues as anaeig
 
         if self.reversible:
             self._eigenvalues = anaeig(self.transition_matrix, k=neig, ncv=self.ncv,
@@ -262,7 +262,7 @@ class MSM(_Model):
 
     def _compute_eigendecomposition(self, neig):
         """ Conducts the eigenvalue decomposition and stores k eigenvalues, left and right eigenvectors """
-        from pyemma.msm.analysis import rdl_decomposition
+        from msmtools.analysis import rdl_decomposition
 
         if self.reversible:
             self._R, self._D, self._L = rdl_decomposition(self.transition_matrix, norm='reversible',
@@ -373,7 +373,7 @@ class MSM(_Model):
             self._ensure_eigenvalues()
         else:
             self._ensure_eigenvalues(neig=k+1)
-        from pyemma.msm.analysis.dense.decomposition import timescales_from_eigenvalues as _timescales
+        from msmtools.analysis.dense.decomposition import timescales_from_eigenvalues as _timescales
 
         ts = _timescales(self._eigenvalues, tau=self._timeunit_model.dt)
         if k is None:
@@ -442,7 +442,7 @@ class MSM(_Model):
     def _mfpt(self, P, A, B, mu=None):
         self._assert_in_active(A)
         self._assert_in_active(B)
-        from pyemma.msm.analysis import mfpt as __mfpt
+        from msmtools.analysis import mfpt as __mfpt
         # scale mfpt by lag time
         return self._timeunit_model.dt * __mfpt(P, B, origin=A, mu=mu)
 
@@ -461,7 +461,7 @@ class MSM(_Model):
     def _committor_forward(self, P, A, B):
         self._assert_in_active(A)
         self._assert_in_active(B)
-        from pyemma.msm.analysis import committor as __committor
+        from msmtools.analysis import committor as __committor
         return __committor(P, A, B, forward=True)
 
     def committor_forward(self, A, B):
@@ -479,7 +479,7 @@ class MSM(_Model):
     def _committor_backward(self, P, A, B, mu=None):
         self._assert_in_active(A)
         self._assert_in_active(B)
-        from pyemma.msm.analysis import committor as __committor
+        from msmtools.analysis import committor as __committor
         return __committor(P, A, B, forward=False, mu=mu)
 
     def committor_backward(self, A, B):
@@ -618,7 +618,7 @@ class MSM(_Model):
             maxtime = 5 * self.timescales()[0]
         steps = np.arange(int(ceil(float(maxtime) / self._timeunit_model.dt)))
         # compute correlation
-        from pyemma.msm.analysis import correlation as _correlation
+        from msmtools.analysis import correlation as _correlation
         # TODO: this could be improved. If we have already done an eigenvalue decomposition, we could provide it.
         # TODO: for this, the correlation function must accept already-available eigenvalue decompositions.
         res = _correlation(self.transition_matrix, a, obs2=b, times=steps, k=k, ncv=ncv)
@@ -661,7 +661,7 @@ class MSM(_Model):
         # input checking is done in low-level API
         # TODO: this could be improved. If we have already done an eigenvalue decomposition, we could provide it.
         # TODO: for this, the correlation function must accept already-available eigenvalue decompositions.
-        from pyemma.msm.analysis import fingerprint_correlation as _fc
+        from msmtools.analysis import fingerprint_correlation as _fc
         return _fc(self.transition_matrix, a, obs2=b, tau=self._timeunit_model.dt, k=k, ncv=ncv)
 
     def relaxation(self, p0, a, maxtime=None, k=None, ncv=None):
@@ -736,7 +736,7 @@ class MSM(_Model):
         kmax = int(ceil(float(maxtime) / self._timeunit_model.dt))
         steps = np.array(range(kmax), dtype=int)
         # compute relaxation function
-        from pyemma.msm.analysis import relaxation as _relaxation
+        from msmtools.analysis import relaxation as _relaxation
         # TODO: this could be improved. If we have already done an eigenvalue decomposition, we could provide it.
         # TODO: for this, the correlation function must accept already-available eigenvalue decompositions.
         res = _relaxation(self.transition_matrix, p0, a, times=steps, k=k, ncv=ncv)
@@ -782,7 +782,7 @@ class MSM(_Model):
         # input checking is done in low-level API
         # TODO: this could be improved. If we have already done an eigenvalue decomposition, we could provide it.
         # TODO: for this, the correlation function must accept already-available eigenvalue decompositions.
-        from pyemma.msm.analysis import fingerprint_relaxation as _fr
+        from msmtools.analysis import fingerprint_relaxation as _fr
         return _fr(self.transition_matrix, p0, a, tau=self._timeunit_model.dt, k=k, ncv=ncv)
 
     ################################################################################
@@ -812,7 +812,7 @@ class MSM(_Model):
 
         Returns
         -------
-        pcca_obj : :class:`PCCA <pyemma.msm.analysis.dense.pcca.PCCA>`
+        pcca_obj : :class:`PCCA <msmtools.analysis.dense.pcca.PCCA>`
             An object containing all PCCA quantities. However, you can also ingore this return value and instead
             retrieve the quantities of your interest with the following MSM functions: :func:`metastable_memberships`,
             :func:`metastable_distributions`, :func:`metastable_sets` and :func:`metastable_assignments`.
@@ -830,14 +830,14 @@ class MSM(_Model):
             raise ValueError(
                 'Cannot compute PCCA for non-reversible matrices. Set reversible=True when constructing the MSM.')
 
-        from pyemma.msm.analysis.dense.pcca import PCCA
+        from msmtools.analysis.dense.pcca import PCCA
         # ensure that we have a pcca object with the right number of states
         try:
             # this will except if we don't have a pcca object
             if self._pcca.n_metastable != m:
                 # incorrect number of states - recompute
                 self._pcca = PCCA(self.transition_matrix, m)
-        except:
+        except AttributeError:
             # didn't have a pcca object yet - compute
             self._pcca = PCCA(self.transition_matrix, m)
 
