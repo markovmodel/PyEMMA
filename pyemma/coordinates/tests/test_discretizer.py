@@ -100,7 +100,10 @@ class TestDiscretizer(unittest.TestCase):
         """delete temporary files"""
         os.unlink(cls.topfile)
         for f in cls.trajfiles:
-            os.unlink(f)
+            try:
+                os.unlink(f)
+            except:
+                pass
 
         import shutil
         shutil.rmtree(cls.dest_dir, ignore_errors=True)

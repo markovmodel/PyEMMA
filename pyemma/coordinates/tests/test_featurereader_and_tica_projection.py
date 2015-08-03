@@ -64,7 +64,8 @@ class TestFeatureReaderAndTICAProjection(unittest.TestCase):
         mean = np.random.randn(cls.dim)
 
         # create topology file
-        cls.temppdb = tempfile.mktemp('.pdb')
+        cls.workdir = tempfile.mkdtemp(suffix='test_feature_reader_tica_proj')
+        cls.temppdb = tempfile.mktemp('.pdb', dir=cls.workdir)
         with open(cls.temppdb, 'w') as f:
             for i in xrange(cls.dim // 3):
                 print>>f, ('ATOM  %5d C    ACE A   1      28.490  31.600  33.379  0.00  1.00' % i)
@@ -82,17 +83,15 @@ class TestFeatureReaderAndTICAProjection(unittest.TestCase):
             traj = mdtraj.load(cls.temppdb)
             traj.xyz = xyz
             traj.time = t
-            tempfname = tempfile.mktemp('.xtc')
+            tempfname = tempfile.mktemp('.xtc', dir=cls.workdir)
             traj.save(tempfname)
             cls.trajnames.append(tempfname)
 
     @classmethod
     def tearDownClass(cls):
-        for fname in cls.trajnames:
-            os.unlink(fname)
-        os.unlink(cls.temppdb)
-        super(TestFeatureReaderAndTICAProjection, cls).tearDownClass()
-        
+        import shutil
+        shutil.rmtree(cls.workdir, ignore_errors=True)
+
     def test_covariances_and_eigenvalues(self):
         reader = FeatureReader(self.trajnames, self.temppdb)
         trans = TICA(lag=1, dim=self.dim, force_eigenvalues_le_one=True)
