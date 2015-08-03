@@ -125,7 +125,6 @@ class KmeansClustering(AbstractClustering):
         if self._init_strategy == 'uniform':
             del self._centers_iter_list
             del self._init_centers_indices
-        if self._init_strategy == 'kmeans++':
 
         self._progress_force_finish(0)
         self._progress_force_finish(1)
@@ -270,10 +269,9 @@ class MiniBatchKmeansClustering(KmeansClustering):
             if rel_change <= self._tolerance:
                 converged_in_max_iter = True
                 self._logger.info("Cluster centers converged after %i steps." % (ipass + 1))
-                self._progress_iters.numerator = self.max_iter
+                self._force_finish_progress(stage=1)
             else:
-                self._progress_iters.numerator += 1
-            show_progressbar(self._progress_iters)
+                self._progress_update(1, stage=1)
             if converged_in_max_iter or ipass + 1 >= self.max_iter:
                 if not converged_in_max_iter:
                     self._logger.info("Algorithm did not reach convergence criterion"
