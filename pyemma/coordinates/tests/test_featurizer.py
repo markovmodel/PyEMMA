@@ -128,7 +128,7 @@ class TestFeaturizer(unittest.TestCase):
     def test_distances(self):
         sel = np.array([1, 2, 5, 20], dtype=int)
         pairs_expected = np.array([[1, 5], [1, 20], [2, 5], [2, 20], [5, 20]])
-        pairs = self.feat.pairs(sel)
+        pairs = self.feat.pairs(sel, excluded_neighbors=2)
         assert(pairs.shape == pairs_expected.shape)
         assert(np.all(pairs == pairs_expected))
         self.feat.add_distances(pairs, periodic=False)  # unperiodic distances such that we can compare
@@ -141,7 +141,7 @@ class TestFeaturizer(unittest.TestCase):
     def test_inverse_distances(self):
         sel = np.array([1, 2, 5, 20], dtype=int)
         pairs_expected = np.array([[1, 5], [1, 20], [2, 5], [2, 20], [5, 20]])
-        pairs = self.feat.pairs(sel)
+        pairs = self.feat.pairs(sel, excluded_neighbors=2)
         assert(pairs.shape == pairs_expected.shape)
         assert(np.all(pairs == pairs_expected))
         self.feat.add_inverse_distances(pairs, periodic=False)  # unperiodic distances such that we can compare
@@ -154,7 +154,7 @@ class TestFeaturizer(unittest.TestCase):
     def test_ca_distances(self):
         sel = self.feat.select_Ca()
         assert(np.all(sel == range(self.traj.n_atoms)))  # should be all for this Ca-traj
-        pairs = self.feat.pairs(sel)
+        pairs = self.feat.pairs(sel, excluded_neighbors=0)
         self.feat.add_distances_ca(periodic=False)  # unperiodic distances such that we can compare
         assert(self.feat.dimension() == pairs.shape[0])
         X = self.traj.xyz[:, pairs[:, 0], :]
@@ -165,7 +165,7 @@ class TestFeaturizer(unittest.TestCase):
     def test_contacts(self):
         sel = np.array([1, 2, 5, 20], dtype=int)
         pairs_expected = np.array([[1, 5], [1, 20], [2, 5], [2, 20], [5, 20]])
-        pairs = self.feat.pairs(sel)
+        pairs = self.feat.pairs(sel, excluded_neighbors=2)
         assert(pairs.shape == pairs_expected.shape)
         assert(np.all(pairs == pairs_expected))
         self.feat.add_contacts(pairs, threshold=0.5, periodic=False)  # unperiodic distances such that we can compare
@@ -476,7 +476,7 @@ class TestFeaturizerNoDubs(unittest.TestCase):
 
         # try to fool it with ca selection
         ca = featurizer.select_Ca()
-        ca = featurizer.pairs(ca)
+        ca = featurizer.pairs(ca, excluded_neighbors=0)
         featurizer.add_distances(ca)
         self.assertEqual(len(featurizer.active_features), 4)
         featurizer.add_distances_ca()
