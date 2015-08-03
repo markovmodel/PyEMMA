@@ -95,12 +95,12 @@ class TestSaveTraj(unittest.TestCase):
 
     def test_list_input_save_IO(self):
         # Test that we're saving to disk alright
-        save_traj(self.trajfiles, self.sets, self.outfile, topfile=self.pdbfile)
+        save_traj(self.trajfiles, self.sets, self.outfile, top=self.pdbfile)
         exist = os.stat(self.outfile)
         self.assertTrue(exist, "Could not write to disk")
 
     def test_list_input_returns_trajectory(self):
-        self.assertTrue(isinstance(save_traj(self.trajfiles, self.sets, None, topfile=self.pdbfile),
+        self.assertTrue(isinstance(save_traj(self.trajfiles, self.sets, None, top=self.pdbfile),
                           md.Trajectory))
 
     def test_reader_input_save_correct_frames_disk(self):
@@ -127,7 +127,7 @@ class TestSaveTraj(unittest.TestCase):
 
     def test_list_input_save_correct_frames_disk(self):
 
-        save_traj(self.trajfiles, self.sets, self.outfile, topfile=self.pdbfile)
+        save_traj(self.trajfiles, self.sets, self.outfile, top=self.pdbfile)
 
         # Reload the object to memory
         traj = md.load(self.outfile, top=self.pdbfile)
@@ -140,7 +140,7 @@ class TestSaveTraj(unittest.TestCase):
     def test_list_input_save_correct_frames_mem(self):
 
         # Keep object in memory
-        traj = save_traj(self.trajfiles, self.sets, None, topfile=self.pdbfile)
+        traj = save_traj(self.trajfiles, self.sets, None, top=self.pdbfile)
 
         # Check for diffs
         (found_diff, errmsg) = compare_coords_md_trajectory_objects(traj, self.traj_ref, atom=0)

@@ -26,8 +26,8 @@ import numpy as np
 from .transformer import Transformer
 
 from pyemma.util.annotators import doc_inherit
-from pyemma.util.progressbar import ProgressBar
-from pyemma.util.progressbar.gui import show_progressbar
+from pyemma.coordinates.transform.transformer import SkipPassException
+from pyemma.util import types
 
 __all__ = ['PCA']
 __author__ = 'noe'
@@ -35,7 +35,7 @@ __author__ = 'noe'
 
 class PCA(Transformer):
 
-    def __init__(self, dim=-1, var_cutoff=1.0):
+    def __init__(self, dim=-1, var_cutoff=1.0, mean=None):
         r""" Principal component analysis.
 
         Given a sequence of multivariate data :math:`X_t`,
@@ -68,6 +68,9 @@ class PCA(Transformer):
             exceeds the fraction subspace_variance. var_cutoff=1.0 means all numerically available dimensions
             (see epsilon) will be used, unless set by dim. Setting var_cutoff smaller than 1.0 is exclusive with dim
 
+        mean : ndarray, optional, default None
+            Optionally pass pre-calculated means to avoid their re-computation.
+            The shape has to match the input dimension.
 
         """
         super(PCA, self).__init__()
@@ -79,6 +82,8 @@ class PCA(Transformer):
         self.Y = None
         self._N = 0
 
+        self.mu = mean
+
         # set up result variables
         self.eigenvalues = None
         self.eigenvectors = None
@@ -86,8 +91,6 @@ class PCA(Transformer):
 
         # output options
         self._custom_param_progress_handling = True
-        self._progress_mean = None
-        self._progress_cov = None
 
     @doc_inherit
     def describe(self):
@@ -122,13 +125,20 @@ class PCA(Transformer):
         indim = self.data_producer.dimension()
         self._logger.info("Running PCA on %i dimensional input" % indim)
         assert indim > 0, "Incoming data of PCA has 0 dimension!"
-        self.mu = np.zeros(indim)
+
+        if self.mu is not None:
+            self.mu = types.ensure_ndarray(self.mu, shape=(indim,))
+            self._given_mean = True
+        else:
+            self.mu = np.zeros(indim)
+            self._given_mean = False
+
         self.cov = np.zeros((indim, indim))
 
         # amount of chunks
         denom = self._n_chunks(self._param_with_stride)
-        self._progress_mean = ProgressBar(denom, description="calculate mean")
-        self._progress_cov = ProgressBar(denom, description="calculate covariances")
+        self._progress_register(denom, description="calculate mean", stage=0)
+        self._progress_register(denom, description="calculate covariances", stage=1)
 
     def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
                         last_chunk, ipass, Y=None, stride=1):
@@ -158,6 +168,8 @@ class PCA(Transformer):
         # pass 1: means
         if ipass == 0:
             if t == 0:
+                if self._given_mean:
+                    raise SkipPassException()
                 self._logger.debug("start to calculate mean for traj nr %i" % itraj)
                 self._sum_tmp = np.empty(X.shape[1])
             np.sum(X, axis=0, out=self._sum_tmp)
@@ -165,8 +177,7 @@ class PCA(Transformer):
             self._N += np.shape(X)[0]
 
             # counting chunks and log of eta
-            self._progress_mean.numerator += 1
-            show_progressbar(self._progress_mean)
+            self._progress_update(1, 0)
 
             if last_chunk:
                 self.mu /= self._N
@@ -180,8 +191,7 @@ class PCA(Transformer):
             np.dot(Xm.T, Xm, self._dot_prod_tmp)
             self.cov += self._dot_prod_tmp
 
-            self._progress_cov.numerator += 1
-            show_progressbar(self._progress_cov)
+            self._progress_update(1, stage=1)
 
             if last_chunk:
                 self.cov /= self._N - 1
@@ -209,6 +219,7 @@ class PCA(Transformer):
         :param X: the input data
         :return: the projected data
         """
+        # TODO: consider writing an extension to avoid temporary Xmeanfree
         X_meanfree = X - self.mu
-        Y = np.dot(X_meanfree, self.eigenvectors[:, 0:self._dim])
+        Y = np.dot(X_meanfree, self.eigenvectors[:, 0:self.dimension()])
         return Y

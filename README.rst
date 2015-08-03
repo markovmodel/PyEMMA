@@ -69,5 +69,4 @@ Or start a discussion on our mailing list: pyemma-users@lists.fu-berlin.de
 External Libraries
 ------------------
 * mdtraj (LGPLv3): https://mdtraj.org
-* grandalf (GPLv2, EPLv1): https://github.com/bdcht/grandalf
 

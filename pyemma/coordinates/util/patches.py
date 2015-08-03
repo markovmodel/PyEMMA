@@ -29,21 +29,14 @@ Created on 13.03.2015
 @author: marscher
 '''
 import numpy as np
-import warnings
-
 from mdtraj.utils.validation import cast_indices
-from mdtraj.core.trajectory import load, Trajectory, _parse_topology
-from mdtraj.formats.hdf5 import HDF5TrajectoryFile
-from mdtraj.utils.unit import in_units_of
-from mdtraj.formats.lh5 import LH5TrajectoryFile
-from mdtraj.formats import DCDTrajectoryFile
-from mdtraj.formats import XTCTrajectoryFile
+from mdtraj.core.trajectory import load, _parse_topology, _TOPOLOGY_EXTS, _get_extension, open,\
+    Trajectory
 
-from pyemma.util.log import getLogger
+from itertools import groupby
+from operator import itemgetter
 
-log = getLogger('patches')
-
-
+#@profile
 def iterload(filename, chunk=100, **kwargs):
     """An iterator over a trajectory from one or more files on disk, in fragments
 
@@ -89,103 +82,107 @@ def iterload(filename, chunk=100, **kwargs):
     <mdtraj.Trajectory with 100 frames, 423 atoms at 0x110740a90>
 
     """
-    stride = kwargs.get('stride', 1)
-    atom_indices = cast_indices(kwargs.get('atom_indices', None))
-    if chunk % stride != 0 and filename.endswith('.dcd'):
-        raise ValueError('Stride must be a divisor of chunk. stride=%d does not go '
-                         'evenly into chunk=%d' % (stride, chunk))
-    if chunk == 0:
-        yield load(filename, **kwargs)
-    # If chunk was 0 then we want to avoid filetype-specific code in case of undefined behavior in various file parsers.
+    stride = kwargs.pop('stride', 1)
+    atom_indices = cast_indices(kwargs.pop('atom_indices', None))
+    top = kwargs.pop('top', None)
+    skip = kwargs.pop('skip', 0)
+
+    extension = _get_extension(filename)
+    if extension not in _TOPOLOGY_EXTS:
+        topology = _parse_topology(top)
     else:
-        skip = kwargs.pop('skip', 0)
-        if filename.endswith('.h5'):
-            if 'top' in kwargs:
-                warnings.warn('top= kwarg ignored since file contains topology information')
+        topology = top
 
-            with HDF5TrajectoryFile(filename) as f:
-                if skip > 0:
-                    xyz, _, _, _ = f.read(skip, atom_indices=atom_indices)
-                    if len(xyz) == 0:
-                        raise StopIteration()
-                if atom_indices is None:
-                    topology = f.topology
+    if chunk == 0:
+        # If chunk was 0 then we want to avoid filetype-specific code
+        # in case of undefined behavior in various file parsers.
+        # TODO: this will first apply stride, then skip!
+        if extension not in _TOPOLOGY_EXTS:
+            kwargs['top'] = top
+        yield load(filename, **kwargs)[skip:]
+    elif extension in ('.pdb', '.pdb.gz'):
+        # the PDBTrajectortFile class doesn't follow the standard API. Fixing it
+        # to support iterload could be worthwhile, but requires a deep refactor.
+        t = load(filename, stride=stride, atom_indices=atom_indices)
+        for i in range(0, len(t), chunk):
+            yield t[i:i+chunk]
+
+    elif isinstance(stride, np.ndarray):
+        with (lambda x: open(x, n_atoms=topology.n_atoms)
+              if extension in ('.crd', '.mdcrd')
+              else open(filename))(filename) as f:
+            x_prev = 0
+            curr_size = 0
+            traj = []
+            leftovers = []
+            for k, g in groupby(enumerate(stride), lambda (a, b): a-b):
+                grouped_stride = map(itemgetter(1), g)
+                seek_offset = (1 if x_prev != 0 else 0)
+                seek_to = grouped_stride[0] - x_prev - seek_offset
+                f.seek(seek_to, whence=1)
+                x_prev = grouped_stride[-1]
+                group_size = len(grouped_stride)
+                if curr_size + group_size > chunk:
+                    leftovers = grouped_stride
                 else:
-                    topology = f.topology.subset(atom_indices)
+                    local_traj = _get_local_traj_object(atom_indices, extension, f, group_size, topology, **kwargs)
+                    traj.append(local_traj)
+                    curr_size += len(grouped_stride)
+                if curr_size == chunk:
+                    yield _efficient_traj_join(traj)
+                    curr_size = 0
+                    traj = []
+                while leftovers:
+                    local_chunk = leftovers[:min(chunk, len(leftovers))]
+                    local_traj = _get_local_traj_object(atom_indices, extension, f, len(local_chunk), topology, **kwargs)
+                    traj.append(local_traj)
+                    leftovers = leftovers[min(chunk, len(leftovers)):]
+                    curr_size += len(local_chunk)
+                    if curr_size == chunk:
+                        yield _efficient_traj_join(traj)
+                        curr_size = 0
+                        traj = []
+            if traj:
+                yield _efficient_traj_join(traj)
+            raise StopIteration()
 
-                while True:
-                    data = f.read(chunk*stride, stride=stride, atom_indices=atom_indices)
-                    if data == []:
-                        raise StopIteration()
-                    in_units_of(data.coordinates, f.distance_unit, Trajectory._distance_unit, inplace=True)
-                    in_units_of(data.cell_lengths, f.distance_unit, Trajectory._distance_unit, inplace=True)
-                    yield Trajectory(xyz=data.coordinates, topology=topology,
-                                     time=data.time, unitcell_lengths=data.cell_lengths,
-                                     unitcell_angles=data.cell_angles)
-
-        if filename.endswith('.lh5'):
-            if 'top' in kwargs:
-                warnings.warn('top= kwarg ignored since file contains topology information')
-            with LH5TrajectoryFile(filename) as f:
-                if atom_indices is None:
-                    topology = f.topology
+    else:
+        with (lambda x: open(x, n_atoms=topology.n_atoms)
+              if extension in ('.crd', '.mdcrd')
+              else open(filename))(filename) as f:
+            if skip > 0:
+                f.seek(skip)
+            while True:
+                if extension not in _TOPOLOGY_EXTS:
+                    traj = f.read_as_traj(topology, n_frames=chunk*stride, stride=stride, atom_indices=atom_indices, **kwargs)
                 else:
-                    topology = f.topology.subset(atom_indices)
+                    traj = f.read_as_traj(n_frames=chunk*stride, stride=stride, atom_indices=atom_indices, **kwargs)
 
-                ptr = 0
-                if skip > 0:
-                    xyz, _, _, _ = f.read(skip, atom_indices=atom_indices)
-                    if len(xyz) == 0:
-                        raise StopIteration()
-                while True:
-                    xyz = f.read(chunk*stride, stride=stride, atom_indices=atom_indices)
-                    if len(xyz) == 0:
-                        raise StopIteration()
-                    in_units_of(xyz, f.distance_unit, Trajectory._distance_unit, inplace=True)
-                    time = np.arange(ptr, ptr+len(xyz)*stride, stride)
-                    ptr += len(xyz)*stride
-                    yield Trajectory(xyz=xyz, topology=topology, time=time)
+                if len(traj) == 0:
+                    raise StopIteration()
 
-        elif filename.endswith('.xtc'):
-            topology = _parse_topology(kwargs.get('top', None))
-            with XTCTrajectoryFile(filename) as f:
-                if skip > 0:
-                    xyz, _, _, _ = f.read(skip)
-                    if len(xyz) == 0:
-                        raise StopIteration()
-                while True:
-                    xyz, time, step, box = f.read(chunk*stride, stride=stride, atom_indices=atom_indices)
-                    if len(xyz) == 0:
-                        raise StopIteration()
-                    in_units_of(xyz, f.distance_unit, Trajectory._distance_unit, inplace=True)
-                    in_units_of(box, f.distance_unit, Trajectory._distance_unit, inplace=True)
-                    trajectory = Trajectory(xyz=xyz, topology=topology, time=time)
-                    trajectory.unitcell_vectors = box
-                    yield trajectory
+                yield traj
 
-        elif filename.endswith('.dcd'):
-            topology = _parse_topology(kwargs.get('top', None))
-            with DCDTrajectoryFile(filename) as f:
-                ptr = 0
-                if skip > 0:
-                    xyz, _, _ = f.read(skip, atom_indices=atom_indices)
-                    if len(xyz) == 0:
-                        raise StopIteration()
-                while True:
-                    # for reasons that I have not investigated, dcdtrajectory file chunk and stride
-                    # together work like this method, but HDF5/XTC do not.
-                    xyz, box_length, box_angle = f.read(chunk, stride=stride, atom_indices=atom_indices)
-                    if len(xyz) == 0:
-                        raise StopIteration()
-                    in_units_of(xyz, f.distance_unit, Trajectory._distance_unit, inplace=True)
-                    in_units_of(box_length, f.distance_unit, Trajectory._distance_unit, inplace=True)
-                    time = np.arange(ptr, ptr+len(xyz)*stride, stride)
-                    ptr += len(xyz)*stride
-                    yield Trajectory(xyz=xyz, topology=topology, time=time, unitcell_lengths=box_length,
-                                     unitcell_angles=box_angle)
 
-        else:
-            log.critical("loading complete traj into mem! This might no be desired.")
-            t = load(filename, **kwargs)
-            for i in range(skip, len(t), chunk):
-                yield t[i:i+chunk]
+def _get_local_traj_object(atom_indices, extension, f, n_frames, topology, **kwargs):
+    if extension not in _TOPOLOGY_EXTS:
+        traj = f.read_as_traj(topology, n_frames=n_frames, stride=1, atom_indices=atom_indices, **kwargs)
+    else:
+        traj = f.read_as_traj(n_frames=n_frames, stride=1, atom_indices=atom_indices, **kwargs)
+    return traj
+
+
+def _efficient_traj_join(trajs):
+    assert trajs
+    top = trajs[0].top
+    n_frames = sum(t.n_frames for t in trajs)
+
+    xyz = np.empty((n_frames, top.n_atoms, 3))
+    t = 0
+    for traj in trajs:
+        n = len(traj)
+        xyz[t:n+t] = traj.xyz
+        t += n
+        # TODO: what about time?
+    return Trajectory(xyz, top, None, None, None)#unitcell_angles=trajs[0].unitcell_angles,
+                      #unitcell_lengths=trajs[0].unitcell_lengths)

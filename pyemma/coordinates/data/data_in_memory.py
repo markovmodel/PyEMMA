@@ -100,13 +100,13 @@ class DataInMemory(ReaderInterface):
 
         self._ndim = ndims[0]
 
-    def _reset(self, stride=1):
+    def _reset(self, context=None):
         """Resets the data producer
         """
         self._itraj = 0
         self._t = 0
 
-    def _next_chunk(self, lag=0, stride=1):
+    def _next_chunk(self, ctx):
         # finished once with all trajectories? so _reset the pointer to allow
         # multi-pass
         if self._itraj >= self._ntraj:
@@ -117,35 +117,65 @@ class DataInMemory(ReaderInterface):
 
         # complete trajectory mode
         if self._chunksize == 0:
-            X = traj[::stride]
-            self._itraj += 1
-
-            if lag == 0:
-                return X
+            if not ctx.uniform_stride:
+                X = self._data[self._itraj][ctx.ra_indices_for_traj(self._itraj)]
+                self._itraj += 1
+                # skip trajs which are not included in stride
+                while self._itraj not in ctx.traj_keys and self._itraj < self.number_of_trajectories():
+                    self._itraj += 1
+                if ctx.lag == 0:
+                    return X
+                else:
+                    raise ValueError("Random access with lag not supported")
             else:
-                Y = traj[lag * stride:traj_len:stride]
-                return (X, Y)
+                X = traj[::ctx.stride]
+                self._itraj += 1
+                if ctx.lag == 0:
+                    return X
+                else:
+                    Y = traj[ctx.lag::ctx.stride]
+                    return X, Y
         # chunked mode
         else:
-            upper_bound = min(
-                self._t + self._chunksize * stride, traj_len)
-            slice_x = slice(self._t, upper_bound, stride)
+            if not ctx.uniform_stride:
+                Y0 = self._data[self._itraj][
+                    ctx.ra_indices_for_traj(self._itraj)[self._t:min(
+                        self._t + self.chunksize, ctx.ra_trajectory_length(self._itraj)
+                    )]
+                ]
+                if ctx.lag != 0:
+                    raise ValueError("Random access with lag not supported")
 
-            X = traj[slice_x]
+                self._t += self.chunksize
+                if self._t >= ctx.ra_trajectory_length(self._itraj):
+                    self._itraj += 1
+                    self._t = 0
 
-            if lag!=0:
-                 upper_bound_Y = min(
-                     self._t + (lag + self._chunksize) * stride, traj_len)
-                 slice_y = slice(self._t + lag*stride, upper_bound_Y, stride)
-                 Y = traj[slice_y]
+                # skip trajs which are not included in stride
+                while (self._itraj not in ctx.traj_keys or self._t >= ctx.ra_trajectory_length(self._itraj)) \
+                        and self._itraj < self.number_of_trajectories():
+                    self._itraj += 1
+                    self._t = 0
+                return Y0
+            else:
+                upper_bound = min(self._t + self._chunksize * ctx.stride, traj_len)
+                slice_x = slice(self._t, upper_bound, ctx.stride)
 
-            self._t = upper_bound
+                X = traj[slice_x]
 
-            if upper_bound >= traj_len:
-                 self._itraj += 1
-                 self._t = 0
-                 
-            if lag==0:
-                return X
-            else: 
-                return (X, Y)
+                if ctx.lag != 0:
+                    upper_bound_Y = min(
+                         self._t + ctx.lag + self._chunksize * ctx.stride, traj_len)
+                    slice_y = slice(self._t + ctx.lag, upper_bound_Y, ctx.stride)
+                    Y = traj[slice_y]
+
+                self._t = upper_bound
+
+                if upper_bound >= traj_len:
+                    self._itraj += 1
+                    self._t = 0
+
+                if ctx.lag == 0:
+                    return X
+                else:
+                    return X, Y
