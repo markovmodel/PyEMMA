@@ -14,8 +14,8 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM):
     """Estimator for a Bayesian HMSM
 
     """
-    def __init__(self, nstates=2, lag=1, stride='effective', nsamples=100, init_hmsm=None, reversible=True,
-                 connectivity='largest', observe_active=True, dt_traj='1 step', conf=0.95):
+    def __init__(self, nstates=2, lag=1, stride='effective', prior='mixed', nsamples=100, init_hmsm=None,
+                 reversible=True, connectivity='largest', observe_active=True, dt_traj='1 step', conf=0.95):
         """
         Parameters
         ----------
@@ -31,23 +31,62 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM):
             in trajectories
                 s[0], s[tau], s[2 tau], ...
                 s[stride], s[stride + tau], s[stride + 2 tau], ...
-            Setting stride = 1 will result in using all data (useful for maximum
-            likelihood estimator), while a Bayesian estimator requires a longer
-            stride in order to have statistically uncorrelated trajectories.
-            Setting stride = None 'effective' uses the largest neglected timescale as
-            an estimate for the correlation time and sets the stride accordingly
+            Setting stride = 1 will result in using all data (useful for
+            maximum likelihood estimator), while a Bayesian estimator requires
+            a longer stride in order to have statistically uncorrelated
+            trajectories. Setting stride = None 'effective' uses the largest
+            neglected timescale as an estimate for the correlation time and
+            sets the stride accordingly.
 
-        hmsm : :class:`HMSM <pyemma.msm.ui.hmsm.HMSM>`
+        prior : str, optional, default='mixed'
+            prior used in the estimation of the transition matrix. While 'sparse'
+            would be preferred as it doesn't bias the distribution way from the
+            maximum-likelihood, this prior is sensitive to loss of connectivity.
+            Loss of connectivity can occur in the Gibbs sampling algorithm used
+            here because in each iteration the hidden state sequence is randomly
+            generated. Once full connectivity is lost in one of these steps, the
+            current algorithm cannot recover from that. As a solution we suggest
+            using a prior that ensures that the estimated transition matrix is
+            connected even if the sampled state sequence is not.
+
+            * 'sparse' : the sparse prior proposed in [1]_ which centers the
+                posterior around the maximum likelihood estimator. This is the
+                preferred option if there are no connectivity problems. However
+                this prior is sensitive to loss of connectivity.
+
+            * 'uniform' : uniform prior probability for every transition matrix
+                element. Compared to the sparse prior, 'uniform' adds +1 to
+                every transition count. Weak prior that ensures connectivity,
+                but can lead to large biases if some states have small exit
+                probabilities.
+
+            * 'mixed' : ensures connectivity by adding a prior taken from the
+                maximum likelihood estimate (MLE) of the hidden transition
+                matrix P. The rows of P are scaled in order to have total
+                outgoing  transition counts of at least 1 out of each state.
+                While this operation centers the posterior around the MLE, it
+                can be a very strong prior if states with small exit
+                probabilities are involved, and can therefore artificially
+                reduce the error bars.
+
+        init_hmsm : :class:`HMSM <pyemma.msm.ui.hmsm.HMSM>`
             Single-point estimate of HMSM object around which errors will be evaluated
 
         observe_active : bool, optional, default=True
             True: Restricts the observation set to the active states of the MSM.
             False: All states are in the observation set.
 
+        References
+        ----------
+        [1] Trendelkamp-Schroer, B., H. Wu, F. Paul and F. Noe: Estimation and
+            uncertainty of reversible Markov models. J. Chem. Phys. (in review)
+            Preprint: http://arxiv.org/abs/1507.05990
+
         """
         self.lag = lag
         self.stride = stride
         self.nstates = nstates
+        self.prior = prior
         self.nsamples = nsamples
         self.init_hmsm = init_hmsm
         self.reversible = reversible
@@ -88,17 +127,37 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM):
         if self.observe_active:
             import pyemma.msm.estimation as msmest
             nstates_full = msmest.number_of_states(dtrajs)
-            pobs = _np.zeros((init_hmsm.nstates, nstates_full))
-            pobs[:, init_hmsm.observable_set] = init_hmsm.observation_probabilities
+            # pobs = _np.zeros((init_hmsm.nstates, nstates_full))  # currently unused because that produces zero cols
+            eps = 0.01 / nstates_full  # default output probability, in order to avoid zero columns
+            # full state space output matrix. make sure there are no zero columns
+            pobs = eps * _np.ones((self.nstates, nstates_full), dtype=_np.float64)
+            # fill active states
+            pobs[:, init_hmsm.observable_set] = _np.maximum(eps, init_hmsm.observation_probabilities)
+            # renormalize B to make it row-stochastic
+            pobs /= pobs.sum(axis=1)[:, None]
         else:
             pobs = init_hmsm.observation_probabilities
 
         # HMM sampler
         from bhmm import discrete_hmm, bayesian_hmm
         hmm_mle = discrete_hmm(init_hmsm.transition_matrix, pobs, stationary=True, reversible=self.reversible)
-        # using the lagged discrete trajectories that have been found in the MLHMM
+
+        # define prior
+        if self.prior == 'sparse':
+            self.prior_count_matrix = _np.zeros((self.nstates, self.nstates), dtype=_np.float64)
+        elif self.prior == 'uniform:':
+            self.prior_count_matrix = _np.ones((self.nstates, self.nstates), dtype=_np.float64)
+        elif self.prior == 'mixed':
+            # C0 = _np.dot(_np.diag(init_hmsm.stationary_distribution), init_hmsm.transition_matrix)
+            P0 = init_hmsm.transition_matrix
+            P0_offdiag = P0 - _np.diag(_np.diag(P0))
+            scaling_factor = 1.0 / _np.sum(P0_offdiag, axis=1)
+            self.prior_count_matrix = P0 * scaling_factor[:, None]
+        else:
+            raise ValueError('Unknown prior mode: '+self.prior)
+
         sampled_hmm = bayesian_hmm(init_hmsm.discrete_trajectories_lagged, hmm_mle, nsample=self.nsamples,
-                                   transition_matrix_prior='init-connect')
+                                   transition_matrix_prior=self.prior_count_matrix)
 
         # Samples
         sample_Ps = [sampled_hmm.sampled_hmms[i].transition_matrix for i in range(self.nsamples)]
