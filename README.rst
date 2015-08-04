@@ -25,7 +25,7 @@ trajectories) via Markov state models (MSM).
 It provides APIs for estimation and analyzing MSM and various utilities to
 process input data (clustering, coordinate transformations etc). For
 documentation of the API, please have a look at the sphinx docs in doc
-directory or `online <http://pythonhosted.org/pyEMMA/api/index.html>`__.
+directory or `online <http://www.emma-project.org/>`__.
 
 For some examples on how to apply the software, please have a look in the
 ipython directory, which shows the most common use cases as documentated
@@ -47,7 +47,7 @@ or install latest devel branch with pip::
      pip install git+https://github.com/markovmodel/PyEMMA.git@devel
 
 For a complete guide to installation, please have a look at the version 
-`online <http://pythonhosted.org/pyEMMA/INSTALL.html>`__ or offline in file
+`online <http://www.emma-project.org/latest/INSTALL.html>`__ or offline in file
 doc/source/INSTALL.rst
 
 To build the documentation offline you should install the requirements with::
