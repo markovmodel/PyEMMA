@@ -30,13 +30,14 @@ Created on 13.03.2015
 '''
 import numpy as np
 from mdtraj.utils.validation import cast_indices
-from mdtraj.core.trajectory import load, _parse_topology, _TOPOLOGY_EXTS, _get_extension, open,\
-    Trajectory
+from mdtraj.core.trajectory import load, _parse_topology, _TOPOLOGY_EXTS, _get_extension, open
 
 from itertools import groupby
 from operator import itemgetter
 
-#@profile
+from pyemma.coordinates.data.util.reader_utils import copy_traj_attributes, preallocate_empty_trajectory
+
+
 def iterload(filename, chunk=100, **kwargs):
     """An iterator over a trajectory from one or more files on disk, in fragments
 
@@ -174,15 +175,13 @@ def _get_local_traj_object(atom_indices, extension, f, n_frames, topology, **kwa
 
 def _efficient_traj_join(trajs):
     assert trajs
-    top = trajs[0].top
-    n_frames = sum(t.n_frames for t in trajs)
 
-    xyz = np.empty((n_frames, top.n_atoms, 3))
-    t = 0
+    n_frames = sum(t.n_frames for t in trajs)
+    concat_traj = preallocate_empty_trajectory(trajs[0].top, n_frames)
+
+    start = 0
     for traj in trajs:
-        n = len(traj)
-        xyz[t:n+t] = traj.xyz
-        t += n
-        # TODO: what about time?
-    return Trajectory(xyz, top, None, None, None)#unitcell_angles=trajs[0].unitcell_angles,
-                      #unitcell_lengths=trajs[0].unitcell_lengths)
+        concat_traj = copy_traj_attributes(concat_traj, traj, start)
+        start += traj.n_frames
+    return concat_traj
+
