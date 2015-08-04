@@ -154,6 +154,8 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
             msm_init = self.msm_init
             self.reversible = msm_init.is_reversible
 
+        # print 'Connected set: ', msm_init.active_set
+
         # generate lagged observations
         if self.stride == 'effective':
             # by default use lag as stride (=lag sampling), because we currently have no better theory for deciding
@@ -165,6 +167,7 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
                 corrtime = int(max(1, msm_init.timescales()[self.nstates-1]))
                 # use the smaller of these two pessimistic estimates
                 self.stride = min(self.stride, 2*corrtime)
+        # TODO: Here we always use the full observation state space for the estimation.
         dtrajs_lagged = _lag_observations(dtrajs, self.lag, stride=self.stride)
 
         # check input
@@ -181,6 +184,9 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
                                  ' It is possible that the resulting HMM is inaccurate. Handle with caution.')
 
         # set things from MSM
+        # TODO: dtrajs_obs is set here, but not used in estimation. Estimation is alwas done with
+        # TODO: respect to full observation (see above). This is confusing. Define how we want to do this in gen.
+        # TODO: observable set is also not used, it is just saved.
         nstates_obs_full = msm_init.nstates_full
         if self.observe_active:
             nstates_obs = msm_init.nstates
@@ -206,7 +212,11 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
         # full state space output matrix
         B = eps * np.ones((self.nstates, nstates_obs_full), dtype=np.float64)
         # expand B_conn to full state space
+        # TODO: here we always select the active set, no matter if observe_active=True or False.
         B[:, msm_init.active_set] = B_conn[:, :]
+        # TODO: at this point we will have zero observation probabilities for states that are not in the active
+        # TODO: set. If these occur in the trajectory, that will mean zero columns in the output probabilities
+        # TODO: and crash of forward-backward and sampling algorithms.
         # renormalize B to make it row-stochastic
         B /= B.sum(axis=1)[:, None]
 
@@ -235,6 +245,7 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
         # find observable set
         transition_matrix = self.hmm.transition_matrix
         observation_probabilities = self.hmm.output_probabilities
+        # TODO: Cutting down... OK, this can be done
         if self.observe_active:  # cut down observation probabilities to active set
             observation_probabilities = observation_probabilities[:, msm_init.active_set]
             observation_probabilities /= observation_probabilities.sum(axis=1)[:,None]  # renormalize
