@@ -84,12 +84,11 @@ class TestFeatureReaderAndTICA(unittest.TestCase):
 
     def test_covariances_and_eigenvalues(self):
         reader = FeatureReader(self.trajnames, self.temppdb, chunksize=10000)
-        trans = api.tica(data=reader, dim=self.dim, lag=1)
         #TICA(tau=1, output_dimension=self.dim)
         for lag in [1, 11, 101, 1001, 2001]:  # avoid cos(w*tau)==0
+            trans = api.tica(data=reader, dim=self.dim, lag=lag)
             log.info('number of trajectories reported by tica %d' % trans.number_of_trajectories())
             log.info('tau = %d corresponds to a number of %f cycles' % (lag, self.w*lag/(2.0*np.pi)))
-            trans.lag = lag
             trans.parametrize()
 
             # analytical solution for C_ij(lag) is 0.5*A[i]*A[j]*cos(phi[i]-phi[j])*cos(w*lag)

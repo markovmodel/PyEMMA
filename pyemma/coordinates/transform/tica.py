@@ -153,8 +153,9 @@ class TICA(Transformer):
 
     @lag.setter
     def lag(self, new_tau):
-        self._parametrized = False
-        self._lag = new_tau
+        raise Exception('Changing lag time is not allowed at the moment.')
+        #self._parametrized = False
+        #self._lag = new_tau
 
     @doc_inherit
     def describe(self):

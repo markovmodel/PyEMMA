@@ -95,11 +95,11 @@ class TestFeatureReaderAndTICAProjection(unittest.TestCase):
         
     def test_covariances_and_eigenvalues(self):
         reader = FeatureReader(self.trajnames, self.temppdb)
-        trans = TICA(lag=1, dim=self.dim, force_eigenvalues_le_one=True)
-        trans.data_producer = reader
         for tau in [1, 10, 100, 1000, 2000]:
+            trans = TICA(lag=tau, dim=self.dim, force_eigenvalues_le_one=True)
+            trans.data_producer = reader
+
             log.info('number of trajectories reported by tica %d' % trans.number_of_trajectories())
-            trans.lag = tau
             trans.parametrize()
             data = trans.get_output()
             # print '@@cov', trans.cov
