@@ -808,23 +808,31 @@ class MDFeaturizer(object):
         return self.topology.select("mass >= 2")
 
     @staticmethod
-    def pairs(sel):
+    def pairs(sel, excluded_neighbors=0):
         """
-        Creates all pairs between indexes, except for 1 and 2-neighbors
+        Creates all pairs between indexes. Will except closest neighbors up to :py:obj:`excluded_neighbors`
+        The self-pair (i,i) is always excluded
 
         Parameters
         ----------
         sel : ndarray((n), dtype=int)
             array with selected atom indexes
 
-        Return:
+        excluded_neighbors: int, default = 0
+            number of neighbors that will be excluded when creating the pairs
+
+        Returns
         -------
         sel : ndarray((m,2), dtype=int)
-            m x 2 array with all pair indexes between different atoms that are at least 3 indexes apart,
-            i.e. if i is the index of an atom, the pairs [i,i-2], [i,i-1], [i,i], [i,i+1], [i,i+2], will
-            not be in sel. Moreover, the list is non-redundant, i.e. if [i,j] is in sel, then [j,i] is not.
+            m x 2 array with all pair indexes between different atoms that are at least :obj:`excluded_neighbors`
+            indexes apart, i.e. if i is the index of an atom, the pairs [i,i-2], [i,i-1], [i,i], [i,i+1], [i,i+2], will
+            not be in :py:obj:`sel` (n=excluded_neighbors) if :py:obj:`excluded_neighbors` = 2.
+            Moreover, the list is non-redundant,i.e. if [i,j] is in sel, then [j,i] is not.
 
         """
+
+        assert isinstance(excluded_neighbors,int)
+
         p = []
         for i in range(len(sel)):
             for j in range(i + 1, len(sel)):
@@ -835,7 +843,7 @@ class MDFeaturizer(object):
                     I = sel[j]
                     J = sel[i]
                 # exclude 1 and 2 neighbors
-                if (J > I + 2):
+                if (J > I + excluded_neighbors):
                     p.append([I, J])
         return np.array(p)
 
@@ -899,8 +907,6 @@ class MDFeaturizer(object):
 
                 iterable of integers (either list or ndarray(n, dtype=int)):
                     indices (not pairs of indices) of the atoms between which the distances shall be computed.
-                    Note that this will produce a pairlist different from the pairlist produced by :py:func:`pairs` in that this does not exclude
-                    1-2 neighbors.
 
         indices2: iterable of integers (either list or ndarray(n, dtype=int)), optional:
                     Only has effect if :py:obj:`indices` is an iterable of integers. Instead of the above behaviour,
@@ -926,7 +932,7 @@ class MDFeaturizer(object):
 
     def add_distances_ca(self, periodic=True):
         """
-        Adds the distances between all Ca's (except for 1- and 2-neighbors) to the feature list.
+        Adds the distances between all Ca's to the feature list.
 
         """
         distance_indexes = self.pairs(self.select_Ca())
@@ -949,8 +955,6 @@ class MDFeaturizer(object):
 
                 iterable of integers (either list or ndarray(n, dtype=int)):
                     indices (not pairs of indices) of the atoms between which the inverse distances shall be computed.
-                    Note that this will produce a pairlist different from the pairlist produced by :py:func:`pairs`
-                    in that this does not exclude 1-2 neighbors.
 
         indices2: iterable of integers (either list or ndarray(n, dtype=int)), optional:
                     Only has effect if :py:obj:`indices` is an iterable of integers. Instead of the above behaviour,
@@ -988,8 +992,6 @@ class MDFeaturizer(object):
 
                 iterable of integers (either list or ndarray(n, dtype=int)):
                     indices (not pairs of indices) of the atoms between which the contacts shall be computed.
-                    Note that this will produce a pairlist different from the pairlist produced by :py:func:`pairs` in that this does not exclude
-                    1-2 neighbors.
 
         indices2: iterable of integers (either list or ndarray(n, dtype=int)), optional:
                     Only has effect if :py:obj:`indices` is an iterable of integers. Instead of the above behaviour,
