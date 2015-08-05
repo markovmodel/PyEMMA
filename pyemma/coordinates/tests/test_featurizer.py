@@ -619,5 +619,56 @@ class TestStaticMethods(unittest.TestCase):
                                    [2,3], [2,4],
                                    [3,4]])
 
+# Define some function that somehow mimics one would typically want to do,
+# e.g. 1. call mdtraj,
+#      2. perform some other operations on the result
+#      3. return a numpy array
+def some_call_to_mdtraj_some_operations_some_linalg(traj, pairs, means, U):
+    D = mdtraj.compute_distances(traj, pairs)
+    D_meanfree =  D - means
+    Y = (U.T.dot(D_meanfree.T)).T
+    return Y.astype('float32')
+
+class TestCustomFeature(unittest.TestCase):
+
+    def setUp(self):
+        self.feat = MDFeaturizer(pdbfile)
+        self.traj = mdtraj.load(xtcfile, top=pdbfile)
+
+
+        self.pairs = [[0,1],[0,2], [1,2]]           #some distances
+        self.means = [.5, .75, 1.0]               #bogus means
+        self.U = np.array([[0,1],
+                           [1,0],
+                           [1,1]])           #bogus transformation, projects from 3 distances to 2 components
+    def test_some_feature(self):
+        self.feat.add_custom_func(some_call_to_mdtraj_some_operations_some_linalg   , self.U.shape[1],
+                                        self.pairs,
+                                        self.means,
+                                        self.U
+                                        )
+
+        Y_custom_feature = self.feat.map(self.traj)
+        # Directly call the function
+        Y_function =  some_call_to_mdtraj_some_operations_some_linalg(self.traj, self.pairs, self.means, self.U)
+        assert np.allclose(Y_custom_feature, Y_function)
+
+    def test_describe(self):
+        self.feat.add_custom_func(some_call_to_mdtraj_some_operations_some_linalg, self.U.shape[1],
+                                  self.pairs,
+                                  self.means,
+                                  self.U
+                                  )
+        self.feat.describe()
+
+    def test_dimensionality(self):
+        self.feat.add_custom_func(some_call_to_mdtraj_some_operations_some_linalg, self.U.shape[1],
+                                  self.pairs,
+                                  self.means,
+                                  self.U
+                                  )
+
+        assert self.feat.dimension()==self.U.shape[1]
+
 if __name__ == "__main__":
     unittest.main()
