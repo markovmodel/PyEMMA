@@ -45,11 +45,16 @@ class AbstractClustering(Transformer):
     def __init__(self, metric='euclidean'):
         super(AbstractClustering, self).__init__()
         self.metric = metric
-        self.clustercenters = None
+        self._clustercenters = None
         self._previous_stride = -1
         self._dtrajs = []
         self._overwrite_dtrajs = False
         self._index_states = []
+
+    @property
+    def clustercenters(self):
+        """ Array containing the coordinates of the calculated cluster centers. """
+        return self._clustercenters
 
     @property
     def overwrite_dtrajs(self):

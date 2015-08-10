@@ -21,13 +21,11 @@
 # ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-__author__ = 'noe'
-
+import numpy as np
 from pyemma.coordinates.clustering.interface import AbstractClustering
 
-import numpy as np
 
+__author__ = 'noe'
 __all__ = ['UniformTimeClustering']
 
 
@@ -40,7 +38,7 @@ class UniformTimeClustering(AbstractClustering):
         Parameters
         ----------
         k : int
-            TODO: super unknown parameter
+            amount of desired cluster centers
         metric : str
             metric to use during clustering ('euclidean', 'minRMSD')
         """
@@ -56,9 +54,8 @@ class UniformTimeClustering(AbstractClustering):
 
         :return:
         """
-        self._logger.info("Running uniform time clustering")
         # initialize cluster centers
-        self.clustercenters = np.zeros(
+        self._clustercenters = np.zeros(
             (self.n_clusters, self.data_producer.dimension()), dtype=np.float32)
 
     def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None, stride=1):
@@ -108,7 +105,7 @@ class UniformTimeClustering(AbstractClustering):
             # harvest cluster centers from this chunk until we have left it
             while (self._nextt < maxt and self._n < self.n_clusters):
                 i = self._nextt - self._tprev - t
-                self.clustercenters[self._n] = X[i]
+                self._clustercenters[self._n] = X[i]
                 self._n += 1
                 self._nextt += self._dt
             if last_chunk_in_traj:
