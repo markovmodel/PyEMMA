@@ -43,7 +43,7 @@ class MeaningOfLagWithStrideWarning(UserWarning):
 
 class TICA(Transformer):
 
-    def __init__(self, lag, dim=-1, var_cutoff=1.0, kinetic_map=False, epsilon=1e-6,
+    def __init__(self, lag, dim=-1, var_cutoff=0.95, kinetic_map=True, epsilon=1e-6,
                  force_eigenvalues_le_one=False, mean=None):
         r""" Time-lagged independent component analysis (TICA) [1]_, [2]_, [3]_.
 
@@ -55,11 +55,11 @@ class TICA(Transformer):
             Maximum number of significant independent components to use to reduce dimension of input data. -1 means
             all numerically available dimensions (see epsilon) will be used unless reduced by var_cutoff.
             Setting dim to a positive value is exclusive with var_cutoff.
-        var_cutoff : float in the range [0,1], optional, default 1
+        var_cutoff : float in the range [0,1], optional, default 0.95
             Determines the number of output dimensions by including dimensions until their cumulative kinetic variance
             exceeds the fraction subspace_variance. var_cutoff=1.0 means all numerically available dimensions
             (see epsilon) will be used, unless set by dim. Setting var_cutoff smaller than 1.0 is exclusive with dim
-        kinetic_map : bool, optional, default False
+        kinetic_map : bool, optional, default True
             Eigenvectors will be scaled by eigenvalues. As a result, Euclidean distances in the transformed data
             approximate kinetic distances [4]_. This is a good choice when the data is further processed by clustering.
         epsilon : float

@@ -35,7 +35,7 @@ __author__ = 'noe'
 
 class PCA(Transformer):
 
-    def __init__(self, dim=-1, var_cutoff=1.0, mean=None):
+    def __init__(self, dim=-1, var_cutoff=0.95, mean=None):
         r""" Principal component analysis.
 
         Given a sequence of multivariate data :math:`X_t`,
@@ -63,7 +63,7 @@ class PCA(Transformer):
             -1 means all numerically available dimensions will be used unless reduced by var_cutoff.
             Setting dim to a positive value is exclusive with var_cutoff.
 
-        var_cutoff : float in the range [0,1], optional, default 1
+        var_cutoff : float in the range [0,1], optional, default 0.95
             Determines the number of output dimensions by including dimensions until their cumulative kinetic variance
             exceeds the fraction subspace_variance. var_cutoff=1.0 means all numerically available dimensions
             (see epsilon) will be used, unless set by dim. Setting var_cutoff smaller than 1.0 is exclusive with dim
@@ -169,8 +169,7 @@ class PCA(Transformer):
         if ipass == 0:
             if t == 0:
                 if self._given_mean:
-                    raise SkipPassException()
-                self._logger.debug("start to calculate mean for traj nr %i" % itraj)
+                    raise SkipPassException(stride=stride)
                 self._sum_tmp = np.empty(X.shape[1])
             np.sum(X, axis=0, out=self._sum_tmp)
             self.mu += self._sum_tmp
@@ -195,7 +194,6 @@ class PCA(Transformer):
 
             if last_chunk:
                 self.cov /= self._N - 1
-                self._logger.debug("finished")
                 return True  # finished!
 
         # by default, continue
