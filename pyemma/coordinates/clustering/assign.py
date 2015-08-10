@@ -64,11 +64,13 @@ class AssignCenters(AbstractClustering):
         super(AssignCenters, self).__init__(metric=metric)
 
         if isinstance(clustercenters, basestring):
-            from ..data import create_file_reader
+            from pyemma.coordinates.data import create_file_reader
             reader = create_file_reader(clustercenters, None, None)
-            self.clustercenters = reader.get_output()[0]
+            self._clustercenters = reader.get_output()[0]
+        else:
+            self._clustercenters = np.array(clustercenters, dtype=np.float32, order='C')
 
-        self.clustercenters = np.array(clustercenters, dtype=np.float32, order='C')
+        # sanity check.
         if not self.clustercenters.ndim == 2:
             raise ValueError('cluster centers have to be 2d')
 

@@ -79,7 +79,7 @@ class RegularSpaceClustering(AbstractClustering):
 
         self._dmin = dmin
         # temporary list to store cluster centers
-        self._clustercenters = []
+        self.__clustercenters = []
         self._max_centers = max_centers
 
     @doc_inherit
@@ -125,7 +125,7 @@ class RegularSpaceClustering(AbstractClustering):
         """
         try:
             regspatial.cluster(X.astype(np.float32, order='C', copy=False),
-                               self._clustercenters, self._dmin,
+                               self.__clustercenters, self._dmin,
                                self.metric, self._max_centers)
             # finished regularly
             if last_chunk:
@@ -137,7 +137,7 @@ class RegularSpaceClustering(AbstractClustering):
             self._logger.warning(msg)
             warnings.warn(msg)
             # finished anyway, because we have no more space for clusters. Rest of trajectory has no effect
-            self.clustercenters = np.array(self._clustercenters)
+            self._clustercenters = np.array(self.__clustercenters)
             self.n_clusters = self.clustercenters.shape[0]
             # TODO: pass amount of processed data
             raise NotConvergedWarning
@@ -145,10 +145,10 @@ class RegularSpaceClustering(AbstractClustering):
         return False
 
     def _param_finish(self):
-        self.clustercenters = np.array(self._clustercenters)
+        self._clustercenters = np.array(self.__clustercenters)
         self.n_clusters = self.clustercenters.shape[0]
 
-        if len(self._clustercenters) == 1:
+        if len(self.__clustercenters) == 1:
             self._logger.warning('Have found only one center according to '
                                  'minimum distance requirement of %f' % self.dmin)
-        del self._clustercenters  # delete temporary
+        del self.__clustercenters  # delete temporary
