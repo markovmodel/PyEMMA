@@ -13,8 +13,9 @@ class DoubleWell_Discrete_Data(object):
     """
 
     def __init__(self):
-        cwd = abspath(join(abspath(__file__), pardir))
-        datafile = np.load(join(cwd, 'double_well_discrete.npz'))
+        from pkg_resources import resource_filename
+        filename = resource_filename('pyemma', 'datasets/double_well_discrete.npz')
+        datafile = np.load(filename)
         self._dtraj_T100K_dt10 = datafile['dtraj']
         self._P = datafile['P']
         self._msm = markov_model(self._P)
@@ -63,10 +64,10 @@ class DoubleWell_Discrete_Data(object):
 
     def generate_traj(self, N, start=None, stop=None, dt=1):
         """ Generates a random trajectory of length N with time step dt """
-        from pyemma.msm.generation import generate_traj
+        from msmtools.generation import generate_traj
         return generate_traj(self._P, N, start=start, stop=stop, dt=dt)
 
     def generate_trajs(self, M, N, start=None, stop=None, dt=1):
         """ Generates M random trajectories of length N each with time step dt """
-        from pyemma.msm.generation import generate_trajs
+        from msmtools.generation import generate_trajs
         return generate_trajs(self._P, M, N, start=start, stop=stop, dt=dt)
