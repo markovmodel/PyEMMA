@@ -36,6 +36,8 @@ import numpy as np
 from . import kmeans_clustering
 
 from pyemma.util.annotators import doc_inherit
+from pyemma.util.progressbar import ProgressBar
+from pyemma.util.progressbar.gui import show_progressbar
 from pyemma.coordinates.clustering.interface import AbstractClustering
 
 __all__ = ['KmeansClustering']
