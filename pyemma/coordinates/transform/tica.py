@@ -29,8 +29,6 @@ Created on 19.01.2015
 '''
 from .transformer import Transformer, SkipPassException
 
-from pyemma.util.progressbar import ProgressBar
-from pyemma.util.progressbar.gui import show_progressbar
 from pyemma.util.linalg import eig_corr
 from pyemma.util.annotators import doc_inherit
 
@@ -220,8 +218,8 @@ class TICA(Transformer):
 
         # amount of chunks
         denom = self._n_chunks(self._param_with_stride)
-        self._progress_mean = ProgressBar(denom, description="calculate mean")
-        self._progress_cov = ProgressBar(denom, description="calculate covariances")
+        self._progress_register(denom, "calculate mean", 0)
+        self._progress_register(denom, "calculate covariances", 1)
 
         return 0  # in zero'th pass don't request lagged data
 
@@ -292,8 +290,7 @@ class TICA(Transformer):
                 self._N_mean += np.shape(X)[0]
 
             # counting chunks and log of eta
-            self._progress_mean.numerator += 1
-            show_progressbar(self._progress_mean)
+            self._progress_update(1, stage=0)
 
             if last_chunk:
                 self.mu /= self._N_mean
@@ -347,8 +344,7 @@ class TICA(Transformer):
                     self.cov += 2.0 * np.dot(X_meanfree.T, X_meanfree)
                     self._N_cov += 2.0 * np.shape(X)[0]
 
-                self._progress_cov.numerator += 1
-                show_progressbar(self._progress_cov)
+                self._progress_update(1,stage=1)
 
             else:
                 self._skipped_trajs.append(itraj)

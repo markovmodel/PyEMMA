@@ -22,8 +22,7 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from pyemma.util.log import getLogger
-from pyemma.util.progressbar import ProgressBar
-from pyemma.util.progressbar.gui import show_progressbar
+from pyemma._base.progress import ProgressReporter
 
 from itertools import count
 import numpy as np
@@ -66,7 +65,7 @@ class TransformerIterator(object):
             return (last_itraj, X, Y)
 
 
-class Transformer(object):
+class Transformer(ProgressReporter):
 
     r""" Basis class for pipeline objects
 
@@ -267,9 +266,8 @@ class Transformer(object):
 
         if not self._custom_param_progress_handling:
             # NOTE: this assumes this class implements a 1-pass algo
-            progress = ProgressBar(self._n_chunks(stride),
-                                   description="parameterizing "
-                                   + self.__class__.__name__)
+            self._progress_register(self._n_chunks(stride), "parameterizing "
+                           + self.__class__.__name__, 0)
         # parametrize
         try:
             while not add_data_finished:
@@ -311,8 +309,7 @@ class Transformer(object):
                             lag = spe.next_pass_lagtime
 
                         if not self._custom_param_progress_handling:
-                            progress.numerator += 1
-                            show_progressbar(progress)
+                            self._progress_update(1, 0)
 
                         if isinstance(return_value, tuple):
                             add_data_finished, lag = return_value
@@ -331,10 +328,8 @@ class Transformer(object):
             self._close()
 
         # finish parametrization
-        if ((not self._custom_param_progress_handling)
-                and progress.numerator < progress.denominator):
-            progress.numerator = progress.denominator
-            show_progressbar(progress)
+        if not self._custom_param_progress_handling:
+            self._progress_force_finish(0)
 
         self._param_finish()
         self._parametrized = True
@@ -626,8 +621,8 @@ class Transformer(object):
         last_itraj = -1
         t = 0  # first time point
 
-        progress = ProgressBar(self._n_chunks(stride), description=
-                               'getting output of ' + self.__class__.__name__)
+        self._progress_register(self._n_chunks(stride), description=
+                       'getting output of ' + self.__class__.__name__, stage=1)
 
         for itraj, chunk in self.iterator(stride=stride):
             if itraj != last_itraj:
@@ -638,8 +633,7 @@ class Transformer(object):
             t += L
 
             # update progress
-            progress.numerator += 1
-            show_progressbar(progress)
+            self._progress_update(1, stage=1)
 
         if self._in_memory:
             self._Y = trajs

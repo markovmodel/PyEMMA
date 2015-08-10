@@ -36,8 +36,6 @@ import numpy as np
 from . import kmeans_clustering
 
 from pyemma.util.annotators import doc_inherit
-from pyemma.util.progressbar import ProgressBar
-from pyemma.util.progressbar.gui import show_progressbar
 from pyemma.coordinates.clustering.interface import AbstractClustering
 
 __all__ = ['KmeansClustering']
@@ -83,8 +81,8 @@ class KmeansClustering(AbstractClustering):
         self._init_centers_indices = {}
         self._t_total = 0
         if self._init_strategy == 'kmeans++':
-            self._progress_init = ProgressBar(self.n_clusters, description="initialize kmeans++ centers")
-        self._progress_iters = ProgressBar(self.max_iter, description="kmeans iterations")
+            self._progress_register(self.n_clusters, description="initialize kmeans++ centers", stage=0)
+        self._progress_register(self.max_iter, description="kmeans iterations", stage=1)
         traj_lengths = self.trajectory_lengths(stride=self._param_with_stride)
         total_length = sum(traj_lengths)
         try:
@@ -122,16 +120,12 @@ class KmeansClustering(AbstractClustering):
         if self._init_strategy == 'uniform':
             del self._centers_iter_list
             del self._init_centers_indices
-        self._progress_init.numerator = self._progress_init.denominator
-        self._progress_init._eta.eta_epoch = 0
-        self._progress_iters.numerator = self._progress_iters.denominator
-        self._progress_iters._eta.eta_epoch = 0
-        show_progressbar(self._progress_init)
-        show_progressbar(self._progress_iters)
+
+        self._progress_force_finish(0)
+        self._progress_force_finish(1)
 
     def kmeanspp_center_assigned(self):
-        self._progress_init.numerator += 1
-        show_progressbar(self._progress_init)
+        self._progress_update(1, stage=0)
 
     def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None, stride=1):
         # first pass: gather data and run k-means
@@ -178,12 +172,11 @@ class KmeansClustering(AbstractClustering):
                         converged_in_max_iter = True
                         self._logger.info("Cluster centers converged after %i steps."
                                           % (it + 1))
-                        self._progress_iters.numerator = self.max_iter
+                        self._progress_force_finish(stage=1)
                         break
                     else:
-                        self._progress_iters.numerator += 1
+                        self._progress_update(1, stage=1)
                     it += 1
-                    show_progressbar(self._progress_iters)
                 if not converged_in_max_iter:
                     self._logger.info("Algorithm did not reach convergence criterion"
                                       " of %g in %i iterations. Consider increasing max_iter."
