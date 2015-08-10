@@ -138,8 +138,6 @@ class TICA(Transformer):
         self._cumvar = None
 
         self._custom_param_progress_handling = True
-        self._progress_mean = None
-        self._progress_cov = None
 
         # skipped trajectories
         self._skipped_trajs = []
@@ -256,7 +254,7 @@ class TICA(Transformer):
                 if self._force_eigenvalues_le_one:
                     self._logger.warning("Constraint of eigenvalues <= 1 is active,"
                                          "so the mean also depends on the lag time!")
-                raise SkipPassException(self._lag)
+                raise SkipPassException(self._lag, stride)
 
             if self._force_eigenvalues_le_one:
                 # MSM-like counting

@@ -37,8 +37,9 @@ __author__ = 'noe, marscher'
 
 class SkipPassException(Exception):
     """ raise this to skip a pass during parametrization """
-    def __init__(self, next_pass_lagtime=0):
+    def __init__(self, next_pass_lagtime=0, next_pass_stride=1):
         self.next_pass_lagtime = next_pass_lagtime
+        self.next_pass_stride = next_pass_stride
 
 
 class TransformerIteratorContext(object):
@@ -393,12 +394,12 @@ class Transformer(ProgressReporter):
                                 last_chunk, ipass, Y=Y, stride=stride)
                         except SkipPassException as spe:
                             self._logger.debug("got skip pass exception."
-                                               "Skipping pass %i" % ipass)
+                                               " Skipping pass %i" % ipass)
                             # break the inner loops
                             last_chunk_in_traj = True
                             last_chunk = True
                             # set lag time for next pass
-                            lag = spe.next_pass_lagtime
+                            return_value = False, spe.next_pass_lagtime, spe.next_pass_stride
 
                         if not self._custom_param_progress_handling:
                             self._progress_update(1, 0)
