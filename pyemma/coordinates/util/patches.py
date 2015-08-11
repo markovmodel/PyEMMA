@@ -28,8 +28,14 @@ Created on 13.03.2015
 
 @author: marscher
 '''
+import numpy as np
 from mdtraj.utils.validation import cast_indices
 from mdtraj.core.trajectory import load, _parse_topology, _TOPOLOGY_EXTS, _get_extension, open
+
+from itertools import groupby
+from operator import itemgetter
+
+from pyemma.coordinates.data.util.reader_utils import copy_traj_attributes, preallocate_empty_trajectory
 
 
 def iterload(filename, chunk=100, **kwargs):
@@ -85,11 +91,9 @@ def iterload(filename, chunk=100, **kwargs):
     extension = _get_extension(filename)
     if extension not in _TOPOLOGY_EXTS:
         topology = _parse_topology(top)
+    else:
+        topology = top
 
-    if chunk % stride != 0:
-        pass
-        #raise ValueError('Stride must be a divisor of chunk. stride=%d does not go '
-        #                 'evenly into chunk=%d' % (stride, chunk))
     if chunk == 0:
         # If chunk was 0 then we want to avoid filetype-specific code
         # in case of undefined behavior in various file parsers.
@@ -103,6 +107,45 @@ def iterload(filename, chunk=100, **kwargs):
         t = load(filename, stride=stride, atom_indices=atom_indices)
         for i in range(0, len(t), chunk):
             yield t[i:i+chunk]
+
+    elif isinstance(stride, np.ndarray):
+        with (lambda x: open(x, n_atoms=topology.n_atoms)
+              if extension in ('.crd', '.mdcrd')
+              else open(filename))(filename) as f:
+            x_prev = 0
+            curr_size = 0
+            traj = []
+            leftovers = []
+            for k, g in groupby(enumerate(stride), lambda (a, b): a-b):
+                grouped_stride = map(itemgetter(1), g)
+                seek_offset = (1 if x_prev != 0 else 0)
+                seek_to = grouped_stride[0] - x_prev - seek_offset
+                f.seek(seek_to, whence=1)
+                x_prev = grouped_stride[-1]
+                group_size = len(grouped_stride)
+                if curr_size + group_size > chunk:
+                    leftovers = grouped_stride
+                else:
+                    local_traj = _get_local_traj_object(atom_indices, extension, f, group_size, topology, **kwargs)
+                    traj.append(local_traj)
+                    curr_size += len(grouped_stride)
+                if curr_size == chunk:
+                    yield _efficient_traj_join(traj)
+                    curr_size = 0
+                    traj = []
+                while leftovers:
+                    local_chunk = leftovers[:min(chunk, len(leftovers))]
+                    local_traj = _get_local_traj_object(atom_indices, extension, f, len(local_chunk), topology, **kwargs)
+                    traj.append(local_traj)
+                    leftovers = leftovers[min(chunk, len(leftovers)):]
+                    curr_size += len(local_chunk)
+                    if curr_size == chunk:
+                        yield _efficient_traj_join(traj)
+                        curr_size = 0
+                        traj = []
+            if traj:
+                yield _efficient_traj_join(traj)
+            raise StopIteration()
 
     else:
         with (lambda x: open(x, n_atoms=topology.n_atoms)
@@ -120,3 +163,25 @@ def iterload(filename, chunk=100, **kwargs):
                     raise StopIteration()
 
                 yield traj
+
+
+def _get_local_traj_object(atom_indices, extension, f, n_frames, topology, **kwargs):
+    if extension not in _TOPOLOGY_EXTS:
+        traj = f.read_as_traj(topology, n_frames=n_frames, stride=1, atom_indices=atom_indices, **kwargs)
+    else:
+        traj = f.read_as_traj(n_frames=n_frames, stride=1, atom_indices=atom_indices, **kwargs)
+    return traj
+
+
+def _efficient_traj_join(trajs):
+    assert trajs
+
+    n_frames = sum(t.n_frames for t in trajs)
+    concat_traj = preallocate_empty_trajectory(trajs[0].top, n_frames)
+
+    start = 0
+    for traj in trajs:
+        concat_traj = copy_traj_attributes(concat_traj, traj, start)
+        start += traj.n_frames
+    return concat_traj
+

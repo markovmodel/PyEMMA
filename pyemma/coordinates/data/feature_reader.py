@@ -93,10 +93,10 @@ class FeatureReader(ReaderInterface):
         # time lagged iterator
         self._mditer2 = None
 
-        self.__set_dimensions_and_lenghts()
+        self.__set_dimensions_and_lengths()
         self._parametrized = True
 
-    def __set_dimensions_and_lenghts(self):
+    def __set_dimensions_and_lengths(self):
         self._ntraj = len(self.trajfiles)
         # lookups pre-computed lengths, or compute it on the fly and store it in db.
         if config['use_trajectory_lengths_cache'] == 'True':
@@ -135,9 +135,9 @@ class FeatureReader(ReaderInterface):
             # general case
             return self.featurizer.dimension()
 
-    def _create_iter(self, filename, skip=0, stride=1):
+    def _create_iter(self, filename, skip=0, stride=1, atom_indices=None):
         return patches.iterload(filename, chunk=self.chunksize,
-                                top=self.topfile, skip=skip, stride=stride)
+                                top=self.topfile, skip=skip, stride=stride, atom_indices=atom_indices)
 
     def _close(self):
         try:
@@ -148,7 +148,7 @@ class FeatureReader(ReaderInterface):
         except:
             self._logger.exception("something went wrong closing file handles")
 
-    def _reset(self, stride=1):
+    def _reset(self, context=None):
         """
         resets the chunk reader
         """
@@ -156,9 +156,15 @@ class FeatureReader(ReaderInterface):
         self._curr_lag = 0
         if len(self.trajfiles) >= 1:
             self._t = 0
-            self._mditer = self._create_iter(self.trajfiles[0], stride=stride)
+            if context and not context.uniform_stride:
+                self._itraj = min(context.traj_keys)
+                self._mditer = self._create_iter(
+                    self.trajfiles[self._itraj], stride=context.ra_indices_for_traj(self._itraj)
+                )
+            else:
+                self._mditer = self._create_iter(self.trajfiles[0], stride=context.stride if context else 1)
 
-    def _next_chunk(self, lag=0, stride=1):
+    def _next_chunk(self, context=None):
         """
         gets the next chunk. If lag > 0, we open another iterator with same chunk
         size and advance it by one, as soon as this method is called with a lag > 0.
@@ -168,16 +174,18 @@ class FeatureReader(ReaderInterface):
         chunk = self._mditer.next()
         shape = chunk.xyz.shape
 
-        if lag > 0:
+        if context.lag > 0:
+            if not context.uniform_stride:
+                raise ValueError("random access stride with lag not supported")
             if self._curr_lag == 0:
                 # lag time or trajectory index changed, so open lagged iterator
                 if __debug__:
                     self._logger.debug("open time lagged iterator for traj %i with lag %i"
-                                       % (self._itraj, lag))
-                self._curr_lag = lag
+                                       % (self._itraj, context.lag))
+                self._curr_lag = context.lag
                 self._mditer2 = self._create_iter(self.trajfiles[self._itraj],
                                                   skip=self._curr_lag,
-                                                  stride=stride)
+                                                  stride=context.stride)
             try:
                 adv_chunk = self._mditer2.next()
             except StopIteration:
@@ -186,11 +194,11 @@ class FeatureReader(ReaderInterface):
             except RuntimeError as e:
                 if "seek error" in str(e):
                     raise RuntimeError("Trajectory %s too short for lag time %i" %
-                                       (self.trajfiles[self._itraj], lag))
+                                       (self.trajfiles[self._itraj], context.lag))
 
         self._t += shape[0]
 
-        if (self._t >= self.trajectory_length(self._itraj, stride=stride) and
+        if (self._t >= self.trajectory_length(self._itraj, stride=context.stride) and
                 self._itraj < len(self.trajfiles) - 1):
             if __debug__:
                 self._logger.debug('closing current trajectory "%s"'
@@ -199,21 +207,30 @@ class FeatureReader(ReaderInterface):
 
             self._t = 0
             self._itraj += 1
-            self._mditer = self._create_iter(self.trajfiles[self._itraj], stride=stride)
+            if not context.uniform_stride:
+                while self._itraj not in context.traj_keys and self._itraj < self.number_of_trajectories():
+                    self._itraj += 1
+                self._mditer = self._create_iter(
+                    self.trajfiles[self._itraj], stride=context.ra_indices_for_traj(self._itraj)
+                )
+            else:
+                self._mditer = self._create_iter(self.trajfiles[self._itraj], stride=context.stride)
             # we open self._mditer2 only if requested due lag parameter!
             self._curr_lag = 0
 
-        if (self._t >= self.trajectory_length(self._itraj, stride=stride) and
-                self._itraj == len(self.trajfiles) - 1):
+        if not context.uniform_stride:
+            traj_len = context.ra_trajectory_length(self._itraj)
+        else:
+            traj_len = self.trajectory_length(self._itraj)
+        if self._t >= traj_len and self._itraj == len(self.trajfiles) - 1:
             if __debug__:
-                self._logger.debug('closing last trajectory "%s"'
-                                   % self.trajfiles[self._itraj])
+                self._logger.debug('closing last trajectory "%s"' % self.trajfiles[self._itraj])
             self._mditer.close()
             if self._curr_lag != 0:
                 self._mditer2.close()
 
         # map data
-        if lag == 0:
+        if context.lag == 0:
             if len(self.featurizer.active_features) == 0:
                 shape_2d = (shape[0], shape[1] * shape[2])
                 return chunk.xyz.reshape(shape_2d)
