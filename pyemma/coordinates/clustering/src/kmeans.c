@@ -218,6 +218,53 @@ error:
     return return_new_centers;
 }
 
+static PyObject* costFunction(PyObject *self, PyObject *args) {
+    int k, i, j, r;
+    float value, d;
+    float *data, *centers;
+    char *metric;
+    PyObject *ret_cost;
+    Py_ssize_t dim, n_frames;
+    PyArrayObject *np_data, *np_centers;
+    float (*distance)(float*, float*, size_t, float*, float*);
+    float *buffer_a, *buffer_b;
+
+    k = 0; r = 0; i = 0; j = 0; value = 0.0; d = 0.0;
+    metric = NULL; np_data = NULL;
+    data = NULL; ret_cost = Py_BuildValue("");
+    buffer_a = NULL; buffer_b = NULL;
+    /* parse python input (np_data, np_centers, metric, k) */
+    if (!PyArg_ParseTuple(args, "O!O!si", &PyArray_Type, &np_data, &PyList_Type, &np_centers, &metric, &k)) {
+        goto error;
+    }
+    n_frames = np_data->dimensions[0];
+    dim = np_data->dimensions[1];
+    data = PyArray_DATA(np_data);
+    /* parse and initialize metric */
+    if(strcmp(metric,"euclidean")==0) {
+        distance = euclidean_distance;
+    } else if(strcmp(metric,"minRMSD")==0) {
+        distance = minRMSD_distance;
+        buffer_a = malloc(dim*sizeof(float));
+        buffer_b = malloc(dim*sizeof(float));
+        if(!buffer_a || !buffer_b) { PyErr_NoMemory(); goto error; }
+    } else {
+        PyErr_SetString(PyExc_ValueError, "metric must be one of \"euclidean\" or \"minRMSD\".");
+        goto error;
+    }
+
+    for(r = 0; r < k; r++) {
+        centers = PyArray_DATA(PyList_GetItem(np_centers,r));
+        for(i = 0; i < n_frames; i++) {
+            value += pow(distance(&data[i*dim], &centers[0], dim, buffer_a, buffer_b), 2);
+        }
+    }
+    ret_cost = Py_BuildValue("f", value);
+    Py_INCREF(ret_cost);
+error:
+    return ret_cost;
+}
+
 static PyObject* initCentersKMpp(PyObject *self, PyObject *args) {
     int k, centers_found, first_center_index, i, j, n_trials;
     int some_not_done;
@@ -505,6 +552,7 @@ static PyMethodDef kmeansMethods[] =
      {"cluster", cluster, METH_VARARGS, CLUSTER_USAGE},
      {"assign",  assign,  METH_VARARGS, ASSIGN_USAGE},
      {"init_centers", initCentersKMpp, METH_VARARGS, INIT_CENTERS_USAGE},
+     {"cost_function", costFunction, METH_VARARGS, "Evaluates the cost function for the k-means clustering algorithm."},
      {"set_callback", c_set_callback, METH_VARARGS, "For setting a callback."},
      {NULL, NULL, 0, NULL}
 };

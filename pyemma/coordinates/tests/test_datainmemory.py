@@ -32,6 +32,7 @@ import unittest
 import numpy as np
 
 from pyemma.coordinates.data.data_in_memory import DataInMemory
+from pyemma.coordinates.transform.transformer import TransformerIteratorContext
 from pyemma.util.log import getLogger
 
 logger = getLogger('TestDataInMemory')
@@ -121,7 +122,7 @@ class TestDataInMemory(unittest.TestCase):
         self.assertEqual(reader.n_frames_total(), n + n - 50 + 29)
 
         # iterate over data
-        lag = 30
+        ctx = TransformerIteratorContext(lag=30)
         t = 0
         itraj = 0
         last_chunk = False
@@ -129,7 +130,7 @@ class TestDataInMemory(unittest.TestCase):
             last_chunk_in_traj = False
             t = 0
             while not last_chunk_in_traj:
-                X, Y = reader._next_chunk(lag=lag)
+                X, Y = reader._next_chunk(ctx)
                 if itraj == 0:
                     self.assertEqual(X.shape, (100, 3))
                     self.assertEqual(Y.shape, (70, 3))
