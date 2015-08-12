@@ -23,6 +23,10 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+
+from __future__ import print_function
+
+from __future__ import absolute_import
 __author__ = 'noe'
 
 import numpy as np
@@ -392,7 +396,7 @@ def assert_array(A, shape=None, uniform=None, ndim=None, size=None, dtype=None, 
         if isinstance(ex, AssertionError):
             raise ex
         else:  # other exception raised in the test code above
-            print 'Found exception: ',ex
+            print('Found exception: ',ex)
             raise AssertionError('Given argument is not an array of the expected shape or type:\n'+
                                  'arg = '+str(A)+'\ntype = '+str(type(A)))
 

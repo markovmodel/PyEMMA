@@ -30,8 +30,11 @@ Created on 15.10.2013
 '''
 __all__ = ['getLogger', 'enabled', 'CRITICAL', 'DEBUG', 'FATAL', 'INFO', 'NOTSET',
            'WARN', 'WARNING']
-
+from pyemma._ext.six import PY3
 import logging
+if PY3:
+    from imp import reload
+
 reload(logging)
 
 from logging import CRITICAL, FATAL, ERROR, WARNING, WARN, INFO, DEBUG, NOTSET

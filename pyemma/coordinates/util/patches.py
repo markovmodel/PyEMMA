@@ -116,7 +116,7 @@ def iterload(filename, chunk=100, **kwargs):
             curr_size = 0
             traj = []
             leftovers = []
-            for k, g in groupby(enumerate(stride), lambda (a, b): a-b):
+            for k, g in groupby(enumerate(stride), lambda a, b: a - b):
                 grouped_stride = map(itemgetter(1), g)
                 seek_offset = (1 if x_prev != 0 else 0)
                 seek_to = grouped_stride[0] - x_prev - seek_offset

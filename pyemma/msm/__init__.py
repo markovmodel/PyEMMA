@@ -87,6 +87,7 @@ Low-level functions for estimation and analysis of transition matrices and io.
    msm.flux
 
 """
+from __future__ import absolute_import
 #####################################################
 # Low-level MSM functions (imported from msmtools)
 
@@ -131,6 +132,9 @@ class _RedirectMSMToolsImport(object):
         if name in _sys.modules:
             return _sys.modules[name]
 
+        # lookup the package in msmtools, if it starts with "pyemma.msm."
+        assert name.startswith('pyemma.msm.')
+        package = name[len('pyemma.msm.'):]
         module_info = _imp.find_module(package, self.lookup_path)
 
         # load, cache and return redirected module
@@ -146,20 +150,20 @@ _sys.meta_path = [_RedirectMSMToolsImport('pyemma.msm.analysis'),
                   _RedirectMSMToolsImport('pyemma.msm.flux')]
 
 # backward compatibility to PyEMMA 1.2.x
-import analysis
-import estimation
-import generation
-import dtraj
-import io
-import flux
-from flux import ReactiveFlux
+from . import analysis
+from . import estimation
+from . import generation
+from . import dtraj
+from . import io
+from . import flux
+from .flux import ReactiveFlux
 #####################################################
 # Estimators and models
-from estimators import MaximumLikelihoodMSM, BayesianMSM
-from estimators import MaximumLikelihoodHMSM, BayesianHMSM
-from estimators import ImpliedTimescales
+from .estimators import MaximumLikelihoodMSM, BayesianMSM
+from .estimators import MaximumLikelihoodHMSM, BayesianHMSM
+from .estimators import ImpliedTimescales
 
-from models import MSM, HMSM, SampledMSM, SampledHMSM
+from .models import MSM, HMSM, SampledMSM, SampledHMSM
 
 # high-level api
-from api import *
+from .api import *

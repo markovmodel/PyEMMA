@@ -557,8 +557,81 @@ static PyMethodDef kmeansMethods[] =
      {NULL, NULL, 0, NULL}
 };
 
-PyMODINIT_FUNC initkmeans_clustering(void)
+struct module_state {
+    PyObject *error;
+};
+
+#if PY_MAJOR_VERSION >= 3
+#define GETSTATE(m) ((struct module_state*)PyModule_GetState(m))
+#else
+#define GETSTATE(m) (&_state)
+static struct module_state _state;
+#endif
+
+static PyObject *
+error_out(PyObject *m) {
+    struct module_state *st = GETSTATE(m);
+    PyErr_SetString(st->error, "something bad happened");
+    return NULL;
+}
+
+
+#if PY_MAJOR_VERSION >= 3
+
+static int myextension_traverse(PyObject *m, visitproc visit, void *arg) {
+    Py_VISIT(GETSTATE(m)->error);
+    return 0;
+}
+
+static int myextension_clear(PyObject *m) {
+    Py_CLEAR(GETSTATE(m)->error);
+    return 0;
+}
+
+
+static struct PyModuleDef moduledef = {
+        PyModuleDef_HEAD_INIT,
+        "kmeans_clustering",
+        NULL,
+        sizeof(struct module_state),
+        kmeansMethods,
+        NULL,
+        myextension_traverse,
+        myextension_clear,
+        NULL
+};
+
+#define INITERROR return NULL
+
+PyObject *
+PyInit_kmeans_clustering(void)
+
+#else // py2
+#define INITERROR return
+
+void initkmeans_clustering(void)
+#endif
 {
-  (void)Py_InitModule3("kmeans_clustering", kmeansMethods, MOD_USAGE);
-  import_array();
+#if PY_MAJOR_VERSION >= 3
+    PyObject *module = PyModule_Create(&moduledef);
+#else
+    PyObject *module = Py_InitModule3("kmeans_clustering", kmeansMethods, MOD_USAGE);
+#endif
+    struct module_state *st = GETSTATE(module);
+
+    if (module == NULL)
+        INITERROR;
+
+    st->error = PyErr_NewException("kmeans_clustering.Error", NULL, NULL);
+    if (st->error == NULL) {
+        Py_DECREF(module);
+        INITERROR;
+    }
+    // numpy support
+    import_array();
+
+
+#if PY_MAJOR_VERSION >= 3
+    return module;
+#endif
 }
