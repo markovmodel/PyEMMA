@@ -2,7 +2,7 @@ __author__ = 'noe'
 
 import numpy as np
 
-from pyemma.msm import estimation as msmest
+from msmtools import estimation as msmest
 from pyemma.util.annotators import shortcut
 from pyemma.util.linalg import submatrix
 from pyemma.util.discrete_trajectories import visited_set
@@ -22,8 +22,7 @@ class DiscreteTrajectoryStats(object):
         # discrete trajectories
         self._dtrajs = ensure_dtraj_list(dtrajs)
 
-        # basic count statistics
-        import pyemma.msm.estimation as msmest
+        ## basic count statistics
         # histogram
         self._hist = msmest.count_states(self._dtrajs)
         # total counts

@@ -33,8 +33,8 @@ import unittest
 import numpy as np
 
 from pyemma import msm
-from pyemma.msm.generation import generate_traj
-from pyemma.msm.estimation import count_matrix, largest_connected_set, largest_connected_submatrix, transition_matrix
+from msmtools.generation import generate_traj
+from msmtools.estimation import count_matrix, largest_connected_set, largest_connected_submatrix, transition_matrix
 from pyemma.util.numeric import assert_allclose
 from pyemma.msm.tests.birth_death_chain import BirthDeathChain
 from pyemma.msm import estimate_markov_model

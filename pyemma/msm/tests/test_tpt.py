@@ -34,7 +34,7 @@ import numpy as np
 from pyemma.util.numeric import assert_allclose
 
 from pyemma.msm import markov_model, tpt
-import pyemma.msm.analysis as msmana
+import msmtools.analysis as msmana
 
 
 class TestReactiveFluxFunctions(unittest.TestCase):
