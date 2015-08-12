@@ -87,7 +87,7 @@ Low-level functions for estimation and analysis of transition matrices and io.
    msm.flux
 
 """
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 #####################################################
 # Low-level MSM functions (imported from msmtools)
 
@@ -135,11 +135,17 @@ class _RedirectMSMToolsImport(object):
         # lookup the package in msmtools, if it starts with "pyemma.msm."
         assert name.startswith('pyemma.msm.')
         package = name[len('pyemma.msm.'):]
-        module_info = _imp.find_module(package, self.lookup_path)
-
+        
         # load, cache and return redirected module
-        module = _imp.load_module(package, *module_info)
+        if _sys.version_info[0] < 3:
+            module_info = _imp.find_module(package, self.lookup_path)
+            module = _imp.load_module(package, *module_info)
+        else:
+            import importlib
+            module = importlib.import_module('msmtools.' + package)
+
         _sys.modules[name] = module
+
         return module
 
 _sys.meta_path = [_RedirectMSMToolsImport('pyemma.msm.analysis'),
@@ -154,7 +160,8 @@ from . import analysis
 from . import estimation
 from . import generation
 from . import dtraj
-from . import io
+# backward compatibility
+io = dtraj
 from . import flux
 from .flux import ReactiveFlux
 #####################################################
