@@ -1,10 +1,6 @@
 __author__ = 'noe'
 
-from os.path import abspath, join
-from os import pardir
 import numpy as np
-
-import pyemma.util.discrete_trajectories as dt
 from pyemma.msm import markov_model
 
 class DoubleWell_Discrete_Data(object):
