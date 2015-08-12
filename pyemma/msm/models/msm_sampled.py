@@ -93,7 +93,7 @@ class SampledMSM(MSM, SampledModel):
 #             it is recommended that ncv > 2*k
 #
 #         """
-#         from pyemma.msm.analysis import rdl_decomposition
+#         from msmtools.analysis import rdl_decomposition
 #         from pyemma.util import linalg
 #
 #         # left eigenvectors

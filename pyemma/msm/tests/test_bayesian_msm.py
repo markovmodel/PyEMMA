@@ -39,13 +39,13 @@ class TestBMSM(unittest.TestCase):
         # shape
         assert np.array_equal(np.shape(Psamples), (self.nsamples, self.nstates, self.nstates))
         # consistency
-        import pyemma.msm.analysis as msmana
+        import msmtools.analysis as msmana
         for P in Psamples:
             assert msmana.is_transition_matrix(P)
             assert msmana.is_reversible(P)
 
     def test_transition_matrix_stats(self):
-        import pyemma.msm.analysis as msmana
+        import msmtools.analysis as msmana
         # mean
         Pmean = self.sampled_msm_lag100.sample_mean('transition_matrix')
         # test shape and consistency

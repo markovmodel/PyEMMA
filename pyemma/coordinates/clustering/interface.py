@@ -225,9 +225,9 @@ class AbstractClustering(Transformer):
 
         # obtain filenames from input (if possible, reader is a featurereader)
         if output_format == 'ascii':
-            from pyemma.msm.io import write_discrete_trajectory as write_dtraj
+            from msmtools.dtraj import write_discrete_trajectory as write_dtraj
         else:
-            from pyemma.msm.io import save_discrete_trajectory as write_dtraj
+            from msmtools.dtraj import save_discrete_trajectory as write_dtraj
         import os.path as path
 
         output_files = []

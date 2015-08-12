@@ -97,7 +97,7 @@ class SampledHMSM(_HMSM, _SampledModel):
     #     Stores all eigenvalues, left and right eigenvectors for all sampled matrices
     #
     #     """
-    #     from pyemma.msm.analysis import rdl_decomposition
+    #     from msmtools.analysis import rdl_decomposition
     #     from pyemma.util import linalg
     #
     #     # left eigenvectors

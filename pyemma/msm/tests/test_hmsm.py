@@ -4,13 +4,9 @@ Test MLHMM.
 """
 
 import unittest
-from os.path import abspath, join
-from os import pardir
-
 import numpy as np
-
 from pyemma import msm
-from pyemma.msm import analysis as msmana
+from msmtools import analysis as msmana
 
 
 class TestMLHMM(unittest.TestCase):
@@ -52,7 +48,7 @@ class TestMLHMM(unittest.TestCase):
         assert self.hmsm_lag10.nstates == 2
 
     def test_transition_matrix(self):
-        import pyemma.msm.analysis as msmana
+        import msmtools.analysis as msmana
         for P in [self.hmsm_lag1.transition_matrix, self.hmsm_lag1.transition_matrix]:
             assert msmana.is_transition_matrix(P)
             assert msmana.is_reversible(P)

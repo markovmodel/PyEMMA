@@ -31,7 +31,7 @@ r"""Unit test for the its method
 import unittest
 import numpy as np
 from pyemma import msm
-from pyemma.msm.analysis import timescales
+from msmtools.analysis import timescales
 from pyemma.msm.api import timescales_msm
 
 
