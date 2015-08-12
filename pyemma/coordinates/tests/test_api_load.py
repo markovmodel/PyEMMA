@@ -28,6 +28,8 @@ Created on 14.04.2015
 
 @author: marscher
 '''
+
+from __future__ import absolute_import
 import unittest
 from pyemma.coordinates.api import load
 import os

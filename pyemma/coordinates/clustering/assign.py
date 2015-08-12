@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from pyemma.util import types
 
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University

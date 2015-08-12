@@ -23,6 +23,10 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+
+from __future__ import print_function
+
+from __future__ import absolute_import
 import unittest
 import os
 import tempfile
@@ -39,12 +43,12 @@ class TestStride(unittest.TestCase):
         # create topology file
         cls.temppdb = tempfile.mktemp('.pdb')
         with open(cls.temppdb, 'w') as f:
-            for i in xrange(cls.dim//3):
-                print>>f, ('ATOM  %5d C    ACE A   1      28.490  31.600  33.379  0.00  1.00' % i)
+            for i in range(cls.dim//3):
+                print(('ATOM  %5d C    ACE A   1      28.490  31.600  33.379  0.00  1.00' % i), file=f)
 
         cls.trajnames = []  # list of xtc file names
         cls.data = []
-        for i in xrange(N_trajs):
+        for i in range(N_trajs):
             # set up data
             N = int(np.random.rand()*1000+1000)
             xyz = np.random.randn(N, cls.dim//3, 3).astype(np.float32)
@@ -59,7 +63,7 @@ class TestStride(unittest.TestCase):
             cls.trajnames.append(tempfname)
 
     def test_length_and_content_feature_reader_and_TICA(self):
-        for stride in xrange(1, 100, 23):
+        for stride in range(1, 100, 23):
             r = coor.source(self.trajnames, top=self.temppdb)
             t = coor.tica(data=r, lag=2, dim=2, force_eigenvalues_le_one=True)
             # t.data_producer = r
@@ -90,7 +94,7 @@ class TestStride(unittest.TestCase):
         # prepare test data
         N_trajs = 10
         d = []
-        for _ in xrange(N_trajs):
+        for _ in range(N_trajs):
             N = int(np.random.rand()*1000+10)
             d.append(np.random.randn(N, 10).astype(np.float32))
 
@@ -98,13 +102,13 @@ class TestStride(unittest.TestCase):
         reader = coor.source(d)
 
         # compare
-        for stride in xrange(1, 10, 3):
+        for stride in range(1, 10, 3):
             out_reader = reader.get_output(stride=stride)
             for ref_data, test_data in zip(d, out_reader):
                 self.assertTrue(np.all(ref_data[::stride] == test_data))  # here we can test exact equality
 
     def test_parametrize_with_stride(self):
-        for stride in xrange(1, 100, 23):
+        for stride in range(1, 100, 23):
             r = coor.source(self.trajnames, top=self.temppdb)
             tau = 5
             try:

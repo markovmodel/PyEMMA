@@ -28,6 +28,10 @@ Test feature reader and Tica by checking the properties of the ICs.
 cov(ic_i,ic_j) = delta_ij and cov(ic_i,ic_j,tau) = lambda_i delta_ij
 @author: Fabian Paul
 '''
+
+from __future__ import print_function
+
+from __future__ import absolute_import
 import unittest
 import os
 import tempfile
@@ -66,12 +70,12 @@ class TestFeatureReaderAndTICAProjection(unittest.TestCase):
         # create topology file
         cls.temppdb = tempfile.mktemp('.pdb')
         with open(cls.temppdb, 'w') as f:
-            for i in xrange(cls.dim // 3):
-                print>>f, ('ATOM  %5d C    ACE A   1      28.490  31.600  33.379  0.00  1.00' % i)
+            for i in range(cls.dim // 3):
+                print(('ATOM  %5d C    ACE A   1      28.490  31.600  33.379  0.00  1.00' % i), file=f)
 
         t = np.arange(0, N)
         cls.trajnames = []  # list of xtc file names
-        for i in xrange(N_trajs):
+        for i in range(N_trajs):
             # set up data
             white = np.random.randn(N, cls.dim)
             brown = np.cumsum(white, axis=0)

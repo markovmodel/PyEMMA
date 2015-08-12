@@ -1,5 +1,7 @@
 """Utilities for writing code that runs on Python 2 and 3"""
 
+from __future__ import absolute_import
+
 # Copyright (c) 2010-2013 Benjamin Peterson
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -43,7 +45,7 @@ if PY3:
 else:
     string_types = basestring,
     integer_types = (int, long)
-    class_types = (type, types.ClassType)
+    class_types = (type, type)
     text_type = unicode
     binary_type = str
 
@@ -403,7 +405,7 @@ if PY3:
     Iterator = object
 else:
     def get_unbound_function(unbound):
-        return unbound.im_func
+        return unbound.__func__
 
     def create_bound_method(func, obj):
         return types.MethodType(func, obj, obj.__class__)

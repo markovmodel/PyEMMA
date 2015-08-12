@@ -3,6 +3,8 @@ Created on 29.07.2015
 
 @author: marscher
 '''
+
+from __future__ import absolute_import
 import unittest
 from pyemma._base.progress import ProgressReporter
 

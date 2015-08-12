@@ -23,6 +23,8 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+
+from __future__ import absolute_import
 import numpy as np
 import sys
 
@@ -62,7 +64,7 @@ def acf(trajs, stride=1, max_lag=None, subtract_mean=True, normalize=True, mean=
         trajs = [trajs]
 
     mytrajs = [None] * len(trajs)
-    for i in xrange(len(trajs)):
+    for i in range(len(trajs)):
         if trajs[i].ndim == 1:
             mytrajs[i] = trajs[i].reshape((trajs[i].shape[0], 1))
         elif trajs[i].ndim == 2:

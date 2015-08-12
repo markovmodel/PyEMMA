@@ -11,6 +11,8 @@ and
 
 Base classes for all estimators.
 """
+
+from __future__ import absolute_import
 # Author: Gael Varoquaux <gael.varoquaux@normalesup.org>
 # License: BSD 3 clause
 
@@ -225,7 +227,7 @@ class BaseEstimator(object):
 
             # XXX: should we rather test if instance of estimator?
             if deep and hasattr(value, 'get_params'):
-                deep_items = value.get_params().items()
+                deep_items = list(value.get_params().items())
                 out.update((key + '__' + k, val) for k, val in deep_items)
             out[key] = value
         return out

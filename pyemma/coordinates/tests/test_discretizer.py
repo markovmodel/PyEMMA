@@ -26,6 +26,8 @@ Created on 19.01.2015
 
 @author: marscher
 '''
+
+from __future__ import absolute_import
 import itertools
 import os
 import tempfile
@@ -48,7 +50,7 @@ def create_water_topology_on_disc(n):
     top = Topology()
     chain = top.add_chain()
 
-    for i in xrange(n):
+    for i in range(n):
         res = top.add_residue('r%i' % i, chain)
         h1 = top.add_atom('H', hydrogen, res)
         o = top.add_atom('O', oxygen, res)
@@ -148,7 +150,7 @@ class TestDiscretizer(unittest.TestCase):
         reader = source(self.trajfiles, top=self.topfile)
         # select all possible distances
         pairs = np.array(
-            [x for x in itertools.combinations(range(self.n_residues), 2)])
+            [x for x in itertools.combinations(list(range(self.n_residues)), 2)])
 
         cluster = cluster_kmeans(k=2)
         d = Discretizer(reader, cluster=cluster)

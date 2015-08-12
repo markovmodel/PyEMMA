@@ -26,6 +26,8 @@ Created on 18.02.2015
 
 @author: marscher
 '''
+
+from __future__ import absolute_import
 from pyemma.coordinates.transform.transformer import Transformer
 from pyemma.util.files import mkdir_p
 from pyemma.util.discrete_trajectories import index_states, sample_indexes_by_state
@@ -243,7 +245,7 @@ class AbstractClustering(Transformer):
                 # name = path.join(p, name)
                 output_files.append(name)
         else:
-            for i in xrange(len(self.dtrajs)):
+            for i in range(len(self.dtrajs)):
                 if prefix is not '':
                     name = "%s_%i%s" % (prefix, i, extension)
                 else:

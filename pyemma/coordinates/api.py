@@ -21,6 +21,7 @@
 # ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 r"""User-API for the pyemma.coordinates package
 
 .. currentmodule:: pyemma.coordinates.api
@@ -726,7 +727,7 @@ def save_trajs(traj_inp, indexes, prefix = 'set_', fmt = None, outfiles = None,
     # Prepare the list of outfiles before the loop
     if outfiles is None:
         outfiles = []
-        for ii in xrange(len(indexes)):
+        for ii in range(len(indexes)):
             outfiles.append(prefix + '%06u' % ii + fmt)
 
     # Check that we have the same name of outfiles as (T, 2)-indexes arrays

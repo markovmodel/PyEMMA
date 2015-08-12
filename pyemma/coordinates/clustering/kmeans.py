@@ -27,6 +27,8 @@ Created on 22.01.2015
 
 @author: marscher, noe
 """
+
+from __future__ import absolute_import
 import math
 import os
 import random
@@ -105,7 +107,7 @@ class KmeansClustering(AbstractClustering):
             # gives random samples from each trajectory such that the cluster centers are distributed percentage-wise
             # with respect to the trajectories length
             for idx, traj_len in enumerate(traj_lengths):
-                self._init_centers_indices[idx] = random.sample(range(0, traj_len), int(
+                self._init_centers_indices[idx] = random.sample(list(range(0, traj_len)), int(
                     math.ceil((traj_len / float(total_length)) * self.n_clusters)))
 
     def _init_in_memory_chunks(self, size):
@@ -196,8 +198,8 @@ class KmeansClustering(AbstractClustering):
     def _initialize_centers(self, X, itraj, t, last_chunk, ipass):
         if ipass == 0:
             if self._init_strategy == 'uniform':
-                if itraj in self._init_centers_indices.keys():
-                    for l in xrange(len(X)):
+                if itraj in list(self._init_centers_indices.keys()):
+                    for l in range(len(X)):
                         if len(self._cluster_centers_iter) < self.n_clusters and t + l in self._init_centers_indices[itraj]:
                             self._cluster_centers_iter.append(X[l].astype(np.float32, order='C'))
             elif last_chunk and self._init_strategy == 'kmeans++':
@@ -241,7 +243,7 @@ class MiniBatchKmeansClustering(KmeansClustering):
             self._random_access_stride[offset:offset + self._n_samples_traj[idx], 0] = idx * np.ones(
                 self._n_samples_traj[idx], dtype=int)
             self._random_access_stride[offset:offset + self._n_samples_traj[idx], 1] = np.sort(
-                random.sample(xrange(traj_len), self._n_samples_traj[idx])).T
+                random.sample(range(traj_len), self._n_samples_traj[idx])).T
             offset += self._n_samples_traj[idx]
         return self._random_access_stride
 

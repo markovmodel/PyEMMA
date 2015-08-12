@@ -30,6 +30,8 @@ and provides them for later access.
 
 """
 
+from __future__ import absolute_import
+
 __docformat__ = "restructuredtext en"
 
 import copy
@@ -734,7 +736,7 @@ class MSM(_Model):
             # by default, use five times the longest relaxation time, because then we have relaxed to equilibrium.
             maxtime = 5 * self.timescales()[0]
         kmax = int(ceil(float(maxtime) / self._timeunit_model.dt))
-        steps = np.array(range(kmax), dtype=int)
+        steps = np.array(list(range(kmax)), dtype=int)
         # compute relaxation function
         from msmtools.analysis import relaxation as _relaxation
         # TODO: this could be improved. If we have already done an eigenvalue decomposition, we could provide it.

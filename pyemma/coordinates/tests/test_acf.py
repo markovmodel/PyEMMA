@@ -23,6 +23,8 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+
+from __future__ import absolute_import
 import unittest
 import numpy as np
 
@@ -41,7 +43,7 @@ class TestACF(unittest.TestCase):
         refacf = np.zeros(data.shape)
         meanfree = data - np.mean(data, axis=0)
         padded = np.concatenate((meanfree, np.zeros(data.shape)), axis=0)
-        for tau in xrange(N):
+        for tau in range(N):
             refacf[tau] = (padded[0:N, :]*padded[tau:N+tau, :]).sum(axis=0)/(N-tau)
         refacf /= refacf[0]  # normalize
 

@@ -21,6 +21,8 @@
 # ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+from __future__ import absolute_import
 import pyemma
 
 '''
@@ -57,14 +59,14 @@ class TestDataInMemory(unittest.TestCase):
 
         frames_per_traj = 100
         dim = 3
-        data = [np.random.random((frames_per_traj, dim)) for _ in xrange(3)]
+        data = [np.random.random((frames_per_traj, dim)) for _ in range(3)]
 
         d = DataInMemory(data)
 
         self.assertEqual(d.dimension(), dim)
 
         np.testing.assert_equal(
-            d.trajectory_lengths(), np.array([frames_per_traj for _ in xrange(3)]))
+            d.trajectory_lengths(), np.array([frames_per_traj for _ in range(3)]))
 
     def testDataArray(self):
         frames_per_traj = 100
@@ -74,7 +76,7 @@ class TestDataInMemory(unittest.TestCase):
         d = DataInMemory(data)
 
         np.testing.assert_equal(
-            d.trajectory_lengths(), np.array([frames_per_traj for _ in xrange(1)]))
+            d.trajectory_lengths(), np.array([frames_per_traj for _ in range(1)]))
 
     def test1dData(self):
         n = 3
@@ -182,8 +184,8 @@ class TestDataInMemory(unittest.TestCase):
         self.assertEqual(reader.n_frames_total(), sum(input_lens))
 
         # store results by traj
-        chunked_trajs = [[] for _ in xrange(len(data))]
-        chunked_lagged_trajs = [[] for _ in xrange(len(data))]
+        chunked_trajs = [[] for _ in range(len(data))]
+        chunked_lagged_trajs = [[] for _ in range(len(data))]
 
         # iterate over data
         for itraj, X, Y in reader.iterator(lag=lag):
@@ -218,8 +220,8 @@ class TestDataInMemory(unittest.TestCase):
         self.assertEqual(reader.n_frames_total(), sum(input_lens))
 
         # store results by traj
-        chunks = [[] for _ in xrange(len(data))]
-        lagged_chunks = [[] for _ in xrange(len(data))]
+        chunks = [[] for _ in range(len(data))]
+        lagged_chunks = [[] for _ in range(len(data))]
 
         # iterate over data
         for itraj, X, Y in reader.iterator(lag=lag):

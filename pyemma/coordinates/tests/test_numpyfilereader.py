@@ -26,6 +26,10 @@ Created on 07.04.2015
 
 @author: marscher
 '''
+
+from __future__ import print_function
+
+from __future__ import absolute_import
 import unittest
 import tempfile
 
@@ -118,7 +122,7 @@ class TestNumPyFileReader(unittest.TestCase):
         all_data = reader.get_output()
 
         fh = np.load(self.npz)
-        data = [x[1] for x in fh.items()]
+        data = [x[1] for x in list(fh.items())]
         fh.close()
 
         self.assertEqual(reader.number_of_trajectories(), len(data))
@@ -151,16 +155,16 @@ class TestNumPyFileReader(unittest.TestCase):
 
     def test_lagged_stridden_access_multiple_files(self):
         reader = NumPyFileReader(self.files2d)
-        print reader.trajectory_lengths()
+        print(reader.trajectory_lengths())
         strides = [2, 3, 5, 7, 15]
         lags = [1, 3, 7, 10, 30]
         for stride in strides:
             for lag in lags:
-                chunks = {i: [] for i in xrange(reader.number_of_trajectories())}
+                chunks = {i: [] for i in range(reader.number_of_trajectories())}
                 for itraj, _, Y in reader.iterator(stride, lag):
                     chunks[itraj].append(Y)
 
-                for i, k in enumerate(chunks.itervalues()):
+                for i, k in enumerate(chunks.values()):
                     stack = np.vstack(k)
                     d = np.load(self.files2d[i])
                     np.testing.assert_equal(stack, d[lag::stride],

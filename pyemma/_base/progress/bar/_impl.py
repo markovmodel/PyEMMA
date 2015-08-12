@@ -5,6 +5,8 @@ https://github.com/Robpol86/etaprogress
 https://pypi.python.org/pypi/etaprogress
 """
 
+from __future__ import absolute_import
+
 from __future__ import division
 from collections import deque
 from math import sqrt, ceil

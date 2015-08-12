@@ -30,6 +30,8 @@ the retrival via save_trajs
 @author: gph82, clonker
 """
 
+from __future__ import absolute_import
+
 import unittest
 import os
 import shutil
@@ -72,8 +74,8 @@ class TestSaveTrajs(unittest.TestCase):
         # Instantiate the reader
         self.reader = coor.source(self.trajfiles, top=self.pdbfile)
         self.reader.chunksize = 30
-        self.n_pass_files = [self.subdir + 'n_pass.set_%06u.xtc' % ii for ii in xrange(len(self.sets))]
-        self.one_pass_files = [self.subdir + '1_pass.set_%06u.xtc' % ii for ii in xrange(len(self.sets))]
+        self.n_pass_files = [self.subdir + 'n_pass.set_%06u.xtc' % ii for ii in range(len(self.sets))]
+        self.one_pass_files = [self.subdir + '1_pass.set_%06u.xtc' % ii for ii in range(len(self.sets))]
 
         self.traj_ref = save_traj_w_md_load_frame(self.reader, self.sets)
         self.strides = [2, 3, 5]

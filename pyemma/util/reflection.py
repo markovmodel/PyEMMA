@@ -16,7 +16,7 @@ def call_member(obj, f, *args, **kwargs):
     """
     # get function name
     if not isinstance(f, str):
-        fname = f.im_func.func_name
+        fname = f.__func__.__name__
     else:
         fname = f
     # get the method ref

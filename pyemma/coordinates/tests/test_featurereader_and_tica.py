@@ -27,6 +27,10 @@
 Test feature reader and Tica with a set of cosine time series.
 @author: Fabian Paul
 '''
+
+from __future__ import print_function
+
+from __future__ import absolute_import
 import unittest
 import os
 import tempfile
@@ -56,13 +60,13 @@ class TestFeatureReaderAndTICA(unittest.TestCase):
         # create topology file
         cls.temppdb = tempfile.mktemp('.pdb')
         with open(cls.temppdb, 'w') as f:
-            for i in xrange(cls.dim//3):
-                print>>f, ('ATOM  %5d C    ACE A   1      28.490  31.600  33.379  0.00  1.00' % i)
+            for i in range(cls.dim//3):
+                print(('ATOM  %5d C    ACE A   1      28.490  31.600  33.379  0.00  1.00' % i), file=f)
 
         t = np.arange(0, N)
         t_total = 0
         cls.trajnames = []  # list of xtc file names
-        for i in xrange(N_trajs):
+        for i in range(N_trajs):
             # set up data
             data = cls.A*np.cos((cls.w*(t+t_total))[:, np.newaxis]+cls.phi) + mean
             xyz = data.reshape((N, cls.dim//3, 3))

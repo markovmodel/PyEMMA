@@ -21,6 +21,8 @@
 # ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+from __future__ import absolute_import
 import math
 import numpy as np
 
@@ -63,9 +65,9 @@ def _fruchterman_reingold(A, dim=2, k=None, pos=None, fixed=None,
     # the inscrutable (but fast) version
     # this is still O(V^2)
     # could use multilevel methods to speed this up significantly
-    for _ in xrange(iterations):
+    for _ in range(iterations):
         # matrix of difference between points
-        for i in xrange(pos.shape[1]):
+        for i in range(pos.shape[1]):
             delta[:, :, i] = pos[:, i, None] - pos[:, i]
         # distance between points
         distance = np.sqrt((delta**2).sum(axis=-1))
@@ -261,7 +263,7 @@ class NetworkPlot(object):
         else:
             # transfrom from [0,1] to 255-scale
             state_colors = [
-                plt.cm.binary(int(256.0 * state_colors[i])) for i in xrange(n)]
+                plt.cm.binary(int(256.0 * state_colors[i])) for i in range(n)]
         # set arrow labels
         if isinstance(arrow_labels, np.ndarray):
             L = arrow_labels
@@ -270,8 +272,8 @@ class NetworkPlot(object):
         if arrow_labels is None:
             L[:, :] = ''
         elif arrow_labels.lower() == 'weights':
-            for i in xrange(n):
-                for j in xrange(n):
+            for i in range(n):
+                for j in range(n):
                     L[i, j] = arrow_label_format % self.A[i, j]
         else:
             rcParams['font.size'] = old_fontsize
@@ -279,7 +281,7 @@ class NetworkPlot(object):
 
         # draw circles
         circles = []
-        for i in xrange(n):
+        for i in range(n):
             fig = plt.gcf()
             # choose color
             c = plt.Circle(self.pos[i], radius=math.sqrt(
@@ -294,8 +296,8 @@ class NetworkPlot(object):
         assert len(circles) == n, "%i != %i" % (len(circles), n)
 
         # draw arrows
-        for i in xrange(n):
-            for j in xrange(i + 1, n):
+        for i in range(n):
+            for j in range(i + 1, n):
                 if (abs(self.A[i, j]) > 0):
                     self._draw_arrow(self.pos[i, 0], self.pos[i, 1],
                                      self.pos[j, 0], self.pos[j, 1], Dx, Dy,

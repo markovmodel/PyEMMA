@@ -21,6 +21,8 @@
 # ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+from __future__ import absolute_import
 import unittest
 import numpy as np
 
@@ -153,7 +155,7 @@ class TestFeaturizer(unittest.TestCase):
 
     def test_ca_distances(self):
         sel = self.feat.select_Ca()
-        assert(np.all(sel == range(self.traj.n_atoms)))  # should be all for this Ca-traj
+        assert(np.all(sel == list(range(self.traj.n_atoms))))  # should be all for this Ca-traj
         pairs = self.feat.pairs(sel, excluded_neighbors=0)
         self.feat.add_distances_ca(periodic=False)  # unperiodic distances such that we can compare
         assert(self.feat.dimension() == pairs.shape[0])

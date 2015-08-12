@@ -28,6 +28,8 @@ Created on 02.02.2015
 
 @author: marscher
 """
+
+from __future__ import absolute_import
 import unittest
 import os
 import numpy as np

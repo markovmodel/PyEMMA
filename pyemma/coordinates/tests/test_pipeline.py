@@ -23,6 +23,10 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+
+from __future__ import print_function
+
+from __future__ import absolute_import
 import unittest
 import os
 
@@ -148,7 +152,7 @@ class TestPipeline(unittest.TestCase):
         p = api.pipeline([reader_xtc, kmeans])
         out1 = kmeans.get_output()
         # replace source
-        print reader_gen
+        print(reader_gen)
         p.set_element(0, reader_gen)
         assert hasattr(kmeans, '_chunks')
         p.parametrize()

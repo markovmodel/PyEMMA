@@ -27,6 +27,8 @@ Created on 23.01.2015
 
 @author: marscher
 '''
+
+from __future__ import absolute_import
 import mdtraj
 import os
 import tempfile
@@ -99,7 +101,7 @@ class TestFeatureReader(unittest.TestCase):
         reader = FeatureReader([self.trajfile, self.trajfile2], self.topfile)
         reader.chunksize = 100
 
-        data = {itraj: [] for itraj in xrange(reader.number_of_trajectories())}
+        data = {itraj: [] for itraj in range(reader.number_of_trajectories())}
 
         for i, X in reader:
             data[i].append(X)
@@ -197,7 +199,7 @@ class TestFeatureReader(unittest.TestCase):
         for stride in strides:
             for lag in lags:
                 chunks = {itraj: []
-                          for itraj in xrange(reader.number_of_trajectories())}
+                          for itraj in range(reader.number_of_trajectories())}
                 for itraj, _, Y in reader.iterator(stride, lag):
                     chunks[itraj].append(Y)
                 chunks[0] = np.vstack(chunks[0])

@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 __author__ = 'noe'
 
 import copy
@@ -73,7 +74,7 @@ class EstimatedMSM(MSM):
         self._nstates_full = np.shape(C_full)[0]
         # full2active mapping
         self._full2active = -1 * np.ones(self._nstates_full, dtype=int)
-        self._full2active[self._active_set] = np.array(range(len(self._active_set)), dtype=int)
+        self._full2active[self._active_set] = np.array(list(range(len(self._active_set))), dtype=int)
 
         # is estimated
         self._is_estimated = True

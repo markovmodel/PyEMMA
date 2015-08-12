@@ -28,6 +28,8 @@ Created on 13.03.2015
 
 @author: marscher
 '''
+
+from __future__ import absolute_import
 import numpy as np
 from mdtraj.utils.validation import cast_indices
 from mdtraj.core.trajectory import load, _parse_topology, _TOPOLOGY_EXTS, _get_extension, open

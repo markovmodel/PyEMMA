@@ -29,6 +29,8 @@ r"""Unit test for the MSM module
 .. moduleauthor:: B. Trendelkamp-Schroer <benjamin DOT trendelkamp-schroer AT fu-berlin DOT de>
 
 """
+
+from __future__ import absolute_import
 import unittest
 
 import numpy as np
@@ -619,7 +621,7 @@ class TestMSMDoubleWell(unittest.TestCase):
     # ---------------------------------
 
     def _expectation(self, msm):
-        e = msm.expectation(range(msm.nstates))
+        e = msm.expectation(list(range(msm.nstates)))
         # approximately equal for both
         assert (np.abs(e - 31.73) < 0.01)
 
@@ -640,17 +642,17 @@ class TestMSMDoubleWell(unittest.TestCase):
         with self.assertRaises(AssertionError):
             msm.correlation(a, 1)
         # should decrease
-        a = range(msm.nstates)
+        a = list(range(msm.nstates))
         times, corr1 = msm.correlation(a, maxtime=maxtime)
         assert (len(corr1) == maxtime / msm.lagtime)
         assert (len(times) == maxtime / msm.lagtime)
         assert (corr1[0] > corr1[-1])
-        a = range(msm.nstates)
+        a = list(range(msm.nstates))
         times, corr2 = msm.correlation(a, a, maxtime=maxtime, k=k)
         # should be identical to autocorr
         assert (np.allclose(corr1, corr2))
         # Test: should be increasing in time
-        b = range(msm.nstates)[::-1]
+        b = list(range(msm.nstates))[::-1]
         times, corr3 = msm.correlation(a, b, maxtime=maxtime, )
         assert (len(times) == maxtime / msm.lagtime)
         assert (len(corr3) == maxtime / msm.lagtime)
@@ -669,7 +671,7 @@ class TestMSMDoubleWell(unittest.TestCase):
             k = msm.nstates            
         pi_perturbed = (msm.stationary_distribution ** 2)
         pi_perturbed /= pi_perturbed.sum()
-        a = range(msm.nstates)
+        a = list(range(msm.nstates))
         maxtime = 100000
         times, rel1 = msm.relaxation(msm.stationary_distribution, a, maxtime=maxtime, k=k)
         # should be constant because we are in equilibrium
@@ -698,7 +700,7 @@ class TestMSMDoubleWell(unittest.TestCase):
             with self.assertRaises(AssertionError):
                 msm.fingerprint_correlation(a, 1, k=k)
             # should decrease
-            a = range(self.msm.nstates)
+            a = list(range(self.msm.nstates))
             fp1 = msm.fingerprint_correlation(a, k=k)
             # first timescale is infinite
             assert (fp1[0][0] == np.inf)
@@ -707,22 +709,22 @@ class TestMSMDoubleWell(unittest.TestCase):
             # all amplitudes nonnegative (for autocorrelation)
             assert (np.all(fp1[1][:] >= 0))
             # identical call
-            b = range(msm.nstates)
+            b = list(range(msm.nstates))
             fp2 = msm.fingerprint_correlation(a, b, k=k)
             assert (np.allclose(fp1[0], fp2[0]))
             assert (np.allclose(fp1[1], fp2[1]))
             # should be - of the above, apart from the first
-            b = range(msm.nstates)[::-1]
+            b = list(range(msm.nstates))[::-1]
             fp3 = msm.fingerprint_correlation(a, b, k=k)
             assert (np.allclose(fp1[0], fp3[0]))
             assert (np.allclose(fp1[1][1:], -fp3[1][1:]))
         else:  # raise ValueError, because fingerprints are not defined for nonreversible
             with self.assertRaises(ValueError):
-                a = range(self.msm.nstates)
+                a = list(range(self.msm.nstates))
                 msm.fingerprint_correlation(a, k=k)
             with self.assertRaises(ValueError):
-                a = range(self.msm.nstates)
-                b = range(msm.nstates)
+                a = list(range(self.msm.nstates))
+                b = list(range(msm.nstates))
                 msm.fingerprint_correlation(a, b, k=k)
 
     def test_fingerprint_correlation(self):
@@ -743,7 +745,7 @@ class TestMSMDoubleWell(unittest.TestCase):
             with self.assertRaises(AssertionError):
                 msm.fingerprint_relaxation(msm.stationary_distribution, a, k=k)
             # equilibrium relaxation should be constant
-            a = range(msm.nstates)
+            a = list(range(msm.nstates))
             fp1 = msm.fingerprint_relaxation(msm.stationary_distribution, a, k=k)
             # first timescale is infinite
             assert (fp1[0][0] == np.inf)
@@ -763,12 +765,12 @@ class TestMSMDoubleWell(unittest.TestCase):
             assert (np.max(np.abs(fp2[1][1:])) > 0.1)
         else:  # raise ValueError, because fingerprints are not defined for nonreversible
             with self.assertRaises(ValueError):
-                a = range(self.msm.nstates)
+                a = list(range(self.msm.nstates))
                 msm.fingerprint_relaxation(msm.stationary_distribution, a, k=k)
             with self.assertRaises(ValueError):
                 pi_perturbed = (msm.stationary_distribution ** 2)
                 pi_perturbed /= pi_perturbed.sum()
-                a = range(self.msm.nstates)
+                a = list(range(self.msm.nstates))
                 msm.fingerprint_relaxation(pi_perturbed, a)
 
     def test_fingerprint_relaxation(self):

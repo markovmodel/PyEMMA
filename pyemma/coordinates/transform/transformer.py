@@ -21,6 +21,8 @@
 # ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+from __future__ import absolute_import
 from pyemma.util.log import getLogger
 from pyemma._base.progress import ProgressReporter
 
@@ -719,7 +721,7 @@ class Transformer(ProgressReporter):
         if self._in_memory:
             # ensure stride and dimensions are same of cached result
             if self._Y and all(self._Y[i].shape == (self.trajectory_length(i, stride=stride), ndim)
-                               for i in xrange(self.number_of_trajectories())):
+                               for i in range(self.number_of_trajectories())):
                 return self._Y
 
         # allocate memory

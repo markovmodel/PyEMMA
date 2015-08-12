@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import os
 import tempfile
 import unittest
@@ -70,7 +71,7 @@ class TestRandomAccessStride(TestCase):
         np.testing.assert_array_almost_equal(out[2], [self.data[2][0]])
 
     def test_csv_filereader_random_access(self):
-        tmpfiles = [tempfile.mktemp(suffix='.dat') for _ in xrange(0, len(self.data))]
+        tmpfiles = [tempfile.mktemp(suffix='.dat') for _ in range(0, len(self.data))]
         try:
             for idx, tmp in enumerate(tmpfiles):
                 np.savetxt(tmp, self.data[idx])
@@ -94,7 +95,7 @@ class TestRandomAccessStride(TestCase):
                     pass
 
     def test_numpy_filereader_random_access(self):
-        tmpfiles = [tempfile.mktemp(suffix='.npy') for _ in xrange(0, len(self.data))]
+        tmpfiles = [tempfile.mktemp(suffix='.npy') for _ in range(0, len(self.data))]
         try:
             for idx, tmp in enumerate(tmpfiles):
                 np.save(tmp, self.data[idx])
@@ -126,13 +127,13 @@ class TestRandomAccessStride(TestCase):
         kmeans = coor.cluster_kmeans(self.data, k=2)
         kmeans.in_memory = True
 
-        for cs in xrange(1, 5):
+        for cs in range(1, 5):
             kmeans.chunksize = cs
             ref_stride = {0: 0, 1: 0, 2: 0}
             it = kmeans.iterator(stride=self.stride)
             for x in it:
                 ref_stride[x[0]] += len(x[1])
-            for key in ref_stride.keys():
+            for key in list(ref_stride.keys()):
                 expected = len(it._ctx.ra_indices_for_traj(key))
                 assert ref_stride[key] == expected, \
                     "Expected to get exactly %s elements of trajectory %s, but got %s for chunksize=%s" \
