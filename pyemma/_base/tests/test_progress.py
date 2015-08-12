@@ -4,9 +4,8 @@ Created on 29.07.2015
 @author: marscher
 '''
 import unittest
-import sys
 from pyemma._base.progress import ProgressReporter
-from pyemma.util.progressbar import ProgressBar
+from pyemma._base.progress.bar import ProgressBar
 
 
 class TestProgress(unittest.TestCase):
