@@ -39,8 +39,8 @@ from os.path import abspath, join
 from os import pardir
 
 from pyemma.msm.generation import generate_traj
-from pyemma.msm.estimation import count_matrix, largest_connected_set, largest_connected_submatrix, transition_matrix
-from pyemma.msm.analysis import stationary_distribution, timescales
+from msmtools.estimation import count_matrix, largest_connected_set, largest_connected_submatrix, transition_matrix
+from msmtools.analysis import stationary_distribution, timescales
 from pyemma.util.numeric import assert_allclose
 from pyemma.msm.tests.birth_death_chain import BirthDeathChain
 from pyemma.msm import estimate_markov_model
@@ -269,7 +269,7 @@ class TestMSMDoubleWell(unittest.TestCase):
         # shape
         assert (np.all(P.shape == (msm.nstates, msm.nstates)))
         # test transition matrix properties
-        import pyemma.msm.analysis as msmana
+        import msmtools.analysis as msmana
 
         assert (msmana.is_transition_matrix(P))
         assert (msmana.is_connected(P))

@@ -127,7 +127,7 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporter):
         # here we blow up the output matrix (if needed) to the FULL state space because we want to use dtrajs in the
         # Bayesian HMM sampler
         if self.observe_active:
-            import pyemma.msm.estimation as msmest
+            import msmtools.estimation as msmest
             nstates_full = msmest.number_of_states(dtrajs)
             # pobs = _np.zeros((init_hmsm.nstates, nstates_full))  # currently unused because that produces zero cols
             eps = 0.01 / nstates_full  # default output probability, in order to avoid zero columns
