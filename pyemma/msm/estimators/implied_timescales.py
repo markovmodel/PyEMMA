@@ -29,7 +29,7 @@ Created on Jul 26, 2014
 @author: noe
 '''
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 import numpy as np
 
@@ -57,10 +57,15 @@ def _generate_lags(maxlag, multiplier):
     # build default lag list
     lags.append(1)
     lag = 1.0
+    import decimal
     while lag <= maxlag:
-        lag = round(lag * multiplier)
+        lag = lag*multiplier
+        # round up, like python 2
+        lag = int(decimal.Decimal(lag).quantize(decimal.Decimal('1'),    
+                                                rounding=decimal.ROUND_HALF_UP))
         if lag <= maxlag:
-            lags.append(int(lag))
+            ilag = int(lag)
+            lags.append(ilag)
     return np.array(lags)
 
 
