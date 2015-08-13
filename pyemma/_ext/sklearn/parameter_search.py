@@ -22,6 +22,7 @@ from __future__ import absolute_import
 from collections import Mapping
 from functools import partial
 from itertools import product
+from functools import reduce
 import operator
 
 class ParameterGrid(object):

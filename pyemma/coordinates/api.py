@@ -57,6 +57,7 @@ from pyemma.coordinates.util.stat import histogram
 from mdtraj import Topology as _Topology, Trajectory as _Trajectory
 
 from pyemma._ext.six import string_types
+from pyemma._ext.six.moves import zip
 
 import numpy as _np
 import itertools as _itertools
@@ -583,7 +584,7 @@ def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=1000, 
     # Determine the type of input and extract necessary parameters
     if isinstance(traj_inp, _FeatureReader):
         trajfiles = traj_inp.trajfiles
-        top  = traj_inp.topfile
+        top = traj_inp.topfile
         chunksize = traj_inp.chunksize
     else:
         # Do we have what we need?
@@ -627,7 +628,7 @@ def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=1000, 
     for ii, traj_idx in enumerate(file_pos):
         # Append the trajectory from the respective list of iterators
         # and advance that iterator
-        traj = _copy_traj_attributes(traj, trajectory_iterator_list[traj_idx].next(), ii)
+        traj = _copy_traj_attributes(traj, next(trajectory_iterator_list[traj_idx]), ii)
 
     # Return to memory as an mdtraj trajectory object
     if outfile is None:
@@ -739,7 +740,7 @@ def save_trajs(traj_inp, indexes, prefix = 'set_', fmt = None, outfiles = None,
     # This implementation looks for "i_indexes" separately, and thus one traj_inp.trajfile 
     # might be accessed more than once (less memory intensive)
     if not inmemory:
-        for i_indexes, outfile in _itertools.izip(indexes, outfiles):
+        for i_indexes, outfile in zip(indexes, outfiles):
             # TODO: use **kwargs to parse to save_traj
             save_traj(traj_inp, i_indexes, outfile, stride = stride, verbose=verbose)
 
@@ -747,7 +748,7 @@ def save_trajs(traj_inp, indexes, prefix = 'set_', fmt = None, outfiles = None,
     else:
         traj = save_traj(traj_inp, indexes, outfile=None, stride = stride, verbose=verbose)
         i_idx = 0
-        for i_indexes, outfile in _itertools.izip(indexes, outfiles):
+        for i_indexes, outfile in zip(indexes, outfiles):
             # Create indices for slicing the mdtraj trajectory object
             f_idx = i_idx + len(i_indexes)
             # print i_idx, f_idx

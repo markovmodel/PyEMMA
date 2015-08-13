@@ -30,6 +30,8 @@ Created on 14.04.2015
 '''
 
 from __future__ import absolute_import
+# unicode compat py2/3
+from pyemma._ext.six import text_type
 import unittest
 from pyemma.coordinates.api import load
 import os
@@ -48,13 +50,13 @@ traj_files = [
 class TestAPILoad(unittest.TestCase):
 
     def testUnicodeString_without_featurizer(self):
-        filename = unicode(traj_files[0])
+        filename = text_type(traj_files[0])
 
         with self.assertRaises(ValueError):
             load(filename)
 
     def testUnicodeString(self):
-        filename = unicode(traj_files[0])
+        filename = text_type(traj_files[0])
         features = api.featurizer(pdb_file)
 
         load(filename, features)

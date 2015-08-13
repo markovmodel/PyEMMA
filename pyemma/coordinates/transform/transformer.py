@@ -143,6 +143,9 @@ class TransformerIterator(object):
             X, Y = self._transformer._next_chunk(self._ctx)
             return (last_itraj, X, Y)
 
+    def __next__(self):
+        return self.next()
+
 
 class Transformer(ProgressReporter):
 
@@ -241,7 +244,7 @@ class Transformer(ProgressReporter):
 
     def __create_logger(self):
         # note this is private, since it should only be called (once) from this class.
-        count = self._ids.next()
+        count = next(self._ids)
         i = self.__module__.rfind(".")
         j = self.__module__.find(".") + 1
         package = self.__module__[j:i]

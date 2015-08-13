@@ -24,9 +24,8 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-from __future__ import print_function
-
-from __future__ import absolute_import
+from __future__ import print_function, absolute_import
+from pyemma._ext.six import string_types
 __author__ = 'noe'
 
 import numpy as np
@@ -135,7 +134,7 @@ def is_float_array(l):
     return False
 
 def is_string(s):
-    return isinstance(s, basestring)
+    return isinstance(s, string_types)
 
 def is_iterable(I):
     return isinstance(I, collections.Iterable)
@@ -145,7 +144,7 @@ def is_list(S):
     return isinstance(S, (list, tuple))
 
 def is_list_of_string(S):
-    return isinstance(S, (list, tuple)) and (all(isinstance(s, basestring) for s in S))
+    return isinstance(S, (list, tuple)) and (all(isinstance(s, string_types) for s in S))
 
 def ensure_dtraj(dtraj):
     r"""Makes sure that dtraj is a discrete trajectory (array of int)
