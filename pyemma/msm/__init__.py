@@ -90,49 +90,46 @@ Low-level functions for estimation and analysis of transition matrices and io.
 from __future__ import absolute_import, print_function
 
 #####################################################
-# Estimators and models
-from .estimators import MaximumLikelihoodMSM, BayesianMSM
-from .estimators import MaximumLikelihoodHMSM, BayesianHMSM
-from .estimators import ImpliedTimescales
-
-from .models import MSM, HMSM, SampledMSM, SampledHMSM
-
-#####################################################
 # Low-level MSM functions (imported from msmtools)
 
 import sys as _sys
 import imp as _imp
 
+
 class _RedirectMSMToolsImport(object):
     # this class redirects all imports into pyemma.msm package into msmtools.*
-    import msmtools as _msmtools
-    lookup_path = _msmtools.__path__
+    from msmtools import __path__ as lookup_path
 
     def __init__(self, *args):
         self.module_names = args
+        self.loader = self
+
+    def find_spec(self, fullname, path, target=None):
+        """ way to go in py3.4 """
+        return self.find_module(fullname, path)
 
     def find_module(self, fullname, path=None):
         if fullname in self.module_names:
             self.path = path
+            self.name = fullname
             return self
         return None
-    
+
     def load_module(self, name):
         assert name.startswith('pyemma.msm.')
 
         import inspect
         _, filename, lineno, _, _, _ = \
-        inspect.getouterframes(inspect.currentframe())[1]
+            inspect.getouterframes(inspect.currentframe())[1]
 
         package = name[len('pyemma.msm.'):]
-        #pkg_resources.resource_filename('')
+        # pkg_resources.resource_filename('')
         current_file = __file__
         if __file__.endswith('.pyc'):
             current_file = __file__[:-1]
-        #if True:
-        if filename != current_file:
+        if _sys.version_info[0] < 3 and filename != current_file:
             msg = "Deprecated module '%s' imported." \
-                   " Please use 'msmtools.%s'" % (name, package)
+                " Please use 'msmtools.%s'" % (name, package)
             import warnings
             warnings.warn_explicit(msg, DeprecationWarning, filename, lineno)
         # lookup the package in msmtools, if it starts with "pyemma.msm."
@@ -144,7 +141,7 @@ class _RedirectMSMToolsImport(object):
         # lookup the package in msmtools, if it starts with "pyemma.msm."
         assert name.startswith('pyemma.msm.')
         package = name[len('pyemma.msm.'):]
-        
+
         # load, cache and return redirected module
         if _sys.version_info[0] < 3:
             module_info = _imp.find_module(package, self.lookup_path)
@@ -157,12 +154,12 @@ class _RedirectMSMToolsImport(object):
 
         return module
 
-_sys.meta_path = [_RedirectMSMToolsImport('pyemma.msm.analysis'),
-                  _RedirectMSMToolsImport('pyemma.msm.estimation'),
-                  _RedirectMSMToolsImport('pyemma.msm.generation'),
-                  _RedirectMSMToolsImport('pyemma.msm.dtraj'),
-                  _RedirectMSMToolsImport('pyemma.msm.io'),
-                  _RedirectMSMToolsImport('pyemma.msm.flux')]
+_sys.meta_path.append(_RedirectMSMToolsImport('pyemma.msm.analysis',
+                                              'pyemma.msm.estimation',
+                                              'pyemma.msm.generation',
+                                              'pyemma.msm.dtraj',
+                                              'pyemma.msm.io',
+                                              'pyemma.msm.flux'))
 
 # backward compatibility to PyEMMA 1.2.x
 from . import analysis
@@ -174,5 +171,13 @@ io = dtraj
 from . import flux
 from .flux import ReactiveFlux
 
+#####################################################
+# Estimators and models
+from .estimators import MaximumLikelihoodMSM, BayesianMSM
+from .estimators import MaximumLikelihoodHMSM, BayesianHMSM
+from .estimators import ImpliedTimescales
+
+from pyemma.msm.models import MSM, HMSM, SampledMSM, SampledHMSM
+
 # high-level api
-#from .api import *
+from .api import *
