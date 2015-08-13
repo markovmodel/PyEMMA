@@ -52,9 +52,9 @@ the Python package:
 To access the config at runtime eg. the logging section:
 
 >>> from pyemma import config
->>> print config.Logging.level # doctest: +SKIP
+>>> print(config.Logging.level) # doctest: +SKIP
 ... INFO
->>> print config.show_progress_bars # doctest: +SKIP
+>>> print(config.show_progress_bars) # doctest: +SKIP
 ... 'True'
 
 
@@ -247,3 +247,4 @@ class Wrapper(object):
             raise KeyError('"%s" is not a valid config section.' % name)
 
 sys.modules[__name__] = Wrapper(sys.modules[__name__])
+

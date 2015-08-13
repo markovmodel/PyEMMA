@@ -262,8 +262,8 @@ class TICA(Transformer):
                 # MSM-like counting
                 if self.trajectory_length(itraj, stride=1) - self._lag > 0:
                     # find the "tails" of the trajectory relative to the current chunk
-                    Zptau = self._lag/stride - t  # zero plus tau
-                    Nmtau = self.trajectory_length(itraj, stride=stride)-t-self._lag/stride  # N minus tau
+                    Zptau = self._lag//stride - t  # zero plus tau
+                    Nmtau = self.trajectory_length(itraj, stride=stride)-t-self._lag//stride  # N minus tau
 
                     # restrict them to valid block indices
                     size = X.shape[0]

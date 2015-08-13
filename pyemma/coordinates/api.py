@@ -1396,7 +1396,7 @@ def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True,
     >>> data = np.random.random((100, 3))
     >>> cluster_centers = data[np.random.randint(0, 99, size=10)]
     >>> dtrajs = assign_to_centers(data, cluster_centers)
-    >>> print dtrajs # doctest: +ELLIPSIS
+    >>> print(dtrajs) # doctest: +ELLIPSIS
     [array([...
 
     """
@@ -1409,3 +1409,4 @@ def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True,
         return parametrized_stage.dtrajs
 
     return parametrized_stage
+

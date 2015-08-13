@@ -157,7 +157,7 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
     >>> from pyemma import msm
     >>> dtraj = [0,1,1,2,2,2,1,2,2,2,1,0,0,1,1,1,2,2,1,1,2,1,1,0,0,0,1,1,2,2,1]   # mini-trajectory
     >>> ts = msm.its(dtraj, [1,2,3,4,5])
-    >>> print ts.timescales  # doctest: +ELLIPSIS
+    >>> print(ts.timescales)  # doctest: +ELLIPSIS
     [[ 1.5...  0.2...]
      [ 3.1...  1.0...]
      [ 2.03...  1.02...]
@@ -254,17 +254,17 @@ def markov_model(P, dt_model='1 step'):
 
     Now we can compute various quantities, e.g. the stationary (equilibrium) distribution:
 
-    >>> print mm.stationary_distribution
+    >>> print(mm.stationary_distribution)
     [ 0.25  0.5   0.25]
 
     The (implied) relaxation timescales
 
-    >>> print mm.timescales()
+    >>> print(mm.timescales())
     [ 38.006   5.978]
 
     The mean first passage time from state 0 to 2
 
-    >>> print mm.mfpt(0, 2)
+    >>> print(mm.mfpt(0, 2))
     160.0
 
     And many more. See :class:`MSM <pyemma.msm.models.MSM>` for a full documentation.
@@ -432,42 +432,42 @@ def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
 
     Which is the active set of states we are working on?
 
-    >>> print mm.active_set
+    >>> print(mm.active_set)
     [0 1 2]
 
     Show the count matrix
 
 
-    >>> print mm.count_matrix_active
+    >>> print(mm.count_matrix_active)
     [[ 7.  2.  1.]
      [ 2.  0.  4.]
      [ 2.  3.  9.]]
 
     Show the estimated transition matrix
 
-    >>> print mm.transition_matrix
+    >>> print(mm.transition_matrix)
     [[ 0.7    0.167  0.133]
      [ 0.388  0.     0.612]
      [ 0.119  0.238  0.643]]
 
     Is this model reversible (i.e. does it fulfill detailed balance)?
 
-    >>> print mm.is_reversible
+    >>> print(mm.is_reversible)
     True
 
     What is the equilibrium distribution of states?
 
-    >>> print mm.stationary_distribution
+    >>> print(mm.stationary_distribution)
     [ 0.393  0.17   0.437]
 
     Relaxation timescales?
 
-    >>> print mm.timescales()
+    >>> print(mm.timescales())
     [ 3.415  1.297]
 
     Mean first passage time from state 0 to 2:
 
-    >>> print mm.mfpt(0, 2)  # doctest: +ELLIPSIS
+    >>> print(mm.mfpt(0, 2))  # doctest: +ELLIPSIS
     9.929...
 
     """
@@ -559,7 +559,7 @@ def timescales_hmsm(dtrajs, nstates, lags=None, nits=None, reversible=True,
     >>> np.set_printoptions(precision=3)
     >>> dtraj = [0,1,1,2,2,2,1,2,2,2,1,0,0,1,1,1,2,2,1,1,2,1,1,0,0,0,1,1,2,2,1]   # mini-trajectory
     >>> ts = msm.its(dtraj, [1,2,3,4,5])
-    >>> print ts.timescales # doctest: +ELLIPSIS
+    >>> print(ts.timescales) # doctest: +ELLIPSIS
     [[ 1.5...  0.2...]
      [ 3.1...  1.0...]
      [ 2.0...  1.0...]
@@ -707,19 +707,19 @@ def estimate_hidden_markov_model(dtrajs, nstates, lag, reversible=True, connecti
     We have estimated a 2x2 hidden transition matrix between the metastable
     states:
 
-    >>> print mm.transition_matrix
+    >>> print(mm.transition_matrix)
     [[ 0.756  0.244]
      [ 0.205  0.795]]
 
     With the equilibrium distribution:
 
-    >>> print mm.stationary_distribution # doctest: +ELLIPSIS
+    >>> print(mm.stationary_distribution) # doctest: +ELLIPSIS
     [ 0.45...  0.54...]
 
     The observed states are the three discrete clusters that we have in our
     discrete trajectory:
 
-    >>> print mm.observable_set
+    >>> print(mm.observable_set)
     [0 1 2]
 
     The metastable distributions (mm.metastable_distributions), or equivalently
@@ -727,7 +727,7 @@ def estimate_hidden_markov_model(dtrajs, nstates, lag, reversible=True, connecti
     ('microstate') if we are in one of the hidden metastable states.
     So it's a 2 x 3 matrix:
 
-    >>> print mm.observation_probabilities # doctest: +SKIP
+    >>> print(mm.observation_probabilities) # doctest: +SKIP
     [[ 0.9620883   0.0379117   0.        ]
      [ 0.          0.28014352  0.71985648]]
 
@@ -738,18 +738,18 @@ def estimate_hidden_markov_model(dtrajs, nstates, lag, reversible=True, connecti
 
     We can print the lifetimes of the metastable states:
 
-    >>> print mm.lifetimes # doctest: +ELLIPSIS
+    >>> print(mm.lifetimes) # doctest: +ELLIPSIS
     [ 7...  8...]
 
     And the timescale of the hidden transition matrix - now we only have one
     relaxation timescale:
 
-    >>> print mm.timescales()  # doctest: +ELLIPSIS
+    >>> print(mm.timescales())  # doctest: +ELLIPSIS
     [ 3.35...]
 
     The mean first passage times can also be computed between metastable states:
 
-    >>> print mm.mfpt(0, 1)  # doctest: +ELLIPSIS
+    >>> print(mm.mfpt(0, 1))  # doctest: +ELLIPSIS
     8...
 
     """
@@ -860,7 +860,7 @@ def bayesian_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
     bayesian_markov_model uses an effective count matrix with statistically
     uncorrelated counts:
 
-    >>> print mm.transition_matrix  # doctest: +SKIP
+    >>> print(mm.transition_matrix)  # doctest: +SKIP
     [[ 0.70000001  0.16463699  0.135363  ]
      [ 0.38169055  0.          0.61830945]
      [ 0.12023989  0.23690297  0.64285714]]
@@ -870,14 +870,14 @@ def bayesian_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
     that are offered by the MSM object. This works as follows. You can ask for
     the sample mean and specify the method you wanna evaluate as a string:
 
-    >>> print mm.sample_mean('transition_matrix')  # doctest: +SKIP
+    >>> print(mm.sample_mean('transition_matrix'))  # doctest: +SKIP
     [[ 0.71108663  0.15947371  0.12943966]
      [ 0.41076105  0.          0.58923895]
      [ 0.13079372  0.23005443  0.63915185]]
 
     Likewise, the standard deviation by element:
 
-    >>> print mm.sample_std('transition_matrix')  # doctest: +SKIP
+    >>> print(mm.sample_std('transition_matrix'))  # doctest: +SKIP
     [[ 0.13707029  0.09479627  0.09200214]
      [ 0.15247454  0.          0.15247454]
      [ 0.07701315  0.09385258  0.1119089 ]]
@@ -886,8 +886,8 @@ def bayesian_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
     percentile using the conf argument in this function:
 
     >>> L, R = mm.sample_conf('transition_matrix')
-    >>> print L # doctest: +SKIP
-    >>> print R  # doctest: +SKIP
+    >>> print(L) # doctest: +SKIP
+    >>> print(R)  # doctest: +SKIP
     [[ 0.44083423  0.03926518  0.0242113 ]
      [ 0.14102544  0.          0.30729828]
      [ 0.02440188  0.07629456  0.43682481]]
@@ -898,7 +898,7 @@ def bayesian_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
     If you wanna compute expectations of functions that require arguments,
     just pass these arguments as well:
 
-    >>> print mm.sample_std('mfpt', 0, 2) # doctest: +SKIP
+    >>> print(mm.sample_std('mfpt', 0, 2)) # doctest: +SKIP
     12.9049811296
 
     And if you want to histogram the distribution or compute more complex
@@ -907,7 +907,7 @@ def bayesian_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
     at will:
 
     >>> samples = mm.sample_f('mfpt', 0, 2)
-    >>> print samples[:4] # doctest: +SKIP
+    >>> print(samples[:4]) # doctest: +SKIP
     [7.9763615793248155, 8.6540958274695701, 26.295326015231058, 17.909895469938899]
 
     Internally, the SampledMSM object has 100 transition matrices (the number
@@ -1031,7 +1031,7 @@ def bayesian_hidden_markov_model(dtrajs, nstates, lag, nsamples=100, reversible=
 
     >>> pi = mm.stationary_distribution
     >>> piL,piR = mm.sample_conf('stationary_distribution')
-    >>> for i in range(2): print pi[i],' -',piL[i],'+',piR[i]  # doctest: +SKIP
+    >>> for i in range(2): print(pi[i],' -',piL[i],'+',piR[i])  # doctest: +SKIP
     0.459176653019  - 0.268314552886 + 0.715326151685
     0.540823346981  - 0.284761476984 + 0.731730375713
 
@@ -1042,7 +1042,7 @@ def bayesian_hidden_markov_model(dtrajs, nstates, lag, nsamples=100, reversible=
 
     >>> l = mm.lifetimes
     >>> lL, lR = mm.sample_conf('lifetimes')
-    >>> for i in range(2): print l[i],' -',lL[i],'+',lR[i]  # doctest: +SKIP
+    >>> for i in range(2): print(l[i],' -',lL[i],'+',lR[i])  # doctest: +SKIP
     7.18543434854  - 6.03617757784 + 80.1298222741
     8.65699332061  - 5.35089540896 + 30.1719505772
 
@@ -1052,7 +1052,7 @@ def bayesian_hidden_markov_model(dtrajs, nstates, lag, nsamples=100, reversible=
 
     >>> ts = mm.timescales()
     >>> tsL,tsR = mm.sample_conf('timescales')
-    >>> print ts[0],' -',tsL[0],'+',tsR[0]  # doctest: +SKIP
+    >>> print(ts[0],' -',tsL[0],'+',tsR[0])  # doctest: +SKIP
     3.35310468086  - 2.24574587978 + 8.34383177258
 
 
@@ -1146,3 +1146,4 @@ def tpt(msmobj, A, B):
     mu = msmobj.stationary_distribution
     tptobj = tpt_factory(T, A, B, mu=mu)
     return tptobj
+

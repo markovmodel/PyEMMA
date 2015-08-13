@@ -44,7 +44,7 @@ def param_grid(pargrid):
     Generates parameter sets with different lag times:
 
     >>> grid = param_grid({'lag':[1,2,5,10,20,50]})
-    >>> for p in grid: print p
+    >>> for p in grid: print(p)
     {'lag': 1}
     {'lag': 2}
     {'lag': 5}
@@ -55,7 +55,7 @@ def param_grid(pargrid):
     Generates parameter sets with all combinations of several parameter values:
 
     >>> grid = param_grid({'lag':[1,10,100], 'reversible':[False,True]})
-    >>> for p in grid: print p
+    >>> for p in grid: print(p)
     {'reversible': False, 'lag': 1}
     {'reversible': True, 'lag': 1}
     {'reversible': False, 'lag': 10}
@@ -293,3 +293,4 @@ class Estimator(_BaseEstimator):
             return self._model
         except AttributeError:
             raise AttributeError('Model has not yet been estimated. Call estimate(X) or fit(X) first')
+
