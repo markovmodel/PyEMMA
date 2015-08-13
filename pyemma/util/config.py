@@ -73,7 +73,8 @@ import os
 import sys
 import warnings
 
-from pyemma._ext.six.moves import configparser
+from six.moves import configparser
+from six import PY2
 from pyemma.util.files import mkdir_p
 
 __docformat__ = "restructuredtext en"
@@ -169,16 +170,28 @@ def readConfiguration():
 
     # read defaults from default_pyemma_conf first.
     defParser = configparser.RawConfigParser()
+    
+    def readline_generator(f):
+        line = f.readline()
+        while line:
+            yield line
+            line = f.readline()
 
     try:
         with open(default_pyemma_conf) as f:
-            defParser.readfp(f, default_pyemma_conf)
+            if PY2:
+                defParser.readfp(f)
+            else:
+                defParser.read_file(readline_generator(f), default_pyemma_conf)
     except EnvironmentError as e:
         raise RuntimeError("FATAL ERROR: could not read default configuration"
                            " file %s\n%s" % (default_pyemma_conf, e))
 
     # store values of defParser in configParser with sections
-    configParser = configparser.SafeConfigParser()
+    if PY2:
+        configParser = configparser.SafeConfigParser()
+    else:
+        configParser = configparser.ConfigParser()
     for section in defParser.sections():
         configParser.add_section(section)
         for item in defParser.items(section):
