@@ -1,5 +1,8 @@
-__author__ = 'noe'
+from six import string_types
+import inspect
 
+__author__ = 'noe'
+__code_fixer__ = 'marscher'
 
 def call_member(obj, f, *args, **kwargs):
     """ Calls the specified method, property or attribute of the given object
@@ -15,16 +18,15 @@ def call_member(obj, f, *args, **kwargs):
         in that case
     """
     # get function name
-    if not isinstance(f, str):
+    if not isinstance(f, string_types):
         fname = f.__func__.__name__
     else:
         fname = f
     # get the method ref
     method = getattr(obj, fname)
     # handle cases
-    if str(type(method)) == '<type \'instancemethod\'>':  # call function without params
+    if inspect.ismethod(method):
         return method(*args, **kwargs)
-    elif str(type(method)) == '<type \'property\'>':  # call property
-        return method
-    else:  # now it's an Attribute, so we can just return its value
-        return method
+
+    # attribute or property
+    return method
