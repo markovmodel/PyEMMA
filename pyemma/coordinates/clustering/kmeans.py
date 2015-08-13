@@ -39,6 +39,7 @@ from . import kmeans_clustering
 
 from pyemma.util.annotators import doc_inherit
 from pyemma.coordinates.clustering.interface import AbstractClustering
+from six.moves import range
 
 __all__ = ['KmeansClustering']
 
@@ -243,7 +244,7 @@ class MiniBatchKmeansClustering(KmeansClustering):
             self._random_access_stride[offset:offset + self._n_samples_traj[idx], 0] = idx * np.ones(
                 self._n_samples_traj[idx], dtype=int)
             self._random_access_stride[offset:offset + self._n_samples_traj[idx], 1] = np.sort(
-                random.sample(range(traj_len), self._n_samples_traj[idx])).T
+                random.sample(list(range(traj_len)), self._n_samples_traj[idx])).T
             offset += self._n_samples_traj[idx]
         return self._random_access_stride
 

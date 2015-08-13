@@ -29,6 +29,7 @@ import unittest
 import numpy as np
 
 from pyemma.coordinates.acf import acf
+from six.moves import range
 
 
 class TestACF(unittest.TestCase):

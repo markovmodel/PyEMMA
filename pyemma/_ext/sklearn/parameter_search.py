@@ -24,6 +24,7 @@ from functools import partial
 from itertools import product
 from functools import reduce
 import operator
+from six.moves import zip
 
 class ParameterGrid(object):
     """Grid of parameters with a discrete number of values for each.
@@ -78,9 +79,9 @@ class ParameterGrid(object):
             if not items:
                 yield {}
             else:
-                keys, values = zip(*items)
+                keys, values = list(zip(*items))
                 for v in product(*values):
-                    params = dict(zip(keys, v))
+                    params = dict(list(zip(keys, v)))
                     yield params
 
     def __len__(self):

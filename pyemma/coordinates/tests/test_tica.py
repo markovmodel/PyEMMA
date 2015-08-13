@@ -40,6 +40,7 @@ from pyemma.coordinates.data.data_in_memory import DataInMemory
 from pyemma.coordinates import source, tica
 from pyemma.util.log import getLogger
 import pyemma.util.types as types
+from six.moves import range
 
 logger = getLogger('TestTICA')
 

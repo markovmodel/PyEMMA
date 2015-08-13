@@ -40,6 +40,7 @@ import pkg_resources
 
 import numpy as np
 from pyemma.coordinates.api import discretizer, tica, source
+from six.moves import range
 
 log = getLogger('TestFeatureReader')
 

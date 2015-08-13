@@ -36,6 +36,7 @@ import os
 import numpy as np
 from pyemma.coordinates.api import cluster_kmeans
 import shutil
+from six.moves import range
 
 
 class TestKmeans(unittest.TestCase):

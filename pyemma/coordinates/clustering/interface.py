@@ -36,6 +36,8 @@ import numpy as np
 import os
 
 from pyemma.coordinates.clustering import regspatial
+from six.moves import range
+from six.moves import zip
 
 
 class AbstractClustering(Transformer):

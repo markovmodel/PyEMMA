@@ -40,6 +40,7 @@ import mdtraj
 from pyemma.coordinates.api import tica, _TICA as TICA
 from pyemma.coordinates.data.feature_reader import FeatureReader
 from pyemma.util.log import getLogger
+from six.moves import range
 
 log = getLogger('TestFeatureReaderAndTICAProjection')
 

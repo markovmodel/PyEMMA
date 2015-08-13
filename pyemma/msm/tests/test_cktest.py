@@ -40,6 +40,7 @@ from msmtools.estimation import count_matrix, largest_connected_set, largest_con
 from pyemma.util.numeric import assert_allclose
 from pyemma.msm.tests.birth_death_chain import BirthDeathChain
 from pyemma.msm import estimate_markov_model
+from six.moves import range
 
 
 class TestCK_MSM(unittest.TestCase):

@@ -38,6 +38,8 @@ from itertools import groupby
 from operator import itemgetter
 
 from pyemma.coordinates.data.util.reader_utils import copy_traj_attributes, preallocate_empty_trajectory
+from six.moves import map
+from six.moves import range
 
 
 def iterload(filename, chunk=100, **kwargs):
@@ -119,7 +121,7 @@ def iterload(filename, chunk=100, **kwargs):
             traj = []
             leftovers = []
             for k, g in groupby(enumerate(stride), lambda a: a[0] - a[1]):
-                grouped_stride = map(itemgetter(1), g)
+                grouped_stride = list(map(itemgetter(1), g))
                 seek_offset = (1 if x_prev != 0 else 0)
                 seek_to = grouped_stride[0] - x_prev - seek_offset
                 f.seek(seek_to, whence=1)

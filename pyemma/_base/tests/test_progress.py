@@ -7,6 +7,8 @@ Created on 29.07.2015
 from __future__ import absolute_import
 import unittest
 from pyemma._base.progress import ProgressReporter
+from pyemma._base.progress.bar import ProgressBar
+from six.moves import range
 
 
 class TestProgress(unittest.TestCase):

@@ -28,6 +28,7 @@ import scipy.linalg
 import scipy.sparse
 import copy
 import math
+from six.moves import range
 
 __author__ = 'noe'
 

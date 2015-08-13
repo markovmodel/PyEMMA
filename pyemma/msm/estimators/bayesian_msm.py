@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from six.moves import range
 __author__ = 'noe'
 
 from pyemma.msm.models.msm import MSM as _MSM

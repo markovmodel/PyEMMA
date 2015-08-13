@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 from pyemma.util import types
+import six
 
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
@@ -64,7 +65,7 @@ class AssignCenters(AbstractClustering):
     def __init__(self, clustercenters, metric='euclidean'):
         super(AssignCenters, self).__init__(metric=metric)
 
-        if isinstance(clustercenters, basestring):
+        if isinstance(clustercenters, six.string_types):
             from pyemma.coordinates.data import create_file_reader
             reader = create_file_reader(clustercenters, None, None)
             self._clustercenters = reader.get_output()[0]

@@ -37,6 +37,7 @@ import numpy as np
 from pyemma.coordinates import pca
 from pyemma.util.log import getLogger
 import pyemma.util.types as types
+from six.moves import range
 
 
 logger = getLogger('TestPCA')

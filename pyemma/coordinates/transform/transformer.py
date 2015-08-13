@@ -32,6 +32,8 @@ from math import ceil
 
 from abc import ABCMeta, abstractmethod
 from pyemma.util.exceptions import NotConvergedWarning
+import six
+from six.moves import range
 
 __all__ = ['Transformer']
 __author__ = 'noe, marscher'
@@ -131,7 +133,7 @@ class TransformerIterator(object):
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         if self._transformer._itraj >= self._transformer.number_of_trajectories():
             raise StopIteration
 
@@ -142,12 +144,11 @@ class TransformerIterator(object):
         else:
             X, Y = self._transformer._next_chunk(self._ctx)
             return (last_itraj, X, Y)
+    def next(self):
+        return self.__next__()
 
-    def __next__(self):
-        return self.next()
 
-
-class Transformer(ProgressReporter):
+class Transformer(six.with_metaclass(ABCMeta, ProgressReporter)):
 
     r""" Basis class for pipeline objects
 
@@ -157,7 +158,6 @@ class Transformer(ProgressReporter):
         the chunksize used to batch process underlying data
 
     """
-    __metaclass__ = ABCMeta
     # count instances
     _ids = count(0)
 

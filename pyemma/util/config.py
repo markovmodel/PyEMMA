@@ -69,15 +69,11 @@ compare for:
         ...
 
 '''
-from pyemma._ext.six import PY3
-if PY3:
-    import configparser as ConfigParser
-else:
-    import ConfigParser
 import os
 import sys
 import warnings
 
+from pyemma._ext.six.moves import configparser
 from pyemma.util.files import mkdir_p
 
 __docformat__ = "restructuredtext en"
@@ -172,7 +168,7 @@ def readConfiguration():
     ]
 
     # read defaults from default_pyemma_conf first.
-    defParser = ConfigParser.RawConfigParser()
+    defParser = configparser.RawConfigParser()
 
     try:
         with open(default_pyemma_conf) as f:
@@ -182,7 +178,7 @@ def readConfiguration():
                            " file %s\n%s" % (default_pyemma_conf, e))
 
     # store values of defParser in configParser with sections
-    configParser = ConfigParser.SafeConfigParser()
+    configParser = configparser.SafeConfigParser()
     for section in defParser.sections():
         configParser.add_section(section)
         for item in defParser.items(section):

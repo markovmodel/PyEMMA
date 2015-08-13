@@ -35,11 +35,12 @@ import numpy as np
 from pyemma import msm
 from msmtools.analysis import timescales
 from pyemma.msm.api import timescales_msm
+from six.moves import range
 
 
 class TestITS_MSM(unittest.TestCase):
     def setUp(self):
-        from pyemma.msm.generation import generate_traj
+        from msmtools.generation import generate_traj
         self.dtrajs = []
 
         # simple case
@@ -105,7 +106,7 @@ class TestITS_MSM(unittest.TestCase):
 
     def test_lag_generation(self):
         its = msm.timescales_msm(self.dtraj4_2, lags=1000)
-        assert np.array_equal(its.lags, [1, 2, 3, 5, 8, 12, 18, 27, 41, 62, 93, 140, 210, 315, 473, 710])
+        np.testing.assert_array_equal(its.lags, [1, 2, 3, 5, 8, 12, 18, 27, 41, 62, 93, 140, 210, 315, 473, 710])
 
     def test_too_large_lagtime(self):
         dtraj = [[0, 1, 1, 1, 0]]

@@ -39,6 +39,7 @@ import pyemma.util.discrete_trajectories as dt
 
 from os.path import abspath, join
 from os import pardir
+from six.moves import range
 
 testpath = abspath(join(abspath(__file__), pardir)) + '/data/'
 

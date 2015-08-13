@@ -37,6 +37,8 @@ import numpy as np
 from pyemma.coordinates.data.numpy_filereader import NumPyFileReader
 from pyemma.util.log import getLogger
 import shutil
+from six.moves import range
+from six.moves import zip
 
 
 class TestNumPyFileReader(unittest.TestCase):

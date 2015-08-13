@@ -7,6 +7,7 @@ import numpy as np
 import pyemma.coordinates.api as coor
 import pkg_resources
 import mdtraj
+from six.moves import range
 
 
 class TestRandomAccessStride(TestCase):

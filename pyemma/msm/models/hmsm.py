@@ -32,6 +32,7 @@ and provides them for later access.
 """
 
 from __future__ import absolute_import
+from six.moves import range
 
 __docformat__ = "restructuredtext en"
 

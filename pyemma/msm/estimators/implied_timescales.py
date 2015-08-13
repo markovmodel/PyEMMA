@@ -30,9 +30,6 @@ Created on Jul 26, 2014
 '''
 
 from __future__ import absolute_import
-__docformat__ = "restructuredtext en"
-
-__all__ = ['ImpliedTimescales']
 
 import numpy as np
 
@@ -42,6 +39,9 @@ from pyemma._base.estimator import Estimator, get_estimator, param_grid, estimat
 from pyemma._base.progress import ProgressReporter
 from pyemma._base.model import SampledModel
 
+__docformat__ = "restructuredtext en"
+
+__all__ = ['ImpliedTimescales']
 
 # ====================================================================
 # Helper functions

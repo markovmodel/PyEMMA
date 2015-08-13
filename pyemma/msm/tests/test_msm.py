@@ -46,6 +46,7 @@ from msmtools.analysis import stationary_distribution, timescales
 from pyemma.util.numeric import assert_allclose
 from pyemma.msm.tests.birth_death_chain import BirthDeathChain
 from pyemma.msm import estimate_markov_model
+from six.moves import range
 
 
 class TestMSMSimple(unittest.TestCase):

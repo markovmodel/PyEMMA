@@ -61,6 +61,8 @@ from pyemma._ext.six.moves import zip
 
 import numpy as _np
 import itertools as _itertools
+from six.moves import range
+from six.moves import zip
 
 _logger = _getLogger('coordinates.api')
 
