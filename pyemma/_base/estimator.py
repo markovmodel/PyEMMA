@@ -13,7 +13,7 @@ import joblib
 
 # imports for external usage
 from pyemma._ext.sklearn.base import clone as clone_estimator
-from pyemma._ext.six.moves import range
+from six.moves import range
 from pyemma._base.progress import ProgressReporter
 
 def get_estimator(estimator):

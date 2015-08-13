@@ -32,7 +32,7 @@ Created on 15.10.2013
 from __future__ import absolute_import
 __all__ = ['getLogger', 'enabled', 'CRITICAL', 'DEBUG', 'FATAL', 'INFO', 'NOTSET',
            'WARN', 'WARNING']
-from pyemma._ext.six import PY3
+from six import PY3
 import logging
 if PY3:
     from imp import reload

@@ -56,8 +56,8 @@ from pyemma.coordinates.util.stat import histogram
 # types
 from mdtraj import Topology as _Topology, Trajectory as _Trajectory
 
-from pyemma._ext.six import string_types
-from pyemma._ext.six.moves import zip
+from six import string_types
+from six.moves import zip
 
 import numpy as _np
 import itertools as _itertools

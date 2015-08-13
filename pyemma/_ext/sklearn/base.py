@@ -22,8 +22,8 @@ import warnings
 
 import numpy as np
 from scipy import sparse
-from pyemma._ext import six
 
+import six
 
 ###############################################################################
 def clone(estimator, safe=True):

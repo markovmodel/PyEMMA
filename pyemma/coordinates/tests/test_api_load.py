@@ -31,7 +31,7 @@ Created on 14.04.2015
 
 from __future__ import absolute_import
 # unicode compat py2/3
-from pyemma._ext.six import text_type
+from six import text_type
 import unittest
 from pyemma.coordinates.api import load
 import os

@@ -11,7 +11,7 @@ from pyemma.msm.estimators.estimated_hmsm import EstimatedHMSM as _EstimatedHMSM
 from pyemma.msm.models.hmsm_sampled import SampledHMSM as _SampledHMSM
 from pyemma.util.units import TimeUnit
 from pyemma._base.progress import ProgressReporter
-from pyemma._ext.six.moves import range
+from six.moves import range
 
 
 class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporter):

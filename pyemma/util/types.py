@@ -25,7 +25,7 @@
 
 
 from __future__ import print_function, absolute_import
-from pyemma._ext.six import string_types
+from six import string_types
 from six.moves import range
 __author__ = 'noe'
 

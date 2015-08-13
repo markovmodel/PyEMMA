@@ -1,11 +1,8 @@
 from __future__ import absolute_import
-import copy
 import numpy as _np
 import inspect
 import warnings
 
-from pyemma._ext import six
-from pyemma._ext.sklearn.base import _pprint
 from pyemma.util.statistics import confidence_interval
 from pyemma.util.reflection import call_member
 
