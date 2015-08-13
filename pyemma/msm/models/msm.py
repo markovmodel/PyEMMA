@@ -31,6 +31,7 @@ and provides them for later access.
 """
 
 from __future__ import absolute_import
+from six.moves import range
 
 __docformat__ = "restructuredtext en"
 
@@ -832,7 +833,7 @@ class MSM(_Model):
             raise ValueError(
                 'Cannot compute PCCA for non-reversible matrices. Set reversible=True when constructing the MSM.')
 
-        from msmtools.analysis.dense.pcca import PCCA
+        from msmtools.analysis.api import _pcca_object as PCCA
         # ensure that we have a pcca object with the right number of states
         try:
             # this will except if we don't have a pcca object
