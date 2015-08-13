@@ -257,6 +257,11 @@ class Transformer(ProgressReporter):
         """
         return self.data_producer.number_of_trajectories()
 
+    @property
+    def ntraj(self):
+        __doc__ = self.number_of_trajectories.__doc__
+        return self.number_of_trajectories()
+
     def trajectory_length(self, itraj, stride=1):
         r"""
         Returns the length of trajectory of the requested index.
