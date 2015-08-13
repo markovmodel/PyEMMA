@@ -3,11 +3,11 @@ __author__ = 'noe'
 import numpy as np
 
 from msmtools import estimation as msmest
-from pyemma.util.annotators import shortcut
+from pyemma.util.annotators import alias, aliased
 from pyemma.util.linalg import submatrix
 from pyemma.util.discrete_trajectories import visited_set
 
-
+@aliased
 class DiscreteTrajectoryStats(object):
     r""" Statistics, count matrices and connectivity from discrete trajectories
 
@@ -118,7 +118,7 @@ class DiscreteTrajectoryStats(object):
         return self._nstates
 
     @property
-    @shortcut('dtrajs')
+    @alias('dtrajs')
     def discrete_trajectories(self):
         """
         A list of integer arrays with the original (unmapped) discrete trajectories:
@@ -131,7 +131,7 @@ class DiscreteTrajectoryStats(object):
         return self._hist.sum()
 
     @property
-    @shortcut('hist')
+    @alias('hist')
     def histogram(self):
         r""" Histogram of discrete state counts
 
@@ -196,7 +196,7 @@ class DiscreteTrajectoryStats(object):
 
         return C
 
-    @shortcut('hist_lagged')
+    @alias('hist_lagged')
     def histogram_lagged(self, connected_set=None, subset=None, effective=False):
         r""" Histogram of discrete state counts
 
