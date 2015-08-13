@@ -56,6 +56,8 @@ from pyemma.coordinates.util.stat import histogram
 # types
 from mdtraj import Topology as _Topology, Trajectory as _Trajectory
 
+from pyemma._ext.six import string_types
+
 import numpy as _np
 import itertools as _itertools
 
@@ -218,9 +220,9 @@ def load(trajfiles, features=None, top=None, stride=1, chunk_size=100):
     >>> output = load(files, top='my_structure.pdb') # doctest: +SKIP
 
     """
-    if isinstance(trajfiles, basestring) or (
+    if isinstance(trajfiles, string_types) or (
         isinstance(trajfiles, (list, tuple))
-            and (any(isinstance(item, basestring) for item in trajfiles) or len(trajfiles) is 0)):
+            and (any(isinstance(item, string_types) for item in trajfiles) or len(trajfiles) is 0)):
         reader = _create_file_reader(trajfiles, top, features, chunk_size=chunk_size)
         trajs = reader.get_output(stride=stride)
         if len(trajs) == 1:
@@ -323,8 +325,8 @@ def source(inp, features=None, top=None, chunk_size=None):
     """
     # CASE 1: input is a string or list of strings
     # check: if single string create a one-element list
-    if isinstance(inp, basestring) or (isinstance(inp, (list, tuple))
-                                       and (any(isinstance(item, basestring) for item in inp) or len(inp) is 0)):
+    if isinstance(inp, string_types) or (isinstance(inp, (list, tuple))
+                                       and (any(isinstance(item, string_types) for item in inp) or len(inp) is 0)):
         reader = _create_file_reader(inp, top, features, chunk_size=chunk_size if chunk_size else 100)
 
     elif isinstance(inp, _np.ndarray) or (isinstance(inp, (list, tuple))
