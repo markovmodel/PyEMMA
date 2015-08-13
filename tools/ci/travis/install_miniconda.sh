@@ -15,7 +15,7 @@ function create_env {
 	if [[ ! -d $BASE_ENV ]]; then
 		echo "base env does not exists, creating it"
 		conda create -q --yes -n ci -c https://conda.binstar.org/omnia \
-			python=$TRAVIS_PYTHON_VERSION $deps $common_py_deps
+			python=$python $deps $common_py_deps
 	fi
 }
 

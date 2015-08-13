@@ -1,6 +1,4 @@
-language: python
-python:
- - 2.7
+language: c 
 
 sudo: false
 
@@ -11,13 +9,16 @@ env:
     - common_py_deps="pip pylint nose python-coveralls cython mdtraj matplotlib numpy scipy"
     - doc_deps="ipython ipython-notebook sphinx==1.2.3 matplotlib"
     - deps="scipy numpy"
+  secure: "byk9bmnGvP3qDfpYvPKX4909KeS6pJQtfW+GkSsuHy4vnp++gu2IsXC/CJeCB0r7hpoRp7Z+XlOtYmJLvb585LZmGaqIs5LKs1DimJniAg5anpywOnaXodspeFcz6UWtLlIAQQS3SvP9SXvvrlIiF8IwXqWfEewtoGbpiCj3dEo="
   matrix:
-    secure: "byk9bmnGvP3qDfpYvPKX4909KeS6pJQtfW+GkSsuHy4vnp++gu2IsXC/CJeCB0r7hpoRp7Z+XlOtYmJLvb585LZmGaqIs5LKs1DimJniAg5anpywOnaXodspeFcz6UWtLlIAQQS3SvP9SXvvrlIiF8IwXqWfEewtoGbpiCj3dEo="
+    - python=2.7  CONDA_PY=27  CONDA_NPY=17
+    - python=3.3  CONDA_PY=33  CONDA_NPY=17
+    - python=3.4  CONDA_PY=34  CONDA_NPY=18
+    - python=3.4  CONDA_PY=34  CONDA_NPY=19
 
 before_install:
 # before we invoke setup.py, install $common_deps with conda and let the rest
 # (currently only pystallone) be resolved by setuptools.
-- deactivate # travis python venv
 - tools/ci/travis/install_miniconda.sh
 - source activate ci
 - conda list
