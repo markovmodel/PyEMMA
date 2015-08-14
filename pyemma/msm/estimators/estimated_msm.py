@@ -5,10 +5,10 @@ import copy
 import numpy as np
 
 from pyemma.msm.models.msm import MSM
-from pyemma.util.annotators import shortcut
+from pyemma.util.annotators import alias, aliased
 from pyemma.util.units import TimeUnit
 
-
+@aliased
 class EstimatedMSM(MSM):
     r"""Estimates a Markov model from discrete trajectories.
 
@@ -140,7 +140,7 @@ class EstimatedMSM(MSM):
         return self._connected_sets
 
     @property
-    @shortcut('dtrajs_full')
+    @alias('dtrajs_full')
     def discrete_trajectories_full(self):
         """
         A list of integer arrays with the original (unmapped) discrete trajectories:
@@ -150,7 +150,7 @@ class EstimatedMSM(MSM):
         return self._dtrajs_full
 
     @property
-    @shortcut('dtrajs_active')
+    @alias('dtrajs_active')
     def discrete_trajectories_active(self):
         """
         A list of integer arrays with the discrete trajectories mapped to the connectivity mode used.
@@ -358,7 +358,7 @@ class EstimatedMSM(MSM):
         # TODO: frames. Anyway, this is a nontrivial issue.
         self._check_is_estimated()
         # generate synthetic states
-        from pyemma.msm.generation import generate_traj as _generate_traj
+        from msmtools.generation import generate_traj as _generate_traj
 
         syntraj = _generate_traj(self.transition_matrix, N, start=start, stop=stop, dt=stride)
         # result

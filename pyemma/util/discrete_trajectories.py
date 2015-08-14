@@ -1,4 +1,3 @@
-
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
 # All rights reserved.
@@ -22,11 +21,6 @@
 # ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-__author__ = 'noe'
-
-from pyemma.util.types import ensure_dtraj_list as _ensure_dtraj_list
-
 r"""This module implements IO and manipulation function for discrete trajectories
 
 Discrete trajectories are generally ndarrays of type integer
@@ -36,11 +30,11 @@ We store them either as single column ascii files or as ndarrays of shape (n,) i
 .. moduleauthor:: F. Noe <frank DOT noe AT fu-berlin DOT de>
 
 """
-
 import numpy as np
-
-from pyemma.util.annotators import shortcut
 from pyemma.util.types import ensure_dtraj_list as _ensure_dtraj_list
+from pyemma.util.annotators import shortcut
+
+__author__ = 'noe'
 
 ################################################################################
 # ascii

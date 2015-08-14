@@ -39,12 +39,18 @@ class Bar(Foo):
 Now, Bar.foo.__doc__ == Bar().foo.__doc__ == Foo.foo.__doc__ == "Frobber"
 """
 
+from __future__ import absolute_import, print_function
+
 import warnings
 from functools import wraps
-import inspect
+from six import PY2
 
-__all__ = ['doc_inherit']
-
+__all__ = ['alias',
+           'aliased',
+           'deprecated',
+           'doc_inherit',
+           'shortcut',
+           ]
 
 class DocInherit(object):
 
@@ -109,24 +115,26 @@ def deprecated(msg):
     """
     def deprecated_decorator(func):
 
+        @wraps(func)
         def new_func(*args, **kwargs):
-            _, filename, line_number, _, _, _ = \
-                inspect.getouterframes(inspect.currentframe())[1]
+            mod = func.__module__
+            filename = mod.__file__
+            lineno = func.__code__.co_firstlineno + 1
 
             user_msg = "Call to deprecated function %s. Called from %s line %i. " \
-                % (func.__name__, filename, line_number)
+                % (func.__name__, filename, lineno)
             if msg:
                 user_msg += msg
 
             warnings.warn_explicit(
                 user_msg,
                 category=DeprecationWarning,
-                filename=func.func_code.co_filename,
-                lineno=func.func_code.co_firstlineno + 1
+                filename=func.__code__.co_filename,
+                lineno=func.__code__.co_firstlineno + 1
             )
             return func(*args, **kwargs)
 
-        new_func.func_dict['__deprecated__'] = True
+        new_func.__dict__['__deprecated__'] = True
 
         # TODO: search docstring for notes section and append deprecation notice (with msg)
 
@@ -135,8 +143,70 @@ def deprecated(msg):
     return deprecated_decorator
 
 
-def shortcut(name):
-    """Add an shortcut (alias) to a decorated function.
+class alias(object):
+    """
+    Alias class that can be used as a decorator for making methods callable
+    through other names (or "aliases").
+    Note: This decorator must be used inside an @aliased -decorated class.
+    For example, if you want to make the method shout() be also callable as
+    yell() and scream(), you can use alias like this:
+
+        @alias('yell', 'scream')
+        def shout(message):
+            # ....
+    """
+
+    def __init__(self, *aliases):
+        """Constructor."""
+        self.aliases = set(aliases)
+
+    def __call__(self, f):
+        """
+        Method call wrapper. As this decorator has arguments, this method will
+        only be called once as a part of the decoration process, receiving only
+        one argument: the decorated function ('f'). As a result of this kind of
+        decorator, this method must return the callable that will wrap the
+        decorated function.
+        """
+        f._aliases = self.aliases
+        return f
+
+
+def aliased(aliased_class):
+    """
+    Decorator function that *must* be used in combination with @alias
+    decorator. This class will make the magic happen!
+    @aliased classes will have their aliased method (via @alias) actually
+    aliased.
+    This method simply iterates over the member attributes of 'aliased_class'
+    seeking for those which have an '_aliases' attribute and then defines new
+    members in the class using those aliases as mere pointer functions to the
+    original ones.
+
+    Usage:
+        @aliased
+        class MyClass(object):
+            @alias('coolMethod', 'myKinkyMethod')
+            def boring_method(self):
+                # ...
+
+        i = MyClass()
+        i.coolMethod() # equivalent to i.myKinkyMethod() and i.boring_method()
+    """
+    original_methods = aliased_class.__dict__.copy()
+    for name, method in original_methods.iteritems():
+        if hasattr(method, '_aliases'):
+            # Add the aliases for 'method', but don't override any
+            # previously-defined attribute of 'aliased_class'
+            for alias in method._aliases - set(original_methods):
+                setattr(aliased_class, alias, method)
+    return aliased_class
+
+
+def shortcut(*names):
+    """Add an shortcut (alias) to a decorated function, but not to class methods!
+    
+    use aliased/alias decorators for class members!
 
     Calling the shortcut (alias) will call the decorated function. The shortcut name will be appended
     to the module's __all__ variable and the shortcut function will inherit the function's docstring
@@ -152,16 +222,13 @@ def shortcut(name):
 
     """
     # TODO: this does not work (is not tested with class member functions)
-    # extract callers frame
-    frame = inspect.stack()[1][0]
-    # get caller module of decorator
-
+    # it is not possible to reliably determine if a function is a member function, until it is bound
     def wrap(f):
-        # docstrings are also being copied
-        frame.f_globals[name] = f
-        if frame.f_globals.has_key('__all__'):
-            # add shortcut if it's not already there.
-            if name not in frame.f_globals['__all__']:
-                frame.f_globals['__all__'].append(name)
+        # TODO: this is wrong for class member shortcuts
+        globals_ = f.func_globals if PY2 else f.__globals__
+        for name in names:
+            globals_[name] = f
+            if '__all__' in globals_ and name not in globals_['__all__']:
+                globals_['__all__'].append(name)
         return f
     return wrap

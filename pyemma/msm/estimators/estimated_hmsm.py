@@ -36,9 +36,9 @@ __docformat__ = "restructuredtext en"
 import numpy as _np
 
 from pyemma.msm.models.hmsm import HMSM as _HMSM
-from pyemma.util.annotators import shortcut
+from pyemma.util.annotators import alias, aliased
 
-
+@aliased
 class EstimatedHMSM(_HMSM):
 
     def __init__(self, dtrajs_full, dtrajs_lagged, dt_model, lagtime, nstates_obs, observable_set, dtrajs_obs,
@@ -78,7 +78,7 @@ class EstimatedHMSM(_HMSM):
         return self._observable_set
 
     @property
-    @shortcut('dtrajs_full')
+    @alias('dtrajs_full')
     def discrete_trajectories_full(self):
         """
         A list of integer arrays with the original trajectories.
@@ -87,7 +87,7 @@ class EstimatedHMSM(_HMSM):
         return self._dtrajs_full
 
     @property
-    @shortcut('dtrajs_lagged')
+    @alias('dtrajs_lagged')
     def discrete_trajectories_lagged(self):
         """
         Transformed original trajectories that are used as an input into the HMM estimation
@@ -96,7 +96,7 @@ class EstimatedHMSM(_HMSM):
         return self._dtrajs_lagged
 
     @property
-    @shortcut('dtrajs_obs')
+    @alias('dtrajs_obs')
     def discrete_trajectories_obs(self):
         """
         A list of integer arrays with the discrete trajectories mapped to the observation mode used.
