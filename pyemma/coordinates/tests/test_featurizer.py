@@ -457,38 +457,36 @@ class TestFeaturizerNoDubs(unittest.TestCase):
         """this tests adds multiple features twice (eg. same indices) and
         checks whether they are rejected or not"""
         featurizer = MDFeaturizer(pdbfile)
+        expected_active = 1
 
         featurizer.add_angles([[0, 1, 2], [0, 3, 4]])
         featurizer.add_angles([[0, 1, 2], [0, 3, 4]])
-
-        self.assertEqual(len(featurizer.active_features), 1)
-
-        featurizer.add_backbone_torsions()
-
-        self.assertEqual(len(featurizer.active_features), 2)
-        featurizer.add_backbone_torsions()
-        self.assertEqual(len(featurizer.active_features), 2)
+        self.assertEqual(len(featurizer.active_features), expected_active)
 
         featurizer.add_contacts([[0, 1], [0, 3]])
-        self.assertEqual(len(featurizer.active_features), 3)
+        expected_active += 1
+        self.assertEqual(len(featurizer.active_features), expected_active)
         featurizer.add_contacts([[0, 1], [0, 3]])
-        self.assertEqual(len(featurizer.active_features), 3)
+        self.assertEqual(len(featurizer.active_features), expected_active)
 
         # try to fool it with ca selection
         ca = featurizer.select_Ca()
         ca = featurizer.pairs(ca, excluded_neighbors=0)
         featurizer.add_distances(ca)
-        self.assertEqual(len(featurizer.active_features), 4)
+        expected_active += 1
+        self.assertEqual(len(featurizer.active_features), expected_active)
         featurizer.add_distances_ca()
-        self.assertEqual(len(featurizer.active_features), 4)
+        self.assertEqual(len(featurizer.active_features), expected_active)
 
         featurizer.add_inverse_distances([[0, 1], [0, 3]])
-        self.assertEqual(len(featurizer.active_features), 5)
+        expected_active += 1
+        self.assertEqual(len(featurizer.active_features), expected_active)
 
         featurizer.add_distances([[0, 1], [0, 3]])
-        self.assertEqual(len(featurizer.active_features), 6)
+        expected_active += 1
+        self.assertEqual(len(featurizer.active_features), expected_active)
         featurizer.add_distances([[0, 1], [0, 3]])
-        self.assertEqual(len(featurizer.active_features), 6)
+        self.assertEqual(len(featurizer.active_features), expected_active)
 
         def my_func(x):
             return x - 1
@@ -496,34 +494,42 @@ class TestFeaturizerNoDubs(unittest.TestCase):
         def foo(x):
             return x - 1
 
+        expected_active += 1
         my_feature = CustomFeature(my_func)
         my_feature.dimension = 3
         featurizer.add_custom_feature(my_feature)
-
-        self.assertEqual(len(featurizer.active_features), 7)
+        
+        self.assertEqual(len(featurizer.active_features), expected_active)
         featurizer.add_custom_feature(my_feature)
-        self.assertEqual(len(featurizer.active_features), 7)
+        self.assertEqual(len(featurizer.active_features), expected_active)
+
         # since myfunc and foo are different functions, it should be added
+        expected_active += 1
         foo_feat = CustomFeature(foo, dim=3)
         featurizer.add_custom_feature(foo_feat)
-        self.assertEqual(len(featurizer.active_features), 8)
 
+        self.assertEqual(len(featurizer.active_features), expected_active)
+
+        expected_active += 1
         ref = mdtraj.load(xtcfile, top=pdbfile)
         featurizer.add_minrmsd_to_ref(ref)
         featurizer.add_minrmsd_to_ref(ref)
-        self.assertEquals(len(featurizer.active_features), 9)
+        self.assertEquals(len(featurizer.active_features), expected_active)
 
+        expected_active += 1
         featurizer.add_minrmsd_to_ref(pdbfile)
         featurizer.add_minrmsd_to_ref(pdbfile)
-        self.assertEquals(len(featurizer.active_features), 10)
+        self.assertEquals(len(featurizer.active_features), expected_active)
 
+        expected_active += 1
         featurizer.add_residue_mindist()
         featurizer.add_residue_mindist()
-        self.assertEquals(len(featurizer.active_features), 11)
+        self.assertEquals(len(featurizer.active_features), expected_active)
 
+        expected_active += 1
         featurizer.add_group_mindist([[0,1],[0,2]])
         featurizer.add_group_mindist([[0,1],[0,2]])
-        self.assertEquals(len(featurizer.active_features), 12)
+        self.assertEquals(len(featurizer.active_features), expected_active)
 
     def test_labels(self):
         """ just checks for exceptions """
