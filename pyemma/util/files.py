@@ -55,7 +55,7 @@ class TemporaryDirectory(object):
     >>> import os
     >>> with TemporaryDirectory() as tmp:
     ...    path = os.path.join(tmp, "myfile.dat")
-    ...    fh = open(path, 'w)
+    ...    fh = open(path, 'w')
     ...    fh.write('hello world')
     ...    fh.close()
 
