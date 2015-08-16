@@ -612,7 +612,7 @@ class Transformer(ProgressReporter):
 
         Returns
         -------
-        iterator : a :class:`pyemma.coordinates.transfrom.TransformerIterator` transformer iterator
+        iterator : a :class:`pyemma.coordinates.transfrom.transformer.TransformerIterator` transformer iterator
             a call to the .next() method of this iterator will return the pair
             (itraj, X) : (int, ndarray(n, m))
             where itraj corresponds to input sequence number (eg. trajectory index)
@@ -639,7 +639,7 @@ class Transformer(ProgressReporter):
 
         Returns
         -------
-        iterator : a :class:`pyemma.coordinates.transfrom.TransformerIterator` transformer iterator
+        iterator : a :class:`TransformerIterator <pyemma.coordinates.transform.transformer.TransformerIterator>`  
             If lag = 0, a call to the .next() method of this iterator will return
             the pair
             (itraj, X) : (int, ndarray(n, m)),

@@ -74,13 +74,3 @@ Find here a documentation how to extract features from them.
 
 """
 from .api import *
-
-
-def get_test_data():
-    import tests
-    import os
-    from glob import glob
-    dir = os.path.join(tests.__path__[0], 'data')
-    trajs = glob(dir + os.sep + "*.xtc")
-    top = os.path.join(dir, 'bpti_ca.pdb')
-    return {'trajs': trajs, 'top': top}

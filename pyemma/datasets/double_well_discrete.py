@@ -10,7 +10,7 @@ class DoubleWell_Discrete_Data(object):
 
     def __init__(self):
         from pkg_resources import resource_filename
-        filename = resource_filename('pyemma', 'datasets/double_well_discrete.npz')
+        filename = resource_filename('pyemma.datasets', 'double_well_discrete.npz')
         datafile = np.load(filename)
         self._dtraj_T100K_dt10 = datafile['dtraj']
         self._P = datafile['P']

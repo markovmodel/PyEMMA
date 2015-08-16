@@ -288,20 +288,24 @@ def source(inp, features=None, top=None, chunk_size=None):
     --------
 
     Create a reader for NumPy files:
+    
     >>> import numpy as np
     >>> from pyemma.coordinates import source
     >>> reader = source(['001.npy', '002.npy'] # doctest: +SKIP
 
     Create a reader for trajectory files and select some distance as feature:
+    
     >>> reader = source(['traj01.xtc', 'traj02.xtc'], top='my_structure.pdb') # doctest: +SKIP
     >>> reader.featurizer.add_distances([[0, 1], [5, 6]]) # doctest: +SKIP
     >>> calculated_features = reader.get_output() # doctest: +SKIP
 
     create a reader for a csv file:
+    
     >>> reader = source('data.csv') # doctest: +SKIP
 
     Create a reader for huge NumPy in-memory arrays to process them in huge chunks
     to avoid memory issues:
+    
     >>> data = np.random.random(int(1e7))
     >>> reader = source(data, chunk_size=5000)
     >>> from pyemma.coordinates import cluster_regspace
@@ -458,8 +462,8 @@ def discretizer(reader,
 
     >>> import numpy as np
     >>> from pyemma.coordinates import source, pca, cluster_regspace, discretizer
-    >>> data = np.random.random((1000, 3))
-    >>> reader = source(data)
+    >>> from pyemma.datasets import get_bpti_test_data
+    >>> reader = source(get_bpti_test_data()['trajs'], top=get_bpti_test_data()['top'])
     >>> transform = pca(dim=2)
     >>> cluster = cluster_regspace(dmin=0.1)
     >>> disc = discretizer(reader, transform, cluster)
@@ -479,8 +483,8 @@ def discretizer(reader,
     >>> import os
     >>> with TemporaryDirectory('dtrajs') as tmpdir:
     ...     disc.save_dtrajs(output_dir=tmpdir)
-    ...     os.listdir(tmpdir)
-    ['bpti_mini.dtraj', 'bpti_067-100.dtraj', 'bpti_034-066.dtraj', 'bpti_001-033.dtraj']
+    ...     sorted(os.listdir(tmpdir))
+    ['bpti_001-033.dtraj', 'bpti_034-066.dtraj', 'bpti_067-100.dtraj']
 
     """
     if cluster is None:
