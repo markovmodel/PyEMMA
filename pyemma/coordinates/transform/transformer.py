@@ -686,6 +686,7 @@ class Transformer(ProgressReporter):
         >>> import matplotlib.pyplot as plt # doctest: +SKIP
 
         Fill with some actual data!
+
         >>> tica = coor.tica() # doctest: +SKIP
         >>> trajs = tica.get_output(dimensions=(0,), stride=100) # doctest: +SKIP
         >>> for traj in trajs: # doctest: +SKIP
