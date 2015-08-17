@@ -5,8 +5,8 @@ PYVER = 2.7
 PYTHON = python$(PYVER)
 
 # You can set these variables from the command line.
-SPHINXOPTS    =
-SPHINXBUILD   = LANG=C sphinx-build -j 4
+SPHINXOPTS    = -j4 -vv
+SPHINXBUILD   = LANG=C sphinx-build
 PAPER         =
 
 FILES=
@@ -61,3 +61,6 @@ ipython-rst: source/generated
 latex:
 	mkdir -p build/latex build/doctrees
 	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) build/latex $(FILES)
+
+html_check: 
+	$(SPHINXBUILD) -b linkcheck $(ALLSPHINXOPTS) build/html $(FILES)
