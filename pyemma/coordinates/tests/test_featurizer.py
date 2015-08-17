@@ -542,8 +542,7 @@ class TestFeaturizerNoDubs(unittest.TestCase):
         featurizer.add_contacts([[0, 1], [0, 3]])
         featurizer.add_distances([[0, 1], [0, 3]])
         featurizer.add_inverse_distances([[0, 1], [0, 3]])
-        cs = CustomFeature(lambda x: x - 1)
-        cs.dimension = lambda: 3
+        cs = CustomFeature(lambda x: x - 1, dim=3)
         featurizer.add_custom_feature(cs)
         featurizer.add_minrmsd_to_ref(pdbfile)
         featurizer.add_residue_mindist()
