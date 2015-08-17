@@ -24,7 +24,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 import numpy as np
 import sys
 from six.moves import range
@@ -118,8 +118,8 @@ def acf(trajs, stride=1, max_lag=None, subtract_mean=True, normalize=True, mean=
             raise Exception(('number of order parameters in trajectory number %d differs ' +
                              'from the number found in previous trajectories.') % i)
         if res.shape[1] < acftraj.shape[1] or res.shape[0] < acftraj.shape[0]:
-            res.resize(acftraj.shape)
-            N.resize(acftraj.shape[0])
+            res = np.resize(res, acftraj.shape)
+            N = np.resize(N, acftraj.shape[0])
         # update acf and number of samples
         res[0:acftraj.shape[0], :] += acftraj
         N[0:acftraj.shape[0]] += Ntraj
