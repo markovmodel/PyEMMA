@@ -38,11 +38,9 @@ class Bar(Foo):
 
 Now, Bar.foo.__doc__ == Bar().foo.__doc__ == Foo.foo.__doc__ == "Frobber"
 """
-
-from __future__ import absolute_import, print_function
-
-import warnings
+from __future__ import absolute_import
 from functools import wraps
+import warnings
 from six import PY2
 
 __all__ = ['alias',
@@ -51,6 +49,7 @@ __all__ = ['alias',
            'doc_inherit',
            'shortcut',
            ]
+
 
 class DocInherit(object):
 
@@ -194,7 +193,7 @@ def aliased(aliased_class):
         i.coolMethod() # equivalent to i.myKinkyMethod() and i.boring_method()
     """
     original_methods = aliased_class.__dict__.copy()
-    for name, method in original_methods.iteritems():
+    for name, method in original_methods.items():
         if hasattr(method, '_aliases'):
             # Add the aliases for 'method', but don't override any
             # previously-defined attribute of 'aliased_class'
@@ -225,7 +224,7 @@ def shortcut(*names):
     # it is not possible to reliably determine if a function is a member function, until it is bound
     def wrap(f):
         # TODO: this is wrong for class member shortcuts
-        globals_ = f.func_globals if PY2 else f.__globals__
+        globals_ = f.__globals__ if PY2 else f.__globals__
         for name in names:
             globals_[name] = f
             if '__all__' in globals_ and name not in globals_['__all__']:
