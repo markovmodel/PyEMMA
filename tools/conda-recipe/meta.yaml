@@ -17,6 +17,7 @@ requirements:
     - joblib
     - matplotlib
     - mdtraj
+    - nose # actually this should not be here...
     - mock
     - msmtools
     - numpy >=1.7
