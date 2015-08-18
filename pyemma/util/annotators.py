@@ -216,7 +216,7 @@ def shortcut(*names):
     In some module you have defined a function
     >>> @shortcut('is_tmatrix') # doctest: +SKIP
     >>> def is_transition_matrix(args): # doctest: +SKIP
-    >>>     pass # doctest: +SKIP
+    ...     pass # doctest: +SKIP
     Now you are able to call the function under its short name
     >>> is_tmatrix(args) # doctest: +SKIP
 

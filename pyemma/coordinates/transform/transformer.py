@@ -257,6 +257,11 @@ class Transformer(ProgressReporter):
         """
         return self.data_producer.number_of_trajectories()
 
+    @property
+    def ntraj(self):
+        __doc__ = self.number_of_trajectories.__doc__
+        return self.number_of_trajectories()
+
     def trajectory_length(self, itraj, stride=1):
         r"""
         Returns the length of trajectory of the requested index.
@@ -607,7 +612,7 @@ class Transformer(ProgressReporter):
 
         Returns
         -------
-        iterator : a :class:`pyemma.coordinates.transfrom.TransformerIterator` transformer iterator
+        iterator : a :class:`pyemma.coordinates.transfrom.transformer.TransformerIterator` transformer iterator
             a call to the .next() method of this iterator will return the pair
             (itraj, X) : (int, ndarray(n, m))
             where itraj corresponds to input sequence number (eg. trajectory index)
@@ -634,7 +639,7 @@ class Transformer(ProgressReporter):
 
         Returns
         -------
-        iterator : a :class:`pyemma.coordinates.transfrom.TransformerIterator` transformer iterator
+        iterator : a :class:`TransformerIterator <pyemma.coordinates.transform.transformer.TransformerIterator>`  
             If lag = 0, a call to the .next() method of this iterator will return
             the pair
             (itraj, X) : (int, ndarray(n, m)),
@@ -681,6 +686,7 @@ class Transformer(ProgressReporter):
         >>> import matplotlib.pyplot as plt # doctest: +SKIP
 
         Fill with some actual data!
+
         >>> tica = coor.tica() # doctest: +SKIP
         >>> trajs = tica.get_output(dimensions=(0,), stride=100) # doctest: +SKIP
         >>> for traj in trajs: # doctest: +SKIP

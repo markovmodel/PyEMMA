@@ -61,8 +61,9 @@ User API
 
 Classes
 =======
-**Coordinate classes** encapsulating complex functionality. You don't need to construct these classes yourself, as this
-is done by the user API functions above. Find here a documentation how to extract features from them.
+**Coordinate classes** encapsulating complex functionality. You don't need to
+construct these classes yourself, as this is done by the user API functions above.
+Find here a documentation how to extract features from them.
 
 .. autosummary::
    :toctree: generated/

@@ -221,18 +221,30 @@ class CustomFeature(object):
     args : list of positional args (optional) passed to func
     kwargs : named arguments (optional) passed to func
 
+    Notes
+    -----
+    Your passed in function will get a mdtraj.Trajectory object as first argument.
+
     Examples
     --------
     We define a feature that transforms all coordinates by :math:`1 / x^2`:
 
     >>> from pyemma.coordinates import source
+    >>> from pyemma.datasets import get_bpti_test_data
+    >>> inp = get_bpti_test_data()
 
-    Define a function which transforms the coordinates of the trajectory object:
-    >>> my_feature = CustomFeature(lambda x: 1.0 / x.xyz**2)
-    >>> reader = pyemma.coordinates.load('traj.xtc', top='my_topology.pdb') # doctest: +SKIP
-    # pass the feature to the featurizer and transform the data
-    >>> reader.featurizer.add_custom_feature(my_feature) # doctest: +SKIP
-    >>> data = reader.get_output() # doctest: +SKIP
+    Define a function which transforms the coordinates of the trajectory object.
+    Note that you need to define the output dimension, which we pass directly in
+    the feature construction. The trajectory contains 58 atoms, so the output
+    dimension will be 3 * 58 = 174:
+    
+    >>> my_feature = CustomFeature(lambda x: (1.0 / x.xyz**2).reshape(-1, 174), dim=174)
+    >>> reader = source(inp['trajs'][0], top=inp['top'])
+
+    pass the feature to the featurizer and transform the data
+    
+    >>> reader.featurizer.add_custom_feature(my_feature)
+    >>> data = reader.get_output()
 
     """
 
@@ -730,6 +742,13 @@ class MDFeaturizer(object):
         self._logger = getLogger(name)
 
     def __add_feature(self, f):
+        # perform sanity checks
+        if f.dimension == 0:
+            self._logger.error("given an empty feature (eg. due to an empty/"
+                               "ineffective selection). Skipping it."
+                               " Feature desc: %s" % f.describe())
+            return
+
         if f not in self.active_features:
             self.active_features.append(f)
         else:
