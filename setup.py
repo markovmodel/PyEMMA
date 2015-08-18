@@ -261,6 +261,13 @@ else:
                                   'nose',
                                   ]
 
+    metadata['package_data'] = {
+                                'pyemma': ['pyemma.cfg'],
+                                'pyemma.coordinates.tests': ['data/*'],
+                                'pyemma.datasets': ['*.npz'],
+                                'pyemma.util.tests': ['data/*'],
+                                }
+
     # when on git, we require cython
     if os.path.exists('.git'):
         warnings.warn('using git, require cython')
