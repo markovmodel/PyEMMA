@@ -30,23 +30,21 @@ r"""This module contains unit tests for the trajectory module
 """
 
 from __future__ import absolute_import
+
 import os
 import unittest
-
+import pkg_resources
 import numpy as np
+from six.moves import range
 
 import pyemma.util.discrete_trajectories as dt
 
-from os.path import abspath, join
-from os import pardir
-from six.moves import range
-
-testpath = abspath(join(abspath(__file__), pardir)) + '/data/'
+testpath = pkg_resources.resource_filename(__name__, 'data') + os.path.sep
 
 class TestReadDiscreteTrajectory(unittest.TestCase):
 
     def setUp(self):
-        self.filename= testpath +'dtraj.dat'
+        self.filename = testpath +'dtraj.dat'
 
     def tearDown(self):
         pass

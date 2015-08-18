@@ -38,12 +38,12 @@ from pyemma.coordinates import api
 import pyemma.msm.generation as msmgen
 import tempfile
 from six.moves import range
-
+import pkg_resources
 
 class TestPipeline(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        path = os.path.join(os.path.split(__file__)[0], 'data')
+        path = pkg_resources.resource_filename(__name__, 'data') + os.path.sep
         cls.pdb_file = os.path.join(path, 'bpti_ca.pdb')
         cls.feat = MDFeaturizer(cls.pdb_file)
         cls.feat.add_all()

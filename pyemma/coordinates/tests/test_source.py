@@ -33,14 +33,14 @@ from pyemma.coordinates.data import MDFeaturizer
 from pyemma.util.log import getLogger
 import pyemma.coordinates.api as api
 import pyemma.util.types as types
-
+import pkg_resources
 
 logger = getLogger('TestReaderUtils')
 
 
 class TestSource(unittest.TestCase):
     def setUp(self):
-        path = os.path.join(os.path.split(__file__)[0], 'data')
+        path = pkg_resources.resource_filename('pyemma.coordinates.tests', 'data') + os.path.sep
         self.pdb_file = os.path.join(path, 'bpti_ca.pdb')
         self.traj_files = [
             os.path.join(path, 'bpti_001-033.xtc'),
@@ -114,7 +114,7 @@ class TestSourceCallAll(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        path = os.path.join(os.path.split(__file__)[0], 'data')
+        path = pkg_resources.resource_filename(__name__, 'data') + os.path.sep
         cls.pdb_file = os.path.join(path, 'bpti_ca.pdb')
         cls.xtc_file = os.path.join(path, 'bpti_mini.xtc')
         cls.inp = api.source(cls.xtc_file, top=cls.pdb_file)

@@ -143,7 +143,7 @@ class TestRandomAccessStride(TestCase):
     def test_feature_reader_random_access(self):
         from pyemma.coordinates.tests.test_featurereader import create_traj
 
-        topfile = pkg_resources.resource_filename('pyemma.coordinates.tests.test_featurereader', 'data/test.pdb')
+        topfile = pkg_resources.resource_filename(__name__, 'data/test.pdb')
         trajfiles = []
         for _ in range(3):
             f, _, _ = create_traj(topfile)

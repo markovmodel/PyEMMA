@@ -32,6 +32,7 @@ Created on 02.02.2015
 from __future__ import absolute_import
 import unittest
 import os
+import pkg_resources
 import numpy as np
 
 from pyemma.coordinates import api
@@ -61,7 +62,7 @@ class TestTICA_Basic(unittest.TestCase):
 
     def test_MD_data(self):
         # this is too little data to get reasonable results. We just test to avoid exceptions
-        path = os.path.join(os.path.split(__file__)[0], 'data')
+        path = pkg_resources.resource_filename(__name__, 'data') + os.path.sep
         self.pdb_file = os.path.join(path, 'bpti_ca.pdb')
         self.xtc_file = os.path.join(path, 'bpti_mini.xtc')
         inp = source(self.xtc_file, top=self.pdb_file)
@@ -277,7 +278,7 @@ class TestTICAExtensive(unittest.TestCase):
 
     def test_feature_correlation_MD(self):
         # Copying from the test_MD_data
-        path = os.path.join(os.path.split(__file__)[0], 'data')
+        path = pkg_resources.resource_filename(__name__, 'data') + os.path.sep
         self.pdb_file = os.path.join(path, 'bpti_ca.pdb')
         self.xtc_file = os.path.join(path, 'bpti_mini.xtc')
         inp = source(self.xtc_file, top=self.pdb_file)

@@ -34,9 +34,8 @@ from itertools import combinations, product
 # from pyemma.coordinates.data import featurizer as ft
 from pyemma.coordinates.data.featurizer import MDFeaturizer, CustomFeature, _parse_pairwise_input
 from six.moves import range
-# from pyemma.coordinates.tests.test_discretizer import create_water_topology_on_disc
-
-path = os.path.join(os.path.split(__file__)[0], 'data')
+import pkg_resources
+path = pkg_resources.resource_filename(__name__, 'data') + os.path.sep
 xtcfile = os.path.join(path, 'bpti_mini.xtc')
 pdbfile = os.path.join(path, 'bpti_ca.pdb')
 

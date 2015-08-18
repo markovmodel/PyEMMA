@@ -31,6 +31,7 @@ the retrival via save_trajs
 
 from __future__ import absolute_import
 
+import pkg_resources
 import unittest
 import os
 
@@ -40,6 +41,7 @@ import mdtraj as md
 from pyemma.coordinates.data.frames_from_file import frames_from_file as _frames_from_file
 from pyemma.coordinates.data.util.reader_utils import compare_coords_md_trajectory_objects
 
+
 class TestFramesFromFile(unittest.TestCase):
 
     @classmethod
@@ -48,7 +50,7 @@ class TestFramesFromFile(unittest.TestCase):
 
     def setUp(self):
         self.eps = 1e-10
-        path = os.path.join(os.path.split(__file__)[0], 'data')
+        path = pkg_resources.resource_filename(__name__, 'data') + os.path.sep
         self.pdbfile = os.path.join(path, 'bpti_ca.pdb')
         self.trajfiles = os.path.join(path, 'bpti_mini.xtc')
 
