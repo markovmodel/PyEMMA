@@ -460,6 +460,24 @@ class ContactFeature(DistanceFeature):
         hash_value ^= hash(self.threshold)
         return hash_value
 
+class TanhContactFeature(DistanceFeature):
+
+    def __init__(self, top, distance_indexes, threshold=5.0, scale=1., periodic=True):
+        DistanceFeature.__init__(self, top, distance_indexes)
+        self.prefix_label = "TANHCONTACT:"
+        self.threshold = threshold
+        self.scale = scale
+        self.periodic = periodic
+
+    def map(self, traj):
+        dists = mdtraj.compute_distances(traj, self.distance_indexes, periodic=self.periodic)
+        return 0.5*(np.tanh(2.*(self.threshold - dists)/self.scale) + 1.)
+
+    def __hash__(self):
+        hash_value = DistanceFeature.__hash__(self)
+        hash_value ^= hash(self.threshold)
+        return hash_value
+
 
 class AngleFeature(object):
 
@@ -1033,6 +1051,48 @@ class MDFeaturizer(object):
 
         atom_pairs = self._check_indices(atom_pairs)
         f = ContactFeature(self.topology, atom_pairs, threshold, periodic)
+        self.__add_feature(f)
+
+    def add_tanh_contacts(self, indices, indices2=None, threshold=5.0, scale=2.0, periodic=True):
+        r"""
+        Adds the contacts to the feature list.
+
+        Parameters
+        ----------
+        indices : can be of two types:
+
+                ndarray((n, 2), dtype=int):
+                    n x 2 array with the pairs of atoms between which the contacts shall be computed
+
+                iterable of integers (either list or ndarray(n, dtype=int)):
+                    indices (not pairs of indices) of the atoms between which the contacts shall be computed.
+
+        indices2: iterable of integers (either list or ndarray(n, dtype=int)), optional:
+                    Only has effect if :py:obj:`indices` is an iterable of integers. Instead of the above behaviour,
+                    only the contacts between the atoms in :py:obj:`indices` and :py:obj:`indices2` will be computed.
+
+        threshold : float, optional, default = 5.0
+            distances below this threshold will result in feature tending towards 1.0, distances above will tend towards 0.0.
+            The default is set with Angstrom distances in mind.
+            Make sure that you know whether your coordinates are in Angstroms or nanometers when setting this threshold.
+
+        scale: float, optional, default = 2.0
+            scale over which the tanh contact function switches over from ~0.02 to ~0.98.
+            The default is set with Angstrom distances in mind.
+            Make sure that you know whether your coordinates are in Angstroms or nanometers when setting this threshold.
+
+
+        .. note::
+            When using the *iterable of integers* input, :py:obj:`indices` and :py:obj:`indices2`
+            will be sorted numerically and made unique before converting them to a pairlist.
+            Please look carefully at the output of :py:func:`describe()` to see what features exactly have been added.
+        """
+
+        atom_pairs = _parse_pairwise_input(
+            indices, indices2, self._logger, fname='add_tanhcontacts()')
+
+        atom_pairs = self._check_indices(atom_pairs)
+        f = TanhContactFeature(self.topology, atom_pairs, threshold, scale, periodic)
         self.__add_feature(f)
 
     def add_residue_mindist(self,
