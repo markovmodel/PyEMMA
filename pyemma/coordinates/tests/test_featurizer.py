@@ -178,6 +178,20 @@ class TestFeaturizer(unittest.TestCase):
         C[I[:, 0], I[:, 1]] = 1.0
         assert(np.allclose(C, self.feat.map(self.traj)))
 
+    def test_tanhcontacts(self):
+        sel = np.array([1, 2, 5, 20], dtype=int)
+        pairs_expected = np.array([[1, 5], [1, 20], [2, 5], [2, 20], [5, 20]])
+        pairs = self.feat.pairs(sel, excluded_neighbors=2)
+        assert(pairs.shape == pairs_expected.shape)
+        assert(np.all(pairs == pairs_expected))
+        self.feat.add_tanhcontacts(pairs, threshold=0.5, scale=0.1, periodic=False)  # unperiodic distances such that we can compare
+        assert(self.feat.dimension() == pairs_expected.shape[0])
+        X = self.traj.xyz[:, pairs_expected[:, 0], :]
+        Y = self.traj.xyz[:, pairs_expected[:, 1], :]
+        D = np.sqrt(np.sum((X - Y) ** 2, axis=2))
+        C = 0.5*(np.tanh(2.*(0.5 - D)/0.1) + 1.)
+        assert(np.allclose(C, self.feat.map(self.traj)))
+
     def test_angles(self):
         sel = np.array([[1, 2, 5],
                         [1, 3, 8],
