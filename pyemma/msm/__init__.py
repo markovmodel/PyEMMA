@@ -153,23 +153,18 @@ class _RedirectMSMToolsImport(object):
         _sys.modules[name] = module
 
         return module
-
+"""
 _sys.meta_path.append(_RedirectMSMToolsImport('pyemma.msm.analysis',
                                               'pyemma.msm.estimation',
                                               'pyemma.msm.generation',
                                               'pyemma.msm.dtraj',
                                               'pyemma.msm.io',
                                               'pyemma.msm.flux'))
-
+"""
 # backward compatibility to PyEMMA 1.2.x
-from . import analysis
-from . import estimation
-from . import generation
-from . import dtraj
-# backward compatibility
+from msmtools import analysis, estimation, generation, dtraj, flux
+from msmtools.flux import ReactiveFlux
 io = dtraj
-from . import flux
-from .flux import ReactiveFlux
 
 #####################################################
 # Estimators and models
