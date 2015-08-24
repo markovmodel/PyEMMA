@@ -39,7 +39,7 @@ install:
   - "python -c \"import struct; print(struct.calcsize('P') * 8)\""
   - conda config --set always_yes true 
   - conda config --add channels http://conda.binstar.org/omnia 
-  - conda install python-coveralls conda-build jinja2
+  - conda install conda-build jinja2
 
   # use agg backend in matplotlib to avoid gui popup, which can not be closed.
   - echo %userprofile%
