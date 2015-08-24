@@ -499,9 +499,9 @@ error:
     return ret_init_centers;
 }
 
-#define MOD_USAGE "Chunked regular spatial clustering"
+static char MOD_USAGE[] = "Chunked regular spatial clustering";
 
-#define CLUSTER_USAGE "cluster(chunk, centers, mindist, metric)\n"\
+static char CLUSTER_USAGE[] = "cluster(chunk, centers, mindist, metric)\n"\
 "Given a chunk of data and a list of cluster centers, update the list of cluster centers with the newly found centers.\n"\
 "\n"\
 "Parameters\n"\
@@ -524,9 +524,9 @@ error:
 "\n"\
 "Note\n"\
 "----\n"\
-"This function uses the minRMSD implementation of mdtraj."
+"This function uses the minRMSD implementation of mdtraj.";
 
-#define INIT_CENTERS_USAGE "init_centers(data, metric, k)\n"\
+static char INIT_CENTERS_USAGE[] = "init_centers(data, metric, k)\n"\
 "Given the data, choose \"k\" cluster centers according to the kmeans++ initialization."\
 "\n"\
 "Parameters\n"\
@@ -544,7 +544,7 @@ error:
 "\n"\
 "Note\n"\
 "----\n"\
-"This function uses the minRMSD implementation of mdtraj."
+"This function uses the minRMSD implementation of mdtraj.";
 
 
 static PyMethodDef kmeansMethods[] =
