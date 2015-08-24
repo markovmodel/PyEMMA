@@ -192,8 +192,10 @@ class TestITS_AllEstimators(unittest.TestCase):
         assert np.allclose(estimator.timescales, ref, rtol=0.1, atol=10.0)
         # within left / right intervals. This test should fail only 1 out of 1000 times.
         L, R = estimator.get_sample_conf(conf=0.999)
-        assert np.alltrue(L < estimator.timescales)
-        assert np.alltrue(estimator.timescales < R)
+        np.testing.assert_array_less(L, estimator.timescales)
+        #assert np.alltrue(L < estimator.timescales)
+        np.testing.assert_array_less(estimator.timescales, R)
+        #assert np.alltrue(estimator.timescales < R)
 
     def test_its_hmsm(self):
         estimator = msm.timescales_hmsm([self.double_well_data.dtraj_T100K_dt10_n6good], 2, lags = [1, 10, 100])
@@ -213,8 +215,9 @@ class TestITS_AllEstimators(unittest.TestCase):
         assert np.allclose(estimator.timescales, ref, rtol=0.1, atol=10.0)
         # within left / right intervals. This test should fail only 1 out of 1000 times.
         L, R = estimator.get_sample_conf(conf=0.999)
-        assert np.alltrue(L < estimator.timescales)
-        assert np.alltrue(estimator.timescales < R)
+
+        np.testing.assert_array_less(L, estimator.timescales)
+        np.testing.assert_array_less(estimator.timescales, R)
 
 
 if __name__ == "__main__":
