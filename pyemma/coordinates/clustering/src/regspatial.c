@@ -165,7 +165,8 @@ static char CLUSTER_USAGE[] = "cluster(chunk, centers, mindist, metric)\n"\
 static PyMethodDef regspatialMethods[] =
 {
      {"cluster", cluster, METH_VARARGS, CLUSTER_USAGE},
-     {"assign",  assign,  METH_VARARGS, ASSIGN_USAGE}
+     {"assign",  assign,  METH_VARARGS, ASSIGN_USAGE},
+     {NULL, NULL, 0, NULL}
 };
 
 struct module_state {
