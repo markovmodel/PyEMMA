@@ -128,7 +128,7 @@ class TestTICA_Basic(unittest.TestCase):
 class TestTICAExtensive(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        import pyemma.msm.generation as msmgen
+        import msmtools.generation as msmgen
 
         # generate HMM with two Gaussians
         cls.P = np.array([[0.99, 0.01],

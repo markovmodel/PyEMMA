@@ -47,7 +47,7 @@ class TestPCAExtensive(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        import pyemma.msm.generation as msmgen
+        import msmtools.generation as msmgen
 
         # set random state, remember old one and set it back in tearDownClass
         cls.old_state = np.random.get_state()

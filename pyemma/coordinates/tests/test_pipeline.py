@@ -35,7 +35,7 @@ import numpy as np
 from pyemma.coordinates.data import DataInMemory
 from pyemma.coordinates.data import MDFeaturizer
 from pyemma.coordinates import api
-import pyemma.msm.generation as msmgen
+import msmtools.generation as msmgen
 import tempfile
 from six.moves import range
 import pkg_resources

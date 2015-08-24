@@ -40,7 +40,7 @@ import warnings
 from os.path import abspath, join
 from os import pardir
 
-from pyemma.msm.generation import generate_traj
+from msmtools.generation import generate_traj
 from msmtools.estimation import count_matrix, largest_connected_set, largest_connected_submatrix, transition_matrix
 from msmtools.analysis import stationary_distribution, timescales
 from pyemma.util.numeric import assert_allclose
