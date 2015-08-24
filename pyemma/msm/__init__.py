@@ -80,7 +80,7 @@ Low-level functions for estimation and analysis of transition matrices and io.
 .. toctree::
    :maxdepth: 1
 
-   msm.io
+   msm.dtraj
    msm.generation
    msm.estimation
    msm.analysis
@@ -101,8 +101,9 @@ io = dtraj
 from .estimators import MaximumLikelihoodMSM, BayesianMSM
 from .estimators import MaximumLikelihoodHMSM, BayesianHMSM
 from .estimators import ImpliedTimescales
+from .estimators import EstimatedMSM, EstimatedHMSM
 
-from pyemma.msm.models import MSM, HMSM, SampledMSM, SampledHMSM
+from .models import MSM, HMSM, SampledMSM, SampledHMSM
 
 # high-level api
 from .api import *

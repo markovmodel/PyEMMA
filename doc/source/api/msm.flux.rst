@@ -1,4 +1,4 @@
-.. automodule:: pyemma.msm.flux
+.. automodule:: msmtools.flux
 
 .. toctree::
    :maxdepth: 1
