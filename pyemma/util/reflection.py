@@ -30,3 +30,11 @@ def call_member(obj, f, *args, **kwargs):
 
     # attribute or property
     return method
+
+
+def get_default_args(func):
+    """
+    returns a dictionary of arg_name:default_values for the input function
+    """
+    args, varargs, keywords, defaults = inspect.getargspec(func)
+    return dict(zip(args[-len(defaults):], defaults))

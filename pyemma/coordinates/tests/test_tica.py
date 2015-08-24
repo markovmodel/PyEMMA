@@ -159,7 +159,7 @@ class TestTICAExtensive(unittest.TestCase):
 
     def test_kinetic_map(self):
         # test kinetic map variances:
-        tica_kinmap = api.tica(data=self.X, lag=self.lag, dim=-1, kinetic_map=True)
+        tica_kinmap = api.tica(data=self.X, lag=self.lag, dim=-1,var_cutoff=1, kinetic_map=True)
         O = tica_kinmap.get_output()[0]
         vars = np.var(O, axis=0)
         refs = tica_kinmap.eigenvalues ** 2

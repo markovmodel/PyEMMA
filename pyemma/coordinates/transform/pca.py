@@ -25,11 +25,10 @@
 from __future__ import absolute_import
 import numpy as np
 
-from .transformer import Transformer
-
 from pyemma.util.annotators import doc_inherit
-from pyemma.coordinates.transform.transformer import SkipPassException
+from pyemma.coordinates.transform.transformer import SkipPassException, Transformer
 from pyemma.util import types
+from pyemma.util.reflection import get_default_args
 
 __all__ = ['PCA']
 __author__ = 'noe'
@@ -78,7 +77,8 @@ class PCA(Transformer):
         super(PCA, self).__init__()
         self._dim = dim
         self._var_cutoff = var_cutoff
-        if dim != -1 and var_cutoff < 1.0:
+        default_var_cutoff = get_default_args(self.__init__)['var_cutoff']
+        if dim != -1 and var_cutoff != default_var_cutoff:
             raise ValueError('Trying to set both the number of dimension and the subspace variance. Use either or.')
         self._dot_prod_tmp = None
         self.Y = None
@@ -100,18 +100,20 @@ class PCA(Transformer):
 
     def dimension(self):
         """ output dimension """
+        d = None
         if self._dim != -1:  # fixed parametrization
-            return self._dim
+            d = self._dim
         elif self._parametrized:  # parametrization finished. Dimension is known
             dim = len(self.eigenvalues)
             if self._var_cutoff < 1.0:  # if subspace_variance, reduce the output dimension if needed
                 dim = min(dim, np.searchsorted(self.cumvar, self._var_cutoff)+1)
-            return dim
+            d = dim
         elif self._var_cutoff == 1.0:  # We only know that all dimensions are wanted, so return input dim
-            return self.data_producer.dimension()
+            d = self.data_producer.dimension()
         else:  # We know nothing. Give up
             raise RuntimeError('Requested dimension, but the dimension depends on the cumulative variance and the '
                                'transformer has not yet been parametrized. Call parametrize() before.')
+        return d
 
     @property
     def mean(self):

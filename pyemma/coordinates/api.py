@@ -803,7 +803,7 @@ def _param_stage(previous_stage, this_stage, stride=1):
     return this_stage
 
 
-def pca(data=None, dim=2, var_cutoff=1.0, stride=1, mean=None):
+def pca(data=None, dim=2, var_cutoff=0.95, stride=1, mean=None):
     r""" Principal Component Analysis (PCA).
 
     PCA is a linear transformation method that finds coordinates of maximal
@@ -838,7 +838,7 @@ def pca(data=None, dim=2, var_cutoff=1.0, stride=1, mean=None):
         reduced by var_cutoff. Setting dim to a positive value is exclusive
         with var_cutoff.
 
-    var_cutoff : float in the range [0,1], optional, default 1
+    var_cutoff : float in the range [0,1], optional, default 0.95
         Determines the number of output dimensions by including dimensions
         until their cumulative kinetic variance exceeds the fraction
         subspace_variance. var_cutoff=1.0 means all numerically available
@@ -883,7 +883,7 @@ def pca(data=None, dim=2, var_cutoff=1.0, stride=1, mean=None):
     When used as a dimension reduction method, the input data is projected onto
     the dominant principal components.
 
-    See `Wiki page <http://en.wikipedia.org/wiki/Principal_component_analysis>`_
+    See `Wiki page <http://en.wikipedia.org/wiki/Principal_component_analysis>`_ for more theory and references.
     for more theory and references.
 
     Examples
@@ -940,7 +940,7 @@ def pca(data=None, dim=2, var_cutoff=1.0, stride=1, mean=None):
     return _param_stage(data, res, stride=stride)
 
 
-def tica(data=None, lag=10, dim=-1, var_cutoff=1.0, kinetic_map=False, stride=1,
+def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, stride=1,
          force_eigenvalues_le_one=False, mean=None):
     r""" Time-lagged independent component analysis (TICA).
 
@@ -979,7 +979,7 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=1.0, kinetic_map=False, stride=1,
         dimensions will be used unless reduced by var_cutoff.
         Setting dim to a positive value is exclusive with var_cutoff.
 
-    var_cutoff : float in the range [0,1], optional, default 1
+    var_cutoff : float in the range [0,1], optional, default 0.95
         Determines the number of output dimensions by including dimensions
         until their cumulative kinetic variance exceeds the fraction
         subspace_variance. var_cutoff=1.0 means all numerically available
