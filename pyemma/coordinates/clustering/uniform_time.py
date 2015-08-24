@@ -22,7 +22,7 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import absolute_import
+from __future__ import absolute_import, division
 import numpy as np
 from pyemma.coordinates.clustering.interface import AbstractClustering
 
@@ -99,9 +99,9 @@ class UniformTimeClustering(AbstractClustering):
                 # number of clusters yet
                 self._n = 0
                 # time segment length between cluster centers
-                self._dt = T / self.n_clusters
+                self._dt = T // self.n_clusters
                 # first data point in the middle of the time segment
-                self._nextt = self._dt / 2
+                self._nextt = self._dt // 2
             # final time we can go to with this chunk
             maxt = self._tprev + t + L
             # harvest cluster centers from this chunk until we have left it

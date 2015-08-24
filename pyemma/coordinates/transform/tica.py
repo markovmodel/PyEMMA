@@ -316,8 +316,8 @@ class TICA(Transformer):
                 # update the instantaneous covariance matrix
                 if self._force_eigenvalues_le_one:
                     # MSM-like counting
-                    Zptau = self._lag/stride-t  # zero plus tau
-                    Nmtau = self.trajectory_length(itraj, stride=stride)-t-self._lag/stride  # N minus tau
+                    Zptau = self._lag//stride-t  # zero plus tau
+                    Nmtau = self.trajectory_length(itraj, stride=stride)-t-self._lag//stride  # N minus tau
 
                     # restrict to valid block indices
                     size = X_meanfree.shape[0]
