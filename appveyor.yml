@@ -39,7 +39,7 @@ install:
   - "python -c \"import struct; print(struct.calcsize('P') * 8)\""
   - conda config --set always_yes true 
   - conda config --add channels http://conda.binstar.org/omnia 
-  - conda install conda-build jinja2
+  - conda install -q conda-build jinja2
 
   # use agg backend in matplotlib to avoid gui popup, which can not be closed.
   - echo %userprofile%
@@ -58,5 +58,5 @@ build: false # Not a C# project, build stuff at the test step instead.
 test_script:
   # run testsuite and upload test results to AppVeyor; return exit code of testsuite
   #- "powershell ./tools/ci/appveyor/runTestsuite.ps1"
-  - conda build tools/conda-recipe
+  - conda build -q tools/conda-recipe
 
