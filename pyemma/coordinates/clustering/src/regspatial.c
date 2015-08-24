@@ -234,7 +234,7 @@ PyMODINIT_FUNC initregspatial(void)
     if (module == NULL)
         INITERROR;
 
-    st->error = PyErr_NewException("regspace.Error", NULL, NULL);
+    st->error = PyErr_NewException("regspatial.Error", NULL, NULL);
     if (st->error == NULL) {
         Py_DECREF(module);
         INITERROR;
