@@ -40,6 +40,8 @@ class MaximumLikelihoodMSM(_Estimator, _EstimatedMSM):
 
     reversible : bool, optional, default = True
         If true compute reversible MSM, else non-reversible MSM
+    statdist : (M,) ndarray, optional
+        Stationary vector on the full set of states
 
     count_mode : str, optional, default='sliding'
         mode to obtain count matrices from discrete trajectories. Should be
@@ -115,12 +117,16 @@ class MaximumLikelihoodMSM(_Estimator, _EstimatedMSM):
         of the change vector, :math:`|e_i|_2`, is compared to maxerr.
 
     """
-    def __init__(self, lag=1, reversible=True, count_mode='sliding', sparse=False, connectivity='largest',
-                 dt_traj='1 step', maxiter=1000000, maxerr=1e-8):
+    def __init__(self, lag=1, reversible=True, statdist=None,
+                 count_mode='sliding', sparse=False,
+                 connectivity='largest', dt_traj='1 step', maxiter=1000000,
+                 maxerr=1e-8):
         self.lag = lag
 
         # set basic parameters
         self.reversible = reversible
+        self.statdist = statdist
+        
 
         # sparse matrix computation wanted?
         self.sparse = sparse
@@ -184,7 +190,8 @@ class MaximumLikelihoodMSM(_Estimator, _EstimatedMSM):
 
         # set active set
         if self.connectivity == 'largest':
-            # the largest connected set is the active set. This is at the same time a mapping from active to full
+            # the largest connected set is the active set. This is at
+            # the same time a mapping from active to full
             self.active_set = dtrajstats.largest_connected_set
         else:
             # for 'None' and 'all' all visited states are active
@@ -193,6 +200,12 @@ class MaximumLikelihoodMSM(_Estimator, _EstimatedMSM):
         # FIXME: setting is_estimated before so that we can start using the parameters just set, but this is not clean!
         # is estimated
         self._is_estimated = True
+
+        # restrict stationary distribution to active set
+        if self.statdist is None:
+            self.statdist_active = None
+        else:
+            self.statdist_active = self.statdist[self.active_set]
 
         # count matrices and numbers of states
         self._C_full = dtrajstats.count_matrix()
@@ -208,14 +221,17 @@ class MaximumLikelihoodMSM(_Estimator, _EstimatedMSM):
         # Estimate transition matrix
         if self.connectivity == 'largest':
             P = msmest.transition_matrix(self._C_active, reversible=self.reversible,
-                                         maxiter=self.maxiter, maxerr=self.maxerr)
+                                         mu=self.statdist_active, maxiter=self.maxiter,
+                                         maxerr=self.maxerr)
         elif self.connectivity == 'none':
-            # reversible mode only possible if active set is connected - in this case all visited states are connected
-            # and thus this mode is identical to 'largest'
+            # reversible mode only possible if active set is connected
+            # - in this case all visited states are connected and thus
+            # this mode is identical to 'largest'
             if self.reversible and not msmest.is_connected(self._C_active):
                 raise ValueError('Reversible MSM estimation is not possible with connectivity mode \'none\', '+
                                  'because the set of all visited states is not reversibly connected')
             P = msmest.transition_matrix(self._C_active, reversible=self.reversible,
+                                         mu=self.statdist_active,
                                          maxiter=self.maxiter, maxerr=self.maxerr)
         else:
             raise NotImplementedError(
@@ -223,16 +239,19 @@ class MaximumLikelihoodMSM(_Estimator, _EstimatedMSM):
 
         # continue sparse or dense?
         if not self.sparse:
-            # converting count matrices to arrays. As a result the transition matrix and all subsequent properties
-            # will be computed using dense arrays and dense matrix algebra.
+            # converting count matrices to arrays. As a result the
+            # transition matrix and all subsequent properties will be
+            # computed using dense arrays and dense matrix algebra.
             self._C_full = self._C_full.toarray()
             self._C_active = self._C_active.toarray()
             P = P.toarray()
 
-        # Done. We set our own model parameters, so this estimator is equal to the estimated model.
+        # Done. We set our own model parameters, so this estimator is
+        # equal to the estimated model.
         self._dtrajs_full = dtrajs
         self._connected_sets = msmest.connected_sets(self._C_full)
-        self.set_model_params(P=P, reversible=self.reversible, dt_model=self.timestep_traj.get_scaled(self.lag))
+        self.set_model_params(P=P, reversible=self.reversible,
+                              dt_model=self.timestep_traj.get_scaled(self.lag))
 
         return self
 
