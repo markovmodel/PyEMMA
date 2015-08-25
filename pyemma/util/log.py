@@ -32,10 +32,17 @@ Created on 15.10.2013
 from __future__ import absolute_import
 __all__ = ['getLogger', 'enabled', 'CRITICAL', 'DEBUG', 'FATAL', 'INFO', 'NOTSET',
            'WARN', 'WARNING']
-from six import PY3
 import logging
+
+from six import PY3
 if PY3:
-    from importlib import reload
+    import sys
+    if sys.version_info[1] <= 3:
+        # python <= 3.3
+        from imp import reload
+    else:
+        # python >= 3.4
+        from importlib import reload
 
 reload(logging)
 
