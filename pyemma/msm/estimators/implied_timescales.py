@@ -107,9 +107,6 @@ class ImpliedTimescales(Estimator, ProgressReporter):
         self._its = None
         # sampled its's. 3D-array with indexing: lagtime, its, sample
         self._its_samples = None
-        
-        ProgressReporter.__init__(self)
-
 
     def _estimate(self, data):
         r"""Estimates ITS at set of lagtimes
@@ -138,22 +135,18 @@ class ImpliedTimescales(Estimator, ProgressReporter):
         ### RUN ESTIMATION
 
         # construct all parameter sets for the estimator
-        param_sets = param_grid({'lag': self._lags})
-        param_sets = [p for p in param_sets]
+        param_sets = tuple(param_grid({'lag': self._lags}))
 
         # run estimation on all lag times
         self._models, self._estimators = estimate_param_scan(self.estimator,
                                                              data, param_sets,
                                                              return_estimators=True,
-                                                             n_jobs=self.n_jobs)
+                                                             n_jobs=self.n_jobs,
+                                                             progress_reporter=self)
 
         ### PROCESS RESULTS
         # timescales
-        timescales = []
-        self._progress_register(len(self._models), stage=1, description="calc timescales")
-        for m in self._models:
-            timescales.append(m.timescales())
-            self._progress_update(1, stage=1)
+        timescales = [m.timescales() for m in self._models]
 
         # how many finity timescales do we really have?
         maxnts = max([len(ts[np.isfinite(ts)]) for ts in timescales])
