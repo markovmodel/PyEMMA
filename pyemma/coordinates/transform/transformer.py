@@ -201,7 +201,7 @@ class Transformer(ProgressReporter):
                               for l in self.trajectory_lengths(stride)])
         else:
             chunks = 1
-        return chunks
+        return int(chunks)
 
     def _close(self):
         if self.data_producer is not self:
