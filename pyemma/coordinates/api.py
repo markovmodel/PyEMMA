@@ -57,12 +57,11 @@ from pyemma.coordinates.util.stat import histogram
 from mdtraj import Topology as _Topology, Trajectory as _Trajectory
 
 from six import string_types
+from six.moves import range
 from six.moves import zip
 
 import numpy as _np
 import itertools as _itertools
-from six.moves import range
-from six.moves import zip
 
 _logger = _getLogger('coordinates.api')
 

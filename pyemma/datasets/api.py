@@ -1,4 +1,4 @@
-from __future__ import (print_function, absolute_import)
+from __future__ import absolute_import
 __author__ = 'noe'
 
 def load_2well_discrete():

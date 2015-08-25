@@ -1,12 +1,12 @@
 from __future__ import absolute_import
 from six.moves import range
+
 __author__ = 'noe'
 
 import numpy as np
 from pyemma._base.estimator import Estimator, estimate_param_scan, param_grid
 from pyemma._base.model import SampledModel
 #from pyemma._base.progress import ProgressReporter
-from six.moves import range
 from pyemma.util.statistics import confidence_interval
 from pyemma.util import types
 import math

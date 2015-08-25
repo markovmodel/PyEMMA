@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 from six.moves import range
+
 __author__ = 'noe'
 
 from pyemma._ext.sklearn.base import BaseEstimator as _BaseEstimator
@@ -13,8 +14,6 @@ import joblib
 
 # imports for external usage
 from pyemma._ext.sklearn.base import clone as clone_estimator
-from six.moves import range
-from pyemma._base.progress import ProgressReporter
 
 def get_estimator(estimator):
     """ Returns an estimator object given an estimator object or class

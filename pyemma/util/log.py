@@ -35,7 +35,7 @@ __all__ = ['getLogger', 'enabled', 'CRITICAL', 'DEBUG', 'FATAL', 'INFO', 'NOTSET
 from six import PY3
 import logging
 if PY3:
-    from imp import reload
+    from importlib import reload
 
 reload(logging)
 
