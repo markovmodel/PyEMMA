@@ -265,7 +265,7 @@ def markov_model(P, dt_model='1 step'):
     >>> print mm.mfpt(0, 2)
     160.0
 
-    And many more. See :class:`MSM <pyemma.msm.ui.MSM>` for a full documentation.
+    And many more. See :class:`MSM <pyemma.msm.models.MSM>` for a full documentation.
 
     """
     return MSM(P, dt_model=dt_model)
@@ -275,7 +275,7 @@ def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
                           dt_traj='1 step', maxiter=1000000, maxerr=1e-8):
     r""" Estimates a Markov model from discrete trajectories
 
-    Returns a :class:`EstimatedMSM <pyemma.msm.ui.EstimatedMSM>` that
+    Returns a :class:`EstimatedMSM <pyemma.msm.estimators.EstimatedMSM>` that
     contains the estimated transition matrix and allows to compute a
     large number of quantities related to Markov models.
 
@@ -353,7 +353,7 @@ def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
 
     Returns
     -------
-    An :class:`EstimatedMSM <pyemma.msm.ui.EstimatedMSM>` object
+    An :class:`EstimatedMSM <pyemma.msm.estimators.EstimatedMSM>` object
     containing a transition matrix and various other MSM-related
     quantities.
 
