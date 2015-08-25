@@ -45,26 +45,38 @@ class KmeansClustering(AbstractClustering):
 
     def __init__(self, n_clusters, max_iter=5, metric='euclidean',
                  tolerance=1e-5, init_strategy='kmeans++', oom_strategy='memmap'):
-        r"""
-        Kmeans clustering
+        r"""Kmeans clustering
 
         Parameters
         ----------
         n_clusters : int
             amount of cluster centers
+
         max_iter : int
-            how many iterations per chunk?
+            maximum number of iterations before stopping.
+
+        tolerance : float
+            stop iteration when the relative change in the cost function
+
+            .. math:
+                C(S) = \sum_{i=1}^{k} \sum_{\mathbf x \in S_i} \left\| \mathbf x - \boldsymbol\mu_i \right\|^2
+
+            is smaller than tolerance.
         metric : str
             metric to use during clustering ('euclidean', 'minRMSD')
-        tolerance : float
-            if the cluster centers' change did not exceed tolerance, stop iterating
+
         init_strategy : string
-            can be either 'kmeans++' or 'uniform', determining how the initial cluster centers are being chosen
-        oom_strategy : string
-            how to deal with out of memory situation during accumulation of all data.
-            Currently if no memory is available to store all data, a memory mapped
-            file is created and written to, if set to 'memmap'.
-            Set it to 'raise', to raise the exception then.
+            can be either 'kmeans++' or 'uniform', determining how the initial
+            cluster centers are being chosen
+
+        oom_strategy : string, default='memmap'
+            how to deal with out of memory situation during accumulation of all
+            data.
+
+            * 'memmap': if no memory is available to store all data, a memory
+                mapped file is created and written to
+            * 'raise': raise OutOfMemory exception.
+
         """
         super(KmeansClustering, self).__init__(metric=metric)
         self.n_clusters = n_clusters
