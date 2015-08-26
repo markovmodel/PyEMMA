@@ -1,19 +1,18 @@
 from __future__ import absolute_import
-from six.moves import range
 
-__author__ = 'noe'
+from six.moves import range
+import inspect
+import joblib
 
 from pyemma._ext.sklearn.base import BaseEstimator as _BaseEstimator
 from pyemma._ext.sklearn.parameter_search import ParameterGrid
 from pyemma.util.log import getLogger
 from pyemma.util import types as _types
 
-import inspect
-import joblib
-
-
 # imports for external usage
 from pyemma._ext.sklearn.base import clone as clone_estimator
+
+__author__ = 'noe'
 
 def get_estimator(estimator):
     """ Returns an estimator object given an estimator object or class
@@ -28,8 +27,10 @@ def get_estimator(estimator):
 
     """
     if inspect.isclass(estimator):
-        estimator = estimator()  # construct the estimator with default settings
+        # construct the estimator with default settings
+        estimator = estimator()
     return estimator
+
 
 def param_grid(pargrid):
     """ Generates an iterable over all possible parameter combinations from the grid
@@ -65,6 +66,7 @@ def param_grid(pargrid):
     """
     return ParameterGrid(pargrid)
 
+
 def _call_member(obj, name, args=None, failfast=True):
     """ Calls the specified method, property or attribute of the given object
 
@@ -87,19 +89,20 @@ def _call_member(obj, name, args=None, failfast=True):
             raise e
         else:
             return None
-    if str(type(method)) == '<type \'instancemethod\'>':  # call function
+
+    if inspect.ismethod(object):  # call function
         if args is None:
             return method()
         else:
             return method(*args)
-    elif str(type(method)) == '<type \'property\'>':  # call property
+    elif isinstance(type(obj).name, property):  # call property
         return method
     else:  # now it's an Attribute, so we can just return its value
         return method
 
 
 def _estimate_param_scan_worker(estimator, params, X, evaluate, evaluate_args,
-                                failfast, progress_reporter=None):
+                                failfast):
     # run estimation
     model = estimator.estimate(X, **params)
     # deal with results
@@ -108,7 +111,8 @@ def _estimate_param_scan_worker(estimator, params, X, evaluate, evaluate_args,
     # deal with result
     if evaluate is None:  # we want full models
         res.append(model)
-    elif _types.is_iterable(evaluate):  # we want to evaluate function(s) of the model
+    # we want to evaluate function(s) of the model
+    elif _types.is_iterable(evaluate):
         values = []  # the function values the model
         for ieval in range(len(evaluate)):
             # get method/attribute name and arguments to be evaluated
@@ -118,8 +122,10 @@ def _estimate_param_scan_worker(estimator, params, X, evaluate, evaluate_args,
                 args = evaluate_args[ieval]
             # evaluate
             try:
-                value = _call_member(model, name, args=args)  # try calling method/property/attribute
-            except AttributeError as e:  # couldn't find method/property/attribute
+                # try calling method/property/attribute
+                value = _call_member(model, name, args=args)
+            # couldn't find method/property/attribute
+            except AttributeError as e:
                 if failfast:
                     raise e  # raise an AttributeError
                 else:
@@ -129,7 +135,7 @@ def _estimate_param_scan_worker(estimator, params, X, evaluate, evaluate_args,
         if len(values) == 1:
             values = values[0]
     else:
-        raise ValueError('Invalid setting for evaluate: '+str(evaluate))
+        raise ValueError('Invalid setting for evaluate: ' + str(evaluate))
 
     if len(res) == 1:
         res = res[0]
@@ -212,6 +218,24 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
     if _types.is_string(evaluate):
         evaluate = [evaluate]
 
+    # set call back for joblib
+    if progress_reporter is not None:
+        progress_reporter._progress_register(len(estimators), stage=0,
+                                             description="estimating")
+
+    class CallBack(object):
+        def __init__(self, index, parallel):
+            self.index = index
+            self.parallel = parallel
+
+        def __call__(self, index):
+            if progress_reporter is not None:
+                progress_reporter._progress_update(1, stage=0)
+            if self.parallel._original_iterable:
+                self.parallel.dispatch_next()
+    import joblib.parallel
+    joblib.parallel.CallBack = CallBack
+
     # iterate over parameter settings
     pool = joblib.Parallel(n_jobs=n_jobs)
     task_iter = (joblib.delayed(_estimate_param_scan_worker)(estimators[i],
@@ -219,11 +243,14 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
                                                              evaluate,
                                                              evaluate_args,
                                                              failfast,
-                                                             progress_reporter)
-                for i in range(len(param_sets)))
+                                                             )
+                 for i in range(len(param_sets)))
 
     # container for model or function evaluations
     res = pool(task_iter)
+
+    if progress_reporter is not None:
+        progress_reporter._progress_force_finish(0)
 
     # done
     if return_estimators:
@@ -277,7 +304,8 @@ class Estimator(_BaseEstimator):
         return self._model
 
     def _estimate(self, X):
-        raise NotImplementedError('You need to overload the _estimate() method in your Estimator implementation!')
+        raise NotImplementedError(
+            'You need to overload the _estimate() method in your Estimator implementation!')
 
     def fit(self, X):
         """ For compatibility with sklearn.
@@ -291,5 +319,5 @@ class Estimator(_BaseEstimator):
         try:
             return self._model
         except AttributeError:
-            raise AttributeError('Model has not yet been estimated. Call estimate(X) or fit(X) first')
-
+            raise AttributeError(
+                'Model has not yet been estimated. Call estimate(X) or fit(X) first')

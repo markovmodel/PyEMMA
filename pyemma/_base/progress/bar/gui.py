@@ -47,6 +47,17 @@ if ipython_notebook_session:
     from IPython.html.widgets import IntProgress, Box, Text
 
 
+def hide_widget(widget):
+    widget.close()
+
+
+def hide_progressbar(bar):
+    if ipython_notebook_session and hasattr(bar, 'widget'):
+        from threading import Timer
+        timeout = 2
+        Timer(timeout, hide_widget, args=(bar.widget, )).start()
+
+
 def show_progressbar(bar, show_eta=True):
     """ shows given bar either using an ipython widget, if in
     interactive session or simply use the string format of it and print it
