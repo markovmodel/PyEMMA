@@ -44,7 +44,7 @@ __all__ = ['KmeansClustering']
 class KmeansClustering(AbstractClustering):
 
     def __init__(self, n_clusters, max_iter=5, metric='euclidean',
-                 tolerance=1e-5, init_strategy='kmeans++', oom_strategy='memmap'):
+                 tolerance=1e-5, init_strategy='kmeans++', fixed_seed=False, oom_strategy='memmap'):
         r"""Kmeans clustering
 
         Parameters
@@ -68,6 +68,9 @@ class KmeansClustering(AbstractClustering):
         init_strategy : string
             can be either 'kmeans++' or 'uniform', determining how the initial
             cluster centers are being chosen
+            
+        fixed_seed : bool
+            if True, the seed gets set to 42
 
         oom_strategy : string, default='memmap'
             how to deal with out of memory situation during accumulation of all
@@ -87,6 +90,7 @@ class KmeansClustering(AbstractClustering):
         self._init_strategy = init_strategy
         self._oom_strategy = oom_strategy
         self._custom_param_progress_handling = True
+        self._fixed_seed = fixed_seed
 
     def _param_init(self):
         self._prev_cost = 0
@@ -104,9 +108,13 @@ class KmeansClustering(AbstractClustering):
         if self._init_strategy == 'uniform':
             # gives random samples from each trajectory such that the cluster centers are distributed percentage-wise
             # with respect to the trajectories length
+            if self._fixed_seed:
+                random.seed(42)
             for idx, traj_len in enumerate(traj_lengths):
                 self._init_centers_indices[idx] = random.sample(range(0, traj_len), int(
                     math.ceil((traj_len / float(total_length)) * self.n_clusters)))
+            if self._fixed_seed:
+                random.seed(None)
 
     def _init_in_memory_chunks(self, size):
         try:
@@ -203,7 +211,7 @@ class KmeansClustering(AbstractClustering):
             elif last_chunk and self._init_strategy == 'kmeans++':
                 kmeans_clustering.set_callback(self.kmeanspp_center_assigned)
                 cc = kmeans_clustering.init_centers(self._in_memory_chunks,
-                                                    self.metric, self.n_clusters)
+                                                    self.metric, self.n_clusters, not self._fixed_seed)
                 self._cluster_centers_iter = [c for c in cc]
 
     def _collect_data(self, X, first_chunk, stride):
@@ -226,7 +234,7 @@ class MiniBatchKmeansClustering(KmeansClustering):
 
     def __init__(self, n_clusters, max_iter=5, metric='euclidean', tolerance=1e-5, init_strategy='kmeans++',
                  batch_size=0.2, oom_strategy='memmap'):
-        super(MiniBatchKmeansClustering, self).__init__(n_clusters, max_iter, metric, tolerance, init_strategy,
+        super(MiniBatchKmeansClustering, self).__init__(n_clusters, max_iter, metric, tolerance, init_strategy, False,
                                                         oom_strategy)
         self._batch_size = batch_size
         if self._batch_size > 1:
