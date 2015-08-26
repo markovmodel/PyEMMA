@@ -10,6 +10,8 @@ Pentapeptide
 =============================
 
 .. toctree::
+   :maxdepth: 1
+
    generated/md2msm_penta_peptide
 
 
@@ -17,6 +19,8 @@ BPTI
 =============================
 
 .. toctree::
+   :maxdepth: 1
+
    generated/MSM_BPTI
 
 
