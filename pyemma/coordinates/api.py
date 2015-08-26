@@ -1121,7 +1121,8 @@ def cluster_mini_batch_kmeans(data=None, k=100, max_iter=10, batch_size=0.2, met
     return _param_stage(data, res, stride=1)
 
 
-def cluster_kmeans(data=None, k=100, max_iter=10, tolerance=1e-5, stride=1, metric='euclidean', init_strategy='kmeans++'):
+def cluster_kmeans(data=None, k=100, max_iter=10, tolerance=1e-5, stride=1,
+                   metric='euclidean', init_strategy='kmeans++', fixed_seed=False):
     r"""k-means clustering
 
     If data is given, it performs a k-means clustering and then assigns the
@@ -1164,8 +1165,10 @@ def cluster_kmeans(data=None, k=100, max_iter=10, tolerance=1e-5, stride=1, metr
     metric : str
         metric to use during clustering ('euclidean', 'minRMSD')
     init_strategy : str
-        determines if the initial cluster centers are chosen according to the
-        kmeans++ algorithm or uniformly distributed
+        determines if the initial cluster centers are chosen according to the kmeans++-algorithm
+        or drawn uniformly distributed from the provided data set
+    fixed_seed : bool
+        if set to true, the random seed gets fixed resulting in deterministic behavior; default is false
 
     Returns
     -------
@@ -1200,8 +1203,8 @@ def cluster_kmeans(data=None, k=100, max_iter=10, tolerance=1e-5, stride=1, metr
             :attributes:
 
     """
-    res = _KmeansClustering(n_clusters=k, max_iter=max_iter, tolerance=tolerance,
-                            metric=metric, init_strategy=init_strategy)
+    res = _KmeansClustering(n_clusters=k, max_iter=max_iter, metric=metric, tolerance=tolerance,
+                            init_strategy=init_strategy, fixed_seed=fixed_seed)
     return _param_stage(data, res, stride=stride)
 
 
