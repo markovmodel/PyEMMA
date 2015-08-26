@@ -195,6 +195,9 @@ class TestMLHMM(unittest.TestCase):
         # approximately equal for both
         assert (np.abs(e - 31.73) < 0.01)
 
+        # test error case of incompatible vector size
+        self.assertRaises(ValueError, hmsm.expectation, list(range(hmsm.nstates_obs-1)))
+
     def test_correlation(self):
         hmsm = self.hmsm_lag10
         # raise assertion error because size is wrong:
@@ -219,6 +222,9 @@ class TestMLHMM(unittest.TestCase):
         assert (len(corr3) == maxtime / hmsm.lagtime)
         assert (corr3[0] < corr3[-1])
 
+        # test error case of incompatible vector size
+        self.assertRaises(ValueError, hmsm.correlation, list(range(hmsm.nstates+hmsm.nstates_obs)), None)
+
     def test_relaxation(self):
         hmsm = self.hmsm_lag10
         a = list(range(hmsm.nstates))
@@ -232,6 +238,9 @@ class TestMLHMM(unittest.TestCase):
         assert (len(times) == maxtime / hmsm.lagtime)
         assert (len(rel2) == maxtime / hmsm.lagtime)
         assert (rel2[0] < rel2[-1])
+
+        # test error case of incompatible vector size
+        self.assertRaises(ValueError, hmsm.relaxation, list(range(hmsm.nstates+1)), list(range(hmsm.nstates+1)))
 
     def test_fingerprint_correlation(self):
         hmsm = self.hmsm_lag10
@@ -259,6 +268,9 @@ class TestMLHMM(unittest.TestCase):
         assert (np.allclose(fp1[0], fp3[0]))
         assert (np.allclose(fp1[1][1:], -fp3[1][1:]))
 
+        # test error case of incompatible vector size
+        self.assertRaises(ValueError, hmsm.fingerprint_correlation, list(range(hmsm.nstates+hmsm.nstates_obs)), None)
+
     def test_fingerprint_relaxation(self):
         hmsm = self.hmsm_lag10
         # raise assertion error because size is wrong:
@@ -283,6 +295,10 @@ class TestMLHMM(unittest.TestCase):
         assert (np.allclose(fp2[0][1:], hmsm.timescales()))
         # dynamical amplitudes should be significant because we are not in equilibrium
         assert (np.max(np.abs(fp2[1][1:])) > 0.1)
+
+        # test error case of incompatible vector size
+        self.assertRaises(ValueError, hmsm.fingerprint_relaxation,
+                          list(range(hmsm.nstates+1)), list(range(hmsm.nstates+1)))
 
     # ================================================================================================================
     # Metastable state stuff

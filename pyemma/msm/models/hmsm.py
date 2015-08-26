@@ -246,8 +246,8 @@ class HMSM(_MSM):
         if len(a) == self.nstates:
             return _MSM.expectation(self, a)
         else:
-            raise ValueError('observable vector a has size ' + len(a) + ' which is incompatible with both hidden (' +
-                             self.nstates + ') and observed states (' + self.nstates_obs + ')')
+            raise ValueError('observable vector a has size %s which is incompatible with both hidden (%s) '
+                             'and observed states (%s)' % (len(a), self.nstates, self.nstates_obs))
 
     def correlation(self, a, b=None, maxtime=None, k=None, ncv=None):
         # basic checks for a and b
@@ -262,8 +262,8 @@ class HMSM(_MSM):
         if len(a) == self.nstates:
             return _MSM.correlation(self, a, b=b, maxtime=maxtime)
         else:
-            raise ValueError('observable vectors have size ' + len(a) + ' which is incompatible with both hidden (' +
-                             self.nstates + ') and observed states (' + self.nstates_obs + ')')
+            raise ValueError('observable vectors have size %s which is incompatible with both hidden (%s)'
+                             ' and observed states (%s)' % (len(a), self.nstates, self.nstates_obs))
 
     def fingerprint_correlation(self, a, b=None, k=None, ncv=None):
         # basic checks for a and b
@@ -278,8 +278,8 @@ class HMSM(_MSM):
         if len(a) == self.nstates:
             return _MSM.fingerprint_correlation(self, a, b=b)
         else:
-            raise ValueError('observable vectors have size ' + len(a) + ' which is incompatible with both hidden (' +
-                             self.nstates + ') and observed states (' + self.nstates_obs + ')')
+            raise ValueError('observable vectors have size %s which is incompatible with both hidden (%s)'
+                             ' and observed states (%s)' % (len(a), self.nstates, self.nstates_obs))
 
     def relaxation(self, p0, a, maxtime=None, k=None, ncv=None):
         # basic checks for a and b
@@ -293,8 +293,8 @@ class HMSM(_MSM):
         if len(a) == self.nstates:
             return _MSM.relaxation(self, p0, a, maxtime=maxtime)
         else:
-            raise ValueError('observable vectors have size ' + len(a) + ' which is incompatible with both hidden (' +
-                             self.nstates + ') and observed states (' + self.nstates_obs + ')')
+            raise ValueError('observable vectors have size %s which is incompatible with both hidden (%s)'
+                             ' and observed states (%s)' % (len(a), self.nstates, self.nstates_obs))
 
     def fingerprint_relaxation(self, p0, a, k=None, ncv=None):
         # basic checks for a and b
@@ -308,8 +308,8 @@ class HMSM(_MSM):
         if len(a) == self.nstates:
             return _MSM.fingerprint_relaxation(self, p0, a)
         else:
-            raise ValueError('observable vectors have size ' + len(a) + ' which is incompatible with both hidden (' +
-                             self.nstates + ') and observed states (' + self.nstates_obs + ')')
+            raise ValueError('observable vectors have size %s which is incompatible with both hidden (%s)'
+                             ' and observed states (%s)' % (len(a), self.nstates, self.nstates_obs))
 
     def pcca(self, m):
         raise NotImplementedError('PCCA is not meaningful for Hidden Markov models. ' +
