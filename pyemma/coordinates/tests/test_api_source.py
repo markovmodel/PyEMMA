@@ -23,6 +23,8 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+
+from __future__ import absolute_import
 import unittest
 import os
 import tempfile
@@ -96,11 +98,12 @@ class TestApiSourceFileReader(unittest.TestCase):
         # this file is not parseable as tabulated float file
         self.assertRaises(ValueError, api.source, self.bs)
 
-
+import pkg_resources
 class TestApiSourceFeatureReader(unittest.TestCase):
 
     def setUp(self):
-        path = os.path.join(os.path.split(__file__)[0], 'data')
+        path = pkg_resources.resource_filename(__name__, 'data') + os.path.sep
+
         self.pdb_file = os.path.join(path, 'bpti_ca.pdb')
         self.traj_files = [
             os.path.join(path, 'bpti_001-033.xtc'),

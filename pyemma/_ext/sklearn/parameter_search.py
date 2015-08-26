@@ -11,6 +11,8 @@ and
 
 Parameter estimation tools
 """
+
+from __future__ import absolute_import
 # Author: Alexandre Gramfort <alexandre.gramfort@inria.fr>,
 #         Gael Varoquaux <gael.varoquaux@normalesup.org>
 #         Andreas Mueller <amueller@ais.uni-bonn.de>
@@ -20,7 +22,9 @@ Parameter estimation tools
 from collections import Mapping
 from functools import partial
 from itertools import product
+from functools import reduce
 import operator
+from six.moves import zip
 
 class ParameterGrid(object):
     """Grid of parameters with a discrete number of values for each.
@@ -75,14 +79,14 @@ class ParameterGrid(object):
             if not items:
                 yield {}
             else:
-                keys, values = zip(*items)
+                keys, values = list(zip(*items))
                 for v in product(*values):
-                    params = dict(zip(keys, v))
+                    params = dict(list(zip(keys, v)))
                     yield params
 
     def __len__(self):
         """Number of points on the grid."""
         # Product function that can handle iterables (np.product can't).
         product = partial(reduce, operator.mul)
-        return sum(product(len(v) for v in p.values()) if p else 1
+        return sum(product(len(v) for v in list(p.values())) if p else 1
                    for p in self.param_grid)

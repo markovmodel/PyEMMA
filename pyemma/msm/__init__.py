@@ -80,86 +80,30 @@ Low-level functions for estimation and analysis of transition matrices and io.
 .. toctree::
    :maxdepth: 1
 
-   msm.io
+   msm.dtraj
    msm.generation
    msm.estimation
    msm.analysis
    msm.flux
 
 """
+from __future__ import absolute_import, print_function
+
 #####################################################
 # Low-level MSM functions (imported from msmtools)
-
-import sys as _sys
-import imp as _imp
-
-class _RedirectMSMToolsImport(object):
-    # this class redirects all imports into pyemma.msm package into msmtools.*
-    import msmtools as _msmtools
-    lookup_path = _msmtools.__path__
-
-    def __init__(self, *args):
-        self.module_names = args
-
-    def find_module(self, fullname, path=None):
-        if fullname in self.module_names:
-            self.path = path
-            return self
-        return None
-    
-    def load_module(self, name):
-        assert name.startswith('pyemma.msm.')
-
-        import inspect
-        _, filename, lineno, _, _, _ = \
-        inspect.getouterframes(inspect.currentframe())[1]
-
-        package = name[len('pyemma.msm.'):]
-        #pkg_resources.resource_filename('')
-        current_file = __file__
-        if __file__.endswith('.pyc'):
-            current_file = __file__[:-1]
-        #if True:
-        if filename != current_file:
-            msg = "Deprecated module '%s' imported." \
-                   " Please use 'msmtools.%s'" % (name, package)
-            import warnings
-            warnings.warn_explicit(msg, DeprecationWarning, filename, lineno)
-        # lookup the package in msmtools, if it starts with "pyemma.msm."
-        if name == 'pyemma.msm.io':
-            name = 'pyemma.msm.dtraj'
-        if name in _sys.modules:
-            return _sys.modules[name]
-
-        module_info = _imp.find_module(package, self.lookup_path)
-
-        # load, cache and return redirected module
-        module = _imp.load_module(package, *module_info)
-        _sys.modules[name] = module
-        return module
-
-_sys.meta_path = [_RedirectMSMToolsImport('pyemma.msm.analysis'),
-                  _RedirectMSMToolsImport('pyemma.msm.estimation'),
-                  _RedirectMSMToolsImport('pyemma.msm.generation'),
-                  _RedirectMSMToolsImport('pyemma.msm.dtraj'),
-                  _RedirectMSMToolsImport('pyemma.msm.io'),
-                  _RedirectMSMToolsImport('pyemma.msm.flux')]
-
 # backward compatibility to PyEMMA 1.2.x
-import analysis
-import estimation
-import generation
-import dtraj
-import io
-import flux
-from flux import ReactiveFlux
+from msmtools import analysis, estimation, generation, dtraj, flux
+from msmtools.flux import ReactiveFlux
+io = dtraj
+
 #####################################################
 # Estimators and models
-from estimators import MaximumLikelihoodMSM, BayesianMSM
-from estimators import MaximumLikelihoodHMSM, BayesianHMSM
-from estimators import ImpliedTimescales
+from .estimators import MaximumLikelihoodMSM, BayesianMSM
+from .estimators import MaximumLikelihoodHMSM, BayesianHMSM
+from .estimators import ImpliedTimescales
+from .estimators import EstimatedMSM, EstimatedHMSM
 
-from models import MSM, HMSM, SampledMSM, SampledHMSM
+from .models import MSM, HMSM, SampledMSM, SampledHMSM
 
 # high-level api
-from api import *
+from .api import *

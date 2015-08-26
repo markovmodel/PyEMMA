@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from six.moves import range
 __author__ = 'noe'
 
 import numpy as np
@@ -89,7 +91,7 @@ class DiscreteTrajectoryStats(object):
 
         # mapping from full to lcs
         self._full2lcs = -1 * np.ones((self._nstates), dtype=int)
-        self._full2lcs[lcs] = np.array(range(len(lcs)), dtype=int)
+        self._full2lcs[lcs] = np.array(list(range(len(lcs))), dtype=int)
 
         # remember that this function was called
         self._counted_at_lag = True

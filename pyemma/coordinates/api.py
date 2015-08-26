@@ -21,6 +21,7 @@
 # ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 r"""User-API for the pyemma.coordinates package
 
 .. currentmodule:: pyemma.coordinates.api
@@ -54,6 +55,10 @@ from pyemma.coordinates.util.stat import histogram
 
 # types
 from mdtraj import Topology as _Topology, Trajectory as _Trajectory
+
+from six import string_types
+from six.moves import range
+from six.moves import zip
 
 import numpy as _np
 import itertools as _itertools
@@ -217,9 +222,9 @@ def load(trajfiles, features=None, top=None, stride=1, chunk_size=100):
     >>> output = load(files, top='my_structure.pdb') # doctest: +SKIP
 
     """
-    if isinstance(trajfiles, basestring) or (
+    if isinstance(trajfiles, string_types) or (
         isinstance(trajfiles, (list, tuple))
-            and (any(isinstance(item, basestring) for item in trajfiles) or len(trajfiles) is 0)):
+            and (any(isinstance(item, string_types) for item in trajfiles) or len(trajfiles) is 0)):
         reader = _create_file_reader(trajfiles, top, features, chunk_size=chunk_size)
         trajs = reader.get_output(stride=stride)
         if len(trajs) == 1:
@@ -322,8 +327,8 @@ def source(inp, features=None, top=None, chunk_size=None):
     """
     # CASE 1: input is a string or list of strings
     # check: if single string create a one-element list
-    if isinstance(inp, basestring) or (isinstance(inp, (list, tuple))
-                                       and (any(isinstance(item, basestring) for item in inp) or len(inp) is 0)):
+    if isinstance(inp, string_types) or (isinstance(inp, (list, tuple))
+                                       and (any(isinstance(item, string_types) for item in inp) or len(inp) is 0)):
         reader = _create_file_reader(inp, top, features, chunk_size=chunk_size if chunk_size else 100)
 
     elif isinstance(inp, _np.ndarray) or (isinstance(inp, (list, tuple))
@@ -580,7 +585,7 @@ def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=1000, 
     # Determine the type of input and extract necessary parameters
     if isinstance(traj_inp, _FeatureReader):
         trajfiles = traj_inp.trajfiles
-        top  = traj_inp.topfile
+        top = traj_inp.topfile
         chunksize = traj_inp.chunksize
     else:
         # Do we have what we need?
@@ -624,7 +629,7 @@ def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=1000, 
     for ii, traj_idx in enumerate(file_pos):
         # Append the trajectory from the respective list of iterators
         # and advance that iterator
-        traj = _copy_traj_attributes(traj, trajectory_iterator_list[traj_idx].next(), ii)
+        traj = _copy_traj_attributes(traj, next(trajectory_iterator_list[traj_idx]), ii)
 
     # Return to memory as an mdtraj trajectory object
     if outfile is None:
@@ -726,7 +731,7 @@ def save_trajs(traj_inp, indexes, prefix = 'set_', fmt = None, outfiles = None,
     # Prepare the list of outfiles before the loop
     if outfiles is None:
         outfiles = []
-        for ii in xrange(len(indexes)):
+        for ii in range(len(indexes)):
             outfiles.append(prefix + '%06u' % ii + fmt)
 
     # Check that we have the same name of outfiles as (T, 2)-indexes arrays
@@ -736,7 +741,7 @@ def save_trajs(traj_inp, indexes, prefix = 'set_', fmt = None, outfiles = None,
     # This implementation looks for "i_indexes" separately, and thus one traj_inp.trajfile 
     # might be accessed more than once (less memory intensive)
     if not inmemory:
-        for i_indexes, outfile in _itertools.izip(indexes, outfiles):
+        for i_indexes, outfile in zip(indexes, outfiles):
             # TODO: use **kwargs to parse to save_traj
             save_traj(traj_inp, i_indexes, outfile, stride = stride, verbose=verbose)
 
@@ -744,7 +749,7 @@ def save_trajs(traj_inp, indexes, prefix = 'set_', fmt = None, outfiles = None,
     else:
         traj = save_traj(traj_inp, indexes, outfile=None, stride = stride, verbose=verbose)
         i_idx = 0
-        for i_indexes, outfile in _itertools.izip(indexes, outfiles):
+        for i_indexes, outfile in zip(indexes, outfiles):
             # Create indices for slicing the mdtraj trajectory object
             f_idx = i_idx + len(i_indexes)
             # print i_idx, f_idx
@@ -797,7 +802,7 @@ def _param_stage(previous_stage, this_stage, stride=1):
     return this_stage
 
 
-def pca(data=None, dim=2, var_cutoff=1.0, stride=1, mean=None):
+def pca(data=None, dim=2, var_cutoff=0.95, stride=1, mean=None):
     r""" Principal Component Analysis (PCA).
 
     PCA is a linear transformation method that finds coordinates of maximal
@@ -832,7 +837,7 @@ def pca(data=None, dim=2, var_cutoff=1.0, stride=1, mean=None):
         reduced by var_cutoff. Setting dim to a positive value is exclusive
         with var_cutoff.
 
-    var_cutoff : float in the range [0,1], optional, default 1
+    var_cutoff : float in the range [0,1], optional, default 0.95
         Determines the number of output dimensions by including dimensions
         until their cumulative kinetic variance exceeds the fraction
         subspace_variance. var_cutoff=1.0 means all numerically available
@@ -877,7 +882,7 @@ def pca(data=None, dim=2, var_cutoff=1.0, stride=1, mean=None):
     When used as a dimension reduction method, the input data is projected onto
     the dominant principal components.
 
-    See `Wiki page <http://en.wikipedia.org/wiki/Principal_component_analysis>`_
+    See `Wiki page <http://en.wikipedia.org/wiki/Principal_component_analysis>`_ for more theory and references.
     for more theory and references.
 
     Examples
@@ -934,7 +939,7 @@ def pca(data=None, dim=2, var_cutoff=1.0, stride=1, mean=None):
     return _param_stage(data, res, stride=stride)
 
 
-def tica(data=None, lag=10, dim=-1, var_cutoff=1.0, kinetic_map=False, stride=1,
+def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, stride=1,
          force_eigenvalues_le_one=False, mean=None):
     r""" Time-lagged independent component analysis (TICA).
 
@@ -973,7 +978,7 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=1.0, kinetic_map=False, stride=1,
         dimensions will be used unless reduced by var_cutoff.
         Setting dim to a positive value is exclusive with var_cutoff.
 
-    var_cutoff : float in the range [0,1], optional, default 1
+    var_cutoff : float in the range [0,1], optional, default 0.95
         Determines the number of output dimensions by including dimensions
         until their cumulative kinetic variance exceeds the fraction
         subspace_variance. var_cutoff=1.0 means all numerically available
@@ -1390,7 +1395,7 @@ def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True,
     >>> data = np.random.random((100, 3))
     >>> cluster_centers = data[np.random.randint(0, 99, size=10)]
     >>> dtrajs = assign_to_centers(data, cluster_centers)
-    >>> print dtrajs # doctest: +ELLIPSIS
+    >>> print(dtrajs) # doctest: +ELLIPSIS
     [array([...
 
     """
@@ -1403,3 +1408,4 @@ def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True,
         return parametrized_stage.dtrajs
 
     return parametrized_stage
+

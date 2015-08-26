@@ -1,10 +1,8 @@
-import copy
+from __future__ import absolute_import
 import numpy as _np
 import inspect
 import warnings
 
-from pyemma._ext import six
-from pyemma._ext.sklearn.base import _pprint
 from pyemma.util.statistics import confidence_interval
 from pyemma.util.reflection import call_member
 
@@ -44,7 +42,7 @@ class Model(object):
 
     def update_model_params(self, **params):
         """Update given model parameter if they are set to specific values"""
-        for key, value in params.iteritems():
+        for key, value in list(params.items()):
             if not hasattr(self, key):
                 setattr(self, key, value)  # set parameter for the first time.
             elif getattr(self, key) is None:
@@ -82,7 +80,7 @@ class Model(object):
 
             # XXX: should we rather test if instance of estimator?
             if deep and hasattr(value, 'get_params'):
-                deep_items = value.get_params().items()
+                deep_items = list(value.get_params().items())
                 out.update((key + '__' + k, val) for k, val in deep_items)
             out[key] = value
         return out

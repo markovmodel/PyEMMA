@@ -3,6 +3,8 @@ Created on 24.04.2015
 
 @author: marscher
 '''
+
+from __future__ import absolute_import
 import sys
 from pyemma import config
 

@@ -28,8 +28,11 @@ Created on 02.02.2015
 
 @author: marscher
 """
+
+from __future__ import absolute_import
 import unittest
 import os
+import pkg_resources
 import numpy as np
 
 from pyemma.coordinates import api
@@ -38,6 +41,7 @@ from pyemma.coordinates.data.data_in_memory import DataInMemory
 from pyemma.coordinates import source, tica
 from pyemma.util.log import getLogger
 import pyemma.util.types as types
+from six.moves import range
 
 logger = getLogger('TestTICA')
 
@@ -58,7 +62,7 @@ class TestTICA_Basic(unittest.TestCase):
 
     def test_MD_data(self):
         # this is too little data to get reasonable results. We just test to avoid exceptions
-        path = os.path.join(os.path.split(__file__)[0], 'data')
+        path = pkg_resources.resource_filename(__name__, 'data') + os.path.sep
         self.pdb_file = os.path.join(path, 'bpti_ca.pdb')
         self.xtc_file = os.path.join(path, 'bpti_mini.xtc')
         inp = source(self.xtc_file, top=self.pdb_file)
@@ -124,7 +128,7 @@ class TestTICA_Basic(unittest.TestCase):
 class TestTICAExtensive(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        import pyemma.msm.generation as msmgen
+        import msmtools.generation as msmgen
 
         # generate HMM with two Gaussians
         cls.P = np.array([[0.99, 0.01],
@@ -155,7 +159,7 @@ class TestTICAExtensive(unittest.TestCase):
 
     def test_kinetic_map(self):
         # test kinetic map variances:
-        tica_kinmap = api.tica(data=self.X, lag=self.lag, dim=-1, kinetic_map=True)
+        tica_kinmap = api.tica(data=self.X, lag=self.lag, dim=-1,var_cutoff=1, kinetic_map=True)
         O = tica_kinmap.get_output()[0]
         vars = np.var(O, axis=0)
         refs = tica_kinmap.eigenvalues ** 2
@@ -274,7 +278,7 @@ class TestTICAExtensive(unittest.TestCase):
 
     def test_feature_correlation_MD(self):
         # Copying from the test_MD_data
-        path = os.path.join(os.path.split(__file__)[0], 'data')
+        path = pkg_resources.resource_filename(__name__, 'data') + os.path.sep
         self.pdb_file = os.path.join(path, 'bpti_ca.pdb')
         self.xtc_file = os.path.join(path, 'bpti_mini.xtc')
         inp = source(self.xtc_file, top=self.pdb_file)

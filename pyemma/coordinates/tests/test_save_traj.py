@@ -30,10 +30,13 @@ the retrival via save_traj
 @author: gph82, clonker
 """
 
+from __future__ import absolute_import
+
 import unittest
 import os
 import shutil
 import tempfile
+import pkg_resources
 
 import numpy as np
 import pyemma.coordinates as coor
@@ -41,7 +44,7 @@ import mdtraj as md
 from pyemma.coordinates.data.util.reader_utils import single_traj_from_n_files, save_traj_w_md_load_frame, \
     compare_coords_md_trajectory_objects
 from pyemma.coordinates.api import save_traj
-
+from six.moves import range
 
 class TestSaveTraj(unittest.TestCase):
     @classmethod
@@ -50,7 +53,7 @@ class TestSaveTraj(unittest.TestCase):
 
     def setUp(self):
         self.eps = 1e-10
-        path = os.path.join(os.path.split(__file__)[0], 'data')
+        path = pkg_resources.resource_filename(__name__, 'data') + os.path.sep
         self.pdbfile = os.path.join(path, 'bpti_ca.pdb')
         self.trajfiles = [os.path.join(path, 'bpti_001-033.xtc'),
                           os.path.join(path, 'bpti_034-066.xtc'),
@@ -74,8 +77,8 @@ class TestSaveTraj(unittest.TestCase):
         # Instantiate the reader
         self.reader = coor.source(self.trajfiles, top=self.pdbfile)
         self.reader.chunksize = 30
-        self.n_pass_files = [self.subdir + 'n_pass.set_%06u.xtc' % ii for ii in xrange(len(self.sets))]
-        self.one_pass_files = [self.subdir + '1_pass.set_%06u.xtc' % ii for ii in xrange(len(self.sets))]
+        self.n_pass_files = [self.subdir + 'n_pass.set_%06u.xtc' % ii for ii in range(len(self.sets))]
+        self.one_pass_files = [self.subdir + '1_pass.set_%06u.xtc' % ii for ii in range(len(self.sets))]
 
         self.traj_ref = save_traj_w_md_load_frame(self.reader, self.sets)
         self.strides = [2, 3, 5]

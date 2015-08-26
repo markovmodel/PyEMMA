@@ -23,6 +23,8 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+
+from __future__ import absolute_import
 import unittest
 import os
 import tempfile
@@ -32,6 +34,7 @@ import numpy as np
 from pyemma.util.log import getLogger
 import pyemma.coordinates as coor
 import pyemma.util.types as types
+from six.moves import range
 
 
 logger = getLogger('TestReaderUtils')
@@ -154,7 +157,7 @@ class TestCluster(unittest.TestCase):
             c.save_dtrajs(trajfiles=None, prefix=prefix, output_dir=outdir, extension=extension)
 
             names = ["%s_%i%s" % (prefix, i, extension)
-                     for i in xrange(c.data_producer.number_of_trajectories())]
+                     for i in range(c.data_producer.number_of_trajectories())]
             names = [os.path.join(outdir, n) for n in names]
 
             # check files with given patterns are there

@@ -21,6 +21,8 @@
 # ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+from __future__ import absolute_import
 from pyemma.util.log import getLogger
 from pyemma._base.progress import ProgressReporter
 
@@ -30,6 +32,8 @@ from math import ceil
 
 from abc import ABCMeta, abstractmethod
 from pyemma.util.exceptions import NotConvergedWarning
+import six
+from six.moves import range
 
 __all__ = ['Transformer']
 __author__ = 'noe, marscher'
@@ -129,7 +133,7 @@ class TransformerIterator(object):
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         if self._transformer._itraj >= self._transformer.number_of_trajectories():
             raise StopIteration
 
@@ -140,9 +144,11 @@ class TransformerIterator(object):
         else:
             X, Y = self._transformer._next_chunk(self._ctx)
             return (last_itraj, X, Y)
+    def next(self):
+        return self.__next__()
 
 
-class Transformer(ProgressReporter):
+class Transformer(six.with_metaclass(ABCMeta, ProgressReporter)):
 
     r""" Basis class for pipeline objects
 
@@ -152,7 +158,6 @@ class Transformer(ProgressReporter):
         the chunksize used to batch process underlying data
 
     """
-    __metaclass__ = ABCMeta
     # count instances
     _ids = count(0)
 
@@ -239,7 +244,7 @@ class Transformer(ProgressReporter):
 
     def __create_logger(self):
         # note this is private, since it should only be called (once) from this class.
-        count = self._ids.next()
+        count = next(self._ids)
         i = self.__module__.rfind(".")
         j = self.__module__.find(".") + 1
         package = self.__module__[j:i]
@@ -719,7 +724,7 @@ class Transformer(ProgressReporter):
         if self._in_memory:
             # ensure stride and dimensions are same of cached result
             if self._Y and all(self._Y[i].shape == (self.trajectory_length(i, stride=stride), ndim)
-                               for i in xrange(self.number_of_trajectories())):
+                               for i in range(self.number_of_trajectories())):
                 return self._Y
 
         # allocate memory

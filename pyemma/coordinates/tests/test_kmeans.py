@@ -28,12 +28,15 @@ Created on 28.01.2015
 
 @author: marscher
 '''
+
+from __future__ import absolute_import
 import unittest
 import tempfile
 import os
 import numpy as np
 from pyemma.coordinates.api import cluster_kmeans
 import shutil
+from six.moves import range
 
 
 class TestKmeans(unittest.TestCase):
@@ -91,7 +94,7 @@ class TestKmeans(unittest.TestCase):
                                 output_dir=outdir, extension=extension)
 
         names = ["%s_%i%s" % (prefix, i, extension)
-                 for i in xrange(self.kmeans.data_producer.number_of_trajectories())]
+                 for i in range(self.kmeans.data_producer.number_of_trajectories())]
         names = [os.path.join(outdir, n) for n in names]
 
         # check files with given patterns are there

@@ -1,7 +1,8 @@
+from __future__ import absolute_import
 __author__ = 'noe'
 
 def load_2well_discrete():
-    from double_well_discrete import DoubleWell_Discrete_Data
+    from .double_well_discrete import DoubleWell_Discrete_Data
     return DoubleWell_Discrete_Data()
 
 def get_bpti_test_data():
@@ -24,5 +25,10 @@ def get_bpti_test_data():
     import pkg_resources
     path = pkg_resources.resource_filename('pyemma.coordinates.tests', 'data/')
     top = pkg_resources.resource_filename('pyemma.coordinates.tests', 'data/bpti_ca.pdb')
-    trajs = sorted(filter(lambda x: x.find('mini') == -1, glob(path + os.sep + "*.xtc")))
+
+    trajs = glob(path + os.sep + "*.xtc")
+    trajs = filter(lambda f: not f.endswith("bpti_mini.xtc"), trajs)
+    trajs = sorted(trajs)
+
+    assert len(trajs) == 3
     return {'trajs': trajs, 'top': top}

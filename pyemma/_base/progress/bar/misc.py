@@ -4,6 +4,8 @@ Created on 21.04.2015
 @author: marscher
 '''
 
+from __future__ import absolute_import
+
 """Miscellaneous classes/functions/etc."""
 import os
 import struct

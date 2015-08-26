@@ -1,3 +1,6 @@
+from __future__ import absolute_import
+from six.moves import range
+
 __author__ = 'noe'
 
 from pyemma.msm.models.msm import MSM as _MSM
@@ -5,7 +8,6 @@ from pyemma.msm.estimators.maximum_likelihood_msm import MaximumLikelihoodMSM as
 from pyemma.msm.models.msm_sampled import SampledMSM as _SampledMSM
 from pyemma.util.types import ensure_dtraj_list
 from pyemma._base.progress import ProgressReporter
-from pyemma._ext.six.moves import range
 
 
 class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporter):

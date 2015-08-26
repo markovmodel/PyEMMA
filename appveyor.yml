@@ -12,19 +12,23 @@ environment:
   matrix:
     - PYTHON: "C:\\Python27_32"
       PYTHON_VERSION: "2.7.8"
+      CONDA_PY: "27"
       PYTHON_ARCH: "32"
     
     - PYTHON: "C:\\Python27_64"
       PYTHON_VERSION: "2.7.8"
+      CONDA_PY: "27" 
       PYTHON_ARCH: "64"
 
-#    - PYTHON: "C:\\Python34_32"
-#      PYTHON_VERSION: "3.4.1"
-#      PYTHON_ARCH: "32"
+    - PYTHON: "C:\\Python34_32"
+      PYTHON_VERSION: "3.4.1"
+      CONDA_PY: "34"
+      PYTHON_ARCH: "32"
 
-#    - PYTHON: "C:\\Python34_64"
-#      PYTHON_VERSION: "3.4.1"
-#      PYTHON_ARCH: "64"
+    - PYTHON: "C:\\Python34_64"
+      PYTHON_VERSION: "3.4.1"
+      CONDA_PY: "34"
+      PYTHON_ARCH: "64"
 
 install:
   - "powershell ./tools/ci/appveyor/install.ps1"
@@ -33,23 +37,18 @@ install:
   # Check that we have the expected version and architecture for Python
   - "python --version"
   - "python -c \"import struct; print(struct.calcsize('P') * 8)\""
+  - conda config --set always_yes true 
+  - conda config --add channels http://conda.binstar.org/omnia 
+  - conda install -q conda-build jinja2
+
   # use agg backend in matplotlib to avoid gui popup, which can not be closed.
   - echo %userprofile%
   - mkdir %userprofile%\\.matplotlib
   - "echo backend: agg > %userprofile%\\.matplotlib\\matplotlibrc"
-  # install dependencies
-  - conda install -q --yes -c https://conda.binstar.org/omnia scipy numpy nose cython mdtraj matplotlib 
-  # temporarily install bhmm from git, as recent pyemma development uses not yet released features of bhmm
-  - pip install git+https://github.com/markovmodel/msmtools@devel
-  - pip install git+https://github.com/bhmm/bhmm@master
-  # Build the compiled extension and run the project tests
-  - "%CMD_IN_ENV% python setup.py develop"
 
 build: false # Not a C# project, build stuff at the test step instead.
 
 test_script:
   # run testsuite and upload test results to AppVeyor; return exit code of testsuite
-  - "powershell ./tools/ci/appveyor/runTestsuite.ps1"
+  - conda build -q tools/conda-recipe
 
-#deploy_script:
-#  - "powershell ./tools/ci/appveyor/deploy.ps1"

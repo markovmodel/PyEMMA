@@ -28,6 +28,10 @@ Created on 14.04.2015
 
 @author: marscher
 '''
+
+from __future__ import absolute_import
+# unicode compat py2/3
+from six import text_type
 import unittest
 from pyemma.coordinates.api import load
 import os
@@ -35,7 +39,9 @@ import os
 import numpy as np
 from pyemma.coordinates import api
 
-path = os.path.join(os.path.split(__file__)[0], 'data')
+import pkg_resources
+path = pkg_resources.resource_filename(__name__, 'data') + os.path.sep
+
 pdb_file = os.path.join(path, 'bpti_ca.pdb')
 traj_files = [
     os.path.join(path, 'bpti_001-033.xtc'),
@@ -46,13 +52,13 @@ traj_files = [
 class TestAPILoad(unittest.TestCase):
 
     def testUnicodeString_without_featurizer(self):
-        filename = unicode(traj_files[0])
+        filename = text_type(traj_files[0])
 
         with self.assertRaises(ValueError):
             load(filename)
 
     def testUnicodeString(self):
-        filename = unicode(traj_files[0])
+        filename = text_type(traj_files[0])
         features = api.featurizer(pdb_file)
 
         load(filename, features)

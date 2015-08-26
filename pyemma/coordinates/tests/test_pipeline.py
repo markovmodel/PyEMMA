@@ -23,6 +23,10 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+
+from __future__ import print_function
+
+from __future__ import absolute_import
 import unittest
 import os
 
@@ -31,14 +35,15 @@ import numpy as np
 from pyemma.coordinates.data import DataInMemory
 from pyemma.coordinates.data import MDFeaturizer
 from pyemma.coordinates import api
-import pyemma.msm.generation as msmgen
+import msmtools.generation as msmgen
 import tempfile
-
+from six.moves import range
+import pkg_resources
 
 class TestPipeline(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        path = os.path.join(os.path.split(__file__)[0], 'data')
+        path = pkg_resources.resource_filename(__name__, 'data') + os.path.sep
         cls.pdb_file = os.path.join(path, 'bpti_ca.pdb')
         cls.feat = MDFeaturizer(cls.pdb_file)
         cls.feat.add_all()
@@ -148,7 +153,7 @@ class TestPipeline(unittest.TestCase):
         p = api.pipeline([reader_xtc, kmeans])
         out1 = kmeans.get_output()
         # replace source
-        print reader_gen
+        print(reader_gen)
         p.set_element(0, reader_gen)
         assert hasattr(kmeans, '_chunks')
         p.parametrize()

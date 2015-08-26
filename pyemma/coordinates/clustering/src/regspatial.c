@@ -131,9 +131,9 @@ error:
     return py_res;
 }
 
-#define MOD_USAGE "Chunked regular spatial clustering"
+static char MOD_USAGE[] = "Chunked regular spatial clustering";
 
-#define CLUSTER_USAGE "cluster(chunk, centers, mindist, metric)\n"\
+static char CLUSTER_USAGE[] = "cluster(chunk, centers, mindist, metric)\n"\
 "Given a chunk of data and a list of cluster centers, update the list of cluster centers with the newly found centers.\n"\
 "\n"\
 "Parameters\n"\
@@ -159,7 +159,7 @@ error:
 "\n"\
 "Note\n"\
 "----\n"\
-"This function uses the minRMSD implementation of mdtraj."
+"This function uses the minRMSD implementation of mdtraj.";
 
 
 static PyMethodDef regspatialMethods[] =
@@ -169,8 +169,81 @@ static PyMethodDef regspatialMethods[] =
      {NULL, NULL, 0, NULL}
 };
 
+struct module_state {
+    PyObject *error;
+};
+
+#if PY_MAJOR_VERSION >= 3
+#define GETSTATE(m) ((struct module_state*)PyModule_GetState(m))
+#else
+#define GETSTATE(m) (&_state)
+static struct module_state _state;
+#endif
+
+static PyObject *
+error_out(PyObject *m) {
+    struct module_state *st = GETSTATE(m);
+    PyErr_SetString(st->error, "something bad happened");
+    return NULL;
+}
+
+
+#if PY_MAJOR_VERSION >= 3
+
+static int myextension_traverse(PyObject *m, visitproc visit, void *arg) {
+    Py_VISIT(GETSTATE(m)->error);
+    return 0;
+}
+
+static int myextension_clear(PyObject *m) {
+    Py_CLEAR(GETSTATE(m)->error);
+    return 0;
+}
+
+
+static struct PyModuleDef moduledef = {
+        PyModuleDef_HEAD_INIT,
+        "regspatial",
+        NULL,
+        sizeof(struct module_state),
+        regspatialMethods,
+        NULL,
+        myextension_traverse,
+        myextension_clear,
+        NULL
+};
+
+#define INITERROR return NULL
+
+PyObject *
+PyInit_regspatial(void)
+
+#else // py2
+#define INITERROR return
+
 PyMODINIT_FUNC initregspatial(void)
+#endif
 {
-  (void)Py_InitModule3("regspatial", regspatialMethods, MOD_USAGE);
-  import_array();
+#if PY_MAJOR_VERSION >= 3
+    PyObject *module = PyModule_Create(&moduledef);
+#else
+    PyObject *module = Py_InitModule3("regspatial", regspatialMethods, MOD_USAGE);
+#endif
+    struct module_state *st = GETSTATE(module);
+
+    if (module == NULL)
+        INITERROR;
+
+    st->error = PyErr_NewException("regspatial.Error", NULL, NULL);
+    if (st->error == NULL) {
+        Py_DECREF(module);
+        INITERROR;
+    }
+    // numpy support
+    import_array();
+
+
+#if PY_MAJOR_VERSION >= 3
+    return module;
+#endif
 }

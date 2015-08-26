@@ -56,7 +56,7 @@ class TemporaryDirectory(object):
     >>> with TemporaryDirectory() as tmp:
     ...    path = os.path.join(tmp, "myfile.dat")
     ...    fh = open(path, 'w')
-    ...    fh.write('hello world')
+    ...    _ = fh.write('hello world')
     ...    fh.close()
 
     Upon exiting the context, the directory and everything contained

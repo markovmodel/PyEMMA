@@ -27,9 +27,12 @@ Created on 11.04.2015
 
 @author: marscher
 '''
+
+from __future__ import absolute_import
 from pyemma.coordinates.data.interface import ReaderInterface
 import numpy as np
 import csv
+from six.moves import range
 
 
 class _csv_chunked_numpy_iterator:
@@ -57,11 +60,11 @@ class _csv_chunked_numpy_iterator:
 
         # skip header in first row
         if header == 0:
-            self.reader.next()
+            next(self.reader)
             self.line = 1
 
     def get_chunk(self):
-        return self.next()
+        return next(self)
 
     def __iter__(self):
         return self
@@ -74,7 +77,7 @@ class _csv_chunked_numpy_iterator:
         result = stack_of_strings.astype(float)
         return result
 
-    def next(self):
+    def __next__(self):
         if not self.fh:
             raise StopIteration
 
@@ -88,7 +91,7 @@ class _csv_chunked_numpy_iterator:
 
             self.line += 1
             if not self._ctx.uniform_stride:
-                for i in xrange(0, self._ctx.ra_indices_for_traj(self._itraj).tolist().count(self.line-1)):
+                for i in range(0, self._ctx.ra_indices_for_traj(self._itraj).tolist().count(self.line-1)):
                     lines.append(row)
             else:
                 lines.append(row)
@@ -103,6 +106,9 @@ class _csv_chunked_numpy_iterator:
 
         self.fh.close()
         raise StopIteration
+
+    def next(self):
+        return self.__next__()
 
 
 class PyCSVReader(ReaderInterface):
