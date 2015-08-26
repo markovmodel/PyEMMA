@@ -5,6 +5,7 @@ Created on 29.07.2015
 '''
 import unittest
 from pyemma._base.progress import ProgressReporter
+from pyemma._base.progress.bar._impl import ProgressBar
 
 
 class TestProgress(unittest.TestCase):
