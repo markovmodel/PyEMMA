@@ -7,6 +7,7 @@ from __future__ import absolute_import
 from pyemma.util.types import is_int
 from pyemma._base.progress.bar import ProgressBar as _ProgressBar
 from pyemma._base.progress.bar import show_progressbar as _show_progressbar
+from pyemma._base.progress.bar.gui import hide_progressbar as _hide_progressbar
 
 
 class ProgressReporter(object):
@@ -124,3 +125,4 @@ class ProgressReporter(object):
         pg.numerator = pg.denominator
         pg._eta.eta_epoch = 0
         _show_progressbar(pg)
+        _hide_progressbar(pg)
