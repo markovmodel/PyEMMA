@@ -98,10 +98,42 @@ def scatter_contour(x, y, z, ncontours = 50, colorbar=True, fig=None, ax=None, c
     return ax
 
 
-def plot_free_energy(xall, yall, weights=None, ax=None, nbins=100, offset=0.1, cmap=_plt.cm.spectral, cbar=True, cbar_label=None):
+def plot_free_energy(xall, yall, weights=None, ax=None, nbins=100, offset=0.1, cmap=_plt.cm.spectral, cbar=True, cbar_label='Free energy (kT)'):
+    """Shows a free energy plot given 2D scattered data
+
+    Builds a 2D-histogram of the given data points and plots -log(p) where p is
+    the probability computed from the histogram count.
+
+    Parameters
+    ----------
+    xall : ndarray(T)
+        sample x-coordinates
+    yall : ndarray(T)
+        sample y-coordinates
+    weights : ndarray(T), default = None
+        sample weights. By default all samples have the same weight
+    ax : matplotlib Axes object, default = None
+        the axes to plot to. When set to None the default Axes object will be used.
+    nbins : int, default=100
+        number of histogram bins used in each dimension
+    offset : float, default=0.1
+        small additive shift to the histogram. This creates a small bias to the
+        distribution, but gives a better visual impression with the default
+        colormap.
+    cmap : matplotlib colormap, optional, default = None
+        the color map to use. None will use pylab.cm.spectral.
+    cbar : boolean, default=True
+        plot a color bar
+    cbar_label : str or None, default='Free energy (kT)'
+        colorbar label string. Use None to suppress it.
+
+    Returns
+    -------
+    ax : Axes object containing the plot
+
+    fig : Figure object containing the plot
+
     """
-    """
-    # histogram data
     z,x,y = _np.histogram2d(xall, yall, bins=nbins, weights=weights)
     z += offset
     # compute free energies
@@ -110,10 +142,10 @@ def plot_free_energy(xall, yall, weights=None, ax=None, nbins=100, offset=0.1, c
     extent = [x[0], x[-1], y[0], y[-1]]
     if ax is None:
         ax = _plt.gca()
-    ax.contourf(F.T, 100, extent=extent, cmap=cmap)
+    CS = ax.contourf(F.T, 100, extent=extent, cmap=cmap)
     if cbar:
-        cbar = _plt.colorbar()
+        cbar = _plt.colorbar(CS)
         if cbar_label is not None:
             cbar.ax.set_ylabel(cbar_label)
 
-    return ax
+    return ax, _plt.gcf()
