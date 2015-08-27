@@ -642,7 +642,7 @@ class MSM(_Model):
             Number of eigenvalues and eigenvectors to use for computation. This option is only relevant for sparse
             matrices and long times for which an eigenvalue decomposition will be done instead of using the matrix power
         ncv : int (optional)
-            Only relevant for sparse matrices and large lag times, where the relaxation will be computes using an
+            Only relevant for sparse matrices and large lag times, where the relaxation will be computed using an
             eigenvalue decomposition. The number of Lanczos vectors generated, `ncv` must be greater than k;
             it is recommended that ncv > 2*k
 
@@ -688,7 +688,7 @@ class MSM(_Model):
         Markov model is computed by relaxation(p0, a). This is done by evaluating the equation
 
         .. :math:
-            E_a(k\tau)     & = & \mathbf{p_0}^\top \mathbf{P(\tau)}^k \mathbf{a} \\
+            E_a(k\tau)     & = \mathbf{p_0}^\top \mathbf{P(\tau)}^k \mathbf{a} \\
 
         where :math:`E` stands for the expectation value that relaxes to its equilibrium value that is identical
         to expectation(a), :math:`\mathbf{P(\tau)}` is the transition matrix at lag time :math:`\tau`,
@@ -714,7 +714,7 @@ class MSM(_Model):
             evaluated. Internally, the correlation function can only be computed in integer multiples of the
             Markov model lag time, and therefore the actual last time point will be computed at
             :math:`\mathrm{ceil}(\mathrm{maxtime} / \tau)`.
-            By default (None), the maxtime will be set equal to the 3 times the slowest relaxation time of the MSM,
+            By default (None), the maxtime will be set equal to the 5 times the slowest relaxation time of the MSM,
             because after this time the signal is constant.
         k : int (optional)
             Number of eigenvalues and eigenvectors to use for computation
