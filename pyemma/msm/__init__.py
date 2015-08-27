@@ -28,7 +28,7 @@ r"""
 
 User API
 ========
-For most users, the following high-level functions provide are sufficient to estimate msm models from data.
+For most users, the following high-level functions are sufficient to estimate msm models from data.
 Expert users may want to construct Estimators or Models (see below) directly.
 
 .. autosummary::
@@ -59,7 +59,7 @@ use the API functions above.
 
 
 **Models** of the kinetics or stationary properties of the data. 
-If you are not an expert user, use API functions above.
+If you are not an expert user, use the API functions above.
 
 .. autosummary::
    :toctree: generated/

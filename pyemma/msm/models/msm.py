@@ -61,7 +61,7 @@ class MSM(_Model):
         whether P is reversible with respect to its stationary distribution.
         If None (default), will be determined from P
 
-    dt : str, optional, default='1 step'
+    dt_model : str, optional, default='1 step'
         Description of the physical time corresponding to one time step of the
         MSM (aka lag time). May be used by analysis algorithms such as plotting
         tools to pretty-print the axes.
