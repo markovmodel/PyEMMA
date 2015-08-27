@@ -28,6 +28,7 @@ import numpy as np
 
 from matplotlib import pylab as plt
 from matplotlib import rcParams
+from pyemma.util import types as _types
 from six.moves import range
 
 __author__ = 'noe, marscher'
@@ -206,7 +207,7 @@ class NetworkPlot(object):
                      state_sizes=None, state_scale=1.0, state_colors='#ff5500',
                      arrow_scale=1.0, arrow_curvature=1.0, arrow_labels='weights',
                      arrow_label_format='%10.2f', max_width=12, max_height=12,
-                     figpadding=0.2, xticks=False, yticks=False):
+                     figpadding=0.2, xticks=False, yticks=False, show_frame=False):
         """
         Draws a network using discs and curved arrows.
 
@@ -256,15 +257,19 @@ class NetworkPlot(object):
             frame.axes.get_xaxis().set_ticks([])
         if not yticks:
             frame.axes.get_yaxis().set_ticks([])
+        # show or suppress frame
+        frame.set_frame_on(show_frame)
         # set node colors
         if state_colors is None:
             state_colors = '#ff5500'  # None is not acceptable
         if isinstance(state_colors, str):
             state_colors = [state_colors] * n
-        else:
-            # transfrom from [0,1] to 255-scale
-            state_colors = [
-                plt.cm.binary(int(256.0 * state_colors[i])) for i in range(n)]
+        try:
+            colorscales = _types.ensure_ndarray(state_colors, ndim=1, kind='numeric')
+            colorscales /= colorscales.max()
+            state_colors = [plt.cm.binary(int(256.0 * colorscales[i])) for i in range(n)]
+        except:
+            pass  # assume we have a list of strings now.
         # set arrow labels
         if isinstance(arrow_labels, np.ndarray):
             L = arrow_labels
@@ -377,7 +382,7 @@ def plot_markov_model(P, pos=None, state_sizes=None, state_scale=1.0,
                       state_colors='#ff5500', minflux=1e-6,
                       arrow_scale=1.0, arrow_curvature=1.0,
                       arrow_labels='weights', arrow_label_format='%2.e',
-                      max_width=12, max_height=12, figpadding=0.2):
+                      max_width=12, max_height=12, figpadding=0.2, show_frame=False):
     r"""Plots a network representation of a Markov model transition matrix
 
     This visualization is not optimized for large matrices. It is meant to be
@@ -418,6 +423,8 @@ def plot_markov_model(P, pos=None, state_sizes=None, state_scale=1.0,
         The maximum figure height
     figpadding = 0.2
         The relative figure size used for the padding
+    show_frame: boolean (default=False)
+        Draw a frame around the network.
 
     Returns
     -------
@@ -455,15 +462,16 @@ def plot_markov_model(P, pos=None, state_sizes=None, state_scale=1.0,
                            arrow_labels=arrow_labels,
                            arrow_label_format=arrow_label_format,
                            max_width=max_width, max_height=max_height,
-                           figpadding=figpadding, xticks=False, yticks=False)
+                           figpadding=figpadding, xticks=False, yticks=False, show_frame=show_frame)
     return ax, plot.pos
 
 
-def plot_flux(flux, pos=None, state_sizes=None, state_scale=1.0,
-              state_colors='#ff5500', minflux=1e-9,
+def plot_flux(flux, pos=None, state_sizes=None, flux_scale=1.0,
+              state_scale=1.0, state_colors='#ff5500', minflux=1e-9,
               arrow_scale=1.0, arrow_curvature=1.0, arrow_labels='weights',
               arrow_label_format='%2.e', max_width=12, max_height=12,
-              figpadding=0.2, attribute_to_plot='net_flux'):
+              figpadding=0.2, attribute_to_plot='net_flux',
+              show_frame=False, show_committor=True):
     r"""Plots a network representation of the reactive flux
 
     This visualization is not optimized for large fluxes. It is meant to be used
@@ -506,6 +514,10 @@ def plot_flux(flux, pos=None, state_sizes=None, state_scale=1.0,
         The maximum figure height
     figpadding: float (default = 0.2)
         The relative figure size used for the padding
+    show_frame: boolean (default=False)
+        Draw a frame around the network.
+    show_committor: boolean (default=False)
+        Print the committor value on the x-axis.
 
     Returns
     -------
@@ -536,20 +548,114 @@ def plot_flux(flux, pos=None, state_sizes=None, state_scale=1.0,
     (<matplotlib.figure.Figure..., array...)
 
     """
-    F = getattr(flux, attribute_to_plot)
-    if minflux > 0:
-        I, J = np.where(F < minflux)
-        F[I, J] = 0.0
+    F = flux_scale * getattr(flux, attribute_to_plot)
     c = flux.committor
     if state_sizes is None:
         state_sizes = flux.stationary_distribution
     plot = NetworkPlot(F, pos=pos, xpos=c)
+    if minflux > 0:
+        I, J = np.where(F < minflux)
+        F[I, J] = 0.0
     ax = plot.plot_network(state_sizes=state_sizes, state_scale=state_scale,
                            state_colors=state_colors,
                            arrow_scale=arrow_scale, arrow_curvature=arrow_curvature,
                            arrow_labels=arrow_labels,
                            arrow_label_format=arrow_label_format,
                            max_width=max_width, max_height=max_height,
-                           figpadding=figpadding, xticks=True, yticks=False)
-    plt.xlabel('Committor probability')
+                           figpadding=figpadding, xticks=show_committor, yticks=False, show_frame=show_frame)
+    if show_committor:
+        plt.xlabel('Committor probability')
+    return ax, plot.pos
+
+
+def plot_network(weights, pos=None, xpos=None, ypos=None, state_sizes=None,
+                state_scale=1.0, state_colors='#ff5500', minflux=1e-9,
+                arrow_scale=1.0, arrow_curvature=1.0, arrow_labels='weights',
+                arrow_label_format='%2.e', max_width=12, max_height=12,
+                figpadding=0.2, attribute_to_plot='net_flux',
+                show_frame=False, xticks=False, yticks=False):
+    r"""Plots a network representation of the given matrix
+
+    This visualization is not optimized for large networks. It is meant to be
+    used for the visualization of small models with up to 10-20 states. If used
+    with large network, the automatic node positioning will be very slow and
+    may still look ugly.
+
+    Parameters
+    ----------
+    flux : :class:`ReactiveFlux <pyemma.msm.flux.ReactiveFlux>`
+        reactive flux object
+    pos : ndarray(n,2), optional, default=None
+        User-defined positions to draw the states on.
+    xpos : ndarray(n,), optional, default=None
+        Fixes the x positions while the y positions are optimized
+    ypos : ndarray(n,), optional, default=None
+        Fixes the y positions while the x positions are optimized
+    state_sizes : ndarray(n), optional, default=None
+        User-defined areas of the discs drawn for each state. If not given, the
+        stationary probability of P will be used
+    state_colors : string or ndarray(n), optional, default='#ff5500' (orange)
+        Either a string with a Hex code for a single color used for all states,
+        or an array of values in [0,1] which will result in a grayscale plot
+    minflux : float, optional, default=1e-9
+        The minimal flux for a transition to be drawn
+    arrow_scale : float, optional, default=1.0
+        Relative arrow scale. Set to a value different from 1 to increase or
+        decrease the arrow width.
+    arrow_curvature : float, optional, default=1.0
+        Relative arrow curvature. Set to a value different from 1 to make arrows
+        more or less curved.
+    arrow_labels : 'weights', None or a ndarray(n,n) with label strings. Optional, default='weights'
+        Strings to be placed upon arrows. If None, no labels will be used. If
+        'weights', the elements of P will be used. If a matrix of strings is
+        given by the user these will be used.
+    arrow_label_format : str, optional, default='%10.2f'
+        The numeric format to print the arrow labels
+    max_width : int (default = 12)
+        The maximum figure width
+    max_height: int (default = 12)
+        The maximum figure height
+    figpadding: float (default = 0.2)
+        The relative figure size used for the padding
+    show_frame: boolean (default=False)
+        Draw a frame around the network.
+    xticks: boolean (default=False)
+        Show x ticks
+    yticks: boolean (default=False)
+        Show y ticks
+
+    Returns
+    -------
+    (fig, pos) : matpotlib.Figure instance, ndarray
+        Axes instances containing the plot. Use pyplot.show() to display it.
+        The positions of states. Can be used later to plot a different network
+        representation (e.g. the flux).
+
+    Examples
+    --------
+    We define first define a reactive flux by taking the following transition
+    matrix and computing TPT from state 2 to 3
+
+    >>> import numpy as np
+    >>> P = np.array([[0.8,  0.15, 0.05,  0.0,  0.0],
+    ...               [0.1,  0.75, 0.05, 0.05, 0.05],
+    ...               [0.05,  0.1,  0.8,  0.0,  0.05],
+    ...               [0.0,  0.2, 0.0,  0.8,  0.0],
+    ...               [0.0,  0.02, 0.02, 0.0,  0.96]])
+
+    Scale the flux by 100 is basically a change of units to get numbers close
+    to 1 (avoid printing many zeros). Now we visualize the flux:
+
+    >>> plot_flux(F) # doctest:+ELLIPSIS
+    (<matplotlib.figure.Figure..., array...)
+
+    """
+    plot = NetworkPlot(weights, pos=pos, xpos=xpos, ypos=ypos)
+    ax = plot.plot_network(state_sizes=state_sizes, state_scale=state_scale,
+                           state_colors=state_colors,
+                           arrow_scale=arrow_scale, arrow_curvature=arrow_curvature,
+                           arrow_labels=arrow_labels,
+                           arrow_label_format=arrow_label_format,
+                           max_width=max_width, max_height=max_height,
+                           figpadding=figpadding, xticks=xticks, yticks=yticks, show_frame=show_frame)
     return ax, plot.pos
