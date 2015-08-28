@@ -115,12 +115,20 @@ class TestMSMDoubleWell(unittest.TestCase):
     def setUpClass(cls):
         import pyemma.datasets
         cls.dtraj = pyemma.datasets.load_2well_discrete().dtraj_T100K_dt10
+        nu = 1.*np.bincount(cls.dtraj)        
+        cls.statdist = nu/nu.sum()
+        
         cls.tau = 10
         cls.msmrev = estimate_markov_model(cls.dtraj, cls.tau)
+        cls.msmrevpi = estimate_markov_model(cls.dtraj, cls.tau,
+                                             statdist=cls.statdist)
         cls.msm = estimate_markov_model(cls.dtraj, cls.tau, reversible=False)
 
         """Sparse"""
         cls.msmrev_sparse = estimate_markov_model(cls.dtraj, cls.tau, sparse=True)
+        cls.msmrevpi_sparse = estimate_markov_model(cls.dtraj, cls.tau,
+                                                    statdist=cls.statdist,
+                                                    sparse=True)
         cls.msm_sparse = estimate_markov_model(cls.dtraj, cls.tau, reversible=False, sparse=True)
 
     # ---------------------------------
@@ -130,27 +138,30 @@ class TestMSMDoubleWell(unittest.TestCase):
     def test_reversible(self):
         # NONREVERSIBLE
         assert self.msmrev.is_reversible
+        assert self.msmrevpi.is_reversible
         assert (self.msmrev_sparse.is_reversible)
+        assert self.msmrevpi_sparse.is_reversible
         # REVERSIBLE
         assert not self.msm.is_reversible
         assert not self.msm_sparse.is_reversible
-
 
     def _sparse(self, msm):
         assert (msm.is_sparse)
 
     def test_sparse(self):
         self._sparse(self.msmrev_sparse)
-        self._sparse(self.msm_sparse)
-        
+        self._sparse(self.msmrevpi_sparse)
+        self._sparse(self.msm_sparse)        
 
     def _lagtime(self, msm):
         assert (msm.lagtime == self.tau)
 
     def test_lagtime(self):
         self._lagtime(self.msmrev)
+        self._lagtime(self.msmrevpi)
         self._lagtime(self.msm)
         self._lagtime(self.msmrev_sparse)
+        self._lagtime(self.msmrevpi_sparse)
         self._lagtime(self.msm_sparse)
 
     def _active_set(self, msm):
@@ -161,8 +172,10 @@ class TestMSMDoubleWell(unittest.TestCase):
 
     def test_active_set(self):
         self._active_set(self.msmrev)
+        self._active_set(self.msmrevpi)
         self._active_set(self.msm)
         self._active_set(self.msmrev_sparse)
+        self._active_set(self.msmrevpi_sparse)
         self._active_set(self.msm_sparse)
 
     def _largest_connected_set(self, msm):
@@ -174,8 +187,10 @@ class TestMSMDoubleWell(unittest.TestCase):
 
     def test_largest_connected_set(self):
         self._largest_connected_set(self.msmrev)
+        self._largest_connected_set(self.msmrevpi)
         self._largest_connected_set(self.msm)
         self._largest_connected_set(self.msmrev_sparse)
+        self._largest_connected_set(self.msmrevpi_sparse)
         self._largest_connected_set(self.msm_sparse)
 
     def _nstates(self, msm):
@@ -186,8 +201,10 @@ class TestMSMDoubleWell(unittest.TestCase):
 
     def test_nstates(self):
         self._nstates(self.msmrev)
+        self._nstates(self.msmrevpi)
         self._nstates(self.msm)
         self._nstates(self.msmrev_sparse)
+        self._nstates(self.msmrevpi_sparse)
         self._nstates(self.msm_sparse)
 
     def _connected_sets(self, msm):
@@ -198,8 +215,10 @@ class TestMSMDoubleWell(unittest.TestCase):
 
     def test_connected_sets(self):
         self._connected_sets(self.msmrev)
+        self._connected_sets(self.msmrevpi)
         self._connected_sets(self.msm)
         self._connected_sets(self.msmrev_sparse)
+        self._connected_sets(self.msmrevpi_sparse)
         self._connected_sets(self.msm_sparse)
 
     def _connectivity(self, msm):
@@ -208,8 +227,10 @@ class TestMSMDoubleWell(unittest.TestCase):
 
     def test_connectivity(self):
         self._connectivity(self.msmrev)
+        self._connectivity(self.msmrevpi)
         self._connectivity(self.msm)
         self._connectivity(self.msmrev_sparse)
+        self._connectivity(self.msmrevpi_sparse)
         self._connectivity(self.msm_sparse)
 
     def _count_matrix_active(self, msm):
@@ -218,8 +239,10 @@ class TestMSMDoubleWell(unittest.TestCase):
 
     def test_count_matrix_active(self):
         self._count_matrix_active(self.msmrev)
+        self._count_matrix_active(self.msmrevpi)
         self._count_matrix_active(self.msm) 
         self._count_matrix_active(self.msmrev_sparse)
+        self._count_matrix_active(self.msmrevpi_sparse)
         self._count_matrix_active(self.msm_sparse) 
 
     def _count_matrix_full(self, msm):
@@ -228,8 +251,10 @@ class TestMSMDoubleWell(unittest.TestCase):
 
     def test_count_matrix_full(self):
         self._count_matrix_full(self.msmrev)
+        self._count_matrix_full(self.msmrevpi)
         self._count_matrix_full(self.msm)
         self._count_matrix_full(self.msmrev_sparse)
+        self._count_matrix_full(self.msmrevpi_sparse)
         self._count_matrix_full(self.msm_sparse)
 
     def _discrete_trajectories_full(self, msm):
@@ -237,8 +262,10 @@ class TestMSMDoubleWell(unittest.TestCase):
 
     def test_discrete_trajectories_full(self):
         self._discrete_trajectories_full(self.msmrev)
+        self._discrete_trajectories_full(self.msmrevpi)
         self._discrete_trajectories_full(self.msm)
         self._discrete_trajectories_full(self.msmrev_sparse)
+        self._discrete_trajectories_full(self.msmrevpi_sparse)
         self._discrete_trajectories_full(self.msm_sparse)
 
     def _discrete_trajectories_active(self, msm):
@@ -250,8 +277,10 @@ class TestMSMDoubleWell(unittest.TestCase):
 
     def test_discrete_trajectories_active(self):
         self._discrete_trajectories_active(self.msmrev)
+        self._discrete_trajectories_active(self.msmrevpi)
         self._discrete_trajectories_active(self.msm)
         self._discrete_trajectories_active(self.msmrev_sparse)
+        self._discrete_trajectories_active(self.msmrevpi_sparse)
         self._discrete_trajectories_active(self.msm_sparse)
 
     def _timestep(self, msm):
@@ -260,8 +289,10 @@ class TestMSMDoubleWell(unittest.TestCase):
 
     def test_timestep(self):
         self._timestep(self.msmrev)
+        self._timestep(self.msmrevpi)
         self._timestep(self.msm)
         self._timestep(self.msmrev_sparse)
+        self._timestep(self.msmrevpi_sparse)
         self._timestep(self.msm_sparse)
 
     def _transition_matrix(self, msm):
@@ -282,8 +313,10 @@ class TestMSMDoubleWell(unittest.TestCase):
 
     def test_transition_matrix(self):
         self._transition_matrix(self.msmrev)
+        self._transition_matrix(self.msmrev)
         self._transition_matrix(self.msm)
         self._transition_matrix(self.msmrev_sparse)
+        self._transition_matrix(self.msmrevpi_sparse)
         self._transition_matrix(self.msm_sparse)
 
     # ---------------------------------
@@ -298,8 +331,10 @@ class TestMSMDoubleWell(unittest.TestCase):
 
     def test_active_count_fraction(self):
         self._active_count_fraction(self.msmrev)
+        self._active_count_fraction(self.msmrevpi)
         self._active_count_fraction(self.msm)
         self._active_count_fraction(self.msmrev_sparse)
+        self._active_count_fraction(self.msmrevpi_sparse)
         self._active_count_fraction(self.msm_sparse)
 
     def _active_state_fraction(self, msm):
@@ -309,8 +344,10 @@ class TestMSMDoubleWell(unittest.TestCase):
     def test_active_state_fraction(self):
         # should always be a fraction
         self._active_state_fraction(self.msmrev)
+        self._active_state_fraction(self.msmrevpi)
         self._active_state_fraction(self.msm)
         self._active_state_fraction(self.msmrev_sparse)
+        self._active_state_fraction(self.msmrevpi_sparse)
         self._active_state_fraction(self.msm_sparse)
 
     def _effective_count_matrix(self, msm):
@@ -322,8 +359,10 @@ class TestMSMDoubleWell(unittest.TestCase):
 
     def test_effective_count_matrix(self):
         self._effective_count_matrix(self.msmrev)
+        self._effective_count_matrix(self.msmrevpi)
         self._effective_count_matrix(self.msm)
         self._effective_count_matrix(self.msmrev_sparse)
+        self._effective_count_matrix(self.msmrevpi_sparse)
         self._effective_count_matrix(self.msm_sparse)
 
     # ---------------------------------
@@ -339,8 +378,10 @@ class TestMSMDoubleWell(unittest.TestCase):
 
     def test_statdist(self):
         self._statdist(self.msmrev)
+        self._statdist(self.msmrevpi)
         self._statdist(self.msm)
         self._statdist(self.msmrev_sparse)
+        self._statdist(self.msmrevpi_sparse)
         self._statdist(self.msm_sparse)
 
     def _eigenvalues(self, msm):
@@ -363,8 +404,10 @@ class TestMSMDoubleWell(unittest.TestCase):
 
     def test_eigenvalues(self):
         self._eigenvalues(self.msmrev)
+        self._eigenvalues(self.msmrevpi)
         self._eigenvalues(self.msm)
         self._eigenvalues(self.msmrev_sparse)
+        self._eigenvalues(self.msmrevpi_sparse)
         self._eigenvalues(self.msm_sparse)
 
     def _eigenvectors_left(self, msm):
@@ -388,8 +431,10 @@ class TestMSMDoubleWell(unittest.TestCase):
 
     def test_eigenvectors_left(self):
         self._eigenvectors_left(self.msmrev)
+        self._eigenvectors_left(self.msmrevpi)
         self._eigenvectors_left(self.msm)
         self._eigenvectors_left(self.msmrev_sparse)
+        self._eigenvectors_left(self.msmrevpi_sparse)
         self._eigenvectors_left(self.msm_sparse)
 
     def _eigenvectors_right(self, msm):
@@ -410,8 +455,10 @@ class TestMSMDoubleWell(unittest.TestCase):
 
     def test_eigenvectors_right(self):
         self._eigenvectors_right(self.msmrev)
+        self._eigenvectors_right(self.msmrevpi)
         self._eigenvectors_right(self.msm)
         self._eigenvectors_right(self.msmrev_sparse)
+        self._eigenvectors_right(self.msmrevpi_sparse)
         self._eigenvectors_right(self.msm_sparse)
 
     def _eigenvectors_RDL(self, msm):
@@ -443,8 +490,10 @@ class TestMSMDoubleWell(unittest.TestCase):
 
     def test_eigenvectors_RDL(self):
         self._eigenvectors_RDL(self.msmrev)
+        self._eigenvectors_RDL(self.msmrevpi)
         self._eigenvectors_RDL(self.msm)
         self._eigenvectors_RDL(self.msmrev_sparse)
+        self._eigenvectors_RDL(self.msmrevpi_sparse)
         self._eigenvectors_RDL(self.msm_sparse)
 
     def _timescales(self, msm):
@@ -799,8 +848,10 @@ class TestMSMDoubleWell(unittest.TestCase):
 
     def test_active_state_indexes(self):
         self._active_state_indexes(self.msmrev)
+        self._active_state_indexes(self.msmrevpi)
         self._active_state_indexes(self.msm)
         self._active_state_indexes(self.msmrev_sparse)
+        self._active_state_indexes(self.msmrevpi_sparse)
         self._active_state_indexes(self.msm_sparse)
 
     def _generate_traj(self, msm):
@@ -813,9 +864,12 @@ class TestMSMDoubleWell(unittest.TestCase):
 
     def test_generate_traj(self):
         self._generate_traj(self.msmrev)
+        self._generate_traj(self.msmrevpi)
         self._generate_traj(self.msm)
         with warnings.catch_warnings(record=True) as w:
             self._generate_traj(self.msmrev_sparse)
+        with warnings.catch_warnings(record=True) as w:
+            self._generate_traj(self.msmrevpi_sparse)
         with warnings.catch_warnings(record=True) as w:
             self._generate_traj(self.msm_sparse)
 
@@ -835,8 +889,10 @@ class TestMSMDoubleWell(unittest.TestCase):
 
     def test_sample_by_state(self):
         self._sample_by_state(self.msmrev)
+        self._sample_by_state(self.msmrevpi)
         self._sample_by_state(self.msm)
         self._sample_by_state(self.msmrev_sparse)
+        self._sample_by_state(self.msmrevpi_sparse)
         self._sample_by_state(self.msm_sparse)
 
     def _trajectory_weights(self, msm):
@@ -846,8 +902,10 @@ class TestMSMDoubleWell(unittest.TestCase):
 
     def test_trajectory_weights(self):
         self._trajectory_weights(self.msmrev)
+        self._trajectory_weights(self.msmrevpi)
         self._trajectory_weights(self.msm)
         self._trajectory_weights(self.msmrev_sparse)
+        self._trajectory_weights(self.msmrevpi_sparse)
         self._trajectory_weights(self.msm_sparse)
 
     # ----------------------------------
@@ -877,8 +935,10 @@ class TestMSMDoubleWell(unittest.TestCase):
 
     def test_two_state_kinetics(self):
         self._two_state_kinetics(self.msmrev)
+        self._two_state_kinetics(self.msmrevpi)
         self._two_state_kinetics(self.msm)
         self._two_state_kinetics(self.msmrev_sparse)
+        self._two_state_kinetics(self.msmrevpi_sparse)
         self._two_state_kinetics(self.msm_sparse)
 
 
