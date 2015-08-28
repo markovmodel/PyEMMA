@@ -646,7 +646,7 @@ def plot_network(weights, pos=None, xpos=None, ypos=None, state_sizes=None,
     Scale the flux by 100 is basically a change of units to get numbers close
     to 1 (avoid printing many zeros). Now we visualize the flux:
 
-    >>> plot_flux(F) # doctest:+ELLIPSIS
+    >>> plot_network(P) # doctest:+ELLIPSIS
     (<matplotlib.figure.Figure..., array...)
 
     """
