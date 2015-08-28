@@ -29,6 +29,8 @@ r"""Unit test for the tpt-function
 .. moduleauthor:: B.Trendelkamp-Schroer <benjamin DOT trendelkamp-schroer AT fu-berlin DOT de>
 
 """
+
+from __future__ import absolute_import
 import unittest
 import numpy as np
 from pyemma.util.numeric import assert_allclose

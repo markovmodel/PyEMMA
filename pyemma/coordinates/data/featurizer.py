@@ -22,6 +22,8 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 # -*- coding: uft-8 -*-
+
+from __future__ import absolute_import
 import mdtraj
 from mdtraj.geometry.dihedral import _get_indices_phi, \
     _get_indices_psi, compute_dihedrals, _atom_sequence, CHI1_ATOMS
@@ -33,8 +35,14 @@ from itertools import product as _product
 from pyemma.util.types import is_iterable_of_int as _is_iterable_of_int
 import functools
 
+
+from six import PY3
+from pyemma.util.types import is_iterable_of_int as _is_iterable_of_int
 from pyemma.util.log import getLogger
-from pyemma.util.annotators import deprecated
+#from pyemma.util.annotators import deprecated
+from six.moves import map
+from six.moves import range
+from six.moves import zip
 
 
 __author__ = 'Frank Noe, Martin Scherer'
@@ -43,7 +51,7 @@ __all__ = ['MDFeaturizer',
 
 
 def _get_indices_chi1(traj):
-    rids, indices = zip(*(_atom_sequence(traj, atoms) for atoms in CHI1_ATOMS))
+    rids, indices = list(zip(*(_atom_sequence(traj, atoms) for atoms in CHI1_ATOMS)))
     id_sort = np.argsort(np.concatenate(rids))
     if not any(x.size for x in indices):
         return np.empty(shape=(0, 4), dtype=np.int)
@@ -66,7 +74,7 @@ def _describe_atom(topology, index):
     :param index:
     :return:
     """
-    assert isinstance(index, int)
+    #assert isinstance(index, int)
     at = topology.atom(index)
     return "%s %i %s %i" % (at.residue.name, at.residue.index, at.name, at.index)
 
@@ -84,17 +92,34 @@ def _catch_unhashable(x):
 
     return x
 
+if PY3:
+    def _hash_numpy_array(x):
+        hash_value = hash(x.shape)
+        hash_value ^= hash(x.strides)
+        hash_value ^= hash(x.data.tobytes())
+        return hash_value
+else:
+    def _hash_numpy_array(x):
+        writeable = x.flags.writeable
+        try:
+            x.flags.writeable = False
+            hash_value = hash(x.shape)
+            hash_value ^= hash(x.strides)
+            hash_value ^= hash(x.data)
+        finally:
+            x.flags.writeable = writeable
+        return hash_value
 
-def _hash_numpy_array(x):
-    if x is None:
-        return hash(None)
-    x.flags.writeable = False
-    hash_value = hash(x.shape)
-    hash_value ^= hash(x.strides)
-    hash_value ^= hash(x.data)
-    x.flags.writeable = True
-
-    return hash_value
+def hash_top(top):
+    if not PY3:
+        return hash(top)
+    else:
+        # this is a temporary workaround for py3
+        hash_value = hash(top.n_atoms)
+        hash_value ^= hash(tuple(top.atoms))
+        hash_value ^= hash(tuple(top.residues))
+        hash_value ^= hash(tuple(top.bonds))
+        return hash_value
 
 
 def _parse_pairwise_input(indices1, indices2, MDlogger, fname=''):
@@ -203,6 +228,7 @@ def _parse_groupwise_input(group_definitions, group_pairs, MDlogger, mname=''):
 
     return new_groups, new_pairs, np.vstack(group_distance_indexes), group_distance_identifiers
 
+
 class CustomFeature(object):
 
     """
@@ -268,8 +294,8 @@ class CustomFeature(object):
     def __hash__(self):
         hash_value = hash(self._func)
         # if key contains numpy arrays, we hash their data arrays
-        key = tuple(map(_catch_unhashable, self._args) +
-                    map(_catch_unhashable, sorted(self._kwargs.items())))
+        key = tuple(list(map(_catch_unhashable, self._args)) +
+                    list(map(_catch_unhashable, sorted(self._kwargs.items()))))
         hash_value ^= hash(key)
         return hash_value
 
@@ -311,9 +337,9 @@ class SelectionFeature(object):
         return np.reshape(traj.xyz[:, self.indexes, :], newshape)
 
     def __hash__(self):
-        hash_value = hash(self.top)
+        hash_value = hash(self.prefix_label)
+        hash_value ^= hash_top(self.top)
         hash_value ^= _hash_numpy_array(self.indexes)
-        hash_value ^= hash(self.prefix_label)
 
         return hash_value
 
@@ -345,7 +371,7 @@ class DistanceFeature(object):
 
     def __hash__(self):
         hash_value = _hash_numpy_array(self.distance_indexes)
-        hash_value ^= hash(self.top)
+        hash_value ^= hash_top(self.top)
         hash_value ^= hash(self.prefix_label)
         return hash_value
 
@@ -524,7 +550,7 @@ class AngleFeature(object):
 
     def __hash__(self):
         hash_value = _hash_numpy_array(self.angle_indexes)
-        hash_value ^= hash(self.top)
+        hash_value ^= hash_top(self.top)
         hash_value ^= hash(self.deg)
 
         return hash_value
@@ -581,7 +607,7 @@ class DihedralFeature(object):
 
     def __hash__(self):
         hash_value = _hash_numpy_array(self.dih_indexes)
-        hash_value ^= hash(self.top)
+        hash_value ^= hash_top(self.top)
         hash_value ^= hash(self.deg)
         hash_value ^= hash(self.cossin)
 
@@ -751,7 +777,7 @@ class MDFeaturizer(object):
         self._create_logger()
 
     def _create_logger(self):
-        count = self._ids.next()
+        count = next(self._ids)
         i = self.__module__.rfind(".")
         j = self.__module__.find(".") + 1
         package = self.__module__[j:i]
@@ -910,7 +936,7 @@ class MDFeaturizer(object):
 
         """
         # TODO: add possibility to align to a reference structure
-        self.add_selection(range(self.topology.n_atoms))
+        self.add_selection(list(range(self.topology.n_atoms)))
 
     def add_selection(self, indexes):
         """
@@ -926,10 +952,6 @@ class MDFeaturizer(object):
         # TODO: add possibility to align to a reference structure
         f = SelectionFeature(self.topology, indexes)
         self.__add_feature(f)
-
-    @deprecated
-    def distances(self, atom_pairs):
-        return self.add_distances(atom_pairs)
 
     def add_distances(self, indices, periodic=True, indices2=None):
         r"""
@@ -963,10 +985,6 @@ class MDFeaturizer(object):
         f = DistanceFeature(self.topology, atom_pairs, periodic=periodic)
         self.__add_feature(f)
 
-    @deprecated
-    def distancesCa(self):
-        return self.add_distances_ca()
-
     def add_distances_ca(self, periodic=True):
         """
         Adds the distances between all Ca's to the feature list.
@@ -974,10 +992,6 @@ class MDFeaturizer(object):
         """
         distance_indexes = self.pairs(self.select_Ca())
         self.add_distances(distance_indexes, periodic=periodic)
-
-    @deprecated
-    def inverse_distances(self, atom_pairs):
-        return self.add_inverse_distances(atom_pairs)
 
     def add_inverse_distances(self, indices, periodic=True, indices2=None):
         """
@@ -1011,10 +1025,6 @@ class MDFeaturizer(object):
         atom_pairs = self._check_indices(atom_pairs)
         f = InverseDistanceFeature(self.topology, atom_pairs, periodic=True)
         self.__add_feature(f)
-
-    @deprecated
-    def contacts(self, *args):
-        return self.add_contacts(args)
 
     def add_contacts(self, indices, indices2=None, threshold=5.0, periodic=True):
         r"""
@@ -1178,10 +1188,6 @@ class MDFeaturizer(object):
         f = GroupMinDistanceFeature(self.topology, group_pairs, distance_list, group_identifiers, threshold)
         self.__add_feature(f)
 
-    @deprecated
-    def angles(self, *args):
-        return self.add_angles(args)
-
     def add_angles(self, indexes, deg=False, cossin=False):
         """
         Adds the list of angles to the feature list
@@ -1223,10 +1229,6 @@ class MDFeaturizer(object):
         indexes = self._check_indices(indexes, pair_n=4)
         f = DihedralFeature(self.topology, indexes, deg=deg, cossin=cossin)
         self.__add_feature(f)
-
-    @deprecated
-    def backbone_torsions(self, *args):
-        return self.add_backbone_torsions(args)
 
     def add_backbone_torsions(self, selstr=None, deg=False, cossin=False):
         """

@@ -266,7 +266,7 @@ error:
 }
 
 static PyObject* initCentersKMpp(PyObject *self, PyObject *args) {
-    int k, centers_found, first_center_index, i, j, n_trials;
+    int k, centers_found, first_center_index, i, j, n_trials, use_random_seed;
     int some_not_done;
     float d;
     float dist_sum;
@@ -299,18 +299,27 @@ static PyObject* initCentersKMpp(PyObject *self, PyObject *args) {
     next_center_candidates_rand = NULL;
     next_center_candidates_potential = NULL;
     dist_sum = 0.0;
+    use_random_seed = 1;
 
-
-#ifndef _KMEANS_INIT_RANDOM_SEED
-#define _KMEANS_INIT_RANDOM_SEED
-    /* set random seed */
-    srand(time(NULL));
-#endif
 
     /* parse python input (np_data, metric, k) */
-    if (!PyArg_ParseTuple(args, "O!si", &PyArray_Type, &np_data, &metric, &k)) {
+    if (!PyArg_ParseTuple(args, "O!sii", &PyArray_Type, &np_data, &metric, &k, &use_random_seed)) {
         goto error;
     }
+
+    if(use_random_seed) {
+        #ifndef _KMEANS_INIT_RANDOM_SEED
+        #define _KMEANS_INIT_RANDOM_SEED
+        /* set random seed */
+        srand(time(NULL));
+        #endif
+    } else {
+        #ifdef _KMEANS_INIT_RANDOM_SEED
+        #undef _KMEANS_INIT_RANDOM_SEED
+        #endif
+        srand(42);
+    }
+
     n_frames = np_data->dimensions[0];
     dim = np_data->dimensions[1];
     data = PyArray_DATA(np_data);
@@ -488,6 +497,10 @@ static PyObject* initCentersKMpp(PyObject *self, PyObject *args) {
     memcpy(arr_data, init_centers, PyArray_ITEMSIZE((PyArrayObject*) ret_init_centers) * k * dim);
     Py_INCREF(ret_init_centers);  /* The returned list should still exist after calling the C extension */
 error:
+    // reset the seed to something else than 42
+    if(!use_random_seed) {
+        srand(time(NULL));
+    }
     free(buffer_a);
     free(buffer_b);
     free(taken_points);
@@ -499,9 +512,9 @@ error:
     return ret_init_centers;
 }
 
-#define MOD_USAGE "Chunked regular spatial clustering"
+static char MOD_USAGE[] = "Chunked regular spatial clustering";
 
-#define CLUSTER_USAGE "cluster(chunk, centers, mindist, metric)\n"\
+static char CLUSTER_USAGE[] = "cluster(chunk, centers, mindist, metric)\n"\
 "Given a chunk of data and a list of cluster centers, update the list of cluster centers with the newly found centers.\n"\
 "\n"\
 "Parameters\n"\
@@ -524,9 +537,9 @@ error:
 "\n"\
 "Note\n"\
 "----\n"\
-"This function uses the minRMSD implementation of mdtraj."
+"This function uses the minRMSD implementation of mdtraj.";
 
-#define INIT_CENTERS_USAGE "init_centers(data, metric, k)\n"\
+static char INIT_CENTERS_USAGE[] = "init_centers(data, metric, k)\n"\
 "Given the data, choose \"k\" cluster centers according to the kmeans++ initialization."\
 "\n"\
 "Parameters\n"\
@@ -537,6 +550,8 @@ error:
 "    (input) One of \"euclidean\" or \"minRMSD\" (case sensitive).\n"\
 "k : int\n"\
 "    (input) the number of cluster centers to be assigned for initialization."\
+"use_random_seed : bool\n"\
+"    (input) determines if a fixed seed should be used or a random one\n"\
 "\n"\
 "Returns\n"\
 "-------\n"\
@@ -544,7 +559,7 @@ error:
 "\n"\
 "Note\n"\
 "----\n"\
-"This function uses the minRMSD implementation of mdtraj."
+"This function uses the minRMSD implementation of mdtraj.";
 
 
 static PyMethodDef kmeansMethods[] =
@@ -557,8 +572,81 @@ static PyMethodDef kmeansMethods[] =
      {NULL, NULL, 0, NULL}
 };
 
-PyMODINIT_FUNC initkmeans_clustering(void)
+struct module_state {
+    PyObject *error;
+};
+
+#if PY_MAJOR_VERSION >= 3
+#define GETSTATE(m) ((struct module_state*)PyModule_GetState(m))
+#else
+#define GETSTATE(m) (&_state)
+static struct module_state _state;
+#endif
+
+static PyObject *
+error_out(PyObject *m) {
+    struct module_state *st = GETSTATE(m);
+    PyErr_SetString(st->error, "something bad happened");
+    return NULL;
+}
+
+
+#if PY_MAJOR_VERSION >= 3
+
+static int myextension_traverse(PyObject *m, visitproc visit, void *arg) {
+    Py_VISIT(GETSTATE(m)->error);
+    return 0;
+}
+
+static int myextension_clear(PyObject *m) {
+    Py_CLEAR(GETSTATE(m)->error);
+    return 0;
+}
+
+
+static struct PyModuleDef moduledef = {
+        PyModuleDef_HEAD_INIT,
+        "kmeans_clustering",
+        NULL,
+        sizeof(struct module_state),
+        kmeansMethods,
+        NULL,
+        myextension_traverse,
+        myextension_clear,
+        NULL
+};
+
+#define INITERROR return NULL
+
+PyObject *
+PyInit_kmeans_clustering(void)
+
+#else // py2
+#define INITERROR return
+
+void initkmeans_clustering(void)
+#endif
 {
-  (void)Py_InitModule3("kmeans_clustering", kmeansMethods, MOD_USAGE);
-  import_array();
+#if PY_MAJOR_VERSION >= 3
+    PyObject *module = PyModule_Create(&moduledef);
+#else
+    PyObject *module = Py_InitModule3("kmeans_clustering", kmeansMethods, MOD_USAGE);
+#endif
+    struct module_state *st = GETSTATE(module);
+
+    if (module == NULL)
+        INITERROR;
+
+    st->error = PyErr_NewException("kmeans_clustering.Error", NULL, NULL);
+    if (st->error == NULL) {
+        Py_DECREF(module);
+        INITERROR;
+    }
+    // numpy support
+    import_array();
+
+
+#if PY_MAJOR_VERSION >= 3
+    return module;
+#endif
 }

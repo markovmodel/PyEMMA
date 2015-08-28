@@ -3,12 +3,15 @@ Created on 22.05.2015
 
 @author: marscher
 '''
+
+from __future__ import absolute_import
 import unittest
 import numpy as np
 
 from pyemma.plots.networks import plot_flux, plot_markov_model
-from pyemma.msm.flux.api import tpt
-import pyemma
+#from pyemma.msm.flux.api import tpt
+from msmtools.flux import tpt
+import msmtools
 import matplotlib
 
 
@@ -36,16 +39,13 @@ class TestNetworkPlot(unittest.TestCase):
 
     def test_random(self):
         C = np.random.randint(0, 1000, size=(10, 10))
-        P = pyemma.msm.estimation.transition_matrix(C, reversible=True)
+        P = msmtools.estimation.transition_matrix(C, reversible=True)
         r = tpt(P, [0], [len(C)-1])
         fig, pos = plot_flux(r)
 
     def test_plot_markov_model(self):
-        from pyemma.msm.analysis import stationary_distribution
         fig, pos = plot_markov_model(self.P)
         assert type(fig) is matplotlib.figure.Figure
-
-        #matplotlib.pyplot.show(fig)
 
 if __name__ == "__main__":
     unittest.main()

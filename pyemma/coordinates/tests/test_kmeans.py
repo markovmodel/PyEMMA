@@ -28,12 +28,15 @@ Created on 28.01.2015
 
 @author: marscher
 '''
+
+from __future__ import absolute_import
 import unittest
 import tempfile
 import os
 import numpy as np
 from pyemma.coordinates.api import cluster_kmeans
 import shutil
+from six.moves import range
 
 
 class TestKmeans(unittest.TestCase):
@@ -62,11 +65,31 @@ class TestKmeans(unittest.TestCase):
              np.random.randn(100),
              np.random.randn(100)+2.0]
         X = np.hstack(X)
-        kmeans = cluster_kmeans(X, k=10)
-        cc = kmeans.clustercenters
-        assert(np.any(cc < 1.0))
-        assert(np.any((cc > -1.0) * (cc < 1.0)))
-        assert(np.any(cc > -1.0))
+
+        for init_strategy in ['kmeans++', 'uniform']:
+            kmeans = cluster_kmeans(X, k=10, init_strategy=init_strategy)
+            cc = kmeans.clustercenters
+            assert (np.any(cc < 1.0)), "failed for init_strategy=%s" % init_strategy
+            assert (np.any((cc > -1.0) * (cc < 1.0))), "failed for init_strategy=%s" % init_strategy
+            assert (np.any(cc > -1.0)), "failed for init_strategy=%s" % init_strategy
+
+            # test fixed seed
+            km1 = cluster_kmeans(X, k=10, init_strategy=init_strategy, fixed_seed=True)
+            km2 = cluster_kmeans(X, k=10, init_strategy=init_strategy, fixed_seed=True)
+            np.testing.assert_array_equal(km1.clustercenters, km2.clustercenters,
+                                          "should yield same centers with fixed seed")
+
+            # test that not-fixed seed yields different results
+            retry, done = 0, False
+            while not done and retry < 4:
+                try:
+                    km3 = cluster_kmeans(X, k=10, init_strategy=init_strategy, fixed_seed=False)
+                    self.assertRaises(AssertionError, np.testing.assert_array_equal,
+                                      km1.clustercenters, km3.clustercenters)
+                    done = True
+                except AssertionError:
+                    retry += 1
+            self.assertTrue(done, 'using a fixed seed compared to a not fixed one made no difference!')
 
     def test_3gaussian_2d_multitraj(self):
         # generate 1D data from three gaussians
@@ -91,7 +114,7 @@ class TestKmeans(unittest.TestCase):
                                 output_dir=outdir, extension=extension)
 
         names = ["%s_%i%s" % (prefix, i, extension)
-                 for i in xrange(self.kmeans.data_producer.number_of_trajectories())]
+                 for i in range(self.kmeans.data_producer.number_of_trajectories())]
         names = [os.path.join(outdir, n) for n in names]
 
         # check files with given patterns are there

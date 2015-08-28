@@ -1,7 +1,9 @@
+from __future__ import absolute_import
+from six.moves import range
+
 __author__ = 'noe'
 
 import numpy as _np
-
 from pyemma.util.types import ensure_dtraj_list
 from pyemma.msm.estimators.maximum_likelihood_hmsm import MaximumLikelihoodHMSM as _MaximumLikelihoodHMSM
 from pyemma.msm.models.hmsm import HMSM as _HMSM
@@ -9,7 +11,6 @@ from pyemma.msm.estimators.estimated_hmsm import EstimatedHMSM as _EstimatedHMSM
 from pyemma.msm.models.hmsm_sampled import SampledHMSM as _SampledHMSM
 from pyemma.util.units import TimeUnit
 from pyemma._base.progress import ProgressReporter
-from pyemma._ext.six.moves import range
 
 
 class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporter):

@@ -32,6 +32,10 @@ to analyze trajectories generated from any kind of simulation
 (e.g. molecular trajectories) via Markov state models (MSM).
 
 """
+
+from __future__ import print_function
+
+from __future__ import absolute_import
 # TODO: extend docstring
 DOCLINES = __doc__.split("\n")
 __requires__ = 'setuptools>=3.6'
@@ -63,14 +67,14 @@ try:
     from setuptools import setup, Extension, find_packages
     from pkg_resources import VersionConflict
 except ImportError as ie:
-    print getSetuptoolsError()
+    print(getSetuptoolsError())
     sys.exit(23)
 # this should catch pkg_resources.DistributionNotFound, which is not
 # importable now.
 except:
-    print "Your version of setuptools is too old. We require at least %s\n" \
-          % __requires__
-    print getSetuptoolsError()
+    print("Your version of setuptools is too old. We require at least %s\n" \
+          % __requires__)
+    print(getSetuptoolsError())
     sys.exit(24)
 
 ###############################################################################
@@ -193,7 +197,7 @@ def get_cmdclass():
 
             try:
                 from Cython.Build import cythonize
-                print "cythonizing sources"
+                print("cythonizing sources")
                 cythonize(extensions())
             except ImportError:
                 warnings.warn('sdist cythonize failed')
@@ -257,6 +261,13 @@ else:
                                   'nose',
                                   ]
 
+    metadata['package_data'] = {
+                                'pyemma': ['pyemma.cfg'],
+                                'pyemma.coordinates.tests': ['data/*'],
+                                'pyemma.datasets': ['*.npz'],
+                                'pyemma.util.tests': ['data/*'],
+                                }
+
     # when on git, we require cython
     if os.path.exists('.git'):
         warnings.warn('using git, require cython')
@@ -276,8 +287,8 @@ else:
 try:
     setup(**metadata)
 except VersionConflict as ve:
-    print ve
-    print "You need to manually upgrade your 'setuptools' installation!"
+    print(ve)
+    print("You need to manually upgrade your 'setuptools' installation!")
     " Please use these instructions to perform an upgrade and/or consult\n"
     " https://pypi.python.org/pypi/setuptools#installation-instructions"
-    print getSetuptoolsError()
+    print(getSetuptoolsError())

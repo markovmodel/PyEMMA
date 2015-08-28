@@ -28,6 +28,8 @@ Created on 13.03.2015
 
 @author: marscher
 '''
+
+from __future__ import absolute_import
 import numpy as np
 from mdtraj.utils.validation import cast_indices
 from mdtraj.core.trajectory import load, _parse_topology, _TOPOLOGY_EXTS, _get_extension, open
@@ -36,6 +38,8 @@ from itertools import groupby
 from operator import itemgetter
 
 from pyemma.coordinates.data.util.reader_utils import copy_traj_attributes, preallocate_empty_trajectory
+from six.moves import map
+from six.moves import range
 
 
 def iterload(filename, chunk=100, **kwargs):
@@ -116,8 +120,8 @@ def iterload(filename, chunk=100, **kwargs):
             curr_size = 0
             traj = []
             leftovers = []
-            for k, g in groupby(enumerate(stride), lambda (a, b): a-b):
-                grouped_stride = map(itemgetter(1), g)
+            for k, g in groupby(enumerate(stride), lambda a: a[0] - a[1]):
+                grouped_stride = list(map(itemgetter(1), g))
                 seek_offset = (1 if x_prev != 0 else 0)
                 seek_to = grouped_stride[0] - x_prev - seek_offset
                 f.seek(seek_to, whence=1)

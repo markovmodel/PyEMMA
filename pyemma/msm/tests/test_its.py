@@ -28,16 +28,19 @@ r"""Unit test for the its method
 .. moduleauthor:: B.Trendelkamp-Schroer <benjamin DOT trendelkamp-schroer AT fu-berlin DOT de>
 
 """
+
+from __future__ import absolute_import
 import unittest
 import numpy as np
 from pyemma import msm
 from msmtools.analysis import timescales
 from pyemma.msm.api import timescales_msm
+from six.moves import range
 
 
 class TestITS_MSM(unittest.TestCase):
     def setUp(self):
-        from pyemma.msm.generation import generate_traj
+        from msmtools.generation import generate_traj
         self.dtrajs = []
 
         # simple case
@@ -103,7 +106,7 @@ class TestITS_MSM(unittest.TestCase):
 
     def test_lag_generation(self):
         its = msm.timescales_msm(self.dtraj4_2, lags=1000)
-        assert np.array_equal(its.lags, [1, 2, 3, 5, 8, 12, 18, 27, 41, 62, 93, 140, 210, 315, 473, 710])
+        np.testing.assert_array_equal(its.lags, [1, 2, 3, 5, 8, 12, 18, 27, 41, 62, 93, 140, 210, 315, 473, 710])
 
     def test_too_large_lagtime(self):
         dtraj = [[0, 1, 1, 1, 0]]
@@ -189,8 +192,10 @@ class TestITS_AllEstimators(unittest.TestCase):
         assert np.allclose(estimator.timescales, ref, rtol=0.1, atol=10.0)
         # within left / right intervals. This test should fail only 1 out of 1000 times.
         L, R = estimator.get_sample_conf(conf=0.999)
-        assert np.alltrue(L < estimator.timescales)
-        assert np.alltrue(estimator.timescales < R)
+        np.testing.assert_array_less(L, estimator.timescales)
+        #assert np.alltrue(L < estimator.timescales)
+        np.testing.assert_array_less(estimator.timescales, R)
+        #assert np.alltrue(estimator.timescales < R)
 
     def test_its_hmsm(self):
         estimator = msm.timescales_hmsm([self.double_well_data.dtraj_T100K_dt10_n6good], 2, lags = [1, 10, 100])
@@ -210,8 +215,9 @@ class TestITS_AllEstimators(unittest.TestCase):
         assert np.allclose(estimator.timescales, ref, rtol=0.1, atol=10.0)
         # within left / right intervals. This test should fail only 1 out of 1000 times.
         L, R = estimator.get_sample_conf(conf=0.999)
-        assert np.alltrue(L < estimator.timescales)
-        assert np.alltrue(estimator.timescales < R)
+
+        np.testing.assert_array_less(L, estimator.timescales)
+        np.testing.assert_array_less(estimator.timescales, R)
 
 
 if __name__ == "__main__":

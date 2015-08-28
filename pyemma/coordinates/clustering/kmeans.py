@@ -27,6 +27,8 @@ Created on 22.01.2015
 
 @author: marscher, noe
 """
+
+from __future__ import absolute_import
 import math
 import os
 import random
@@ -37,6 +39,7 @@ from . import kmeans_clustering
 
 from pyemma.util.annotators import doc_inherit
 from pyemma.coordinates.clustering.interface import AbstractClustering
+from six.moves import range
 
 __all__ = ['KmeansClustering']
 
@@ -44,27 +47,42 @@ __all__ = ['KmeansClustering']
 class KmeansClustering(AbstractClustering):
 
     def __init__(self, n_clusters, max_iter=5, metric='euclidean',
-                 tolerance=1e-5, init_strategy='kmeans++', oom_strategy='memmap'):
-        r"""
-        Kmeans clustering
+                 tolerance=1e-5, init_strategy='kmeans++', fixed_seed=False, oom_strategy='memmap'):
+        r"""Kmeans clustering
 
         Parameters
         ----------
         n_clusters : int
             amount of cluster centers
+
         max_iter : int
-            how many iterations per chunk?
+            maximum number of iterations before stopping.
+
+        tolerance : float
+            stop iteration when the relative change in the cost function
+
+            .. math:
+                C(S) = \sum_{i=1}^{k} \sum_{\mathbf x \in S_i} \left\| \mathbf x - \boldsymbol\mu_i \right\|^2
+
+            is smaller than tolerance.
         metric : str
             metric to use during clustering ('euclidean', 'minRMSD')
-        tolerance : float
-            if the cluster centers' change did not exceed tolerance, stop iterating
+
         init_strategy : string
-            can be either 'kmeans++' or 'uniform', determining how the initial cluster centers are being chosen
-        oom_strategy : string
-            how to deal with out of memory situation during accumulation of all data.
-            Currently if no memory is available to store all data, a memory mapped
-            file is created and written to, if set to 'memmap'.
-            Set it to 'raise', to raise the exception then.
+            can be either 'kmeans++' or 'uniform', determining how the initial
+            cluster centers are being chosen
+            
+        fixed_seed : bool
+            if True, the seed gets set to 42
+
+        oom_strategy : string, default='memmap'
+            how to deal with out of memory situation during accumulation of all
+            data.
+
+            * 'memmap': if no memory is available to store all data, a memory
+                mapped file is created and written to
+            * 'raise': raise OutOfMemory exception.
+
         """
         super(KmeansClustering, self).__init__(metric=metric)
         self.n_clusters = n_clusters
@@ -75,6 +93,7 @@ class KmeansClustering(AbstractClustering):
         self._init_strategy = init_strategy
         self._oom_strategy = oom_strategy
         self._custom_param_progress_handling = True
+        self._fixed_seed = fixed_seed
 
     def _param_init(self):
         self._prev_cost = 0
@@ -92,9 +111,13 @@ class KmeansClustering(AbstractClustering):
         if self._init_strategy == 'uniform':
             # gives random samples from each trajectory such that the cluster centers are distributed percentage-wise
             # with respect to the trajectories length
+            if self._fixed_seed:
+                random.seed(42)
             for idx, traj_len in enumerate(traj_lengths):
-                self._init_centers_indices[idx] = random.sample(range(0, traj_len), int(
+                self._init_centers_indices[idx] = random.sample(list(range(0, traj_len)), int(
                     math.ceil((traj_len / float(total_length)) * self.n_clusters)))
+            if self._fixed_seed:
+                random.seed(None)
 
     def _init_in_memory_chunks(self, size):
         try:
@@ -184,14 +207,14 @@ class KmeansClustering(AbstractClustering):
     def _initialize_centers(self, X, itraj, t, last_chunk, ipass):
         if ipass == 0:
             if self._init_strategy == 'uniform':
-                if itraj in self._init_centers_indices.keys():
-                    for l in xrange(len(X)):
+                if itraj in list(self._init_centers_indices.keys()):
+                    for l in range(len(X)):
                         if len(self._cluster_centers_iter) < self.n_clusters and t + l in self._init_centers_indices[itraj]:
                             self._cluster_centers_iter.append(X[l].astype(np.float32, order='C'))
             elif last_chunk and self._init_strategy == 'kmeans++':
                 kmeans_clustering.set_callback(self.kmeanspp_center_assigned)
                 cc = kmeans_clustering.init_centers(self._in_memory_chunks,
-                                                    self.metric, self.n_clusters)
+                                                    self.metric, self.n_clusters, not self._fixed_seed)
                 self._cluster_centers_iter = [c for c in cc]
 
     def _collect_data(self, X, first_chunk, stride):
@@ -214,7 +237,7 @@ class MiniBatchKmeansClustering(KmeansClustering):
 
     def __init__(self, n_clusters, max_iter=5, metric='euclidean', tolerance=1e-5, init_strategy='kmeans++',
                  batch_size=0.2, oom_strategy='memmap'):
-        super(MiniBatchKmeansClustering, self).__init__(n_clusters, max_iter, metric, tolerance, init_strategy,
+        super(MiniBatchKmeansClustering, self).__init__(n_clusters, max_iter, metric, tolerance, init_strategy, False,
                                                         oom_strategy)
         self._batch_size = batch_size
         if self._batch_size > 1:
@@ -229,7 +252,7 @@ class MiniBatchKmeansClustering(KmeansClustering):
             self._random_access_stride[offset:offset + self._n_samples_traj[idx], 0] = idx * np.ones(
                 self._n_samples_traj[idx], dtype=int)
             self._random_access_stride[offset:offset + self._n_samples_traj[idx], 1] = np.sort(
-                random.sample(xrange(traj_len), self._n_samples_traj[idx])).T
+                random.sample(list(range(traj_len)), self._n_samples_traj[idx])).T
             offset += self._n_samples_traj[idx]
         return self._random_access_stride
 

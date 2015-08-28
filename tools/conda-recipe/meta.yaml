@@ -1,8 +1,6 @@
 package:
   name: pyemma
-# TODO: try to get this via setup.py version
-  version: !!str 1.2
-
+  version: !!str dev
 source:
   path: ../..
 
@@ -14,27 +12,38 @@ requirements:
     - python
     - setuptools
     - cython >=0.20
+
+    - bhmm
+    - joblib
+    - matplotlib
+    - mdtraj
+    - nose # actually this should not be here...
+    - mock
+    - msmtools
     - numpy >=1.7
     - scipy
-    - scikit-learn
-    - mdtraj
-    - matplotlib
+    - six
+
   run:
     - python
     - setuptools
+    - bhmm
+    - joblib
+    - matplotlib
+    - mdtraj
+    - mock
+    - msmtools
     - numpy >=1.7
     - scipy
-    - scikit-learn
-    - mdtraj
-    - matplotlib
+    - six
 
 test:
   requires:
     - nose
+    - coverage
   imports:
     - pyemma
-  commands:
-    - nosetests pyemma --nocapture --verbosity=2 --with-doctest 
+
 about:
   home: http://emma-project.org
   license: BSD 2-Clause License

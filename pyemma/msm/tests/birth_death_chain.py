@@ -29,9 +29,12 @@ r"""Birth death chain for testing
 
 """
 
+from __future__ import absolute_import
+
 import numpy as np
 
 from scipy.sparse import diags
+from six.moves import range
 
 
 class BirthDeathChain(object):
@@ -263,8 +266,8 @@ class BirthDeathChain(object):
             
         """
         flux = self.flux(a, b)
-        A = range(a + 1)
-        notA = range(a + 1, flux.shape[0])
+        A = list(range(a + 1))
+        notA = list(range(a + 1, flux.shape[0]))
         F = flux[A, :][:, notA].sum()
         return F
 

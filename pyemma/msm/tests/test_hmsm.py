@@ -3,10 +3,13 @@ Test MLHMM.
 
 """
 
+from __future__ import absolute_import
+
 import unittest
 import numpy as np
 from pyemma import msm
 from msmtools import analysis as msmana
+from six.moves import range
 
 
 class TestMLHMM(unittest.TestCase):
@@ -188,9 +191,12 @@ class TestMLHMM(unittest.TestCase):
 
     def test_expectation(self):
         hmsm = self.hmsm_lag10
-        e = hmsm.expectation(range(hmsm.nstates_obs))
+        e = hmsm.expectation(list(range(hmsm.nstates_obs)))
         # approximately equal for both
         assert (np.abs(e - 31.73) < 0.01)
+
+        # test error case of incompatible vector size
+        self.assertRaises(ValueError, hmsm.expectation, list(range(hmsm.nstates_obs-1)))
 
     def test_correlation(self):
         hmsm = self.hmsm_lag10
@@ -200,25 +206,28 @@ class TestMLHMM(unittest.TestCase):
         with self.assertRaises(AssertionError):
             hmsm.correlation(a, 1)
         # should decrease
-        a = range(hmsm.nstates_obs)
+        a = list(range(hmsm.nstates_obs))
         times, corr1 = hmsm.correlation(a, maxtime=maxtime)
         assert (len(corr1) == maxtime / hmsm.lagtime)
         assert (len(times) == maxtime / hmsm.lagtime)
         assert (corr1[0] > corr1[-1])
-        a = range(hmsm.nstates_obs)
+        a = list(range(hmsm.nstates_obs))
         times, corr2 = hmsm.correlation(a, a, maxtime=maxtime)
         # should be identical to autocorr
         assert (np.allclose(corr1, corr2))
         # Test: should be increasing in time
-        b = range(hmsm.nstates_obs)[::-1]
+        b = list(range(hmsm.nstates_obs))[::-1]
         times, corr3 = hmsm.correlation(a, b, maxtime=maxtime)
         assert (len(times) == maxtime / hmsm.lagtime)
         assert (len(corr3) == maxtime / hmsm.lagtime)
         assert (corr3[0] < corr3[-1])
 
+        # test error case of incompatible vector size
+        self.assertRaises(ValueError, hmsm.correlation, list(range(hmsm.nstates+hmsm.nstates_obs)), None)
+
     def test_relaxation(self):
         hmsm = self.hmsm_lag10
-        a = range(hmsm.nstates)
+        a = list(range(hmsm.nstates))
         maxtime = 1000
         times, rel1 = hmsm.relaxation(hmsm.stationary_distribution, a, maxtime=maxtime)
         # should be constant because we are in equilibrium
@@ -230,6 +239,9 @@ class TestMLHMM(unittest.TestCase):
         assert (len(rel2) == maxtime / hmsm.lagtime)
         assert (rel2[0] < rel2[-1])
 
+        # test error case of incompatible vector size
+        self.assertRaises(ValueError, hmsm.relaxation, list(range(hmsm.nstates+1)), list(range(hmsm.nstates+1)))
+
     def test_fingerprint_correlation(self):
         hmsm = self.hmsm_lag10
         # raise assertion error because size is wrong:
@@ -237,7 +249,7 @@ class TestMLHMM(unittest.TestCase):
         with self.assertRaises(AssertionError):
             hmsm.fingerprint_correlation(a, 1)
         # should decrease
-        a = range(hmsm.nstates_obs)
+        a = list(range(hmsm.nstates_obs))
         fp1 = hmsm.fingerprint_correlation(a)
         # first timescale is infinite
         assert (fp1[0][0] == np.inf)
@@ -246,15 +258,18 @@ class TestMLHMM(unittest.TestCase):
         # all amplitudes nonnegative (for autocorrelation)
         assert (np.all(fp1[1][:] >= 0))
         # identical call
-        b = range(hmsm.nstates_obs)
+        b = list(range(hmsm.nstates_obs))
         fp2 = hmsm.fingerprint_correlation(a, b)
         assert (np.allclose(fp1[0], fp2[0]))
         assert (np.allclose(fp1[1], fp2[1]))
         # should be - of the above, apart from the first
-        b = range(hmsm.nstates_obs)[::-1]
+        b = list(range(hmsm.nstates_obs))[::-1]
         fp3 = hmsm.fingerprint_correlation(a, b)
         assert (np.allclose(fp1[0], fp3[0]))
         assert (np.allclose(fp1[1][1:], -fp3[1][1:]))
+
+        # test error case of incompatible vector size
+        self.assertRaises(ValueError, hmsm.fingerprint_correlation, list(range(hmsm.nstates+hmsm.nstates_obs)), None)
 
     def test_fingerprint_relaxation(self):
         hmsm = self.hmsm_lag10
@@ -263,7 +278,7 @@ class TestMLHMM(unittest.TestCase):
         with self.assertRaises(AssertionError):
             hmsm.fingerprint_relaxation(hmsm.stationary_distribution, a)
         # equilibrium relaxation should be constant
-        a = range(hmsm.nstates)
+        a = list(range(hmsm.nstates))
         fp1 = hmsm.fingerprint_relaxation(hmsm.stationary_distribution, a)
         # first timescale is infinite
         assert (fp1[0][0] == np.inf)
@@ -280,6 +295,10 @@ class TestMLHMM(unittest.TestCase):
         assert (np.allclose(fp2[0][1:], hmsm.timescales()))
         # dynamical amplitudes should be significant because we are not in equilibrium
         assert (np.max(np.abs(fp2[1][1:])) > 0.1)
+
+        # test error case of incompatible vector size
+        self.assertRaises(ValueError, hmsm.fingerprint_relaxation,
+                          list(range(hmsm.nstates+1)), list(range(hmsm.nstates+1)))
 
     # ================================================================================================================
     # Metastable state stuff

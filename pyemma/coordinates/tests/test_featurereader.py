@@ -27,6 +27,8 @@ Created on 23.01.2015
 
 @author: marscher
 '''
+
+from __future__ import absolute_import
 import mdtraj
 import os
 import tempfile
@@ -38,6 +40,7 @@ import pkg_resources
 
 import numpy as np
 from pyemma.coordinates.api import discretizer, tica, source
+from six.moves import range
 
 log = getLogger('TestFeatureReader')
 
@@ -63,8 +66,7 @@ class TestFeatureReader(unittest.TestCase):
         c = super(TestFeatureReader, cls).setUpClass()
         # create a fake trajectory which has 3 atoms and coordinates are just a range
         # over all frames.
-        cls.topfile = pkg_resources.resource_filename(
-            'pyemma.coordinates.tests.test_featurereader', 'data/test.pdb')
+        cls.topfile = pkg_resources.resource_filename(__name__, 'data/test.pdb')
         cls.trajfile, cls.xyz, cls.n_frames = create_traj(cls.topfile)
         cls.trajfile2, cls.xyz2, cls.n_frames2 = create_traj(cls.topfile)
 
@@ -99,7 +101,7 @@ class TestFeatureReader(unittest.TestCase):
         reader = FeatureReader([self.trajfile, self.trajfile2], self.topfile)
         reader.chunksize = 100
 
-        data = {itraj: [] for itraj in xrange(reader.number_of_trajectories())}
+        data = {itraj: [] for itraj in range(reader.number_of_trajectories())}
 
         for i, X in reader:
             data[i].append(X)
@@ -197,7 +199,7 @@ class TestFeatureReader(unittest.TestCase):
         for stride in strides:
             for lag in lags:
                 chunks = {itraj: []
-                          for itraj in xrange(reader.number_of_trajectories())}
+                          for itraj in range(reader.number_of_trajectories())}
                 for itraj, _, Y in reader.iterator(stride, lag):
                     chunks[itraj].append(Y)
                 chunks[0] = np.vstack(chunks[0])

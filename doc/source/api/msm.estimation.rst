@@ -1,4 +1,4 @@
-.. automodule:: pyemma.msm.estimation
+.. automodule:: msmtools.estimation
 
 .. toctree::
    :maxdepth: 1

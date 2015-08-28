@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import unittest
 import numpy as np
 from pyemma.msm import bayesian_markov_model
@@ -67,7 +68,7 @@ class TestBMSM(unittest.TestCase):
     def test_eigenvalues_samples(self):
         samples = self.sampled_msm_lag100.sample_f('eigenvalues')
         # shape
-        assert np.array_equal(np.shape(samples), (self.nsamples, self.nstates))
+        self.assertEqual(np.shape(samples), (self.nsamples, self.nstates))
         # consistency
         for ev in samples:
             assert np.isclose(ev[0], 1)
@@ -96,7 +97,7 @@ class TestBMSM(unittest.TestCase):
     def test_eigenvectors_left_samples(self):
         samples = self.sampled_msm_lag100.sample_f('eigenvectors_left')
         # shape
-        assert np.array_equal(np.shape(samples), (self.nsamples, self.nstates, self.nstates))
+        np.testing.assert_equal(np.shape(samples), (self.nsamples, self.nstates, self.nstates))
         # consistency
         for evec in samples:
             assert np.sign(evec[0,0]) == np.sign(evec[0,1])
@@ -125,7 +126,7 @@ class TestBMSM(unittest.TestCase):
     def test_eigenvectors_right_samples(self):
         samples = self.sampled_msm_lag100.sample_f('eigenvectors_right')
         # shape
-        assert np.array_equal(np.shape(samples), (self.nsamples, self.nstates, self.nstates))
+        np.testing.assert_equal(np.shape(samples), (self.nsamples, self.nstates, self.nstates))
         # consistency
         for evec in samples:
             assert np.sign(evec[0,0]) == np.sign(evec[1,0])
@@ -135,7 +136,7 @@ class TestBMSM(unittest.TestCase):
         # mean
         mean = self.sampled_msm_lag100.sample_mean('eigenvectors_right')
         # test shape and consistency
-        assert np.array_equal(mean.shape, (self.nstates, self.nstates))
+        np.testing.assert_equal(mean.shape, (self.nstates, self.nstates))
         assert np.sign(mean[0,0]) == np.sign(mean[1,0])
         assert np.sign(mean[0,1]) != np.sign(mean[1,1])
         # std
@@ -184,7 +185,7 @@ class TestBMSM(unittest.TestCase):
     def test_timescales_samples(self):
         samples = self.sampled_msm_lag100.sample_f('timescales')
         # shape
-        assert np.array_equal(np.shape(samples), (self.nsamples, self.nstates-1))
+        np.testing.assert_equal(np.shape(samples), (self.nsamples, self.nstates-1))
         # consistency
         for l in samples:
             assert np.all(l > 0.0)

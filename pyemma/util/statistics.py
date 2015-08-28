@@ -29,10 +29,13 @@ Created on Jul 25, 2014
 @author: noe
 '''
 
+from __future__ import absolute_import
+
 import numpy as np
 import math
 import itertools
-import types
+from . import types
+from six.moves import range
 
 
 def _confidence_interval_1d(data, alpha):
@@ -87,9 +90,9 @@ def _indexes(arr):
     """
     myarr = np.array(arr)
     if myarr.ndim == 1:
-        return range(len(myarr))
+        return list(range(len(myarr)))
     elif myarr.ndim == 2:
-        return itertools.product(range(arr.shape[0]), range(arr.shape[1]))
+        return itertools.product(list(range(arr.shape[0])), list(range(arr.shape[1])))
     else:
         raise NotImplementedError('Only supporting arrays of dimension 1 and 2 as yet.')
 

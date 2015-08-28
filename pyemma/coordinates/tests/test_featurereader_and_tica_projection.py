@@ -28,6 +28,10 @@ Test feature reader and Tica by checking the properties of the ICs.
 cov(ic_i,ic_j) = delta_ij and cov(ic_i,ic_j,tau) = lambda_i delta_ij
 @author: Fabian Paul
 '''
+
+from __future__ import print_function
+
+from __future__ import absolute_import
 import unittest
 import os
 import tempfile
@@ -36,6 +40,7 @@ import mdtraj
 from pyemma.coordinates.api import tica, _TICA as TICA
 from pyemma.coordinates.data.feature_reader import FeatureReader
 from pyemma.util.log import getLogger
+from six.moves import range
 
 log = getLogger('TestFeatureReaderAndTICAProjection')
 
@@ -66,12 +71,12 @@ class TestFeatureReaderAndTICAProjection(unittest.TestCase):
         # create topology file
         cls.temppdb = tempfile.mktemp('.pdb')
         with open(cls.temppdb, 'w') as f:
-            for i in xrange(cls.dim // 3):
-                print>>f, ('ATOM  %5d C    ACE A   1      28.490  31.600  33.379  0.00  1.00' % i)
+            for i in range(cls.dim // 3):
+                print(('ATOM  %5d C    ACE A   1      28.490  31.600  33.379  0.00  1.00' % i), file=f)
 
         t = np.arange(0, N)
         cls.trajnames = []  # list of xtc file names
-        for i in xrange(N_trajs):
+        for i in range(N_trajs):
             # set up data
             white = np.random.randn(N, cls.dim)
             brown = np.cumsum(white, axis=0)
@@ -96,7 +101,7 @@ class TestFeatureReaderAndTICAProjection(unittest.TestCase):
     def test_covariances_and_eigenvalues(self):
         reader = FeatureReader(self.trajnames, self.temppdb)
         for tau in [1, 10, 100, 1000, 2000]:
-            trans = TICA(lag=tau, dim=self.dim, force_eigenvalues_le_one=True)
+            trans = TICA(lag=tau, dim=self.dim, kinetic_map=False, force_eigenvalues_le_one=True)
             trans.data_producer = reader
 
             log.info('number of trajectories reported by tica %d' % trans.number_of_trajectories())
@@ -111,11 +116,11 @@ class TestFeatureReaderAndTICAProjection(unittest.TestCase):
             check = tica(data=data, lag=tau, dim=self.dim, force_eigenvalues_le_one=True)
             check.parametrize()
 
-            self.assertTrue(np.allclose(np.eye(self.dim), check.cov))
-            self.assertTrue(np.allclose(check.mu, 0.0))
+            np.testing.assert_allclose(np.eye(self.dim), check.cov, atol=1e-8)
+            np.testing.assert_allclose(check.mu, 0.0, atol=1e-8)
             ic_cov_tau = np.zeros((self.dim, self.dim))
             ic_cov_tau[np.diag_indices(self.dim)] = trans.eigenvalues
-            self.assertTrue(np.allclose(ic_cov_tau, check.cov_tau))
+            np.testing.assert_allclose(ic_cov_tau, check.cov_tau, atol=1e-8)
             # print '@@cov_tau', check.cov_tau
 
 if __name__ == "__main__":

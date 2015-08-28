@@ -28,6 +28,8 @@ Created on 02.02.2015
 
 @author: marscher
 '''
+
+from __future__ import absolute_import
 import unittest
 
 import numpy as np
@@ -35,6 +37,7 @@ import numpy as np
 from pyemma.coordinates import pca
 from pyemma.util.log import getLogger
 import pyemma.util.types as types
+from six.moves import range
 
 
 logger = getLogger('TestPCA')
@@ -44,7 +47,7 @@ class TestPCAExtensive(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        import pyemma.msm.generation as msmgen
+        import msmtools.generation as msmgen
 
         # set random state, remember old one and set it back in tearDownClass
         cls.old_state = np.random.get_state()

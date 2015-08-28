@@ -21,6 +21,8 @@
 # ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+from __future__ import absolute_import
 from pyemma.util import types
 '''
 Created on 19.01.2015
@@ -31,6 +33,7 @@ from .transformer import Transformer, SkipPassException
 
 from pyemma.util.linalg import eig_corr
 from pyemma.util.annotators import doc_inherit
+from pyemma.util.reflection import get_default_args
 
 import numpy as np
 
@@ -118,7 +121,8 @@ class TICA(Transformer):
         self._lag = lag
         self._dim = dim
         self._var_cutoff = var_cutoff
-        if dim != -1 and var_cutoff < 1.0:
+        default_var_cutoff = get_default_args(self.__init__)['var_cutoff']
+        if dim != -1 and var_cutoff != default_var_cutoff:
             raise ValueError('Trying to set both the number of dimension and the subspace variance. Use either or.')
         self._kinetic_map = kinetic_map
         self._epsilon = epsilon
@@ -164,18 +168,20 @@ class TICA(Transformer):
 
     def dimension(self):
         """ output dimension """
+        d = None
         if self._dim != -1:  # fixed parametrization
-            return self._dim
+            d = self._dim
         elif self._parametrized:  # parametrization finished. Dimension is known
             dim = len(self._eigenvalues)
             if self._var_cutoff < 1.0:  # if subspace_variance, reduce the output dimension if needed
                 dim = min(dim, np.searchsorted(self._cumvar, self._var_cutoff)+1)
-            return dim
+            d = dim
         elif self._var_cutoff == 1.0:  # We only know that all dimensions are wanted, so return input dim
-            return self.data_producer.dimension()
+            d = self.data_producer.dimension()
         else:  # We know nothing. Give up
             raise RuntimeError('Requested dimension, but the dimension depends on the cumulative variance and the '
                                'transformer has not yet been parametrized. Call parametrize() before.')
+        return d
 
     @property
     def mean(self):
@@ -260,8 +266,8 @@ class TICA(Transformer):
                 # MSM-like counting
                 if self.trajectory_length(itraj, stride=1) - self._lag > 0:
                     # find the "tails" of the trajectory relative to the current chunk
-                    Zptau = self._lag/stride - t  # zero plus tau
-                    Nmtau = self.trajectory_length(itraj, stride=stride)-t-self._lag/stride  # N minus tau
+                    Zptau = self._lag//stride - t  # zero plus tau
+                    Nmtau = self.trajectory_length(itraj, stride=stride)-t-self._lag//stride  # N minus tau
 
                     # restrict them to valid block indices
                     size = X.shape[0]
@@ -314,8 +320,8 @@ class TICA(Transformer):
                 # update the instantaneous covariance matrix
                 if self._force_eigenvalues_le_one:
                     # MSM-like counting
-                    Zptau = self._lag/stride-t  # zero plus tau
-                    Nmtau = self.trajectory_length(itraj, stride=stride)-t-self._lag/stride  # N minus tau
+                    Zptau = self._lag//stride-t  # zero plus tau
+                    Nmtau = self.trajectory_length(itraj, stride=stride)-t-self._lag//stride  # N minus tau
 
                     # restrict to valid block indices
                     size = X_meanfree.shape[0]

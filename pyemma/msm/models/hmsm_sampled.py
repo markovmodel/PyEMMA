@@ -31,6 +31,8 @@ and provides them for later access.
 
 """
 
+from __future__ import absolute_import
+
 __docformat__ = "restructuredtext en"
 
 import numpy as _np
