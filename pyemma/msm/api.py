@@ -1144,6 +1144,8 @@ def tpt(msmobj, A, B):
     """
     T = msmobj.transition_matrix
     mu = msmobj.stationary_distribution
+    A = _types.ensure_ndarray(A, kind='i')
+    B = _types.ensure_ndarray(B, kind='i')
     tptobj = tpt_factory(T, A, B, mu=mu)
     return tptobj
 
