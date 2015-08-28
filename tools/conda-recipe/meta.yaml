@@ -13,7 +13,7 @@ requirements:
     - setuptools
     - cython >=0.20
 
-    - bhmm
+    - bhmm ==0.5.1
     - joblib
     - matplotlib
     - mdtraj
@@ -27,7 +27,7 @@ requirements:
   run:
     - python
     - setuptools
-    - bhmm
+    - bhmm ==0.5.1
     - joblib
     - matplotlib
     - mdtraj

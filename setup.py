@@ -238,7 +238,7 @@ metadata = dict(
                       'mdtraj>=1.4.0',
                       'matplotlib',
                       'msmtools',
-                      'bhmm',
+                      'bhmm==0.5.1',
                       'joblib==0.8.4',
                       ],
     zip_safe=False,
