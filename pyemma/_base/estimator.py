@@ -1,8 +1,7 @@
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 from six.moves import range
 import inspect
-import joblib
 
 from pyemma._ext.sklearn.base import BaseEstimator as _BaseEstimator
 from pyemma._ext.sklearn.parameter_search import ParameterGrid
@@ -221,23 +220,41 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
     # set call back for joblib
     if progress_reporter is not None:
         progress_reporter._progress_register(len(estimators), stage=0,
-                                             description="estimating")
+                                             description="estimating %s" % str(estimator.__class__.__name__))
 
-    class CallBack(object):
-        def __init__(self, index, parallel):
-            self.index = index
-            self.parallel = parallel
+        if n_jobs > 1:
+            class CallBack(object):
+                def __init__(self, index, parallel):
+                    self.index = index
+                    self.parallel = parallel
+                    self.reporter = progress_reporter
 
-        def __call__(self, index):
-            if progress_reporter is not None:
-                progress_reporter._progress_update(1, stage=0)
-            if self.parallel._original_iterable:
-                self.parallel.dispatch_next()
-    import joblib.parallel
-    joblib.parallel.CallBack = CallBack
+                def __call__(self, index):
+                    if self.reporter is not None:
+                        self.reporter._progress_update(1, stage=0)
+                    if self.parallel._original_iterable:
+                        self.parallel.dispatch_next()
+            import joblib.parallel
+            joblib.parallel.CallBack = CallBack
+        else:
+            def _print(msg, msg_args):
+                # NOTE: this is a ugly hack, because if we only use one job,
+                # we do not get the joblib callback interface, as a workaround
+                # we use the Parallel._print function, which is called with
+                # msg_args = (done_jobs, total_jobs)
+                if len(msg_args) == 2:
+                    progress_reporter._progress_update(1, stage=0)
 
     # iterate over parameter settings
-    pool = joblib.Parallel(n_jobs=n_jobs)
+    from joblib import Parallel
+    import joblib
+    pool = Parallel(n_jobs=n_jobs)
+
+    if progress_reporter is not None and n_jobs == 1:
+        pool._print = _print
+        # NOTE: verbose has to be set, otherwise our print hack does not work.
+        pool.verbose = 50
+
     task_iter = (joblib.delayed(_estimate_param_scan_worker)(estimators[i],
                                                              param_sets[i], X,
                                                              evaluate,
