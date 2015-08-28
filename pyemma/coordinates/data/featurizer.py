@@ -1071,8 +1071,9 @@ class MDFeaturizer(object):
                     Only has effect if :py:obj:`indices` is an iterable of integers. Instead of the above behaviour,
                     only the contacts between the atoms in :py:obj:`indices` and :py:obj:`indices2` will be computed.
 
-        threshold : float, optional, default = 5.0
+        threshold : float or ndarray(n, dtype=float), optional, default = 5.0
             distances below this threshold will result in feature tending towards 1.0, distances above will tend towards 0.0.
+            An array can be passed so that each pair may use a different threshold.
             The default is set with Angstrom distances in mind.
             Make sure that you know whether your coordinates are in Angstroms or nanometers when setting this threshold.
 
@@ -1089,9 +1090,12 @@ class MDFeaturizer(object):
         """
 
         atom_pairs = _parse_pairwise_input(
-            indices, indices2, self._logger, fname='add_tanhcontacts()')
+            indices, indices2, self._logger, fname='add_tanh_contacts()')
 
         atom_pairs = self._check_indices(atom_pairs)
+        if type(threshold) == np.ndarray:
+            if threshold.shape[0] != atom_pairs.shape[0]:
+                raise IOError("threshold needs to be a float or array of equal length to the number of pairs")
         f = TanhContactFeature(self.topology, atom_pairs, threshold, scale, periodic)
         self.__add_feature(f)
 
