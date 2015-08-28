@@ -1,23 +1,26 @@
 from __future__ import absolute_import
 from six.moves import range
 
-__author__ = 'noe'
-
+import math
 import numpy as np
+
 from pyemma._base.estimator import Estimator, estimate_param_scan, param_grid
 from pyemma._base.model import SampledModel
-#from pyemma._base.progress import ProgressReporter
+from pyemma._base.progress.reporter import ProgressReporter
 from pyemma.util.statistics import confidence_interval
 from pyemma.util import types
-import math
 
-class LaggedModelValidator(Estimator):
+__author__ = 'noe'
+
+
+class LaggedModelValidator(Estimator, ProgressReporter):
     """ Validates a model estimated at lag time tau by testing its predictions
     for longer lag times
 
     """
 
-    def __init__(self, model, estimator, mlags=None, conf=0.95, err_est=False):
+    def __init__(self, model, estimator, mlags=None, conf=0.95, err_est=False,
+                 n_jobs=1, show_progress=True):
         """
         Parameters
         ----------
@@ -43,6 +46,12 @@ class LaggedModelValidator(Estimator):
             if the Estimator is capable of error calculation, will compute
             errors for each tau estimate. This option can be computationally
             expensive.
+
+        n_jobs : int, default=1
+            how many jobs to use during calculation
+
+        show_progress : bool, default=True
+            Show progressbars for calculation?
 
         """
         # set model and estimator
@@ -74,6 +83,8 @@ class LaggedModelValidator(Estimator):
         if err_est and not self.has_errors:
             raise ValueError('Requested errors on the estimated models, '
                              'but the model is not able to calculate errors at all')
+        self.n_jobs = n_jobs
+        self.show_progress = show_progress
 
     def _estimate(self, data):
         # lag times
@@ -92,13 +103,20 @@ class LaggedModelValidator(Estimator):
         self._est_L = []
         self._est_R = []
 
-        #self._register(len(pargrid), stage=0, description="estimating models")
-        #self._register(len(self.mlags), stage=1, description="validating quantities")
-
         # clone estimators and run estimates
+
+        if self.show_progress:
+            if isinstance(self.test_estimator, SampledModel):
+                self.test_estimator.show_progress = False
+            progress_reporter = self
+        else:
+            progress_reporter = None
+
         estimated_models, estimators = \
             estimate_param_scan(self.test_estimator, data, pargrid,
-                                return_estimators=True, progress_reporter=None)
+                                return_estimators=True,
+                                progress_reporter=progress_reporter,
+                                n_jobs=self.n_jobs)
         if include0:
             estimated_models = [None] + estimated_models
             estimators = [None] + estimators
@@ -265,8 +283,10 @@ class LaggedModelValidator(Estimator):
 
 class EigenvalueDecayValidator(LaggedModelValidator):
 
-    def __init__(self, model, estimator, nits=1, mlags=None, conf=0.95, exclude_stat=True, err_est=False):
-        LaggedModelValidator.__init__(self, model, estimator, mlags=mlags, conf=conf)
+    def __init__(self, model, estimator, nits=1, mlags=None, conf=0.95,
+                 exclude_stat=True, err_est=False, show_progress=True):
+        LaggedModelValidator.__init__(self, model, estimator, mlags=mlags,
+                                      conf=conf, show_progress=show_progress)
         self.nits = nits
         self.exclude_stat = exclude_stat
         self.err_est = err_est  # TODO: this is currently unused
@@ -301,7 +321,8 @@ class EigenvalueDecayValidator(LaggedModelValidator):
 
 class ChapmanKolmogorovValidator(LaggedModelValidator):
 
-    def __init__(self, model, estimator, memberships, mlags=None, conf=0.95, err_est=False):
+    def __init__(self, model, estimator, memberships, mlags=None, conf=0.95,
+                 err_est=False, n_jobs=1, show_progress=True):
         """
 
         Parameters
@@ -313,7 +334,9 @@ class ChapmanKolmogorovValidator(LaggedModelValidator):
             to 1).
 
         """
-        LaggedModelValidator.__init__(self, model, estimator, mlags=mlags, conf=conf)
+        LaggedModelValidator.__init__(self, model, estimator, mlags=mlags,
+                                      conf=conf, n_jobs=n_jobs,
+                                      show_progress=show_progress)
         # check and store parameters
         self.memberships = types.ensure_ndarray(memberships, ndim=2, kind='numeric')
         self.nstates, self.nsets = memberships.shape

@@ -262,7 +262,7 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
 
         return self
 
-    def cktest(self, mlags=10, conf=0.95, err_est=False):
+    def cktest(self, mlags=10, conf=0.95, err_est=False, show_progress=True):
         """ Conducts a Chapman-Kolmogorow test.
 
         Parameters
@@ -278,6 +278,8 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
             compute errors also for all estimations (computationally expensive)
             If False, only the prediction will get error bars, which is often
             sufficient to validate a model.
+        show_progress : bool, default=True
+            Show progressbars for calculation?
 
 
         References
@@ -296,6 +298,8 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
 
         """
         from pyemma.msm.estimators import ChapmanKolmogorovValidator
-        ck = ChapmanKolmogorovValidator(self, self, np.eye(self.nstates), mlags=mlags, conf=conf, err_est=err_est)
+        ck = ChapmanKolmogorovValidator(self, self, np.eye(self.nstates),
+                                        mlags=mlags, conf=conf, err_est=err_est,
+                                        show_progress=show_progress)
         ck.estimate(self._dtrajs_full)
         return ck

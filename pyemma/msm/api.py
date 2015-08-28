@@ -59,7 +59,7 @@ __all__ = ['markov_model',
 
 @shortcut('its')
 def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True,
-                   errors=None, nsamples=50, n_jobs=1):
+                   errors=None, nsamples=50, n_jobs=1, show_progress=True):
     # format data
     r""" Calculate implied timescales from Markov state models estimated at a series of lag times.
 
@@ -177,12 +177,14 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
     if errors is None:
         estimator = _ML_MSM(reversible=reversible, connectivity=connectivity)
     elif errors == 'bayes':
-        estimator = _Bayes_MSM(reversible=reversible, connectivity=connectivity, nsamples=nsamples)
+        estimator = _Bayes_MSM(reversible=reversible, connectivity=connectivity,
+                               nsamples=nsamples, show_progress=show_progress)
     else:
         raise NotImplementedError('Error estimation method'+errors+'currently not implemented')
 
     # go
-    itsobj = _ImpliedTimescales(estimator, lags=lags, nits=nits, n_jobs=n_jobs)
+    itsobj = _ImpliedTimescales(estimator, lags=lags, nits=nits, n_jobs=n_jobs,
+                                show_progress=show_progress)
     itsobj.estimate(dtrajs)
     return itsobj
 
@@ -480,7 +482,8 @@ def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
 
 
 def timescales_hmsm(dtrajs, nstates, lags=None, nits=None, reversible=True,
-                    connected=True, errors=None, nsamples=100, n_jobs=1):
+                    connected=True, errors=None, nsamples=100, n_jobs=1,
+                    show_progress=True):
     r""" Calculate implied timescales from Hidden Markov state models estimated at a series of lag times.
 
     Warning: this can be slow!
@@ -520,6 +523,9 @@ def timescales_hmsm(dtrajs, nstates, lags=None, nits=None, reversible=True,
 
     n_jobs = 1 : int
         how many subprocesses to start to estimate the models for each lag time.
+
+    show_progress : bool, default=True
+        Show progressbars for calculation?
 
     Returns
     -------
@@ -579,14 +585,18 @@ def timescales_hmsm(dtrajs, nstates, lags=None, nits=None, reversible=True,
     if errors is None:
         estimator = _ML_HMSM(nstates=nstates, reversible=reversible, connectivity=connectivity)
     elif errors == 'bayes':
-        estimator = _Bayes_HMSM(nstates=nstates, reversible=reversible, connectivity=connectivity)
+        estimator = _Bayes_HMSM(nstates=nstates, reversible=reversible,
+                                connectivity=connectivity,
+                                show_progress=show_progress)
     else:
-        raise NotImplementedError('Error estimation method'+errors+'currently not implemented')
+        raise NotImplementedError('Error estimation method'+str(errors)+'currently not implemented')
 
     # go
-    itsobj = _ImpliedTimescales(estimator, lags=lags, nits=nits, n_jobs=n_jobs)
+    itsobj = _ImpliedTimescales(estimator, lags=lags, nits=nits, n_jobs=n_jobs,
+                                show_progress=show_progress)
     itsobj.estimate(dtrajs)
     return itsobj
+
 
 def estimate_hidden_markov_model(dtrajs, nstates, lag, reversible=True, connectivity='largest', observe_active=True,
                                  dt_traj='1 step', accuracy=1e-3, maxit=1000):
@@ -761,7 +771,7 @@ def estimate_hidden_markov_model(dtrajs, nstates, lag, reversible=True, connecti
 
 
 def bayesian_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivity='largest',
-                          nsamples=100, conf=0.95, dt_traj='1 step'):
+                          nsamples=100, conf=0.95, dt_traj='1 step', show_progress=True):
     r""" Bayesian Markov model estimate using Gibbs sampling of the posterior
 
     Returns a :class:`SampledMSM <pyemma.msm.models.SampledMSM>` that contains the
@@ -828,6 +838,9 @@ def bayesian_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
         |  'us',  'microsecond*'
         |  'ms',  'millisecond*'
         |  's',   'second*'
+
+    show_progress : bool, default=True
+        Show progressbars for calculation?
 
     Returns
     -------
@@ -919,12 +932,13 @@ def bayesian_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
     """
     # TODO: store_data=True
     bmsm_estimator = _Bayes_MSM(lag=lag, reversible=reversible, sparse=sparse, connectivity=connectivity,
-                                dt_traj=dt_traj, nsamples=nsamples, conf=conf)
+                                dt_traj=dt_traj, nsamples=nsamples, conf=conf, show_progress=show_progress)
     return bmsm_estimator.estimate(dtrajs)
 
 
 def bayesian_hidden_markov_model(dtrajs, nstates, lag, nsamples=100, reversible=True, connectivity='largest',
-                                 observe_active=True, conf=0.95, dt_traj='1 step'):
+                                 observe_active=True, conf=0.95, dt_traj='1 step',
+                                 show_progress=True):
     r""" Bayesian Hidden Markov model estimate using Gibbs sampling of the posterior
 
     Returns a :class:`SampledHMSM <pyemma.msm.model.SampledHMSM>` that contains
@@ -990,6 +1004,9 @@ def bayesian_hidden_markov_model(dtrajs, nstates, lag, nsamples=100, reversible=
         |  'us',  'microsecond*'
         |  'ms',  'millisecond*'
         |  's',   'second*'
+
+    show_progress : bool, default=True
+        Show progressbars for calculation?
 
     Returns
     -------
@@ -1058,7 +1075,8 @@ def bayesian_hidden_markov_model(dtrajs, nstates, lag, nsamples=100, reversible=
 
     """
     bhmsm_estimator = _Bayes_HMSM(lag=lag, nstates=nstates, nsamples=nsamples, reversible=reversible,
-                                  connectivity=connectivity, observe_active=observe_active, dt_traj=dt_traj, conf=conf)
+                                  connectivity=connectivity, observe_active=observe_active,
+                                  dt_traj=dt_traj, conf=conf, show_progress=show_progress)
     return bhmsm_estimator.estimate(dtrajs)
 
 # TODO: need code examples
@@ -1078,23 +1096,23 @@ def tpt(msmobj, A, B):
         List of integer state labels for set A
     B : array_like
         List of integer state labels for set B
-        
+
     Returns
     -------
     tptobj : :class:`ReactiveFlux <pyemma.msm.flux.ReactiveFlux>` object
         A python object containing the reactive A->B flux network
         and several additional quantities, such as stationary probability,
         committors and set definitions.
-        
+
     Notes
     -----
     The central object used in transition path theory is
     the forward and backward committor function.
-    
+
     TPT (originally introduced in [1]_) for continuous systems has a
     discrete version outlined in [2]_. Here, we use the transition
     matrix formulation described in [3]_.
-    
+
 
     .. autoclass:: pyemma.msm.flux.reactive_flux.ReactiveFlux
         :members:
@@ -1140,7 +1158,7 @@ def tpt(msmobj, A, B):
     Examples
     --------
 
-        
+
     """
     T = msmobj.transition_matrix
     mu = msmobj.stationary_distribution

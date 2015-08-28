@@ -1,4 +1,3 @@
-
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
 # All rights reserved.
@@ -97,12 +96,14 @@ class ImpliedTimescales(Estimator, ProgressReporter):
         how many subprocesses to start to estimate the models for each lag time.
 
     """
-    def __init__(self, estimator, lags=None, nits=None, failfast=False, n_jobs=1):
+    def __init__(self, estimator, lags=None, nits=None, failfast=False, n_jobs=1,
+                 show_progress=True):
         # initialize
         self.estimator = get_estimator(estimator)
         self.nits = nits
         self.failfast = failfast
         self.n_jobs = n_jobs
+        self.show_progress = show_progress
 
         # set lag times
         if _types.is_int(lags):  # got a single integer. We create a list
@@ -143,6 +144,9 @@ class ImpliedTimescales(Estimator, ProgressReporter):
 
         # construct all parameter sets for the estimator
         param_sets = tuple(param_grid({'lag': self._lags}))
+
+        if isinstance(self.estimator, SampledModel):
+            self.estimator.show_progress = False
 
         # run estimation on all lag times
         self._models, self._estimators = estimate_param_scan(self.estimator,
@@ -235,20 +239,20 @@ class ImpliedTimescales(Estimator, ProgressReporter):
 
     def get_timescales(self, process=None):
         r"""Returns the implied timescale estimates
-        
+
         Parameters
         ----------
         process : int or None (default)
             index in [0:n-1] referring to the process whose timescale will be returned.
             By default, process = None and all computed process timescales will be returned.
-            
+
         Returns
         --------
         if process is None, will return a (l x k) array, where l is the number of lag times 
         and k is the number of computed timescales.
         if process is an integer, will return a (l) array with the selected process time scale
         for every lag time
-        
+
         """
         if process is None:
             return self._its[self._successful_lag_indexes, :]
@@ -260,7 +264,7 @@ class ImpliedTimescales(Estimator, ProgressReporter):
         r"""Returns True if samples are available and thus sample
         means, standard errors and confidence intervals can be
         obtained
-        
+
         """
         return self._its_samples is not None
 
@@ -281,20 +285,20 @@ class ImpliedTimescales(Estimator, ProgressReporter):
     def get_sample_mean(self, process=None):
         r"""Returns the sample means of implied timescales. Need to
         generate the samples first, e.g. by calling bootstrap
-        
+
         Parameters
         ----------
         process : int or None (default)
             index in [0:n-1] referring to the process whose timescale will be returned.
             By default, process = None and all computed process timescales will be returned.
-            
+
         Returns
         -------
         if process is None, will return a (l x k) array, where l is the number of lag times 
         and k is the number of computed timescales.
         if process is an integer, will return a (l) array with the selected process time scale
         for every lag time
-        
+
         """
         if self._its_samples is None:
             raise RuntimeError('Cannot compute sample mean, because no samples were generated ' +
@@ -325,20 +329,20 @@ class ImpliedTimescales(Estimator, ProgressReporter):
     def get_sample_std(self, process=None):
         r"""Returns the standard error of implied timescales. Need to
         generate the samples first, e.g. by calling bootstrap
-        
+
         Parameters
         -----------
         process : int or None (default)
             index in [0:n-1] referring to the process whose timescale will be returned.
             By default, process = None and all computed process timescales will be returned.
-            
+
         Returns
         -------
         if process is None, will return a (l x k) array, where l is the number of lag times 
         and k is the number of computed timescales.
         if process is an integer, will return a (l) array with the selected process time scale
         for every lag time
-        
+
         """
         if self._its_samples is None:
             raise RuntimeError('Cannot compute sample mean, because no samples were generated ' +
@@ -351,13 +355,13 @@ class ImpliedTimescales(Estimator, ProgressReporter):
 
     def get_sample_conf(self, conf=0.95, process=None):
         r"""Returns the confidence interval that contains alpha % of the sample data
-        
+
         Use:
         conf = 0.6827 for 1-sigma confidence interval
         conf = 0.9545 for 2-sigma confidence interval
         conf = 0.9973 for 3-sigma confidence interval
         etc.
-        
+
         Returns
         -------
         (L,R) : (float[],float[]) or (float[][],float[][])
@@ -366,7 +370,7 @@ class ImpliedTimescales(Estimator, ProgressReporter):
         and k is the number of computed timescales.
         if process is an integer, will return two (l)-arrays with the
         selected process time scale for every lag time
-        
+
         """
         if self._its_samples is None:
             raise RuntimeError('Cannot compute sample mean, because no samples were generated ' +
@@ -407,7 +411,7 @@ class ImpliedTimescales(Estimator, ProgressReporter):
         """
         # TODO : implement fraction_of_active_frames
         # Are we computing this for the first time?
-        if not hasattr(self,'_fraction'):
+        if not hasattr(self, '_fraction'):
             self._fraction = np.zeros_like(self.lagtimes, dtype='float32')
             self._nframes = self._trajlengths.sum()
 

@@ -1,7 +1,5 @@
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 from six.moves import range
-
-__author__ = 'noe'
 
 import numpy as _np
 from pyemma.util.types import ensure_dtraj_list
@@ -12,80 +10,86 @@ from pyemma.msm.models.hmsm_sampled import SampledHMSM as _SampledHMSM
 from pyemma.util.units import TimeUnit
 from pyemma._base.progress import ProgressReporter
 
+__author__ = 'noe'
+
 
 class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporter):
     """Estimator for a Bayesian HMSM
 
+    Parameters
+    ----------
+    nstates : int, optional, default=2
+        number of hidden states
+
+    lag : int, optional, default=1
+        lagtime to estimate the HMSM at
+
+    stride : str or int, default=1
+        stride between two lagged trajectories extracted from the input
+        trajectories. Given trajectory s[t], stride and lag will result
+        in trajectories
+            s[0], s[tau], s[2 tau], ...
+            s[stride], s[stride + tau], s[stride + 2 tau], ...
+        Setting stride = 1 will result in using all data (useful for
+        maximum likelihood estimator), while a Bayesian estimator requires
+        a longer stride in order to have statistically uncorrelated
+        trajectories. Setting stride = None 'effective' uses the largest
+        neglected timescale as an estimate for the correlation time and
+        sets the stride accordingly.
+
+    prior : str, optional, default='mixed'
+        prior used in the estimation of the transition matrix. While 'sparse'
+        would be preferred as it doesn't bias the distribution way from the
+        maximum-likelihood, this prior is sensitive to loss of connectivity.
+        Loss of connectivity can occur in the Gibbs sampling algorithm used
+        here because in each iteration the hidden state sequence is randomly
+        generated. Once full connectivity is lost in one of these steps, the
+        current algorithm cannot recover from that. As a solution we suggest
+        using a prior that ensures that the estimated transition matrix is
+        connected even if the sampled state sequence is not.
+
+        * 'sparse' : the sparse prior proposed in [1]_ which centers the
+            posterior around the maximum likelihood estimator. This is the
+            preferred option if there are no connectivity problems. However
+            this prior is sensitive to loss of connectivity.
+
+        * 'uniform' : uniform prior probability for every transition matrix
+            element. Compared to the sparse prior, 'uniform' adds +1 to
+            every transition count. Weak prior that ensures connectivity,
+            but can lead to large biases if some states have small exit
+            probabilities.
+
+        * 'mixed' : ensures connectivity by adding a prior taken from the
+            maximum likelihood estimate (MLE) of the hidden transition
+            matrix P. The rows of P are scaled in order to have total
+            outgoing  transition counts of at least 1 out of each state.
+            While this operation centers the posterior around the MLE, it
+            can be a very strong prior if states with small exit
+            probabilities are involved, and can therefore artificially
+            reduce the error bars.
+
+    init_hmsm : :class:`HMSM <pyemma.msm.models.HMSM>`
+        Single-point estimate of HMSM object around which errors will be evaluated
+
+    observe_active : bool, optional, default=True
+        True: Restricts the observation set to the active states of the MSM.
+        False: All states are in the observation set.
+
+    show_progress : bool, default=True
+        Show progressbars for calculation?
+
+    References
+    ----------
+    [1] Trendelkamp-Schroer, B., H. Wu, F. Paul and F. Noe: Estimation and
+        uncertainty of reversible Markov models. J. Chem. Phys. (in review)
+        Preprint: http://arxiv.org/abs/1507.05990
+
     """
-    def __init__(self, nstates=2, lag=1, stride='effective', prior='mixed', nsamples=100, init_hmsm=None,
-                 reversible=True, connectivity='largest', observe_active=True, dt_traj='1 step', conf=0.95):
-        """
-        Parameters
-        ----------
-        nstates : int, optional, default=2
-            number of hidden states
+    def __init__(self, nstates=2, lag=1, stride='effective', prior='mixed',
+                 nsamples=100, init_hmsm=None, reversible=True,
+                 connectivity='largest', observe_active=True,
+                 dt_traj='1 step', conf=0.95, show_progress=True):
 
-        lag : int, optional, default=1
-            lagtime to estimate the HMSM at
-
-        stride : str or int, default=1
-            stride between two lagged trajectories extracted from the input
-            trajectories. Given trajectory s[t], stride and lag will result
-            in trajectories
-                s[0], s[tau], s[2 tau], ...
-                s[stride], s[stride + tau], s[stride + 2 tau], ...
-            Setting stride = 1 will result in using all data (useful for
-            maximum likelihood estimator), while a Bayesian estimator requires
-            a longer stride in order to have statistically uncorrelated
-            trajectories. Setting stride = None 'effective' uses the largest
-            neglected timescale as an estimate for the correlation time and
-            sets the stride accordingly.
-
-        prior : str, optional, default='mixed'
-            prior used in the estimation of the transition matrix. While 'sparse'
-            would be preferred as it doesn't bias the distribution way from the
-            maximum-likelihood, this prior is sensitive to loss of connectivity.
-            Loss of connectivity can occur in the Gibbs sampling algorithm used
-            here because in each iteration the hidden state sequence is randomly
-            generated. Once full connectivity is lost in one of these steps, the
-            current algorithm cannot recover from that. As a solution we suggest
-            using a prior that ensures that the estimated transition matrix is
-            connected even if the sampled state sequence is not.
-
-            * 'sparse' : the sparse prior proposed in [1]_ which centers the
-                posterior around the maximum likelihood estimator. This is the
-                preferred option if there are no connectivity problems. However
-                this prior is sensitive to loss of connectivity.
-
-            * 'uniform' : uniform prior probability for every transition matrix
-                element. Compared to the sparse prior, 'uniform' adds +1 to
-                every transition count. Weak prior that ensures connectivity,
-                but can lead to large biases if some states have small exit
-                probabilities.
-
-            * 'mixed' : ensures connectivity by adding a prior taken from the
-                maximum likelihood estimate (MLE) of the hidden transition
-                matrix P. The rows of P are scaled in order to have total
-                outgoing  transition counts of at least 1 out of each state.
-                While this operation centers the posterior around the MLE, it
-                can be a very strong prior if states with small exit
-                probabilities are involved, and can therefore artificially
-                reduce the error bars.
-
-        init_hmsm : :class:`HMSM <pyemma.msm.ui.hmsm.HMSM>`
-            Single-point estimate of HMSM object around which errors will be evaluated
-
-        observe_active : bool, optional, default=True
-            True: Restricts the observation set to the active states of the MSM.
-            False: All states are in the observation set.
-
-        References
-        ----------
-        [1] Trendelkamp-Schroer, B., H. Wu, F. Paul and F. Noe: Estimation and
-            uncertainty of reversible Markov models. J. Chem. Phys. (in review)
-            Preprint: http://arxiv.org/abs/1507.05990
-
-        """
         self.lag = lag
         self.stride = stride
         self.nstates = nstates
@@ -98,6 +102,7 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporter):
         self.dt_traj = dt_traj
         self.timestep_traj = TimeUnit(dt_traj)
         self.conf = conf
+        self.show_progress = show_progress
 
     def _estimate(self, dtrajs):
         """
@@ -142,10 +147,13 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporter):
             pobs = init_hmsm.observation_probabilities
 
         # HMM sampler
-        self._progress_register(self.nsamples, description='Sampling models', stage=0)
+        if self.show_progress:
+            self._progress_register(self.nsamples, description='Sampling HMSMs', stage=0)
 
-        def call_back():
-            self._progress_update(1, stage=0)
+            def call_back():
+                self._progress_update(1, stage=0)
+        else:
+            call_back = None
 
         from bhmm import discrete_hmm, bayesian_hmm
         hmm_mle = discrete_hmm(init_hmsm.transition_matrix, pobs, stationary=True, reversible=self.reversible)
@@ -166,6 +174,9 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporter):
 
         sampled_hmm = bayesian_hmm(init_hmsm.discrete_trajectories_lagged, hmm_mle, nsample=self.nsamples,
                                    transition_matrix_prior=self.prior_count_matrix, call_back=call_back)
+
+        if self.show_progress:
+            self._progress_force_finish(stage=0)
 
         # Samples
         sample_Ps = [sampled_hmm.sampled_hmms[i].transition_matrix for i in range(self.nsamples)]
