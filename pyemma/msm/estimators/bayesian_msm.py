@@ -92,14 +92,18 @@ class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporter):
         Confidence interval. By default one-sigma (68.3%) is used. Use 95.4%
         for two sigma or 99.7% for three sigma.
 
+    show_progress : bool, default=True
+        Show progressbars for calculation?
+
     """
     def __init__(self, lag=1, nsamples=100, nsteps=None, reversible=True, count_mode='effective', sparse=False,
-                 connectivity='largest', dt_traj='1 step', conf=0.95):
+                 connectivity='largest', dt_traj='1 step', conf=0.95, show_progress=True):
         _MLMSM.__init__(self, lag=lag, reversible=reversible, count_mode=count_mode, sparse=sparse,
                         connectivity=connectivity, dt_traj=dt_traj)
         self.nsamples = nsamples
         self.nsteps = nsteps
         self.conf = conf
+        self.show_progress = show_progress
 
     def _estimate(self, dtrajs):
         """
@@ -130,10 +134,13 @@ class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporter):
         tsampler = tmatrix_sampler(self.count_matrix_active, reversible=self.reversible, T0=self.transition_matrix,
                                    nsteps=self.nsteps)
 
-        self._progress_register(self.nsamples, description="Sampling models", stage=0)
+        self._progress_register(self.nsamples, description="Sampling MSMs", stage=0)
 
-        def call_back():
-            self._progress_update(1, stage=0)
+        if self.show_progress:
+            def call_back():
+                self._progress_update(1, stage=0)
+        else:
+            call_back = None
 
         sample_Ps, sample_mus = tsampler.sample(nsamples=self.nsamples,
                                                 return_statdist=True,

@@ -208,7 +208,8 @@ class MaximumLikelihoodMSM(_Estimator, _EstimatedMSM):
 
         return self
 
-    def cktest(self, nsets, memberships=None, mlags=10, conf=0.95, err_est=False):
+    def cktest(self, nsets, memberships=None, mlags=10, conf=0.95, err_est=False,
+               show_progress=True):
         """ Conducts a Chapman-Kolmogorow test.
 
         Parameters
@@ -229,7 +230,8 @@ class MaximumLikelihoodMSM(_Estimator, _EstimatedMSM):
             compute errors also for all estimations (computationally expensive)
             If False, only the prediction will get error bars, which is often
             sufficient to validate a model.
-
+        show_progress : bool, default=True
+            Show progressbars for calculation?
 
         References
         ----------

@@ -3,7 +3,7 @@ Created on 16.07.2015
 
 @author: marscher
 '''
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 from pyemma.util.types import is_int
 from pyemma._base.progress.bar import ProgressBar as _ProgressBar
 from pyemma._base.progress.bar import show_progressbar as _show_progressbar
@@ -17,17 +17,6 @@ class ProgressReporter(object):
 
     # Note: this class has intentionally no constructor, because it is more
     # comfortable for the user of this class (who is then not in the need to call it).
-
-    @property
-    def progress_silence(self):
-        """ If set to True, no progress will be reported. Defaults to False."""
-        if not hasattr(self, '_prog_rep_silence'):
-            self._prog_rep_silence = False
-        return self._prog_rep_silence
-
-    @progress_silence.setter
-    def progress_silence(self, value):
-        setattr(self, '_prog_rep_silence', value)
 
     def _progress_register(self, amount_of_work, description=None, stage=0):
         """ Registers a progress which can be reported/displayed via a progress bar.
@@ -43,7 +32,7 @@ class ProgressReporter(object):
             in the first pass over the data, calculate covariances in the second),
             one needs to estimate different times of arrival.
         """
-        if hasattr(self, '_prog_rep_silence') and self._prog_rep_silence:
+        if hasattr(self, 'show_progress') and not self.show_progress:
             return
 
         # note this semantic makes it possible to use this class without calling
@@ -52,14 +41,18 @@ class ProgressReporter(object):
             self._prog_rep_progressbars = {}
 
         if not is_int(amount_of_work):
-            raise ValueError("amount_of_work has to be of integer type. But is "
-                             + str(type(amount_of_work)))
+            raise ValueError("amount_of_work has to be of integer type. But is %s"
+                             % type(amount_of_work))
 
-#         if stage in self._prog_rep_progressbars:
-#             import warnings
-#             warnings.warn("overriding progress for stage " + str(stage))
         self._prog_rep_progressbars[stage] = _ProgressBar(
             amount_of_work, description=description)
+
+#     def _progress_set_description(self, stage, description):
+#         """ set description of an already existing progress """
+#         assert hasattr(self, '_prog_rep_progressbars')
+#         assert stage in self._prog_rep_progressbars
+# 
+#         self._prog_rep_progressbars[stage].description = description
 
     def register_progress_callback(self, call_back, stage=0):
         """ Registers the progress reporter.
@@ -76,8 +69,9 @@ class ProgressReporter(object):
         stage: int, optional, default=0
             The stage you want the given call back function to be fired.
         """
-        if hasattr(self, '_prog_rep_silence') and self._prog_rep_silence:
+        if hasattr(self, 'show_progress') and not self.show_progress:
             return
+
         if not hasattr(self, '_callbacks'):
             self._prog_rep_callbacks = {}
 
@@ -104,7 +98,7 @@ class ProgressReporter(object):
             Current stage of the algorithm, 0 or greater
 
         """
-        if hasattr(self, '_prog_rep_silence') and self._prog_rep_silence:
+        if hasattr(self, 'show_progress') and not self.show_progress:
             return
 
         if stage not in self._prog_rep_progressbars:
@@ -121,6 +115,11 @@ class ProgressReporter(object):
 
     def _progress_force_finish(self, stage=0):
         """ forcefully finish the progress for given stage """
+        if hasattr(self, 'show_progress') and not self.show_progress:
+            return
+        if stage not in self._prog_rep_progressbars:
+            raise RuntimeError(
+                "call _progress_register(amount_of_work, stage=x) on this instance first!")
         pg = self._prog_rep_progressbars[stage]
         pg.numerator = pg.denominator
         pg._eta.eta_epoch = 0
