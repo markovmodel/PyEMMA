@@ -291,7 +291,9 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
         If true compute reversible MSM, else non-reversible MSM
 
     statdist : (M,) ndarray, optional
-        Stationary vector on the full state-space  
+        Stationary vector on the full state-space. Transition matrix
+        will be estimated such that statdist is its equilibrium
+        distribution.
 
     sparse : bool, optional, default = False
         If true compute count matrix, transition matrix and all
@@ -471,7 +473,7 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
 
     """
     # transition matrix estimator
-    mlmsm = _ML_MSM(lag=lag, reversible=reversible, statdist=statdist,
+    mlmsm = _ML_MSM(lag=lag, reversible=reversible, statdist_constraint=statdist,
                     sparse=sparse, connectivity=connectivity,
                     dt_traj=dt_traj, maxiter=maxiter,
                     maxerr=maxerr)
