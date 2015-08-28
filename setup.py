@@ -239,7 +239,7 @@ metadata = dict(
                       'matplotlib',
                       'msmtools',
                       'bhmm',
-                      'joblib',
+                      'joblib==0.8.4',
                       ],
     zip_safe=False,
 )
