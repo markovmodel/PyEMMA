@@ -173,6 +173,18 @@ class TestFeaturizer(unittest.TestCase):
         D_ca = feat_just_ca.map(mdtraj.load(pdbfile_ops_aa))
         assert(np.allclose(D_aa, D_ca))
 
+    def test_ca_distances_with_all_atom_geometries_and_exclusions(self):
+        feat = MDFeaturizer(pdbfile_ops_aa)
+        feat.add_distances_ca(excluded_Ca_neighbors=2)
+        D_aa = feat.map(mdtraj.load(pdbfile_ops_aa))
+
+        # Create a reference
+        feat_just_ca = MDFeaturizer(pdbfile_ops_Ca)
+        ca_pairs = feat.pairs(feat_just_ca.select_Ca(),excluded_neighbors=2)
+        feat_just_ca.add_distances(ca_pairs)
+        D_ca = feat_just_ca.map(mdtraj.load(pdbfile_ops_Ca))
+        assert(np.allclose(D_aa, D_ca))
+
     def test_contacts(self):
         sel = np.array([1, 2, 5, 20], dtype=int)
         pairs_expected = np.array([[1, 5], [1, 20], [2, 5], [2, 20], [5, 20]])
