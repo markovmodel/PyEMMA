@@ -30,6 +30,9 @@ and provides them for later access.
 
 """
 
+from __future__ import absolute_import
+from six.moves import range
+
 __docformat__ = "restructuredtext en"
 
 import copy
@@ -58,7 +61,7 @@ class MSM(_Model):
         whether P is reversible with respect to its stationary distribution.
         If None (default), will be determined from P
 
-    dt : str, optional, default='1 step'
+    dt_model : str, optional, default='1 step'
         Description of the physical time corresponding to one time step of the
         MSM (aka lag time). May be used by analysis algorithms such as plotting
         tools to pretty-print the axes.
@@ -111,7 +114,7 @@ class MSM(_Model):
             whether P is reversible with respect to its stationary distribution.
             If None (default), will be determined from P
 
-        dt : str, optional, default='1 step'
+        dt_model : str, optional, default='1 step'
             Description of the physical time corresponding to the model time
             step.  May be used by analysis algorithms such as plotting tools to
             pretty-print the axes. By default '1 step', i.e. there is no
@@ -540,8 +543,8 @@ class MSM(_Model):
         This is done by evaluating the equation
 
         .. :math:
-            acf_a(k\tau)     & = & \mathbf{a}^\top \mathrm{diag}(\boldsymbol{\pi}) \mathbf{P(\tau)}^k \mathbf{a} \\
-            ccf_{a,b}(k\tau) & = & \mathbf{a}^\top \mathrm{diag}(\boldsymbol{\pi}) \mathbf{P(\tau)}^k \mathbf{b} \\
+            acf_a(k\tau)     & = \mathbf{a}^\top \mathrm{diag}(\boldsymbol{\pi}) \mathbf{P(\tau)}^k \mathbf{a} \\
+            ccf_{a,b}(k\tau) & = \mathbf{a}^\top \mathrm{diag}(\boldsymbol{\pi}) \mathbf{P(\tau)}^k \mathbf{b}
 
         where :math:`acf` stands for autocorrelation function and :math:`ccf` stands for cross-correlation function,
         :math:`\mathbf{P(\tau)}` is the transition matrix at lag time :math:`\tau`, :math:`\boldsymbol{\pi}` is the
@@ -564,8 +567,8 @@ class MSM(_Model):
             evaluated.
             Internally, the correlation function can only be computed in integer multiples of the Markov model lag time,
             and therefore the actual last time point will be computed at :math:`\mathrm{ceil}(\mathrm{maxtime} / \tau)`
-            By default (None), the maxtime will be set equal to the 3 times the slowest relaxation time of the MSM,
-            because after this time the signal is constant.
+            By default (None), the maxtime will be set equal to the 5 times the slowest relaxation time of the MSM,
+            because after this time the signal is almost constant.
         b : (M,) ndarray (optional)
             Second observable, for cross-correlations
         k : int (optional)
@@ -573,9 +576,9 @@ class MSM(_Model):
             matrices and long times for which an eigenvalue decomposition will be done instead of using the
             matrix power.
         ncv : int (optional)
-            Only relevant for sparse matrices and large lag times, where the relaxation will be computes using an
+            Only relevant for sparse matrices and large lag times where the relaxation will be computed using an
             eigenvalue decomposition. The number of Lanczos vectors generated, `ncv` must be greater than k;
-            it is recommended that ncv > 2*k
+            it is recommended that ncv > 2*k.
 
         Returns
         -------
@@ -639,7 +642,7 @@ class MSM(_Model):
             Number of eigenvalues and eigenvectors to use for computation. This option is only relevant for sparse
             matrices and long times for which an eigenvalue decomposition will be done instead of using the matrix power
         ncv : int (optional)
-            Only relevant for sparse matrices and large lag times, where the relaxation will be computes using an
+            Only relevant for sparse matrices and large lag times, where the relaxation will be computed using an
             eigenvalue decomposition. The number of Lanczos vectors generated, `ncv` must be greater than k;
             it is recommended that ncv > 2*k
 
@@ -685,7 +688,7 @@ class MSM(_Model):
         Markov model is computed by relaxation(p0, a). This is done by evaluating the equation
 
         .. :math:
-            E_a(k\tau)     & = & \mathbf{p_0}^\top \mathbf{P(\tau)}^k \mathbf{a} \\
+            E_a(k\tau)     & = \mathbf{p_0}^\top \mathbf{P(\tau)}^k \mathbf{a} \\
 
         where :math:`E` stands for the expectation value that relaxes to its equilibrium value that is identical
         to expectation(a), :math:`\mathbf{P(\tau)}` is the transition matrix at lag time :math:`\tau`,
@@ -711,7 +714,7 @@ class MSM(_Model):
             evaluated. Internally, the correlation function can only be computed in integer multiples of the
             Markov model lag time, and therefore the actual last time point will be computed at
             :math:`\mathrm{ceil}(\mathrm{maxtime} / \tau)`.
-            By default (None), the maxtime will be set equal to the 3 times the slowest relaxation time of the MSM,
+            By default (None), the maxtime will be set equal to the 5 times the slowest relaxation time of the MSM,
             because after this time the signal is constant.
         k : int (optional)
             Number of eigenvalues and eigenvectors to use for computation
@@ -734,7 +737,7 @@ class MSM(_Model):
             # by default, use five times the longest relaxation time, because then we have relaxed to equilibrium.
             maxtime = 5 * self.timescales()[0]
         kmax = int(ceil(float(maxtime) / self._timeunit_model.dt))
-        steps = np.array(range(kmax), dtype=int)
+        steps = np.array(list(range(kmax)), dtype=int)
         # compute relaxation function
         from msmtools.analysis import relaxation as _relaxation
         # TODO: this could be improved. If we have already done an eigenvalue decomposition, we could provide it.
@@ -830,7 +833,7 @@ class MSM(_Model):
             raise ValueError(
                 'Cannot compute PCCA for non-reversible matrices. Set reversible=True when constructing the MSM.')
 
-        from msmtools.analysis.dense.pcca import PCCA
+        from msmtools.analysis.api import _pcca_object as PCCA
         # ensure that we have a pcca object with the right number of states
         try:
             # this will except if we don't have a pcca object

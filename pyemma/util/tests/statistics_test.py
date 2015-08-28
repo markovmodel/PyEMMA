@@ -28,9 +28,12 @@ Created on Jul 25, 2014
 
 @author: noe
 '''
+
+from __future__ import absolute_import
 import unittest
 from pyemma.util import statistics
 import numpy as np
+from six.moves import range
 
 
 class TestStatistics(unittest.TestCase):

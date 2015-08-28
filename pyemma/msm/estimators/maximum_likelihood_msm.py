@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from six.moves import range
 __author__ = 'noe'
 
 import numpy as np
@@ -173,7 +175,7 @@ class MaximumLikelihoodMSM(_Estimator, _EstimatedMSM):
         # computed derived quantities
         # back-mapping from full to lcs
         self._full2active = -1 * np.ones((dtrajstats.nstates), dtype=int)
-        self._full2active[self.active_set] = np.array(range(len(self.active_set)), dtype=int)
+        self._full2active[self.active_set] = np.array(list(range(len(self.active_set))), dtype=int)
 
         # Estimate transition matrix
         if self.connectivity == 'largest':

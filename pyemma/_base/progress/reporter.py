@@ -3,8 +3,11 @@ Created on 16.07.2015
 
 @author: marscher
 '''
+from __future__ import absolute_import
+from pyemma.util.types import is_int
 from pyemma._base.progress.bar import ProgressBar as _ProgressBar
 from pyemma._base.progress.bar import show_progressbar as _show_progressbar
+from pyemma._base.progress.bar.gui import hide_progressbar as _hide_progressbar
 
 
 class ProgressReporter(object):
@@ -47,6 +50,10 @@ class ProgressReporter(object):
         # its constructor.
         if not hasattr(self, '_prog_rep_progressbars'):
             self._prog_rep_progressbars = {}
+
+        if not is_int(amount_of_work):
+            raise ValueError("amount_of_work has to be of integer type. But is "
+                             + str(type(amount_of_work)))
 
 #         if stage in self._prog_rep_progressbars:
 #             import warnings
@@ -118,3 +125,4 @@ class ProgressReporter(object):
         pg.numerator = pg.denominator
         pg._eta.eta_epoch = 0
         _show_progressbar(pg)
+        _hide_progressbar(pg)

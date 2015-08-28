@@ -3,6 +3,8 @@ Created on 24.04.2015
 
 @author: marscher
 '''
+
+from __future__ import absolute_import
 import sys
 from pyemma import config
 
@@ -43,6 +45,17 @@ is_interactive_session = __is_tty_or_interactive_session()
 if ipython_notebook_session:
     from IPython.display import display
     from IPython.html.widgets import IntProgress, Box, Text
+
+
+def hide_widget(widget):
+    widget.close()
+
+
+def hide_progressbar(bar):
+    if ipython_notebook_session and hasattr(bar, 'widget'):
+        from threading import Timer
+        timeout = 2
+        Timer(timeout, hide_widget, args=(bar.widget, )).start()
 
 
 def show_progressbar(bar, show_eta=True):

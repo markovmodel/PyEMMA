@@ -57,7 +57,7 @@ extern "C" {
 #define ASSIGN_ERR_NO_MEMORY 1
 #define ASSIGN_ERR_INVALID_METRIC 2
 
-#define ASSIGN_USAGE "assign(chunk, centers, dtraj, metric)\n"\
+static char ASSIGN_USAGE[] = "assign(chunk, centers, dtraj, metric)\n"\
 "Assigns frames in `chunk` to the closest cluster centers.\n"\
 "\n"\
 "Parameters\n"\
@@ -79,7 +79,7 @@ extern "C" {
 "\n"\
 "Note\n"\
 "----\n"\
-"This function uses the minRMSD implementation of mdtraj."
+"This function uses the minRMSD implementation of mdtraj.";
 
 // euclidean metric
 float euclidean_distance(float *SKP_restrict a, float *SKP_restrict b, size_t n, float *buffer_a, float *buffer_b);

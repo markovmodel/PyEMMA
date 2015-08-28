@@ -9,6 +9,10 @@
 # versioneer-0.13 (https://github.com/warner/python-versioneer)
 
 # these strings will be replaced by git during git-archive
+
+from __future__ import absolute_import, print_function
+from six.moves import range
+
 git_refnames = "$Format:%d$"
 git_full = "$Format:%H$"
 

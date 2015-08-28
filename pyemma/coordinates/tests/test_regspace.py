@@ -28,6 +28,8 @@ Created on 26.01.2015
 
 @author: marscher
 '''
+
+from __future__ import absolute_import
 import itertools
 import unittest
 

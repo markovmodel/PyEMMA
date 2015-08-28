@@ -21,6 +21,8 @@
 # ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+from __future__ import absolute_import
 import unittest
 import numpy as np
 
@@ -31,9 +33,9 @@ from itertools import combinations, product
 
 # from pyemma.coordinates.data import featurizer as ft
 from pyemma.coordinates.data.featurizer import MDFeaturizer, CustomFeature, _parse_pairwise_input
-# from pyemma.coordinates.tests.test_discretizer import create_water_topology_on_disc
-
-path = os.path.join(os.path.split(__file__)[0], 'data')
+from six.moves import range
+import pkg_resources
+path = pkg_resources.resource_filename(__name__, 'data') + os.path.sep
 xtcfile = os.path.join(path, 'bpti_mini.xtc')
 pdbfile = os.path.join(path, 'bpti_ca.pdb')
 
@@ -153,7 +155,7 @@ class TestFeaturizer(unittest.TestCase):
 
     def test_ca_distances(self):
         sel = self.feat.select_Ca()
-        assert(np.all(sel == range(self.traj.n_atoms)))  # should be all for this Ca-traj
+        assert(np.all(sel == list(range(self.traj.n_atoms))))  # should be all for this Ca-traj
         pairs = self.feat.pairs(sel, excluded_neighbors=0)
         self.feat.add_distances_ca(periodic=False)  # unperiodic distances such that we can compare
         assert(self.feat.dimension() == pairs.shape[0])
@@ -553,8 +555,7 @@ class TestFeaturizerNoDubs(unittest.TestCase):
         featurizer.add_contacts([[0, 1], [0, 3]])
         featurizer.add_distances([[0, 1], [0, 3]])
         featurizer.add_inverse_distances([[0, 1], [0, 3]])
-        cs = CustomFeature(lambda x: x - 1)
-        cs.dimension = lambda: 3
+        cs = CustomFeature(lambda x: x - 1, dim=3)
         featurizer.add_custom_feature(cs)
         featurizer.add_minrmsd_to_ref(pdbfile)
         featurizer.add_residue_mindist()

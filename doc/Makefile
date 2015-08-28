@@ -5,7 +5,7 @@ PYVER = 2.7
 PYTHON = python$(PYVER)
 
 # You can set these variables from the command line.
-SPHINXOPTS    = -j4 -vv
+SPHINXOPTS    = -j4 -v
 SPHINXBUILD   = LANG=C sphinx-build
 PAPER         =
 
