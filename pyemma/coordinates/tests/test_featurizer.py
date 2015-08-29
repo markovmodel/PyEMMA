@@ -154,7 +154,7 @@ class TestFeaturizer(unittest.TestCase):
         sel = self.feat.select_Ca()
         assert(np.all(sel == list(range(self.traj.n_atoms))))  # should be all for this Ca-traj
         pairs = self.feat.pairs(sel, excluded_neighbors=0)
-        self.feat.add_distances_ca(periodic=False, excluded_Ca_neighbors=0)  # unperiodic distances such that we can compare
+        self.feat.add_distances_ca(periodic=False, excluded_neighbors=0)  # unperiodic distances such that we can compare
         assert(self.feat.dimension() == pairs.shape[0])
         X = self.traj.xyz[:, pairs[:, 0], :]
         Y = self.traj.xyz[:, pairs[:, 1], :]
@@ -163,7 +163,7 @@ class TestFeaturizer(unittest.TestCase):
 
     def test_ca_distances_with_all_atom_geometries(self):
         feat = MDFeaturizer(pdbfile_ops_aa)
-        feat.add_distances_ca(excluded_Ca_neighbors=0)
+        feat.add_distances_ca(excluded_neighbors=0)
         D_aa = feat.map(mdtraj.load(pdbfile_ops_aa))
 
         # Create a reference
@@ -175,7 +175,7 @@ class TestFeaturizer(unittest.TestCase):
 
     def test_ca_distances_with_all_atom_geometries_and_exclusions(self):
         feat = MDFeaturizer(pdbfile_ops_aa)
-        feat.add_distances_ca(excluded_Ca_neighbors=2)
+        feat.add_distances_ca(excluded_neighbors=2)
         D_aa = feat.map(mdtraj.load(pdbfile_ops_aa))
 
         # Create a reference
@@ -498,7 +498,7 @@ class TestFeaturizerNoDubs(unittest.TestCase):
         featurizer.add_distances(ca)
         expected_active += 1
         self.assertEqual(len(featurizer.active_features), expected_active)
-        featurizer.add_distances_ca(excluded_Ca_neighbors=0)
+        featurizer.add_distances_ca(excluded_neighbors=0)
         self.assertEqual(len(featurizer.active_features), expected_active)
 
         featurizer.add_inverse_distances([[0, 1], [0, 3]])
