@@ -1,10 +1,12 @@
 .. _ref_api:
 
-==========
-PyEMMA API
-==========
+=============
+Documentation
+=============
 
-The API is currently divided into two main parts:
+PyEMMA is a Python library and can be used through python or ipython.
+See Tutorials for examples and getting started.
+The API (Application Programming Interface) is currently divided into two main packages:
 
 .. toctree::
    :maxdepth: 2

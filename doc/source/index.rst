@@ -26,8 +26,6 @@ Installation
    :maxdepth: 2
 
    INSTALL
-   Configuration
-
 
 Documentation
 =============
@@ -45,6 +43,13 @@ Tutorials
 
    ipython
 
+Run-time configuration
+======================
+
+.. toctree::
+   :maxdepth: 2
+
+   Configuration
 
 Development
 ===========
