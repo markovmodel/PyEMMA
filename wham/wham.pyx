@@ -12,6 +12,7 @@ cdef extern from "_wham.h":
     void rc_wham_fk(
         double *f_i, double *b_K_i, int n_therm_states, int n_markov_states,
         double *scratch, double *f_K)
+    void rc_wham_normalize(double *f_i, int n_markov_states, double *scratch)
 
 def wham_fi(
     np.ndarray[double, ndim=1, mode="c"] log_N_K not None,
@@ -33,20 +34,20 @@ def wham_fi(
         reduced free energies of the T thermodynamic states
     b_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         bias energies in the T thermodynamic and M discrete Markov states
-    scratch : numpy.ndarray(shape=(M), dtype=numpy.float64)
+    scratch : numpy.ndarray(shape=(T), dtype=numpy.float64)
         scratch array
     f_K : numpy.ndarray(shape=(T), dtype=numpy.float64)
         target array for the reduced free energies of the T thermodynamic states
     """
     rc_wham_fi(
-            <double*> np.PyArray_DATA(log_N_K),
-            <double*> np.PyArray_DATA(log_N_i),
-            <double*> np.PyArray_DATA(f_K),
-            <double*> np.PyArray_DATA(b_K_i),
-            b_K_i.shape[0],
-            b_K_i.shape[1],
-            <double*> np.PyArray_DATA(scratch),
-            <double*> np.PyArray_DATA(f_i))
+        <double*> np.PyArray_DATA(log_N_K),
+        <double*> np.PyArray_DATA(log_N_i),
+        <double*> np.PyArray_DATA(f_K),
+        <double*> np.PyArray_DATA(b_K_i),
+        b_K_i.shape[0],
+        b_K_i.shape[1],
+        <double*> np.PyArray_DATA(scratch),
+        <double*> np.PyArray_DATA(f_i))
 
 def wham_fk(
     np.ndarray[double, ndim=1, mode="c"] f_i not None,
@@ -68,9 +69,28 @@ def wham_fk(
         target array for the reduced free energies of the T thermodynamic states
     """
     rc_wham_fk(
-            <double*> np.PyArray_DATA(f_i),
-            <double*> np.PyArray_DATA(b_K_i),
-            b_K_i.shape[0],
-            b_K_i.shape[1],
-            <double*> np.PyArray_DATA(scratch),
-            <double*> np.PyArray_DATA(f_K))
+        <double*> np.PyArray_DATA(f_i),
+        <double*> np.PyArray_DATA(b_K_i),
+        b_K_i.shape[0],
+        b_K_i.shape[1],
+        <double*> np.PyArray_DATA(scratch),
+        <double*> np.PyArray_DATA(f_K))
+
+def wham_normalize(
+    np.ndarray[double, ndim=1, mode="c"] f_i not None,
+    np.ndarray[double, ndim=1, mode="c"] scratch not None):
+    r"""
+    Apply shift on the reduced free energies f_i such that the
+    stationary distribution is normalized
+        
+    Parameters
+    ----------
+    f_i : numpy.ndarray(shape=(M), dtype=numpy.float64)
+        reduced free energies of the M markov states
+    scratch : numpy.ndarray(shape=(M), dtype=numpy.float64)
+        scratch array
+    """
+    rc_wham_normalize(
+        <double*> np.PyArray_DATA(f_i),
+        f_i.shape[0],
+        <double*> np.PyArray_DATA(scratch))
