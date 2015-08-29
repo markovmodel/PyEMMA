@@ -1,21 +1,11 @@
 /*
-
-    lse.h - logsumexp implementation in C (header file)
-
-    author: Christoph Wehmeyer <christoph.wehmeyer@fu-berlin.de>
-
+*   Copyright 2015 Christoph Wehmeyer
 */
 
-#ifndef PYTRAM_LSE
-#define PYTRAM_LSE
+#ifndef REWCORE_LSE
+#define REWCORE_LSE
 
-#include <stdio.h>
-#include <math.h>
-
-/* _sort()is based on examples from http://www.linux-related.de (2004) */
-void _sort( double *array, int L, int R );
-
-double _logsumexp( double *array, int length );
-double _logsumexp_pair( double a, double b );
+extern double rc_logsumexp(double *array, int length);
+extern double rc_logsumexp_pair(double a, double b);
 
 #endif
