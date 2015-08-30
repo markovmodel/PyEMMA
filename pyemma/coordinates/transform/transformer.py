@@ -23,6 +23,7 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+
 from __future__ import absolute_import
 from pyemma.util.log import getLogger
 from pyemma._base.progress import ProgressReporter

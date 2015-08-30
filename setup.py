@@ -25,6 +25,7 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+
 """EMMA: Emma's Markov Model Algorithms
 
 EMMA is an open source collection of algorithms implemented mostly in

@@ -23,6 +23,7 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+
 '''
 Test the get_frames_from_file by comparing
 the direct, sequential retrieval of frames via mdtraj.load_frame() vs
