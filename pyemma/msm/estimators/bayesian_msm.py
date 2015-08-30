@@ -11,7 +11,7 @@ from pyemma._base.progress import ProgressReporter
 
 
 class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporter):
-    """ Bayesian estimator for MSMs given discrete trajectory statistics
+    r""" Bayesian estimator for MSMs given discrete trajectory statistics
 
     Parameters
     ----------
@@ -116,7 +116,7 @@ class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporter):
 
         Return
         ------
-        hmsm : :class:`EstimatedHMSM <pyemma.msm.ui.hmsm_estimated.EstimatedHMSM>`
+        hmsm : :class:`EstimatedHMSM <pyemma.msm.estimators.hmsm_estimated.EstimatedHMSM>`
             Estimated Hidden Markov state model
 
         """
