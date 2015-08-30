@@ -82,7 +82,8 @@ class PCA(Transformer):
             raise ValueError('Trying to set both the number of dimension and the subspace variance. Use either or.')
         self._dot_prod_tmp = None
         self.Y = None
-        self._N = 0
+        self._N_mean = 0
+        self._N_cov = 0
 
         self.mu = mean
 
@@ -124,7 +125,8 @@ class PCA(Transformer):
         return self.cov
 
     def _param_init(self):
-        self._N = 0
+        self._N_mean = 0
+        self._N_cov = 0
         # create mean array and covariance matrix
         indim = self.data_producer.dimension()
         self._logger.info("Running PCA on %i dimensional input" % indim)
@@ -173,17 +175,17 @@ class PCA(Transformer):
         if ipass == 0:
             if t == 0:
                 if self._given_mean:
-                    raise SkipPassException(stride=stride)
+                    raise SkipPassException(next_pass_stride=stride)
                 self._sum_tmp = np.empty(X.shape[1])
             np.sum(X, axis=0, out=self._sum_tmp)
             self.mu += self._sum_tmp
-            self._N += np.shape(X)[0]
+            self._N_mean += np.shape(X)[0]
 
             # counting chunks and log of eta
             self._progress_update(1, 0)
 
             if last_chunk:
-                self.mu /= self._N
+                self.mu /= self._N_mean
 
         # pass 2: covariances
         if ipass == 1:
@@ -193,11 +195,12 @@ class PCA(Transformer):
             Xm = X - self.mu
             np.dot(Xm.T, Xm, self._dot_prod_tmp)
             self.cov += self._dot_prod_tmp
+            self._N_cov += np.shape(X)[0]
 
             self._progress_update(1, stage=1)
 
             if last_chunk:
-                self.cov /= self._N - 1
+                self.cov /= self._N_cov - 1
                 return True  # finished!
 
         # by default, continue
@@ -214,7 +217,7 @@ class PCA(Transformer):
         self.cumvar = np.cumsum(self.eigenvalues)
         self.cumvar /= self.cumvar[-1]
 
-    def _map_array(self, X):
+    def _transform_array(self, X):
         r"""
         Projects the data onto the dominant principal components.
 
