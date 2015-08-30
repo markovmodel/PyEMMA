@@ -11,4 +11,3 @@ matrices and automatically choose the corresponding implementation.
 
 .. toctree::
    :maxdepth: 1
-

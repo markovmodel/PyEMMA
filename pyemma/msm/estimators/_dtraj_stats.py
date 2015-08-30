@@ -41,6 +41,9 @@ class DiscreteTrajectoryStats(object):
 
         Parameters
         ----------
+        lag : int
+            lagtime in trajectory steps
+
         count_mode : str, optional, default='sliding'
             mode to obtain count matrices from discrete trajectories. Should be one of:
 
@@ -101,6 +104,9 @@ class DiscreteTrajectoryStats(object):
     # ==================================
 
     def _assert_counted_at_lag(self):
+        """
+        Checks if count_lagged has been run
+        """
         assert self._counted_at_lag, \
             "You haven't run count_lagged yet. Do that first before accessing lag-based quantities"
 
@@ -117,6 +123,9 @@ class DiscreteTrajectoryStats(object):
 
     @property
     def nstates(self):
+        """
+        Number (int) of states
+        """
         return self._nstates
 
     @property
@@ -130,6 +139,10 @@ class DiscreteTrajectoryStats(object):
 
     @property
     def total_count(self):
+        """
+        Total number of counts
+
+        """
         return self._hist.sum()
 
     @property
@@ -164,9 +177,9 @@ class DiscreteTrajectoryStats(object):
         subset : array-like of int or None, optional, default=None
             subset of states to compute the count matrix on. This parameter is exclusive with subset.
         effective : bool, optional, default=False
-            Statistically uncorrelated transition counts within the active set of states
+            Statistically uncorrelated transition counts within the active set of states.
 
-            You can use this count matrix for any kind of estimation, in particular it is mean to give reasonable
+            You can use this count matrix for any kind of estimation, in particular it is meant to give reasonable
             error bars in uncertainty measurements (error perturbation or Gibbs sampling of the posterior).
 
             The effective count matrix is obtained by dividing the sliding-window count matrix by the lag time. This
@@ -244,7 +257,7 @@ class DiscreteTrajectoryStats(object):
 
     @property
     def connected_set_sizes(self):
-        """The numbers of state for each connected set
+        """The numbers of states for each connected set
 
         """
         self._assert_counted_at_lag()
