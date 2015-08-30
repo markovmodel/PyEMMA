@@ -36,6 +36,12 @@ The same applies for the filename ".pyemma.cfg" (hidden file).
 The default values are stored in latter file to ensure these values are always
 defined. This is preferred over hardcoding them somewhere in the Python code.
 
+After the first import of pyemma, you will find a .pyemma directory in your
+user directory. It contains a pyemma.cfg and logging.yml. The latter is a YAML
+file to configure the logging system.
+For details have a look at the brief documentation: 
+https://docs.python.org/2/howto/logging.html
+
 Default configuration file
 --------------------------
 Default settings are stored in a provided pyemma.cfg file, which is included in
@@ -47,20 +53,12 @@ the Python package:
 To access the config at runtime eg. the logging section:
 
 >>> from pyemma import config
->>> print(config.Logging.level)  # doctest: +SKIP
-WARNING
 >>> print(config.show_progress_bars)
 True
 
-Setting configuration values by section:
-
->>> config.Logging.level = 'DEBUG'
->>> print(config.Logging.level)
-DEBUG
-
 or
 
->>> config.show_progress_bars = 'False'
+>>> config.show_progress_bars = False
 >>> print(config.show_progress_bars)
 False
 
@@ -253,7 +251,7 @@ class Wrapper(object):
             conf_values[name] = value
         else:
             raise KeyError('"%s" is not a valid config section.' % name)
- 
+
     def __setattr__(self, name, value):
         if name not in ('wrapped', ):
             self.__setitem__(name, value)
@@ -261,3 +259,4 @@ class Wrapper(object):
             object.__setattr__(self, name, value)
 
 sys.modules[__name__] = Wrapper(sys.modules[__name__])
+

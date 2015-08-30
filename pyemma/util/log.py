@@ -24,103 +24,76 @@ Created on 15.10.2013
 '''
 
 from __future__ import absolute_import
-__all__ = ['getLogger', 'enabled', 'CRITICAL', 'DEBUG', 'FATAL', 'INFO', 'NOTSET',
-           'WARN', 'WARNING']
+
+import pkg_resources
 import logging
+import warnings
+import os.path
 
-from six import PY3
-if PY3:
-    import sys
-    if sys.version_info[1] <= 3:
-        # python <= 3.3
-        from imp import reload
-    else:
-        # python >= 3.4
-        from importlib import reload
+__all__ = ['getLogger',
+           'enabled',
+          ]
 
-reload(logging)
-
-from logging import CRITICAL, FATAL, ERROR, WARNING, WARN, INFO, DEBUG, NOTSET
-
-enabled = False
-
-
-class dummyLogger(object):
-
-    """ set up a dummy logger if logging is disabled"""
-
-    def dummy(self, kwargs):
-        pass
-
-    def __getattr__(self, name):
-        return self.dummy
-
-dummyInstance = None
-
+def_conf_file = pkg_resources.resource_filename('pyemma', 'logging.yml')
+del pkg_resources
 
 def setupLogging():
     """
     parses pyemma configuration file and creates a logger conf_values from that
     """
-    global enabled, dummyInstance
-    from pyemma.util.config import conf_values
-    args = conf_values['Logging']
+    from logging.config import dictConfig
+    from pyemma.util import config
+    import yaml
+    
+    # copy default cfg to users dir
+    cfg_dir = config.create_cfg_dir(def_conf_file)
 
-    enabled = args.enabled == 'True'
-    toconsole = args.toconsole == 'True'
-    tofile = args.tofile == 'True'
+    class LoggingConfigurationError(RuntimeError):
+        pass
 
-    if enabled:
-        try:
-            logging.basicConfig(level=args.level,
-                                format=args.format,
-                                datefmt='%d-%m-%y %H:%M:%S')
-        except IOError as ie:
-            import warnings
-            warnings.warn(
-                'logging could not be initialized, because of %s' % ie)
-            return
-        # in case we want to log to both file and stream, add a separate handler
-        formatter = logging.Formatter(args.format)
-        root_logger = logging.getLogger('')
-        root_handlers = root_logger.handlers
+    args = config.logging_config
+    default = False
 
-        if toconsole:
-            ch = root_handlers[0]
-            ch.setLevel(args.level)
-            ch.setFormatter(formatter)
-        else: # remove first handler (which should be streamhandler)
-            assert len(root_handlers) == 1
-            streamhandler = root_handlers.pop()
-            assert isinstance(streamhandler, logging.StreamHandler)
-        if tofile:
-            # set delay to True, to prevent creation of empty log files
-            fh = logging.FileHandler(args.file, mode='a', delay=True)
-            fh.setFormatter(formatter)
-            fh.setLevel(args.level)
-            root_logger.addHandler(fh)
-
-        # if user enabled logging, but disallowed file and console logging, disable
-        # logging completely.
-        if not tofile and not toconsole:
-            enabled = False
-            dummyInstance = dummyLogger()
+    if args.upper() == 'DEFAULT':
+        default = True
+        src = os.path.join(cfg_dir, 'logging.yml')
     else:
-        dummyInstance = dummyLogger()
+        src = args
+
+    # first try to read configured file
+    try:
+        with open(src) as f:
+            D = yaml.load(f)
+    except EnvironmentError as ee:
+        # fall back to default
+        if not default:
+            try:
+                with open(def_conf_file) as f:
+                    D = yaml.load(f)
+                    warnings.warn('Your set logging configuration could not '
+                                  'be used. Used default as fallback.')
+            except EnvironmentError as ee2:
+                raise LoggingConfigurationError('Could not read either configured nor '
+                                                'default logging configuration!\n%s' % ee)
+        else:
+            raise LoggingConfigurationError('could not handle default logging '
+                                            'configuration file\n%s' % ee2)
+            
+    if D is None:
+        raise LoggingConfigurationError('Empty logging config! Try using default config by'
+                                        ' setting logging_conf=DEFAULT in pyemma.cfg')
+
+    D.setdefault('version', 1)
+    dictConfig(D)
 
 
 def getLogger(name=None):
-    if not enabled:
-        return dummyInstance
     # if name is not given, return a logger with name of the calling module.
     if not name:
         import traceback
         t = traceback.extract_stack(limit=2)
         path = t[0][0]
         pos = path.rfind('pyemma')
-        if pos == -1:
-            pos = path.rfind('scripts/')
-
         name = path[pos:]
 
     return logging.getLogger(name)
