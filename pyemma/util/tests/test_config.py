@@ -57,14 +57,17 @@ class TestConfig(unittest.TestCase):
     def test_shortcuts(self):
         import pyemma
         pyemma.util.config.show_progress_bars = False
+        assert pyemma.config.show_progress_bars == False
 
     def test_shortcuts2(self):
         import pyemma
         pyemma.config.show_progress_bars = 'True'
+        assert pyemma.config.show_progress_bars == 'True'
 
     def test_shortcut3(self):
         import pyemma
         pyemma.config['show_progress_bars'] = 'True'
+        assert pyemma.config.show_progress_bars == 'True'
 
 
 if __name__ == "__main__":
