@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# This file is part of MSMTools.
+# This file is part of PyEMMA.
 #
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
 #
@@ -234,6 +234,7 @@ metadata = dict(
                       'msmtools',
                       'bhmm==0.5.1',
                       'joblib==0.8.4',
+                      'pyyaml',
                       'psutil>=3.1.1',
                       'decorator>=4.0.0',
                       ],
