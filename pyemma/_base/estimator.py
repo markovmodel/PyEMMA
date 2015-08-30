@@ -143,8 +143,6 @@ def _estimate_param_scan_worker(estimator, params, X, evaluate, evaluate_args,
 
 def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=None, failfast=True,
                         return_estimators=False, n_jobs=1, progress_reporter=None):
-    # TODO: parallelize. For options see http://scikit-learn.org/stable/modules/grid_search.html
-    # TODO: allow to specify method parameters in evaluate
     """ Runs multiple estimations using a list of parameter settings
 
     Parameters

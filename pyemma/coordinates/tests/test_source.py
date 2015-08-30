@@ -160,7 +160,7 @@ class TestSourceCallAll(unittest.TestCase):
     def test_map(self):
         # map not defined for source
         with self.assertRaises(NotImplementedError):
-            self.inp.map(np.zeros((10,10)))
+            self.inp.transform(np.zeros((10,10)))
 
     def test_n_frames_total(self):
         # map not defined for source

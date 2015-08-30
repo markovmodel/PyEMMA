@@ -24,6 +24,7 @@
 
 from __future__ import absolute_import
 from pyemma.util.log import getLogger
+from pyemma.util.annotators import deprecated
 from pyemma._base.progress import ProgressReporter
 
 from itertools import count
@@ -448,7 +449,17 @@ class Transformer(six.with_metaclass(ABCMeta, ProgressReporter)):
         if self.in_memory and not self._mapping_to_mem_active:
             self._map_to_memory()
 
+    @deprecated
     def map(self, X):
+        r"""Deprecated: use transform(X)
+
+        Maps the input data through the transformer to correspondingly shaped output data array/list.
+
+        """
+
+        return self.transform(X)
+
+    def transform(self, X):
         r"""Maps the input data through the transformer to correspondingly shaped output data array/list.
 
         Parameters
@@ -468,7 +479,7 @@ class Transformer(six.with_metaclass(ABCMeta, ProgressReporter)):
         """
         if isinstance(X, np.ndarray):
             if X.ndim == 2:
-                mapped = self._map_array(X)
+                mapped = self._transform_array(X)
                 return mapped
             else:
                 raise TypeError('Input has the wrong shape: %s with %i'
@@ -477,7 +488,7 @@ class Transformer(six.with_metaclass(ABCMeta, ProgressReporter)):
         elif isinstance(X, (list, tuple)):
             out = []
             for x in X:
-                mapped = self._map_array(x)
+                mapped = self._transform_array(x)
                 out.append(mapped)
             return out
         else:
@@ -486,7 +497,7 @@ class Transformer(six.with_metaclass(ABCMeta, ProgressReporter)):
                             'or lists of such arrays' % (str(type(X))))
 
     @abstractmethod
-    def _map_array(self, X):
+    def _transform_array(self, X):
         r"""
         Initializes the parametrization.
 
@@ -601,7 +612,7 @@ class Transformer(six.with_metaclass(ABCMeta, ProgressReporter)):
                 if self._t >= self.trajectory_length(self._itraj, stride=ctx.stride):
                     self._itraj += 1
                     self._t = 0
-                return self.map(X)
+                return self.transform(X)
             # TODO: this seems to be a dead branch of code
             else:
                 (X0, Xtau) = self.data_producer._next_chunk(ctx)
@@ -609,7 +620,7 @@ class Transformer(six.with_metaclass(ABCMeta, ProgressReporter)):
                 if self._t >= self.trajectory_length(self._itraj, stride=ctx.stride):
                     self._itraj += 1
                     self._t = 0
-                return self.map(X0), self.map(Xtau)
+                return self.transform(X0), self.transform(Xtau)
 
     def __iter__(self):
         r"""

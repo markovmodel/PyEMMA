@@ -389,7 +389,7 @@ class TICA(Transformer):
             self._logger.warn("Had to skip %u trajectories for being too short. "
                               "Their indexes are in self._skipped_trajs."%len(self._skipped_trajs))
 
-    def _map_array(self, X):
+    def _transform_array(self, X):
         r"""Projects the data onto the dominant independent components.
 
         Parameters

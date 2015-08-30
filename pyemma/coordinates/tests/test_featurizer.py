@@ -118,14 +118,14 @@ class TestFeaturizer(unittest.TestCase):
         self.feat.add_all()
         assert (self.feat.dimension() == self.traj.n_atoms * 3)
         refmap = np.reshape(self.traj.xyz, (len(self.traj), self.traj.n_atoms * 3))
-        assert (np.all(refmap == self.feat.map(self.traj)))
+        assert (np.all(refmap == self.feat.transform(self.traj)))
 
     def test_select(self):
         sel = np.array([1, 2, 5, 20], dtype=int)
         self.feat.add_selection(sel)
         assert (self.feat.dimension() == sel.shape[0] * 3)
         refmap = np.reshape(self.traj.xyz[:, sel, :], (len(self.traj), sel.shape[0] * 3))
-        assert (np.all(refmap == self.feat.map(self.traj)))
+        assert (np.all(refmap == self.feat.transform(self.traj)))
 
     def test_distances(self):
         sel = np.array([1, 2, 5, 20], dtype=int)
@@ -138,7 +138,7 @@ class TestFeaturizer(unittest.TestCase):
         X = self.traj.xyz[:, pairs_expected[:, 0], :]
         Y = self.traj.xyz[:, pairs_expected[:, 1], :]
         D = np.sqrt(np.sum((X - Y) ** 2, axis=2))
-        assert(np.allclose(D, self.feat.map(self.traj)))
+        assert(np.allclose(D, self.feat.transform(self.traj)))
 
     def test_inverse_distances(self):
         sel = np.array([1, 2, 5, 20], dtype=int)
@@ -151,7 +151,7 @@ class TestFeaturizer(unittest.TestCase):
         X = self.traj.xyz[:, pairs_expected[:, 0], :]
         Y = self.traj.xyz[:, pairs_expected[:, 1], :]
         Dinv = 1.0/np.sqrt(np.sum((X - Y) ** 2, axis=2))
-        assert(np.allclose(Dinv, self.feat.map(self.traj)))
+        assert(np.allclose(Dinv, self.feat.transform(self.traj)))
 
     def test_ca_distances(self):
         sel = self.feat.select_Ca()
@@ -162,7 +162,7 @@ class TestFeaturizer(unittest.TestCase):
         X = self.traj.xyz[:, pairs[:, 0], :]
         Y = self.traj.xyz[:, pairs[:, 1], :]
         D = np.sqrt(np.sum((X - Y) ** 2, axis=2))
-        assert(np.allclose(D, self.feat.map(self.traj)))
+        assert(np.allclose(D, self.feat.transform(self.traj)))
 
     def test_contacts(self):
         sel = np.array([1, 2, 5, 20], dtype=int)
@@ -178,7 +178,7 @@ class TestFeaturizer(unittest.TestCase):
         C = np.zeros(D.shape)
         I = np.argwhere(D <= 0.5)
         C[I[:, 0], I[:, 1]] = 1.0
-        assert(np.allclose(C, self.feat.map(self.traj)))
+        assert(np.allclose(C, self.feat.transform(self.traj)))
 
     def test_angles(self):
         sel = np.array([[1, 2, 5],
@@ -186,7 +186,7 @@ class TestFeaturizer(unittest.TestCase):
                         [2, 9, 10]], dtype=int)
         self.feat.add_angles(sel)
         assert(self.feat.dimension() == sel.shape[0])
-        Y = self.feat.map(self.traj)
+        Y = self.feat.transform(self.traj)
         assert(np.alltrue(Y >= -np.pi))
         assert(np.alltrue(Y <= np.pi))
         self.assertEqual(len(self.feat.describe()), self.feat.dimension())
@@ -198,7 +198,7 @@ class TestFeaturizer(unittest.TestCase):
                         [2, 9, 10]], dtype=int)
         self.feat.add_angles(sel, deg=True)
         assert(self.feat.dimension() == sel.shape[0])
-        Y = self.feat.map(self.traj)
+        Y = self.feat.transform(self.traj)
         assert(np.alltrue(Y >= -180.0))
         assert(np.alltrue(Y <= 180.0))
 
@@ -208,7 +208,7 @@ class TestFeaturizer(unittest.TestCase):
                         [2, 9, 10]], dtype=int)
         self.feat.add_angles(sel, cossin=True)
         assert(self.feat.dimension() == 2 * sel.shape[0])
-        Y = self.feat.map(self.traj)
+        Y = self.feat.transform(self.traj)
         assert(np.alltrue(Y >= -np.pi))
         assert(np.alltrue(Y <= np.pi))
 
@@ -221,7 +221,7 @@ class TestFeaturizer(unittest.TestCase):
                         [2, 9, 10, 12]], dtype=int)
         self.feat.add_dihedrals(sel)
         assert(self.feat.dimension() == sel.shape[0])
-        Y = self.feat.map(self.traj)
+        Y = self.feat.transform(self.traj)
         assert(np.alltrue(Y >= -np.pi))
         assert(np.alltrue(Y <= np.pi))
         self.assertEqual(len(self.feat.describe()), self.feat.dimension())
@@ -232,7 +232,7 @@ class TestFeaturizer(unittest.TestCase):
                         [2, 9, 10, 12]], dtype=int)
         self.feat.add_dihedrals(sel, deg=True)
         assert(self.feat.dimension() == sel.shape[0])
-        Y = self.feat.map(self.traj)
+        Y = self.feat.transform(self.traj)
         assert(np.alltrue(Y >= -180.0))
         assert(np.alltrue(Y <= 180.0))
         self.assertEqual(len(self.feat.describe()), self.feat.dimension())
@@ -243,7 +243,7 @@ class TestFeaturizer(unittest.TestCase):
                         [2, 9, 10, 12]], dtype=int)
         self.feat.add_dihedrals(sel, cossin=True)
         assert(self.feat.dimension() == 2 * sel.shape[0])
-        Y = self.feat.map(self.traj)
+        Y = self.feat.transform(self.traj)
         assert(np.alltrue(Y >= -np.pi))
         assert(np.alltrue(Y <= np.pi))
         desc = self.feat.describe()
@@ -254,7 +254,7 @@ class TestFeaturizer(unittest.TestCase):
         self.feat.add_backbone_torsions()
 
         traj = mdtraj.load(self.asn_leu_pdbfile)
-        Y = self.feat.map(traj)
+        Y = self.feat.transform(traj)
         assert(np.alltrue(Y >= -np.pi))
         assert(np.alltrue(Y <= np.pi))
 
@@ -266,7 +266,7 @@ class TestFeaturizer(unittest.TestCase):
         self.feat.add_backbone_torsions(deg=True)
 
         traj = mdtraj.load(self.asn_leu_pdbfile)
-        Y = self.feat.map(traj)
+        Y = self.feat.transform(traj)
         assert(np.alltrue(Y >= -180.0))
         assert(np.alltrue(Y <= 180.0))
         desc = self.feat.describe()
@@ -277,7 +277,7 @@ class TestFeaturizer(unittest.TestCase):
         self.feat.add_backbone_torsions(cossin=True)
 
         traj = mdtraj.load(self.asn_leu_traj, top=self.asn_leu_pdbfile)
-        Y = self.feat.map(traj)
+        Y = self.feat.transform(traj)
         self.assertEqual(Y.shape, (len(traj), 3*4)) # (3 phi + 3 psi)*2 [cos, sin]
         assert(np.alltrue(Y >= -np.pi))
         assert(np.alltrue(Y <= np.pi))
@@ -291,7 +291,7 @@ class TestFeaturizer(unittest.TestCase):
         self.feat.add_chi1_torsions()
 
         traj = mdtraj.load(self.asn_leu_pdbfile)
-        Y = self.feat.map(traj)
+        Y = self.feat.transform(traj)
         assert(np.alltrue(Y >= -np.pi))
         assert(np.alltrue(Y <= np.pi))
         desc = self.feat.describe()
@@ -302,7 +302,7 @@ class TestFeaturizer(unittest.TestCase):
         self.feat.add_chi1_torsions(cossin=True)
 
         traj = mdtraj.load(self.asn_leu_pdbfile)
-        Y = self.feat.map(traj)
+        Y = self.feat.transform(traj)
         assert(np.alltrue(Y >= -np.pi))
         assert(np.alltrue(Y <= np.pi))
         desc = self.feat.describe()
@@ -319,7 +319,7 @@ class TestFeaturizer(unittest.TestCase):
         self.feat.add_minrmsd_to_ref(self.traj[self.ref_frame])
         # and the file-input variant
         self.feat.add_minrmsd_to_ref(xtcfile, ref_frame=self.ref_frame)
-        test_Y  = self.feat.map(self.traj).squeeze()
+        test_Y  = self.feat.transform(self.traj).squeeze()
         # now the reference
         ref_Y = mdtraj.rmsd(self.traj, self.traj[self.ref_frame])
         verbose_assertion_minrmsd(ref_Y, test_Y, self)
@@ -331,7 +331,7 @@ class TestFeaturizer(unittest.TestCase):
         self.feat.add_minrmsd_to_ref(self.traj[self.ref_frame], atom_indices=self.atom_indices)
         # and the file-input variant
         self.feat.add_minrmsd_to_ref(xtcfile, ref_frame=self.ref_frame, atom_indices=self.atom_indices)
-        test_Y  = self.feat.map(self.traj).squeeze()
+        test_Y  = self.feat.transform(self.traj).squeeze()
         # now the reference
         ref_Y = mdtraj.rmsd(self.traj, self.traj[self.ref_frame], atom_indices=self.atom_indices)
         verbose_assertion_minrmsd(ref_Y, test_Y, self)
@@ -343,7 +343,7 @@ class TestFeaturizer(unittest.TestCase):
         self.feat.add_minrmsd_to_ref(self.traj[self.ref_frame], atom_indices=self.atom_indices, precentered=True)
         # and the file-input variant
         self.feat.add_minrmsd_to_ref(xtcfile, ref_frame=self.ref_frame, atom_indices=self.atom_indices, precentered=True)
-        test_Y  = self.feat.map(self.traj).squeeze()
+        test_Y  = self.feat.transform(self.traj).squeeze()
         # now the reference
         ref_Y = mdtraj.rmsd(self.traj, self.traj[self.ref_frame], atom_indices=self.atom_indices, precentered=True)
         verbose_assertion_minrmsd(ref_Y, test_Y, self)
@@ -353,7 +353,7 @@ class TestFeaturizer(unittest.TestCase):
     def test_Residue_Mindist_Ca_all(self):
         n_ca = self.feat.topology.n_atoms
         self.feat.add_residue_mindist(scheme='ca')
-        D = self.feat.map(self.traj)
+        D = self.feat.transform(self.traj)
         Dref = mdtraj.compute_contacts(self.traj, scheme='ca')[0]
         assert np.allclose(D, Dref)
         assert len(self.feat.describe())==self.feat.dimension()
@@ -361,7 +361,7 @@ class TestFeaturizer(unittest.TestCase):
     def test_Residue_Mindist_Ca_all_threshold(self):
         threshold = .7
         self.feat.add_residue_mindist(scheme='ca', threshold=threshold)
-        D = self.feat.map(self.traj)
+        D = self.feat.transform(self.traj)
         Dref = mdtraj.compute_contacts(self.traj, scheme='ca')[0]
         Dbinary = np.zeros_like(Dref)
         I = np.argwhere(Dref <= threshold)
@@ -372,7 +372,7 @@ class TestFeaturizer(unittest.TestCase):
     def test_Residue_Mindist_Ca_array(self):
         contacts=np.array([[20,10,], [10,0]])
         self.feat.add_residue_mindist(scheme='ca', residue_pairs=contacts)
-        D = self.feat.map(self.traj)
+        D = self.feat.transform(self.traj)
         Dref = mdtraj.compute_contacts(self.traj, scheme='ca', contacts=contacts)[0]
         assert np.allclose(D, Dref)
         assert len(self.feat.describe())==self.feat.dimension()
@@ -380,7 +380,7 @@ class TestFeaturizer(unittest.TestCase):
     def test_Group_Mindist_One_Group(self):
         group0= [0,20,30,0]
         self.feat.add_group_mindist(group_definitions=[group0]) # Even with duplicates
-        D = self.feat.map(self.traj)
+        D = self.feat.transform(self.traj)
         dist_list = list(combinations(np.unique(group0),2))
         Dref = mdtraj.compute_distances(self.traj, dist_list)
         assert np.allclose(D.squeeze(), Dref.min(1))
@@ -391,7 +391,7 @@ class TestFeaturizer(unittest.TestCase):
         group1 = [1,21,31,1]
         group2 = [2,22,32,2]
         self.feat.add_group_mindist(group_definitions=[group0, group1, group2])
-        D = self.feat.map(self.traj)
+        D = self.feat.transform(self.traj)
 
         # Now the references, computed separately for each combination of groups
         dist_list_01 = np.array(list(product(np.unique(group0),np.unique(group1))))
@@ -411,7 +411,7 @@ class TestFeaturizer(unittest.TestCase):
         group1 = [1, 21, 31, 1]
         group2 = [2, 22, 32, 2]
         self.feat.add_group_mindist(group_definitions=[group0, group1, group2], threshold=threshold)
-        D = self.feat.map(self.traj)
+        D = self.feat.transform(self.traj)
 
         # Now the references, computed separately for each combination of groups
         dist_list_01 = np.array(list(product(np.unique(group0), np.unique(group1))))
@@ -439,7 +439,7 @@ class TestFeaturizer(unittest.TestCase):
                               [0,2]])
 
         self.feat.add_group_mindist(group_definitions=[group0, group1, group2], group_pairs=group_pairs)
-        D = self.feat.map(self.traj)
+        D = self.feat.transform(self.traj)
 
         # Now the references, computed separately for each combination of groups
         dist_list_01 = np.array(list(product(np.unique(group0),np.unique(group1))))
@@ -655,7 +655,7 @@ class TestCustomFeature(unittest.TestCase):
                                         self.U
                                         )
 
-        Y_custom_feature = self.feat.map(self.traj)
+        Y_custom_feature = self.feat.transform(self.traj)
         # Directly call the function
         Y_function =  some_call_to_mdtraj_some_operations_some_linalg(self.traj, self.pairs, self.means, self.U)
         assert np.allclose(Y_custom_feature, Y_function)

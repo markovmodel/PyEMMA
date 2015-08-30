@@ -132,7 +132,7 @@ class TestCluster(unittest.TestCase):
 
     def test_map(self):
         c = self.ass
-        Y = c.map(self.X)
+        Y = c.transform(self.X)
         assert Y.shape[0] == self.T
         assert Y.shape[1] == 1
         # test if consistent with get_output
