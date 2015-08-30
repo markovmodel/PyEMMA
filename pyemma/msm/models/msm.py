@@ -21,8 +21,8 @@
 # ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-r"""Implement a MSM class that builds a Markov state models from
-microstate trajectories automatically computes important properties
+r"""Implement an MSM class that builds a Markov state models from
+microstate trajectories, automatically computes important properties
 and provides them for later access.
 
 .. moduleauthor:: F. Noe <frank DOT noe AT fu-berlin DOT de>
@@ -209,7 +209,7 @@ class MSM(_Model):
 
     @property
     def transition_matrix(self):
-        """
+        r"""
         The transition matrix, estimated on the active set. For example, for
         connectivity='largest' it will be the transition matrix amongst the
         largest set of reversibly connected states
@@ -299,7 +299,7 @@ class MSM(_Model):
             self._compute_eigendecomposition(neig)
 
     def eigenvalues(self, k=None):
-        """Compute the transition matrix eigenvalues
+        r"""Compute the transition matrix eigenvalues
 
         Parameters
         ----------
@@ -318,7 +318,7 @@ class MSM(_Model):
         return self._eigenvalues[:k]
 
     def eigenvectors_left(self, k=None):
-        """Compute the left transition matrix eigenvectors
+        r"""Compute the left transition matrix eigenvectors
 
         Parameters
         ----------
@@ -337,7 +337,7 @@ class MSM(_Model):
         return self._L[:k, :]
 
     def eigenvectors_right(self, k=None):
-        """Compute the right transition matrix eigenvectors
+        r"""Compute the right transition matrix eigenvectors
 
         Parameters
         ----------
@@ -356,7 +356,7 @@ class MSM(_Model):
         return self._R[:, :k]
 
     def timescales(self, k=None):
-        """
+        r"""
         The relaxation timescales corresponding to the eigenvalues
 
         Parameters
@@ -385,7 +385,7 @@ class MSM(_Model):
             return ts[1:k+1]  # exclude the stationary process
 
     def propagate(self, p0, k):
-        """ Propagates the initial distribution p0 k times
+        r""" Propagates the initial distribution p0 k times
 
         Computes the product
 
@@ -512,7 +512,7 @@ class MSM(_Model):
 
         Notes
         -----
-        The equilibrium expectation value of an observable a is defined as follows
+        The equilibrium expectation value of an observable :math:`a` is defined as follows
 
         .. math::
 
@@ -532,7 +532,8 @@ class MSM(_Model):
         by MSM state:
 
         .. math::
-            a_i = \frac{1}{N_i} \sum_{x_t \in S_i} f(x_t)
+
+            a_i & = \frac{1}{N_i} \sum_{x_t \in S_i} f(x_t)
 
         where :math:`S_i` is the set of configurations belonging to MSM state :math:`i` and :math:`f()` is a function
         that computes the experimental observable of interest for configuration :math:`x_t`. If a cross-correlation
@@ -543,6 +544,7 @@ class MSM(_Model):
         This is done by evaluating the equation
 
         .. :math:
+
             acf_a(k\tau)     & = \mathbf{a}^\top \mathrm{diag}(\boldsymbol{\pi}) \mathbf{P(\tau)}^k \mathbf{a} \\
             ccf_{a,b}(k\tau) & = \mathbf{a}^\top \mathrm{diag}(\boldsymbol{\pi}) \mathbf{P(\tau)}^k \mathbf{b}
 
