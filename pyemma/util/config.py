@@ -52,7 +52,7 @@ the Python package:
 To access the config at runtime eg. the logging section:
 
 >>> from pyemma import config
->>> print(config.Logging.level)
+>>> print(config.Logging.level)  # doctest: +SKIP
 WARNING
 >>> print(config.show_progress_bars)
 True
