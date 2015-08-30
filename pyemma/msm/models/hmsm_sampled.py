@@ -24,7 +24,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 r"""Implement a MSM class that builds a Markov state models from
-microstate trajectories automatically computes important properties
+microstate trajectories, automatically computes important properties
 and provides them for later access.
 
 .. moduleauthor:: F. Noe <frank DOT noe AT fu-berlin DOT de>
