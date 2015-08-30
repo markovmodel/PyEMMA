@@ -105,21 +105,21 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
 
     Returns
     -------
-    itsobj : :class:`ImpliedTimescales <pyemma.msm.ui.ImpliedTimescales>` object
+    itsobj : :class:`ImpliedTimescales <pyemma.msm.estimators.ImpliedTimescales>` object
 
 
-    .. autoclass:: pyemma.msm.ui.timescales.ImpliedTimescales
+    .. autoclass:: pyemma.msm.estimators.ImpliedTimescales
         :members:
         :undoc-members:
 
         .. rubric:: Methods
 
-        .. autoautosummary:: pyemma.msm.ui.timescales.ImpliedTimescales
+        .. autoautosummary:: pyemma.msm.estimators.ImpliedTimescales
            :methods:
 
         .. rubric:: Attributes
 
-        .. autoautosummary:: pyemma.msm.ui.timescales.ImpliedTimescales
+        .. autoautosummary:: pyemma.msm.estimators.ImpliedTimescales
             :attributes:
 
     See also
@@ -127,7 +127,7 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
     ImpliedTimescales
         The object returned by this function.
     pyemma.plots.plot_implied_timescales
-        Plotting function for the :class:`ImpliedTimescales <pyemma.msm.ui.ImpliedTimescales>` object
+        Plotting function for the :class:`ImpliedTimescales <pyemma.msm.estimators.ImpliedTimescales>` object
 
     References
     ----------
@@ -674,7 +674,7 @@ def estimate_hidden_markov_model(dtrajs, nstates, lag, reversible=True, connecti
 
     Returns
     -------
-    An :class:`EstimatedMSM <pyemma.msm.ui.EstimatedMSM>` object containing
+    An :class:`EstimatedMSM <pyemma.msm.estimators.EstimatedMSM>` object containing
     a transition matrix and various other HMM-related quantities.
 
     Notes

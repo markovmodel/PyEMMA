@@ -446,7 +446,7 @@ class EstimatedMSM(MSM):
 
         Returns
         -------
-        hmsm : :class:`EstimatedHMSM <pyemma.msm.ui.hmsm_estimated.EstimatedHMSM>`
+        hmsm : :class:`EstimatedHMSM <pyemma.msm.estimators.hmsm_estimated.EstimatedHMSM>`
 
         .. [1] F. Noe, H. Wu, J.-H. Prinz and N. Plattner:
             Projected and hidden Markov models for calculating kinetics and metastable states of complex molecules
@@ -469,7 +469,7 @@ class EstimatedMSM(MSM):
 
         Returns
         -------
-        hmsm : :class:`EstimatedHMSM <pyemma.msm.ui.hmsm_estimated.EstimatedHMSM>`
+        hmsm : :class:`EstimatedHMSM <pyemma.msm.estimators.hmsm_estimated.EstimatedHMSM>`
 
         .. [1] F. Noe, H. Wu, J.-H. Prinz and N. Plattner:
             Projected and hidden Markov models for calculating kinetics and metastable states of complex molecules

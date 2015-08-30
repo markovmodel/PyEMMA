@@ -111,7 +111,7 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporter):
 
         Return
         ------
-        hmsm : :class:`EstimatedHMSM <pyemma.msm.ui.hmsm_estimated.EstimatedHMSM>`
+        hmsm : :class:`EstimatedHMSM <pyemma.msm.estimators.hmsm_estimated.EstimatedHMSM>`
             Estimated Hidden Markov state model
 
         """

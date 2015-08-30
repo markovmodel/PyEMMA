@@ -62,7 +62,7 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
         Setting stride = 'effective' uses the largest neglected timescale as
         an estimate for the correlation time and sets the stride accordingly
 
-    msm_init : :class:`MSM <pyemma.msm.ui.msm_estimated.MSM>`
+    msm_init : :class:`MSM <pyemma.msm.estimators.msm_estimated.MSM>`
         MSM object to initialize the estimation
 
     reversible : bool, optional, default = True
@@ -138,7 +138,7 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
 
         Return
         ------
-        hmsm : :class:`EstimatedHMSM <pyemma.msm.ui.hmsm_estimated.EstimatedHMSM>`
+        hmsm : :class:`EstimatedHMSM <pyemma.msm.estimators.hmsm_estimated.EstimatedHMSM>`
             Estimated Hidden Markov state model
 
         """
