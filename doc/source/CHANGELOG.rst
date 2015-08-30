@@ -15,6 +15,13 @@ New features:
   (means, variances, confidence intervals) to be computed for all properties of MSMs and HMMs.
 - msm: Generalized Chapman-Kolmogorov test for both MSM and HMM models
 - plots: plotting functions for Chapman-Kolmogorov tests and 2D free energy surfaces.
+- coordinates: new MiniBatchKmeans implementation.
+- coordinates: random access of input through pipeline via indices.
+- coordinates: PCA and TICA use a default variance cutoff of 95%.
+- coordinates: TICA eigenvalues can be used to calculate timescales.
+- coordinates: Early termination of pipeline possible (eg. max_clusters reached).
+- coordinates: Featurizer new features: ResidueMinDistanceFeature and GroupMinDistanceFeature.
+- coordinates: removed deprecated functions (since 1.2.2).
 
 Documentation:
 
