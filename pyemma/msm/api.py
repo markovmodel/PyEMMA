@@ -587,7 +587,7 @@ def timescales_hmsm(dtrajs, nstates, lags=None, nits=None, reversible=True,
     elif errors == 'bayes':
         estimator = _Bayes_HMSM(nstates=nstates, reversible=reversible,
                                 connectivity=connectivity,
-                                show_progress=show_progress)
+                                show_progress=show_progress, nsamples=nsamples)
     else:
         raise NotImplementedError('Error estimation method'+str(errors)+'currently not implemented')
 
@@ -924,7 +924,7 @@ def bayesian_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
     [7.9763615793248155, 8.6540958274695701, 26.295326015231058, 17.909895469938899]
 
     Internally, the SampledMSM object has 100 transition matrices (the number
-    can be controlled by nsample), that were computed by the transition matrix
+    can be controlled by nsamples), that were computed by the transition matrix
     sampling method. All of the above sample functions iterate over these 100
     transition matrices and evaluate the requested function with the given
     parameters on each of them.
@@ -1080,6 +1080,8 @@ def bayesian_hidden_markov_model(dtrajs, nstates, lag, nsamples=100, reversible=
     return bhmsm_estimator.estimate(dtrajs)
 
 # TODO: need code examples
+#     Examples
+#     --------
 def tpt(msmobj, A, B):
     r""" A->B reactive flux from transition path theory (TPT)
 
@@ -1100,8 +1102,8 @@ def tpt(msmobj, A, B):
     Returns
     -------
     tptobj : :class:`ReactiveFlux <pyemma.msm.flux.ReactiveFlux>` object
-        A python object containing the reactive A->B flux network
-        and several additional quantities, such as stationary probability,
+        An object containing the reactive A->B flux network
+        and several additional quantities, such as the stationary probability,
         committors and set definitions.
 
     Notes
@@ -1154,10 +1156,6 @@ def tpt(msmobj, A, B):
         T. Weikl: Constructing the Full Ensemble of Folding Pathways
         from Short Off-Equilibrium Simulations.
         Proc. Natl. Acad. Sci. USA, 106, 19011-19016 (2009)
-
-    Examples
-    --------
-
 
     """
     T = msmobj.transition_matrix
