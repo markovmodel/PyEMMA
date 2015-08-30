@@ -52,10 +52,23 @@ the Python package:
 To access the config at runtime eg. the logging section:
 
 >>> from pyemma import config
->>> print(config.Logging.level) # doctest: +SKIP
-... INFO
->>> print(config.show_progress_bars) # doctest: +SKIP
-... 'True'
+>>> print(config.Logging.level)
+WARNING
+>>> print(config.show_progress_bars)
+True
+
+
+Setting configuration values by section:
+>>> config.Logging.level = 'DEBUG'
+>>> print(config.Logging.level)
+DEBUG
+
+or
+
+>>> config.show_progress_bars = False
+>>> print(config.show_progress_bars)
+False
+
 
 
 Notes
@@ -245,6 +258,12 @@ class Wrapper(object):
             conf_values[name] = value
         else:
             raise KeyError('"%s" is not a valid config section.' % name)
+ 
+    def __setattr__(self, name, value):
+        if name not in ('wrapped', ):
+            self.__setitem__(name, value)
+        else:
+            object.__setattr__(self, name, value)
 
 sys.modules[__name__] = Wrapper(sys.modules[__name__])
 
