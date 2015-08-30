@@ -1,7 +1,41 @@
 Changelog
 =========
 
-1.2.2 (27-7-2015)
+2.0 (8-31-2015)
+---------------
+2.0 is a major release offering several new features and a major internal
+reorganization of the code.
+
+New features:
+
+- msm: Estimator for Bayesian Markov state models.
+- msm: MSMs can be systematically coarse-grained to few-state models
+- msm: Estimators for discrete Hidden Markov Models (HMMs) and Bayesian Hidden Markov models (BHMMs).
+- msm: SampledModels, e.g. generated from BayesianMSM or BayesianHMM allow statistics
+  (means, variances, confidence intervals) to be computed for all properties of MSMs and HMMs.
+- msm: Generalized Chapman-Kolmogorov test for both MSM and HMM models
+- plots: plotting functions for Chapman-Kolmogorov tests and 2D free energy surfaces.
+
+Documentation:
+
+- Two new application-based ipython notebooks and three new methodological ipython notebooks
+  are provided. All Notebooks and most of the data are provided for download at pyemma.org.
+
+Code architecture:
+
+- Object structure is more clear, general and extensible. We have three main
+  class types: Estimators, Transformers and Models. Estimators (e.g. MaximumLikelihoodMSM)
+  read data and produce a Transformer or a Model. Transformers (e.g. TICA) can be employed in
+  order to transform input data into output data (e.g. dimension reduction). Models
+  (e.g. MSM) can be analyzed in order to compute molecular quantities of interest, such
+  as equilibrium probabilities or transition rates.
+- Code for low-level msm functions (msm.analysis, msm.estimation, msm.generation, msm.flux) has
+  been relocated to the subsidiary package msmtools (github.com/markovmodel/msmtools). msmtools is
+  part of the PyEMMA distribution but can be separately installed without depending on
+  PyEMMA in order to facilitate further method development.
+
+
+1.2.2 (7-27-2015)
 -----------------
 - msm estimation: new fast transition matrix sampler
 - msm estimation: new feature "auto-sparse": automatically decide which datatype 
@@ -20,13 +54,13 @@ Changelog
 - general: made all example codes in documentation work.
 
 
-1.2.1 (28-5-2015)
+1.2.1 (5-28-2015)
 -----------------
 - general: Time consuming algorithms now display progressbars (optional).
 - general: removed scikit-learn dependency (due to new kmeans impl. Thanks @clonker)
 - coordinates package: new and faster implementation of Kmeans (10x faster than scikit-learn).
 - coordinates package: allow metrics to be passed to cluster algorithms.
-- coordinates package: cache trajectory lengths by default -
+- coordinates package: cache trajectory lengths by default
                        (uncached led to 1 pass of reading for non indexed (XTC) formats).
   This avoids re-reading e.g XTC files to determine their lengths.
 - coordinates package: enable passing chunk size to readers and pipelines in API.
@@ -36,10 +70,10 @@ Changelog
   In this case, an extra parameter topfile has to be parsed as well.
 - plots package: added functions to plot flux and msm models.
 - Bugfixes:
-    - [msm.MSM.pcca]: coarse-grained transition matrix corrected
-    - [msm.generation]: stopping states option fixed
-    - [coordinates.NumPyReader]: during gathering of shapes of all files, none
-                                 of them were closed. Thanks @gph82
+
+   - [msm.MSM.pcca]: coarse-grained transition matrix corrected
+   - [msm.generation]: stopping states option fixed
+   - [coordinates.NumPyReader]: during gathering of shapes of all files, none of them were closed.
 
 1.2 (4-14-2015)
 ---------------
