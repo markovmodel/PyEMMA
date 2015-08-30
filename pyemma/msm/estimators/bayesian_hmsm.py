@@ -62,14 +62,16 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporter):
         * 'mixed' : ensures connectivity by adding a prior taken from the
             maximum likelihood estimate (MLE) of the hidden transition
             matrix P. The rows of P are scaled in order to have total
-            outgoing  transition counts of at least 1 out of each state.
+            outgoing transition counts of at least 1 out of each state.
             While this operation centers the posterior around the MLE, it
             can be a very strong prior if states with small exit
             probabilities are involved, and can therefore artificially
             reduce the error bars.
 
-    init_hmsm : :class:`HMSM <pyemma.msm.models.HMSM>`
-        Single-point estimate of HMSM object around which errors will be evaluated
+    init_hmsm : :class:`HMSM <pyemma.msm.models.HMSM>`, default=None
+        Single-point estimate of HMSM object around which errors will be evaluated.
+        If None is give an initial estimate will be automatically generated using the
+        given parameters.
 
     observe_active : bool, optional, default=True
         True: Restricts the observation set to the active states of the MSM.
