@@ -23,13 +23,15 @@ import inspect
 
 from pyemma._ext.sklearn.base import BaseEstimator as _BaseEstimator
 from pyemma._ext.sklearn.parameter_search import ParameterGrid
-from pyemma.util.log import getLogger
 from pyemma.util import types as _types
 
 # imports for external usage
 from pyemma._ext.sklearn.base import clone as clone_estimator
+from pyemma._base.logging import create_logger, instance_name
+from itertools import count
 
-__author__ = 'noe'
+__author__ = 'noe, marscher'
+
 
 def get_estimator(estimator):
     """ Returns an estimator object given an estimator object or class
@@ -296,19 +298,26 @@ class Estimator(_BaseEstimator):
     """ Base class for pyEMMA estimators
 
     """
+    # counting estimator instances, incremented by name property.
+    _ids = count(0)
 
-    def __create_logger(self):
-        name = "%s[%s]" % (self.__class__.__name__, hex(id(self)))
-        self._logger = getLogger(name)
+    @property
+    def name(self):
+        try:
+            return self._name
+        except AttributeError:
+            self._name = instance_name(self, next(self._ids))
+            return self._name
+    
 
     @property
     def logger(self):
         """ The logger for this Estimator """
         try:
-            return self._logger
+            return self._logger_instance
         except AttributeError:
-            self.__create_logger()
-            return self._logger
+            create_logger(self)
+            return self._logger_instance
 
     def estimate(self, X, **params):
         """ Estimates the model given the data X
