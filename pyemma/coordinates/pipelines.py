@@ -16,7 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_importfrom pyemma.coordinates.clustering.interface import AbstractClustering
+from __future__ import absolute_import
+from pyemma.coordinates.clustering.interface import AbstractClustering
 from pyemma.coordinates.transform.transformer import Transformer
 from pyemma.coordinates.data.feature_reader import FeatureReader
 
