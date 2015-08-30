@@ -69,7 +69,7 @@ def show_progressbar(bar, show_eta=True):
     show_eta : bool (optional)
 
     """
-    if not (config['show_progress_bars'] == 'True' and
+    if not (str(config['show_progress_bars']) == 'True' and
             is_interactive_session):
         return
 
