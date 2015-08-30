@@ -196,13 +196,6 @@ class TICA(Transformer):
         if self._force_eigenvalues_le_one and self._lag % self._param_with_stride != 0:
             raise RuntimeError("When using TICA with force_eigenvalues_le_one, lag must be a multiple of stride.")
 
-        if self._param_with_stride > 1:
-            import warnings
-            warnings.simplefilter('once', MeaningOfLagWithStrideWarning, append=True)
-            warnings.warn("Since version 1.3 lag is measured in time steps of your"
-                          " trajectory, no matter what value of stride is used.",
-                          MeaningOfLagWithStrideWarning)
-
         if self.mu is not None:
             self.mu = types.ensure_ndarray(self.mu, shape=(indim,))
             self._given_mean = True
