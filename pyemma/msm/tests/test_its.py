@@ -208,9 +208,9 @@ class TestITS_AllEstimators(unittest.TestCase):
     def test_its_bhmm(self):
         estimator = msm.timescales_hmsm([self.double_well_data.dtraj_T100K_dt10_n6good], 2, lags = [1, 10, 100],
                                         errors='bayes', nsamples=100)
-        ref = np.array([[ 222.0641768 ],
-                        [ 332.57667046],
-                        [ 370.33580404]])
+        ref = np.array([[ 222.02102829],
+                        [ 342.49101981],
+                        [ 372.54409752]])
         # rough agreement with MLE
         assert np.allclose(estimator.timescales, ref, rtol=0.1, atol=10.0)
         # within left / right intervals. This test should fail only 1 out of 1000 times.
