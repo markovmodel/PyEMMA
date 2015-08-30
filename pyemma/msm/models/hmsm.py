@@ -135,7 +135,7 @@ class HMSM(_MSM):
         return -self._timeunit_model.dt / _np.log(_np.diag(self.transition_matrix))
 
     def transition_matrix_obs(self, k=1):
-        """ Computes the transition matrix between observed states
+        r""" Computes the transition matrix between observed states
 
         Transition matrices for longer lag times than the one used to
         parametrize this HMSM can be obtained by setting the k option.
@@ -186,7 +186,7 @@ class HMSM(_MSM):
         return _np.dot(self.metastable_memberships, self.eigenvectors_right())
 
     def propagate(self, p0, k):
-        """ Propagates the initial distribution p0 k times
+        r""" Propagates the initial distribution p0 k times
 
         Computes the product
 
@@ -321,7 +321,7 @@ class HMSM(_MSM):
 
     @property
     def metastable_memberships(self):
-        """ Computes the memberships of observable states to metastable sets by
+        r""" Computes the memberships of observable states to metastable sets by
             Bayesian inversion as described in [1]_.
 
         Returns
@@ -346,7 +346,7 @@ class HMSM(_MSM):
 
     @property
     def metastable_distributions(self):
-        """ Returns the output probability distributions. Identical to
+        r""" Returns the output probability distributions. Identical to
             :meth:`observation_probability`
 
         Returns
@@ -363,7 +363,7 @@ class HMSM(_MSM):
 
     @property
     def metastable_sets(self):
-        """ Computes the metastable sets of observable states within each
+        r""" Computes the metastable sets of observable states within each
             metastable set
 
         This is only recommended for visualization purposes. You *cannot*
@@ -384,7 +384,7 @@ class HMSM(_MSM):
 
     @property
     def metastable_assignments(self):
-        """ Computes the assignment to metastable sets for observable states
+        r""" Computes the assignment to metastable sets for observable states
 
         This is only recommended for visualization purposes. You *cannot*
         compute any actual quantity of the coarse-grained kinetics without
