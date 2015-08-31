@@ -49,8 +49,7 @@ class DiscreteTrajectoryStats(object):
 
             * 'sliding' : A trajectory of length T will have :math:`T-tau` counts
                 at time indexes
-                .. math:
-                    (0 \rightarray \tau), (1 \rightarray \tau+1), ..., (T-\tau-1 \rightarray T-1)
+                ..1:                    (0 \rightarray \tau), (1 \rightarray \tau+1), ..., (T-\tau-1 \rightarray T-1)
 
             * 'effective' : Uses an estimate of the transition counts that are
                 statistically uncorrelated. Recommended when used with a
@@ -58,8 +57,7 @@ class DiscreteTrajectoryStats(object):
 
             * 'sample' : A trajectory of length T will have :math:`T/tau` counts
                 at time indexes
-                .. math:
-                    (0 \rightarray \tau), (\tau \rightarray 2 \tau), ..., (((T/tau)-1) \tau \rightarray T)
+                ..1:                    (0 \rightarray \tau), (\tau \rightarray 2 \tau), ..., (((T/tau)-1) \tau \rightarray T)
 
 
         """

@@ -389,8 +389,7 @@ class MSM(_Model):
 
         Computes the product
 
-        .. math:
-            p_k = p_0^T P^k
+        ..1:            p_k = p_0^T P^k
 
         If the lag time of transition matrix :math:`P` is :math:`\tau`, this
         will provide the probability distribution at time :math:`k \tau`.

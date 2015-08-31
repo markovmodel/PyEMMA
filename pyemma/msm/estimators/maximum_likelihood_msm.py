@@ -12,32 +12,37 @@ from pyemma.msm.estimators.estimated_msm import EstimatedMSM as _EstimatedMSM
 from pyemma.util.units import TimeUnit
 
 class MaximumLikelihoodMSM(_Estimator, _EstimatedMSM):
-    r""" Maximum likelihood estimator for MSMs given discrete trajectory statistics
+    r"""Maximum likelihood estimator for MSMs given discrete trajectory statistics
 
     Parameters
     ----------
     lag : int
         lag time at which transitions are counted and the transition matrix is
         estimated.
+
     reversible : bool, optional, default = True
         If true compute reversible MSM, else non-reversible MSM
+
     count_mode : str, optional, default='sliding'
         mode to obtain count matrices from discrete trajectories. Should be
         one of:
-        * 'sliding' : A trajectory of length T will have :math:`T-tau` counts
-            at time indexes
-            .. math:
 
-                (0 \rightarray \tau), (1 \rightarray \tau+1), ..., (T-\tau-1 \rightarray T-1)
+        * 'sliding' : A trajectory of length T will have :math:`T-tau` counts
+          at time indexes
+
+          .. math::
+
+             (0 \rightarrow \tau), (1 \rightarrow \tau+1), ..., (T-\tau-1 \rightarrow T-1)
 
         * 'effective' : Uses an estimate of the transition counts that are
-            statistically uncorrelated. Recommended when used with a
-            Bayesian MSM.
+          statistically uncorrelated. Recommended when used with a
+          Bayesian MSM.
         * 'sample' : A trajectory of length T will have :math:`T/tau` counts
-            at time indexes
-            .. math:
+          at time indexes
 
-                (0 \rightarray \tau), (\tau \rightarray 2 \tau), ..., (((T/tau)-1) \tau \rightarray T)
+          .. math::
+
+                (0 \rightarrow \tau), (\tau \rightarrow 2 \tau), ..., (((T/tau)-1) \tau \rightarrow T)
 
     sparse : bool, optional, default = False
         If true compute count matrix, transition matrix and all derived
@@ -48,20 +53,22 @@ class MaximumLikelihoodMSM(_Estimator, _EstimatedMSM):
     connectivity : str, optional, default = 'largest'
         Connectivity mode. Three methods are intended (currently only 'largest'
         is implemented)
+
         * 'largest' : The active set is the largest reversibly connected set.
-            All estimation will be done on this subset and all quantities
-            (transition matrix, stationary distribution, etc) are only defined
-            on this subset and are correspondingly smaller than the full set
-            of states
+          All estimation will be done on this subset and all quantities
+          (transition matrix, stationary distribution, etc) are only defined
+          on this subset and are correspondingly smaller than the full set
+          of states
         * 'all' : The active set is the full set of states. Estimation will be
-            conducted on each reversibly connected set separately. That means
-            the transition matrix will decompose into disconnected submatrices,
-            the stationary vector is only defined within subsets, etc.
-            Currently not implemented.
+          conducted on each reversibly connected set separately. That means
+          the transition matrix will decompose into disconnected submatrices,
+          the stationary vector is only defined within subsets, etc.
+          Currently not implemented.
         * 'none' : The active set is the full set of states. Estimation will
-            be conducted on the full set of
-            states without ensuring connectivity. This only permits
-            nonreversible estimation. Currently not implemented.
+          be conducted on the full set of
+          states without ensuring connectivity. This only permits
+          nonreversible estimation. Currently not implemented.
+
     dt_traj : str, optional, default='1 step'
         Description of the physical time of the input trajectories. May be used
         by analysis algorithms such as plotting tools to pretty-print the axes.
@@ -76,10 +83,10 @@ class MaximumLikelihoodMSM(_Estimator, _EstimatedMSM):
         |  'ms',  'millisecond*'
         |  's',   'second*'
 
-    maxiter = 1000000 : int
+    maxiter: int, optioanl, default = 1000000
         Optional parameter with reversible = True. maximum number of iterations
         before the transition matrix estimation method exits
-    maxerr = 1e-8 : float
+    maxerr : float, optional, default = 1e-8
         Optional parameter with reversible = True.
         convergence tolerance for transition matrix estimation.
         This specifies the maximum change of the Euclidean norm of relative
@@ -129,11 +136,11 @@ class MaximumLikelihoodMSM(_Estimator, _EstimatedMSM):
         """
             Parameters
             ----------
-            dtrajs : list containing ndarrays(dtype=int) or ndarray(n, dtype=int) or
-            :class:`pyemma.msm.util.dtraj_states.DiscreteTrajectoryStats`
+            dtrajs : list containing ndarrays(dtype=int) or ndarray(n, dtype=int) or :class:`pyemma.msm.util.dtraj_states.DiscreteTrajectoryStats`
                 discrete trajectories, stored as integer ndarrays (arbitrary size)
                 or a single ndarray for only one trajectory.
-            **params : Other keyword parameters if different from the settings when this estimator was constructed
+            **params :
+                Other keyword parameters if different from the settings when this estimator was constructed
 
             Returns
             -------
