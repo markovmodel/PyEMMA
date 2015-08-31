@@ -12,7 +12,7 @@ from pyemma.msm.estimators.estimated_msm import EstimatedMSM as _EstimatedMSM
 from pyemma.util.units import TimeUnit
 
 class MaximumLikelihoodMSM(_Estimator, _EstimatedMSM):
-    """ Maximum likelihood estimator for MSMs given discrete trajectory statistics
+    r""" Maximum likelihood estimator for MSMs given discrete trajectory statistics
 
     Parameters
     ----------
@@ -27,14 +27,18 @@ class MaximumLikelihoodMSM(_Estimator, _EstimatedMSM):
         * 'sliding' : A trajectory of length T will have :math:`T-tau` counts
             at time indexes
             .. math:
+
                 (0 \rightarray \tau), (1 \rightarray \tau+1), ..., (T-\tau-1 \rightarray T-1)
+
         * 'effective' : Uses an estimate of the transition counts that are
             statistically uncorrelated. Recommended when used with a
             Bayesian MSM.
         * 'sample' : A trajectory of length T will have :math:`T/tau` counts
             at time indexes
             .. math:
+
                 (0 \rightarray \tau), (\tau \rightarray 2 \tau), ..., (((T/tau)-1) \tau \rightarray T)
+
     sparse : bool, optional, default = False
         If true compute count matrix, transition matrix and all derived
         quantities using sparse matrix algebra. In this case python sparse
@@ -75,7 +79,6 @@ class MaximumLikelihoodMSM(_Estimator, _EstimatedMSM):
     maxiter = 1000000 : int
         Optional parameter with reversible = True. maximum number of iterations
         before the transition matrix estimation method exits
-
     maxerr = 1e-8 : float
         Optional parameter with reversible = True.
         convergence tolerance for transition matrix estimation.

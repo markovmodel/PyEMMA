@@ -1,4 +1,4 @@
 .. automodule:: msmtools.flux
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2

@@ -229,7 +229,7 @@ class ImpliedTimescales(Estimator, ProgressReporter):
         r"""Returns the implied timescale estimates
 
         Returns
-        --------
+        -------
         timescales : ndarray((l x k), dtype=float)
             timescales for all processes and lag times.
             l is the number of lag times and k is the number of computed timescales.
@@ -331,7 +331,7 @@ class ImpliedTimescales(Estimator, ProgressReporter):
         generate the samples first, e.g. by calling bootstrap
 
         Parameters
-        -----------
+        ----------
         process : int or None (default)
             index in [0:n-1] referring to the process whose timescale will be returned.
             By default, process = None and all computed process timescales will be returned.
@@ -400,7 +400,7 @@ class ImpliedTimescales(Estimator, ProgressReporter):
         r"""Returns the fraction of frames used to compute the count matrix at each lagtime.
 
         Notes
-        -------
+        -----
         In a list of discrete trajectories with varying lengths, the estimation at longer lagtimes will mean
         discarding some trajectories for which not even one count can be computed. This function returns the fraction
         of frames that was actually used in computing the count matrix.
