@@ -18,7 +18,6 @@
 
 
 from __future__ import absolute_import
-from pyemma.util.log import getLogger
 from pyemma.util.annotators import deprecated
 from pyemma.util import types as _types
 from pyemma._base.progress import ProgressReporter
@@ -29,8 +28,10 @@ from math import ceil
 
 from abc import ABCMeta, abstractmethod
 from pyemma.util.exceptions import NotConvergedWarning
-import six
+from pyemma._base.logging import create_logger, instance_name
+
 from six.moves import range
+import six
 
 __all__ = ['Transformer']
 __author__ = 'noe, marscher'
@@ -166,7 +167,7 @@ class Transformer(six.with_metaclass(ABCMeta, ProgressReporter)):
         the chunksize used to batch process underlying data
 
     """
-    # count instances
+    # counting transformer instances, incremented by name property.
     _ids = count(0)
 
     def __init__(self, chunksize=100):
@@ -178,7 +179,22 @@ class Transformer(six.with_metaclass(ABCMeta, ProgressReporter)):
         # allow children of this class to implement their own progressbar handling
         self._custom_param_progress_handling = False
 
-        self.__create_logger()
+    @property
+    def name(self):
+        try:
+            return self._name
+        except AttributeError:
+            self._name = instance_name(self, next(self._ids))
+            return self._name
+
+    @property
+    def _logger(self):
+        """ The logger for this Estimator """
+        try:
+            return self._logger_instance
+        except AttributeError:
+            create_logger(self)
+            return self._logger_instance
 
     @property
     def data_producer(self):
@@ -250,15 +266,6 @@ class Transformer(six.with_metaclass(ABCMeta, ProgressReporter)):
         r""" Number of dimensions that should be used for the output of the transformer. """
         pass
 
-    def __create_logger(self):
-        # note this is private, since it should only be called (once) from this class.
-        count = next(self._ids)
-        i = self.__module__.rfind(".")
-        j = self.__module__.find(".") + 1
-        package = self.__module__[j:i]
-        name = "%s.%s[%i]" % (package, self.__class__.__name__, count)
-        self._name = name
-        self._logger = getLogger(name)
 
     def number_of_trajectories(self):
         r"""
