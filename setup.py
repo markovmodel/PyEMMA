@@ -39,16 +39,17 @@ import versioneer
 import warnings
 
 CLASSIFIERS = """\
-Development Status :: 4 - Beta
+Development Status :: 5 - Production/Stable
 Environment :: Console
 Environment :: MacOS X
 Intended Audience :: Science/Research
-License :: OSI Approved :: BSD License
+License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)
 Natural Language :: English
 Operating System :: MacOS :: MacOS X
 Operating System :: POSIX
-Programming Language :: Python :: 2.6
+Operating System :: Microsoft :: Windows
 Programming Language :: Python :: 2.7
+Programming Language :: Python :: 3
 Topic :: Scientific/Engineering :: Bio-Informatics
 Topic :: Scientific/Engineering :: Chemistry
 Topic :: Scientific/Engineering :: Mathematics
@@ -211,7 +212,7 @@ metadata = dict(
     author='The Emma team',
     author_email='info@emma-project.org',
     url='http://github.com/markovmodel/PyEMMA',
-    license='FreeBSD',
+    license='LGPLv3+',
     description=DOCLINES[0],
     long_description=open('README.rst').read(),
     version=versioneer.get_version(),
