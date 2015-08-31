@@ -346,7 +346,7 @@ class HMSM(_MSM):
     @property
     def metastable_distributions(self):
         r""" Returns the output probability distributions. Identical to
-            :meth:`observation_probability`
+            :py:meth:`observation_probability`
 
         Returns
         -------
