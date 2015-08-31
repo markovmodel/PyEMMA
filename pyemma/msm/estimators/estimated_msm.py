@@ -30,57 +30,58 @@ from pyemma.util.units import TimeUnit
 
 @aliased
 class EstimatedMSM(MSM):
-    r"""Estimates a Markov model from discrete trajectories.
-
-    Parameters
-    ----------
-    dtrajs : list containing ndarrays(dtype=int) or ndarray(n, dtype=int)
-        discrete trajectories, stored as integer ndarrays (arbitrary size)
-        or a single ndarray for only one trajectory.
-
-    dt_traj : str, optional, default='1 step'
-        Description of the physical time corresponding to the trajectory time
-        step. May be used by analysis algorithms such as plotting tools to
-        pretty-print the axes. By default '1 step', i.e. there is no physical
-        time unit. Specify by a number, whitespace and unit. Permitted units
-        are (* is an arbitrary string):
-
-        |  'fs',  'femtosecond*'
-        |  'ps',  'picosecond*'
-        |  'ns',  'nanosecond*'
-        |  'us',  'microsecond*'
-        |  'ms',  'millisecond*'
-        |  's',   'second*'
-
-    lagtime : int
-        lagtime for the MSM estimation in multiples of trajectory steps
-
-    connectivity : str, optional, default = 'largest'
-        Connectivity mode. Three methods are intended (currently only 'largest' is implemented)
-
-        * 'largest' : The active set is the largest reversibly connected set. All estimation will be done on this
-          subset and all quantities (transition matrix, stationary distribution, etc) are only defined on this
-          subset and are correspondingly smaller than the full set of states
-        * 'all' : The active set is the full set of states. Estimation will be conducted on each reversibly connected
-          set separately. That means the transition matrix will decompose into disconnected submatrices,
-          the stationary vector is only defined within subsets, etc. Currently not implemented.
-        * 'none' : The active set is the full set of states. Estimation will be conducted on the full set of states
-          without ensuring connectivity. This only permits nonreversible estimation. Currently not implemented.
-
-    active_set :
-
-    connected_sets :
-
-    C_full :
-
-    C_active :
-
-    transition_matrix :
-
-    """
+    r"""Estimated Markov state model"""
 
     def __init__(self, dtrajs, dt_traj, lag, connectivity, active_set, connected_sets,
                  C_full, C_active, transition_matrix):
+        r"""Estimates a Markov model from discrete trajectories.
+
+        Parameters
+        ----------
+        dtrajs : list containing ndarrays(dtype=int) or ndarray(n, dtype=int)
+            discrete trajectories, stored as integer ndarrays (arbitrary size)
+            or a single ndarray for only one trajectory.
+
+        dt_traj : str, optional, default='1 step'
+            Description of the physical time corresponding to the trajectory time
+            step. May be used by analysis algorithms such as plotting tools to
+            pretty-print the axes. By default '1 step', i.e. there is no physical
+            time unit. Specify by a number, whitespace and unit. Permitted units
+            are (* is an arbitrary string):
+
+            |  'fs',  'femtosecond*'
+            |  'ps',  'picosecond*'
+            |  'ns',  'nanosecond*'
+            |  'us',  'microsecond*'
+            |  'ms',  'millisecond*'
+            |  's',   'second*'
+
+        lagtime : int
+            lagtime for the MSM estimation in multiples of trajectory steps
+
+        connectivity : str, optional, default = 'largest'
+            Connectivity mode. Three methods are intended (currently only 'largest' is implemented)
+
+            * 'largest' : The active set is the largest reversibly connected set. All estimation will be done on this
+              subset and all quantities (transition matrix, stationary distribution, etc) are only defined on this
+              subset and are correspondingly smaller than the full set of states
+            * 'all' : The active set is the full set of states. Estimation will be conducted on each reversibly connected
+              set separately. That means the transition matrix will decompose into disconnected submatrices,
+              the stationary vector is only defined within subsets, etc. Currently not implemented.
+            * 'none' : The active set is the full set of states. Estimation will be conducted on the full set of states
+              without ensuring connectivity. This only permits nonreversible estimation. Currently not implemented.
+
+        active_set :
+
+        connected_sets :
+
+        C_full :
+
+        C_active :
+
+        transition_matrix :
+
+        """
         # superclass constructor
         MSM.__init__(self, transition_matrix, dt_model=TimeUnit(dt_traj).get_scaled(lag))
 
@@ -200,7 +201,7 @@ class EstimatedMSM(MSM):
         a factor of tau more counts than are statistically uncorrelated. It's fine to use this matrix for maximum
         likelihood estimated, but it will give far too small errors if you use it for uncertainty calculations. In order
         to do uncertainty calculations, use the effective count matrix, see:
-        :math:`effective_count_matrix`
+        :attr:`effective_count_matrix`
 
         See Also
         --------
@@ -216,21 +217,21 @@ class EstimatedMSM(MSM):
     def effective_count_matrix(self):
         """Statistically uncorrelated transition counts within the active set of states
 
-        You can use this count matrix for any kind of estimation, in particular it is mean to give reasonable
-        error bars in uncertainty measurements (error perturbation or Gibbs sampling of the posterior).
+        You can use this count matrix for Bayesian estimation or error perturbation.
 
-        The effective count matrix is obtained by dividing the sliding-window count matrix by the lag time. This
-        can be shown to provide a likelihood that is the geometrical average over shifted subsamples of the trajectory,
-        :math:`(s_1,\:s_{tau+1},\:...),\:(s_2,\:t_{tau+2},\:...),` etc. This geometrical average converges to the
-        correct likelihood in the statistical limit [1]_.
-
-        [1] Trendelkamp-Schroer B., H. Wu, F. Paul and F. Noe. 2015:
-        Reversible Markov models of molecular kinetics: Estimation and uncertainty.
-        in preparation.
+        References
+        ----------
+        [1] Noe, F. (2015) Statistical inefficiency of Markov model count matrices
+            http://publications.mi.fu-berlin.de/1699/1/autocorrelation_counts.pdf
 
         """
         self._check_is_estimated()
-        return self._C_active / float(self.lag)
+        import msmtools.estimation as msmest
+        Ceff_full = msmest.effective_count_matrix(self._dtrajs_full, self.lag)
+        from pyemma.util.linalg import submatrix
+        Ceff = submatrix(Ceff_full, self.active_set)
+        return Ceff
+        # return self._C_active / float(self.lag)
 
     @property
     def count_matrix_full(self):
@@ -239,7 +240,7 @@ class EstimatedMSM(MSM):
         Attention: This count matrix has been obtained by sliding a window of length tau across the data. It contains
         a factor of tau more counts than are statistically uncorrelated. It's fine to use this matrix for maximum
         likelihood estimated, but it will give far too small errors if you use it for uncertainty calculations. In order
-        to do uncertainty calculations, use the effective count matrix, see: :attribute:`effective_count_matrix`
+        to do uncertainty calculations, use the effective count matrix, see: :attr:`effective_count_matrix`
         (only implemented on the active set), or divide this count matrix by tau.
 
         See Also
@@ -283,11 +284,13 @@ class EstimatedMSM(MSM):
         Returns a list of weight arrays, one for each trajectory, and with a number of elements equal to
         trajectory frames. Given :math:`N` trajectories of lengths :math:`T_1` to :math:`T_N`, this function
         returns corresponding weights:
+
         .. math::
 
             (w_{1,1}, ..., w_{1,T_1}), (w_{N,1}, ..., w_{N,T_N})
 
         that are normalized to one:
+
         .. math::
 
             \sum_{i=1}^N \sum_{t=1}^{T_i} w_{i,t} = 1
@@ -295,23 +298,28 @@ class EstimatedMSM(MSM):
         Suppose you are interested in computing the expectation value of a function :math:`a(x)`, where :math:`x`
         are your input configurations. Use this function to compute the weights of all input configurations and
         obtain the estimated expectation by:
+
         .. math::
 
             \langle a \rangle = \sum_{i=1}^N \sum_{t=1}^{T_i} w_{i,t} a(x_{i,t})
 
         Or if you are interested in computing the time-lagged correlation between functions :math:`a(x)` and
         :math:`b(x)` you could do:
+
         .. math::
 
             \langle a(t) b(t+\tau) \rangle_t = \sum_{i=1}^N \sum_{t=1}^{T_i} w_{i,t} a(x_{i,t}) a(x_{i,t+\tau})
 
+
         Returns
         -------
-        The normalized trajectory weights. Given :math:`N` trajectories of lengths :math:`T_1` to :math:`T_N`,
-        returns the corresponding weights:
-        .. math::
+        weights : list of ndarray
+            The normalized trajectory weights. Given :math:`N` trajectories of lengths :math:`T_1` to :math:`T_N`,
+            returns the corresponding weights:
 
-            (w_{1,1}, ..., w_{1,T_1}), (w_{N,1}, ..., w_{N,T_N})
+            .. math::
+
+                (w_{1,1}, ..., w_{1,T_1}), (w_{N,1}, ..., w_{N,T_N})
 
         """
         self._check_is_estimated()
@@ -356,7 +364,7 @@ class EstimatedMSM(MSM):
         in order to generate a synthetic molecular dynamics trajectory - see
         :func:`pyemma.coordinates.save_traj`
 
-        Note that the time different between two samples is the Markov model lag time  :math:`\tau`. When comparing
+        Note that the time different between two samples is the Markov model lag time tau. When comparing
         quantities computing from this synthetic trajectory and from the input trajectories, the time points of this
         trajectory must be scaled by the lag time in order to have them on the same time scale.
 
@@ -377,7 +385,7 @@ class EstimatedMSM(MSM):
         indexes : ndarray( (N, 2) )
             trajectory and time indexes of the simulated trajectory. Each row consist of a tuple (i, t), where i is
             the index of the trajectory and t is the time index within the trajectory.
-            Note that the time different between two samples is the Markov model lag time  :math:`\tau`.
+            Note that the time different between two samples is the Markov model lag time tau
 
         See also
         --------
@@ -477,8 +485,10 @@ class EstimatedMSM(MSM):
 
         Returns
         -------
-        hmsm : :class:`EstimatedHMSM <pyemma.msm.estimators.hmsm_estimated.EstimatedHMSM>`
+        hmsm : :class:`MaximumLikelihoodHMSM`
 
+        References
+        ----------
         .. [1] F. Noe, H. Wu, J.-H. Prinz and N. Plattner:
             Projected and hidden Markov models for calculating kinetics and metastable states of complex molecules
             J. Chem. Phys. 139, 184114 (2013)
@@ -500,8 +510,10 @@ class EstimatedMSM(MSM):
 
         Returns
         -------
-        hmsm : :class:`EstimatedHMSM <pyemma.msm.estimators.hmsm_estimated.EstimatedHMSM>`
+        hmsm : :class:`MaximumLikelihoodHMSM`
 
+        References
+        ----------
         .. [1] F. Noe, H. Wu, J.-H. Prinz and N. Plattner:
             Projected and hidden Markov models for calculating kinetics and metastable states of complex molecules
             J. Chem. Phys. 139, 184114 (2013)

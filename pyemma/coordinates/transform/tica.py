@@ -40,6 +40,7 @@ class MeaningOfLagWithStrideWarning(UserWarning):
 
 
 class TICA(Transformer):
+    r""" Time-lagged independent component analysis (TICA)"""
 
     def __init__(self, lag, dim=-1, var_cutoff=0.95, kinetic_map=True, epsilon=1e-6,
                  force_eigenvalues_le_one=False, mean=None):

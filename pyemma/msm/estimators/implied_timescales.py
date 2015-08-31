@@ -67,37 +67,34 @@ def _generate_lags(maxlag, multiplier):
 # TODO: Timescales should be assigned by similar eigenvectors rather than by order
 # TODO: when requesting too long lagtimes, throw a warning and exclude lagtime from calculation, but compute the rest
 class ImpliedTimescales(Estimator, ProgressReporter):
-    r"""Implied timescales for a series of lag times.
+    r"""Implied timescales for a series of lag times."""
 
-    Parameters
-    ----------
-    dtrajs : array-like or list of array-likes
-        discrete trajectories
-
-    lags : array-like with integers or None, default = None
-        integer lag times at which the implied timescales will be calculated. If set to None (default)
-        as list of lagtimes will be automatically generated.
-
-    nits = None : int
-        maximum number of implied timescales to be computed and stored. If less
-        timescales are available, nits will be set to a smaller value during
-        estimation. None means the number of timescales will be automatically
-        determined.
-
-    failfast : boolean, default = False
-        if True, will raise an error as soon as not all requested timescales can be computed at all requested
-        lagtimes. If False, will continue with a warning and compute the timescales/lagtimes that are possible.
-
-    n_jobs: int, default = 1
-        how many subprocesses to start to estimate the models for each lag time.
-
-    """
-    def __init__(self, estimator, lags=None, nits=None, failfast=False, n_jobs=1,
+    def __init__(self, estimator, lags=None, nits=None, n_jobs=1,
                  show_progress=True):
+        r"""Implied timescales for a series of lag times.
+
+        Parameters
+        ----------
+        estimator : Estimator
+            Estimator to be used for estimating timescales at each lag time.
+
+        lags : array-like with integers or None, optional
+            integer lag times at which the implied timescales will be calculated. If set to None (default)
+            as list of lagtimes will be automatically generated.
+
+        nits : int, optional
+            maximum number of implied timescales to be computed and stored. If less
+            timescales are available, nits will be set to a smaller value during
+            estimation. None means the number of timescales will be automatically
+            determined.
+
+        n_jobs: int, optional
+            how many subprocesses to start to estimate the models for each lag time.
+
+        """
         # initialize
         self.estimator = get_estimator(estimator)
         self.nits = nits
-        self.failfast = failfast
         self.n_jobs = n_jobs
         self.show_progress = show_progress
 

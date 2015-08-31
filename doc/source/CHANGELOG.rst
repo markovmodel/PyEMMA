@@ -1,20 +1,20 @@
 Changelog
 =========
 
-2.0 (8-31-2015)
----------------
+2.0 (9-1-2015)
+--------------
 2.0 is a major release offering several new features and a major internal
 reorganization of the code.
 
 **New features**:
 
-- coordinates: new MiniBatchKmeans implementation.
-- coordinates: random access of input through pipeline via indices.
-- coordinates: PCA and TICA use a default variance cutoff of 95%.
-- coordinates: TICA eigenvalues can be used to calculate timescales.
-- coordinates: Early termination of pipeline possible (eg. max_clusters reached).
 - coordinates: Featurizer new features: ResidueMinDistanceFeature and GroupMinDistanceFeature.
-- coordinates: removed deprecated functions (since 1.2.2).
+- coordinates: PCA and TICA use a default variance cutoff of 95%.
+- coordinates: TICA is scaled to produce a kinetic map by default.
+- coordinates: TICA eigenvalues can be used to calculate timescales.
+- coordinates: new MiniBatchKmeans implementation.
+- coordinates: Early termination of pipeline possible (eg. max_clusters reached).
+- coordinates: random access of input through pipeline via indices.
 - msm: Estimator for Bayesian Markov state models.
 - msm: MSMs can be systematically coarse-grained to few-state models
 - msm: Estimators for discrete Hidden Markov Models (HMMs) and Bayesian Hidden Markov models (BHMMs).
@@ -22,11 +22,13 @@ reorganization of the code.
   (means, variances, confidence intervals) to be computed for all properties of MSMs and HMMs.
 - msm: Generalized Chapman-Kolmogorov test for both MSM and HMM models
 - plots: plotting functions for Chapman-Kolmogorov tests and 2D free energy surfaces.
+- plots: more flexible network plots.
 
 **Documentation**:
 
 - One new application-based ipython notebooks and three new methodological ipython notebooks
   are provided. All Notebooks and most of the data are provided for download at pyemma.org.
+- Many improvements in API documentation.
 
 **Code architecture**:
 
@@ -36,10 +38,12 @@ reorganization of the code.
   order to transform input data into output data (e.g. dimension reduction). Models
   (e.g. MSM) can be analyzed in order to compute molecular quantities of interest, such
   as equilibrium probabilities or transition rates.
+- Estimators and Transformers have basic compatibility with scikit-learn objects.
 - Code for low-level msm functions (msm.analysis, msm.estimation, msm.generation, msm.flux) has
   been relocated to the subsidiary package msmtools (github.com/markovmodel/msmtools). msmtools is
   part of the PyEMMA distribution but can be separately installed without depending on
   PyEMMA in order to facilitate further method development.
+- Removed deprecated functions from 1.1 that were kept during 1.2
 
 
 1.2.2 (7-27-2015)

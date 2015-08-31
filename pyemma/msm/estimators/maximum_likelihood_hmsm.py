@@ -64,69 +64,71 @@ def _lag_observations(observations, lag, stride=1):
 
 
 class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
-    r"""Maximum likelihood estimator for a Hidden MSM given a MSM
+    r"""Maximum likelihood estimator for a Hidden MSM given a MSM"""
 
-    Parameters
-    ----------
-    nstates : int, optional, default=2
-        number of hidden states
-    lag : int, optional, default=1
-        lagtime to estimate the HMSM at
-    stride : str or int, default=1
-        stride between two lagged trajectories extracted from the input
-        trajectories. Given trajectory s[t], stride and lag will result
-        in trajectories
-            s[0], s[lag], s[2 lag], ...
-            s[stride], s[stride + lag], s[stride + 2 lag], ...
-        Setting stride = 1 will result in using all data (useful for maximum
-        likelihood estimator), while a Bayesian estimator requires a longer
-        stride in order to have statistically uncorrelated trajectories.
-        Setting stride = 'effective' uses the largest neglected timescale as
-        an estimate for the correlation time and sets the stride accordingly
-    msm_init : :class:`MSM <pyemma.msm.estimators.msm_estimated.MSM>`
-        MSM object to initialize the estimation
-    reversible : bool, optional, default = True
-        If true compute reversible MSM, else non-reversible MSM
-    connectivity : str, optional, default = 'largest'
-        Connectivity mode. Three methods are intended (currently only 'largest' is implemented)
-        * 'largest' : The active set is the largest reversibly connected set. All estimation will be done on this
-          subset and all quantities (transition matrix, stationary distribution, etc) are only defined on this
-          subset and are correspondingly smaller than the full set of states
-        * 'all' : The active set is the full set of states. Estimation will be conducted on each reversibly
-          connected set separately. That means the transition matrix will decompose into disconnected
-          submatrices, the stationary vector is only defined within subsets, etc. Currently not implemented.
-        * 'none' : The active set is the full set of states. Estimation will be conducted on the full set of
-          states without ensuring connectivity. This only permits nonreversible estimation. Currently not
-          implemented.
-    observe_active : bool, optional, default=True
-        True: Restricts the observation set to the active states of the MSM.
-        False: All states are in the observation set.
-    dt_traj : str, optional, default='1 step'
-        Description of the physical time corresponding to the trajectory time
-        step.  May be used by analysis algorithms such as plotting tools to
-        pretty-print the axes. By default '1 step', i.e. there is no physical
-        time unit. Specify by a number, whitespace and unit. Permitted units
-        are (* is an arbitrary string):
-
-        |  'fs',  'femtosecond*'
-        |  'ps',  'picosecond*'
-        |  'ns',  'nanosecond*'
-        |  'us',  'microsecond*'
-        |  'ms',  'millisecond*'
-        |  's',   'second*'
-
-    accuracy : float, optional, default = 1e-3
-        convergence threshold for EM iteration. When two the likelihood does
-        not increase by more than accuracy, the iteration is stopped
-        successfully.
-    maxit : int, optional, default = 1000
-        stopping criterion for EM iteration. When so many iterations are
-        performed without reaching the requested accuracy, the iteration is
-        stopped without convergence (a warning is given)
-
-    """
     def __init__(self, nstates=2, lag=1, stride=1, msm_init=None, reversible=True, connectivity='largest',
                  observe_active=True, dt_traj='1 step', accuracy=1e-3, maxit=1000):
+        r"""Maximum likelihood estimator for a Hidden MSM given a MSM
+
+        Parameters
+        ----------
+        nstates : int, optional, default=2
+            number of hidden states
+        lag : int, optional, default=1
+            lagtime to estimate the HMSM at
+        stride : str or int, default=1
+            stride between two lagged trajectories extracted from the input
+            trajectories. Given trajectory s[t], stride and lag will result
+            in trajectories
+                s[0], s[lag], s[2 lag], ...
+                s[stride], s[stride + lag], s[stride + 2 lag], ...
+            Setting stride = 1 will result in using all data (useful for maximum
+            likelihood estimator), while a Bayesian estimator requires a longer
+            stride in order to have statistically uncorrelated trajectories.
+            Setting stride = 'effective' uses the largest neglected timescale as
+            an estimate for the correlation time and sets the stride accordingly
+        msm_init : :class:`MSM <pyemma.msm.estimators.msm_estimated.MSM>`
+            MSM object to initialize the estimation
+        reversible : bool, optional, default = True
+            If true compute reversible MSM, else non-reversible MSM
+        connectivity : str, optional, default = 'largest'
+            Connectivity mode. Three methods are intended (currently only 'largest' is implemented)
+            * 'largest' : The active set is the largest reversibly connected set. All estimation will be done on this
+              subset and all quantities (transition matrix, stationary distribution, etc) are only defined on this
+              subset and are correspondingly smaller than the full set of states
+            * 'all' : The active set is the full set of states. Estimation will be conducted on each reversibly
+              connected set separately. That means the transition matrix will decompose into disconnected
+              submatrices, the stationary vector is only defined within subsets, etc. Currently not implemented.
+            * 'none' : The active set is the full set of states. Estimation will be conducted on the full set of
+              states without ensuring connectivity. This only permits nonreversible estimation. Currently not
+              implemented.
+        observe_active : bool, optional, default=True
+            True: Restricts the observation set to the active states of the MSM.
+            False: All states are in the observation set.
+        dt_traj : str, optional, default='1 step'
+            Description of the physical time corresponding to the trajectory time
+            step.  May be used by analysis algorithms such as plotting tools to
+            pretty-print the axes. By default '1 step', i.e. there is no physical
+            time unit. Specify by a number, whitespace and unit. Permitted units
+            are (* is an arbitrary string):
+
+            |  'fs',  'femtosecond*'
+            |  'ps',  'picosecond*'
+            |  'ns',  'nanosecond*'
+            |  'us',  'microsecond*'
+            |  'ms',  'millisecond*'
+            |  's',   'second*'
+
+        accuracy : float, optional, default = 1e-3
+            convergence threshold for EM iteration. When two the likelihood does
+            not increase by more than accuracy, the iteration is stopped
+            successfully.
+        maxit : int, optional, default = 1000
+            stopping criterion for EM iteration. When so many iterations are
+            performed without reaching the requested accuracy, the iteration is
+            stopped without convergence (a warning is given)
+
+        """
         self.nstates = nstates
         self.lag = lag
         self.stride = stride

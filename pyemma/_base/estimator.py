@@ -303,6 +303,7 @@ class Estimator(_BaseEstimator):
 
     @property
     def name(self):
+        """The name of this estimator"""
         try:
             return self._name
         except AttributeError:
@@ -312,7 +313,7 @@ class Estimator(_BaseEstimator):
 
     @property
     def logger(self):
-        """ The logger for this Estimator """
+        """The logger for this Estimator """
         try:
             return self._logger_instance
         except AttributeError:
@@ -350,14 +351,24 @@ class Estimator(_BaseEstimator):
             'You need to overload the _estimate() method in your Estimator implementation!')
 
     def fit(self, X):
-        """ For compatibility with sklearn.
-        :param X:
-        :return:
+        """Estimates parameters - for compatibility with sklearn.
+
+        Parameters
+        ----------
+        X : object
+            A reference to the data from which the model will be estimated
+
+        Returns
+        -------
+        model : object
+            The estimated model.
+
         """
         self.estimate(X)
 
     @property
     def model(self):
+        """The model estimated by this Estimator"""
         try:
             return self._model
         except AttributeError:

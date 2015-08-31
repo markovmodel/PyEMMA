@@ -55,7 +55,7 @@ def _add_ck_subplot(cktest, ax, i, j, ipos=None, jpos=None, y01=True, units='ste
 
 def plot_cktest(cktest, figsize=None, diag=False,  y01=True, layout=None,
                 padding_between=0.1, padding_top=0.075, units='steps', dt=1.):
-    """Plots the result of a Chapman-Kolmogorov test
+    """Plot of Chapman-Kolmogorov test
 
     Parameters:
     -----------

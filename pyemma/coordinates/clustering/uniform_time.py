@@ -27,6 +27,7 @@ __all__ = ['UniformTimeClustering']
 
 
 class UniformTimeClustering(AbstractClustering):
+    r"""Uniform time clustering"""
 
     def __init__(self, k=2, metric='euclidean'):
         """r

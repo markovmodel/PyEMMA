@@ -37,6 +37,7 @@ __all__ = ['RegularSpaceClustering']
 
 
 class RegularSpaceClustering(AbstractClustering):
+    r"""Regular space clustering"""
 
     def __init__(self, dmin, max_centers=1000, metric='euclidean'):
         """Clusters data objects in such a way, that cluster centers are at least in

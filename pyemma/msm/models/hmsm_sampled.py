@@ -37,6 +37,7 @@ from pyemma.util.types import is_iterable
 
 
 class SampledHMSM(_HMSM, _SampledModel):
+    r""" Sampled Hidden Markov state model """
 
     def __init__(self, samples, ref=None, conf=0.95):
         r""" Constructs a sampled HMSM

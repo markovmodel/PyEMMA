@@ -201,11 +201,10 @@ class TestITS_AllEstimators(unittest.TestCase):
         assert np.allclose(estimator.timescales, ref, rtol=0.1, atol=10.0)  # rough agreement
 
     def test_its_bhmm(self):
-        estimator = msm.timescales_hmsm([self.double_well_data.dtraj_T100K_dt10_n6good], 2, lags = [1, 10, 100],
+        estimator = msm.timescales_hmsm([self.double_well_data.dtraj_T100K_dt10_n6good], 2, lags = [1, 10],
                                         errors='bayes', nsamples=100)
         ref = np.array([[ 222.02102829],
-                        [ 342.49101981],
-                        [ 372.54409752]])
+                        [ 342.49101981]])
         # rough agreement with MLE
         assert np.allclose(estimator.timescales, ref, rtol=0.1, atol=10.0)
         # within left / right intervals. This test should fail only 1 out of 1000 times.

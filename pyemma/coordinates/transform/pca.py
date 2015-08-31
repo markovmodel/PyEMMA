@@ -30,6 +30,7 @@ __author__ = 'noe'
 
 
 class PCA(Transformer):
+    r""" Principal component analysis."""
 
     def __init__(self, dim=-1, var_cutoff=0.95, mean=None):
         r""" Principal component analysis.

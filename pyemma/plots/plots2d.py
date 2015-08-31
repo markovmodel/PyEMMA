@@ -54,7 +54,7 @@ def contour(x, y, z, ncontours = 50, colorbar=True, fig=None, ax=None, method='l
 
 
 def scatter_contour(x, y, z, ncontours = 50, colorbar=True, fig=None, ax=None, cmap=None, outfile=None):
-    """Shows a contour plot on scattered data (x,y,z) and the plots the positions of the points (x,y) on top.
+    """Contour plot on scattered data (x,y,z) and the plots the positions of the points (x,y) on top.
 
     Parameters
     ----------
@@ -93,7 +93,7 @@ def scatter_contour(x, y, z, ncontours = 50, colorbar=True, fig=None, ax=None, c
 
 
 def plot_free_energy(xall, yall, weights=None, ax=None, nbins=100, offset=0.1, cmap=_plt.cm.spectral, cbar=True, cbar_label='Free energy (kT)'):
-    """Shows a free energy plot given 2D scattered data
+    """Free energy plot given 2D scattered data
 
     Builds a 2D-histogram of the given data points and plots -log(p) where p is
     the probability computed from the histogram count.

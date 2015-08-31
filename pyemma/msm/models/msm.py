@@ -41,50 +41,53 @@ from pyemma.util import types as _types
 
 
 class MSM(_Model):
-    r"""Markov model with a given transition matrix
+    r"""Markov model with a given transition matrix"""
 
-    Parameters
-    ----------
-    P : ndarray(n,n)
-        transition matrix
-
-    pi : ndarray(n), optional, default=None
-        stationary distribution. Can be optionally given in case if it was
-        already computed, e.g. by the estimator.
-
-    reversible : bool, optional, default=None
-        whether P is reversible with respect to its stationary distribution.
-        If None (default), will be determined from P
-
-    dt_model : str, optional, default='1 step'
-        Description of the physical time corresponding to one time step of the
-        MSM (aka lag time). May be used by analysis algorithms such as plotting
-        tools to pretty-print the axes.
-        By default '1 step', i.e. there is no physical time unit. Specify by a
-        number, whitespace and unit. Permitted units are
-        (* is an arbitrary string):
-
-        |  'fs',  'femtosecond*'
-        |  'ps',  'picosecond*'
-        |  'ns',  'nanosecond*'
-        |  'us',  'microsecond*'
-        |  'ms',  'millisecond*'
-        |  's',   'second*'
-
-    neig : int or None
-        The number of eigenvalues / eigenvectors to be kept. If set to None,
-        defaults will be used. For a dense MSM the default is all eigenvalues.
-        For a sparse MSM the default is 10.
-
-    ncv : int (optional)
-        Relevant for eigenvalue decomposition of reversible transition
-        matrices. ncv is the number of Lanczos vectors generated, `ncv` must
-        be greater than k; it is recommended that ncv > 2*k.
-
-    """
     def __init__(self, P, pi=None, reversible=None, dt_model='1 step', neig=None, ncv=None):
+        r"""Markov model with a given transition matrix
+
+        Parameters
+        ----------
+        P : ndarray(n,n)
+            transition matrix
+
+        pi : ndarray(n), optional, default=None
+            stationary distribution. Can be optionally given in case if it was
+            already computed, e.g. by the estimator.
+
+        reversible : bool, optional, default=None
+            whether P is reversible with respect to its stationary distribution.
+            If None (default), will be determined from P
+
+        dt_model : str, optional, default='1 step'
+            Description of the physical time corresponding to one time step of the
+            MSM (aka lag time). May be used by analysis algorithms such as plotting
+            tools to pretty-print the axes.
+            By default '1 step', i.e. there is no physical time unit. Specify by a
+            number, whitespace and unit. Permitted units are
+            (* is an arbitrary string):
+
+            |  'fs',  'femtosecond*'
+            |  'ps',  'picosecond*'
+            |  'ns',  'nanosecond*'
+            |  'us',  'microsecond*'
+            |  'ms',  'millisecond*'
+            |  's',   'second*'
+
+        neig : int or None
+            The number of eigenvalues / eigenvectors to be kept. If set to None,
+            defaults will be used. For a dense MSM the default is all eigenvalues.
+            For a sparse MSM the default is 10.
+
+        ncv : int (optional)
+            Relevant for eigenvalue decomposition of reversible transition
+            matrices. ncv is the number of Lanczos vectors generated, `ncv` must
+            be greater than k; it is recommended that ncv > 2*k.
+
+        """
         self.set_model_params(P=P, pi=pi, reversible=reversible, dt_model=dt_model, neig=neig)
         self.ncv = ncv
+
 
 
     # TODO: maybe rename to parametrize in order to avoid confusion with set_params that has a different behavior?
@@ -205,9 +208,7 @@ class MSM(_Model):
     @property
     def transition_matrix(self):
         r"""
-        The transition matrix, estimated on the active set. For example, for
-        connectivity='largest' it will be the transition matrix amongst the
-        largest set of reversibly connected states
+        The transition matrix on the active set.
 
         """
         try:
@@ -221,12 +222,7 @@ class MSM(_Model):
 
     @property
     def stationary_distribution(self):
-        """The stationary distribution, estimated on the active set.
-
-        For example, for connectivity='largest' it will be the
-        transition matrix amongst the largest set of reversibly connected states
-
-        """
+        """The stationary distribution on the MSM states"""
         if self.pi is not None:
             return self.pi
         else:
@@ -304,8 +300,8 @@ class MSM(_Model):
 
         Returns
         -------
-        ts : ndarray(m)
-            transition matrix eigenvalues :math:`\lambda_i, i = 1,...,neig`.,
+        ts : ndarray(k,)
+            transition matrix eigenvalues :math:`\lambda_i, i = 1, ..., k`.,
             sorted by descending norm.
 
         """
@@ -342,7 +338,7 @@ class MSM(_Model):
 
         Returns
         -------
-        R : ndarray(n,neig)
+        R : ndarray(n,k)
             right eigenvectors in a column matrix. r_ij is the i'th component
             of the j'th right eigenvector
 
@@ -384,14 +380,16 @@ class MSM(_Model):
 
         Computes the product
 
-        ..1:            p_k = p_0^T P^k
+        .. math::
+
+            p_k = p_0^T P^k
 
         If the lag time of transition matrix :math:`P` is :math:`\tau`, this
         will provide the probability distribution at time :math:`k \tau`.
 
         Parameters
         ----------
-        p0 : ndarray(n)
+        p0 : ndarray(n,)
             Initial distribution. Vector of size of the active set.
 
         k : int
@@ -399,7 +397,7 @@ class MSM(_Model):
 
         Returns
         ----------
-        pk : ndarray(n)
+        pk : ndarray(n,)
             Distribution after k steps. Vector of size of the active set.
 
         """
@@ -496,8 +494,8 @@ class MSM(_Model):
 
         Parameters
         ----------
-        a : (M,) ndarray
-            Observable vector
+        a : (n,) ndarray
+            Observable vector on the MSM state space
 
         Returns
         -------
@@ -510,9 +508,10 @@ class MSM(_Model):
 
         .. math::
 
-            \mathbb{E}_{\mu}[a] = \sum_i \mu_i a_i
+            \mathbb{E}_{\mu}[a] = \sum_i \pi_i a_i
 
-        :math:`\mu=(\mu_i)` is the stationary vector of the transition matrix :math:`T`.
+        :math:`\pi=(\pi_i)` is the stationary vector of the transition matrix :math:`P`.
+
         """
         # check input and go
         a = _types.ensure_ndarray(a, ndim=1, size=self.nstates, kind='numeric')
@@ -521,73 +520,87 @@ class MSM(_Model):
     def correlation(self, a, b=None, maxtime=None, k=None, ncv=None):
         r"""Time-correlation for equilibrium experiment.
 
-        In order to simulate a time-correlation experiment (e.g. fluorescence correlation spectroscopy [1]_, dynamical
-        neutron scattering [2]_, ...), first compute the mean values of your experimental observable :math:`a`
+        In order to simulate a time-correlation experiment (e.g. fluorescence
+        correlation spectroscopy [NDD11]_, dynamical neutron scattering [LYP13]_,
+        ...), first compute the mean values of your experimental observable :math:`a`
         by MSM state:
 
         .. math::
 
             a_i & = \frac{1}{N_i} \sum_{x_t \in S_i} f(x_t)
 
-        where :math:`S_i` is the set of configurations belonging to MSM state :math:`i` and :math:`f()` is a function
-        that computes the experimental observable of interest for configuration :math:`x_t`. If a cross-correlation
-        function is wanted, also apply the above computation to a second experimental observable :math:`b`.
+        where :math:`S_i` is the set of configurations belonging to MSM state
+        :math:`i` and :math:`f()` is a function that computes the experimental
+        observable of interest for configuration :math:`x_t`. If a cross-correlation
+        function is wanted, also apply the above computation to a second
+        experimental observable :math:`b`.
 
-        Then the precise (i.e. without statistical error) autocorrelation function of :math:`f(x_t)` given the Markov
-        model is computed by correlation(a), and the precise cross-correlation function is computed by correlation(a,b).
-        This is done by evaluating the equation
+        Then the accurate (i.e. without statistical error) autocorrelation
+        function of :math:`f(x_t)` given the Markov model is computed by
+        correlation(a), and the accurate cross-correlation function is computed
+        by correlation(a,b). This is done by evaluating the equation
 
-        .. :math:
+        .. math::
 
-            acf_a(k\tau)     & = \mathbf{a}^\top \mathrm{diag}(\boldsymbol{\pi}) \mathbf{P(\tau)}^k \mathbf{a} \\
-            ccf_{a,b}(k\tau) & = \mathbf{a}^\top \mathrm{diag}(\boldsymbol{\pi}) \mathbf{P(\tau)}^k \mathbf{b}
+            acf_a(k\tau)     &= \mathbf{a}^\top \mathrm{diag}(\boldsymbol{\pi}) \mathbf{P(\tau)}^k \mathbf{a} \\
+            ccf_{a,b}(k\tau) &= \mathbf{a}^\top \mathrm{diag}(\boldsymbol{\pi}) \mathbf{P(\tau)}^k \mathbf{b}
 
-        where :math:`acf` stands for autocorrelation function and :math:`ccf` stands for cross-correlation function,
-        :math:`\mathbf{P(\tau)}` is the transition matrix at lag time :math:`\tau`, :math:`\boldsymbol{\pi}` is the
+        where :math:`acf` stands for autocorrelation function and :math:`ccf`
+        stands for cross-correlation function, :math:`\mathbf{P(\tau)}` is the
+        transition matrix at lag time :math:`\tau`, :math:`\boldsymbol{\pi}` is the
         equilibrium distribution of :math:`\mathbf{P}`, and :math:`k` is the time index.
 
-        Note that instead of using this method you could generate a long synthetic trajectory from the MSM using
-        :func:`generate_traj` and then estimating the time-correlation of your observable(s) directly from this
-        trajectory. However, there is no reason to do this because the present method does that calculation without
-        any sampling, and only in the limit of an infinitely long synthetic trajectory the two results will agree
-        exactly. The correlation function computed by the present method still has statistical uncertainty from the
-        fact that the underlying MSM transition matrix has statistical uncertainty when being estimated from data, but
-        there is no additional (and unnecessary) uncertainty due to synthetic trajectory generation.
+        Note that instead of using this method you could generate a long
+        synthetic trajectory from the MSM and then estimating the
+        time-correlation of your observable(s) directly from this trajectory.
+        However, there is no reason to do this because the present method
+        does that calculation without any sampling, and only in the limit of
+        an infinitely long synthetic trajectory the two results will agree
+        exactly. The correlation function computed by the present method still
+        has statistical uncertainty from the fact that the underlying MSM
+        transition matrix has statistical uncertainty when being estimated from
+        data, but there is no additional (and unnecessary) uncertainty due to
+        synthetic trajectory generation.
 
         Parameters
         ----------
-        a : (M,) ndarray
+        a : (n,) ndarray
             Observable, represented as vector on state space
         maxtime : int or float
-            Maximum time (in units of the input trajectory time step) until which the correlation function will be
-            evaluated.
-            Internally, the correlation function can only be computed in integer multiples of the Markov model lag time,
-            and therefore the actual last time point will be computed at :math:`\mathrm{ceil}(\mathrm{maxtime} / \tau)`
-            By default (None), the maxtime will be set equal to the 5 times the slowest relaxation time of the MSM,
-            because after this time the signal is almost constant.
-        b : (M,) ndarray (optional)
+            Maximum time (in units of the input trajectory time step) until
+            which the correlation function will be evaluated.
+            Internally, the correlation function can only be computed in
+            integer multiples of the Markov model lag time, and therefore
+            the actual last time point will be computed at :math:`\mathrm{ceil}(\mathrm{maxtime} / \tau)`
+            By default (None), the maxtime will be set equal to the 5 times
+            the slowest relaxation time of the MSM, because after this time
+            the signal is almost constant.
+        b : (n,) ndarray (optional)
             Second observable, for cross-correlations
         k : int (optional)
-            Number of eigenvalues and eigenvectors to use for computation. This option is only relevant for sparse
-            matrices and long times for which an eigenvalue decomposition will be done instead of using the
-            matrix power.
+            Number of eigenvalues and eigenvectors to use for computation.
+            This option is only relevant for sparse matrices and long times
+            for which an eigenvalue decomposition will be done instead of
+            using the matrix power.
         ncv : int (optional)
-            Only relevant for sparse matrices and large lag times where the relaxation will be computed using an
-            eigenvalue decomposition. The number of Lanczos vectors generated, `ncv` must be greater than k;
+            Only relevant for sparse matrices and large lag times where the
+            relaxation will be computed using an eigenvalue decomposition.
+            The number of Lanczos vectors generated, `ncv` must be greater than k;
             it is recommended that ncv > 2*k.
 
         Returns
         -------
         times : ndarray (N)
-            Time points (in units of the input trajectory time step) at which the correlation has been computed
+            Time points (in units of the input trajectory time step) at which
+            the correlation has been computed
         correlations : ndarray (N)
             Correlation values at given times
 
         Examples
         --------
 
-        This example computes the autocorrelation function of a simple observable on a three-state Markov model
-        and plots the result using matplotlib:
+        This example computes the autocorrelation function of a simple observable
+        on a three-state Markov model and plots the result using matplotlib:
 
         >>> import numpy as np
         >>> import pyemma.msm as msm
@@ -598,14 +611,14 @@ class MSM(_Model):
         >>> times, acf = M.correlation(a)
         >>>
         >>> import matplotlib.pylab as plt
-        >>> plt.plot(times, acf) # doctest: +SKIP
+        >>> plt.plot(times, acf)  # doctest: +SKIP
 
         References
         ----------
-        .. [1] Noe, F., S. Doose, I. Daidone, M. Loellmann, J. D. Chodera, M. Sauer and J. C. Smith. 2011
+        .. [NDD11] Noe, F., S. Doose, I. Daidone, M. Loellmann, J. D. Chodera, M. Sauer and J. C. Smith. 2011
             Dynamical fingerprints for probing individual relaxation processes in biomolecular dynamics with simulations
             and kinetic experiments. Proc. Natl. Acad. Sci. USA 108, 4822-4827.
-        .. [2] Lindner, B., Z. Yi, J.-H. Prinz, J. C. Smith and F. Noe. 2013.
+        .. [LYP13] Lindner, B., Z. Yi, J.-H. Prinz, J. C. Smith and F. Noe. 2013.
             Dynamic Neutron Scattering from Conformational Dynamics I: Theory and Markov models.
             J. Chem. Phys. 139, 175101.
 
@@ -630,28 +643,35 @@ class MSM(_Model):
 
         Parameters
         ----------
-        a : (M,) ndarray
-            Observable, represented as vector on state space
-        b : (M,) ndarray (optional)
+        a : (n,) ndarray
+            Observable, represented as vector on MSM state space
+        b : (n,) ndarray, optional
             Second observable, for cross-correlations
-        k : int (optional)
-            Number of eigenvalues and eigenvectors to use for computation. This option is only relevant for sparse
-            matrices and long times for which an eigenvalue decomposition will be done instead of using the matrix power
-        ncv : int (optional)
-            Only relevant for sparse matrices and large lag times, where the relaxation will be computed using an
-            eigenvalue decomposition. The number of Lanczos vectors generated, `ncv` must be greater than k;
+        k : int, optional
+            Number of eigenvalues and eigenvectors to use for computation. This
+            option is only relevant for sparse matrices and long times for which
+            an eigenvalue decomposition will be done instead of using the matrix
+            power
+        ncv : int, optional
+            Only relevant for sparse matrices and large lag times, where the
+            relaxation will be computed using an eigenvalue decomposition.
+            The number of Lanczos vectors generated, `ncv` must be greater than k;
             it is recommended that ncv > 2*k
 
         Returns
         -------
-        timescales : (N,) ndarray
+        timescales : (k,) ndarray
             Time-scales (in units of the input trajectory time step) of the transition matrix
-        amplitudes : (N,) ndarray
+        amplitudes : (k,) ndarray
             Amplitudes for the correlation experiment
 
         References
         ----------
-        .. [1] Noe, F, S Doose, I Daidone, M Loellmann, M Sauer, J D
+        Spectral densities are commonly used in spectroscopy. Dynamical
+        fingerprints are a useful representation for computational
+        spectroscopy results and have been introduced in [NDD11]_.
+
+        .. [NDD11] Noe, F, S Doose, I Daidone, M Loellmann, M Sauer, J D
             Chodera and J Smith. 2010. Dynamical fingerprints for probing
             individual relaxation processes in biomolecular dynamics with
             simulations and kinetic experiments. PNAS 108 (12): 4822-4827.
@@ -674,26 +694,26 @@ class MSM(_Model):
         In order to simulate such an experiment, first determine the distribution of states at which the experiment is
         started, :math:`p_0` and compute the mean values of your experimental observable :math:`a` by MSM state:
 
-        .. :math:
+        .. math::
 
             a_i = \frac{1}{N_i} \sum_{x_t \in S_i} f(x_t)
 
         where :math:`S_i` is the set of configurations belonging to MSM state :math:`i` and :math:`f()` is a function
         that computes the experimental observable of interest for configuration :math:`x_t`.
 
-        Then the precise (i.e. without statistical error) time-dependent expectation value of :math:`f(x_t)` given the
+        Then the accurate (i.e. without statistical error) time-dependent expectation value of :math:`f(x_t)` given the
         Markov model is computed by relaxation(p0, a). This is done by evaluating the equation
 
-        .. :math:
+        .. math::
 
-            E_a(k\tau)     & = \mathbf{p_0}^\top \mathbf{P(\tau)}^k \mathbf{a} \\
+            E_a(k\tau) = \mathbf{p_0}^{\top} \mathbf{P(\tau)}^k \mathbf{a}
 
         where :math:`E` stands for the expectation value that relaxes to its equilibrium value that is identical
         to expectation(a), :math:`\mathbf{P(\tau)}` is the transition matrix at lag time :math:`\tau`,
         :math:`\boldsymbol{\pi}` is the equilibrium distribution of :math:`\mathbf{P}`, and :math:`k` is the time index.
 
-        Note that instead of using this method you could generate many synthetic trajectory from the MSM using
-        :func:`generate_traj` that with starting points drawn from the initial distribution and then estimating the
+        Note that instead of using this method you could generate many synthetic trajectory from the MSM
+        with starting points drawn from the initial distribution and then estimating the
         time-dependent expectation value by an ensemble average. However, there is no reason to do this because the
         present method does that calculation without any sampling, and only in the limit of an infinitely many
         trajectories the two results will agree exactly. The relaxation function computed by the present method still
@@ -707,7 +727,7 @@ class MSM(_Model):
             Initial distribution for a relaxation experiment
         a : (n,) ndarray
             Observable, represented as vector on state space
-        maxtime : int or float, optional, default = None
+        maxtime : int or float, optional
             Maximum time (in units of the input trajectory time step) until which the correlation function will be
             evaluated. Internally, the correlation function can only be computed in integer multiples of the
             Markov model lag time, and therefore the actual last time point will be computed at
@@ -754,27 +774,27 @@ class MSM(_Model):
             Initial distribution for a relaxation experiment
         a : (n,) ndarray
             Observable, represented as vector on state space
-        lag : int or int array
-            List of lag time or lag times (in units of the transition matrix 
-            lag time :math:`\tau`) at which to compute
-            correlation
-        k : int (optional)
+        k : int, optional
             Number of eigenvalues and eigenvectors to use for computation
-        ncv : int (optional)
+        ncv : int, optional
             Only relevant for sparse matrices and large lag times, where the relaxation will be computes using an
             eigenvalue decomposition. The number of Lanczos vectors generated, `ncv` must be greater than k;
             it is recommended that ncv > 2*k
 
         Returns
         -------
-        timescales : (N,) ndarray
+        timescales : (k,) ndarray
             Time-scales (in units of the input trajectory time step) of the transition matrix
-        amplitudes : (N,) ndarray
+        amplitudes : (k,) ndarray
             Amplitudes for the relaxation experiment
 
         References
         ----------
-        .. [1] Noe, F, S Doose, I Daidone, M Loellmann, M Sauer, J D
+        Spectral densities are commonly used in spectroscopy. Dynamical
+        fingerprints are a useful representation for computational
+        spectroscopy results and have been introduced in [NDD11]_.
+
+        .. [NDD11] Noe, F, S Doose, I Daidone, M Loellmann, M Sauer, J D
             Chodera and J Smith. 2010. Dynamical fingerprints for probing
             individual relaxation processes in biomolecular dynamics with
             simulations and kinetic experiments. PNAS 108 (12): 4822-4827.
@@ -801,10 +821,11 @@ class MSM(_Model):
             raise ValueError('Metastable decomposition has not yet been computed. Please call pcca(m) first.')
 
     def pcca(self, m):
-        r""" Runs PCCA++ [1]_ in order to compute a fuzzy metastable decomposition of MSM states
+        r""" Runs PCCA++ [1]_ to compute a metastable decomposition of MSM states
 
         After calling this method you can access :func:`metastable_memberships`,
-        :func:`metastable_distributions`, :func:`metastable_sets` and :func:`metastable_assignments`
+        :func:`metastable_distributions`, :func:`metastable_sets` and
+        :func:`metastable_assignments`.
 
         Parameters
         ----------
@@ -813,9 +834,10 @@ class MSM(_Model):
 
         Returns
         -------
-        pcca_obj : :class:`PCCA <msmtools.analysis.dense.pcca.PCCA>`
-            An object containing all PCCA quantities. However, you can also ingore this return value and instead
-            retrieve the quantities of your interest with the following MSM functions: :func:`metastable_memberships`,
+        pcca_obj : :class:`PCCA <pyemma.msm.PCCA>`
+            An object containing all PCCA quantities. However, you can also
+            ignore this return value and instead retrieve the quantities of
+            your interest with the following MSM functions: :func:`metastable_memberships`,
             :func:`metastable_distributions`, :func:`metastable_sets` and :func:`metastable_assignments`.
 
         References
@@ -853,15 +875,19 @@ class MSM(_Model):
 
     @property
     def metastable_memberships(self):
-        r""" Computes the memberships of active set states to metastable sets with the PCCA++ method [1]_.
+        r""" Probabilities of MSM states to belong to a metastable state by PCCA++
 
-        :func:`pcca` needs to be called first before this attribute is available.
+        Computes the memberships of active set states to metastable sets with
+        the PCCA++ method [1]_.
+
+        :func:`pcca` needs to be called first to make this attribute available.
 
         Returns
         -------
         M : ndarray((n,m))
-            A matrix containing the probability or membership of each state to be assigned to each metastable set.
-            i.e. p(metastable | state). The row sums of M are 1.
+            A matrix containing the probability or membership of each state to be
+            assigned to each metastable set, i.e. p(metastable | state).
+            The row sums of M are 1.
 
         See also
         --------
@@ -882,16 +908,19 @@ class MSM(_Model):
 
     @property
     def metastable_distributions(self):
-        r""" Computes the probability distributions of active set states within each metastable set using the PCCA++ method [1]_
-        using Bayesian inversion as described in [2]_.
+        r""" Probability of metastable states to visit an MSM state by PCCA++
 
-        :func:`pcca` needs to be called first before this attribute is available.
+        Computes the probability distributions of active set states within
+        each metastable set by combining the the PCCA++ method [1]_ with
+        Bayesian inversion as described in [2]_.
+
+        :func:`pcca` needs to be called first to make this attribute available.
 
         Returns
         -------
-        p_out : ndarray((m,n))
-            A matrix containing the probability distribution of each active set state, given that we are in one of the
-            m metastable sets.
+        p_out : ndarray (m,n)
+            A matrix containing the probability distribution of each active set
+            state, given that we are in one of the m metastable sets,
             i.e. p(state | metastable). The row sums of p_out are 1.
 
         See also
@@ -902,12 +931,11 @@ class MSM(_Model):
         References
         ----------
         .. [1] Roeblitz, S and M Weber. 2013. Fuzzy spectral clustering by
-            PCCA+: application to Markov state models and data
-            classification. Advances in Data Analysis and Classification 7
-            (2): 147-179
-        .. [2] F. Noe, H. Wu, J.-H. Prinz and N. Plattner:
-            Projected and hidden Markov models for calculating kinetics and metastable states of complex molecules
-            J. Chem. Phys. 139, 184114 (2013)
+            PCCA+: application to Markov state models and data classification.
+            Advances in Data Analysis and Classification 7, 147-179.
+        .. [2] F. Noe, H. Wu, J.-H. Prinz and N. Plattner. 2013.
+            Projected and hidden Markov models for calculating kinetics and
+            metastable states of complex molecules J. Chem. Phys. 139, 184114.
 
         """
         # are we ready?
@@ -916,16 +944,21 @@ class MSM(_Model):
 
     @property
     def metastable_sets(self):
-        """ Computes the metastable sets of active set states within each metastable set using the PCCA++ method [1]_
+        """ Metastable sets using PCCA++
 
-        :func:`pcca` needs to be called first before this attribute is available.
+        Computes the metastable sets of active set states within each
+        metastable set using the PCCA++ method [1]_. :func:`pcca` needs
+        to be called first to make this attribute available.
 
-        This is only recommended for visualization purposes. You *cannot* compute any
-        actual quantity of the coarse-grained kinetics without employing the fuzzy memberships!
+        This is only recommended for visualization purposes. You *cannot*
+        compute any actual quantity of the coarse-grained kinetics without
+        employing the fuzzy memberships!
 
         Returns
         -------
-        A list of length equal to metastable states. Each element is an array with microstate indexes contained in it
+        sets : list of ndarray
+            A list of length equal to metastable states. Each element is an
+            array with microstate indexes contained in it
 
         See also
         --------
@@ -946,16 +979,20 @@ class MSM(_Model):
 
     @property
     def metastable_assignments(self):
-        """ Computes the assignment to metastable sets for active set states using the PCCA++ method [1]_
+        """ Assignment of states to metastable sets using PCCA++
 
-        :func:`pcca` needs to be called first before this attribute is available.
+        Computes the assignment to metastable sets for active set states using
+        the PCCA++ method [1]_. :func:`pcca` needs to be called first to make
+        this attribute available.
 
-        This is only recommended for visualization purposes. You *cannot* compute any
-        actual quantity of the coarse-grained kinetics without employing the fuzzy memberships!
+        This is only recommended for visualization purposes. You *cannot* compute
+        any actual quantity of the coarse-grained kinetics without employing the
+        fuzzy memberships!
 
         Returns
         -------
-        For each active set state, the metastable state it is located in.
+        assignments : ndarray (n,)
+            For each MSM state, the metastable state it is located in.
 
         See also
         --------

@@ -340,7 +340,7 @@ class HMSM(_MSM):
     @property
     def metastable_distributions(self):
         r""" Returns the output probability distributions. Identical to
-            :py:meth:`observation_probability`
+            :meth:`observation_probabilities`
 
         Returns
         -------
@@ -349,7 +349,7 @@ class HMSM(_MSM):
 
         See also
         --------
-        observation_probability
+        observation_probabilities
 
         """
         return self.observation_probabilities
@@ -367,7 +367,7 @@ class HMSM(_MSM):
 
         Returns
         -------
-        list of int :
+        sets : list of int-arrays
             A list of length equal to metastable states. Each element is an array
             with observable state indexes contained in it
 

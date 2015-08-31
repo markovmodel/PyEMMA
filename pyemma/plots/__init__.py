@@ -28,14 +28,38 @@ plots - Plotting tools (:mod:`pyemma.plots`)
 User-API
 ========
 
+**Graph plots**
+
 .. autosummary::
    :toctree: generated/
 
    plot_implied_timescales
+   plot_cktest
+
+**Contour plots**
+
+.. autosummary::
+   :toctree: generated/
+
+   plot_free_energy
    scatter_contour
+
+**Network plots**
+
+.. autosummary::
+   :toctree: generated/
+
    plot_markov_model
    plot_flux
+   plot_network
+
+Classes
+========
+
+.. autosummary::
+   :toctree: generated/
    NetworkPlot
+
 
 """
 from __future__ import absolute_import

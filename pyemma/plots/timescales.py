@@ -28,7 +28,7 @@ import matplotlib.pylab as _plt
 def plot_implied_timescales(ITS, ax=None, outfile=None, show_mle=True, show_mean=True,
                             xlog=False, ylog=True, confidence=0.95, refs=None,
                             units='steps', dt=1., **kwargs):
-    r""" Generate a pretty implied timescale plot
+    r"""Implied timescale plot
 
     Parameters
     ----------

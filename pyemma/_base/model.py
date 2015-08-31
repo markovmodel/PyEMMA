@@ -37,7 +37,7 @@ class Model(object):
     """
 
     def _get_model_param_names(self):
-        """Get parameter names for the estimator"""
+        r"""Get parameter names for the model"""
         # fetch model parameters
         if hasattr(self, 'set_model_params'):
             set_model_param_method = getattr(self, 'set_model_params')
@@ -59,7 +59,7 @@ class Model(object):
             return []
 
     def update_model_params(self, **params):
-        """Update given model parameter if they are set to specific values"""
+        r"""Update given model parameter if they are set to specific values"""
         for key, value in list(params.items()):
             if not hasattr(self, key):
                 setattr(self, key, value)  # set parameter for the first time.
@@ -69,7 +69,8 @@ class Model(object):
                 setattr(self, key, value)  # only overwrite if set to a specific value (None does not overwrite).
 
     def get_model_params(self, deep=True):
-        """Get parameters for this estimator.
+        r"""Get parameters for this model.
+
         Parameters
         ----------
         deep: boolean, optional
@@ -161,18 +162,102 @@ class SampledModel(Model):
 #        """Computes the mean model from the given samples"""
 #        raise NotImplementedError('mean_model is not implemented in class '+str(self.__class__))
 
-    def sample_f(self, f, *args, **kw):
-        self._check_samples_available()
-        return [call_member(M, f, *args, **kw) for M in self.samples]
+    def sample_f(self, f, *args, **kwargs):
+        r"""Evaluated method f for all samples
 
-    def sample_mean(self, f, *args, **kw):
-        vals = self.sample_f(f, *args, **kw)
+        Calls f(*args, **kwargs) on all samples.
+
+        Parameters
+        ----------
+        f : method reference or name (str)
+            Model method to be evaluated for each model sample
+
+        args : arguments
+            Non-keyword arguments to be passed to the method in each call
+
+        kwargs : keyword-argments
+            Keyword arguments to be passed to the method in each call
+
+        Returns
+        -------
+        vals : list
+            list of results of the method calls
+
+        """
+        self._check_samples_available()
+        return [call_member(M, f, *args, **kwargs) for M in self.samples]
+
+    def sample_mean(self, f, *args, **kwargs):
+        r"""Sample mean of numerical method f over all samples
+
+        Calls f(*args, **kwargs) on all samples and computes the mean.
+        f must return a numerical value or an ndarray.
+
+        Parameters
+        ----------
+        f : method reference or name (str)
+            Model method to be evaluated for each model sample
+        args : arguments
+            Non-keyword arguments to be passed to the method in each call
+        kwargs : keyword-argments
+            Keyword arguments to be passed to the method in each call
+
+        Returns
+        -------
+        mean : float or ndarray
+            mean value or mean array
+
+        """
+        vals = self.sample_f(f, *args, **kwargs)
         return _np.mean(vals, axis=0)
 
-    def sample_std(self, f, *args, **kw):
-        vals = self.sample_f(f, *args, **kw)
+    def sample_std(self, f, *args, **kwargs):
+        r"""Sample standard deviation of numerical method f over all samples
+
+        Calls f(*args, **kwargs) on all samples and computes the standard deviation.
+        f must return a numerical value or an ndarray.
+
+        Parameters
+        ----------
+        f : method reference or name (str)
+            Model method to be evaluated for each model sample
+        args : arguments
+            Non-keyword arguments to be passed to the method in each call
+        kwargs : keyword-argments
+            Keyword arguments to be passed to the method in each call
+
+        Returns
+        -------
+        std : float or ndarray
+            standard deviation or array of standard deviations
+
+        """
+        vals = self.sample_f(f, *args, **kwargs)
         return _np.std(vals, axis=0)
 
-    def sample_conf(self, f, *args, **kw):
-        vals = self.sample_f(f, *args, **kw)
+    def sample_conf(self, f, *args, **kwargs):
+        r"""Sample confidence interval of numerical method f over all samples
+
+        Calls f(*args, **kwargs) on all samples and computes the confidence interval.
+        Size of confidence interval is given in the construction of the
+        SampledModel. f must return a numerical value or an ndarray.
+
+        Parameters
+        ----------
+        f : method reference or name (str)
+            Model method to be evaluated for each model sample
+        args : arguments
+            Non-keyword arguments to be passed to the method in each call
+        kwargs : keyword-argments
+            Keyword arguments to be passed to the method in each call
+
+        Returns
+        -------
+        L : float or ndarray
+            lower value or array of confidence interval
+        R : float or ndarray
+            upper value or array of confidence interval
+
+        """
+        vals = self.sample_f(f, *args, **kwargs)
         return confidence_interval(vals, conf=self.conf)

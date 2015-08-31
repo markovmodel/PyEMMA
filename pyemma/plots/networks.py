@@ -30,6 +30,7 @@ __author__ = 'noe, marscher'
 
 
 class NetworkPlot(object):
+    r"""Plot of network with nodes and arcs """
 
     def __init__(self, A, pos=None, xpos=None, ypos=None):
         r"""
@@ -286,7 +287,7 @@ class NetworkPlot(object):
     def layout_automatic(self):
         n = len(self.A)
         I, J = np.where(self.A > 0.0)
-        # note: against intution this has to be of type float
+        # note: against intuition this has to be of type float
         A = np.zeros((n, n))
         A[I, J] = 1
 
@@ -298,7 +299,7 @@ def plot_markov_model(P, pos=None, state_sizes=None, state_scale=1.0,
                       arrow_scale=1.0, arrow_curvature=1.0,
                       arrow_labels='weights', arrow_label_format='%2.e',
                       max_width=12, max_height=12, figpadding=0.2, show_frame=False):
-    r"""Plots a network representation of a Markov model transition matrix
+    r"""Network representation of MSM transition matrix
 
     This visualization is not optimized for large matrices. It is meant to be
     used for the visualization of small models with up to 10-20 states, e.g.
@@ -387,7 +388,7 @@ def plot_flux(flux, pos=None, state_sizes=None, flux_scale=1.0,
               arrow_label_format='%2.e', max_width=12, max_height=12,
               figpadding=0.2, attribute_to_plot='net_flux',
               show_frame=False, show_committor=True):
-    r"""Plots a network representation of the reactive flux
+    r"""Network representation of reactive flux
 
     This visualization is not optimized for large fluxes. It is meant to be used
     for the visualization of small models with up to 10-20 states, e.g. obtained
@@ -489,7 +490,7 @@ def plot_network(weights, pos=None, xpos=None, ypos=None, state_sizes=None,
                 arrow_label_format='%2.e', max_width=12, max_height=12,
                 figpadding=0.2, attribute_to_plot='net_flux',
                 show_frame=False, xticks=False, yticks=False):
-    r"""Plots a network representation of the given matrix
+    r"""Network representation of given matrix
 
     This visualization is not optimized for large networks. It is meant to be
     used for the visualization of small models with up to 10-20 states. If used

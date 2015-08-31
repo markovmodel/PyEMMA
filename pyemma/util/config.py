@@ -52,15 +52,15 @@ WARNING
 >>> print(config.show_progress_bars)
 True
 
-
 Setting configuration values by section:
+
 >>> config.Logging.level = 'DEBUG'
 >>> print(config.Logging.level)
 DEBUG
 
 or
 
->>> config.show_progress_bars = False
+>>> config.show_progress_bars = 'False'
 >>> print(config.show_progress_bars)
 False
 

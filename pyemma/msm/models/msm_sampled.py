@@ -24,6 +24,7 @@ from pyemma.msm.models.msm import MSM
 from pyemma.util.types import is_iterable
 
 class SampledMSM(MSM, SampledModel):
+    r""" Sampled Markov state model """
 
     def __init__(self, samples, ref=None, conf=0.95):
         r""" Constructs a sampled MSM

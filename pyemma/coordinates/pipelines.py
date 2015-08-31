@@ -31,6 +31,7 @@ __author__ = 'noe, marscher'
 
 
 class Pipeline(object):
+    r"""Data processing pipeline."""
 
     def __init__(self, chain, chunksize=100, param_stride=1):
         r"""Data processing pipeline.

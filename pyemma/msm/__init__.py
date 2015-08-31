@@ -21,8 +21,8 @@ r"""
 
 .. currentmodule:: pyemma.msm
 
-User API
-========
+User Functions
+==============
 For most users, the following high-level functions are sufficient to estimate msm models from data.
 Expert users may want to construct Estimators or Models (see below) directly.
 
@@ -39,6 +39,8 @@ Expert users may want to construct Estimators or Models (see below) directly.
    estimate_hidden_markov_model
    bayesian_hidden_markov_model
 
+MSM classes
+===========
 
 **Estimators** to generate models from data. If you are not an expert user,
 use the API functions above.
@@ -60,12 +62,11 @@ If you are not an expert user, use the API functions above.
    :toctree: generated/
 
    MSM
-   EstimatedMSM
    SampledMSM
    HMSM
-   EstimatedHMSM
    SampledHMSM
    ReactiveFlux
+   PCCA
 
 
 MSM functions (low-level API)
@@ -89,6 +90,7 @@ from __future__ import absolute_import, print_function
 # backward compatibility to PyEMMA 1.2.x
 from msmtools import analysis, estimation, generation, dtraj, flux
 from msmtools.flux import ReactiveFlux
+from msmtools.analysis.dense.pcca import PCCA
 io = dtraj
 
 #####################################################
