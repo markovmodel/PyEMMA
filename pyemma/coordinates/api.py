@@ -64,7 +64,6 @@ __docformat__ = "restructuredtext en"
 __author__ = "Frank Noe, Martin Scherer"
 __copyright__ = "Copyright 2015, Computational Molecular Biology Group, FU-Berlin"
 __credits__ = ["Benjamin Trendelkamp-Schroer", "Martin Scherer", "Frank Noe"]
-__license__ = "FreeBSD"
 __maintainer__ = "Martin Scherer"
 __email__ = "m.scherer AT fu-berlin DOT de"
 
