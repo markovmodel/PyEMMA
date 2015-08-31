@@ -128,7 +128,7 @@ class HMSM(_MSM):
         -------
         l : ndarray(nstates)
             state lifetimes in units of the input trajectory time step,
-            defined by :math:`-tau / ln | p_{ii} |, i = 1,...,nstates`, where
+            defined by :math:`-\tau / ln \mid p_{ii} \mid, i = 1,...,nstates`, where
             :math:`p_{ii}` are the diagonal entries of the hidden transition matrix.
 
         """
@@ -365,14 +365,17 @@ class HMSM(_MSM):
         r""" Computes the metastable sets of observable states within each
             metastable set
 
+        Notes
+        -----
         This is only recommended for visualization purposes. You *cannot*
         compute any actual quantity of the coarse-grained kinetics without
         employing the fuzzy memberships!
 
         Returns
         -------
-        A list of length equal to metastable states. Each element is an array
-        with observable state indexes contained in it
+        list of int :
+            A list of length equal to metastable states. Each element is an array
+            with observable state indexes contained in it
 
         """
         res = []
@@ -385,13 +388,16 @@ class HMSM(_MSM):
     def metastable_assignments(self):
         r""" Computes the assignment to metastable sets for observable states
 
+        Notes
+        -----
         This is only recommended for visualization purposes. You *cannot*
         compute any actual quantity of the coarse-grained kinetics without
         employing the fuzzy memberships!
 
         Returns
         -------
-        For each observable state, the metastable state it is located in.
+        ndarray((n) ,dtype=int)
+            For each observable state, the metastable state it is located in.
 
         """
         return _np.argmax(self.observation_probabilities, axis=0)
