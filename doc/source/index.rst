@@ -12,7 +12,7 @@ of molecular kinetics and other kinetic and thermodynamic models from molecular 
 data. Currently, PyEMMA has the following main features - please check out the IPython Tutorials for
 examples:
 
-* Featurization and MD trajectory input. Can read all commonly MD formats.
+* Featurization and MD trajectory input. Can read all commonly used MD formats.
 * Time-lagged independent component analysis (TICA).
 * Clustering / state space discretization.
 * Markov state model (MSM) estimation and validation and Bayesian estimation of MSMs.
@@ -27,6 +27,8 @@ examples:
 Technical features:
 
 * Code is implemented in Python and C.
+* Runs on Linux (64 bit), Windows (32 or 64 bit) or MacOS (64 bit).
+* Supports Python 2.7 and Python 3.3/3.4
 * MD data can be either loaded (fast processing but high memory requirements) or streamed (slower processing but
   low memory requirements).
 * Basic compatibility with `scikit-learn <http://scikit-learn.org/>`_. More complete compatibility will follow.

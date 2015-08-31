@@ -60,12 +60,23 @@ Classes
 construct these classes yourself, as this is done by the user API functions above.
 Find here a documentation how to extract features from them.
 
+**I/O and Featurization**
+
 .. autosummary::
    :toctree: generated/
 
-   pipelines.Pipeline
+   data.ReaderInterface
+   data.MDFeaturizer
+
+**Transformers**
+
+.. autosummary::
+   :toctree: generated/
+
    transform.PCA
    transform.TICA
+   pipelines.Pipeline
+
 
 """
 from .api import *

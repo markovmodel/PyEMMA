@@ -204,9 +204,11 @@ def load(trajfiles, features=None, top=None, stride=1, chunk_size=100):
 
     See also
     --------
-    :func:`pyemma.coordinates.pipeline`
-        if your memory is not big enough, use pipeline to process it in a
-        streaming manner
+    :func:`pyemma.coordinates.source`
+        if your memory is not big enough, specify data source and put it into your
+        transformation or clustering algorithms instead of the loaded data. This
+        will stream the data and save memory on the cost of longer processing
+        times.
 
     Examples
     --------
@@ -230,9 +232,15 @@ def load(trajfiles, features=None, top=None, stride=1, chunk_size=100):
 
 
 def source(inp, features=None, top=None, chunk_size=None):
-    r""" Wraps input as data source for pipeline.
+    r""" Defines trajectory data source
 
-    Use this function to construct the first stage of a data processing :func:`pipeline`.
+    This function defines input trajectories without loading them. You can pass
+    the resulting object into transformers such as :func:`pyemma.coordinates.tica`
+    or clustering algorithms such as :func:`pyemma.coordinates.cluster_kmeans`.
+    Then, the data will be streamed instead of being loaded, thus saving memory.
+
+    You can also use this function to construct the first stage of a data
+    processing :func:`pipeline`.
 
     Parameters
     ----------
@@ -278,15 +286,14 @@ def source(inp, features=None, top=None, chunk_size=None):
 
     Returns
     -------
-    reader obj: type depends on input data
-
-        1. :class:`FeatureReader <pyemma.coordinates.data.feature_reader.FeatureReader>` for MD-data
-        2. :class:`NumPyFileReader <pyemma.coordinates.data.numpy_filereader.NumPyFileReader>` for .npy files
-        3. :class:`PyCSVReader <pyemma.coordinates.data.py_csv_reader.PyCSVReader>` for csv files.
-        4. :class:`DataInMemory <pyemma.coordinates.data.data_in_memory.DataInMemory>` for already loaded data (e.g NumPy arrays)
+    reader : :class:`ReaderInterface <pyemma.coordinates.data.ReaderInterface>` object
 
     See also
     --------
+    :func:`pyemma.coordinates.load`
+        If your memory is big enough to load all features into memory, don't
+        bother using source - working in memory is faster!
+
     :func:`pyemma.coordinates.pipeline`
         The data input is the first stage for your pipeline. Add other stages
         to it and build a pipeline to analyze big data in streaming mode.
@@ -317,6 +324,23 @@ def source(inp, features=None, top=None, chunk_size=None):
     >>> reader = source(data, chunk_size=5000)
     >>> from pyemma.coordinates import cluster_regspace
     >>> regspace = cluster_regspace(reader, dmin=0.1)
+
+    Returned object
+    ---------------
+
+    .. autoclass:: pyemma.coordinates.data.ReaderInterface
+        :members:
+        :undoc-members:
+
+        .. rubric:: Methods
+
+        .. autoautosummary:: pyemma.coordinates.data.ReaderInterface
+            :methods:
+
+        .. rubric:: Attributes
+
+        .. autoautosummary:: pyemma.coordinates.data.ReaderInterface
+            :attributes:
 
     """
     # CASE 1: input is a string or list of strings
