@@ -13,7 +13,7 @@ from pyemma.util.units import TimeUnit
 
 
 def _lag_observations(observations, lag, stride=1):
-    """ Create new trajectories that are subsampled at lag but shifted
+    r""" Create new trajectories that are subsampled at lag but shifted
 
     Given a trajectory (s0, s1, s2, s3, s4, ...) and lag 3, this function will generate 3 trajectories
     (s0, s3, s6, ...), (s1, s4, s7, ...) and (s2, s5, s8, ...). Use this function in order to parametrize a MLE
@@ -37,8 +37,16 @@ def _lag_observations(observations, lag, stride=1):
     return obsnew
 
 
+# TODO: This parameter was in the docstring but is not used:
+#     store_data : bool
+#         True: estimate() returns an :class:`pyemma.msm.EstimatedMSM` object
+#         with discrete trajectories and counts stored. False: estimate() returns
+#         a plain :class:`pyemma.msm.MSM` object that only contains the
+#         transition matrix and quantities derived from it.
+
+
 class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
-    """Maximum likelihood estimator for a Hidden MSM given a MSM
+    r"""Maximum likelihood estimator for a Hidden MSM given a MSM
 
     Parameters
     ----------
@@ -63,15 +71,15 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
         If true compute reversible MSM, else non-reversible MSM
     connectivity : str, optional, default = 'largest'
         Connectivity mode. Three methods are intended (currently only 'largest' is implemented)
-        'largest' : The active set is the largest reversibly connected set. All estimation will be done on this
-            subset and all quantities (transition matrix, stationary distribution, etc) are only defined on this
-            subset and are correspondingly smaller than the full set of states
-        'all' : The active set is the full set of states. Estimation will be conducted on each reversibly
-            connected set separately. That means the transition matrix will decompose into disconnected
-            submatrices, the stationary vector is only defined within subsets, etc. Currently not implemented.
-        'none' : The active set is the full set of states. Estimation will be conducted on the full set of
-            states without ensuring connectivity. This only permits nonreversible estimation. Currently not
-            implemented.
+        * 'largest' : The active set is the largest reversibly connected set. All estimation will be done on this
+          subset and all quantities (transition matrix, stationary distribution, etc) are only defined on this
+          subset and are correspondingly smaller than the full set of states
+        * 'all' : The active set is the full set of states. Estimation will be conducted on each reversibly
+          connected set separately. That means the transition matrix will decompose into disconnected
+          submatrices, the stationary vector is only defined within subsets, etc. Currently not implemented.
+        * 'none' : The active set is the full set of states. Estimation will be conducted on the full set of
+          states without ensuring connectivity. This only permits nonreversible estimation. Currently not
+          implemented.
     observe_active : bool, optional, default=True
         True: Restricts the observation set to the active states of the MSM.
         False: All states are in the observation set.
@@ -89,19 +97,14 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
         |  'ms',  'millisecond*'
         |  's',   'second*'
 
-    accuracy : float
+    accuracy : float, optional, default = 1e-3
         convergence threshold for EM iteration. When two the likelihood does
         not increase by more than accuracy, the iteration is stopped
         successfully.
-    maxit : int
+    maxit : int, optional, default = 1000
         stopping criterion for EM iteration. When so many iterations are
         performed without reaching the requested accuracy, the iteration is
         stopped without convergence (a warning is given)
-    store_data : bool
-        True: estimate() returns an :class:`pyemma.msm.EstimatedMSM` object
-        with discrete trajectories and counts stored. False: estimate() returns
-        a plain :class:`pyemma.msm.MSM` object that only contains the
-        transition matrix and quantities derived from it.
 
     """
     def __init__(self, nstates=2, lag=1, stride=1, msm_init=None, reversible=True, connectivity='largest',
@@ -119,6 +122,7 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
         self.maxit = maxit
 
 
+    #TODO: store_data is mentioned but not implemented or used!
     def _estimate(self, dtrajs):
         """
 
@@ -274,14 +278,14 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
         References
         ----------
         This is an adaption of the Chapman-Kolmogorov Test described in detail
-        in [1]_ to Hidden MSMs as described in [2]_.
+        in [#]_ to Hidden MSMs as described in [#]_.
 
-        .. [1] Prinz, J H, H Wu, M Sarich, B Keller, M Senne, M Held, J D
+        .. [#] Prinz, J H, H Wu, M Sarich, B Keller, M Senne, M Held, J D
             Chodera, C Schuette and F Noe. 2011. Markov models of
             molecular kinetics: Generation and validation. J Chem Phys
             134: 174105
 
-        .. [2] F. Noe, H. Wu, J.-H. Prinz and N. Plattner: Projected and hidden
+        .. [#] F. Noe, H. Wu, J.-H. Prinz and N. Plattner: Projected and hidden
             Markov models for calculating kinetics and metastable states of complex
             molecules. J. Chem. Phys. 139, 184114 (2013)
 

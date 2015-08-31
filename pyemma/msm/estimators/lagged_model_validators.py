@@ -14,14 +14,14 @@ __author__ = 'noe'
 
 
 class LaggedModelValidator(Estimator, ProgressReporter):
-    """ Validates a model estimated at lag time tau by testing its predictions
+    r""" Validates a model estimated at lag time tau by testing its predictions
     for longer lag times
 
     """
 
     def __init__(self, model, estimator, mlags=None, conf=0.95, err_est=False,
                  n_jobs=1, show_progress=True):
-        """
+        r"""
         Parameters
         ----------
         model : Model
@@ -39,7 +39,7 @@ class LaggedModelValidator(Estimator, ProgressReporter):
             of these lag time multiples, e.g. the value 0 only make sense
             if _predict_observables(0) will work.
 
-        conf : float
+        conf : float, default = 0.95
             confidence interval for errors
 
         err_est : bool, default=False
