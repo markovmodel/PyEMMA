@@ -681,6 +681,7 @@ class MSM(_Model):
         started, :math:`p_0` and compute the mean values of your experimental observable :math:`a` by MSM state:
 
         .. :math:
+
             a_i = \frac{1}{N_i} \sum_{x_t \in S_i} f(x_t)
 
         where :math:`S_i` is the set of configurations belonging to MSM state :math:`i` and :math:`f()` is a function
@@ -690,6 +691,7 @@ class MSM(_Model):
         Markov model is computed by relaxation(p0, a). This is done by evaluating the equation
 
         .. :math:
+
             E_a(k\tau)     & = \mathbf{p_0}^\top \mathbf{P(\tau)}^k \mathbf{a} \\
 
         where :math:`E` stands for the expectation value that relaxes to its equilibrium value that is identical
@@ -805,7 +807,7 @@ class MSM(_Model):
             raise ValueError('Metastable decomposition has not yet been computed. Please call pcca(m) first.')
 
     def pcca(self, m):
-        """ Runs PCCA++ [1]_ in order to compute a fuzzy metastable decomposition of MSM states
+        r""" Runs PCCA++ [1]_ in order to compute a fuzzy metastable decomposition of MSM states
 
         After calling this method you can access :func:`metastable_memberships`,
         :func:`metastable_distributions`, :func:`metastable_sets` and :func:`metastable_assignments`
@@ -857,7 +859,7 @@ class MSM(_Model):
 
     @property
     def metastable_memberships(self):
-        """ Computes the memberships of active set states to metastable sets with the PCCA++ method [1]_.
+        r""" Computes the memberships of active set states to metastable sets with the PCCA++ method [1]_.
 
         :func:`pcca` needs to be called first before this attribute is available.
 
@@ -886,7 +888,7 @@ class MSM(_Model):
 
     @property
     def metastable_distributions(self):
-        """ Computes the probability distributions of active set states within each metastable set using the PCCA++ method [1]_
+        r""" Computes the probability distributions of active set states within each metastable set using the PCCA++ method [1]_
         using Bayesian inversion as described in [2]_.
 
         :func:`pcca` needs to be called first before this attribute is available.
