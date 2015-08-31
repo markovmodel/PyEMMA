@@ -3,21 +3,40 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-======================================
-EMMA -> Emma's Markov Model Algorithms
-======================================
+=======================================
+PyEMMA - Emma's Markov Model Algorithms
+=======================================
 
-This software is a collection of algorithms implemented mostly in
-`NumPy <http://www.numpy.org/>`_ and `SciPy <http://www.scipy.org>`_ to analyze
-trajectories generated from any kind of simulation (e.g. molecular
-trajectories) via Markov state models (MSM). It provides an API for estimation
-and analyzing MSM and various utilities to process input data (clustering,
-coordinate transformations etc). For documentation of the API, please have a
-look at the :ref:`ref_api`. To install this software and additional
-dependencies refer to the :ref:`Installation Guide <ref_install>`. For
-support/bug reports/sugguestions/complains please visit us at
-`GitHub <http://github.com/markovmodel/PyEMMA/>` or post to the PyEMMA mailing
-list: pyemma-users@lists.fu-berlin.de
+PyEMMA is a Python library for the estimation, validation and analysis Markov models
+of molecular kinetics and other kinetic and thermodynamic models from molecular dynamics (MD)
+data. Currently, PyEMMA has the following main features - please check out the IPython Tutorials for
+examples:
+
+* Featurization and MD trajectory input. Can read all commonly used MD formats.
+* Time-lagged independent component analysis (TICA).
+* Clustering / state space discretization.
+* Markov state model (MSM) estimation and validation and Bayesian estimation of MSMs.
+* Computing Metastable states and structures with Perron-cluster cluster analysis (PCCA).
+* Systematic coarse-graining of MSMs to transition models with few states.
+* Hidden Markov Models (HMM) and Bayesian estimation for HMMs.
+* Extensive analysis options for MSMs and HMMs, e.g. calculation of committors, mean first passage times,
+  transition rates, experimental expectation values and time-correlation functions, etc.
+* Transition Path Theory (TPT).
+* Plotting functions for data visualization and production of publishable figures.
+
+Technical features:
+
+* Code is implemented in Python and C.
+* Runs on Linux (64 bit), Windows (32 or 64 bit) or MacOS (64 bit).
+* Supports Python 2.7 and Python 3.3/3.4
+* MD data can be either loaded (fast processing but high memory requirements) or streamed (slower processing but
+  low memory requirements).
+* Basic compatibility with `scikit-learn <http://scikit-learn.org/>`_. More complete compatibility will follow.
+* Code is hosted at `GitHub <http://github.com/markovmodel/PyEMMA/>`_ under the Lesser GNU public license (LGPL).
+  Please post issues or reports there.
+* For general comments and request to be added to the newsticker, please write to pyemma-users@lists.fu-berlin.de.
+* Modular and flexible object structure, consisting of data Transformers, model Estimators and Models.
+
 
 Installation
 ============

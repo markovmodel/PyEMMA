@@ -79,6 +79,7 @@ __all__ = ['featurizer',  # IO
            'tica',
            'cluster_regspace',  # cluster
            'cluster_kmeans',
+           'cluster_mini_batch_kmeans',
            'cluster_uniform_time',
            'assign_to_centers',
            ]
@@ -101,10 +102,6 @@ def featurizer(topfile):
     Returns
     -------
     feat : :class:`Featurizer <pyemma.coordinates.data.featurizer.MDFeaturizer>`
-
-    See also
-    --------
-    data.MDFeaturizer
 
     Examples
     --------
@@ -204,9 +201,11 @@ def load(trajfiles, features=None, top=None, stride=1, chunk_size=100):
 
     See also
     --------
-    :func:`pyemma.coordinates.pipeline`
-        if your memory is not big enough, use pipeline to process it in a
-        streaming manner
+    :func:`pyemma.coordinates.source`
+        if your memory is not big enough, specify data source and put it into your
+        transformation or clustering algorithms instead of the loaded data. This
+        will stream the data and save memory on the cost of longer processing
+        times.
 
     Examples
     --------
@@ -230,9 +229,15 @@ def load(trajfiles, features=None, top=None, stride=1, chunk_size=100):
 
 
 def source(inp, features=None, top=None, chunk_size=None):
-    r""" Wraps input as data source for pipeline.
+    r""" Defines trajectory data source
 
-    Use this function to construct the first stage of a data processing :func:`pipeline`.
+    This function defines input trajectories without loading them. You can pass
+    the resulting object into transformers such as :func:`pyemma.coordinates.tica`
+    or clustering algorithms such as :func:`pyemma.coordinates.cluster_kmeans`.
+    Then, the data will be streamed instead of being loaded, thus saving memory.
+
+    You can also use this function to construct the first stage of a data
+    processing :func:`pipeline`.
 
     Parameters
     ----------
@@ -278,15 +283,14 @@ def source(inp, features=None, top=None, chunk_size=None):
 
     Returns
     -------
-    reader obj: type depends on input data
-
-        1. :class:`FeatureReader <pyemma.coordinates.data.feature_reader.FeatureReader>` for MD-data
-        2. :class:`NumPyFileReader <pyemma.coordinates.data.numpy_filereader.NumPyFileReader>` for .npy files
-        3. :class:`PyCSVReader <pyemma.coordinates.data.py_csv_reader.PyCSVReader>` for csv files.
-        4. :class:`DataInMemory <pyemma.coordinates.data.data_in_memory.DataInMemory>` for already loaded data (e.g NumPy arrays)
+    reader : :class:`ReaderInterface <pyemma.coordinates.data.ReaderInterface>` object
 
     See also
     --------
+    :func:`pyemma.coordinates.load`
+        If your memory is big enough to load all features into memory, don't
+        bother using source - working in memory is faster!
+
     :func:`pyemma.coordinates.pipeline`
         The data input is the first stage for your pipeline. Add other stages
         to it and build a pipeline to analyze big data in streaming mode.
@@ -317,6 +321,23 @@ def source(inp, features=None, top=None, chunk_size=None):
     >>> reader = source(data, chunk_size=5000)
     >>> from pyemma.coordinates import cluster_regspace
     >>> regspace = cluster_regspace(reader, dmin=0.1)
+
+    Returned object
+    ---------------
+
+    .. autoclass:: pyemma.coordinates.data.interface.ReaderInterface
+        :members:
+        :undoc-members:
+
+        .. rubric:: Methods
+
+        .. autoautosummary:: pyemma.coordinates.data.interface.ReaderInterface
+            :methods:
+
+        .. rubric:: Attributes
+
+        .. autoautosummary:: pyemma.coordinates.data.interface.ReaderInterface
+            :attributes:
 
     """
     # CASE 1: input is a string or list of strings
@@ -470,7 +491,6 @@ def discretizer(reader,
         A pipeline object that is able to streamline data analysis of large
         amounts of input data with limited memory in streaming mode.
 
-
     Examples
     --------
 
@@ -503,6 +523,20 @@ def discretizer(reader,
     ...     disc.save_dtrajs(output_dir=tmpdir)
     ...     sorted(os.listdir(tmpdir))
     ['bpti_001-033.dtraj', 'bpti_034-066.dtraj', 'bpti_067-100.dtraj']
+
+    .. autoclass:: pyemma.coordinates.pipelines.Pipeline
+        :members:
+        :undoc-members:
+
+        .. rubric:: Methods
+
+        .. autoautosummary:: pyemma.coordinates.pipelines.Pipeline
+           :methods:
+
+        .. rubric:: Attributes
+
+        .. autoautosummary:: pyemma.coordinates.pipelines.Pipeline
+            :attributes:
 
     """
     if cluster is None:
@@ -896,6 +930,12 @@ def pca(data=None, dim=2, var_cutoff=0.95, stride=1, mean=None):
            [ 0.001     ],
            [ 0.001     ],...
 
+    See also
+    --------
+    :class:`PCA <pyemma.coordinates.transform.PCA>` : pca object
+
+    :func:`tica <pyemma.coordinates.tica>` : for time-lagged independent component analysis
+
 
     .. autoclass:: pyemma.coordinates.transform.pca.PCA
         :members:
@@ -911,15 +951,13 @@ def pca(data=None, dim=2, var_cutoff=0.95, stride=1, mean=None):
         .. autoautosummary:: pyemma.coordinates.transform.pca.PCA
             :attributes:
 
-    See also
-    --------
-    :class:`PCA <pyemma.coordinates.transform.PCA>` : pca object
-
-    :func:`tica <pyemma.coordinates.tica>` : for time-lagged independent component analysis
-
     References
     ----------
-    .. [1] Hotelling, H. 1933.
+    .. [1] Pearson, K. 1901
+        On Lines and Planes of Closest Fit to Systems of Points in Space
+        Phil. Mag. 2, 559--572
+
+    .. [2] Hotelling, H. 1933.
         Analysis of a complex of statistical variables into principal components.
         J. Edu. Psych. 24, 417-441 and 498-520.
 
@@ -1054,6 +1092,12 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, stride=1,
     coordinate have a look `here
     <http://docs.markovmodel.org/lecture_tica.html#Example:-TICA-versus-PCA-in-a-stretched-double-well-potential>`_.
 
+    See also
+    --------
+    :class:`TICA <pyemma.coordinates.transform.TICA>` : tica object
+
+    :func:`pca <pyemma.coordinates.pca>` : for principal component analysis
+
 
     .. autoclass:: pyemma.coordinates.transform.tica.TICA
         :members:
@@ -1068,12 +1112,6 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, stride=1,
 
         .. autoautosummary:: pyemma.coordinates.transform.tica.TICA
             :attributes:
-
-    See also
-    --------
-    :class:`TICA <pyemma.coordinates.transform.TICA>` : tica object
-
-    :func:`pca <pyemma.coordinates.pca>` : for principal component analysis
 
     References
     ----------
@@ -1111,6 +1149,42 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, stride=1,
 # =========================================================================
 
 def cluster_mini_batch_kmeans(data=None, k=100, max_iter=10, batch_size=0.2, metric='euclidean', init_strategy='kmeans++'):
+    r"""k-means clustering with mini-batch strategy
+
+    Mini-batch k-means is an approximation to k-means which picks a randomly
+    selected subset of data points to be updated in each iteration. Usually
+    much faster than k-means but will likely deliver a less optimal result.
+
+    Returns
+    -------
+    kmeans_mini : a :class:`MiniBatchKmeansClustering <pyemma.coordinates.clustering.MiniBatchKmeansClustering>` clustering object
+        Object for mini-batch kmeans clustering.
+        It holds discrete trajectories and cluster center information.
+
+    See also
+    --------
+    :func:`kmeans <pyemma.coordinates.kmeans>` : for full k-means clustering
+
+
+    .. autoclass:: pyemma.coordinates.clustering.kmeans.MiniBatchKmeansClustering
+        :members:
+        :undoc-members:
+
+        .. rubric:: Methods
+
+        .. autoautosummary:: pyemma.coordinates.clustering.kmeans.MiniBatchKmeansClustering
+           :methods:
+
+        .. rubric:: Attributes
+
+        .. autoautosummary:: pyemma.coordinates.clustering.kmeans.MiniBatchKmeansClustering
+            :attributes:
+
+    References
+    ----------
+    .. [1] http://www.eecs.tufts.edu/~dsculley/papers/fastkmeans.pdf
+
+    """
     res = _MiniBatchKmeansClustering(n_clusters=k, max_iter=max_iter, metric=metric, init_strategy=init_strategy, batch_size=batch_size)
     return _param_stage(data, res, stride=1)
 
@@ -1125,8 +1199,6 @@ def cluster_kmeans(data=None, k=100, max_iter=10, tolerance=1e-5, stride=1,
     assign other data points to the same partition. If data is not given, an
     empty :class:`KmeansClustering <pyemma.coordinates.clustering.KmeansClustering>`
     will be created that still needs to be parametrized, e.g. in a :func:`pipeline`.
-
-    .. seealso:: **Theoretical background**: `Wiki page <http://en.wikipedia.org/wiki/K-means_clustering>`_
 
     Parameters
     ----------
@@ -1180,6 +1252,8 @@ def cluster_kmeans(data=None, k=100, max_iter=10, tolerance=1e-5, stride=1,
     >>> cluster_obj.get_output() # doctest: +ELLIPSIS
     [array([...
 
+    .. seealso:: **Theoretical background**: `Wiki page <http://en.wikipedia.org/wiki/K-means_clustering>`_
+
 
     .. autoclass:: pyemma.coordinates.clustering.kmeans.KmeansClustering
         :members:
@@ -1194,6 +1268,20 @@ def cluster_kmeans(data=None, k=100, max_iter=10, tolerance=1e-5, stride=1,
 
         .. autoautosummary:: pyemma.coordinates.clustering.kmeans.KmeansClustering
             :attributes:
+
+    References
+    ----------
+    The k-means algorithms was invented in [1]_. The term k-means was
+    first used in [2]_.
+
+    .. [1] Steinhaus, H. (1957).
+        Sur la division des corps materiels en parties.
+        Bull. Acad. Polon. Sci. (in French) 4, 801-804.
+
+    .. [2] MacQueen, J. B. (1967).
+        Some Methods for classification and Analysis of Multivariate Observations.
+        Proceedings of 5th Berkeley Symposium on Mathematical Statistics and
+        Probability 1. University of California Press. pp. 281-297
 
     """
     res = _KmeansClustering(n_clusters=k, max_iter=max_iter, metric=metric, tolerance=tolerance,
@@ -1299,6 +1387,7 @@ def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1, metric='euc
     metric : str
         metric to use during clustering ('euclidean', 'minRMSD')
 
+
     Returns
     -------
     regSpace : a :class:`RegularSpaceClustering <pyemma.coordinates.clustering.RegularSpaceClustering>` clustering  object
@@ -1319,7 +1408,6 @@ def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1, metric='euc
 
         .. autoautosummary:: pyemma.coordinates.clustering.regspace.RegularSpaceClustering
             :attributes:
-
 
     References
     ----------
@@ -1381,18 +1469,33 @@ def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True,
 
     Examples
     --------
-
     Load data to assign to clusters from 'my_data.csv' by using the cluster
     centers from file 'my_centers.csv'
 
     >>> import numpy as np
 
     Generate some random data and choose 10 random centers:
+
     >>> data = np.random.random((100, 3))
     >>> cluster_centers = data[np.random.randint(0, 99, size=10)]
     >>> dtrajs = assign_to_centers(data, cluster_centers)
     >>> print(dtrajs) # doctest: +ELLIPSIS
     [array([...
+
+
+    .. autoclass:: pyemma.coordinates.clustering.assign.AssignCenters
+        :members:
+        :undoc-members:
+
+        .. rubric:: Methods
+
+        .. autoautosummary:: pyemma.coordinates.clustering.assign.AssignCenters
+           :methods:
+
+        .. rubric:: Attributes
+
+        .. autoautosummary:: pyemma.coordinates.clustering.assign.AssignCenters
+            :attributes:
 
     """
     if centers is None:
