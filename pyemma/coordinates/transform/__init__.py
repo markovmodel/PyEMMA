@@ -30,5 +30,6 @@ transform - Transformation Utilities (:mod:`pyemma.coordinates.transform`)
     TICA - time independent components
 """
 
+from .transformer import Transformer
 from .pca import *
 from .tica import *

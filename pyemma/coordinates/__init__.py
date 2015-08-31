@@ -23,7 +23,7 @@ r"""
 User API
 ========
 
-**Data handling and IO**
+**Trajectory input/output and featurization**
 
 .. autosummary::
    :toctree: generated/
@@ -36,7 +36,7 @@ User API
    save_traj
    save_trajs
 
-**Transformations**
+**Coordinate and feature transformations**
 
 .. autosummary::
    :toctree: generated/
@@ -50,6 +50,7 @@ User API
    :toctree: generated/
 
    cluster_kmeans
+   cluster_mini_batch_kmeans
    cluster_regspace
    cluster_uniform_time
    assign_to_centers
@@ -68,14 +69,38 @@ Find here a documentation how to extract features from them.
    data.ReaderInterface
    data.MDFeaturizer
 
-**Transformers**
+**Transformation estimators**
 
 .. autosummary::
    :toctree: generated/
 
    transform.PCA
    transform.TICA
+
+**Clustering algorithms**
+
+.. autosummary::
+   :toctree: generated/
+
+   clustering.KmeansClustering
+   clustering.MiniBatchKmeansClustering
+   clustering.RegularSpaceClustering
+   clustering.UniformTimeClustering
+
+**Transformers**
+
+.. autosummary::
+   :toctree: generated/
+
+   transform.Transformer
    pipelines.Pipeline
+
+**Discretization**
+
+.. autosummary::
+   :toctree: generated/
+
+   clustering.AssignCenters
 
 
 """
