@@ -114,7 +114,7 @@ class EstimatedHMSM(_HMSM):
     ################################################################################
 
     def trajectory_weights(self):
-        """Uses the HMSM to assign a probability weight to each trajectory frame.
+        r"""Uses the HMSM to assign a probability weight to each trajectory frame.
 
         This is a powerful function for the calculation of arbitrary observables in the trajectories one has
         started the analysis with. The stationary probability of the MSM will be used to reweigh all states.
@@ -122,18 +122,25 @@ class EstimatedHMSM(_HMSM):
         trajectory frames. Given :math:`N` trajectories of lengths :math:`T_1` to :math:`T_N`, this function
         returns corresponding weights:
         .. math::
+
             (w_{1,1}, ..., w_{1,T_1}), (w_{N,1}, ..., w_{N,T_N})
+
         that are normalized to one:
         .. math::
+
             \sum_{i=1}^N \sum_{t=1}^{T_i} w_{i,t} = 1
+
         Suppose you are interested in computing the expectation value of a function :math:`a(x)`, where :math:`x`
         are your input configurations. Use this function to compute the weights of all input configurations and
         obtain the estimated expectation by:
         .. math::
+
             \langle a \rangle = \sum_{i=1}^N \sum_{t=1}^{T_i} w_{i,t} a(x_{i,t})
+
         Or if you are interested in computing the time-lagged correlation between functions :math:`a(x)` and
         :math:`b(x)` you could do:
         .. math::
+
             \langle a(t) b(t+\tau) \rangle_t = \sum_{i=1}^N \sum_{t=1}^{T_i} w_{i,t} a(x_{i,t}) a(x_{i,t+\tau})
 
         Returns
@@ -141,6 +148,7 @@ class EstimatedHMSM(_HMSM):
         The normalized trajectory weights. Given :math:`N` trajectories of lengths :math:`T_1` to :math:`T_N`,
         returns the corresponding weights:
         .. math::
+
             (w_{1,1}, ..., w_{1,T_1}), (w_{N,1}, ..., w_{N,T_N})
 
         """
@@ -181,7 +189,7 @@ class EstimatedHMSM(_HMSM):
     # TODO: sample_by_state. How should that be defined?
 
     def sample_by_observation_probabilities(self, nsample):
-        """Generates samples according to given probability distributions
+        r"""Generates samples according to given probability distributions
 
         Parameters
         ----------

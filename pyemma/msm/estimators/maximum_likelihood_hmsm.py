@@ -24,10 +24,8 @@ def _lag_observations(observations, lag, stride=1):
     ----------
     observations : list of int arrays
         observation trajectories
-
     lag : int
         lag time
-
     stride : int, default=1
         will return only one trajectory for every stride. Use this for Bayesian analysis.
 
@@ -46,10 +44,8 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
     ----------
     nstates : int, optional, default=2
         number of hidden states
-
     lag : int, optional, default=1
         lagtime to estimate the HMSM at
-
     stride : str or int, default=1
         stride between two lagged trajectories extracted from the input
         trajectories. Given trajectory s[t], stride and lag will result
@@ -61,13 +57,10 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
         stride in order to have statistically uncorrelated trajectories.
         Setting stride = 'effective' uses the largest neglected timescale as
         an estimate for the correlation time and sets the stride accordingly
-
     msm_init : :class:`MSM <pyemma.msm.estimators.msm_estimated.MSM>`
         MSM object to initialize the estimation
-
     reversible : bool, optional, default = True
         If true compute reversible MSM, else non-reversible MSM
-
     connectivity : str, optional, default = 'largest'
         Connectivity mode. Three methods are intended (currently only 'largest' is implemented)
         'largest' : The active set is the largest reversibly connected set. All estimation will be done on this
@@ -79,11 +72,9 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
         'none' : The active set is the full set of states. Estimation will be conducted on the full set of
             states without ensuring connectivity. This only permits nonreversible estimation. Currently not
             implemented.
-
     observe_active : bool, optional, default=True
         True: Restricts the observation set to the active states of the MSM.
         False: All states are in the observation set.
-
     dt_traj : str, optional, default='1 step'
         Description of the physical time corresponding to the trajectory time
         step.  May be used by analysis algorithms such as plotting tools to
@@ -102,12 +93,10 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
         convergence threshold for EM iteration. When two the likelihood does
         not increase by more than accuracy, the iteration is stopped
         successfully.
-
     maxit : int
         stopping criterion for EM iteration. When so many iterations are
         performed without reaching the requested accuracy, the iteration is
         stopped without convergence (a warning is given)
-
     store_data : bool
         True: estimate() returns an :class:`pyemma.msm.EstimatedMSM` object
         with discrete trajectories and counts stored. False: estimate() returns
