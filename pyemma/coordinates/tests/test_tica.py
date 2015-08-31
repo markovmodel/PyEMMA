@@ -54,7 +54,7 @@ class TestTICA_Basic(unittest.TestCase):
         data = np.random.randn(100, 10)
         tica_obj = api.tica(data=data, lag=10, dim=1)
         tica_obj.parametrize()
-        Y = tica_obj._map_array(data)
+        Y = tica_obj._transform_array(data)
         # right shape
         assert types.is_float_matrix(Y)
         assert Y.shape[0] == 100
@@ -236,7 +236,7 @@ class TestTICAExtensive(unittest.TestCase):
         assert self.tica_obj.lag == self.lag
 
     def test_map(self):
-        Y = self.tica_obj.map(self.X)
+        Y = self.tica_obj.transform(self.X)
         assert Y.shape[0] == self.T
         assert Y.shape[1] == 1
         # test if consistent with get_output

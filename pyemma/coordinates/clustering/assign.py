@@ -99,7 +99,7 @@ class AssignCenters(AbstractClustering):
             self._dtrajs.append(np.empty(n, dtype=self.output_type()))
 
         L = np.shape(X)[0]
-        self._dtrajs[itraj][t:t+L] = self._map_array(X).squeeze()
+        self._dtrajs[itraj][t:t+L] = self._transform_array(X).squeeze()
 
         if last_chunk:
             return True

@@ -128,7 +128,7 @@ class AbstractClustering(Transformer):
 
         return sample_indexes_by_state(self._index_states[clusters], nsample, replace=replace)
 
-    def _map_array(self, X):
+    def _transform_array(self, X):
         """get closest index of point in :attr:`clustercenters` to x."""
         dtraj = np.empty(X.shape[0], dtype=self.output_type())
         regspatial.assign(X.astype(np.float32, order='C', copy=False),
@@ -192,7 +192,7 @@ class AbstractClustering(Transformer):
                 raise ValueError('assign accepts either X or stride parameters, but not both. If you want to map '+
                                  'only a subset of your data, extract the subset yourself and pass it as X.')
             # map to column vector(s)
-            mapped = self.map(X)
+            mapped = self.transform(X)
             # flatten
             if isinstance(mapped, np.ndarray):
                 mapped = np.transpose(mapped)[0]

@@ -935,7 +935,7 @@ def pca(data=None, dim=2, var_cutoff=0.95, stride=1, mean=None):
         indim = data.dimension()
         mean = _types.ensure_ndarray(mean, shape=(indim,), dtype=_np.float)
 
-    res = _PCA(dim=dim, var_cutoff=var_cutoff)
+    res = _PCA(dim=dim, var_cutoff=var_cutoff, mean=mean)
     return _param_stage(data, res, stride=stride)
 
 

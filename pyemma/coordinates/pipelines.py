@@ -140,19 +140,7 @@ class Pipeline(object):
 
         return replaced
 
-    def run(self):
-        """deprecated. Identical to parametrize()
-        """
-        import warnings
-        warnings.warn(
-            "run() is deprecated and will be disabled in the future. Use parametrize().", DeprecationWarning)
-        self.parametrize()
-
-    # TODO: DISCUSS - renamed run() to parametrize (because run is a bit ambiguous).
-    # TODO: We could also call it fit() (here and in the transformers).
-    # TODO: This might be nicer because it's shorter and the spelling is unambiguous
-    # TODO: (in contrast to parametrize and parameterize and parameterise that
-    # are all correct in english.
+    # TODO: to be replaced by fit/estimate
     def parametrize(self):
         r"""
         Reads all data and discretizes it into discrete trajectories.
