@@ -74,8 +74,9 @@ class ImpliedTimescales(Estimator, ProgressReporter):
     dtrajs : array-like or list of array-likes
         discrete trajectories
 
-    lags = None : array-like with integers
-        integer lag times at which the implied timescales will be calculated
+    lags : array-like with integers or None, default = None
+        integer lag times at which the implied timescales will be calculated. If set to None (default)
+        as list of lagtimes will be automatically generated.
 
     nits = None : int
         maximum number of implied timescales to be computed and stored. If less
@@ -83,11 +84,11 @@ class ImpliedTimescales(Estimator, ProgressReporter):
         estimation. None means the number of timescales will be automatically
         determined.
 
-    failfast = False : boolean
+    failfast : boolean, default = False
         if True, will raise an error as soon as not all requested timescales can be computed at all requested
         lagtimes. If False, will continue with a warning and compute the timescales/lagtimes that are possible.
 
-    n_jobs = 1 : int
+    n_jobs: int, default = 1
         how many subprocesses to start to estimate the models for each lag time.
 
     """
@@ -224,7 +225,7 @@ class ImpliedTimescales(Estimator, ProgressReporter):
         r"""Returns the implied timescale estimates
 
         Returns
-        --------
+        -------
         timescales : ndarray((l x k), dtype=float)
             timescales for all processes and lag times.
             l is the number of lag times and k is the number of computed timescales.
@@ -237,7 +238,7 @@ class ImpliedTimescales(Estimator, ProgressReporter):
 
         Parameters
         ----------
-        process : int or None (default)
+        process : int or None, default = None
             index in [0:n-1] referring to the process whose timescale will be returned.
             By default, process = None and all computed process timescales will be returned.
 
@@ -283,7 +284,7 @@ class ImpliedTimescales(Estimator, ProgressReporter):
 
         Parameters
         ----------
-        process : int or None (default)
+        process : int or None, default = None
             index in [0:n-1] referring to the process whose timescale will be returned.
             By default, process = None and all computed process timescales will be returned.
 
@@ -326,8 +327,8 @@ class ImpliedTimescales(Estimator, ProgressReporter):
         generate the samples first, e.g. by calling bootstrap
 
         Parameters
-        -----------
-        process : int or None (default)
+        ----------
+        process : int or None, default = None
             index in [0:n-1] referring to the process whose timescale will be returned.
             By default, process = None and all computed process timescales will be returned.
 
@@ -351,20 +352,27 @@ class ImpliedTimescales(Estimator, ProgressReporter):
     def get_sample_conf(self, conf=0.95, process=None):
         r"""Returns the confidence interval that contains alpha % of the sample data
 
-        Use:
-        conf = 0.6827 for 1-sigma confidence interval
-        conf = 0.9545 for 2-sigma confidence interval
-        conf = 0.9973 for 3-sigma confidence interval
+
         etc.
+
+        Parameters
+        ----------
+        conf : float, default = 0.95
+            the confidence interval. Use:
+
+            * conf = 0.6827 for 1-sigma confidence interval
+            * conf = 0.9545 for 2-sigma confidence interval
+            * conf = 0.9973 for 3-sigma confidence interval
 
         Returns
         -------
         (L,R) : (float[],float[]) or (float[][],float[][])
             lower and upper timescales bounding the confidence interval
-        if process is None, will return two (l x k) arrays, where l is the number of lag times 
-        and k is the number of computed timescales.
-        if process is an integer, will return two (l)-arrays with the
-        selected process time scale for every lag time
+
+            * if process is None, will return two (l x k) arrays, where l is the number of lag times
+              and k is the number of computed timescales.
+            * if process is an integer, will return two (l)-arrays with the
+              selected process time scale for every lag time
 
         """
         if self._its_samples is None:
@@ -395,7 +403,7 @@ class ImpliedTimescales(Estimator, ProgressReporter):
         r"""Returns the fraction of frames used to compute the count matrix at each lagtime.
 
         Notes
-        -------
+        -----
         In a list of discrete trajectories with varying lengths, the estimation at longer lagtimes will mean
         discarding some trajectories for which not even one count can be computed. This function returns the fraction
         of frames that was actually used in computing the count matrix.

@@ -57,19 +57,24 @@ class EstimatedMSM(MSM):
 
     connectivity : str, optional, default = 'largest'
         Connectivity mode. Three methods are intended (currently only 'largest' is implemented)
-        'largest' : The active set is the largest reversibly connected set. All estimation will be done on this
-            subset and all quantities (transition matrix, stationary distribution, etc) are only defined on this
-            subset and are correspondingly smaller than the full set of states
-        'all' : The active set is the full set of states. Estimation will be conducted on each reversibly connected
-            set separately. That means the transition matrix will decompose into disconnected submatrices,
-            the stationary vector is only defined within subsets, etc. Currently not implemented.
-        'none' : The active set is the full set of states. Estimation will be conducted on the full set of states
-            without ensuring connectivity. This only permits nonreversible estimation. Currently not implemented.
+
+        * 'largest' : The active set is the largest reversibly connected set. All estimation will be done on this
+          subset and all quantities (transition matrix, stationary distribution, etc) are only defined on this
+          subset and are correspondingly smaller than the full set of states
+        * 'all' : The active set is the full set of states. Estimation will be conducted on each reversibly connected
+          set separately. That means the transition matrix will decompose into disconnected submatrices,
+          the stationary vector is only defined within subsets, etc. Currently not implemented.
+        * 'none' : The active set is the full set of states. Estimation will be conducted on the full set of states
+          without ensuring connectivity. This only permits nonreversible estimation. Currently not implemented.
 
     active_set :
+
     connected_sets :
+
     C_full :
+
     C_active :
+
     transition_matrix :
 
     """
@@ -195,7 +200,7 @@ class EstimatedMSM(MSM):
         a factor of tau more counts than are statistically uncorrelated. It's fine to use this matrix for maximum
         likelihood estimated, but it will give far too small errors if you use it for uncertainty calculations. In order
         to do uncertainty calculations, use the effective count matrix, see:
-        :meth:`effective_count_matrix`
+        :math:`effective_count_matrix`
 
         See Also
         --------
@@ -217,7 +222,7 @@ class EstimatedMSM(MSM):
         The effective count matrix is obtained by dividing the sliding-window count matrix by the lag time. This
         can be shown to provide a likelihood that is the geometrical average over shifted subsamples of the trajectory,
         :math:`(s_1,\:s_{tau+1},\:...),\:(s_2,\:t_{tau+2},\:...),` etc. This geometrical average converges to the
-        correct likelihood in the statistical limit _[1].
+        correct likelihood in the statistical limit [1]_.
 
         [1] Trendelkamp-Schroer B., H. Wu, F. Paul and F. Noe. 2015:
         Reversible Markov models of molecular kinetics: Estimation and uncertainty.
@@ -271,7 +276,7 @@ class EstimatedMSM(MSM):
     ################################################################################
 
     def trajectory_weights(self):
-        """Uses the MSM to assign a probability weight to each trajectory frame.
+        r"""Uses the MSM to assign a probability weight to each trajectory frame.
 
         This is a powerful function for the calculation of arbitrary observables in the trajectories one has
         started the analysis with. The stationary probability of the MSM will be used to reweigh all states.
@@ -279,18 +284,25 @@ class EstimatedMSM(MSM):
         trajectory frames. Given :math:`N` trajectories of lengths :math:`T_1` to :math:`T_N`, this function
         returns corresponding weights:
         .. math::
+
             (w_{1,1}, ..., w_{1,T_1}), (w_{N,1}, ..., w_{N,T_N})
+
         that are normalized to one:
         .. math::
+
             \sum_{i=1}^N \sum_{t=1}^{T_i} w_{i,t} = 1
+
         Suppose you are interested in computing the expectation value of a function :math:`a(x)`, where :math:`x`
         are your input configurations. Use this function to compute the weights of all input configurations and
         obtain the estimated expectation by:
         .. math::
+
             \langle a \rangle = \sum_{i=1}^N \sum_{t=1}^{T_i} w_{i,t} a(x_{i,t})
+
         Or if you are interested in computing the time-lagged correlation between functions :math:`a(x)` and
         :math:`b(x)` you could do:
         .. math::
+
             \langle a(t) b(t+\tau) \rangle_t = \sum_{i=1}^N \sum_{t=1}^{T_i} w_{i,t} a(x_{i,t}) a(x_{i,t+\tau})
 
         Returns
@@ -298,6 +310,7 @@ class EstimatedMSM(MSM):
         The normalized trajectory weights. Given :math:`N` trajectories of lengths :math:`T_1` to :math:`T_N`,
         returns the corresponding weights:
         .. math::
+
             (w_{1,1}, ..., w_{1,T_1}), (w_{N,1}, ..., w_{N,T_N})
 
         """

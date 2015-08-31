@@ -32,7 +32,7 @@ __author__ = 'noe'
 
 
 class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporter):
-    """Estimator for a Bayesian HMSM
+    r"""Estimator for a Bayesian HMSM
 
     Parameters
     ----------

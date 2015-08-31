@@ -31,7 +31,7 @@ from pyemma.util.units import TimeUnit
 
 
 def _lag_observations(observations, lag, stride=1):
-    """ Create new trajectories that are subsampled at lag but shifted
+    r""" Create new trajectories that are subsampled at lag but shifted
 
     Given a trajectory (s0, s1, s2, s3, s4, ...) and lag 3, this function will generate 3 trajectories
     (s0, s3, s6, ...), (s1, s4, s7, ...) and (s2, s5, s8, ...). Use this function in order to parametrize a MLE
@@ -42,10 +42,8 @@ def _lag_observations(observations, lag, stride=1):
     ----------
     observations : list of int arrays
         observation trajectories
-
     lag : int
         lag time
-
     stride : int, default=1
         will return only one trajectory for every stride. Use this for Bayesian analysis.
 
@@ -57,17 +55,23 @@ def _lag_observations(observations, lag, stride=1):
     return obsnew
 
 
+# TODO: This parameter was in the docstring but is not used:
+#     store_data : bool
+#         True: estimate() returns an :class:`pyemma.msm.EstimatedMSM` object
+#         with discrete trajectories and counts stored. False: estimate() returns
+#         a plain :class:`pyemma.msm.MSM` object that only contains the
+#         transition matrix and quantities derived from it.
+
+
 class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
-    """Maximum likelihood estimator for a Hidden MSM given a MSM
+    r"""Maximum likelihood estimator for a Hidden MSM given a MSM
 
     Parameters
     ----------
     nstates : int, optional, default=2
         number of hidden states
-
     lag : int, optional, default=1
         lagtime to estimate the HMSM at
-
     stride : str or int, default=1
         stride between two lagged trajectories extracted from the input
         trajectories. Given trajectory s[t], stride and lag will result
@@ -79,29 +83,24 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
         stride in order to have statistically uncorrelated trajectories.
         Setting stride = 'effective' uses the largest neglected timescale as
         an estimate for the correlation time and sets the stride accordingly
-
     msm_init : :class:`MSM <pyemma.msm.estimators.msm_estimated.MSM>`
         MSM object to initialize the estimation
-
     reversible : bool, optional, default = True
         If true compute reversible MSM, else non-reversible MSM
-
     connectivity : str, optional, default = 'largest'
         Connectivity mode. Three methods are intended (currently only 'largest' is implemented)
-        'largest' : The active set is the largest reversibly connected set. All estimation will be done on this
-            subset and all quantities (transition matrix, stationary distribution, etc) are only defined on this
-            subset and are correspondingly smaller than the full set of states
-        'all' : The active set is the full set of states. Estimation will be conducted on each reversibly
-            connected set separately. That means the transition matrix will decompose into disconnected
-            submatrices, the stationary vector is only defined within subsets, etc. Currently not implemented.
-        'none' : The active set is the full set of states. Estimation will be conducted on the full set of
-            states without ensuring connectivity. This only permits nonreversible estimation. Currently not
-            implemented.
-
+        * 'largest' : The active set is the largest reversibly connected set. All estimation will be done on this
+          subset and all quantities (transition matrix, stationary distribution, etc) are only defined on this
+          subset and are correspondingly smaller than the full set of states
+        * 'all' : The active set is the full set of states. Estimation will be conducted on each reversibly
+          connected set separately. That means the transition matrix will decompose into disconnected
+          submatrices, the stationary vector is only defined within subsets, etc. Currently not implemented.
+        * 'none' : The active set is the full set of states. Estimation will be conducted on the full set of
+          states without ensuring connectivity. This only permits nonreversible estimation. Currently not
+          implemented.
     observe_active : bool, optional, default=True
         True: Restricts the observation set to the active states of the MSM.
         False: All states are in the observation set.
-
     dt_traj : str, optional, default='1 step'
         Description of the physical time corresponding to the trajectory time
         step.  May be used by analysis algorithms such as plotting tools to
@@ -116,21 +115,14 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
         |  'ms',  'millisecond*'
         |  's',   'second*'
 
-    accuracy : float
+    accuracy : float, optional, default = 1e-3
         convergence threshold for EM iteration. When two the likelihood does
         not increase by more than accuracy, the iteration is stopped
         successfully.
-
-    maxit : int
+    maxit : int, optional, default = 1000
         stopping criterion for EM iteration. When so many iterations are
         performed without reaching the requested accuracy, the iteration is
         stopped without convergence (a warning is given)
-
-    store_data : bool
-        True: estimate() returns an :class:`pyemma.msm.EstimatedMSM` object
-        with discrete trajectories and counts stored. False: estimate() returns
-        a plain :class:`pyemma.msm.MSM` object that only contains the
-        transition matrix and quantities derived from it.
 
     """
     def __init__(self, nstates=2, lag=1, stride=1, msm_init=None, reversible=True, connectivity='largest',
@@ -148,6 +140,7 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
         self.maxit = maxit
 
 
+    #TODO: store_data is mentioned but not implemented or used!
     def _estimate(self, dtrajs):
         """
 

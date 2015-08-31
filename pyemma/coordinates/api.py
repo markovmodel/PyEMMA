@@ -1142,8 +1142,7 @@ def cluster_kmeans(data=None, k=100, max_iter=10, tolerance=1e-5, stride=1,
     tolerance : float
         stop iteration when the relative change in the cost function
 
-        .. math:
-            C(S) = \sum_{i=1}^{k} \sum_{\mathbf x \in S_i} \left\| \mathbf x - \boldsymbol\mu_i \right\|^2
+        ..1:            C(S) = \sum_{i=1}^{k} \sum_{\mathbf x \in S_i} \left\| \mathbf x - \boldsymbol\mu_i \right\|^2
 
         is smaller than tolerance.
 

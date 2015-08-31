@@ -56,8 +56,7 @@ class KmeansClustering(AbstractClustering):
         tolerance : float
             stop iteration when the relative change in the cost function
 
-            .. math:
-                C(S) = \sum_{i=1}^{k} \sum_{\mathbf x \in S_i} \left\| \mathbf x - \boldsymbol\mu_i \right\|^2
+            ..1:                C(S) = \sum_{i=1}^{k} \sum_{\mathbf x \in S_i} \left\| \mathbf x - \boldsymbol\mu_i \right\|^2
 
             is smaller than tolerance.
         metric : str

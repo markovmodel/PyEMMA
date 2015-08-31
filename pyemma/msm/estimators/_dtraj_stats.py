@@ -65,19 +65,17 @@ class DiscreteTrajectoryStats(object):
         count_mode : str, optional, default='sliding'
             mode to obtain count matrices from discrete trajectories. Should be one of:
 
-            * 'sliding' : A trajectory of length T will have :math:`T-tau` counts
-                at time indexes
-                .. math:
-                    (0 \rightarray \tau), (1 \rightarray \tau+1), ..., (T-\tau-1 \rightarray T-1)
+            * 'sliding' : A trajectory of length T will have :math:`T-\tau` counts
+              at time indexes
+              .. math:: (0 \rightarray \tau), (1 \rightarray \tau+1), ..., (T-\tau-1 \rightarray T-1)
 
             * 'effective' : Uses an estimate of the transition counts that are
-                statistically uncorrelated. Recommended when used with a
-                Bayesian MSM.
+              statistically uncorrelated. Recommended when used with a
+              Bayesian MSM.
 
-            * 'sample' : A trajectory of length T will have :math:`T/tau` counts
-                at time indexes
-                .. math:
-                    (0 \rightarray \tau), (\tau \rightarray 2 \tau), ..., (((T/tau)-1) \tau \rightarray T)
+            * 'sample' : A trajectory of length T will have :math:`T / \tau` counts
+              at time indexes
+              .. math:: (0 \rightarray \tau), (\tau \rightarray 2 \tau), ..., (((T/tau)-1) \tau \rightarray T)
 
 
         """
@@ -203,7 +201,7 @@ class DiscreteTrajectoryStats(object):
             The effective count matrix is obtained by dividing the sliding-window count matrix by the lag time. This
             can be shown to provide a likelihood that is the geometrical average over shifted subsamples of the trajectory,
             :math:`(s_1,\:s_{tau+1},\:...),\:(s_2,\:t_{tau+2},\:...),` etc. This geometrical average converges to the
-            correct likelihood in the statistical limit _[1].
+            correct likelihood in the statistical limit [1]_.
 
         References
         ----------

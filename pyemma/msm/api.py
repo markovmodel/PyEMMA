@@ -1109,23 +1109,23 @@ def tpt(msmobj, A, B):
     matrix formulation described in [3]_.
 
 
-    .. autoclass:: pyemma.msm.flux.reactive_flux.ReactiveFlux
+    .. autoclass:: msmtools.flux.reactive_flux.ReactiveFlux
         :members:
         :undoc-members:
 
         .. rubric:: Methods
 
-        .. autoautosummary:: pyemma.msm.flux.reactive_flux.ReactiveFlux
+        .. autoautosummary:: msmtools.flux.reactive_flux.ReactiveFlux
            :methods:
 
         .. rubric:: Attributes
 
-        .. autoautosummary:: pyemma.msm.flux.reactive_flux.ReactiveFlux
+        .. autoautosummary:: msmtools.flux.reactive_flux.ReactiveFlux
             :attributes:
 
     See also
     --------
-    :class:`ReactiveFlux <pyemma.msm.flux.ReactiveFlux>`
+    :class:`ReactiveFlux <msmtools.flux.ReactiveFlux>`
         Reactive Flux object
 
     References

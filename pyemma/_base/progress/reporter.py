@@ -82,7 +82,7 @@ class ProgressReporter(object):
 
             1. stage (int)
             2. instance of pyemma.utils.progressbar.ProgressBar
-            3. optional *args and named keywords (**kw), for future changes
+            3. optional \*args and named keywords (\*\*kw), for future changes
 
         stage: int, optional, default=0
             The stage you want the given call back function to be fired.

@@ -424,7 +424,6 @@ class TICA(Transformer):
     def timescales(self):
         r"""Implied timescales of the TICA transformation
 
-
         For each :math:`i`-th eigenvalue, this returns
 
         .. math::
@@ -451,7 +450,7 @@ class TICA(Transformer):
         r"""Eigenvalues of the TICA problem (usually denoted :math:`\lambda`
 
         Returns
-        -----
+        -------
         eigenvalues: 1D np.array
         """
 
@@ -465,7 +464,7 @@ class TICA(Transformer):
         r"""Eigenvectors of the TICA problem, columnwise
 
         Returns
-        -----
+        -------
         eigenvectors: (N,M) ndarray
         """
 
@@ -479,7 +478,7 @@ class TICA(Transformer):
         r"""Cumulative sum of the the TICA eigenvalues
 
         Returns
-        -----
+        -------
         cumvar: 1D np.array
         """
 

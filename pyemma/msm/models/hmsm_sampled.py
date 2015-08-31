@@ -18,7 +18,7 @@
 
 
 r"""Implement a MSM class that builds a Markov state models from
-microstate trajectories automatically computes important properties
+microstate trajectories, automatically computes important properties
 and provides them for later access.
 
 .. moduleauthor:: F. Noe <frank DOT noe AT fu-berlin DOT de>
@@ -45,11 +45,9 @@ class SampledHMSM(_HMSM, _SampledModel):
         ----------
         samples : list of HMSM
             Sampled HMSM objects
-
         ref : HMSM
             Single-point estimator, e.g. containing a maximum likelihood HMSM.
             If not given, the sample mean will be used.
-
         conf : float, optional, default=0.95
             Confidence interval. By default two-sigma (95.4%) is used.
             Use 95.4% for two sigma or 99.7% for three sigma.

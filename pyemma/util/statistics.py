@@ -176,13 +176,11 @@ def statistical_inefficiency(X, truncate_acf=True):
 
     The statistical inefficiency is computed as :math:`I = (2 \tau)^{-1}` using the damped autocorrelation time
 
-    .. math:
-        \tau = \frac{1}{2}+\sum_{K=1}^{N} A(k) \left(1-\frac{k}{N}\right)
+    ..1:        \tau = \frac{1}{2}+\sum_{K=1}^{N} A(k) \left(1-\frac{k}{N}\right)
 
     where
 
-    .. math:
-        A(k) = \frac{\langle x_t x_{t+k} \rangle_t - \langle x^2 \rangle_t}{\mathrm{var}(x)}
+    ..1:        A(k) = \frac{\langle x_t x_{t+k} \rangle_t - \langle x^2 \rangle_t}{\mathrm{var}(x)}
 
     is the autocorrelation function of the signal :math:`{x_t}`, which is computed either for a single or multiple
     trajectories.

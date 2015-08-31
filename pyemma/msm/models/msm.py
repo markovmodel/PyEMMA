@@ -204,7 +204,7 @@ class MSM(_Model):
 
     @property
     def transition_matrix(self):
-        """
+        r"""
         The transition matrix, estimated on the active set. For example, for
         connectivity='largest' it will be the transition matrix amongst the
         largest set of reversibly connected states
@@ -294,7 +294,7 @@ class MSM(_Model):
             self._compute_eigendecomposition(neig)
 
     def eigenvalues(self, k=None):
-        """Compute the transition matrix eigenvalues
+        r"""Compute the transition matrix eigenvalues
 
         Parameters
         ----------
@@ -313,7 +313,7 @@ class MSM(_Model):
         return self._eigenvalues[:k]
 
     def eigenvectors_left(self, k=None):
-        """Compute the left transition matrix eigenvectors
+        r"""Compute the left transition matrix eigenvectors
 
         Parameters
         ----------
@@ -332,7 +332,7 @@ class MSM(_Model):
         return self._L[:k, :]
 
     def eigenvectors_right(self, k=None):
-        """Compute the right transition matrix eigenvectors
+        r"""Compute the right transition matrix eigenvectors
 
         Parameters
         ----------
@@ -351,7 +351,7 @@ class MSM(_Model):
         return self._R[:, :k]
 
     def timescales(self, k=None):
-        """
+        r"""
         The relaxation timescales corresponding to the eigenvalues
 
         Parameters
@@ -380,12 +380,11 @@ class MSM(_Model):
             return ts[1:k+1]  # exclude the stationary process
 
     def propagate(self, p0, k):
-        """ Propagates the initial distribution p0 k times
+        r""" Propagates the initial distribution p0 k times
 
         Computes the product
 
-        .. math:
-            p_k = p_0^T P^k
+        ..1:            p_k = p_0^T P^k
 
         If the lag time of transition matrix :math:`P` is :math:`\tau`, this
         will provide the probability distribution at time :math:`k \tau`.
@@ -507,7 +506,7 @@ class MSM(_Model):
 
         Notes
         -----
-        The equilibrium expectation value of an observable a is defined as follows
+        The equilibrium expectation value of an observable :math:`a` is defined as follows
 
         .. math::
 
@@ -527,7 +526,8 @@ class MSM(_Model):
         by MSM state:
 
         .. math::
-            a_i = \frac{1}{N_i} \sum_{x_t \in S_i} f(x_t)
+
+            a_i & = \frac{1}{N_i} \sum_{x_t \in S_i} f(x_t)
 
         where :math:`S_i` is the set of configurations belonging to MSM state :math:`i` and :math:`f()` is a function
         that computes the experimental observable of interest for configuration :math:`x_t`. If a cross-correlation
@@ -538,6 +538,7 @@ class MSM(_Model):
         This is done by evaluating the equation
 
         .. :math:
+
             acf_a(k\tau)     & = \mathbf{a}^\top \mathrm{diag}(\boldsymbol{\pi}) \mathbf{P(\tau)}^k \mathbf{a} \\
             ccf_{a,b}(k\tau) & = \mathbf{a}^\top \mathrm{diag}(\boldsymbol{\pi}) \mathbf{P(\tau)}^k \mathbf{b}
 
@@ -674,6 +675,7 @@ class MSM(_Model):
         started, :math:`p_0` and compute the mean values of your experimental observable :math:`a` by MSM state:
 
         .. :math:
+
             a_i = \frac{1}{N_i} \sum_{x_t \in S_i} f(x_t)
 
         where :math:`S_i` is the set of configurations belonging to MSM state :math:`i` and :math:`f()` is a function
@@ -683,6 +685,7 @@ class MSM(_Model):
         Markov model is computed by relaxation(p0, a). This is done by evaluating the equation
 
         .. :math:
+
             E_a(k\tau)     & = \mathbf{p_0}^\top \mathbf{P(\tau)}^k \mathbf{a} \\
 
         where :math:`E` stands for the expectation value that relaxes to its equilibrium value that is identical
@@ -798,7 +801,7 @@ class MSM(_Model):
             raise ValueError('Metastable decomposition has not yet been computed. Please call pcca(m) first.')
 
     def pcca(self, m):
-        """ Runs PCCA++ [1]_ in order to compute a fuzzy metastable decomposition of MSM states
+        r""" Runs PCCA++ [1]_ in order to compute a fuzzy metastable decomposition of MSM states
 
         After calling this method you can access :func:`metastable_memberships`,
         :func:`metastable_distributions`, :func:`metastable_sets` and :func:`metastable_assignments`
@@ -850,7 +853,7 @@ class MSM(_Model):
 
     @property
     def metastable_memberships(self):
-        """ Computes the memberships of active set states to metastable sets with the PCCA++ method [1]_.
+        r""" Computes the memberships of active set states to metastable sets with the PCCA++ method [1]_.
 
         :func:`pcca` needs to be called first before this attribute is available.
 
@@ -879,7 +882,7 @@ class MSM(_Model):
 
     @property
     def metastable_distributions(self):
-        """ Computes the probability distributions of active set states within each metastable set using the PCCA++ method [1]_
+        r""" Computes the probability distributions of active set states within each metastable set using the PCCA++ method [1]_
         using Bayesian inversion as described in [2]_.
 
         :func:`pcca` needs to be called first before this attribute is available.
