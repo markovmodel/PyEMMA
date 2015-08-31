@@ -1,29 +1,25 @@
-# Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
-# Berlin, 14195 Berlin, Germany.
-# All rights reserved.
+
+# This file is part of PyEMMA.
 #
-# Redistribution and use in source and binary forms, with or without modification,
-# are permitted provided that the following conditions are met:
+# Copyright (c) 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
 #
-#  * Redistributions of source code must retain the above copyright notice, this
-# list of conditions and the following disclaimer.
-#  * Redistributions in binary form must reproduce the above copyright notice,
-# this list of conditions and the following disclaimer in the documentation and/or
-# other materials provided with the distribution.
+# PyEMMA is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS ``AS IS''
-# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
-# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-# ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 
 from __future__ import absolute_import
-from pyemma.util.log import getLogger
+from pyemma.util.annotators import deprecated
+from pyemma.util import types as _types
 from pyemma._base.progress import ProgressReporter
 
 from itertools import count
@@ -32,12 +28,25 @@ from math import ceil
 
 from abc import ABCMeta, abstractmethod
 from pyemma.util.exceptions import NotConvergedWarning
-import six
+from pyemma._base.logging import create_logger, instance_name
+
 from six.moves import range
+import six
 
 __all__ = ['Transformer']
 __author__ = 'noe, marscher'
 
+def _to_data_producer(X):
+    from pyemma.coordinates.data.data_in_memory import DataInMemory as _DataInMemory
+    # this is a pipelining stage, so let's parametrize from it
+    if isinstance(X, Transformer):
+        inputstage = X
+    # second option: data is array or list of arrays
+    else:
+        data = _types.ensure_traj_list(X)
+        inputstage = _DataInMemory(data)
+
+    return inputstage
 
 class SkipPassException(Exception):
     """ raise this to skip a pass during parametrization """
@@ -158,7 +167,7 @@ class Transformer(six.with_metaclass(ABCMeta, ProgressReporter)):
         the chunksize used to batch process underlying data
 
     """
-    # count instances
+    # counting transformer instances, incremented by name property.
     _ids = count(0)
 
     def __init__(self, chunksize=100):
@@ -170,7 +179,22 @@ class Transformer(six.with_metaclass(ABCMeta, ProgressReporter)):
         # allow children of this class to implement their own progressbar handling
         self._custom_param_progress_handling = False
 
-        self.__create_logger()
+    @property
+    def name(self):
+        try:
+            return self._name
+        except AttributeError:
+            self._name = instance_name(self, next(self._ids))
+            return self._name
+
+    @property
+    def _logger(self):
+        """ The logger for this Estimator """
+        try:
+            return self._logger_instance
+        except AttributeError:
+            create_logger(self)
+            return self._logger_instance
 
     @property
     def data_producer(self):
@@ -242,15 +266,6 @@ class Transformer(six.with_metaclass(ABCMeta, ProgressReporter)):
         r""" Number of dimensions that should be used for the output of the transformer. """
         pass
 
-    def __create_logger(self):
-        # note this is private, since it should only be called (once) from this class.
-        count = next(self._ids)
-        i = self.__module__.rfind(".")
-        j = self.__module__.find(".") + 1
-        package = self.__module__[j:i]
-        name = "%s.%s[%i]" % (package, self.__class__.__name__, count)
-        self._name = name
-        self._logger = getLogger(name)
 
     def number_of_trajectories(self):
         r"""
@@ -326,6 +341,24 @@ class Transformer(six.with_metaclass(ABCMeta, ProgressReporter)):
         r""" By default transformers return single precision floats. """
         return np.float32
 
+    def fit(self, X, **kwargs):
+        r"""For compatibility with sklearn"""
+        self.data_producer = _to_data_producer(X)
+        if hasattr(X, 'chunksize'):
+            self.chunksize = X.chunksize
+        if 'stride' in kwargs:
+            self.parametrize(stride=kwargs['stride'])
+        else:
+            self.parametrize()
+        return self
+
+    def fit_transform(self, X, **kwargs):
+        r"""For compatibility with sklearn"""
+        self.fit(X, **kwargs)
+        return self.transform(X)
+
+    # TODO: to be replaced by estimate(X, kwargs). Need to find out if we need y parameters
+    # TODO: and if resetting of the data producer causes any problems with our framework.
     def parametrize(self, stride=1):
         r""" Parametrize this Transformer
         """
@@ -448,7 +481,17 @@ class Transformer(six.with_metaclass(ABCMeta, ProgressReporter)):
         if self.in_memory and not self._mapping_to_mem_active:
             self._map_to_memory()
 
+    @deprecated
     def map(self, X):
+        r"""Deprecated: use transform(X)
+
+        Maps the input data through the transformer to correspondingly shaped output data array/list.
+
+        """
+
+        return self.transform(X)
+
+    def transform(self, X):
         r"""Maps the input data through the transformer to correspondingly shaped output data array/list.
 
         Parameters
@@ -456,7 +499,6 @@ class Transformer(six.with_metaclass(ABCMeta, ProgressReporter)):
         X : ndarray(T, n) or list of ndarray(T_i, n)
             The input data, where T is the number of time steps and n is the number of dimensions.
             If a list is provided, the number of time steps is allowed to vary, but the number of dimensions are
-            required to be to be consistent.
             required to be to be consistent.
 
         Returns
@@ -468,7 +510,7 @@ class Transformer(six.with_metaclass(ABCMeta, ProgressReporter)):
         """
         if isinstance(X, np.ndarray):
             if X.ndim == 2:
-                mapped = self._map_array(X)
+                mapped = self._transform_array(X)
                 return mapped
             else:
                 raise TypeError('Input has the wrong shape: %s with %i'
@@ -477,7 +519,7 @@ class Transformer(six.with_metaclass(ABCMeta, ProgressReporter)):
         elif isinstance(X, (list, tuple)):
             out = []
             for x in X:
-                mapped = self._map_array(x)
+                mapped = self._transform_array(x)
                 out.append(mapped)
             return out
         else:
@@ -486,7 +528,7 @@ class Transformer(six.with_metaclass(ABCMeta, ProgressReporter)):
                             'or lists of such arrays' % (str(type(X))))
 
     @abstractmethod
-    def _map_array(self, X):
+    def _transform_array(self, X):
         r"""
         Initializes the parametrization.
 
@@ -601,7 +643,7 @@ class Transformer(six.with_metaclass(ABCMeta, ProgressReporter)):
                 if self._t >= self.trajectory_length(self._itraj, stride=ctx.stride):
                     self._itraj += 1
                     self._t = 0
-                return self.map(X)
+                return self.transform(X)
             # TODO: this seems to be a dead branch of code
             else:
                 (X0, Xtau) = self.data_producer._next_chunk(ctx)
@@ -609,7 +651,7 @@ class Transformer(six.with_metaclass(ABCMeta, ProgressReporter)):
                 if self._t >= self.trajectory_length(self._itraj, stride=ctx.stride):
                     self._itraj += 1
                     self._t = 0
-                return self.map(X0), self.map(Xtau)
+                return self.transform(X0), self.transform(Xtau)
 
     def __iter__(self):
         r"""

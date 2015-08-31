@@ -1,26 +1,21 @@
-# Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
-# Berlin, 14195 Berlin, Germany.
-# All rights reserved.
+
+# This file is part of PyEMMA.
 #
-# Redistribution and use in source and binary forms, with or without modification,
-# are permitted provided that the following conditions are met:
+# Copyright (c) 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
 #
-#  * Redistributions of source code must retain the above copyright notice, this
-# list of conditions and the following disclaimer.
-#  * Redistributions in binary form must reproduce the above copyright notice,
-# this list of conditions and the following disclaimer in the documentation and/or
-# other materials provided with the distribution.
+# PyEMMA is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS ``AS IS''
-# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
-# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-# ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 
 from __future__ import absolute_import
 import numpy as np
@@ -82,7 +77,8 @@ class PCA(Transformer):
             raise ValueError('Trying to set both the number of dimension and the subspace variance. Use either or.')
         self._dot_prod_tmp = None
         self.Y = None
-        self._N = 0
+        self._N_mean = 0
+        self._N_cov = 0
 
         self.mu = mean
 
@@ -124,7 +120,8 @@ class PCA(Transformer):
         return self.cov
 
     def _param_init(self):
-        self._N = 0
+        self._N_mean = 0
+        self._N_cov = 0
         # create mean array and covariance matrix
         indim = self.data_producer.dimension()
         self._logger.info("Running PCA on %i dimensional input" % indim)
@@ -173,17 +170,17 @@ class PCA(Transformer):
         if ipass == 0:
             if t == 0:
                 if self._given_mean:
-                    raise SkipPassException(stride=stride)
+                    raise SkipPassException(next_pass_stride=stride)
                 self._sum_tmp = np.empty(X.shape[1])
             np.sum(X, axis=0, out=self._sum_tmp)
             self.mu += self._sum_tmp
-            self._N += np.shape(X)[0]
+            self._N_mean += np.shape(X)[0]
 
             # counting chunks and log of eta
             self._progress_update(1, 0)
 
             if last_chunk:
-                self.mu /= self._N
+                self.mu /= self._N_mean
 
         # pass 2: covariances
         if ipass == 1:
@@ -193,11 +190,12 @@ class PCA(Transformer):
             Xm = X - self.mu
             np.dot(Xm.T, Xm, self._dot_prod_tmp)
             self.cov += self._dot_prod_tmp
+            self._N_cov += np.shape(X)[0]
 
             self._progress_update(1, stage=1)
 
             if last_chunk:
-                self.cov /= self._N - 1
+                self.cov /= self._N_cov - 1
                 return True  # finished!
 
         # by default, continue
@@ -214,7 +212,7 @@ class PCA(Transformer):
         self.cumvar = np.cumsum(self.eigenvalues)
         self.cumvar /= self.cumvar[-1]
 
-    def _map_array(self, X):
+    def _transform_array(self, X):
         r"""
         Projects the data onto the dominant principal components.
 

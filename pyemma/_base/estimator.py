@@ -1,3 +1,21 @@
+
+# This file is part of PyEMMA.
+#
+# Copyright (c) 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+#
+# PyEMMA is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 from __future__ import absolute_import, print_function
 
 from six.moves import range
@@ -5,13 +23,15 @@ import inspect
 
 from pyemma._ext.sklearn.base import BaseEstimator as _BaseEstimator
 from pyemma._ext.sklearn.parameter_search import ParameterGrid
-from pyemma.util.log import getLogger
 from pyemma.util import types as _types
 
 # imports for external usage
 from pyemma._ext.sklearn.base import clone as clone_estimator
+from pyemma._base.logging import create_logger, instance_name
+from itertools import count
 
-__author__ = 'noe'
+__author__ = 'noe, marscher'
+
 
 def get_estimator(estimator):
     """ Returns an estimator object given an estimator object or class
@@ -143,8 +163,6 @@ def _estimate_param_scan_worker(estimator, params, X, evaluate, evaluate_args,
 
 def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=None, failfast=True,
                         return_estimators=False, n_jobs=1, progress_reporter=None):
-    # TODO: parallelize. For options see http://scikit-learn.org/stable/modules/grid_search.html
-    # TODO: allow to specify method parameters in evaluate
     """ Runs multiple estimations using a list of parameter settings
 
     Parameters
@@ -280,19 +298,26 @@ class Estimator(_BaseEstimator):
     """ Base class for pyEMMA estimators
 
     """
+    # counting estimator instances, incremented by name property.
+    _ids = count(0)
 
-    def __create_logger(self):
-        name = "%s[%s]" % (self.__class__.__name__, hex(id(self)))
-        self._logger = getLogger(name)
+    @property
+    def name(self):
+        try:
+            return self._name
+        except AttributeError:
+            self._name = instance_name(self, next(self._ids))
+            return self._name
+    
 
     @property
     def logger(self):
         """ The logger for this Estimator """
         try:
-            return self._logger
+            return self._logger_instance
         except AttributeError:
-            self.__create_logger()
-            return self._logger
+            create_logger(self)
+            return self._logger_instance
 
     def estimate(self, X, **params):
         """ Estimates the model given the data X

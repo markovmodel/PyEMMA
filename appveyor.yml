@@ -10,33 +10,23 @@ environment:
     CMD_IN_ENV: "cmd /E:ON /V:ON /C .\\tools\\ci\\appveyor\\run_with_env.cmd"
 
   matrix:
-    - PYTHON: "C:\\Python27_32"
-      PYTHON_VERSION: "2.7.8"
+    - PYTHON: "C:\\Miniconda"
       CONDA_PY: "27"
-      PYTHON_ARCH: "32"
     
-    - PYTHON: "C:\\Python27_64"
-      PYTHON_VERSION: "2.7.8"
+    - PYTHON: "C:\\Miniconda-x64"
       CONDA_PY: "27" 
-      PYTHON_ARCH: "64"
+      ARCH: "64"
 
-    - PYTHON: "C:\\Python34_32"
-      PYTHON_VERSION: "3.4.1"
+    - PYTHON: "C:\\Miniconda3"
       CONDA_PY: "34"
-      PYTHON_ARCH: "32"
 
-    - PYTHON: "C:\\Python34_64"
-      PYTHON_VERSION: "3.4.1"
+    - PYTHON: "C:\\Miniconda3-x64"
       CONDA_PY: "34"
-      PYTHON_ARCH: "64"
+      ARCH: "64"
 
 install:
-  - "powershell ./tools/ci/appveyor/install.ps1"
   - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%;"
 
-  # Check that we have the expected version and architecture for Python
-  - "python --version"
-  - "python -c \"import struct; print(struct.calcsize('P') * 8)\""
   - conda config --set always_yes true 
   - conda config --add channels http://conda.binstar.org/omnia 
   - conda install -q conda-build jinja2
@@ -51,4 +41,3 @@ build: false # Not a C# project, build stuff at the test step instead.
 test_script:
   # run testsuite and upload test results to AppVeyor; return exit code of testsuite
   - conda build -q tools/conda-recipe
-

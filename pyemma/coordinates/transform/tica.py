@@ -1,26 +1,21 @@
-# Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
-# Berlin, 14195 Berlin, Germany.
-# All rights reserved.
+
+# This file is part of PyEMMA.
 #
-# Redistribution and use in source and binary forms, with or without modification,
-# are permitted provided that the following conditions are met:
+# Copyright (c) 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
 #
-#  * Redistributions of source code must retain the above copyright notice, this
-# list of conditions and the following disclaimer.
-#  * Redistributions in binary form must reproduce the above copyright notice,
-# this list of conditions and the following disclaimer in the documentation and/or
-# other materials provided with the distribution.
+# PyEMMA is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS ``AS IS''
-# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
-# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-# ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 
 from __future__ import absolute_import
 from pyemma.util import types
@@ -195,13 +190,6 @@ class TICA(Transformer):
                                     " of input data (%i)" % (self._dim, indim))
         if self._force_eigenvalues_le_one and self._lag % self._param_with_stride != 0:
             raise RuntimeError("When using TICA with force_eigenvalues_le_one, lag must be a multiple of stride.")
-
-        if self._param_with_stride > 1:
-            import warnings
-            warnings.simplefilter('once', MeaningOfLagWithStrideWarning, append=True)
-            warnings.warn("Since version 1.3 lag is measured in time steps of your"
-                          " trajectory, no matter what value of stride is used.",
-                          MeaningOfLagWithStrideWarning)
 
         if self.mu is not None:
             self.mu = types.ensure_ndarray(self.mu, shape=(indim,))
@@ -389,7 +377,7 @@ class TICA(Transformer):
             self._logger.warn("Had to skip %u trajectories for being too short. "
                               "Their indexes are in self._skipped_trajs."%len(self._skipped_trajs))
 
-    def _map_array(self, X):
+    def _transform_array(self, X):
         r"""Projects the data onto the dominant independent components.
 
         Parameters

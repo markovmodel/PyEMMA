@@ -1,27 +1,20 @@
-# Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
-# Berlin, 14195 Berlin, Germany.
-# All rights reserved.
+# This file is part of PyEMMA.
 #
-# Redistribution and use in source and binary forms, with or without modification,
-# are permitted provided that the following conditions are met:
+# Copyright (c) 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
 #
-#  * Redistributions of source code must retain the above copyright notice, this
-# list of conditions and the following disclaimer.
-#  * Redistributions in binary form must reproduce the above copyright notice,
-# this list of conditions and the following disclaimer in the documentation and/or
-# other materials provided with the distribution.
+# PyEMMA is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS ``AS IS''
-# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
-# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-# ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-# -*- coding: uft-8 -*-
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 
 from __future__ import absolute_import
 import mdtraj
@@ -38,8 +31,9 @@ import functools
 
 from six import PY3
 from pyemma.util.types import is_iterable_of_int as _is_iterable_of_int
-from pyemma.util.log import getLogger
-#from pyemma.util.annotators import deprecated
+from pyemma._base.logging import instance_name, create_logger
+
+from pyemma.util.annotators import deprecated
 from six.moves import map
 from six.moves import range
 from six.moves import zip
@@ -285,7 +279,14 @@ class CustomFeature(object):
                                                            str(self._args) +
                                                            str(self._kwargs))]
 
+    @deprecated
     def map(self, traj):
+        r"""Deprecated: use transform(traj)
+
+        """
+        return self.transform(traj)
+
+    def transform(self, traj):
         feature = self._func(traj, *self._args, **self._kwargs)
         if not isinstance(feature, np.ndarray):
             raise ValueError("your function should return a NumPy array!")
@@ -332,7 +333,14 @@ class SelectionFeature(object):
     def dimension(self):
         return 3 * self.indexes.shape[0]
 
+    @deprecated
     def map(self, traj):
+        r"""Deprecated: use transform(traj)
+
+        """
+        return self.transform(traj)
+
+    def transform(self, traj):
         newshape = (traj.xyz.shape[0], 3 * self.indexes.shape[0])
         return np.reshape(traj.xyz[:, self.indexes, :], newshape)
 
@@ -366,7 +374,14 @@ class DistanceFeature(object):
     def dimension(self):
         return self.distance_indexes.shape[0]
 
+    @deprecated
     def map(self, traj):
+        r"""Deprecated: use transform(traj)
+
+        """
+        return self.transform(traj)
+
+    def transform(self, traj):
         return mdtraj.compute_distances(traj, self.distance_indexes, periodic=self.periodic)
 
     def __hash__(self):
@@ -386,7 +401,14 @@ class InverseDistanceFeature(DistanceFeature):
             self, top, distance_indexes, periodic=periodic)
         self.prefix_label = "INVDIST:"
 
+    @deprecated
     def map(self, traj):
+        r"""Deprecated: use transform(traj)
+
+        """
+        return self.transform(traj)
+
+    def transform(self, traj):
         return 1.0 / mdtraj.compute_distances(traj, self.distance_indexes, periodic=self.periodic)
 
     # does not need own hash impl, since we take prefix label into account
@@ -417,7 +439,14 @@ class ResidueMinDistanceFeature(DistanceFeature):
                   for pair in self.distance_indexes]
         return labels
 
+    @deprecated
     def map(self, traj):
+        r"""Deprecated: use transform(traj)
+
+        """
+        return self.transform(traj)
+
+    def transform(self, traj):
         # We let mdtraj compute the contacts with the input scheme
         D = mdtraj.compute_contacts(traj, contacts=self.contacts, scheme=self.scheme)[0]
         res = np.zeros_like(D)
@@ -446,7 +475,14 @@ class GroupMinDistanceFeature(DistanceFeature):
                   for pair in self.distance_indexes]
         return labels
 
+    @deprecated
     def map(self, traj):
+        r"""Deprecated: use transform(traj)
+
+        """
+        return self.transform(traj)
+
+    def transform(self, traj):
         # All needed distances
         Dall = mdtraj.compute_distances(traj, self.distance_list)
         # Just the minimas
@@ -472,7 +508,14 @@ class ContactFeature(DistanceFeature):
         self.threshold = threshold
         self.periodic = periodic
 
+    @deprecated
     def map(self, traj):
+        r"""Deprecated: use transform(traj)
+
+        """
+        return self.transform(traj)
+
+    def transform(self, traj):
         dists = mdtraj.compute_distances(
             traj, self.distance_indexes, periodic=self.periodic)
         res = np.zeros(
@@ -496,7 +539,6 @@ class AngleFeature(object):
         self.cossin = cossin
 
     def describe(self):
-
         if self.cossin:
             sin_cos = ("ANGLE: COS(%s - %s - %s)",
                        "ANGLE: SIN(%s - %s - %s)")
@@ -520,7 +562,14 @@ class AngleFeature(object):
             dim *= 2
         return dim
 
+    @deprecated
     def map(self, traj):
+        r"""Deprecated: use transform(traj)
+
+        """
+        return self.transform(traj)
+
+    def transform(self, traj):
         rad = mdtraj.compute_angles(traj, self.angle_indexes)
         if self.cossin:
             rad = np.dstack((np.cos(rad), np.sin(rad)))
@@ -576,7 +625,14 @@ class DihedralFeature(object):
     def dimension(self):
         return self._dim
 
+    @deprecated
     def map(self, traj):
+        r"""Deprecated: use transform(traj)
+
+        """
+        return self.transform(traj)
+
+    def transform(self, traj):
         rad = mdtraj.compute_dihedrals(traj, self.dih_indexes)
         if self.cossin:
             rad = np.dstack((np.cos(rad), np.sin(rad)))
@@ -719,7 +775,14 @@ class MinRmsdFeature(object):
     def dimension(self):
         return 1
 
+    @deprecated
     def map(self, traj):
+        r"""Deprecated: use transform(traj)
+
+        """
+        return self.transform(traj)
+
+    def transform(self, traj):
         return np.array(mdtraj.rmsd(traj, self.ref, atom_indices=self.atom_indices), ndmin=2).T
 
     def __hash__(self):
@@ -741,6 +804,7 @@ class MinRmsdFeature(object):
 
 class MDFeaturizer(object):
 
+    # counting instances, incremented by name property.
     _ids = count(0)
 
     def __init__(self, topfile):
@@ -756,16 +820,23 @@ class MDFeaturizer(object):
         self.topology = (mdtraj.load(topfile)).topology
         self.active_features = []
         self._dim = 0
-        self._create_logger()
 
-    def _create_logger(self):
-        count = next(self._ids)
-        i = self.__module__.rfind(".")
-        j = self.__module__.find(".") + 1
-        package = self.__module__[j:i]
-        name = "%s.%s[%i]" % (package, self.__class__.__name__, count)
-        self._name = name
-        self._logger = getLogger(name)
+    @property
+    def name(self):
+        try:
+            return self._name
+        except AttributeError:
+            self._name = instance_name(self, next(self._ids))
+            return self._name
+
+    @property
+    def _logger(self):
+        """ The logger for this Estimator """
+        try:
+            return self._logger_instance
+        except AttributeError:
+            create_logger(self)
+            return self._logger_instance
 
     def __add_feature(self, f):
         # perform sanity checks
@@ -1298,7 +1369,14 @@ class MDFeaturizer(object):
         dim = sum(f.dimension for f in self.active_features)
         return dim
 
+    @deprecated
     def map(self, traj):
+        r"""Deprecated: use transform(traj)
+
+        """
+        return self.transform(traj)
+
+    def transform(self, traj):
         """
         Maps an mdtraj Trajectory object to the selected output features
 
@@ -1337,7 +1415,7 @@ class MDFeaturizer(object):
             # perform sanity checks for custom feature input
             if isinstance(f, CustomFeature):
                 # NOTE: casting=safe raises in numpy>=1.9
-                vec = f.map(traj).astype(np.float32, casting='safe')
+                vec = f.transform(traj).astype(np.float32, casting='safe')
                 if vec.shape[0] == 0:
                     vec = np.empty((0, f.dimension))
 
@@ -1357,7 +1435,7 @@ class MDFeaturizer(object):
                                         traj.xyz.shape[0],
                                         vec.shape[0]))
             else:
-                vec = f.map(traj).astype(np.float32)
+                vec = f.transform(traj).astype(np.float32)
             feature_vec.append(vec)
 
         if len(feature_vec) > 1:
