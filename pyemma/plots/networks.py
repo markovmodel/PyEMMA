@@ -1,26 +1,21 @@
-# Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
-# Berlin, 14195 Berlin, Germany.
-# All rights reserved.
+
+# This file is part of PyEMMA.
 #
-# Redistribution and use in source and binary forms, with or without modification,
-# are permitted provided that the following conditions are met:
+# Copyright (c) 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
 #
-#  * Redistributions of source code must retain the above copyright notice, this
-# list of conditions and the following disclaimer.
-#  * Redistributions in binary form must reproduce the above copyright notice,
-# this list of conditions and the following disclaimer in the documentation and/or
-# other materials provided with the distribution.
+# PyEMMA is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS ``AS IS''
-# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
-# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-# ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 
 from __future__ import absolute_import
 import math
@@ -32,86 +27,6 @@ from pyemma.util import types as _types
 from six.moves import range
 
 __author__ = 'noe, marscher'
-
-
-# taken from networkx.drawing.layout and added hold_dim
-def _fruchterman_reingold(A, dim=2, k=None, pos=None, fixed=None,
-                          iterations=50, hold_dim=None):
-    # Position nodes in adjacency matrix A using Fruchterman-Reingold
-    # Entry point for NetworkX graph is fruchterman_reingold_layout()
-    try:
-        nnodes, _ = A.shape
-    except AttributeError:
-        raise RuntimeError(
-            "fruchterman_reingold() takes an adjacency matrix as input")
-
-    A = np.asarray(A)  # make sure we have an array instead of a matrix
-
-    if pos is None:
-        # random initial positions
-        pos = np.asarray(np.random.random((nnodes, dim)), dtype=A.dtype)
-    else:
-        # make sure positions are of same type as matrix
-        pos = pos.astype(A.dtype)
-
-    # optimal distance between nodes
-    if k is None:
-        k = np.sqrt(1.0 / nnodes)
-    # the initial "temperature"  is about .1 of domain area (=1x1)
-    # this is the largest step allowed in the dynamics.
-    t = 0.1
-    # simple cooling scheme.
-    # linearly step down by dt on each iteration so last iteration is size dt.
-    dt = t / float(iterations + 1)
-    delta = np.zeros((pos.shape[0], pos.shape[0], pos.shape[1]), dtype=A.dtype)
-    # the inscrutable (but fast) version
-    # this is still O(V^2)
-    # could use multilevel methods to speed this up significantly
-    for _ in range(iterations):
-        # matrix of difference between points
-        for i in range(pos.shape[1]):
-            delta[:, :, i] = pos[:, i, None] - pos[:, i]
-        # distance between points
-        distance = np.sqrt((delta**2).sum(axis=-1))
-        # enforce minimum distance of 0.01
-        distance = np.where(distance < 0.01, 0.01, distance)
-        # displacement "force"
-        displacement = np.transpose(np.transpose(delta) *
-                                    (k * k / distance**2 - A * distance / k))\
-            .sum(axis=1)
-        # update positions
-        length = np.sqrt((displacement**2).sum(axis=1))
-        length = np.where(length < 0.01, 0.1, length)
-        delta_pos = np.transpose(np.transpose(displacement) * t / length)
-        if fixed is not None:
-            # don't change positions of fixed nodes
-            delta_pos[fixed] = 0.0
-        # only update y component
-        if hold_dim == 0:
-            pos[:, 1] += delta_pos[:, 1]
-        # only update x component
-        elif hold_dim == 1:
-            pos[:, 0] += delta_pos[:, 0]
-        else:
-            pos += delta_pos
-        # cool temperature
-        t -= dt
-        pos = _rescale_layout(pos)
-    return pos
-
-
-def _rescale_layout(pos, scale=1):
-    # rescale to (0,pscale) in all axes
-
-    # shift origin to (0,0)
-    lim = 0  # max coordinate for all axes
-    for i in range(pos.shape[1]):
-        pos[:, i] -= pos[:, i].min()
-        lim = max(pos[:, i].max(), lim)
-    # rescale to (0,scale) in all directions, preserves aspect
-    for i in range(pos.shape[1]):
-        pos[:, i] *= scale / lim
-    return pos
 
 
 class NetworkPlot(object):
@@ -344,7 +259,7 @@ class NetworkPlot(object):
         # nothing to do
         elif self.xpos is not None and self.ypos is not None:
             return np.array([self.xpos, self.ypos]), 0
-
+        from pyemma.plots._ext.fruchterman_reingold import _fruchterman_reingold
         best_pos = _fruchterman_reingold(G, pos=initpos, dim=2, hold_dim=holddim)
 
         # rescale fixed to user settings and balance the other coordinate
