@@ -2,7 +2,6 @@
 *   Copyright 2015 Christoph Wehmeyer
 */
 
-#include <stdio.h>
 #include <math.h>
 #include "../lse/_lse.h"
 #include "_dtram.h"
@@ -66,7 +65,6 @@ extern void rc_dtram_lognu(
                     {
                         scratch_M[j] = -rc_logsumexp_pair(
                             0.0, f_i[j] - f_i[i] + b_K_i[Kj] - b_K_i[Ki]);
-                        printf("####### WARNING ####### scratch_M=%f\n", scratch_M[j]);
                     }
                     else
                         scratch_M[j] = -INFINITY;

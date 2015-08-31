@@ -2,7 +2,6 @@
 *   Copyright 2015 Christoph Wehmeyer
 */
 
-#include <stdio.h>
 #include <math.h>
 
 #include "_lse.h"
