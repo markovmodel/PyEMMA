@@ -201,6 +201,6 @@ extern void rc_f_K_equation(
     {
         for(i=0; i<n_markov_states; ++i)
             scratch_j[i] = -(b_K_i[K*n_markov_states + i] + f_i[i]);
-        f_K[K] = rc_logsumexp(scratch_j, n_markov_states);
+        f_K[K] = -rc_logsumexp(scratch_j, n_markov_states);
     }
 }
