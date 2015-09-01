@@ -268,7 +268,8 @@ def markov_model(P, dt_model='1 step'):
     return MSM(P, dt_model=dt_model)
 
 
-def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivity='largest',
+def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
+                          sparse=False, connectivity='largest',
                           dt_traj='1 step', maxiter=1000000, maxerr=1e-8):
     r""" Estimates a Markov model from discrete trajectories
 
@@ -288,6 +289,11 @@ def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
 
     reversible : bool, optional, default = True
         If true compute reversible MSM, else non-reversible MSM
+
+    statdist : (M,) ndarray, optional
+        Stationary vector on the full state-space. Transition matrix
+        will be estimated such that statdist is its equilibrium
+        distribution.
 
     sparse : bool, optional, default = False
         If true compute count matrix, transition matrix and all
@@ -467,9 +473,10 @@ def estimate_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
 
     """
     # transition matrix estimator
-    mlmsm = _ML_MSM(lag=lag, reversible=reversible, sparse=sparse,
-                    connectivity=connectivity, dt_traj=dt_traj,
-                    maxiter=maxiter, maxerr=maxerr)
+    mlmsm = _ML_MSM(lag=lag, reversible=reversible, statdist_constraint=statdist,
+                    sparse=sparse, connectivity=connectivity,
+                    dt_traj=dt_traj, maxiter=maxiter,
+                    maxerr=maxerr)
     # estimate and return
     return mlmsm.estimate(dtrajs)
 

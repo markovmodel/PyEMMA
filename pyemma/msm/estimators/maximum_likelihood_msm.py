@@ -20,14 +20,15 @@ from __future__ import absolute_import
 from six.moves import range
 __author__ = 'noe'
 
-import numpy as np
+import numpy as _np
 from msmtools import estimation as msmest
 
 from pyemma.util.types import ensure_dtraj_list
 from pyemma._base.estimator import Estimator as _Estimator
 from pyemma.msm.estimators._dtraj_stats import DiscreteTrajectoryStats as _DiscreteTrajectoryStats
 from pyemma.msm.estimators.estimated_msm import EstimatedMSM as _EstimatedMSM
-from pyemma.util.units import TimeUnit
+from pyemma.util.units import TimeUnit as _TimeUnit
+from pyemma.util import types as _types
 
 class MaximumLikelihoodMSM(_Estimator, _EstimatedMSM):
     r"""Maximum likelihood estimator for MSMs given discrete trajectory statistics
@@ -40,6 +41,12 @@ class MaximumLikelihoodMSM(_Estimator, _EstimatedMSM):
 
     reversible : bool, optional, default = True
         If true compute reversible MSM, else non-reversible MSM
+
+    statdist : (M,) ndarray, optional
+        Stationary vector on the full set of states. Estimation will be
+        made such the the resulting transition matrix has this distribution
+        as an equilibrium distribution. Set probabilities to zero if these
+        states should be excluded from the analysis.
 
     count_mode : str, optional, default='sliding'
         mode to obtain count matrices from discrete trajectories. Should be
@@ -115,12 +122,17 @@ class MaximumLikelihoodMSM(_Estimator, _EstimatedMSM):
         of the change vector, :math:`|e_i|_2`, is compared to maxerr.
 
     """
-    def __init__(self, lag=1, reversible=True, count_mode='sliding', sparse=False, connectivity='largest',
-                 dt_traj='1 step', maxiter=1000000, maxerr=1e-8):
+    def __init__(self, lag=1, reversible=True, statdist_constraint=None,
+                 count_mode='sliding', sparse=False,
+                 connectivity='largest', dt_traj='1 step', maxiter=1000000,
+                 maxerr=1e-8):
         self.lag = lag
 
         # set basic parameters
         self.reversible = reversible
+        self.statdist_constraint = _types.ensure_ndarray_or_None(statdist_constraint, ndim=None, kind='numeric')
+        if self.statdist_constraint is not None:  # renormalize
+            self.statdist_constraint /= self.statdist_constraint.sum()
 
         # sparse matrix computation wanted?
         self.sparse = sparse
@@ -143,7 +155,7 @@ class MaximumLikelihoodMSM(_Estimator, _EstimatedMSM):
 
         # time step
         self.dt_traj = dt_traj
-        self.timestep_traj = TimeUnit(dt_traj)
+        self.timestep_traj = _TimeUnit(dt_traj)
 
         # convergence parameters
         self.maxiter = maxiter
@@ -182,10 +194,20 @@ class MaximumLikelihoodMSM(_Estimator, _EstimatedMSM):
         # count lagged
         dtrajstats.count_lagged(self.lag, count_mode=self.count_mode)
 
-        # set active set
+        # full count matrix and number of states
+        self._C_full = dtrajstats.count_matrix()
+        self._nstates_full = self._C_full.shape[0]
+
+        # set active set. This is at the same time a mapping from active to full
         if self.connectivity == 'largest':
-            # the largest connected set is the active set. This is at the same time a mapping from active to full
-            self.active_set = dtrajstats.largest_connected_set
+            if self.statdist_constraint is None:
+                # statdist not given - full connectivity on all states
+                self.active_set = dtrajstats.largest_connected_set
+            else:
+                # statdist given - simple connectivity on all nonzero probability states
+                nz = _np.nonzero(self.statdist_constraint)[0]
+                Cnz = dtrajstats.count_matrix(subset=nz)
+                self.active_set = nz[msmest.largest_connected_set(Cnz, directed=False)]
         else:
             # for 'None' and 'all' all visited states are active
             self.active_set = dtrajstats.visited_set
@@ -194,28 +216,36 @@ class MaximumLikelihoodMSM(_Estimator, _EstimatedMSM):
         # is estimated
         self._is_estimated = True
 
-        # count matrices and numbers of states
-        self._C_full = dtrajstats.count_matrix()
-        self._nstates_full = self._C_full.shape[0]
+        # active count matrix and number of states
         self._C_active = dtrajstats.count_matrix(subset=self.active_set)
         self._nstates = self._C_active.shape[0]
 
         # computed derived quantities
         # back-mapping from full to lcs
-        self._full2active = -1 * np.ones((dtrajstats.nstates), dtype=int)
-        self._full2active[self.active_set] = np.array(list(range(len(self.active_set))), dtype=int)
+        self._full2active = -1 * _np.ones((dtrajstats.nstates), dtype=int)
+        self._full2active[self.active_set] = _np.array(list(range(len(self.active_set))), dtype=int)
+
+        # restrict stationary distribution to active set
+        if self.statdist_constraint is None:
+            statdist_active = None
+        else:
+            statdist_active = self.statdist_constraint[self.active_set]
+            statdist_active /= statdist_active.sum()  # renormalize
 
         # Estimate transition matrix
         if self.connectivity == 'largest':
             P = msmest.transition_matrix(self._C_active, reversible=self.reversible,
-                                         maxiter=self.maxiter, maxerr=self.maxerr)
+                                         mu=statdist_active, maxiter=self.maxiter,
+                                         maxerr=self.maxerr)
         elif self.connectivity == 'none':
-            # reversible mode only possible if active set is connected - in this case all visited states are connected
-            # and thus this mode is identical to 'largest'
+            # reversible mode only possible if active set is connected
+            # - in this case all visited states are connected and thus
+            # this mode is identical to 'largest'
             if self.reversible and not msmest.is_connected(self._C_active):
                 raise ValueError('Reversible MSM estimation is not possible with connectivity mode \'none\', '+
                                  'because the set of all visited states is not reversibly connected')
             P = msmest.transition_matrix(self._C_active, reversible=self.reversible,
+                                         mu=statdist_active,
                                          maxiter=self.maxiter, maxerr=self.maxerr)
         else:
             raise NotImplementedError(
@@ -223,16 +253,19 @@ class MaximumLikelihoodMSM(_Estimator, _EstimatedMSM):
 
         # continue sparse or dense?
         if not self.sparse:
-            # converting count matrices to arrays. As a result the transition matrix and all subsequent properties
-            # will be computed using dense arrays and dense matrix algebra.
+            # converting count matrices to arrays. As a result the
+            # transition matrix and all subsequent properties will be
+            # computed using dense arrays and dense matrix algebra.
             self._C_full = self._C_full.toarray()
             self._C_active = self._C_active.toarray()
             P = P.toarray()
 
-        # Done. We set our own model parameters, so this estimator is equal to the estimated model.
+        # Done. We set our own model parameters, so this estimator is
+        # equal to the estimated model.
         self._dtrajs_full = dtrajs
         self._connected_sets = msmest.connected_sets(self._C_full)
-        self.set_model_params(P=P, reversible=self.reversible, dt_model=self.timestep_traj.get_scaled(self.lag))
+        self.set_model_params(P=P, pi=statdist_active, reversible=self.reversible,
+                              dt_model=self.timestep_traj.get_scaled(self.lag))
 
         return self
 
