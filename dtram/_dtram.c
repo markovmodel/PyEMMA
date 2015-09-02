@@ -135,7 +135,7 @@ extern void rc_dtram_fi(
         new_f_i[i] += norm;
 }
 
-extern void rc_dtram_p(
+extern void rc_dtram_pk(
     double *log_nu_K_i, double *b_K_i, double *f_i, int *C_K_ij, int n_therm_states,
     int n_markov_states, double *scratch_M, double *p_K_ij)
 {
@@ -187,6 +187,55 @@ extern void rc_dtram_p(
                 p_K_ij[KMM + i*n_markov_states + i] = 1.0 - sum;
             }
         }       
+    }
+}
+
+extern void rc_dtram_p(
+    double *log_nu_i, double *b_i, double *f_i, int *C_ij,
+    int n_markov_states, double *scratch_M, double *p_ij)
+{
+    int i, j;
+    int ij, ji;
+    int C;
+    double divisor, sum;
+    for(i=0; i<n_markov_states; ++i)
+    {
+        for(j=0; j<n_markov_states; ++j)
+        {
+            /* special case: we compute the diagonal elements later */
+            if(i == j)
+            {
+                scratch_M[j] = -INFINITY;
+                continue;
+            }
+            ij = i*n_markov_states + j;
+            ji = j*n_markov_states + i;
+            p_ij[ij] = 0.0;
+            C = C_ij[ij] + C_ij[ji];
+            /* special case: this element is zero */
+            if(0 == C)
+            {
+                scratch_M[j] = -INFINITY;
+                continue;
+            }
+            /* regular case */
+            divisor = rc_logsumexp_pair(
+                    log_nu_i[j] - f_i[i] - b_i[i], log_nu_i[i] - f_i[j] - b_i[j]);
+            scratch_M[j] =  log((double) C) - f_i[j] - b_i[j] - divisor;
+            p_ij[ij] = exp(scratch_M[j]);
+        }
+        /* compute the diagonal elements from the other elements in this line */
+        sum = exp(rc_logsumexp(scratch_M, n_markov_states));
+        if(1.0 <= sum)
+        {
+            p_ij[i*n_markov_states + i] = 0.0;
+            for(j=0; j<n_markov_states; ++j)
+                p_ij[i*n_markov_states + j] /= sum;
+        }
+        else
+        {
+            p_ij[i*n_markov_states + i] = 1.0 - sum;
+        }
     }
 }
 
