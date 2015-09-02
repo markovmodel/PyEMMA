@@ -40,7 +40,7 @@ class TestEstimationRequired(unittest.TestCase):
         testimator = TestEstimator()
         with self.assertRaises(ValueError) as ctx:
             testimator.property_method_requires
-        self.assertTrue('Tried calling property_method_requires on TestEstimator' in ctx.exception.message)
+        self.assertTrue('Tried calling property_method_requires on TestEstimator' in str(ctx.exception))
         testimator.estimate(None)
         self.assertEqual("", testimator.property_method_requires, "should return an empty string since now estimated")
 
