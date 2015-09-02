@@ -147,7 +147,7 @@ class KmeansClustering(AbstractClustering):
 
     def _calculate_required_memory(self, size):
         empty = np.empty(shape=(1, self.data_producer.dimension()), order='C', dtype=np.float32)
-        return long(empty[0, :].nbytes * size)
+        return empty[0, :].nbytes * size
 
     @doc_inherit
     def describe(self):
