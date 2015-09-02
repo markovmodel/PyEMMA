@@ -2,10 +2,10 @@
 *   Copyright 2015 Christoph Wehmeyer
 */
 
-#ifndef REWCORE_LSE
-#define REWCORE_LSE
+#ifndef THERMOTOOLS_LSE
+#define THERMOTOOLS_LSE
 
-extern double rc_logsumexp(double *array, int length);
-extern double rc_logsumexp_pair(double a, double b);
+extern double _logsumexp(double *array, int length);
+extern double _logsumexp_pair(double a, double b);
 
 #endif

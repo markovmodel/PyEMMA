@@ -14,7 +14,7 @@
 #endif
 
 /* _sort() is based on examples from http://www.linux-related.de (2004) */
-static void rc_sort(double *array, int L, int R)
+static void _sort(double *array, int L, int R)
 {
     int l, r;
     double swap;
@@ -34,8 +34,8 @@ static void rc_sort(double *array, int L, int R)
         swap = array[l];
         array[l] = array[R];
         array[R] = swap;
-        rc_sort(array, L, l - 1);
-        rc_sort(array, l + 1, R);
+        _sort(array, L, l - 1);
+        _sort(array, l + 1, R);
     }
     else /* use insertion sort */
     {
@@ -49,11 +49,11 @@ static void rc_sort(double *array, int L, int R)
     }
 }
 
-extern double rc_logsumexp(double *array, int length)
+extern double _logsumexp(double *array, int length)
 {
     int i;
     double sum=0.0;
-    rc_sort(array, 0, length - 1);
+    _sort(array, 0, length - 1);
     if(-INFINITY == array[length - 1])
         return -INFINITY;
     for(i=0; i<length-1; ++i)
@@ -61,7 +61,7 @@ extern double rc_logsumexp(double *array, int length)
     return array[length - 1] + log(sum + 1.0);
 }
 
-extern double rc_logsumexp_pair(double a, double b)
+extern double _logsumexp_pair(double a, double b)
 {
     if((-INFINITY == a) && (-INFINITY == b))
         return -INFINITY;
