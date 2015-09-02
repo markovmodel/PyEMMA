@@ -18,16 +18,16 @@ class TestEstimator(Estimator):
     @deprecated()
     @estimation_required
     @alias('testimator_method_requires')
-    def test_method_requires_estimation(self):
+    def method_requires_estimation(self):
         pass
 
     @alias('testimator_method_requires_rev')
     @estimation_required
     @deprecated()
-    def test_method_requires_estimation_reverse(self):
+    def method_requires_estimation_reverse(self):
         pass
 
-    def test_method_does_not_require_estimation(self):
+    def method_does_not_require_estimation(self):
         pass
 
     def _estimate(self, X):
@@ -46,10 +46,10 @@ class TestEstimationRequired(unittest.TestCase):
 
     def test_requires_estimation(self):
         testimator = TestEstimator()
-        self.assertRaises(ValueError, testimator.test_method_requires_estimation)
+        self.assertRaises(ValueError, testimator.method_requires_estimation)
         testimator.estimate(None)
         # now that we called 'estimate()', should not raise
-        testimator.test_method_requires_estimation()
+        testimator.method_requires_estimation()
 
     def test_requires_estimation_alias(self):
         testimator = TestEstimator()
@@ -68,4 +68,4 @@ class TestEstimationRequired(unittest.TestCase):
     def test_does_not_require_estimation(self):
         testimator = TestEstimator()
         # does not require 'estimate()', should not raise
-        testimator.test_method_does_not_require_estimation()
+        testimator.method_does_not_require_estimation()
