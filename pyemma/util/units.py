@@ -22,6 +22,7 @@ from __future__ import absolute_import
 __author__ = 'noe'
 
 import numpy as np
+import math
 
 class TimeUnit(object):
 
@@ -138,3 +139,18 @@ class TimeUnit(object):
 
         # nothing to do
         return times, self._unit
+
+def bytes_to_string(num, suffix='B'):
+    """
+    Returns the size of num (bytes) in a human readable form up to Yottabytes (YB).
+    :param num: The size of interest in bytes.
+    :param suffix: A suffix, default 'B' for 'bytes'.
+    :return: a human readable representation of a size in bytes
+    """
+    extensions = ["%s%s" % (x, suffix) for x in ['', 'K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y']]
+    if num == 0:
+        return "0%s" % extensions[0]
+    else:
+        n_bytes = float(abs(num))
+        place = int(math.floor(math.log(n_bytes, 1024)))
+        return "%.1f%s" % (np.sign(num) * (n_bytes / pow(1024, place)), extensions[place])

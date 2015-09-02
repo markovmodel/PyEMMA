@@ -234,6 +234,7 @@ metadata = dict(
                       'msmtools',
                       'bhmm==0.5.1',
                       'joblib==0.8.4',
+                      'psutil>=3.1.1'
                       ],
     zip_safe=False,
 )
