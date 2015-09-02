@@ -23,6 +23,7 @@ requirements:
     - numpy >=1.7
     - scipy
     - six
+    - decorator
 
   run:
     - python
@@ -36,6 +37,7 @@ requirements:
     - numpy >=1.7
     - scipy
     - six
+    - decorator
 
 test:
   requires:

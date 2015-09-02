@@ -37,6 +37,8 @@ from __future__ import absolute_import
 from functools import wraps
 import warnings
 from six import PY2
+from decorator import decorator
+from pyemma._base.estimator import Estimator
 
 __all__ = ['alias',
            'aliased',
@@ -226,3 +228,15 @@ def shortcut(*names):
                 globals_['__all__'].append(name)
         return f
     return wrap
+
+@decorator
+def estimation_required(func, *args, **kw):
+    """
+    Decorator checking the self._estimated flag in an Estimator instance, raising a value error if the decorated
+    function is called before estimator.estimate() has been called.
+    """
+    self = args[0] if len(args) > 0 else None
+    if self and isinstance(self, Estimator) and not self._estimated:
+        raise ValueError("Tried calling %s on %s which requires the estimator to be estimated."
+                         % (func.__name__, self.__class__.__name__))
+    return func(*args, **kw)
