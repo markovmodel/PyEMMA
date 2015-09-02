@@ -15,8 +15,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+r"""
+Python interface to the WHAM estimator's lowlevel functions.
+"""
+
 import numpy as np
 cimport numpy as np
+
+__all__ = ['wham_fi', 'wham_fk', 'wham_normalize']
 
 cdef extern from "_wham.h":
     void _wham_fi(
