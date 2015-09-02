@@ -65,7 +65,7 @@ class TestFeatureReader(unittest.TestCase):
         cls.trajfile, cls.xyz, cls.n_frames = create_traj(cls.topfile)
         cls.trajfile2, cls.xyz2, cls.n_frames2 = create_traj(cls.topfile)
 
-        cls.traj_dcd = create_traj(cls.topfile, format='.dcd')
+        cls.traj_dcd = create_traj(cls.topfile, format='.dcd')[0]
 
         return c
 
