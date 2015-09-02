@@ -51,7 +51,8 @@ class KmeansClustering(AbstractClustering):
         Parameters
         ----------
         n_clusters : int
-            amount of cluster centers
+            amount of cluster centers. When not specified (None), min(sqrt(N), 5000) is chosen as default value,
+            where N denotes the number of data points
 
         max_iter : int
             maximum number of iterations before stopping.
@@ -97,11 +98,17 @@ class KmeansClustering(AbstractClustering):
         self._cluster_centers_iter = []
         self._init_centers_indices = {}
         self._t_total = 0
+        traj_lengths = self.trajectory_lengths(stride=self._param_with_stride)
+        total_length = sum(traj_lengths)
+
+        if not self.n_clusters:
+            self.n_clusters = min(int(math.sqrt(total_length)), 5000)
+            self._logger.info("The number of cluster centers was not specified, "
+                              "using min(sqrt(N), 5000)=%s as n_clusters." % self.n_clusters)
+
         if self._init_strategy == 'kmeans++':
             self._progress_register(self.n_clusters, description="initialize kmeans++ centers", stage=0)
         self._progress_register(self.max_iter, description="kmeans iterations", stage=1)
-        traj_lengths = self.trajectory_lengths(stride=self._param_with_stride)
-        total_length = sum(traj_lengths)
 
         self._init_in_memory_chunks(total_length)
 

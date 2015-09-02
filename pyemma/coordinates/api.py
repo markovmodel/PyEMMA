@@ -1189,7 +1189,7 @@ def cluster_mini_batch_kmeans(data=None, k=100, max_iter=10, batch_size=0.2, met
     return _param_stage(data, res, stride=1)
 
 
-def cluster_kmeans(data=None, k=100, max_iter=10, tolerance=1e-5, stride=1,
+def cluster_kmeans(data=None, k=None, max_iter=10, tolerance=1e-5, stride=1,
                    metric='euclidean', init_strategy='kmeans++', fixed_seed=False):
     r"""k-means clustering
 
@@ -1209,7 +1209,8 @@ def cluster_kmeans(data=None, k=100, max_iter=10, tolerance=1e-5, stride=1,
         the number of cluster centers
 
     max_iter : int
-        maximum number of iterations before stopping.
+        maximum number of iterations before stopping. When not specified (None), min(sqrt(N),5000) is chosen
+        as default value, where N denotes the number of data points
 
     tolerance : float
         stop iteration when the relative change in the cost function
