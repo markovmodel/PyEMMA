@@ -29,10 +29,12 @@ import os
 import random
 import tempfile
 import numpy as np
+import psutil
 
 from . import kmeans_clustering
 
 from pyemma.util.annotators import doc_inherit
+from pyemma.util.units import bytes_to_string
 from pyemma.coordinates.clustering.interface import AbstractClustering
 from six.moves import range
 
@@ -115,15 +117,30 @@ class KmeansClustering(AbstractClustering):
                 random.seed(None)
 
     def _init_in_memory_chunks(self, size):
-        try:
+        available_mem = psutil.virtual_memory().available
+        required_mem = self._calculate_required_memory(size)
+        if required_mem <= available_mem:
             self._in_memory_chunks = np.empty(shape=(size, self.data_producer.dimension()),
                                               order='C', dtype=np.float32)
-        except MemoryError:
+        else:
             if self._oom_strategy == 'raise':
-                raise
-            self._in_memory_chunks = np.memmap(tempfile.mkstemp()[1], mode="w+",
-                                               shape=(size, self.data_producer.dimension()), order='C',
-                                               dtype=np.float32)
+                self._logger.warn('K-means failed to load all the data (%s required, %s available) into memory. '
+                                  'Consider using a larger stride or set the oom_strategy to \'memmap\' which works '
+                                  'with a memmapped temporary file.'
+                                  % (bytes_to_string(required_mem), bytes_to_string(available_mem)))
+                raise MemoryError
+            else:
+                self._logger.warn('K-means failed to load all the data (%s required, %s available) into memory '
+                                  'and now uses a memmapped temporary file which is comparably slow. '
+                                  'Consider using a larger stride.'
+                                  % (bytes_to_string(required_mem), bytes_to_string(available_mem)))
+                self._in_memory_chunks = np.memmap(tempfile.mkstemp()[1], mode="w+",
+                                                   shape=(size, self.data_producer.dimension()), order='C',
+                                                   dtype=np.float32)
+
+    def _calculate_required_memory(self, size):
+        empty = np.empty(shape=(1, self.data_producer.dimension()), order='C', dtype=np.float32)
+        return long(empty[0, :].nbytes * size)
 
     @doc_inherit
     def describe(self):
@@ -216,12 +233,6 @@ class KmeansClustering(AbstractClustering):
         # beginning - compute
         if first_chunk:
             self._t_total = 0
-            mem_req = int(1.0 / 1024 ** 2 * X[0, :].nbytes * self.n_frames_total(stride))
-            if mem_req > 100:
-                self._logger.warn('K-means implementation is currently memory inefficient.'
-                                  ' This calculation needs %i megabytes of main memory.'
-                                  ' If you get a memory error, try using a larger stride.'
-                                  % mem_req)
 
         # appends a true copy
         self._in_memory_chunks[self._t_total:self._t_total + len(X)] = X[:]
