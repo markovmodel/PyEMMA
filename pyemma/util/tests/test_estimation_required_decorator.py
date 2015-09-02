@@ -7,6 +7,15 @@ from pyemma.util.annotators import estimation_required, alias, aliased, deprecat
 @aliased
 class TestEstimator(Estimator):
 
+    def __init__(self):
+        self._prop = ""
+
+    @property
+    @estimation_required
+    def property_method_requires(self):
+        return self._prop
+
+    @deprecated()
     @estimation_required
     @alias('testimator_method_requires')
     def test_method_requires_estimation(self):
@@ -14,6 +23,7 @@ class TestEstimator(Estimator):
 
     @alias('testimator_method_requires_rev')
     @estimation_required
+    @deprecated()
     def test_method_requires_estimation_reverse(self):
         pass
 
@@ -25,6 +35,14 @@ class TestEstimator(Estimator):
 
 
 class TestEstimationRequired(unittest.TestCase):
+
+    def test_requires_estimation_property(self):
+        testimator = TestEstimator()
+        with self.assertRaises(ValueError) as ctx:
+            testimator.property_method_requires
+        self.assertTrue('Tried calling property_method_requires on TestEstimator' in ctx.exception.message)
+        testimator.estimate(None)
+        self.assertEqual("", testimator.property_method_requires, "should return an empty string since now estimated")
 
     def test_requires_estimation(self):
         testimator = TestEstimator()

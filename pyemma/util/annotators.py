@@ -97,8 +97,7 @@ class DocInherit(object):
 
 doc_inherit = DocInherit
 
-
-def deprecated(msg):
+class deprecated(object):
     """This is a decorator which can be used to mark functions
     as deprecated. It will result in a warning being emitted
     when the function is used.
@@ -109,34 +108,31 @@ def deprecated(msg):
         a user level hint which should indicate which feature to use otherwise.
 
     """
-    def deprecated_decorator(func):
 
-        @wraps(func)
-        def new_func(*args, **kwargs):
-            mod = func.__module__
-            filename = mod.__file__
-            lineno = func.__code__.co_firstlineno + 1
+    def __init__(self, msg = None):
+        self.msg = msg
 
-            user_msg = "Call to deprecated function %s. Called from %s line %i. " \
-                % (func.__name__, filename, lineno)
-            if msg:
-                user_msg += msg
+    def __call__(self, func):
+        mod = func.__module__
+        filename = mod.__file__ if hasattr(mod, '__file__') else None
+        lineno = func.__code__.co_firstlineno + 1
 
-            warnings.warn_explicit(
-                user_msg,
-                category=DeprecationWarning,
-                filename=func.__code__.co_filename,
-                lineno=func.__code__.co_firstlineno + 1
-            )
-            return func(*args, **kwargs)
+        user_msg = "Call to deprecated function %s. Called from %s line %i. " \
+                   % (func.__name__, filename if filename else mod, lineno)
 
-        new_func.__dict__['__deprecated__'] = True
+        if self.msg:
+            user_msg += self.msg
 
+        warnings.warn_explicit(
+            user_msg,
+            category=DeprecationWarning,
+            filename=func.__code__.co_filename,
+            lineno=func.__code__.co_firstlineno + 1
+        )
+
+        func.__dict__['__deprecated__'] = True
         # TODO: search docstring for notes section and append deprecation notice (with msg)
-
-        return new_func
-
-    return deprecated_decorator
+        return func
 
 
 class alias(object):
@@ -234,6 +230,13 @@ def estimation_required(func, *args, **kw):
     """
     Decorator checking the self._estimated flag in an Estimator instance, raising a value error if the decorated
     function is called before estimator.estimate() has been called.
+
+    If mixed with a property-annotation, this annotation needs to come first in the chain of function calls, i.e.,
+
+    @property
+    @estimation_required
+    def func(self):
+        ....
     """
     self = args[0] if len(args) > 0 else None
     if self and isinstance(self, Estimator) and not self._estimated:

@@ -26,6 +26,7 @@ Created on Jul 26, 2014
 from __future__ import absolute_import, print_function
 
 import numpy as np
+from pyemma.util.annotators import estimation_required
 
 from pyemma.util.statistics import confidence_interval
 from pyemma.util import types as _types
@@ -218,6 +219,7 @@ class ImpliedTimescales(Estimator, ProgressReporter):
         return self.nits
 
     @property
+    @estimation_required
     def timescales(self):
         r"""Returns the implied timescale estimates
 
