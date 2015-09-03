@@ -245,7 +245,7 @@ class TestFeaturizer(unittest.TestCase):
         self.assertEqual(len(desc), self.feat.dimension())
 
     def test_backbone_dihedrals(self):
-        self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
+        self.feat = MDFeaturizer(topology=self.asn_leu_pdbfile)
         self.feat.add_backbone_torsions()
 
         traj = mdtraj.load(self.asn_leu_pdbfile)
@@ -257,7 +257,7 @@ class TestFeaturizer(unittest.TestCase):
         self.assertEqual(len(desc), self.feat.dimension())
 
     def test_backbone_dihedrals_deg(self):
-        self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
+        self.feat = MDFeaturizer(topology=self.asn_leu_pdbfile)
         self.feat.add_backbone_torsions(deg=True)
 
         traj = mdtraj.load(self.asn_leu_pdbfile)
@@ -268,7 +268,7 @@ class TestFeaturizer(unittest.TestCase):
         self.assertEqual(len(desc), self.feat.dimension())
 
     def test_backbone_dihedrals_cossin(self):
-        self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
+        self.feat = MDFeaturizer(topology=self.asn_leu_pdbfile)
         self.feat.add_backbone_torsions(cossin=True)
 
         traj = mdtraj.load(self.asn_leu_traj, top=self.asn_leu_pdbfile)
@@ -282,7 +282,7 @@ class TestFeaturizer(unittest.TestCase):
         self.assertEqual(len(desc), self.feat.dimension())
 
     def test_backbone_dihedrials_chi(self):
-        self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
+        self.feat = MDFeaturizer(topology=self.asn_leu_pdbfile)
         self.feat.add_chi1_torsions()
 
         traj = mdtraj.load(self.asn_leu_pdbfile)
@@ -293,7 +293,7 @@ class TestFeaturizer(unittest.TestCase):
         self.assertEqual(len(desc), self.feat.dimension())
 
     def test_backbone_dihedrials_chi_cossin(self):
-        self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
+        self.feat = MDFeaturizer(topology=self.asn_leu_pdbfile)
         self.feat.add_chi1_torsions(cossin=True)
 
         traj = mdtraj.load(self.asn_leu_pdbfile)
