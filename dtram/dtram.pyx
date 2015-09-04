@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 r"""
-Python interface to the WHAM estimator's lowlevel functions.
+Python interface to the dTRAM estimator's lowlevel functions.
 """
 
 import numpy as np
