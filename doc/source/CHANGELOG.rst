@@ -1,5 +1,9 @@
 Changelog
 =========
+2.0.1 (9-3-2015)
+----------------
+Urgent bug fix: reading other formats than XTC was not possible in coordinates
+pipeline. This bug has been introduced into 2.0, prior versions were not affected.
 
 2.0 (9-1-2015)
 --------------
