@@ -38,7 +38,6 @@ from functools import wraps
 import warnings
 from six import PY2
 from decorator import decorator
-from pyemma._base.estimator import Estimator
 
 __all__ = ['alias',
            'aliased',
@@ -239,7 +238,7 @@ def estimation_required(func, *args, **kw):
         ....
     """
     self = args[0] if len(args) > 0 else None
-    if self and isinstance(self, Estimator) and not self._estimated:
+    if self and hasattr(self, '_estimated') and not self._estimated:
         raise ValueError("Tried calling %s on %s which requires the estimator to be estimated."
                          % (func.__name__, self.__class__.__name__))
     return func(*args, **kw)
