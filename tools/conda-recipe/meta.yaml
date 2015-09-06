@@ -24,6 +24,7 @@ requirements:
     - scipy
     - six
     - psutil
+    - decorator
 
   run:
     - python
@@ -38,6 +39,7 @@ requirements:
     - scipy
     - six
     - psutil
+    - decorator
 
 test:
   requires:
