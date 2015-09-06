@@ -300,6 +300,8 @@ class Estimator(_BaseEstimator):
     """
     # counting estimator instances, incremented by name property.
     _ids = count(0)
+    # flag indicating if estimator's estimate method has been called
+    _estimated = False
 
     @property
     def name(self):
@@ -309,7 +311,6 @@ class Estimator(_BaseEstimator):
         except AttributeError:
             self._name = instance_name(self, next(self._ids))
             return self._name
-    
 
     @property
     def logger(self):
@@ -344,6 +345,7 @@ class Estimator(_BaseEstimator):
         if params:
             self.set_params(**params)
         self._model = self._estimate(X)
+        self._estimated = True
         return self._model
 
     def _estimate(self, X):
