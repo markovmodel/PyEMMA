@@ -18,6 +18,7 @@
 
 
 from __future__ import absolute_import, division
+import math
 import numpy as np
 from pyemma.coordinates.clustering.interface import AbstractClustering
 
@@ -53,6 +54,13 @@ class UniformTimeClustering(AbstractClustering):
         :return:
         """
         # initialize cluster centers
+        if not self.n_clusters:
+            traj_lengths = self.trajectory_lengths(stride=self._param_with_stride)
+            total_length = sum(traj_lengths)
+            self.n_clusters = min(int(math.sqrt(total_length)), 5000)
+            self._logger.info("The number of cluster centers was not specified, "
+                              "using min(sqrt(N), 5000)=%s as n_clusters." % self.n_clusters)
+
         self._clustercenters = np.zeros(
             (self.n_clusters, self.data_producer.dimension()), dtype=np.float32)
 

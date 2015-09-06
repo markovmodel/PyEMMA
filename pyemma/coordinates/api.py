@@ -1189,7 +1189,7 @@ def cluster_mini_batch_kmeans(data=None, k=100, max_iter=10, batch_size=0.2, met
     return _param_stage(data, res, stride=1)
 
 
-def cluster_kmeans(data=None, k=100, max_iter=10, tolerance=1e-5, stride=1,
+def cluster_kmeans(data=None, k=None, max_iter=10, tolerance=1e-5, stride=1,
                    metric='euclidean', init_strategy='kmeans++', fixed_seed=False):
     r"""k-means clustering
 
@@ -1206,10 +1206,12 @@ def cluster_kmeans(data=None, k=100, max_iter=10, tolerance=1e-5, stride=1,
         input data, if available in memory
 
     k: int
-        the number of cluster centers
+        the number of cluster centers. When not specified (None), min(sqrt(N), 5000) is chosen as default value,
+        where N denotes the number of data points
 
     max_iter : int
-        maximum number of iterations before stopping.
+        maximum number of iterations before stopping. When not specified (None), min(sqrt(N),5000) is chosen
+        as default value, where N denotes the number of data points
 
     tolerance : float
         stop iteration when the relative change in the cost function
@@ -1289,7 +1291,7 @@ def cluster_kmeans(data=None, k=100, max_iter=10, tolerance=1e-5, stride=1,
     return _param_stage(data, res, stride=stride)
 
 
-def cluster_uniform_time(data=None, k=100, stride=1, metric='euclidean'):
+def cluster_uniform_time(data=None, k=None, stride=1, metric='euclidean'):
     r"""Uniform time clustering
 
     If given data, performs a clustering that selects data points uniformly in
@@ -1306,7 +1308,8 @@ def cluster_uniform_time(data=None, k=100, stride=1, metric='euclidean'):
         by source function input data, if available in memory
 
     k : int
-        the number of cluster centers
+        the number of cluster centers. When not specified (None), min(sqrt(N), 5000) is chosen as default value,
+        where N denotes the number of data points
 
     stride : int, optional, default = 1
         If set to 1, all input data will be used for estimation. Note that this
@@ -1340,7 +1343,7 @@ def cluster_uniform_time(data=None, k=100, stride=1, metric='euclidean'):
 
     """
     res = _UniformTimeClustering(k, metric=metric)
-    return _param_stage(data, res)
+    return _param_stage(data, res, stride=stride)
 
 
 def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1, metric='euclidean'):
