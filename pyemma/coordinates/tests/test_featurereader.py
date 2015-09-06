@@ -40,8 +40,8 @@ from six.moves import range
 log = getLogger('TestFeatureReader')
 
 
-def create_traj(top):
-    trajfile = tempfile.mktemp('.xtc')
+def create_traj(top, format='.xtc'):
+    trajfile = tempfile.mktemp(suffix=format)
     n_frames = np.random.randint(500, 1500)
     log.debug("create traj with %i frames" % n_frames)
     xyz = np.arange(n_frames * 3 * 3).reshape((n_frames, 3, 3))
@@ -65,6 +65,8 @@ class TestFeatureReader(unittest.TestCase):
         cls.trajfile, cls.xyz, cls.n_frames = create_traj(cls.topfile)
         cls.trajfile2, cls.xyz2, cls.n_frames2 = create_traj(cls.topfile)
 
+        cls.traj_dcd = create_traj(cls.topfile, format='.dcd')[0]
+
         return c
 
     @classmethod
@@ -73,6 +75,10 @@ class TestFeatureReader(unittest.TestCase):
             os.unlink(cls.trajfile)
         except EnvironmentError:
             pass
+
+    def test_dcd(self):
+        reader = api.source(self.traj_dcd, top=self.topfile)
+        reader.get_output()
 
     def testIteratorAccess(self):
         reader = api.source(self.trajfile, top=self.topfile)
