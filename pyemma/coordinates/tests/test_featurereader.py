@@ -38,10 +38,8 @@ from six.moves import range
 
 log = getLogger('TestFeatureReader')
 
-tmpdir = tempfile.mkdtemp('test_feature_reader')
-
-def create_traj(top, format='.xtc'):
-    trajfile = tempfile.mktemp(suffix=format, dir=tmpdir)
+def create_traj(top, format='.xtc', dir=None):
+    trajfile = tempfile.mktemp(suffix=format, dir=dir)
     n_frames = np.random.randint(500, 1500)
     log.debug("create traj with %i frames" % n_frames)
     xyz = np.arange(n_frames * 3 * 3).reshape((n_frames, 3, 3))
@@ -54,9 +52,9 @@ def create_traj(top, format='.xtc'):
 
     return trajfile, xyz, n_frames
 
-def create_loader_test(traj_file, top):
+def create_loader_case(traj_file, top):
     def test_format_loading_via_feature_reader(self):
-        reader = source(traj_file, top=top)
+        reader = source(traj_file, top=top, dir=tmpdir)
         reader.get_output()
     return test_format_loading_via_feature_reader
 
@@ -67,17 +65,18 @@ class TestFeatureReader(unittest.TestCase):
         c = super(TestFeatureReader, cls).setUpClass()
         # create a fake trajectory which has 3 atoms and coordinates are just a range
         # over all frames.
+        cls.tmpdir = tempfile.mkdtemp('test_feature_reader')
+        
         cls.topfile = pkg_resources.resource_filename(__name__, 'data/test.pdb')
-        cls.trajfile, cls.xyz, cls.n_frames = create_traj(cls.topfile)
-        cls.trajfile2, cls.xyz2, cls.n_frames2 = create_traj(cls.topfile)
-
+        cls.trajfile, cls.xyz, cls.n_frames = create_traj(cls.topfile, dir=cls.tmpdir)
+        cls.trajfile2, cls.xyz2, cls.n_frames2 = create_traj(cls.topfile, dir=cls.tmpdir)
         traj = mdtraj.load(cls.trajfile, top=cls.topfile)
         for fo in traj._savers():
             if fo in ('.crd', '.mdcrd', '.h5',  '.ncrst', '.lh5'):
                 continue
             log.debug( "creating traj for " + fo)
-            traj_file = create_traj(cls.topfile, format=fo)[0]
-            test_mtd = create_loader_test(traj_file, cls.topfile)
+            traj_file = create_traj(cls.topfile, format=fo, dir=cls.tmpdir)[0]
+            test_mtd = create_loader_case(traj_file, cls.topfile)
             test_mtd.__name__ = 'test_loader_' + fo
             setattr(cls, test_mtd.__name__, test_mtd)
 
@@ -86,7 +85,7 @@ class TestFeatureReader(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         import shutil
-        shutil.rmtree(tmpdir, ignore_errors=True)
+        shutil.rmtree(cls.tmpdir, ignore_errors=True)
 
     def testIteratorAccess(self):
         reader = api.source(self.trajfile, top=self.topfile)
