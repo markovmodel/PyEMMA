@@ -25,7 +25,6 @@ Created on 23.01.2015
 
 from __future__ import absolute_import
 import mdtraj
-import os
 import tempfile
 import unittest
 from pyemma.coordinates import api
@@ -39,20 +38,27 @@ from six.moves import range
 
 log = getLogger('TestFeatureReader')
 
+tmpdir = tempfile.mkdtemp('test_feature_reader')
 
 def create_traj(top, format='.xtc'):
-    trajfile = tempfile.mktemp(suffix=format)
+    trajfile = tempfile.mktemp(suffix=format, dir=tmpdir)
     n_frames = np.random.randint(500, 1500)
     log.debug("create traj with %i frames" % n_frames)
     xyz = np.arange(n_frames * 3 * 3).reshape((n_frames, 3, 3))
 
     t = mdtraj.load(top)
     t.xyz = xyz
+    t.unitcell_vectors = np.array(n_frames*[[0,0,1], [0,1,0], [1,0,0]]).reshape(n_frames, 3,3)
     t.time = np.arange(n_frames)
     t.save(trajfile)
 
     return trajfile, xyz, n_frames
 
+def create_loader_test(traj_file, top):
+    def test_format_loading_via_feature_reader(self):
+        reader = source(traj_file, top=top)
+        reader.get_output()
+    return test_format_loading_via_feature_reader
 
 class TestFeatureReader(unittest.TestCase):
 
@@ -65,20 +71,22 @@ class TestFeatureReader(unittest.TestCase):
         cls.trajfile, cls.xyz, cls.n_frames = create_traj(cls.topfile)
         cls.trajfile2, cls.xyz2, cls.n_frames2 = create_traj(cls.topfile)
 
-        cls.traj_dcd = create_traj(cls.topfile, format='.dcd')[0]
+        traj = mdtraj.load(cls.trajfile, top=cls.topfile)
+        for fo in traj._savers():
+            if fo in ('.crd', '.mdcrd', '.h5',  '.ncrst', '.lh5'):
+                continue
+            log.debug( "creating traj for " + fo)
+            traj_file = create_traj(cls.topfile, format=fo)[0]
+            test_mtd = create_loader_test(traj_file, cls.topfile)
+            test_mtd.__name__ = 'test_loader_' + fo
+            setattr(cls, test_mtd.__name__, test_mtd)
 
         return c
 
     @classmethod
     def tearDownClass(cls):
-        try:
-            os.unlink(cls.trajfile)
-        except EnvironmentError:
-            pass
-
-    def test_dcd(self):
-        reader = api.source(self.traj_dcd, top=self.topfile)
-        reader.get_output()
+        import shutil
+        shutil.rmtree(tmpdir, ignore_errors=True)
 
     def testIteratorAccess(self):
         reader = api.source(self.trajfile, top=self.topfile)
