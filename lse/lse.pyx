@@ -41,6 +41,15 @@ def logsumexp(_np.ndarray[double, ndim=1, mode="c"] array not None):
     -------
     ln_sum : float
         logarithm of the sum of exponentials
+
+    Notes
+    -----
+    The logsumexp() function returns
+
+    .. math:
+        \ln\left( \sum_{i=0}^{n-1} \exp(a_i) \right)
+
+    where the :math:`a_i` are the :math:`n` values in the supplied array.
     """
     return _logsumexp(<double*> _np.PyArray_DATA(array), array.shape[0])
 
@@ -59,5 +68,14 @@ def logsumexp_pair(a, b):
     -------
     ln_sum : float
         logarithm of the sum of exponentials
+
+    Notes
+    -----
+    The logsumexp_pair() function returns
+
+    .. math:
+        \ln\left( \exp(a) + \exp(b) \right)
+
+    where the :math:`a` and :math:`b` are the supplied values.
     """
     return _logsumexp_pair(a, b)
