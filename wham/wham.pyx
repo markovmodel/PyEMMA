@@ -57,6 +57,28 @@ def iterate_fi(
         scratch array
     f_K : numpy.ndarray(shape=(T), dtype=numpy.float64)
         target array for the reduced free energies of the T thermodynamic states
+
+    Notes
+    -----
+    The iterate_fi() function computes
+
+    .. math:
+        f_i = -\ln\left( \frac{
+                \sum_{K=0}^{N_T-1} N_i^{(K)}
+            }{
+                \sum_{K=0}^{N_T-1} \exp(f^{(K)}-b_i^{(K)}) \sum_{j=0}^{N_M-1} N_j^{(K)}
+            }\right)
+
+    which equals to
+
+    .. math:
+        f_i = \ln\left(
+                \sum_{K=0}^{N_T-1} \exp\left(
+                    f^{(K)} - b_i^{(K)} + \ln\left( \sum_{j=0}^{N_M-1} N_j^{(K)} \right)
+                \right)
+            \right) - \ln\left( \sum_{K=0}^{N_T-1} N_i^{(K)} \right)
+
+    in the logsumexp scheme.
     """
     _iterate_fi(
         <double*> _np.PyArray_DATA(log_N_K),
@@ -86,6 +108,17 @@ def iterate_fk(
         scratch array
     f_K : numpy.ndarray(shape=(T), dtype=numpy.float64)
         target array for the reduced free energies of the T thermodynamic states
+
+    Notes
+    -----
+    The iterate_fk() function computes
+
+    .. math:
+        f^{(K)} = -\ln\left(
+                \sum_{i=0}^{N_M-1} \exp(-b_i^{(K)}-f_i)
+            \right)
+
+    which is already in the logsumexp form.
     """
     _iterate_fk(
         <double*> _np.PyArray_DATA(f_i),
@@ -108,6 +141,17 @@ def normalize_fi(
         reduced free energies of the M markov states
     scratch_M : numpy.ndarray(shape=(M), dtype=numpy.float64)
         scratch array
+
+    Notes
+    -----
+    The normalize_fi() function performs to operation
+
+    .. math:
+        f_i \leftarrow  f_i + \ln\left(
+                \sum_{i=0}^{N_M-1} \exp(-f_i)
+            \right)
+
+    which is equilvalent to a renormalisation of the stationary distribution.
     """
     _normalize_fi(
         <double*> _np.PyArray_DATA(f_i),
