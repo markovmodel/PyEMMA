@@ -972,7 +972,7 @@ def pca(data=None, dim=2, var_cutoff=0.95, stride=1, mean=None):
 
 
 def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, stride=1,
-         force_eigenvalues_le_one=False, mean=None):
+         force_eigenvalues_le_one=False, epsilon=1e-6, mean=None):
     r""" Time-lagged independent component analysis (TICA).
 
     TICA is a linear transformation method. In contrast to PCA, which finds
@@ -1034,6 +1034,11 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, stride=1,
     force_eigenvalues_le_one : boolean
         Compute covariance matrix and time-lagged covariance matrix such
         that the generalized eigenvalues are always guaranteed to be <= 1.
+
+    epsilon : float
+            eigenvalue norm cutoff. Eigenvalues of C0 with norms <= epsilon will be
+            cut off. The remaining number of eigenvalues define the size
+            of the output.
 
     mean : ndarray, optional, default None
         Optionally pass pre-calculated means to avoid their re-computation.
