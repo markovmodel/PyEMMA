@@ -176,4 +176,18 @@ Frequently Asked Questions (FAQ)
      
      conda install pyside
 
+* Q: My conda installation raises errors during import
+
+  A: check if you have a file called 'easy-install.pth' in our home directory
+
+     ~/.local/lib/python2.7/site-packages/easy-install.pth
+
+     and validate it contains only packages you want (eg. Python packages you
+     have installed with pip prior the usage of Anaconda/miniconda. If the list
+     in this file contains important dependencies of PyEMMA like SciPy or NumPy
+     this can cause trouble, since these packages are being used in favour of
+     the conda installation and are not compatible.
+     You should also make sure that this file does not contain a reference to
+     the systems provided python installation like /usr/lib/python etc. because
+     of the same reason.
 
