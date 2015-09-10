@@ -25,10 +25,10 @@ cimport numpy as np
 __all__ = ['df']
 
 cdef extern from "_bar.h":
-    double _df(double *dbIJ, int L1, double *dbJI, int L2, double *scratch)
+    double _df(double *db_IJ, int L1, double *db_JI, int L2, double *scratch)
 
-def df(np.ndarray[double, ndim=1, mode="c"] dbIJ not None,
-       np.ndarray[double, ndim=1, mode="c"] dbJI not None,
+def df(np.ndarray[double, ndim=1, mode="c"] db_IJ not None,
+       np.ndarray[double, ndim=1, mode="c"] db_JI not None,
        np.ndarray[double, ndim=1, mode="c"] scratch not None):
     
     """
@@ -36,5 +36,9 @@ def df(np.ndarray[double, ndim=1, mode="c"] dbIJ not None,
     ----------
 
     """
-    return _df(<double*> np.PyArray_DATA(dbIJ), dbIJ.shape[0], <double*> np.PyArray_DATA(dbJI), 
-               dbJI.shape[0], <double*> np.PyArray_DATA(scratch))
+    return _df(
+    	<double*> np.PyArray_DATA(db_IJ),
+    	db_IJ.shape[0],
+    	<double*> np.PyArray_DATA(db_JI), 
+        db_JI.shape[0],
+        <double*> np.PyArray_DATA(scratch))

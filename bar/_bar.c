@@ -21,21 +21,20 @@
 #include "_bar.h"
 #include "../lse/_lse.h"
 
-extern double _df(double *dbIJ, int L1, double *dbJI, int L2, double *scratch)
+extern double _df(double *db_IJ, int L1, double *db_JI, int L2, double *scratch)
 {
     int i;
     double ln_avg1;
     double ln_avg2; 
     for (i=0; i<L1; i++)
     {
-        scratch[i] = dbIJ[i]>0 ? 0 : dbIJ[i];
+        scratch[i] = db_IJ[i]>0 ? 0 : db_IJ[i];
     }
     ln_avg1 = _logsumexp(scratch, L1);
     for (i=0; i<L1; i++)
     {
-        scratch[i] = dbJI[i]>0 ? 0 : dbJI[i];
+        scratch[i] = db_JI[i]>0 ? 0 : db_JI[i];
     }
     ln_avg2 = _logsumexp(scratch, L2);
-
     return ln_avg2 - ln_avg1;
 }
