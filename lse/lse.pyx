@@ -19,8 +19,8 @@ r"""
 Python interface to the logsumexp summation scheme for numerically robust summation of exponentials.
 """
 
-import numpy as np
-cimport numpy as np
+import numpy as _np
+cimport numpy as _np
 
 __all__ = ['logsumexp', 'logsumexp_pair']
 
@@ -28,7 +28,7 @@ cdef extern from "_lse.h":
     double _logsumexp(double *array, int length)
     double _logsumexp_pair(double a, double b)
 
-def logsumexp(np.ndarray[double, ndim=1, mode="c"] array not None):
+def logsumexp(_np.ndarray[double, ndim=1, mode="c"] array not None):
     r"""
     Perform a summation of an array of exponentials via the logsumexp scheme
         
@@ -42,7 +42,7 @@ def logsumexp(np.ndarray[double, ndim=1, mode="c"] array not None):
     ln_sum : float
         logarithm of the sum of exponentials
     """
-    return _logsumexp(<double*> np.PyArray_DATA(array), array.shape[0])
+    return _logsumexp(<double*> _np.PyArray_DATA(array), array.shape[0])
 
 def logsumexp_pair(a, b):
     r"""

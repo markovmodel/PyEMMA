@@ -28,7 +28,7 @@
     #define NAN (INFINITY-INFINITY)
 #endif
 
-extern void _wham_fi(
+extern void _iterate_fi(
     double *log_N_K, double *log_N_i, double *f_K, double *b_K_i,
     int n_therm_states, int n_markov_states, double *scratch_T, double *f_i)
 {
@@ -41,7 +41,7 @@ extern void _wham_fi(
     }
 }
 
-extern void _wham_fk(
+extern void _iterate_fk(
     double *f_i, double *b_K_i, int n_therm_states, int n_markov_states,
     double *scratch_M, double *f_K)
 {
@@ -55,7 +55,7 @@ extern void _wham_fk(
     }
 }
 
-extern void _wham_normalize(double *f_i, int n_markov_states, double *scratch_M)
+extern void _normalize_fi(double *f_i, int n_markov_states, double *scratch_M)
 {
     int i;
     double shift;
