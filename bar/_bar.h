@@ -20,7 +20,7 @@
 #ifndef THERMOTOOLS_BAR
 #define THERMOTOOLS_BAR
 
-extern double _df(double *dbIJ, int L1, double *dbJI, int L2, double *scratch, int sL);
+extern double _df(double *dbIJ, int L1, double *dbJI, int L2, double *scratch);
 
 #endif
 

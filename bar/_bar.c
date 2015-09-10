@@ -30,12 +30,12 @@ extern double _df(double *dbIJ, int L1, double *dbJI, int L2, double *scratch)
     {
         scratch[i] = dbIJ[i]>0 ? 0 : dbIJ[i];
     }
-    ln_avg1 = logsumexp(scratch, L1);
+    ln_avg1 = _logsumexp(scratch, L1);
     for (i=0; i<L1; i++)
     {
         scratch[i] = dbJI[i]>0 ? 0 : dbJI[i];
     }
-    ln_avg2 = logsumexp(scratch, L2);
+    ln_avg2 = _logsumexp(scratch, L2);
 
     return ln_avg2 - ln_avg1;
 }
