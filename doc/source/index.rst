@@ -26,16 +26,15 @@ examples:
 
 Technical features:
 
-* Code is implemented in Python and C.
+* Code is implemented in Python (supports 2.7, 3.3/3.4) and C.
 * Runs on Linux (64 bit), Windows (32 or 64 bit) or MacOS (64 bit).
-* Supports Python 2.7 and Python 3.3/3.4
 * MD data can be either loaded (fast processing but high memory requirements) or streamed (slower processing but
   low memory requirements).
+* Modular and flexible object structure, consisting of data Transformers, model Estimators and Models.
 * Basic compatibility with `scikit-learn <http://scikit-learn.org/>`_. More complete compatibility will follow.
 * Code is hosted at `GitHub <http://github.com/markovmodel/PyEMMA/>`_ under the Lesser GNU public license (LGPL).
   Please post issues or reports there.
-* For general comments and request to be added to the newsticker, please write to pyemma-users@lists.fu-berlin.de.
-* Modular and flexible object structure, consisting of data Transformers, model Estimators and Models.
+* Subscribe to the newsletter `here <https://lists.fu-berlin.de/listinfo/pyemma-newsletter#subscribe>`_. News will be sent only after major releases / fixes.
 
 
 Installation
