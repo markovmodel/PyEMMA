@@ -148,8 +148,7 @@ def get_pk(
     _np.ndarray[double, ndim=2, mode="c"] b_K_i not None,
     _np.ndarray[double, ndim=1, mode="c"] f_i not None,
     _np.ndarray[int, ndim=3, mode="c"] C_K_ij not None,
-    _np.ndarray[double, ndim=1, mode="c"] scratch_M not None,
-    _np.ndarray[double, ndim=3, mode="c"] p_K_ij not None):
+    _np.ndarray[double, ndim=1, mode="c"] scratch_M not None):
     r"""
     Compute the transition matrices for all thermodynamic states
 
@@ -165,52 +164,57 @@ def get_pk(
         multistate count matrix
     scratch_M : numpy.ndarray(shape=(M,), dtype=numpy.float64)
         scratch array for logsumexp operations
+
+    Returns
+    -------
     p_K_ij : numpy.ndarray(shape=(T, M, M), dtype=numpy.float64)
-        target array for the transition matrices
+        transition matrices for all thermodynamic states
     """
-    _get_pk(
-        <double*> _np.PyArray_DATA(log_nu_K_i),
-        <double*> _np.PyArray_DATA(b_K_i),
-        <double*> _np.PyArray_DATA(f_i),
-        <int*> _np.PyArray_DATA(C_K_ij),
-        log_nu_K_i.shape[0],
-        log_nu_K_i.shape[1],
-        <double*> _np.PyArray_DATA(scratch_M),
-        <double*> _np.PyArray_DATA(p_K_ij))
+    p_K_ij = _np.zeros(shape=(C_K_ij.shape[0], C_K_ij.shape[1], C_K_ij.shape[2]), dtype=_np.float64)
+    for K in range(log_nu_K_i.shape[0]):
+        p_K_ij[K, :, :] = get_p(log_nu_K_i, b_K_i, f_i, C_K_ij, scratch_M, K)[:, :]
+    return p_K_ij
 
 def get_p(
-    _np.ndarray[double, ndim=1, mode="c"] log_nu_i not None,
-    _np.ndarray[double, ndim=1, mode="c"] b_i not None,
+    _np.ndarray[double, ndim=2, mode="c"] log_nu_K_i not None,
+    _np.ndarray[double, ndim=2, mode="c"] b_K_i not None,
     _np.ndarray[double, ndim=1, mode="c"] f_i not None,
-    _np.ndarray[int, ndim=2, mode="c"] C_ij not None,
+    _np.ndarray[int, ndim=3, mode="c"] C_K_ij not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_M not None,
-    _np.ndarray[double, ndim=2, mode="c"] p_ij not None):
+    therm_state):
     r"""
-    Compute the transition matrices for a single thermodynamic state
+    Compute the transition matrices for all thermodynamic states
 
     Parameters
     ----------
-    log_nu_i : numpy.ndarray(shape=(M,), dtype=numpy.float64)
+    log_nu_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         log of the Lagrangian multipliers
-    b_i : numpy.ndarray(shape=(M,), dtype=numpy.intc)
-        reduced bias energies of the M markov states in the desired thermodynamic state
+    b_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
+        reduced bias energies of the T thermodynamic and M markov states
     f_i : numpy.ndarray(shape=(M,), dtype=numpy.float64)
         reduced unbiased free energies
-    C_ij : numpy.ndarray(shape=(M, M), dtype=numpy.intc)
-        count matrix in the desired thermodynamic state
+    C_K_ij : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
+        multistate count matrix
     scratch_M : numpy.ndarray(shape=(M,), dtype=numpy.float64)
         scratch array for logsumexp operations
+    therm_state : int
+        target thermodynamic state
+
+    Returns
+    -------
     p_ij : numpy.ndarray(shape=(M, M), dtype=numpy.float64)
-        target array for the transition matrix in the desired thermodynamic state
+        transition matrix for the target thermodynamic state
     """
+    p_ij = _np.zeros(shape=(f_i.shape[0], f_i.shape[0]), dtype=_np.float64)
     _get_p(
-        <double*> _np.PyArray_DATA(log_nu_i),
-        <double*> _np.PyArray_DATA(b_i),
+        <double*> _np.PyArray_DATA(_np.ascontiguousarray(log_nu_K_i[therm_state, :])),
+        <double*> _np.PyArray_DATA(_np.ascontiguousarray(b_K_i[therm_state, :])),
         <double*> _np.PyArray_DATA(f_i),
-        <int*> _np.PyArray_DATA(C_ij),
-        log_nu_i.shape[0],
+        <int*> _np.PyArray_DATA(_np.ascontiguousarray(C_K_ij[therm_state, :, :])),
+        f_i.shape[0],
         <double*> _np.PyArray_DATA(scratch_M),
         <double*> _np.PyArray_DATA(p_ij))
+    return p_ij
 
 def get_fk(
     _np.ndarray[double, ndim=2, mode="c"] b_K_i not None,

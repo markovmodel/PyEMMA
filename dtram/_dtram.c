@@ -51,7 +51,7 @@ extern void _iterate_lognu(
     double *log_nu_K_i, double *b_K_i, double *f_i, int *C_K_ij,
     int n_therm_states, int n_markov_states, double *scratch_M, double *new_log_nu_K_i)
 {
-    int i, j, K;
+    int i, j, K, o;
     int MM=n_markov_states*n_markov_states, Ki, Kj;
     int CK, CKij, CKji;
     double divisor;
@@ -60,6 +60,7 @@ extern void _iterate_lognu(
         for(K=0; K<n_therm_states; ++K)
         {
             Ki = K*n_markov_states+i;
+            o = 0;
             for(j=0; j<n_markov_states; ++j)
             {
                 CKij = C_K_ij[K*MM + i*n_markov_states + j];
@@ -67,30 +68,20 @@ extern void _iterate_lognu(
                 /* special case: most variables cancel out, here */
                 if(i == j)
                 {
-                    scratch_M[j] = (0 == CKij) ?
+                    scratch_M[o++] = (0 == CKij) ?
                         THERMOTOOLS_DTRAM_LOG_PRIOR : log(THERMOTOOLS_DTRAM_PRIOR + (double) CKij);
                     continue;
                 }
                 CK = CKij + CKji;
                 Kj = K*n_markov_states+j;
                 /* special case */
-                if(0 == CK)
-                {
-                    if((-INFINITY == log_nu_K_i[Ki]) && (-INFINITY == log_nu_K_i[Kj]))
-                    {
-                        scratch_M[j] = -_logsumexp_pair(
-                            0.0, f_i[j] - f_i[i] + b_K_i[Kj] - b_K_i[Ki]);
-                    }
-                    else
-                        scratch_M[j] = -INFINITY;
-                    continue;
-                }
+                if(0 == CK) continue;
                 /* regular case */
                 divisor = _logsumexp_pair(
                         log_nu_K_i[Kj] - f_i[i] - b_K_i[Ki], log_nu_K_i[Ki] - f_i[j] - b_K_i[Kj]);
-                scratch_M[j] = log((double) CK) - b_K_i[Kj] - f_i[j] + log_nu_K_i[Ki] - divisor;
+                scratch_M[o++] = log((double) CK) - b_K_i[Kj] - f_i[j] + log_nu_K_i[Ki] - divisor;
             }
-            new_log_nu_K_i[Ki] = _logsumexp(scratch_M, n_markov_states);
+            new_log_nu_K_i[Ki] = _logsumexp(scratch_M, o);
         }
     }
 }
@@ -99,13 +90,14 @@ extern void _iterate_fi(
     double *log_nu_K_i, double *b_K_i, double *f_i, int *C_K_ij, int n_therm_states,
     int n_markov_states, double *scratch_TM, double *scratch_M, double *new_f_i)
 {
-    int i, j, K;
+    int i, j, K, o;
     int MM=n_markov_states*n_markov_states, KM=n_therm_states*n_markov_states, Ki, Kj;
     int CK, CKij, CKji, Ci;
     double divisor, norm;
     for(i=0; i<n_markov_states; ++i)
     {
         Ci = 0;
+        o = 0;
         for(K=0; K<n_therm_states; ++K)
         {
             Ki = K*n_markov_states + i;
@@ -119,29 +111,22 @@ extern void _iterate_fi(
                 /* special case: most variables cancel out, here */
                 if(i == j)
                 {
-                    scratch_TM[Kj] = (0 == CKij) ?
+                    scratch_TM[o] = (0 == CKij) ?
                         THERMOTOOLS_DTRAM_LOG_PRIOR : log(THERMOTOOLS_DTRAM_PRIOR + (double) CKij);
-                    scratch_TM[Kj] += f_i[i];
+                    scratch_TM[o++] += f_i[i];
                     continue;
                 }
                 CK = CKij + CKji;
                 /* special case */
-                if(0 == CK)
-                {
-                    scratch_TM[Kj] = -INFINITY;
-                    continue;
-                }
-                /* special case */ /* NaNs possible! CHECK THIS */
-                /*if( -INFINITY == log_nu_K_i[Ki] )
-                    continue;*/
+                if(0 == CK) continue;
                 /* regular case */
                 divisor = _logsumexp_pair(
                         log_nu_K_i[Kj] - f_i[i] - b_K_i[Ki], log_nu_K_i[Ki] - f_i[j] - b_K_i[Kj]);
-                scratch_TM[Kj] = log((double) CK) - b_K_i[Ki] + log_nu_K_i[Kj] - divisor;
+                scratch_TM[o++] = log((double) CK) - b_K_i[Ki] + log_nu_K_i[Kj] - divisor;
             }
         }
         /* patch Ci and the total divisor together */
-        new_f_i[i] = _logsumexp(scratch_TM, KM) - log(
+        new_f_i[i] = _logsumexp(scratch_TM, o) - log(
             n_therm_states*THERMOTOOLS_DTRAM_PRIOR + (double) Ci);
         scratch_M[i] = -new_f_i[i];
     }
@@ -209,47 +194,48 @@ extern void _get_p(
     double *log_nu_i, double *b_i, double *f_i, int *C_ij,
     int n_markov_states, double *scratch_M, double *p_ij)
 {
-    int i, j;
+    int i, j, o;
     int ij, ji;
     int C;
     double divisor, sum;
     for(i=0; i<n_markov_states; ++i)
     {
+        o = 0;
         for(j=0; j<n_markov_states; ++j)
         {
-            /* special case: we compute the diagonal elements later */
+            ij = i*n_markov_states + j;
+            p_ij[ij] = 0.0;
+            /* special case: diagonal element */
             if(i == j)
             {
-                scratch_M[j] = -INFINITY;
+                scratch_M[o] = (0 == C_ij[ij]) ?
+                    THERMOTOOLS_DTRAM_LOG_PRIOR : log(THERMOTOOLS_DTRAM_PRIOR + (double) C_ij[ij]);
+                scratch_M[o] -= log_nu_i[i];
+                p_ij[ij] = exp(scratch_M[o++]);
                 continue;
             }
-            ij = i*n_markov_states + j;
             ji = j*n_markov_states + i;
-            p_ij[ij] = 0.0;
             C = C_ij[ij] + C_ij[ji];
             /* special case: this element is zero */
-            if(0 == C)
-            {
-                scratch_M[j] = -INFINITY;
-                continue;
-            }
+            if(0 == C) continue;
             /* regular case */
             divisor = _logsumexp_pair(
                     log_nu_i[j] - f_i[i] - b_i[i], log_nu_i[i] - f_i[j] - b_i[j]);
-            scratch_M[j] =  log((double) C) - f_i[j] - b_i[j] - divisor;
-            p_ij[ij] = exp(scratch_M[j]);
+            scratch_M[o] =  log((double) C) - f_i[j] - b_i[j] - divisor;
+            p_ij[ij] = exp(scratch_M[o++]);
         }
         /* compute the diagonal elements from the other elements in this line */
-        sum = exp(_logsumexp(scratch_M, n_markov_states));
-        if(1.0 <= sum)
+        sum = exp(_logsumexp(scratch_M, o));
+        if(0.0 == sum)
         {
-            p_ij[i*n_markov_states + i] = 0.0;
+            for(j=0; j<n_markov_states; ++j)
+                p_ij[i*n_markov_states + j] = 0.0;
+            p_ij[i*n_markov_states + i] = 1.0;
+        }
+        else if(1.0 != sum)
+        {
             for(j=0; j<n_markov_states; ++j)
                 p_ij[i*n_markov_states + j] /= sum;
-        }
-        else
-        {
-            p_ij[i*n_markov_states + i] = 1.0 - sum;
         }
     }
 }
