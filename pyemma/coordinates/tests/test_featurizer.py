@@ -30,11 +30,12 @@ from itertools import combinations, product
 from pyemma.coordinates.data.featurizer import MDFeaturizer, CustomFeature, _parse_pairwise_input
 from six.moves import range
 import pkg_resources
+
 path = pkg_resources.resource_filename(__name__, 'data') + os.path.sep
 xtcfile = os.path.join(path, 'bpti_mini.xtc')
 pdbfile = os.path.join(path, 'bpti_ca.pdb')
-pdbfile_ops_aa = os.path.join(path,'opsin_aa_1_frame.pdb')
-pdbfile_ops_Ca = os.path.join(path,'opsin_Ca_1_frame.pdb')
+pdbfile_ops_aa = os.path.join(path,'opsin_aa_1_frame.pdb.gz')
+pdbfile_ops_Ca = os.path.join(path,'opsin_Ca_1_frame.pdb.gz')
 
 asn_leu_pdb = """
 ATOM    559  N   ASN A  69      19.168  -0.936 -10.274  1.00 27.50           N  
@@ -164,25 +165,24 @@ class TestFeaturizer(unittest.TestCase):
     def test_ca_distances_with_all_atom_geometries(self):
         feat = MDFeaturizer(pdbfile_ops_aa)
         feat.add_distances_ca(excluded_neighbors=0)
-        D_aa = feat.map(mdtraj.load(pdbfile_ops_aa))
+        D_aa = feat.transform(mdtraj.load(pdbfile_ops_aa))
 
         # Create a reference
-        feat_just_ca = MDFeaturizer(pdbfile_ops_aa)
-        ca_pairs = feat.pairs(feat_just_ca.select_Ca())
-        feat_just_ca.add_distances(ca_pairs)
-        D_ca = feat_just_ca.map(mdtraj.load(pdbfile_ops_aa))
+        feat_just_ca = MDFeaturizer(pdbfile_ops_Ca)
+        feat_just_ca.add_distances(np.arange(feat_just_ca.topology.n_atoms))
+        D_ca = feat_just_ca.transform(mdtraj.load(pdbfile_ops_Ca))
         assert(np.allclose(D_aa, D_ca))
 
     def test_ca_distances_with_all_atom_geometries_and_exclusions(self):
         feat = MDFeaturizer(pdbfile_ops_aa)
         feat.add_distances_ca(excluded_neighbors=2)
-        D_aa = feat.map(mdtraj.load(pdbfile_ops_aa))
+        D_aa = feat.transform(mdtraj.load(pdbfile_ops_aa))
 
         # Create a reference
         feat_just_ca = MDFeaturizer(pdbfile_ops_Ca)
         ca_pairs = feat.pairs(feat_just_ca.select_Ca(),excluded_neighbors=2)
         feat_just_ca.add_distances(ca_pairs)
-        D_ca = feat_just_ca.map(mdtraj.load(pdbfile_ops_Ca))
+        D_ca = feat_just_ca.transform(mdtraj.load(pdbfile_ops_Ca))
         assert(np.allclose(D_aa, D_ca))
 
     def test_contacts(self):
