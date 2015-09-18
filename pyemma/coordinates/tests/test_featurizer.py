@@ -162,6 +162,19 @@ class TestFeaturizer(unittest.TestCase):
         D = np.sqrt(np.sum((X - Y) ** 2, axis=2))
         assert(np.allclose(D, self.feat.transform(self.traj)))
 
+    def test_ca_distances_residue_subset(self):
+        self.feat.add_distances_ca(periodic=False, excluded_neighbors=0,
+                                   residue_subset=np.arange(1,4)) #=[1,2,3] in resSeq = [0,1,2] in residue idx
+
+        pairs = np.array([[0,1],[0,2],
+                          [1,2]
+                         ])
+
+        X = self.traj.xyz[:, pairs[:, 0], :]
+        Y = self.traj.xyz[:, pairs[:, 1], :]
+        D = np.sqrt(np.sum((X - Y) ** 2, axis=2))
+        assert(np.allclose(D, self.feat.transform(self.traj)))
+
     def test_ca_distances_with_all_atom_geometries(self):
         feat = MDFeaturizer(pdbfile_ops_aa)
         feat.add_distances_ca(excluded_neighbors=0)
