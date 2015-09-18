@@ -80,7 +80,14 @@ def iterate_fi(
                 \right)
             \right) - \ln\left( \sum_{K=0}^{N_T-1} N_i^{(K)} \right)
 
-    in the logsumexp scheme.
+    in the logsumexp scheme. Afterwards, we apply
+
+    .. math:
+        f_i \leftarrow  f_i + \ln\left(
+                \sum_{j=0}^{N_M-1} \exp(-f_j)
+            \right)
+
+    which is equilvalent to a renormalisation of the stationary distribution.
     """
     _iterate_fi(
         <double*> _np.PyArray_DATA(log_N_K),
