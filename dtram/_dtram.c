@@ -135,61 +135,6 @@ extern void _iterate_fi(
         new_f_i[i] += norm;
 }
 
-extern void _get_pk(
-    double *log_nu_K_i, double *b_K_i, double *f_i, int *C_K_ij, int n_therm_states,
-    int n_markov_states, double *scratch_M, double *p_K_ij)
-{
-    int i, j, K;
-    int MM=n_markov_states*n_markov_states, KMM, Ki, Kj, ij, ji;
-    int CK;
-    double divisor, sum;
-    for(K=0; K<n_therm_states; ++K)
-    {
-        KMM = K*MM;
-        for(i=0; i<n_markov_states; ++i)
-        {
-            Ki = K*n_markov_states + i;
-            for(j=0; j<n_markov_states; ++j)
-            {
-                /* special case: we compute the diagonal elements later */
-                if(i == j)
-                {
-                    scratch_M[j] = -INFINITY;
-                    continue;
-                }
-                ij = i*n_markov_states + j;
-                ji = j*n_markov_states + i;
-                p_K_ij[KMM + ij] = 0.0;
-                CK = C_K_ij[KMM + ij] + C_K_ij[KMM + ji];
-                /* special case: this element is zero */
-                if(0 == CK)
-                {
-                    scratch_M[j] = -INFINITY;
-                    continue;
-                }
-                /* regular case */
-                Kj = K*n_markov_states + j;
-                divisor = _logsumexp_pair(
-                        log_nu_K_i[Kj] - f_i[i] - b_K_i[Ki], log_nu_K_i[Ki] - f_i[j] - b_K_i[Kj]);
-                scratch_M[j] =  log((double) CK) - f_i[j] - b_K_i[Kj] - divisor;
-                p_K_ij[KMM + ij] = exp(scratch_M[j]);
-            }
-            /* compute the diagonal elements from the other elements in this line */
-            sum = exp(_logsumexp(scratch_M, n_markov_states));
-            if(1.0 <= sum)
-            {
-                p_K_ij[KMM + i*n_markov_states + i] = 0.0;
-                for(j=0; j<n_markov_states; ++j)
-                    p_K_ij[KMM + i*n_markov_states + j] /= sum;
-            }
-            else
-            {
-                p_K_ij[KMM + i*n_markov_states + i] = 1.0 - sum;
-            }
-        }       
-    }
-}
-
 extern void _get_p(
     double *log_nu_i, double *b_i, double *f_i, int *C_ij,
     int n_markov_states, double *scratch_M, double *p_ij)

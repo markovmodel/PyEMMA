@@ -39,9 +39,6 @@ cdef extern from "_dtram.h":
     void _iterate_fi(
         double *log_nu_K_i, double *b_K_i, double *f_i, int *C_K_ij, int n_therm_states,
         int n_markov_states, double *scratch_TM, double *scratch_M, double *new_f_i)
-    void _get_pk(
-        double *log_nu_K_i, double *b_K_i, double *f_i, int *C_K_ij, int n_therm_states,
-        int n_markov_states, double *scratch_M, double *p_K_ij)
     void _get_p(
         double *log_nu_i, double *b_i, double *f_i, int *C_ij,
         int n_markov_states, double *scratch_M, double *p_ij)
