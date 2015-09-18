@@ -22,22 +22,22 @@ Python interface to the WHAM estimator's lowlevel functions.
 import numpy as _np
 cimport numpy as _np
 
-__all__ = ['iterate_fi', 'iterate_fk', 'normalize_fi']
+__all__ = ['iterate_fi', 'iterate_fk']
 
 cdef extern from "_wham.h":
     void _iterate_fi(
         double *log_N_K, double *log_N_i, double *f_K, double *b_K_i,
-        int n_therm_states, int n_markov_states, double *scratch_T, double *f_i)
+        int n_therm_states, int n_markov_states, double *scratch_M, double *scratch_T, double *f_i)
     void _iterate_fk(
         double *f_i, double *b_K_i, int n_therm_states, int n_markov_states,
         double *scratch_M, double *f_K)
-    void _normalize_fi(double *f_i, int n_markov_states, double *scratch_M)
 
 def iterate_fi(
     _np.ndarray[double, ndim=1, mode="c"] log_N_K not None,
     _np.ndarray[double, ndim=1, mode="c"] log_N_i not None,
     _np.ndarray[double, ndim=1, mode="c"] f_K not None,
     _np.ndarray[double, ndim=2, mode="c"] b_K_i not None,
+    _np.ndarray[double, ndim=1, mode="c"] scratch_M not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_T not None,
     _np.ndarray[double, ndim=1, mode="c"] f_i not None):
     r"""
@@ -53,6 +53,8 @@ def iterate_fi(
         reduced free energies of the T thermodynamic states
     b_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         bias energies in the T thermodynamic and M discrete Markov states
+    scratch_M : numpy.ndarray(shape=(M), dtype=numpy.float64)
+        scratch array
     scratch_T : numpy.ndarray(shape=(T), dtype=numpy.float64)
         scratch array
     f_K : numpy.ndarray(shape=(T), dtype=numpy.float64)
@@ -87,6 +89,7 @@ def iterate_fi(
         <double*> _np.PyArray_DATA(b_K_i),
         b_K_i.shape[0],
         b_K_i.shape[1],
+        <double*> _np.PyArray_DATA(scratch_M),
         <double*> _np.PyArray_DATA(scratch_T),
         <double*> _np.PyArray_DATA(f_i))
 
@@ -127,33 +130,3 @@ def iterate_fk(
         b_K_i.shape[1],
         <double*> _np.PyArray_DATA(scratch_M),
         <double*> _np.PyArray_DATA(f_K))
-
-def normalize_fi(
-    _np.ndarray[double, ndim=1, mode="c"] f_i not None,
-    _np.ndarray[double, ndim=1, mode="c"] scratch_M not None):
-    r"""
-    Apply shift on the reduced free energies f_i such that the
-    stationary distribution is normalized
-        
-    Parameters
-    ----------
-    f_i : numpy.ndarray(shape=(M), dtype=numpy.float64)
-        reduced free energies of the M markov states
-    scratch_M : numpy.ndarray(shape=(M), dtype=numpy.float64)
-        scratch array
-
-    Notes
-    -----
-    The normalize_fi() function performs to operation
-
-    .. math:
-        f_i \leftarrow  f_i + \ln\left(
-                \sum_{i=0}^{N_M-1} \exp(-f_i)
-            \right)
-
-    which is equilvalent to a renormalisation of the stationary distribution.
-    """
-    _normalize_fi(
-        <double*> _np.PyArray_DATA(f_i),
-        f_i.shape[0],
-        <double*> _np.PyArray_DATA(scratch_M))
