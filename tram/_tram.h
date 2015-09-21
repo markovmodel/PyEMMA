@@ -20,6 +20,17 @@
 #ifndef THERMOTOOLS_TRAM
 #define THERMOTOOLS_TRAM
 
+#define THERMOTOOLS_TRAM_PRIOR 1.0E-10
+#define THERMOTOOLS_TRAM_LOG_PRIOR -23.025850929940457
 
+void _set_lognu(double *log_nu_K_i, int *C_K_ij, int n_therm_states, int n_markov_states);
+void _iterate_lognu(
+    double *log_nu_K_i, double *f_K_i, int *C_K_ij,
+    int n_therm_states, int n_markov_states, double *scratch_M, double *new_log_nu_K_i);
+void _iterate_fki(
+    double *log_nu_K_i, double *f_K_i, int *C_K_ij, double *b_K_x,
+    int *M_x, int *N_K_i, int seq_length, double *log_R_K_i,
+    int n_therm_states, int n_markov_states, double *scratch_M, double *scratch_T,
+    double *new_f_K_i, int K_target);
 
 #endif
