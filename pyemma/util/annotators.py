@@ -37,7 +37,8 @@ from __future__ import absolute_import
 from functools import wraps
 import warnings
 from six import PY2
-from decorator import decorator
+from decorator import decorator, decorate
+from inspect import stack
 
 __all__ = ['alias',
            'aliased',
@@ -95,44 +96,6 @@ class DocInherit(object):
         return func
 
 doc_inherit = DocInherit
-
-class deprecated(object):
-    """This is a decorator which can be used to mark functions
-    as deprecated. It will result in a warning being emitted
-    when the function is used.
-
-    Parameters
-    ----------
-    msg : str
-        a user level hint which should indicate which feature to use otherwise.
-
-    """
-
-    def __init__(self, msg = None):
-        self.msg = msg
-
-    def __call__(self, func):
-        mod = func.__module__
-        filename = mod.__file__ if hasattr(mod, '__file__') else None
-        lineno = func.__code__.co_firstlineno + 1
-
-        user_msg = "Call to deprecated function %s. Called from %s line %i. " \
-                   % (func.__name__, filename if filename else mod, lineno)
-
-        if self.msg:
-            user_msg += self.msg
-
-        warnings.warn_explicit(
-            user_msg,
-            category=DeprecationWarning,
-            filename=func.__code__.co_filename,
-            lineno=func.__code__.co_firstlineno + 1
-        )
-
-        func.__dict__['__deprecated__'] = True
-        # TODO: search docstring for notes section and append deprecation notice (with msg)
-        return func
-
 
 class alias(object):
     """
@@ -223,6 +186,41 @@ def shortcut(*names):
                 globals_['__all__'].append(name)
         return f
     return wrap
+
+def deprecated(*optional_message):
+    """This is a decorator which can be used to mark functions
+    as deprecated. It will result in a warning being emitted
+    when the function is used.
+
+    Parameters
+    ----------
+    *optional_message : str
+        an optional user level hint which should indicate which feature to use otherwise.
+
+    """
+    def _deprecated(func, *args, **kw):
+        caller_frame = stack()[1]
+        filename = caller_frame[0].f_globals.get('__file__', None)
+        lineno = func.__code__.co_firstlineno + 1
+
+        user_msg = "Call to deprecated function %s. Called from %s line %i. %s" \
+                   % (func.__name__, filename, lineno, msg)
+
+        warnings.warn_explicit(
+            user_msg,
+            category=DeprecationWarning,
+            filename=func.__code__.co_filename,
+            lineno=func.__code__.co_firstlineno + 1
+        )
+        return func(*args, **kw)
+    if len(optional_message) == 1 and callable(optional_message[0]):
+        # this is the function itself, decorate!
+        msg = ""
+        return decorate(optional_message[0], _deprecated)
+    else:
+        # actually got a message (or empty parenthesis)
+        msg = optional_message[0] if len(optional_message) > 0 else ""
+        return decorator(_deprecated)
 
 @decorator
 def estimation_required(func, *args, **kw):

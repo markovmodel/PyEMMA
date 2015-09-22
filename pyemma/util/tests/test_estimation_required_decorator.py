@@ -15,7 +15,7 @@ class TestEstimator(Estimator):
     def property_method_requires(self):
         return self._prop
 
-    @deprecated()
+    @deprecated("testimator_method_requires is deprecated.")
     @estimation_required
     @alias('testimator_method_requires')
     def method_requires_estimation(self):
@@ -23,7 +23,7 @@ class TestEstimator(Estimator):
 
     @alias('testimator_method_requires_rev')
     @estimation_required
-    @deprecated()
+    @deprecated("method_requires_estimation_reverse is deprecated.")
     def method_requires_estimation_reverse(self):
         pass
 
@@ -33,8 +33,15 @@ class TestEstimator(Estimator):
     def _estimate(self, X):
         pass
 
+@deprecated
+def _deprecated_method():
+    pass
 
 class TestEstimationRequired(unittest.TestCase):
+
+    def test_deprecated_method(self):
+        # sanity test
+        _deprecated_method()
 
     def test_requires_estimation_property(self):
         testimator = TestEstimator()
@@ -69,3 +76,4 @@ class TestEstimationRequired(unittest.TestCase):
         testimator = TestEstimator()
         # does not require 'estimate()', should not raise
         testimator.method_does_not_require_estimation()
+

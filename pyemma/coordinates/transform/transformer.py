@@ -515,7 +515,7 @@ class Transformer(six.with_metaclass(ABCMeta, ProgressReporter)):
             else:
                 raise TypeError('Input has the wrong shape: %s with %i'
                                 ' dimensions. Expecting a matrix (2 dimensions)'
-                                % (str(X.shape, X.ndim)))
+                                % (str(X.shape), X.ndim))
         elif isinstance(X, (list, tuple)):
             out = []
             for x in X:
