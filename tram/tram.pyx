@@ -37,6 +37,11 @@ cdef extern from "_tram.h":
         int *M_x, int *N_K_i, int seq_length, double *log_R_K_i,
         int n_therm_states, int n_markov_states, double *scratch_M, double *scratch_T,
         double *new_f_K_i, int K_target)
+    void _f_ground_state(
+        double *b_K_x, int *M_x, int seq_length, double *log_R_K_i,
+        int n_therm_states, int n_markov_states, double *scratch_M, double *scratch_T,
+        double *f_ground_i)        
+
 
 def set_lognu(
     _np.ndarray[double, ndim=2, mode="c"] log_nu_K_i not None,
@@ -114,6 +119,12 @@ def iterate_fki(
         multistate count matrix
     b_K_x : numpy.ndarray(shape=(T, X), dtype=numpy.intc)
         reduced bias energies in the T thermodynamic states for all X samples
+    M_x : numpy.ndarray(shape=(X,), dtype=numpy.intc)
+        Markov state indices for all X samples
+    N_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
+        number of visits to thermodynamic state K and Markov state i
+    log_R_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+        scratch array for sum of TRAM log pseudo-counts and f_K_i
     scratch_M : numpy.ndarray(shape=(M), dtype=numpy.float64)
         scratch array for logsumexp operations
     scratch_T : numpy.ndarray(shape=(T), dtype=numpy.float64)
@@ -138,3 +149,42 @@ def iterate_fki(
         <double*> _np.PyArray_DATA(scratch_T),
         <double*> _np.PyArray_DATA(new_f_K_i),
         target_therm_state)
+
+def f_ground_state(
+    _np.ndarray[double, ndim=2, mode="c"] b_K_x not None,
+    _np.ndarray[int, ndim=1, mode="c"] M_x not None,
+    _np.ndarray[double, ndim=2, mode="c"] log_R_K_i not None,
+    _np.ndarray[double, ndim=1, mode="c"] scratch_M not None,
+    _np.ndarray[double, ndim=1, mode="c"] scratch_T not None,
+    _np.ndarray[double, ndim=1, mode="c"] f_ground_i not None):
+    r"""
+    Update the reduced unbiased free energies
+
+    Parameters
+    ----------
+    b_K_x : numpy.ndarray(shape=(T, X), dtype=numpy.intc)
+        reduced bias energies in the T thermodynamic states for all X samples
+    M_x : numpy.ndarray(shape=(X,), dtype=numpy.intc)
+        Markov state indices for all X samples
+    log_R_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+        precomputed sum of TRAM log pseudo-counts and f_K_i
+    scratch_M : numpy.ndarray(shape=(M), dtype=numpy.float64)
+        scratch array for logsumexp operations
+    scratch_T : numpy.ndarray(shape=(T), dtype=numpy.float64)
+        scratch array for logsumexp operations
+    f_ground_i : numpy.ndarray(shape=(M,), dtype=numpy.float64)
+        target array for the ground state (Markov) free energies
+    """
+    # later this can be extended to other thermodynmic states and
+    # arbitrary expectations (not only pi)
+    _f_ground_state(
+        <double*> _np.PyArray_DATA(b_K_x),
+        <int*> _np.PyArray_DATA(M_x),
+        M_x.shape[0],
+        <double*> _np.PyArray_DATA(log_R_K_i),
+        log_R_K_i.shape[0],
+        log_R_K_i.shape[1],
+        <double*> _np.PyArray_DATA(scratch_M),
+        <double*> _np.PyArray_DATA(scratch_T),
+        <double*> _np.PyArray_DATA(f_ground_i))
+

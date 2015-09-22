@@ -161,25 +161,31 @@ void _iterate_fki(
     }
 }
 
+void _f_ground_state(
+    double *b_K_x, int *M_x, int seq_length, double *log_R_K_i,
+    int n_therm_states, int n_markov_states, double *scratch_M, double *scratch_T,
+    double *f_ground_i)
+{
+    int i, K, x;
+    double divisor, norm;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    /* set f_ground_i to infinity (pi_i==0) */
+    for(i=0; i<n_markov_states; ++i)
+        f_ground_i[i] = INFINITY;
+    
+    /* compute new f_ground_i */
+    for( x=0; x<seq_length; ++x )
+    {
+        i = M_x[x];
+        for(K=0; K<n_therm_states; ++K)
+            scratch_T[K] = log_R_K_i[K * n_markov_states + i] - b_K_x[K * seq_length + x];
+        divisor = _logsumexp(scratch_T, n_therm_states);
+        f_ground_i[i] = -_logsumexp_pair(-f_ground_i[i], -divisor);
+    }
+    /* apply normalization */
+    for(i=0; i<n_markov_states; ++i)
+        scratch_M[i] = -f_ground_i[i];
+    norm = _logsumexp(scratch_M, n_markov_states);
+    for(i=0; i<n_markov_states; ++i)
+        f_ground_i[i] += norm;
+}
