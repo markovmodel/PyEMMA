@@ -92,8 +92,8 @@ void _iterate_fki(
     int n_therm_states, int n_markov_states, double *scratch_M, double *scratch_T,
     double *new_f_K_i, int K_target)
 {
-    int i, j, K, I, l, x, o;
-    int MM = n_markov_states * n_markov_states, Ki, Kj, KM, KMM;
+    int i, j, K, x, o;
+    int Ki, Kj, KM, KMM;
     int Ci, CK, CKij, CKji, NC;
     double divisor, R_addon, norm;
     /* compute R_K_i */
@@ -188,4 +188,54 @@ void _f_ground_state(
     norm = _logsumexp(scratch_M, n_markov_states);
     for(i=0; i<n_markov_states; ++i)
         f_ground_i[i] += norm;
+}
+
+void _get_p(
+    double *log_nu_i, double *f_i, int *C_ij,
+    int n_markov_states, double *scratch_M, double *p_ij)
+{
+    int i, j, o;
+    int ij, ji;
+    int C;
+    double divisor, sum;
+    for(i=0; i<n_markov_states; ++i)
+    {
+        o = 0;
+        for(j=0; j<n_markov_states; ++j)
+        {
+            ij = i*n_markov_states + j;
+            p_ij[ij] = 0.0;
+            /* special case: diagonal element */
+            if(i == j)
+            {
+                scratch_M[o] = (0 == C_ij[ij]) ?
+                    THERMOTOOLS_TRAM_LOG_PRIOR : log(THERMOTOOLS_TRAM_PRIOR + (double) C_ij[ij]);
+                scratch_M[o] -= log_nu_i[i];
+                p_ij[ij] = exp(scratch_M[o++]);
+                continue;
+            }
+            ji = j*n_markov_states + i;
+            C = C_ij[ij] + C_ij[ji];
+            /* special case: this element is zero */
+            if(0 == C) continue;
+            /* regular case */
+            divisor = _logsumexp_pair(
+                    log_nu_i[j] - f_i[i], log_nu_i[i] - f_i[j]);
+            scratch_M[o] =  log((double) C) - f_i[j] - divisor;
+            p_ij[ij] = exp(scratch_M[o++]);
+        }
+        /* compute the diagonal elements from the other elements in this line */
+        sum = exp(_logsumexp(scratch_M, o));
+        if(0.0 == sum)
+        {
+            for(j=0; j<n_markov_states; ++j)
+                p_ij[i*n_markov_states + j] = 0.0;
+            p_ij[i*n_markov_states + i] = 1.0;
+        }
+        else if(1.0 != sum)
+        {
+            for(j=0; j<n_markov_states; ++j)
+                p_ij[i*n_markov_states + j] /= sum;
+        }
+    }
 }

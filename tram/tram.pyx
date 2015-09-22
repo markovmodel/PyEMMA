@@ -25,7 +25,10 @@ cimport numpy as _np
 __all__ = [
     'set_lognu',
     'iterate_lognu',
-    'iterate_fki']
+    'iterate_fki'
+    'get_p',
+    'get_pk',
+    'f_ground_state']
 
 cdef extern from "_tram.h":
     void _set_lognu(double *log_nu_K_i, int *C_K_ij, int n_therm_states, int n_markov_states)
@@ -40,7 +43,11 @@ cdef extern from "_tram.h":
     void _f_ground_state(
         double *b_K_x, int *M_x, int seq_length, double *log_R_K_i,
         int n_therm_states, int n_markov_states, double *scratch_M, double *scratch_T,
-        double *f_ground_i)        
+        double *f_ground_i)
+    void _get_p(
+        double *log_nu_i, double *f_i, int *C_ij,
+        int n_markov_states, double *scratch_M, double *p_ij)
+
 
 
 def set_lognu(
@@ -149,6 +156,72 @@ def iterate_fki(
         <double*> _np.PyArray_DATA(scratch_T),
         <double*> _np.PyArray_DATA(new_f_K_i),
         target_therm_state)
+
+def get_pk(
+    _np.ndarray[double, ndim=2, mode="c"] log_nu_K_i not None,
+    _np.ndarray[double, ndim=2, mode="c"] f_K_i not None,
+    _np.ndarray[int, ndim=3, mode="c"] C_K_ij not None,
+    _np.ndarray[double, ndim=1, mode="c"] scratch_M not None):
+    r"""
+    Compute the transition matrices for all thermodynamic states
+
+    Parameters
+    ----------
+    log_nu_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+        log of the Lagrangian multipliers
+    f_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
+        reduced unbiased free energies
+    C_K_ij : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
+        multistate count matrix
+    scratch_M : numpy.ndarray(shape=(M,), dtype=numpy.float64)
+        scratch array for logsumexp operations
+
+    Returns
+    -------
+    p_K_ij : numpy.ndarray(shape=(T, M, M), dtype=numpy.float64)
+        transition matrices for all thermodynamic states
+    """
+    p_K_ij = _np.zeros(shape=(C_K_ij.shape[0], C_K_ij.shape[1], C_K_ij.shape[2]), dtype=_np.float64)
+    for K in range(log_nu_K_i.shape[0]):
+        p_K_ij[K, :, :] = get_p(log_nu_K_i, f_K_i, C_K_ij, scratch_M, K)[:, :]
+    return p_K_ij
+
+def get_p(
+    _np.ndarray[double, ndim=2, mode="c"] log_nu_K_i not None,
+    _np.ndarray[double, ndim=2, mode="c"] f_K_i not None,
+    _np.ndarray[int, ndim=3, mode="c"] C_K_ij not None,
+    _np.ndarray[double, ndim=1, mode="c"] scratch_M not None,
+    therm_state):
+    r"""
+    Compute the transition matrices for all thermodynamic states
+
+    Parameters
+    ----------
+    log_nu_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+        log of the Lagrangian multipliers
+    f_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
+        reduced unbiased free energies
+    C_K_ij : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
+        multistate count matrix
+    scratch_M : numpy.ndarray(shape=(M,), dtype=numpy.float64)
+        scratch array for logsumexp operations
+    therm_state : int
+        target thermodynamic state
+
+    Returns
+    -------
+    p_ij : numpy.ndarray(shape=(M, M), dtype=numpy.float64)
+        transition matrix for the target thermodynamic state
+    """
+    p_ij = _np.zeros(shape=(f_K_i.shape[1], f_K_i.shape[1]), dtype=_np.float64)
+    _get_p(
+        <double*> _np.PyArray_DATA(_np.ascontiguousarray(log_nu_K_i[therm_state, :])),
+        <double*> _np.PyArray_DATA(_np.ascontiguousarray(f_K_i[therm_state, :])),
+        <int*> _np.PyArray_DATA(_np.ascontiguousarray(C_K_ij[therm_state, :, :])),
+        f_K_i.shape[1],
+        <double*> _np.PyArray_DATA(scratch_M),
+        <double*> _np.PyArray_DATA(p_ij))
+    return p_ij
 
 def f_ground_state(
     _np.ndarray[double, ndim=2, mode="c"] b_K_x not None,
