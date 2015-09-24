@@ -32,10 +32,10 @@ void _iterate_fki(
     int *M_x, int *N_K_i, int seq_length, double *log_R_K_i,
     int n_therm_states, int n_markov_states, double *scratch_M, double *scratch_T,
     double *new_f_K_i, int K_target);
-void _f_ground_state(
+void _get_fi(
     double *b_K_x, int *M_x, int seq_length, double *log_R_K_i,
     int n_therm_states, int n_markov_states, double *scratch_M, double *scratch_T,
-    double *f_ground_i);
+    double *f_i);
 void _get_p(
     double *log_nu_i, double *f_i, int *C_ij,
     int n_markov_states, double *scratch_M, double *p_ij);
