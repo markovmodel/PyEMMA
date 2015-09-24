@@ -73,7 +73,7 @@ def get_fi(
     _np.ndarray[double, ndim=1, mode="c"] scratch_T not None,
     n_discrete_states):
     r"""
-    Calculate the reduced free energies f_i
+    Calculate the reduced unbiased free energies f_i
         
     Parameters
     ----------
@@ -83,12 +83,19 @@ def get_fi(
         reduced free energies of the T thermodynamic states
     b_K_x : numpy.ndarray(shape=(T, X), dtype=numpy.float64)
         bias energies in the T thermodynamic states for all X samples
+    M_x : numpy.ndarray(shape=(X), dtype=numpy.intc)
+        discrete states indices for all X samples
     scratch_M : numpy.ndarray(shape=(M), dtype=numpy.float64)
         scratch array
     scratch_T : numpy.ndarray(shape=(T), dtype=numpy.float64)
         scratch array
-    new_f_K : numpy.ndarray(shape=(T), dtype=numpy.float64)
-        target array for the reduced free energies of the T thermodynamic states
+    n_discrete_states : int
+        number of discrete states (M)
+
+    Returns
+    -------
+    f_i : numpy.ndarray(shape=(M), dtype=numpy.float64)
+        reduced unbiased free energies
     """
     f_i = _np.zeros(shape=(n_discrete_states,), dtype=_np.float64)
     _get_fi(
