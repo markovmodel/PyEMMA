@@ -27,6 +27,7 @@ __all__ = [
     'iterate_lognu',
     'iterate_fki',
     'get_fi',
+    'normalize_fki',
     'get_p',
     'get_pk']
 
@@ -39,11 +40,13 @@ cdef extern from "_tram.h":
         double *log_nu_K_i, double *f_K_i, int *C_K_ij, double *b_K_x,
         int *M_x, int *N_K_i, int seq_length, double *log_R_K_i,
         int n_therm_states, int n_markov_states, double *scratch_M, double *scratch_T,
-        double *new_f_K_i, int K_target)
+        double *new_f_K_i)
     void _get_fi(
         double *b_K_x, int *M_x, int seq_length, double *log_R_K_i,
         int n_therm_states, int n_markov_states, double *scratch_M, double *scratch_T,
         double *f_i)
+    void _normalize_fki(
+        double *f_i, double *f_K_i, int n_therm_states, int n_markov_states, double *scratch_M)
     void _get_p(
         double *log_nu_i, double *f_i, int *C_ij,
         int n_markov_states, double *scratch_M, double *p_ij)
@@ -111,8 +114,7 @@ def iterate_fki(
     _np.ndarray[double, ndim=2, mode="c"] log_R_K_i not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_M not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_T not None,
-    _np.ndarray[double, ndim=2, mode="c"] new_f_K_i not None,
-    target_therm_state=0):
+    _np.ndarray[double, ndim=2, mode="c"] new_f_K_i not None):
     r"""
     Update the reduced unbiased free energies
 
@@ -138,8 +140,6 @@ def iterate_fki(
         scratch array for logsumexp operations
     new_f_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         target array for the reduced free energies
-    target_therm_state : int
-        references the thermodynamic target state
     """
     _iterate_fki(
         <double*> _np.PyArray_DATA(log_nu_K_i),
@@ -154,8 +154,7 @@ def iterate_fki(
         log_nu_K_i.shape[1],
         <double*> _np.PyArray_DATA(scratch_M),
         <double*> _np.PyArray_DATA(scratch_T),
-        <double*> _np.PyArray_DATA(new_f_K_i),
-        target_therm_state)
+        <double*> _np.PyArray_DATA(new_f_K_i))
 
 def get_fi(
     _np.ndarray[double, ndim=2, mode="c"] b_K_x not None,
@@ -198,6 +197,29 @@ def get_fi(
         <double*> _np.PyArray_DATA(scratch_T),
         <double*> _np.PyArray_DATA(f_i))
     return f_i
+
+def normalize_fki(
+    _np.ndarray[double, ndim=1, mode="c"] f_i not None,
+    _np.ndarray[double, ndim=2, mode="c"] f_K_i not None,
+    _np.ndarray[double, ndim=1, mode="c"] scratch_M not None):
+    r"""
+    Update the reduced unbiased free energies
+
+    Parameters
+    ----------
+    f_i : numpy.ndarray(shape=(M), dtype=numpy.intc)
+        unbiased reduced bias energies in the M discrete states
+    f_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
+        reduced bias energies in the T thermodynamic and M discrete states
+    scratch_M : numpy.ndarray(shape=(M), dtype=numpy.float64)
+        scratch array for logsumexp operations
+    """
+    _normalize_fki(
+        <double*> _np.PyArray_DATA(f_i),
+        <double*> _np.PyArray_DATA(f_K_i),
+        f_K_i.shape[0],
+        f_K_i.shape[1],
+        <double*> _np.PyArray_DATA(scratch_M))
 
 def get_pk(
     _np.ndarray[double, ndim=2, mode="c"] log_nu_K_i not None,

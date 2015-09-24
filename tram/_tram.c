@@ -90,7 +90,7 @@ void _iterate_fki(
     double *log_nu_K_i, double *f_K_i, int *C_K_ij, double *b_K_x,
     int *M_x, int *N_K_i, int seq_length, double *log_R_K_i,
     int n_therm_states, int n_markov_states, double *scratch_M, double *scratch_T,
-    double *new_f_K_i, int K_target)
+    double *new_f_K_i)
 {
     int i, j, K, x, o;
     int Ki, Kj, KM, KMM;
@@ -132,11 +132,9 @@ void _iterate_fki(
         }
     }
     /* set new_f_K_i to infinity (z_K_i==0) */
-    for(K=0; K<n_therm_states; ++K)
-    {
-        for(i=0; i<n_markov_states; ++i)
-            new_f_K_i[K * n_markov_states + i] = INFINITY;
-    }
+    KM = n_therm_states * n_markov_states;
+    for(i=0; i<KM; ++i)
+        new_f_K_i[i] = INFINITY;
     /* compute new f_K_i */
     for(x=0; x<seq_length; ++x)
     {
@@ -150,15 +148,13 @@ void _iterate_fki(
                     -new_f_K_i[K * n_markov_states + i], -(divisor + b_K_x[K * seq_length + x]));
         }
     }
-    /* apply normalization */
-    for(i=0; i<n_markov_states; ++i)
-        scratch_M[i] = -new_f_K_i[K_target * n_markov_states + i];
-    shift = _logsumexp(scratch_M, n_markov_states);
-    for(K=0; K<n_therm_states; ++K)
-    {
-        for(i=0; i<n_markov_states; ++i)
-            new_f_K_i[K * n_markov_states + i] += shift;
-    }
+    /* prevent drift */
+    KM = n_therm_states * n_markov_states;
+    shift = new_f_K_i[0];
+    for(i=1; i<KM; ++i)
+        shift = (shift < new_f_K_i[i]) ? shift : new_f_K_i[i];
+    for(i=0; i<KM; ++i)
+        new_f_K_i[i] -= shift;
 }
 
 void _get_fi(
@@ -182,12 +178,20 @@ void _get_fi(
         divisor = _logsumexp(scratch_T, n_therm_states);
         f_i[i] = -_logsumexp_pair(-f_i[i], -divisor);
     }
-    /* apply normalization */
+}
+
+void _normalize_fki(
+    double *f_i, double *f_K_i, int n_therm_states, int n_markov_states, double *scratch_M)
+{
+    int i, KM = n_therm_states * n_markov_states;
+    double f0;
     for(i=0; i<n_markov_states; ++i)
         scratch_M[i] = -f_i[i];
-    norm = _logsumexp(scratch_M, n_markov_states);
+    f0 = -_logsumexp(scratch_M, n_markov_states);
     for(i=0; i<n_markov_states; ++i)
-        f_i[i] += norm;
+        f_i[i] -= f0;
+    for(i=0; i<KM; ++i)
+        f_K_i[i] -= f0;
 }
 
 void _get_p(
