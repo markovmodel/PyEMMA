@@ -216,8 +216,7 @@ def get_p(
 def get_fk(
     _np.ndarray[double, ndim=2, mode="c"] b_K_i not None,
     _np.ndarray[double, ndim=1, mode="c"] f_i not None,
-    _np.ndarray[double, ndim=1, mode="c"] scratch_M not None,
-    _np.ndarray[double, ndim=1, mode="c"] f_K not None):
+    _np.ndarray[double, ndim=1, mode="c"] scratch_M not None):
     r"""
     Compute the transition matrices for all thermodynamic states
 
@@ -229,9 +228,13 @@ def get_fk(
         reduced unbiased free energies
     scratch_M : numpy.ndarray(shape=(M,), dtype=numpy.float64)
         scratch array for logsumexp operations
+
+    Returns
+    -------
     f_K : numpy.ndarray(shape=(T,), dtype=numpy.float64)
-        target array for the reduced thermodynamic free energies
+        reduced thermodynamic free energies
     """
+    f_K = _np.zeros(shape=(b_K_i.shape[0],), dtype=_np.float64)
     _get_fk(
         <double*> _np.PyArray_DATA(b_K_i),
         <double*> _np.PyArray_DATA(f_i),
@@ -239,3 +242,4 @@ def get_fk(
         b_K_i.shape[1],
         <double*> _np.PyArray_DATA(scratch_M),
         <double*> _np.PyArray_DATA(f_K))
+    return f_K
