@@ -162,8 +162,7 @@ def get_fi(
     _np.ndarray[int, ndim=1, mode="c"] M_x not None,
     _np.ndarray[double, ndim=2, mode="c"] log_R_K_i not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_M not None,
-    _np.ndarray[double, ndim=1, mode="c"] scratch_T not None,
-    _np.ndarray[double, ndim=1, mode="c"] f_i not None):
+    _np.ndarray[double, ndim=1, mode="c"] scratch_T not None):
     r"""
     Update the reduced unbiased free energies
 
@@ -179,11 +178,15 @@ def get_fi(
         scratch array for logsumexp operations
     scratch_T : numpy.ndarray(shape=(T), dtype=numpy.float64)
         scratch array for logsumexp operations
+
+    Returns
+    -------
     f_i : numpy.ndarray(shape=(M,), dtype=numpy.float64)
-        target array for the ground state (Markov) free energies
+        unbiased (Markov) free energies
     """
     # later this can be extended to other thermodynmic states and
     # arbitrary expectations (not only pi)
+    f_i = _np.zeros(shape=(log_R_K_i.shape[1],), dtype=_np.float64)
     _get_fi(
         <double*> _np.PyArray_DATA(b_K_x),
         <int*> _np.PyArray_DATA(M_x),
@@ -194,6 +197,7 @@ def get_fi(
         <double*> _np.PyArray_DATA(scratch_M),
         <double*> _np.PyArray_DATA(scratch_T),
         <double*> _np.PyArray_DATA(f_i))
+    return f_i
 
 def get_pk(
     _np.ndarray[double, ndim=2, mode="c"] log_nu_K_i not None,

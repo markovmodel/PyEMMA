@@ -95,7 +95,7 @@ void _iterate_fki(
     int i, j, K, x, o;
     int Ki, Kj, KM, KMM;
     int Ci, CK, CKij, CKji, NC;
-    double divisor, R_addon, norm;
+    double divisor, R_addon, shift;
     /* compute R_K_i */
     for(K=0; K<n_therm_states; ++K)
     {
@@ -138,10 +138,10 @@ void _iterate_fki(
             new_f_K_i[K * n_markov_states + i] = INFINITY;
     }
     /* compute new f_K_i */
-    for( x=0; x<seq_length; ++x )
+    for(x=0; x<seq_length; ++x)
     {
         i = M_x[x];
-        for(K=0; K<n_therm_states; ++K)
+        for(K=0; K<n_therm_states; ++K) /* TODO: use continue for R_K_i=0 cases */
             scratch_T[K] = log_R_K_i[K * n_markov_states + i] - b_K_x[K * seq_length + x];
         divisor = _logsumexp(scratch_T, n_therm_states);
         for(K=0; K<n_therm_states; ++K)
@@ -153,11 +153,11 @@ void _iterate_fki(
     /* apply normalization */
     for(i=0; i<n_markov_states; ++i)
         scratch_M[i] = -new_f_K_i[K_target * n_markov_states + i];
-    norm = _logsumexp(scratch_M, n_markov_states);
+    shift = _logsumexp(scratch_M, n_markov_states);
     for(K=0; K<n_therm_states; ++K)
     {
         for(i=0; i<n_markov_states; ++i)
-            new_f_K_i[K * n_markov_states + i] += norm;
+            new_f_K_i[K * n_markov_states + i] += shift;
     }
 }
 
