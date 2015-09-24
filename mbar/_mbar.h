@@ -20,6 +20,8 @@
 #ifndef THERMOTOOLS_MBAR
 #define THERMOTOOLS_MBAR
 
-
+void _iterate_fk(
+    double *log_N_K, double *f_K, double *b_K_x,
+    int n_therm_states, int seq_length, double *scratch_T, double *new_f_K);
 
 #endif
