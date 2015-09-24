@@ -103,8 +103,13 @@ void _iterate_fki(
         KMM = KM * n_markov_states;
         for(i=0; i<n_markov_states; ++i)
         {
-            Ci = 0;
             Ki = KM + i;
+            if(0 == N_K_i[Ki]) /* applying Hao's speed-up recomendation */
+            {
+                log_R_K_i[Ki] = -INFINITY;
+                continue;
+            }
+            Ci = 0;
             o = 0;
             for(j=0; j<n_markov_states; ++j)
             {
@@ -139,9 +144,14 @@ void _iterate_fki(
     for(x=0; x<seq_length; ++x)
     {
         i = M_x[x];
-        for(K=0; K<n_therm_states; ++K) /* TODO: use continue for R_K_i=0 cases */
-            scratch_T[K] = log_R_K_i[K * n_markov_states + i] - b_K_x[K * seq_length + x];
-        divisor = _logsumexp(scratch_T, n_therm_states);
+        o = 0;
+        for(K=0; K<n_therm_states; ++K)
+        {
+            /* applying Hao's speed-up recomendation */
+            if(-INFINITY == log_R_K_i[K * n_markov_states + i]) continue;
+            scratch_T[o++] = log_R_K_i[K * n_markov_states + i] - b_K_x[K * seq_length + x];
+        }
+        divisor = _logsumexp(scratch_T, o);
         for(K=0; K<n_therm_states; ++K)
         {
             new_f_K_i[K * n_markov_states + i] = -_logsumexp_pair(
