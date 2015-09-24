@@ -51,6 +51,39 @@ void _iterate_fk(
         new_f_K[K] -= shift;
 }
 
+void _get_fi(
+    double *log_N_K, double *f_K, double *b_K_x, int * M_x,
+    int n_therm_states, int n_markov_states, int seq_length, double *scratch_T, double *f_i)
+{
+    int i, x, L;
+    for(i=0; i<n_markov_states; ++i)
+        f_i[i] = INFINITY;
+    for(x=0; x<seq_length; ++x)
+    {
+        for(L=0; L<n_therm_states; ++L)
+            scratch_T[L] = log_N_K[L] + f_K[L] - b_K_x[L * seq_length + x];
+        i = M_x[x];
+        f_i[i] = -_logsumexp_pair(-f_i[i], 1.0 - _logsumexp(scratch_T, n_therm_states));
+    }
+}
+
+void _normalize_fi(
+    double *f_K, double *f_i, int n_therm_states, int n_markov_states, double *scratch_M)
+{
+    int K, i;
+    double f0;
+    for(i=0; i<n_markov_states; ++i)
+        scratch_M[i] = -f_i[i];
+    f0 = -_logsumexp(scratch_M, n_markov_states);
+    for(i=0; i<n_markov_states; ++i)
+        f_i[i] -= f0;
+    for(K=0; K<n_therm_states; ++K)
+        f_K[K] -= f0;
+}
+
+
+
+
 
 
 

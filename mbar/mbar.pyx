@@ -28,6 +28,11 @@ cdef extern from "_mbar.h":
     void _iterate_fk(
         double *log_N_K, double *f_K, double *b_K_x,
         int n_therm_states, int seq_length, double *scratch_T, double *new_f_K)
+    void _get_fi(
+        double *log_N_K, double *f_K, double *b_K_x, int * M_x,
+        int n_therm_states, int n_markov_states, int seq_length, double *scratch_T, double *f_i)
+    void _normalize_fi(
+        double *f_K, double *f_i, int n_therm_states, int n_markov_states, double *scratch_M)
 
 def iterate_fk(
     _np.ndarray[double, ndim=1, mode="c"] log_N_K not None,
@@ -36,7 +41,7 @@ def iterate_fk(
     _np.ndarray[double, ndim=1, mode="c"] scratch_T not None,
     _np.ndarray[double, ndim=1, mode="c"] new_f_K not None):
     r"""
-    Calculate the reduced free energies f_i
+    Calculate the reduced thermodynamic free energies f_K
         
     Parameters
     ----------
@@ -59,3 +64,66 @@ def iterate_fk(
         b_K_x.shape[1],
         <double*> _np.PyArray_DATA(scratch_T),
         <double*> _np.PyArray_DATA(new_f_K))
+
+def get_fi(
+    _np.ndarray[double, ndim=1, mode="c"] log_N_K not None,
+    _np.ndarray[double, ndim=1, mode="c"] f_K not None,
+    _np.ndarray[double, ndim=2, mode="c"] b_K_x not None,
+    _np.ndarray[int, ndim=1, mode="c"] M_x not None,
+    _np.ndarray[double, ndim=1, mode="c"] scratch_T not None,
+    n_discrete_states):
+    r"""
+    Calculate the reduced free energies f_i
+        
+    Parameters
+    ----------
+    log_N_K : numpy.ndarray(shape=(T), dtype=numpy.float64)
+        log of the state counts in each of the T thermodynamic states
+    f_K : numpy.ndarray(shape=(T), dtype=numpy.float64)
+        reduced free energies of the T thermodynamic states
+    b_K_x : numpy.ndarray(shape=(T, X), dtype=numpy.float64)
+        bias energies in the T thermodynamic states for all X samples
+    scratch_T : numpy.ndarray(shape=(T), dtype=numpy.float64)
+        scratch array
+    new_f_K : numpy.ndarray(shape=(T), dtype=numpy.float64)
+        target array for the reduced free energies of the T thermodynamic states
+    """
+    f_i = _np.zeros(shape=(n_discrete_states,), dtype=_np.float64)
+    _get_fi(
+        <double*> _np.PyArray_DATA(log_N_K),
+        <double*> _np.PyArray_DATA(f_K),
+        <double*> _np.PyArray_DATA(b_K_x),
+        <int*> _np.PyArray_DATA(M_x),
+        b_K_x.shape[0],
+        n_discrete_states,
+        b_K_x.shape[1],
+        <double*> _np.PyArray_DATA(scratch_T),
+        <double*> _np.PyArray_DATA(f_i))
+    return f_i
+
+def normalize_fi(
+    _np.ndarray[double, ndim=1, mode="c"] f_i not None,
+    _np.ndarray[double, ndim=1, mode="c"] f_K not None,
+    _np.ndarray[double, ndim=1, mode="c"] scratch_M not None):
+    r"""
+    Calculate the reduced free energies f_i
+        
+    Parameters
+    ----------
+    log_N_K : numpy.ndarray(shape=(T), dtype=numpy.float64)
+        log of the state counts in each of the T thermodynamic states
+    f_K : numpy.ndarray(shape=(T), dtype=numpy.float64)
+        reduced free energies of the T thermodynamic states
+    b_K_x : numpy.ndarray(shape=(T, X), dtype=numpy.float64)
+        bias energies in the T thermodynamic states for all X samples
+    scratch_T : numpy.ndarray(shape=(T), dtype=numpy.float64)
+        scratch array
+    new_f_K : numpy.ndarray(shape=(T), dtype=numpy.float64)
+        target array for the reduced free energies of the T thermodynamic states
+    """
+    _normalize_fi(
+        <double*> _np.PyArray_DATA(f_i),
+        <double*> _np.PyArray_DATA(f_K),
+        f_K.shape[0],
+        f_i.shape[0],
+        <double*> _np.PyArray_DATA(scratch_M))
