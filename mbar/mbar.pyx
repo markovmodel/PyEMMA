@@ -22,7 +22,7 @@ Python interface to the TRAM estimator's lowlevel functions.
 import numpy as _np
 cimport numpy as _np
 
-__all__ = ['iterate_fk']
+__all__ = ['iterate_fk', 'normalize', 'get_fi', 'estimate']
 
 cdef extern from "_mbar.h":
     void _iterate_fk(
