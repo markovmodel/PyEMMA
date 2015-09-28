@@ -31,7 +31,7 @@ cdef extern from "_wham.h":
     void _iterate_fk(
         double *f_i, double *b_K_i, int n_therm_states, int n_markov_states,
         double *scratch_M, double *f_K)
-    extern void _normalize(
+    void _normalize(
         double *f_K, double *f_i, int n_therm_states, int n_markov_states, double *scratch_M)
 
 def iterate_fi(
