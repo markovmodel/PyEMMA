@@ -155,3 +155,50 @@ def normalize(
         f_K.shape[0],
         f_i.shape[0],
         <double*> _np.PyArray_DATA(scratch_M))
+
+def estimate(N_K_i, b_K_i, maxiter=1000, maxerr=1.0E-8, f_K=None, f_i=None):
+    r"""
+    Normalize the unbiased reduced free energies and shift the thermodynamic free energies
+        
+    Parameters
+    ----------
+    N_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
+        discrete state counts in the T thermodynamic and M discrete states
+    b_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+        reduced bias energies in the T thermodynamic and M discrete states
+    maxiter : int
+        maximum number of iterations
+    maxerr : float
+        convergence criterion based on absolute change in free energies
+
+    Returns
+    -------
+    f_K : numpy.ndarray(shape=(T), dtype=numpy.float64)
+        reduced free energies of the T thermodynamic states
+    f_i : numpy.ndarray(shape=(M), dtype=numpy.float64)
+        reduced unbiased free energies of the M discrete states
+    """
+    log_N_K = np.log(N_K_i.sum(axis=1))
+    log_N_i = np.log(N_K_i.sum(axis=0))
+    if f_K is None:
+        f_K = np.zeros(shape=b_K_i.shape[0], dtype=np.float64)
+    if f_i is None:
+        f_i = np.zeros(shape=b_K_i.shape[1], dtype=np.float64)
+    old_f_K = f_K.copy()
+    old_f_i = f_i.copy()
+    scratch = np.zeros(shape=np.min(f_K.shape[0], f_i.shape[0]),), dtype=np.float64)
+    stop = False
+    for _m in range(maxiter):
+        wham.iterate_fk(f_i, b_K_i, scratch, f_K)
+        wham.iterate_fi(log_N_K, log_N_i, f_K, b_K_i, scratch, f_i)
+        delta_f_K = np.max(np.abs((f_K - old_f_K)))
+        delta_f_i = np.max(np.abs((f_i - old_f_i)))
+        if delta_f_K < ftol and delta_f_i < ftol:
+            stop = True
+        else:
+            old_f_K[:] = f_K[:]
+            old_f_i[:] = f_i[:]
+        if stop:
+            break
+    wham.normalize(f_K, f_i, scratch)
+    return f_K, f_i
