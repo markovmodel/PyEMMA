@@ -38,13 +38,15 @@ cdef extern from "_dtram.h":
         int n_markov_states, double *scratch_M, double *new_log_nu_K_i)
     void _iterate_fi(
         double *log_nu_K_i, double *b_K_i, double *f_i, int *C_K_ij, int n_therm_states,
-        int n_markov_states, double *scratch_TM, double *scratch_M, double *new_f_i)
+        int n_markov_states, double *scratch_TM, double *new_f_i)
     void _get_p(
         double *log_nu_i, double *b_i, double *f_i, int *C_ij,
         int n_markov_states, double *scratch_M, double *p_ij)
     void _get_fk(
         double *b_K_i, double *f_i, int n_therm_states, int n_markov_states,
         double *scratch_M, double *f_K)
+    void _normalize(
+        double *f_K, double *f_i, int n_therm_states, int n_markov_states, double *scratch_M)
 
 def set_lognu(
     _np.ndarray[double, ndim=2, mode="c"] log_nu_K_i not None,
@@ -107,7 +109,6 @@ def iterate_fi(
     _np.ndarray[double, ndim=1, mode="c"] f_i not None,
     _np.ndarray[int, ndim=3, mode="c"] C_K_ij not None,
     _np.ndarray[double, ndim=2, mode="c"] scratch_TM not None,
-    _np.ndarray[double, ndim=1, mode="c"] scratch_M not None,
     _np.ndarray[double, ndim=1, mode="c"] new_f_i not None):
     r"""
     Update the reduced unbiased free energies
@@ -124,8 +125,6 @@ def iterate_fi(
         multistate count matrix
     scratch_TM : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         scratch array for logsumexp operations
-    scratch_M : numpy.ndarray(shape=(M,), dtype=numpy.float64)
-        scratch array for logsumexp operations
     new_f_i : numpy.ndarray(shape=(M,), dtype=numpy.float64)
         target array for the reduced unbiased free energies
     """
@@ -137,7 +136,6 @@ def iterate_fi(
         log_nu_K_i.shape[0],
         log_nu_K_i.shape[1],
         <double*> _np.PyArray_DATA(scratch_TM),
-        <double*> _np.PyArray_DATA(scratch_M),
         <double*> _np.PyArray_DATA(new_f_i))
 
 def get_pk(
@@ -243,3 +241,27 @@ def get_fk(
         <double*> _np.PyArray_DATA(scratch_M),
         <double*> _np.PyArray_DATA(f_K))
     return f_K
+
+def normalize(
+    _np.ndarray[double, ndim=1, mode="c"] f_K not None,
+    _np.ndarray[double, ndim=1, mode="c"] f_i not None,
+    _np.ndarray[double, ndim=1, mode="c"] scratch_M not None):
+    r"""
+    Normalize the unbiased reduced free energies and shift the reduced thermodynamic
+    free energies accordingly
+
+    Parameters
+    ----------
+    f_K : numpy.ndarray(shape=(T), dtype=numpy.intc)
+        reduced thermodynamic free energies
+    f_i : numpy.ndarray(shape=(M), dtype=numpy.float64)
+        reduced unbiased free energies
+    scratch_M : numpy.ndarray(shape=(M), dtype=numpy.float64)
+        scratch array for logsumexp operations
+    """
+    _normalize(
+        <double*> _np.PyArray_DATA(f_K),
+        <double*> _np.PyArray_DATA(f_i),
+        f_K.shape[0],
+        f_i.shape[0],
+        <double*> _np.PyArray_DATA(scratch_M))
