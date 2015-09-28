@@ -22,7 +22,7 @@ Python interface to the WHAM estimator's lowlevel functions.
 import numpy as _np
 cimport numpy as _np
 
-__all__ = ['iterate_fi', 'iterate_fk']
+__all__ = ['iterate_fi', 'iterate_fk', 'normalize', 'estimate']
 
 cdef extern from "_wham.h":
     void _iterate_fi(
@@ -178,27 +178,30 @@ def estimate(N_K_i, b_K_i, maxiter=1000, maxerr=1.0E-8, f_K=None, f_i=None):
     f_i : numpy.ndarray(shape=(M), dtype=numpy.float64)
         reduced unbiased free energies of the M discrete states
     """
-    log_N_K = np.log(N_K_i.sum(axis=1))
-    log_N_i = np.log(N_K_i.sum(axis=0))
+    T = N_K_i.shape[0]
+    M = N_K_i.shape[1]
+    S = _np.max([T, M])
+    log_N_K = _np.log(N_K_i.sum(axis=1))
+    log_N_i = _np.log(N_K_i.sum(axis=0))
     if f_K is None:
-        f_K = np.zeros(shape=b_K_i.shape[0], dtype=np.float64)
+        f_K = _np.zeros(shape=(T,), dtype=_np.float64)
     if f_i is None:
-        f_i = np.zeros(shape=b_K_i.shape[1], dtype=np.float64)
+        f_i = _np.zeros(shape=(M,), dtype=_np.float64)
     old_f_K = f_K.copy()
     old_f_i = f_i.copy()
-    scratch = np.zeros(shape=np.min(f_K.shape[0], f_i.shape[0]),), dtype=np.float64)
+    scratch = _np.zeros(shape=(S,), dtype=_np.float64)
     stop = False
     for _m in range(maxiter):
-        wham.iterate_fk(f_i, b_K_i, scratch, f_K)
-        wham.iterate_fi(log_N_K, log_N_i, f_K, b_K_i, scratch, f_i)
-        delta_f_K = np.max(np.abs((f_K - old_f_K)))
-        delta_f_i = np.max(np.abs((f_i - old_f_i)))
-        if delta_f_K < ftol and delta_f_i < ftol:
+        iterate_fk(f_i, b_K_i, scratch, f_K)
+        iterate_fi(log_N_K, log_N_i, f_K, b_K_i, scratch, f_i)
+        delta_f_K = _np.max(_np.abs((f_K - old_f_K)))
+        delta_f_i = _np.max(_np.abs((f_i - old_f_i)))
+        if delta_f_K < maxerr and delta_f_i < maxerr:
             stop = True
         else:
             old_f_K[:] = f_K[:]
             old_f_i[:] = f_i[:]
         if stop:
             break
-    wham.normalize(f_K, f_i, scratch)
+    normalize(f_K, f_i, scratch)
     return f_K, f_i
