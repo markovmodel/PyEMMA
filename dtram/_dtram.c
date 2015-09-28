@@ -88,12 +88,12 @@ extern void _iterate_lognu(
 
 extern void _iterate_fi(
     double *log_nu_K_i, double *b_K_i, double *f_i, int *C_K_ij, int n_therm_states,
-    int n_markov_states, double *scratch_TM, double *scratch_M, double *new_f_i)
+    int n_markov_states, double *scratch_TM, double *new_f_i)
 {
     int i, j, K, o;
-    int MM=n_markov_states*n_markov_states, KM=n_therm_states*n_markov_states, Ki, Kj;
+    int MM=n_markov_states*n_markov_states, Ki, Kj;
     int CK, CKij, CKji, Ci;
-    double divisor, norm;
+    double divisor, shift;
     for(i=0; i<n_markov_states; ++i)
     {
         Ci = 0;
@@ -128,11 +128,12 @@ extern void _iterate_fi(
         /* patch Ci and the total divisor together */
         new_f_i[i] = _logsumexp(scratch_TM, o) - log(
             n_therm_states*THERMOTOOLS_DTRAM_PRIOR + (double) Ci);
-        scratch_M[i] = -new_f_i[i];
     }
-    norm = _logsumexp(scratch_M, n_markov_states);
+    shift = new_f_i[0];
+    for(i=1; i<n_markov_states; ++i)
+        shift = (shift < new_f_i[i]) ? shift : new_f_i[i];
     for(i=0; i<n_markov_states; ++i)
-        new_f_i[i] += norm;
+        new_f_i[i] -= shift;
 }
 
 extern void _get_p(
@@ -196,4 +197,18 @@ extern void _get_fk(
             scratch_M[i] = -(b_K_i[K*n_markov_states + i] + f_i[i]);
         f_K[K] = -_logsumexp(scratch_M, n_markov_states);
     }
+}
+
+extern void _normalize(
+    double *f_K, double *f_i, int n_therm_states, int n_markov_states, double *scratch_M)
+{
+    int K, i;
+    double f0;
+    for(i=0; i<n_markov_states; ++i)
+        scratch_M[i] = -f_i[i];
+    f0 = -_logsumexp(scratch_M, n_markov_states);
+    for(K=0; K<n_therm_states; ++K)
+        f_K[K] -= f0;
+    for(i=0; i<n_markov_states; ++i)
+        f_i[i] -= f0;
 }

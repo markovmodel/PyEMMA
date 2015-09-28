@@ -32,7 +32,7 @@ extern void _iterate_lognu(
 
 extern void _iterate_fi(
     double *log_nu_K_i, double *b_K_i, double *f_i, int *C_K_ij, int n_therm_states,
-    int n_markov_states, double *scratch_TM, double *scratch_M, double *new_f_i);
+    int n_markov_states, double *scratch_TM, double *new_f_i);
 
 extern void _get_p(
     double *log_nu_i, double *b_i, double *f_i, int *C_ij,
@@ -41,5 +41,8 @@ extern void _get_p(
 extern void _get_fk(
     double *b_K_i, double *f_i, int n_therm_states, int n_markov_states,
     double *scratch_M, double *f_K);
+
+extern void _normalize(
+    double *f_K, double *f_i, int n_therm_states, int n_markov_states, double *scratch_M);
 
 #endif
