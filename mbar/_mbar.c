@@ -47,8 +47,26 @@ void _iterate_fk(
     shift = new_f_K[0];
     for(K=1; K<n_therm_states; ++K)
         shift = (shift < new_f_K[K]) ? shift : new_f_K[K];
-    for(K=1; K<n_therm_states; ++K)
+    for(K=0; K<n_therm_states; ++K)
         new_f_K[K] -= shift;
+}
+
+void _normalize(
+    double *log_N_K, double *f_K, double *b_K_x,
+    int n_therm_states, int seq_length, double *scratch_T)
+{
+    int K, x, L;
+    double divisor, f0 = INFINITY;
+    for(x=0; x<seq_length; ++x)
+    {
+        for(L=0; L<n_therm_states; ++L)
+            scratch_T[L] = log_N_K[L] + f_K[L] - b_K_x[L * seq_length + x];
+        divisor = _logsumexp(scratch_T, n_therm_states);
+        for(K=0; K<n_therm_states; ++K)
+            f0 = -_logsumexp_pair(-f0, -divisor);
+    }
+    for(K=0; K<n_therm_states; ++K)
+        f_K[K] -= f0;
 }
 
 void _get_fi(
