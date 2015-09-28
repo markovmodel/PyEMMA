@@ -265,3 +265,52 @@ def normalize(
         f_K.shape[0],
         f_i.shape[0],
         <double*> _np.PyArray_DATA(scratch_M))
+
+def estimate(C_K_ij, b_K_i, maxiter=1000, maxerr=1.0E-8, log_nu_K_i=None, f_i=None):
+    r"""
+    Estimate the unbiased reduced free energies and thermodynamic free energies
+        
+    Parameters
+    ----------
+    C_K_ij : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
+        transition count matrices for all T thermodynamic states
+    b_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+        reduced bias energies in the T thermodynamic and M discrete states
+    maxiter : int
+        maximum number of iterations
+    maxerr : float
+        convergence criterion based on absolute change in free energies
+    f_i : numpy.ndarray(shape=(M), dtype=numpy.float64)
+        reduced unbiased free energies of the M discrete states
+    log_nu_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+        Lagrangian multipliers
+
+    Returns
+    -------
+    f_K : numpy.ndarray(shape=(T), dtype=numpy.float64)
+        reduced free energies of the T thermodynamic states
+    f_i : numpy.ndarray(shape=(M), dtype=numpy.float64)
+        reduced unbiased free energies of the M discrete states
+    log_nu_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+        Lagrangian multipliers
+    """
+    log_nu_K_i = _np.zeros(shape=b_K_i.shape, dtype=_np.float64)
+    f_i = _np.zeros(shape=b_K_i.shape[1], dtype=_np.float64)
+    set_lognu(log_nu_K_i, C_K_ij)
+    scratch_TM = _np.zeros(shape=b_K_i.shape, dtype=_np.float64)
+    scratch_M = _np.zeros(shape=f_i.shape, dtype=_np.float64)
+    old_log_nu_K_i = log_nu_K_i.copy()
+    old_f_i = f_i.copy()
+    for m in range(maxiter):
+        iterate_lognu(old_log_nu_K_i, b_K_i, f_i, C_K_ij, scratch_M, log_nu_K_i)
+        iterate_fi(log_nu_K_i, b_K_i, old_f_i, C_K_ij, scratch_TM, f_i)
+        delta_log_nu_K_i = _np.max(_np.abs((log_nu_K_i - old_log_nu_K_i)))
+        delta_f_i = _np.max(_np.abs((f_i - old_f_i)))
+        if delta_log_nu_K_i < maxerr and delta_f_i < maxerr:
+            stop = True
+        else:
+            old_log_nu_K_i[:] = log_nu_K_i[:]
+            old_f_i[:] = f_i[:]
+    f_K = get_fk(b_K_i, f_i, scratch_M)
+    normalize(f_K, f_i, scratch_M)
+    return f_K, f_i, log_nu_K_i

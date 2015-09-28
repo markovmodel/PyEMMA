@@ -91,7 +91,7 @@ extern void _iterate_fi(
     int n_markov_states, double *scratch_TM, double *new_f_i)
 {
     int i, j, K, o;
-    int MM=n_markov_states*n_markov_states, KM=n_therm_states*n_markov_states, Ki, Kj;
+    int MM=n_markov_states*n_markov_states, Ki, Kj;
     int CK, CKij, CKji, Ci;
     double divisor, shift;
     for(i=0; i<n_markov_states; ++i)
