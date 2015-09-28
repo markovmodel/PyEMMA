@@ -138,7 +138,8 @@ def normalize(
     _np.ndarray[double, ndim=1, mode="c"] f_i not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_M not None):
     r"""
-    Normalize the unbiased reduced free energies and shift the thermodynamic free energies
+    Normalize the unbiased reduced free energies and shift the thermodynamic
+    free energies accordingly
         
     Parameters
     ----------
@@ -158,7 +159,7 @@ def normalize(
 
 def estimate(N_K_i, b_K_i, maxiter=1000, maxerr=1.0E-8, f_K=None, f_i=None):
     r"""
-    Normalize the unbiased reduced free energies and shift the thermodynamic free energies
+    Estimate the unbiased reduced free energies and thermodynamic free energies
         
     Parameters
     ----------
