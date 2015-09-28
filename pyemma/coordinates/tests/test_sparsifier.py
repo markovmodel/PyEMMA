@@ -24,23 +24,17 @@ class TestSparsifier(unittest.TestCase):
         self.sparsifier.parametrize()
 
     def test_constant_column(self):
-
         out = self.sparsifier.get_output()[0]
         np.testing.assert_allclose(out, self.X)
 
     def test_constant_column_tica(self):
-        tica_obj = tica(self.sparsifier, kinetic_map=True)
+        tica_obj = tica(self.sparsifier, kinetic_map=True, var_cutoff=1)
         self.assertEqual(tica_obj.dimension(), self.sparsifier.dimension())
 
     def test_numerical_close_features(self):
         rtol = self.sparsifier.rtol
         noise = (rtol*200) * (np.random.random(1000)*2 - 0.5)
         self.src._data[0][:, -1] += noise
-
-        first_frame = self.X[0]
-        print np.isclose(self.X, first_frame, rtol=rtol)
-
-        print self.src._data[0][:, -1]
 
         out = self.sparsifier.get_output()[0]
         np.testing.assert_allclose(out, self.X)
