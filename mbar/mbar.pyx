@@ -28,6 +28,9 @@ cdef extern from "_mbar.h":
     void _iterate_fk(
         double *log_N_K, double *f_K, double *b_K_x,
         int n_therm_states, int seq_length, double *scratch_T, double *new_f_K)
+    void _normalize(
+        double *log_N_K, double *f_K, double *b_K_x,
+        int n_therm_states, int seq_length, double *scratch_T)
     void _get_fi(
         double *log_N_K, double *f_K, double *b_K_x, int * M_x,
         int n_therm_states, int n_markov_states, int seq_length,
@@ -63,6 +66,34 @@ def iterate_fk(
         b_K_x.shape[1],
         <double*> _np.PyArray_DATA(scratch_T),
         <double*> _np.PyArray_DATA(new_f_K))
+
+def normalize(
+    _np.ndarray[double, ndim=1, mode="c"] log_N_K not None,
+    _np.ndarray[double, ndim=1, mode="c"] f_K not None,
+    _np.ndarray[double, ndim=2, mode="c"] b_K_x not None,
+    _np.ndarray[double, ndim=1, mode="c"] scratch_T not None):
+    r"""
+    Shift the reduced thermodynamic free energies f_K such that the unbiased thermodynamic
+    free energy is zero
+        
+    Parameters
+    ----------
+    log_N_K : numpy.ndarray(shape=(T), dtype=numpy.float64)
+        log of the state counts in each of the T thermodynamic states
+    f_K : numpy.ndarray(shape=(T), dtype=numpy.float64)
+        reduced free energies of the T thermodynamic states
+    b_K_x : numpy.ndarray(shape=(T, X), dtype=numpy.float64)
+        bias energies in the T thermodynamic states for all X samples
+    scratch_T : numpy.ndarray(shape=(T), dtype=numpy.float64)
+        scratch array
+    """
+    _normalize(
+        <double*> _np.PyArray_DATA(log_N_K),
+        <double*> _np.PyArray_DATA(f_K),
+        <double*> _np.PyArray_DATA(b_K_x),
+        b_K_x.shape[0],
+        b_K_x.shape[1],
+        <double*> _np.PyArray_DATA(scratch_T))
 
 def get_fi(
     _np.ndarray[double, ndim=1, mode="c"] log_N_K not None,
@@ -110,3 +141,43 @@ def get_fi(
         <double*> _np.PyArray_DATA(scratch_T),
         <double*> _np.PyArray_DATA(f_i))
     return f_i
+
+def estimate(N_K, b_K_x, maxiter=1000, maxerr=1.0E-8, f_K=None):
+    r"""
+    Estimate the unbiased reduced free energies and thermodynamic free energies
+        
+    Parameters
+    ----------
+    N_K : numpy.ndarray(shape=(T), dtype=numpy.intc)
+        discrete state counts in the T thermodynamic states
+    b_K_x : numpy.ndarray(shape=(T, X), dtype=numpy.float64)
+        reduced bias energies in the T thermodynamic states for all X samples
+    M_x : numpy.ndarray(shape=(X), dtype=numpy.float64)
+        discrete state indices for all X samples
+    maxiter : int
+        maximum number of iterations
+    maxerr : float
+        convergence criterion based on absolute change in free energies
+
+    Returns
+    -------
+    f_K : numpy.ndarray(shape=(T), dtype=numpy.float64)
+        reduced free energies of the T thermodynamic states
+    """
+    T = N_K.shape[0]
+    log_N_K = _np.log(N_K)
+    if f_K is None:
+        f_K = _np.zeros(shape=(T,), dtype=_np.float64)
+    old_f_K = f_K.copy()
+    scratch = _np.zeros(shape=(T,), dtype=_np.float64)
+    stop = False
+    for _m in range(maxiter):
+        iterate_fk(log_N_K, old_f_K, b_K_x, scratch, f_K)
+        if _np.max(_np.abs((f_K - old_f_K))) < maxerr:
+            stop = True
+        else:
+            old_f_K[:] = f_K[:]
+        if stop:
+            break
+    normalize(log_N_K, old_f_K, b_K_x, scratch)
+    return f_K
