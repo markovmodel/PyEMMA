@@ -60,3 +60,17 @@ extern void _iterate_fk(
         f_K[K] = -_logsumexp(scratch_M, n_markov_states);
     }
 }
+
+extern void _normalize(
+    double *f_K, double *f_i, int n_therm_states, int n_markov_states, double *scratch_M)
+{
+    int K, i;
+    double f0;
+    for(i=0; i<n_markov_states; ++i)
+        scratch_M[i] = -f_i[i];
+    f0 = -_logsumexp(scratch_M, n_markov_states);
+    for(i=0; i<n_markov_states; ++i)
+        f_i[i] -= f0;
+    for(K=0; K<n_therm_states; ++K)
+        f_K[K] -= f0;
+}

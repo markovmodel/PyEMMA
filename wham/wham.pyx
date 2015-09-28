@@ -31,6 +31,8 @@ cdef extern from "_wham.h":
     void _iterate_fk(
         double *f_i, double *b_K_i, int n_therm_states, int n_markov_states,
         double *scratch_M, double *f_K)
+    extern void _normalize(
+        double *f_K, double *f_i, int n_therm_states, int n_markov_states, double *scratch_M)
 
 def iterate_fi(
     _np.ndarray[double, ndim=1, mode="c"] log_N_K not None,
@@ -130,3 +132,26 @@ def iterate_fk(
         b_K_i.shape[1],
         <double*> _np.PyArray_DATA(scratch_M),
         <double*> _np.PyArray_DATA(f_K))
+
+def normalize(
+    _np.ndarray[double, ndim=1, mode="c"] f_K not None,
+    _np.ndarray[double, ndim=1, mode="c"] f_i not None,
+    _np.ndarray[double, ndim=1, mode="c"] scratch_M not None):
+    r"""
+    Normalize the unbiased reduced free energies and shift the thermodynamic free energies
+        
+    Parameters
+    ----------
+    f_K : numpy.ndarray(shape=(T), dtype=numpy.float64)
+        reduced free energies of the T thermodynamic states
+    f_i : numpy.ndarray(shape=(M), dtype=numpy.float64)
+        reduced free energies of the M discrete states
+    scratch_M : numpy.ndarray(shape=(M), dtype=numpy.float64)
+        scratch array
+    """
+    _normalize(
+        <double*> _np.PyArray_DATA(f_K),
+        <double*> _np.PyArray_DATA(f_i),
+        f_K.shape[0],
+        f_i.shape[0],
+        <double*> _np.PyArray_DATA(scratch_M))
