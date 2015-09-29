@@ -51,7 +51,7 @@ def logsumexp(_np.ndarray[double, ndim=1, mode="c"] array not None):
 
     where the :math:`a_i` are the :math:`n` values in the supplied array.
     """
-    return _logsumexp(<double*> _np.PyArray_DATA(array), array.shape[0])
+    return _logsumexp(<double*> _np.PyArray_DATA(array.copy()), array.shape[0])
 
 def logsumexp_pair(a, b):
     r"""
