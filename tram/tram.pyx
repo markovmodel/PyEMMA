@@ -27,9 +27,10 @@ __all__ = [
     'iterate_lognu',
     'iterate_fki',
     'get_fi',
-    'normalize_fki',
+    'normalize',
     'get_p',
-    'get_pk']
+    'get_pk',
+    'estimate']
 
 cdef extern from "_tram.h":
     void _set_lognu(double *log_nu_K_i, int *C_K_ij, int n_therm_states, int n_markov_states)
@@ -339,6 +340,10 @@ def estimate(C_K_ij, N_K_i, b_K_x, M_x, maxiter=1000, maxerr=1.0E-8, f_K_i=None,
         maximum number of iterations
     maxerr : float
         convergence criterion based on absolute change in free energies
+    f_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64), OPTIONAL
+        initial guess for the reduced discrete state free energies for all T thermodynamic states
+    log_nu_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64), OPTIONAL
+        initial guess for the logarithm of the Lagrangian multipliers
 
     Returns
     -------
