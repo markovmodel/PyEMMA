@@ -58,8 +58,8 @@ def df(np.ndarray[double, ndim=1, mode="c"] db_IJ not None,
         Monte Carlo Data. J. Comput. Phys. 22, 245-268 (1976)
     """
     return _df(
-    	<double*> np.PyArray_DATA(db_IJ),
-    	db_IJ.shape[0],
-    	<double*> np.PyArray_DATA(db_JI), 
+        <double*> np.PyArray_DATA(db_IJ),
+        db_IJ.shape[0],
+        <double*> np.PyArray_DATA(db_JI), 
         db_JI.shape[0],
         <double*> np.PyArray_DATA(scratch))
