@@ -52,7 +52,7 @@ void _iterate_lognu(
     int n_therm_states, int n_markov_states, double *scratch_M, double *new_log_nu_K_i)
 {
     int i, j, K, o;
-    int MM = n_markov_states * n_markov_states, Ki, Kj, KM, KMM;
+    int Ki, Kj, KM, KMM;
     int CK, CKij;
     double divisor;
     for(K=0; K<n_therm_states; ++K)
@@ -173,13 +173,9 @@ void _get_fi(
     double *f_i)
 {
     int i, K, x;
-    double divisor, norm;
-
-    /* set f_i to infinity (pi_i==0) */
+    double divisor;
     for(i=0; i<n_markov_states; ++i)
         f_i[i] = INFINITY;
-    
-    /* compute new f_i */
     for( x=0; x<seq_length; ++x )
     {
         i = M_x[x];
