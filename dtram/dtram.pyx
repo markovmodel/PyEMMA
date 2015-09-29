@@ -28,7 +28,9 @@ __all__ = [
     'iterate_fi',
     'get_pk',
     'get_p',
-    'get_fk']
+    'get_fk',
+    'normalize',
+    'estimate']
 
 cdef extern from "_dtram.h":
     void _set_lognu(
