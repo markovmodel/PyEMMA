@@ -190,8 +190,21 @@ void _get_fi(
     }
 }
 
-void _normalize_fki(
-    double *f_i, double *f_K_i, int n_therm_states, int n_markov_states, double *scratch_M)
+void _get_fk(
+    double *f_K_i, int n_therm_states, int n_markov_states, double *scratch_M, double *f_K)
+{
+    int i, K;
+    for(K=0; K<n_therm_states; ++K)
+    {
+        for(i=0; i<n_markov_states; ++i)
+            scratch_M[i] = -f_K_i[K * n_markov_states + i];
+        f_K[K] = -_logsumexp(scratch_M, n_markov_states);
+    }
+}
+
+void _normalize(
+    double *f_i, double *f_K_i, double *f_K,
+    int n_therm_states, int n_markov_states, double *scratch_M)
 {
     int i, KM = n_therm_states * n_markov_states;
     double f0;
@@ -202,6 +215,8 @@ void _normalize_fki(
         f_i[i] -= f0;
     for(i=0; i<KM; ++i)
         f_K_i[i] -= f0;
+    for(i=0; i<n_therm_states; ++i)
+        f_K[i] -= f0;
 }
 
 void _get_p(

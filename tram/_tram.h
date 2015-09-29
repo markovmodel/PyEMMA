@@ -24,20 +24,29 @@
 #define THERMOTOOLS_TRAM_LOG_PRIOR -23.025850929940457
 
 void _set_lognu(double *log_nu_K_i, int *C_K_ij, int n_therm_states, int n_markov_states);
+
 void _iterate_lognu(
     double *log_nu_K_i, double *f_K_i, int *C_K_ij,
     int n_therm_states, int n_markov_states, double *scratch_M, double *new_log_nu_K_i);
+
 void _iterate_fki(
     double *log_nu_K_i, double *f_K_i, int *C_K_ij, double *b_K_x,
     int *M_x, int *N_K_i, int seq_length, double *log_R_K_i,
     int n_therm_states, int n_markov_states, double *scratch_M, double *scratch_T,
     double *new_f_K_i);
+
 void _get_fi(
     double *b_K_x, int *M_x, int seq_length, double *log_R_K_i,
     int n_therm_states, int n_markov_states, double *scratch_M, double *scratch_T,
     double *f_i);
-void _normalize_fki(
-    double *f_i, double *f_K_i, int n_therm_states, int n_markov_states, double *scratch_M);
+
+void _get_fk(
+    double *f_K_i, int n_therm_states, int n_markov_states, double *scratch_M, double *f_K);
+
+void _normalize(
+    double *f_i, double *f_K_i, double *f_K,
+    int n_therm_states, int n_markov_states, double *scratch_M);
+
 void _get_p(
     double *log_nu_i, double *f_i, int *C_ij,
     int n_markov_states, double *scratch_M, double *p_ij);
