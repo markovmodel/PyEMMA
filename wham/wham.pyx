@@ -171,6 +171,10 @@ def estimate(N_K_i, b_K_i, maxiter=1000, maxerr=1.0E-8, f_K=None, f_i=None):
         maximum number of iterations
     maxerr : float
         convergence criterion based on absolute change in free energies
+    f_K : numpy.ndarray(shape=(T), dtype=numpy.float64), OPTIONAL
+        initial guess for the reduced free energies of the T thermodynamic states
+    f_i : numpy.ndarray(shape=(M), dtype=numpy.float64), OPTIONAL
+        initial guess for the reduced unbiased free energies of the M discrete states
 
     Returns
     -------

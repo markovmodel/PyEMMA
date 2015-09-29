@@ -282,10 +282,10 @@ def estimate(C_K_ij, b_K_i, maxiter=1000, maxerr=1.0E-8, log_nu_K_i=None, f_i=No
         maximum number of iterations
     maxerr : float
         convergence criterion based on absolute change in free energies
-    f_i : numpy.ndarray(shape=(M), dtype=numpy.float64)
-        reduced unbiased free energies of the M discrete states
-    log_nu_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
-        Lagrangian multipliers
+    f_i : numpy.ndarray(shape=(M), dtype=numpy.float64), OPTIONAL
+        initial guess for the reduced unbiased free energies of the M discrete states
+    log_nu_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64), OPTIONAL
+        initial guess for the logarithm of the Lagrangian multipliers
 
     Returns
     -------
@@ -294,7 +294,7 @@ def estimate(C_K_ij, b_K_i, maxiter=1000, maxerr=1.0E-8, log_nu_K_i=None, f_i=No
     f_i : numpy.ndarray(shape=(M), dtype=numpy.float64)
         reduced unbiased free energies of the M discrete states
     log_nu_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
-        Lagrangian multipliers
+        logarithm of the Lagrangian multipliers
     """
     log_nu_K_i = _np.zeros(shape=b_K_i.shape, dtype=_np.float64)
     f_i = _np.zeros(shape=b_K_i.shape[1], dtype=_np.float64)

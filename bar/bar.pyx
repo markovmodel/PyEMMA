@@ -40,6 +40,7 @@ def df(np.ndarray[double, ndim=1, mode="c"] db_IJ not None,
     :math:`\Delta b^{IJ}(x) = (B^I(x \in J) - B(x \in I)) / kT^I`
     where B(x) is the bias energy function and kT is the thermal
     energy.
+
     Parameters
     ----------
     db_IJ : numpy.ndarray(shape=(L1,), dtype=np.float64)
@@ -48,10 +49,12 @@ def df(np.ndarray[double, ndim=1, mode="c"] db_IJ not None,
         Reduced biased energy differences for samples generated in thermodynamic state J.
     sctatch : numpy.ndarray(shape=(max(L1,L2)), dtryp=np.float64)
         Empty scatch array for internal data processing
+
     Returns
     -------
     df : float
         free energy difference between states I and J defined by :math:`f^IJ = f^J-f^I`.
+
     References
     ----------
     .. [1] Bennett, C. H.: Efficient Estimation of Free Energy Differences from

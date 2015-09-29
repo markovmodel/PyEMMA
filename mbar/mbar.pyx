@@ -152,12 +152,12 @@ def estimate(N_K, b_K_x, maxiter=1000, maxerr=1.0E-8, f_K=None):
         discrete state counts in the T thermodynamic states
     b_K_x : numpy.ndarray(shape=(T, X), dtype=numpy.float64)
         reduced bias energies in the T thermodynamic states for all X samples
-    M_x : numpy.ndarray(shape=(X), dtype=numpy.float64)
-        discrete state indices for all X samples
     maxiter : int
         maximum number of iterations
     maxerr : float
         convergence criterion based on absolute change in free energies
+    f_K : numpy.ndarray(shape=(T), dtype=numpy.float64), OPTIONAL
+        initial guess for the reduced free energies of the T thermodynamic states
 
     Returns
     -------
