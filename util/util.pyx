@@ -24,7 +24,7 @@ cimport numpy as _np
 from scipy.sparse import csr_matrix as _csr
 from msmtools.estimation import count_matrix as _cm
 
-__all__ = ['count_matrices']
+__all__ = ['count_matrices', 'state_counts']
 
 cdef extern from "_util.h":
     int _get_therm_state_break_points(int *T_x, int seq_length, int *break_points)
@@ -53,6 +53,10 @@ def get_therm_state_break_points(
 
 def count_matrices(dtraj, lag, sliding=True, sparse_return=True, nstates=None):
     r"""
+    Count transitions at given lagtime
+
+    Parameters
+    ----------
     dtraj : list of numpy.ndarray(shape=(X, 2), dtype=np.intc)
         list of discretized trajectories
     lag : int
@@ -88,3 +92,26 @@ def count_matrices(dtraj, lag, sliding=True, sparse_return=True, nstates=None):
     if sparse_return:
         return C_K
     return _np.array([C.todense() for C in C_K], dtype=_np.intc)
+
+def state_counts(dtraj):
+    r"""
+    Count discrete states in all thermodynamic states
+
+    Parameters
+    ----------
+    dtraj : list of numpy.ndarray(shape=(X, 2), dtype=np.intc)
+        list of discretized trajectories
+
+    Returns
+    -------
+    N : numpy.ndarray(shape=(T, M))
+        state counts
+    """
+    kmax = _np.max([d[:, 0].max() for d in dtraj])
+    nmax = _np.max([d[:, 1].max() for d in dtraj])
+    N = _np.zeros(shape=(kmax + 1, nmax + 1), dtype=_np.intc)
+    for d in dtraj:
+        for K in range(kmax + 1):
+            for i in range(nmax + 1):
+                N[K, i] += ((d[:, 0] == K) * (d[:, 1] == i)).sum()
+    return N
