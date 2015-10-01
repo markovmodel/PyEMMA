@@ -117,8 +117,8 @@ def state_counts(dtraj, nstates=None, nthermo=None):
     N : numpy.ndarray(shape=(T, M))
         state counts
     """
-    kmax = _np.max([d[:, 0].max() for d in dtraj])
-    nmax = _np.max([d[:, 1].max() for d in dtraj])
+    kmax = int(_np.max([d[:, 0].max() for d in dtraj]))
+    nmax = int(_np.max([d[:, 1].max() for d in dtraj]))
     if nthermo is None:
         nthermo = kmax + 1
     elif nthermo < kmax + 1:
