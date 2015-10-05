@@ -29,7 +29,7 @@
 #endif
 
 extern void _set_lognu(
-    double *log_nu_K_i, int *C_K_ij, int n_therm_states, int n_markov_states)
+    int *C_K_ij, int n_therm_states, int n_markov_states, double *log_nu_K_i)
 {
     int i, j, K;
     int MM=n_markov_states*n_markov_states, KMM;
@@ -200,7 +200,7 @@ extern void _get_fk(
 }
 
 extern void _normalize(
-    double *f_K, double *f_i, int n_therm_states, int n_markov_states, double *scratch_M)
+    int n_therm_states, int n_markov_states, double *scratch_M, double *f_K, double *f_i)
 {
     int K, i;
     double f0;

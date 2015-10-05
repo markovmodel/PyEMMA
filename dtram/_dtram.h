@@ -24,7 +24,7 @@
 #define THERMOTOOLS_DTRAM_LOG_PRIOR -23.025850929940457
 
 extern void _set_lognu(
-    double *log_nu_K_i, int *C_K_ij, int n_therm_states, int n_markov_states);
+    int *C_K_ij, int n_therm_states, int n_markov_states, double *log_nu_K_i);
 
 extern void _iterate_lognu(
     double *log_nu_K_i, double *b_K_i, double *f_i, int *C_K_ij,
@@ -43,6 +43,6 @@ extern void _get_fk(
     double *scratch_M, double *f_K);
 
 extern void _normalize(
-    double *f_K, double *f_i, int n_therm_states, int n_markov_states, double *scratch_M);
+    int n_therm_states, int n_markov_states, double *scratch_M, double *f_K, double *f_i);
 
 #endif

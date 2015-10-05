@@ -29,8 +29,8 @@ cdef extern from "_mbar.h":
         double *log_N_K, double *f_K, double *b_K_x,
         int n_therm_states, int seq_length, double *scratch_T, double *new_f_K)
     void _normalize(
-        double *log_N_K, double *f_K, double *b_K_x,
-        int n_therm_states, int seq_length, double *scratch_T)
+        double *log_N_K, double *b_K_x, int n_therm_states, int seq_length,
+        double *scratch_T, double *f_K)
     void _get_fi(
         double *log_N_K, double *f_K, double *b_K_x, int * M_x,
         int n_therm_states, int n_markov_states, int seq_length,
@@ -69,9 +69,9 @@ def iterate_fk(
 
 def normalize(
     _np.ndarray[double, ndim=1, mode="c"] log_N_K not None,
-    _np.ndarray[double, ndim=1, mode="c"] f_K not None,
     _np.ndarray[double, ndim=2, mode="c"] b_K_x not None,
-    _np.ndarray[double, ndim=1, mode="c"] scratch_T not None):
+    _np.ndarray[double, ndim=1, mode="c"] scratch_T not None,
+    _np.ndarray[double, ndim=1, mode="c"] f_K not None):
     r"""
     Shift the reduced thermodynamic free energies f_K such that the unbiased thermodynamic
     free energy is zero
@@ -80,20 +80,20 @@ def normalize(
     ----------
     log_N_K : numpy.ndarray(shape=(T), dtype=numpy.float64)
         log of the state counts in each of the T thermodynamic states
-    f_K : numpy.ndarray(shape=(T), dtype=numpy.float64)
-        reduced free energies of the T thermodynamic states
     b_K_x : numpy.ndarray(shape=(T, X), dtype=numpy.float64)
         bias energies in the T thermodynamic states for all X samples
     scratch_T : numpy.ndarray(shape=(T), dtype=numpy.float64)
+    f_K : numpy.ndarray(shape=(T), dtype=numpy.float64)
+        reduced free energies of the T thermodynamic states
         scratch array
     """
     _normalize(
         <double*> _np.PyArray_DATA(log_N_K),
-        <double*> _np.PyArray_DATA(f_K),
         <double*> _np.PyArray_DATA(b_K_x),
         b_K_x.shape[0],
         b_K_x.shape[1],
-        <double*> _np.PyArray_DATA(scratch_T))
+        <double*> _np.PyArray_DATA(scratch_T),
+        <double*> _np.PyArray_DATA(f_K))
 
 def get_fi(
     _np.ndarray[double, ndim=1, mode="c"] log_N_K not None,
@@ -179,5 +179,5 @@ def estimate(N_K, b_K_x, maxiter=1000, maxerr=1.0E-8, f_K=None):
             old_f_K[:] = f_K[:]
         if stop:
             break
-    normalize(log_N_K, old_f_K, b_K_x, scratch)
+    normalize(log_N_K, b_K_x, scratch, f_K)
     return f_K

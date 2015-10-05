@@ -34,7 +34,7 @@ __all__ = [
 
 cdef extern from "_dtram.h":
     void _set_lognu(
-        double *log_nu_K_i, int *C_K_ij, int n_therm_states, int n_markov_states)
+        int *C_K_ij, int n_therm_states, int n_markov_states, double *log_nu_K_i)
     void _iterate_lognu(
         double *log_nu_K_i, double *b_K_i, double *f_i, int *C_K_ij, int n_therm_states,
         int n_markov_states, double *scratch_M, double *new_log_nu_K_i)
@@ -48,27 +48,27 @@ cdef extern from "_dtram.h":
         double *b_K_i, double *f_i, int n_therm_states, int n_markov_states,
         double *scratch_M, double *f_K)
     void _normalize(
-        double *f_K, double *f_i, int n_therm_states, int n_markov_states, double *scratch_M)
+        int n_therm_states, int n_markov_states, double *scratch_M, double *f_K, double *f_i)
 
 def set_lognu(
-    _np.ndarray[double, ndim=2, mode="c"] log_nu_K_i not None,
-    _np.ndarray[int, ndim=3, mode="c"] C_K_ij not None):
+    _np.ndarray[int, ndim=3, mode="c"] C_K_ij not None,
+    _np.ndarray[double, ndim=2, mode="c"] log_nu_K_i not None):
     r"""
     Set the logarithm of the Lagrangian multipliers with an initial guess based
     on the transition counts
 
     Parameters
     ----------
-    log_nu_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
-        log of the Lagrangian multipliers (allocated but unset)
     C_K_ij : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
         multistate count matrix
+    log_nu_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+        log of the Lagrangian multipliers (allocated but unset)
     """
     _set_lognu(
-        <double*> _np.PyArray_DATA(log_nu_K_i),
         <int*> _np.PyArray_DATA(C_K_ij),
         log_nu_K_i.shape[0],
-        log_nu_K_i.shape[1])
+        log_nu_K_i.shape[1],
+        <double*> _np.PyArray_DATA(log_nu_K_i))
 
 def iterate_lognu(
     _np.ndarray[double, ndim=2, mode="c"] log_nu_K_i not None,
@@ -245,28 +245,28 @@ def get_fk(
     return f_K
 
 def normalize(
+    _np.ndarray[double, ndim=1, mode="c"] scratch_M not None,
     _np.ndarray[double, ndim=1, mode="c"] f_K not None,
-    _np.ndarray[double, ndim=1, mode="c"] f_i not None,
-    _np.ndarray[double, ndim=1, mode="c"] scratch_M not None):
+    _np.ndarray[double, ndim=1, mode="c"] f_i not None):
     r"""
     Normalize the unbiased reduced free energies and shift the reduced thermodynamic
     free energies accordingly
 
     Parameters
     ----------
+    scratch_M : numpy.ndarray(shape=(M), dtype=numpy.float64)
+        scratch array for logsumexp operations
     f_K : numpy.ndarray(shape=(T), dtype=numpy.intc)
         reduced thermodynamic free energies
     f_i : numpy.ndarray(shape=(M), dtype=numpy.float64)
         reduced unbiased free energies
-    scratch_M : numpy.ndarray(shape=(M), dtype=numpy.float64)
-        scratch array for logsumexp operations
     """
     _normalize(
-        <double*> _np.PyArray_DATA(f_K),
-        <double*> _np.PyArray_DATA(f_i),
         f_K.shape[0],
         f_i.shape[0],
-        <double*> _np.PyArray_DATA(scratch_M))
+        <double*> _np.PyArray_DATA(scratch_M),
+        <double*> _np.PyArray_DATA(f_K),
+        <double*> _np.PyArray_DATA(f_i))
 
 def estimate(C_K_ij, b_K_i, maxiter=1000, maxerr=1.0E-8, log_nu_K_i=None, f_i=None):
     r"""
@@ -298,7 +298,7 @@ def estimate(C_K_ij, b_K_i, maxiter=1000, maxerr=1.0E-8, log_nu_K_i=None, f_i=No
     """
     log_nu_K_i = _np.zeros(shape=b_K_i.shape, dtype=_np.float64)
     f_i = _np.zeros(shape=b_K_i.shape[1], dtype=_np.float64)
-    set_lognu(log_nu_K_i, C_K_ij)
+    set_lognu(C_K_ij, log_nu_K_i)
     scratch_TM = _np.zeros(shape=b_K_i.shape, dtype=_np.float64)
     scratch_M = _np.zeros(shape=f_i.shape, dtype=_np.float64)
     old_log_nu_K_i = log_nu_K_i.copy()
@@ -314,5 +314,5 @@ def estimate(C_K_ij, b_K_i, maxiter=1000, maxerr=1.0E-8, log_nu_K_i=None, f_i=No
             old_log_nu_K_i[:] = log_nu_K_i[:]
             old_f_i[:] = f_i[:]
     f_K = get_fk(b_K_i, f_i, scratch_M)
-    normalize(f_K, f_i, scratch_M)
+    normalize(scratch_M, f_K, f_i)
     return f_K, f_i, log_nu_K_i

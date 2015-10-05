@@ -32,7 +32,7 @@ cdef extern from "_wham.h":
         double *f_i, double *b_K_i, int n_therm_states, int n_markov_states,
         double *scratch_M, double *f_K)
     void _normalize(
-        double *f_K, double *f_i, int n_therm_states, int n_markov_states, double *scratch_M)
+        int n_therm_states, int n_markov_states, double *scratch_M, double *f_K, double *f_i)
 
 def iterate_fi(
     _np.ndarray[double, ndim=1, mode="c"] log_N_K not None,
@@ -134,28 +134,28 @@ def iterate_fk(
         <double*> _np.PyArray_DATA(f_K))
 
 def normalize(
+    _np.ndarray[double, ndim=1, mode="c"] scratch_M not None,
     _np.ndarray[double, ndim=1, mode="c"] f_K not None,
-    _np.ndarray[double, ndim=1, mode="c"] f_i not None,
-    _np.ndarray[double, ndim=1, mode="c"] scratch_M not None):
+    _np.ndarray[double, ndim=1, mode="c"] f_i not None):
     r"""
     Normalize the unbiased reduced free energies and shift the thermodynamic
     free energies accordingly
         
     Parameters
     ----------
+    scratch_M : numpy.ndarray(shape=(M), dtype=numpy.float64)
+        scratch array
     f_K : numpy.ndarray(shape=(T), dtype=numpy.float64)
         reduced free energies of the T thermodynamic states
     f_i : numpy.ndarray(shape=(M), dtype=numpy.float64)
         reduced free energies of the M discrete states
-    scratch_M : numpy.ndarray(shape=(M), dtype=numpy.float64)
-        scratch array
     """
     _normalize(
-        <double*> _np.PyArray_DATA(f_K),
-        <double*> _np.PyArray_DATA(f_i),
         f_K.shape[0],
         f_i.shape[0],
-        <double*> _np.PyArray_DATA(scratch_M))
+        <double*> _np.PyArray_DATA(scratch_M),
+        <double*> _np.PyArray_DATA(f_K),
+        <double*> _np.PyArray_DATA(f_i))
 
 def estimate(N_K_i, b_K_i, maxiter=1000, maxerr=1.0E-8, f_K=None, f_i=None):
     r"""
@@ -208,5 +208,5 @@ def estimate(N_K_i, b_K_i, maxiter=1000, maxerr=1.0E-8, f_K=None, f_i=None):
             old_f_i[:] = f_i[:]
         if stop:
             break
-    normalize(f_K, f_i, scratch)
+    normalize(scratch, f_K, f_i)
     return f_K, f_i

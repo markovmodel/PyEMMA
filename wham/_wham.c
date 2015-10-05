@@ -62,7 +62,7 @@ extern void _iterate_fk(
 }
 
 extern void _normalize(
-    double *f_K, double *f_i, int n_therm_states, int n_markov_states, double *scratch_M)
+    int n_therm_states, int n_markov_states, double *scratch_M, double *f_K, double *f_i)
 {
     int K, i;
     double f0;

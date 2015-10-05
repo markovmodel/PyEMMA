@@ -25,8 +25,8 @@ void _iterate_fk(
     int n_therm_states, int seq_length, double *scratch_T, double *new_f_K);
 
 void _normalize(
-    double *log_N_K, double *f_K, double *b_K_x,
-    int n_therm_states, int seq_length, double *scratch_T);
+    double *log_N_K, double *b_K_x, int n_therm_states, int seq_length,
+    double *scratch_T, double *f_K);
 
 void _get_fi(
     double *log_N_K, double *f_K, double *b_K_x, int * M_x,
