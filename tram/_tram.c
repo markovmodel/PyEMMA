@@ -28,28 +28,28 @@
     #define NAN (INFINITY-INFINITY)
 #endif
 
-void _init_lagrangian_mult(double *log_nu_K_i, int *C_K_ij, int n_therm_states, int n_markov_states)
+void _init_lagrangian_mult(int *count_matrices, int n_therm_states, int n_conf_states, double *log_lagrangian_mult)
 {
     int i, j, K;
-    int MM = n_markov_states * n_markov_states, KMM;
+    int MM = n_conf_states * n_conf_states, KMM;
     int sum;
     for(K=0; K<n_therm_states; ++K)
     {
         KMM = K * MM;
-        for(i=0; i<n_markov_states; ++i)
+        for(i=0; i<n_conf_states; ++i)
         {
             sum = 0;
-            for(j=0; j<n_markov_states; ++j)
-                sum += C_K_ij[KMM + i * n_markov_states + j];
-            log_nu_K_i[K * n_markov_states + i] = log(THERMOTOOLS_TRAM_PRIOR + sum);
+            for(j=0; j<n_conf_states; ++j)
+                sum += count_matrices[KMM + i * n_conf_states + j];
+            log_lagrangian_mult[K * n_conf_states + i] = log(THERMOTOOLS_TRAM_PRIOR + sum);
         }
     }
 
 }
 
 void _update_lagrangian_mult(
-    double *log_nu_K_i, double *f_K_i, int *C_K_ij,
-    int n_therm_states, int n_markov_states, double *scratch_M, double *new_log_nu_K_i)
+    double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices,
+    int n_therm_states, int n_conf_states, double *scratch_M, double *new_log_lagrangian_mult)
 {
     int i, j, K, o;
     int Ki, Kj, KM, KMM;
@@ -57,15 +57,15 @@ void _update_lagrangian_mult(
     double divisor;
     for(K=0; K<n_therm_states; ++K)
     {
-        KM = K * n_markov_states;
-        KMM = KM * n_markov_states;
-        for(i=0; i<n_markov_states; ++i)
+        KM = K * n_conf_states;
+        KMM = KM * n_conf_states;
+        for(i=0; i<n_conf_states; ++i)
         {
             Ki = KM + i;
             o = 0;
-            for(j=0; j<n_markov_states; ++j)
+            for(j=0; j<n_conf_states; ++j)
             {
-                CKij = C_K_ij[KMM + i * n_markov_states + j];
+                CKij = count_matrices[KMM + i * n_conf_states + j];
                 /* special case: most variables cancel out, here */
                 if(i == j)
                 {
@@ -73,24 +73,24 @@ void _update_lagrangian_mult(
                         THERMOTOOLS_TRAM_LOG_PRIOR : log(THERMOTOOLS_TRAM_PRIOR + (double) CKij);
                     continue;
                 }
-                CK = CKij + C_K_ij[KMM + j * n_markov_states + i];
+                CK = CKij + count_matrices[KMM + j * n_conf_states + i];
                 /* special case */
                 if(0 == CK) continue;
                 /* regular case */
                 Kj = KM + j;
-                divisor = _logsumexp_pair(log_nu_K_i[Kj] - f_K_i[Ki], log_nu_K_i[Ki] - f_K_i[Kj]);
-                scratch_M[o++] = log((double) CK) + log_nu_K_i[Ki] - f_K_i[Kj] - divisor;
+                divisor = _logsumexp_pair(log_lagrangian_mult[Kj] - biased_conf_energies[Ki], log_lagrangian_mult[Ki] - biased_conf_energies[Kj]);
+                scratch_M[o++] = log((double) CK) + log_lagrangian_mult[Ki] - biased_conf_energies[Kj] - divisor;
             }
-            new_log_nu_K_i[Ki] = _logsumexp(scratch_M, o);
+            new_log_lagrangian_mult[Ki] = _logsumexp(scratch_M, o);
         }
     }
 }
 
 void _update_biased_conf_energies(
-    double *log_nu_K_i, double *f_K_i, int *C_K_ij, double *b_K_x,
-    int *M_x, int *N_K_i, int seq_length, double *log_R_K_i,
-    int n_therm_states, int n_markov_states, double *scratch_M, double *scratch_T,
-    double *new_f_K_i)
+    double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices, double *bias_energies,
+    int *M_x, int *state_counts, int seq_length, double *log_R_K_i,
+    int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_T,
+    double *new_biased_conf_energies)
 {
     int i, j, K, x, o;
     int Ki, Kj, KM, KMM;
@@ -99,28 +99,28 @@ void _update_biased_conf_energies(
     /* compute R_K_i */
     for(K=0; K<n_therm_states; ++K)
     {
-        KM = K * n_markov_states;
-        KMM = KM * n_markov_states;
-        for(i=0; i<n_markov_states; ++i)
+        KM = K * n_conf_states;
+        KMM = KM * n_conf_states;
+        for(i=0; i<n_conf_states; ++i)
         {
             Ki = KM + i;
-            if(0 == N_K_i[Ki]) /* applying Hao's speed-up recomendation */
+            if(0 == state_counts[Ki]) /* applying Hao's speed-up recomendation */
             {
                 log_R_K_i[Ki] = -INFINITY;
                 continue;
             }
             Ci = 0;
             o = 0;
-            for(j=0; j<n_markov_states; ++j)
+            for(j=0; j<n_conf_states; ++j)
             {
-                CKij = C_K_ij[KMM + i * n_markov_states + j];
-                CKji = C_K_ij[KMM + j * n_markov_states + i];
+                CKij = count_matrices[KMM + i * n_conf_states + j];
+                CKji = count_matrices[KMM + j * n_conf_states + i];
                 Ci += CKji;
                 /* special case: most variables cancel out, here */
                 if(i == j)
                 {
                     scratch_M[o] = (0 == CKij) ? THERMOTOOLS_TRAM_LOG_PRIOR : log(THERMOTOOLS_TRAM_PRIOR + (double) CKij);
-                    scratch_M[o++] += f_K_i[Ki];
+                    scratch_M[o++] += biased_conf_energies[Ki];
                     continue;
                 }
                 CK = CKij + CKji;
@@ -128,19 +128,19 @@ void _update_biased_conf_energies(
                 if(0 == CK) continue;
                 /* regular case */
                 Kj = KM + j;
-                divisor = _logsumexp_pair(log_nu_K_i[Kj] - f_K_i[Ki], log_nu_K_i[Ki] - f_K_i[Kj]);
-                scratch_M[o++] = log((double) CK) + log_nu_K_i[Kj] - divisor;
+                divisor = _logsumexp_pair(log_lagrangian_mult[Kj] - biased_conf_energies[Ki], log_lagrangian_mult[Ki] - biased_conf_energies[Kj]);
+                scratch_M[o++] = log((double) CK) + log_lagrangian_mult[Kj] - divisor;
             }
-            NC = N_K_i[Ki] - Ci;
-            R_addon = (0 < NC) ? log((double) NC) + f_K_i[Ki] : -INFINITY; /* IGNORE PRIOR */
+            NC = state_counts[Ki] - Ci;
+            R_addon = (0 < NC) ? log((double) NC) + biased_conf_energies[Ki] : -INFINITY; /* IGNORE PRIOR */
             log_R_K_i[Ki] = _logsumexp_pair(_logsumexp(scratch_M, o), R_addon);
         }
     }
-    /* set new_f_K_i to infinity (z_K_i==0) */
-    KM = n_therm_states * n_markov_states;
+    /* set new_biased_conf_energies to infinity (z_K_i==0) */
+    KM = n_therm_states * n_conf_states;
     for(i=0; i<KM; ++i)
-        new_f_K_i[i] = INFINITY;
-    /* compute new f_K_i */
+        new_biased_conf_energies[i] = INFINITY;
+    /* compute new biased_conf_energies */
     for(x=0; x<seq_length; ++x)
     {
         i = M_x[x];
@@ -148,119 +148,119 @@ void _update_biased_conf_energies(
         for(K=0; K<n_therm_states; ++K)
         {
             /* applying Hao's speed-up recomendation */
-            if(-INFINITY == log_R_K_i[K * n_markov_states + i]) continue;
-            scratch_T[o++] = log_R_K_i[K * n_markov_states + i] - b_K_x[K * seq_length + x];
+            if(-INFINITY == log_R_K_i[K * n_conf_states + i]) continue;
+            scratch_T[o++] = log_R_K_i[K * n_conf_states + i] - bias_energies[K * seq_length + x];
         }
         divisor = _logsumexp(scratch_T, o);
         for(K=0; K<n_therm_states; ++K)
         {
-            new_f_K_i[K * n_markov_states + i] = -_logsumexp_pair(
-                    -new_f_K_i[K * n_markov_states + i], -(divisor + b_K_x[K * seq_length + x]));
+            new_biased_conf_energies[K * n_conf_states + i] = -_logsumexp_pair(
+                    -new_biased_conf_energies[K * n_conf_states + i], -(divisor + bias_energies[K * seq_length + x]));
         }
     }
     /* prevent drift */
-    KM = n_therm_states * n_markov_states;
-    shift = new_f_K_i[0];
+    KM = n_therm_states * n_conf_states;
+    shift = new_biased_conf_energies[0];
     for(i=1; i<KM; ++i)
-        shift = (shift < new_f_K_i[i]) ? shift : new_f_K_i[i];
+        shift = (shift < new_biased_conf_energies[i]) ? shift : new_biased_conf_energies[i];
     for(i=0; i<KM; ++i)
-        new_f_K_i[i] -= shift;
+        new_biased_conf_energies[i] -= shift;
 }
 
 void _get_conf_energies(
-    double *b_K_x, int *M_x, int seq_length, double *log_R_K_i,
-    int n_therm_states, int n_markov_states, double *scratch_M, double *scratch_T,
-    double *f_i)
+    double *bias_energies, int *M_x, int seq_length, double *log_R_K_i,
+    int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_T,
+    double *conf_energies)
 {
     int i, K, x;
     double divisor;
-    for(i=0; i<n_markov_states; ++i)
-        f_i[i] = INFINITY;
+    for(i=0; i<n_conf_states; ++i)
+        conf_energies[i] = INFINITY;
     for( x=0; x<seq_length; ++x )
     {
         i = M_x[x];
         for(K=0; K<n_therm_states; ++K)
-            scratch_T[K] = log_R_K_i[K * n_markov_states + i] - b_K_x[K * seq_length + x];
+            scratch_T[K] = log_R_K_i[K * n_conf_states + i] - bias_energies[K * seq_length + x];
         divisor = _logsumexp(scratch_T, n_therm_states);
-        f_i[i] = -_logsumexp_pair(-f_i[i], -divisor);
+        conf_energies[i] = -_logsumexp_pair(-conf_energies[i], -divisor);
     }
 }
 
 void _get_therm_energies(
-    double *f_K_i, int n_therm_states, int n_markov_states, double *scratch_M, double *f_K)
+    double *biased_conf_energies, int n_therm_states, int n_conf_states, double *scratch_M, double *therm_energies)
 {
     int i, K;
     for(K=0; K<n_therm_states; ++K)
     {
-        for(i=0; i<n_markov_states; ++i)
-            scratch_M[i] = -f_K_i[K * n_markov_states + i];
-        f_K[K] = -_logsumexp(scratch_M, n_markov_states);
+        for(i=0; i<n_conf_states; ++i)
+            scratch_M[i] = -biased_conf_energies[K * n_conf_states + i];
+        therm_energies[K] = -_logsumexp(scratch_M, n_conf_states);
     }
 }
 
 void _normalize(
-    double *f_i, double *f_K_i, double *f_K,
-    int n_therm_states, int n_markov_states, double *scratch_M)
+    double *conf_energies, double *biased_conf_energies, double *therm_energies,
+    int n_therm_states, int n_conf_states, double *scratch_M)
 {
-    int i, KM = n_therm_states * n_markov_states;
+    int i, KM = n_therm_states * n_conf_states;
     double f0;
-    for(i=0; i<n_markov_states; ++i)
-        scratch_M[i] = -f_i[i];
-    f0 = -_logsumexp(scratch_M, n_markov_states);
-    for(i=0; i<n_markov_states; ++i)
-        f_i[i] -= f0;
+    for(i=0; i<n_conf_states; ++i)
+        scratch_M[i] = -conf_energies[i];
+    f0 = -_logsumexp(scratch_M, n_conf_states);
+    for(i=0; i<n_conf_states; ++i)
+        conf_energies[i] -= f0;
     for(i=0; i<KM; ++i)
-        f_K_i[i] -= f0;
+        biased_conf_energies[i] -= f0;
     for(i=0; i<n_therm_states; ++i)
-        f_K[i] -= f0;
+        therm_energies[i] -= f0;
 }
 
 void _estimate_transition_matrix(
-    double *log_nu_i, double *f_i, int *C_ij,
-    int n_markov_states, double *scratch_M, double *p_ij)
+    double *log_lagrangian_mult, double *conf_energies, int *count_matrix,
+    int n_conf_states, double *scratch_M, double *transition_matrix)
 {
     int i, j, o;
     int ij, ji;
     int C;
     double divisor, sum;
-    for(i=0; i<n_markov_states; ++i)
+    for(i=0; i<n_conf_states; ++i)
     {
         o = 0;
-        for(j=0; j<n_markov_states; ++j)
+        for(j=0; j<n_conf_states; ++j)
         {
-            ij = i*n_markov_states + j;
-            p_ij[ij] = 0.0;
+            ij = i*n_conf_states + j;
+            transition_matrix[ij] = 0.0;
             /* special case: diagonal element */
             if(i == j)
             {
-                scratch_M[o] = (0 == C_ij[ij]) ?
-                    THERMOTOOLS_TRAM_LOG_PRIOR : log(THERMOTOOLS_TRAM_PRIOR + (double) C_ij[ij]);
-                scratch_M[o] -= log_nu_i[i];
-                p_ij[ij] = exp(scratch_M[o++]);
+                scratch_M[o] = (0 == count_matrix[ij]) ?
+                    THERMOTOOLS_TRAM_LOG_PRIOR : log(THERMOTOOLS_TRAM_PRIOR + (double) count_matrix[ij]);
+                scratch_M[o] -= log_lagrangian_mult[i];
+                transition_matrix[ij] = exp(scratch_M[o++]);
                 continue;
             }
-            ji = j*n_markov_states + i;
-            C = C_ij[ij] + C_ij[ji];
+            ji = j*n_conf_states + i;
+            C = count_matrix[ij] + count_matrix[ji];
             /* special case: this element is zero */
             if(0 == C) continue;
             /* regular case */
             divisor = _logsumexp_pair(
-                    log_nu_i[j] - f_i[i], log_nu_i[i] - f_i[j]);
-            scratch_M[o] =  log((double) C) - f_i[j] - divisor;
-            p_ij[ij] = exp(scratch_M[o++]);
+                    log_lagrangian_mult[j] - conf_energies[i], log_lagrangian_mult[i] - conf_energies[j]);
+            scratch_M[o] =  log((double) C) - conf_energies[j] - divisor;
+            transition_matrix[ij] = exp(scratch_M[o++]);
         }
         /* compute the diagonal elements from the other elements in this line */
         sum = exp(_logsumexp(scratch_M, o));
         if(0.0 == sum)
         {
-            for(j=0; j<n_markov_states; ++j)
-                p_ij[i*n_markov_states + j] = 0.0;
-            p_ij[i*n_markov_states + i] = 1.0;
+            for(j=0; j<n_conf_states; ++j)
+                transition_matrix[i*n_conf_states + j] = 0.0;
+            transition_matrix[i*n_conf_states + i] = 1.0;
         }
         else if(1.0 != sum)
         {
-            for(j=0; j<n_markov_states; ++j)
-                p_ij[i*n_markov_states + j] /= sum;
+            for(j=0; j<n_conf_states; ++j)
+                transition_matrix[i*n_conf_states + j] /= sum;
         }
     }
 }

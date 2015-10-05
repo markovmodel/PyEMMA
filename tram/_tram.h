@@ -23,32 +23,32 @@
 #define THERMOTOOLS_TRAM_PRIOR 1.0E-10
 #define THERMOTOOLS_TRAM_LOG_PRIOR -23.025850929940457
 
-void _init_lagrangian_mult(double *log_nu_K_i, int *C_K_ij, int n_therm_states, int n_markov_states);
+void _init_lagrangian_mult(int *count_matrices, int n_therm_states, int n_conf_states, double *log_lagrangian_mult);
 
 void _update_lagrangian_mult(
-    double *log_nu_K_i, double *f_K_i, int *C_K_ij,
-    int n_therm_states, int n_markov_states, double *scratch_M, double *new_log_nu_K_i);
+    double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices,
+    int n_therm_states, int n_conf_states, double *scratch_M, double *new_log_lagrangian_mult);
 
 void _update_biased_conf_energies(
-    double *log_nu_K_i, double *f_K_i, int *C_K_ij, double *b_K_x,
-    int *M_x, int *N_K_i, int seq_length, double *log_R_K_i,
-    int n_therm_states, int n_markov_states, double *scratch_M, double *scratch_T,
-    double *new_f_K_i);
+    double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices, double *bias_energies,
+    int *M_x, int *state_counts, int seq_length, double *log_R_K_i,
+    int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_T,
+    double *new_biased_conf_energies);
 
 void _get_conf_energies(
-    double *b_K_x, int *M_x, int seq_length, double *log_R_K_i,
-    int n_therm_states, int n_markov_states, double *scratch_M, double *scratch_T,
-    double *f_i);
+    double *bias_energies, int *M_x, int seq_length, double *log_R_K_i,
+    int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_T,
+    double *conf_energies);
 
 void _get_therm_energies(
-    double *f_K_i, int n_therm_states, int n_markov_states, double *scratch_M, double *f_K);
+    double *biased_conf_energies, int n_therm_states, int n_conf_states, double *scratch_M, double *therm_energies);
 
 void _normalize(
-    double *f_i, double *f_K_i, double *f_K,
-    int n_therm_states, int n_markov_states, double *scratch_M);
+    double *conf_energies, double *biased_conf_energies, double *therm_energies,
+    int n_therm_states, int n_conf_states, double *scratch_M);
 
 void _estimate_transition_matrix(
-    double *log_nu_i, double *f_i, int *C_ij,
-    int n_markov_states, double *scratch_M, double *p_ij);
+    double *log_lagrangian_mult, double *conf_energies, int *count_matrix,
+    int n_conf_states, double *scratch_M, double *transition_matrix);
 
 #endif

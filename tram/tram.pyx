@@ -33,135 +33,135 @@ __all__ = [
     'estimate']
 
 cdef extern from "_tram.h":
-    void _init_lagrangian_mult(double *log_nu_K_i, int *C_K_ij, int n_therm_states, int n_markov_states)
+    void _init_lagrangian_mult(int *count_matrices, int n_therm_states, int n_conf_states, double *log_lagrangian_mult)
     void _update_lagrangian_mult(
-        double *log_nu_K_i, double *f_K_i, int *C_K_ij,
-        int n_therm_states, int n_markov_states, double *scratch_M, double *new_log_nu_K_i)
+        double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices,
+        int n_therm_states, int n_conf_states, double *scratch_M, double *new_log_lagrangian_mult)
     void _update_biased_conf_energies(
-        double *log_nu_K_i, double *f_K_i, int *C_K_ij, double *b_K_x,
-        int *M_x, int *N_K_i, int seq_length, double *log_R_K_i,
-        int n_therm_states, int n_markov_states, double *scratch_M, double *scratch_T,
-        double *new_f_K_i)
+        double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices, double *bias_energies,
+        int *M_x, int *state_counts, int seq_length, double *log_R_K_i,
+        int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_T,
+        double *new_biased_conf_energies)
     void _get_conf_energies(
-        double *b_K_x, int *M_x, int seq_length, double *log_R_K_i,
-        int n_therm_states, int n_markov_states, double *scratch_M, double *scratch_T,
-        double *f_i)
+        double *bias_energies, int *M_x, int seq_length, double *log_R_K_i,
+        int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_T,
+        double *conf_energies)
     void _get_therm_energies(
-        double *f_K_i, int n_therm_states, int n_markov_states, double *scratch_M, double *f_K)
+        double *biased_conf_energies, int n_therm_states, int n_conf_states, double *scratch_M, double *therm_energies)
     void _normalize(
-        double *f_i, double *f_K_i, double *f_K,
-        int n_therm_states, int n_markov_states, double *scratch_M)
+        double *conf_energies, double *biased_conf_energies, double *therm_energies,
+        int n_therm_states, int n_conf_states, double *scratch_M)
     void _estimate_transition_matrix(
-        double *log_nu_i, double *f_i, int *C_ij,
-        int n_markov_states, double *scratch_M, double *p_ij)
+        double *log_lagrangian_mult, double *conf_energies, int *count_matrix,
+        int n_conf_states, double *scratch_M, double *transition_matrix)
 
 
 
 def init_lagrangian_mult(
-    _np.ndarray[double, ndim=2, mode="c"] log_nu_K_i not None,
-    _np.ndarray[int, ndim=3, mode="c"] C_K_ij not None):
+    _np.ndarray[int, ndim=3, mode="c"] count_matrices not None,
+    _np.ndarray[double, ndim=2, mode="c"] log_lagrangian_mult not None):
     r"""
     Set the logarithm of the Lagrangian multipliers with an initial guess based
     on the transition counts
 
     Parameters
     ----------
-    log_nu_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
-        log of the Lagrangian multipliers (allocated but unset)
-    C_K_ij : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
+    count_matrices : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
         multistate count matrix
+    log_lagrangian_mult : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+        log of the Lagrangian multipliers (allocated but unset)
     """
     _init_lagrangian_mult(
-        <double*> _np.PyArray_DATA(log_nu_K_i),
-        <int*> _np.PyArray_DATA(C_K_ij),
-        log_nu_K_i.shape[0],
-        log_nu_K_i.shape[1])
+        <int*> _np.PyArray_DATA(count_matrices),
+        log_lagrangian_mult.shape[0],
+        log_lagrangian_mult.shape[1],
+        <double*> _np.PyArray_DATA(log_lagrangian_mult))
 
 def update_lagrangian_mult(
-    _np.ndarray[double, ndim=2, mode="c"] log_nu_K_i not None,
-    _np.ndarray[double, ndim=2, mode="c"] f_K_i not None,
-    _np.ndarray[int, ndim=3, mode="c"] C_K_ij not None,
+    _np.ndarray[double, ndim=2, mode="c"] log_lagrangian_mult not None,
+    _np.ndarray[double, ndim=2, mode="c"] biased_conf_energies not None,
+    _np.ndarray[int, ndim=3, mode="c"] count_matrices not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_M not None,
-    _np.ndarray[double, ndim=2, mode="c"] new_log_nu_K_i not None):
+    _np.ndarray[double, ndim=2, mode="c"] new_log_lagrangian_mult not None):
     r"""
     Update the logarithms of the Lagrangian multipliers
 
     Parameters
     ----------
-    log_nu_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+    log_lagrangian_mult : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         log of the Lagrangian multipliers
-    f_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+    biased_conf_energies : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         reduced free energies
-    C_K_ij : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
+    count_matrices : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
         multistate count matrix
     scratch_M : numpy.ndarray(shape=(M), dtype=numpy.float64)
         scratch array for logsumexp operations
-    new_log_nu_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+    new_log_lagrangian_mult : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         target array for the log of the Lagrangian multipliers
     """
     _update_lagrangian_mult(
-        <double*> _np.PyArray_DATA(log_nu_K_i),
-        <double*> _np.PyArray_DATA(f_K_i),
-        <int*> _np.PyArray_DATA(C_K_ij),
-        log_nu_K_i.shape[0],
-        log_nu_K_i.shape[1],
+        <double*> _np.PyArray_DATA(log_lagrangian_mult),
+        <double*> _np.PyArray_DATA(biased_conf_energies),
+        <int*> _np.PyArray_DATA(count_matrices),
+        log_lagrangian_mult.shape[0],
+        log_lagrangian_mult.shape[1],
         <double*> _np.PyArray_DATA(scratch_M),
-        <double*> _np.PyArray_DATA(new_log_nu_K_i))
+        <double*> _np.PyArray_DATA(new_log_lagrangian_mult))
 
 def update_biased_conf_energies(
-    _np.ndarray[double, ndim=2, mode="c"] log_nu_K_i not None,
-    _np.ndarray[double, ndim=2, mode="c"] f_K_i not None,
-    _np.ndarray[int, ndim=3, mode="c"] C_K_ij not None,
-    _np.ndarray[double, ndim=2, mode="c"] b_K_x not None,
+    _np.ndarray[double, ndim=2, mode="c"] log_lagrangian_mult not None,
+    _np.ndarray[double, ndim=2, mode="c"] biased_conf_energies not None,
+    _np.ndarray[int, ndim=3, mode="c"] count_matrices not None,
+    _np.ndarray[double, ndim=2, mode="c"] bias_energies not None,
     _np.ndarray[int, ndim=1, mode="c"] M_x not None,
-    _np.ndarray[int, ndim=2, mode="c"] N_K_i not None,
+    _np.ndarray[int, ndim=2, mode="c"] state_counts not None,
     _np.ndarray[double, ndim=2, mode="c"] log_R_K_i not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_M not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_T not None,
-    _np.ndarray[double, ndim=2, mode="c"] new_f_K_i not None):
+    _np.ndarray[double, ndim=2, mode="c"] new_biased_conf_energies not None):
     r"""
     Update the reduced unbiased free energies
 
     Parameters
     ----------
-    log_nu_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+    log_lagrangian_mult : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         log of the Lagrangian multipliers
-    f_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+    biased_conf_energies : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         reduced free energies
-    C_K_ij : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
+    count_matrices : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
         multistate count matrix
-    b_K_x : numpy.ndarray(shape=(T, X), dtype=numpy.intc)
+    bias_energies : numpy.ndarray(shape=(T, X), dtype=numpy.intc)
         reduced bias energies in the T thermodynamic states for all X samples
     M_x : numpy.ndarray(shape=(X,), dtype=numpy.intc)
         Markov state indices for all X samples
-    N_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
+    state_counts : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
         number of visits to thermodynamic state K and Markov state i
     log_R_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
-        scratch array for sum of TRAM log pseudo-counts and f_K_i
+        scratch array for sum of TRAM log pseudo-counts and biased_conf_energies
     scratch_M : numpy.ndarray(shape=(M), dtype=numpy.float64)
         scratch array for logsumexp operations
     scratch_T : numpy.ndarray(shape=(T), dtype=numpy.float64)
         scratch array for logsumexp operations
-    new_f_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+    new_biased_conf_energies : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         target array for the reduced free energies
     """
     _update_biased_conf_energies(
-        <double*> _np.PyArray_DATA(log_nu_K_i),
-        <double*> _np.PyArray_DATA(f_K_i),
-        <int*> _np.PyArray_DATA(C_K_ij),
-        <double*> _np.PyArray_DATA(b_K_x),
+        <double*> _np.PyArray_DATA(log_lagrangian_mult),
+        <double*> _np.PyArray_DATA(biased_conf_energies),
+        <int*> _np.PyArray_DATA(count_matrices),
+        <double*> _np.PyArray_DATA(bias_energies),
         <int*> _np.PyArray_DATA(M_x),
-        <int*> _np.PyArray_DATA(N_K_i),
+        <int*> _np.PyArray_DATA(state_counts),
         M_x.shape[0],
         <double*> _np.PyArray_DATA(log_R_K_i),
-        log_nu_K_i.shape[0],
-        log_nu_K_i.shape[1],
+        log_lagrangian_mult.shape[0],
+        log_lagrangian_mult.shape[1],
         <double*> _np.PyArray_DATA(scratch_M),
         <double*> _np.PyArray_DATA(scratch_T),
-        <double*> _np.PyArray_DATA(new_f_K_i))
+        <double*> _np.PyArray_DATA(new_biased_conf_energies))
 
 def get_conf_energies(
-    _np.ndarray[double, ndim=2, mode="c"] b_K_x not None,
+    _np.ndarray[double, ndim=2, mode="c"] bias_energies not None,
     _np.ndarray[int, ndim=1, mode="c"] M_x not None,
     _np.ndarray[double, ndim=2, mode="c"] log_R_K_i not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_M not None,
@@ -171,12 +171,12 @@ def get_conf_energies(
 
     Parameters
     ----------
-    b_K_x : numpy.ndarray(shape=(T, X), dtype=numpy.intc)
+    bias_energies : numpy.ndarray(shape=(T, X), dtype=numpy.intc)
         reduced bias energies in the T thermodynamic states for all X samples
     M_x : numpy.ndarray(shape=(X,), dtype=numpy.intc)
         Markov state indices for all X samples
     log_R_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
-        precomputed sum of TRAM log pseudo-counts and f_K_i
+        precomputed sum of TRAM log pseudo-counts and biased_conf_energies
     scratch_M : numpy.ndarray(shape=(M), dtype=numpy.float64)
         scratch array for logsumexp operations
     scratch_T : numpy.ndarray(shape=(T), dtype=numpy.float64)
@@ -184,14 +184,14 @@ def get_conf_energies(
 
     Returns
     -------
-    f_i : numpy.ndarray(shape=(M,), dtype=numpy.float64)
+    conf_energies : numpy.ndarray(shape=(M,), dtype=numpy.float64)
         unbiased (Markov) free energies
     """
     # later this can be extended to other thermodynmic states and
     # arbitrary expectations (not only pi)
-    f_i = _np.zeros(shape=(log_R_K_i.shape[1],), dtype=_np.float64)
+    conf_energies = _np.zeros(shape=(log_R_K_i.shape[1],), dtype=_np.float64)
     _get_conf_energies(
-        <double*> _np.PyArray_DATA(b_K_x),
+        <double*> _np.PyArray_DATA(bias_energies),
         <int*> _np.PyArray_DATA(M_x),
         M_x.shape[0],
         <double*> _np.PyArray_DATA(log_R_K_i),
@@ -199,78 +199,78 @@ def get_conf_energies(
         log_R_K_i.shape[1],
         <double*> _np.PyArray_DATA(scratch_M),
         <double*> _np.PyArray_DATA(scratch_T),
-        <double*> _np.PyArray_DATA(f_i))
-    return f_i
+        <double*> _np.PyArray_DATA(conf_energies))
+    return conf_energies
 
 def get_therm_energies(
-    _np.ndarray[double, ndim=2, mode="c"] f_K_i not None,
+    _np.ndarray[double, ndim=2, mode="c"] biased_conf_energies not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_M not None):
     r"""
     Update the reduced unbiased free energies
 
     Parameters
     ----------
-    f_K_i : numpy.ndarray(shape=(T, X), dtype=numpy.intc)
+    biased_conf_energies : numpy.ndarray(shape=(T, X), dtype=numpy.intc)
         reduced discrete state free energies for all T thermodynamic states
     scratch_M : numpy.ndarray(shape=(M), dtype=numpy.float64)
         scratch array for logsumexp operations
 
     Returns
     -------
-    f_K : numpy.ndarray(shape=(T), dtype=numpy.float64)
+    therm_energies : numpy.ndarray(shape=(T), dtype=numpy.float64)
         reduced thermodynamic free energies
     """
-    f_K = _np.zeros(shape=(f_K_i.shape[0],), dtype=_np.float64)
+    therm_energies = _np.zeros(shape=(biased_conf_energies.shape[0],), dtype=_np.float64)
     _get_therm_energies(
-        <double*> _np.PyArray_DATA(f_K_i),
-        f_K_i.shape[0],
-        f_K_i.shape[1],
+        <double*> _np.PyArray_DATA(biased_conf_energies),
+        biased_conf_energies.shape[0],
+        biased_conf_energies.shape[1],
         <double*> _np.PyArray_DATA(scratch_M),
-        <double*> _np.PyArray_DATA(f_K))
-    return f_K
+        <double*> _np.PyArray_DATA(therm_energies))
+    return therm_energies
 
 def normalize(
-    _np.ndarray[double, ndim=1, mode="c"] f_i not None,
-    _np.ndarray[double, ndim=2, mode="c"] f_K_i not None,
-    _np.ndarray[double, ndim=1, mode="c"] f_K not None,
+    _np.ndarray[double, ndim=1, mode="c"] conf_energies not None,
+    _np.ndarray[double, ndim=2, mode="c"] biased_conf_energies not None,
+    _np.ndarray[double, ndim=1, mode="c"] therm_energies not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_M not None):
     r"""
     Update the reduced unbiased free energies
 
     Parameters
     ----------
-    f_i : numpy.ndarray(shape=(M), dtype=numpy.intc)
+    conf_energies : numpy.ndarray(shape=(M), dtype=numpy.intc)
         unbiased reduced bias energies in the M discrete states
-    f_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
+    biased_conf_energies : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
         reduced bias energies in the T thermodynamic and M discrete states
-    f_K : numpy.ndarray(shape=(T), dtype=numpy.intc)
+    therm_energies : numpy.ndarray(shape=(T), dtype=numpy.intc)
         reduced thermodynamic free energies
     scratch_M : numpy.ndarray(shape=(M), dtype=numpy.float64)
         scratch array for logsumexp operations
     """
     _normalize(
-        <double*> _np.PyArray_DATA(f_i),
-        <double*> _np.PyArray_DATA(f_K_i),
-        <double*> _np.PyArray_DATA(f_K),
-        f_K_i.shape[0],
-        f_K_i.shape[1],
+        <double*> _np.PyArray_DATA(conf_energies),
+        <double*> _np.PyArray_DATA(biased_conf_energies),
+        <double*> _np.PyArray_DATA(therm_energies),
+        biased_conf_energies.shape[0],
+        biased_conf_energies.shape[1],
         <double*> _np.PyArray_DATA(scratch_M))
 
 def estimate_transition_matrices(
-    _np.ndarray[double, ndim=2, mode="c"] log_nu_K_i not None,
-    _np.ndarray[double, ndim=2, mode="c"] f_K_i not None,
-    _np.ndarray[int, ndim=3, mode="c"] C_K_ij not None,
+    _np.ndarray[double, ndim=2, mode="c"] log_lagrangian_mult not None,
+    _np.ndarray[double, ndim=2, mode="c"] biased_conf_energies not None,
+    _np.ndarray[int, ndim=3, mode="c"] count_matrices not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_M not None):
     r"""
     Compute the transition matrices for all thermodynamic states
 
     Parameters
     ----------
-    log_nu_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+    log_lagrangian_mult : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         log of the Lagrangian multipliers
-    f_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
+    biased_conf_energies : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
         reduced unbiased free energies
-    C_K_ij : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
+    count_matrices : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
         multistate count matrix
     scratch_M : numpy.ndarray(shape=(M,), dtype=numpy.float64)
         scratch array for logsumexp operations
@@ -280,15 +280,15 @@ def estimate_transition_matrices(
     p_K_ij : numpy.ndarray(shape=(T, M, M), dtype=numpy.float64)
         transition matrices for all thermodynamic states
     """
-    p_K_ij = _np.zeros(shape=(C_K_ij.shape[0], C_K_ij.shape[1], C_K_ij.shape[2]), dtype=_np.float64)
-    for K in range(log_nu_K_i.shape[0]):
-        p_K_ij[K, :, :] = estimate_transition_matrix(log_nu_K_i, f_K_i, C_K_ij, scratch_M, K)[:, :]
+    p_K_ij = _np.zeros(shape=(count_matrices.shape[0], count_matrices.shape[1], count_matrices.shape[2]), dtype=_np.float64)
+    for K in range(log_lagrangian_mult.shape[0]):
+        p_K_ij[K, :, :] = estimate_transition_matrix(log_lagrangian_mult, biased_conf_energies, count_matrices, scratch_M, K)[:, :]
     return p_K_ij
 
 def estimate_transition_matrix(
-    _np.ndarray[double, ndim=2, mode="c"] log_nu_K_i not None,
-    _np.ndarray[double, ndim=2, mode="c"] f_K_i not None,
-    _np.ndarray[int, ndim=3, mode="c"] C_K_ij not None,
+    _np.ndarray[double, ndim=2, mode="c"] log_lagrangian_mult not None,
+    _np.ndarray[double, ndim=2, mode="c"] biased_conf_energies not None,
+    _np.ndarray[int, ndim=3, mode="c"] count_matrices not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_M not None,
     therm_state):
     r"""
@@ -296,11 +296,11 @@ def estimate_transition_matrix(
 
     Parameters
     ----------
-    log_nu_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+    log_lagrangian_mult : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         log of the Lagrangian multipliers
-    f_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
+    biased_conf_energies : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
         reduced unbiased free energies
-    C_K_ij : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
+    count_matrices : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
         multistate count matrix
     scratch_M : numpy.ndarray(shape=(M,), dtype=numpy.float64)
         scratch array for logsumexp operations
@@ -309,30 +309,30 @@ def estimate_transition_matrix(
 
     Returns
     -------
-    p_ij : numpy.ndarray(shape=(M, M), dtype=numpy.float64)
+    transition_matrix : numpy.ndarray(shape=(M, M), dtype=numpy.float64)
         transition matrix for the target thermodynamic state
     """
-    p_ij = _np.zeros(shape=(f_K_i.shape[1], f_K_i.shape[1]), dtype=_np.float64)
+    transition_matrix = _np.zeros(shape=(biased_conf_energies.shape[1], biased_conf_energies.shape[1]), dtype=_np.float64)
     _estimate_transition_matrix(
-        <double*> _np.PyArray_DATA(_np.ascontiguousarray(log_nu_K_i[therm_state, :])),
-        <double*> _np.PyArray_DATA(_np.ascontiguousarray(f_K_i[therm_state, :])),
-        <int*> _np.PyArray_DATA(_np.ascontiguousarray(C_K_ij[therm_state, :, :])),
-        f_K_i.shape[1],
+        <double*> _np.PyArray_DATA(_np.ascontiguousarray(log_lagrangian_mult[therm_state, :])),
+        <double*> _np.PyArray_DATA(_np.ascontiguousarray(biased_conf_energies[therm_state, :])),
+        <int*> _np.PyArray_DATA(_np.ascontiguousarray(count_matrices[therm_state, :, :])),
+        biased_conf_energies.shape[1],
         <double*> _np.PyArray_DATA(scratch_M),
-        <double*> _np.PyArray_DATA(p_ij))
-    return p_ij
+        <double*> _np.PyArray_DATA(transition_matrix))
+    return transition_matrix
 
-def estimate(C_K_ij, N_K_i, b_K_x, M_x, maxiter=1000, maxerr=1.0E-8, f_K_i=None, log_nu_K_i=None):
+def estimate(count_matrices, state_counts, bias_energies, M_x, maxiter=1000, maxerr=1.0E-8, biased_conf_energies=None, log_lagrangian_mult=None):
     r"""
     Estimate the reduced discrete state free energies and thermodynamic free energies
         
     Parameters
     ----------
-    C_K_ij : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
+    count_matrices : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
         transition count matrices for all T thermodynamic states
-    N_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
+    state_counts : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
         state counts for all M discrete and T thermodynamic states
-    b_K_x : numpy.ndarray(shape=(T, X), dtype=numpy.float64)
+    bias_energies : numpy.ndarray(shape=(T, X), dtype=numpy.float64)
         reduced bias energies in the T thermodynamic states for all X samples
     M_x : numpy.ndarray(shape=(X), dtype=numpy.float64)
         discrete state indices for all X samples
@@ -340,42 +340,42 @@ def estimate(C_K_ij, N_K_i, b_K_x, M_x, maxiter=1000, maxerr=1.0E-8, f_K_i=None,
         maximum number of iterations
     maxerr : float
         convergence criterion based on absolute change in free energies
-    f_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64), OPTIONAL
+    biased_conf_energies : numpy.ndarray(shape=(T, M), dtype=numpy.float64), OPTIONAL
         initial guess for the reduced discrete state free energies for all T thermodynamic states
-    log_nu_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64), OPTIONAL
+    log_lagrangian_mult : numpy.ndarray(shape=(T, M), dtype=numpy.float64), OPTIONAL
         initial guess for the logarithm of the Lagrangian multipliers
 
     Returns
     -------
-    f_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+    biased_conf_energies : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         reduced discrete state free energies for all T thermodynamic states
-    f_i : numpy.ndarray(shape=(M), dtype=numpy.float64)
+    conf_energies : numpy.ndarray(shape=(M), dtype=numpy.float64)
         reduced unbiased discrete state free energies
-    f_K : numpy.ndarray(shape=(M), dtype=numpy.float64)
+    therm_energies : numpy.ndarray(shape=(M), dtype=numpy.float64)
         reduced thermodynamic free energies
-    log_nu_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+    log_lagrangian_mult : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         logarithm of the Lagrangian multipliers
     """
-    if f_K_i is None:
-        f_K_i = _np.zeros(shape=N_K_i.shape, dtype=_np.float64)
-    if log_nu_K_i is None:
-        log_nu_K_i = _np.zeros(shape=N_K_i.shape, dtype=_np.float64)
-        init_lagrangian_mult(log_nu_K_i, C_K_ij)
-    log_R_K_i = _np.zeros(shape=N_K_i.shape, dtype=_np.float64)
-    scratch_T = _np.zeros(shape=(C_K_ij.shape[0],), dtype=_np.float64)
-    scratch_M = _np.zeros(shape=(C_K_ij.shape[1],), dtype=_np.float64)
-    old_f_K_i = f_K_i.copy()
-    old_log_nu_K_i = log_nu_K_i.copy()
+    if biased_conf_energies is None:
+        biased_conf_energies = _np.zeros(shape=state_counts.shape, dtype=_np.float64)
+    if log_lagrangian_mult is None:
+        log_lagrangian_mult = _np.zeros(shape=state_counts.shape, dtype=_np.float64)
+        init_lagrangian_mult(count_matrices, log_lagrangian_mult)
+    log_R_K_i = _np.zeros(shape=state_counts.shape, dtype=_np.float64)
+    scratch_T = _np.zeros(shape=(count_matrices.shape[0],), dtype=_np.float64)
+    scratch_M = _np.zeros(shape=(count_matrices.shape[1],), dtype=_np.float64)
+    old_biased_conf_energies = biased_conf_energies.copy()
+    old_log_lagrangian_mult = log_lagrangian_mult.copy()
     for _m in range(maxiter):
-        update_lagrangian_mult(old_log_nu_K_i, f_K_i, C_K_ij, scratch_M, log_nu_K_i)
-        update_biased_conf_energies(log_nu_K_i, old_f_K_i, C_K_ij, b_K_x, M_x,
-            N_K_i, log_R_K_i, scratch_M, scratch_T, f_K_i)
-        if _np.max(_np.abs(f_K_i - old_f_K_i)) < maxerr:
+        update_lagrangian_mult(old_log_lagrangian_mult, biased_conf_energies, count_matrices, scratch_M, log_lagrangian_mult)
+        update_biased_conf_energies(log_lagrangian_mult, old_biased_conf_energies, count_matrices, bias_energies, M_x,
+            state_counts, log_R_K_i, scratch_M, scratch_T, biased_conf_energies)
+        if _np.max(_np.abs(biased_conf_energies - old_biased_conf_energies)) < maxerr:
             break
         else:
-            old_f_K_i[:] = f_K_i[:]
-            old_log_nu_K_i[:] = log_nu_K_i[:]
-    f_i = get_conf_energies(b_K_x, M_x, log_R_K_i, scratch_M, scratch_T)
-    f_K = get_therm_energies(f_K_i, scratch_M)
-    normalize(f_i, f_K_i, f_K, scratch_M)
-    return f_K_i, f_i, f_K, log_nu_K_i
+            old_biased_conf_energies[:] = biased_conf_energies[:]
+            old_log_lagrangian_mult[:] = log_lagrangian_mult[:]
+    conf_energies = get_conf_energies(bias_energies, M_x, log_R_K_i, scratch_M, scratch_T)
+    therm_energies = get_therm_energies(biased_conf_energies, scratch_M)
+    normalize(conf_energies, biased_conf_energies, therm_energies, scratch_M)
+    return biased_conf_energies, conf_energies, therm_energies, log_lagrangian_mult
