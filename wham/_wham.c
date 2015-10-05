@@ -29,48 +29,48 @@
 #endif
 
 extern void _update_conf_energies(
-    double *log_N_K, double *log_N_i, double *f_K, double *b_K_i,
-    int n_therm_states, int n_markov_states, double *scratch_T, double *f_i)
+    double *log_therm_state_counts, double *log_conf_state_counts, double *therm_energies, double *bias_energies,
+    int n_therm_states, int n_conf_states, double *scratch_T, double *conf_energies)
 {
     int i, K;
     double shift;
-    for(i=0; i<n_markov_states; ++i)
+    for(i=0; i<n_conf_states; ++i)
     {
         for(K=0; K<n_therm_states; ++K)
-            scratch_T[K] = log_N_K[K] - b_K_i[K*n_markov_states + i] + f_K[K];
-        f_i[i] = _logsumexp(scratch_T, n_therm_states) - log_N_i[i];
+            scratch_T[K] = log_therm_state_counts[K] - bias_energies[K*n_conf_states + i] + therm_energies[K];
+        conf_energies[i] = _logsumexp(scratch_T, n_therm_states) - log_conf_state_counts[i];
     }
-    shift = f_i[0];
-    for(i=1; i<n_markov_states; ++i)
-        shift = (shift < f_i[i]) ? shift : f_i[i];
-    for(i=0; i<n_markov_states; ++i)
-        f_i[i] -= shift;
+    shift = conf_energies[0];
+    for(i=1; i<n_conf_states; ++i)
+        shift = (shift < conf_energies[i]) ? shift : conf_energies[i];
+    for(i=0; i<n_conf_states; ++i)
+        conf_energies[i] -= shift;
 }
 
 extern void _update_therm_energies(
-    double *f_i, double *b_K_i, int n_therm_states, int n_markov_states,
-    double *scratch_M, double *f_K)
+    double *conf_energies, double *bias_energies, int n_therm_states, int n_conf_states,
+    double *scratch_M, double *therm_energies)
 {
     int i, K, KM;
     for(K=0; K<n_therm_states; ++K)
     {
-        KM = K*n_markov_states;
-        for(i=0; i<n_markov_states; ++i)
-            scratch_M[i] = -(b_K_i[KM + i] + f_i[i]);
-        f_K[K] = -_logsumexp(scratch_M, n_markov_states);
+        KM = K*n_conf_states;
+        for(i=0; i<n_conf_states; ++i)
+            scratch_M[i] = -(bias_energies[KM + i] + conf_energies[i]);
+        therm_energies[K] = -_logsumexp(scratch_M, n_conf_states);
     }
 }
 
 extern void _normalize(
-    int n_therm_states, int n_markov_states, double *scratch_M, double *f_K, double *f_i)
+    int n_therm_states, int n_conf_states, double *scratch_M, double *therm_energies, double *conf_energies)
 {
     int K, i;
     double f0;
-    for(i=0; i<n_markov_states; ++i)
-        scratch_M[i] = -f_i[i];
-    f0 = -_logsumexp(scratch_M, n_markov_states);
-    for(i=0; i<n_markov_states; ++i)
-        f_i[i] -= f0;
+    for(i=0; i<n_conf_states; ++i)
+        scratch_M[i] = -conf_energies[i];
+    f0 = -_logsumexp(scratch_M, n_conf_states);
+    for(i=0; i<n_conf_states; ++i)
+        conf_energies[i] -= f0;
     for(K=0; K<n_therm_states; ++K)
-        f_K[K] -= f0;
+        therm_energies[K] -= f0;
 }

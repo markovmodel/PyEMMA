@@ -26,37 +26,37 @@ __all__ = ['update_conf_energies', 'update_therm_energies', 'normalize', 'estima
 
 cdef extern from "_wham.h":
     void _update_conf_energies(
-        double *log_N_K, double *log_N_i, double *f_K, double *b_K_i,
-        int n_therm_states, int n_markov_states, double *scratch_T, double *f_i)
+        double *log_therm_state_counts, double *log_conf_state_counts, double *therm_energies, double *bias_energies,
+        int n_therm_states, int n_conf_states, double *scratch_T, double *conf_energies)
     void _update_therm_energies(
-        double *f_i, double *b_K_i, int n_therm_states, int n_markov_states,
-        double *scratch_M, double *f_K)
+        double *conf_energies, double *bias_energies, int n_therm_states, int n_conf_states,
+        double *scratch_M, double *therm_energies)
     void _normalize(
-        int n_therm_states, int n_markov_states, double *scratch_M, double *f_K, double *f_i)
+        int n_therm_states, int n_conf_states, double *scratch_M, double *therm_energies, double *conf_energies)
 
 def update_conf_energies(
-    _np.ndarray[double, ndim=1, mode="c"] log_N_K not None,
-    _np.ndarray[double, ndim=1, mode="c"] log_N_i not None,
-    _np.ndarray[double, ndim=1, mode="c"] f_K not None,
-    _np.ndarray[double, ndim=2, mode="c"] b_K_i not None,
+    _np.ndarray[double, ndim=1, mode="c"] log_therm_state_counts not None,
+    _np.ndarray[double, ndim=1, mode="c"] log_conf_state_counts not None,
+    _np.ndarray[double, ndim=1, mode="c"] therm_energies not None,
+    _np.ndarray[double, ndim=2, mode="c"] bias_energies not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_T not None,
-    _np.ndarray[double, ndim=1, mode="c"] f_i not None):
+    _np.ndarray[double, ndim=1, mode="c"] conf_energies not None):
     r"""
-    Calculate the reduced free energies f_i
+    Calculate the reduced free energies conf_energies
         
     Parameters
     ----------
-    log_N_K : numpy.ndarray(shape=(T), dtype=numpy.float64)
+    log_therm_state_counts : numpy.ndarray(shape=(T), dtype=numpy.float64)
         log of the state counts in each of the T thermodynamic states
-    log_N_i : numpy.ndarray(shape=(M), dtype=numpy.float64)
-        log of the state counts in each of the M markov states
-    f_K : numpy.ndarray(shape=(T), dtype=numpy.float64)
+    log_conf_state_counts : numpy.ndarray(shape=(M), dtype=numpy.float64)
+        log of the state counts in each of the M configurational states
+    therm_energies : numpy.ndarray(shape=(T), dtype=numpy.float64)
         reduced free energies of the T thermodynamic states
-    b_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
-        bias energies in the T thermodynamic and M discrete Markov states
+    bias_energies : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+        bias energies in the T thermodynamic and M discrete configurational states
     scratch_T : numpy.ndarray(shape=(T), dtype=numpy.float64)
         scratch array
-    f_K : numpy.ndarray(shape=(T), dtype=numpy.float64)
+    therm_energies : numpy.ndarray(shape=(T), dtype=numpy.float64)
         target array for the reduced free energies of the T thermodynamic states
 
     Notes
@@ -64,7 +64,7 @@ def update_conf_energies(
     The update_conf_energies() function computes
 
     .. math:
-        f_i = -\ln\left( \frac{
+        conf_energies = -\ln\left( \frac{
                 \sum_{K=0}^{N_T-1} N_i^{(K)}
             }{
                 \sum_{K=0}^{N_T-1} \exp(f^{(K)}-b_i^{(K)}) \sum_{j=0}^{N_M-1} N_j^{(K)}
@@ -73,7 +73,7 @@ def update_conf_energies(
     which equals to
 
     .. math:
-        f_i = \ln\left(
+        conf_energies = \ln\left(
                 \sum_{K=0}^{N_T-1} \exp\left(
                     f^{(K)} - b_i^{(K)} + \ln\left( \sum_{j=0}^{N_M-1} N_j^{(K)} \right)
                 \right)
@@ -82,36 +82,36 @@ def update_conf_energies(
     in the logsumexp scheme. Afterwards, we apply
 
     .. math:
-        f_i \leftarrow  f_i - \min_i(f_i)
+        conf_energies \leftarrow  conf_energies - \min_i(conf_energies)
 
     """
     _update_conf_energies(
-        <double*> _np.PyArray_DATA(log_N_K),
-        <double*> _np.PyArray_DATA(log_N_i),
-        <double*> _np.PyArray_DATA(f_K),
-        <double*> _np.PyArray_DATA(b_K_i),
-        b_K_i.shape[0],
-        b_K_i.shape[1],
+        <double*> _np.PyArray_DATA(log_therm_state_counts),
+        <double*> _np.PyArray_DATA(log_conf_state_counts),
+        <double*> _np.PyArray_DATA(therm_energies),
+        <double*> _np.PyArray_DATA(bias_energies),
+        bias_energies.shape[0],
+        bias_energies.shape[1],
         <double*> _np.PyArray_DATA(scratch_T),
-        <double*> _np.PyArray_DATA(f_i))
+        <double*> _np.PyArray_DATA(conf_energies))
 
 def update_therm_energies(
-    _np.ndarray[double, ndim=1, mode="c"] f_i not None,
-    _np.ndarray[double, ndim=2, mode="c"] b_K_i not None,
+    _np.ndarray[double, ndim=1, mode="c"] conf_energies not None,
+    _np.ndarray[double, ndim=2, mode="c"] bias_energies not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_M not None,
-    _np.ndarray[double, ndim=1, mode="c"] f_K not None):
+    _np.ndarray[double, ndim=1, mode="c"] therm_energies not None):
     r"""
-    Calculate the reduced thermodynamic free energies f_K
+    Calculate the reduced thermodynamic free energies therm_energies
         
     Parameters
     ----------
-    f_i : numpy.ndarray(shape=(M), dtype=numpy.float64)
-        reduced free energies of the M markov states
-    b_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
-        bias energies in the T thermodynamic and M discrete Markov states
+    conf_energies : numpy.ndarray(shape=(M), dtype=numpy.float64)
+        reduced free energies of the M configurational states
+    bias_energies : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+        bias energies in the T thermodynamic and M configurational states
     scratch_M : numpy.ndarray(shape=(M), dtype=numpy.float64)
         scratch array
-    f_K : numpy.ndarray(shape=(T), dtype=numpy.float64)
+    therm_energies : numpy.ndarray(shape=(T), dtype=numpy.float64)
         target array for the reduced free energies of the T thermodynamic states
 
     Notes
@@ -120,23 +120,23 @@ def update_therm_energies(
 
     .. math:
         f^{(K)} = -\ln\left(
-                \sum_{i=0}^{N_M-1} \exp(-b_i^{(K)}-f_i)
+                \sum_{i=0}^{N_M-1} \exp(-b_i^{(K)}-conf_energies)
             \right)
 
     which is already in the logsumexp form.
     """
     _update_therm_energies(
-        <double*> _np.PyArray_DATA(f_i),
-        <double*> _np.PyArray_DATA(b_K_i),
-        b_K_i.shape[0],
-        b_K_i.shape[1],
+        <double*> _np.PyArray_DATA(conf_energies),
+        <double*> _np.PyArray_DATA(bias_energies),
+        bias_energies.shape[0],
+        bias_energies.shape[1],
         <double*> _np.PyArray_DATA(scratch_M),
-        <double*> _np.PyArray_DATA(f_K))
+        <double*> _np.PyArray_DATA(therm_energies))
 
 def normalize(
     _np.ndarray[double, ndim=1, mode="c"] scratch_M not None,
-    _np.ndarray[double, ndim=1, mode="c"] f_K not None,
-    _np.ndarray[double, ndim=1, mode="c"] f_i not None):
+    _np.ndarray[double, ndim=1, mode="c"] therm_energies not None,
+    _np.ndarray[double, ndim=1, mode="c"] conf_energies not None):
     r"""
     Normalize the unbiased reduced free energies and shift the thermodynamic
     free energies accordingly
@@ -145,68 +145,68 @@ def normalize(
     ----------
     scratch_M : numpy.ndarray(shape=(M), dtype=numpy.float64)
         scratch array
-    f_K : numpy.ndarray(shape=(T), dtype=numpy.float64)
+    therm_energies : numpy.ndarray(shape=(T), dtype=numpy.float64)
         reduced free energies of the T thermodynamic states
-    f_i : numpy.ndarray(shape=(M), dtype=numpy.float64)
+    conf_energies : numpy.ndarray(shape=(M), dtype=numpy.float64)
         reduced free energies of the M discrete states
     """
     _normalize(
-        f_K.shape[0],
-        f_i.shape[0],
+        therm_energies.shape[0],
+        conf_energies.shape[0],
         <double*> _np.PyArray_DATA(scratch_M),
-        <double*> _np.PyArray_DATA(f_K),
-        <double*> _np.PyArray_DATA(f_i))
+        <double*> _np.PyArray_DATA(therm_energies),
+        <double*> _np.PyArray_DATA(conf_energies))
 
-def estimate(N_K_i, b_K_i, maxiter=1000, maxerr=1.0E-8, f_K=None, f_i=None):
+def estimate(state_counts, bias_energies, maxiter=1000, maxerr=1.0E-8, therm_energies=None, conf_energies=None):
     r"""
     Estimate the unbiased reduced free energies and thermodynamic free energies
         
     Parameters
     ----------
-    N_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
-        discrete state counts in the T thermodynamic and M discrete states
-    b_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
-        reduced bias energies in the T thermodynamic and M discrete states
+    state_counts : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
+        state counts in the T thermodynamic and M configurational states
+    bias_energies : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+        reduced bias energies in the T thermodynamic and M configurational states
     maxiter : int
         maximum number of iterations
     maxerr : float
         convergence criterion based on absolute change in free energies
-    f_K : numpy.ndarray(shape=(T), dtype=numpy.float64), OPTIONAL
+    therm_energies : numpy.ndarray(shape=(T), dtype=numpy.float64), OPTIONAL
         initial guess for the reduced free energies of the T thermodynamic states
-    f_i : numpy.ndarray(shape=(M), dtype=numpy.float64), OPTIONAL
-        initial guess for the reduced unbiased free energies of the M discrete states
+    conf_energies : numpy.ndarray(shape=(M), dtype=numpy.float64), OPTIONAL
+        initial guess for the reduced unbiased free energies of the M configurational states
 
     Returns
     -------
-    f_K : numpy.ndarray(shape=(T), dtype=numpy.float64)
+    therm_energies : numpy.ndarray(shape=(T), dtype=numpy.float64)
         reduced free energies of the T thermodynamic states
-    f_i : numpy.ndarray(shape=(M), dtype=numpy.float64)
-        reduced unbiased free energies of the M discrete states
+    conf_energies : numpy.ndarray(shape=(M), dtype=numpy.float64)
+        reduced unbiased free energies of the M configurational states
     """
-    T = N_K_i.shape[0]
-    M = N_K_i.shape[1]
+    T = state_counts.shape[0]
+    M = state_counts.shape[1]
     S = _np.max([T, M])
-    log_N_K = _np.log(N_K_i.sum(axis=1))
-    log_N_i = _np.log(N_K_i.sum(axis=0))
-    if f_K is None:
-        f_K = _np.zeros(shape=(T,), dtype=_np.float64)
-    if f_i is None:
-        f_i = _np.zeros(shape=(M,), dtype=_np.float64)
-    old_f_K = f_K.copy()
-    old_f_i = f_i.copy()
+    log_therm_state_counts = _np.log(state_counts.sum(axis=1))
+    log_conf_state_counts = _np.log(state_counts.sum(axis=0))
+    if therm_energies is None:
+        therm_energies = _np.zeros(shape=(T,), dtype=_np.float64)
+    if conf_energies is None:
+        conf_energies = _np.zeros(shape=(M,), dtype=_np.float64)
+    old_therm_energies = therm_energies.copy()
+    old_conf_energies = conf_energies.copy()
     scratch = _np.zeros(shape=(S,), dtype=_np.float64)
     stop = False
     for _m in range(maxiter):
-        update_therm_energies(f_i, b_K_i, scratch, f_K)
-        update_conf_energies(log_N_K, log_N_i, f_K, b_K_i, scratch, f_i)
-        delta_f_K = _np.max(_np.abs((f_K - old_f_K)))
-        delta_f_i = _np.max(_np.abs((f_i - old_f_i)))
-        if delta_f_K < maxerr and delta_f_i < maxerr:
+        update_therm_energies(conf_energies, bias_energies, scratch, therm_energies)
+        update_conf_energies(log_therm_state_counts, log_conf_state_counts, therm_energies, bias_energies, scratch, conf_energies)
+        delta_therm_energies = _np.max(_np.abs((therm_energies - old_therm_energies)))
+        delta_conf_energies = _np.max(_np.abs((conf_energies - old_conf_energies)))
+        if delta_therm_energies < maxerr and delta_conf_energies < maxerr:
             stop = True
         else:
-            old_f_K[:] = f_K[:]
-            old_f_i[:] = f_i[:]
+            old_therm_energies[:] = therm_energies[:]
+            old_conf_energies[:] = conf_energies[:]
         if stop:
             break
-    normalize(scratch, f_K, f_i)
-    return f_K, f_i
+    normalize(scratch, therm_energies, conf_energies)
+    return therm_energies, conf_energies
