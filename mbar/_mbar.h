@@ -20,17 +20,17 @@
 #ifndef THERMOTOOLS_MBAR
 #define THERMOTOOLS_MBAR
 
-void _iterate_fk(
-    double *log_N_K, double *f_K, double *b_K_x,
-    int n_therm_states, int seq_length, double *scratch_T, double *new_f_K);
+void _update_therm_energies(
+    double *log_therm_state_counts, double *therm_energies, double *bias_energies,
+    int n_therm_states, int seq_length, double *scratch_T, double *new_therm_energies);
 
 void _normalize(
-    double *log_N_K, double *f_K, double *b_K_x,
-    int n_therm_states, int seq_length, double *scratch_T);
+    double *log_therm_state_counts, double *bias_energies, int n_therm_states, int seq_length,
+    double *scratch_T, double *therm_energies);
 
-void _get_fi(
-    double *log_N_K, double *f_K, double *b_K_x, int * M_x,
-    int n_therm_states, int n_markov_states, int seq_length,
-    double *scratch_M, double *scratch_T, double *f_i);
+void _get_conf_energies(
+    double *log_therm_state_counts, double *therm_energies, double *bias_energies, int * M_x,
+    int n_therm_states, int n_conf_states, int seq_length,
+    double *scratch_M, double *scratch_T, double *conf_energies);
 
 #endif

@@ -23,26 +23,26 @@
 #define THERMOTOOLS_DTRAM_PRIOR 1.0E-10
 #define THERMOTOOLS_DTRAM_LOG_PRIOR -23.025850929940457
 
-extern void _set_lognu(
-    double *log_nu_K_i, int *C_K_ij, int n_therm_states, int n_markov_states);
+extern void _init_lagrangian_mult(
+    int *count_matrices, int n_therm_states, int n_conf_states, double *log_lagrangian_mult);
 
-extern void _iterate_lognu(
-    double *log_nu_K_i, double *b_K_i, double *f_i, int *C_K_ij,
-    int n_therm_states, int n_markov_states, double *scratch_M, double *new_log_nu_K_i);
+extern void _update_lagrangian_mult(
+    double *log_lagrangian_mult, double *bias_energies, double *conf_energies, int *count_matrices,
+    int n_therm_states, int n_conf_states, double *scratch_M, double *new_log_lagrangian_mult);
 
-extern void _iterate_fi(
-    double *log_nu_K_i, double *b_K_i, double *f_i, int *C_K_ij, int n_therm_states,
-    int n_markov_states, double *scratch_TM, double *new_f_i);
+extern void _update_conf_energies(
+    double *log_lagrangian_mult, double *bias_energies, double *conf_energies, int *count_matrices, int n_therm_states,
+    int n_conf_states, double *scratch_TM, double *new_conf_energies);
 
-extern void _get_p(
-    double *log_nu_i, double *b_i, double *f_i, int *C_ij,
-    int n_markov_states, double *scratch_M, double *p_ij);
+extern void _estimate_transition_matrix(
+    double *log_lagrangian_mult, double *bias_energies, double *conf_energies, int *count_matrix,
+    int n_conf_states, double *scratch_M, double *transition_matrix);
 
-extern void _get_fk(
-    double *b_K_i, double *f_i, int n_therm_states, int n_markov_states,
-    double *scratch_M, double *f_K);
+extern void _get_therm_energies(
+    double *bias_energies, double *conf_energies, int n_therm_states, int n_conf_states,
+    double *scratch_M, double *therm_energies);
 
 extern void _normalize(
-    double *f_K, double *f_i, int n_therm_states, int n_markov_states, double *scratch_M);
+    int n_therm_states, int n_conf_states, double *scratch_M, double *therm_energies, double *conf_energies);
 
 #endif

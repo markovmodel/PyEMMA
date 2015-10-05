@@ -28,66 +28,66 @@
     #define NAN (INFINITY-INFINITY)
 #endif
 
-void _iterate_fk(
-    double *log_N_K, double *f_K, double *b_K_x,
-    int n_therm_states, int seq_length, double *scratch_T, double *new_f_K)
+void _update_therm_energies(
+    double *log_therm_state_counts, double *therm_energies, double *bias_energies,
+    int n_therm_states, int seq_length, double *scratch_T, double *new_therm_energies)
 {
     int K, x, L;
     double divisor, shift;
     for(K=0; K<n_therm_states; ++K)
-        new_f_K[K] = INFINITY;
+        new_therm_energies[K] = INFINITY;
     for(x=0; x<seq_length; ++x)
     {
         for(L=0; L<n_therm_states; ++L)
-            scratch_T[L] = log_N_K[L] + f_K[L] - b_K_x[L * seq_length + x];
+            scratch_T[L] = log_therm_state_counts[L] + therm_energies[L] - bias_energies[L * seq_length + x];
         divisor = _logsumexp(scratch_T, n_therm_states);
         for(K=0; K<n_therm_states; ++K)
-            new_f_K[K] = -_logsumexp_pair(-new_f_K[K], -b_K_x[K * seq_length + x] - divisor);
+            new_therm_energies[K] = -_logsumexp_pair(-new_therm_energies[K], -bias_energies[K * seq_length + x] - divisor);
     }
-    shift = new_f_K[0];
+    shift = new_therm_energies[0];
     for(K=1; K<n_therm_states; ++K)
-        shift = (shift < new_f_K[K]) ? shift : new_f_K[K];
+        shift = (shift < new_therm_energies[K]) ? shift : new_therm_energies[K];
     for(K=0; K<n_therm_states; ++K)
-        new_f_K[K] -= shift;
+        new_therm_energies[K] -= shift;
 }
 
 void _normalize(
-    double *log_N_K, double *f_K, double *b_K_x,
-    int n_therm_states, int seq_length, double *scratch_T)
+    double *log_therm_state_counts, double *bias_energies, int n_therm_states, int seq_length,
+    double *scratch_T, double *therm_energies)
 {
     int K, x, L;
     double divisor, f0 = INFINITY;
     for(x=0; x<seq_length; ++x)
     {
         for(L=0; L<n_therm_states; ++L)
-            scratch_T[L] = log_N_K[L] + f_K[L] - b_K_x[L * seq_length + x];
+            scratch_T[L] = log_therm_state_counts[L] + therm_energies[L] - bias_energies[L * seq_length + x];
         divisor = _logsumexp(scratch_T, n_therm_states);
         for(K=0; K<n_therm_states; ++K)
             f0 = -_logsumexp_pair(-f0, -divisor);
     }
     for(K=0; K<n_therm_states; ++K)
-        f_K[K] -= f0;
+        therm_energies[K] -= f0;
 }
 
-void _get_fi(
-    double *log_N_K, double *f_K, double *b_K_x, int * M_x,
-    int n_therm_states, int n_markov_states, int seq_length,
-    double *scratch_M, double *scratch_T, double *f_i)
+void _get_conf_energies(
+    double *log_therm_state_counts, double *therm_energies, double *bias_energies, int * M_x,
+    int n_therm_states, int n_conf_states, int seq_length,
+    double *scratch_M, double *scratch_T, double *conf_energies)
 {
     int i, x, L;
     double f0;
-    for(i=0; i<n_markov_states; ++i)
-        f_i[i] = INFINITY;
+    for(i=0; i<n_conf_states; ++i)
+        conf_energies[i] = INFINITY;
     for(x=0; x<seq_length; ++x)
     {
         for(L=0; L<n_therm_states; ++L)
-            scratch_T[L] = log_N_K[L] + f_K[L] - b_K_x[L * seq_length + x];
+            scratch_T[L] = log_therm_state_counts[L] + therm_energies[L] - bias_energies[L * seq_length + x];
         i = M_x[x];
-        f_i[i] = -_logsumexp_pair(-f_i[i], 1.0 - _logsumexp(scratch_T, n_therm_states));
+        conf_energies[i] = -_logsumexp_pair(-conf_energies[i], 1.0 - _logsumexp(scratch_T, n_therm_states));
     }
-    for(i=0; i<n_markov_states; ++i)
-        scratch_M[i] = -f_i[i];
-    f0 = -_logsumexp(scratch_M, n_markov_states);
-    for(i=0; i<n_markov_states; ++i)
-        f_i[i] -= f0;
+    for(i=0; i<n_conf_states; ++i)
+        scratch_M[i] = -conf_energies[i];
+    f0 = -_logsumexp(scratch_M, n_conf_states);
+    for(i=0; i<n_conf_states; ++i)
+        conf_energies[i] -= f0;
 }
