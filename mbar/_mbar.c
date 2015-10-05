@@ -83,7 +83,7 @@ void _get_conf_energies(
         for(L=0; L<n_therm_states; ++L)
             scratch_T[L] = log_therm_state_counts[L] + therm_energies[L] - bias_energies[L * seq_length + x];
         i = M_x[x];
-        conf_energies[i] = -_logsumexp_pair(-conf_energies[i], 1.0 - _logsumexp(scratch_T, n_therm_states));
+        conf_energies[i] = -_logsumexp_pair(-conf_energies[i], -_logsumexp(scratch_T, n_therm_states));
     }
     for(i=0; i<n_conf_states; ++i)
         scratch_M[i] = -conf_energies[i];
