@@ -296,9 +296,11 @@ def estimate(C_K_ij, b_K_i, maxiter=1000, maxerr=1.0E-8, log_nu_K_i=None, f_i=No
     log_nu_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         logarithm of the Lagrangian multipliers
     """
-    log_nu_K_i = _np.zeros(shape=b_K_i.shape, dtype=_np.float64)
-    f_i = _np.zeros(shape=b_K_i.shape[1], dtype=_np.float64)
-    set_lognu(C_K_ij, log_nu_K_i)
+    if log_nu_K_i is None:
+        log_nu_K_i = _np.zeros(shape=b_K_i.shape, dtype=_np.float64)
+        set_lognu(C_K_ij, log_nu_K_i)
+    if f_i is None:
+        f_i = _np.zeros(shape=b_K_i.shape[1], dtype=_np.float64)
     scratch_TM = _np.zeros(shape=b_K_i.shape, dtype=_np.float64)
     scratch_M = _np.zeros(shape=f_i.shape, dtype=_np.float64)
     old_log_nu_K_i = log_nu_K_i.copy()
