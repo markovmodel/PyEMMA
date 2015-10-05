@@ -24,8 +24,8 @@ cimport numpy as _np
 
 __all__ = [
     'set_lognu',
-    'iterate_lognu',
-    'iterate_fi',
+    'update_lognu',
+    'update_fi',
     'get_pk',
     'get_p',
     'get_fk',
@@ -35,10 +35,10 @@ __all__ = [
 cdef extern from "_dtram.h":
     void _set_lognu(
         int *C_K_ij, int n_therm_states, int n_markov_states, double *log_nu_K_i)
-    void _iterate_lognu(
+    void _update_lognu(
         double *log_nu_K_i, double *b_K_i, double *f_i, int *C_K_ij, int n_therm_states,
         int n_markov_states, double *scratch_M, double *new_log_nu_K_i)
-    void _iterate_fi(
+    void _update_fi(
         double *log_nu_K_i, double *b_K_i, double *f_i, int *C_K_ij, int n_therm_states,
         int n_markov_states, double *scratch_TM, double *new_f_i)
     void _get_p(
@@ -70,7 +70,7 @@ def set_lognu(
         log_nu_K_i.shape[1],
         <double*> _np.PyArray_DATA(log_nu_K_i))
 
-def iterate_lognu(
+def update_lognu(
     _np.ndarray[double, ndim=2, mode="c"] log_nu_K_i not None,
     _np.ndarray[double, ndim=2, mode="c"] b_K_i not None,
     _np.ndarray[double, ndim=1, mode="c"] f_i not None,
@@ -95,7 +95,7 @@ def iterate_lognu(
     new_log_nu_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         target array for the log of the Lagrangian multipliers
     """
-    _iterate_lognu(
+    _update_lognu(
         <double*> _np.PyArray_DATA(log_nu_K_i),
         <double*> _np.PyArray_DATA(b_K_i),
         <double*> _np.PyArray_DATA(f_i),
@@ -105,7 +105,7 @@ def iterate_lognu(
         <double*> _np.PyArray_DATA(scratch_M),
         <double*> _np.PyArray_DATA(new_log_nu_K_i))
 
-def iterate_fi(
+def update_fi(
     _np.ndarray[double, ndim=2, mode="c"] log_nu_K_i not None,
     _np.ndarray[double, ndim=2, mode="c"] b_K_i not None,
     _np.ndarray[double, ndim=1, mode="c"] f_i not None,
@@ -130,7 +130,7 @@ def iterate_fi(
     new_f_i : numpy.ndarray(shape=(M,), dtype=numpy.float64)
         target array for the reduced unbiased free energies
     """
-    _iterate_fi(
+    _update_fi(
         <double*> _np.PyArray_DATA(log_nu_K_i),
         <double*> _np.PyArray_DATA(b_K_i),
         <double*> _np.PyArray_DATA(f_i),
@@ -306,8 +306,8 @@ def estimate(C_K_ij, b_K_i, maxiter=1000, maxerr=1.0E-8, log_nu_K_i=None, f_i=No
     old_log_nu_K_i = log_nu_K_i.copy()
     old_f_i = f_i.copy()
     for m in range(maxiter):
-        iterate_lognu(old_log_nu_K_i, b_K_i, f_i, C_K_ij, scratch_M, log_nu_K_i)
-        iterate_fi(log_nu_K_i, b_K_i, old_f_i, C_K_ij, scratch_TM, f_i)
+        update_lognu(old_log_nu_K_i, b_K_i, f_i, C_K_ij, scratch_M, log_nu_K_i)
+        update_fi(log_nu_K_i, b_K_i, old_f_i, C_K_ij, scratch_TM, f_i)
         delta_log_nu_K_i = _np.max(_np.abs((log_nu_K_i - old_log_nu_K_i)))
         delta_f_i = _np.max(_np.abs((f_i - old_f_i)))
         if delta_log_nu_K_i < maxerr and delta_f_i < maxerr:

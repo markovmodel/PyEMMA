@@ -22,10 +22,10 @@ Python interface to the MBAR estimator's lowlevel functions.
 import numpy as _np
 cimport numpy as _np
 
-__all__ = ['iterate_fk', 'normalize', 'get_fi', 'estimate']
+__all__ = ['update_fk', 'normalize', 'get_fi', 'estimate']
 
 cdef extern from "_mbar.h":
-    void _iterate_fk(
+    void _update_fk(
         double *log_N_K, double *f_K, double *b_K_x,
         int n_therm_states, int seq_length, double *scratch_T, double *new_f_K)
     void _normalize(
@@ -36,7 +36,7 @@ cdef extern from "_mbar.h":
         int n_therm_states, int n_markov_states, int seq_length,
         double *scratch_M, double *scratch_T, double *f_i)
 
-def iterate_fk(
+def update_fk(
     _np.ndarray[double, ndim=1, mode="c"] log_N_K not None,
     _np.ndarray[double, ndim=1, mode="c"] f_K not None,
     _np.ndarray[double, ndim=2, mode="c"] b_K_x not None,
@@ -58,7 +58,7 @@ def iterate_fk(
     new_f_K : numpy.ndarray(shape=(T), dtype=numpy.float64)
         target array for the reduced free energies of the T thermodynamic states
     """
-    _iterate_fk(
+    _update_fk(
         <double*> _np.PyArray_DATA(log_N_K),
         <double*> _np.PyArray_DATA(f_K),
         <double*> _np.PyArray_DATA(b_K_x),
@@ -172,7 +172,7 @@ def estimate(N_K, b_K_x, maxiter=1000, maxerr=1.0E-8, f_K=None):
     scratch = _np.zeros(shape=(T,), dtype=_np.float64)
     stop = False
     for _m in range(maxiter):
-        iterate_fk(log_N_K, old_f_K, b_K_x, scratch, f_K)
+        update_fk(log_N_K, old_f_K, b_K_x, scratch, f_K)
         if _np.max(_np.abs((f_K - old_f_K))) < maxerr:
             stop = True
         else:

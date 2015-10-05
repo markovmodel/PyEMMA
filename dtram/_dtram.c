@@ -47,7 +47,7 @@ extern void _set_lognu(
     }
 }
 
-extern void _iterate_lognu(
+extern void _update_lognu(
     double *log_nu_K_i, double *b_K_i, double *f_i, int *C_K_ij,
     int n_therm_states, int n_markov_states, double *scratch_M, double *new_log_nu_K_i)
 {
@@ -86,7 +86,7 @@ extern void _iterate_lognu(
     }
 }
 
-extern void _iterate_fi(
+extern void _update_fi(
     double *log_nu_K_i, double *b_K_i, double *f_i, int *C_K_ij, int n_therm_states,
     int n_markov_states, double *scratch_TM, double *new_f_i)
 {
