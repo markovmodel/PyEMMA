@@ -28,7 +28,7 @@
     #define NAN (INFINITY-INFINITY)
 #endif
 
-void _set_lognu(double *log_nu_K_i, int *C_K_ij, int n_therm_states, int n_markov_states)
+void _init_lagrangian_mult(double *log_nu_K_i, int *C_K_ij, int n_therm_states, int n_markov_states)
 {
     int i, j, K;
     int MM = n_markov_states * n_markov_states, KMM;
@@ -47,7 +47,7 @@ void _set_lognu(double *log_nu_K_i, int *C_K_ij, int n_therm_states, int n_marko
 
 }
 
-void _iterate_lognu(
+void _update_lagrangian_mult(
     double *log_nu_K_i, double *f_K_i, int *C_K_ij,
     int n_therm_states, int n_markov_states, double *scratch_M, double *new_log_nu_K_i)
 {
@@ -86,7 +86,7 @@ void _iterate_lognu(
     }
 }
 
-void _iterate_fki(
+void _update_biased_conf_energies(
     double *log_nu_K_i, double *f_K_i, int *C_K_ij, double *b_K_x,
     int *M_x, int *N_K_i, int seq_length, double *log_R_K_i,
     int n_therm_states, int n_markov_states, double *scratch_M, double *scratch_T,
@@ -167,7 +167,7 @@ void _iterate_fki(
         new_f_K_i[i] -= shift;
 }
 
-void _get_fi(
+void _get_conf_energies(
     double *b_K_x, int *M_x, int seq_length, double *log_R_K_i,
     int n_therm_states, int n_markov_states, double *scratch_M, double *scratch_T,
     double *f_i)
@@ -186,7 +186,7 @@ void _get_fi(
     }
 }
 
-void _get_fk(
+void _get_therm_energies(
     double *f_K_i, int n_therm_states, int n_markov_states, double *scratch_M, double *f_K)
 {
     int i, K;
@@ -215,7 +215,7 @@ void _normalize(
         f_K[i] -= f0;
 }
 
-void _get_p(
+void _estimate_transition_matrix(
     double *log_nu_i, double *f_i, int *C_ij,
     int n_markov_states, double *scratch_M, double *p_ij)
 {
