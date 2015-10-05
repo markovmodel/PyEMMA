@@ -23,34 +23,34 @@ import numpy as _np
 cimport numpy as _np
 
 __all__ = [
-    'set_lognu',
-    'update_lognu',
-    'update_fi',
-    'get_pk',
-    'get_p',
-    'get_fk',
+    'init_lagrangian_mult',
+    'update_lagrangian_mult',
+    'update_conf_energies',
+    'estimate_transition_matrices',
+    'estimate_transition_matrix',
+    'get_therm_energies',
     'normalize',
     'estimate']
 
 cdef extern from "_dtram.h":
-    void _set_lognu(
+    void _init_lagrangian_mult(
         int *C_K_ij, int n_therm_states, int n_markov_states, double *log_nu_K_i)
-    void _update_lognu(
+    void _update_lagrangian_mult(
         double *log_nu_K_i, double *b_K_i, double *f_i, int *C_K_ij, int n_therm_states,
         int n_markov_states, double *scratch_M, double *new_log_nu_K_i)
-    void _update_fi(
+    void _update_conf_energies(
         double *log_nu_K_i, double *b_K_i, double *f_i, int *C_K_ij, int n_therm_states,
         int n_markov_states, double *scratch_TM, double *new_f_i)
-    void _get_p(
+    void _estimate_transition_matrix(
         double *log_nu_i, double *b_i, double *f_i, int *C_ij,
         int n_markov_states, double *scratch_M, double *p_ij)
-    void _get_fk(
+    void _get_therm_energies(
         double *b_K_i, double *f_i, int n_therm_states, int n_markov_states,
         double *scratch_M, double *f_K)
     void _normalize(
         int n_therm_states, int n_markov_states, double *scratch_M, double *f_K, double *f_i)
 
-def set_lognu(
+def init_lagrangian_mult(
     _np.ndarray[int, ndim=3, mode="c"] C_K_ij not None,
     _np.ndarray[double, ndim=2, mode="c"] log_nu_K_i not None):
     r"""
@@ -64,13 +64,13 @@ def set_lognu(
     log_nu_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         log of the Lagrangian multipliers (allocated but unset)
     """
-    _set_lognu(
+    _init_lagrangian_mult(
         <int*> _np.PyArray_DATA(C_K_ij),
         log_nu_K_i.shape[0],
         log_nu_K_i.shape[1],
         <double*> _np.PyArray_DATA(log_nu_K_i))
 
-def update_lognu(
+def update_lagrangian_mult(
     _np.ndarray[double, ndim=2, mode="c"] log_nu_K_i not None,
     _np.ndarray[double, ndim=2, mode="c"] b_K_i not None,
     _np.ndarray[double, ndim=1, mode="c"] f_i not None,
@@ -95,7 +95,7 @@ def update_lognu(
     new_log_nu_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         target array for the log of the Lagrangian multipliers
     """
-    _update_lognu(
+    _update_lagrangian_mult(
         <double*> _np.PyArray_DATA(log_nu_K_i),
         <double*> _np.PyArray_DATA(b_K_i),
         <double*> _np.PyArray_DATA(f_i),
@@ -105,7 +105,7 @@ def update_lognu(
         <double*> _np.PyArray_DATA(scratch_M),
         <double*> _np.PyArray_DATA(new_log_nu_K_i))
 
-def update_fi(
+def update_conf_energies(
     _np.ndarray[double, ndim=2, mode="c"] log_nu_K_i not None,
     _np.ndarray[double, ndim=2, mode="c"] b_K_i not None,
     _np.ndarray[double, ndim=1, mode="c"] f_i not None,
@@ -130,7 +130,7 @@ def update_fi(
     new_f_i : numpy.ndarray(shape=(M,), dtype=numpy.float64)
         target array for the reduced unbiased free energies
     """
-    _update_fi(
+    _update_conf_energies(
         <double*> _np.PyArray_DATA(log_nu_K_i),
         <double*> _np.PyArray_DATA(b_K_i),
         <double*> _np.PyArray_DATA(f_i),
@@ -140,7 +140,7 @@ def update_fi(
         <double*> _np.PyArray_DATA(scratch_TM),
         <double*> _np.PyArray_DATA(new_f_i))
 
-def get_pk(
+def estimate_transition_matrices(
     _np.ndarray[double, ndim=2, mode="c"] log_nu_K_i not None,
     _np.ndarray[double, ndim=2, mode="c"] b_K_i not None,
     _np.ndarray[double, ndim=1, mode="c"] f_i not None,
@@ -169,10 +169,10 @@ def get_pk(
     """
     p_K_ij = _np.zeros(shape=(C_K_ij.shape[0], C_K_ij.shape[1], C_K_ij.shape[2]), dtype=_np.float64)
     for K in range(log_nu_K_i.shape[0]):
-        p_K_ij[K, :, :] = get_p(log_nu_K_i, b_K_i, f_i, C_K_ij, scratch_M, K)[:, :]
+        p_K_ij[K, :, :] = estimate_transition_matrix(log_nu_K_i, b_K_i, f_i, C_K_ij, scratch_M, K)[:, :]
     return p_K_ij
 
-def get_p(
+def estimate_transition_matrix(
     _np.ndarray[double, ndim=2, mode="c"] log_nu_K_i not None,
     _np.ndarray[double, ndim=2, mode="c"] b_K_i not None,
     _np.ndarray[double, ndim=1, mode="c"] f_i not None,
@@ -203,7 +203,7 @@ def get_p(
         transition matrix for the target thermodynamic state
     """
     p_ij = _np.zeros(shape=(f_i.shape[0], f_i.shape[0]), dtype=_np.float64)
-    _get_p(
+    _estimate_transition_matrix(
         <double*> _np.PyArray_DATA(_np.ascontiguousarray(log_nu_K_i[therm_state, :])),
         <double*> _np.PyArray_DATA(_np.ascontiguousarray(b_K_i[therm_state, :])),
         <double*> _np.PyArray_DATA(f_i),
@@ -213,7 +213,7 @@ def get_p(
         <double*> _np.PyArray_DATA(p_ij))
     return p_ij
 
-def get_fk(
+def get_therm_energies(
     _np.ndarray[double, ndim=2, mode="c"] b_K_i not None,
     _np.ndarray[double, ndim=1, mode="c"] f_i not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_M not None):
@@ -235,7 +235,7 @@ def get_fk(
         reduced thermodynamic free energies
     """
     f_K = _np.zeros(shape=(b_K_i.shape[0],), dtype=_np.float64)
-    _get_fk(
+    _get_therm_energies(
         <double*> _np.PyArray_DATA(b_K_i),
         <double*> _np.PyArray_DATA(f_i),
         b_K_i.shape[0],
@@ -298,7 +298,7 @@ def estimate(C_K_ij, b_K_i, maxiter=1000, maxerr=1.0E-8, log_nu_K_i=None, f_i=No
     """
     if log_nu_K_i is None:
         log_nu_K_i = _np.zeros(shape=b_K_i.shape, dtype=_np.float64)
-        set_lognu(C_K_ij, log_nu_K_i)
+        init_lagrangian_mult(C_K_ij, log_nu_K_i)
     if f_i is None:
         f_i = _np.zeros(shape=b_K_i.shape[1], dtype=_np.float64)
     scratch_TM = _np.zeros(shape=b_K_i.shape, dtype=_np.float64)
@@ -306,8 +306,8 @@ def estimate(C_K_ij, b_K_i, maxiter=1000, maxerr=1.0E-8, log_nu_K_i=None, f_i=No
     old_log_nu_K_i = log_nu_K_i.copy()
     old_f_i = f_i.copy()
     for m in range(maxiter):
-        update_lognu(old_log_nu_K_i, b_K_i, f_i, C_K_ij, scratch_M, log_nu_K_i)
-        update_fi(log_nu_K_i, b_K_i, old_f_i, C_K_ij, scratch_TM, f_i)
+        update_lagrangian_mult(old_log_nu_K_i, b_K_i, f_i, C_K_ij, scratch_M, log_nu_K_i)
+        update_conf_energies(log_nu_K_i, b_K_i, old_f_i, C_K_ij, scratch_TM, f_i)
         delta_log_nu_K_i = _np.max(_np.abs((log_nu_K_i - old_log_nu_K_i)))
         delta_f_i = _np.max(_np.abs((f_i - old_f_i)))
         if delta_log_nu_K_i < maxerr and delta_f_i < maxerr:
@@ -315,6 +315,6 @@ def estimate(C_K_ij, b_K_i, maxiter=1000, maxerr=1.0E-8, log_nu_K_i=None, f_i=No
         else:
             old_log_nu_K_i[:] = log_nu_K_i[:]
             old_f_i[:] = f_i[:]
-    f_K = get_fk(b_K_i, f_i, scratch_M)
+    f_K = get_therm_energies(b_K_i, f_i, scratch_M)
     normalize(scratch_M, f_K, f_i)
     return f_K, f_i, log_nu_K_i

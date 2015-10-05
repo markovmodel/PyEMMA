@@ -22,19 +22,19 @@ Python interface to the WHAM estimator's lowlevel functions.
 import numpy as _np
 cimport numpy as _np
 
-__all__ = ['update_fi', 'update_fk', 'normalize', 'estimate']
+__all__ = ['update_conf_energies', 'update_therm_energies', 'normalize', 'estimate']
 
 cdef extern from "_wham.h":
-    void _update_fi(
+    void _update_conf_energies(
         double *log_N_K, double *log_N_i, double *f_K, double *b_K_i,
         int n_therm_states, int n_markov_states, double *scratch_T, double *f_i)
-    void _update_fk(
+    void _update_therm_energies(
         double *f_i, double *b_K_i, int n_therm_states, int n_markov_states,
         double *scratch_M, double *f_K)
     void _normalize(
         int n_therm_states, int n_markov_states, double *scratch_M, double *f_K, double *f_i)
 
-def update_fi(
+def update_conf_energies(
     _np.ndarray[double, ndim=1, mode="c"] log_N_K not None,
     _np.ndarray[double, ndim=1, mode="c"] log_N_i not None,
     _np.ndarray[double, ndim=1, mode="c"] f_K not None,
@@ -61,7 +61,7 @@ def update_fi(
 
     Notes
     -----
-    The update_fi() function computes
+    The update_conf_energies() function computes
 
     .. math:
         f_i = -\ln\left( \frac{
@@ -85,7 +85,7 @@ def update_fi(
         f_i \leftarrow  f_i - \min_i(f_i)
 
     """
-    _update_fi(
+    _update_conf_energies(
         <double*> _np.PyArray_DATA(log_N_K),
         <double*> _np.PyArray_DATA(log_N_i),
         <double*> _np.PyArray_DATA(f_K),
@@ -95,7 +95,7 @@ def update_fi(
         <double*> _np.PyArray_DATA(scratch_T),
         <double*> _np.PyArray_DATA(f_i))
 
-def update_fk(
+def update_therm_energies(
     _np.ndarray[double, ndim=1, mode="c"] f_i not None,
     _np.ndarray[double, ndim=2, mode="c"] b_K_i not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_M not None,
@@ -116,7 +116,7 @@ def update_fk(
 
     Notes
     -----
-    The update_fk() function computes
+    The update_therm_energies() function computes
 
     .. math:
         f^{(K)} = -\ln\left(
@@ -125,7 +125,7 @@ def update_fk(
 
     which is already in the logsumexp form.
     """
-    _update_fk(
+    _update_therm_energies(
         <double*> _np.PyArray_DATA(f_i),
         <double*> _np.PyArray_DATA(b_K_i),
         b_K_i.shape[0],
@@ -197,8 +197,8 @@ def estimate(N_K_i, b_K_i, maxiter=1000, maxerr=1.0E-8, f_K=None, f_i=None):
     scratch = _np.zeros(shape=(S,), dtype=_np.float64)
     stop = False
     for _m in range(maxiter):
-        update_fk(f_i, b_K_i, scratch, f_K)
-        update_fi(log_N_K, log_N_i, f_K, b_K_i, scratch, f_i)
+        update_therm_energies(f_i, b_K_i, scratch, f_K)
+        update_conf_energies(log_N_K, log_N_i, f_K, b_K_i, scratch, f_i)
         delta_f_K = _np.max(_np.abs((f_K - old_f_K)))
         delta_f_i = _np.max(_np.abs((f_i - old_f_i)))
         if delta_f_K < maxerr and delta_f_i < maxerr:

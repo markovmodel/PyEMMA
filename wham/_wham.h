@@ -20,11 +20,11 @@
 #ifndef THERMOTOOLS_WHAM
 #define THERMOTOOLS_WHAM
 
-extern void _update_fi(
+extern void _update_conf_energies(
     double *log_N_K, double *log_N_i, double *f_K, double *b_K_i,
     int n_therm_states, int n_markov_states, double *scratch_T, double *f_i);
 
-extern void _update_fk(
+extern void _update_therm_energies(
     double *f_i, double *b_K_i, int n_therm_states, int n_markov_states,
     double *scratch_M, double *f_K);
 
