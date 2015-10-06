@@ -30,13 +30,13 @@ void _update_lagrangian_mult(
     int n_therm_states, int n_conf_states, double *scratch_M, double *new_log_lagrangian_mult);
 
 void _update_biased_conf_energies(
-    double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices, double *bias_energies,
-    int *M_x, int *state_counts, int seq_length, double *log_R_K_i,
+    double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices, double *bias_energy_sequence,
+    int *state_sequence, int *state_counts, int seq_length, double *log_R_K_i,
     int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_T,
     double *new_biased_conf_energies);
 
 void _get_conf_energies(
-    double *bias_energies, int *M_x, int seq_length, double *log_R_K_i,
+    double *bias_energy_sequence, int *state_sequence, int seq_length, double *log_R_K_i,
     int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_T,
     double *conf_energies);
 

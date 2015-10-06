@@ -87,8 +87,8 @@ void _update_lagrangian_mult(
 }
 
 void _update_biased_conf_energies(
-    double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices, double *bias_energies,
-    int *M_x, int *state_counts, int seq_length, double *log_R_K_i,
+    double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices, double *bias_energy_sequence,
+    int *state_sequence, int *state_counts, int seq_length, double *log_R_K_i,
     int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_T,
     double *new_biased_conf_energies)
 {
@@ -143,19 +143,19 @@ void _update_biased_conf_energies(
     /* compute new biased_conf_energies */
     for(x=0; x<seq_length; ++x)
     {
-        i = M_x[x];
+        i = state_sequence[x];
         o = 0;
         for(K=0; K<n_therm_states; ++K)
         {
             /* applying Hao's speed-up recomendation */
             if(-INFINITY == log_R_K_i[K * n_conf_states + i]) continue;
-            scratch_T[o++] = log_R_K_i[K * n_conf_states + i] - bias_energies[K * seq_length + x];
+            scratch_T[o++] = log_R_K_i[K * n_conf_states + i] - bias_energy_sequence[K * seq_length + x];
         }
         divisor = _logsumexp(scratch_T, o);
         for(K=0; K<n_therm_states; ++K)
         {
             new_biased_conf_energies[K * n_conf_states + i] = -_logsumexp_pair(
-                    -new_biased_conf_energies[K * n_conf_states + i], -(divisor + bias_energies[K * seq_length + x]));
+                    -new_biased_conf_energies[K * n_conf_states + i], -(divisor + bias_energy_sequence[K * seq_length + x]));
         }
     }
     /* prevent drift */
@@ -168,7 +168,7 @@ void _update_biased_conf_energies(
 }
 
 void _get_conf_energies(
-    double *bias_energies, int *M_x, int seq_length, double *log_R_K_i,
+    double *bias_energy_sequence, int *state_sequence, int seq_length, double *log_R_K_i,
     int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_T,
     double *conf_energies)
 {
@@ -178,9 +178,9 @@ void _get_conf_energies(
         conf_energies[i] = INFINITY;
     for( x=0; x<seq_length; ++x )
     {
-        i = M_x[x];
+        i = state_sequence[x];
         for(K=0; K<n_therm_states; ++K)
-            scratch_T[K] = log_R_K_i[K * n_conf_states + i] - bias_energies[K * seq_length + x];
+            scratch_T[K] = log_R_K_i[K * n_conf_states + i] - bias_energy_sequence[K * seq_length + x];
         divisor = _logsumexp(scratch_T, n_therm_states);
         conf_energies[i] = -_logsumexp_pair(-conf_energies[i], -divisor);
     }

@@ -38,12 +38,12 @@ cdef extern from "_tram.h":
         double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices,
         int n_therm_states, int n_conf_states, double *scratch_M, double *new_log_lagrangian_mult)
     void _update_biased_conf_energies(
-        double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices, double *bias_energies,
-        int *M_x, int *state_counts, int seq_length, double *log_R_K_i,
+        double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices, double *bias_energy_sequence,
+        int *state_sequence, int *state_counts, int seq_length, double *log_R_K_i,
         int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_T,
         double *new_biased_conf_energies)
     void _get_conf_energies(
-        double *bias_energies, int *M_x, int seq_length, double *log_R_K_i,
+        double *bias_energy_sequence, int *state_sequence, int seq_length, double *log_R_K_i,
         int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_T,
         double *conf_energies)
     void _get_therm_energies(
@@ -112,8 +112,8 @@ def update_biased_conf_energies(
     _np.ndarray[double, ndim=2, mode="c"] log_lagrangian_mult not None,
     _np.ndarray[double, ndim=2, mode="c"] biased_conf_energies not None,
     _np.ndarray[int, ndim=3, mode="c"] count_matrices not None,
-    _np.ndarray[double, ndim=2, mode="c"] bias_energies not None,
-    _np.ndarray[int, ndim=1, mode="c"] M_x not None,
+    _np.ndarray[double, ndim=2, mode="c"] bias_energy_sequence not None,
+    _np.ndarray[int, ndim=1, mode="c"] state_sequence not None,
     _np.ndarray[int, ndim=2, mode="c"] state_counts not None,
     _np.ndarray[double, ndim=2, mode="c"] log_R_K_i not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_M not None,
@@ -130,9 +130,9 @@ def update_biased_conf_energies(
         reduced free energies
     count_matrices : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
         multistate count matrix
-    bias_energies : numpy.ndarray(shape=(T, X), dtype=numpy.intc)
+    bias_energy_sequence : numpy.ndarray(shape=(T, X), dtype=numpy.intc)
         reduced bias energies in the T thermodynamic states for all X samples
-    M_x : numpy.ndarray(shape=(X,), dtype=numpy.intc)
+    state_sequence : numpy.ndarray(shape=(X,), dtype=numpy.intc)
         Markov state indices for all X samples
     state_counts : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
         number of visits to thermodynamic state K and Markov state i
@@ -149,10 +149,10 @@ def update_biased_conf_energies(
         <double*> _np.PyArray_DATA(log_lagrangian_mult),
         <double*> _np.PyArray_DATA(biased_conf_energies),
         <int*> _np.PyArray_DATA(count_matrices),
-        <double*> _np.PyArray_DATA(bias_energies),
-        <int*> _np.PyArray_DATA(M_x),
+        <double*> _np.PyArray_DATA(bias_energy_sequence),
+        <int*> _np.PyArray_DATA(state_sequence),
         <int*> _np.PyArray_DATA(state_counts),
-        M_x.shape[0],
+        state_sequence.shape[0],
         <double*> _np.PyArray_DATA(log_R_K_i),
         log_lagrangian_mult.shape[0],
         log_lagrangian_mult.shape[1],
@@ -161,8 +161,8 @@ def update_biased_conf_energies(
         <double*> _np.PyArray_DATA(new_biased_conf_energies))
 
 def get_conf_energies(
-    _np.ndarray[double, ndim=2, mode="c"] bias_energies not None,
-    _np.ndarray[int, ndim=1, mode="c"] M_x not None,
+    _np.ndarray[double, ndim=2, mode="c"] bias_energy_sequence not None,
+    _np.ndarray[int, ndim=1, mode="c"] state_sequence not None,
     _np.ndarray[double, ndim=2, mode="c"] log_R_K_i not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_M not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_T not None):
@@ -171,9 +171,9 @@ def get_conf_energies(
 
     Parameters
     ----------
-    bias_energies : numpy.ndarray(shape=(T, X), dtype=numpy.intc)
+    bias_energy_sequence : numpy.ndarray(shape=(T, X), dtype=numpy.intc)
         reduced bias energies in the T thermodynamic states for all X samples
-    M_x : numpy.ndarray(shape=(X,), dtype=numpy.intc)
+    state_sequence : numpy.ndarray(shape=(X,), dtype=numpy.intc)
         Markov state indices for all X samples
     log_R_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         precomputed sum of TRAM log pseudo-counts and biased_conf_energies
@@ -191,9 +191,9 @@ def get_conf_energies(
     # arbitrary expectations (not only pi)
     conf_energies = _np.zeros(shape=(log_R_K_i.shape[1],), dtype=_np.float64)
     _get_conf_energies(
-        <double*> _np.PyArray_DATA(bias_energies),
-        <int*> _np.PyArray_DATA(M_x),
-        M_x.shape[0],
+        <double*> _np.PyArray_DATA(bias_energy_sequence),
+        <int*> _np.PyArray_DATA(state_sequence),
+        state_sequence.shape[0],
         <double*> _np.PyArray_DATA(log_R_K_i),
         log_R_K_i.shape[0],
         log_R_K_i.shape[1],
@@ -322,7 +322,7 @@ def estimate_transition_matrix(
         <double*> _np.PyArray_DATA(transition_matrix))
     return transition_matrix
 
-def estimate(count_matrices, state_counts, bias_energies, M_x, maxiter=1000, maxerr=1.0E-8, biased_conf_energies=None, log_lagrangian_mult=None):
+def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence, maxiter=1000, maxerr=1.0E-8, biased_conf_energies=None, log_lagrangian_mult=None):
     r"""
     Estimate the reduced discrete state free energies and thermodynamic free energies
         
@@ -332,9 +332,9 @@ def estimate(count_matrices, state_counts, bias_energies, M_x, maxiter=1000, max
         transition count matrices for all T thermodynamic states
     state_counts : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
         state counts for all M discrete and T thermodynamic states
-    bias_energies : numpy.ndarray(shape=(T, X), dtype=numpy.float64)
+    bias_energy_sequence : numpy.ndarray(shape=(T, X), dtype=numpy.float64)
         reduced bias energies in the T thermodynamic states for all X samples
-    M_x : numpy.ndarray(shape=(X), dtype=numpy.float64)
+    state_sequence : numpy.ndarray(shape=(X), dtype=numpy.float64)
         discrete state indices for all X samples
     maxiter : int
         maximum number of iterations
@@ -368,14 +368,14 @@ def estimate(count_matrices, state_counts, bias_energies, M_x, maxiter=1000, max
     old_log_lagrangian_mult = log_lagrangian_mult.copy()
     for _m in range(maxiter):
         update_lagrangian_mult(old_log_lagrangian_mult, biased_conf_energies, count_matrices, scratch_M, log_lagrangian_mult)
-        update_biased_conf_energies(log_lagrangian_mult, old_biased_conf_energies, count_matrices, bias_energies, M_x,
+        update_biased_conf_energies(log_lagrangian_mult, old_biased_conf_energies, count_matrices, bias_energy_sequence, state_sequence,
             state_counts, log_R_K_i, scratch_M, scratch_T, biased_conf_energies)
         if _np.max(_np.abs(biased_conf_energies - old_biased_conf_energies)) < maxerr:
             break
         else:
             old_biased_conf_energies[:] = biased_conf_energies[:]
             old_log_lagrangian_mult[:] = log_lagrangian_mult[:]
-    conf_energies = get_conf_energies(bias_energies, M_x, log_R_K_i, scratch_M, scratch_T)
+    conf_energies = get_conf_energies(bias_energy_sequence, state_sequence, log_R_K_i, scratch_M, scratch_T)
     therm_energies = get_therm_energies(biased_conf_energies, scratch_M)
     normalize(conf_energies, biased_conf_energies, therm_energies, scratch_M)
     return biased_conf_energies, conf_energies, therm_energies, log_lagrangian_mult
