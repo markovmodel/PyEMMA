@@ -133,3 +133,42 @@ def state_counts(dtraj, nstates=None, nthermo=None):
             for i in range(nstates):
                 N[K, i] += ((d[:, 0] == K) * (d[:, 1] == i)).sum()
     return N
+
+def restrict_samples_to_cset(state_sequence, bias_energy_sequence, cset):
+    r"""
+    Restrict full list of samples to a subset and relabel configurational state indices
+
+    Parameters
+    ----------
+    state_sequence : numpy.ndarray(shape=(X, 2), dtype=numpy.intc)
+        sequence of the thermodynamic and configurational state indices of the X samples
+    bias_energy_sequence : numpy.ndarray(shape=(X, T), dtype=numpy.float64)
+        sequence of the reduced bias energies for all X samples in all T thermodynamic states
+    cset : list
+        list of configurational states within the desired set
+
+    Returns
+    -------
+    new_state_sequence : numpy.ndarray(shape=(Y, 2), dtype=numpy.intc)
+        restricted and relabeled sequence of the thermodynamic and configurational state
+        indices of the Y valid samples
+    new_bias_energy_sequence : numpy.ndarray(shape=(Y, T), dtype=numpy.float64)
+        restricted sequence of the reduced bias energies for all Y valid samples in
+        all T thermodynamic states
+    """
+    nmax = int(_np.max([_np.max(state_sequence), _np.max(cset)]))
+    mapping = []
+    o = 0
+    for i in range(nmax + 1):
+        if i in cset:
+            mapping.append(o)
+            o += 1
+        else:
+            mapping.append(-1)
+    mapping = _np.array(mapping, dtype=_np.intc)
+    conf_state_sequence = mapping[state_sequence[:, 1]]
+    valid_samples = (conf_state_sequence != -1)
+    new_state_sequence = _np.ascontiguousarray(state_sequence[valid_samples, :])
+    new_state_sequence[:, 1] = conf_state_sequence[valid_samples]
+    new_bias_energy_sequence = _np.ascontiguousarray(bias_energy_sequence[valid_samples, :])
+    return new_state_sequence, new_bias_energy_sequence
