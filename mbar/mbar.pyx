@@ -26,20 +26,22 @@ __all__ = ['update_therm_energies', 'normalize', 'get_conf_energies', 'estimate'
 
 cdef extern from "_mbar.h":
     void _update_therm_energies(
-        double *log_therm_state_counts, double *therm_energies, double *bias_energies,
+        double *log_therm_state_counts, double *therm_energies, double *bias_energy_sequence,
         int n_therm_states, int seq_length, double *scratch_T, double *new_therm_energies)
     void _normalize(
-        double *log_therm_state_counts, double *bias_energies, int n_therm_states, int seq_length,
+        double *log_therm_state_counts, double *bias_energy_sequence,
+        int n_therm_states, int seq_length,
         double *scratch_T, double *therm_energies)
     void _get_conf_energies(
-        double *log_therm_state_counts, double *therm_energies, double *bias_energies, int * M_x,
+        double *log_therm_state_counts, double *therm_energies,
+        double *bias_energy_sequence, int * conf_state_sequence,
         int n_therm_states, int n_conf_states, int seq_length,
-        double *scratch_M, double *scratch_T, double *f_i)
+        double *scratch_M, double *scratch_T, double *conf_energies)
 
 def update_therm_energies(
     _np.ndarray[double, ndim=1, mode="c"] log_therm_state_counts not None,
     _np.ndarray[double, ndim=1, mode="c"] therm_energies not None,
-    _np.ndarray[double, ndim=2, mode="c"] bias_energies not None,
+    _np.ndarray[double, ndim=2, mode="c"] bias_energy_sequence not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_T not None,
     _np.ndarray[double, ndim=1, mode="c"] new_therm_energies not None):
     r"""
@@ -51,7 +53,7 @@ def update_therm_energies(
         log of the state counts in each of the T thermodynamic states
     therm_energies : numpy.ndarray(shape=(T), dtype=numpy.float64)
         reduced free energies of the T thermodynamic states
-    bias_energies : numpy.ndarray(shape=(T, X), dtype=numpy.float64)
+    bias_energy_sequence : numpy.ndarray(shape=(T, X), dtype=numpy.float64)
         bias energies in the T thermodynamic states for all X samples
     scratch_T : numpy.ndarray(shape=(T), dtype=numpy.float64)
         scratch array
@@ -61,15 +63,15 @@ def update_therm_energies(
     _update_therm_energies(
         <double*> _np.PyArray_DATA(log_therm_state_counts),
         <double*> _np.PyArray_DATA(therm_energies),
-        <double*> _np.PyArray_DATA(bias_energies),
-        bias_energies.shape[0],
-        bias_energies.shape[1],
+        <double*> _np.PyArray_DATA(bias_energy_sequence),
+        bias_energy_sequence.shape[0],
+        bias_energy_sequence.shape[1],
         <double*> _np.PyArray_DATA(scratch_T),
         <double*> _np.PyArray_DATA(new_therm_energies))
 
 def normalize(
     _np.ndarray[double, ndim=1, mode="c"] log_therm_state_counts not None,
-    _np.ndarray[double, ndim=2, mode="c"] bias_energies not None,
+    _np.ndarray[double, ndim=2, mode="c"] bias_energy_sequence not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_T not None,
     _np.ndarray[double, ndim=1, mode="c"] therm_energies not None):
     r"""
@@ -80,7 +82,7 @@ def normalize(
     ----------
     log_therm_state_counts : numpy.ndarray(shape=(T), dtype=numpy.float64)
         log of the state counts in each of the T thermodynamic states
-    bias_energies : numpy.ndarray(shape=(T, X), dtype=numpy.float64)
+    bias_energy_sequence : numpy.ndarray(shape=(T, X), dtype=numpy.float64)
         bias energies in the T thermodynamic states for all X samples
     scratch_T : numpy.ndarray(shape=(T), dtype=numpy.float64)
     therm_energies : numpy.ndarray(shape=(T), dtype=numpy.float64)
@@ -89,22 +91,22 @@ def normalize(
     """
     _normalize(
         <double*> _np.PyArray_DATA(log_therm_state_counts),
-        <double*> _np.PyArray_DATA(bias_energies),
-        bias_energies.shape[0],
-        bias_energies.shape[1],
+        <double*> _np.PyArray_DATA(bias_energy_sequence),
+        bias_energy_sequence.shape[0],
+        bias_energy_sequence.shape[1],
         <double*> _np.PyArray_DATA(scratch_T),
         <double*> _np.PyArray_DATA(therm_energies))
 
 def get_conf_energies(
     _np.ndarray[double, ndim=1, mode="c"] log_therm_state_counts not None,
     _np.ndarray[double, ndim=1, mode="c"] therm_energies not None,
-    _np.ndarray[double, ndim=2, mode="c"] bias_energies not None,
-    _np.ndarray[int, ndim=1, mode="c"] M_x not None,
+    _np.ndarray[double, ndim=2, mode="c"] bias_energy_sequence not None,
+    _np.ndarray[int, ndim=1, mode="c"] conf_state_sequence not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_M not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_T not None,
     n_discrete_states):
     r"""
-    Calculate the reduced unbiased free energies f_i
+    Calculate the reduced unbiased free energies conf_energies
         
     Parameters
     ----------
@@ -112,9 +114,9 @@ def get_conf_energies(
         log of the state counts in each of the T thermodynamic states
     therm_energies : numpy.ndarray(shape=(T), dtype=numpy.float64)
         reduced free energies of the T thermodynamic states
-    bias_energies : numpy.ndarray(shape=(T, X), dtype=numpy.float64)
+    bias_energy_sequence : numpy.ndarray(shape=(T, X), dtype=numpy.float64)
         bias energies in the T thermodynamic states for all X samples
-    M_x : numpy.ndarray(shape=(X), dtype=numpy.intc)
+    conf_state_sequence : numpy.ndarray(shape=(X), dtype=numpy.intc)
         discrete states indices for all X samples
     scratch_M : numpy.ndarray(shape=(M), dtype=numpy.float64)
         scratch array
@@ -125,24 +127,24 @@ def get_conf_energies(
 
     Returns
     -------
-    f_i : numpy.ndarray(shape=(M), dtype=numpy.float64)
+    conf_energies : numpy.ndarray(shape=(M), dtype=numpy.float64)
         reduced unbiased free energies
     """
-    f_i = _np.zeros(shape=(n_discrete_states,), dtype=_np.float64)
+    conf_energies = _np.zeros(shape=(n_discrete_states,), dtype=_np.float64)
     _get_conf_energies(
         <double*> _np.PyArray_DATA(log_therm_state_counts),
         <double*> _np.PyArray_DATA(therm_energies),
-        <double*> _np.PyArray_DATA(bias_energies),
-        <int*> _np.PyArray_DATA(M_x),
-        bias_energies.shape[0],
+        <double*> _np.PyArray_DATA(bias_energy_sequence),
+        <int*> _np.PyArray_DATA(conf_state_sequence),
+        bias_energy_sequence.shape[0],
         n_discrete_states,
-        bias_energies.shape[1],
+        bias_energy_sequence.shape[1],
         <double*> _np.PyArray_DATA(scratch_M),
         <double*> _np.PyArray_DATA(scratch_T),
-        <double*> _np.PyArray_DATA(f_i))
-    return f_i
+        <double*> _np.PyArray_DATA(conf_energies))
+    return conf_energies
 
-def estimate(therm_state_counts, bias_energies, maxiter=1000, maxerr=1.0E-8, therm_energies=None):
+def estimate(therm_state_counts, bias_energy_sequence, maxiter=1000, maxerr=1.0E-8, therm_energies=None):
     r"""
     Estimate the unbiased reduced free energies and thermodynamic free energies
         
@@ -150,7 +152,7 @@ def estimate(therm_state_counts, bias_energies, maxiter=1000, maxerr=1.0E-8, the
     ----------
     therm_state_counts : numpy.ndarray(shape=(T), dtype=numpy.intc)
         numbers of samples in the T thermodynamic states
-    bias_energies : numpy.ndarray(shape=(T, X), dtype=numpy.float64)
+    bias_energy_sequence : numpy.ndarray(shape=(T, X), dtype=numpy.float64)
         reduced bias energies in the T thermodynamic states for all X samples
     maxiter : int
         maximum number of iterations
@@ -172,12 +174,12 @@ def estimate(therm_state_counts, bias_energies, maxiter=1000, maxerr=1.0E-8, the
     scratch = _np.zeros(shape=(T,), dtype=_np.float64)
     stop = False
     for _m in range(maxiter):
-        update_therm_energies(log_therm_state_counts, old_therm_energies, bias_energies, scratch, therm_energies)
+        update_therm_energies(log_therm_state_counts, old_therm_energies, bias_energy_sequence, scratch, therm_energies)
         if _np.max(_np.abs((therm_energies - old_therm_energies))) < maxerr:
             stop = True
         else:
             old_therm_energies[:] = therm_energies[:]
         if stop:
             break
-    normalize(log_therm_state_counts, bias_energies, scratch, therm_energies)
+    normalize(log_therm_state_counts, bias_energy_sequence, scratch, therm_energies)
     return therm_energies
