@@ -29,7 +29,8 @@ void _normalize(
     double *scratch_T, double *therm_energies);
 
 void _get_conf_energies(
-    double *log_therm_state_counts, double *therm_energies, double *bias_energies, int * M_x,
+    double *log_therm_state_counts, double *therm_energies,
+    double *bias_energies, int * conf_state_sequence,
     int n_therm_states, int n_conf_states, int seq_length,
     double *scratch_M, double *scratch_T, double *conf_energies);
 

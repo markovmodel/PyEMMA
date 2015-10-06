@@ -70,7 +70,8 @@ void _normalize(
 }
 
 void _get_conf_energies(
-    double *log_therm_state_counts, double *therm_energies, double *bias_energies, int * M_x,
+    double *log_therm_state_counts, double *therm_energies,
+    double *bias_energies, int * conf_state_sequence,
     int n_therm_states, int n_conf_states, int seq_length,
     double *scratch_M, double *scratch_T, double *conf_energies)
 {
@@ -82,7 +83,7 @@ void _get_conf_energies(
     {
         for(L=0; L<n_therm_states; ++L)
             scratch_T[L] = log_therm_state_counts[L] + therm_energies[L] - bias_energies[L * seq_length + x];
-        i = M_x[x];
+        i = conf_state_sequence[x];
         conf_energies[i] = -_logsumexp_pair(-conf_energies[i], -_logsumexp(scratch_T, n_therm_states));
     }
     for(i=0; i<n_conf_states; ++i)
