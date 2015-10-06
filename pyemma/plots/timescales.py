@@ -52,13 +52,15 @@ def plot_implied_timescales(ITS, ax=None, outfile=None, show_mle=True, show_mean
     refs : ndarray((m), dtype=float), optional, default = None
         Reference (exact solution or other reference) timescales if known. The number of timescales must match those
         in the ITS object
-    units: str, optional, default = 'steps'
+    units: str or list (len=2) of strings, optional, default = 'steps'
         Affects the labeling of the axes. Used with :py:obj:`dt`, allows for changing the physical units of the axes.
         Accepts simple LaTeX math strings, eg. '$\mu$s'
-    dt: float, optional, default = 1.0
+        If this parameter is a list, it will be assumed that units[0] is for the x-axis and units[1] for the y-axis.
+    dt: float or list(len=2) of floats, optional, default = 1.0
         Physical time between frames, expressed the units given in :py:obj:`units`. E.g, if you know that each
         frame corresponds to .010 ns, you can use the combination of parameters :py:obj:`dt` =0.01,
         :py:obj:`units` ='ns' to display the implied timescales in ns (instead of frames)
+        If this parameter is a list, it will be assumed that dt[0] is for the x-axis and dt[1] for the y-axis.
 
     **kwargs: Will be parsed to pyplot.plo when plotting the MLE datapoints (not the bootstrapped means).
             See the doc of pyplot for more options. Most useful lineproperties like `marker='o'` and/or :markersize=5
@@ -74,32 +76,45 @@ def plot_implied_timescales(ITS, ax=None, outfile=None, show_mle=True, show_mean
     colors = ['blue','red','green','cyan','purple','orange','violet']
     lags = ITS.lagtimes
     xmax = _np.max(lags)
+
+    # Check units and dt for user error.
+    if isinstance(units,list) and len(units)!=2:
+        raise TypeError("If units is a list, len(units) has to be = 2")
+    if isinstance(dt,list) and len(dt)!=2:
+        raise TypeError("If dt is a list, len(dt) has to be = 2")
+
+    # Create list of units and dts for different axis
+    if isinstance(units,str):
+        units = [units]*2
+    if isinstance(dt,(float, int)):
+        dt = [dt]*2
+
     #ymin = min(_np.min(lags), _np.min(ITS.get_timescales()))
     #ymax = 1.5*_np.min(ITS.get_timescales())
     for i in range(ITS.number_of_timescales):
         # plot estimate
         if show_mle:
-            ax.plot(lags*dt, ITS.get_timescales(process=i)*dt, color=colors[i % len(colors)], **kwargs)
+            ax.plot(lags*dt[0], ITS.get_timescales(process=i)*dt[1], color=colors[i % len(colors)], **kwargs)
         # sample available?
         if (ITS.samples_available):# and ITS.sample_number_of_timescales > i):
             # plot sample mean
             if show_mean:
-                ax.plot(lags*dt, ITS.get_sample_mean(process=i)*dt, marker='o',
+                ax.plot(lags*dt[0], ITS.get_sample_mean(process=i)*dt[1], marker='o',
                         color=colors[i % len(colors)], linestyle='dashed')
             (lconf, rconf) = ITS.get_sample_conf(confidence, i)
-            ax.fill_between(lags*dt, lconf*dt, rconf*dt, alpha=0.2, color=colors[i % len(colors)])
+            ax.fill_between(lags*dt[0], lconf*dt[1], rconf*dt[1], alpha=0.2, color=colors[i % len(colors)])
         # reference available?
         if (refs is not None):
             tref = refs[i]
-            ax.plot([0,min(tref,xmax)]*dt, [tref,tref]*dt, color='black', linewidth=1)
+            ax.plot([0,min(tref,xmax)]*dt[0], [tref,tref]*dt[1], color='black', linewidth=1)
     # cutoff
-    ax.plot(lags*dt, lags*dt, linewidth=2, color='black')
-    ax.set_xlim([1*dt,xmax*dt])
+    ax.plot(lags*dt[0], lags*dt[1], linewidth=2, color='black')
+    ax.set_xlim([1*dt[0], xmax*dt[0]])
     #ax.set_ylim([ymin,ymax])
-    ax.fill_between(lags*dt, ax.get_ylim()[0]*_np.ones(len(lags))*dt, lags*dt, alpha=0.5, color='grey')
+    ax.fill_between(lags*dt[0], ax.get_ylim()[0]*_np.ones(len(lags))*dt[1], lags*dt[1], alpha=0.5, color='grey')
     # formatting
-    ax.set_xlabel('lag time / %s'%units)
-    ax.set_ylabel('timescale / %s'%units)
+    ax.set_xlabel('lag time / %s'%units[0])
+    ax.set_ylabel('timescale / %s'%units[1])
     if (xlog):
         ax.set_xscale('log')
     if (ylog):
