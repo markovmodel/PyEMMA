@@ -53,7 +53,7 @@ cdef extern from "_tram.h":
         int n_therm_states, int n_conf_states, double *scratch_M)
     void _estimate_transition_matrix(
         double *log_lagrangian_mult, double *conf_energies, int *count_matrix,
-        int n_conf_states, double *scratch_M, double *transition_matrix)
+        int n_conf_states, double *transition_matrix)
 
 
 
@@ -259,8 +259,7 @@ def normalize(
 def estimate_transition_matrices(
     _np.ndarray[double, ndim=2, mode="c"] log_lagrangian_mult not None,
     _np.ndarray[double, ndim=2, mode="c"] biased_conf_energies not None,
-    _np.ndarray[int, ndim=3, mode="c"] count_matrices not None,
-    _np.ndarray[double, ndim=1, mode="c"] scratch_M not None):
+    _np.ndarray[int, ndim=3, mode="c"] count_matrices not None):
     r"""
     Compute the transition matrices for all thermodynamic states
 
@@ -272,8 +271,6 @@ def estimate_transition_matrices(
         reduced unbiased free energies
     count_matrices : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
         multistate count matrix
-    scratch_M : numpy.ndarray(shape=(M,), dtype=numpy.float64)
-        scratch array for logsumexp operations
 
     Returns
     -------
@@ -282,14 +279,13 @@ def estimate_transition_matrices(
     """
     p_K_ij = _np.zeros(shape=(count_matrices.shape[0], count_matrices.shape[1], count_matrices.shape[2]), dtype=_np.float64)
     for K in range(log_lagrangian_mult.shape[0]):
-        p_K_ij[K, :, :] = estimate_transition_matrix(log_lagrangian_mult, biased_conf_energies, count_matrices, scratch_M, K)[:, :]
+        p_K_ij[K, :, :] = estimate_transition_matrix(log_lagrangian_mult, biased_conf_energies, count_matrices, K)[:, :]
     return p_K_ij
 
 def estimate_transition_matrix(
     _np.ndarray[double, ndim=2, mode="c"] log_lagrangian_mult not None,
     _np.ndarray[double, ndim=2, mode="c"] biased_conf_energies not None,
     _np.ndarray[int, ndim=3, mode="c"] count_matrices not None,
-    _np.ndarray[double, ndim=1, mode="c"] scratch_M not None,
     therm_state):
     r"""
     Compute the transition matrices for all thermodynamic states
@@ -302,8 +298,6 @@ def estimate_transition_matrix(
         reduced unbiased free energies
     count_matrices : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
         multistate count matrix
-    scratch_M : numpy.ndarray(shape=(M,), dtype=numpy.float64)
-        scratch array for logsumexp operations
     therm_state : int
         target thermodynamic state
 
@@ -318,7 +312,6 @@ def estimate_transition_matrix(
         <double*> _np.PyArray_DATA(_np.ascontiguousarray(biased_conf_energies[therm_state, :])),
         <int*> _np.PyArray_DATA(_np.ascontiguousarray(count_matrices[therm_state, :, :])),
         biased_conf_energies.shape[1],
-        <double*> _np.PyArray_DATA(scratch_M),
         <double*> _np.PyArray_DATA(transition_matrix))
     return transition_matrix
 

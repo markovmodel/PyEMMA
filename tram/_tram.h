@@ -49,6 +49,6 @@ void _normalize(
 
 void _estimate_transition_matrix(
     double *log_lagrangian_mult, double *conf_energies, int *count_matrix,
-    int n_conf_states, double *scratch_M, double *transition_matrix);
+    int n_conf_states, double *transition_matrix);
 
 #endif
