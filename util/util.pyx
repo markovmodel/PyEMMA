@@ -142,7 +142,7 @@ def restrict_samples_to_cset(state_sequence, bias_energy_sequence, cset):
     ----------
     state_sequence : numpy.ndarray(shape=(X, 2), dtype=numpy.intc)
         sequence of the thermodynamic and configurational state indices of the X samples
-    bias_energy_sequence : numpy.ndarray(shape=(X, T), dtype=numpy.float64)
+    bias_energy_sequence : numpy.ndarray(shape=(T, X), dtype=numpy.float64)
         sequence of the reduced bias energies for all X samples in all T thermodynamic states
     cset : list
         list of configurational states within the desired set
@@ -152,7 +152,7 @@ def restrict_samples_to_cset(state_sequence, bias_energy_sequence, cset):
     new_state_sequence : numpy.ndarray(shape=(Y, 2), dtype=numpy.intc)
         restricted and relabeled sequence of the thermodynamic and configurational state
         indices of the Y valid samples
-    new_bias_energy_sequence : numpy.ndarray(shape=(Y, T), dtype=numpy.float64)
+    new_bias_energy_sequence : numpy.ndarray(shape=(T, Y), dtype=numpy.float64)
         restricted sequence of the reduced bias energies for all Y valid samples in
         all T thermodynamic states
     """
@@ -170,5 +170,5 @@ def restrict_samples_to_cset(state_sequence, bias_energy_sequence, cset):
     valid_samples = (conf_state_sequence != -1)
     new_state_sequence = _np.ascontiguousarray(state_sequence[valid_samples, :])
     new_state_sequence[:, 1] = conf_state_sequence[valid_samples]
-    new_bias_energy_sequence = _np.ascontiguousarray(bias_energy_sequence[valid_samples, :])
+    new_bias_energy_sequence = _np.ascontiguousarray(bias_energy_sequence[:, valid_samples])
     return new_state_sequence, new_bias_energy_sequence
