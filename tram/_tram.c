@@ -328,7 +328,7 @@ double _log_likelihood(
             KM = K*n_conf_states;
             Ki = KM + i;
             scratch_T[o++] =
-                log_R_K_i[Ki] - bias_energy_sequence[K * seq_length + x] + biased_conf_energies[Ki];
+                log_R_K_i[Ki] - bias_energy_sequence[K * seq_length + x];
         }
         c -= _logsumexp(scratch_T,o);
     }
