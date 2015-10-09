@@ -301,7 +301,7 @@ double _log_likelihood(
                 log_pKij = log((double)CCTKij) - biased_conf_energies[j] - divisor;
                 scratch_M[o++] = log_pKij;
                 /* update likelihood */
-                a += CCTKij * log_pKij;
+                a += CKij * log_pKij;
             }
             /* diagonal element */
             CKii = count_matrices[KMM + i * n_conf_states + i];
