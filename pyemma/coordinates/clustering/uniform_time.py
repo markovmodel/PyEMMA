@@ -45,7 +45,7 @@ class UniformTimeClustering(AbstractClustering):
         self.n_clusters = k
 
     def describe(self):
-        return "[Uniform time clustering, k = %i]" % self.n_clusters
+        return "[Uniform time clustering, k = %i, inp_dim=%i]" % (self.n_clusters, self.data_producer.dimension())
 
     def _param_init(self):
         """
