@@ -274,8 +274,8 @@ double _log_likelihood(
 {
     double a, b, c;
     int K, i, j, x, o;
-    int KM, KMM, Ki, CKij, CCTKij, CKii;
-    double divisor, log_pKij;
+    int KM, KMM, Ki, Kj, CKij, CCTKij, CKii;
+    double divisor, log_pKij, sum;
 
     /* \sum_{i,j,k}c_{ij}^{(k)}\log p_{ij}^{(k)} */
     a = 0;
@@ -293,19 +293,28 @@ double _log_likelihood(
                 if(i == j) continue; /* exclude diagonal */
                 CKij = count_matrices[KMM + i * n_conf_states + j];
                 if(0 == CKij) continue;
-                CCTKij = CKij + count_matrices[KMM + j * n_conf_states + i]; 
+                CCTKij = CKij + count_matrices[KMM + j * n_conf_states + i];
                 /* compute log(p_K_ij) */
+                Kj = KM + j;
                 divisor = _logsumexp_pair(
-                    log_lagrangian_mult[j] - biased_conf_energies[i],
-                    log_lagrangian_mult[i] - biased_conf_energies[j]);
-                log_pKij = log((double)CCTKij) - biased_conf_energies[j] - divisor;
+                    log_lagrangian_mult[Kj] - biased_conf_energies[Ki],
+                    log_lagrangian_mult[Ki] - biased_conf_energies[Kj]);
+                log_pKij = log((double)CCTKij) - biased_conf_energies[Kj] - divisor;
                 scratch_M[o++] = log_pKij;
+                //printf("*T[%d,%d,%d]=%f\n", K,i,j,exp(log_pKij));
                 /* update likelihood */
                 a += CKij * log_pKij;
             }
             /* diagonal element */
             CKii = count_matrices[KMM + i * n_conf_states + i];
-            if(CKii > 0) a += CKii * log(1 - exp(_logsumexp(scratch_M, o)));
+            if(CKii > 0) {
+                sum = exp(_logsumexp(scratch_M, o));
+                //printf("*T[%d,%d,%d]=%f\n", K,i,i,1.0-sum);
+                if(sum >= 1.0)
+                    fprintf(stderr, "Warning: can\'t compute p[%d,%d,%d]; skipping it\'s contibution to log(L)\n", K, i, i);
+                else
+                    a += CKii * log(1 - sum);
+            }
         }
     }
 
