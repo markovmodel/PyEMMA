@@ -49,7 +49,7 @@ void _init_lagrangian_mult(int *count_matrices, int n_therm_states, int n_conf_s
 }
 
 void _update_lagrangian_mult(
-    double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices,
+    double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices, int* state_counts,
     int n_therm_states, int n_conf_states, double *scratch_M, double *new_log_lagrangian_mult)
 {
     int i, j, K, o;
@@ -63,6 +63,11 @@ void _update_lagrangian_mult(
         for(i=0; i<n_conf_states; ++i)
         {
             Ki = KM + i;
+            if(0 == state_counts[Ki])
+            {
+                new_log_lagrangian_mult[Ki] = -INFINITY;
+                continue;
+            }            
             o = 0;
             for(j=0; j<n_conf_states; ++j)
             {
@@ -260,3 +265,74 @@ void _estimate_transition_matrix(
             transition_matrix[i*n_conf_states + i] = 1.0 - sum;
     }
 }
+
+double _log_likelihood(
+    double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices,  int *state_counts, double *log_R_K_i,
+    int n_therm_states, int n_conf_states,
+    double *bias_energy_sequence, int *state_sequence, int seq_length,
+    double *scratch_T, double *scratch_M)
+{
+    double a, b, c;
+    int K, i, j, x, o;
+    int KM, KMM, Ki, CKij, CCTKij, CKii;
+    double divisor, log_pKij;
+
+    /* \sum_{i,j,k}c_{ij}^{(k)}\log p_{ij}^{(k)} */
+    a = 0;
+    for(K=0; K<n_therm_states; ++K)
+    {
+        KM = K * n_conf_states;
+        KMM = KM * n_conf_states;
+        for(i=0; i<n_conf_states; ++i)
+        {
+            Ki = KM + i;
+            if(0 == state_counts[Ki]) continue;
+            o = 0;
+            for(j=0; j<n_conf_states; ++j)
+            {
+                if(i == j) continue; /* exclude diagonal */
+                CKij = count_matrices[KMM + i * n_conf_states + j];
+                if(0 == CKij) continue;
+                CCTKij = CKij + count_matrices[KMM + j * n_conf_states + i]; 
+                /* compute log(p_K_ij) */
+                divisor = _logsumexp_pair(
+                    log_lagrangian_mult[j] - biased_conf_energies[i],
+                    log_lagrangian_mult[i] - biased_conf_energies[j]);
+                log_pKij = log((double)CCTKij) - biased_conf_energies[j] - divisor;
+                scratch_M[o++] = log_pKij;
+                /* update likelihood */
+                a += CCTKij * log_pKij;
+            }
+            /* diagonal element */
+            CKii = count_matrices[KMM + i * n_conf_states + i];
+            if(CKii > 0) a += CKii * log(1 - exp(_logsumexp(scratch_M, o)));
+        }
+    }
+
+    /* \sum_{i,k}N_{i}^{(k)}f_{i}^{(k)} */
+    b = 0;
+    for(K=0; K<n_therm_states; ++K) {
+        KM = K * n_conf_states;
+        for(i=0; i<n_conf_states; ++i) {
+            Ki = KM + i;
+            b += state_counts[Ki]*biased_conf_energies[Ki];
+        }
+    }
+
+    /* -\sum_{x}\log\sum_{l}R_{i(x)}^{(l)}e^{-b^{(l)}(x)+f_{i(x)}^{(l)}} */
+    c = 0;
+    for(x=0; x<seq_length; ++x) {
+        o = 0;
+        i = state_sequence[x];
+        for(K=0; K<n_therm_states; ++K) {
+            KM = K*n_conf_states;
+            Ki = KM + i;
+            scratch_T[o++] =
+                log_R_K_i[Ki] - bias_energy_sequence[K * seq_length + x] + biased_conf_energies[Ki];
+        }
+        c -= _logsumexp(scratch_T,o);
+    }
+    fprintf(stderr, "logL composition: %f, %f, %f\n", a,b,c);
+    return a+b+c;
+}
+

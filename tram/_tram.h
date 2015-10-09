@@ -26,7 +26,7 @@
 void _init_lagrangian_mult(int *count_matrices, int n_therm_states, int n_conf_states, double *log_lagrangian_mult);
 
 void _update_lagrangian_mult(
-    double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices,
+    double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices, int* state_counts,
     int n_therm_states, int n_conf_states, double *scratch_M, double *new_log_lagrangian_mult);
 
 void _update_biased_conf_energies(
@@ -50,5 +50,11 @@ void _normalize(
 void _estimate_transition_matrix(
     double *log_lagrangian_mult, double *conf_energies, int *count_matrix,
     int n_conf_states, double *transition_matrix);
+
+double _log_likelihood(
+    double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices,  int *state_counts, double *log_R_K_i,
+    int n_therm_states, int n_conf_states,
+    double *bias_energy_sequence, int *state_sequence, int seq_length,
+    double *scratch_T, double *scratch_M);
 
 #endif
