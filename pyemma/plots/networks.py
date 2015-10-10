@@ -123,7 +123,8 @@ class NetworkPlot(object):
                      state_sizes=None, state_scale=1.0, state_colors='#ff5500', state_labels='auto',
                      arrow_scale=1.0, arrow_curvature=1.0, arrow_labels='weights',
                      arrow_label_format='%10.2f', max_width=12, max_height=12,
-                     figpadding=0.2, xticks=False, yticks=False, show_frame=False):
+                     figpadding=0.2, xticks=False, yticks=False, show_frame=False,
+                     **textkwargs):
         """
         Draws a network using discs and curved arrows.
 
@@ -208,6 +209,12 @@ class NetworkPlot(object):
             rcParams['font.size'] = old_fontsize
             raise ValueError('invalid arrow label format')
 
+        # Set the default values for the text dictionary
+        textkwargs.setdefault('size', 14)
+        textkwargs.setdefault('horizontalalignment', 'center')
+        textkwargs.setdefault('verticalalignment', 'center')
+        textkwargs.setdefault('color','black')
+
         # draw circles
         circles = []
         for i in range(n):
@@ -218,9 +225,8 @@ class NetworkPlot(object):
             circles.append(c)
             fig.gca().add_artist(c)
             # add annotation
-            plt.text(self.pos[i][0], self.pos[i][1], state_labels[i], size=14,
-                     horizontalalignment='center', verticalalignment='center',
-                     color='black', zorder=3)
+            plt.text(self.pos[i][0], self.pos[i][1], state_labels[i], zorder=3,
+                     **textkwargs)
 
         assert len(circles) == n, "%i != %i" % (len(circles), n)
 
@@ -305,7 +311,8 @@ def plot_markov_model(P, pos=None, state_sizes=None, state_scale=1.0,
                       state_colors='#ff5500', state_labels='auto', minflux=1e-6,
                       arrow_scale=1.0, arrow_curvature=1.0,
                       arrow_labels='weights', arrow_label_format='%2.e',
-                      max_width=12, max_height=12, figpadding=0.2, show_frame=False):
+                      max_width=12, max_height=12, figpadding=0.2, show_frame=False,
+                      **textkwargs):
     r"""Network representation of MSM transition matrix
 
     This visualization is not optimized for large matrices. It is meant to be
@@ -356,6 +363,8 @@ def plot_markov_model(P, pos=None, state_sizes=None, state_scale=1.0,
         The relative figure size used for the padding
     show_frame: boolean (default=False)
         Draw a frame around the network.
+    textkwargs : optional argument for the text of the state labels.
+        See http://matplotlib.org/api/text_api.html#matplotlib.text.Text for more info
 
     Returns
     -------
@@ -393,7 +402,8 @@ def plot_markov_model(P, pos=None, state_sizes=None, state_scale=1.0,
                            arrow_labels=arrow_labels,
                            arrow_label_format=arrow_label_format,
                            max_width=max_width, max_height=max_height,
-                           figpadding=figpadding, xticks=False, yticks=False, show_frame=show_frame)
+                           figpadding=figpadding, xticks=False, yticks=False, show_frame=show_frame,
+                           **textkwargs)
     return ax, plot.pos
 
 
@@ -402,7 +412,8 @@ def plot_flux(flux, pos=None, state_sizes=None, flux_scale=1.0,
               arrow_scale=1.0, arrow_curvature=1.0, arrow_labels='weights',
               arrow_label_format='%2.e', max_width=12, max_height=12,
               figpadding=0.2, attribute_to_plot='net_flux',
-              show_frame=False, show_committor=True):
+              show_frame=False, show_committor=True,
+              **textkwargs):
     r"""Network representation of reactive flux
 
     This visualization is not optimized for large fluxes. It is meant to be used
@@ -457,6 +468,8 @@ def plot_flux(flux, pos=None, state_sizes=None, flux_scale=1.0,
         Draw a frame around the network.
     show_committor: boolean (default=False)
         Print the committor value on the x-axis.
+    textkwargs : optional argument for the text of the state labels.
+        See http://matplotlib.org/api/text_api.html#matplotlib.text.Text for more info
 
     Returns
     -------
@@ -501,7 +514,8 @@ def plot_flux(flux, pos=None, state_sizes=None, flux_scale=1.0,
                            arrow_labels=arrow_labels,
                            arrow_label_format=arrow_label_format,
                            max_width=max_width, max_height=max_height,
-                           figpadding=figpadding, xticks=show_committor, yticks=False, show_frame=show_frame)
+                           figpadding=figpadding, xticks=show_committor, yticks=False, show_frame=show_frame,
+                           **textkwargs)
     if show_committor:
         plt.xlabel('Committor probability')
     return ax, plot.pos
@@ -512,7 +526,8 @@ def plot_network(weights, pos=None, xpos=None, ypos=None, state_sizes=None,
                 arrow_scale=1.0, arrow_curvature=1.0, arrow_labels='weights',
                 arrow_label_format='%2.e', max_width=12, max_height=12,
                 figpadding=0.2, attribute_to_plot='net_flux',
-                show_frame=False, xticks=False, yticks=False):
+                show_frame=False, xticks=False, yticks=False,
+                ):
     r"""Network representation of given matrix
 
     This visualization is not optimized for large networks. It is meant to be
