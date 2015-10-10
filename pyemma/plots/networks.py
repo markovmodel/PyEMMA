@@ -120,7 +120,7 @@ class NetworkPlot(object):
                  horizontalalignment='center', verticalalignment='center', zorder=1)
 
     def plot_network(self,
-                     state_sizes=None, state_scale=1.0, state_colors='#ff5500',
+                     state_sizes=None, state_scale=1.0, state_colors='#ff5500', state_labels='auto',
                      arrow_scale=1.0, arrow_curvature=1.0, arrow_labels='weights',
                      arrow_label_format='%10.2f', max_width=12, max_height=12,
                      figpadding=0.2, xticks=False, yticks=False, show_frame=False):
@@ -175,11 +175,18 @@ class NetworkPlot(object):
             frame.axes.get_yaxis().set_ticks([])
         # show or suppress frame
         frame.set_frame_on(show_frame)
+        # set node labels
+        if state_labels is 'auto':
+            state_labels=[str(i) for i in np.arange(n)]
+        else:
+            assert len(state_labels)==n, "Mistmatch between nstates and nr. state_labels (%u vs %u)"%(n, len(state_labels))
         # set node colors
         if state_colors is None:
             state_colors = '#ff5500'  # None is not acceptable
         if isinstance(state_colors, str):
             state_colors = [state_colors] * n
+        if isinstance(state_colors, list):
+            assert len(state_colors)==n, "Mistmatch between nstates and nr. state_colors (%u vs %u)"%(n, len(state_colors))
         try:
             colorscales = _types.ensure_ndarray(state_colors, ndim=1, kind='numeric')
             colorscales /= colorscales.max()
@@ -211,7 +218,7 @@ class NetworkPlot(object):
             circles.append(c)
             fig.gca().add_artist(c)
             # add annotation
-            plt.text(self.pos[i][0], self.pos[i][1], str(i), size=14,
+            plt.text(self.pos[i][0], self.pos[i][1], state_labels[i], size=14,
                      horizontalalignment='center', verticalalignment='center',
                      color='black', zorder=3)
 
@@ -295,7 +302,7 @@ class NetworkPlot(object):
 
 
 def plot_markov_model(P, pos=None, state_sizes=None, state_scale=1.0,
-                      state_colors='#ff5500', minflux=1e-6,
+                      state_colors='#ff5500', state_labels='auto', minflux=1e-6,
                       arrow_scale=1.0, arrow_curvature=1.0,
                       arrow_labels='weights', arrow_label_format='%2.e',
                       max_width=12, max_height=12, figpadding=0.2, show_frame=False):
@@ -316,9 +323,17 @@ def plot_markov_model(P, pos=None, state_sizes=None, state_scale=1.0,
     state_sizes : ndarray(n), optional, default=None
         User-defined areas of the discs drawn for each state. If not given,
         the stationary probability of P will be used.
-    state_colors : string or ndarray(n), optional, default='#ff5500' (orange)
-        Either a string with a Hex code for a single color used for all states,
-        or an array of values in [0,1] which will result in a grayscale plot
+    state_colors : string, ndarray(n), or list, optional, default='#ff5500' (orange)
+        string :
+            a Hex code for a single color used for all states
+        array :
+            n values in [0,1] which will result in a grayscale plot
+        list :
+            of len = nstates, with a color for each state. The list can mix strings, RGB values and hex codes,
+            e.g. :py:obj:`state_colors` = ['g', 'red', [.23, .34, .35], '#ff5500'] is possible.
+    state_labels : list of strings, optional, default is 'auto'
+        A list with a label for each state, to be displayed at the center
+        of each node/state. If left to 'auto', the labels are automatically set to the state indices.
     minflux : float, optional, default=1e-6
         The minimal flux (p_i * p_ij) for a transition to be drawn
     arrow_scale : float, optional, default=1.0
@@ -373,7 +388,7 @@ def plot_markov_model(P, pos=None, state_sizes=None, state_scale=1.0,
         P[I, J] = 0.0
     plot = NetworkPlot(P, pos=pos)
     ax = plot.plot_network(state_sizes=state_sizes, state_scale=state_scale,
-                           state_colors=state_colors,
+                           state_colors=state_colors, state_labels=state_labels,
                            arrow_scale=arrow_scale, arrow_curvature=arrow_curvature,
                            arrow_labels=arrow_labels,
                            arrow_label_format=arrow_label_format,
@@ -383,7 +398,7 @@ def plot_markov_model(P, pos=None, state_sizes=None, state_scale=1.0,
 
 
 def plot_flux(flux, pos=None, state_sizes=None, flux_scale=1.0,
-              state_scale=1.0, state_colors='#ff5500', minflux=1e-9,
+              state_scale=1.0, state_colors='#ff5500', state_labels='auto', minflux=1e-9,
               arrow_scale=1.0, arrow_curvature=1.0, arrow_labels='weights',
               arrow_label_format='%2.e', max_width=12, max_height=12,
               figpadding=0.2, attribute_to_plot='net_flux',
@@ -407,9 +422,17 @@ def plot_flux(flux, pos=None, state_sizes=None, flux_scale=1.0,
     state_sizes : ndarray(n), optional, default=None
         User-defined areas of the discs drawn for each state. If not given, the
         stationary probability of P will be used
-    state_colors : string or ndarray(n), optional, default='#ff5500' (orange)
-        Either a string with a Hex code for a single color used for all states,
-        or an array of values in [0,1] which will result in a grayscale plot
+    state_colors : string, ndarray(n), or list, optional, default='#ff5500' (orange)
+        string :
+            a Hex code for a single color used for all states
+        array :
+            n values in [0,1] which will result in a grayscale plot
+        list :
+            of len = nstates, with a color for each state. The list can mix strings, RGB values and hex codes,
+            e.g. :py:obj:`state_colors` = ['g', 'red', [.23, .34, .35], '#ff5500'] is possible.
+    state_labels : list of strings, optional, default is 'auto'
+        A list with a label for each state, to be displayed at the center
+        of each node/state. If left to 'auto', the labels are automatically set to the state indices.
     minflux : float, optional, default=1e-9
         The minimal flux for a transition to be drawn
     arrow_scale : float, optional, default=1.0
@@ -473,7 +496,7 @@ def plot_flux(flux, pos=None, state_sizes=None, flux_scale=1.0,
         I, J = np.where(F < minflux)
         F[I, J] = 0.0
     ax = plot.plot_network(state_sizes=state_sizes, state_scale=state_scale,
-                           state_colors=state_colors,
+                           state_colors=state_colors, state_labels=state_labels,
                            arrow_scale=arrow_scale, arrow_curvature=arrow_curvature,
                            arrow_labels=arrow_labels,
                            arrow_label_format=arrow_label_format,
@@ -510,9 +533,17 @@ def plot_network(weights, pos=None, xpos=None, ypos=None, state_sizes=None,
     state_sizes : ndarray(n), optional, default=None
         User-defined areas of the discs drawn for each state. If not given, the
         stationary probability of P will be used
-    state_colors : string or ndarray(n), optional, default='#ff5500' (orange)
-        Either a string with a Hex code for a single color used for all states,
-        or an array of values in [0,1] which will result in a grayscale plot
+    state_colors : string, ndarray(n), or list, optional, default='#ff5500' (orange)
+        string :
+            a Hex code for a single color used for all states
+        array :
+            n values in [0,1] which will result in a grayscale plot
+        list :
+            of len = nstates, with a color for each state. The list can mix strings, RGB values and hex codes,
+            e.g. :py:obj:`state_colors` = ['g', 'red', [.23, .34, .35], '#ff5500'] is possible.
+    state_labels : list of strings, optional, default is 'auto'
+        A list with a label for each state, to be displayed at the center
+        of each node/state. If left to 'auto', the labels are automatically set to the state indices.
     minflux : float, optional, default=1e-9
         The minimal flux for a transition to be drawn
     arrow_scale : float, optional, default=1.0
