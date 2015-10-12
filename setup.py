@@ -170,7 +170,7 @@ def get_cmdclass():
             import pkg_resources
             dir = pkg_resources.resource_filename('numpy', 'core/include')
             self.include_dirs = [dir]
-            # self.include_dirs = [] # gets overwritten by super init
+            print("init include dirs to:", self.include_dirs)
             build_ext.initialize_options(self)
 
     sdist_class = versioneer_cmds['sdist']
