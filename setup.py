@@ -26,17 +26,16 @@ to analyze trajectories generated from any kind of simulation
 
 """
 
-from __future__ import print_function
-
-from __future__ import absolute_import
-# TODO: extend docstring
-DOCLINES = __doc__.split("\n")
-__requires__ = 'setuptools>=3.6'
+from __future__ import print_function, absolute_import
 
 import sys
 import os
 import versioneer
 import warnings
+
+DOCLINES = __doc__.split("\n")
+__requires__ = 'setuptools>=18'
+
 
 CLASSIFIERS = """\
 Development Status :: 5 - Production/Stable
@@ -134,9 +133,7 @@ def extensions():
     exts += [regspatial_module,
              kmeans_module]
 
-    if USE_CYTHON: # if we have cython available now, cythonize module
-        exts = cythonize(exts)
-    else:
+    if not USE_CYTHON: 
         # replace pyx files by their pre generated c code.
         for e in exts:
             new_src = []
@@ -158,9 +155,9 @@ def extensions():
 
 
 def get_cmdclass():
-    vervsioneer_cmds = versioneer.get_cmdclass()
+    versioneer_cmds = versioneer.get_cmdclass()
 
-    from distutils.command.build_ext import build_ext
+    from setuptools.command.build_ext import build_ext
     class np_build(build_ext):
         """
         Sets numpy include path for extensions. Its ensured, that numpy exists
@@ -169,24 +166,21 @@ def get_cmdclass():
         So add them here!
         """
         def initialize_options(self):
+            build_ext.initialize_options(self)
+            import pkg_resources
+            dir = pkg_resources.resource_filename('numpy', 'core/include')
+            self.include_dirs = [dir]
             # self.include_dirs = [] # gets overwritten by super init
             build_ext.initialize_options(self)
-            # https://stackoverflow.com/questions/21605927/why-doesnt-setup-requires-work-properly-for-numpy
-            try:
-                __builtins__.__NUMPY_SETUP__ = False
-            except AttributeError:
-                # this may happen, if numpy requirement is already fulfilled.
-                pass
-            from numpy import get_include
-            self.include_dirs = [get_include()]
 
-    sdist_class = vervsioneer_cmds['sdist']
+    sdist_class = versioneer_cmds['sdist']
     class sdist(sdist_class):
         """ensure cython files are compiled to c, when distributing"""
 
         def run(self):
             # only run if .git is present
             if not os.path.exists('.git'):
+                print("Not on git, can not create source distribution")
                 return
 
             try:
@@ -201,8 +195,8 @@ def get_cmdclass():
                     sdist=sdist,
                     )
 
-    vervsioneer_cmds.update(cmdclass)
-    return vervsioneer_cmds
+    versioneer_cmds.update(cmdclass)
+    return versioneer_cmds
 
 
 metadata = dict(
@@ -252,7 +246,6 @@ if len(sys.argv) == 1 or (len(sys.argv) >= 2 and ('--help' in sys.argv[1:] or
 else:
     # setuptools>=2.2 can handle setup_requires
     metadata['setup_requires'] = ['numpy>=1.6.0',
-                                  'setuptools>3.6',
                                   'mdtraj>=1.4.0',
                                   'nose',
                                   ]
@@ -270,8 +263,9 @@ else:
         metadata['setup_requires'] += ['cython>=0.22']
 
     # only require numpy and extensions in case of building/installing
-    metadata['ext_modules'] = lazy_cythonize(extensions)
+    metadata['ext_modules'] = extensions()
 
+from distutils.errors import DistutilsError
 try:
     setup(**metadata)
 except VersionConflict as ve:
@@ -280,3 +274,8 @@ except VersionConflict as ve:
     " Please use these instructions to perform an upgrade and/or consult\n"
     " https://pypi.python.org/pypi/setuptools#installation-instructions"
     print(getSetuptoolsError())
+    sys.exit(42)
+except DistutilsError as de:
+    print(de)
+    sys.exit(43)
+
