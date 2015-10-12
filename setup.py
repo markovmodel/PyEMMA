@@ -167,11 +167,19 @@ def get_cmdclass():
         """
         def initialize_options(self):
             build_ext.initialize_options(self)
-            import pkg_resources
-            dir = pkg_resources.resource_filename('numpy', 'core/include')
+            try:
+                import numpy
+                dir = numpy.get_include()
+            except ImportError:
+                # this method should work for pip installations, where the numpy
+                # egg is located in the source folder
+                import pkg_resources
+                dir = pkg_resources.resource_filename('numpy', 'core/include')
+
+            if not os.path.isdir(dir):
+                raise RuntimeError("NumPy include dir '%s' not found")
+
             self.include_dirs = [dir]
-            print("init include dirs to:", self.include_dirs)
-            build_ext.initialize_options(self)
 
     sdist_class = versioneer_cmds['sdist']
     class sdist(sdist_class):
