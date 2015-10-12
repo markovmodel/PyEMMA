@@ -1,0 +1,32 @@
+# PyEMMA's default logging settings
+# If you want to enable file logging, uncomment the file related handlers and handlers
+# 
+formatters:
+    simpleFormater:
+        format: '%(asctime)s %(name)-12s %(levelname)-8s %(message)s'
+        datefmt: '%d-%m-%y %H:%M:%S'
+
+handlers:
+    console:
+        class: logging.StreamHandler
+        formatter: simpleFormater
+        level: DEBUG
+        stream: ext://sys.stdout
+#    file:
+#        class : logging.FileHandler
+#        formatter: simpleFormater
+#        level: INFO
+#        filename: pyemma.log
+
+loggers:
+    clogger:
+        level: INFO
+        handlers: [console]
+    #flogger:
+    #    level: INFO
+    #    handlers: [file]
+
+root:
+# global log level
+    level: INFO
+    handlers: [console] #, file]
