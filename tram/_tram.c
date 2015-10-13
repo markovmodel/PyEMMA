@@ -274,8 +274,9 @@ double _log_likelihood(
 {
     double a, b, c;
     int K, i, j, x, o;
-    int KM, KMM, Ki, Kj, CKij, CCTKij, CKii;
-    double divisor, log_pKij, sum;
+    int KM, KMM, Ki, Kj;
+    int CKij, CCTKij;
+    double divisor, log_pKij;
 
     /* \sum_{i,j,k}c_{ij}^{(k)}\log p_{ij}^{(k)} */
     a = 0;
@@ -290,30 +291,24 @@ double _log_likelihood(
             o = 0;
             for(j=0; j<n_conf_states; ++j)
             {
-                if(i == j) continue; /* exclude diagonal */
                 CKij = count_matrices[KMM + i * n_conf_states + j];
                 if(0 == CKij) continue;
-                CCTKij = CKij + count_matrices[KMM + j * n_conf_states + i];
-                /* compute log(p_K_ij) */
-                Kj = KM + j;
-                divisor = _logsumexp_pair(
-                    log_lagrangian_mult[Kj] - biased_conf_energies[Ki],
-                    log_lagrangian_mult[Ki] - biased_conf_energies[Kj]);
-                log_pKij = log((double)CCTKij) - biased_conf_energies[Kj] - divisor;
-                scratch_M[o++] = log_pKij;
-                //printf("*T[%d,%d,%d]=%f\n", K,i,j,exp(log_pKij));
-                /* update likelihood */
-                a += CKij * log_pKij;
-            }
-            /* diagonal element */
-            CKii = count_matrices[KMM + i * n_conf_states + i];
-            if(CKii > 0) {
-                sum = exp(_logsumexp(scratch_M, o));
-                //printf("*T[%d,%d,%d]=%f\n", K,i,i,1.0-sum);
-                if(sum >= 1.0)
-                    fprintf(stderr, "Warning: can\'t compute p[%d,%d,%d]; skipping it\'s contibution to log(L)\n", K, i, i);
-                else
-                    a += CKii * log(1 - sum);
+                if(i==j) {
+                    /* compute log(p_K_ij) */
+                    log_pKij = log((double)CKij + THERMOTOOLS_TRAM_PRIOR) - log_lagrangian_mult[Ki];
+                    /* update likelihood */
+                    a += ((double)CKij + THERMOTOOLS_TRAM_PRIOR) * log_pKij;
+                } else {
+                    CCTKij = CKij + count_matrices[KMM + j * n_conf_states + i];
+                    /* compute log(p_K_ij) */
+                    Kj = KM + j;
+                    divisor = _logsumexp_pair(
+                        log_lagrangian_mult[Kj] - biased_conf_energies[Ki],
+                        log_lagrangian_mult[Ki] - biased_conf_energies[Kj]);
+                    log_pKij = log((double)CCTKij) - biased_conf_energies[Kj] - divisor;
+                    /* update likelihood */
+                    a += CKij * log_pKij;
+                }
             }
         }
     }
@@ -324,11 +319,22 @@ double _log_likelihood(
         KM = K * n_conf_states;
         for(i=0; i<n_conf_states; ++i) {
             Ki = KM + i;
-            b += state_counts[Ki]*biased_conf_energies[Ki];
+            b += (state_counts[Ki] + THERMOTOOLS_TRAM_PRIOR) * biased_conf_energies[Ki];
         }
     }
 
     /* -\sum_{x}\log\sum_{l}R_{i(x)}^{(l)}e^{-b^{(l)}(x)+f_{i(x)}^{(l)}} */
+    /* Part "c" must be consistent with part "b" in that the
+       biased_conf_energies used in "b" must be the normalization factors
+       of \mu_i^{k} which is used here in "c".
+       This is already the case, because the following code is based
+       on the same log_R_K_i values that were used to compute
+       biased_conf_energies. */
+    /*
+      f_old -----> nu --+-> R ----------> c
+        \              /     \
+         \------>-----/       \---> f --> b
+     */
     c = 0;
     for(x=0; x<seq_length; ++x) {
         o = 0;
@@ -341,7 +347,6 @@ double _log_likelihood(
         }
         c -= _logsumexp(scratch_T,o);
     }
-    fprintf(stderr, "logL composition: %f, %f, %f\n", a,b,c);
     return a+b+c;
 }
 
