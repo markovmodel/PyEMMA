@@ -1,5 +1,15 @@
 Changelog
 =========
+
+2.0.1 (to be released)
+----------------------
+
+** New features**:
+
+- coordinates: added Sparsifier, which detects constant features in data stream
+  and removes them for further processing. 
+
+
 2.0.1 (9-3-2015)
 ----------------
 Urgent bug fix: reading other formats than XTC was not possible in coordinates
