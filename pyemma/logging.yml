@@ -10,7 +10,7 @@ handlers:
     console:
         class: logging.StreamHandler
         formatter: simpleFormater
-        level: DEBUG
+        level: INFO 
         stream: ext://sys.stdout
 #    file:
 #        class : logging.FileHandler
