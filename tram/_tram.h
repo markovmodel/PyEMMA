@@ -35,7 +35,7 @@ void _update_lagrangian_mult(
 void _update_biased_conf_energies(
     double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices, double *bias_energy_sequence,
     int *state_sequence, int *state_counts, int seq_length, double *log_R_K_i,
-    int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_T,
+    int n_therm_states, int n_conf_states, int do_shift, double *scratch_M, double *scratch_T,
     double *new_biased_conf_energies);
 
 void _get_conf_energies(
@@ -54,8 +54,10 @@ void _estimate_transition_matrix(
     double *log_lagrangian_mult, double *conf_energies, int *count_matrix,
     int n_conf_states, double *transition_matrix);
 
-double _log_likelihood(
-    double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices,  int *state_counts, double *log_R_K_i,
+double _log_likelihood_assuming_fulfilled_constraints(
+    double *old_log_lagrangian_mult, double *new_log_lagrangian_mult,
+    double *old_biased_conf_energies, double *new_biased_conf_energies,
+    int *count_matrices,  int *state_counts,
     int n_therm_states, int n_conf_states,
     double *bias_energy_sequence, int *state_sequence, int seq_length,
     double *scratch_T, double *scratch_M, double *scratch_TM);
