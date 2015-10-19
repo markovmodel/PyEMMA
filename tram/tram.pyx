@@ -397,6 +397,7 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
     old_biased_conf_energies = biased_conf_energies.copy()
     old_log_lagrangian_mult = log_lagrangian_mult.copy()
     import sys
+    log_L_hist = []
     for _m in range(maxiter):
         update_lagrangian_mult(old_log_lagrangian_mult, biased_conf_energies, count_matrices, state_counts, scratch_M, log_lagrangian_mult)
         update_biased_conf_energies(log_lagrangian_mult, old_biased_conf_energies, count_matrices, bias_energy_sequence, state_sequence,
@@ -404,6 +405,8 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
         if _m%10 == 0:
             log_L = log_likelihood(log_lagrangian_mult, biased_conf_energies, count_matrices, bias_energy_sequence, state_sequence,
                 state_counts, log_R_K_i, scratch_M, scratch_T)
+            log_L_hist.append(log_L)
+            print>>sys.stderr,'f_K:',-_np.log(_np.exp(-biased_conf_energies).sum(axis=1))
             print>>sys.stderr, -log_L, 
             print>>sys.stderr, _np.max(_np.abs(biased_conf_energies - old_biased_conf_energies))
         if _np.max(_np.abs(biased_conf_energies - old_biased_conf_energies)) < maxerr:
@@ -414,4 +417,4 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
     conf_energies = get_conf_energies(bias_energy_sequence, state_sequence, log_R_K_i, scratch_M, scratch_T)
     therm_energies = get_therm_energies(biased_conf_energies, scratch_M)
     normalize(conf_energies, biased_conf_energies, therm_energies, scratch_M)
-    return biased_conf_energies, conf_energies, therm_energies, log_lagrangian_mult
+    return biased_conf_energies, conf_energies, therm_energies, log_lagrangian_mult, log_L_hist

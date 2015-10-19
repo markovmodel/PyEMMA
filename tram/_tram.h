@@ -20,8 +20,11 @@
 #ifndef THERMOTOOLS_TRAM
 #define THERMOTOOLS_TRAM
 
-#define THERMOTOOLS_TRAM_PRIOR 1.0E-10
-#define THERMOTOOLS_TRAM_LOG_PRIOR -23.025850929940457
+/*#define THERMOTOOLS_TRAM_PRIOR 1.0E-10
+  #define THERMOTOOLS_TRAM_LOG_PRIOR -23.025850929940457*/
+
+#define THERMOTOOLS_TRAM_PRIOR 0
+#define THERMOTOOLS_TRAM_LOG_PRIOR -INFINITY
 
 void _init_lagrangian_mult(int *count_matrices, int n_therm_states, int n_conf_states, double *log_lagrangian_mult);
 
