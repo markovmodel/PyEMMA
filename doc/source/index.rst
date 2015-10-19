@@ -1,7 +1,3 @@
-.. EMMA documentation master file, created by
-   sphinx-quickstart on Tue Sep 24 17:27:16 2013.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
 
 =======================================
 PyEMMA - Emma's Markov Model Algorithms
@@ -36,6 +32,31 @@ Technical features:
   Please post issues or reports there.
 * Subscribe to the newsletter `here <https://lists.fu-berlin.de/listinfo/pyemma-newsletter#subscribe>`_. News will be sent only after major releases / fixes.
 
+Citation |DOI for Citing PyEMMA|
+--------------------------------
+
+PyEMMA is scientific software, if you use it in your scientific work, please
+consider citing this paper: ::
+
+	@article{scherer_pyemma_2015,
+		title = {{PyEMMA} 2: {A} {Software} {Package} for {Estimation},
+                         {Validation}, and {Analysis} of {Markov} {Models}},
+		issn = {1549-9618},
+		shorttitle = {{PyEMMA} 2},
+		url = {http://dx.doi.org/10.1021/acs.jctc.5b00743},
+		doi = {10.1021/acs.jctc.5b00743},
+		urldate = {2015-10-19},
+		journal = {Journal of Chemical Theory and Computation},
+		author = {Scherer, Martin K. and Trendelkamp-Schroer, Benjamin
+                          and Paul, Fabian and Pérez-Hernández, Guillermo and Hoffmann, Moritz and
+                          Plattner, Nuria and Wehmeyer, Christoph and Prinz, Jan-Hendrik and Noé, Frank},
+		month = oct,
+		year = {2015},
+	}
+
+.. |DOI for Citing PyEMMA| image:: _static/pyemma_paper_doi.svg
+   :target: https://dx.doi.org/10.1021/acs.jctc.5b00743
+
 
 Installation
 ============
@@ -44,6 +65,7 @@ Installation
    :maxdepth: 2
 
    INSTALL
+   Configuration
 
 Documentation
 =============
@@ -61,14 +83,6 @@ Tutorials
 
    ipython
 
-Run-time configuration
-======================
-
-.. toctree::
-   :maxdepth: 2
-
-   Configuration
-
 Development
 ===========
 .. toctree::
@@ -84,3 +98,4 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
