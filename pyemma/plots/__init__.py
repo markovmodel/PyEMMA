@@ -58,8 +58,8 @@ Classes
 
 .. autosummary::
    :toctree: generated/
-   NetworkPlot
 
+   NetworkPlot
 
 """
 from __future__ import absolute_import

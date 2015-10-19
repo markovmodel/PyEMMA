@@ -299,31 +299,33 @@ def source(inp, features=None, top=None, chunk_size=None):
     --------
 
     Create a reader for NumPy files:
-    
+
     >>> import numpy as np
     >>> from pyemma.coordinates import source
     >>> reader = source(['001.npy', '002.npy'] # doctest: +SKIP
 
     Create a reader for trajectory files and select some distance as feature:
-    
+
     >>> reader = source(['traj01.xtc', 'traj02.xtc'], top='my_structure.pdb') # doctest: +SKIP
     >>> reader.featurizer.add_distances([[0, 1], [5, 6]]) # doctest: +SKIP
     >>> calculated_features = reader.get_output() # doctest: +SKIP
 
     create a reader for a csv file:
-    
+
     >>> reader = source('data.csv') # doctest: +SKIP
 
     Create a reader for huge NumPy in-memory arrays to process them in
     huge chunks to avoid memory issues:
-    
+
     >>> data = np.random.random(int(1e7))
     >>> reader = source(data, chunk_size=5000)
     >>> from pyemma.coordinates import cluster_regspace
     >>> regspace = cluster_regspace(reader, dmin=0.1)
 
-    Returned object
-    ---------------
+    Returns
+    -------
+
+    reader : a reader instance
 
     .. autoclass:: pyemma.coordinates.data.interface.ReaderInterface
         :members:
