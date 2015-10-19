@@ -21,6 +21,7 @@ Python interface to the TRAM estimator's lowlevel functions.
 
 import numpy as _np
 cimport numpy as _np
+import sys
 
 __all__ = [
     'init_lagrangian_mult',
@@ -58,7 +59,7 @@ cdef extern from "_tram.h":
         double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices,  int *state_counts, double *log_R_K_i,
         int n_therm_states, int n_conf_states,
         double *bias_energy_sequence, int *state_sequence, int seq_length,
-        double *scratch_T, double *scratch_M)
+        double *scratch_T, double *scratch_M, double *scratch_TM)
 
 
 def init_lagrangian_mult(
@@ -338,6 +339,8 @@ def log_likelihood(
        Returns the log-likelihood
     """
     
+    scratch_TM = _np.zeros_like(biased_conf_energies)
+    
     return _log_likelihood(
         <double*> _np.PyArray_DATA(log_lagrangian_mult),
         <double*> _np.PyArray_DATA(biased_conf_energies),
@@ -350,7 +353,8 @@ def log_likelihood(
         <int*> _np.PyArray_DATA(state_sequence),
         state_sequence.shape[0],
         <double*> _np.PyArray_DATA(scratch_T),
-        <double*> _np.PyArray_DATA(scratch_M))
+        <double*> _np.PyArray_DATA(scratch_M),
+        <double*> _np.PyArray_DATA(scratch_TM))
 
 def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence, maxiter=1000, maxerr=1.0E-8, biased_conf_energies=None, log_lagrangian_mult=None):
     r"""
@@ -396,15 +400,50 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
     scratch_M = _np.zeros(shape=(count_matrices.shape[1],), dtype=_np.float64)
     old_biased_conf_energies = biased_conf_energies.copy()
     old_log_lagrangian_mult = log_lagrangian_mult.copy()
-    import sys
+    
+    if True:
+        # to monitor log-L convergence compute a feasible point
+        frozen_biased_conf_energies = biased_conf_energies.copy()
+        frozen_log_R_K_i = _np.zeros(shape=state_counts.shape, dtype=_np.float64)
+        update_biased_conf_energies(log_lagrangian_mult, old_biased_conf_energies, count_matrices, bias_energy_sequence, state_sequence,
+                state_counts, frozen_log_R_K_i, scratch_M, scratch_T, frozen_biased_conf_energies)
+        # The frozen values effectively contain an arbitary mu.
+        # Now iterate log_nu equation to fulfill the constraints (wrt. the arbitrary mu).
+        local_log_lagrangian_mult = log_lagrangian_mult.copy()
+        old_local_log_lagrangian_mult = log_lagrangian_mult.copy()
+        print>>sys.stderr, "generating a feasible point..."
+        _n = 0
+        while True:
+            update_lagrangian_mult(old_local_log_lagrangian_mult, frozen_biased_conf_energies, count_matrices, state_counts, scratch_M, local_log_lagrangian_mult)
+            nz = _np.where(_np.logical_and(_np.logical_not(_np.isinf(local_log_lagrangian_mult)),
+                                           _np.logical_not(_np.isinf(old_local_log_lagrangian_mult))))
+            if _np.max(_np.abs(local_log_lagrangian_mult[nz] - old_local_log_lagrangian_mult[nz])) < maxerr:
+                break
+            if _n%100==0:
+                print _n, _np.max(_np.abs(local_log_lagrangian_mult[nz] - old_local_log_lagrangian_mult[nz]))
+            old_local_log_lagrangian_mult[:] = local_log_lagrangian_mult[:]
+            _n += 1
+        print>>sys.stderr, "done"
+        logL_0 = log_likelihood(local_log_lagrangian_mult, frozen_biased_conf_energies, count_matrices, bias_energy_sequence, state_sequence,
+                    state_counts, frozen_log_R_K_i, scratch_M, scratch_T)
+        logL_hist = [logL_0]
+        del frozen_log_R_K_i
+        del frozen_biased_conf_energies
+        del local_log_lagrangian_mult
+        del old_local_log_lagrangian_mult
+        # end of initial log-L computation
+    else:
+        logL_hist = []
+    
     for _m in range(maxiter):
         update_lagrangian_mult(old_log_lagrangian_mult, biased_conf_energies, count_matrices, state_counts, scratch_M, log_lagrangian_mult)
         update_biased_conf_energies(log_lagrangian_mult, old_biased_conf_energies, count_matrices, bias_energy_sequence, state_sequence,
             state_counts, log_R_K_i, scratch_M, scratch_T, biased_conf_energies)
         if _m%10 == 0:
-            log_L = log_likelihood(log_lagrangian_mult, biased_conf_energies, count_matrices, bias_energy_sequence, state_sequence,
-                state_counts, log_R_K_i, scratch_M, scratch_T)
-            print>>sys.stderr, -log_L, 
+            logL = log_likelihood(log_lagrangian_mult, biased_conf_energies, count_matrices, bias_energy_sequence, state_sequence,
+                                   state_counts, log_R_K_i, scratch_M, scratch_T)
+            logL_hist.append(logL)
+            print>>sys.stderr, logL, 
             print>>sys.stderr, _np.max(_np.abs(biased_conf_energies - old_biased_conf_energies))
         if _np.max(_np.abs(biased_conf_energies - old_biased_conf_energies)) < maxerr:
             break
@@ -414,4 +453,4 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
     conf_energies = get_conf_energies(bias_energy_sequence, state_sequence, log_R_K_i, scratch_M, scratch_T)
     therm_energies = get_therm_energies(biased_conf_energies, scratch_M)
     normalize(conf_energies, biased_conf_energies, therm_energies, scratch_M)
-    return biased_conf_energies, conf_energies, therm_energies, log_lagrangian_mult
+    return biased_conf_energies, conf_energies, therm_energies, log_lagrangian_mult, logL_hist

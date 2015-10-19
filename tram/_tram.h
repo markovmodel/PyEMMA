@@ -23,6 +23,9 @@
 #define THERMOTOOLS_TRAM_PRIOR 1.0E-10
 #define THERMOTOOLS_TRAM_LOG_PRIOR -23.025850929940457
 
+/* #define THERMOTOOLS_TRAM_PRIOR 0 */
+/* #define THERMOTOOLS_TRAM_LOG_PRIOR -INFINITY */
+
 void _init_lagrangian_mult(int *count_matrices, int n_therm_states, int n_conf_states, double *log_lagrangian_mult);
 
 void _update_lagrangian_mult(
@@ -55,6 +58,6 @@ double _log_likelihood(
     double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices,  int *state_counts, double *log_R_K_i,
     int n_therm_states, int n_conf_states,
     double *bias_energy_sequence, int *state_sequence, int seq_length,
-    double *scratch_T, double *scratch_M);
+    double *scratch_T, double *scratch_M, double *scratch_TM);
 
 #endif

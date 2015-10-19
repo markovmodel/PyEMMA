@@ -166,11 +166,11 @@ void _update_biased_conf_energies(
     }
     /* prevent drift */
     KM = n_therm_states * n_conf_states;
-    shift = new_biased_conf_energies[0];
+    /*shift = new_biased_conf_energies[0];
     for(i=1; i<KM; ++i)
         shift = (shift < new_biased_conf_energies[i]) ? shift : new_biased_conf_energies[i];
     for(i=0; i<KM; ++i)
-        new_biased_conf_energies[i] -= shift;
+        new_biased_conf_energies[i] -= shift;*/
 }
 
 void _get_conf_energies(
@@ -270,7 +270,7 @@ double _log_likelihood(
     double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices,  int *state_counts, double *log_R_K_i,
     int n_therm_states, int n_conf_states,
     double *bias_energy_sequence, int *state_sequence, int seq_length,
-    double *scratch_T, double *scratch_M)
+    double *scratch_T, double *scratch_M, double *scratch_TM)
 {
     double a, b, c;
     int K, i, j, x, o;
@@ -312,6 +312,35 @@ double _log_likelihood(
             }
         }
     }
+    
+    /* check normalization! */
+    KM = n_therm_states * n_conf_states;
+    for(i=0; i<KM; ++i)
+        scratch_TM[i] = INFINITY;
+    /* compute new biased_conf_energies */
+    for(x=0; x<seq_length; ++x)
+    {
+        i = state_sequence[x];
+        o = 0;
+        for(K=0; K<n_therm_states; ++K)
+        {
+            if(-INFINITY == log_R_K_i[K * n_conf_states + i]) continue;
+            scratch_T[o++] = log_R_K_i[K * n_conf_states + i] - bias_energy_sequence[K * seq_length + x];
+        }
+        divisor = _logsumexp(scratch_T, o);
+        for(K=0; K<n_therm_states; ++K)
+        {
+            Ki = K*n_conf_states + i;
+            scratch_TM[K * n_conf_states + i] = -_logsumexp_pair(
+                    -scratch_TM[K * n_conf_states + i], biased_conf_energies[Ki] -(divisor + bias_energy_sequence[K * seq_length + x]));
+        }
+    }    
+    KM = n_therm_states * n_conf_states;
+    for(i=0; i<KM; ++i) {
+        if(fabs(scratch_TM[i]) > 1.E-12) {
+            fprintf(stderr, "Warning: mu is not properly normalized. %d,%f. Value of likelihood will be meaningless.\n", i,scratch_TM[i]);
+        }
+    }
 
     /* \sum_{i,k}N_{i}^{(k)}f_{i}^{(k)} */
     b = 0;
@@ -319,7 +348,8 @@ double _log_likelihood(
         KM = K * n_conf_states;
         for(i=0; i<n_conf_states; ++i) {
             Ki = KM + i;
-            b += (state_counts[Ki] + THERMOTOOLS_TRAM_PRIOR) * biased_conf_energies[Ki];
+            if(state_counts[Ki]>0)
+                b += (state_counts[Ki] + THERMOTOOLS_TRAM_PRIOR) * biased_conf_energies[Ki];
         }
     }
 
@@ -342,11 +372,13 @@ double _log_likelihood(
         for(K=0; K<n_therm_states; ++K) {
             KM = K*n_conf_states;
             Ki = KM + i;
-            scratch_T[o++] =
-                log_R_K_i[Ki] - bias_energy_sequence[K * seq_length + x];
+            if(state_counts[Ki]>0)
+                scratch_T[o++] =
+                    log_R_K_i[Ki] - bias_energy_sequence[K * seq_length + x];
         }
         c -= _logsumexp(scratch_T,o);
     }
     return a+b+c;
 }
+
 
