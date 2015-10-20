@@ -60,6 +60,6 @@ double _log_likelihood_assuming_fulfilled_constraints(
     int *count_matrices,  int *state_counts,
     int n_therm_states, int n_conf_states,
     double *bias_energy_sequence, int *state_sequence, int seq_length,
-    double *scratch_T, double *scratch_M, double *scratch_TM);
+    double *scratch_T, double *scratch_M, double *scratch_TM, double *scratch_MM);
 
 #endif

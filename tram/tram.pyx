@@ -61,7 +61,7 @@ cdef extern from "_tram.h":
         int *count_matrices, int *state_counts,
         int n_therm_states, int n_conf_states,
         double *bias_energy_sequence, int *state_sequence, int seq_length,
-        double *scratch_T, double *scratch_M, double *scratch_TM)
+        double *scratch_T, double *scratch_M, double *scratch_TM, double *scratch_MM)
 
 
 def init_lagrangian_mult(
@@ -271,8 +271,8 @@ def normalize(
 def estimate_transition_matrices(
     _np.ndarray[double, ndim=2, mode="c"] log_lagrangian_mult not None,
     _np.ndarray[double, ndim=2, mode="c"] biased_conf_energies not None,
-    _np.ndarray[double, ndim=1, mode="c"] scratch_M,
-    _np.ndarray[int, ndim=3, mode="c"] count_matrices not None):
+    _np.ndarray[int, ndim=3, mode="c"] count_matrices not None,
+    _np.ndarray[double, ndim=1, mode="c"] scratch_M):
     r"""
     Compute the transition matrices for all thermodynamic states
 
@@ -294,14 +294,14 @@ def estimate_transition_matrices(
         scratch_M = _np.zeros(shape=(count_matrices.shape[1],), dtype=_np.float64)
     p_K_ij = _np.zeros(shape=(count_matrices.shape[0], count_matrices.shape[1], count_matrices.shape[2]), dtype=_np.float64)
     for K in range(log_lagrangian_mult.shape[0]):
-        p_K_ij[K, :, :] = estimate_transition_matrix(log_lagrangian_mult, biased_conf_energies, scratch_M, count_matrices, K)[:, :]
+        p_K_ij[K, :, :] = estimate_transition_matrix(log_lagrangian_mult, biased_conf_energies, count_matrices, scratch_M, K)[:, :]
     return p_K_ij
 
 def estimate_transition_matrix(
     _np.ndarray[double, ndim=2, mode="c"] log_lagrangian_mult not None,
     _np.ndarray[double, ndim=2, mode="c"] biased_conf_energies not None,
-    _np.ndarray[double, ndim=1, mode="c"] scratch_M,
     _np.ndarray[int, ndim=3, mode="c"] count_matrices not None,
+    _np.ndarray[double, ndim=1, mode="c"] scratch_M,
     therm_state):
     r"""
     Compute the transition matrices for all thermodynamic states
@@ -345,7 +345,8 @@ def log_likelihood_assuming_fulfilled_constraints(
     _np.ndarray[int, ndim=2, mode="c"] state_counts not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_M not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_T not None,
-    _np.ndarray[double, ndim=2, mode="c"] scratch_TM not None):
+    _np.ndarray[double, ndim=2, mode="c"] scratch_TM not None,
+    _np.ndarray[double, ndim=2, mode="c"] scratch_MM not None):
     r"""
     Computes the TRAM log-likelihood with an arbitrary mu that is implicitly
     given by old_log_lagrangian_mult and old_biased_conf_energies.
@@ -373,7 +374,8 @@ def log_likelihood_assuming_fulfilled_constraints(
         state_sequence.shape[0],
         <double*> _np.PyArray_DATA(scratch_T),
         <double*> _np.PyArray_DATA(scratch_M),
-        <double*> _np.PyArray_DATA(scratch_TM))
+        <double*> _np.PyArray_DATA(scratch_TM),
+        <double*> _np.PyArray_DATA(scratch_MM))
 
     return logL
 
@@ -387,6 +389,7 @@ def log_likelihood(
     _np.ndarray[double, ndim=1, mode="c"] scratch_M not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_T not None,
     _np.ndarray[double, ndim=2, mode="c"] scratch_TM not None,
+    _np.ndarray[double, ndim=2, mode="c"] scratch_MM not None,
     maxerr):
     r"""Computes the TRAM log-likelihood with an arbitrary mu that is implicitly
        given by log_lagrangian_mult and biased_conf_energies.
@@ -415,7 +418,7 @@ def log_likelihood(
                very_old_log_lagrangian_mult, new_log_lagrangian_mult,
                old_biased_conf_energies, new_biased_conf_energies,
                count_matrices, bias_energy_sequence, state_sequence, state_counts,
-               scratch_M, scratch_T, scratch_TM)
+               scratch_M, scratch_T, scratch_TM, scratch_MM)
     return logL
 
 def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence, maxiter=1000, maxerr=1.0E-8, biased_conf_energies=None, log_lagrangian_mult=None):
@@ -461,13 +464,14 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
     scratch_T = _np.zeros(shape=(count_matrices.shape[0],), dtype=_np.float64)
     scratch_M = _np.zeros(shape=(count_matrices.shape[1],), dtype=_np.float64)
     scratch_TM = _np.zeros(shape=count_matrices.shape[0:2], dtype=_np.float64)
+    scratch_MM = _np.zeros(shape=count_matrices.shape[1:3], dtype=_np.float64)
     old_biased_conf_energies = biased_conf_energies.copy()
     old_log_lagrangian_mult = log_lagrangian_mult.copy()
 
     if True:
         logL_0 = log_likelihood(log_lagrangian_mult, biased_conf_energies,
                      count_matrices, bias_energy_sequence, state_sequence, state_counts,
-                     scratch_M, scratch_T, scratch_TM, maxerr)
+                     scratch_M, scratch_T, scratch_TM, scratch_MM, maxerr)
         logL_hist = [logL_0]
     else:
         logL_hist = []
@@ -481,7 +485,7 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
                        log_lagrangian_mult, log_lagrangian_mult,
                        biased_conf_energies, biased_conf_energies,
                        count_matrices, bias_energy_sequence, state_sequence,
-                       state_counts, scratch_M, scratch_T, scratch_TM)
+                       state_counts, scratch_M, scratch_T, scratch_TM, scratch_MM)
             logL_hist.append(logL)
             print>>sys.stderr, logL, 
             print>>sys.stderr, _np.max(_np.abs(biased_conf_energies - old_biased_conf_energies))

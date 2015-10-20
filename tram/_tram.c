@@ -263,7 +263,9 @@ void _estimate_transition_matrix(
     for(i=0; i<n_conf_states; ++i) {
         for(j=0; j<n_conf_states; ++j) {
             if(i==j) {
-                transition_matrix[i*n_conf_states + i] = (transition_matrix[i*n_conf_states + i]+max_sum-sum[i])/max_sum; 
+                transition_matrix[i*n_conf_states + i] = (transition_matrix[i*n_conf_states + i]+max_sum-sum[i])/max_sum;
+                if(0 == transition_matrix[i*n_conf_states + i] && 0 < count_matrix[i*n_conf_states + i])
+                    fprintf(stderr, "# Warning: zero diagonal element T[%d,%d] with non-zero counts.\n", i, i);
             } else {
                 transition_matrix[i*n_conf_states + j] = transition_matrix[i*n_conf_states + j]/max_sum; 
             }
@@ -288,45 +290,35 @@ double _log_likelihood_assuming_fulfilled_constraints(
     int *count_matrices,  int *state_counts,
     int n_therm_states, int n_conf_states,
     double *bias_energy_sequence, int *state_sequence, int seq_length,
-    double *scratch_T, double *scratch_M, double *scratch_TM)
+    double *scratch_T, double *scratch_M, double *scratch_TM, double *scratch_MM)
 {
     double a, b, c;
     int K, i, j, x, o;
     int KM, KMM, Ki, Kj;
-    int CKij, CKji, CCTKij, Ci, NC, CK;
-    double divisor, log_pKij, R_addon;
-    double *old_log_R_K_i;
+    int CKij, CKji, Ci, NC, CK;
+    double divisor, R_addon;
+    double *old_log_R_K_i, *T_ij;
 
     /* \sum_{i,j,k}c_{ij}^{(k)}\log p_{ij}^{(k)} */
     a = 0;
+    T_ij = scratch_MM;
     for(K=0; K<n_therm_states; ++K)
     {
         KM = K * n_conf_states;
         KMM = KM * n_conf_states;
+        _estimate_transition_matrix(
+           &new_log_lagrangian_mult[KM], &new_biased_conf_energies[KM], &count_matrices[KMM],
+           n_conf_states, scratch_M, T_ij);
         for(i=0; i<n_conf_states; ++i)
         {
-            Ki = KM + i;
-            if(0 == state_counts[Ki]) continue;
-            o = 0;
             for(j=0; j<n_conf_states; ++j)
             {
                 CKij = count_matrices[KMM + i * n_conf_states + j];
-                if(0 == CKij) continue;
+                if(0==CKij) continue;
                 if(i==j) {
-                    /* compute log(p_K_ij) */
-                    log_pKij = log((double)CKij + THERMOTOOLS_TRAM_PRIOR) - new_log_lagrangian_mult[Ki];
-                    /* update likelihood */
-                    a += ((double)CKij + THERMOTOOLS_TRAM_PRIOR) * log_pKij;
+                    a += ((double)CKij + THERMOTOOLS_TRAM_PRIOR) * log(T_ij[i*n_conf_states + j]);
                 } else {
-                    CCTKij = CKij + count_matrices[KMM + j * n_conf_states + i];
-                    /* compute log(p_K_ij) */
-                    Kj = KM + j;
-                    divisor = _logsumexp_pair(
-                        new_log_lagrangian_mult[Kj] - new_biased_conf_energies[Ki],
-                        new_log_lagrangian_mult[Ki] - new_biased_conf_energies[Kj]);
-                    log_pKij = log((double)CCTKij) - new_biased_conf_energies[Kj] - divisor;
-                    /* update likelihood */
-                    a += CKij * log_pKij;
+                    a += CKij * log(T_ij[i*n_conf_states + j]);
                 }
             }
         }
