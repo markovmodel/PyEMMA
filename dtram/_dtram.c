@@ -212,3 +212,17 @@ extern void _normalize(
     for(i=0; i<n_conf_states; ++i)
         conf_energies[i] -= f0;
 }
+
+extern double _get_loglikelihood(
+    int *count_matrices, double *transition_matrices,
+    int n_therm_states, int n_conf_states)
+{
+    int i, n = n_therm_states * n_conf_states * n_conf_states;
+    double sum = 0.0;
+    for(i=0; i<n; ++i)
+    {
+        if(count_matrices[i] > 0)
+            sum += count_matrices[i] * log(transition_matrices[i]);
+    }
+    return sum;
+}
