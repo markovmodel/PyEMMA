@@ -225,47 +225,51 @@ void _normalize(
 
 void _estimate_transition_matrix(
     double *log_lagrangian_mult, double *conf_energies, int *count_matrix,
-    int n_conf_states, double *transition_matrix)
+    int n_conf_states, double *scratch_M, double *transition_matrix)
 {
     int i, j;
     int ij, ji;
     int C;
-    double divisor, sum;
+    double divisor, max_sum;
+    double *sum;
+    sum = scratch_M;
     for(i=0; i<n_conf_states; ++i)
     {
-        sum = 0.0;
+        sum[i] = 0.0;
         for(j=0; j<n_conf_states; ++j)
         {
             ij = i*n_conf_states + j;
-            transition_matrix[ij] = 0.0;
-            /* special case: diagonal element */
-            if(i == j) continue;
             ji = j*n_conf_states + i;
+            transition_matrix[ij] = 0.0;
             C = count_matrix[ij] + count_matrix[ji];
             /* special case: this element is zero */
             if(0 == C) continue;
-            /* regular case */
-            divisor = _logsumexp_pair(
-                log_lagrangian_mult[j] - conf_energies[i],
-                log_lagrangian_mult[i] - conf_energies[j]);
-            transition_matrix[ij] = C * exp(-(conf_energies[j] + divisor));
-            sum += transition_matrix[ij];
+            if(i == j) {
+                /* special case: diagonal element */
+                transition_matrix[ij] = 0.5 * C * exp(-log_lagrangian_mult[i]);
+            } else {
+                /* regular case */
+                divisor = _logsumexp_pair(
+                    log_lagrangian_mult[j] - conf_energies[i],
+                    log_lagrangian_mult[i] - conf_energies[j]);
+                transition_matrix[ij] = C * exp(-(conf_energies[j] + divisor));
+            }
+            sum[i] += transition_matrix[ij];
         }
-        /* empty row */
-        if(0.0 == sum)
-            transition_matrix[i*n_conf_states + i] = 1.0;
-        /* too  large row */
-        else if(1.0 < sum)
-        {
-            if(0 < count_matrix[i*n_conf_states + i])
-                printf("# WARNING! THERMOTOOLS::TRAM::ESTIMATE_TRANSITION_MATRIX: T[%d,%d]=0 but C[%d,%d]=%d\n", i, i, i, i, count_matrix[i*n_conf_states + i]);
-            for(j=0; j<n_conf_states; ++j)
-                transition_matrix[i*n_conf_states + j] /= sum;
-        }
-        /* regular row */
-        else
-            transition_matrix[i*n_conf_states + i] = 1.0 - sum;
     }
+    /* normalize T matrix */
+    max_sum = -1;
+    for(i=0; i<n_conf_states; ++i) if(sum[i] > max_sum) max_sum = sum[i];
+    for(i=0; i<n_conf_states; ++i) {
+        for(j=0; j<n_conf_states; ++j) {
+            if(i==j) {
+                transition_matrix[i*n_conf_states + i] = (transition_matrix[i*n_conf_states + i]+max_sum-sum[i])/max_sum; 
+            } else {
+                transition_matrix[i*n_conf_states + j] = transition_matrix[i*n_conf_states + j]/max_sum; 
+            }
+        }
+    }
+
 }
 
 /* Internally this function computes mu(old_log_lagrangian_mult,old_biased_conf_energies).
