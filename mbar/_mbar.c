@@ -72,12 +72,12 @@ extern void _normalize(
 
 extern void _get_conf_energies(
     double *log_therm_state_counts, double *therm_energies,
-    double *bias_energy_sequence, int * conf_state_sequence,
+    double *bias_energy_sequence, int *conf_state_sequence,
     int n_therm_states, int n_conf_states, int seq_length,
     double *scratch_M, double *scratch_T, double *conf_energies)
 {
     int i, x, L;
-    double f0;
+    /* double f0; */
     for(i=0; i<n_conf_states; ++i)
         conf_energies[i] = INFINITY;
     for(x=0; x<seq_length; ++x)
@@ -87,9 +87,34 @@ extern void _get_conf_energies(
         i = conf_state_sequence[x];
         conf_energies[i] = -_logsumexp_pair(-conf_energies[i], -_logsumexp(scratch_T, n_therm_states));
     }
+/*  OBSOLETE SINCE normalize() SHOULD HAVE SHIFTED therm_energies ALREADY?
     for(i=0; i<n_conf_states; ++i)
         scratch_M[i] = -conf_energies[i];
     f0 = -_logsumexp(scratch_M, n_conf_states);
     for(i=0; i<n_conf_states; ++i)
         conf_energies[i] -= f0;
+*/
+}
+
+extern void _get_biased_conf_energies(
+    double *log_therm_state_counts, double *therm_energies,
+    double *bias_energy_sequence, int *conf_state_sequence,
+    int n_therm_states, int n_conf_states, int seq_length,
+    double *scratch_M, double *scratch_T, double *biased_conf_energies)
+{
+    int i, x, K, L;
+    double divisor;
+    for(i=0; i<n_therm_states*n_conf_states; ++i)
+        biased_conf_energies[i] = INFINITY;
+    for(x=0; x<seq_length; ++x)
+    {
+        for(L=0; L<n_therm_states; ++L)
+            scratch_T[L] = log_therm_state_counts[L] + therm_energies[L] - bias_energy_sequence[L * seq_length + x];
+        i = conf_state_sequence[x];
+        divisor = _logsumexp(scratch_T, n_therm_states);
+        for(K=0; K<n_therm_states; ++K)
+            biased_conf_energies[K * n_conf_states + i] = -_logsumexp_pair(
+                -biased_conf_energies[K * n_conf_states + i],
+                -(bias_energy_sequence[K * seq_length + x] + divisor));
+    }
 }

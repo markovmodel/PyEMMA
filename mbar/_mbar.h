@@ -35,4 +35,10 @@ extern void _get_conf_energies(
     int n_therm_states, int n_conf_states, int seq_length,
     double *scratch_M, double *scratch_T, double *conf_energies);
 
+extern void _get_biased_conf_energies(
+    double *log_therm_state_counts, double *therm_energies,
+    double *bias_energy_sequence, int *conf_state_sequence,
+    int n_therm_states, int n_conf_states, int seq_length,
+    double *scratch_M, double *scratch_T, double *biased_conf_energies);
+
 #endif
