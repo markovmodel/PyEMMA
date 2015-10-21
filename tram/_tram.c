@@ -84,8 +84,8 @@ void _update_lagrangian_mult(
                 if(0 == CK) continue;
                 /* regular case */
                 Kj = KM + j;
-                divisor = _logsumexp_pair(log_lagrangian_mult[Kj] - biased_conf_energies[Ki], log_lagrangian_mult[Ki] - biased_conf_energies[Kj]);
-                scratch_M[o++] = log((double) CK) + log_lagrangian_mult[Ki] - biased_conf_energies[Kj] - divisor;
+                divisor = _logsumexp_pair(log_lagrangian_mult[Kj] - biased_conf_energies[Ki] - log_lagrangian_mult[Ki] + biased_conf_energies[Kj], 0.0);
+                scratch_M[o++] = log((double) CK) - divisor;
             }
             new_log_lagrangian_mult[Ki] = _logsumexp(scratch_M, o);
         }
