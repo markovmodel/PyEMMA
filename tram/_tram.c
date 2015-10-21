@@ -95,13 +95,13 @@ void _update_lagrangian_mult(
 void _update_biased_conf_energies(
     double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices, double *bias_energy_sequence,
     int *state_sequence, int *state_counts, int seq_length, double *log_R_K_i,
-    int n_therm_states, int n_conf_states, int do_shift, double *scratch_M, double *scratch_T,
+    int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_T,
     double *new_biased_conf_energies)
 {
     int i, j, K, x, o;
     int Ki, Kj, KM, KMM;
     int Ci, CK, CKij, CKji, NC;
-    double divisor, R_addon, shift;
+    double divisor, R_addon;
     /* compute R_K_i */
     for(K=0; K<n_therm_states; ++K)
     {
@@ -163,15 +163,6 @@ void _update_biased_conf_energies(
             new_biased_conf_energies[K * n_conf_states + i] = -_logsumexp_pair(
                     -new_biased_conf_energies[K * n_conf_states + i], -(divisor + bias_energy_sequence[K * seq_length + x]));
         }
-    }
-    if(do_shift) {
-        /* prevent drift */
-        KM = n_therm_states * n_conf_states;
-        shift = new_biased_conf_energies[0];
-        for(i=1; i<KM; ++i)
-            shift = (shift < new_biased_conf_energies[i]) ? shift : new_biased_conf_energies[i];
-        for(i=0; i<KM; ++i)
-            new_biased_conf_energies[i] -= shift;
     }
 }
 
@@ -284,7 +275,7 @@ void _estimate_transition_matrix(
  * implicit transition matrix is normalized. Only then the result of
  * this fucntion is meaningful.
  */
-double _log_likelihood_assuming_fulfilled_constraints(
+double _log_likelihood_lower_bound(
     double *old_log_lagrangian_mult, double *new_log_lagrangian_mult,
     double *old_biased_conf_energies, double *new_biased_conf_energies,
     int *count_matrices,  int *state_counts,

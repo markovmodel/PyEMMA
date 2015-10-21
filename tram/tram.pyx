@@ -41,7 +41,7 @@ cdef extern from "_tram.h":
     void _update_biased_conf_energies(
         double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices, double *bias_energy_sequence,
         int *state_sequence, int *state_counts, int seq_length, double *log_R_K_i,
-        int n_therm_states, int n_conf_states, int do_shift, double *scratch_M, double *scratch_T,
+        int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_T,
         double *new_biased_conf_energies)
     void _get_conf_energies(
         double *bias_energy_sequence, int *state_sequence, int seq_length, double *log_R_K_i,
@@ -55,7 +55,7 @@ cdef extern from "_tram.h":
     void _estimate_transition_matrix(
         double *log_lagrangian_mult, double *conf_energies, int *count_matrix,
         int n_conf_states, double *scratch_M, double *transition_matrix)
-    double _log_likelihood_assuming_fulfilled_constraints(
+    double _log_likelihood_lower_bound(
         double *old_log_lagrangian_mult, double *new_log_lagrangian_mult,
         double *old_biased_conf_energies, double *new_biased_conf_energies,
         int *count_matrices, int *state_counts,
@@ -125,7 +125,6 @@ def update_biased_conf_energies(
     _np.ndarray[int, ndim=1, mode="c"] state_sequence not None,
     _np.ndarray[int, ndim=2, mode="c"] state_counts not None,
     _np.ndarray[double, ndim=2, mode="c"] log_R_K_i not None,
-    do_shift,
     _np.ndarray[double, ndim=1, mode="c"] scratch_M not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_T not None,
     _np.ndarray[double, ndim=2, mode="c"] new_biased_conf_energies not None):
@@ -167,7 +166,6 @@ def update_biased_conf_energies(
         <double*> _np.PyArray_DATA(log_R_K_i),
         log_lagrangian_mult.shape[0],
         log_lagrangian_mult.shape[1],
-        int(do_shift),
         <double*> _np.PyArray_DATA(scratch_M),
         <double*> _np.PyArray_DATA(scratch_T),
         <double*> _np.PyArray_DATA(new_biased_conf_energies))
@@ -334,7 +332,7 @@ def estimate_transition_matrix(
         <double*> _np.PyArray_DATA(transition_matrix))
     return transition_matrix
 
-def log_likelihood_assuming_fulfilled_constraints(
+def log_likelihood_lower_bound(
     _np.ndarray[double, ndim=2, mode="c"] old_log_lagrangian_mult not None,
     _np.ndarray[double, ndim=2, mode="c"] new_log_lagrangian_mult not None,
     _np.ndarray[double, ndim=2, mode="c"] old_biased_conf_energies not None,
@@ -360,7 +358,7 @@ def log_likelihood_assuming_fulfilled_constraints(
     just serves as a helper function for log_likelihood.
     """
 
-    logL = _log_likelihood_assuming_fulfilled_constraints(
+    logL = _log_likelihood_lower_bound(
         <double*> _np.PyArray_DATA(old_log_lagrangian_mult),
         <double*> _np.PyArray_DATA(new_log_lagrangian_mult),
         <double*> _np.PyArray_DATA(old_biased_conf_energies),
@@ -379,7 +377,9 @@ def log_likelihood_assuming_fulfilled_constraints(
 
     return logL
 
-def log_likelihood(
+# TODO: this should not be the default function; give optional argument ti say if we want to iterate
+# best T = true/false; fro false just default to the simple version
+def log_likelihood_best_lower_bound(
     _np.ndarray[double, ndim=2, mode="c"] log_lagrangian_mult not None,
     _np.ndarray[double, ndim=2, mode="c"] biased_conf_energies not None,
     _np.ndarray[int, ndim=3, mode="c"] count_matrices not None,
@@ -414,7 +414,7 @@ def log_likelihood(
             break
         old_log_lagrangian_mult[:] = new_log_lagrangian_mult[:]
     # Use helper function.
-    logL = log_likelihood_assuming_fulfilled_constraints(
+    logL = log_likelihood_lower_bound(
                very_old_log_lagrangian_mult, new_log_lagrangian_mult,
                old_biased_conf_energies, new_biased_conf_energies,
                count_matrices, bias_energy_sequence, state_sequence, state_counts,
@@ -468,33 +468,31 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
     old_biased_conf_energies = biased_conf_energies.copy()
     old_log_lagrangian_mult = log_lagrangian_mult.copy()
 
-    if True:
-        logL_0 = log_likelihood(log_lagrangian_mult, biased_conf_energies,
-                     count_matrices, bias_energy_sequence, state_sequence, state_counts,
-                     scratch_M, scratch_T, scratch_TM, scratch_MM, maxerr)
-        logL_hist = [logL_0]
-    else:
-        logL_hist = []
+    logL_history = []
+    error_history = []
     
     for _m in range(maxiter):
         update_lagrangian_mult(old_log_lagrangian_mult, biased_conf_energies, count_matrices, state_counts, scratch_M, log_lagrangian_mult)
         update_biased_conf_energies(log_lagrangian_mult, old_biased_conf_energies, count_matrices, bias_energy_sequence, state_sequence,
-            state_counts, log_R_K_i, True, scratch_M, scratch_T, biased_conf_energies)
+            state_counts, log_R_K_i, scratch_M, scratch_T, biased_conf_energies) # optinally include compuation of sum log mu
         if _m%10 == 0:
-            logL = log_likelihood_assuming_fulfilled_constraints( # better just use log_likelihood?
+            logL = log_likelihood_lower_bound( # better just use log_likelihood?
                        log_lagrangian_mult, log_lagrangian_mult,
-                       biased_conf_energies, biased_conf_energies,
+                       old_biased_conf_energies, biased_conf_energies,
                        count_matrices, bias_energy_sequence, state_sequence,
                        state_counts, scratch_M, scratch_T, scratch_TM, scratch_MM)
-            logL_hist.append(logL)
+            logL_history.append(logL)
+            error_history.append(_np.max(_np.abs(biased_conf_energies - old_biased_conf_energies)))
             print>>sys.stderr, logL, 
-            print>>sys.stderr, _np.max(_np.abs(biased_conf_energies - old_biased_conf_energies))
+            print>>sys.stderr, error_history[-1]
         if _np.max(_np.abs(biased_conf_energies - old_biased_conf_energies)) < maxerr:
             break
-        else:
-            old_biased_conf_energies[:] = biased_conf_energies[:]
-            old_log_lagrangian_mult[:] = log_lagrangian_mult[:]
+
+        biased_conf_energies -= _np.min(biased_conf_energies)
+        old_biased_conf_energies[:] = biased_conf_energies
+        old_log_lagrangian_mult[:] = log_lagrangian_mult[:]
+
     conf_energies = get_conf_energies(bias_energy_sequence, state_sequence, log_R_K_i, scratch_M, scratch_T)
     therm_energies = get_therm_energies(biased_conf_energies, scratch_M)
     normalize(conf_energies, biased_conf_energies, therm_energies, scratch_M)
-    return biased_conf_energies, conf_energies, therm_energies, log_lagrangian_mult #, logL_hist
+    return biased_conf_energies, conf_energies, therm_energies, log_lagrangian_mult ,error_history, logL_history
