@@ -151,7 +151,6 @@ def update_biased_conf_energies(
         scratch array for logsumexp operations
     scratch_T : numpy.ndarray(shape=(T), dtype=numpy.float64)
         scratch array for logsumexp operations
-    do_shift : shift new_biased_conf_energies s.t. the minimum is zero
     new_biased_conf_energies : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         target array for the reduced free energies
     """
@@ -346,16 +345,53 @@ def log_likelihood_lower_bound(
     _np.ndarray[double, ndim=2, mode="c"] scratch_TM not None,
     _np.ndarray[double, ndim=2, mode="c"] scratch_MM not None):
     r"""
-    Computes the TRAM log-likelihood with an arbitrary mu that is implicitly
-    given by old_log_lagrangian_mult and old_biased_conf_energies.
+    Computes a lower bound on the TRAM log-likelihood with an arbitrary
+    mu that is implicitly given by old_log_lagrangian_mult and
+    old_biased_conf_energies.
 
-    new_biased_conf_energies is assumed to be the correct normalization
-    of mu. new_log_lagrangian_mult is assumed to code for a T matrix
-    that fulfills detailled balance w.r.t. new_biased_conf_energies.
+    Parameters
+    ----------
+    old_log_lagrangian_mult : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+        log of (old) the Lagrangian multipliers that parametrize mu
+    new_log_lagrangian_mult : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+        log of the Lagrangian multipliers that parametrize the correct
+        estimate of the transtition matrix which in turn fulfills detailled
+        balance wrt. new_biased_conf_energies
+    old_biased_conf_energies : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+        (old) reduced free energies that parametrize mu
+    new_biased_conf_energies : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+        (new) reduced free energies that normalize mu
+    count_matrices : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
+        multistate count matrix
+    bias_energy_sequence : numpy.ndarray(shape=(T, X), dtype=numpy.intc)
+        reduced bias energies in the T thermodynamic states for all X samples
+    state_sequence : numpy.ndarray(shape=(X,), dtype=numpy.intc)
+        Markov state indices for all X samples
+    state_counts : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
+        number of visits to thermodynamic state K and Markov state i
+    scratch_M : numpy.ndarray(shape=(M), dtype=numpy.float64)
+        scratch array
+    scratch_T : numpy.ndarray(shape=(T), dtype=numpy.float64)
+        scratch array
+    scratch_TM : numpy.ndarray(shape=(T,M), dtype=numpy.float64)
+        scratch array
+    scratch_MM : numpy.ndarray(shape=(M,M), dtype=numpy.float64)
+        scratch array
 
-    When the TRAM iteration is converged, inserting the same values for
-    old* and new* will yield the actual log-likelihood. Otherwise this
-    just serves as a helper function for log_likelihood.
+    Note
+    ----
+    mu_i^{(k)} are regarded as functions of old_log_lagrangian_mult,
+    old_biased_conf_energies, count_matrices, bias_energy_sequence,
+    state_sequence and state_counts. By itself that doesn't have to be
+    normalized. exp(-new_biased_conf_energies) are assumed to be the
+    correct normalization constants for mu_i^{(k)}.
+
+    The lower bound on the log-likelihood is computed by first projecting
+    the transition matrix to close feasible point and then computing
+    the (exact) log-likelihood for the combination of mu_i^{(k)},
+    new_biased_conf_energies and this projected transition matrix.
+    Because the projection of the transition matrix is not optimal,
+    this yields only a lower bound on the true log-likelihood.
     """
 
     logL = _log_likelihood_lower_bound(
@@ -377,8 +413,6 @@ def log_likelihood_lower_bound(
 
     return logL
 
-# TODO: this should not be the default function; give optional argument ti say if we want to iterate
-# best T = true/false; fro false just default to the simple version
 def log_likelihood_best_lower_bound(
     _np.ndarray[double, ndim=2, mode="c"] log_lagrangian_mult not None,
     _np.ndarray[double, ndim=2, mode="c"] biased_conf_energies not None,
@@ -391,8 +425,43 @@ def log_likelihood_best_lower_bound(
     _np.ndarray[double, ndim=2, mode="c"] scratch_TM not None,
     _np.ndarray[double, ndim=2, mode="c"] scratch_MM not None,
     maxerr):
-    r"""Computes the TRAM log-likelihood with an arbitrary mu that is implicitly
-       given by log_lagrangian_mult and biased_conf_energies.
+    r"""
+    Computes the best lower bound on the TRAM log-likelihood with an
+    arbitrary mu that is implicitly given by log_lagrangian_mult and
+    biased_conf_energies. The best bound is achieved by iterating the
+    Lagragian multipliers to convergence (thus optimizing the MSM part
+    of TRAM) while keeping biased_conf_energies fixed.
+
+    Parameters
+    ----------
+    log_lagrangian_mult : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+        log of the Lagrangian multipliers that parametrize mu
+    biased_conf_energies : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+        reduced free energies that parametrize mu
+    count_matrices : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
+        multistate count matrix
+    bias_energy_sequence : numpy.ndarray(shape=(T, X), dtype=numpy.intc)
+        reduced bias energies in the T thermodynamic states for all X samples
+    state_sequence : numpy.ndarray(shape=(X,), dtype=numpy.intc)
+        Markov state indices for all X samples
+    state_counts : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
+        number of visits to thermodynamic state K and Markov state i
+    scratch_M : numpy.ndarray(shape=(M), dtype=numpy.float64)
+        scratch array
+    scratch_T : numpy.ndarray(shape=(T), dtype=numpy.float64)
+        scratch array
+    scratch_TM : numpy.ndarray(shape=(T,M), dtype=numpy.float64)
+        scratch array
+    scratch_MM : numpy.ndarray(shape=(M,M), dtype=numpy.float64)
+        scratch array
+    maxerr : float
+        error tolerance to which the Lagrangian multipliers are converged
+
+    Note
+    ----
+    This function can take a long time to finish. Using this function
+    to monitor convergence of the log-likelihood can be too expensive
+    with realistic application. Use log_likelihood_lower_bound instead.
     """
 
     # Compute the normalization contant of mu that is implicitly given
@@ -402,7 +471,7 @@ def log_likelihood_best_lower_bound(
     old_biased_conf_energies = biased_conf_energies.copy()
     new_biased_conf_energies = _np.zeros_like(biased_conf_energies)
     update_biased_conf_energies(old_log_lagrangian_mult, old_biased_conf_energies, count_matrices, bias_energy_sequence, state_sequence,
-                                state_counts, scratch_TM, False, scratch_M, scratch_T, new_biased_conf_energies)
+                                state_counts, scratch_TM, scratch_M, scratch_T, new_biased_conf_energies)
     # Compute a normalized T matrix that fulfills detailled balance w.r.t.
     # new_biased_conf_energies by iterating the Lagrange multipliers.
     new_log_lagrangian_mult = _np.zeros_like(old_log_lagrangian_mult)
@@ -421,10 +490,10 @@ def log_likelihood_best_lower_bound(
                scratch_M, scratch_T, scratch_TM, scratch_MM)
     return logL
 
-def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence, maxiter=1000, maxerr=1.0E-8, biased_conf_energies=None, log_lagrangian_mult=None):
+def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence, maxiter=1000, maxerr=1.0E-8, biased_conf_energies=None, log_lagrangian_mult=None, best_lower_bound=False):
     r"""
     Estimate the reduced discrete state free energies and thermodynamic free energies
-        
+
     Parameters
     ----------
     count_matrices : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
@@ -443,6 +512,10 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
         initial guess for the reduced discrete state free energies for all T thermodynamic states
     log_lagrangian_mult : numpy.ndarray(shape=(T, M), dtype=numpy.float64), OPTIONAL
         initial guess for the logarithm of the Lagrangian multipliers
+    best_lower_bound : boolean
+        When estimating the log-likelihood, select whether a lower bound
+        on the log-likelihhod of the current iterate or the best (highest)
+        lower bound should be calculated.
 
     Returns
     -------
@@ -476,11 +549,17 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
         update_biased_conf_energies(log_lagrangian_mult, old_biased_conf_energies, count_matrices, bias_energy_sequence, state_sequence,
             state_counts, log_R_K_i, scratch_M, scratch_T, biased_conf_energies) # optinally include compuation of sum log mu
         if _m%10 == 0:
-            logL = log_likelihood_lower_bound( # better just use log_likelihood?
-                       log_lagrangian_mult, log_lagrangian_mult,
-                       old_biased_conf_energies, biased_conf_energies,
-                       count_matrices, bias_energy_sequence, state_sequence,
-                       state_counts, scratch_M, scratch_T, scratch_TM, scratch_MM)
+            if best_lower_bound:
+                logL = log_likelihood_best_lower_bound(log_lagrangian_mult,
+                           biased_conf_energies, count_matrices,
+                           bias_energy_sequence, state_sequence,
+                           state_counts, scratch_M, scratch_T, scratch_TM, scratch_MM, maxerr)
+            else:
+                logL = log_likelihood_lower_bound(
+                           log_lagrangian_mult, log_lagrangian_mult,
+                           old_biased_conf_energies, biased_conf_energies,
+                           count_matrices, bias_energy_sequence, state_sequence,
+                           state_counts, scratch_M, scratch_T, scratch_TM, scratch_MM)
             logL_history.append(logL)
             error_history.append(_np.max(_np.abs(biased_conf_energies - old_biased_conf_energies)))
             print>>sys.stderr, logL, 

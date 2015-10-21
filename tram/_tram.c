@@ -269,11 +269,9 @@ void _estimate_transition_matrix(
  * Unless old_log_lagrangian_mult and old_biased_conf_energies are converged
  * values, this mu is an abitrary mu (this is ok).
  * new_biased_conf_energies must normalize mu.
- * The transition matrix that fulfills detailled balance w.r.t.
- * new_biased_conf_energies is implicitly given by new_log_lagrangian_mult.
- * new_log_lagrangian_mult should be chosen by the user such that the
- * implicit transition matrix is normalized. Only then the result of
- * this fucntion is meaningful.
+ * The (possibly non normalized) transition matrix that fulfills detailled
+ * balance w.r.t. new_biased_conf_energies must implicitly be given by
+ * new_log_lagrangian_mult.
  */
 double _log_likelihood_lower_bound(
     double *old_log_lagrangian_mult, double *new_log_lagrangian_mult,
@@ -327,7 +325,7 @@ double _log_likelihood_lower_bound(
     }
 
     /* compute R_{i(x)}^{(k)} */
-    /* TODO: refactor computation of R. */
+    /* TODO: refactor computation of R. or the one of sum_x log mu(x)*/
     old_log_R_K_i = scratch_TM;
     for(K=0; K<n_therm_states; ++K)
     {
