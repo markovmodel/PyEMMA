@@ -77,10 +77,10 @@ class TestCSVReader(unittest.TestCase):
         for skip in [0, 3, 13]:
             r1 = CSVReader(self.filename1, chunksize=30)
             r1._skip = skip
-            out_without_3 = r1.get_output()[0]
+            out_with_skip = r1.get_output()[0]
             r2 = CSVReader(self.filename1, chunksize=30)
             out = r2.get_output()[0]
-            np.testing.assert_almost_equal(out_without_3, out[skip::],
+            np.testing.assert_almost_equal(out_with_skip, out[skip::],
                                            err_msg="The first %s rows were skipped, but that did not "
                                                    "match the rows with skip=0 and sliced by [%s::]" % (skip, skip))
 
@@ -88,13 +88,13 @@ class TestCSVReader(unittest.TestCase):
         for skip in [0, 3, 13]:
             r1 = CSVReader([self.filename1, self.filename1])
             r1._skip = skip
-            out_without_3 = r1.get_output()
-            r2 = CSVReader([self.filename1, "./%s" % self.filename1])
+            out_with_skip = r1.get_output()
+            r2 = CSVReader([self.filename1, self.filename1])
             out = r2.get_output()
-            np.testing.assert_almost_equal(out_without_3[0], out[0][skip::],
+            np.testing.assert_almost_equal(out_with_skip[0], out[0][skip::],
                                            err_msg="The first %s rows of the first file were skipped, but that did not "
                                                    "match the rows with skip=0 and sliced by [%s::]" % (skip, skip))
-            np.testing.assert_almost_equal(out_without_3[1], out[1][skip::],
+            np.testing.assert_almost_equal(out_with_skip[1], out[1][skip::],
                                            err_msg="The first %s rows of the second file were skipped, but that did not"
                                                    " match the rows with skip=0 and sliced by [%s::]" % (skip, skip))
 
