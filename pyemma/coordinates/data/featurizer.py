@@ -549,9 +549,9 @@ class ContactFeature(DistanceFeature):
         dists = mdtraj.compute_distances(
             traj, self.distance_indexes, periodic=self.periodic)
         res = np.zeros(
-            (len(traj), self.distance_indexes.shape[0]), dtype=np.float32)
+            (len(traj), self.distance_indexes.shape[0]), dtype=np.bool)
         I = np.argwhere(dists <= self.threshold)
-        res[I[:, 0], I[:, 1]] = 1.0
+        res[I[:, 0], I[:, 1]] = 1
         return res
 
     def __hash__(self):

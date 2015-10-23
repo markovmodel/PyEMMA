@@ -269,6 +269,10 @@ class Transformer(six.with_metaclass(ABCMeta, ProgressReporter)):
         r""" Number of dimensions that should be used for the output of the transformer. """
         pass
 
+    @property
+    def _has_potentially_sparse_output(self):
+        r""" returns True, if data producer has potentially sparse (constant) columns """
+        return self.data_producer._has_potentially_sparse_output
 
     def number_of_trajectories(self):
         r"""

@@ -269,3 +269,10 @@ class FeatureReader(ReaderInterface):
         assert traj.xyz.shape[1] == desired_n_atoms, "Mismatch in the number of atoms between the topology" \
                                                      " and the first trajectory file, %u vs %u"% \
                                                      (desired_n_atoms, traj.xyz.shape[1])
+
+    @property
+    def _has_potentially_sparse_output(self):
+        r""" returns True, if data producer has potentially sparse (constant) columns """
+        if self.enforce_sparsity:
+            return True
+        return self.featurizer._has_potentially_sparse_output

@@ -66,7 +66,7 @@ class TestFeatureReader(unittest.TestCase):
         # create a fake trajectory which has 3 atoms and coordinates are just a range
         # over all frames.
         cls.tmpdir = tempfile.mkdtemp('test_feature_reader')
-        
+
         cls.topfile = pkg_resources.resource_filename(__name__, 'data/test.pdb')
         cls.trajfile, cls.xyz, cls.n_frames = create_traj(cls.topfile, dir=cls.tmpdir)
         cls.trajfile2, cls.xyz2, cls.n_frames2 = create_traj(cls.topfile, dir=cls.tmpdir)
@@ -217,6 +217,14 @@ class TestFeatureReader(unittest.TestCase):
                 chunks[1] = np.vstack(chunks[1])
                 np.testing.assert_almost_equal(
                     chunks[1], self.xyz2.reshape(-1, 9)[lag::stride], err_msg=err_msg % (stride, lag))
+
+    def test_contact_feature_constant(self):
+        reader = api.source([self.trajfile, self.trajfile2], top=self.topfile)
+        self.assertFalse(reader._has_potentially_sparse_output)
+
+        contact_inds = [[0, 1], [0, 3]]
+        reader.featurizer.add_contacts(contact_inds)
+        self.assertTrue(reader._has_potentially_sparse_output)
 
 if __name__ == "__main__":
     unittest.main()
