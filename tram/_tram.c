@@ -33,13 +33,13 @@ void _init_lagrangian_mult(int *count_matrices, int n_therm_states, int n_conf_s
 {
     int i, j, K;
     int MM = n_conf_states * n_conf_states, KMM;
-    int sum;
+    double sum;
     for(K=0; K<n_therm_states; ++K)
     {
         KMM = K * MM;
         for(i=0; i<n_conf_states; ++i)
         {
-            sum = 0;
+            sum = 0.0;
             for(j=0; j<n_conf_states; ++j)
                 sum += 0.5 * (count_matrices[KMM + i * n_conf_states + j]+
                               count_matrices[KMM + j * n_conf_states + i]);
