@@ -121,6 +121,31 @@ class TestFeatureReader(unittest.TestCase):
         np.testing.assert_equal(data[0], self.xyz.reshape(-1, 9))
         np.testing.assert_equal(data[1], self.xyz2.reshape(-1, 9))
 
+    def test_skip(self):
+        for skip in [0, 3, 13]:
+            r1 = FeatureReader(self.trajfile, self.topfile)
+            r1._skip = skip
+            out_with_skip = r1.get_output()[0]
+            r2 = FeatureReader(self.trajfile, self.topfile)
+            out = r2.get_output()[0]
+            np.testing.assert_almost_equal(out_with_skip, out[skip::],
+                                           err_msg="The first %s rows were skipped, but that did not "
+                                                   "match the rows with skip=0 and sliced by [%s::]" % (skip, skip))
+
+    def test_skip_input_list(self):
+        for skip in [0, 3, 13]:
+            r1 = FeatureReader([self.trajfile, self.trajfile2], self.topfile)
+            r1._skip = skip
+            out_with_skip = r1.get_output()
+            r2 = FeatureReader([self.trajfile, self.trajfile2], self.topfile)
+            out = r2.get_output()
+            np.testing.assert_almost_equal(out_with_skip[0], out[0][skip::],
+                                           err_msg="The first %s rows of the first file were skipped, but that did not "
+                                                   "match the rows with skip=0 and sliced by [%s::]" % (skip, skip))
+            np.testing.assert_almost_equal(out_with_skip[1], out[1][skip::],
+                                           err_msg="The first %s rows of the second file were skipped, but that did not"
+                                                   " match the rows with skip=0 and sliced by [%s::]" % (skip, skip))
+
     def testTimeLaggedIterator(self):
         lag = 10
         reader = FeatureReader(self.trajfile, self.topfile)
