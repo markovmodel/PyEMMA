@@ -13,7 +13,7 @@ Anaconda install (Recommended)
 ==============================
 
 We strongly recommend to use the Anaconda scientific python distribution in order to install
-python-based software, including pyEMMA. Python-based software is not trivial to distribute
+python-based software, including PyEMMA. Python-based software is not trivial to distribute
 and this approach saves you many headaches and problems that frequently arise in other installation
 methods. You are free to use a different approach (see below) if you know how to sort out problems,
 but play at your own risk.
@@ -29,12 +29,11 @@ If you already have a conda installation, directly go to step 3:
 2. If you have installed from a Linux shell, either open a new shell to have an updated PATH,
    or update your PATH variable by ``source ~/.bashrc`` (or .tcsh, .csh - whichever shell you are using).
 
-3. Add the omnia-md software channel, and install (or update) pyemma:
+3. Add the omnia-md software channel, and install (or update) PyEMMA:
 
    .. code::
 
-      conda config --add channels http://conda.binstar.org/omnia
-      conda install binstar # to be able to get packages from binstar
+      conda config --add channels omnia
       conda install pyemma
 
    if the command conda is unknown, the PATH variable is probably not set correctly (see 1. and 2.)
@@ -60,7 +59,7 @@ Python Package Index (PyPI)
 
 If you do not like Anaconda for some reason you should use the Python package
 manager **pip** to install. This is not recommended, because in the past,
-various problems have arisen with pip in compiling the packages that pyEMMA depends upon.
+various problems have arisen with pip in compiling the packages that PyEMMA depends upon.
 
 1. If you do not have pip, please read the install guide:
    `install guide <http://pip.readthedocs.org/en/latest/installing.html>`_.
@@ -76,7 +75,7 @@ various problems have arisen with pip in compiling the packages that pyEMMA depe
    moment of writing PyPI does not support Linux binaries at all, so Linux users
    have to compile by themselves.
 
-3. Install pyEMMA using
+3. Install PyEMMA using
 
    ::
 
@@ -102,16 +101,16 @@ various problems have arisen with pip in compiling the packages that pyEMMA depe
 
 Building from Source
 ====================
-If you refuse to use Anaconda, you will build pyEMMA from the
-source. In this approach, all pyEMMA dependencies will be built from the source too.
+If you refuse to use Anaconda, you will build PyEMMA from the
+source. In this approach, all PyEMMA dependencies will be built from the source too.
 Building these from source is sometimes (if not usually) tricky, takes a
 long time and is error prone - though it is **not** recommended nor supported
 by us. If unsure, use the anaconda installation.
 
-1. Ensure that you fulfill the following prerequesites:
+1. Ensure that you fulfill the following prerequisites:
 
    * C/C++ compiler
-   * setuptools > 3.6
+   * setuptools > 18 
    * cython >= 0.22
    * numpy >= 1.6
    * scipy >= 0.11
@@ -144,11 +143,11 @@ supplied) from source.
 
 For Developers
 ==============
-If you are a developer, clone the code repository from github and install it as follows
+If you are a developer, clone the code repository from GitHub and install it as follows
 
-1. Ensure the Prerequesites (point 1) described for "Building from Source" above.
+1. Ensure the prerequisites (point 1) described for "Building from Source" above.
 
-2. Make a suitable directory, and inside clone the reposity via
+2. Make a suitable directory, and inside clone the repository via
 
    ::
 
@@ -161,9 +160,9 @@ If you are a developer, clone the code repository from github and install it as 
       python setup.py develop [--user]
 
    The develop install has the advantage that if only python scripts are being changed
-   e.g. via an pull or a local edit, you do not have to reinstall anything, because
+   e.g. via an pull or a local edit, you do not have to re-install anything, because
    the setup command simply created a link to your working copy. Repeating point 3 is
-   only necessary if any of pyEMMA's C-files change and need to be rebuilt.
+   only necessary if any of PyEMMA C-files change and need to be rebuilt.
 
 Frequently Asked Questions (FAQ)
 ================================
@@ -191,3 +190,20 @@ Frequently Asked Questions (FAQ)
      the systems provided python installation like /usr/lib/python etc. because
      of the same reason.
 
+* Q: I'm using conda, but recently during installations/updates I get the following
+  error message::
+
+     $ conda install binstar
+
+     Fetching package metadata: .....Error: Could not find URL: http://conda.binstar.org/omnia/osx-64/
+
+  A: This occurs because binstar.org has been removed to anaconda.org (10/2015).
+     To resolve this you need to remove the channel definition by invoking::
+
+        conda config --remove channels http://conda.binstar.org/omnia --force
+
+     and add the new channel living on anaconda.org::
+
+        conda config --add channels omnia
+
+ 

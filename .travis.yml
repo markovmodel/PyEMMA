@@ -16,7 +16,7 @@ env:
 before_install:
 - tools/ci/travis/install_miniconda.sh
 - conda config --set always_yes true 
-- conda config --add channels http://conda.binstar.org/omnia 
+- conda config --add channels omnia 
 - conda install $common_py_deps 
 # use a headless plotting backend for matplotlib
 - mkdir -p ~/.config/matplotlib/
