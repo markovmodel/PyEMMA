@@ -41,7 +41,8 @@ extern void _init_lagrangian_mult(
         {
             sum = 0;
             for(j=0; j<n_conf_states; ++j)
-                sum += count_matrices[KMM + i*n_conf_states + j];
+                sum += 0.5 * (count_matrices[KMM + i*n_conf_states + j],
+                              count_matrices[KMM + j*n_conf_states + i]);
             log_lagrangian_mult[K*n_conf_states + i] = log(THERMOTOOLS_DTRAM_PRIOR + (double) sum);
         }
     }

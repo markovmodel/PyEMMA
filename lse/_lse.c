@@ -73,7 +73,7 @@ extern double _logsumexp(double *array, int length)
         return -INFINITY;
     for(i=0; i<length-1; ++i)
         sum += exp(array[i] - array[length - 1]);
-    return array[length - 1] + log(sum + 1.0);
+    return array[length - 1] + log1p(sum);
 }
 
 extern double _logsumexp_pair(double a, double b)
@@ -81,6 +81,6 @@ extern double _logsumexp_pair(double a, double b)
     if((-INFINITY == a) && (-INFINITY == b))
         return -INFINITY;
     if(b > a)
-        return b + log(1.0 + exp(a - b));
-    return a + log(1.0 + exp(b - a));
+        return b + log1p(exp(a - b));
+    return a + log1p(exp(b - a));
 }
