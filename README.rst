@@ -8,10 +8,10 @@ EMMA (Emma's Markov Model Algorithms)
    :target: https://pypi.python.org/pypi/pyemma
 .. image:: https://pypip.in/d/pyemma/badge.svg
    :target: https://pypi.python.org/pypi/pyemma
-.. image:: https://binstar.org/xavier/binstar/badges/downloads.svg
-   :target: https://binstar.org/omnia/pyemma
-.. image:: https://binstar.org/omnia/pyemma/badges/installer/conda.svg
-   :target: https://conda.binstar.org/omnia
+.. image:: https://anaconda.org/xavier/binstar/badges/downloads.svg
+   :target: https://anaconda.org/omnia/pyemma
+.. image:: https://anaconda.org/omnia/pyemma/badges/installer/conda.svg
+   :target: https://conda.anaconda.org/omnia
 .. image:: https://coveralls.io/repos/markovmodel/PyEMMA/badge.svg?branch=devel
    :target: https://coveralls.io/r/markovmodel/PyEMMA?branch=devel
 
@@ -39,7 +39,7 @@ With pip::
 
 with conda::
 
-     conda install -c https://conda.binstar.org/omnia pyemma
+     conda install -c omnia pyemma
 
 
 or install latest devel branch with pip::
@@ -69,4 +69,6 @@ Or start a discussion on our mailing list: pyemma-users@lists.fu-berlin.de
 External Libraries
 ------------------
 * mdtraj (LGPLv3): https://mdtraj.org
+* bhmm (LGPLv3): http://github.com/bhmm/bhmm
+* msmtools (LGLPv3): http://github.com/markovmodel/msmtools
 
