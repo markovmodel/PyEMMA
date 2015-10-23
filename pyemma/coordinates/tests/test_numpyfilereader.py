@@ -107,6 +107,31 @@ class TestNumPyFileReader(unittest.TestCase):
         for x, y in zip(output, from_files):
             np.testing.assert_array_almost_equal(x, y)
 
+    def test_skip(self):
+        for skip in [0, 3, 13]:
+            r1 = NumPyFileReader(self.npy_files[0])
+            r1._skip = skip
+            out_with_skip = r1.get_output()[0]
+            r2 = NumPyFileReader(self.npy_files[0])
+            out = r2.get_output()[0]
+            np.testing.assert_almost_equal(out_with_skip, out[skip::],
+                                           err_msg="The first %s rows were skipped, but that did not "
+                                                   "match the rows with skip=0 and sliced by [%s::]" % (skip, skip))
+
+    def test_skip_input_list(self):
+        for skip in [0, 3, 13]:
+            r1 = NumPyFileReader(self.npy_files)
+            r1._skip = skip
+            out_with_skip = r1.get_output()
+            r2 = NumPyFileReader(self.npy_files)
+            out = r2.get_output()
+            for i in range(0, len(self.npy_files)):
+                np.testing.assert_almost_equal(
+                    out_with_skip[i], out[i][skip::],
+                    err_msg="The first %s rows of the %s'th file were skipped, but that did not "
+                            "match the rows with skip=0 and sliced by [%s::]" % (skip, i, skip)
+                )
+
     def testSingleFile(self):
         reader = NumPyFileReader(self.npy_files[0])
 
