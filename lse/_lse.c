@@ -68,6 +68,7 @@ extern double _logsumexp(double *array, int length)
 {
     int i;
     double sum=0.0;
+    if(0 == length) return -INFINITY;
     _sort(array, 0, length - 1);
     if(-INFINITY == array[length - 1])
         return -INFINITY;
