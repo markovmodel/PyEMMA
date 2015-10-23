@@ -490,7 +490,8 @@ def log_likelihood_best_lower_bound(
                scratch_M, scratch_T, scratch_TM, scratch_MM)
     return logL
 
-def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence, maxiter=1000, maxerr=1.0E-8, biased_conf_energies=None, log_lagrangian_mult=None, best_lower_bound=False):
+def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence, maxiter=1000, maxerr=1.0E-8,
+             biased_conf_energies=None, log_lagrangian_mult=None, call_back=None):
     r"""
     Estimate the reduced discrete state free energies and thermodynamic free energies
 
@@ -512,10 +513,6 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
         initial guess for the reduced discrete state free energies for all T thermodynamic states
     log_lagrangian_mult : numpy.ndarray(shape=(T, M), dtype=numpy.float64), OPTIONAL
         initial guess for the logarithm of the Lagrangian multipliers
-    best_lower_bound : boolean
-        When estimating the log-likelihood, select whether a lower bound
-        on the log-likelihhod of the current iterate or the best (highest)
-        lower bound should be calculated.
 
     Returns
     -------
@@ -541,9 +538,7 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
     old_biased_conf_energies = biased_conf_energies.copy()
     old_log_lagrangian_mult = log_lagrangian_mult.copy()
 
-    logL_history = []
-    error_history = []
-    
+    best_lower_bound = False # alternative doesn't work at the moment
     for _m in range(maxiter):
         update_lagrangian_mult(old_log_lagrangian_mult, biased_conf_energies, count_matrices, state_counts, scratch_M, log_lagrangian_mult)
         update_biased_conf_energies(log_lagrangian_mult, old_biased_conf_energies, count_matrices, bias_energy_sequence, state_sequence,
@@ -560,10 +555,12 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
                            old_biased_conf_energies, biased_conf_energies,
                            count_matrices, bias_energy_sequence, state_sequence,
                            state_counts, scratch_M, scratch_T, scratch_TM, scratch_MM)
-            logL_history.append(logL)
-            error_history.append(_np.max(_np.abs(biased_conf_energies - old_biased_conf_energies)))
-            print>>sys.stderr, logL, 
-            print>>sys.stderr, error_history[-1]
+            if call_back is not None:
+                call_back(iteration=_m, log_likelihood=logL,
+                          biased_conf_energies=biased_conf_energies,
+                          log_lagrangian_mult=log_lagrangian_mult,
+                          old_biased_conf_energies=old_biased_conf_energies,
+                          old_log_lagrangian_mult=old_log_lagrangian_mult)
         if _np.max(_np.abs(biased_conf_energies - old_biased_conf_energies)) < maxerr:
             break
 
@@ -574,4 +571,4 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
     conf_energies = get_conf_energies(bias_energy_sequence, state_sequence, log_R_K_i, scratch_M, scratch_T)
     therm_energies = get_therm_energies(biased_conf_energies, scratch_M)
     normalize(conf_energies, biased_conf_energies, therm_energies, scratch_M)
-    return biased_conf_energies, conf_energies, therm_energies, log_lagrangian_mult ,error_history, logL_history
+    return biased_conf_energies, conf_energies, therm_energies, log_lagrangian_mult
