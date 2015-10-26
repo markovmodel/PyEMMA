@@ -104,13 +104,14 @@ def update_biased_conf_weights(
         else:
             print "Network is fine"
 
-def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence, maxiter=1000, maxerr=1.0E-8, biased_conf_energies=None, log_lagrangian_mult=None):
+def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence, maxiter=1000, maxerr=1.0E-8, 
+             biased_conf_energies=None, log_lagrangian_mult=None, call_back=None):
     import sys
     print >> sys.stderr, 'Hello direct space.'
     n_therm_states = count_matrices.shape[0]
     n_conf_states = count_matrices.shape[1]
     
-    assert(_np.all(state_counts == _np.maximum(count_matrices.sum(axis=1),count_matrices.sum(axis=2))))
+    assert(_np.all(state_counts >= _np.maximum(count_matrices.sum(axis=1),count_matrices.sum(axis=2))))
     
     # init lagrangian multipliers
     lagrangian_mult = 0.5 * (count_matrices + _np.transpose(count_matrices, axes=(0,2,1))).sum(axis=2).astype(_np.float64)
@@ -127,12 +128,15 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
     old_lagrangian_mult = lagrangian_mult.copy()
     old_biased_conf_energies = _np.zeros_like(biased_conf_weights)
     for _m in range(maxiter):
-        for _mm in range(1):
-            update_lagrangian_mult(old_lagrangian_mult, biased_conf_weights, count_matrices, state_counts, lagrangian_mult)
-            update_biased_conf_weights(lagrangian_mult, old_biased_conf_weights, count_matrices, bias_weight_sequence, state_sequence,
-                                       state_counts, R_K_i, _m%100==0, biased_conf_weights)
-            biased_conf_energies = -_np.log(biased_conf_weights)
+        update_lagrangian_mult(old_lagrangian_mult, biased_conf_weights, count_matrices, state_counts, lagrangian_mult)
+        update_biased_conf_weights(lagrangian_mult, old_biased_conf_weights, count_matrices, bias_weight_sequence, state_sequence,
+                                   state_counts, R_K_i, _m%100==0, biased_conf_weights)
+        biased_conf_energies = -_np.log(biased_conf_weights)
         if _m%100==0:
+            if call_back is not None:
+                call_back(iteration=_m, old_log_lagrangian_mult=_np.log(old_lagrangian_mult), log_lagrangian_mult=_np.log(lagrangian_mult),
+                          old_biased_conf_energies=-_np.log(old_biased_conf_weights), biased_conf_energies=-_np.log(biased_conf_weights),
+                          log_likelihood=0)
             Z_K = biased_conf_weights.sum(axis=1)
             print 'Z_K', Z_K
             #print 'info (Z_K_i):', biased_conf_weights
@@ -156,7 +160,8 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
     therm_energies = -_np.log(biased_conf_weights.sum(axis=1)/norm)
     log_lagrangian_mult = _np.log(lagrangian_mult)
     log_L_hist = []
-    return biased_conf_energies, conf_energies, therm_energies, log_lagrangian_mult, log_L_hist
+    return biased_conf_energies, conf_energies, therm_energies, _np.log(log_lagrangian_mult)
+    
     
 
     
