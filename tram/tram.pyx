@@ -572,4 +572,4 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
     conf_energies = get_conf_energies(bias_energy_sequence, state_sequence, log_R_K_i, scratch_M, scratch_T)
     therm_energies = get_therm_energies(biased_conf_energies, scratch_M)
     normalize(conf_energies, biased_conf_energies, therm_energies, scratch_M)
-    return biased_conf_energies, conf_energies, therm_energies, log_lagrangian_mult, log_L_hist
+    return biased_conf_energies, conf_energies, therm_energies, log_lagrangian_mult
