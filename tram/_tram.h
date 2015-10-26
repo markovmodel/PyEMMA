@@ -20,8 +20,9 @@
 #ifndef THERMOTOOLS_TRAM
 #define THERMOTOOLS_TRAM
 
-/*#define THERMOTOOLS_TRAM_PRIOR 1.0E-10
-  #define THERMOTOOLS_TRAM_LOG_PRIOR -23.025850929940457*/
+/* #define THERMOTOOLS_TRAM_PRIOR 1.0E-10 */
+/* #define THERMOTOOLS_TRAM_LOG_PRIOR -23.025850929940457 */
+
 
 #define THERMOTOOLS_TRAM_PRIOR 0
 #define THERMOTOOLS_TRAM_LOG_PRIOR -INFINITY
@@ -52,12 +53,14 @@ void _normalize(
 
 void _estimate_transition_matrix(
     double *log_lagrangian_mult, double *conf_energies, int *count_matrix,
-    int n_conf_states, double *transition_matrix);
+    int n_conf_states, double *scratch_M, double *transition_matrix);
 
-double _log_likelihood(
-    double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices,  int *state_counts, double *log_R_K_i,
+double _log_likelihood_lower_bound(
+    double *old_log_lagrangian_mult, double *new_log_lagrangian_mult,
+    double *old_biased_conf_energies, double *new_biased_conf_energies,
+    int *count_matrices,  int *state_counts,
     int n_therm_states, int n_conf_states,
     double *bias_energy_sequence, int *state_sequence, int seq_length,
-    double *scratch_T, double *scratch_M);
+    double *scratch_T, double *scratch_M, double *scratch_TM, double *scratch_MM);
 
 #endif
