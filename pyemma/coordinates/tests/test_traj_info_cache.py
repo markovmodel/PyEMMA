@@ -27,6 +27,7 @@ import unittest
 import os
 import tempfile
 from glob import glob
+import numpy as np
 
 from pyemma.coordinates.data.traj_info_cache import _TrajectoryInfoCache as TrajectoryInfoCache
 import mdtraj
@@ -55,6 +56,23 @@ class TestTrajectoryInfoCache(unittest.TestCase):
                 desired[f] = len(fh)
 
         self.assertEqual(results, desired)
+
+    def test_with_npy_file(self):
+        from pyemma.util.files import TemporaryDirectory
+        lengths = [1, 23, 27, ]
+        different_lengths_array = [np.empty((n, 3)) for n in lengths]
+        files = []
+        with TemporaryDirectory() as td:
+            for i, x in enumerate(different_lengths_array):
+                fn = "%i.npy" % i
+                np.save(fn, x)
+                files.append(fn)
+
+            # cache it and compare
+            results = {f: self.db[f] for f in files}
+            expected = {fn: len(different_lengths_array[i]) for i, fn in enumerate(files)}
+
+            self.assertEqual(results, expected)
 
 if __name__ == "__main__":
     unittest.main()
