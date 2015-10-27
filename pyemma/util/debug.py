@@ -8,8 +8,10 @@ Created on 15.10.2015
 
 @author: marscher
 '''
+from __future__ import absolute_import
+
 import signal
-from log import getLogger
+from .log import getLogger
 
 logger = None
 
@@ -28,7 +30,7 @@ def show_stacktrace(sig, frame):
 
     out.seek(0)
     trace = out.read()
-    logger.error(trace)
+    logger.info(trace)
 
 
 def handle_pdb(sig, frame):
