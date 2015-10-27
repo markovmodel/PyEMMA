@@ -42,6 +42,21 @@ class TestFragmentedTrajectory(unittest.TestCase):
             out = reader.get_output(stride=stride)[0]
             np.testing.assert_array_almost_equal(expected, out)
 
+    def test_full_trajectory_stridden_with_lag(self):
+        data = np.vstack((self.d, self.d))
+        for lag in [1, 5, 7]:
+            for stride in [1, 3, 5, 7, 13, 20]:
+                reader = FragmentedTrajectoryReader([self.d, self.d])
+                reader.chunksize = 0
+
+                X, Y = None, None
+                # not chunked
+                for itraj, X, Y in reader.iterator(stride=stride, lag=lag):
+                    pass
+
+                np.testing.assert_array_almost_equal(data[::stride], X)
+                np.testing.assert_array_almost_equal(data[lag::stride], Y)
+
     def test_index_to_reader_index(self):
         reader = FragmentedTrajectoryReader([self.d, self.d])
         assert (0, 0) == reader._index_to_reader_index(0), "first frame is first frame of first reader"
