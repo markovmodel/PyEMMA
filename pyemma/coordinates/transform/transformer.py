@@ -170,8 +170,10 @@ class Transformer(six.with_metaclass(ABCMeta, ProgressReporter)):
     # counting transformer instances, incremented by name property.
     _ids = count(0)
 
-    def __init__(self, chunksize=100):
-        self.chunksize = chunksize
+    def __init__(self, chunksize=None):
+        self._logger.warning("Given deprecated argument 'chunksize=%s'"
+                             " to transformer. Ignored - please set the "
+                             "chunksize in the reader" % chunksize)
         self._in_memory = False
         self._data_producer = None
         self._parametrized = False
@@ -212,21 +214,22 @@ class Transformer(six.with_metaclass(ABCMeta, ProgressReporter)):
     @property
     def chunksize(self):
         """chunksize defines how much data is being processed at once."""
-        return self._chunksize
+        return self.data_producer.chunksize
 
     @chunksize.setter
     def chunksize(self, size):
         if not size >= 0:
             raise ValueError("chunksize has to be positive")
-        self._chunksize = int(size)
+
+        self.data_producer.chunksize = int(size)
 
     def _n_chunks(self, stride=1):
         """ rough estimate of how many chunks will be processed """
-        if self._chunksize != 0:
+        if self.chunksize != 0:
             if not TransformerIteratorContext.is_uniform_stride(stride):
-                chunks = ceil(len(stride[:, 0]) / float(self._chunksize))
+                chunks = ceil(len(stride[:, 0]) / float(self.chunksize))
             else:
-                chunks = sum([ceil(l / float(self._chunksize))
+                chunks = sum([ceil(l / float(self.chunksize))
                               for l in self.trajectory_lengths(stride)])
         else:
             chunks = 1
