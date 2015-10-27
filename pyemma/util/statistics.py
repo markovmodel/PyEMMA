@@ -86,7 +86,8 @@ def _indexes(arr):
     if myarr.ndim == 1:
         return list(range(len(myarr)))
     elif myarr.ndim == 2:
-        return itertools.product(list(range(arr.shape[0])), list(range(arr.shape[1])))
+        return tuple(itertools.product(list(range(arr.shape[0])),
+                                       list(range(arr.shape[1]))))
     else:
         raise NotImplementedError('Only supporting arrays of dimension 1 and 2 as yet.')
 
