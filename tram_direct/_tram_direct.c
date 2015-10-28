@@ -20,10 +20,11 @@
 
 void _update_lagrangian_mult(
     double *lagrangian_mult, double *biased_conf_weights, int *count_matrices, int* state_counts,
-    int n_therm_states, int n_conf_states, double *new_lagrangian_mult)
+    int n_therm_states, int n_conf_states, int iteration, double *new_lagrangian_mult)
 {
     int i, j, K, KMM, Ki, Kj;
     int CCT_Kij;
+    double sum;
 
     for(K=0; K<n_therm_states; ++K)
     {
@@ -45,20 +46,42 @@ void _update_lagrangian_mult(
                     CCT_Kij += count_matrices[KMM + j*n_conf_states + i];
                     if(0 < CCT_Kij) {
                         /* one of the nus can be zero */
-                        if(lagrangian_mult[Ki]==0 && lagrangian_mult[Kj]==0) fprintf(stderr, "Warning nu[%d,%d]=nu[%d,%d]=0\n",K,i,K,j);
-                        if(lagrangian_mult[Ki]+lagrangian_mult[Kj]<CCT_Kij) fprintf(stderr, "Not a valid nu iterate at K=%d, i=%d, j=%d.\n", K,i,j);
-                        if(biased_conf_weights[Ki]==0) fprintf(stderr, "Warning Z[%d,%d]=0\n",K,i);
-                        if(biased_conf_weights[Kj]==0) fprintf(stderr, "Warning Z[%d,%d]=0\n",K,j);
+                        //if(lagrangian_mult[Ki]==0) { fprintf(stderr, "Warning nu[%d,%d]=0 in iteration %d.\n",K,i,iteration); }
+                        //if(lagrangian_mult[Kj]==0) { fprintf(stderr, "Warning nu[%d,%d]=0 in iteration %d.\n",K,j,iteration); }
+                        if(lagrangian_mult[Ki]==0 && lagrangian_mult[Kj]==0) fprintf(stderr, "Warning nu[%d,%d]=nu[%d,%d]=0 in iteration %d.\n",K,i,K,j,iteration);
+                        if(lagrangian_mult[Ki]+lagrangian_mult[Kj]<CCT_Kij) fprintf(stderr, "Not a valid nu iterate at K=%d, i=%d, j=%d in iteration %d.\n", K,i,j,iteration);
+                        //if(biased_conf_weights[Ki]==0) fprintf(stderr, "Warning Z[%d,%d]=0 in iteration %d.\n",K,i,iteration);
+                        //if(biased_conf_weights[Kj]==0) fprintf(stderr, "Warning Z[%d,%d]=0 in iteration %d.\n",K,j,iteration);
+                        if(fabs(log(biased_conf_weights[Ki])-log(biased_conf_weights[Kj])) > 30) {
+                            fprintf(stderr, "Warning unrealistic free energy difference between Z[%d,%d] and Z[%d,%d] in iteration %d.\n",K,i,K,j,iteration);
+                        }
                         new_lagrangian_mult[Ki] += 
                             (double)CCT_Kij / (1.0 + 
                                                (lagrangian_mult[Kj]/lagrangian_mult[Ki])*
                                                (biased_conf_weights[Ki]/biased_conf_weights[Kj]));
+                        if(new_lagrangian_mult[Ki]< 1.E-300) {  
+                            //fprintf(stderr, "Warning new_nu[%d,%d]=0 in iteration %d. fixed.\n",K,i,iteration);
+                            new_lagrangian_mult[Ki] =1.E-300; 
+                        }
                     }
                 }
-                    
+                //if(lagrangian_mult[Ki] > 0 && new_lagrangian_mult[Ki] > 0)
+                //    fprintf(stderr, "nu[%d,%d] was scaled by %g in iteration %d.\n", K,i,new_lagrangian_mult[Ki]/lagrangian_mult[Ki], iteration);
             }
         }
     }
+
+    for(i=0; i<n_conf_states; ++i)
+    {
+        sum = 0;
+        for(K=0; K<n_therm_states; ++K)
+        {
+            Ki = K*n_conf_states + i;
+            sum += lagrangian_mult[Ki];
+        }
+        if(sum < 1.E-50) { fprintf(stderr, "All Lagrange multipliers for i=%d are zero.\n", i); }
+    }
+
 
 }
 
@@ -68,7 +91,7 @@ struct my_sparse _update_biased_conf_weights(
     int n_therm_states, int n_conf_states, int check_overlap, double *scratch_TM, double *new_biased_conf_weights)
 {
     int i, j, K, Ki, Kj, KMM, x, n, L, Li, KLi;
-    int CCT_Kij, CKi;
+    int CCT_Kij, CKi, CtKi;
     double divisor, sum, term, c, t;
     double *skipped_biased_conf_weights, *skipped_divisor;
     int *rows, *cols;
@@ -83,12 +106,14 @@ struct my_sparse _update_biased_conf_weights(
         for(i=0; i<n_conf_states; ++i)
         {
             CKi = 0;
+            CtKi = 0;
             Ki = K*n_conf_states + i;
             R_K_i[Ki] = 0.0;
             for(j=0; j<n_conf_states; ++j)
             {
                 CCT_Kij = count_matrices[KMM + i*n_conf_states + j];
                 CKi += count_matrices[KMM + j*n_conf_states + i];
+                CtKi += count_matrices[KMM + i*n_conf_states + j];
                 Kj = K*n_conf_states + j;
                 if(i == j) {
                     R_K_i[Ki] += CCT_Kij + THERMOTOOLS_TRAM_PRIOR;
