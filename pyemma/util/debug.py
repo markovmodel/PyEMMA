@@ -82,8 +82,8 @@ def register_signal_handlers():
     To obtain a stack trace, just send the signal 42 to the current Python process id.
     This id can be obtained via:
 
-    >>> import os # +doctest:SKIP
-    >>> os.getpid() # +doctest:SKIP
+    >>> import os # doctest: +SKIP
+    >>> os.getpid() # doctest: +SKIP
     34588
 
     To send the signal you can use kill on Linux and OSX::
