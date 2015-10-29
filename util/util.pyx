@@ -27,11 +27,32 @@ from msmtools.estimation import count_matrix as _cm
 __all__ = ['count_matrices', 'state_counts']
 
 cdef extern from "_util.h":
+    void _mixed_sort(double *array, int L, int R)
     int _get_therm_state_break_points(int *T_x, int seq_length, int *break_points)
 
 ####################################################################################################
 #   sorting
 ####################################################################################################
+
+def mixed_sort(_np.ndarray[double, ndim=1, mode="c"] array not None):
+    r"""
+    Sorts the array inplace
+        
+    Parameters
+    ----------
+    array : numpy.ndarray(dtype=numpy.float64)
+        unsorted values
+
+    Returns
+    -------
+    array : numpy.ndarray(dtype=numpy.float64)
+        sorted values
+
+    Notes
+    -----
+    Performs a quicksort/mergesort hybrid.
+    """
+    return _mixed_sort(<double*> _np.PyArray_DATA(array), 0, array.shape[0] - 1)
 
 ####################################################################################################
 #   direct summation schemes

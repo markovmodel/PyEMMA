@@ -30,6 +30,42 @@
 *   sorting
 ***************************************************************************************************/
 
+extern void _mixed_sort(double *array, int L, int R)
+/* _mixed_sort() is based on examples from http://www.linux-related.de (2004) */
+{
+    int l, r;
+    double swap;
+    if(R - L > 25) /* use quicksort */
+    {
+        l = L - 1;
+        r = R;
+        for(;;)
+        {
+            while(array[++l] < array[R]);
+            while((array[--r] > array[R]) && (r > l));
+            if(l >= r) break;
+            swap = array[l];
+            array[l] = array[r];
+            array[r] = swap;
+        }
+        swap = array[l];
+        array[l] = array[R];
+        array[R] = swap;
+        _mixed_sort(array, L, l - 1);
+        _mixed_sort(array, l + 1, R);
+    }
+    else /* use insertion sort */
+    {
+        for(l=L+1; l<=R; ++l)
+        {
+            swap = array[l];
+            for(r=l-1; (r >= L) && (swap < array[r]); --r)
+                array[r + 1] = array[r];
+            array[r + 1] = swap;
+        }
+    }
+}
+
 /***************************************************************************************************
 *   direct summation schemes
 ***************************************************************************************************/
