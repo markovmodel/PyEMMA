@@ -34,15 +34,16 @@ void _init_lagrangian_mult(int *count_matrices, int n_therm_states, int n_conf_s
 {
     int i, j, K;
     int MM = n_conf_states * n_conf_states, KMM;
-    int sum;
+    double sum;
     for(K=0; K<n_therm_states; ++K)
     {
         KMM = K * MM;
         for(i=0; i<n_conf_states; ++i)
         {
-            sum = 0;
+            sum = 0.0;
             for(j=0; j<n_conf_states; ++j)
-                sum += count_matrices[KMM + i * n_conf_states + j];
+                sum += 0.5 * (count_matrices[KMM + i * n_conf_states + j]+
+                              count_matrices[KMM + j * n_conf_states + i]);
             log_lagrangian_mult[K * n_conf_states + i] = log(THERMOTOOLS_TRAM_PRIOR + sum);
         }
     }
@@ -81,9 +82,8 @@ void _update_lagrangian_mult(
                 /* regular case */
                 Kj = KM + j;
                 divisor = _logsumexp_pair(
-                    log_lagrangian_mult[Kj] - biased_conf_energies[Ki],
-                    log_lagrangian_mult[Ki] - biased_conf_energies[Kj]);
-                scratch_M[o++] = log((double) CK) + log_lagrangian_mult[Ki] - biased_conf_energies[Kj] - divisor;
+                    log_lagrangian_mult[Kj] - biased_conf_energies[Ki] - log_lagrangian_mult[Ki] + biased_conf_energies[Kj], 0.0);
+                scratch_M[o++] = log((double) CK) - divisor;
             }
             new_log_lagrangian_mult[Ki] = _logsumexp_sort_kahan_inplace(scratch_M, o);
         }
