@@ -105,8 +105,6 @@ class TestSparsifierImplicitTICA(unittest.TestCase):
         sparsifier.data_producer = reader
         sparsifier.parametrize()
 
-        print sparsifier.varying_indices
-
         self.assertEqual(sparsifier.dimension(), reader.dimension() - 1)
 
         tica = coor_api.tica(reader, lag=1, var_cutoff=1)
