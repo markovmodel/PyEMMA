@@ -45,4 +45,8 @@ extern void _get_therm_energies(
 extern void _normalize(
     int n_therm_states, int n_conf_states, double *scratch_M, double *therm_energies, double *conf_energies);
 
+extern double _get_loglikelihood(
+    int *count_matrices, double *transition_matrices,
+    int n_therm_states, int n_conf_states);
+
 #endif

@@ -18,7 +18,8 @@
 */
 
 #include <math.h>
-#include "../lse/_lse.h"
+
+#include "../util/_util.h"
 #include "_dtram.h"
 
 /* old m$ visual studio is not c99 compliant (vs2010 eg. is not) */
@@ -33,7 +34,7 @@ extern void _init_lagrangian_mult(
 {
     int i, j, K;
     int MM=n_conf_states*n_conf_states, KMM;
-    int sum;
+    double sum;
     for(K=0; K<n_therm_states; ++K)
     {
         KMM = K*MM;
@@ -41,8 +42,8 @@ extern void _init_lagrangian_mult(
         {
             sum = 0;
             for(j=0; j<n_conf_states; ++j)
-                sum += count_matrices[KMM + i*n_conf_states + j];
-            log_lagrangian_mult[K*n_conf_states + i] = log(THERMOTOOLS_DTRAM_PRIOR + (double) sum);
+                sum += 0.5 * (count_matrices[KMM + i*n_conf_states + j] + count_matrices[KMM + j*n_conf_states + i]);
+            log_lagrangian_mult[K*n_conf_states + i] = log(THERMOTOOLS_DTRAM_PRIOR + sum);
         }
     }
 }
@@ -78,10 +79,11 @@ extern void _update_lagrangian_mult(
                 if(0 == CK) continue;
                 /* regular case */
                 divisor = _logsumexp_pair(
-                        log_lagrangian_mult[Kj] - conf_energies[i] - bias_energies[Ki], log_lagrangian_mult[Ki] - conf_energies[j] - bias_energies[Kj]);
+                        log_lagrangian_mult[Kj] - conf_energies[i] - bias_energies[Ki],
+                        log_lagrangian_mult[Ki] - conf_energies[j] - bias_energies[Kj]);
                 scratch_M[o++] = log((double) CK) - bias_energies[Kj] - conf_energies[j] + log_lagrangian_mult[Ki] - divisor;
             }
-            new_log_lagrangian_mult[Ki] = _logsumexp(scratch_M, o);
+            new_log_lagrangian_mult[Ki] = _logsumexp_sort_kahan_inplace(scratch_M, o);
         }
     }
 }
@@ -121,12 +123,13 @@ extern void _update_conf_energies(
                 if(0 == CK) continue;
                 /* regular case */
                 divisor = _logsumexp_pair(
-                        log_lagrangian_mult[Kj] - conf_energies[i] - bias_energies[Ki], log_lagrangian_mult[Ki] - conf_energies[j] - bias_energies[Kj]);
+                        log_lagrangian_mult[Kj] - conf_energies[i] - bias_energies[Ki],
+                        log_lagrangian_mult[Ki] - conf_energies[j] - bias_energies[Kj]);
                 scratch_TM[o++] = log((double) CK) - bias_energies[Ki] + log_lagrangian_mult[Kj] - divisor;
             }
         }
         /* patch Ci and the total divisor together */
-        new_conf_energies[i] = _logsumexp(scratch_TM, o) - log(
+        new_conf_energies[i] = _logsumexp_sort_kahan_inplace(scratch_TM, o) - log(
             n_therm_states*THERMOTOOLS_DTRAM_PRIOR + (double) Ci);
     }
     shift = new_conf_energies[0];
@@ -166,12 +169,13 @@ extern void _estimate_transition_matrix(
             if(0 == C) continue;
             /* regular case */
             divisor = _logsumexp_pair(
-                    log_lagrangian_mult[j] - conf_energies[i] - bias_energies[i], log_lagrangian_mult[i] - conf_energies[j] - bias_energies[j]);
+                    log_lagrangian_mult[j] - conf_energies[i] - bias_energies[i],
+                    log_lagrangian_mult[i] - conf_energies[j] - bias_energies[j]);
             scratch_M[o] =  log((double) C) - conf_energies[j] - bias_energies[j] - divisor;
             transition_matrix[ij] = exp(scratch_M[o++]);
         }
         /* compute the diagonal elements from the other elements in this line */
-        sum = exp(_logsumexp(scratch_M, o));
+        sum = exp(_logsumexp_sort_kahan_inplace(scratch_M, o));
         if(0.0 == sum)
         {
             for(j=0; j<n_conf_states; ++j)
@@ -195,7 +199,7 @@ extern void _get_therm_energies(
     {
         for(i=0; i<n_conf_states; ++i)
             scratch_M[i] = -(bias_energies[K*n_conf_states + i] + conf_energies[i]);
-        therm_energies[K] = -_logsumexp(scratch_M, n_conf_states);
+        therm_energies[K] = -_logsumexp_sort_kahan_inplace(scratch_M, n_conf_states);
     }
 }
 
@@ -206,9 +210,23 @@ extern void _normalize(
     double f0;
     for(i=0; i<n_conf_states; ++i)
         scratch_M[i] = -conf_energies[i];
-    f0 = -_logsumexp(scratch_M, n_conf_states);
+    f0 = -_logsumexp_sort_kahan_inplace(scratch_M, n_conf_states);
     for(K=0; K<n_therm_states; ++K)
         therm_energies[K] -= f0;
     for(i=0; i<n_conf_states; ++i)
         conf_energies[i] -= f0;
+}
+
+extern double _get_loglikelihood(
+    int *count_matrices, double *transition_matrices,
+    int n_therm_states, int n_conf_states)
+{
+    int i, n = n_therm_states * n_conf_states * n_conf_states;
+    double sum = 0.0;
+    for(i=0; i<n; ++i)
+    {
+        if(count_matrices[i] > 0)
+            sum += count_matrices[i] * log(transition_matrices[i]);
+    }
+    return sum;
 }

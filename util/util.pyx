@@ -24,10 +24,171 @@ cimport numpy as _np
 from scipy.sparse import csr_matrix as _csr
 from msmtools.estimation import count_matrix as _cm
 
-__all__ = ['count_matrices', 'state_counts']
+__all__ = [
+    'mixed_sort',
+    'kahan_summation',
+    'logsumexp',
+    'logsumexp_pair',
+    'get_therm_state_break_points',
+    'count_matrices',
+    'state_counts',
+    'restrict_samples_to_cset']
 
 cdef extern from "_util.h":
+    # sorting
+    void _mixed_sort(double *array, int L, int R)
+    # direct summation schemes
+    double _kahan_summation(double *array, int size)
+    # logspace summation schemes
+    double _logsumexp(double *array, int size, double array_max)
+    double _logsumexp_kahan_inplace(double *array, int size, double array_max)
+    double _logsumexp_sort_inplace(double *array, int size)
+    double _logsumexp_sort_kahan_inplace(double *array, int size)
+    double _logsumexp_pair(double a, double b)
+    # counting states and transitions
     int _get_therm_state_break_points(int *T_x, int seq_length, int *break_points)
+
+####################################################################################################
+#   sorting
+####################################################################################################
+
+def mixed_sort(_np.ndarray[double, ndim=1, mode="c"] array not None,
+    inplace=True):
+    r"""
+    Sorts the given array
+        
+    Parameters
+    ----------
+    array : numpy.ndarray(dtype=numpy.float64)
+        unsorted values
+    inplace : boolean
+        should the sorting be performed inplace
+
+    Returns
+    -------
+    sorted_array : numpy.ndarray(dtype=numpy.float64)
+        sorted values
+
+    Notes
+    -----
+    Performs a quicksort/mergesort hybrid.
+    """
+    x = array
+    if not inplace:
+        x = array.copy()
+    _mixed_sort(<double*> _np.PyArray_DATA(x), 0, x.shape[0] - 1)
+    return x
+
+####################################################################################################
+#   direct summation schemes
+####################################################################################################
+
+def kahan_summation(_np.ndarray[double, ndim=1, mode="c"] array not None,
+    sort_array=True,
+    inplace=True):
+    r"""
+    Sums the array using Kahan's algorithm
+        
+    Parameters
+    ----------
+    array : numpy.ndarray(dtype=numpy.float64)
+        (unsorted) values
+    sort_array : boolean
+        should the array be sorted before summation
+    inplace : boolean
+        should the sorting be performed inplace
+
+    Returns
+    -------
+    sum : float
+        sum of the array's values
+    """
+    x = array
+    if sort_array:
+        x = mixed_sort(x, inplace=inplace)
+    return _kahan_summation(<double*> _np.PyArray_DATA(x), x.shape[0])
+
+####################################################################################################
+#   logspace summation schemes
+####################################################################################################
+
+def logsumexp(_np.ndarray[double, ndim=1, mode="c"] array not None,
+    sort_array=True,
+    inplace=True,
+    use_kahan=True):
+    r"""
+    Perform a summation of an array of exponentials via the logsumexp scheme
+        
+    Parameters
+    ----------
+    array : numpy.ndarray(dtype=numpy.float64)
+        arguments of the exponentials
+    sort_array : boolean
+        should the array be sorted before summation
+    inplace : boolean
+        should the sorting be performed inplace
+    use_kahan : boolean
+        use Kahan's algorithm for the actual summation
+
+    Returns
+    -------
+    ln_sum : float
+        logarithm of the sum of exponentials
+
+    Notes
+    -----
+    The logsumexp() function returns
+
+    .. math:
+        \ln\left( \sum_{i=0}^{n-1} \exp(a_i) \right)
+
+    where the :math:`a_i` are the :math:`n` values in the supplied array.
+    """
+    x = array
+    if not inplace:
+        x = array.copy()
+    # from now on, we can always use <inplace=True> safely
+    if use_kahan:
+        if sort_array:
+            return _logsumexp_sort_kahan_inplace(<double*> _np.PyArray_DATA(x), x.shape[0])
+        else:
+            return _logsumexp_kahan_inplace(<double*> _np.PyArray_DATA(x), x.shape[0], x.max())
+    else:
+        if sort_array:
+            return _logsumexp_sort_inplace(<double*> _np.PyArray_DATA(x), x.shape[0])
+        else:
+            return _logsumexp(<double*> _np.PyArray_DATA(x), x.shape[0], x.max())
+
+def logsumexp_pair(a, b):
+    r"""
+    Perform a summation of two exponentials via the logsumexp scheme
+        
+    Parameters
+    ----------
+    a : float
+        arguments of the first exponential
+    b : float
+        arguments of the second exponential
+
+    Returns
+    -------
+    ln_sum : float
+        logarithm of the sum of exponentials
+
+    Notes
+    -----
+    The logsumexp_pair() function returns
+
+    .. math:
+        \ln\left( \exp(a) + \exp(b) \right)
+
+    where the :math:`a` and :math:`b` are the supplied values.
+    """
+    return _logsumexp_pair(a, b)
+
+####################################################################################################
+#   counting states and transitions
+####################################################################################################
 
 def get_therm_state_break_points(
     _np.ndarray[int, ndim=1, mode="c"] T_x not None):
