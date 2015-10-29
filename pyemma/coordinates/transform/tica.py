@@ -17,20 +17,23 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from __future__ import absolute_import
-from pyemma.util import types
 '''
 Created on 19.01.2015
 
 @author: marscher
 '''
-from .transformer import Transformer, SkipPassException
 
-from pyemma.util.linalg import eig_corr
+from __future__ import absolute_import
+
+from pyemma.util import types
 from pyemma.util.annotators import doc_inherit
+from pyemma.util.linalg import eig_corr
 from pyemma.util.reflection import get_default_args
 
 import numpy as np
+
+from .transformer import Transformer, SkipPassException
+
 
 __all__ = ['TICA']
 
@@ -202,19 +205,57 @@ class TICA(Transformer):
         self._N_mean = 0
         self._N_cov = 0
         self._N_cov_tau = 0
-        # create covariance matrices
-        self.cov = np.zeros((indim, indim))
-        self.cov_tau = np.zeros_like(self.cov)
 
-        self._logger.debug("Running TICA with tau=%i; Estimating two covariance matrices"
-                           " with dimension (%i, %i)" % (self._lag, indim, indim))
+        self._logger.debug("Running TICA with tau=%i)" % self._lag)
 
         # amount of chunks
         denom = self._n_chunks(self._param_with_stride)
         self._progress_register(denom, "calculate mean", 0)
         self._progress_register(denom, "calculate covariances", 1)
 
+        n = self.data_producer.dimension()
+        if __debug__:
+            self._logger.debug("create cov matrices, %i x %i" % (n, n))
+
+        self.cov = np.zeros((n, n))
+        self.cov_tau = np.zeros_like(self.cov)
+
         return 0  # in zero'th pass don't request lagged data
+
+    @staticmethod
+    def _calc_mean(X, mu, N_mean, traj_len, lag, stride, t, force_eigenvalues_le_one):
+        if force_eigenvalues_le_one:
+            # MSM-like counting
+            if traj_len - lag > 0:
+                # find the "tails" of the trajectory relative to the current chunk
+                Zptau = lag//stride - t  # zero plus tau
+                Nmtau = traj_len - t - lag//stride  # N minus tau
+
+                # restrict them to valid block indices
+                size = X.shape[0]
+                Zptau = min(max(Zptau, 0), size)
+                Nmtau = min(max(Nmtau, 0), size)
+
+                # find start and end of double-counting region
+                start2 = min(Zptau, Nmtau)
+                end2 = max(Zptau, Nmtau)
+
+                # update mean
+                mu += np.sum(X[0:start2, :], axis=0, dtype=np.float64)
+                N_mean += start2
+
+                if Nmtau > Zptau: # only if trajectory length > 2*tau, there is double-counting
+                    mu += 2.0 * np.sum(X[start2:end2, :], axis=0, dtype=np.float64)
+                    N_mean += 2.0 * (end2 - start2)
+
+                mu += np.sum(X[end2:, :], axis=0, dtype=np.float64)
+                N_mean += (size - end2)
+        else:
+            # traditional counting
+            mu += np.sum(X, axis=0, dtype=np.float64)
+            N_mean += np.shape(X)[0]
+
+        return N_mean
 
     def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
                         last_chunk, ipass, Y=None, stride=1):
@@ -251,36 +292,9 @@ class TICA(Transformer):
                                          "so the mean also depends on the lag time!")
                 raise SkipPassException(self._lag, stride)
 
-            if self._force_eigenvalues_le_one:
-                # MSM-like counting
-                if self.trajectory_length(itraj, stride=1) - self._lag > 0:
-                    # find the "tails" of the trajectory relative to the current chunk
-                    Zptau = self._lag//stride - t  # zero plus tau
-                    Nmtau = self.trajectory_length(itraj, stride=stride)-t-self._lag//stride  # N minus tau
-
-                    # restrict them to valid block indices
-                    size = X.shape[0]
-                    Zptau = min(max(Zptau, 0), size)
-                    Nmtau = min(max(Nmtau, 0), size)
-
-                    # find start and end of double-counting region
-                    start2 = min(Zptau, Nmtau)
-                    end2 = max(Zptau, Nmtau)
-
-                    # update mean
-                    self.mu += np.sum(X[0:start2, :], axis=0, dtype=np.float64)
-                    self._N_mean += start2
-
-                    if Nmtau > Zptau: # only if trajectory length > 2*tau, there is double-counting
-                        self.mu += 2.0 * np.sum(X[start2:end2, :], axis=0, dtype=np.float64)
-                        self._N_mean += 2.0 * (end2 - start2)
-
-                    self.mu += np.sum(X[end2:, :], axis=0, dtype=np.float64)
-                    self._N_mean += (size - end2)
-            else:
-                # traditional counting
-                self.mu += np.sum(X, axis=0, dtype=np.float64)
-                self._N_mean += np.shape(X)[0]
+            traj_len = self.trajectory_length(itraj, stride=1)
+            self._N_mean = self._calc_mean(X, self.mu, self._N_mean, traj_len,
+                                           self._lag, stride, t, self._force_eigenvalues_le_one)
 
             # counting chunks and log of eta
             self._progress_update(1, stage=0)
@@ -295,6 +309,7 @@ class TICA(Transformer):
         elif ipass == 1:
 
             if self.trajectory_length(itraj, stride=1) - self._lag > 0:
+
                 self._N_cov_tau += 2.0 * np.shape(Y)[0]
                 # _N_cov_tau is muliplied by 2, because we later symmetrize
                 # cov_tau, so we are actually using twice the number of samples
@@ -337,7 +352,7 @@ class TICA(Transformer):
                     self.cov += 2.0 * np.dot(X_meanfree.T, X_meanfree)
                     self._N_cov += 2.0 * np.shape(X)[0]
 
-                self._progress_update(1,stage=1)
+                self._progress_update(1, stage=1)
 
             else:
                 self._skipped_trajs.append(itraj)
@@ -351,6 +366,9 @@ class TICA(Transformer):
         if self._force_eigenvalues_le_one:
             assert self._N_mean == self._N_cov, 'inconsistency in C(0) and mu'
             assert self._N_cov == self._N_cov_tau, 'inconsistency in C(0) and C(tau)'
+
+        self._logger.debug("Estimating two covariance matrices"
+                           " with dimension (%i, %i)" % (len(self.cov), len(self.cov)))
 
         # symmetrize covariance matrices
         self.cov = self.cov + self.cov.T

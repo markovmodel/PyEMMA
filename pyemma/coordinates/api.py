@@ -1135,10 +1135,24 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, stride=1,
         (in preparation).
 
     """
-    if mean is not None:
+    if data is not None:
         data = _get_input_stage(data)
-        indim = data.dimension()
-        mean = _types.ensure_ndarray(mean, shape=(indim,), dtype=_np.float)
+
+        if mean is not None:
+            indim = data.dimension()
+            mean = _types.ensure_ndarray(mean, shape=(indim,), dtype=_np.float)
+
+        if data._has_potentially_sparse_output:
+            from pyemma.coordinates.transform.sparsifier import Sparsifier
+            s = Sparsifier(calc_mean=mean is None, lag=lag,
+                           force_eigenvalues_le_one=force_eigenvalues_le_one)
+            data = _param_stage(data, s, stride=stride)
+
+            if mean is None:
+                mean = s.mu
+            else:
+                mean = mean[s.varying_indices]
+
     res = _TICA(lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map,
                 force_eigenvalues_le_one=force_eigenvalues_le_one, mean=mean)
     return _param_stage(data, res, stride=stride)

@@ -171,9 +171,10 @@ class Transformer(six.with_metaclass(ABCMeta, ProgressReporter)):
     _ids = count(0)
 
     def __init__(self, chunksize=None):
-        self._logger.warning("Given deprecated argument 'chunksize=%s'"
-                             " to transformer. Ignored - please set the "
-                             "chunksize in the reader" % chunksize)
+        if chunksize is not None:
+            self._logger.warning("Given deprecated argument 'chunksize=%s'"
+                                 " to transformer. Ignored - please set the "
+                                 "chunksize in the reader" % chunksize)
         self._in_memory = False
         self._data_producer = None
         self._parametrized = False
@@ -269,6 +270,10 @@ class Transformer(six.with_metaclass(ABCMeta, ProgressReporter)):
         r""" Number of dimensions that should be used for the output of the transformer. """
         pass
 
+    @property
+    def _has_potentially_sparse_output(self):
+        r""" returns True, if data producer has potentially sparse (constant) columns """
+        return self.data_producer._has_potentially_sparse_output
 
     def number_of_trajectories(self):
         r"""

@@ -51,6 +51,7 @@ class ReaderInterface(Transformer):
 
         # storage for arrays (used in _add_array_to_storage)
         self._data = []
+        self._force_sparsity = False
 
     @Transformer.data_producer.setter
     def data_producer(self, value):
@@ -172,3 +173,22 @@ class ReaderInterface(Transformer):
 
     def _param_add_data(self, *args, **kwargs):
         raise NotImplementedError("a reader is not meant to be parameterized by data")
+
+    @property
+    def _has_potentially_sparse_output(self):
+        # in general a reader is assumed not to return sparse features.
+        if self.enforce_sparsity:
+            return True
+
+        return False
+
+    @property
+    def enforce_sparsity(self):
+        """ Indicates, if the Featurizer returns potentially sparse output.
+        Set this to True to enforce effort to elimnate those sparse features at
+        some other places of the coordinates pipeline. """
+        return self._force_sparsity
+
+    @enforce_sparsity.setter
+    def enforce_sparsity(self, boolean):
+        self._force_sparsity = boolean

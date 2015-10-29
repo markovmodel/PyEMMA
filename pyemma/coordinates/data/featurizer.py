@@ -549,9 +549,9 @@ class ContactFeature(DistanceFeature):
         dists = mdtraj.compute_distances(
             traj, self.distance_indexes, periodic=self.periodic)
         res = np.zeros(
-            (len(traj), self.distance_indexes.shape[0]), dtype=np.float32)
+            (len(traj), self.distance_indexes.shape[0]), dtype=np.bool)
         I = np.argwhere(dists <= self.threshold)
-        res[I[:, 0], I[:, 1]] = 1.0
+        res[I[:, 0], I[:, 1]] = 1
         return res
 
     def __hash__(self):
@@ -1016,6 +1016,12 @@ class MDFeaturizer(object):
                              % (pair_inds.max(), self.topology.n_atoms))
 
         return pair_inds
+
+    @property
+    def _has_potentially_sparse_output(self):
+        # currently only ContactFeatures are defined to be potentially sparse
+        return len(tuple(filter(lambda x: isinstance(x, ContactFeature),
+                                self.active_features))) > 0
 
     def add_all(self):
         """

@@ -7,7 +7,9 @@ Changelog
 ** New features**:
 
 - coordinates: added Sparsifier, which detects constant features in data stream
-  and removes them for further processing. 
+  and removes them for further processing. Currently enabled for contact features only.
+  To enforce it for arbitrary features, create a reader and set attribute 
+  'enforce_sparsitiy' to True. 
 
 
 2.0.1 (9-3-2015)
