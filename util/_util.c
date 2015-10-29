@@ -17,6 +17,8 @@
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <math.h>
+
 #include "_util.h"
 
 /* old m$ visual studio is not c99 compliant (vs2010 eg. is not) */
@@ -96,6 +98,38 @@ extern double _kahan_summation(double *array, int size)
 /***************************************************************************************************
 *   logspace summation schemes
 ***************************************************************************************************/
+
+extern double _logsumexp(double *array, int size, double array_max)
+{
+    int i;
+    double sum = 0.0;
+    if(0 == size) return -INFINITY;
+    if(-INFINITY == array_max)
+        return -INFINITY;
+    for(i=0; i<size; ++i)
+        sum += exp(array[i] - array_max);
+    return array_max + log(sum);
+}
+
+extern double _logsumexp_kahan_inplace(double *array, int size, double array_max)
+{
+    int i;
+    if(0 == size) return -INFINITY;
+    if(-INFINITY == array_max)
+        return -INFINITY;
+    for(i=0; i<size; ++i)
+        array[i] = exp(array[i] - array_max);
+    return array_max + log(_kahan_summation(array, size));
+}
+
+extern double _logsumexp_pair(double a, double b)
+{
+    if((-INFINITY == a) && (-INFINITY == b))
+        return -INFINITY;
+    if(b > a)
+        return b + log(1.0 + exp(a - b));
+    return a + log(1.0 + exp(b - a));
+}
 
 /***************************************************************************************************
 *   counting states and transitions

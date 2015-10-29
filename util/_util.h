@@ -38,6 +38,10 @@ extern double _kahan_summation(double *array, int size);
 *   logspace summation schemes
 ***************************************************************************************************/
 
+extern double _logsumexp(double *array, int size, double array_max);
+extern double _logsumexp_kahan_inplace(double *array, int size, double array_max);
+extern double _logsumexp_pair(double a, double b);
+
 /***************************************************************************************************
 *   counting states and transitions
 ***************************************************************************************************/

@@ -31,6 +31,10 @@ cdef extern from "_util.h":
     void _mixed_sort(double *array, int L, int R)
     # direct summation schemes
     double _kahan_summation(double *array, int size)
+    #
+    double _logsumexp(double *array, int size, double array_max)
+    double _logsumexp_kahan_inplace(double *array, int size, double array_max)
+    double _logsumexp_pair(double a, double b)
     # counting states and transitions
     int _get_therm_state_break_points(int *T_x, int seq_length, int *break_points)
 
@@ -39,7 +43,7 @@ cdef extern from "_util.h":
 ####################################################################################################
 
 def mixed_sort(_np.ndarray[double, ndim=1, mode="c"] array not None,
-    sort_inplace=True):
+    inplace=True):
     r"""
     Sorts the given array
         
@@ -47,7 +51,7 @@ def mixed_sort(_np.ndarray[double, ndim=1, mode="c"] array not None,
     ----------
     array : numpy.ndarray(dtype=numpy.float64)
         unsorted values
-    sort_inplace : boolean
+    inplace : boolean
         should the sorting be performed inplace
 
     Returns
@@ -60,7 +64,7 @@ def mixed_sort(_np.ndarray[double, ndim=1, mode="c"] array not None,
     Performs a quicksort/mergesort hybrid.
     """
     x = array
-    if not sort_inplace:
+    if not inplace:
         x = array.copy()
     _mixed_sort(<double*> _np.PyArray_DATA(x), 0, x.shape[0] - 1)
     return x
@@ -71,7 +75,7 @@ def mixed_sort(_np.ndarray[double, ndim=1, mode="c"] array not None,
 
 def kahan_summation(_np.ndarray[double, ndim=1, mode="c"] array not None,
     sort_array=True,
-    sort_inplace=True):
+    inplace=True):
     r"""
     Sums the array using Kahan's algorithm
         
@@ -81,7 +85,7 @@ def kahan_summation(_np.ndarray[double, ndim=1, mode="c"] array not None,
         (unsorted) values
     sort_array : boolean
         should the array be sorted before summation
-    sort_inplace : boolean
+    inplace : boolean
         should the sorting be performed inplace
 
     Returns
@@ -91,12 +95,85 @@ def kahan_summation(_np.ndarray[double, ndim=1, mode="c"] array not None,
     """
     x = array
     if sort_array:
-        x = mixed_sort(x, sort_inplace=sort_inplace)
+        x = mixed_sort(x, inplace=inplace)
     return _kahan_summation(<double*> _np.PyArray_DATA(x), x.shape[0])
 
 ####################################################################################################
 #   logspace summation schemes
 ####################################################################################################
+
+def logsumexp(_np.ndarray[double, ndim=1, mode="c"] array not None,
+    sort_array=True,
+    inplace=True,
+    use_kahan=True):
+    r"""
+    Perform a summation of an array of exponentials via the logsumexp scheme
+        
+    Parameters
+    ----------
+    array : numpy.ndarray(dtype=numpy.float64)
+        arguments of the exponentials
+    sort_array : boolean
+        should the array be sorted before summation
+    inplace : boolean
+        should the sorting be performed inplace
+    use_kahan : boolean
+        use Kahan's algorithm for the actual summation
+
+    Returns
+    -------
+    ln_sum : float
+        logarithm of the sum of exponentials
+
+    Notes
+    -----
+    The logsumexp() function returns
+
+    .. math:
+        \ln\left( \sum_{i=0}^{n-1} \exp(a_i) \right)
+
+    where the :math:`a_i` are the :math:`n` values in the supplied array.
+    """
+    x = array
+    if not inplace:
+        x = array.copy()
+    # from now on, we can always use <inplace=True> safely
+    xmax = None
+    if sort_array:
+        x = mixed_sort(x, inplace=True)
+        xmax = x[-1]
+    else:
+        xmax = x.max()
+    if use_kahan:
+        return _logsumexp_kahan_inplace(<double*> _np.PyArray_DATA(x), x.shape[0], xmax)
+    return _logsumexp(<double*> _np.PyArray_DATA(x), x.shape[0], xmax)
+
+def logsumexp_pair(a, b):
+    r"""
+    Perform a summation of two exponentials via the logsumexp scheme
+        
+    Parameters
+    ----------
+    a : float
+        arguments of the first exponential
+    b : float
+        arguments of the second exponential
+
+    Returns
+    -------
+    ln_sum : float
+        logarithm of the sum of exponentials
+
+    Notes
+    -----
+    The logsumexp_pair() function returns
+
+    .. math:
+        \ln\left( \exp(a) + \exp(b) \right)
+
+    where the :math:`a` and :math:`b` are the supplied values.
+    """
+    return _logsumexp_pair(a, b)
 
 ####################################################################################################
 #   counting states and transitions
