@@ -19,7 +19,8 @@
 
 #include <math.h>
 #include <stdio.h>
-#include "../lse/_lse.h"
+
+#include "../util/_util.h"
 #include "_tram.h"
 
 /* old m$ visual studio is not c99 compliant (vs2010 eg. is not) */
@@ -79,10 +80,12 @@ void _update_lagrangian_mult(
                 if(0 == CK) continue;
                 /* regular case */
                 Kj = KM + j;
-                divisor = _logsumexp_pair(log_lagrangian_mult[Kj] - biased_conf_energies[Ki], log_lagrangian_mult[Ki] - biased_conf_energies[Kj]);
+                divisor = _logsumexp_pair(
+                    log_lagrangian_mult[Kj] - biased_conf_energies[Ki],
+                    log_lagrangian_mult[Ki] - biased_conf_energies[Kj]);
                 scratch_M[o++] = log((double) CK) + log_lagrangian_mult[Ki] - biased_conf_energies[Kj] - divisor;
             }
-            new_log_lagrangian_mult[Ki] = _logsumexp(scratch_M, o);
+            new_log_lagrangian_mult[Ki] = _logsumexp_sort_kahan_inplace(scratch_M, o);
         }
     }
 }
@@ -129,12 +132,14 @@ void _update_biased_conf_energies(
                 if(0 == CK) continue;
                 /* regular case */
                 Kj = KM + j;
-                divisor = _logsumexp_pair(log_lagrangian_mult[Kj] - biased_conf_energies[Ki], log_lagrangian_mult[Ki] - biased_conf_energies[Kj]);
+                divisor = _logsumexp_pair(
+                    log_lagrangian_mult[Kj] - biased_conf_energies[Ki],
+                    log_lagrangian_mult[Ki] - biased_conf_energies[Kj]);
                 scratch_M[o++] = log((double) CK) + log_lagrangian_mult[Kj] - divisor;
             }
             NC = state_counts[Ki] - Ci;
             R_addon = (0 < NC) ? log((double) NC) + biased_conf_energies[Ki] : -INFINITY; /* IGNORE PRIOR */
-            log_R_K_i[Ki] = _logsumexp_pair(_logsumexp(scratch_M, o), R_addon);
+            log_R_K_i[Ki] = _logsumexp_pair(_logsumexp_sort_kahan_inplace(scratch_M, o), R_addon);
         }
     }
     /* set new_biased_conf_energies to infinity (z_K_i==0) */
@@ -152,11 +157,12 @@ void _update_biased_conf_energies(
             if(-INFINITY == log_R_K_i[K * n_conf_states + i]) continue;
             scratch_T[o++] = log_R_K_i[K * n_conf_states + i] - bias_energy_sequence[K * seq_length + x];
         }
-        divisor = _logsumexp(scratch_T, o);
+        divisor = _logsumexp_sort_kahan_inplace(scratch_T, o);
         for(K=0; K<n_therm_states; ++K)
         {
             new_biased_conf_energies[K * n_conf_states + i] = -_logsumexp_pair(
-                    -new_biased_conf_energies[K * n_conf_states + i], -(divisor + bias_energy_sequence[K * seq_length + x]));
+                    -new_biased_conf_energies[K * n_conf_states + i],
+                    -(divisor + bias_energy_sequence[K * seq_length + x]));
         }
     }
     /* prevent drift */
@@ -182,7 +188,7 @@ void _get_conf_energies(
         i = state_sequence[x];
         for(K=0; K<n_therm_states; ++K)
             scratch_T[K] = log_R_K_i[K * n_conf_states + i] - bias_energy_sequence[K * seq_length + x];
-        divisor = _logsumexp(scratch_T, n_therm_states);
+        divisor = _logsumexp_sort_kahan_inplace(scratch_T, n_therm_states);
         conf_energies[i] = -_logsumexp_pair(-conf_energies[i], -divisor);
     }
 }
@@ -195,7 +201,7 @@ void _get_therm_energies(
     {
         for(i=0; i<n_conf_states; ++i)
             scratch_M[i] = -biased_conf_energies[K * n_conf_states + i];
-        therm_energies[K] = -_logsumexp(scratch_M, n_conf_states);
+        therm_energies[K] = -_logsumexp_sort_kahan_inplace(scratch_M, n_conf_states);
     }
 }
 
@@ -207,7 +213,7 @@ void _normalize(
     double f0;
     for(i=0; i<n_conf_states; ++i)
         scratch_M[i] = -conf_energies[i];
-    f0 = -_logsumexp(scratch_M, n_conf_states);
+    f0 = -_logsumexp_sort_kahan_inplace(scratch_M, n_conf_states);
     for(i=0; i<n_conf_states; ++i)
         conf_energies[i] -= f0;
     for(i=0; i<KM; ++i)
@@ -251,7 +257,8 @@ void _estimate_transition_matrix(
         else if(1.0 < sum)
         {
             if(0 < count_matrix[i*n_conf_states + i])
-                printf("# WARNING! THERMOTOOLS::TRAM::ESTIMATE_TRANSITION_MATRIX: T[%d,%d]=0 but C[%d,%d]=%d\n", i, i, i, i, count_matrix[i*n_conf_states + i]);
+                printf("# WARNING! THERMOTOOLS::TRAM::ESTIMATE_TRANSITION_MATRIX: T[%d,%d]=0 but C[%d,%d]=%d\n",
+                    i, i, i, i, count_matrix[i*n_conf_states + i]);
             for(j=0; j<n_conf_states; ++j)
                 transition_matrix[i*n_conf_states + j] /= sum;
         }
