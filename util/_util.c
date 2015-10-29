@@ -70,6 +70,29 @@ extern void _mixed_sort(double *array, int L, int R)
 *   direct summation schemes
 ***************************************************************************************************/
 
+extern void _kahan_summation_step(
+    double new_value, double *sum, double *err, double *loc, double *tmp)
+{
+    *loc = new_value - *err;
+    *tmp = *sum + *loc;
+    *err = (*tmp - *sum) - *loc;
+    *sum = *tmp;
+}
+
+extern double _kahan_summation(double *array, int size)
+{
+    int i;
+    double sum = 0.0, err = 0.0, loc, tmp;
+    for(i=0; i<size; ++i)
+    {
+        loc = array[i] - err;
+        tmp = sum + loc;
+        err = (tmp - sum) - loc;
+        sum = tmp;
+    }
+    return sum;
+}
+
 /***************************************************************************************************
 *   logspace summation schemes
 ***************************************************************************************************/

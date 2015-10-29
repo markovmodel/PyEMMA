@@ -27,36 +27,72 @@ from msmtools.estimation import count_matrix as _cm
 __all__ = ['count_matrices', 'state_counts']
 
 cdef extern from "_util.h":
+    # sorting
     void _mixed_sort(double *array, int L, int R)
+    # direct summation schemes
+    double _kahan_summation(double *array, int size)
+    # counting states and transitions
     int _get_therm_state_break_points(int *T_x, int seq_length, int *break_points)
 
 ####################################################################################################
 #   sorting
 ####################################################################################################
 
-def mixed_sort(_np.ndarray[double, ndim=1, mode="c"] array not None):
+def mixed_sort(_np.ndarray[double, ndim=1, mode="c"] array not None,
+    sort_inplace=True):
     r"""
-    Sorts the array inplace
+    Sorts the given array
         
     Parameters
     ----------
     array : numpy.ndarray(dtype=numpy.float64)
         unsorted values
+    sort_inplace : boolean
+        should the sorting be performed inplace
 
     Returns
     -------
-    array : numpy.ndarray(dtype=numpy.float64)
+    sorted_array : numpy.ndarray(dtype=numpy.float64)
         sorted values
 
     Notes
     -----
     Performs a quicksort/mergesort hybrid.
     """
-    return _mixed_sort(<double*> _np.PyArray_DATA(array), 0, array.shape[0] - 1)
+    x = array
+    if not sort_inplace:
+        x = array.copy()
+    _mixed_sort(<double*> _np.PyArray_DATA(x), 0, x.shape[0] - 1)
+    return x
 
 ####################################################################################################
 #   direct summation schemes
 ####################################################################################################
+
+def kahan_summation(_np.ndarray[double, ndim=1, mode="c"] array not None,
+    sort_array=True,
+    sort_inplace=True):
+    r"""
+    Sums the array using Kahan's algorithm
+        
+    Parameters
+    ----------
+    array : numpy.ndarray(dtype=numpy.float64)
+        (unsorted) values
+    sort_array : boolean
+        should the array be sorted before summation
+    sort_inplace : boolean
+        should the sorting be performed inplace
+
+    Returns
+    -------
+    sum : float
+        sum of the array's values
+    """
+    x = array
+    if sort_array:
+        x = mixed_sort(x, sort_inplace=sort_inplace)
+    return _kahan_summation(<double*> _np.PyArray_DATA(x), x.shape[0])
 
 ####################################################################################################
 #   logspace summation schemes

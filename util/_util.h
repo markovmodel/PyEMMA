@@ -30,6 +30,10 @@ extern void _mixed_sort(double *array, int L, int R);
 *   direct summation schemes
 ***************************************************************************************************/
 
+extern void _kahan_summation_step(
+    double new_value, double *sum, double *err, double *loc, double *tmp);
+extern double _kahan_summation(double *array, int size);
+
 /***************************************************************************************************
 *   logspace summation schemes
 ***************************************************************************************************/
