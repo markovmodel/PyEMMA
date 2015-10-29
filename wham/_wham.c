@@ -18,8 +18,8 @@
 */
 
 #include <math.h>
-#include "../lse/_lse.h"
-#include "_wham.h"
+
+#include "../util/_util.h"
 
 /* old m$ visual studio is not c99 compliant (vs2010 eg. is not) */
 #ifdef _MSC_VER
@@ -38,7 +38,7 @@ extern void _update_conf_energies(
     {
         for(K=0; K<n_therm_states; ++K)
             scratch_T[K] = log_therm_state_counts[K] - bias_energies[K*n_conf_states + i] + therm_energies[K];
-        conf_energies[i] = _logsumexp(scratch_T, n_therm_states) - log_conf_state_counts[i];
+        conf_energies[i] = _logsumexp_sort_kahan_inplace(scratch_T, n_therm_states) - log_conf_state_counts[i];
     }
     shift = conf_energies[0];
     for(i=1; i<n_conf_states; ++i)
@@ -57,7 +57,7 @@ extern void _update_therm_energies(
         KM = K*n_conf_states;
         for(i=0; i<n_conf_states; ++i)
             scratch_M[i] = -(bias_energies[KM + i] + conf_energies[i]);
-        therm_energies[K] = -_logsumexp(scratch_M, n_conf_states);
+        therm_energies[K] = -_logsumexp_sort_kahan_inplace(scratch_M, n_conf_states);
     }
 }
 
@@ -68,7 +68,7 @@ extern void _normalize(
     double f0;
     for(i=0; i<n_conf_states; ++i)
         scratch_M[i] = -conf_energies[i];
-    f0 = -_logsumexp(scratch_M, n_conf_states);
+    f0 = -_logsumexp_sort_kahan_inplace(scratch_M, n_conf_states);
     for(i=0; i<n_conf_states; ++i)
         conf_energies[i] -= f0;
     for(K=0; K<n_therm_states; ++K)
