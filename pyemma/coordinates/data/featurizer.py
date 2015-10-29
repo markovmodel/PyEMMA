@@ -1017,6 +1017,12 @@ class MDFeaturizer(object):
 
         return pair_inds
 
+    @property
+    def _has_potentially_sparse_output(self):
+        # currently only ContactFeatures are defined to be potentially sparse
+        return len(tuple(filter(lambda x: isinstance(x, ContactFeature),
+                                self.active_features))) > 0
+
     def add_all(self):
         """
         Adds all atom coordinates to the feature list.
