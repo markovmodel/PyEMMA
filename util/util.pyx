@@ -24,14 +24,22 @@ cimport numpy as _np
 from scipy.sparse import csr_matrix as _csr
 from msmtools.estimation import count_matrix as _cm
 
-__all__ = ['count_matrices', 'state_counts']
+__all__ = [
+    'mixed_sort',
+    'kahan_summation',
+    'logsumexp',
+    'logsumexp_pair',
+    'get_therm_state_break_points',
+    'count_matrices',
+    'state_counts',
+    'restrict_samples_to_cset']
 
 cdef extern from "_util.h":
     # sorting
     void _mixed_sort(double *array, int L, int R)
     # direct summation schemes
     double _kahan_summation(double *array, int size)
-    #
+    # logspace summation schemes
     double _logsumexp(double *array, int size, double array_max)
     double _logsumexp_kahan_inplace(double *array, int size, double array_max)
     double _logsumexp_pair(double a, double b)

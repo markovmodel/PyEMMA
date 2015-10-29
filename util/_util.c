@@ -19,8 +19,6 @@
 
 #include <math.h>
 
-#include "_util.h"
-
 /* old m$ visual studio is not c99 compliant (vs2010 eg. is not) */
 #ifdef _MSC_VER
     #include <float.h>
