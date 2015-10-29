@@ -120,6 +120,20 @@ extern double _logsumexp_kahan_inplace(double *array, int size, double array_max
     return array_max + log(_kahan_summation(array, size));
 }
 
+extern double _logsumexp_sort_inplace(double *array, int size)
+{
+    if(0 == size) return -INFINITY;
+    _mixed_sort(array, 0, size - 1);
+    return _logsumexp(array, size, array[size - 1]);
+}
+
+extern double _logsumexp_sort_kahan_inplace(double *array, int size)
+{
+    if(0 == size) return -INFINITY;
+    _mixed_sort(array, 0, size - 1);
+    return _logsumexp_kahan_inplace(array, size, array[size - 1]);
+}
+
 extern double _logsumexp_pair(double a, double b)
 {
     if((-INFINITY == a) && (-INFINITY == b))

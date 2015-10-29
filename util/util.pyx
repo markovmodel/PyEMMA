@@ -42,6 +42,8 @@ cdef extern from "_util.h":
     # logspace summation schemes
     double _logsumexp(double *array, int size, double array_max)
     double _logsumexp_kahan_inplace(double *array, int size, double array_max)
+    double _logsumexp_sort_inplace(double *array, int size)
+    double _logsumexp_sort_kahan_inplace(double *array, int size)
     double _logsumexp_pair(double a, double b)
     # counting states and transitions
     int _get_therm_state_break_points(int *T_x, int seq_length, int *break_points)
@@ -146,15 +148,16 @@ def logsumexp(_np.ndarray[double, ndim=1, mode="c"] array not None,
     if not inplace:
         x = array.copy()
     # from now on, we can always use <inplace=True> safely
-    xmax = None
-    if sort_array:
-        x = mixed_sort(x, inplace=True)
-        xmax = x[-1]
-    else:
-        xmax = x.max()
     if use_kahan:
-        return _logsumexp_kahan_inplace(<double*> _np.PyArray_DATA(x), x.shape[0], xmax)
-    return _logsumexp(<double*> _np.PyArray_DATA(x), x.shape[0], xmax)
+        if sort_array:
+            return _logsumexp_sort_kahan_inplace(<double*> _np.PyArray_DATA(x), x.shape[0])
+        else:
+            return _logsumexp_kahan_inplace(<double*> _np.PyArray_DATA(x), x.shape[0], x.max())
+    else:
+        if sort_array:
+            return _logsumexp_sort_inplace(<double*> _np.PyArray_DATA(x), x.shape[0])
+        else:
+            return _logsumexp(<double*> _np.PyArray_DATA(x), x.shape[0], x.max())
 
 def logsumexp_pair(a, b):
     r"""
