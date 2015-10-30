@@ -250,8 +250,9 @@ void _estimate_transition_matrix(
         }
     }
     /* normalize T matrix */
-    max_sum = -1;
+    max_sum = 0;
     for(i=0; i<n_conf_states; ++i) if(sum[i] > max_sum) max_sum = sum[i];
+    if(max_sum==0) max_sum = 1.0; /* completely empty T matrix -> generate Id matrix */
     for(i=0; i<n_conf_states; ++i) {
         for(j=0; j<n_conf_states; ++j) {
             if(i==j) {
