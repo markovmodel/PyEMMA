@@ -99,7 +99,55 @@ extern void _update_conf_energies_mk2(
     double *log_lagrangian_mult, double *bias_energies, double *conf_energies, int *count_matrices, int n_therm_states,
     int n_conf_states, double *scratch_TM, double *new_conf_energies)
 {
-    ;
+    int i, j, K, o;
+    int MM = n_conf_states * n_conf_states, Ki, Kj, KMM;
+    int CK, CKij, CKji, Ci;
+    double divisor, shift;
+    for(i=0; i<n_conf_states; ++i)
+    {
+        /* sparsity: zero stationary weights stay zero */
+        if(INFINITY == conf_energies[i])
+        {
+            new_conf_energies[i] = INFINITY;
+            continue;
+        }
+        Ci = 0;
+        o = 0;
+        for(K=0; K<n_therm_states; ++K)
+        {
+            Ki = K * n_conf_states + i;
+            KMM = K * MM;
+            for(j=0; j<n_conf_states; ++j)
+            {
+                Kj = K * n_conf_states + j;
+                CKij = count_matrices[KMM + i * n_conf_states + j];
+                CKji = count_matrices[KMM + j * n_conf_states + i];
+                /* add counts to Ci */
+                Ci += CKji;
+                /* special case: most variables cancel out, here */
+                if(i == j)
+                {
+                    if(0 < CKij)
+                        scratch_TM[o++] = (double) CKij;
+                    continue;
+                }
+                CK = CKij + CKji;
+                /* special case */
+                if(0 == CK) continue;
+                /* regular case */
+                scratch_TM[o++] = (double) CK * _mirrored_sigmoid_term_mk2(
+                    log_lagrangian_mult, bias_energies, conf_energies, Kj, Ki, j, i);
+            }
+        }
+        /* patch Ci and the total divisor together */
+        if(0 < Ci)
+        {
+            _mixed_sort(scratch_TM, 0, o - 1);
+            new_conf_energies[i] = conf_energies[i] - log((double) Ci / _kahan_summation(scratch_TM, o));  
+        }
+        else
+            new_conf_energies[i] = INFINITY;
+    }
 }
 
 extern void _estimate_transition_matrix_mk2(
