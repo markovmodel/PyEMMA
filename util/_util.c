@@ -167,9 +167,30 @@ extern int _get_therm_state_break_points(int *T_x, int seq_length, int *break_po
 *   transition matrix renormalization
 ***************************************************************************************************/
 
-extern void _renormalize_transition_matrix(double *p, int n_conf_states)
+extern void _renormalize_transition_matrix(double *p, int n_conf_states, double *scratch_M)
 {
-    ;
+    int i, j;
+    double sum, max_sum = 0.0;
+    for(i=0; i<n_conf_states; ++i)
+    {
+        for(j=0; j<n_conf_states; ++j)
+            scratch_M[j] = p[i * n_conf_states + j];
+        _mixed_sort(scratch_M, 0, n_conf_states - 1);
+        sum = _kahan_summation(scratch_M, n_conf_states);
+        max_sum = (max_sum > sum) ? max_sum : sum;
+    }
+    if(0.0 >= max_sum) return;
+    for(i=0; i<n_conf_states; ++i)
+    {
+        for(j=0; j<n_conf_states; ++j)
+        {
+            p[i * n_conf_states + j] /= max_sum;
+            if(i == j) scratch_M[i] = 0.0;
+            else scratch_M[i] = p[i * n_conf_states + j];
+        }
+        _mixed_sort(scratch_M, 0, n_conf_states - 1);
+        p[i * n_conf_states + i] = 1.0 - _kahan_summation(scratch_M, n_conf_states);
+    }
 }
 
 /***************************************************************************************************
