@@ -47,6 +47,10 @@ cdef extern from "_util.h":
     double _logsumexp_pair(double a, double b)
     # counting states and transitions
     int _get_therm_state_break_points(int *T_x, int seq_length, int *break_points)
+    # transition matrix renormalization
+    void _renormalize_transition_matrix(double *p, int n_conf_states)
+    # misc functions
+    double _mirrored_sigmoid(double x)
 
 ####################################################################################################
 #   sorting
@@ -333,3 +337,17 @@ def restrict_samples_to_cset(state_sequence, bias_energy_sequence, cset):
     new_state_sequence[:, 1] = conf_state_sequence[valid_samples]
     new_bias_energy_sequence = _np.ascontiguousarray(bias_energy_sequence[:, valid_samples])
     return new_state_sequence, new_bias_energy_sequence
+
+####################################################################################################
+#   transition matrix renormalization
+####################################################################################################
+
+def renormalize_transition_matrix(_np.ndarray[double, ndim=2, mode="c"] P not None):
+    _renormalize_transition_matrix(<double*> _np.PyArray_DATA(P), P.shape[0])
+
+####################################################################################################
+#   misc functions
+####################################################################################################
+
+def mirrored_sigmoid(x):
+    return _mirrored_sigmoid(x)

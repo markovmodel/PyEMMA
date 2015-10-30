@@ -162,3 +162,28 @@ extern int _get_therm_state_break_points(int *T_x, int seq_length, int *break_po
     }
     return o;
 }
+
+/***************************************************************************************************
+*   transition matrix renormalization
+***************************************************************************************************/
+
+extern void _renormalize_transition_matrix(double *p, int n_conf_states)
+{
+    ;
+}
+
+/***************************************************************************************************
+*   misc functions
+***************************************************************************************************/
+
+extern double _mirrored_sigmoid(double x)
+/* implements an argument-mirrored sigmoid function: 1/(1+exp(x)) */
+{
+    double z;
+    if(0 < x)
+    {
+        z = exp(-x);
+        return z / (1.0 + z);
+    }
+    return 1.0 / (1.0 + exp(x));
+}
