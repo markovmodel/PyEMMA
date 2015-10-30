@@ -57,6 +57,35 @@ class TestFragmentedTrajectory(unittest.TestCase):
                 np.testing.assert_array_almost_equal(data[::stride], X)
                 np.testing.assert_array_almost_equal(data[lag::stride], Y)
 
+    def test_chunked_trajectory(self):
+        data = np.vstack((self.d, self.d))
+        lag = 1
+        stride = 1
+        chunksize = 1
+        # for lag in [0, 1, 3]:
+        #     for stride in [1, 3, 5]:
+        #         for chunksize in [1, 17]:
+        #             print "lag=%s, stride=%s, cs=%s" % (lag, stride, chunksize)
+        reader = FragmentedTrajectoryReader([self.d, self.d])
+        reader.chunksize = chunksize
+
+        if lag > 0:
+            collected = None
+            collected_lagged = None
+            for itraj, X, Y in reader.iterator(stride=stride, lag=lag):
+                collected = X if collected is None else np.vstack((collected, X))
+                collected_lagged = Y if collected_lagged is None else np.vstack((collected_lagged, X))
+            np.testing.assert_array_almost_equal(data[::stride], collected)
+            np.testing.assert_array_almost_equal(data[lag::stride], collected)
+        else:
+            collected = None
+            for itraj, X in reader.iterator(stride=stride):
+                collected = X if collected is None else np.vstack((collected, X))
+            np.testing.assert_array_almost_equal(data[::stride], collected)
+
+
+
+
     def test_index_to_reader_index(self):
         reader = FragmentedTrajectoryReader([self.d, self.d])
         assert (0, 0) == reader._index_to_reader_index(0), "first frame is first frame of first reader"
