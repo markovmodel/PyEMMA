@@ -33,11 +33,66 @@
 *   secondary implementation
 ***************************************************************************************************/
 
+static double _mirrored_sigmoid_term_mk2(
+    double *log_lagrangian_mult, double *bias_energies, double *conf_energies,
+    int Ki, int Kj, int i, int j)
+/* use normally for Lagrangian multiplier update and switch i <-> j for conf energies update */
+{
+    double loc = log_lagrangian_mult[Kj];
+    double tmp = loc;
+    double err = 0.0;
+    double sum = tmp;
+    _kahan_summation_step(-log_lagrangian_mult[Ki], &sum, &err, &loc, &tmp);
+    _kahan_summation_step(log_lagrangian_mult[Kj], &sum, &err, &loc, &tmp);
+    _kahan_summation_step(-log_lagrangian_mult[Ki], &sum, &err, &loc, &tmp);
+    _kahan_summation_step(conf_energies[j], &sum, &err, &loc, &tmp);
+    _kahan_summation_step(-conf_energies[i], &sum, &err, &loc, &tmp);
+    return _mirrored_sigmoid(sum);
+}
+
 extern void _update_lagrangian_mult_mk2(
     double *log_lagrangian_mult, double *bias_energies, double *conf_energies, int *count_matrices,
     int n_therm_states, int n_conf_states, double *scratch_M, double *new_log_lagrangian_mult)
 {
-    ;
+    int i, j, K, o;
+    int MM = n_conf_states * n_conf_states, Ki, Kj, KMM;
+    int CK, CKij;
+    double divisor;
+    for(K=0; K<n_therm_states; ++K)
+    {
+        KMM = K * MM;
+        for(i=0; i<n_conf_states; ++i)
+        {
+            Ki = K * n_conf_states + i;
+            /* sparsity: zero Lagrangian multipliers stay zero */
+            if(-INFINITY == log_lagrangian_mult[Ki])
+            {
+                new_log_lagrangian_mult[Ki] = -INFINITY;
+                continue;
+            }
+            o = 0;
+            for(j=0; j<n_conf_states; ++j)
+            {
+                CKij = count_matrices[KMM + i*n_conf_states + j];
+                /* special case: most variables cancel out, here */
+                if(i == j)
+                {
+                    if(0 < CKij)
+                        scratch_M[o++] = (double) CKij;
+                    continue;
+                }
+                CK = CKij + count_matrices[KMM + j*n_conf_states + i];;
+                Kj = K*n_conf_states+j;
+                /* special case: no contribution from zero count situations */
+                if(0 == CK) continue;
+                /* regular case */
+                scratch_M[o++] = (double) CK * _mirrored_sigmoid_term_mk2(
+                    log_lagrangian_mult, bias_energies, conf_energies, Ki, Kj, i, j);
+            }
+            _mixed_sort(scratch_M, 0, o - 1);
+            new_log_lagrangian_mult[Ki] = log(_kahan_summation(scratch_M, o));
+        }
+    }
 }
 
 extern void _update_conf_energies_mk2(
