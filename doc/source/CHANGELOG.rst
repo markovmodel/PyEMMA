@@ -4,11 +4,18 @@ Changelog
 2.0.1 (to be released)
 ----------------------
 
-** New features**:
+**New features**:
 
 - coordinates: added Sparsifier, which detects constant features in data stream
   and removes them for further processing. 
+- coordinates: cache lengths of NumPy arrays
+- logging: full-feature access to Python logging system (edit logging.yml in .pyemma dir) 
 
+**Fixes**:
+
+- Upon import no deprecation warning (about acf function) is shown.
+- coordinates: chunksize attribute moved to readers (no consequence for user-scripts)
+- documentation fixes 
 
 2.0.1 (9-3-2015)
 ----------------
