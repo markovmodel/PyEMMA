@@ -34,6 +34,17 @@ __all__ = [
     'estimate']
 
 cdef extern from "_dtram.h":
+    # secondary implementation
+    void _update_lagrangian_mult_mk2(
+        double *log_lagrangian_mult, double *bias_energies, double *conf_energies, int *count_matrices,
+        int n_therm_states, int n_conf_states, double *scratch_M, double *new_log_lagrangian_mult)
+    void _update_conf_energies_mk2(
+        double *log_lagrangian_mult, double *bias_energies, double *conf_energies, int *count_matrices, int n_therm_states,
+        int n_conf_states, double *scratch_TM, double *new_conf_energies)
+    void _estimate_transition_matrix_mk2(
+        double *log_lagrangian_mult, double *bias_energies, double *conf_energies, int *count_matrix,
+        int n_conf_states, double *scratch_M, double *transition_matrix)
+    # primary implementation
     void _init_lagrangian_mult(
         int *count_matrices, int n_therm_states, int n_conf_states, double *log_lagrangian_mult)
     void _update_lagrangian_mult(
@@ -53,6 +64,157 @@ cdef extern from "_dtram.h":
     double _get_loglikelihood(
         int *count_matrices, double *transition_matrices,
         int n_therm_states, int n_conf_states)
+
+####################################################################################################
+#   secondary implementation
+####################################################################################################
+
+def update_lagrangian_mult_mk2(
+    _np.ndarray[double, ndim=2, mode="c"] log_lagrangian_mult not None,
+    _np.ndarray[double, ndim=2, mode="c"] bias_energies not None,
+    _np.ndarray[double, ndim=1, mode="c"] conf_energies not None,
+    _np.ndarray[int, ndim=3, mode="c"] count_matrices not None,
+    _np.ndarray[double, ndim=1, mode="c"] scratch_M not None,
+    _np.ndarray[double, ndim=2, mode="c"] new_log_lagrangian_mult not None):
+    r"""
+    Update the logarithms of the Lagrangian multipliers
+
+    Parameters
+    ----------
+    log_lagrangian_mult : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+        log of the Lagrangian multipliers
+    bias_energies : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
+        reduced bias energies of the T thermodynamic and M markov states
+    conf_energies : numpy.ndarray(shape=(M,), dtype=numpy.float64)
+        reduced unbiased free energies
+    count_matrices : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
+        multistate count matrix
+    scratch_M : numpy.ndarray(shape=(M,), dtype=numpy.float64)
+        scratch array for logsumexp operations
+    new_log_lagrangian_mult : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+        target array for the log of the Lagrangian multipliers
+    """
+    _update_lagrangian_mult_mk2(
+        <double*> _np.PyArray_DATA(log_lagrangian_mult),
+        <double*> _np.PyArray_DATA(bias_energies),
+        <double*> _np.PyArray_DATA(conf_energies),
+        <int*> _np.PyArray_DATA(count_matrices),
+        log_lagrangian_mult.shape[0],
+        log_lagrangian_mult.shape[1],
+        <double*> _np.PyArray_DATA(scratch_M),
+        <double*> _np.PyArray_DATA(new_log_lagrangian_mult))
+
+def update_conf_energies_mk2(
+    _np.ndarray[double, ndim=2, mode="c"] log_lagrangian_mult not None,
+    _np.ndarray[double, ndim=2, mode="c"] bias_energies not None,
+    _np.ndarray[double, ndim=1, mode="c"] conf_energies not None,
+    _np.ndarray[int, ndim=3, mode="c"] count_matrices not None,
+    _np.ndarray[double, ndim=2, mode="c"] scratch_TM not None,
+    _np.ndarray[double, ndim=1, mode="c"] new_conf_energies not None):
+    r"""
+    Update the reduced unbiased free energies
+
+    Parameters
+    ----------
+    log_lagrangian_mult : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+        log of the Lagrangian multipliers
+    bias_energies : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
+        reduced bias energies of the T thermodynamic and M markov states
+    conf_energies : numpy.ndarray(shape=(M,), dtype=numpy.float64)
+        reduced unbiased free energies
+    count_matrices : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
+        multistate count matrix
+    scratch_TM : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+        scratch array for logsumexp operations
+    new_conf_energies : numpy.ndarray(shape=(M,), dtype=numpy.float64)
+        target array for the reduced unbiased free energies
+    """
+    _update_conf_energies_mk2(
+        <double*> _np.PyArray_DATA(log_lagrangian_mult),
+        <double*> _np.PyArray_DATA(bias_energies),
+        <double*> _np.PyArray_DATA(conf_energies),
+        <int*> _np.PyArray_DATA(count_matrices),
+        log_lagrangian_mult.shape[0],
+        log_lagrangian_mult.shape[1],
+        <double*> _np.PyArray_DATA(scratch_TM),
+        <double*> _np.PyArray_DATA(new_conf_energies))
+
+def estimate_transition_matrices_mk2(
+    _np.ndarray[double, ndim=2, mode="c"] log_lagrangian_mult not None,
+    _np.ndarray[double, ndim=2, mode="c"] bias_energies not None,
+    _np.ndarray[double, ndim=1, mode="c"] conf_energies not None,
+    _np.ndarray[int, ndim=3, mode="c"] count_matrices not None,
+    _np.ndarray[double, ndim=1, mode="c"] scratch_M not None):
+    r"""
+    Compute the transition matrices for all thermodynamic states
+
+    Parameters
+    ----------
+    log_lagrangian_mult : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+        log of the Lagrangian multipliers
+    bias_energies : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
+        reduced bias energies of the T thermodynamic and M markov states
+    conf_energies : numpy.ndarray(shape=(M,), dtype=numpy.float64)
+        reduced unbiased free energies
+    count_matrices : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
+        multistate count matrix
+    scratch_M : numpy.ndarray(shape=(M,), dtype=numpy.float64)
+        scratch array for logsumexp operations
+
+    Returns
+    -------
+    transition_matrices : numpy.ndarray(shape=(T, M, M), dtype=numpy.float64)
+        transition matrices for all thermodynamic states
+    """
+    transition_matrices = _np.zeros(shape=(count_matrices.shape[0], count_matrices.shape[1], count_matrices.shape[2]), dtype=_np.float64)
+    for K in range(log_lagrangian_mult.shape[0]):
+        transition_matrices[K, :, :] = estimate_transition_matrix_mk2(log_lagrangian_mult, bias_energies, conf_energies, count_matrices, scratch_M, K)[:, :]
+    return transition_matrices
+
+def estimate_transition_matrix_mk2(
+    _np.ndarray[double, ndim=2, mode="c"] log_lagrangian_mult not None,
+    _np.ndarray[double, ndim=2, mode="c"] bias_energies not None,
+    _np.ndarray[double, ndim=1, mode="c"] conf_energies not None,
+    _np.ndarray[int, ndim=3, mode="c"] count_matrices not None,
+    _np.ndarray[double, ndim=1, mode="c"] scratch_M not None,
+    therm_state):
+    r"""
+    Compute the transition matrices for all thermodynamic states
+
+    Parameters
+    ----------
+    log_lagrangian_mult : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+        log of the Lagrangian multipliers
+    bias_energies : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
+        reduced bias energies of the T thermodynamic and M markov states
+    conf_energies : numpy.ndarray(shape=(M,), dtype=numpy.float64)
+        reduced unbiased free energies
+    count_matrices : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
+        multistate count matrix
+    scratch_M : numpy.ndarray(shape=(M,), dtype=numpy.float64)
+        scratch array for logsumexp operations
+    therm_state : int
+        target thermodynamic state
+
+    Returns
+    -------
+    transition_matrix : numpy.ndarray(shape=(M, M), dtype=numpy.float64)
+        transition matrix for the target thermodynamic state
+    """
+    transition_matrix = _np.zeros(shape=(conf_energies.shape[0], conf_energies.shape[0]), dtype=_np.float64)
+    _estimate_transition_matrix_mk2(
+        <double*> _np.PyArray_DATA(_np.ascontiguousarray(log_lagrangian_mult[therm_state, :])),
+        <double*> _np.PyArray_DATA(_np.ascontiguousarray(bias_energies[therm_state, :])),
+        <double*> _np.PyArray_DATA(conf_energies),
+        <int*> _np.PyArray_DATA(_np.ascontiguousarray(count_matrices[therm_state, :, :])),
+        conf_energies.shape[0],
+        <double*> _np.PyArray_DATA(scratch_M),
+        <double*> _np.PyArray_DATA(transition_matrix))
+    return transition_matrix
+
+####################################################################################################
+#   primary implementation
+####################################################################################################
 
 def init_lagrangian_mult(
     _np.ndarray[int, ndim=3, mode="c"] count_matrices not None,
