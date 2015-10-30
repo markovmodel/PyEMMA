@@ -234,7 +234,7 @@ metadata = dict(
                       'mdtraj>=1.4.0',
                       'matplotlib',
                       'msmtools',
-                      'bhmm==0.5.1',
+                      'bhmm<6',
                       'joblib==0.8.4',
                       'pyyaml',
                       'psutil>=3.1.1',
