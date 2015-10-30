@@ -57,7 +57,6 @@ extern void _update_lagrangian_mult_mk2(
     int i, j, K, o;
     int MM = n_conf_states * n_conf_states, Ki, Kj, KMM;
     int CK, CKij;
-    double divisor;
     for(K=0; K<n_therm_states; ++K)
     {
         KMM = K * MM;
@@ -96,13 +95,12 @@ extern void _update_lagrangian_mult_mk2(
 }
 
 extern void _update_conf_energies_mk2(
-    double *log_lagrangian_mult, double *bias_energies, double *conf_energies, int *count_matrices, int n_therm_states,
-    int n_conf_states, double *scratch_TM, double *new_conf_energies)
+    double *log_lagrangian_mult, double *bias_energies, double *conf_energies, int *count_matrices,
+    int n_therm_states, int n_conf_states, double *scratch_TM, double *new_conf_energies)
 {
     int i, j, K, o;
     int MM = n_conf_states * n_conf_states, Ki, Kj, KMM;
     int CK, CKij, CKji, Ci;
-    double divisor, shift;
     for(i=0; i<n_conf_states; ++i)
     {
         /* sparsity: zero stationary weights stay zero */
@@ -157,7 +155,7 @@ extern void _estimate_transition_matrix_mk2(
     int i, j, o;
     int ij, ji;
     int C;
-    double divisor, sum;
+    double divisor;
     for(i=0; i<n_conf_states; ++i)
     {
         if(-INFINITY == log_lagrangian_mult[i])
