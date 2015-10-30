@@ -154,7 +154,43 @@ extern void _estimate_transition_matrix_mk2(
     double *log_lagrangian_mult, double *bias_energies, double *conf_energies, int *count_matrix,
     int n_conf_states, double *scratch_M, double *transition_matrix)
 {
-    ;
+    int i, j, o;
+    int ij, ji;
+    int C;
+    double divisor, sum;
+    for(i=0; i<n_conf_states; ++i)
+    {
+        if(-INFINITY == log_lagrangian_mult[i])
+        {
+            for(j=0; j<n_conf_states; ++j)
+                transition_matrix[i * n_conf_states + j] = 0.0;
+            transition_matrix[i * n_conf_states + i] = 1.0;
+            continue;
+        }
+        divisor = exp(log_lagrangian_mult[i]);
+        o = 0;
+        for(j=0; j<n_conf_states; ++j)
+        {
+            ij = i * n_conf_states + j;
+            transition_matrix[ij] = 0.0;
+            /* special case: diagonal element */
+            if(i == j)
+            {
+                if(0 < count_matrix[ij])
+                    transition_matrix[ij] = (double) count_matrix[ij] / divisor;
+                continue;
+            }
+            ji = j * n_conf_states + i;
+            C = count_matrix[ij] + count_matrix[ji];
+            /* special case: this element is zero */
+            if(0 == C) continue;
+            /* regular case */
+            ++o;
+            transition_matrix[ij] = (double) C * _mirrored_sigmoid_term_mk2(
+                log_lagrangian_mult, bias_energies, conf_energies, i, j, i, j) / divisor;
+        }
+        if(0 == o) transition_matrix[i * n_conf_states + i] = 1.0;
+    }
 }
 
 /***************************************************************************************************
