@@ -40,7 +40,7 @@ cdef extern from "_tram.h":
         int n_therm_states, int n_conf_states, double *scratch_M, double *new_log_lagrangian_mult)
     void _update_biased_conf_energies(
         double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices, double *bias_energy_sequence,
-        int *state_sequence, int *state_counts, int seq_length, double *log_R_K_i,
+        int *state_sequence, int *state_counts, int *indices, int indices_length, int seq_length, double *log_R_K_i,
         int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_T,
         double *new_biased_conf_energies)
     void _get_conf_energies(
@@ -124,6 +124,7 @@ def update_biased_conf_energies(
     _np.ndarray[double, ndim=2, mode="c"] bias_energy_sequence not None,
     _np.ndarray[int, ndim=1, mode="c"] state_sequence not None,
     _np.ndarray[int, ndim=2, mode="c"] state_counts not None,
+    _np.ndarray[int, ndim=2, mode="c"] indices not None,
     _np.ndarray[double, ndim=2, mode="c"] log_R_K_i not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_M not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_T not None,
@@ -145,6 +146,9 @@ def update_biased_conf_energies(
         Markov state indices for all X samples
     state_counts : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
         number of visits to thermodynamic state K and Markov state i
+    indices : numpy.ndarray(shape=(M, n), dtype=numpy.intc)
+        indices[i,:] = thermodynamic state indices for which state_counts[:,i] > 0 
+        terminated by -1
     log_R_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         scratch array for sum of TRAM log pseudo-counts and biased_conf_energies
     scratch_M : numpy.ndarray(shape=(M), dtype=numpy.float64)
@@ -161,6 +165,8 @@ def update_biased_conf_energies(
         <double*> _np.PyArray_DATA(bias_energy_sequence),
         <int*> _np.PyArray_DATA(state_sequence),
         <int*> _np.PyArray_DATA(state_counts),
+        <int*> _np.PyArray_DATA(indices),
+        indices.shape[1],
         state_sequence.shape[0],
         <double*> _np.PyArray_DATA(log_R_K_i),
         log_lagrangian_mult.shape[0],
@@ -537,13 +543,30 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
     scratch_MM = _np.zeros(shape=count_matrices.shape[1:3], dtype=_np.float64)
     old_biased_conf_energies = biased_conf_energies.copy()
     old_log_lagrangian_mult = log_lagrangian_mult.copy()
+    
+    # find sparsity structure of the counts
+    #import sys
+    #print >>sys.stderr, 'shape', state_counts.shape
+    #print >>sys.stderr, 'bool', state_counts[:,0]>0
+    #print >>sys.stderr, 'where', _np.where(state_counts[:,0]>0)[0]
+    
+    max_indices = _np.max([len(_np.where(state_counts[:,i]>0)[0]) for i in range(state_counts.shape[1])])+1
+    indices = _np.zeros((state_counts.shape[1], max_indices), dtype=_np.intc)
+    for i in range(state_counts.shape[1]):
+        tmp = _np.where(state_counts[:,i]>0)[0]
+        indices[i,0:len(tmp)] = tmp
+        indices[i,len(tmp)] = -1
+    occupied = _np.where(state_counts>0)
+        
+    import sys
+    print >>sys.stderr, indices
 
     best_lower_bound = False # alternative doesn't work at the moment
     for _m in range(maxiter):
         update_lagrangian_mult(old_log_lagrangian_mult, biased_conf_energies, count_matrices, state_counts, scratch_M, log_lagrangian_mult)
         update_biased_conf_energies(log_lagrangian_mult, old_biased_conf_energies, count_matrices, bias_energy_sequence, state_sequence,
-            state_counts, log_R_K_i, scratch_M, scratch_T, biased_conf_energies) # optinally include compuation of sum log mu
-        if _m%10 == 0:
+            state_counts, indices, log_R_K_i, scratch_M, scratch_T, biased_conf_energies) # optinally include compuation of sum log mu
+        if _m%100 == 0:
             if best_lower_bound:
                 logL = log_likelihood_best_lower_bound(log_lagrangian_mult,
                            biased_conf_energies, count_matrices,
@@ -561,7 +584,7 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
                           log_lagrangian_mult=log_lagrangian_mult,
                           old_biased_conf_energies=old_biased_conf_energies,
                           old_log_lagrangian_mult=old_log_lagrangian_mult)
-        if _np.max(_np.abs(biased_conf_energies - old_biased_conf_energies)) < maxerr:
+        if _np.max(_np.abs(biased_conf_energies[occupied] - old_biased_conf_energies[occupied])) < maxerr:
             break
 
         biased_conf_energies -= _np.min(biased_conf_energies)
