@@ -32,7 +32,10 @@ __all__ = [
     'get_therm_state_break_points',
     'count_matrices',
     'state_counts',
-    'restrict_samples_to_cset']
+    'restrict_samples_to_cset',
+    'renormalize_transition_matrix',
+    'renormalize_transition_matrices',
+    'mirrored_sigmoid']
 
 cdef extern from "_util.h":
     # sorting
@@ -349,6 +352,17 @@ def renormalize_transition_matrix(
         <double*> _np.PyArray_DATA(P),
         P.shape[0],
         <double*> _np.PyArray_DATA(scratch_M))
+
+def renormalize_transition_matrices(
+    _np.ndarray[double, ndim=3, mode="c"] PK not None,
+    _np.ndarray[double, ndim=1, mode="c"] scratch_M not None):
+    for K in range(PK.shape[0]):
+        P = _np.ascontiguousarray(PK[K, :, :])
+        _renormalize_transition_matrix(
+            <double*> _np.PyArray_DATA(P),
+            P.shape[0],
+            <double*> _np.PyArray_DATA(scratch_M))
+        PK[K, :, :] = P[:, :]
 
 ####################################################################################################
 #   misc functions
