@@ -18,7 +18,7 @@
 */
 
 #include <math.h>
-#include "../lse/_lse.h"
+#include "../util/_util.h"
 #include "_mbar.h"
 
 /* old m$ visual studio is not c99 compliant (vs2010 eg. is not) */
@@ -40,7 +40,7 @@ extern void _update_therm_energies(
     {
         for(L=0; L<n_therm_states; ++L)
             scratch_T[L] = log_therm_state_counts[L] + therm_energies[L] - bias_energy_sequence[L * seq_length + x];
-        divisor = _logsumexp(scratch_T, n_therm_states);
+        divisor = _logsumexp_sort_kahan_inplace(scratch_T, n_therm_states);
         for(K=0; K<n_therm_states; ++K)
             new_therm_energies[K] = -_logsumexp_pair(-new_therm_energies[K], -(bias_energy_sequence[K * seq_length + x] + divisor));
     }
@@ -66,7 +66,7 @@ extern void _get_conf_energies(
         for(L=0; L<n_therm_states; ++L)
             scratch_T[L] = log_therm_state_counts[L] + therm_energies[L] - bias_energy_sequence[L * seq_length + x];
         i = conf_state_sequence[x];
-        divisor = _logsumexp(scratch_T, n_therm_states);
+        divisor = _logsumexp_sort_kahan_inplace(scratch_T, n_therm_states);
         conf_energies[i] = -_logsumexp_pair(-conf_energies[i], -divisor);
         for(K=0; K<n_therm_states; ++K)
             biased_conf_energies[K * n_conf_states + i] = -_logsumexp_pair(
@@ -84,7 +84,7 @@ extern void _normalize(
     double f0;
     for(i=0; i<n_conf_states; ++i)
         scratch_M[i] = -conf_energies[i];
-    f0 = -_logsumexp(scratch_M, n_conf_states);
+    f0 = -_logsumexp_sort_kahan_inplace(scratch_M, n_conf_states);
     for(i=0; i<n_conf_states; ++i)
         conf_energies[i] -= f0;
     for(i=0; i<KM; ++i)
