@@ -87,17 +87,13 @@ void _update_lagrangian_mult(
 
 struct my_sparse _update_biased_conf_weights(
     double *lagrangian_mult, double *biased_conf_weights, int *count_matrices, double *bias_sequence,
-    int *state_sequence, int *state_counts, int seq_length, double *R_K_i,
-    int n_therm_states, int n_conf_states, int check_overlap, double *scratch_TM, double *new_biased_conf_weights)
+    int *state_sequence, int *state_counts, int *indices, int indices_length, int seq_length, double *R_K_i,
+    int n_therm_states, int n_conf_states, double *scratch_TM, double *new_biased_conf_weights)
 {
-    int i, j, K, Ki, Kj, KMM, x, n, L, Li, KLi;
+    int i, j, K, Ki, Kj, KMM, x, n;
     int CCT_Kij, CKi, CtKi;
-    double divisor, sum, term, c, t;
-    double *skipped_biased_conf_weights, *skipped_divisor;
-    int *rows, *cols;
+    double divisor, term, c, t;
     struct my_sparse s;
-    
-    s.length = 0;
 
     /* compute R */
     for(K=0; K<n_therm_states; ++K)
@@ -144,7 +140,8 @@ struct my_sparse _update_biased_conf_weights(
         divisor = 0;
         c = 0;
         /* calulate normal divisor */
-        for(K=0; K<n_therm_states; ++K)
+        //for(K=0; K<n_therm_states; ++K)
+        for(n=i*indices_length+1,K=indices[i*indices_length]; K!=-1; K=indices[n++])
         {
             Ki = K*n_conf_states + i;
             if(THERMOTOOLS_TRAM_PRIOR < R_K_i[Ki]) { 
@@ -162,7 +159,8 @@ struct my_sparse _update_biased_conf_weights(
         if(isnan(divisor)) fprintf(stderr, "divisor is NaN. should never happen!\n");
 
         /* update normal weights */
-        for(K=0; K<n_therm_states; ++K)
+        //for(K=0; K<n_therm_states; ++K)
+        for(n=i*indices_length+1,K=indices[i*indices_length]; K!=-1; K=indices[n++])
         {
             Ki = K*n_conf_states + i;
             term = bias_sequence[K*seq_length + x]/divisor - scratch_TM[Ki];

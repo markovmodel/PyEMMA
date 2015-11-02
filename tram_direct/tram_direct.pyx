@@ -21,8 +21,8 @@ cdef extern from "_tram_direct.h":
         int n_therm_states, int n_conf_states, int iteration, double *new_lagrangian_mult)
     my_sparse _update_biased_conf_weights(
         double *lagrangian_mult, double *biased_conf_weights, int *count_matrices, double *bias_sequence,
-        int *state_sequence, int *state_counts, int seq_length, double *R_K_i,
-        int n_therm_states, int n_conf_states, int check_overlap, double *scratch_TM, double *new_biased_conf_weights)
+        int *state_sequence, int *state_counts, int *indices, int indices_length, int seq_length, double *R_K_i,
+        int n_therm_states, int n_conf_states, double *scratch_TM, double *new_biased_conf_weights)
 
 def update_lagrangian_mult(
     _np.ndarray[double, ndim=2, mode="c"] lagrangian_mult not None,
@@ -49,8 +49,8 @@ def update_biased_conf_weights(
     _np.ndarray[double, ndim=2, mode="c"] bias_weight_sequence not None,
     _np.ndarray[int, ndim=1, mode="c"] state_sequence not None,
     _np.ndarray[int, ndim=2, mode="c"] state_counts not None,
+    _np.ndarray[int, ndim=2, mode="c"] indices not None,
     _np.ndarray[double, ndim=2, mode="c"] R_K_i not None,
-    check_overlap,
     _np.ndarray[double, ndim=2, mode="c"] scratch_TM not None,
     _np.ndarray[double, ndim=2, mode="c"] new_biased_conf_weights not None):
         
@@ -62,11 +62,12 @@ def update_biased_conf_weights(
         <double*> _np.PyArray_DATA(bias_weight_sequence),
         <int*> _np.PyArray_DATA(state_sequence),
         <int*> _np.PyArray_DATA(state_counts),
+        <int*> _np.PyArray_DATA(indices),
+        indices.shape[1],
         state_sequence.shape[0],
         <double*> _np.PyArray_DATA(R_K_i),
         lagrangian_mult.shape[0],
         lagrangian_mult.shape[1],
-        int(check_overlap),
         <double*> _np.PyArray_DATA(scratch_TM),
         <double*> _np.PyArray_DATA(new_biased_conf_weights))
 
@@ -98,20 +99,29 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
     scratch_T = _np.zeros(shape=n_therm_states, dtype=_np.float64)
     scratch_M = _np.zeros(shape=n_conf_states, dtype=_np.float64)
     
+    # init sparse indices
+    max_indices = _np.max([len(_np.where(state_counts[:,i]>0)[0]) for i in range(state_counts.shape[1])])+1
+    indices = _np.zeros((state_counts.shape[1], max_indices), dtype=_np.intc)
+    for i in range(state_counts.shape[1]):
+        tmp = _np.where(state_counts[:,i]>0)[0]
+        indices[i,0:len(tmp)] = tmp
+        indices[i,len(tmp)] = -1
+    occupied = _np.where(state_counts>0)    
+
     old_biased_conf_weights = biased_conf_weights.copy()
     old_lagrangian_mult = lagrangian_mult.copy()
     old_biased_conf_energies = _np.zeros_like(biased_conf_weights)
     for _m in range(maxiter):
         update_lagrangian_mult(old_lagrangian_mult, biased_conf_weights, count_matrices, state_counts, _m, lagrangian_mult)
         update_biased_conf_weights(lagrangian_mult, old_biased_conf_weights, count_matrices, bias_weight_sequence, state_sequence,
-                                   state_counts, R_K_i, False, scratch_TM, biased_conf_weights)
+                                   state_counts, indices, R_K_i, scratch_TM, biased_conf_weights)
         biased_conf_energies = -_np.log(biased_conf_weights)
-        if _m%1==0:
+        if _m%100==0:
             if call_back is not None:
                 call_back(iteration=_m, old_log_lagrangian_mult=_np.log(old_lagrangian_mult), log_lagrangian_mult=_np.log(lagrangian_mult),
                           old_biased_conf_energies=-_np.log(old_biased_conf_weights), biased_conf_energies=-_np.log(biased_conf_weights),
                           log_likelihood=0)
-        if _np.max(_np.abs(biased_conf_weights - old_biased_conf_weights)) < maxerr:
+        if _np.max(_np.abs(biased_conf_weights[occupied] - old_biased_conf_weights[occupied])) < maxerr:
             break
         #biased_conf_weights /= _np.max(biased_conf_weights)
         old_lagrangian_mult[:] = lagrangian_mult[:]        
