@@ -20,6 +20,46 @@
 #ifndef THERMOTOOLS_UTIL
 #define THERMOTOOLS_UTIL
 
+/***************************************************************************************************
+*   sorting
+***************************************************************************************************/
+
+extern void _mixed_sort(double *array, int L, int R);
+
+/***************************************************************************************************
+*   direct summation schemes
+***************************************************************************************************/
+
+extern void _kahan_summation_step(
+    double new_value, double *sum, double *err, double *loc, double *tmp);
+extern double _kahan_summation(double *array, int size);
+
+/***************************************************************************************************
+*   logspace summation schemes
+***************************************************************************************************/
+
+extern double _logsumexp(double *array, int size, double array_max);
+extern double _logsumexp_kahan_inplace(double *array, int size, double array_max);
+extern double _logsumexp_sort_inplace(double *array, int size);
+extern double _logsumexp_sort_kahan_inplace(double *array, int size);
+extern double _logsumexp_pair(double a, double b);
+
+/***************************************************************************************************
+*   counting states and transitions
+***************************************************************************************************/
+
 extern int _get_therm_state_break_points(int *T_x, int seq_length, int *break_points);
+
+/***************************************************************************************************
+*   transition matrix renormalization
+***************************************************************************************************/
+
+extern void _renormalize_transition_matrix(double *p, int n_conf_states, double *scratch_M);
+
+/***************************************************************************************************
+*   misc functions
+***************************************************************************************************/
+
+extern double _mirrored_sigmoid(double x);
 
 #endif

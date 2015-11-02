@@ -19,7 +19,7 @@
 
 #include <math.h>
 #include "_bar.h"
-#include "../lse/_lse.h"
+#include "../util/_util.h"
 
 extern double _df(double *db_IJ, int L1, double *db_JI, int L2, double *scratch)
 {
@@ -30,11 +30,11 @@ extern double _df(double *db_IJ, int L1, double *db_JI, int L2, double *scratch)
     {
         scratch[i] = db_IJ[i]>0 ? 0 : db_IJ[i];
     }
-    ln_avg1 = _logsumexp(scratch, L1);
+    ln_avg1 = _logsumexp_sort_kahan_inplace(scratch, L1);
     for (i=0; i<L1; i++)
     {
         scratch[i] = db_JI[i]>0 ? 0 : db_JI[i];
     }
-    ln_avg2 = _logsumexp(scratch, L2);
+    ln_avg2 = _logsumexp_sort_kahan_inplace(scratch, L2);
     return ln_avg2 - ln_avg1;
 }
