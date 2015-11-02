@@ -128,6 +128,14 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
         old_biased_conf_weights[:] = biased_conf_weights[:]
         old_biased_conf_energies[:] = biased_conf_energies[:]
 
+    full_indices = _np.zeros((n_conf_states, n_therm_states+1), dtype=_np.intc)
+    for i in range(n_conf_states):
+        full_indices[i,0:n_therm_states] = range(n_therm_states)
+        full_indices[i,n_therm_states] = -1
+        
+    update_biased_conf_weights(lagrangian_mult, old_biased_conf_weights, count_matrices, bias_weight_sequence, state_sequence,
+                               state_counts, full_indices, R_K_i, scratch_TM, biased_conf_weights)
+
 
     #conf_energies = -_np.log(biased_conf_weights[0,:]) # TODO: change me!
     #norm = biased_conf_weights[0,:].sum()
