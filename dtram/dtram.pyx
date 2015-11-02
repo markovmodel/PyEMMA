@@ -268,7 +268,7 @@ def normalize(
         <double*> _np.PyArray_DATA(therm_energies),
         <double*> _np.PyArray_DATA(conf_energies))
 
-def estimate(count_matrices, bias_energies, maxiter=1000, maxerr=1.0E-8, log_lagrangian_mult=None, conf_energies=None):
+def estimate(count_matrices, bias_energies, maxiter=1000, maxerr=1.0E-8, log_lagrangian_mult=None, conf_energies=None, call_back=None):
     r"""
     Estimate the unbiased reduced free energies and thermodynamic free energies
         
@@ -308,10 +308,16 @@ def estimate(count_matrices, bias_energies, maxiter=1000, maxerr=1.0E-8, log_lag
     for m in range(maxiter):
         update_lagrangian_mult(old_log_lagrangian_mult, bias_energies, conf_energies, count_matrices, scratch_M, log_lagrangian_mult)
         update_conf_energies(log_lagrangian_mult, bias_energies, old_conf_energies, count_matrices, scratch_TM, conf_energies)
+        if call_back is not None:
+            call_back(iteration=m, log_likelihood=0,
+                      conf_energies=conf_energies,
+                      log_lagrangian_mult=log_lagrangian_mult,
+                      old_conf_energies=old_conf_energies,
+                      old_log_lagrangian_mult=old_log_lagrangian_mult)
         delta_log_lagrangian_mult = _np.max(_np.abs((log_lagrangian_mult - old_log_lagrangian_mult)))
         delta_conf_energies = _np.max(_np.abs((conf_energies - old_conf_energies)))
         if delta_log_lagrangian_mult < maxerr and delta_conf_energies < maxerr:
-            stop = True
+            break
         else:
             old_log_lagrangian_mult[:] = log_lagrangian_mult[:]
             old_conf_energies[:] = conf_energies[:]
