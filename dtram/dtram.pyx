@@ -534,7 +534,7 @@ def estimate_mk1(count_matrices, bias_energies, maxiter=1000, maxerr=1.0E-8, log
             lll_traj.append(get_loglikelihood(count_matrices, estimate_transition_matrices(
                 log_lagrangian_mult, bias_energies, conf_energies, count_matrices, scratch_M)))
         if err < maxerr:
-            stop = True
+            break
         else:
             old_log_lagrangian_mult[:] = log_lagrangian_mult[:]
             old_conf_energies[:] = conf_energies[:]
@@ -619,7 +619,7 @@ def estimate_mk2(
             util.renormalize_transition_matrices(P, scratch_M)
             lll_traj.append(get_loglikelihood(count_matrices, P))
         if err < maxerr:
-            stop = True
+            break
         else:
             old_log_lagrangian_mult[:] = log_lagrangian_mult[:]
             old_conf_energies[:] = conf_energies[:]
