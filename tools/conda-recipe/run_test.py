@@ -3,6 +3,9 @@ import os
 import sys
 import shutil
 
+# headless plotting support
+import matplotlib
+matplotlib.use('Agg')
 
 src_dir = os.getenv('SRC_DIR')
 
