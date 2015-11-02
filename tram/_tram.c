@@ -255,8 +255,9 @@ void _estimate_transition_matrix(
         }
     }
     /* normalize T matrix */
-    max_sum = -1;
+    max_sum = 0;
     for(i=0; i<n_conf_states; ++i) if(sum[i] > max_sum) max_sum = sum[i];
+    if(max_sum == 0) max_sum = 1;
     for(i=0; i<n_conf_states; ++i) {
         for(j=0; j<n_conf_states; ++j) {
             if(i==j) {
@@ -369,7 +370,7 @@ double _log_likelihood_lower_bound(
             }
             NC = state_counts[Ki] - Ci;
             R_addon = (0 < NC) ? log((double) NC) + old_biased_conf_energies[Ki] : -INFINITY; /* IGNORE PRIOR */
-            old_log_R_K_i[Ki] = _logsumexp_pair(_logsumexp(scratch_M, o), R_addon);
+            old_log_R_K_i[Ki] = _logsumexp_pair(_logsumexp_sort_kahan_inplace(scratch_M, o), R_addon);
         }
     }
 
@@ -385,7 +386,7 @@ double _log_likelihood_lower_bound(
                 scratch_T[o++] =
                     old_log_R_K_i[Ki] - bias_energy_sequence[K * seq_length + x];
         }
-        c -= _logsumexp(scratch_T,o);
+        c -= _logsumexp_sort_kahan_inplace(scratch_T,o);
     }
     return a+b+c;
 }
