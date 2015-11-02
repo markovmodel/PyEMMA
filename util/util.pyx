@@ -32,7 +32,10 @@ __all__ = [
     'get_therm_state_break_points',
     'count_matrices',
     'state_counts',
-    'restrict_samples_to_cset']
+    'restrict_samples_to_cset',
+    'renormalize_transition_matrix',
+    'renormalize_transition_matrices',
+    'mirrored_sigmoid']
 
 cdef extern from "_util.h":
     # sorting
@@ -47,6 +50,10 @@ cdef extern from "_util.h":
     double _logsumexp_pair(double a, double b)
     # counting states and transitions
     int _get_therm_state_break_points(int *T_x, int seq_length, int *break_points)
+    # transition matrix renormalization
+    void _renormalize_transition_matrix(double *p, int n_conf_states, double *scratch_M)
+    # misc functions
+    double _mirrored_sigmoid(double x)
 
 ####################################################################################################
 #   sorting
@@ -333,3 +340,33 @@ def restrict_samples_to_cset(state_sequence, bias_energy_sequence, cset):
     new_state_sequence[:, 1] = conf_state_sequence[valid_samples]
     new_bias_energy_sequence = _np.ascontiguousarray(bias_energy_sequence[:, valid_samples])
     return new_state_sequence, new_bias_energy_sequence
+
+####################################################################################################
+#   transition matrix renormalization
+####################################################################################################
+
+def renormalize_transition_matrix(
+    _np.ndarray[double, ndim=2, mode="c"] P not None,
+    _np.ndarray[double, ndim=1, mode="c"] scratch_M not None):
+    _renormalize_transition_matrix(
+        <double*> _np.PyArray_DATA(P),
+        P.shape[0],
+        <double*> _np.PyArray_DATA(scratch_M))
+
+def renormalize_transition_matrices(
+    _np.ndarray[double, ndim=3, mode="c"] PK not None,
+    _np.ndarray[double, ndim=1, mode="c"] scratch_M not None):
+    for K in range(PK.shape[0]):
+        P = _np.ascontiguousarray(PK[K, :, :])
+        _renormalize_transition_matrix(
+            <double*> _np.PyArray_DATA(P),
+            P.shape[0],
+            <double*> _np.PyArray_DATA(scratch_M))
+        PK[K, :, :] = P[:, :]
+
+####################################################################################################
+#   misc functions
+####################################################################################################
+
+def mirrored_sigmoid(x):
+    return _mirrored_sigmoid(x)

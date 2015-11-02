@@ -50,4 +50,16 @@ extern double _logsumexp_pair(double a, double b);
 
 extern int _get_therm_state_break_points(int *T_x, int seq_length, int *break_points);
 
+/***************************************************************************************************
+*   transition matrix renormalization
+***************************************************************************************************/
+
+extern void _renormalize_transition_matrix(double *p, int n_conf_states, double *scratch_M);
+
+/***************************************************************************************************
+*   misc functions
+***************************************************************************************************/
+
+extern double _mirrored_sigmoid(double x);
+
 #endif
