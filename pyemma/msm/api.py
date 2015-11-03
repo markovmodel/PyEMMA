@@ -547,11 +547,10 @@ def timescales_hmsm(dtrajs, nstates, lags=None, nits=None, reversible=True,
     >>> ts = msm.timescales_hmsm(dtraj, 2, [1,2,3,4,5])
     >>> print(ts.timescales) # doctest: +ELLIPSIS
     [[  1.691]
-     [  7.537]
-     [  1.919]
-     [ 40.962]
-     [ 11.527]]
-
+     [  7.184]
+     [  2.037]
+     [ 41.015]
+     [ 10.853]]
 
     .. autoclass:: pyemma.msm.estimators.implied_timescales.ImpliedTimescales
         :members:
@@ -694,13 +693,13 @@ def estimate_hidden_markov_model(dtrajs, nstates, lag, reversible=True, connecti
     states:
 
     >>> print(mm.transition_matrix)
-    [[ 0.756  0.244]
-     [ 0.205  0.795]]
+    [[ 0.711  0.289]
+     [ 0.206  0.794]]
 
     With the equilibrium distribution:
 
     >>> print(mm.stationary_distribution) # doctest: +ELLIPSIS
-    [ 0.45...  0.54...]
+    [ 0.41...  0.58...]
 
     The observed states are the three discrete clusters that we have in our
     discrete trajectory:
@@ -725,18 +724,18 @@ def estimate_hidden_markov_model(dtrajs, nstates, lag, reversible=True, connecti
     We can print the lifetimes of the metastable states:
 
     >>> print(mm.lifetimes) # doctest: +ELLIPSIS
-    [ 7...  8...]
+    [ 5...  8...]
 
     And the timescale of the hidden transition matrix - now we only have one
     relaxation timescale:
 
     >>> print(mm.timescales())  # doctest: +ELLIPSIS
-    [ 3.35...]
+    [ 2.9...]
 
     The mean first passage times can also be computed between metastable states:
 
     >>> print(mm.mfpt(0, 1))  # doctest: +ELLIPSIS
-    8...
+    6.9...
 
     See also
     --------
