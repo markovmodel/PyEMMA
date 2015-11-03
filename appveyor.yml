@@ -1,8 +1,4 @@
 environment:
-  myuser:
-    secure: BNlXevLtF9e2aPA67RkRlg==
-  mypass:
-    secure: UVcVBPUuJmH6Dargd2JZHitYoqNavVuBWWeJ8fvarLfSahvVhAAlXsnO2roo/75L
   global:
     # SDK v7.0 MSVC Express 2008's SetEnv.cmd script will fail if the
     # /E:ON and /V:ON options are not enabled in the batch script intepreter
@@ -29,7 +25,7 @@ install:
 
   - conda config --set always_yes true 
   - conda config --add channels omnia 
-  - conda install -q conda-build jinja2
+  - conda install -q conda-build jinja2 anaconda
 
   # use agg backend in matplotlib to avoid gui popup, which can not be closed.
   - echo %userprofile%
