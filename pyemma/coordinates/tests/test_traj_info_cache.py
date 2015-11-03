@@ -64,7 +64,7 @@ class TestTrajectoryInfoCache(unittest.TestCase):
         files = []
         with TemporaryDirectory() as td:
             for i, x in enumerate(different_lengths_array):
-                fn = "%i.npy" % i
+                fn = os.path.join(td, "%i.npy" % i)
                 np.save(fn, x)
                 files.append(fn)
 
