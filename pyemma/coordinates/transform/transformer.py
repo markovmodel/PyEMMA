@@ -809,3 +809,11 @@ class Transformer(six.with_metaclass(ABCMeta, ProgressReporter)):
             self._Y = trajs
 
         return trajs
+
+    def __getstate__(self):
+        d = dict(self.__dict__)
+        try:
+            del d['_logger_instance']
+        except KeyError:
+            pass
+        return d
