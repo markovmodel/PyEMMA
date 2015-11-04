@@ -157,7 +157,11 @@ def normalize(
         <double*> _np.PyArray_DATA(therm_energies),
         <double*> _np.PyArray_DATA(conf_energies))
 
-def estimate(state_counts, bias_energies, maxiter=1000, maxerr=1.0E-8, therm_energies=None, conf_energies=None):
+def estimate(
+    state_counts, bias_energies,
+    maxiter=1000, maxerr=1.0E-8,
+    therm_energies=None, conf_energies=None,
+    err_out=0):
     r"""
     Estimate the unbiased reduced free energies and thermodynamic free energies
         
@@ -195,18 +199,26 @@ def estimate(state_counts, bias_energies, maxiter=1000, maxerr=1.0E-8, therm_ene
     old_therm_energies = therm_energies.copy()
     old_conf_energies = conf_energies.copy()
     scratch = _np.zeros(shape=(S,), dtype=_np.float64)
-    stop = False
+    err_traj = []
+    err_count = 0
     for _m in range(maxiter):
         update_therm_energies(conf_energies, bias_energies, scratch, therm_energies)
         update_conf_energies(log_therm_state_counts, log_conf_state_counts, therm_energies, bias_energies, scratch, conf_energies)
         delta_therm_energies = _np.max(_np.abs((therm_energies - old_therm_energies)))
         delta_conf_energies = _np.max(_np.abs((conf_energies - old_conf_energies)))
-        if delta_therm_energies < maxerr and delta_conf_energies < maxerr:
-            stop = True
+        err_count += 1
+        err = _np.max([delta_conf_energies, delta_therm_energies])
+        if err_count == err_out:
+            err_count = 0
+            err_traj.append(err)
+        if err < maxerr:
+            break
         else:
             old_therm_energies[:] = therm_energies[:]
             old_conf_energies[:] = conf_energies[:]
-        if stop:
-            break
     normalize(scratch, therm_energies, conf_energies)
-    return therm_energies, conf_energies
+    if err_out == 0:
+        err_traj = None
+    else:
+        err_traj = _np.array(err_traj, dtype=_np.float64)
+    return therm_energies, conf_energies, err_traj
