@@ -148,7 +148,7 @@ def normalize(
         <double*> _np.PyArray_DATA(biased_conf_energies))
 
 def estimate(therm_state_counts, bias_energy_sequence, conf_state_sequence,
-    maxiter=1000, maxerr=1.0E-8, therm_energies=None):
+    maxiter=1000, maxerr=1.0E-8, therm_energies=None, call_back=None):
     r"""
     Estimate the (un)biased reduced free energies and thermodynamic free energies
         
@@ -181,6 +181,9 @@ def estimate(therm_state_counts, bias_energy_sequence, conf_state_sequence,
     stop = False
     for _m in range(maxiter):
         update_therm_energies(log_therm_state_counts, old_therm_energies, bias_energy_sequence, scratch_T, therm_energies)
+        if call_back is not None:
+            error = _np.max(_np.abs((therm_energies - old_therm_energies)))
+            call_back(iteration=_m, therm_energies=therm_energies, old_therm_energies=old_therm_energies, error=error)
         if _np.max(_np.abs((therm_energies - old_therm_energies))) < maxerr:
             stop = True
         else:
