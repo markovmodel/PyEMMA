@@ -450,7 +450,7 @@ def normalize(
         <double*> _np.PyArray_DATA(conf_energies))
 
 def get_loglikelihood(
-    _np.ndarray[double, ndim=3, mode="c"] count_matrices not None,
+    _np.ndarray[int, ndim=3, mode="c"] count_matrices not None,
     _np.ndarray[double, ndim=3, mode="c"] transition_matrices not None):
     r"""
     Compute the transition matrices for all thermodynamic states
