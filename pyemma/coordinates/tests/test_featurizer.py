@@ -30,9 +30,12 @@ from itertools import combinations, product
 from pyemma.coordinates.data.featurizer import MDFeaturizer, CustomFeature, _parse_pairwise_input
 from six.moves import range
 import pkg_resources
+
 path = pkg_resources.resource_filename(__name__, 'data') + os.path.sep
 xtcfile = os.path.join(path, 'bpti_mini.xtc')
 pdbfile = os.path.join(path, 'bpti_ca.pdb')
+pdbfile_ops_aa = os.path.join(path,'opsin_aa_1_frame.pdb.gz')
+pdbfile_ops_Ca = os.path.join(path,'opsin_Ca_1_frame.pdb.gz')
 
 asn_leu_pdb = """
 ATOM    559  N   ASN A  69      19.168  -0.936 -10.274  1.00 27.50           N  
@@ -152,12 +155,35 @@ class TestFeaturizer(unittest.TestCase):
         sel = self.feat.select_Ca()
         assert(np.all(sel == list(range(self.traj.n_atoms))))  # should be all for this Ca-traj
         pairs = self.feat.pairs(sel, excluded_neighbors=0)
-        self.feat.add_distances_ca(periodic=False)  # unperiodic distances such that we can compare
+        self.feat.add_distances_ca(periodic=False, excluded_neighbors=0)  # unperiodic distances such that we can compare
         assert(self.feat.dimension() == pairs.shape[0])
         X = self.traj.xyz[:, pairs[:, 0], :]
         Y = self.traj.xyz[:, pairs[:, 1], :]
         D = np.sqrt(np.sum((X - Y) ** 2, axis=2))
         assert(np.allclose(D, self.feat.transform(self.traj)))
+
+    def test_ca_distances_with_all_atom_geometries(self):
+        feat = MDFeaturizer(pdbfile_ops_aa)
+        feat.add_distances_ca(excluded_neighbors=0)
+        D_aa = feat.transform(mdtraj.load(pdbfile_ops_aa))
+
+        # Create a reference
+        feat_just_ca = MDFeaturizer(pdbfile_ops_Ca)
+        feat_just_ca.add_distances(np.arange(feat_just_ca.topology.n_atoms))
+        D_ca = feat_just_ca.transform(mdtraj.load(pdbfile_ops_Ca))
+        assert(np.allclose(D_aa, D_ca))
+
+    def test_ca_distances_with_all_atom_geometries_and_exclusions(self):
+        feat = MDFeaturizer(pdbfile_ops_aa)
+        feat.add_distances_ca(excluded_neighbors=2)
+        D_aa = feat.transform(mdtraj.load(pdbfile_ops_aa))
+
+        # Create a reference
+        feat_just_ca = MDFeaturizer(pdbfile_ops_Ca)
+        ca_pairs = feat.pairs(feat_just_ca.select_Ca(),excluded_neighbors=2)
+        feat_just_ca.add_distances(ca_pairs)
+        D_ca = feat_just_ca.transform(mdtraj.load(pdbfile_ops_Ca))
+        assert(np.allclose(D_aa, D_ca))
 
     def test_contacts(self):
         sel = np.array([1, 2, 5, 20], dtype=int)
@@ -472,7 +498,7 @@ class TestFeaturizerNoDubs(unittest.TestCase):
         featurizer.add_distances(ca)
         expected_active += 1
         self.assertEqual(len(featurizer.active_features), expected_active)
-        featurizer.add_distances_ca()
+        featurizer.add_distances_ca(excluded_neighbors=0)
         self.assertEqual(len(featurizer.active_features), expected_active)
 
         featurizer.add_inverse_distances([[0, 1], [0, 3]])
