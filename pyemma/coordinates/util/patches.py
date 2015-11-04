@@ -37,7 +37,6 @@ from six.moves import range
 
 
 class iterload:
-class iterload:
 
     def __init__(self, filename, chunk=100, **kwargs):
         """An iterator over a trajectory from one or more files on disk, in fragments
