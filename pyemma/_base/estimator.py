@@ -321,6 +321,15 @@ class Estimator(_BaseEstimator):
             create_logger(self)
             return self._logger_instance
 
+    def __getstate__(self):
+        # do not pickle the logger instance
+        d = dict(self.__dict__)
+        try:
+            del d['_logger_instance']
+        except KeyError:
+            pass
+        return d
+
     def estimate(self, X, **params):
         """ Estimates the model given the data X
 
