@@ -212,7 +212,8 @@ class PyCSVReader(ReaderInterface):
         else:
             header = None
 
-        skip = (self._skip + skip)
+        # only apply _skip property at the beginning of the trajectory
+        skip = skip + self._skip if self._t == 0 else 0
         nt = self._lengths[self._itraj]
 
         if self._has_header[self._itraj]:
@@ -276,6 +277,7 @@ class PyCSVReader(ReaderInterface):
             # close file handles and open new ones
             self._t = 0
             self._itraj += 1
+            self._iter = None
 
             while not ctx.uniform_stride and self._itraj not in ctx.traj_keys:
                 self._itraj += 1
