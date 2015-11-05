@@ -141,10 +141,12 @@ def load(trajfiles, features=None, top=None, stride=1, chunk_size=100):
 
     Parameters
     ----------
-    trajfiles : str or list of str
+    trajfiles : str or list of str or list of lists of str
         A filename or a list of filenames to trajectory files that can be
         processed by pyemma. Both molecular dynamics trajectory files and raw
         data files (tabulated ASCII or binary) can be loaded.
+
+        If provided a list of lists, the inner list's components will be treated as one trajectory.
 
         When molecular dynamics trajectory files are loaded either a featurizer
         must be specified (for reading specific quantities such as distances or
@@ -217,7 +219,8 @@ def load(trajfiles, features=None, top=None, stride=1, chunk_size=100):
     """
     if isinstance(trajfiles, string_types) or (
         isinstance(trajfiles, (list, tuple))
-            and (any(isinstance(item, string_types) for item in trajfiles) or len(trajfiles) is 0)):
+            and (any(isinstance(item, (list, tuple, string_types)) for item in trajfiles)
+                 or len(trajfiles) is 0)):
         reader = _create_file_reader(trajfiles, top, features, chunk_size=chunk_size)
         trajs = reader.get_output(stride=stride)
         if len(trajs) == 1:
@@ -242,7 +245,7 @@ def source(inp, features=None, top=None, chunk_size=None):
     Parameters
     ----------
     inp : str (file name) or ndarray or list of strings (file names) or list
-        of ndarrays The inp file names or input data. Can be given in any of
+        of ndarrays or list of lists. Can be given in any of
         these ways:
 
         1. File name of a single trajectory. It can have any of the molecular
@@ -264,6 +267,7 @@ def source(inp, features=None, top=None, chunk_size=None):
            arrays are not being loaded completely, but mapped into memory
            (read-only).
         8. List of tabulated ASCII files of shape (T, N).
+        9. List of lists. The inner list's components will be treated as single trajectory.
 
     features : MDFeaturizer, optional, default = None
         a featurizer object specifying how molecular dynamics files should be
@@ -344,12 +348,13 @@ def source(inp, features=None, top=None, chunk_size=None):
     """
     # CASE 1: input is a string or list of strings
     # check: if single string create a one-element list
-    if isinstance(inp, string_types) or (isinstance(inp, (list, tuple))
-                                       and (any(isinstance(item, string_types) for item in inp) or len(inp) is 0)):
+    if isinstance(inp, string_types) or (
+            isinstance(inp, (list, tuple))
+            and (any(isinstance(item, (list, tuple, string_types)) for item in inp) or len(inp) is 0)):
         reader = _create_file_reader(inp, top, features, chunk_size=chunk_size if chunk_size else 100)
 
     elif isinstance(inp, _np.ndarray) or (isinstance(inp, (list, tuple))
-                                      and (any(isinstance(item, _np.ndarray) for item in inp) or len(inp) is 0)):
+                                          and (any(isinstance(item, _np.ndarray) for item in inp) or len(inp) is 0)):
         # CASE 2: input is a (T, N, 3) array or list of (T_i, N, 3) arrays
         # check: if single array, create a one-element list
         # check: do all arrays have compatible dimensions (*, N, 3)? If not: raise ValueError.
