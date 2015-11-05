@@ -119,6 +119,15 @@ def is_float_matrix(l):
             return True
     return False
 
+def is_bool_matrix(l):
+    r"""Checks if l is a 2D numpy array of bools
+
+    """
+    if isinstance(l, np.ndarray):
+        if l.ndim == 2 and (l.dtype == bool):
+            return True
+    return False
+
 def is_float_array(l):
     r"""Checks if l is a numpy array of floats (any dimension
 
@@ -444,7 +453,7 @@ def ensure_traj(traj):
     r"""Makes sure that dtraj is a discrete trajectory (array of float)
 
     """
-    if is_float_matrix(traj):
+    if is_float_matrix(traj) or is_bool_matrix(traj):
         return traj
     elif is_float_vector(traj):
         return traj[:,None]
