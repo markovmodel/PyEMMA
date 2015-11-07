@@ -16,7 +16,7 @@ requirements:
     - bhmm <6
     - joblib
     - matplotlib
-    - mdtraj
+    - mdtraj >=1.5
     - nose # actually this should not be here...
     - mock
     - msmtools
@@ -33,7 +33,7 @@ requirements:
     - bhmm <6
     - joblib
     - matplotlib
-    - mdtraj
+    - mdtraj >=1.5
     - mock
     - msmtools
     - numpy >=1.7
