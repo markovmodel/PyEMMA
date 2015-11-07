@@ -21,6 +21,7 @@ Changelog
 
 - Upon import no deprecation warning (about acf function) is shown.
 - coordinates: chunksize attribute moved to readers (no consequence for user-scripts)
+- coordinates: fixed bug in parallel evaluation of Estimators, when they have active loggers.
 - documentation fixes 
 
 2.0.1 (9-3-2015)

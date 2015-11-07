@@ -1,14 +1,13 @@
 #!/bin/bash
 
-TARGET=$HOME/miniconda
-BASE_ENV=$TARGET/envs/ci
+# make TARGET overrideable with env
+: ${TARGET:=$HOME/miniconda}
 
 function install_miniconda {
-	echo "installing miniconda"
+	echo "installing miniconda to $TARGET"
 	wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O mc.sh -o /dev/null
 	bash mc.sh -b -f -p $TARGET
 }
 
-export PATH=$TARGET/bin:$PATH
-
 install_miniconda
+export PATH=$TARGET/bin:$PATH

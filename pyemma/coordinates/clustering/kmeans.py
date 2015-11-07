@@ -24,19 +24,22 @@ Created on 22.01.2015
 """
 
 from __future__ import absolute_import
+
 import math
 import os
 import random
 import tempfile
-import numpy as np
+
+from pyemma.coordinates.clustering.interface import AbstractClustering
+from pyemma.util.annotators import doc_inherit
+from pyemma.util.units import bytes_to_string
 import psutil
+
+from six.moves import range
+import numpy as np
 
 from . import kmeans_clustering
 
-from pyemma.util.annotators import doc_inherit
-from pyemma.util.units import bytes_to_string
-from pyemma.coordinates.clustering.interface import AbstractClustering
-from six.moves import range
 
 __all__ = ['KmeansClustering']
 
@@ -263,11 +266,18 @@ class MiniBatchKmeansClustering(KmeansClustering):
     def _draw_mini_batch_sample(self):
         offset = 0
         for idx, traj_len in enumerate(self._traj_lengths):
-            self._random_access_stride[offset:offset + self._n_samples_traj[idx], 0] = idx * np.ones(
-                self._n_samples_traj[idx], dtype=int)
-            self._random_access_stride[offset:offset + self._n_samples_traj[idx], 1] = np.sort(
-                random.sample(list(range(traj_len)), self._n_samples_traj[idx])).T
-            offset += self._n_samples_traj[idx]
+            n_samples_traj = self._n_samples_traj[idx]
+            start = slice(offset, offset + n_samples_traj)
+
+            self._random_access_stride[start, 0] = idx * np.ones(
+                n_samples_traj, dtype=int)
+
+            # draw 'n_samples_traj' without replacement from range(0, traj_len)
+            choice = np.random.choice(traj_len, n_samples_traj, replace=False)
+
+            self._random_access_stride[start, 1] = np.sort(choice).T
+            offset += n_samples_traj
+
         return self._random_access_stride
 
     def _param_init(self):

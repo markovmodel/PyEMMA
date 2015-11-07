@@ -98,8 +98,10 @@ eg. { 'Java' : { 'initheap' : '32m', ... }, ... }
 """
 
 class AttribStore(dict):
-
     """ store arbitrary attributes in this dictionary like class."""
+    def __init__(self, *a, **kw):
+        super(AttribStore, self).__init__(*a, **kw)
+        self.__wrapped__ = None
 
     def __getattr__(self, name):
         """ return attribute with given name or raise."""
@@ -227,6 +229,7 @@ class Wrapper(object):
     # wrap attribute access for this module to enable shortcuts to config values
     def __init__(self, wrapped):
         self.wrapped = wrapped
+        self.__wrapped__ = wrapped
 
     def __getattr__(self, name):
         # try to lookup in conf_values first, then fall back to module attributes
@@ -253,7 +256,7 @@ class Wrapper(object):
             raise KeyError('"%s" is not a valid config section.' % name)
 
     def __setattr__(self, name, value):
-        if name not in ('wrapped', ):
+        if name not in ('wrapped', '__wrapped__'):
             self.__setitem__(name, value)
         else:
             object.__setattr__(self, name, value)
