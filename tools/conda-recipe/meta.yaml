@@ -19,6 +19,7 @@ requirements:
     - mdtraj >=1.5
     - mock
     - msmtools
+    - nose
     - numpy >=1.7
     - pyyaml
     - scipy
