@@ -154,7 +154,7 @@ class KmeansClustering(AbstractClustering):
 
     @doc_inherit
     def describe(self):
-        return "[Kmeans, k=%i]" % self.n_clusters
+        return "[Kmeans, k=%i, inp_dim=%i]" % (self.n_clusters, self.data_producer.dimension())
 
     def _param_finish(self):
         self._clustercenters = np.array(self._cluster_centers_iter)
