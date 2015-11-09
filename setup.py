@@ -256,7 +256,6 @@ else:
     # setuptools>=2.2 can handle setup_requires
     metadata['setup_requires'] = ['numpy>=1.7.0',
                                   'mdtraj>=1.5.0',
-                                  'nose',
                                   ]
 
     metadata['package_data'] = {
