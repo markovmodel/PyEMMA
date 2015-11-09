@@ -226,6 +226,8 @@ metadata = dict(
     # install default emma.cfg into package.
     package_data=dict(pyemma=['pyemma.cfg']),
     cmdclass=get_cmdclass(),
+    tests_require=['nose'],
+    test_suite='nose.collector',
     # runtime dependencies
     install_requires=['numpy>=1.7.0',
                       'scipy>=0.11',
@@ -254,6 +256,7 @@ else:
     # setuptools>=2.2 can handle setup_requires
     metadata['setup_requires'] = ['numpy>=1.7.0',
                                   'mdtraj>=1.5.0',
+                                  'nose',
                                   ]
 
     metadata['package_data'] = {
