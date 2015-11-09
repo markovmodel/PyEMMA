@@ -88,6 +88,23 @@ class TestFragmentedTrajectory(unittest.TestCase):
                 except EnvironmentError:
                     pass
 
+    def test_varying_chunksize(self):
+        source = coor.source([(self.d, self.d, self.d)])
+        source.chunksize = 10
+        data = np.vstack((self.d, self.d, self.d))
+
+        it = source.iterator(stride=2, lag=5)
+        _, X, Y = next(it)
+        self.assertTrue(len(X) == 10 and len(Y) == 10, "chunksize was expected to be 10")
+        np.testing.assert_array_almost_equal(X, data[0:20][::2])
+        np.testing.assert_array_almost_equal(Y, data[5:25][::2])
+
+        source.chunksize = 70
+        _, X, Y = next(it)
+        self.assertTrue(len(X) == 70 and len(Y) == 70, "chunksize was expected to be 70")
+        np.testing.assert_array_almost_equal(X, data[20:160][::2])
+        np.testing.assert_array_almost_equal(Y, data[25:165][::2])
+
     def test_multiple_input_trajectories(self):
         reader = FragmentedTrajectoryReader([[self.d, self.d], self.d, [self.d, self.d]])
         reader.chunksize = 37

@@ -199,6 +199,14 @@ class FragmentedTrajectoryReader(ReaderInterface):
         self._it = None
         self._it_lagged = None
 
+    @ReaderInterface.chunksize.setter
+    def chunksize(self, size):
+        if hasattr(self, '_it') and self._it is not None:
+            self._it._chunksize = int(size)
+        if hasattr(self, '_it_lagged') and self._it_lagged is not None:
+            self._it_lagged._chunksize = int(size)
+        ReaderInterface.chunksize.fset(self, size)
+
     def _next_chunk(self, ctx):
         if self._itraj > self._ntraj:
             self._reset(ctx)
