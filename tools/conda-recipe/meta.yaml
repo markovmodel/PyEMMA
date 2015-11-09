@@ -13,25 +13,24 @@ requirements:
     - setuptools
     - cython >=0.20
 
-    - bhmm <6
-    - joblib
+    - bhmm <0.6
+    - joblib ==0.8.4
     - matplotlib
     - mdtraj >=1.5
-    - nose # actually this should not be here...
     - mock
     - msmtools
     - numpy >=1.7
     - pyyaml
     - scipy
     - six
-    - psutil
-    - decorator
+    - psutil >=3.1.1
+    - decorator >=4.0.0
 
   run:
     - python
     - setuptools
-    - bhmm <6
-    - joblib
+    - bhmm <0.6
+    - joblib ==0.8.4
     - matplotlib
     - mdtraj >=1.5
     - mock
@@ -40,8 +39,8 @@ requirements:
     - pyyaml
     - scipy
     - six
-    - psutil
-    - decorator
+    - psutil >=3.1.1
+    - decorator >=4.0.0
 
 test:
   requires:
