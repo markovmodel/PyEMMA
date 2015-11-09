@@ -25,7 +25,7 @@ install:
 
   - conda config --set always_yes true 
   - conda config --add channels omnia 
-  - conda install -q conda-build jinja2 anaconda
+  - conda install -q conda-build jinja2 
 
   # use agg backend in matplotlib to avoid gui popup, which can not be closed.
   - echo %userprofile%
