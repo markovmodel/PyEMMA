@@ -168,5 +168,23 @@ class TestNumPyFileReader(unittest.TestCase):
                                             "not equal for stride=%i"
                                             " and lag=%i" % (stride, lag))
 
+    def test_lagged_stridden_access_multiple_files_dims(self):
+        reader = NumPyFileReader(self.files2d, usecols=[1])
+        print(reader.trajectory_lengths())
+        strides = [2, 3, 5, 7, 15]
+        lags = [1, 3, 7, 10, 30]
+        for stride in strides:
+            for lag in lags:
+                chunks = {i: [] for i in range(reader.number_of_trajectories())}
+                for itraj, _, Y in reader.iterator(stride, lag):
+                    chunks[itraj].append(Y)
+
+                for i, k in enumerate(chunks.values()):
+                    stack = np.vstack(k)
+                    d = np.load(self.files2d[i])[:,reader._usecols]
+                    np.testing.assert_equal(stack, d[lag::stride],
+                                            "not equal for stride=%i"
+                                            " and lag=%i" % (stride, lag))
+
 if __name__ == "__main__":
     unittest.main()
