@@ -549,6 +549,7 @@ def estimate_mk1(
         else:
             old_log_lagrangian_mult[:] = log_lagrangian_mult[:]
             old_conf_energies[:] = conf_energies[:]
+            old_therm_energies[:] = therm_energies[:]
     if err_out == 0:
         err_traj = None
     else:
