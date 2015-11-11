@@ -263,7 +263,7 @@ extern void _update_conf_energies(
     int i, j, K, o;
     int MM=n_conf_states*n_conf_states, Ki, Kj;
     int CK, CKij, CKji, Ci;
-    double divisor, shift;
+    double divisor;
     for(i=0; i<n_conf_states; ++i)
     {
         Ci = 0;
@@ -300,11 +300,6 @@ extern void _update_conf_energies(
         new_conf_energies[i] = _logsumexp_sort_kahan_inplace(scratch_TM, o) - log(
             n_therm_states*THERMOTOOLS_DTRAM_PRIOR + (double) Ci);
     }
-    shift = new_conf_energies[0];
-    for(i=1; i<n_conf_states; ++i)
-        shift = (shift < new_conf_energies[i]) ? shift : new_conf_energies[i];
-    for(i=0; i<n_conf_states; ++i)
-        new_conf_energies[i] -= shift;
 }
 
 extern void _estimate_transition_matrix(

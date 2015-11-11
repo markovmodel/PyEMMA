@@ -397,7 +397,8 @@ def estimate_transition_matrix(
 def get_therm_energies(
     _np.ndarray[double, ndim=2, mode="c"] bias_energies not None,
     _np.ndarray[double, ndim=1, mode="c"] conf_energies not None,
-    _np.ndarray[double, ndim=1, mode="c"] scratch_M not None):
+    _np.ndarray[double, ndim=1, mode="c"] scratch_M not None,
+    _np.ndarray[double, ndim=1, mode="c"] therm_energies=None):
     r"""
     Compute the transition matrices for all thermodynamic states
 
@@ -415,7 +416,8 @@ def get_therm_energies(
     therm_energies : numpy.ndarray(shape=(T,), dtype=numpy.float64)
         reduced thermodynamic free energies
     """
-    therm_energies = _np.zeros(shape=(bias_energies.shape[0],), dtype=_np.float64)
+    if therm_energies is None:
+        therm_energies = _np.zeros(shape=(bias_energies.shape[0],), dtype=_np.float64)
     _get_therm_energies(
         <double*> _np.PyArray_DATA(bias_energies),
         <double*> _np.PyArray_DATA(conf_energies),
@@ -477,7 +479,11 @@ def get_loglikelihood(
 #   joint estimator
 ####################################################################################################
 
-def estimate_mk1(count_matrices, bias_energies, maxiter=1000, maxerr=1.0E-8, log_lagrangian_mult=None, conf_energies=None, err_out=0, lll_out=0):
+def estimate_mk1(
+    count_matrices, bias_energies,
+    maxiter=1000, maxerr=1.0E-8,
+    log_lagrangian_mult=None, conf_energies=None,
+    err_out=0, lll_out=0):
     r"""
     Estimate the unbiased reduced free energies and thermodynamic free energies
         
@@ -516,16 +522,21 @@ def estimate_mk1(count_matrices, bias_energies, maxiter=1000, maxerr=1.0E-8, log
     lll_count = 0
     scratch_TM = _np.zeros(shape=bias_energies.shape, dtype=_np.float64)
     scratch_M = _np.zeros(shape=conf_energies.shape, dtype=_np.float64)
+    therm_energies = _np.zeros(shape=(bias_energies.shape[0],), dtype=_np.float64)
     old_log_lagrangian_mult = log_lagrangian_mult.copy()
     old_conf_energies = conf_energies.copy()
+    old_therm_energies = therm_energies.copy()
     for m in range(maxiter):
-        update_lagrangian_mult(old_log_lagrangian_mult, bias_energies, conf_energies, count_matrices, scratch_M, log_lagrangian_mult)
-        update_conf_energies(log_lagrangian_mult, bias_energies, old_conf_energies, count_matrices, scratch_TM, conf_energies)
         err_count += 1
         lll_count += 1
-        delta_log_lagrangian_mult = _np.max(_np.abs((log_lagrangian_mult - old_log_lagrangian_mult)))
+        update_lagrangian_mult(old_log_lagrangian_mult, bias_energies, conf_energies, count_matrices, scratch_M, log_lagrangian_mult)
+        update_conf_energies(log_lagrangian_mult, bias_energies, old_conf_energies, count_matrices, scratch_TM, conf_energies)
+        therm_energies = get_therm_energies(
+            bias_energies, conf_energies, scratch_M, therm_energies=therm_energies)
         delta_conf_energies = _np.max(_np.abs((conf_energies - old_conf_energies)))
-        err = _np.max([delta_conf_energies, delta_log_lagrangian_mult])
+        delta_therm_energies = _np.max(_np.abs((therm_energies - old_therm_energies)))
+        normalize(scratch_M, therm_energies, conf_energies)
+        err = _np.max([delta_conf_energies, delta_therm_energies])
         if err_count == err_out:
             err_count = 0
             err_traj.append(err)
@@ -538,8 +549,7 @@ def estimate_mk1(count_matrices, bias_energies, maxiter=1000, maxerr=1.0E-8, log
         else:
             old_log_lagrangian_mult[:] = log_lagrangian_mult[:]
             old_conf_energies[:] = conf_energies[:]
-    therm_energies = get_therm_energies(bias_energies, conf_energies, scratch_M)
-    normalize(scratch_M, therm_energies, conf_energies)
+            old_therm_energies[:] = therm_energies[:]
     if err_out == 0:
         err_traj = None
     else:
