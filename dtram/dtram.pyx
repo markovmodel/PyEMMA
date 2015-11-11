@@ -523,16 +523,19 @@ def estimate_mk1(
     old_log_lagrangian_mult = log_lagrangian_mult.copy()
     old_conf_energies = conf_energies.copy()
     for m in range(maxiter):
-        update_lagrangian_mult(old_log_lagrangian_mult, bias_energies, conf_energies, count_matrices, scratch_M, log_lagrangian_mult)
-        update_conf_energies(log_lagrangian_mult, bias_energies, old_conf_energies, count_matrices, scratch_TM, conf_energies)
         err_count += 1
         lll_count += 1
+        update_lagrangian_mult(old_log_lagrangian_mult, bias_energies, conf_energies, count_matrices, scratch_M, log_lagrangian_mult)
+        update_conf_energies(log_lagrangian_mult, bias_energies, old_conf_energies, count_matrices, scratch_TM, conf_energies)
+        # compute conf_energies change before drift prevention
         delta_log_lagrangian_mult = _np.max(_np.abs((log_lagrangian_mult - old_log_lagrangian_mult)))
         delta_conf_energies = _np.max(_np.abs((conf_energies - old_conf_energies)))
         err = _np.max([delta_conf_energies, delta_log_lagrangian_mult])
         if err_count == err_out:
             err_count = 0
             err_traj.append(err)
+        # prevent drift before loglikelihood calculation
+        conf_energies -= conf_energies.min()
         if lll_count == lll_out:
             lll_count = 0
             lll_traj.append(get_loglikelihood(count_matrices, estimate_transition_matrices(
