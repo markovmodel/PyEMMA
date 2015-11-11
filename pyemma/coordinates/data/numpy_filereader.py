@@ -28,7 +28,7 @@ import functools
 
 from pyemma._base.progress import ProgressReporter
 from pyemma.coordinates.data.interface import ReaderInterface
-
+from pyemma.util.types import is_iterable_of_int as _is_iterable_of_int
 
 class NumPyFileReader(ReaderInterface, ProgressReporter):
 
@@ -41,11 +41,15 @@ class NumPyFileReader(ReaderInterface, ProgressReporter):
     chunksize : int
         how many rows are read at once
 
+    usecols : iterable of integers, default = None
+        specifies the columns to be extracted from npy files. If left to None
+        all columns will be extracted
+
     mmap_mode : str (optional), default='r'
         binary NumPy arrays are being memory mapped using this flag.
     """
 
-    def __init__(self, filenames, chunksize=1000, mmap_mode='r'):
+    def __init__(self, filenames, chunksize=1000, mmap_mode='r', usecols=None):
         super(NumPyFileReader, self).__init__(chunksize=chunksize)
 
         if not isinstance(filenames, (list, tuple)):
@@ -61,6 +65,13 @@ class NumPyFileReader(ReaderInterface, ProgressReporter):
 
         # currently opened array
         self._array = None
+
+        # bookkeeping for dimensions
+        self._ndim_full = None
+        if not _is_iterable_of_int(usecols) and usecols is not None:
+                raise ValueError("usecols has to be an iterable of integers! "
+                                 "Instead, usecols = %s" % usecols)
+        self._usecols = usecols
 
         self.__set_dimensions_and_lenghts()
 
@@ -132,9 +143,39 @@ class NumPyFileReader(ReaderInterface, ProgressReporter):
             raise ValueError("input data has different dimensions!"
                              "Dimensions are = %s" % ndims)
 
-        self._ndim = ndims[0]
+        #store the original number of dimensions, to  use with the usecol.setter
+        self._ndim_full = ndims[0]
 
+        if self._usecols is None:
+            self._usecols = np.arange(self._ndim_full)
+        else:
+            if np.max(self._usecols) > self._ndim_full:
+                raise ValueError("Cannot ask for dimension %u, "
+                                 "only %u are available"%(np.max(self._usecols), self._ndim_full))
+
+        self._ndim=len(self._usecols)
         self._ntraj = len(self._filenames)
+
+    @property
+    def usecols(self):
+        return self._usecols
+
+    @usecols.setter
+    def usecols(self, newcols):
+        if not _is_iterable_of_int(newcols) and newcols is not None:
+                raise ValueError("usecols has to be an iterable of integers! "
+                                 "Instead, usecols = %s" % newcols)
+        if np.max(newcols) > self._ndim_full:
+                raise ValueError("Cannot ask for dimension %u, "
+                                 "only %u are available"%(np.max(newcols), self._ndim_full))
+
+        # Make sure the setter can restore the full reader
+        if newcols is None:
+            newcols = np.arange(self._ndim_full)
+
+        # If the above sanity checks passed, we're good to go
+        self._usecols = newcols
+        self._ndim = len(newcols)
 
     def _next_chunk(self, context=None):
 
@@ -165,13 +206,13 @@ class NumPyFileReader(ReaderInterface, ProgressReporter):
                 self._itraj += 1
 
             if context.lag == 0:
-                return X
+                return X[:,self._usecols]
             else:
                 if not context.uniform_stride:
                     raise ValueError("Requested lagged data but was in random access mode. This is not supported.")
                 else:
                     Y = traj[context.lag::context.stride]
-                return X, Y
+                return X[:,self._usecols], Y[:,self._usecols]
 
         # chunked mode
         else:
@@ -207,6 +248,6 @@ class NumPyFileReader(ReaderInterface, ProgressReporter):
                     self.__load_file(self._filenames[self._itraj])
 
             if context.lag == 0:
-                return X
+                return X[:,self._usecols]
             else:
-                return X, Y
+                return X[:,self._usecols], Y[:,self._usecols]
