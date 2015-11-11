@@ -477,7 +477,11 @@ def get_loglikelihood(
 #   joint estimator
 ####################################################################################################
 
-def estimate_mk1(count_matrices, bias_energies, maxiter=1000, maxerr=1.0E-8, log_lagrangian_mult=None, conf_energies=None, err_out=0, lll_out=0):
+def estimate_mk1(
+    count_matrices, bias_energies,
+    maxiter=1000, maxerr=1.0E-8,
+    log_lagrangian_mult=None, conf_energies=None,
+    err_out=0, lll_out=0):
     r"""
     Estimate the unbiased reduced free energies and thermodynamic free energies
         
