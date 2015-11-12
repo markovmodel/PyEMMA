@@ -46,7 +46,7 @@ requirements:
 test:
   requires:
     - nose
-    - coverage
+    - coverage ==4
   imports:
     - pyemma
 
