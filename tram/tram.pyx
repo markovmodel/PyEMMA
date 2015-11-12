@@ -491,7 +491,7 @@ def log_likelihood_best_lower_bound(
     return logL
 
 def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence, maxiter=1000, maxerr=1.0E-8,
-             biased_conf_energies=None, log_lagrangian_mult=None, call_back=None):
+             biased_conf_energies=None, log_lagrangian_mult=None, call_back=None, N_dtram_accelerations=0):
     r"""
     Estimate the reduced discrete state free energies and thermodynamic free energies
 
@@ -544,7 +544,7 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
         update_lagrangian_mult(old_log_lagrangian_mult, biased_conf_energies, count_matrices, state_counts, scratch_M, log_lagrangian_mult)
         update_biased_conf_energies(log_lagrangian_mult, old_biased_conf_energies, count_matrices, bias_energy_sequence, state_sequence,
             state_counts, log_R_K_i, scratch_M, scratch_T, biased_conf_energies) # optinally include compuation of sum log mu
-        if _m%1 == 0:
+        if _m%100 == 0:
             if best_lower_bound:
                 logL = log_likelihood_best_lower_bound(log_lagrangian_mult,
                            biased_conf_energies, count_matrices,
