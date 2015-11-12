@@ -118,6 +118,7 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
 
     R_K_i = _np.zeros(shape=(n_therm_states, n_conf_states), dtype=_np.float64)
     scratch_TM = _np.zeros(shape=(n_therm_states, n_conf_states), dtype=_np.float64)
+    scratch_MM = _np.zeros(shape=(n_conf_states, n_conf_states), dtype=_np.float64)
     scratch_T = _np.zeros(shape=n_therm_states, dtype=_np.float64)
     scratch_M = _np.zeros(shape=n_conf_states, dtype=_np.float64)
     scratch_M_int = _np.zeros(shape=n_conf_states, dtype=_np.intc)
@@ -128,20 +129,30 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
         print >>sys.stderr, 'Warning: detected inf in biased_conf_energies.'
 
     # init sparse indices
-    max_indices = _np.max([len(_np.where(state_counts[:,i]>0)[0]) for i in range(state_counts.shape[1])])+1
-    indices = _np.zeros((state_counts.shape[1], max_indices), dtype=_np.intc)
-    for i in range(state_counts.shape[1]):
+    max_indices = _np.max([len(_np.where(state_counts[:,i]>0)[0]) for i in range(n_conf_states)])+1
+    indices = _np.zeros((n_conf_states, max_indices), dtype=_np.intc)
+    for i in range(n_conf_states):
         tmp = _np.where(state_counts[:,i]>0)[0]
         indices[i,0:len(tmp)] = tmp
         indices[i,len(tmp)] = -1
+    # indices for the full matrix
+    full_indices = _np.zeros((n_conf_states, n_therm_states+1), dtype=_np.intc)
+    for i in range(n_conf_states):
+        full_indices[i,0:n_therm_states] = range(n_therm_states)
+        full_indices[i,n_therm_states] = -1
+
 
     old_biased_conf_weights = biased_conf_weights.copy()
     old_lagrangian_mult = lagrangian_mult.copy()
-    old_biased_conf_energies = _np.zeros_like(biased_conf_weights)
+    old_biased_conf_energies = biased_conf_energies.copy()
     for _m in range(maxiter):
         update_lagrangian_mult(old_lagrangian_mult, biased_conf_weights, count_matrices, state_counts, _m, lagrangian_mult)
-        update_biased_conf_weights(lagrangian_mult, old_biased_conf_weights, count_matrices, bias_weight_sequence, state_sequence,
-                                   state_counts, indices, R_K_i, scratch_TM, biased_conf_weights)
+        if _m%100==0 or _m%100==99:
+            update_biased_conf_weights(lagrangian_mult, old_biased_conf_weights, count_matrices, bias_weight_sequence, state_sequence,
+                                       state_counts, full_indices, R_K_i, scratch_TM, biased_conf_weights)
+        else:
+            update_biased_conf_weights(lagrangian_mult, old_biased_conf_weights, count_matrices, bias_weight_sequence, state_sequence,
+                                       state_counts, indices, R_K_i, scratch_TM, biased_conf_weights)
 
         for _n  in range(N_dtram_accelerations):
             old_biased_conf_weights[:] = biased_conf_weights[:]
@@ -155,12 +166,17 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
             old_biased_conf_energies[:] = biased_conf_energies[:]
         if _m%100==0:
             biased_conf_energies = -_np.log(biased_conf_weights)
+            log_lagrangian_mult = _np.log(lagrangian_mult)
             error = _np.max(_np.abs(biased_conf_weights[occupied] - old_biased_conf_weights[occupied]))
             rel_error = _np.max(_np.abs(biased_conf_weights[occupied] - old_biased_conf_weights[occupied])/biased_conf_weights[occupied])
+            log_likelihood = tram.log_likelihood_lower_bound(log_lagrangian_mult, log_lagrangian_mult,
+                                                             old_biased_conf_energies, biased_conf_energies,
+                                                             count_matrices, bias_energy_sequence, state_sequence,
+                                                             state_counts, scratch_M, scratch_T, scratch_TM, scratch_MM)
             if call_back is not None:
-                call_back(iteration=_m, old_log_lagrangian_mult=_np.log(old_lagrangian_mult), log_lagrangian_mult=_np.log(lagrangian_mult),
-                          old_biased_conf_energies=-_np.log(old_biased_conf_weights), biased_conf_energies=-_np.log(biased_conf_weights),
-                          log_likelihood=0, error=error, rel_error=rel_error)
+                call_back(iteration=_m, old_log_lagrangian_mult=_np.log(old_lagrangian_mult), log_lagrangian_mult=log_lagrangian_mult,
+                          old_biased_conf_energies=old_biased_conf_energies, biased_conf_energies=biased_conf_energies,
+                          log_likelihood=log_likelihood, error=error, rel_error=rel_error)
 
         if _np.max(_np.abs(biased_conf_weights[occupied] - old_biased_conf_weights[occupied])/biased_conf_weights[occupied]) < maxerr:
             break
@@ -170,11 +186,6 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
         old_biased_conf_weights[:] = biased_conf_weights[:]
 
     # do one dense calcualtion to find free energies of unvisited states
-    biased_conf_energies = -_np.log(biased_conf_weights)
-    full_indices = _np.zeros((n_conf_states, n_therm_states+1), dtype=_np.intc)
-    for i in range(n_conf_states):
-        full_indices[i,0:n_therm_states] = range(n_therm_states)
-        full_indices[i,n_therm_states] = -1
     update_biased_conf_weights(lagrangian_mult, old_biased_conf_weights, count_matrices, bias_weight_sequence, state_sequence,
                                state_counts, full_indices, R_K_i, scratch_TM, biased_conf_weights)
 
