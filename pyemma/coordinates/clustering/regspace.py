@@ -82,7 +82,7 @@ class RegularSpaceClustering(AbstractClustering):
 
     @doc_inherit
     def describe(self):
-        return "[RegularSpaceClustering dmin=%i]" % self._dmin
+        return "[RegularSpaceClustering dmin=%f, inp_dim=%i]" % (self._dmin, self.data_producer.dimension())
 
     @property
     def dmin(self):

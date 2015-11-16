@@ -49,3 +49,9 @@ class NotConvergedWarning(RuntimeWarning):
     a conditional termination criterion.
 
     """
+    pass
+
+
+class EfficiencyWarning(UserWarning):
+    r"""Some operation or input data leads to a lack of efficiency"""
+    pass
