@@ -26,13 +26,15 @@ __all__ = ['update_conf_energies', 'update_therm_energies', 'normalize', 'estima
 
 cdef extern from "_wham.h":
     void _update_conf_energies(
-        double *log_therm_state_counts, double *log_conf_state_counts, double *therm_energies, double *bias_energies,
+        double *log_therm_state_counts, double *log_conf_state_counts,
+        double *therm_energies, double *bias_energies,
         int n_therm_states, int n_conf_states, double *scratch_T, double *conf_energies)
     void _update_therm_energies(
         double *conf_energies, double *bias_energies, int n_therm_states, int n_conf_states,
         double *scratch_M, double *therm_energies)
     void _normalize(
-        int n_therm_states, int n_conf_states, double *scratch_M, double *therm_energies, double *conf_energies)
+        int n_therm_states, int n_conf_states,
+        double *scratch_M, double *therm_energies, double *conf_energies)
 
 def update_conf_energies(
     _np.ndarray[double, ndim=1, mode="c"] log_therm_state_counts not None,
@@ -203,7 +205,9 @@ def estimate(
     err_count = 0
     for _m in range(maxiter):
         update_therm_energies(conf_energies, bias_energies, scratch, therm_energies)
-        update_conf_energies(log_therm_state_counts, log_conf_state_counts, therm_energies, bias_energies, scratch, conf_energies)
+        update_conf_energies(
+            log_therm_state_counts, log_conf_state_counts, therm_energies, bias_energies,
+            scratch, conf_energies)
         delta_therm_energies = _np.max(_np.abs((therm_energies - old_therm_energies)))
         delta_conf_energies = _np.max(_np.abs((conf_energies - old_conf_energies)))
         err_count += 1

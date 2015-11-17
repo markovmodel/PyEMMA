@@ -56,10 +56,4 @@ extern int _get_therm_state_break_points(int *T_x, int seq_length, int *break_po
 
 extern void _renormalize_transition_matrix(double *p, int n_conf_states, double *scratch_M);
 
-/***************************************************************************************************
-*   misc functions
-***************************************************************************************************/
-
-extern double _mirrored_sigmoid(double x);
-
 #endif

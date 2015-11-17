@@ -21,7 +21,8 @@
 #define THERMOTOOLS_WHAM
 
 extern void _update_conf_energies(
-    double *log_therm_state_counts, double *log_conf_state_counts, double *therm_energies, double *bias_energies,
+    double *log_therm_state_counts, double *log_conf_state_counts,
+    double *therm_energies, double *bias_energies,
     int n_therm_states, int n_conf_states, double *scratch_T, double *conf_energies);
 
 extern void _update_therm_energies(
@@ -29,6 +30,7 @@ extern void _update_therm_energies(
     double *scratch_M, double *therm_energies);
 
 extern void _normalize(
-    int n_therm_states, int n_conf_states, double *scratch_M, double *therm_energies, double *conf_energies);
+    int n_therm_states, int n_conf_states,
+    double *scratch_M, double *therm_energies, double *conf_energies);
 
 #endif

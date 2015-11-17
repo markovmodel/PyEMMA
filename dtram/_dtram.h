@@ -20,24 +20,6 @@
 #ifndef THERMOTOOLS_DTRAM
 #define THERMOTOOLS_DTRAM
 
-/***************************************************************************************************
-*   secondary implementation
-***************************************************************************************************/
-
-extern void _update_lagrangian_mult_mk2(
-    double *log_lagrangian_mult, double *bias_energies, double *conf_energies, int *count_matrices,
-    int n_therm_states, int n_conf_states, double *scratch_M, double *new_log_lagrangian_mult);
-extern void _update_conf_energies_mk2(
-    double *log_lagrangian_mult, double *bias_energies, double *conf_energies, int *count_matrices,
-    int n_therm_states, int n_conf_states, double *scratch_TM, double *new_conf_energies);
-extern void _estimate_transition_matrix_mk2(
-    double *log_lagrangian_mult, double *bias_energies, double *conf_energies, int *count_matrix,
-    int n_conf_states, double *scratch_M, double *transition_matrix);
-
-/***************************************************************************************************
-*   primary implementation
-***************************************************************************************************/
-
 #define THERMOTOOLS_DTRAM_PRIOR 1.0E-10
 #define THERMOTOOLS_DTRAM_LOG_PRIOR -23.025850929940457
 
@@ -66,5 +48,8 @@ extern void _normalize(
 extern double _get_loglikelihood(
     int *count_matrices, double *transition_matrices,
     int n_therm_states, int n_conf_states);
+
+extern double _get_prior();
+extern double _get_log_prior();
 
 #endif

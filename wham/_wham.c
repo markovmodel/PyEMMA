@@ -29,7 +29,8 @@
 #endif
 
 extern void _update_conf_energies(
-    double *log_therm_state_counts, double *log_conf_state_counts, double *therm_energies, double *bias_energies,
+    double *log_therm_state_counts, double *log_conf_state_counts,
+    double *therm_energies, double *bias_energies,
     int n_therm_states, int n_conf_states, double *scratch_T, double *conf_energies)
 {
     int i, K;
