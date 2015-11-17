@@ -34,8 +34,7 @@ __all__ = [
     'state_counts',
     'restrict_samples_to_cset',
     'renormalize_transition_matrix',
-    'renormalize_transition_matrices',
-    'mirrored_sigmoid']
+    'renormalize_transition_matrices']
 
 cdef extern from "_util.h":
     # sorting
@@ -363,10 +362,3 @@ def renormalize_transition_matrices(
             P.shape[0],
             <double*> _np.PyArray_DATA(scratch_M))
         PK[K, :, :] = P[:, :]
-
-####################################################################################################
-#   misc functions
-####################################################################################################
-
-def mirrored_sigmoid(x):
-    return _mirrored_sigmoid(x)
