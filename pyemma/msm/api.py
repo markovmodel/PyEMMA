@@ -785,8 +785,10 @@ def estimate_hidden_markov_model(dtrajs, nstates, lag, reversible=True, connecti
     return hmsm_estimator.estimate(dtrajs)
 
 
-def bayesian_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivity='largest',
-                          nsamples=100, conf=0.95, dt_traj='1 step', show_progress=True):
+def bayesian_markov_model(dtrajs, lag, reversible=True, statdist=None,
+                          sparse=False, connectivity='largest',
+                          nsamples=100, conf=0.95, dt_traj='1 step',
+                          show_progress=True):
     r""" Bayesian Markov model estimate using Gibbs sampling of the posterior
 
     Returns a :class:`BayesianMSM` that contains the
@@ -949,7 +951,9 @@ def bayesian_markov_model(dtrajs, lag, reversible=True, sparse=False, connectivi
 
     """
     # TODO: store_data=True
-    bmsm_estimator = _Bayes_MSM(lag=lag, reversible=reversible, sparse=sparse, connectivity=connectivity,
+    bmsm_estimator = _Bayes_MSM(lag=lag, reversible=reversible,
+                                statdist_constraint=statdist,
+                                sparse=sparse, connectivity=connectivity,
                                 dt_traj=dt_traj, nsamples=nsamples, conf=conf, show_progress=show_progress)
     return bmsm_estimator.estimate(dtrajs)
 

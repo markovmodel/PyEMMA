@@ -31,8 +31,10 @@ from pyemma._base.progress import ProgressReporter
 class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporter):
     r"""Bayesian Markov state model estimator"""
 
-    def __init__(self, lag=1, nsamples=100, nsteps=None, reversible=True, count_mode='effective', sparse=False,
-                 connectivity='largest', dt_traj='1 step', conf=0.95, show_progress=True):
+    def __init__(self, lag=1, nsamples=100, nsteps=None, reversible=True,
+                 statdist_constraint=None, count_mode='effective', sparse=False,
+                 connectivity='largest', dt_traj='1 step', conf=0.95,
+                 show_progress=True):
         r""" Bayesian estimator for MSMs given discrete trajectory statistics
 
         Parameters
@@ -46,13 +48,18 @@ class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporter):
         nsteps : int, optional, default=None
             number of Gibbs sampling steps for each transition matrix used.
             If None, nstep will be determined automatically
-
-        msm : :class:`MSM <pyemma.msm.models.MSM>`
-            Single-point estimate of MSM object around which errors will be
-            evaluated
-
+        
         reversible : bool, optional, default = True
             If true compute reversible MSM, else non-reversible MSM
+
+        statdist_constraint : (M,) ndarray optional
+            Stationary vector on the full set of states. Assign zero
+            stationary probabilities to states for which the
+            stationary vector is unknown. Estimation will be made such
+            that the resulting ensemble of transition matrices is
+            defined on the intersection of the states with positive
+            stationary vector and the largest connected set
+            (undirected). 
 
         count_mode : str, optional, default='effective'
             mode to obtain count matrices from discrete trajectories. Should be one of:
@@ -123,7 +130,9 @@ class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporter):
             Preprint: http://arxiv.org/abs/1507.05990
 
         """
-        _MLMSM.__init__(self, lag=lag, reversible=reversible, count_mode=count_mode, sparse=sparse,
+        _MLMSM.__init__(self, lag=lag, reversible=reversible,
+                        statdist_constraint=statdist_constraint,
+                        count_mode=count_mode, sparse=sparse,
                         connectivity=connectivity, dt_traj=dt_traj)
         self.nsamples = nsamples
         self.nsteps = nsteps
@@ -156,8 +165,15 @@ class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporter):
         if self.nsteps is None:
             self.nsteps = int(sqrt(self.nstates))  # heuristic for number of steps to decorrelate
         # use the same count matrix as the MLE. This is why we have effective as a default
-        tsampler = tmatrix_sampler(self.count_matrix_active, reversible=self.reversible, T0=self.transition_matrix,
-                                   nsteps=self.nsteps)
+        if self.statdist_constraint is None:
+            tsampler = tmatrix_sampler(self.count_matrix_active, reversible=self.reversible, T0=self.transition_matrix,
+                                       nsteps=self.nsteps)
+        else:
+            # Use the stationary distribution on the active set of states
+            statdist_active = self.pi
+            # We can not uise the MLE as T0. Use the initialization in the reversible pi sampler
+            tsampler = tmatrix_sampler(self.count_matrix_active, reversible=self.reversible,
+                                       mu=statdist_active, nsteps=self.nsteps)
 
         self._progress_register(self.nsamples, description="Sampling MSMs", stage=0)
 
