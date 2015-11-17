@@ -77,7 +77,7 @@ def init_log_lagrangian_mult(
     Returns
     -------
     log_lagrangian_mult : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
-        log of the Lagrangian multipliers (allocated but unset)
+        logarithm of the Lagrangian multipliers
     """
     log_lagrangian_mult = _np.zeros(
         shape=(count_matrices.shape[0], count_matrices.shape[1]), dtype=_np.float64)
