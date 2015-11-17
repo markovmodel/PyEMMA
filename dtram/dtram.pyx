@@ -38,7 +38,7 @@ __all__ = [
     'estimate']
 
 cdef extern from "_dtram.h":
-    void _init_lagrangian_mult(
+    void _init_log_lagrangian_mult(
         int *count_matrices, int n_therm_states, int n_conf_states, double *log_lagrangian_mult)
     void _update_lagrangian_mult(
         double *log_lagrangian_mult, double *bias_energies, double *conf_energies,
@@ -63,25 +63,30 @@ cdef extern from "_dtram.h":
     double _get_prior()
     double _get_log_prior()
 
-def init_lagrangian_mult(
-    _np.ndarray[int, ndim=3, mode="c"] count_matrices not None,
-    _np.ndarray[double, ndim=2, mode="c"] log_lagrangian_mult not None):
+def init_log_lagrangian_mult(
+    _np.ndarray[int, ndim=3, mode="c"] count_matrices not None):
     r"""
     Set the logarithm of the Lagrangian multipliers with an initial guess based
-    on the transition counts
+    on the transition counts.
 
     Parameters
     ----------
     count_matrices : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
         multistate count matrix
+
+    Returns
+    -------
     log_lagrangian_mult : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         log of the Lagrangian multipliers (allocated but unset)
     """
-    _init_lagrangian_mult(
+    log_lagrangian_mult = _np.zeros(
+        shape=(count_matrices.shape[0], count_matrices.shape[1]), dtype=_np.float64)
+    _init_log_lagrangian_mult(
         <int*> _np.PyArray_DATA(count_matrices),
         log_lagrangian_mult.shape[0],
         log_lagrangian_mult.shape[1],
         <double*> _np.PyArray_DATA(log_lagrangian_mult))
+    return log_lagrangian_mult
 
 def update_lagrangian_mult(
     _np.ndarray[double, ndim=2, mode="c"] log_lagrangian_mult not None,
@@ -362,8 +367,7 @@ def estimate(
         logarithm of the Lagrangian multipliers
     """
     if log_lagrangian_mult is None:
-        log_lagrangian_mult = _np.zeros(shape=bias_energies.shape, dtype=_np.float64)
-        init_lagrangian_mult(count_matrices, log_lagrangian_mult)
+        log_lagrangian_mult = init_log_lagrangian_mult(count_matrices)
     if conf_energies is None:
         conf_energies = _np.zeros(shape=bias_energies.shape[1], dtype=_np.float64)
     err_traj = []

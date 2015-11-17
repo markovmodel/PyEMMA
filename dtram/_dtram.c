@@ -29,7 +29,7 @@
     #define NAN (INFINITY-INFINITY)
 #endif
 
-extern void _init_lagrangian_mult(
+extern void _init_log_lagrangian_mult(
     int *count_matrices, int n_therm_states, int n_conf_states, double *log_lagrangian_mult)
 {
     int i, j, K;
