@@ -25,8 +25,8 @@ cimport numpy as _np
 from . import util
 
 __all__ = [
-    'init_lagrangian_mult',
-    'update_lagrangian_mult',
+    'init_log_lagrangian_mult',
+    'update_log_lagrangian_mult',
     'update_conf_energies',
     'estimate_transition_matrices',
     'estimate_transition_matrix',
@@ -40,7 +40,7 @@ __all__ = [
 cdef extern from "_dtram.h":
     void _init_log_lagrangian_mult(
         int *count_matrices, int n_therm_states, int n_conf_states, double *log_lagrangian_mult)
-    void _update_lagrangian_mult(
+    void _update_log_lagrangian_mult(
         double *log_lagrangian_mult, double *bias_energies, double *conf_energies,
         int *count_matrices, int n_therm_states, int n_conf_states,
         double *scratch_M, double *new_log_lagrangian_mult)
@@ -88,7 +88,7 @@ def init_log_lagrangian_mult(
         <double*> _np.PyArray_DATA(log_lagrangian_mult))
     return log_lagrangian_mult
 
-def update_lagrangian_mult(
+def update_log_lagrangian_mult(
     _np.ndarray[double, ndim=2, mode="c"] log_lagrangian_mult not None,
     _np.ndarray[double, ndim=2, mode="c"] bias_energies not None,
     _np.ndarray[double, ndim=1, mode="c"] conf_energies not None,
@@ -113,7 +113,7 @@ def update_lagrangian_mult(
     new_log_lagrangian_mult : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         target array for the log of the Lagrangian multipliers
     """
-    _update_lagrangian_mult(
+    _update_log_lagrangian_mult(
         <double*> _np.PyArray_DATA(log_lagrangian_mult),
         <double*> _np.PyArray_DATA(bias_energies),
         <double*> _np.PyArray_DATA(conf_energies),
@@ -383,7 +383,7 @@ def estimate(
     for m in range(maxiter):
         err_count += 1
         lll_count += 1
-        update_lagrangian_mult(
+        update_log_lagrangian_mult(
             old_log_lagrangian_mult, bias_energies, conf_energies, count_matrices,
             scratch_M, log_lagrangian_mult)
         update_conf_energies(
