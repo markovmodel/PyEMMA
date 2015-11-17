@@ -33,6 +33,8 @@ __all__ = [
     'get_therm_energies',
     'normalize',
     'get_loglikelihood',
+    'get_prior',
+    'get_log_prior',
     'estimate']
 
 cdef extern from "_dtram.h":
@@ -55,6 +57,8 @@ cdef extern from "_dtram.h":
     double _get_loglikelihood(
         int *count_matrices, double *transition_matrices,
         int n_therm_states, int n_conf_states)
+    double _get_prior()
+    double _get_log_prior()
 
 def init_lagrangian_mult(
     _np.ndarray[int, ndim=3, mode="c"] count_matrices not None,
@@ -299,6 +303,24 @@ def get_loglikelihood(
         <double*> _np.PyArray_DATA(transition_matrices),
         count_matrices.shape[0],
         count_matrices.shape[1])
+
+def get_prior():
+    r"""
+    Returns
+    -------
+    prior : float
+        The internally used prior on the diagonal transition counts
+    """
+    return _get_prior()
+
+def get_log_prior():
+    r"""
+    Returns
+    -------
+    log_prior : float
+        The internally used log(prior) on the diagonal transition counts
+    """
+    return _get_log_prior()
 
 def estimate(
     count_matrices, bias_energies,

@@ -227,3 +227,13 @@ extern double _get_loglikelihood(
     }
     return sum;
 }
+
+extern double _get_prior()
+{
+    return THERMOTOOLS_DTRAM_PRIOR;
+}
+
+extern double _get_log_prior()
+{
+    return THERMOTOOLS_DTRAM_LOG_PRIOR;
+}

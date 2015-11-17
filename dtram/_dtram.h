@@ -49,4 +49,7 @@ extern double _get_loglikelihood(
     int *count_matrices, double *transition_matrices,
     int n_therm_states, int n_conf_states);
 
+extern double _get_prior();
+extern double _get_log_prior();
+
 #endif
