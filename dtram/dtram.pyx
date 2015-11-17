@@ -41,11 +41,13 @@ cdef extern from "_dtram.h":
     void _init_lagrangian_mult(
         int *count_matrices, int n_therm_states, int n_conf_states, double *log_lagrangian_mult)
     void _update_lagrangian_mult(
-        double *log_lagrangian_mult, double *bias_energies, double *conf_energies, int *count_matrices, int n_therm_states,
-        int n_conf_states, double *scratch_M, double *new_log_lagrangian_mult)
+        double *log_lagrangian_mult, double *bias_energies, double *conf_energies,
+        int *count_matrices, int n_therm_states, int n_conf_states,
+        double *scratch_M, double *new_log_lagrangian_mult)
     void _update_conf_energies(
-        double *log_lagrangian_mult, double *bias_energies, double *conf_energies, int *count_matrices, int n_therm_states,
-        int n_conf_states, double *scratch_TM, double *new_conf_energies)
+        double *log_lagrangian_mult, double *bias_energies, double *conf_energies,
+        int *count_matrices, int n_therm_states, int n_conf_states,
+        double *scratch_TM, double *new_conf_energies)
     void _estimate_transition_matrix(
         double *log_lagrangian_mult, double *b_i, double *conf_energies, int *count_matrix,
         int n_conf_states, double *scratch_M, double *transition_matrix)
@@ -53,7 +55,8 @@ cdef extern from "_dtram.h":
         double *bias_energies, double *conf_energies, int n_therm_states, int n_conf_states,
         double *scratch_M, double *therm_energies)
     void _normalize(
-        int n_therm_states, int n_conf_states, double *scratch_M, double *therm_energies, double *conf_energies)
+        int n_therm_states, int n_conf_states,
+        double *scratch_M, double *therm_energies, double *conf_energies)
     double _get_loglikelihood(
         int *count_matrices, double *transition_matrices,
         int n_therm_states, int n_conf_states)
@@ -177,9 +180,12 @@ def estimate_transition_matrices(
     transition_matrices : numpy.ndarray(shape=(T, M, M), dtype=numpy.float64)
         transition matrices for all thermodynamic states
     """
-    transition_matrices = _np.zeros(shape=(count_matrices.shape[0], count_matrices.shape[1], count_matrices.shape[2]), dtype=_np.float64)
+    transition_matrices = _np.zeros(
+        shape=(count_matrices.shape[0], count_matrices.shape[1], count_matrices.shape[2]),
+        dtype=_np.float64)
     for K in range(log_lagrangian_mult.shape[0]):
-        transition_matrices[K, :, :] = estimate_transition_matrix(log_lagrangian_mult, bias_energies, conf_energies, count_matrices, scratch_M, K)[:, :]
+        transition_matrices[K, :, :] = estimate_transition_matrix(
+            log_lagrangian_mult, bias_energies, conf_energies, count_matrices, scratch_M, K)[:, :]
     return transition_matrices
 
 def estimate_transition_matrix(
@@ -212,7 +218,8 @@ def estimate_transition_matrix(
     transition_matrix : numpy.ndarray(shape=(M, M), dtype=numpy.float64)
         transition matrix for the target thermodynamic state
     """
-    transition_matrix = _np.zeros(shape=(conf_energies.shape[0], conf_energies.shape[0]), dtype=_np.float64)
+    transition_matrix = _np.zeros(
+        shape=(conf_energies.shape[0], conf_energies.shape[0]), dtype=_np.float64)
     _estimate_transition_matrix(
         <double*> _np.PyArray_DATA(_np.ascontiguousarray(log_lagrangian_mult[therm_state, :])),
         <double*> _np.PyArray_DATA(_np.ascontiguousarray(bias_energies[therm_state, :])),
@@ -372,8 +379,12 @@ def estimate(
     for m in range(maxiter):
         err_count += 1
         lll_count += 1
-        update_lagrangian_mult(old_log_lagrangian_mult, bias_energies, conf_energies, count_matrices, scratch_M, log_lagrangian_mult)
-        update_conf_energies(log_lagrangian_mult, bias_energies, old_conf_energies, count_matrices, scratch_TM, conf_energies)
+        update_lagrangian_mult(
+            old_log_lagrangian_mult, bias_energies, conf_energies, count_matrices,
+            scratch_M, log_lagrangian_mult)
+        update_conf_energies(
+            log_lagrangian_mult, bias_energies, old_conf_energies, count_matrices,
+            scratch_TM, conf_energies)
         therm_energies = get_therm_energies(
             bias_energies, conf_energies, scratch_M, therm_energies=therm_energies)
         delta_conf_energies = _np.max(_np.abs((conf_energies - old_conf_energies)))
@@ -402,7 +413,3 @@ def estimate(
     else:
         lll_traj = _np.array(lll_traj, dtype=_np.float64)
     return therm_energies, conf_energies, log_lagrangian_mult, err_traj, lll_traj
-
-
-
-
