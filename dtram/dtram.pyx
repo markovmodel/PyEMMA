@@ -103,7 +103,7 @@ def update_log_lagrangian_mult(
     log_lagrangian_mult : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         log of the Lagrangian multipliers
     bias_energies : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
-        reduced bias energies of the T thermodynamic and M discrete states
+        reduced bias energies of the T thermodynamic and M configurational states
     conf_energies : numpy.ndarray(shape=(M,), dtype=numpy.float64)
         reduced unbiased free energies
     count_matrices : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
@@ -138,7 +138,7 @@ def update_conf_energies(
     log_lagrangian_mult : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         logarithm of the Lagrangian multipliers
     bias_energies : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
-        reduced bias energies of the T thermodynamic and M discrete states
+        reduced bias energies of the T thermodynamic and M configurational states
     conf_energies : numpy.ndarray(shape=(M), dtype=numpy.float64)
         reduced unbiased free energies
     count_matrices : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
@@ -172,7 +172,7 @@ def estimate_transition_matrices(
     log_lagrangian_mult : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         logarithm of the Lagrangian multipliers
     bias_energies : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
-        reduced bias energies of the T thermodynamic and M discrete states
+        reduced bias energies of the T thermodynamic and M configurational states
     conf_energies : numpy.ndarray(shape=(M), dtype=numpy.float64)
         reduced unbiased free energies
     count_matrices : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
@@ -208,7 +208,7 @@ def estimate_transition_matrix(
     log_lagrangian_mult : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         log of the Lagrangian multipliers
     bias_energies : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
-        reduced bias energies of the T thermodynamic and M discrete states
+        reduced bias energies of the T thermodynamic and M configurational states
     conf_energies : numpy.ndarray(shape=(M), dtype=numpy.float64)
         reduced unbiased free energies
     count_matrices : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
@@ -349,13 +349,13 @@ def estimate(
     count_matrices : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
         transition count matrices for all T thermodynamic states
     bias_energies : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
-        reduced bias energies in the T thermodynamic and M discrete states
+        reduced bias energies in the T thermodynamic and M configurational states
     maxiter : int
         maximum number of iterations
     maxerr : float
         convergence criterion based on absolute change in free energies
     conf_energies : numpy.ndarray(shape=(M), dtype=numpy.float64), optional
-        initial guess for the reduced unbiased free energies of the M discrete states
+        initial guess for the reduced unbiased free energies of the M configurational states
     log_lagrangian_mult : numpy.ndarray(shape=(T, M), dtype=numpy.float64), optional
         initial guess for the logarithm of the Lagrangian multipliers
     err_out : int, optional
@@ -368,7 +368,7 @@ def estimate(
     therm_energies : numpy.ndarray(shape=(T), dtype=numpy.float64)
         reduced free energies of the T thermodynamic states
     conf_energies : numpy.ndarray(shape=(M), dtype=numpy.float64)
-        reduced unbiased free energies of the M discrete states
+        reduced unbiased free energies of the M configurational states
     log_lagrangian_mult : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         logarithm of the Lagrangian multipliers
     err : numpy.ndarray(dtype=numpy.float64, ndim=1)
