@@ -23,10 +23,10 @@
 #define THERMOTOOLS_DTRAM_PRIOR 1.0E-10
 #define THERMOTOOLS_DTRAM_LOG_PRIOR -23.025850929940457
 
-extern void _init_lagrangian_mult(
+extern void _init_log_lagrangian_mult(
     int *count_matrices, int n_therm_states, int n_conf_states, double *log_lagrangian_mult);
 
-extern void _update_lagrangian_mult(
+extern void _update_log_lagrangian_mult(
     double *log_lagrangian_mult, double *bias_energies, double *conf_energies, int *count_matrices,
     int n_therm_states, int n_conf_states, double *scratch_M, double *new_log_lagrangian_mult);
 
