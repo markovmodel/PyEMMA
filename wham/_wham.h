@@ -33,4 +33,9 @@ extern void _normalize(
     int n_therm_states, int n_conf_states,
     double *scratch_M, double *therm_energies, double *conf_energies);
 
+extern double _get_loglikelihood(
+    int *therm_state_counts, int *conf_state_counts,
+    double *therm_energies, double *conf_energies,
+    int n_therm_states, int n_conf_states, double *scratch_S);
+
 #endif
