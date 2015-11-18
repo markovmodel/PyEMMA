@@ -206,10 +206,33 @@ class MaximumLikelihoodMSM(_Estimator, _EstimatedMSM):
                 # statdist not given - full connectivity on all states
                 self.active_set = dtrajstats.largest_connected_set
             else:
-                # statdist given - simple connectivity on all nonzero probability states
-                nz = _np.nonzero(self.statdist_constraint)[0]
-                Cnz = dtrajstats.count_matrix(subset=nz)
-                self.active_set = nz[msmest.largest_connected_set(Cnz, directed=False)]
+                """Active set is the intersection of all states with
+                positive stationary probability and undirected kinetic
+                connectivity"""
+                pos = _np.nonzero(self.statdist_constraint)[0]
+                lcc = msmest.largest_connected_set(self._C_full, directed=False)
+                active_set = _np.intersect1d(pos, lcc)
+                if active_set.size == 0:
+                    errorstr = """The connected set of the given
+                    trajectories does not contain states for which the
+                    given stationary vector has positive entries. A
+                    MSM reversible with respect to the given
+                    stationary vector can not be estimated."""
+                    raise ValueError(errorstr)               
+                # """Or: Active set is the set of all kinetically connected states, lcc (undirected).
+                # If lcc contains states which have zero probability according to the given stationary vector
+                # an error is raised."""
+                # lcc = msmest.largest_connected_set(self._C_full, directed=False)
+                # active_set = lcc
+                # if not _np.all(self.statdist_constraint[active_set] > 0.0):
+                #     errorstr="""The connected set of the given
+                #     trajectories does contain states which have zero
+                #     probability according to the given stationary
+                #     vector. A MSM reversible with respect to the given
+                #     stationary vector can not be estimated"""
+                #     raise ValueError(errorstr)
+                self.active_set = active_set
+                
         else:
             # for 'None' and 'all' all visited states are active
             self.active_set = dtrajstats.visited_set
