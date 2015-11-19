@@ -208,10 +208,6 @@ class BaseEstimator(object):
                                " of their __init__ (no varargs)."
                                " %s doesn't follow this convention."
                                % (cls, ))
-        # Remove 'self'
-        # XXX: This is going to fail if the init is a staticmethod, but
-        # who would do this?
-        args.pop(0)
         args.sort()
         return args
 
