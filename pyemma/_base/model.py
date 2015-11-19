@@ -18,11 +18,11 @@
 
 from __future__ import absolute_import
 import numpy as _np
-import inspect
+#import inspect
 import warnings
 
 from pyemma.util.statistics import confidence_interval
-from pyemma.util.reflection import call_member
+from pyemma.util.reflection import call_member, getargspec_no_self
 
 __author__ = 'noe'
 
@@ -43,7 +43,7 @@ class Model(object):
             set_model_param_method = getattr(self, 'set_model_params')
             # introspect the constructor arguments to find the model parameters
             # to represent
-            args, varargs, kw, default = inspect.getargspec(set_model_param_method)
+            args, varargs, kw, default = getargspec_no_self(set_model_param_method)
             if varargs is not None:
                 raise RuntimeError("pyEMMA models should always specify their parameters in the signature"
                                    " of their set_model_params (no varargs). %s doesn't follow this convention."

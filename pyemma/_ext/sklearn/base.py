@@ -35,13 +35,13 @@ from __future__ import absolute_import
 # License: BSD 3 clause
 
 import copy
-import inspect
 import warnings
 
 import numpy as np
 from scipy import sparse
 
 import six
+from pyemma.util.reflection import getargspec_no_self
 
 ###############################################################################
 def clone(estimator, safe=True):
@@ -201,7 +201,7 @@ class BaseEstimator(object):
 
         # introspect the constructor arguments to find the model parameters
         # to represent
-        args, varargs, kw, default = inspect.getargspec(init)
+        args, varargs, kw, default = getargspec_no_self(init)
         if varargs is not None:
             raise RuntimeError("scikit-learn estimators should always "
                                "specify their parameters in the signature"
