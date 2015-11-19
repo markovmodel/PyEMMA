@@ -86,10 +86,10 @@ class LaggedModelValidator(Estimator, ProgressReporter):
         mlags = types.ensure_ndarray(mlags, ndim=1, kind='i')
         if np.any(mlags > maxmlag):
             mlags = mlags[np.where(mlags <= maxmlag)]
-            self.logger.warn('Changed mlags as some mlags exceeded maximum trajectory length.')
+            self.logger.warning('Changed mlags as some mlags exceeded maximum trajectory length.')
         if np.any(mlags < 0):
             mlags = mlags[np.where(mlags >= 0)]
-            self.logger.warn('Changed mlags as some mlags were negative.')
+            self.logger.warning('Changed mlags as some mlags were negative.')
         self.mlags = mlags
 
         # set conf and error handling

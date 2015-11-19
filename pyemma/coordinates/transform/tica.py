@@ -375,8 +375,9 @@ class TICA(Transformer):
 
         if len(self._skipped_trajs) >= 1:
             self._skipped_trajs = np.asarray(self._skipped_trajs)
-            self._logger.warn("Had to skip %u trajectories for being too short. "
-                              "Their indexes are in self._skipped_trajs."%len(self._skipped_trajs))
+            self._logger.warning("Had to skip %u trajectories for being too short. "
+                                 "Their indexes are in self._skipped_trajs."
+                                 % len(self._skipped_trajs))
 
     def _transform_array(self, X):
         r"""Projects the data onto the dominant independent components.

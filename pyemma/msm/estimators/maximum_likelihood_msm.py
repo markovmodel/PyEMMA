@@ -189,7 +189,7 @@ class MaximumLikelihoodMSM(_Estimator, _EstimatedMSM):
             dtrajstats = _DiscreteTrajectoryStats(dtrajs)
             # check if this MSM seems too large to be dense
             if dtrajstats.nstates > 4000 and not self.sparse:
-                self.logger.warn('Building a dense MSM with ' + str(dtrajstats.nstates) + ' states. This can be '
+                self.logger.warning('Building a dense MSM with ' + str(dtrajstats.nstates) + ' states. This can be '
                                   'inefficient or unfeasible in terms of both runtime and memory consumption. '
                                   'Consider using sparse=True.')
 

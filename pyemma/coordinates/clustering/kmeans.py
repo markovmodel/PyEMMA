@@ -134,13 +134,13 @@ class KmeansClustering(AbstractClustering):
                                               order='C', dtype=np.float32)
         else:
             if self._oom_strategy == 'raise':
-                self._logger.warn('K-means failed to load all the data (%s required, %s available) into memory. '
+                self._logger.warning('K-means failed to load all the data (%s required, %s available) into memory. '
                                   'Consider using a larger stride or set the oom_strategy to \'memmap\' which works '
                                   'with a memmapped temporary file.'
                                   % (bytes_to_string(required_mem), bytes_to_string(available_mem)))
                 raise MemoryError
             else:
-                self._logger.warn('K-means failed to load all the data (%s required, %s available) into memory '
+                self._logger.warning('K-means failed to load all the data (%s required, %s available) into memory '
                                   'and now uses a memmapped temporary file which is comparably slow. '
                                   'Consider using a larger stride.'
                                   % (bytes_to_string(required_mem), bytes_to_string(available_mem)))
