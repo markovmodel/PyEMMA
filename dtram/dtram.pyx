@@ -23,6 +23,7 @@ import numpy as _np
 cimport numpy as _np
 
 from . import util
+from .callback import CallbackInterrupt
 
 __all__ = [
     'init_log_lagrangian_mult',
@@ -340,7 +341,7 @@ def estimate(
     count_matrices, bias_energies,
     maxiter=1000, maxerr=1.0E-8,
     log_lagrangian_mult=None, conf_energies=None,
-    err_out=0, lll_out=0):
+    err_out=0, lll_out=0, callback=None):
     r"""
     Estimate the reduced unbiased and thermodynamic free energies.
         
@@ -419,6 +420,17 @@ def estimate(
             lll_count = 0
             lll_traj.append(get_loglikelihood(count_matrices, estimate_transition_matrices(
                 log_lagrangian_mult, bias_energies, conf_energies, count_matrices, scratch_M)))
+        try:
+            callback(
+                log_lagrangian_mult=log_lagrangian_mult,
+                conf_energies=conf_energies,
+                therm_energies=therm_energies,
+                delta_conf_energies=delta_conf_energies,
+                delta_therm_energies=delta_therm_energies,
+                err=err,
+                iteration_step=m)
+        except TypeError:
+            pass
         if err < maxerr:
             break
         else:
