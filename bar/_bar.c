@@ -17,8 +17,6 @@
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <math.h>
-
 #include "../util/_util.h"
 
 extern double _df(double *db_IJ, int L1, double *db_JI, int L2, double *scratch)
