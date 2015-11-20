@@ -172,7 +172,7 @@ class PCA(Transformer):
                 if self._given_mean:
                     raise SkipPassException(next_pass_stride=stride)
 
-            self.mu += np.sum(X, axis=0)
+            self.mu += np.sum(X, axis=0, dtype=np.float64)
             self._N_mean += np.shape(X)[0]
 
             # counting chunks and log of eta
