@@ -409,8 +409,8 @@ def estimate(
             scratch_TM, conf_energies)
         therm_energies = get_therm_energies(
             bias_energies, conf_energies, scratch_M, therm_energies=therm_energies)
-        delta_conf_energies = _np.max(_np.abs((conf_energies - old_conf_energies)))
-        delta_therm_energies = _np.max(_np.abs((therm_energies - old_therm_energies)))
+        delta_conf_energies = _np.abs((conf_energies - old_conf_energies))
+        delta_therm_energies = _np.abs((therm_energies - old_therm_energies))
         normalize(scratch_M, therm_energies, conf_energies)
         err = _np.max([delta_conf_energies, delta_therm_energies])
         if err_count == err_out:
@@ -424,11 +424,16 @@ def estimate(
             callback(
                 log_lagrangian_mult=log_lagrangian_mult,
                 conf_energies=conf_energies,
+                old_therm_energies=old_therm_energies,
+                old_log_lagrangian_mult=old_log_lagrangian_mult,
+                old_conf_energies=old_conf_energies,
                 therm_energies=therm_energies,
                 delta_conf_energies=delta_conf_energies,
                 delta_therm_energies=delta_therm_energies,
                 err=err,
-                iteration_step=m)
+                iteration_step=m,
+                maxiter=maxiter,
+                maxerr=maxerr)
         except TypeError:
             pass
         if err < maxerr:
