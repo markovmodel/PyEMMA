@@ -98,7 +98,7 @@ void _update_lagrangian_mult(
 
 void _update_biased_conf_energies(
     double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices, double *bias_energy_sequence,
-    int *state_sequence, int *state_counts, int *indices, int indices_length, int seq_length, double *log_R_K_i,
+    int *state_sequence, int *state_counts, int seq_length, double *log_R_K_i,
     int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_T,
     double *new_biased_conf_energies)
 {
@@ -148,7 +148,6 @@ void _update_biased_conf_energies(
             log_R_K_i[Ki] = _logsumexp_pair(_logsumexp_sort_kahan_inplace(scratch_M, o), R_addon);
         }
     }
-    //fprintf(stderr, "indices_length = %d\n", indices_length);
     /* set new_biased_conf_energies to infinity (z_K_i==0) */
     KM = n_therm_states * n_conf_states;
     for(i=0; i<KM; ++i)
@@ -157,10 +156,8 @@ void _update_biased_conf_energies(
     for(x=0; x<seq_length; ++x)
     {
         i = state_sequence[x];
-        //fprintf(stderr, "i=%d ", i);
         o = 0;
-        //for(K=0; K<n_therm_states; ++K)
-        for(n=i*indices_length+1,K=indices[i*indices_length]; K!=-1; K=indices[n++])
+        for(K=0; K<n_therm_states; ++K)
         {
             assert(K<n_therm_states);
             assert(K>=0);
@@ -170,11 +167,8 @@ void _update_biased_conf_energies(
         }
         divisor = _logsumexp_sort_kahan_inplace(scratch_T, o);
         
-        //for(K=0; K<n_therm_states; ++K)
-        for(n=i*indices_length+1,K=indices[i*indices_length]; K!=-1; K=indices[n++])
+        for(K=0; K<n_therm_states; ++K)
         {
-            //if(K==-1) break;
-            //fprintf(stderr, "K=%d ", K);
             assert(K<n_therm_states);
             assert(K>=0);
             new_biased_conf_energies[K * n_conf_states + i] = -_logsumexp_pair(

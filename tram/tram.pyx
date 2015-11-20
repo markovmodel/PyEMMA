@@ -21,7 +21,7 @@ Python interface to the TRAM estimator's lowlevel functions.
 
 import numpy as _np
 cimport numpy as _np
-import sys
+from .callback import CallbackInterrupt
 
 __all__ = [
     'init_lagrangian_mult',
@@ -40,7 +40,7 @@ cdef extern from "_tram.h":
         int n_therm_states, int n_conf_states, double *scratch_M, double *new_log_lagrangian_mult)
     void _update_biased_conf_energies(
         double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices, double *bias_energy_sequence,
-        int *state_sequence, int *state_counts, int *indices, int indices_length, int seq_length, double *log_R_K_i,
+        int *state_sequence, int *state_counts, int seq_length, double *log_R_K_i,
         int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_T,
         double *new_biased_conf_energies)
     void _get_conf_energies(
@@ -124,7 +124,6 @@ def update_biased_conf_energies(
     _np.ndarray[double, ndim=2, mode="c"] bias_energy_sequence not None,
     _np.ndarray[int, ndim=1, mode="c"] state_sequence not None,
     _np.ndarray[int, ndim=2, mode="c"] state_counts not None,
-    _np.ndarray[int, ndim=2, mode="c"] indices not None,
     _np.ndarray[double, ndim=2, mode="c"] log_R_K_i not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_M not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_T not None,
@@ -146,9 +145,6 @@ def update_biased_conf_energies(
         Markov state indices for all X samples
     state_counts : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
         number of visits to thermodynamic state K and Markov state i
-    indices : numpy.ndarray(shape=(M, n), dtype=numpy.intc)
-        indices[i,:] = thermodynamic state indices for which state_counts[:,i] > 0 
-        terminated by -1
     log_R_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         scratch array for sum of TRAM log pseudo-counts and biased_conf_energies
     scratch_M : numpy.ndarray(shape=(M), dtype=numpy.float64)
@@ -165,8 +161,6 @@ def update_biased_conf_energies(
         <double*> _np.PyArray_DATA(bias_energy_sequence),
         <int*> _np.PyArray_DATA(state_sequence),
         <int*> _np.PyArray_DATA(state_counts),
-        <int*> _np.PyArray_DATA(indices),
-        indices.shape[1],
         state_sequence.shape[0],
         <double*> _np.PyArray_DATA(log_R_K_i),
         log_lagrangian_mult.shape[0],
@@ -497,7 +491,7 @@ def log_likelihood_best_lower_bound(
     return logL
 
 def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence, maxiter=1000, maxerr=1.0E-8,
-             biased_conf_energies=None, log_lagrangian_mult=None, call_back=None):
+             biased_conf_energies=None, log_lagrangian_mult=None, err_out=0, lll_out=0, call_back=None):
     r"""
     Estimate the reduced discrete state free energies and thermodynamic free energies
 
@@ -519,6 +513,10 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
         initial guess for the reduced discrete state free energies for all T thermodynamic states
     log_lagrangian_mult : numpy.ndarray(shape=(T, M), dtype=numpy.float64), OPTIONAL
         initial guess for the logarithm of the Lagrangian multipliers
+    err_out : int, optional
+        every err_out iteration steps, store the actual increment
+    lll_out : int, optional
+        every lll_out iteration steps, store the actual loglikelihood
 
     Returns
     -------
@@ -530,12 +528,22 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
         reduced thermodynamic free energies
     log_lagrangian_mult : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         logarithm of the Lagrangian multipliers
+    err : numpy.ndarray(dtype=numpy.float64, ndim=1)
+        stored sequence of increments
+    lll : numpy.ndarray(dtype=numpy.float64, ndim=1)
+        stored sequence of loglikelihoods        
     """
     if biased_conf_energies is None:
         biased_conf_energies = _np.zeros(shape=state_counts.shape, dtype=_np.float64)
     if log_lagrangian_mult is None:
         log_lagrangian_mult = _np.zeros(shape=state_counts.shape, dtype=_np.float64)
         init_lagrangian_mult(count_matrices, log_lagrangian_mult)
+
+    err_traj = []
+    lll_traj = []
+    err_count = 0
+    lll_count = 0
+
     log_R_K_i = _np.zeros(shape=state_counts.shape, dtype=_np.float64)
     scratch_T = _np.zeros(shape=(count_matrices.shape[0],), dtype=_np.float64)
     scratch_M = _np.zeros(shape=(count_matrices.shape[1],), dtype=_np.float64)
@@ -543,55 +551,98 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
     scratch_MM = _np.zeros(shape=count_matrices.shape[1:3], dtype=_np.float64)
     old_biased_conf_energies = biased_conf_energies.copy()
     old_log_lagrangian_mult = log_lagrangian_mult.copy()
-    
-    # find sparsity structure of the counts
-    #import sys
-    #print >>sys.stderr, 'shape', state_counts.shape
-    #print >>sys.stderr, 'bool', state_counts[:,0]>0
-    #print >>sys.stderr, 'where', _np.where(state_counts[:,0]>0)[0]
-    
-    max_indices = _np.max([len(_np.where(state_counts[:,i]>0)[0]) for i in range(state_counts.shape[1])])+1
-    indices = _np.zeros((state_counts.shape[1], max_indices), dtype=_np.intc)
-    for i in range(state_counts.shape[1]):
-        tmp = _np.where(state_counts[:,i]>0)[0]
-        indices[i,0:len(tmp)] = tmp
-        indices[i,len(tmp)] = -1
-    occupied = _np.where(state_counts>0)
-        
-    import sys
-    print >>sys.stderr, indices
+    old_stat_vectors = _np.zeros(shape=state_counts.shape, dtype=_np.float64)
+    old_therm_energies = _np.zeros(shape=count_matrices.shape[0], dtype=_np.float64)
 
-    best_lower_bound = False # alternative doesn't work at the moment
     for _m in range(maxiter):
+        err_count += 1
+        lll_count += 1        
         update_lagrangian_mult(old_log_lagrangian_mult, biased_conf_energies, count_matrices, state_counts, scratch_M, log_lagrangian_mult)
         update_biased_conf_energies(log_lagrangian_mult, old_biased_conf_energies, count_matrices, bias_energy_sequence, state_sequence,
-            state_counts, indices, log_R_K_i, scratch_M, scratch_T, biased_conf_energies) # optinally include compuation of sum log mu
-        if _m%100 == 0:
-            if best_lower_bound:
-                logL = log_likelihood_best_lower_bound(log_lagrangian_mult,
-                           biased_conf_energies, count_matrices,
-                           bias_energy_sequence, state_sequence,
-                           state_counts, scratch_M, scratch_T, scratch_TM, scratch_MM, maxerr)
-            else:
-                logL = log_likelihood_lower_bound(
-                           log_lagrangian_mult, log_lagrangian_mult,
-                           old_biased_conf_energies, biased_conf_energies,
-                           count_matrices, bias_energy_sequence, state_sequence,
-                           state_counts, scratch_M, scratch_T, scratch_TM, scratch_MM)
-            if call_back is not None:
-                call_back(iteration=_m, log_likelihood=logL,
-                          biased_conf_energies=biased_conf_energies,
+            state_counts, log_R_K_i, scratch_M, scratch_T, biased_conf_energies) # optinally include compuation of sum log mu
+
+        therm_energies = get_therm_energies(biased_conf_energies, scratch_M)
+        stat_vectors = _np.exp(-biased_conf_energies + therm_energies[:, _np.newaxis])
+        delta_therm_energies = _np.max(_np.abs(therm_energies - old_therm_energies))
+        delta_stat_vectors =  _np.max(_np.abs(stat_vectors - old_stat_vectors))
+        err = max(_np.max(delta_therm_energies),_np.max(delta_stat_vectors))
+
+        if err_count == err_out:
+            err_count = 0
+            err_traj.append(err)
+
+        if lll_count == lll_out:
+            lll_count = 0
+            logL = log_likelihood_lower_bound(
+                       log_lagrangian_mult, log_lagrangian_mult,
+                       old_biased_conf_energies, biased_conf_energies,
+                       count_matrices, bias_energy_sequence, state_sequence,
+                       state_counts, scratch_M, scratch_T, scratch_TM, scratch_MM)
+            lll_traj.append(logL)
+
+        if call_back is not None:
+            try:
+                call_back(biased_conf_energies=biased_conf_energies,
                           log_lagrangian_mult=log_lagrangian_mult,
+                          therm_energies=therm_energies,
+                          stat_vectors=stat_vectors,
                           old_biased_conf_energies=old_biased_conf_energies,
-                          old_log_lagrangian_mult=old_log_lagrangian_mult)
-        if _np.max(_np.abs(biased_conf_energies[occupied] - old_biased_conf_energies[occupied])) < maxerr:
+                          old_log_lagrangian_mult=old_log_lagrangian_mult,
+                          old_stat_vectors=old_stat_vectors,
+                          old_therm_energies=old_therm_energies,
+                          iteration_step=_m,
+                          err=err,
+                          maxerr=maxerr,
+                          maxiter=maxiter)
+            except CallbackInterrupt:
+                break
+
+        if err < maxerr:
             break
 
-        biased_conf_energies -= _np.min(biased_conf_energies)
+        shift = _np.min(biased_conf_energies)
+        biased_conf_energies -= shift
         old_biased_conf_energies[:] = biased_conf_energies
         old_log_lagrangian_mult[:] = log_lagrangian_mult[:]
+        old_therm_energies[:] = therm_energies[:]-shift
+        old_stat_vectors[:] = stat_vectors[:]
 
     conf_energies = get_conf_energies(bias_energy_sequence, state_sequence, log_R_K_i, scratch_M, scratch_T)
     therm_energies = get_therm_energies(biased_conf_energies, scratch_M)
     normalize(conf_energies, biased_conf_energies, therm_energies, scratch_M)
-    return biased_conf_energies, conf_energies, therm_energies, log_lagrangian_mult
+
+    if err_out == 0:
+        err_traj = None
+    else:
+        err_traj = _np.array(err_traj, dtype=_np.float64)
+    if lll_out == 0:
+        lll_traj = None
+    else:
+        lll_traj = _np.array(lll_traj, dtype=_np.float64)
+
+    return biased_conf_energies, conf_energies, therm_energies, log_lagrangian_mult, err_traj, lll_traj
+
+def simple_error(call_back=None):
+    r"""
+    Stopping condition for `estimate`. Can be given as the value of `call_back`.
+    
+    Stop the estimation when the difference of the biased energies
+    (logarithms of the joint probability of conformational state and
+    thermodynamic state) between two iterations is smaller than `maxerr`.
+
+    Parameters
+    ----------
+    call_back : optional 
+        user call back. Because `simple_error` takes the `call_back`
+        slot of `estimate`, this allows to chain `simple_error` with
+        another call back.
+    """
+    def function(**kwargs):
+        biased_conf_energies = kwargs['biased_conf_energies']
+        old_biased_conf_energies = kwargs['old_biased_conf_energies']
+        maxerr = kwargs['maxerr']
+        if call_back is not None:
+            call_back(**kwargs)
+        if _np.max(_np.abs(biased_conf_energies - old_biased_conf_energies)) < maxerr:
+            raise CallbackInterrupt('biased configuration energies have converged')
+    return function
