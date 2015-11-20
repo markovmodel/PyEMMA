@@ -21,6 +21,7 @@ Python interface to the MBAR estimator's lowlevel functions.
 
 import numpy as _np
 cimport numpy as _np
+from .callback import CallbackInterrupt
 
 __all__ = ['update_therm_energies', 'normalize', 'get_conf_energies', 'get_biased_conf_energies', 'estimate']
 
@@ -148,7 +149,7 @@ def normalize(
         <double*> _np.PyArray_DATA(biased_conf_energies))
 
 def estimate(therm_state_counts, bias_energy_sequence, conf_state_sequence,
-    maxiter=1000, maxerr=1.0E-8, therm_energies=None):
+    maxiter=1000, maxerr=1.0E-8, therm_energies=None, err_out=0, callback=None):
     r"""
     Estimate the (un)biased reduced free energies and thermodynamic free energies
         
@@ -158,17 +159,28 @@ def estimate(therm_state_counts, bias_energy_sequence, conf_state_sequence,
         numbers of samples in the T thermodynamic states
     bias_energy_sequence : numpy.ndarray(shape=(T, X), dtype=numpy.float64)
         reduced bias energies in the T thermodynamic states for all X samples
+    conf_state_sequence : numpy.ndarray(shape=(X), dtype=numpy.float64)
+        discrete state indices (cluster indices) for all X samples
     maxiter : int
         maximum number of iterations
     maxerr : float
         convergence criterion based on absolute change in free energies
     therm_energies : numpy.ndarray(shape=(T), dtype=numpy.float64), OPTIONAL
         initial guess for the reduced free energies of the T thermodynamic states
+    err_out : int, optional
+        every err_out iteration steps, store the actual increment
 
     Returns
     -------
     therm_energies : numpy.ndarray(shape=(T), dtype=numpy.float64)
         reduced free energies of the T thermodynamic states
+    conf_energies : numpy.ndarray(shape=(M), dtype=numpy.float64)
+        reduced unbiased discrete state (cluster) free energies
+    biased_conf_energies : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+        reduced discrete state free energies for all combinations of
+        T thermodynamic states and M discrete states
+    err : numpy.ndarray(dtype=numpy.float64, ndim=1)
+        stored sequence of increments
     """
     T = therm_state_counts.shape[0]
     M = 1 + _np.max(conf_state_sequence)
@@ -176,12 +188,31 @@ def estimate(therm_state_counts, bias_energy_sequence, conf_state_sequence,
     if therm_energies is None:
         therm_energies = _np.zeros(shape=(T,), dtype=_np.float64)
     old_therm_energies = therm_energies.copy()
-    scratch_M = _np.zeros(shape=(M,), dtype=_np.float64)
+    err_traj = []
+    err_count = 0
     scratch_T = _np.zeros(shape=(T,), dtype=_np.float64)
+    scratch_M = _np.zeros(shape=(M,), dtype=_np.float64)
     stop = False
     for _m in range(maxiter):
+        err_count += 1
         update_therm_energies(log_therm_state_counts, old_therm_energies, bias_energy_sequence, scratch_T, therm_energies)
-        if _np.max(_np.abs((therm_energies - old_therm_energies))) < maxerr:
+        delta_therm_energies = _np.abs(therm_energies - old_therm_energies)
+        err = _np.max(delta_therm_energies)
+        if err_count == err_out:
+            err_count = 0
+            err_traj.append(err)
+        if callback is not None:
+            try:
+                callback(therm_energies=therm_energies,
+                         old_therm_energies=old_therm_energies,
+                         delta_therm_energies=delta_therm_energies,
+                         iteration_step=_m,
+                         err=err,
+                         maxerr=maxerr,
+                         maxiter=maxiter)
+            except CallbackInterrupt:
+                stop = True
+        if err < maxerr:
             stop = True
         else:
             old_therm_energies[:] = therm_energies[:]
@@ -189,5 +220,9 @@ def estimate(therm_state_counts, bias_energy_sequence, conf_state_sequence,
             break
     conf_energies, biased_conf_energies = get_conf_energies(
         log_therm_state_counts, therm_energies, bias_energy_sequence, conf_state_sequence, scratch_T, M)
-    #normalize(log_therm_state_counts, bias_energy_sequence, scratch_M, therm_energies, conf_energies, biased_conf_energies)
-    return therm_energies, conf_energies, biased_conf_energies
+    normalize(log_therm_state_counts, bias_energy_sequence, scratch_M, therm_energies, conf_energies, biased_conf_energies)
+    if err_out == 0:
+        err_traj = None
+    else:
+        err_traj = _np.array(err_traj, dtype=_np.float64)
+    return therm_energies, conf_energies, biased_conf_energies, err_traj
