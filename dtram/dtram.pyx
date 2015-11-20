@@ -412,7 +412,7 @@ def estimate(
         delta_conf_energies = _np.abs((conf_energies - old_conf_energies))
         delta_therm_energies = _np.abs((therm_energies - old_therm_energies))
         normalize(scratch_M, therm_energies, conf_energies)
-        err = _np.max([delta_conf_energies, delta_therm_energies])
+        err = _np.max([_np.max(delta_conf_energies), _np.max(delta_therm_energies)])
         if err_count == err_out:
             err_count = 0
             err_traj.append(err)
@@ -420,22 +420,23 @@ def estimate(
             lll_count = 0
             lll_traj.append(get_loglikelihood(count_matrices, estimate_transition_matrices(
                 log_lagrangian_mult, bias_energies, conf_energies, count_matrices, scratch_M)))
-        try:
-            callback(
-                log_lagrangian_mult=log_lagrangian_mult,
-                conf_energies=conf_energies,
-                old_therm_energies=old_therm_energies,
-                old_log_lagrangian_mult=old_log_lagrangian_mult,
-                old_conf_energies=old_conf_energies,
-                therm_energies=therm_energies,
-                delta_conf_energies=delta_conf_energies,
-                delta_therm_energies=delta_therm_energies,
-                err=err,
-                iteration_step=m,
-                maxiter=maxiter,
-                maxerr=maxerr)
-        except TypeError:
-            pass
+        if callback is not None:
+            try:
+                callback(
+                    log_lagrangian_mult=log_lagrangian_mult,
+                    conf_energies=conf_energies,
+                    old_therm_energies=old_therm_energies,
+                    old_log_lagrangian_mult=old_log_lagrangian_mult,
+                    old_conf_energies=old_conf_energies,
+                    therm_energies=therm_energies,
+                    delta_conf_energies=delta_conf_energies,
+                    delta_therm_energies=delta_therm_energies,
+                    err=err,
+                    iteration_step=m,
+                    maxiter=maxiter,
+                    maxerr=maxerr)
+            except CallbackInterrupt:
+                break
         if err < maxerr:
             break
         else:
