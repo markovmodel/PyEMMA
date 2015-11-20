@@ -18,7 +18,7 @@
 */
 
 #include <math.h>
-#include "_bar.h"
+
 #include "../util/_util.h"
 
 extern double _df(double *db_IJ, int L1, double *db_JI, int L2, double *scratch)
