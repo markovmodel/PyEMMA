@@ -17,14 +17,7 @@
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <math.h>
-
-/* old m$ visual studio is not c99 compliant (vs2010 eg. is not) */
-#ifdef _MSC_VER
-    #include <float.h>
-    #define INFINITY (DBL_MAX+DBL_MAX)
-    #define NAN (INFINITY-INFINITY)
-#endif
+#include "_util.h"
 
 /***************************************************************************************************
 *   sorting

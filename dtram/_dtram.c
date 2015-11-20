@@ -17,17 +17,8 @@
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <math.h>
-
-#include "../util/_util.h"
 #include "_dtram.h"
-
-/* old m$ visual studio is not c99 compliant (vs2010 eg. is not) */
-#ifdef _MSC_VER
-    #include <float.h>
-    #define INFINITY (DBL_MAX+DBL_MAX)
-    #define NAN (INFINITY-INFINITY)
-#endif
+#include "../util/_util.h"
 
 extern void _init_log_lagrangian_mult(
     int *count_matrices, int n_therm_states, int n_conf_states, double *log_lagrangian_mult)
@@ -42,10 +33,8 @@ extern void _init_log_lagrangian_mult(
         {
             sum = 0;
             for(j=0; j<n_conf_states; ++j)
-                /*sum += 0.5 * (count_matrices[KMM + i*n_conf_states + j] + count_matrices[KMM + j*n_conf_states + i]);*/
-                sum += count_matrices[KMM + j*n_conf_states + i];
-            /*log_lagrangian_mult[K*n_conf_states + i] = log(THERMOTOOLS_DTRAM_PRIOR + sum);*/
-            log_lagrangian_mult[K*n_conf_states + i] = log(sum);
+                sum += 0.5 * (count_matrices[KMM + i*n_conf_states + j] + count_matrices[KMM + j*n_conf_states + i]);
+            log_lagrangian_mult[K*n_conf_states + i] = log(THERMOTOOLS_DTRAM_PRIOR + sum);
         }
     }
 }
