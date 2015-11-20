@@ -491,7 +491,7 @@ def log_likelihood_best_lower_bound(
     return logL
 
 def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence, maxiter=1000, maxerr=1.0E-8,
-             biased_conf_energies=None, log_lagrangian_mult=None, err_out=0, lll_out=0, call_back=None):
+             biased_conf_energies=None, log_lagrangian_mult=None, err_out=0, lll_out=0, callback=None):
     r"""
     Estimate the reduced discrete state free energies and thermodynamic free energies
 
@@ -563,8 +563,8 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
 
         therm_energies = get_therm_energies(biased_conf_energies, scratch_M)
         stat_vectors = _np.exp(-biased_conf_energies + therm_energies[:, _np.newaxis])
-        delta_therm_energies = _np.max(_np.abs(therm_energies - old_therm_energies))
-        delta_stat_vectors =  _np.max(_np.abs(stat_vectors - old_stat_vectors))
+        delta_therm_energies = _np.abs(therm_energies - old_therm_energies)
+        delta_stat_vectors =  _np.abs(stat_vectors - old_stat_vectors)
         err = max(_np.max(delta_therm_energies),_np.max(delta_stat_vectors))
 
         if err_count == err_out:
@@ -580,20 +580,20 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
                        state_counts, scratch_M, scratch_T, scratch_TM, scratch_MM)
             lll_traj.append(logL)
 
-        if call_back is not None:
+        if callback is not None:
             try:
-                call_back(biased_conf_energies=biased_conf_energies,
-                          log_lagrangian_mult=log_lagrangian_mult,
-                          therm_energies=therm_energies,
-                          stat_vectors=stat_vectors,
-                          old_biased_conf_energies=old_biased_conf_energies,
-                          old_log_lagrangian_mult=old_log_lagrangian_mult,
-                          old_stat_vectors=old_stat_vectors,
-                          old_therm_energies=old_therm_energies,
-                          iteration_step=_m,
-                          err=err,
-                          maxerr=maxerr,
-                          maxiter=maxiter)
+                callback(biased_conf_energies=biased_conf_energies,
+                         log_lagrangian_mult=log_lagrangian_mult,
+                         therm_energies=therm_energies,
+                         stat_vectors=stat_vectors,
+                         old_biased_conf_energies=old_biased_conf_energies,
+                         old_log_lagrangian_mult=old_log_lagrangian_mult,
+                         old_stat_vectors=old_stat_vectors,
+                         old_therm_energies=old_therm_energies,
+                         iteration_step=_m,
+                         err=err,
+                         maxerr=maxerr,
+                         maxiter=maxiter)
             except CallbackInterrupt:
                 break
 
