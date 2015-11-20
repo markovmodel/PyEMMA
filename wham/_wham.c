@@ -17,16 +17,7 @@
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <math.h>
-
 #include "../util/_util.h"
-
-/* old m$ visual studio is not c99 compliant (vs2010 eg. is not) */
-#ifdef _MSC_VER
-    #include <float.h>
-    #define INFINITY (DBL_MAX+DBL_MAX)
-    #define NAN (INFINITY-INFINITY)
-#endif
 
 extern void _update_conf_energies(
     double *log_therm_state_counts, double *log_conf_state_counts,
