@@ -76,7 +76,6 @@ class PCA(Transformer):
         default_var_cutoff = get_default_args(self.__init__)['var_cutoff']
         if dim != -1 and var_cutoff != default_var_cutoff:
             raise ValueError('Trying to set both the number of dimension and the subspace variance. Use either or.')
-        self._dot_prod_tmp = None
         self.Y = None
         self._N_mean = 0
         self._N_cov = 0
@@ -172,9 +171,8 @@ class PCA(Transformer):
             if t == 0:
                 if self._given_mean:
                     raise SkipPassException(next_pass_stride=stride)
-                self._sum_tmp = np.empty(X.shape[1])
-            np.sum(X, axis=0, out=self._sum_tmp)
-            self.mu += self._sum_tmp
+
+            self.mu += np.sum(X, axis=0)
             self._N_mean += np.shape(X)[0]
 
             # counting chunks and log of eta
@@ -187,10 +185,8 @@ class PCA(Transformer):
         if ipass == 1:
             if t == 0:
                 self._logger.debug("start calculate covariance for traj nr %i" % itraj)
-                self._dot_prod_tmp = np.empty_like(self.cov)
             Xm = X - self.mu
-            np.dot(Xm.T, Xm, self._dot_prod_tmp)
-            self.cov += self._dot_prod_tmp
+            self.cov += np.dot(Xm.T, Xm)
             self._N_cov += np.shape(X)[0]
 
             self._progress_update(1, stage=1)
