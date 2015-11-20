@@ -22,6 +22,8 @@ Python interface to the WHAM estimator's lowlevel functions.
 import numpy as _np
 cimport numpy as _np
 
+from .callback import CallbackInterrupt
+
 __all__ = [
     'update_conf_energies',
     'update_therm_energies',
@@ -199,7 +201,7 @@ def estimate(
     state_counts, bias_energies,
     maxiter=1000, maxerr=1.0E-8,
     therm_energies=None, conf_energies=None,
-    err_out=0, lll_out=0):
+    err_out=0, lll_out=0, callback=None):
     r"""
     Estimate the unbiased reduced free energies and thermodynamic free energies
         
@@ -257,16 +259,16 @@ def estimate(
     lll_traj = []
     err_count = 0
     lll_count = 0
-    for _m in range(maxiter):
+    for m in range(maxiter):
         err_count += 1
         lll_count += 1
         update_therm_energies(conf_energies, bias_energies, scratch, therm_energies)
         update_conf_energies(
             log_therm_state_counts, log_conf_state_counts, therm_energies, bias_energies,
             scratch, conf_energies)
-        delta_therm_energies = _np.max(_np.abs((therm_energies - old_therm_energies)))
-        delta_conf_energies = _np.max(_np.abs((conf_energies - old_conf_energies)))
-        err = _np.max([delta_conf_energies, delta_therm_energies])
+        delta_therm_energies = _np.abs(therm_energies - old_therm_energies)
+        delta_conf_energies = _np.abs(conf_energies - old_conf_energies)
+        err = _np.max([_np.max(delta_conf_energies), _np.max(delta_therm_energies)])
         normalize(scratch, therm_energies, conf_energies)
         if err_count == err_out:
             err_count = 0
@@ -276,6 +278,21 @@ def estimate(
             lll_traj.append(
                 get_loglikelihood(
                     therm_state_counts, conf_state_counts, therm_energies, conf_energies, scratch))
+        if callback is not None:
+            try:
+                callback(
+                    conf_energies=conf_energies,
+                    old_therm_energies=old_therm_energies,
+                    old_conf_energies=old_conf_energies,
+                    therm_energies=therm_energies,
+                    delta_conf_energies=delta_conf_energies,
+                    delta_therm_energies=delta_therm_energies,
+                    err=err,
+                    iteration_step=m,
+                    maxiter=maxiter,
+                    maxerr=maxerr)
+            except CallbackInterrupt:
+                break
         if err < maxerr:
             break
         else:

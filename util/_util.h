@@ -21,6 +21,22 @@
 #define THERMOTOOLS_UTIL
 
 /***************************************************************************************************
+*   C99 compatibility for macros INFINITY and NAN 
+***************************************************************************************************/
+
+#include <math.h>
+
+/* define INFINITY if not available */
+#ifndef INFINITY
+    #define INFINITY 1.0/0.0
+#endif
+
+/* define NAN if not available */
+#ifndef NAN
+    #define NAN INFINITY-INFINITY
+#endif
+
+/***************************************************************************************************
 *   sorting
 ***************************************************************************************************/
 
