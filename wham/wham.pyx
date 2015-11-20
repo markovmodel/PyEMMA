@@ -22,17 +22,28 @@ Python interface to the WHAM estimator's lowlevel functions.
 import numpy as _np
 cimport numpy as _np
 
-__all__ = ['update_conf_energies', 'update_therm_energies', 'normalize', 'estimate']
+__all__ = [
+    'update_conf_energies',
+    'update_therm_energies',
+    'normalize',
+    'get_loglikelihood',
+    'estimate']
 
 cdef extern from "_wham.h":
     void _update_conf_energies(
-        double *log_therm_state_counts, double *log_conf_state_counts, double *therm_energies, double *bias_energies,
+        double *log_therm_state_counts, double *log_conf_state_counts,
+        double *therm_energies, double *bias_energies,
         int n_therm_states, int n_conf_states, double *scratch_T, double *conf_energies)
     void _update_therm_energies(
         double *conf_energies, double *bias_energies, int n_therm_states, int n_conf_states,
         double *scratch_M, double *therm_energies)
     void _normalize(
-        int n_therm_states, int n_conf_states, double *scratch_M, double *therm_energies, double *conf_energies)
+        int n_therm_states, int n_conf_states,
+        double *scratch_M, double *therm_energies, double *conf_energies)
+    double _get_loglikelihood(
+        int *therm_state_counts, int *conf_state_counts,
+        double *therm_energies, double *conf_energies,
+        int n_therm_states, int n_conf_states, double *scratch_S)
 
 def update_conf_energies(
     _np.ndarray[double, ndim=1, mode="c"] log_therm_state_counts not None,
@@ -42,22 +53,22 @@ def update_conf_energies(
     _np.ndarray[double, ndim=1, mode="c"] scratch_T not None,
     _np.ndarray[double, ndim=1, mode="c"] conf_energies not None):
     r"""
-    Calculate the reduced free energies conf_energies
+    Calculate the reduced unbiased free energies.
         
     Parameters
     ----------
     log_therm_state_counts : numpy.ndarray(shape=(T), dtype=numpy.float64)
-        log of the state counts in each of the T thermodynamic states
+        logarithm of the state counts in each of the T thermodynamic states
     log_conf_state_counts : numpy.ndarray(shape=(M), dtype=numpy.float64)
-        log of the state counts in each of the M configurational states
+        logarithm of the state counts in each of the M configurational states
     therm_energies : numpy.ndarray(shape=(T), dtype=numpy.float64)
         reduced free energies of the T thermodynamic states
-    bias_energies : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
-        bias energies in the T thermodynamic and M discrete configurational states
+    bias_energies : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
+        reduced bias energies of the T thermodynamic and M configurational states
     scratch_T : numpy.ndarray(shape=(T), dtype=numpy.float64)
         scratch array
-    therm_energies : numpy.ndarray(shape=(T), dtype=numpy.float64)
-        target array for the reduced free energies of the T thermodynamic states
+    conf_energies : numpy.ndarray(shape=(M,), dtype=numpy.float64)
+        reduced unbiased configurational energies
 
     Notes
     -----
@@ -105,10 +116,10 @@ def update_therm_energies(
         
     Parameters
     ----------
-    conf_energies : numpy.ndarray(shape=(M), dtype=numpy.float64)
-        reduced free energies of the M configurational states
-    bias_energies : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
-        bias energies in the T thermodynamic and M configurational states
+    conf_energies : numpy.ndarray(shape=(M,), dtype=numpy.float64)
+        reduced unbiased configurational energies
+    bias_energies : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
+        reduced bias energies of the T thermodynamic and M configurational states
     scratch_M : numpy.ndarray(shape=(M), dtype=numpy.float64)
         scratch array
     therm_energies : numpy.ndarray(shape=(T), dtype=numpy.float64)
@@ -147,8 +158,8 @@ def normalize(
         scratch array
     therm_energies : numpy.ndarray(shape=(T), dtype=numpy.float64)
         reduced free energies of the T thermodynamic states
-    conf_energies : numpy.ndarray(shape=(M), dtype=numpy.float64)
-        reduced free energies of the M discrete states
+    conf_energies : numpy.ndarray(shape=(M,), dtype=numpy.float64)
+        reduced unbiased configurational energies
     """
     _normalize(
         therm_energies.shape[0],
@@ -157,7 +168,38 @@ def normalize(
         <double*> _np.PyArray_DATA(therm_energies),
         <double*> _np.PyArray_DATA(conf_energies))
 
-def estimate(state_counts, bias_energies, maxiter=1000, maxerr=1.0E-8, therm_energies=None, conf_energies=None):
+def get_loglikelihood(
+    _np.ndarray[int, ndim=1, mode="c"] therm_state_counts not None,
+    _np.ndarray[int, ndim=1, mode="c"] conf_state_counts not None,
+    _np.ndarray[double, ndim=1, mode="c"] therm_energies not None,
+    _np.ndarray[double, ndim=1, mode="c"] conf_energies not None,
+    _np.ndarray[double, ndim=1, mode="c"] scratch_S not None):
+    r"""
+    Compute the loglikelihood of the estimated reduced free energies.
+
+    Parameters
+    ----------
+
+
+    Returns
+    -------
+    loglikelihood : float
+        loglikelihood of the reduced free energies given the observed state counts
+    """
+    return _get_loglikelihood(
+        <int*> _np.PyArray_DATA(therm_state_counts),
+        <int*> _np.PyArray_DATA(conf_state_counts),
+        <double*> _np.PyArray_DATA(therm_energies),
+        <double*> _np.PyArray_DATA(conf_energies),
+        therm_state_counts.shape[0],
+        conf_state_counts.shape[0],
+        <double*> _np.PyArray_DATA(scratch_S))
+
+def estimate(
+    state_counts, bias_energies,
+    maxiter=1000, maxerr=1.0E-8,
+    therm_energies=None, conf_energies=None,
+    err_out=0, lll_out=0):
     r"""
     Estimate the unbiased reduced free energies and thermodynamic free energies
         
@@ -165,29 +207,45 @@ def estimate(state_counts, bias_energies, maxiter=1000, maxerr=1.0E-8, therm_ene
     ----------
     state_counts : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
         state counts in the T thermodynamic and M configurational states
-    bias_energies : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
-        reduced bias energies in the T thermodynamic and M configurational states
+    bias_energies : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
+        reduced bias energies of the T thermodynamic and M configurational states
     maxiter : int
         maximum number of iterations
     maxerr : float
         convergence criterion based on absolute change in free energies
-    therm_energies : numpy.ndarray(shape=(T), dtype=numpy.float64), OPTIONAL
-        initial guess for the reduced free energies of the T thermodynamic states
-    conf_energies : numpy.ndarray(shape=(M), dtype=numpy.float64), OPTIONAL
-        initial guess for the reduced unbiased free energies of the M configurational states
+    therm_energies : numpy.ndarray(shape=(T,), dtype=numpy.float64), OPTIONAL
+        initial guess for the reduced thermodynamic energies
+    conf_energies : numpy.ndarray(shape=(M,), dtype=numpy.float64)
+        initial guess for the reduced unbiased free energies
+    err_out : int, optional
+        every err_out iteration steps, store the actual increment
+    lll_out : int, optional
+        every lll_out iteration steps, store the actual loglikelihood
 
     Returns
     -------
-    therm_energies : numpy.ndarray(shape=(T), dtype=numpy.float64)
-        reduced free energies of the T thermodynamic states
-    conf_energies : numpy.ndarray(shape=(M), dtype=numpy.float64)
-        reduced unbiased free energies of the M configurational states
+    therm_energies : numpy.ndarray(shape=(T,), dtype=numpy.float64)
+        reduced thermodynamic energies
+    conf_energies : numpy.ndarray(shape=(M,), dtype=numpy.float64)
+        reduced unbiased configurational energies
+    err : numpy.ndarray(dtype=numpy.float64, ndim=1)
+        stored sequence of increments
+    lll : numpy.ndarray(dtype=numpy.float64, ndim=1)
+        stored sequence of loglikelihoods
+
+    Notes
+    -----
+    This function calls the previously defined update functions to estimate the reduced
+    configuration energies of the unbiased thermodynamic state and the reduced thermodynamic
+    energies by means of a fixed point iteration.
     """
     T = state_counts.shape[0]
     M = state_counts.shape[1]
-    S = _np.max([T, M])
-    log_therm_state_counts = _np.log(state_counts.sum(axis=1))
-    log_conf_state_counts = _np.log(state_counts.sum(axis=0))
+    S = T + M
+    therm_state_counts = state_counts.sum(axis=1).astype(_np.intc)
+    conf_state_counts = state_counts.sum(axis=0).astype(_np.intc)
+    log_therm_state_counts = _np.log(therm_state_counts).astype(_np.float64)
+    log_conf_state_counts = _np.log(conf_state_counts).astype(_np.float64)
     if therm_energies is None:
         therm_energies = _np.zeros(shape=(T,), dtype=_np.float64)
     if conf_energies is None:
@@ -195,18 +253,40 @@ def estimate(state_counts, bias_energies, maxiter=1000, maxerr=1.0E-8, therm_ene
     old_therm_energies = therm_energies.copy()
     old_conf_energies = conf_energies.copy()
     scratch = _np.zeros(shape=(S,), dtype=_np.float64)
-    stop = False
+    err_traj = []
+    lll_traj = []
+    err_count = 0
+    lll_count = 0
     for _m in range(maxiter):
+        err_count += 1
+        lll_count += 1
         update_therm_energies(conf_energies, bias_energies, scratch, therm_energies)
-        update_conf_energies(log_therm_state_counts, log_conf_state_counts, therm_energies, bias_energies, scratch, conf_energies)
+        update_conf_energies(
+            log_therm_state_counts, log_conf_state_counts, therm_energies, bias_energies,
+            scratch, conf_energies)
         delta_therm_energies = _np.max(_np.abs((therm_energies - old_therm_energies)))
         delta_conf_energies = _np.max(_np.abs((conf_energies - old_conf_energies)))
-        if delta_therm_energies < maxerr and delta_conf_energies < maxerr:
-            stop = True
+        err = _np.max([delta_conf_energies, delta_therm_energies])
+        normalize(scratch, therm_energies, conf_energies)
+        if err_count == err_out:
+            err_count = 0
+            err_traj.append(err)
+        if lll_count == lll_out:
+            lll_count = 0
+            lll_traj.append(
+                get_loglikelihood(
+                    therm_state_counts, conf_state_counts, therm_energies, conf_energies, scratch))
+        if err < maxerr:
+            break
         else:
             old_therm_energies[:] = therm_energies[:]
             old_conf_energies[:] = conf_energies[:]
-        if stop:
-            break
-    normalize(scratch, therm_energies, conf_energies)
-    return therm_energies, conf_energies
+    if err_out == 0:
+        err_traj = None
+    else:
+        err_traj = _np.array(err_traj, dtype=_np.float64)
+    if lll_out == 0:
+        lll_traj = None
+    else:
+        lll_traj = _np.array(lll_traj, dtype=_np.float64)
+    return therm_energies, conf_energies, err_traj, lll_traj

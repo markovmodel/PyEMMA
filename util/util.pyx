@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 r"""
-Python interface to utility functions
+Python interface to utility functions.
 """
 
 import numpy as _np
@@ -25,7 +25,6 @@ from scipy.sparse import csr_matrix as _csr
 from msmtools.estimation import count_matrix as _cm
 
 __all__ = [
-    'mixed_sort',
     'kahan_summation',
     'logsumexp',
     'logsumexp_pair',
@@ -34,8 +33,7 @@ __all__ = [
     'state_counts',
     'restrict_samples_to_cset',
     'renormalize_transition_matrix',
-    'renormalize_transition_matrices',
-    'mirrored_sigmoid']
+    'renormalize_transition_matrices']
 
 cdef extern from "_util.h":
     # sorting
@@ -62,23 +60,23 @@ cdef extern from "_util.h":
 def mixed_sort(_np.ndarray[double, ndim=1, mode="c"] array not None,
     inplace=True):
     r"""
-    Sorts the given array
+    Sorts the given array using a quicksort/mergesort hybrid.
         
     Parameters
     ----------
-    array : numpy.ndarray(dtype=numpy.float64)
+    array : numpy.ndarray(dtype=numpy.float64, ndim=1)
         unsorted values
     inplace : boolean
         should the sorting be performed inplace
 
     Returns
     -------
-    sorted_array : numpy.ndarray(dtype=numpy.float64)
+    sorted_array : numpy.ndarray(dtype=numpy.float64, ndim=1)
         sorted values
 
     Notes
     -----
-    Performs a quicksort/mergesort hybrid.
+    This python wrapper is only to expose the underlying C function to the nose test suite.
     """
     x = array
     if not inplace:
@@ -94,11 +92,11 @@ def kahan_summation(_np.ndarray[double, ndim=1, mode="c"] array not None,
     sort_array=True,
     inplace=True):
     r"""
-    Sums the array using Kahan's algorithm
+    Sums the array using Kahan's algorithm.
         
     Parameters
     ----------
-    array : numpy.ndarray(dtype=numpy.float64)
+    array : numpy.ndarray(dtype=numpy.float64, ndim=1)
         (unsorted) values
     sort_array : boolean
         should the array be sorted before summation
@@ -124,11 +122,11 @@ def logsumexp(_np.ndarray[double, ndim=1, mode="c"] array not None,
     inplace=True,
     use_kahan=True):
     r"""
-    Perform a summation of an array of exponentials via the logsumexp scheme
+    Perform a summation of an array of exponentials via the logsumexp scheme.
         
     Parameters
     ----------
-    array : numpy.ndarray(dtype=numpy.float64)
+    array : numpy.ndarray(dtype=numpy.float64, ndim=1)
         arguments of the exponentials
     sort_array : boolean
         should the array be sorted before summation
@@ -168,14 +166,14 @@ def logsumexp(_np.ndarray[double, ndim=1, mode="c"] array not None,
 
 def logsumexp_pair(a, b):
     r"""
-    Perform a summation of two exponentials via the logsumexp scheme
+    Perform a summation of two exponentials via the logsumexp scheme.
         
     Parameters
     ----------
     a : float
-        arguments of the first exponential
+        argument of the first exponential
     b : float
-        arguments of the second exponential
+        argument of the second exponential
 
     Returns
     -------
@@ -200,7 +198,7 @@ def logsumexp_pair(a, b):
 def get_therm_state_break_points(
     _np.ndarray[int, ndim=1, mode="c"] T_x not None):
     r"""
-    Find thermodynamic state changes within a trajectory
+    Find thermodynamic state changes within a trajectory.
 
     Parameters
     ----------
@@ -221,11 +219,11 @@ def get_therm_state_break_points(
 
 def count_matrices(dtraj, lag, sliding=True, sparse_return=True, nthermo=None, nstates=None):
     r"""
-    Count transitions at given lagtime
+    Count transitions at given lagtime.
 
     Parameters
     ----------
-    dtraj : list of numpy.ndarray(shape=(X, 2), dtype=np.intc)
+    dtraj : [numpy.ndarray(shape=(X, 2), dtype=numpy.intc)]
         list of discretized trajectories
     lag : int
         lagtime in trajectory steps
@@ -240,8 +238,8 @@ def count_matrices(dtraj, lag, sliding=True, sparse_return=True, nthermo=None, n
 
     Returns
     -------
-    C_K : [scipy.sparse.coo_matrix] or numpy.ndarray(shape=(T, M, M))
-        count matrices at given lag in coordinate list format
+    C_K : [scipy.sparse.coo_matrix] or numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
+        count matrices at given lagtime
     """
     kmax = _np.max([d[:, 0].max() for d in dtraj])
     nmax = _np.max([d[:, 1].max() for d in dtraj])
@@ -269,11 +267,11 @@ def count_matrices(dtraj, lag, sliding=True, sparse_return=True, nthermo=None, n
 
 def state_counts(dtraj, nstates=None, nthermo=None):
     r"""
-    Count discrete states in all thermodynamic states
+    Count discrete states visits in all thermodynamic states.
 
     Parameters
     ----------
-    dtraj : list of numpy.ndarray(shape=(X, 2), dtype=np.intc)
+    dtraj : [numpy.ndarray(shape=(X, 2), dtype=numpy.intc)]
         list of discretized trajectories
     nstates : int, optional
         enforce state count matrix with shape=(nthermo, nstates)
@@ -282,7 +280,7 @@ def state_counts(dtraj, nstates=None, nthermo=None):
 
     Returns
     -------
-    N : numpy.ndarray(shape=(T, M))
+    N : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
         state counts
     """
     kmax = int(_np.max([d[:, 0].max() for d in dtraj]))
@@ -304,7 +302,7 @@ def state_counts(dtraj, nstates=None, nthermo=None):
 
 def restrict_samples_to_cset(state_sequence, bias_energy_sequence, cset):
     r"""
-    Restrict full list of samples to a subset and relabel configurational state indices
+    Restrict full list of samples to a subset and relabel configurational state indices.
 
     Parameters
     ----------
@@ -363,10 +361,3 @@ def renormalize_transition_matrices(
             P.shape[0],
             <double*> _np.PyArray_DATA(scratch_M))
         PK[K, :, :] = P[:, :]
-
-####################################################################################################
-#   misc functions
-####################################################################################################
-
-def mirrored_sigmoid(x):
-    return _mirrored_sigmoid(x)

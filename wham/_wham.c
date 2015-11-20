@@ -29,22 +29,20 @@
 #endif
 
 extern void _update_conf_energies(
-    double *log_therm_state_counts, double *log_conf_state_counts, double *therm_energies, double *bias_energies,
+    double *log_therm_state_counts, double *log_conf_state_counts,
+    double *therm_energies, double *bias_energies,
     int n_therm_states, int n_conf_states, double *scratch_T, double *conf_energies)
 {
     int i, K;
-    double shift;
     for(i=0; i<n_conf_states; ++i)
     {
         for(K=0; K<n_therm_states; ++K)
-            scratch_T[K] = log_therm_state_counts[K] - bias_energies[K*n_conf_states + i] + therm_energies[K];
-        conf_energies[i] = _logsumexp_sort_kahan_inplace(scratch_T, n_therm_states) - log_conf_state_counts[i];
+            scratch_T[K] = log_therm_state_counts[K]
+                         - bias_energies[K * n_conf_states + i]
+                         + therm_energies[K];
+        conf_energies[i] = _logsumexp_sort_kahan_inplace(scratch_T, n_therm_states)
+                         - log_conf_state_counts[i];
     }
-    shift = conf_energies[0];
-    for(i=1; i<n_conf_states; ++i)
-        shift = (shift < conf_energies[i]) ? shift : conf_energies[i];
-    for(i=0; i<n_conf_states; ++i)
-        conf_energies[i] -= shift;
 }
 
 extern void _update_therm_energies(
@@ -62,7 +60,8 @@ extern void _update_therm_energies(
 }
 
 extern void _normalize(
-    int n_therm_states, int n_conf_states, double *scratch_M, double *therm_energies, double *conf_energies)
+    int n_therm_states, int n_conf_states,
+    double *scratch_M, double *therm_energies, double *conf_energies)
 {
     int K, i;
     double f0;
@@ -73,4 +72,24 @@ extern void _normalize(
         conf_energies[i] -= f0;
     for(K=0; K<n_therm_states; ++K)
         therm_energies[K] -= f0;
+}
+
+extern double _get_loglikelihood(
+    int *therm_state_counts, int *conf_state_counts,
+    double *therm_energies, double *conf_energies,
+    int n_therm_states, int n_conf_states, double *scratch_S)
+{
+    int i, o = 0;
+    for(i=0; i<n_therm_states; ++i)
+    {
+        if(therm_state_counts[i] > 0)
+            scratch_S[o++] = therm_state_counts[i] * therm_energies[i];
+    }
+    for(i=0; i<n_conf_states; ++i)
+    {
+        if(conf_state_counts[i] > 0)
+            scratch_S[o++] = -conf_state_counts[i] * conf_energies[i];
+    }
+    _mixed_sort(scratch_S, 0, o - 1);
+    return _kahan_summation(scratch_S, o);
 }

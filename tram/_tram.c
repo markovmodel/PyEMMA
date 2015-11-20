@@ -19,6 +19,7 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <assert.h>
 
 #include "../util/_util.h"
 #include "_tram.h"
@@ -101,7 +102,7 @@ void _update_biased_conf_energies(
     int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_T,
     double *new_biased_conf_energies)
 {
-    int i, j, K, x, o;
+    int i, j, K, x, o, n;
     int Ki, Kj, KM, KMM;
     int Ci, CK, CKij, CKji, NC;
     double divisor, R_addon;
@@ -158,13 +159,18 @@ void _update_biased_conf_energies(
         o = 0;
         for(K=0; K<n_therm_states; ++K)
         {
+            assert(K<n_therm_states);
+            assert(K>=0);
             /* applying Hao's speed-up recomendation */
             if(-INFINITY == log_R_K_i[K * n_conf_states + i]) continue;
             scratch_T[o++] = log_R_K_i[K * n_conf_states + i] - bias_energy_sequence[K * seq_length + x];
         }
         divisor = _logsumexp_sort_kahan_inplace(scratch_T, o);
+        
         for(K=0; K<n_therm_states; ++K)
         {
+            assert(K<n_therm_states);
+            assert(K>=0);
             new_biased_conf_energies[K * n_conf_states + i] = -_logsumexp_pair(
                     -new_biased_conf_energies[K * n_conf_states + i],
                     -(divisor + bias_energy_sequence[K * seq_length + x]));
@@ -257,7 +263,7 @@ void _estimate_transition_matrix(
     /* normalize T matrix */
     max_sum = 0;
     for(i=0; i<n_conf_states; ++i) if(sum[i] > max_sum) max_sum = sum[i];
-    if(max_sum == 0) max_sum = 1;
+    if(max_sum==0) max_sum = 1.0; /* completely empty T matrix -> generate Id matrix */
     for(i=0; i<n_conf_states; ++i) {
         for(j=0; j<n_conf_states; ++j) {
             if(i==j) {
