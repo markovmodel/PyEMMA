@@ -95,8 +95,8 @@ class ProgressReporter(object):
 
         assert callable(call_back)
         # check we have the desired function signature
-        import inspect
-        argspec = inspect.getargspec(call_back)
+        from pyemma.util.reflection import getargspec_no_self
+        argspec = getargspec_no_self(call_back)
         assert len(argspec.args) == 2
         assert argspec.varargs is not None
         assert argspec.keywords is not None

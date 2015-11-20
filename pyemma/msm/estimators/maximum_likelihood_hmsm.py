@@ -192,7 +192,7 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
         if msm_init.nstates > self.nstates:
             timescale_ratios = msm_init.timescales()[:-1] / msm_init.timescales()[1:]
             if timescale_ratios[self.nstates-2] < 2.0:
-                self.logger.warn('Requested coarse-grained model with ' + str(self.nstates) + ' metastable states at ' +
+                self.logger.warning('Requested coarse-grained model with ' + str(self.nstates) + ' metastable states at ' +
                                  'lag=' + str(self.lag) + '.' + 'The ratio of relaxation timescales between ' +
                                  str(self.nstates) + ' and ' + str(self.nstates+1) + ' states is only ' +
                                  str(timescale_ratios[self.nstates-2]) + ' while we recommend at least 2. ' +

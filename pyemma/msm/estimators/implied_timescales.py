@@ -131,7 +131,7 @@ class ImpliedTimescales(Estimator, ProgressReporter):
         if np.max(self._lags) >= maxlength:
             Ifit = np.where(self._lags < maxlength)[0]
             Inofit = np.where(self._lags >= maxlength)[0]
-            self.logger.warn('Ignoring lag times that exceed the longest trajectory: ' + str(self._lags[Inofit]))
+            self.logger.warning('Ignoring lag times that exceed the longest trajectory: ' + str(self._lags[Inofit]))
             self._lags = self._lags[Ifit]
 
         ### RUN ESTIMATION
@@ -159,7 +159,7 @@ class ImpliedTimescales(Estimator, ProgressReporter):
             self.nits = maxnts
         if maxnts < self.nits:
             self.nits = maxnts
-            self.logger.warn('Changed user setting nits to the number of available timescales nits=' + str(self.nits))
+            self.logger.warning('Changed user setting nits to the number of available timescales nits=' + str(self.nits))
 
         # sort timescales into matrix
         computed_all = True  # flag if we have found any problems
@@ -194,7 +194,7 @@ class ImpliedTimescales(Estimator, ProgressReporter):
                 computed_all = False
 
         if not computed_all:
-            self.logger.warn('Some timescales could not be computed. Timescales array is smaller than '
+            self.logger.warning('Some timescales could not be computed. Timescales array is smaller than '
                              'expected or contains NaNs')
 
     @property
