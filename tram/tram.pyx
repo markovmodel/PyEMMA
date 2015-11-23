@@ -62,6 +62,16 @@ cdef extern from "_tram.h":
         int n_therm_states, int n_conf_states,
         double *bias_energy_sequence, int *state_sequence, int seq_length,
         double *scratch_T, double *scratch_M, double *scratch_TM, double *scratch_MM)
+    void _get_log_R_K_i(double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices,
+        int *state_counts, int n_therm_states, int n_conf_states, double *scratch_M,
+        double *log_R_K_i)
+    void _get_unbiased_pointwise_free_energies(
+        double* unbiased_conf_energies, double *bias_energy_sequence, int *state_sequence,
+        int seq_length, double *log_R_K_i, int n_therm_states, int n_conf_states,
+        double *scratch_T, double *unbiased_pointwise_free_energies)
+    void _get_unbiased_user_free_energies(double *unbiased_pointwise_free_energies,
+        int *user_index_sequence, int seq_length, int n_user_states, double *unbiased_user_free_energies)
+    double _get_expectation(double *unbiased_pointwise_free_energies, double *observable_sequence, int seq_length)
 
 
 def init_lagrangian_mult(
@@ -169,6 +179,41 @@ def update_biased_conf_energies(
         <double*> _np.PyArray_DATA(scratch_T),
         <double*> _np.PyArray_DATA(new_biased_conf_energies))
 
+def _private_get_log_R_K_i(
+    _np.ndarray[double, ndim=2, mode="c"] log_lagrangian_mult not None,
+    _np.ndarray[double, ndim=2, mode="c"] biased_conf_energies not None,
+    _np.ndarray[int, ndim=3, mode="c"] count_matrices not None,
+    _np.ndarray[int, ndim=2, mode="c"] state_counts not None,
+    _np.ndarray[double, ndim=1, mode="c"] scratch_M not None,
+    _np.ndarray[double, ndim=2, mode="c"] log_R_K_i not None):
+    r"""
+    Computes the sum of TRAM log pseudo-counts and biased_conf_energies.
+
+    Parameters
+    ----------
+    log_lagrangian_mult : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+        log of the Lagrangian multipliers
+    biased_conf_energies : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+        reduced free energies
+    count_matrices : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
+        multistate count matrix
+    scratch_M : numpy.ndarray(shape=(M), dtype=numpy.float64)
+        scratch array for logsumexp operations
+    scratch_T : numpy.ndarray(shape=(T), dtype=numpy.float64)
+        scratch array for logsumexp operations
+    log_R_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+        target array for sum of TRAM log pseudo-counts and biased_conf_energies
+    """
+    _get_log_R_K_i(
+        <double*> _np.PyArray_DATA(log_lagrangian_mult),
+        <double*> _np.PyArray_DATA(biased_conf_energies),
+        <int*> _np.PyArray_DATA(count_matrices),
+        <int*> _np.PyArray_DATA(state_counts),
+        log_lagrangian_mult.shape[0],
+        log_lagrangian_mult.shape[1],
+        <double*> _np.PyArray_DATA(scratch_M),
+        <double*> _np.PyArray_DATA(log_R_K_i))
+
 def get_conf_energies(
     _np.ndarray[double, ndim=2, mode="c"] bias_energy_sequence not None,
     _np.ndarray[int, ndim=1, mode="c"] state_sequence not None,
@@ -264,6 +309,38 @@ def normalize(
         biased_conf_energies.shape[0],
         biased_conf_energies.shape[1],
         <double*> _np.PyArray_DATA(scratch_M))
+
+def get_unbiased_pointwise_free_energies(
+    _np.ndarray[double, ndim=2, mode="c"] log_lagrangian_mult not None,
+    _np.ndarray[double, ndim=2, mode="c"] biased_conf_energies not None,
+    _np.ndarray[int, ndim=3, mode="c"] count_matrices not None,
+    _np.ndarray[double, ndim=2, mode="c"] bias_energy_sequence not None,
+    _np.ndarray[int, ndim=1, mode="c"] state_sequence not None,
+    _np.ndarray[int, ndim=2, mode="c"] state_counts not None,
+    _np.ndarray[double, ndim=1, mode="c"] conf_energies not None,
+    _np.ndarray[double, ndim=1, mode="c"] scratch_M,    
+    _np.ndarray[double, ndim=1, mode="c"] scratch_T,
+    _np.ndarray[double, ndim=1, mode="c"] unbiased_pointwise_free_energies not None):
+
+    log_R_K_i = _np.zeros(shape=(state_counts.shape[0],state_counts.shape[1]), dtype=_np.float64)
+    if scratch_T is None:
+        scratch_T = _np.zeros(shape=(state_counts.shape[0]), dtype=_np.float64)
+    if scratch_M is None:
+        scratch_M = _np.zeros(shape=(state_counts.shape[1]), dtype=_np.float64)
+
+    _private_get_log_R_K_i(log_lagrangian_mult, biased_conf_energies,
+        count_matrices, state_counts, scratch_M, log_R_K_i)
+
+    _get_unbiased_pointwise_free_energies(
+        <double*> _np.PyArray_DATA(conf_energies),
+        <double*> _np.PyArray_DATA(bias_energy_sequence),
+        <int*> _np.PyArray_DATA(state_sequence),
+        state_sequence.shape[0], 
+        <double*> _np.PyArray_DATA(log_R_K_i),
+        log_R_K_i.shape[0],
+        log_R_K_i.shape[1],
+        <double*> _np.PyArray_DATA(scratch_T),
+        <double*> _np.PyArray_DATA(unbiased_pointwise_free_energies))
 
 def estimate_transition_matrices(
     _np.ndarray[double, ndim=2, mode="c"] log_lagrangian_mult not None,
@@ -491,7 +568,7 @@ def log_likelihood_best_lower_bound(
     return logL
 
 def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence, maxiter=1000, maxerr=1.0E-8,
-             biased_conf_energies=None, log_lagrangian_mult=None, err_out=0, lll_out=0, callback=None):
+             biased_conf_energies=None, log_lagrangian_mult=None, err_out=0, lll_out=0, callback=None, N_dtram_accelerations=0):
     r"""
     Estimate the reduced discrete state free energies and thermodynamic free energies
 
@@ -646,3 +723,33 @@ def simple_error(call_back=None):
         if _np.max(_np.abs(biased_conf_energies - old_biased_conf_energies)) < maxerr:
             raise CallbackInterrupt('biased configuration energies have converged')
     return function
+
+def get_unbiased_user_free_energies(
+    _np.ndarray[double, ndim=1, mode="c"] unbiased_pointwise_free_energies not None,
+    _np.ndarray[int, ndim=1, mode="c"] user_index_sequence not None,
+    _np.ndarray[double, ndim=1, mode="c"] unbiased_user_free_energies not None):
+    r"""
+    Compute free energies of user-defined states in the unbiased ensemble.
+
+    Parameters
+    ----------
+    unbiased_pointwise_free_energies :  numpy.ndarray(shape=(X,), dtype=numpy.float64)
+        pointwise free energies in the unbiased ensemble for all X samples
+    user_index_sequence : numpy.ndarray(shape=(X,), dtype=numpy.intc)
+        User state indices for all X samples
+    unbiased_user_conf_energies : numpy.ndarray(shape=(Y,), dtype=numpy.float64)
+        where Y is 1 + the largest index in user_index_sequence
+        target array for the user free energies
+    """
+    assert unbiased_pointwise_free_energies.shape == user_index_sequence.shape 
+    n_user_states = unbiased_user_free_energies.shape[0]
+    assert _np.all(user_index_sequence < n_user_states)
+    
+    _get_unbiased_user_free_energies(
+        <double*> _np.PyArray_DATA(unbiased_pointwise_free_energies),
+        <int*> _np.PyArray_DATA(user_index_sequence),
+        unbiased_pointwise_free_energies.shape[0],
+        n_user_states,
+        <double*> _np.PyArray_DATA(unbiased_user_free_energies))
+
+

@@ -63,4 +63,18 @@ double _log_likelihood_lower_bound(
     double *bias_energy_sequence, int *state_sequence, int seq_length,
     double *scratch_T, double *scratch_M, double *scratch_TM, double *scratch_MM);
 
+void _get_log_R_K_i(double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices,
+    int *state_counts, int n_therm_states, int n_conf_states, double *scratch_M,
+    double *log_R_K_i);
+
+void _get_unbiased_pointwise_free_energies(
+    double* unbiased_conf_energies, double *bias_energy_sequence, int *state_sequence, 
+    int seq_length, double *log_R_K_i, int n_therm_states, int n_conf_states, 
+    double *scratch_T, double *unbiased_pointwise_free_energies);
+
+void _get_unbiased_user_free_energies(double *unbiased_pointwise_free_energies,
+    int *user_index_sequence, int seq_length, int n_user_states, double *unbiased_user_free_energies);
+
+double _get_expectation(double *unbiased_pointwise_free_energies, double *observable_sequence, int seq_length);
+
 #endif

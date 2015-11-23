@@ -88,17 +88,70 @@ void _update_lagrangian_mult(
     }
 }
 
+void _get_log_R_K_i(
+    double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices,
+    int *state_counts, int n_therm_states, int n_conf_states, double *scratch_M,
+    double *log_R_K_i)
+{
+    int i, j, K, o;
+    int Ki, Kj, KM, KMM;
+    int Ci, CK, CKij, CKji, NC;
+    double divisor, R_addon;
+
+    for(K=0; K<n_therm_states; ++K)
+    {
+        KM = K * n_conf_states;
+        KMM = KM * n_conf_states;
+        for(i=0; i<n_conf_states; ++i)
+        {
+            Ki = KM + i;
+            if(0 == state_counts[Ki]) /* applying Hao's speed-up recomendation */
+            {
+                log_R_K_i[Ki] = -INFINITY;
+                continue;
+            }
+            Ci = 0;
+            o = 0;
+            for(j=0; j<n_conf_states; ++j)
+            {
+                CKij = count_matrices[KMM + i * n_conf_states + j];
+                CKji = count_matrices[KMM + j * n_conf_states + i];
+                Ci += CKji;
+                /* special case: most variables cancel out, here */
+                if(i == j)
+                {
+                    scratch_M[o] = (0 == CKij) ? THERMOTOOLS_TRAM_LOG_PRIOR : log(THERMOTOOLS_TRAM_PRIOR + (double) CKij);
+                    scratch_M[o++] += biased_conf_energies[Ki];
+                    continue;
+                }
+                CK = CKij + CKji;
+                /* special case */
+                if(0 == CK) continue;
+                /* regular case */
+                Kj = KM + j;
+                divisor = _logsumexp_pair(
+                    log_lagrangian_mult[Kj] - biased_conf_energies[Ki],
+                    log_lagrangian_mult[Ki] - biased_conf_energies[Kj]);
+                scratch_M[o++] = log((double) CK) + log_lagrangian_mult[Kj] - divisor;
+            }
+            NC = state_counts[Ki] - Ci;
+            R_addon = (0 < NC) ? log((double) NC) + biased_conf_energies[Ki] : -INFINITY; /* IGNORE PRIOR */
+            log_R_K_i[Ki] = _logsumexp_pair(_logsumexp_sort_kahan_inplace(scratch_M, o), R_addon);
+        }
+    }
+}
+
 void _update_biased_conf_energies(
     double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices, double *bias_energy_sequence,
     int *state_sequence, int *state_counts, int seq_length, double *log_R_K_i,
     int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_T,
     double *new_biased_conf_energies)
 {
-    int i, j, K, x, o, n;
+    int i, j, K, x, o;
     int Ki, Kj, KM, KMM;
     int Ci, CK, CKij, CKji, NC;
     double divisor, R_addon;
-    /* compute R_K_i */
+    /* compute R_K_i */ /* TODO: refactor */
     for(K=0; K<n_therm_states; ++K)
     {
         KM = K * n_conf_states;
@@ -170,7 +223,8 @@ void _update_biased_conf_energies(
     }
 }
 
-void _get_conf_energies(
+/* unbiased */
+void _get_conf_energies( 
     double *bias_energy_sequence, int *state_sequence, int seq_length, double *log_R_K_i,
     int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_T,
     double *conf_energies)
@@ -389,3 +443,117 @@ double _log_likelihood_lower_bound(
     return a+b+c;
 }
 
+/* pointwise expectations
+   ---------------------- */
+void _get_unbiased_pointwise_free_energies(
+    double* unbiased_conf_energies, double *bias_energy_sequence, int *state_sequence, 
+    int seq_length, double *log_R_K_i, int n_therm_states, int n_conf_states, 
+    double *scratch_T, double *unbiased_pointwise_free_energies)
+{
+    int K, o, i, x;
+    double divisor;
+
+    for(x=0; x<seq_length; ++x)
+    {
+        i = state_sequence[x];
+        o = 0;
+        for(K=0; K<n_therm_states; ++K)
+        {
+            if(-INFINITY == log_R_K_i[K * n_conf_states + i]) continue;
+            scratch_T[o++] = log_R_K_i[K * n_conf_states + i] - bias_energy_sequence[K * seq_length + x];
+        }
+        divisor = _logsumexp_sort_kahan_inplace(scratch_T, o);
+        unbiased_pointwise_free_energies[x] = divisor + unbiased_conf_energies[i];
+    }
+}
+
+/*void _get_unbiased_user_free_energies(double* unbiased_conf_energies, 
+    double *bias_energy_sequence, int *state_sequence,
+    int *user_index_sequence, int seq_length, double *log_R_K_i, int n_therm_states,
+    int n_conf_states, int n_user_states, double *scratch_T, double *unbiased_user_conf_energies)
+{
+    int K, o, i, u, x;
+    double divisor;
+
+    for(i=0; i<n_user_states; ++i)
+        unbiased_user_conf_energies[i] = -INFINITY;
+
+    for(x=0; x<seq_length; ++x)
+    {
+        i = state_sequence[x];
+        u = user_index_sequence[x];
+        o = 0;
+        for(K=0; K<n_therm_states; ++K)
+        {
+            if(-INFINITY == log_R_K_i[K * n_conf_states + i]) continue;
+            scratch_T[o++] = log_R_K_i[K * n_conf_states + i] - bias_energy_sequence[K * seq_length + x];
+        }
+        divisor = _logsumexp_sort_kahan_inplace(scratch_T, o);
+        unbiased_user_conf_energies[u] = -_logsumexp_pair(
+                -unbiased_user_conf_energies[u],
+                -(divisor + unbiased_conf_energies[i]));
+    }
+}
+
+double _get_expectation(double* unbiased_conf_energies, 
+    double *bias_energy_sequence, int *state_sequence, 
+    double *observable_sequence, int seq_length, double *log_R_K_i, int n_therm_states,
+    int n_conf_states, double *scratch_T)
+{
+    int K, o, i, x;
+    double divisor, expectation, obs;
+
+    expectation = 0;
+    for(x=0; x<seq_length; ++x)
+    {
+        i = state_sequence[x];
+        obs = observable_sequence[x];
+        o = 0;
+        for(K=0; K<n_therm_states; ++K)
+        {
+            if(-INFINITY == log_R_K_i[K * n_conf_states + i]) continue;
+            scratch_T[o++] = log_R_K_i[K * n_conf_states + i] - bias_energy_sequence[K * seq_length + x];
+        }
+        divisor = _logsumexp_sort_kahan_inplace(scratch_T, o);
+        expectation += obs * exp(-divisor - unbiased_conf_energies[i]);
+    }
+    return expectation;
+}
+*/
+
+void _get_unbiased_user_free_energies(
+    double *unbiased_pointwise_free_energies,
+    int *user_index_sequence,
+    int seq_length,
+    int n_user_states,
+    double *unbiased_user_free_energies)
+{
+    int u, x;
+
+    for(u=0; u<n_user_states; ++u)
+        unbiased_user_free_energies[u] = -INFINITY;
+
+    for(x=0; x<seq_length; ++x)
+    {
+        u = user_index_sequence[x];
+        unbiased_user_free_energies[u] = -_logsumexp_pair(
+                -unbiased_user_free_energies[u], unbiased_pointwise_free_energies[x]);
+    }
+}
+
+double _get_expectation(
+    double *unbiased_pointwise_free_energies,
+    double *observable_sequence,
+    int seq_length)
+{
+    int x;
+    double expectation, obs;
+    
+    expectation = 0;
+    for(x=0; x<seq_length; ++x)
+    {
+        obs = observable_sequence[x];
+        expectation += obs * exp(-unbiased_pointwise_free_energies[x]);
+    }
+    return expectation;
+}
