@@ -14,7 +14,8 @@ from __future__ import print_function
 import os
 
 # Check Sphinx version
-needs_sphinx = '1.3.1+'
+# TODO: once 1.3.2 is released, require it again. 1.2.3 is known to be broken.
+#needs_sphinx = '1.3.1+'
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
