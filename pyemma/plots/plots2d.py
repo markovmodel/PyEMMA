@@ -16,16 +16,16 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
-
 from __future__ import absolute_import
-__author__ = 'noe'
 
 import numpy as _np
-import matplotlib.pylab as _plt
 from scipy.interpolate import griddata as gd
 
+__author__ = 'noe'
+
+
 def contour(x, y, z, ncontours = 50, colorbar=True, fig=None, ax=None, method='linear', zlim=None, cmap=None):
+    import matplotlib.pylab as _plt
     # check input
     if (ax is None):
         if fig is None:
@@ -80,6 +80,7 @@ def scatter_contour(x, y, z, ncontours = 50, colorbar=True, fig=None, ax=None, c
     ax : Axes object containing the plot
 
     """
+    import matplotlib.pylab as _plt
     ax = contour(x, y, z, ncontours=ncontours, colorbar=colorbar, fig=fig, ax=ax, cmap=cmap)
 
     # scatter points
@@ -92,7 +93,8 @@ def scatter_contour(x, y, z, ncontours = 50, colorbar=True, fig=None, ax=None, c
     return ax
 
 
-def plot_free_energy(xall, yall, weights=None, ax=None, nbins=100, offset=0.1, cmap=_plt.cm.spectral, cbar=True, cbar_label='Free energy (kT)'):
+def plot_free_energy(xall, yall, weights=None, ax=None, nbins=100, offset=0.1,
+                     cmap='spectral', cbar=True, cbar_label='Free energy (kT)'):
     """Free energy plot given 2D scattered data
 
     Builds a 2D-histogram of the given data points and plots -log(p) where p is
@@ -128,7 +130,9 @@ def plot_free_energy(xall, yall, weights=None, ax=None, nbins=100, offset=0.1, c
     fig : Figure object containing the plot
 
     """
-    z,x,y = _np.histogram2d(xall, yall, bins=nbins, weights=weights)
+    import matplotlib.pylab as _plt
+
+    z, x, y = _np.histogram2d(xall, yall, bins=nbins, weights=weights)
     z += offset
     # compute free energies
     F = -_np.log(z)
@@ -143,3 +147,4 @@ def plot_free_energy(xall, yall, weights=None, ax=None, nbins=100, offset=0.1, c
             cbar.ax.set_ylabel(cbar_label)
 
     return ax, _plt.gcf()
+
