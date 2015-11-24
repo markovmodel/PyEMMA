@@ -21,7 +21,7 @@ __author__ = 'noe'
 
 import math
 import numpy as np
-import matplotlib.pylab as plt
+
 
 def _add_ck_subplot(cktest, ax, i, j, ipos=None, jpos=None, y01=True, units='steps', dt=1.):
     # plot estimates
@@ -88,6 +88,8 @@ def plot_cktest(cktest, figsize=None, diag=False,  y01=True, layout=None,
         padding space on top of subplots (as a fraction of 1.0)
 
     """
+    import matplotlib.pylab as plt
+
     sharey = y01
     # first fix subfigure layout
     if diag:
