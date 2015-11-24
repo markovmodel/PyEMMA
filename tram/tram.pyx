@@ -66,7 +66,7 @@ cdef extern from "_tram.h":
         int *state_counts, int n_therm_states, int n_conf_states, double *scratch_M,
         double *log_R_K_i)
     void _get_unbiased_pointwise_free_energies(
-        double* unbiased_conf_energies, double *bias_energy_sequence, int *state_sequence,
+        double *bias_energy_sequence, int *state_sequence,
         int seq_length, double *log_R_K_i, int n_therm_states, int n_conf_states,
         double *scratch_T, double *unbiased_pointwise_free_energies)
     void _get_unbiased_user_free_energies(double *unbiased_pointwise_free_energies,
@@ -317,7 +317,6 @@ def get_unbiased_pointwise_free_energies(
     _np.ndarray[double, ndim=2, mode="c"] bias_energy_sequence not None,
     _np.ndarray[int, ndim=1, mode="c"] state_sequence not None,
     _np.ndarray[int, ndim=2, mode="c"] state_counts not None,
-    _np.ndarray[double, ndim=1, mode="c"] conf_energies not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_M,    
     _np.ndarray[double, ndim=1, mode="c"] scratch_T,
     _np.ndarray[double, ndim=1, mode="c"] unbiased_pointwise_free_energies not None):
@@ -332,7 +331,6 @@ def get_unbiased_pointwise_free_energies(
         count_matrices, state_counts, scratch_M, log_R_K_i)
 
     _get_unbiased_pointwise_free_energies(
-        <double*> _np.PyArray_DATA(conf_energies),
         <double*> _np.PyArray_DATA(bias_energy_sequence),
         <int*> _np.PyArray_DATA(state_sequence),
         state_sequence.shape[0], 
@@ -741,10 +739,10 @@ def get_unbiased_user_free_energies(
         where Y is 1 + the largest index in user_index_sequence
         target array for the user free energies
     """
-    assert unbiased_pointwise_free_energies.shape == user_index_sequence.shape 
+    assert unbiased_pointwise_free_energies.shape[0] == user_index_sequence.shape[0]
     n_user_states = unbiased_user_free_energies.shape[0]
     assert _np.all(user_index_sequence < n_user_states)
-    
+
     _get_unbiased_user_free_energies(
         <double*> _np.PyArray_DATA(unbiased_pointwise_free_energies),
         <int*> _np.PyArray_DATA(user_index_sequence),

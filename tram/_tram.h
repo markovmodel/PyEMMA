@@ -68,8 +68,8 @@ void _get_log_R_K_i(double *log_lagrangian_mult, double *biased_conf_energies, i
     double *log_R_K_i);
 
 void _get_unbiased_pointwise_free_energies(
-    double* unbiased_conf_energies, double *bias_energy_sequence, int *state_sequence, 
-    int seq_length, double *log_R_K_i, int n_therm_states, int n_conf_states, 
+    double *bias_energy_sequence, int *state_sequence,
+    int seq_length, double *log_R_K_i, int n_therm_states, int n_conf_states,
     double *scratch_T, double *unbiased_pointwise_free_energies);
 
 void _get_unbiased_user_free_energies(double *unbiased_pointwise_free_energies,

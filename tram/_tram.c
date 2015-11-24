@@ -229,16 +229,19 @@ void _get_conf_energies(
     int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_T,
     double *conf_energies)
 {
-    int i, K, x;
+    int i, K, x, o;
     double divisor;
     for(i=0; i<n_conf_states; ++i)
         conf_energies[i] = INFINITY;
     for( x=0; x<seq_length; ++x )
     {
         i = state_sequence[x];
-        for(K=0; K<n_therm_states; ++K)
-            scratch_T[K] = log_R_K_i[K * n_conf_states + i] - bias_energy_sequence[K * seq_length + x];
-        divisor = _logsumexp_sort_kahan_inplace(scratch_T, n_therm_states);
+        o = 0;
+        for(K=0; K<n_therm_states; ++K) {
+            if(-INFINITY == log_R_K_i[K * n_conf_states + i]) continue;
+            scratch_T[o++] = log_R_K_i[K * n_conf_states + i] - bias_energy_sequence[K * seq_length + x];
+        }
+        divisor = _logsumexp_sort_kahan_inplace(scratch_T, o);
         conf_energies[i] = -_logsumexp_pair(-conf_energies[i], -divisor);
     }
 }
@@ -446,12 +449,12 @@ double _log_likelihood_lower_bound(
 /* pointwise expectations
    ---------------------- */
 void _get_unbiased_pointwise_free_energies(
-    double* unbiased_conf_energies, double *bias_energy_sequence, int *state_sequence, 
-    int seq_length, double *log_R_K_i, int n_therm_states, int n_conf_states, 
+    double *bias_energy_sequence, int *state_sequence,
+    int seq_length, double *log_R_K_i, int n_therm_states, int n_conf_states,
     double *scratch_T, double *unbiased_pointwise_free_energies)
 {
     int K, o, i, x;
-    double divisor;
+    double log_divisor;
 
     for(x=0; x<seq_length; ++x)
     {
@@ -462,64 +465,10 @@ void _get_unbiased_pointwise_free_energies(
             if(-INFINITY == log_R_K_i[K * n_conf_states + i]) continue;
             scratch_T[o++] = log_R_K_i[K * n_conf_states + i] - bias_energy_sequence[K * seq_length + x];
         }
-        divisor = _logsumexp_sort_kahan_inplace(scratch_T, o);
-        unbiased_pointwise_free_energies[x] = divisor + unbiased_conf_energies[i];
+        log_divisor = _logsumexp_sort_kahan_inplace(scratch_T, o);
+        unbiased_pointwise_free_energies[x] = log_divisor;
     }
 }
-
-/*void _get_unbiased_user_free_energies(double* unbiased_conf_energies, 
-    double *bias_energy_sequence, int *state_sequence,
-    int *user_index_sequence, int seq_length, double *log_R_K_i, int n_therm_states,
-    int n_conf_states, int n_user_states, double *scratch_T, double *unbiased_user_conf_energies)
-{
-    int K, o, i, u, x;
-    double divisor;
-
-    for(i=0; i<n_user_states; ++i)
-        unbiased_user_conf_energies[i] = -INFINITY;
-
-    for(x=0; x<seq_length; ++x)
-    {
-        i = state_sequence[x];
-        u = user_index_sequence[x];
-        o = 0;
-        for(K=0; K<n_therm_states; ++K)
-        {
-            if(-INFINITY == log_R_K_i[K * n_conf_states + i]) continue;
-            scratch_T[o++] = log_R_K_i[K * n_conf_states + i] - bias_energy_sequence[K * seq_length + x];
-        }
-        divisor = _logsumexp_sort_kahan_inplace(scratch_T, o);
-        unbiased_user_conf_energies[u] = -_logsumexp_pair(
-                -unbiased_user_conf_energies[u],
-                -(divisor + unbiased_conf_energies[i]));
-    }
-}
-
-double _get_expectation(double* unbiased_conf_energies, 
-    double *bias_energy_sequence, int *state_sequence, 
-    double *observable_sequence, int seq_length, double *log_R_K_i, int n_therm_states,
-    int n_conf_states, double *scratch_T)
-{
-    int K, o, i, x;
-    double divisor, expectation, obs;
-
-    expectation = 0;
-    for(x=0; x<seq_length; ++x)
-    {
-        i = state_sequence[x];
-        obs = observable_sequence[x];
-        o = 0;
-        for(K=0; K<n_therm_states; ++K)
-        {
-            if(-INFINITY == log_R_K_i[K * n_conf_states + i]) continue;
-            scratch_T[o++] = log_R_K_i[K * n_conf_states + i] - bias_energy_sequence[K * seq_length + x];
-        }
-        divisor = _logsumexp_sort_kahan_inplace(scratch_T, o);
-        expectation += obs * exp(-divisor - unbiased_conf_energies[i]);
-    }
-    return expectation;
-}
-*/
 
 void _get_unbiased_user_free_energies(
     double *unbiased_pointwise_free_energies,
@@ -531,13 +480,13 @@ void _get_unbiased_user_free_energies(
     int u, x;
 
     for(u=0; u<n_user_states; ++u)
-        unbiased_user_free_energies[u] = -INFINITY;
+        unbiased_user_free_energies[u] = INFINITY;
 
     for(x=0; x<seq_length; ++x)
     {
         u = user_index_sequence[x];
         unbiased_user_free_energies[u] = -_logsumexp_pair(
-                -unbiased_user_free_energies[u], unbiased_pointwise_free_energies[x]);
+                -unbiased_user_free_energies[u], -unbiased_pointwise_free_energies[x]);
     }
 }
 
