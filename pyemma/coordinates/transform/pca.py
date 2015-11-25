@@ -22,7 +22,6 @@ import numpy as np
 
 from pyemma.util.annotators import doc_inherit
 from pyemma.coordinates.transform.transformer import Transformer
-from pyemma.util import types
 from pyemma.util.reflection import get_default_args
 
 from pyemma.coordinates.estimators.covar.running_moments import running_covar
@@ -80,9 +79,8 @@ class PCA(Transformer):
         if dim != -1 and var_cutoff != default_var_cutoff:
             raise ValueError('Trying to set both the number of dimension and the subspace variance. Use either or.')
         self.Y = None
-        self._N_mean = 0
-        self._N_cov = 0
 
+        self.cov = None
         self.mu = mean
 
         # set up result variables
@@ -123,21 +121,10 @@ class PCA(Transformer):
         return self.cov
 
     def _param_init(self):
-        self._N_mean = 0
-        self._N_cov = 0
         # create mean array and covariance matrix
         indim = self.data_producer.dimension()
         self._logger.info("Running PCA on %i dimensional input" % indim)
         assert indim > 0, "Incoming data of PCA has 0 dimension!"
-
-        if self.mu is not None:
-            self.mu = types.ensure_ndarray(self.mu, shape=(indim,))
-            self._given_mean = True
-        else:
-            self.mu = np.zeros(indim)
-            self._given_mean = False
-
-        self.cov = np.zeros((indim, indim))
 
         # amount of chunks
         denom = self._n_chunks(self._param_with_stride)
@@ -186,8 +173,7 @@ class PCA(Transformer):
 
     def _param_finish(self):
         self.cov = self._covar.cov_XX()
-        if not self._given_mean:
-            self.mu = self._covar.mean_X()
+        self.mu = self._covar.mean_X()
 
         (v, R) = np.linalg.eigh(self.cov)
         # sort
