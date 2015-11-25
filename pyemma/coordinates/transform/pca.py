@@ -21,9 +21,12 @@ from __future__ import absolute_import
 import numpy as np
 
 from pyemma.util.annotators import doc_inherit
-from pyemma.coordinates.transform.transformer import SkipPassException, Transformer
+from pyemma.coordinates.transform.transformer import Transformer
 from pyemma.util import types
 from pyemma.util.reflection import get_default_args
+
+from pyemma.coordinates.estimators.covar.running_moments import running_covar
+from math import ceil, log
 
 __all__ = ['PCA']
 __author__ = 'noe'
@@ -138,8 +141,7 @@ class PCA(Transformer):
 
         # amount of chunks
         denom = self._n_chunks(self._param_with_stride)
-        self._progress_register(denom, description="calculate mean", stage=0)
-        self._progress_register(denom, description="calculate covariances", stage=1)
+        self._progress_register(denom, description="calculate mean/cov", stage=0)
 
     def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
                         last_chunk, ipass, Y=None, stride=1):
@@ -166,39 +168,27 @@ class PCA(Transformer):
             time-lagged data (if available)
         :return:
         """
-        # pass 1: means
-        if ipass == 0:
-            if t == 0:
-                if self._given_mean:
-                    raise SkipPassException(next_pass_stride=stride)
+        if t == 0 and ipass == 0:
+            n_chunks = self._data_producer._n_chunks(stride)
+            nsave = max(log(ceil(n_chunks), 2), 2)
+            self._logger.debug("using %s moments for %i chunks" % (nsave, n_chunks))
+            self._covar = running_covar(xx=True, xy=False, yy=False,
+                                        remove_mean=True, symmetrize=False,
+                                        nsave=nsave)
 
-            self.mu += np.sum(X, axis=0, dtype=np.float64)
-            self._N_mean += np.shape(X)[0]
+        self._covar.add(X)
 
-            # counting chunks and log of eta
-            self._progress_update(1, 0)
+        # counting chunks and log of eta
+        self._progress_update(1, 0)
 
-            if last_chunk:
-                self.mu /= self._N_mean
-
-        # pass 2: covariances
-        if ipass == 1:
-            if t == 0:
-                self._logger.debug("start calculate covariance for traj nr %i" % itraj)
-            Xm = X - self.mu
-            self.cov += np.dot(Xm.T, Xm)
-            self._N_cov += np.shape(X)[0]
-
-            self._progress_update(1, stage=1)
-
-            if last_chunk:
-                self.cov /= self._N_cov - 1
-                return True  # finished!
-
-        # by default, continue
-        return False
+        if last_chunk:
+            return True
 
     def _param_finish(self):
+        self.cov = self._covar.cov_XX()
+        if not self._given_mean:
+            self.mu = self._covar.mean_X()
+
         (v, R) = np.linalg.eigh(self.cov)
         # sort
         I = np.argsort(v)[::-1]
