@@ -265,6 +265,7 @@ def markov_model(P, dt_model='1 step'):
 
 
 def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
+                          count_mode='sliding',
                           sparse=False, connectivity='largest',
                           dt_traj='1 step', maxiter=1000000, maxerr=1e-8):
     r""" Estimates a Markov model from discrete trajectories
@@ -287,6 +288,26 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
         Stationary vector on the full state-space. Transition matrix
         will be estimated such that statdist is its equilibrium
         distribution.
+    count_mode : str, optional, default='sliding'
+        mode to obtain count matrices from discrete trajectories. Should be
+        one of:
+
+        * 'sliding' : A trajectory of length T will have :math:`T-tau` counts
+          at time indexes
+
+              .. math::
+
+                 (0 \rightarrow \tau), (1 \rightarrow \tau+1), ..., (T-\tau-1 \rightarrow T-1)
+
+        * 'effective' : Uses an estimate of the transition counts that are
+          statistically uncorrelated. Recommended when used with a
+          Bayesian MSM.
+        * 'sample' : A trajectory of length T will have :math:`T/tau` counts
+          at time indexes
+
+              .. math::
+
+                    (0 \rightarrow \tau), (\tau \rightarrow 2 \tau), ..., (((T/tau)-1) \tau \rightarrow T)
     sparse : bool, optional
         If true compute count matrix, transition matrix and all
         derived quantities using sparse matrix algebra.  In this case
@@ -474,6 +495,7 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
     """
     # transition matrix estimator
     mlmsm = _ML_MSM(lag=lag, reversible=reversible, statdist_constraint=statdist,
+                    count_mode=count_mode,
                     sparse=sparse, connectivity=connectivity,
                     dt_traj=dt_traj, maxiter=maxiter,
                     maxerr=maxerr)
@@ -787,6 +809,7 @@ def estimate_hidden_markov_model(dtrajs, nstates, lag, reversible=True, connecti
 
 def bayesian_markov_model(dtrajs, lag, reversible=True, statdist=None,
                           sparse=False, connectivity='largest',
+                          count_mode ='effective',
                           nsamples=100, conf=0.95, dt_traj='1 step',
                           show_progress=True):
     r""" Bayesian Markov model estimate using Gibbs sampling of the posterior
@@ -811,6 +834,30 @@ def bayesian_markov_model(dtrajs, lag, reversible=True, statdist=None,
         matrices will be returned by the corresponding functions instead of
         numpy arrays. This behavior is suggested for very large numbers of
         states (e.g. > 4000) because it is likely to be much more efficient.
+    statdist : (M,) ndarray, optional
+        Stationary vector on the full state-space. Transition matrix
+        will be estimated such that statdist is its equilibrium
+        distribution.
+    count_mode : str, optional, default='sliding'
+        mode to obtain count matrices from discrete trajectories. Should be
+        one of:
+
+        * 'sliding' : A trajectory of length T will have :math:`T-tau` counts
+          at time indexes
+
+              .. math::
+
+                 (0 \rightarrow \tau), (1 \rightarrow \tau+1), ..., (T-\tau-1 \rightarrow T-1)
+
+        * 'effective' : Uses an estimate of the transition counts that are
+          statistically uncorrelated. Recommended when used with a
+          Bayesian MSM.
+        * 'sample' : A trajectory of length T will have :math:`T/tau` counts
+          at time indexes
+
+              .. math::
+
+                    (0 \rightarrow \tau), (\tau \rightarrow 2 \tau), ..., (((T/tau)-1) \tau \rightarrow T)
     connectivity : str, optional, default = 'largest'
         Connectivity mode. Three methods are intended (currently only 'largest'
         is implemented):
@@ -953,6 +1000,7 @@ def bayesian_markov_model(dtrajs, lag, reversible=True, statdist=None,
     # TODO: store_data=True
     bmsm_estimator = _Bayes_MSM(lag=lag, reversible=reversible,
                                 statdist_constraint=statdist,
+                                count_mode=count_mode,
                                 sparse=sparse, connectivity=connectivity,
                                 dt_traj=dt_traj, nsamples=nsamples, conf=conf, show_progress=show_progress)
     return bmsm_estimator.estimate(dtrajs)
