@@ -26,6 +26,9 @@ Created on 19.01.2015
 '''
 from .transformer import Transformer, SkipPassException
 
+from pyemma.coordinates.estimators.covar.running_moments import running_covar
+from math import ceil, log
+
 from pyemma.util.linalg import eig_corr
 from pyemma.util.annotators import doc_inherit
 from pyemma.util.reflection import get_default_args
@@ -122,17 +125,17 @@ class TICA(Transformer):
             raise ValueError('Trying to set both the number of dimension and the subspace variance. Use either or.')
         self._kinetic_map = kinetic_map
         self._epsilon = epsilon
-        self._force_eigenvalues_le_one = force_eigenvalues_le_one
 
+        if force_eigenvalues_le_one:
+            import warnings
+            warnings.warn("Force eigenvalues <= 1 constraint parameter ignored",
+                          DeprecationWarning)
         # covariances
         self.cov = None
         self.cov_tau = None
         # mean
-        self.mu = mean
+        self.mu = None
 
-        self._N_mean = 0
-        self._N_cov = 0
-        self._N_cov_tau = 0
         self._eigenvalues = None
         self._eigenvectors = None
         self._cumvar = None
@@ -189,32 +192,16 @@ class TICA(Transformer):
         assert indim > 0, "zero dimension from data producer"
         assert self._dim <= indim, ("requested more output dimensions (%i) than dimension"
                                     " of input data (%i)" % (self._dim, indim))
-        if self._force_eigenvalues_le_one and self._lag % self._param_with_stride != 0:
-            raise RuntimeError("When using TICA with force_eigenvalues_le_one, lag must be a multiple of stride.")
-
-        if self.mu is not None:
-            self.mu = types.ensure_ndarray(self.mu, shape=(indim,))
-            self._given_mean = True
-        else:
-            self.mu = np.zeros(indim)
-            self._given_mean = False
-
-        self._N_mean = 0
-        self._N_cov = 0
-        self._N_cov_tau = 0
-        # create covariance matrices
-        self.cov = np.zeros((indim, indim))
-        self.cov_tau = np.zeros_like(self.cov)
 
         self._logger.debug("Running TICA with tau=%i; Estimating two covariance matrices"
                            " with dimension (%i, %i)" % (self._lag, indim, indim))
 
         # amount of chunks
         denom = self._n_chunks(self._param_with_stride)
-        self._progress_register(denom, "calculate mean", 0)
-        self._progress_register(denom, "calculate covariances", 1)
+        self._progress_register(denom, "calculate mean+cov", 0)
 
-        return 0  # in zero'th pass don't request lagged data
+        # request lagged data in first pass
+        return self._lag
 
     def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
                         last_chunk, ipass, Y=None, stride=1):
@@ -242,126 +229,34 @@ class TICA(Transformer):
             time-lagged data (if available)
         :return:
         """
-        if ipass == 0:
+        if t == 0:
+            n_chunks = self._data_producer._n_chunks(stride)
+            nsave = max(log(ceil(n_chunks), 2), 2)
+            self._logger.debug("using %s moments for %i chunks" % (nsave, n_chunks))
+            self._covar = running_covar(xx=True, xy=True, yy=False,
+                                        remove_mean=True, symmetrize=True,
+                                        nsave=nsave)
 
-            # if we have a user-given mean, skip ipass 0 now:
-            if self._given_mean:
-                if self._force_eigenvalues_le_one:
-                    self._logger.warning("Constraint of eigenvalues <= 1 is active,"
-                                         "so the mean also depends on the lag time!")
-                raise SkipPassException(self._lag, stride)
+        if self.trajectory_length(itraj, stride=1) - self._lag > 0:
+            assert Y is not None
+            self._covar.add(X, Y)
 
-            if self._force_eigenvalues_le_one:
-                # MSM-like counting
-                if self.trajectory_length(itraj, stride=1) - self._lag > 0:
-                    # find the "tails" of the trajectory relative to the current chunk
-                    Zptau = self._lag//stride - t  # zero plus tau
-                    Nmtau = self.trajectory_length(itraj, stride=stride)-t-self._lag//stride  # N minus tau
+        else:
+            self._skipped_trajs.append(itraj)
 
-                    # restrict them to valid block indices
-                    size = X.shape[0]
-                    Zptau = min(max(Zptau, 0), size)
-                    Nmtau = min(max(Nmtau, 0), size)
+        # counting chunks and log of eta
+        self._progress_update(1, stage=0)
 
-                    # find start and end of double-counting region
-                    start2 = min(Zptau, Nmtau)
-                    end2 = max(Zptau, Nmtau)
+        if last_chunk:
+            return True  # finished!
 
-                    # update mean
-                    self.mu += np.sum(X[0:start2, :], axis=0, dtype=np.float64)
-                    self._N_mean += start2
-
-                    if Nmtau > Zptau: # only if trajectory length > 2*tau, there is double-counting
-                        self.mu += 2.0 * np.sum(X[start2:end2, :], axis=0, dtype=np.float64)
-                        self._N_mean += 2.0 * (end2 - start2)
-
-                    self.mu += np.sum(X[end2:, :], axis=0, dtype=np.float64)
-                    self._N_mean += (size - end2)
-            else:
-                # traditional counting
-                self.mu += np.sum(X, axis=0, dtype=np.float64)
-                self._N_mean += np.shape(X)[0]
-
-            # counting chunks and log of eta
-            self._progress_update(1, stage=0)
-
-            if last_chunk:
-                self.mu /= self._N_mean
-
-                # now we request real lagged data, since we are finished
-                # with first pass
-                return False, self._lag
-
-        elif ipass == 1:
-
-            if self.trajectory_length(itraj, stride=1) - self._lag > 0:
-                self._N_cov_tau += 2.0 * np.shape(Y)[0]
-                # _N_cov_tau is muliplied by 2, because we later symmetrize
-                # cov_tau, so we are actually using twice the number of samples
-                # for every element.
-                X_meanfree = X - self.mu
-                Y_meanfree = Y - self.mu
-                # update the time-lagged covariance matrix
-                end = min(X_meanfree.shape[0], Y_meanfree.shape[0])
-                self.cov_tau += 2.0 * np.dot(X_meanfree[0:end].T,
-                                             Y_meanfree[0:end])
-
-                # update the instantaneous covariance matrix
-                if self._force_eigenvalues_le_one:
-                    # MSM-like counting
-                    Zptau = self._lag//stride-t  # zero plus tau
-                    Nmtau = self.trajectory_length(itraj, stride=stride)-t-self._lag//stride  # N minus tau
-
-                    # restrict to valid block indices
-                    size = X_meanfree.shape[0]
-                    Zptau = min(max(Zptau, 0), size)
-                    Nmtau = min(max(Nmtau, 0), size)
-
-                    # update covariance matrix
-                    start2 = min(Zptau, Nmtau)
-                    end2 = max(Zptau, Nmtau)
-                    self.cov += np.dot(X_meanfree[0:start2, :].T,
-                                       X_meanfree[0:start2, :])
-                    self._N_cov += start2
-
-                    if Nmtau > Zptau:
-                        self.cov += 2.0 * np.dot(X_meanfree[start2:end2, :].T,
-                                                 X_meanfree[start2:end2, :])
-                        self._N_cov += 2.0 * (end2 - start2)
-
-                    self.cov += np.dot(X_meanfree[end2:, :].T,
-                                       X_meanfree[end2:, :])
-                    self._N_cov += (size - end2)
-                else:
-                    # traditional counting
-                    self.cov += 2.0 * np.dot(X_meanfree.T, X_meanfree)
-                    self._N_cov += 2.0 * np.shape(X)[0]
-
-                self._progress_update(1,stage=1)
-
-            else:
-                self._skipped_trajs.append(itraj)
-
-            if last_chunk:
-                return True  # finished!
-
-        return False  # not finished yet.
+        return False
 
     def _param_finish(self):
-        if self._force_eigenvalues_le_one:
-            assert self._N_mean == self._N_cov, 'inconsistency in C(0) and mu'
-            assert self._N_cov == self._N_cov_tau, 'inconsistency in C(0) and C(tau)'
-
-        # symmetrize covariance matrices
-        self.cov = self.cov + self.cov.T
-        self.cov *= 0.5
-
-        self.cov_tau = self.cov_tau + self.cov_tau.T
-        self.cov_tau *= 0.5
-
-        # norm
-        self.cov /= self._N_cov - 2
-        self.cov_tau /= self._N_cov_tau - 2
+        self.mu = self._covar.mean_X()
+        # covariance matrices
+        self.cov = self._covar.covXX()
+        self.cov_tau = self._covar.cov_XY()
 
         # diagonalize with low rank approximation
         self._logger.debug("diagonalize Cov and Cov_tau.")
