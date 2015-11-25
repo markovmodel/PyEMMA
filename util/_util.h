@@ -28,7 +28,12 @@
 
 /* define INFINITY if not available */
 #ifndef INFINITY
-    #define INFINITY 1.0/0.0
+    #include <float.h>
+    #ifdef DBL_MAX
+        #define INFINITY DBL_MAX+DBL_MAX
+    #else
+        #define INFINITY 1.0/0.0
+    #endif
 #endif
 
 /* define NAN if not available */
