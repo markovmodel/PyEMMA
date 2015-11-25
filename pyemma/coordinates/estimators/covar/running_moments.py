@@ -16,11 +16,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-__author__ = 'noe'
-
 import warnings
 import numpy as np
-from variational.estimators.moments import moments_XX, moments_XXXY, moments_block
+from .moments import moments_XX, moments_XXXY, moments_block
+
+__author__ = 'noe'
 
 
 class Moments(object):
