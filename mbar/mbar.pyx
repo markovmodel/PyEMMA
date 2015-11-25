@@ -38,6 +38,12 @@ cdef extern from "_mbar.h":
         double *log_therm_state_counts, double *bias_energy_sequence,
         int n_therm_states, int n_conf_states, int seq_length, double *scratch_M,
         double *therm_energies, double *conf_energies, double *biased_conf_energies)
+    void _get_pointwise_unbiased_free_energies(
+        double *log_therm_state_counts, double *therm_energies,
+        double *bias_energy_sequence,
+        int n_therm_states,  int seq_length,
+        double *scratch_T, double *pointwise_unbiased_free_energies)
+
 
 def update_therm_energies(
     _np.ndarray[double, ndim=1, mode="c"] log_therm_state_counts not None,
@@ -147,6 +153,25 @@ def normalize(
         <double*> _np.PyArray_DATA(therm_energies),
         <double*> _np.PyArray_DATA(conf_energies),
         <double*> _np.PyArray_DATA(biased_conf_energies))
+
+def get_pointwise_unbiased_free_energies(
+    _np.ndarray[double, ndim=1, mode="c"] log_therm_state_counts not None,
+    _np.ndarray[double, ndim=2, mode="c"] bias_energy_sequence not None,
+    _np.ndarray[double, ndim=1, mode="c"] therm_energies not None,
+    _np.ndarray[double, ndim=1, mode="c"] scratch_T,
+    _np.ndarray[double, ndim=1, mode="c"] pointwise_unbiased_free_energies not None):
+
+    if scratch_T is None:
+        scratch_T = _np.zeros(log_therm_state_counts.shape[0], dtype=_np.float64)
+
+    _get_pointwise_unbiased_free_energies(
+        <double*> _np.PyArray_DATA(log_therm_state_counts),
+        <double*> _np.PyArray_DATA(therm_energies),
+        <double*> _np.PyArray_DATA(bias_energy_sequence),
+        log_therm_state_counts.shape[0],
+        bias_energy_sequence.shape[1],
+        <double*> _np.PyArray_DATA(scratch_T),
+        <double*> _np.PyArray_DATA(pointwise_unbiased_free_energies))
 
 def estimate(therm_state_counts, bias_energy_sequence, conf_state_sequence,
     maxiter=1000, maxerr=1.0E-8, therm_energies=None, err_out=0, callback=None):

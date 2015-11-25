@@ -67,14 +67,14 @@ void _get_log_R_K_i(double *log_lagrangian_mult, double *biased_conf_energies, i
     int *state_counts, int n_therm_states, int n_conf_states, double *scratch_M,
     double *log_R_K_i);
 
-void _get_unbiased_pointwise_free_energies(
+void _get_pointwise_unbiased_free_energies(
     double *bias_energy_sequence, int *state_sequence,
     int seq_length, double *log_R_K_i, int n_therm_states, int n_conf_states,
-    double *scratch_T, double *unbiased_pointwise_free_energies);
+    double *scratch_T, double *pointwise_unbiased_free_energiess);
 
 void _get_unbiased_user_free_energies(double *unbiased_pointwise_free_energies,
     int *user_index_sequence, int seq_length, int n_user_states, double *unbiased_user_free_energies);
 
-double _get_expectation(double *unbiased_pointwise_free_energies, double *observable_sequence, int seq_length);
+double _get_unbiased_expectation(double *unbiased_pointwise_free_energies, double *observable_sequence, int seq_length);
 
 #endif

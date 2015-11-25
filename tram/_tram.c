@@ -448,10 +448,10 @@ double _log_likelihood_lower_bound(
 
 /* pointwise expectations
    ---------------------- */
-void _get_unbiased_pointwise_free_energies(
+void _get_pointwise_unbiased_free_energies(
     double *bias_energy_sequence, int *state_sequence,
     int seq_length, double *log_R_K_i, int n_therm_states, int n_conf_states,
-    double *scratch_T, double *unbiased_pointwise_free_energies)
+    double *scratch_T, double *pointwise_unbiased_free_energies)
 {
     int K, o, i, x;
     double log_divisor;
@@ -466,12 +466,13 @@ void _get_unbiased_pointwise_free_energies(
             scratch_T[o++] = log_R_K_i[K * n_conf_states + i] - bias_energy_sequence[K * seq_length + x];
         }
         log_divisor = _logsumexp_sort_kahan_inplace(scratch_T, o);
-        unbiased_pointwise_free_energies[x] = log_divisor;
+        pointwise_unbiased_free_energies[x] = log_divisor;
     }
 }
 
+/* TODO: these two functions are general enough to be used for MBAR and TRAM, put them somewhere else */
 void _get_unbiased_user_free_energies(
-    double *unbiased_pointwise_free_energies,
+    double *pointwise_unbiased_free_energies,
     int *user_index_sequence,
     int seq_length,
     int n_user_states,
@@ -486,11 +487,11 @@ void _get_unbiased_user_free_energies(
     {
         u = user_index_sequence[x];
         unbiased_user_free_energies[u] = -_logsumexp_pair(
-                -unbiased_user_free_energies[u], -unbiased_pointwise_free_energies[x]);
+                -unbiased_user_free_energies[u], -pointwise_unbiased_free_energies[x]);
     }
 }
 
-double _get_expectation(
+double _get_unbiased_expectation(
     double *unbiased_pointwise_free_energies,
     double *observable_sequence,
     int seq_length)

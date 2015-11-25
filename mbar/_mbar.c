@@ -83,3 +83,21 @@ extern void _normalize(
     for(i=0; i<n_therm_states; ++i)
         therm_energies[i] -= f0;
 }
+
+void _get_pointwise_unbiased_free_energies(
+    double *log_therm_state_counts, double *therm_energies,
+    double *bias_energy_sequence,
+    int n_therm_states,  int seq_length,
+    double *scratch_T, double *pointwise_unbiased_free_energies)
+{
+    int L, x;
+    double log_divisor;
+
+    for(x=0; x<seq_length; ++x)
+    {
+        for(L=0; L<n_therm_states; ++L)
+            scratch_T[L] = log_therm_state_counts[L] + therm_energies[L] - bias_energy_sequence[L * seq_length + x];
+        log_divisor = _logsumexp_sort_kahan_inplace(scratch_T, n_therm_states);
+        pointwise_unbiased_free_energies[x] = log_divisor;
+    }
+}

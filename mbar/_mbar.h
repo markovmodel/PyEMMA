@@ -35,4 +35,11 @@ extern void _normalize(
     int n_therm_states, int n_conf_states, int seq_length, double *scratch_M,
     double *therm_energies, double *conf_energies, double *biased_conf_energies);
 
+void _get_pointwise_unbiased_free_energies(
+    double *log_therm_state_counts, double *therm_energies,
+    double *bias_energy_sequence,
+    int n_therm_states,  int seq_length,
+    double *scratch_T, double *pointwise_unbiased_free_energies);
+
+
 #endif

@@ -65,13 +65,13 @@ cdef extern from "_tram.h":
     void _get_log_R_K_i(double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices,
         int *state_counts, int n_therm_states, int n_conf_states, double *scratch_M,
         double *log_R_K_i)
-    void _get_unbiased_pointwise_free_energies(
+    void _get_pointwise_unbiased_free_energies(
         double *bias_energy_sequence, int *state_sequence,
         int seq_length, double *log_R_K_i, int n_therm_states, int n_conf_states,
-        double *scratch_T, double *unbiased_pointwise_free_energies)
-    void _get_unbiased_user_free_energies(double *unbiased_pointwise_free_energies,
+        double *scratch_T, double *pointwise_unbiased_free_energies)
+    void _get_unbiased_user_free_energies(double *pointwise_unbiased_free_energies,
         int *user_index_sequence, int seq_length, int n_user_states, double *unbiased_user_free_energies)
-    double _get_expectation(double *unbiased_pointwise_free_energies, double *observable_sequence, int seq_length)
+    double _get_unbiased_expectation(double *pointwise_unbiased_free_energies, double *observable_sequence, int seq_length)
 
 
 def init_lagrangian_mult(
@@ -310,7 +310,7 @@ def normalize(
         biased_conf_energies.shape[1],
         <double*> _np.PyArray_DATA(scratch_M))
 
-def get_unbiased_pointwise_free_energies(
+def get_pointwise_unbiased_free_energies(
     _np.ndarray[double, ndim=2, mode="c"] log_lagrangian_mult not None,
     _np.ndarray[double, ndim=2, mode="c"] biased_conf_energies not None,
     _np.ndarray[int, ndim=3, mode="c"] count_matrices not None,
@@ -319,7 +319,7 @@ def get_unbiased_pointwise_free_energies(
     _np.ndarray[int, ndim=2, mode="c"] state_counts not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_M,    
     _np.ndarray[double, ndim=1, mode="c"] scratch_T,
-    _np.ndarray[double, ndim=1, mode="c"] unbiased_pointwise_free_energies not None):
+    _np.ndarray[double, ndim=1, mode="c"] pointwise_unbiased_free_energies not None):
 
     log_R_K_i = _np.zeros(shape=(state_counts.shape[0],state_counts.shape[1]), dtype=_np.float64)
     if scratch_T is None:
@@ -330,7 +330,7 @@ def get_unbiased_pointwise_free_energies(
     _private_get_log_R_K_i(log_lagrangian_mult, biased_conf_energies,
         count_matrices, state_counts, scratch_M, log_R_K_i)
 
-    _get_unbiased_pointwise_free_energies(
+    _get_pointwise_unbiased_free_energies(
         <double*> _np.PyArray_DATA(bias_energy_sequence),
         <int*> _np.PyArray_DATA(state_sequence),
         state_sequence.shape[0], 
@@ -338,7 +338,7 @@ def get_unbiased_pointwise_free_energies(
         log_R_K_i.shape[0],
         log_R_K_i.shape[1],
         <double*> _np.PyArray_DATA(scratch_T),
-        <double*> _np.PyArray_DATA(unbiased_pointwise_free_energies))
+        <double*> _np.PyArray_DATA(pointwise_unbiased_free_energies))
 
 def estimate_transition_matrices(
     _np.ndarray[double, ndim=2, mode="c"] log_lagrangian_mult not None,
@@ -742,6 +742,7 @@ def get_unbiased_user_free_energies(
     assert unbiased_pointwise_free_energies.shape[0] == user_index_sequence.shape[0]
     n_user_states = unbiased_user_free_energies.shape[0]
     assert _np.all(user_index_sequence < n_user_states)
+    assert _np.all(user_index_sequence >= 0)
 
     _get_unbiased_user_free_energies(
         <double*> _np.PyArray_DATA(unbiased_pointwise_free_energies),
