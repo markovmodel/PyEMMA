@@ -163,6 +163,31 @@ class MaximumLikelihoodMSM(_Estimator, _EstimatedMSM):
         self.maxiter = maxiter
         self.maxerr = maxerr
 
+    def _prepare_input_revpi(self, C, pi):
+        """Max. state index visited by trajectories"""
+        nC = C.shape[0]
+        """Max. state index of the stationary vector array"""
+        npi = pi.shape[0]
+        """pi has to be defined on all states visited by the trajectories"""
+        if nC > npi:
+            errstr="""There are visited states for which no stationary
+            probability is given"""
+            raise ValueError(errstr)
+        """Reduce pi to the 'visited set'"""
+        pi_visited = pi[0:nC]
+        """Find visited states with positive stationary probabilities"""
+        pos = _np.where(pi_visited > 0.0)[0]
+        """Reduce C to positive probability states"""
+        C_pos = msmest.connected_cmatrix(C, lcc=pos)
+        if C_pos.sum() == 0.0:
+            errstr = """The set of states with positive stationary
+            probabilities is not visited by the trajectories. A MSM
+            reversible with respect to the given stationary vector can
+            not be estimated"""
+            raise ValueError(errstr)
+        """Compute largest connected set of C_pos, undirected connectivity"""
+        lcc = msmest.largest_connected_set(C_pos, directed=False)
+        return pos[lcc]
 
     def _estimate(self, dtrajs):
         """
@@ -206,33 +231,9 @@ class MaximumLikelihoodMSM(_Estimator, _EstimatedMSM):
                 # statdist not given - full connectivity on all states
                 self.active_set = dtrajstats.largest_connected_set
             else:
-                """Active set is the intersection of all states with
-                positive stationary probability and undirected kinetic
-                connectivity"""
-                pos = _np.nonzero(self.statdist_constraint)[0]
-                lcc = msmest.largest_connected_set(self._C_full, directed=False)
-                active_set = _np.intersect1d(pos, lcc)
-                if active_set.size == 0:
-                    errorstr = """The connected set of the given
-                    trajectories does not contain states for which the
-                    given stationary vector has positive entries. A
-                    MSM reversible with respect to the given
-                    stationary vector can not be estimated."""
-                    raise ValueError(errorstr)               
-                # """Or: Active set is the set of all kinetically connected states, lcc (undirected).
-                # If lcc contains states which have zero probability according to the given stationary vector
-                # an error is raised."""
-                # lcc = msmest.largest_connected_set(self._C_full, directed=False)
-                # active_set = lcc
-                # if not _np.all(self.statdist_constraint[active_set] > 0.0):
-                #     errorstr="""The connected set of the given
-                #     trajectories does contain states which have zero
-                #     probability according to the given stationary
-                #     vector. A MSM reversible with respect to the given
-                #     stationary vector can not be estimated"""
-                #     raise ValueError(errorstr)
+                active_set = self._prepare_input_revpi(self._C_full,
+                                                       self.statdist_constraint)
                 self.active_set = active_set
-                
         else:
             # for 'None' and 'all' all visited states are active
             self.active_set = dtrajstats.visited_set
