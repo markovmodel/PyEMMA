@@ -135,6 +135,8 @@ def extensions():
             for s in e.sources:
                 new_src.append(s.replace('.pyx', '.c'))
             e.sources = new_src
+    else:
+        exts = cythonize(exts)
 
     if openmp_enabled:
         warnings.warn('enabled openmp')
