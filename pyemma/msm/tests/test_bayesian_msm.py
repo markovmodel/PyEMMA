@@ -133,7 +133,7 @@ class TestBMSM(unittest.TestCase):
         self._eigenvalues_stats(self.bmsm_rev)
         self._eigenvalues_stats(self.bmsm_revpi)
         
-    def _eigenvalues_stats(self, msm):
+    def _eigenvalues_stats(self, msm, tol=1e-12):
         # mean
         mean = msm.sample_mean('eigenvalues')
         # test shape and consistency
@@ -150,8 +150,8 @@ class TestBMSM(unittest.TestCase):
         assert np.array_equal(L.shape, (self.nstates,))
         assert np.array_equal(R.shape, (self.nstates,))
         # test consistency
-        assert np.all(L <= mean)
-        assert np.all(R >= mean)
+        assert np.all(L-tol <= mean)
+        assert np.all(R+tol >= mean)
 
     def test_eigenvectors_left_samples(self):
         self._eigenvectors_left_samples(self.bmsm_rev)
@@ -277,8 +277,8 @@ class TestBMSM(unittest.TestCase):
             assert np.all(l > 0.0)
 
     def test_timescales_stats(self):
-        self._timescales_samples(self.bmsm_rev)
-        self._timescales_samples(self.bmsm_revpi) 
+        self._timescales_stats(self.bmsm_rev)
+        self._timescales_stats(self.bmsm_revpi) 
 
     def _timescales_stats(self, msm):
         # mean
