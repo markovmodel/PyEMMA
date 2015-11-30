@@ -1,6 +1,10 @@
 # PyEMMA's default logging settings
 # If you want to enable file logging, uncomment the file related handlers and handlers
 # 
+
+# do not disable other loggers by default.
+disable_existing_loggers: False
+
 formatters:
     simpleFormater:
         format: '%(asctime)s %(name)-12s %(levelname)-8s %(message)s'

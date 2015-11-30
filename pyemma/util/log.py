@@ -78,12 +78,18 @@ def setupLogging():
         else:
             raise LoggingConfigurationError('could not handle default logging '
                                             'configuration file\n%s' % ee2)
-            
+
     if D is None:
         raise LoggingConfigurationError('Empty logging config! Try using default config by'
                                         ' setting logging_conf=DEFAULT in pyemma.cfg')
 
+    # this has not been set in PyEMMA version prior 2.0.2+
     D.setdefault('version', 1)
+    # if the user has not explicitly disabled other loggers, we (contrary to Pythons
+    # default value) do not want to override them.
+    D.setdefault('disable_existing_loggers', False)
+
+    # configure using the dict
     dictConfig(D)
 
 
