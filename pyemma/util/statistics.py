@@ -30,6 +30,7 @@ import math
 import itertools
 from . import types
 from six.moves import range
+import warnings
 
 
 def _confidence_interval_1d(data, alpha):
@@ -50,6 +51,13 @@ def _confidence_interval_1d(data, alpha):
     """
     if alpha < 0 or alpha > 1:
         raise ValueError('Not a meaningful confidence level: '+str(alpha))
+      # exception: if data are constant, return three times the constant and raise a warning
+    dmin = np.min(data)
+    dmax = np.max(data)
+    # if dmin == dmax:
+    if np.isclose(dmin, dmax):
+        warnings.warn('confidence interval for constant data is not meaningful')
+        return dmin, dmin, dmin
     
     # compute mean
     m = np.mean(data)
