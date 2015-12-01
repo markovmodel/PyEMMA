@@ -100,6 +100,7 @@ def getLogger(name=None):
         t = traceback.extract_stack(limit=2)
         path = t[0][0]
         pos = path.rfind('pyemma')
+        pos = pos if pos > 0 else 0
         name = path[pos:]
 
     return logging.getLogger(name)
