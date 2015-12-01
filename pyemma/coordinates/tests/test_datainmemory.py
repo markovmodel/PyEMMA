@@ -34,7 +34,7 @@ from pyemma.coordinates.data.data_in_memory import DataInMemory
 from pyemma.coordinates.transform.transformer import TransformerIteratorContext
 from pyemma.util.log import getLogger
 
-logger = getLogger('TestDataInMemory')
+logger = getLogger('pyemma.'+'TestDataInMemory')
 
 
 class TestDataInMemory(unittest.TestCase):
