@@ -125,6 +125,9 @@ class iterload:
         elif self._mode is 'traj':
             self._f.close()
 
+    def __next__(self):
+        return self.next()
+
     def next(self):
         if self._closed:
             raise StopIteration()
