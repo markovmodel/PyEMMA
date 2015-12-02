@@ -21,14 +21,13 @@ from __future__ import absolute_import
 from pyemma.util.annotators import deprecated
 from pyemma.util import types as _types
 from pyemma._base.progress import ProgressReporter
+from pyemma._base.logging import Loggable
 
-from itertools import count
 import numpy as np
 from math import ceil
 
 from abc import ABCMeta, abstractmethod
 from pyemma.util.exceptions import NotConvergedWarning
-from pyemma._base.logging import create_logger, instance_name
 
 from six.moves import range
 import six
@@ -153,11 +152,12 @@ class TransformerIterator(object):
         else:
             X, Y = self._transformer._next_chunk(self._ctx)
             return (last_itraj, X, Y)
+
     def next(self):
         return self.__next__()
 
 
-class Transformer(six.with_metaclass(ABCMeta, ProgressReporter)):
+class Transformer(six.with_metaclass(ABCMeta, ProgressReporter, Loggable)):
 
     r""" Basis class for pipeline objects
 
@@ -167,10 +167,9 @@ class Transformer(six.with_metaclass(ABCMeta, ProgressReporter)):
         the chunksize used to batch process underlying data
 
     """
-    # counting transformer instances, incremented by name property.
-    _ids = count(0)
 
     def __init__(self, chunksize=None):
+        super(Transformer, self).__init__()
         if chunksize is not None:
             self._logger.warning("Given deprecated argument 'chunksize=%s'"
                                  " to transformer. Ignored - please set the "
@@ -181,23 +180,6 @@ class Transformer(six.with_metaclass(ABCMeta, ProgressReporter)):
         self._param_with_stride = 1
         # allow children of this class to implement their own progressbar handling
         self._custom_param_progress_handling = False
-
-    @property
-    def name(self):
-        try:
-            return self._name
-        except AttributeError:
-            self._name = instance_name(self, next(self._ids))
-            return self._name
-
-    @property
-    def _logger(self):
-        """ The logger for this Estimator """
-        try:
-            return self._logger_instance
-        except AttributeError:
-            create_logger(self)
-            return self._logger_instance
 
     @property
     def data_producer(self):
@@ -809,11 +791,3 @@ class Transformer(six.with_metaclass(ABCMeta, ProgressReporter)):
             self._Y = trajs
 
         return trajs
-
-    def __getstate__(self):
-        d = dict(self.__dict__)
-        try:
-            del d['_logger_instance']
-        except KeyError:
-            pass
-        return d
