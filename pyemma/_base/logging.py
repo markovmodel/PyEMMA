@@ -30,9 +30,7 @@ def _clean_dead_refs():
     _refs = [r for r in _refs if r() is not None]
     
 def instance_name(self, id):
-    i = self.__module__.rfind(".")
-    j = self.__module__.find(".") + 1
-    package = self.__module__[j:i]
+    package = self.__module__
     instance_name = "%s.%s[%i]" % (package, self.__class__.__name__, id)
     return instance_name
 

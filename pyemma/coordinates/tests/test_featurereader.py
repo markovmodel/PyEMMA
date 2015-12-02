@@ -36,7 +36,7 @@ import numpy as np
 from pyemma.coordinates.api import discretizer, tica, source
 from six.moves import range
 
-log = getLogger('TestFeatureReader')
+log = getLogger('pyemma.'+'TestFeatureReader')
 
 def create_traj(top, format='.xtc', dir=None):
     trajfile = tempfile.mktemp(suffix=format, dir=dir)

@@ -31,7 +31,7 @@ import pyemma.util.types as types
 from six.moves import range
 
 
-logger = getLogger('TestReaderUtils')
+logger = getLogger('pyemma.'+'TestReaderUtils')
 
 
 class TestCluster(unittest.TestCase):

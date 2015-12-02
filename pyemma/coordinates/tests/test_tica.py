@@ -37,7 +37,7 @@ from pyemma.util.log import getLogger
 import pyemma.util.types as types
 from six.moves import range
 
-logger = getLogger('TestTICA')
+logger = getLogger('pyemma.'+'TestTICA')
 
 
 class TestTICA_Basic(unittest.TestCase):
