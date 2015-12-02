@@ -40,7 +40,6 @@ class TestFragmentedTrajectory(unittest.TestCase):
 
     def test_full_trajectory_stridden(self):
         for stride in [1, 3, 5, 7, 13, 20]:
-            print "Stride=%s" % stride
             reader = FragmentedTrajectoryReader([self.d, self.d])
             reader.chunksize = 0
             expected = np.vstack((self.d, self.d))[::stride]

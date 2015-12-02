@@ -107,7 +107,7 @@ class TestDataInMemory(unittest.TestCase):
         reader = DataInMemory(data)
 
         self.assertEqual(reader.trajectory_lengths(), np.array([n]))
-        self.assertEqual(reader.dimension(), 1)
+        self.assertEqual(reader.ndim, 1)
         self.assertEqual(reader.number_of_trajectories(), 1)
         self.assertEqual(reader.n_frames_total(), n)
 
@@ -117,7 +117,7 @@ class TestDataInMemory(unittest.TestCase):
         reader = DataInMemory(data)
 
         np.testing.assert_equal(reader.trajectory_lengths(), np.array([n, n]))
-        self.assertEqual(reader.dimension(), 1)
+        self.assertEqual(reader.ndim, 1)
         self.assertEqual(reader.number_of_trajectories(), 2)
         self.assertEqual(reader.n_frames_total(), 2 * n)
 
@@ -133,7 +133,7 @@ class TestDataInMemory(unittest.TestCase):
 
         reader = DataInMemory(data)
 
-        self.assertEqual(reader.dimension(), 2 * 2 * 2)
+        self.assertEqual(reader.ndim, 2 * 2 * 2)
         self.assertEqual(reader.number_of_trajectories(), 1)
         self.assertEqual(reader.n_frames_total(), 4)
         np.testing.assert_equal(
