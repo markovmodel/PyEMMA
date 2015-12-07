@@ -1,3 +1,20 @@
+# This file is part of PyEMMA.
+#
+# Copyright (c) 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+#
+# PyEMMA is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 __author__ = 'wehmeyer, mey'
 
 import numpy as _np
@@ -20,16 +37,15 @@ class WHAM(_Estimator, _MultiThermModel):
     >>> traj1 = np.array([[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,1,1,1,0,0,0]]).T
     >>> traj2 = np.array([[1,1,1,1,1,1,1,1,1,1],[0,1,0,1,0,1,1,0,0,1]]).T
     >>> wham = wham.estimate([traj1, traj2])
-    >>> np.around(wham.log_likelihood(), decimals=4)
-    -14.1098
-    >>> wham.state_counts
+    >>> wham.log_likelihood() # doctest: +ELLIPSIS
+    -6.60...
+    >>> wham.state_counts.astype(dtype=np.int32)
     array([[7, 3],
            [5, 5]], dtype=int32)
-    >>> np.around(wham.stationary_distribution, decimals=2)
-    array([ 0.54,  0.46])
-    >>> np.around(wham.meval('stationary_distribution'), decimals=2)
-    array([[ 0.54,  0.46],
-           [ 0.66,  0.34]])
+    >>> wham.stationary_distribution # doctest: +ELLIPSIS +REPORT_NDIFF
+    array([ 0.54...,  0.45...])
+    >>> wham.meval('stationary_distribution') # doctest: +ELLIPSIS +REPORT_NDIFF
+    [array([ 0.54...,  0.45...]), array([ 0.65...,  0.34...])]
     """
     def __init__(
         self, bias_energies_full,
@@ -92,12 +108,15 @@ class WHAM(_Estimator, _MultiThermModel):
             normalize_energy=False, label="K=%d" % K) for K in range(self.nthermo)]
 
         # set model parameters to self
-        # TODO: find out what that even means...
         self.set_model_params(models=sms, f_therm=self.therm_energies, f=self.conf_energies)
 
-        # done, return estimator (+model?)
+        # done
         return self
 
     def log_likelihood(self):
-        return (self.state_counts * (
-            self.therm_energies[:, _np.newaxis] - self.bias_energies - self.conf_energies[_np.newaxis, :])).sum()
+        return _wham.get_loglikelihood(
+            self.state_counts.sum(axis=1).astype(_np.intc),
+            self.state_counts.sum(axis=0).astype(_np.intc),
+            self.f_therm,
+            self.f,
+            _np.zeros(shape=(self.nthermo + self.nstates,), dtype=_np.float64))

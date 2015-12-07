@@ -1,4 +1,21 @@
-__author__ = 'noe'
+# This file is part of PyEMMA.
+#
+# Copyright (c) 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+#
+# PyEMMA is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+__author__ = 'noe, wehmeyer'
 
 import numpy as _np
 from six.moves import range
@@ -139,8 +156,11 @@ class DTRAM(_Estimator, _MultiThermModel):
         return self
 
     def log_likelihood(self):
-        # nonzero = self.count_matrices.nonzero()
-        # return _np.sum(self.count_matrices[nonzero] * _np.log(self.transition_matrices[nonzero]))
-        return _dtram.get_loglikelihood(self.count_matrices, _dtram.estimate_transition_matrices(
-            self.log_lagrangian_mult, self.bias_energies, self.conf_energies,
-            self.count_matrices, _np.zeros(shape=self.conf_energies.shape, dtype=_np.float64)))
+        return _dtram.get_loglikelihood(
+            self.count_matrices,
+            _dtram.estimate_transition_matrices(
+                self.log_lagrangian_mult,
+                self.bias_energies,
+                self.conf_energies,
+                self.count_matrices,
+                _np.zeros(shape=self.conf_energies.shape, dtype=_np.float64)))
