@@ -38,14 +38,14 @@ class WHAM(_Estimator, _MultiThermModel):
     >>> traj2 = np.array([[1,1,1,1,1,1,1,1,1,1],[0,1,0,1,0,1,1,0,0,1]]).T
     >>> wham = wham.estimate([traj1, traj2])
     >>> wham.log_likelihood() # doctest: +ELLIPSIS
-    -6.60...
+    -6.6...
     >>> wham.state_counts.astype(dtype=np.int32)
     array([[7, 3],
            [5, 5]], dtype=int32)
     >>> wham.stationary_distribution # doctest: +ELLIPSIS +REPORT_NDIFF
-    array([ 0.54...,  0.45...])
+    array([ 0.5...,  0.4...])
     >>> wham.meval('stationary_distribution') # doctest: +ELLIPSIS +REPORT_NDIFF
-    [array([ 0.54...,  0.45...]), array([ 0.65...,  0.34...])]
+    [array([ 0.5...,  0.4...]), array([ 0.6...,  0.3...])]
     """
     def __init__(
         self, bias_energies_full,
