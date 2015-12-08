@@ -39,9 +39,9 @@ class WHAM(_Estimator, _MultiThermModel):
     >>> wham = wham.estimate([traj1, traj2])
     >>> wham.log_likelihood() # doctest: +ELLIPSIS
     -6.6...
-    >>> wham.state_counts.astype(dtype=np.int32)
+    >>> wham.state_counts # doctest: +SKIP
     array([[7, 3],
-           [5, 5]], dtype=int32)
+           [5, 5]])
     >>> wham.stationary_distribution # doctest: +ELLIPSIS +REPORT_NDIFF
     array([ 0.5...,  0.4...])
     >>> wham.meval('stationary_distribution') # doctest: +ELLIPSIS +REPORT_NDIFF
