@@ -1,4 +1,4 @@
-# Copyright (c) 2015, 2014 Computational Molecular Biology Group, Free University
+# Copyright (c) 2015 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
 # All rights reserved.
 #
@@ -27,7 +27,7 @@ from pyemma.util import types as _types
 
 __docformat__ = "restructuredtext en"
 __author__ = "Frank Noe, Christoph Wehmeyer"
-__copyright__ = "Copyright 2015, 2014, Computational Molecular Biology Group, FU-Berlin"
+__copyright__ = "Copyright 2015, Computational Molecular Biology Group, FU-Berlin"
 __credits__ = ["Frank Noe", "Christoph Wehmeyer"]
 __maintainer__ = "Christoph Wehmeyer"
 __email__ = "christoph.wehmeyer@fu-berlin.de"
@@ -154,13 +154,12 @@ def dtram(ttrajs, dtrajs, bias, lag, maxiter=10000, maxerr=1.0E-15, err_out=0, l
         X.append(_np.ascontiguousarray(_np.array([ttraj, dtraj]).T))
     # build DTRAM
     from pyemma.thermo.estimators import DTRAM
-    dtram_estimator = DTRAM(
-        bias, lag=lag, count_mode='sliding',
+    dtram_estimator = DTRAM(bias, lag=lag, count_mode='sliding',
         maxiter=maxiter, maxerr=maxerr, err_out=err_out, lll_out=lll_out)
     # run estimation
     return dtram_estimator.estimate(X)
 
-def wham(ttrajs, dtrajs, bias, lag, maxiter=100000, maxerr=1.0E-15, err_out=0, lll_out=0):
+def wham(ttrajs, dtrajs, bias, maxiter=100000, maxerr=1.0E-15, err_out=0, lll_out=0):
     r"""
     Weighted histogram analysis method
 
