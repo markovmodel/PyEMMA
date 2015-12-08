@@ -17,3 +17,6 @@
 
 from pyemma.thermo.models import StationaryModel, MultiThermModel
 from pyemma.thermo.estimators import WHAM, DTRAM
+
+# high-level api
+from .api import *
