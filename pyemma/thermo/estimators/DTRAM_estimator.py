@@ -1,6 +1,6 @@
 # This file is part of PyEMMA.
 #
-# Copyright (c) 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+# Copyright (c) 2015 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
 #
 # PyEMMA is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -97,13 +97,12 @@ class DTRAM(_Estimator, _MultiThermModel):
         assert _types.is_list(trajs)
         for ttraj in trajs:
             _types.assert_array(ttraj, ndim=2, kind='numeric')
-            assert _np.shape(ttraj)[1] >= 2 # TODO: check if == 2 is really necessary
 
-        # count matrices (like in TRAM)
+        # count matrices
         self.count_matrices_full = _util.count_matrices(
             [_np.ascontiguousarray(t[:, :2]).astype(_np.intc) for t in trajs], self.lag,
             sliding=self.count_mode, sparse_return=False, nstates=self.nstates_full)
-        # hasrvest state counts (for WHAM)
+        # harvest state counts (for WHAM)
         self.state_counts_full = _util.state_counts(
             trajs, nthermo=self.nthermo, nstates=self.nstates_full)
 
@@ -152,7 +151,8 @@ class DTRAM(_Estimator, _MultiThermModel):
 
         # set model parameters to self
         self.set_model_params(models=models, f_therm=self.therm_energies, f=self.conf_energies)
-        # done, return estimator (+model?)
+
+        # done
         return self
 
     def log_likelihood(self):

@@ -1,6 +1,6 @@
 # This file is part of PyEMMA.
 #
-# Copyright (c) 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+# Copyright (c) 2015 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
 #
 # PyEMMA is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -86,7 +86,6 @@ class WHAM(_Estimator, _MultiThermModel):
             trajs, nthermo=self.nthermo, nstates=self.nstates_full)
 
         # active set
-        # TODO: check for active thermodynamic set!
         self.active_set = _np.where(self.state_counts_full.sum(axis=0) > 0)[0]
         self.state_counts = _np.ascontiguousarray(
             self.state_counts_full[:, self.active_set].astype(_np.intc))
@@ -94,7 +93,6 @@ class WHAM(_Estimator, _MultiThermModel):
             self.bias_energies_full[:, self.active_set], dtype=_np.float64)
 
         # run estimator
-        # TODO: give convergence feedback!
         self.therm_energies, self.conf_energies, self.err, self.lll = _wham.estimate(
             self.state_counts, self.bias_energies,
             maxiter=self.maxiter, maxerr=self.maxerr,
