@@ -94,7 +94,7 @@ void _update_biased_conf_energies(
     int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_T,
     double *new_biased_conf_energies)
 {
-    int i, j, K, x, o, n;
+    int i, j, K, x, o;
     int Ki, Kj, KM, KMM;
     int Ci, CK, CKij, CKji, NC;
     double divisor, R_addon;
