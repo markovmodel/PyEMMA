@@ -29,9 +29,11 @@ __all__ = [
     'update_biased_conf_energies',
     'get_conf_energies',
     'normalize',
+    'get_pointwise_unbiased_free_energies',
     'estimate_transition_matrix',
     'estimate_transition_matrices',
-    'estimate']
+    'estimate',
+    'get_unbiased_user_free_energies']
 
 cdef extern from "_tram.h":
     void _init_lagrangian_mult(int *count_matrices, int n_therm_states, int n_conf_states, double *log_lagrangian_mult)
