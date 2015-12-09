@@ -129,7 +129,7 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
     n_therm_states = count_matrices.shape[0]
     n_conf_states = count_matrices.shape[1]
 
-    assert(_np.all(state_counts >= _np.maximum(count_matrices.sum(axis=1),count_matrices.sum(axis=2))))
+    assert(_np.all(state_counts >= _np.maximum(count_matrices.sum(axis=1), count_matrices.sum(axis=2))))
 
     # init lagrangian multipliers
     if log_lagrangian_mult is None:
@@ -137,15 +137,22 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
     else:
         lagrangian_mult = _np.exp(log_lagrangian_mult)
 
+    # exploit invariance w.r.t. simultaneous scaling of energies and free energies
+    # standard quantities-> scaled quantities
+    # bias_energy^k(x)   -> bias_energy^k(x) - alpha^k
+    # free_energy_i^k    -> free_energy_i^k - alpha^k
+    # log \tilde{R}_i^k  -> log \tilde{R}_i^k - alpha^k
+    shift = _np.min(bias_energy_sequence, axis=1) # minimum energy for every th. state
+
     # init weights
     if biased_conf_energies is not None:
-        biased_conf_weights = _np.exp(-biased_conf_energies)
+        biased_conf_weights = _np.exp(-(biased_conf_energies - shift[:, _np.newaxis]))
     else:
         biased_conf_weights = _np.ones(shape=(n_therm_states, n_conf_states), dtype=_np.float64)
         biased_conf_energies = _np.zeros(shape=(n_therm_states, n_conf_states), dtype=_np.float64)
 
     # init Boltzmann factors
-    bias_weight_sequence = _np.exp(-bias_energy_sequence) # TODO: shift
+    bias_weight_sequence = _np.exp(-(bias_energy_sequence - shift[:, _np.newaxis]))
 
     err_traj = []
     lll_traj = []
@@ -196,8 +203,8 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
         if lll_count == lll_out:
             lll_count = 0
             log_lagrangian_mult = _np.log(lagrangian_mult)
-            old_biased_conf_energies = -_np.log(old_biased_conf_weights)
-            biased_conf_energies = -_np.log(biased_conf_weights)
+            old_biased_conf_energies = -_np.log(old_biased_conf_weights)  + shift[:, _np.newaxis]
+            biased_conf_energies = -_np.log(biased_conf_weights) + shift[:, _np.newaxis]
             logL = _tram.log_likelihood_lower_bound(log_lagrangian_mult, log_lagrangian_mult,
                                                     old_biased_conf_energies, biased_conf_energies,
                                                     count_matrices, bias_energy_sequence, state_sequence,
@@ -212,6 +219,7 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
                          old_biased_conf_weights = old_biased_conf_weights,
                          old_lagrangian_mult = old_lagrangian_mult,
                          occupied = occupied,
+                         shift = shift,
                          err = err,
                          maxerr = maxerr,
                          maxiter = maxiter)
@@ -228,9 +236,9 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
         old_therm_energies[:] = therm_energies[:] + _np.log(normalization_factor)
         old_stat_vectors[:] = stat_vectors[:]
 
-    biased_conf_energies = -_np.log(biased_conf_weights)
+    biased_conf_energies = -_np.log(biased_conf_weights) + shift[:, _np.newaxis]
     log_lagrangian_mult = _np.log(lagrangian_mult)
-    log_R_K_i = _np.log(R_K_i)
+    log_R_K_i = _np.log(R_K_i) + shift[:, _np.newaxis]
 
     conf_energies = _tram.get_conf_energies(bias_energy_sequence, state_sequence, log_R_K_i, scratch_M, scratch_T)
     therm_energies = _tram.get_therm_energies(biased_conf_energies, scratch_M)
