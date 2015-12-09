@@ -388,7 +388,7 @@ class Transformer(six.with_metaclass(ABCMeta, ProgressReporter, Loggable)):
         try:
             while not add_data_finished:
                 first_chunk = True
-                self.data_producer._reset(ctx)
+                # self.data_producer._reset(ctx)
                 # iterate over trajectories
                 last_chunk = False
                 itraj = 0

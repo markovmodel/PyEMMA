@@ -31,7 +31,6 @@ import unittest
 import numpy as np
 
 from pyemma.coordinates.data.data_in_memory import DataInMemory
-from pyemma.coordinates.transform.transformer import TransformerIteratorContext
 from pyemma.util.log import getLogger
 
 logger = getLogger('pyemma.'+'TestDataInMemory')
@@ -51,8 +50,7 @@ class TestDataInMemory(unittest.TestCase):
     def test_skip(self):
         for skip in [0, 3, 13]:
             r1 = DataInMemory(self.d)
-            r1._skip = skip
-            out_with_skip = r1.get_output()[0]
+            out_with_skip = r1.get_output(skip=skip)[0]
             r2 = DataInMemory(self.d)
             out = r2.get_output()[0]
             np.testing.assert_almost_equal(out_with_skip, out[skip::],
@@ -62,8 +60,7 @@ class TestDataInMemory(unittest.TestCase):
     def test_skip_input_list(self):
         for skip in [0, 3, 13]:
             r1 = DataInMemory([self.d, self.d])
-            r1._skip = skip
-            out_with_skip = r1.get_output()
+            out_with_skip = r1.get_output(skip=skip)
             r2 = DataInMemory([self.d, self.d])
             out = r2.get_output()
             np.testing.assert_almost_equal(out_with_skip[0], out[0][skip::],
@@ -147,35 +144,19 @@ class TestDataInMemory(unittest.TestCase):
         self.assertEqual(reader.n_frames_total(), n + n - 50 + 29)
 
         # iterate over data
-        ctx = TransformerIteratorContext(lag=30)
-        t = 0
-        itraj = 0
-        last_chunk = False
-        while not last_chunk:
-            last_chunk_in_traj = False
-            t = 0
-            while not last_chunk_in_traj:
-                X, Y = reader._next_chunk(ctx)
-                if itraj == 0:
-                    self.assertEqual(X.shape, (100, 3))
-                    self.assertEqual(Y.shape, (70, 3))
-                elif itraj == 1:
-                    # the time lagged chunk can not be built due to lag time
-                    self.assertEqual(X.shape, (29, 3))
-                    self.assertEqual(Y.shape, (0, 3))
-                elif itraj == 2:
-                    self.assertEqual(X.shape, (50, 3))
-                    self.assertEqual(Y.shape, (20, 3))
-                L = np.shape(X)[0]
-                # last chunk in traj?
-                last_chunk_in_traj = (
-                    t + L >= reader.trajectory_length(itraj))
-                # last chunk?
-                last_chunk = (
-                    last_chunk_in_traj and itraj >= reader.number_of_trajectories() - 1)
-                t += L
-            # increment trajectory
-            itraj += 1
+        it = reader.iterator(lag=30, return_trajindex=True)
+        for itraj, X, Y in it:
+            if itraj == 0:
+                # self.assertEqual(X.shape, (100, 3)) <-- changed behavior: return only chunks of same size
+                self.assertEqual(X.shape, (70, 3))
+                self.assertEqual(Y.shape, (70, 3))
+            elif itraj == 1:
+                # the time lagged chunk can not be built due to lag time
+                self.assertEqual(X.shape, (0, 3))
+                self.assertEqual(Y.shape, (0, 3))
+            elif itraj == 2:
+                self.assertEqual(X.shape, (20, 3))
+                self.assertEqual(Y.shape, (20, 3))
 
     def test_stride(self):
         reader = DataInMemory(self.d)
@@ -220,7 +201,9 @@ class TestDataInMemory(unittest.TestCase):
 
         # unlagged data
         for traj, input_traj in zip(trajs, data):
-            np.testing.assert_equal(traj.reshape(input_traj.shape), input_traj)
+            # do not consider chunks that have no lagged counterpart
+            input_shape = input_traj.shape
+            np.testing.assert_equal(traj.reshape((input_shape[0]-lag,)), input_traj[:len(input_traj)-lag])
 
         # lagged data
         lagged_0 = [d[lag:] for d in data]
@@ -257,7 +240,9 @@ class TestDataInMemory(unittest.TestCase):
 
         # unlagged data
         for traj, input_traj in zip(trajs, data):
-            np.testing.assert_equal(traj.reshape(input_traj.shape), input_traj)
+            # do not consider chunks that have no lagged counterpart
+            input_shape = input_traj.shape
+            np.testing.assert_equal(traj.reshape((input_shape[0]-lag,3)), input_traj[:len(input_traj)-lag])
 
         # lagged data
         lagged_0 = [d[lag:] for d in data]
@@ -273,10 +258,10 @@ class TestDataInMemory(unittest.TestCase):
         for stride in strides:
             for lag in lags:
                 chunks = []
-                for _, _, Y in reader.iterator(stride, lag):
+                for _, _, Y in reader.iterator(stride=stride, lag=lag):
                     chunks.append(Y)
                 chunks = np.vstack(chunks)
-                np.testing.assert_equal(chunks, data[lag::stride])
+                np.testing.assert_equal(chunks, data[lag::stride], "failed for stride=%s, lag=%s" % (stride, lag))
 
 if __name__ == "__main__":
     unittest.main()
