@@ -169,6 +169,9 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
     old_biased_conf_weights = biased_conf_weights.copy()
     old_lagrangian_mult = lagrangian_mult.copy()
     old_biased_conf_energies = biased_conf_energies.copy()
+    old_stat_vectors = _np.zeros(shape=state_counts.shape, dtype=_np.float64)
+    old_therm_energies = _np.zeros(shape=count_matrices.shape[0], dtype=_np.float64)
+
     for _m in range(maxiter):
         err_count += 1
         lll_count += 1
@@ -181,8 +184,13 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
             dtram_like_update(lagrangian_mult, old_biased_conf_weights, count_matrices,
                               state_counts, scratch_M, scratch_M_int, biased_conf_weights)
 
-        err = _np.max(_np.abs(biased_conf_weights[occupied] - old_biased_conf_weights[occupied])/biased_conf_weights[occupied])
-            
+        partition_funcs = biased_conf_weights.sum(axis=1)
+        stat_vectors = biased_conf_weights / partition_funcs[:, _np.newaxis]
+        therm_energies = -_np.log(partition_funcs)
+        delta_therm_energies = _np.abs(therm_energies - old_therm_energies)
+        delta_stat_vectors =  _np.abs(stat_vectors - old_stat_vectors)
+        err = max(_np.max(delta_therm_energies),_np.max(delta_stat_vectors[occupied]))
+
         if err_count == err_out:
             err_count = 0
             err_traj.append(err)
@@ -205,6 +213,7 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
                          lagrangian_mult = lagrangian_mult,
                          old_biased_conf_weights = old_biased_conf_weights,
                          old_lagrangian_mult = old_lagrangian_mult,
+                         occupied = occupied,
                          err = err,
                          maxerr = maxerr,
                          maxiter = maxiter)
@@ -214,9 +223,12 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
         if err < maxerr:
             break
 
-        biased_conf_weights /= _np.max(biased_conf_weights)
+        normalization_factor = _np.max(biased_conf_weights)
+        biased_conf_weights /= normalization_factor
         old_lagrangian_mult[:] = lagrangian_mult[:]
         old_biased_conf_weights[:] = biased_conf_weights[:]
+        old_therm_energies[:] = therm_energies[:] + _np.log(normalization_factor)
+        old_stat_vectors[:] = stat_vectors[:]
 
     biased_conf_energies = -_np.log(biased_conf_weights)
     log_lagrangian_mult = _np.log(lagrangian_mult)
