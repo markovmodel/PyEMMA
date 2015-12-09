@@ -150,8 +150,6 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
     # init Boltzmann factors
     bias_weight_sequence = _np.exp(-bias_energy_sequence) # TODO: shift
 
-    assert _np.all(state_counts >= _np.maximum(count_matrices.sum(axis=1), count_matrices.sum(axis=2)))
-
     err_traj = []
     lll_traj = []
     err_count = 0
@@ -170,12 +168,12 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
         print >>sys.stderr, 'Warning: detected inf in biased_conf_energies.'
 
     # init sparse indices
-    max_indices = _np.max([len(_np.where(state_counts[:,i]>0)[0]) for i in range(n_conf_states)])+1
-    indices = _np.zeros((n_conf_states, max_indices), dtype=_np.intc)
-    for i in range(n_conf_states):
-        tmp = _np.where(state_counts[:,i]>0)[0]
-        indices[i,0:len(tmp)] = tmp
-        indices[i,len(tmp)] = -1
+    #max_indices = _np.max([len(_np.where(state_counts[:,i]>0)[0]) for i in range(n_conf_states)])+1
+    #indices = _np.zeros((n_conf_states, max_indices), dtype=_np.intc)
+    #for i in range(n_conf_states):
+    #    tmp = _np.where(state_counts[:,i]>0)[0]
+    #    indices[i,0:len(tmp)] = tmp
+    #    indices[i,len(tmp)] = -1
     # indices for the full matrix
     full_indices = _np.zeros((n_conf_states, n_therm_states+1), dtype=_np.intc)
     for i in range(n_conf_states):
@@ -185,20 +183,28 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
     old_biased_conf_weights = biased_conf_weights.copy()
     old_lagrangian_mult = lagrangian_mult.copy()
     old_biased_conf_energies = biased_conf_energies.copy()
+    old_stat_vectors = _np.zeros(shape=state_counts.shape, dtype=_np.float64)
+    old_therm_energies = _np.zeros(shape=count_matrices.shape[0], dtype=_np.float64)
+
     for _m in range(maxiter):
         err_count += 1
         lll_count += 1
         update_lagrangian_mult(old_lagrangian_mult, biased_conf_weights, count_matrices, state_counts, _m, lagrangian_mult)
         update_biased_conf_weights(lagrangian_mult, old_biased_conf_weights, count_matrices, bias_weight_sequence, state_sequence,
-                                   state_counts, indices, R_K_i, scratch_TM, biased_conf_weights)
+                                   state_counts, full_indices, R_K_i, scratch_TM, biased_conf_weights)
 
         for _n  in range(N_dtram_accelerations):
             old_biased_conf_weights[:] = biased_conf_weights[:]
             dtram_like_update(lagrangian_mult, old_biased_conf_weights, count_matrices,
                               state_counts, scratch_M, scratch_M_int, biased_conf_weights)
 
-        err = _np.max(_np.abs(biased_conf_weights[occupied] - old_biased_conf_weights[occupied])/biased_conf_weights[occupied])
-            
+        partition_funcs = biased_conf_weights.sum(axis=1)
+        stat_vectors = biased_conf_weights / partition_funcs[:, _np.newaxis]
+        therm_energies = -_np.log(partition_funcs)
+        delta_therm_energies = _np.abs(therm_energies - old_therm_energies)
+        delta_stat_vectors =  _np.abs(stat_vectors - old_stat_vectors)
+        err = max(_np.max(delta_therm_energies),_np.max(delta_stat_vectors[occupied]))
+
         if err_count == err_out:
             err_count = 0
             err_traj.append(err)
@@ -221,6 +227,7 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
                          lagrangian_mult = lagrangian_mult,
                          old_biased_conf_weights = old_biased_conf_weights,
                          old_lagrangian_mult = old_lagrangian_mult,
+                         occupied = occupied,
                          err = err,
                          maxerr = maxerr,
                          maxiter = maxiter)
@@ -230,9 +237,12 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
         if err < maxerr:
             break
 
-        biased_conf_weights /= _np.max(biased_conf_weights)
+        normalization_factor = _np.max(biased_conf_weights)
+        biased_conf_weights /= normalization_factor
         old_lagrangian_mult[:] = lagrangian_mult[:]
         old_biased_conf_weights[:] = biased_conf_weights[:]
+        old_therm_energies[:] = therm_energies[:] + _np.log(normalization_factor)
+        old_stat_vectors[:] = stat_vectors[:]
 
     # do one dense calcualtion to find free energies of unvisited states
     update_biased_conf_weights(lagrangian_mult, old_biased_conf_weights, count_matrices, bias_weight_sequence, state_sequence,
