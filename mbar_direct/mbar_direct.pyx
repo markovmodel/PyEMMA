@@ -84,6 +84,9 @@ def estimate(therm_state_counts, bias_energy_sequence, conf_state_sequence,
         initial guess for the reduced free energies of the T thermodynamic states
     err_out : int, optional
         every err_out iteration steps, store the actual increment
+    n_conf_states : int, optional, default=None
+        the number of configurational states in `conf_state_sequence`.
+        If None, this is set to max(conf_state_sequence)+1.
 
     Returns
     -------
