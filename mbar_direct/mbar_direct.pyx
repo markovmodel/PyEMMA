@@ -107,12 +107,13 @@ def estimate(therm_state_counts, bias_energy_sequence, conf_state_sequence,
     else:
         M = n_conf_states
     log_therm_state_counts = _np.log(therm_state_counts)
+    shift = _np.min(bias_energy_sequence, axis=1)
     if therm_energies is None:
         therm_energies = _np.zeros(shape=(T,), dtype=_np.float64)
         therm_weights = _np.ones(shape=(T,), dtype=_np.float64)
     else:
-        therm_weights = _np.exp(-therm_energies)
-    bias_weight_sequence = _np.exp(-bias_energy_sequence)
+        therm_weights = _np.exp(-(therm_energies - shift))
+    bias_weight_sequence = _np.exp(-(bias_energy_sequence - shift[:, _np.newaxis]))
     old_therm_energies = therm_energies.copy()
     old_therm_weights = therm_weights.copy()
     err_traj = []
@@ -146,7 +147,7 @@ def estimate(therm_state_counts, bias_energy_sequence, conf_state_sequence,
             old_therm_energies[:] = therm_energies[:]
         if stop:
             break
-    therm_energies = -_np.log(therm_weights)
+    therm_energies = -_np.log(therm_weights) + shift
     conf_energies, biased_conf_energies = _mbar.get_conf_energies(
         log_therm_state_counts, therm_energies, bias_energy_sequence, conf_state_sequence, scratch_T, M)
     _mbar.normalize(log_therm_state_counts, bias_energy_sequence, scratch_M, therm_energies, conf_energies, biased_conf_energies)
