@@ -117,8 +117,9 @@ def estimate(therm_state_counts, bias_energy_sequence, conf_state_sequence,
     for _m in range(maxiter):
         err_count += 1
         update_therm_weights(therm_state_counts, old_therm_weights, bias_weight_sequence, scratch_T, therm_weights)
-        delta_relative_therm_weights = _np.abs(therm_weights - old_therm_weights) / _np.abs(therm_weights)
-        err = _np.max(delta_relative_therm_weights)
+        therm_energies = -_np.log(therm_weights)
+        delta_therm_energies = _np.abs(therm_energies - old_therm_energies)
+        err = _np.max(delta_therm_energies)
         if err_count == err_out:
             err_count = 0
             err_traj.append(err)
@@ -127,16 +128,16 @@ def estimate(therm_state_counts, bias_energy_sequence, conf_state_sequence,
                 callback(iteration_step = _m,
                          therm_weights = therm_weights,
                          old_therm_weights = old_therm_weights,
-                         delta_relative_therm_weights = delta_relative_therm_weights,
                          err=err,
                          maxerr=maxerr,
                          maxiter=maxiter)
             except CallbackInterrupt:
                 stop = True
-        if _np.max(_np.abs((therm_weights - old_therm_weights)) - maxerr * _np.abs(therm_weights)) < 0:
+        if err < maxerr:
             stop = True
         else:
             old_therm_weights[:] = therm_weights[:]
+            old_therm_energies[:] = therm_energies[:]
         if stop:
             break
     therm_energies = -_np.log(therm_weights)
