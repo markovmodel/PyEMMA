@@ -13,7 +13,7 @@ cdef extern from "_tram_direct.h":
         int n_therm_states, int n_conf_states, int iteration, double *new_lagrangian_mult)
     void _update_biased_conf_weights(
         double *lagrangian_mult, double *biased_conf_weights, int *count_matrices, double *bias_sequence,
-        int *state_sequence, int *state_counts, int *indices, int indices_length, int seq_length, double *R_K_i,
+        int *state_sequence, int *state_counts, int seq_length, double *R_K_i,
         int n_therm_states, int n_conf_states, double *scratch_TM, double *new_biased_conf_weights)
     void _dtram_like_update(
         double *lagrangian_mult, double *biased_conf_weights, int *count_matrices, int *state_counts, 
@@ -44,7 +44,6 @@ def update_biased_conf_weights(
     _np.ndarray[double, ndim=2, mode="c"] bias_weight_sequence not None,
     _np.ndarray[int, ndim=1, mode="c"] state_sequence not None,
     _np.ndarray[int, ndim=2, mode="c"] state_counts not None,
-    _np.ndarray[int, ndim=2, mode="c"] indices not None,
     _np.ndarray[double, ndim=2, mode="c"] R_K_i not None,
     _np.ndarray[double, ndim=2, mode="c"] scratch_TM not None,
     _np.ndarray[double, ndim=2, mode="c"] new_biased_conf_weights not None):
@@ -56,8 +55,6 @@ def update_biased_conf_weights(
         <double*> _np.PyArray_DATA(bias_weight_sequence),
         <int*> _np.PyArray_DATA(state_sequence),
         <int*> _np.PyArray_DATA(state_counts),
-        <int*> _np.PyArray_DATA(indices),
-        indices.shape[1],
         state_sequence.shape[0],
         <double*> _np.PyArray_DATA(R_K_i),
         lagrangian_mult.shape[0],
@@ -167,19 +164,6 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
     if _np.any(_np.isinf(biased_conf_energies[occupied])):
         print >>sys.stderr, 'Warning: detected inf in biased_conf_energies.'
 
-    # init sparse indices
-    #max_indices = _np.max([len(_np.where(state_counts[:,i]>0)[0]) for i in range(n_conf_states)])+1
-    #indices = _np.zeros((n_conf_states, max_indices), dtype=_np.intc)
-    #for i in range(n_conf_states):
-    #    tmp = _np.where(state_counts[:,i]>0)[0]
-    #    indices[i,0:len(tmp)] = tmp
-    #    indices[i,len(tmp)] = -1
-    # indices for the full matrix
-    full_indices = _np.zeros((n_conf_states, n_therm_states+1), dtype=_np.intc)
-    for i in range(n_conf_states):
-        full_indices[i,0:n_therm_states] = range(n_therm_states)
-        full_indices[i,n_therm_states] = -1
-
     old_biased_conf_weights = biased_conf_weights.copy()
     old_lagrangian_mult = lagrangian_mult.copy()
     old_biased_conf_energies = biased_conf_energies.copy()
@@ -191,7 +175,7 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
         lll_count += 1
         update_lagrangian_mult(old_lagrangian_mult, biased_conf_weights, count_matrices, state_counts, _m, lagrangian_mult)
         update_biased_conf_weights(lagrangian_mult, old_biased_conf_weights, count_matrices, bias_weight_sequence, state_sequence,
-                                   state_counts, full_indices, R_K_i, scratch_TM, biased_conf_weights)
+                                   state_counts, R_K_i, scratch_TM, biased_conf_weights)
 
         for _n  in range(N_dtram_accelerations):
             old_biased_conf_weights[:] = biased_conf_weights[:]
@@ -243,10 +227,6 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
         old_biased_conf_weights[:] = biased_conf_weights[:]
         old_therm_energies[:] = therm_energies[:] + _np.log(normalization_factor)
         old_stat_vectors[:] = stat_vectors[:]
-
-    # do one dense calcualtion to find free energies of unvisited states
-    update_biased_conf_weights(lagrangian_mult, old_biased_conf_weights, count_matrices, bias_weight_sequence, state_sequence,
-                               state_counts, full_indices, R_K_i, scratch_TM, biased_conf_weights)
 
     biased_conf_energies = -_np.log(biased_conf_weights)
     log_lagrangian_mult = _np.log(lagrangian_mult)
