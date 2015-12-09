@@ -174,7 +174,7 @@ def get_pointwise_unbiased_free_energies(
         <double*> _np.PyArray_DATA(pointwise_unbiased_free_energies))
 
 def estimate(therm_state_counts, bias_energy_sequence, conf_state_sequence,
-    maxiter=1000, maxerr=1.0E-8, therm_energies=None, err_out=0, callback=None):
+    maxiter=1000, maxerr=1.0E-8, therm_energies=None, err_out=0, callback=None, n_conf_states=None):
     r"""
     Estimate the (un)biased reduced free energies and thermodynamic free energies
         
@@ -208,7 +208,10 @@ def estimate(therm_state_counts, bias_energy_sequence, conf_state_sequence,
         stored sequence of increments
     """
     T = therm_state_counts.shape[0]
-    M = 1 + _np.max(conf_state_sequence)
+    if n_conf_states is None:
+        M = 1 + _np.max(conf_state_sequence)
+    else:
+        M = n_conf_states
     log_therm_state_counts = _np.log(therm_state_counts)
     if therm_energies is None:
         therm_energies = _np.zeros(shape=(T,), dtype=_np.float64)
