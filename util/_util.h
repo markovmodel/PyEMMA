@@ -26,14 +26,19 @@
 
 #include <math.h>
 
-/* define INFINITY if not available */
-#ifndef INFINITY
-    #define INFINITY 1.0/0.0
-#endif
-
-/* define NAN if not available */
-#ifndef NAN
-    #define NAN INFINITY-INFINITY
+#ifdef _MSC_VER
+    /* handle Microsofts C99 incompatibility */
+    #include <float.h>
+    #define INFINITY (DBL_MAX+DBL_MAX)
+    #define NAN (INFINITY-INFINITY)
+#else
+    /* if not available otherwise, define INFINITY/NAN in the GNU style */
+    #ifndef INFINITY
+        #define INFINITY (1.0/0.0)
+    #endif
+    #ifndef NAN
+        #define NAN (INFINITY-INFINITY)
+    #endif
 #endif
 
 /***************************************************************************************************
