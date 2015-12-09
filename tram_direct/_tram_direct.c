@@ -10,7 +10,7 @@
     #define NAN (INFINITY-INFINITY)
 #endif
 
-#define THERMOTOOLS_TRAM_PRIOR 0
+#define LAGRANGIAN_MULT_LOWER_BOUND 1.E-100
 
 /* direct space implementation */
 
@@ -34,24 +34,19 @@ void _update_lagrangian_mult(
                 CCT_Kij = count_matrices[KMM + i*n_conf_states + j];
                 if(i == j) {
                     if(lagrangian_mult[Ki]<CCT_Kij) fprintf(stderr, "Not a valid nu iterate at K=%d, i=%d.\n", K, i);
-                    new_lagrangian_mult[Ki] += CCT_Kij + THERMOTOOLS_TRAM_PRIOR;
+                    new_lagrangian_mult[Ki] += CCT_Kij;
                 } else {
                     Kj = K*n_conf_states + j;
                     CCT_Kij += count_matrices[KMM + j*n_conf_states + i];
                     if(0 < CCT_Kij) {
                         /* one of the nus can be zero */
-                        if(lagrangian_mult[Ki]+lagrangian_mult[Kj]<CCT_Kij) fprintf(stderr, "Not a valid nu iterate at K=%d, i=%d, j=%d in iteration %d.\n", K,i,j,iteration);
-                        //if(biased_conf_weights[Ki]==0) fprintf(stderr, "Warning Z[%d,%d]=0 in iteration %d.\n",K,i,iteration);
-                        //if(biased_conf_weights[Kj]==0) fprintf(stderr, "Warning Z[%d,%d]=0 in iteration %d.\n",K,j,iteration);
-                        //if(fabs(log(biased_conf_weights[Ki])-log(biased_conf_weights[Kj])) > 30) {
-                        //    fprintf(stderr, "Warning unrealistic free energy difference between Z[%d,%d] and Z[%d,%d] in iteration %d.\n",K,i,K,j,iteration);
-                        //}
+                        if(lagrangian_mult[Ki]+lagrangian_mult[Kj] < CCT_Kij) fprintf(stderr, "Not a valid nu iterate at K=%d, i=%d, j=%d in iteration %d.\n", K,i,j,iteration);
                         new_lagrangian_mult[Ki] += 
                             (double)CCT_Kij / (1.0 + 
                                                (lagrangian_mult[Kj]/lagrangian_mult[Ki])*
                                                (biased_conf_weights[Ki]/biased_conf_weights[Kj]));
-                        if(new_lagrangian_mult[Ki]< 1.E-100) {  
-                            new_lagrangian_mult[Ki] =1.E-100; 
+                        if(new_lagrangian_mult[Ki]< LAGRANGIAN_MULT_LOWER_BOUND) {
+                            new_lagrangian_mult[Ki] = LAGRANGIAN_MULT_LOWER_BOUND;
                         }
                     }
                 }
@@ -62,11 +57,11 @@ void _update_lagrangian_mult(
 
 void _update_biased_conf_weights(
     double *lagrangian_mult, double *biased_conf_weights, int *count_matrices, double *bias_sequence,
-    int *state_sequence, int *state_counts, int *indices, int indices_length, int seq_length, double *R_K_i,
+    int *state_sequence, int *state_counts, int seq_length, double *R_K_i,
     int n_therm_states, int n_conf_states, double *scratch_TM, double *new_biased_conf_weights)
 {
-    int i, j, K, Ki, Kj, KMM, x, n;
-    int CCT_Kij, CKi, CtKi;
+    int i, j, K, Ki, Kj, KMM, x;
+    int CCT_Kij, CKi;
     double divisor;
 
     /* compute R */
@@ -76,17 +71,16 @@ void _update_biased_conf_weights(
         for(i=0; i<n_conf_states; ++i)
         {
             CKi = 0;
-            CtKi = 0;
             Ki = K*n_conf_states + i;
             R_K_i[Ki] = 0.0;
+            if(0 == state_counts[Ki]) continue;
             for(j=0; j<n_conf_states; ++j)
             {
                 CCT_Kij = count_matrices[KMM + i*n_conf_states + j];
                 CKi += count_matrices[KMM + j*n_conf_states + i];
-                CtKi += count_matrices[KMM + i*n_conf_states + j];
                 Kj = K*n_conf_states + j;
                 if(i == j) {
-                    R_K_i[Ki] += CCT_Kij + THERMOTOOLS_TRAM_PRIOR;
+                    R_K_i[Ki] += CCT_Kij;
                 } else {
                     CCT_Kij += count_matrices[KMM + j*n_conf_states + i];
                     if(0 < CCT_Kij) {
@@ -101,16 +95,13 @@ void _update_biased_conf_weights(
                 }
             }
             R_K_i[Ki] += state_counts[Ki] - CKi;
-            if(THERMOTOOLS_TRAM_PRIOR < R_K_i[Ki]) R_K_i[Ki] /= biased_conf_weights[Ki];
+            if(0 < R_K_i[Ki]) R_K_i[Ki] /= biased_conf_weights[Ki];
         }
     }
 
     /* actual update */
-    for(i=0; i < n_conf_states; ++i) {
-        for(n=i*indices_length+1,K=indices[i*indices_length]; K!=-1; K=indices[n++]) {
-            Ki = K*n_conf_states + i;
-            new_biased_conf_weights[Ki] = 0.0;
-        }
+    for(i=0; i < n_conf_states*n_therm_states; ++i) {
+        new_biased_conf_weights[i] = 0.0;
     }
 
     for(x=0; x < seq_length; ++x) 
@@ -118,27 +109,24 @@ void _update_biased_conf_weights(
         i = state_sequence[x];
         divisor = 0;
         /* calulate normal divisor */
-        //for(K=0; K<n_therm_states; ++K)
-        for(n=i*indices_length+1,K=indices[i*indices_length]; K!=-1; K=indices[n++])
+        for(K=0; K<n_therm_states; ++K)
         {
             Ki = K*n_conf_states + i;
-            //if(THERMOTOOLS_TRAM_PRIOR < R_K_i[Ki]) { 
+            if(0 < R_K_i[Ki]) {
                 divisor += R_K_i[Ki]*bias_sequence[K*seq_length + x];
-            //}
+            }
         }
         if(divisor==0) fprintf(stderr, "divisor is zero. should never happen!\n");
         if(isnan(divisor)) fprintf(stderr, "divisor is NaN. should never happen!\n");
 
         /* update normal weights */
-        //for(K=0; K<n_therm_states; ++K)
-        for(n=i*indices_length+1,K=indices[i*indices_length]; K!=-1; K=indices[n++])
+        for(K=0; K<n_therm_states; ++K)
         {
             Ki = K*n_conf_states + i;
             new_biased_conf_weights[Ki] += bias_sequence[K*seq_length + x]/divisor;
-            if(isnan(new_biased_conf_weights[Ki])) { fprintf(stderr, "Z:Warning Z[%d,%d]=NaN (%f,%f) %d\n",K,i,bias_sequence[K*seq_length + x],divisor,x); exit(1); }
-            if(isinf(new_biased_conf_weights[Ki])) { fprintf(stderr, "Z:Warning Z[%d,%d]=Inf (%f,%f) %d\n",K,i,bias_sequence[K*seq_length + x],divisor,x); exit(1); }
+            if(isnan(new_biased_conf_weights[Ki])) fprintf(stderr, "Z:Warning Z[%d,%d]=NaN (%f,%f) %d\n",K,i,bias_sequence[K*seq_length + x],divisor,x);
+            if(isinf(new_biased_conf_weights[Ki])) fprintf(stderr, "Z:Warning Z[%d,%d]=Inf (%f,%f) %d\n",K,i,bias_sequence[K*seq_length + x],divisor,x);
         }
-
     }
 }
 
