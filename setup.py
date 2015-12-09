@@ -129,7 +129,9 @@ def extensions():
         Extension('pyemma.coordinates.estimators.covar.covar_c.covartools',
                   sources=['pyemma/coordinates/estimators/covar/covar_c/covartools.pyx',
                            'pyemma/coordinates/estimators/covar/covar_c/_covartools.c'],
-                  include_dirs=['pyemma/coordinates/estimators/covar/covar_c/'],
+                  include_dirs=['pyemma/coordinates/estimators/covar/covar_c/',
+                                np_inc,
+                                ],
                   extra_compile_args=['-std=c99', '-O3'])
 
     exts += [regspatial_module,
