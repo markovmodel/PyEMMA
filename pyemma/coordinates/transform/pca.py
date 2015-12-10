@@ -18,21 +18,27 @@
 
 
 from __future__ import absolute_import
+
 import numpy as np
 
-from pyemma.util.annotators import doc_inherit
-from pyemma.coordinates.transform.transformer import SkipPassException, Transformer
+from pyemma._base.model import Model
+from pyemma.coordinates.transform.transformer import Transformer
 from pyemma.util import types
+from pyemma.util.annotators import doc_inherit
 from pyemma.util.reflection import get_default_args
 
 __all__ = ['PCA']
 __author__ = 'noe'
 
+class PCAModel(Model):
+    # todo: do we really want this?
+    pass
+
 
 class PCA(Transformer):
     r""" Principal component analysis."""
 
-    def __init__(self, dim=-1, var_cutoff=0.95, mean=None):
+    def __init__(self, dim=-1, var_cutoff=0.95, mean=None, stride=1):
         r""" Principal component analysis.
 
         Given a sequence of multivariate data :math:`X_t`,
@@ -71,40 +77,29 @@ class PCA(Transformer):
 
         """
         super(PCA, self).__init__()
-        self._dim = dim
-        self._var_cutoff = var_cutoff
         default_var_cutoff = get_default_args(self.__init__)['var_cutoff']
         if dim != -1 and var_cutoff != default_var_cutoff:
             raise ValueError('Trying to set both the number of dimension and the subspace variance. Use either or.')
-        self.Y = None
-        self._N_mean = 0
-        self._N_cov = 0
 
-        self.mu = mean
-
-        # set up result variables
-        self.eigenvalues = None
-        self.eigenvectors = None
-        self.cumvar = None
+        self.set_params(dim=dim, var_cutoff=var_cutoff, mean=mean)
 
         # output options
         self._custom_param_progress_handling = True
 
     @doc_inherit
     def describe(self):
-        return "[PCA, output dimension = %i]" % self._dim
+        return "[PCA, output dimension = %i]" % self.dim
 
     def dimension(self):
         """ output dimension """
-        d = None
-        if self._dim != -1:  # fixed parametrization
-            d = self._dim
-        elif self._parametrized:  # parametrization finished. Dimension is known
-            dim = len(self.eigenvalues)
-            if self._var_cutoff < 1.0:  # if subspace_variance, reduce the output dimension if needed
-                dim = min(dim, np.searchsorted(self.cumvar, self._var_cutoff)+1)
+        if self.dim != -1:  # fixed parametrization
+            d = self.dim
+        elif self._estimated:  # estimation finished. Dimension is known
+            dim = len(self._model.eigenvalues)
+            if self.var_cutoff < 1.0:  # if subspace_variance, reduce the output dimension if needed
+                dim = min(dim, np.searchsorted(self.cumvar, self.var_cutoff)+1)
             d = dim
-        elif self._var_cutoff == 1.0:  # We only know that all dimensions are wanted, so return input dim
+        elif self.var_cutoff == 1.0:  # We only know that all dimensions are wanted, so return input dim
             d = self.data_producer.dimension()
         else:  # We know nothing. Give up
             raise RuntimeError('Requested dimension, but the dimension depends on the cumulative variance and the '
@@ -112,102 +107,103 @@ class PCA(Transformer):
         return d
 
     @property
-    def mean(self):
-        return self.mu
+    def cumvar(self):
+        return self._model.cumvar
+
+    @cumvar.setter
+    def cumvar(self, value):
+        self._model.cumvar = value
 
     @property
-    def covariance_matrix(self):
-        return self.cov
+    def eigenvalues(self):
+        return self._model.eigenvalues
 
-    def _param_init(self):
-        self._N_mean = 0
-        self._N_cov = 0
+    @eigenvalues.setter
+    def eigenvalues(self, value):
+        self._model.eigenvalues = value
+
+    @property
+    def eigenvectors(self):
+        return self._model.eigenvectors
+
+    @eigenvectors.setter
+    def eigenvectors(self, value):
+        pass
+
+    # @property
+    # def mean(self):
+    #     return self._model.mean
+    #
+    # @mean.setter
+    # def mean(self, value):
+    #     self._model.mean = value
+
+
+    def _estimate(self, X, **kwargs):
+        N_mean = 0
+        N_cov = 0
         # create mean array and covariance matrix
-        indim = self.data_producer.dimension()
+        indim = X.dimension()
         self._logger.info("Running PCA on %i dimensional input" % indim)
         assert indim > 0, "Incoming data of PCA has 0 dimension!"
 
-        if self.mu is not None:
-            self.mu = types.ensure_ndarray(self.mu, shape=(indim,))
+        if self.mean is not None:
+            mean = types.ensure_ndarray(self.mean, shape=(indim,))
             self._given_mean = True
         else:
-            self.mu = np.zeros(indim)
+            mean = np.zeros(indim)
             self._given_mean = False
 
         self.cov = np.zeros((indim, indim))
 
+        it = X.iterator(return_trajindex=False, **kwargs)
         # amount of chunks
-        denom = self._n_chunks(self._param_with_stride)
+        denom = it._n_chunks(self._param_with_stride)
         self._progress_register(denom, description="calculate mean", stage=0)
         self._progress_register(denom, description="calculate covariances", stage=1)
 
-    def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
-                        last_chunk, ipass, Y=None, stride=1):
-        r"""
-        Chunk-based parametrization of PCA. Iterates through all data twice. In the first pass, the
-        data means are estimated, in the second pass the covariance matrix is estimated.
-        Finally, the eigenvalue problem is solved to determine the principal components.
 
-        :param X:
-            coordinates. axis 0: time, axes 1-..: coordinates
-        :param itraj:
-            index of the current trajectory
-        :param t:
-            time index of first frame within trajectory
-        :param first_chunk:
-            boolean. True if this is the first chunk globally.
-        :param last_chunk_in_traj:
-            boolean. True if this is the last chunk within the trajectory.
-        :param last_chunk:
-            boolean. True if this is the last chunk globally.
-        :param ipass:
-            number of pass through data
-        :param Y:
-            time-lagged data (if available)
-        :return:
-        """
         # pass 1: means
-        if ipass == 0:
-            if t == 0:
-                if self._given_mean:
-                    raise SkipPassException(next_pass_stride=stride)
+        for chunk in it:
+            if self._given_mean:
+                break
 
-            self.mu += np.sum(X, axis=0, dtype=np.float64)
-            self._N_mean += np.shape(X)[0]
+            mean += np.sum(chunk, axis=0, dtype=np.float64)
+            N_mean += np.shape(chunk)[0]
 
             # counting chunks and log of eta
             self._progress_update(1, 0)
+        if not self._given_mean:
+            mean /= N_mean
 
-            if last_chunk:
-                self.mu /= self._N_mean
+        self.set_params(mean=mean)
 
         # pass 2: covariances
-        if ipass == 1:
-            if t == 0:
-                self._logger.debug("start calculate covariance for traj nr %i" % itraj)
-            Xm = X - self.mu
+        for chunk in X.iterator(return_trajindex=False, **kwargs):
+            Xm = chunk - mean
             self.cov += np.dot(Xm.T, Xm)
-            self._N_cov += np.shape(X)[0]
+            N_cov += np.shape(chunk)[0]
 
             self._progress_update(1, stage=1)
 
-            if last_chunk:
-                self.cov /= self._N_cov - 1
-                return True  # finished!
+        self.cov /= N_cov - 1
 
-        # by default, continue
-        return False
-
-    def _param_finish(self):
         (v, R) = np.linalg.eigh(self.cov)
         # sort
         I = np.argsort(v)[::-1]
-        self.eigenvalues = v[I]
-        self.eigenvectors = R[:, I]
+        eigenvalues = v[I]
+        eigenvectors = R[:, I]
 
         # compute cumulative variance
-        self.cumvar = np.cumsum(self.eigenvalues)
-        self.cumvar /= self.cumvar[-1]
+        cumvar = np.cumsum(eigenvalues)
+        cumvar /= cumvar[-1]
+
+        model = PCAModel()
+        model.update_model_params(cumvar=cumvar, eigenvalues=eigenvalues, eigenvectors=eigenvectors,
+                                  mean=mean, mu=mean)
+        self._model = model
+
+        return model
 
     def _transform_array(self, X):
         r"""
@@ -216,7 +212,6 @@ class PCA(Transformer):
         :param X: the input data
         :return: the projected data
         """
-        # TODO: consider writing an extension to avoid temporary Xmeanfree
-        X_meanfree = X - self.mu
-        Y = np.dot(X_meanfree, self.eigenvectors[:, 0:self.dimension()])
+        X_meanfree = X - self._model.mean
+        Y = np.dot(X_meanfree, self._model.eigenvectors[:, 0:self.dimension()])
         return Y

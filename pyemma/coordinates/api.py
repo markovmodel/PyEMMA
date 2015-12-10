@@ -801,7 +801,8 @@ def save_trajs(traj_inp, indexes, prefix = 'set_', fmt = None, outfiles = None,
 
 def _get_input_stage(previous_stage):
     # this is a pipelining stage, so let's parametrize from it
-    if isinstance(previous_stage, _Transformer):
+    from pyemma.coordinates.data.iterable import Iterable
+    if isinstance(previous_stage, Iterable):
         inputstage = previous_stage
     # second option: data is array or list of arrays
     else:
@@ -826,11 +827,11 @@ def _param_stage(previous_stage, this_stage, stride=1):
     if previous_stage is None:
         return this_stage
 
-    inputstage = _get_input_stage(previous_stage)
+    input_stage = _get_input_stage(previous_stage)
     # parametrize transformer
-    this_stage.data_producer = inputstage
-    this_stage.chunksize = inputstage.chunksize
-    this_stage.parametrize(stride=stride)
+    this_stage.data_producer = input_stage
+    this_stage.chunksize = input_stage.chunksize
+    this_stage.estimate(X=input_stage, stride=stride)
     return this_stage
 
 
