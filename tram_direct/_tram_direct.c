@@ -147,6 +147,7 @@ void _dtram_like_update(
         for(K=0; K<n_therm_states; ++K)
         {
             Ki = K*n_conf_states + i;
+            if(0 == state_counts[Ki]) continue;
             KMM = K*n_conf_states*n_conf_states;
             for(j=0; j<n_conf_states; ++j)
             {
@@ -169,11 +170,12 @@ void _dtram_like_update(
 
     for(i=0; i<n_conf_states; ++i)
     {
-        if(0 < Csum[i]) {
+        if(0 < Csum[i])
+        {
             for(K=0; K<n_therm_states; ++K)
             {
-                    Ki = K*n_conf_states + i;
-                    new_biased_conf_weights[Ki] = biased_conf_weights[Ki] * Csum[i] / divisor[i];
+                Ki = K*n_conf_states + i;
+                new_biased_conf_weights[Ki] = biased_conf_weights[Ki] * Csum[i] / divisor[i];
             }
         }
     }
