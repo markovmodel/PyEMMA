@@ -76,8 +76,7 @@ class TestCSVReader(unittest.TestCase):
     def test_read_with_skipping_first_few_couple_lines(self):
         for skip in [0, 3, 13]:
             r1 = CSVReader(self.filename1, chunksize=30)
-            r1._skip = skip
-            out_with_skip = r1.get_output()[0]
+            out_with_skip = r1.get_output(skip=skip)[0]
             r2 = CSVReader(self.filename1, chunksize=30)
             out = r2.get_output()[0]
             np.testing.assert_almost_equal(out_with_skip, out[skip::],
@@ -87,8 +86,7 @@ class TestCSVReader(unittest.TestCase):
     def test_read_with_skipping_first_few_couple_lines_multiple_trajectoryfiles(self):
         for skip in [0, 3, 13]:
             r1 = CSVReader([self.filename1, self.filename1])
-            r1._skip = skip
-            out_with_skip = r1.get_output()
+            out_with_skip = r1.get_output(skip=skip)
             r2 = CSVReader([self.filename1, self.filename1])
             out = r2.get_output()
             np.testing.assert_almost_equal(out_with_skip[0], out[0][skip::],
@@ -157,7 +155,9 @@ class TestCSVReader(unittest.TestCase):
                     chunks_lag.append(Y)
                 chunks = np.vstack(chunks)
                 chunks_lag = np.vstack(chunks_lag)
-                np.testing.assert_almost_equal(chunks, self.data[::s])
+                actual = self.data[::s]
+                actual_lagged = self.data[t::s]
+                np.testing.assert_almost_equal(chunks, self.data[::s][0:len(actual_lagged)])
                 np.testing.assert_almost_equal(chunks_lag, self.data[t::s],
                                                err_msg="output is not equal for"
                                                        " lag %i and stride %i" % (t, s))
@@ -174,7 +174,9 @@ class TestCSVReader(unittest.TestCase):
                     chunks_lag.append(Y)
                 chunks = np.vstack(chunks)
                 chunks_lag = np.vstack(chunks_lag)
-                np.testing.assert_almost_equal(chunks, self.data[::s])
+                actual = self.data[::s]
+                actual_lagged = self.data[t::s]
+                np.testing.assert_almost_equal(chunks, self.data[::s][0:len(actual_lagged)])
                 np.testing.assert_almost_equal(chunks_lag, self.data[t::s],
                                                err_msg="output is not equal for"
                                                        " lag %i and stride %i" % (t, s))

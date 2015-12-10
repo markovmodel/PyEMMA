@@ -137,7 +137,7 @@ class iterload:
             # TODO: this will first apply stride, then skip!
             if self._extension not in _TOPOLOGY_EXTS:
                 self._kwargs['top'] = self._top
-            return load(self._filename, **self._kwargs)[self._skip:]
+            return load(self._filename, stride=self._stride, **self._kwargs)[self._skip:]
         elif self._mode is 'pdb':
             # the PDBTrajectortFile class doesn't follow the standard API. Fixing it
             # to support iterload could be worthwhile, but requires a deep refactor.
