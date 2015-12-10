@@ -36,7 +36,6 @@ logger = getLogger('pyemma.'+'TestDataInMemory')
 
 
 class TestDataInMemory(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls):
         d = np.random.random((100, 3))
