@@ -1,4 +1,3 @@
-
 # This file is part of PyEMMA.
 #
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
@@ -37,7 +36,6 @@ logger = getLogger('TestDataInMemory')
 
 
 class TestDataInMemory(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls):
         d = np.random.random((100, 3))
@@ -70,7 +68,6 @@ class TestDataInMemory(unittest.TestCase):
                                            err_msg="The first %s rows of the second file were skipped, but that did not"
                                                    " match the rows with skip=0 and sliced by [%s::]" % (skip, skip))
 
-
     def testWrongArguments(self):
         with self.assertRaises(ValueError):
             reader = DataInMemory("foo")
@@ -86,7 +83,7 @@ class TestDataInMemory(unittest.TestCase):
         self.assertEqual(d.dimension(), dim)
 
         np.testing.assert_equal(
-            d.trajectory_lengths(), np.array([frames_per_traj for _ in range(3)]))
+                d.trajectory_lengths(), np.array([frames_per_traj for _ in range(3)]))
 
     def testDataArray(self):
         frames_per_traj = 100
@@ -96,7 +93,7 @@ class TestDataInMemory(unittest.TestCase):
         d = DataInMemory(data)
 
         np.testing.assert_equal(
-            d.trajectory_lengths(), np.array([frames_per_traj for _ in range(1)]))
+                d.trajectory_lengths(), np.array([frames_per_traj for _ in range(1)]))
 
     def test1dData(self):
         n = 3
@@ -134,7 +131,7 @@ class TestDataInMemory(unittest.TestCase):
         self.assertEqual(reader.number_of_trajectories(), 1)
         self.assertEqual(reader.n_frames_total(), 4)
         np.testing.assert_equal(
-            reader.trajectory_lengths(), np.array([reader.n_frames_total()]))
+                reader.trajectory_lengths(), np.array([reader.n_frames_total()]))
 
     def test_time_lagged_chunked_access(self):
         n = 100
@@ -168,11 +165,11 @@ class TestDataInMemory(unittest.TestCase):
                                        err_msg="not equal for stride=%i" % s)
 
     def test_chunksize(self):
-        data = np.random.randn(200,2)
+        data = np.random.randn(200, 2)
         cs = 100
-        source = pyemma.coordinates.source(data,chunk_size=cs)
+        source = pyemma.coordinates.source(data, chunk_size=cs)
         source.chunksize = 100
-        for i,ch in source.iterator():
+        for i, ch in source.iterator():
             assert ch.shape[0] <= cs, ch.shape
 
     def test_lagged_iterator_1d(self):
@@ -203,7 +200,7 @@ class TestDataInMemory(unittest.TestCase):
         for traj, input_traj in zip(trajs, data):
             # do not consider chunks that have no lagged counterpart
             input_shape = input_traj.shape
-            np.testing.assert_equal(traj.reshape((input_shape[0]-lag,)), input_traj[:len(input_traj)-lag])
+            np.testing.assert_equal(traj.reshape((input_shape[0] - lag,)), input_traj[:len(input_traj) - lag])
 
         # lagged data
         lagged_0 = [d[lag:] for d in data]
@@ -242,7 +239,7 @@ class TestDataInMemory(unittest.TestCase):
         for traj, input_traj in zip(trajs, data):
             # do not consider chunks that have no lagged counterpart
             input_shape = input_traj.shape
-            np.testing.assert_equal(traj.reshape((input_shape[0]-lag,3)), input_traj[:len(input_traj)-lag])
+            np.testing.assert_equal(traj.reshape((input_shape[0] - lag, 3)), input_traj[:len(input_traj) - lag])
 
         # lagged data
         lagged_0 = [d[lag:] for d in data]
@@ -262,6 +259,7 @@ class TestDataInMemory(unittest.TestCase):
                     chunks.append(Y)
                 chunks = np.vstack(chunks)
                 np.testing.assert_equal(chunks, data[lag::stride], "failed for stride=%s, lag=%s" % (stride, lag))
+
 
 if __name__ == "__main__":
     unittest.main()

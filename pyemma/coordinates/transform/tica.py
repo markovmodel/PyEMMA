@@ -24,7 +24,10 @@ Created on 19.01.2015
 
 @author: marscher
 '''
-from .transformer import Transformer, SkipPassException
+from .transformer import Transformer
+
+class SkipPassException(object):
+    pass
 
 from pyemma.util.linalg import eig_corr
 from pyemma.util.annotators import doc_inherit

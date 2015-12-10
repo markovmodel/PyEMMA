@@ -24,17 +24,20 @@ Created on 23.01.2015
 '''
 
 from __future__ import absolute_import
-import mdtraj
+
 import tempfile
 import unittest
+
+import mdtraj
+import numpy as np
+import pkg_resources
+from six.moves import range
+
 from pyemma.coordinates import api
+from pyemma.coordinates.api import discretizer, tica, source
+from pyemma.coordinates.data.data_in_memory import DataInMemoryIterator
 from pyemma.coordinates.data.feature_reader import FeatureReader
 from pyemma.util.log import getLogger
-import pkg_resources
-
-import numpy as np
-from pyemma.coordinates.api import discretizer, tica, source
-from six.moves import range
 
 log = getLogger('TestFeatureReader')
 
@@ -93,7 +96,7 @@ class TestFeatureReader(unittest.TestCase):
 
         frames = 0
         data = []
-        for i, X in reader:
+        for i, X in reader.iterator():
             assert isinstance(X, np.ndarray)
             frames += X.shape[0]
             data.append(X)
@@ -111,7 +114,7 @@ class TestFeatureReader(unittest.TestCase):
 
         data = {itraj: [] for itraj in range(reader.number_of_trajectories())}
 
-        for i, X in reader:
+        for i, X in reader.iterator():
             data[i].append(X)
 
         # restore shape of input
@@ -124,8 +127,7 @@ class TestFeatureReader(unittest.TestCase):
     def test_skip(self):
         for skip in [0, 3, 13]:
             r1 = FeatureReader(self.trajfile, self.topfile)
-            r1._skip = skip
-            out_with_skip = r1.get_output()[0]
+            out_with_skip = r1.get_output(skip=skip)[0]
             r2 = FeatureReader(self.trajfile, self.topfile)
             out = r2.get_output()[0]
             np.testing.assert_almost_equal(out_with_skip, out[skip::],
@@ -135,8 +137,7 @@ class TestFeatureReader(unittest.TestCase):
     def test_skip_input_list(self):
         for skip in [0, 3, 13]:
             r1 = FeatureReader([self.trajfile, self.trajfile2], self.topfile)
-            r1._skip = skip
-            out_with_skip = r1.get_output()
+            out_with_skip = r1.get_output(skip=skip)
             r2 = FeatureReader([self.trajfile, self.trajfile2], self.topfile)
             out = r2.get_output()
             np.testing.assert_almost_equal(out_with_skip[0], out[0][skip::],
@@ -168,10 +169,10 @@ class TestFeatureReader(unittest.TestCase):
         self.assertTrue(np.allclose(merged_lagged, fake_lagged))
 
         # restore shape of input
-        data = np.vstack(data).reshape(self.xyz.shape)
+        data = np.vstack(data).reshape(self.xyz[lag:].shape)
 
-        self.assertEqual(frames, reader.trajectory_lengths()[0])
-        self.assertTrue(np.allclose(data, self.xyz))
+        self.assertEqual(frames, reader.trajectory_lengths()[0] - lag)
+        self.assertTrue(np.allclose(data, self.xyz[:len(self.xyz) - lag]))
 
     def test_with_pipeline_time_lagged(self):
         reader = api.source(self.trajfile, top=self.topfile)
@@ -203,13 +204,14 @@ class TestFeatureReader(unittest.TestCase):
         # map "results" to memory
         reader = api.source(self.trajfile, top=self.topfile)
         reader.in_memory = True
-        assert reader._parametrized
-        reader.parametrize(stride=2)
+        mem_it = reader.iterator(stride=2, chunk=0, return_trajindex=False)
+        assert isinstance(mem_it, DataInMemoryIterator)
+        mem_data = [X for X in mem_it]
 
         reader2 = api.source(self.trajfile, top=self.topfile)
         out = reader2.get_output(stride=2)
 
-        np.testing.assert_equal(reader._Y[0], out[0])
+        np.testing.assert_equal(mem_data[0], out[0])
 
     def test_in_memory_switch_stride_dim(self):
         reader = api.source(self.trajfile, top=self.topfile)
@@ -231,9 +233,8 @@ class TestFeatureReader(unittest.TestCase):
         err_msg = "not equal for stride=%i, lag=%i"
         for stride in strides:
             for lag in lags:
-                chunks = {itraj: []
-                          for itraj in range(reader.number_of_trajectories())}
-                for itraj, _, Y in reader.iterator(stride, lag):
+                chunks = {itraj: [] for itraj in range(reader.number_of_trajectories())}
+                for itraj, _, Y in reader.iterator(stride=stride, lag=lag):
                     chunks[itraj].append(Y)
                 chunks[0] = np.vstack(chunks[0])
                 np.testing.assert_almost_equal(
