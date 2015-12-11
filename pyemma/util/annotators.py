@@ -159,8 +159,8 @@ def aliased(aliased_class):
 
 def shortcut(*names):
     """Add an shortcut (alias) to a decorated function, but not to class methods!
-    
-    use aliased/alias decorators for class members!
+
+    Use aliased/alias decorators for class members!
 
     Calling the shortcut (alias) will call the decorated function. The shortcut name will be appended
     to the module's __all__ variable and the shortcut function will inherit the function's docstring
@@ -175,17 +175,15 @@ def shortcut(*names):
     >>> is_tmatrix(args) # doctest: +SKIP
 
     """
-    # TODO: this does not work (is not tested with class member functions)
-    # it is not possible to reliably determine if a function is a member function, until it is bound
     def wrap(f):
-        # TODO: this is wrong for class member shortcuts
-        globals_ = f.__globals__ if PY2 else f.__globals__
+        globals_ = f.__globals__
         for name in names:
             globals_[name] = f
             if '__all__' in globals_ and name not in globals_['__all__']:
                 globals_['__all__'].append(name)
         return f
     return wrap
+
 
 def deprecated(*optional_message):
     """This is a decorator which can be used to mark functions

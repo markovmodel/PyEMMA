@@ -18,9 +18,7 @@ Application walkthroughs
    :maxdepth: 1
 
    generated/pentapeptide_msm
-
    generated/MSM_BPTI
-
    generated/trypsin_benzamidine_hmm
 
 
@@ -44,9 +42,15 @@ In this section we will give you in-depth tutorials on specific methods or conce
    :maxdepth: 1
 
    generated/feature_selection
-
    generated/model_selection_validation
-
    generated/tpt
 
 
+Estimation with fixed equilibrium distribution
+----------------------------------------------
+
+.. toctree::
+   :maxdepth: 1
+
+   generated/doublewell
+   generated/alanine

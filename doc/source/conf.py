@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 #
 # EMMA documentation build configuration file, created by
@@ -11,22 +10,28 @@
 #
 # All configuration values have a default; values that are commented out
 # serve to show the default.
+from __future__ import print_function
 import os
 
 # Check Sphinx version
-needs_sphinx = '1.2'
+# TODO: once 1.3.2 is released, require it again. 1.2.3 is known to be broken.
+#needs_sphinx = '1.3.1+'
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 
+# disabled for more flexibility:
+##################################
 # import pyemma from relative path to ensure, we do not use an installed
 # version.
-import imp
-m = imp.find_module('pyemma', ['../..'])
-pyemma = imp.load_module('pyemma', *m)
-print pyemma.__path__
-print pyemma.__version__
+#import imp
+#m = imp.find_module('pyemma', ['../..'])
+#pyemma = imp.load_module('pyemma', *m)
+##################################
+import pyemma
+print ("Generating doc for PyEMMA version %s installed in %s" 
+        % (pyemma.__version__, pyemma.__path__)) 
 
 # -- General configuration -----------------------------------------------
 # Add any Sphinx extension module names here, as strings. They can be extensions
@@ -285,7 +290,7 @@ spelling_show_suggestions = True
 # try to exclude deprecated
 def skip_deprecated(app, what, name, obj, skip, options):
     if hasattr(obj, "func_dict") and "__deprecated__" in obj.func_dict:
-        print "skipping " + name
+        print("skipping " + name)
         return True
     return skip or False
 

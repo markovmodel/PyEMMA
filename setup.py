@@ -34,8 +34,6 @@ import versioneer
 import warnings
 
 DOCLINES = __doc__.split("\n")
-__requires__ = 'setuptools>=18'
-
 
 CLASSIFIERS = """\
 Development Status :: 5 - Production/Stable
@@ -62,13 +60,6 @@ try:
 except ImportError as ie:
     print(getSetuptoolsError())
     sys.exit(23)
-# this should catch pkg_resources.DistributionNotFound, which is not
-# importable now.
-except:
-    print("Your version of setuptools is too old. We require at least %s\n" \
-          % __requires__)
-    print(getSetuptoolsError())
-    sys.exit(24)
 
 ###############################################################################
 # Extensions
@@ -99,6 +90,8 @@ def extensions():
     openmp_enabled, needs_gomp = detect_openmp()
 
     import mdtraj
+    from numpy import get_include as _np_inc
+    np_inc = _np_inc()
 
     exts = []
 
@@ -113,7 +106,8 @@ def extensions():
                       'pyemma/coordinates/clustering/src/clustering.c'],
                   include_dirs=[
                       mdtraj.capi()['include_dir'],
-                      'pyemma/coordinates/clustering/include'
+                      np_inc,
+                      'pyemma/coordinates/clustering/include',
                   ],
                   libraries=[lib_prefix+'theobald'],
                   library_dirs=[mdtraj.capi()['lib_dir']],
@@ -125,6 +119,7 @@ def extensions():
                       'pyemma/coordinates/clustering/src/clustering.c'],
                   include_dirs=[
                       mdtraj.capi()['include_dir'],
+                      np_inc,
                       'pyemma/coordinates/clustering/include'],
                   libraries=[lib_prefix+'theobald'],
                   library_dirs=[mdtraj.capi()['lib_dir']],
@@ -140,6 +135,8 @@ def extensions():
             for s in e.sources:
                 new_src.append(s.replace('.pyx', '.c'))
             e.sources = new_src
+    else:
+        exts = cythonize(exts)
 
     if openmp_enabled:
         warnings.warn('enabled openmp')
@@ -156,31 +153,7 @@ def extensions():
 
 def get_cmdclass():
     versioneer_cmds = versioneer.get_cmdclass()
-
-    from setuptools.command.build_ext import build_ext
-    class np_build(build_ext):
-        """
-        Sets numpy include path for extensions. Its ensured, that numpy exists
-        at runtime. Note that this workaround seems to disable the ability to
-        add additional include dirs via the setup(include_dirs=['...'] option.
-        So add them here!
-        """
-        def initialize_options(self):
-            build_ext.initialize_options(self)
-            try:
-                import numpy
-                dir = numpy.get_include()
-            except ImportError:
-                # this method should work for pip installations, where the numpy
-                # egg is located in the source folder
-                import pkg_resources
-                dir = pkg_resources.resource_filename('numpy', 'core/include')
-
-            if not os.path.isdir(dir):
-                raise RuntimeError("NumPy include dir '%s' not found")
-
-            self.include_dirs = [dir]
-
+    
     sdist_class = versioneer_cmds['sdist']
     class sdist(sdist_class):
         """ensure cython files are compiled to c, when distributing"""
@@ -199,11 +172,8 @@ def get_cmdclass():
                 warnings.warn('sdist cythonize failed')
             return sdist_class.run(self)
 
-    cmdclass = dict(build_ext=np_build,
-                    sdist=sdist,
-                    )
+    versioneer_cmds['sdist'] = sdist
 
-    versioneer_cmds.update(cmdclass)
     return versioneer_cmds
 
 
@@ -258,6 +228,8 @@ else:
                                   'mdtraj>=1.5.0',
                                   'nose',
                                   ]
+    if sys.version_info.major == 2:
+       metadata['install_requires'] += ['mock']
 
     metadata['package_data'] = {
                                 'pyemma': ['pyemma.cfg', 'logging.yml'],
@@ -272,19 +244,7 @@ else:
         metadata['setup_requires'] += ['cython>=0.22']
 
     # only require numpy and extensions in case of building/installing
-    metadata['ext_modules'] = extensions()
+    metadata['ext_modules'] = lazy_cythonize(callback=extensions)
 
-from distutils.errors import DistutilsError
-try:
-    setup(**metadata)
-except VersionConflict as ve:
-    print(ve)
-    print("You need to manually upgrade your 'setuptools' installation!")
-    " Please use these instructions to perform an upgrade and/or consult\n"
-    " https://pypi.python.org/pypi/setuptools#installation-instructions"
-    print(getSetuptoolsError())
-    sys.exit(42)
-except DistutilsError as de:
-    print(de)
-    sys.exit(43)
+setup(**metadata)
 

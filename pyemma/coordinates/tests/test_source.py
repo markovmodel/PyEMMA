@@ -29,7 +29,7 @@ import pyemma.coordinates.api as api
 import pyemma.util.types as types
 import pkg_resources
 
-logger = getLogger('TestReaderUtils')
+logger = getLogger('pyemma.'+'TestReaderUtils')
 
 
 class TestSource(unittest.TestCase):

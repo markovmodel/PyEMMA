@@ -21,8 +21,6 @@ from __future__ import absolute_import
 import math
 import numpy as np
 
-from matplotlib import pylab as plt
-from matplotlib import rcParams
 from pyemma.util import types as _types
 from six.moves import range
 
@@ -65,6 +63,8 @@ class NetworkPlot(object):
         <matplotlib.figure.Figure...
 
         """
+        from matplotlib import pylab as plt
+
         if A.shape[0] >= 50:
             import warnings
             warnings.warn("The layout optimization method will take a long"
@@ -74,6 +74,7 @@ class NetworkPlot(object):
         self.pos = pos
         self.xpos = xpos
         self.ypos = ypos
+        self.plt = plt
 
     def _draw_arrow(self, x1, y1, x2, y2, Dx, Dy, label="", width=1.0,
                     arrow_curvature=1.0, color="grey",
@@ -83,6 +84,7 @@ class NetworkPlot(object):
         Will allow the given patches at start end end.
 
         """
+        plt = self.plt
         # set arrow properties
         dist = math.sqrt(
             ((x2 - x1) / float(Dx))**2 + ((y2 - y1) / float(Dy))**2)
@@ -131,6 +133,8 @@ class NetworkPlot(object):
         The thicknesses and labels of the arrows are taken from the off-diagonal matrix elements in A.
 
         """
+        plt = self.plt
+
         if self.pos is None:
             self.layout_automatic()
         # number of nodes
@@ -166,6 +170,7 @@ class NetworkPlot(object):
         fig = plt.gcf()
         fig.set_size_inches(figsize, forward=True)
         # font sizes
+        from matplotlib import rcParams
         old_fontsize = rcParams['font.size']
         rcParams['font.size'] = 20
         # remove axis labels
@@ -500,6 +505,7 @@ def plot_flux(flux, pos=None, state_sizes=None, flux_scale=1.0,
     (<matplotlib.figure.Figure..., array...)
 
     """
+    from matplotlib import pylab as plt
     F = flux_scale * getattr(flux, attribute_to_plot)
     c = flux.committor
     if state_sizes is None:
@@ -517,6 +523,7 @@ def plot_flux(flux, pos=None, state_sizes=None, flux_scale=1.0,
                            figpadding=figpadding, xticks=show_committor, yticks=False, show_frame=show_frame,
                            **textkwargs)
     if show_committor:
+        
         plt.xlabel('Committor probability')
     return ax, plot.pos
 

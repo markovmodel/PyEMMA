@@ -27,8 +27,7 @@ from pyemma.util import types as _types
 
 # imports for external usage
 from pyemma._ext.sklearn.base import clone as clone_estimator
-from pyemma._base.logging import create_logger, instance_name
-from itertools import count
+from pyemma._base.logging import Loggable
 
 __author__ = 'noe, marscher'
 
@@ -294,41 +293,12 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
         return res
 
 
-class Estimator(_BaseEstimator):
+class Estimator(_BaseEstimator, Loggable):
     """ Base class for pyEMMA estimators
 
     """
-    # counting estimator instances, incremented by name property.
-    _ids = count(0)
     # flag indicating if estimator's estimate method has been called
     _estimated = False
-
-    @property
-    def name(self):
-        """The name of this estimator"""
-        try:
-            return self._name
-        except AttributeError:
-            self._name = instance_name(self, next(self._ids))
-            return self._name
-
-    @property
-    def logger(self):
-        """The logger for this Estimator """
-        try:
-            return self._logger_instance
-        except AttributeError:
-            create_logger(self)
-            return self._logger_instance
-
-    def __getstate__(self):
-        # do not pickle the logger instance
-        d = dict(self.__dict__)
-        try:
-            del d['_logger_instance']
-        except KeyError:
-            pass
-        return d
 
     def estimate(self, X, **params):
         """ Estimates the model given the data X

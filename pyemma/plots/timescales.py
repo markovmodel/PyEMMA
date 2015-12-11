@@ -16,14 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
-
 from __future__ import absolute_import
+
 from six.moves import range
+import numpy as _np
+
 __author__ = 'noe'
 
-import numpy as _np
-import matplotlib.pylab as _plt
 
 def plot_implied_timescales(ITS, ax=None, outfile=None, show_mle=True, show_mean=True,
                             xlog=False, ylog=True, confidence=0.95, refs=None,
@@ -70,6 +69,8 @@ def plot_implied_timescales(ITS, ax=None, outfile=None, show_mle=True, show_mean
     ax : Axes object containing the plot
 
     """
+    import matplotlib.pylab as _plt
+
     # check input
     if (ax is None):
         ax = _plt.gca()

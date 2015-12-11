@@ -7,6 +7,8 @@ import re
 
 src_dir = os.getenv('SRC_DIR')
 
+test_pkg = 'pyemma'
+cover_pkg = test_pkg
 
 # matplotlib headless backend
 with open('matplotlibrc', 'w') as fh:
@@ -25,17 +27,17 @@ def coverage_report():
     # fix paths in .coverage file
     with open(dest, 'r') as fh:
         data = fh.read()
-    match= '"/home/travis/miniconda/envs/_test/lib/python.+?/site-packages/.+?/(pyemma/.+?)"'
+    match= '"/home/travis/miniconda/envs/_test/lib/python.+?/site-packages/.+?/({test_pkg}/.+?)"'.format(test_pkg=test_pkg)
     repl = '"%s/\\1"' % build_dir
     data = re.sub(match, repl, data)
     os.unlink(dest)
     with open(dest, 'w+') as fh:
        fh.write(data)
 
-nose_run = "nosetests pyemma -vv" \
-           " --with-coverage --cover-inclusive --cover-package=pyemma" \
+nose_run = "nosetests {test_pkg} -vv" \
+           " --with-coverage --cover-inclusive --cover-package={cover_pkg}" \
            " --with-doctest --doctest-options=+NORMALIZE_WHITESPACE,+ELLIPSIS" \
-           .split(' ')
+           .format(test_pkg=test_pkg, cover_pkg=cover_pkg).split(' ')
 
 res = subprocess.call(nose_run)
 

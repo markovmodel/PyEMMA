@@ -36,7 +36,7 @@ from pyemma.coordinates.data.feature_reader import FeatureReader
 from pyemma.util.log import getLogger
 from six.moves import range
 
-log = getLogger('TestFeatureReaderAndTICAProjection')
+log = getLogger('pyemma.'+'TestFeatureReaderAndTICAProjection')
 
 def random_invertible(n, eps=0.01):
     'generate real random invertible matrix'

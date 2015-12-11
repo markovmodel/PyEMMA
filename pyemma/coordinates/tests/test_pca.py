@@ -34,7 +34,7 @@ import pyemma.util.types as types
 from six.moves import range
 
 
-logger = getLogger('TestPCA')
+logger = getLogger('pyemma.'+'TestPCA')
 
 
 class TestPCAExtensive(unittest.TestCase):

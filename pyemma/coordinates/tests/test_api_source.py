@@ -32,7 +32,7 @@ from pyemma.coordinates.data.py_csv_reader import PyCSVReader as CSVReader
 import shutil
 
 
-logger = getLogger('TestReaderUtils')
+logger = getLogger('pyemma.'+'TestReaderUtils')
 
 
 class TestApiSourceFileReader(unittest.TestCase):

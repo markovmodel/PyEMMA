@@ -41,7 +41,7 @@ class TestNumPyFileReader(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
 
-        cls.logger = getLogger(cls.__class__.__name__)
+        cls.logger = getLogger('pyemma.'+cls.__class__.__name__)
 
         d = np.arange(3 * 100).reshape((100, 3))
         d2 = np.arange(300, 900).reshape((200,3))
