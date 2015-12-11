@@ -68,7 +68,7 @@ cdef extern from "_tram.h":
         int *state_counts, int n_therm_states, int n_conf_states, double *scratch_M,
         double *log_R_K_i)
     void _get_pointwise_unbiased_free_energies(
-        double *bias_energy_sequence, int *state_sequence,
+        int k, double *bias_energy_sequence, double *therm_energies, int *state_sequence,
         int seq_length, double *log_R_K_i, int n_therm_states, int n_conf_states,
         double *scratch_T, double *pointwise_unbiased_free_energies)
     void _get_unbiased_user_free_energies(double *pointwise_unbiased_free_energies,
@@ -313,8 +313,10 @@ def normalize(
         <double*> _np.PyArray_DATA(scratch_M))
 
 def get_pointwise_unbiased_free_energies(
+    k,
     _np.ndarray[double, ndim=2, mode="c"] log_lagrangian_mult not None,
     _np.ndarray[double, ndim=2, mode="c"] biased_conf_energies not None,
+    _np.ndarray[double, ndim=1, mode="c"] therm_energies not None,
     _np.ndarray[int, ndim=3, mode="c"] count_matrices not None,
     _np.ndarray[double, ndim=2, mode="c"] bias_energy_sequence not None,
     _np.ndarray[int, ndim=1, mode="c"] state_sequence not None,
@@ -322,6 +324,35 @@ def get_pointwise_unbiased_free_energies(
     _np.ndarray[double, ndim=1, mode="c"] scratch_M,    
     _np.ndarray[double, ndim=1, mode="c"] scratch_T,
     _np.ndarray[double, ndim=1, mode="c"] pointwise_unbiased_free_energies not None):
+    r'''
+    Compute the pointwise free energies :math:`\mu^{k}(x)` for all x.
+
+    Parameters
+    ----------
+    k : int or None
+        thermodynamic state, if k is None, compute pointwise free energies
+        of the unbiased state.
+    log_lagrangian_mult : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+        log of the Lagrangian multipliers
+    biased_conf_energies : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+        reduced free energies
+    therm_energies : numpy.ndarray(shape=(T), dtype=numpy.intc)
+        reduced thermodynamic free energies
+    count_matrices : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
+        multistate count matrix
+    bias_energy_sequence : numpy.ndarray(shape=(T, X), dtype=numpy.intc)
+        reduced bias energies in the T thermodynamic states for all X samples
+    state_sequence : numpy.ndarray(shape=(X,), dtype=numpy.intc)
+        Markov state indices for all X samples
+    state_counts : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
+        number of visits to thermodynamic state K and Markov state i
+    scratch_M : numpy.ndarray(shape=(M), dtype=numpy.float64)
+        scratch array for logsumexp operations
+    scratch_T : numpy.ndarray(shape=(T), dtype=numpy.float64)
+        scratch array for logsumexp operations
+    pointwise_unbiased_free_energies : numpy.ndarray(shape=(X), dtype=numpy.float64)
+        target array for the pointwise free energies
+    '''
 
     log_R_K_i = _np.zeros(shape=(state_counts.shape[0],state_counts.shape[1]), dtype=_np.float64)
     if scratch_T is None:
@@ -332,8 +363,13 @@ def get_pointwise_unbiased_free_energies(
     _private_get_log_R_K_i(log_lagrangian_mult, biased_conf_energies,
         count_matrices, state_counts, scratch_M, log_R_K_i)
 
+    if k is None:
+        k = -1
+
     _get_pointwise_unbiased_free_energies(
+        k,
         <double*> _np.PyArray_DATA(bias_energy_sequence),
+        <double*> _np.PyArray_DATA(therm_energies),
         <int*> _np.PyArray_DATA(state_sequence),
         state_sequence.shape[0], 
         <double*> _np.PyArray_DATA(log_R_K_i),

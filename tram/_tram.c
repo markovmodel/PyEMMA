@@ -449,24 +449,27 @@ double _log_likelihood_lower_bound(
 /* pointwise expectations
    ---------------------- */
 void _get_pointwise_unbiased_free_energies(
-    double *bias_energy_sequence, int *state_sequence,
+    int k, double *bias_energy_sequence, double *therm_energies, int *state_sequence,
     int seq_length, double *log_R_K_i, int n_therm_states, int n_conf_states,
     double *scratch_T, double *pointwise_unbiased_free_energies)
 {
-    int K, o, i, x;
+    int L, o, i, x;
     double log_divisor;
 
     for(x=0; x<seq_length; ++x)
     {
         i = state_sequence[x];
         o = 0;
-        for(K=0; K<n_therm_states; ++K)
+        for(L=0; L<n_therm_states; ++L)
         {
-            if(-INFINITY == log_R_K_i[K * n_conf_states + i]) continue;
-            scratch_T[o++] = log_R_K_i[K * n_conf_states + i] - bias_energy_sequence[K * seq_length + x];
+            if(-INFINITY == log_R_K_i[L * n_conf_states + i]) continue;
+            scratch_T[o++] = log_R_K_i[L * n_conf_states + i] - bias_energy_sequence[L * seq_length + x];
         }
         log_divisor = _logsumexp_sort_kahan_inplace(scratch_T, o);
-        pointwise_unbiased_free_energies[x] = log_divisor;
+        if(k==-1)
+            pointwise_unbiased_free_energies[x] = log_divisor;
+        else
+            pointwise_unbiased_free_energies[x] = bias_energy_sequence[k * seq_length + x] + log_divisor - therm_energies[k];
     }
 }
 
