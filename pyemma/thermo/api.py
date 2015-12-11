@@ -95,7 +95,7 @@ def multitemperature_to_bias(utrajs, ttrajs, kTs):
 # Estimators
 # ===================================
 
-def dtram(ttrajs, dtrajs, bias, lag, maxiter=10000, maxerr=1.0E-15, err_out=0, lll_out=0, dt_traj='1 steps'):
+def dtram(ttrajs, dtrajs, bias, lag, maxiter=10000, maxerr=1.0E-15, err_out=0, lll_out=0, dt_traj='1 step'):
     r"""
     Discrete transition-based reweighting analysis method
     Parameters
