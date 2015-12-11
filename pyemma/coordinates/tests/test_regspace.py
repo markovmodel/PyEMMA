@@ -50,10 +50,6 @@ class RandomDataSource(DataInMemory):
 
 class TestRegSpaceClustering(unittest.TestCase):
 
-    @classmethod
-    def setUpClass(cls):
-        super(TestRegSpaceClustering, cls).setUpClass()
-
     def setUp(self):
         self.dmin = 0.3
         self.clustering = RegularSpaceClustering(dmin=self.dmin)
@@ -126,7 +122,7 @@ class TestRegSpaceClustering(unittest.TestCase):
             # Cause all warnings to always be triggered.
             warnings.simplefilter("always")
             # Trigger a warning.
-            self.clustering.parametrize()
+            self.clustering.estimate(self.clustering.data_producer)
             assert w
             assert len(w) == 1
 
