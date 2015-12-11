@@ -23,6 +23,7 @@ from pyemma._base.estimator import Estimator as _Estimator
 from pyemma.thermo.models.multi_therm import MultiThermModel as _MultiThermModel
 from pyemma.msm import MSM as _MSM
 from pyemma.util import types as _types
+from pyemma.util.units import TimeUnit as _TimeUnit
 from msmtools.estimation import largest_connected_set as _largest_connected_set
 from thermotools import dtram as _dtram
 from thermotools import wham as _wham
@@ -30,8 +31,9 @@ from thermotools import util as _util
 
 class DTRAM(_Estimator, _MultiThermModel):
 
-    def __init__(self, bias_energies_full, lag=1, count_mode='sliding', connectivity='largest',
-                 dt_traj='1 step', maxiter=100000, maxerr=1e-5, err_out=0, lll_out=0, use_wham=False):
+    def __init__(
+        self, bias_energies_full, lag=1, count_mode='sliding', connectivity='largest',
+        dt_traj='1 step', maxiter=100000, maxerr=1e-5, err_out=0, lll_out=0, use_wham=False):
         # """
         # Example
         # -------
@@ -74,6 +76,7 @@ class DTRAM(_Estimator, _MultiThermModel):
         self.use_wham = use_wham
         # set derived quantities
         self.nthermo, self.nstates_full = bias_energies_full.shape
+        self.timestep_traj = _TimeUnit(dt_traj)
         # set iteration variables
         self.therm_energies = None
         self.conf_energies = None
@@ -147,7 +150,7 @@ class DTRAM(_Estimator, _MultiThermModel):
         self.model_active_set = [_largest_connected_set(msm, directed=False) for msm in fmsms]
         fmsms = [_np.ascontiguousarray(
             (msm[lcc, :])[:, lcc]) for msm, lcc in zip(fmsms, self.model_active_set)]
-        models = [_MSM(msm) for msm in fmsms]
+        models = [_MSM(msm, dt_model=self.timestep_traj.get_scaled(self.lag)) for msm in fmsms]
 
         # set model parameters to self
         self.set_model_params(models=models, f_therm=self.therm_energies, f=self.conf_energies)
