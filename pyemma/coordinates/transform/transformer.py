@@ -35,6 +35,7 @@ from pyemma.coordinates.data.iterable import Iterable
 from pyemma.util import types as _types
 from pyemma.util.annotators import deprecated
 from pyemma.util.exceptions import NotConvergedWarning
+from pyemma._base.progress.reporter import ProgressReporter
 
 __all__ = ['Transformer']
 __author__ = 'noe, marscher'
@@ -188,12 +189,14 @@ class Transformer(six.with_metaclass(ABCMeta, DataSource, Estimator, Loggable)):
                 X = DataInMemory(X, self.chunksize)
             else:
                 raise ValueError("no")
+
+        model = None
         try:
             # start
             self._param_init()
-            super(Transformer, self).estimate(X, **kwargs)
-        except NotConvergedWarning:
-            self._logger.info("presumely finished estimation.")
+            model = super(Transformer, self).estimate(X, **kwargs)
+        except NotConvergedWarning as ncw:
+            self._logger.info("Presumely finished estimation. Message: %s" % ncw)
         # finish
         self._param_finish()
         # memory mode? Then map all results. Avoid recursion here, if parametrization
@@ -202,8 +205,19 @@ class Transformer(six.with_metaclass(ABCMeta, DataSource, Estimator, Loggable)):
             self._map_to_memory()
 
         # finish parametrization
-        if not self._custom_param_progress_handling:
-            self._progress_force_finish(0)
+        #if not self._custom_param_progress_handling:
+        #    self._progress_force_finish(0)
+
+        self._estimated = True
+
+        return model
+
+    @deprecated("use estimate")
+    def parametrize(self):
+        if self._data_producer is None:
+            raise RuntimeError("This estimator has no data source given, giving up.")
+
+        return self.estimate(self.data_producer)
 
     @deprecated("use fit.")
     def transform(self, X):
