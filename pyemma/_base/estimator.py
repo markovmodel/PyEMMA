@@ -19,7 +19,7 @@
 from __future__ import absolute_import, print_function
 
 from six.moves import range
-import inspect
+import inspect, sys
 
 from pyemma._ext.sklearn.base import BaseEstimator as _BaseEstimator
 from pyemma._ext.sklearn.parameter_search import ParameterGrid
@@ -121,8 +121,22 @@ def _call_member(obj, name, args=None, failfast=True):
 
 def _estimate_param_scan_worker(estimator, params, X, evaluate, evaluate_args,
                                 failfast):
+    """ Method that runs estimation for several parameter settings.
+
+    Defined as a worker for Parallelization
+
+    """
     # run estimation
-    model = estimator.estimate(X, **params)
+    model = None
+    try:  # catch any exception
+        model = estimator.estimate(X, **params)
+    except:
+        e = sys.exc_info()[0]
+        if failfast:
+            raise e
+        else:
+            pass  # just return model=None
+
     # deal with results
     res = []
 
@@ -186,8 +200,9 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
         This may be useful for reducing memory overhead.
 
     failfast : bool
-        If True, will raise an exception when trying a method that doesn't
-        exist. If False, will simply return None.
+        If True, will raise an exception when estimation failed with an exception
+        or trying to calls a method that doesn't exist. If False, will simply
+        return None in these cases.
 
     Return
     ------
@@ -196,7 +211,7 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
         is given, each element will contain the results from these method
         evaluations.
 
-    estimators (optional) : list of estimator ojbects. These are returned only
+    estimators (optional) : list of estimator objects. These are returned only
         if return_estimators=True
 
     Examples
