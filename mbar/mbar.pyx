@@ -26,15 +26,15 @@ from .callback import CallbackInterrupt
 __all__ = ['update_therm_energies', 'normalize', 'get_conf_energies', 'get_biased_conf_energies', 'estimate']
 
 cdef extern from "_mbar.h":
-    void _update_therm_energies(
+    void _mbar_update_therm_energies(
         double *log_therm_state_counts, double *therm_energies, double *bias_energy_sequence,
         int n_therm_states, int seq_length, double *scratch_T, double *new_therm_energies)
-    void _get_conf_energies(
+    void _mbar_get_conf_energies(
         double *log_therm_state_counts, double *therm_energies,
         double *bias_energy_sequence, int * conf_state_sequence,
         int n_therm_states, int n_conf_states, int seq_length,
         double *scratch_T, double *conf_energies, double *biased_conf_energies)
-    void _normalize(
+    void _mbar_normalize(
         double *log_therm_state_counts, double *bias_energy_sequence,
         int n_therm_states, int n_conf_states, int seq_length, double *scratch_M,
         double *therm_energies, double *conf_energies, double *biased_conf_energies)
@@ -61,7 +61,7 @@ def update_therm_energies(
     new_therm_energies : numpy.ndarray(shape=(T), dtype=numpy.float64)
         target array for the reduced free energies of the T thermodynamic states
     """
-    _update_therm_energies(
+    _mbar_update_therm_energies(
         <double*> _np.PyArray_DATA(log_therm_state_counts),
         <double*> _np.PyArray_DATA(therm_energies),
         <double*> _np.PyArray_DATA(bias_energy_sequence),
@@ -102,7 +102,7 @@ def get_conf_energies(
     """
     conf_energies = _np.zeros(shape=(n_conf_states,), dtype=_np.float64)
     biased_conf_energies = _np.zeros(shape=(therm_energies.shape[0], n_conf_states), dtype=_np.float64)
-    _get_conf_energies(
+    _mbar_get_conf_energies(
         <double*> _np.PyArray_DATA(log_therm_state_counts),
         <double*> _np.PyArray_DATA(therm_energies),
         <double*> _np.PyArray_DATA(bias_energy_sequence),
@@ -137,7 +137,7 @@ def normalize(
         reduced free energies of the T thermodynamic states
         scratch array
     """
-    _normalize(
+    _mbar_normalize(
         <double*> _np.PyArray_DATA(log_therm_state_counts),
         <double*> _np.PyArray_DATA(bias_energy_sequence),
         therm_energies.shape[0],

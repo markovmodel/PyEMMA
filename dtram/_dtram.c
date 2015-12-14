@@ -20,7 +20,7 @@
 #include "_dtram.h"
 #include "../util/_util.h"
 
-extern void _init_log_lagrangian_mult(
+extern void _dtram_init_log_lagrangian_mult(
     int *count_matrices, int n_therm_states, int n_conf_states, double *log_lagrangian_mult)
 {
     int i, j, K;
@@ -39,7 +39,7 @@ extern void _init_log_lagrangian_mult(
     }
 }
 
-extern void _update_log_lagrangian_mult(
+extern void _dtram_update_log_lagrangian_mult(
     double *log_lagrangian_mult, double *bias_energies, double *conf_energies, int *count_matrices,
     int n_therm_states, int n_conf_states, double *scratch_M, double *new_log_lagrangian_mult)
 {
@@ -79,7 +79,7 @@ extern void _update_log_lagrangian_mult(
     }
 }
 
-extern void _update_conf_energies(
+extern void _dtram_update_conf_energies(
     double *log_lagrangian_mult, double *bias_energies, double *conf_energies, int *count_matrices, int n_therm_states,
     int n_conf_states, double *scratch_TM, double *new_conf_energies)
 {
@@ -125,7 +125,7 @@ extern void _update_conf_energies(
     }
 }
 
-extern void _estimate_transition_matrix(
+extern void _dtram_estimate_transition_matrix(
     double *log_lagrangian_mult, double *bias_energies, double *conf_energies, int *count_matrix,
     int n_conf_states, double *scratch_M, double *transition_matrix)
 {
@@ -176,7 +176,7 @@ extern void _estimate_transition_matrix(
     }
 }
 
-extern void _get_therm_energies(
+extern void _dtram_get_therm_energies(
     double *bias_energies, double *conf_energies, int n_therm_states, int n_conf_states,
     double *scratch_M, double *therm_energies)
 {
@@ -189,7 +189,7 @@ extern void _get_therm_energies(
     }
 }
 
-extern void _normalize(
+extern void _dtram_normalize(
     int n_therm_states, int n_conf_states, double *scratch_M, double *therm_energies, double *conf_energies)
 {
     int K, i;
@@ -203,7 +203,7 @@ extern void _normalize(
         conf_energies[i] -= f0;
 }
 
-extern double _get_loglikelihood(
+extern double _dtram_get_loglikelihood(
     int *count_matrices, double *transition_matrices,
     int n_therm_states, int n_conf_states)
 {
@@ -217,12 +217,12 @@ extern double _get_loglikelihood(
     return sum;
 }
 
-extern double _get_prior()
+extern double _dtram_get_prior()
 {
     return THERMOTOOLS_DTRAM_PRIOR;
 }
 
-extern double _get_log_prior()
+extern double _dtram_get_log_prior()
 {
     return THERMOTOOLS_DTRAM_LOG_PRIOR;
 }

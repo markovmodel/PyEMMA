@@ -32,17 +32,17 @@ __all__ = [
     'estimate']
 
 cdef extern from "_wham.h":
-    void _update_conf_energies(
+    void _wham_update_conf_energies(
         double *log_therm_state_counts, double *log_conf_state_counts,
         double *therm_energies, double *bias_energies,
         int n_therm_states, int n_conf_states, double *scratch_T, double *conf_energies)
-    void _update_therm_energies(
+    void _wham_update_therm_energies(
         double *conf_energies, double *bias_energies, int n_therm_states, int n_conf_states,
         double *scratch_M, double *therm_energies)
-    void _normalize(
+    void _wham_normalize(
         int n_therm_states, int n_conf_states,
         double *scratch_M, double *therm_energies, double *conf_energies)
-    double _get_loglikelihood(
+    double _wham_get_loglikelihood(
         int *therm_state_counts, int *conf_state_counts,
         double *therm_energies, double *conf_energies,
         int n_therm_states, int n_conf_states, double *scratch_S)
@@ -98,7 +98,7 @@ def update_conf_energies(
         conf_energies \leftarrow  conf_energies - \min_i(conf_energies)
 
     """
-    _update_conf_energies(
+    _wham_update_conf_energies(
         <double*> _np.PyArray_DATA(log_therm_state_counts),
         <double*> _np.PyArray_DATA(log_conf_state_counts),
         <double*> _np.PyArray_DATA(therm_energies),
@@ -138,7 +138,7 @@ def update_therm_energies(
 
     which is already in the logsumexp form.
     """
-    _update_therm_energies(
+    _wham_update_therm_energies(
         <double*> _np.PyArray_DATA(conf_energies),
         <double*> _np.PyArray_DATA(bias_energies),
         bias_energies.shape[0],
@@ -163,7 +163,7 @@ def normalize(
     conf_energies : numpy.ndarray(shape=(M,), dtype=numpy.float64)
         reduced unbiased configurational energies
     """
-    _normalize(
+    _wham_normalize(
         therm_energies.shape[0],
         conf_energies.shape[0],
         <double*> _np.PyArray_DATA(scratch_M),
@@ -188,7 +188,7 @@ def get_loglikelihood(
     loglikelihood : float
         loglikelihood of the reduced free energies given the observed state counts
     """
-    return _get_loglikelihood(
+    return _wham_get_loglikelihood(
         <int*> _np.PyArray_DATA(therm_state_counts),
         <int*> _np.PyArray_DATA(conf_state_counts),
         <double*> _np.PyArray_DATA(therm_energies),
