@@ -30,22 +30,23 @@ __all__ = ['UniformTimeClustering']
 class UniformTimeClustering(AbstractClustering):
     r"""Uniform time clustering"""
 
-    def __init__(self, k=2, metric='euclidean'):
+    def __init__(self, n_clusters=2, metric='euclidean', stride=1):
         """r
         Uniform time clustering
 
         Parameters
         ----------
-        k : int
+        n_clusters : int
             amount of desired cluster centers
         metric : str
             metric to use during clustering ('euclidean', 'minRMSD')
         """
         super(UniformTimeClustering, self).__init__(metric=metric)
-        self.n_clusters = k
+        self.set_params(n_clusters=n_clusters, metric='metric', stride=stride)
 
     def describe(self):
-        return "[Uniform time clustering, k = %i, inp_dim=%i]" % (self.n_clusters, self.data_producer.dimension())
+        return "[Uniform time clustering, k = %i, inp_dim=%i]" \
+                % (self.n_clusters, self.data_producer.dimension())
 
     def _param_init(self):
         """
@@ -64,48 +65,42 @@ class UniformTimeClustering(AbstractClustering):
         self._clustercenters = np.zeros(
             (self.n_clusters, self.data_producer.dimension()), dtype=np.float32)
 
-    def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None, stride=1):
-        """
+    def _estimate(self, iterable, **kw):
 
-        :param X:
-            coordinates. axis 0: time, axes 1-..: coordinates
-        :param itraj:
-            index of the current trajectory
-        :param t:
-            time index of first frame within trajectory
-        :param first_chunk:
-            boolean. True if this is the first chunk globally.
-        :param last_chunk_in_traj:
-            boolean. True if this is the last chunk within the trajectory.
-        :param last_chunk:
-            boolean. True if this is the last chunk globally.
-        :param _ipass:
-            number of pass through data
-        :param Y:
-            time-lagged data (if available)
-        :return:
-        """
-        L = np.shape(X)[0]
-        if ipass == 0:
-            # initialize
-            if (first_chunk):
-                # initialize time counters
-                T = self.data_producer.n_frames_total(stride=stride)
-                if self.n_clusters > T:
-                    self.n_clusters = T
-                    self._logger.info('Requested more clusters (k = %i'
-                                      ' than there are total data points %i)'
-                                      '. Will do clustering with k = %i'
-                                      % (self.n_clusters, T, T))
+        stride = kw['stride'] if 'stride' in kw else self.stride
 
-                # time in previous trajectories
-                self._tprev = 0
-                # number of clusters yet
-                self._n = 0
-                # time segment length between cluster centers
-                self._dt = T // self.n_clusters
-                # first data point in the middle of the time segment
-                self._nextt = self._dt // 2
+        # initialize time counters
+        T = self.data_producer.n_frames_total(stride=stride)
+        if self.n_clusters > T:
+            self.n_clusters = T
+            self._logger.info('Requested more clusters (k = %i'
+                              ' than there are total data points %i)'
+                              '. Will do clustering with k = %i'
+                              % (self.n_clusters, T, T))
+
+        # time in previous trajectories
+        self._tprev = 0
+        # number of clusters yet
+        self._n = 0
+        # time segment length between cluster centers
+        self._dt = T // self.n_clusters
+        # first data point in the middle of the time segment
+        self._nextt = self._dt // 2
+
+        last_itraj = -1
+        t = 0
+
+        for itraj, X in iterable.iterator(stride=self.stride, return_trajindex=True, **kw):
+
+            if itraj != last_itraj:
+                last_itraj = itraj
+                t = 0
+                self._tprev += self.data_producer.trajectory_length(
+                    itraj, stride=stride)
+
+            L = np.shape(X)[0]
+            t += L
+
             # final time we can go to with this chunk
             maxt = self._tprev + t + L
             # harvest cluster centers from this chunk until we have left it
@@ -114,10 +109,6 @@ class UniformTimeClustering(AbstractClustering):
                 self._clustercenters[self._n] = X[i]
                 self._n += 1
                 self._nextt += self._dt
-            if last_chunk_in_traj:
-                self._tprev += self.data_producer.trajectory_length(
-                    itraj, stride=stride)
-            if last_chunk:
-                return True  # done!
-
-        return False  # not done yet.
+            #if last_chunk_in_traj:
+             #   self._tprev += self.data_producer.trajectory_length(
+             #       itraj, stride=stride)
