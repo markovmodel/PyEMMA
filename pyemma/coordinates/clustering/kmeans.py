@@ -17,7 +17,7 @@
 """
 Created on 22.01.2015
 
-@author: marscher, noe
+@author: clonker, marscher, noe
 """
 
 from __future__ import absolute_import
@@ -96,8 +96,6 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
 
         self._cluster_centers_iter = None
         self._centers_iter_list = []
-        self._custom_param_progress_handling = True
-        self._fixed_seed = fixed_seed
 
     def _param_init(self):
         self._prev_cost = 0
@@ -121,12 +119,12 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
         if self.init_strategy == 'uniform':
             # gives random samples from each trajectory such that the cluster centers are distributed percentage-wise
             # with respect to the trajectories length
-            if self._fixed_seed:
+            if self.fixed_seed:
                 random.seed(42)
             for idx, traj_len in enumerate(traj_lengths):
                 self._init_centers_indices[idx] = random.sample(list(range(0, traj_len)), int(
                     math.ceil((traj_len / float(total_length)) * self.n_clusters)))
-            if self._fixed_seed:
+            if self.fixed_seed:
                 random.seed(None)
 
     def _init_in_memory_chunks(self, size):
@@ -180,27 +178,41 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
     def kmeanspp_center_assigned(self):
         self._progress_update(1, stage=0)
 
-    def _estimate(self, iterable, **kwargs):
-        iterator = iterable.iterator(return_trajindex=True, **kwargs)
+    def _estimate(self, iterable, **kw):
+
+        stride = kw['stride'] if 'stride' in kw else self.stride
+
+        iterator = iterable.iterator(return_trajindex=True, **kw)
         # first pass: gather data and run k-means
         first_chunk = True
         t = 0
+        last_itraj = -1
         last_chunk = True if iterator.chunksize == 0 else False
-        chunks_total = iterator._n_chunks(self.stride)
+        n_frames = iterator.n_frames_total()
+        last_traj_len = iterator.trajectory_lengths()[-1]
         ntraj = self.number_of_trajectories()
+
         for itraj, X in iterator:
+            if itraj != last_itraj:
+                t = 0
+                last_itraj = itraj
             t += len(X)
-            if itraj == ntraj-1:
+
+            if itraj == ntraj - 1:
                 if iterator.chunksize == 0:
                     last_chunk = True
                 else:
-                    raise NotImplementedError("TODO")
+                    if t >= last_traj_len - iterator.chunksize:
+                        last_chunk=True
+                    #raise NotImplementedError("TODO")
             # collect data
             self._collect_data(X, first_chunk, self.stride)
             # initialize cluster centers
             self._logger.debug("last_chunk: %s" % last_chunk)
             self._initialize_centers(X, itraj, t, last_chunk)
             first_chunk = False
+
+
 
         # run k-means with all the data
         self._logger.debug("Accumulated all data, running kmeans on " + str(self._in_memory_chunks.shape))
@@ -221,7 +233,7 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
             self._prev_cost = cost
 
             #if np.allclose(old_centers, self._cluster_centers, rtol=self._tolerance):
-            if rel_change <= self._tolerance:
+            if rel_change <= self.tolerance:
                 converged_in_max_iter = True
                 self._logger.info("Cluster centers converged after %i steps."
                                   % (it + 1))
@@ -233,7 +245,7 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
         if not converged_in_max_iter:
             self._logger.info("Algorithm did not reach convergence criterion"
                               " of %g in %i iterations. Consider increasing max_iter."
-                              % (self._tolerance, self.max_iter))
+                              % (self.tolerance, self.max_iter))
 
     def _initialize_centers(self, X, itraj, t, last_chunk):
         if self.init_strategy == 'uniform':
@@ -241,7 +253,7 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
                 for l in range(len(X)):
                     if len(self._cluster_centers_iter) < self.n_clusters and t + l in self._init_centers_indices[itraj]:
                         self._cluster_centers_iter.append(X[l].astype(np.float32, order='C'))
-        elif last_chunk and self._init_strategy == 'kmeans++':
+        elif last_chunk and self.init_strategy == 'kmeans++':
             kmeans_clustering.set_callback(self.kmeanspp_center_assigned)
             cc = kmeans_clustering.init_centers(self._in_memory_chunks,
                                                 self.metric, self.n_clusters, not self.fixed_seed)
@@ -309,7 +321,9 @@ class MiniBatchKmeansClustering(KmeansClustering):
         return 0, self._draw_mini_batch_sample()
 
     # @profile
-    def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None, stride=1):
+    #def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None, stride=1):
+    def _estimate(self, iterable, **kw):
+        stride = kw['stride'] if 'stride' in kw else self.stride
         # collect data
         self._collect_data(X, first_chunk, stride)
         # initialize cluster centers
