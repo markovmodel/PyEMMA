@@ -201,18 +201,15 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
             if itraj == ntraj - 1:
                 if iterator.chunksize == 0:
                     last_chunk = True
-                else:
-                    if t >= last_traj_len - iterator.chunksize:
-                        last_chunk=True
-                    #raise NotImplementedError("TODO")
+                elif t >= last_traj_len - iterator.chunksize:
+                    last_chunk = True
+
             # collect data
-            self._collect_data(X, first_chunk, self.stride)
+            self._collect_data(X, first_chunk, stride)
             # initialize cluster centers
             self._logger.debug("last_chunk: %s" % last_chunk)
             self._initialize_centers(X, itraj, t, last_chunk)
             first_chunk = False
-
-
 
         # run k-means with all the data
         self._logger.debug("Accumulated all data, running kmeans on " + str(self._in_memory_chunks.shape))
@@ -246,6 +243,8 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
             self._logger.info("Algorithm did not reach convergence criterion"
                               " of %g in %i iterations. Consider increasing max_iter."
                               % (self.tolerance, self.max_iter))
+
+        return self
 
     def _initialize_centers(self, X, itraj, t, last_chunk):
         if self.init_strategy == 'uniform':
