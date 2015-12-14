@@ -18,9 +18,12 @@
 
 
 from __future__ import absolute_import, division
+
 import math
-import numpy as np
+
 from pyemma.coordinates.clustering.interface import AbstractClustering
+
+import numpy as np
 
 
 __author__ = 'noe'
@@ -70,7 +73,7 @@ class UniformTimeClustering(AbstractClustering):
         stride = kw['stride'] if 'stride' in kw else self.stride
 
         # initialize time counters
-        T = self.data_producer.n_frames_total(stride=stride)
+        T = iterable.n_frames_total(stride=stride)
         if self.n_clusters > T:
             self.n_clusters = T
             self._logger.info('Requested more clusters (k = %i'
@@ -89,26 +92,25 @@ class UniformTimeClustering(AbstractClustering):
 
         last_itraj = -1
         t = 0
+        iterator = iterable.iterator(stride=self.stride, return_trajindex=True, **kw)
 
-        for itraj, X in iterable.iterator(stride=self.stride, return_trajindex=True, **kw):
+        for itraj, X in iterator:
 
             if itraj != last_itraj:
+                if last_itraj != -1:
+                    self._tprev += iterator.trajectory_length(last_itraj, stride=stride)
                 last_itraj = itraj
                 t = 0
-                self._tprev += self.data_producer.trajectory_length(
-                    itraj, stride=stride)
 
             L = np.shape(X)[0]
             t += L
 
             # final time we can go to with this chunk
             maxt = self._tprev + t + L
+            print "max_t", maxt
             # harvest cluster centers from this chunk until we have left it
             while (self._nextt < maxt and self._n < self.n_clusters):
                 i = self._nextt - self._tprev - t
                 self._clustercenters[self._n] = X[i]
                 self._n += 1
                 self._nextt += self._dt
-            #if last_chunk_in_traj:
-             #   self._tprev += self.data_producer.trajectory_length(
-             #       itraj, stride=stride)
