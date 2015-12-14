@@ -19,8 +19,6 @@
 from __future__ import absolute_import
 
 from abc import ABCMeta, abstractmethod
-from itertools import count
-from math import ceil
 
 import numpy as np
 import six
@@ -35,7 +33,6 @@ from pyemma.coordinates.data.iterable import Iterable
 from pyemma.util import types as _types
 from pyemma.util.annotators import deprecated
 from pyemma.util.exceptions import NotConvergedWarning
-from pyemma._base.progress.reporter import ProgressReporter
 
 __all__ = ['Transformer']
 __author__ = 'noe, marscher'
@@ -64,7 +61,7 @@ class Transformer(six.with_metaclass(ABCMeta, DataSource, Estimator, Loggable)):
 
     """
 
-    def __init__(self, chunksize=None):
+    def __init__(self, chunksize=0):
         super(Transformer, self).__init__(chunksize)
         if chunksize is not None:
             self._logger.warning("Given deprecated argument 'chunksize=%s'"
@@ -286,14 +283,6 @@ class Transformer(six.with_metaclass(ABCMeta, DataSource, Estimator, Loggable)):
         Finalizes the parametrization.
         """
         pass
-
-    def __getstate__(self):
-        d = dict(self.__dict__)
-        try:
-            del d['_logger_instance']
-        except KeyError:
-            pass
-        return d
 
 
 class TransformerIterator(DataSourceIterator):
