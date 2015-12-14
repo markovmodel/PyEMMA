@@ -48,6 +48,32 @@ class TestDataInMemory(unittest.TestCase):
         cls.d_1d = d_1d
         return cls
 
+    def test_skip(self):
+        for skip in [0, 3, 13]:
+            r1 = DataInMemory(self.d)
+            r1._skip = skip
+            out_with_skip = r1.get_output()[0]
+            r2 = DataInMemory(self.d)
+            out = r2.get_output()[0]
+            np.testing.assert_almost_equal(out_with_skip, out[skip::],
+                                           err_msg="The first %s rows were skipped, but that did not "
+                                                   "match the rows with skip=0 and sliced by [%s::]" % (skip, skip))
+
+    def test_skip_input_list(self):
+        for skip in [0, 3, 13]:
+            r1 = DataInMemory([self.d, self.d])
+            r1._skip = skip
+            out_with_skip = r1.get_output()
+            r2 = DataInMemory([self.d, self.d])
+            out = r2.get_output()
+            np.testing.assert_almost_equal(out_with_skip[0], out[0][skip::],
+                                           err_msg="The first %s rows of the first file were skipped, but that did not "
+                                                   "match the rows with skip=0 and sliced by [%s::]" % (skip, skip))
+            np.testing.assert_almost_equal(out_with_skip[1], out[1][skip::],
+                                           err_msg="The first %s rows of the second file were skipped, but that did not"
+                                                   " match the rows with skip=0 and sliced by [%s::]" % (skip, skip))
+
+
     def testWrongArguments(self):
         with self.assertRaises(ValueError):
             reader = DataInMemory("foo")
@@ -166,7 +192,7 @@ class TestDataInMemory(unittest.TestCase):
         source = pyemma.coordinates.source(data,chunk_size=cs)
         source.chunksize = 100
         for i,ch in source.iterator():
-            assert ch.shape[0] <=cs, ch.shape
+            assert ch.shape[0] <= cs, ch.shape
 
     def test_lagged_iterator_1d(self):
         n = 57

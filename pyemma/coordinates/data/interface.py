@@ -52,6 +52,9 @@ class ReaderInterface(Transformer):
         # storage for arrays (used in _add_array_to_storage)
         self._data = []
 
+        # number of initially skipped frames, regardless of lag, no lag or chunk size
+        self.__skip = 0
+
     @Transformer.data_producer.setter
     def data_producer(self, value):
         self._logger.warning("tried to set data_producer in reader, which makes"
@@ -59,6 +62,14 @@ class ReaderInterface(Transformer):
         import inspect
         res = inspect.getouterframes(inspect.currentframe())[1]
         self._logger.debug(str(res))
+
+    @property
+    def _skip(self):
+        return self.__skip
+
+    @_skip.setter
+    def _skip(self, value):
+        self.__skip = value
 
     @property
     def chunksize(self):
@@ -81,7 +92,7 @@ class ReaderInterface(Transformer):
         """
         return self._ntraj
 
-    def trajectory_length(self, itraj, stride=1):
+    def trajectory_length(self, itraj, stride=1, skip=None):
         """
         Returns the length of trajectory
 
@@ -98,7 +109,7 @@ class ReaderInterface(Transformer):
             selection = stride[stride[:, 0] == itraj][:, 0]
             return 0 if itraj not in selection else len(selection)
         else:
-            return (self._lengths[itraj] - 1) // int(stride) + 1
+            return (self._lengths[itraj] - (self._skip if skip is None else skip) - 1) // int(stride) + 1
 
     def trajectory_lengths(self, stride=1):
         """
@@ -116,7 +127,7 @@ class ReaderInterface(Transformer):
                 [self.trajectory_length(itraj, stride) for itraj in range(0, self.number_of_trajectories())],
                 dtype=int)
         else:
-            return np.array([(l - 1) // stride + 1 for l in self._lengths], dtype=int)
+            return np.array([(l - self._skip - 1) // stride + 1 for l in self._lengths], dtype=int)
 
     def n_frames_total(self, stride=1):
         """
