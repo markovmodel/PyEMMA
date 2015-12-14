@@ -19,8 +19,6 @@
 from __future__ import absolute_import
 
 from abc import ABCMeta, abstractmethod
-from itertools import count
-from math import ceil
 
 import numpy as np
 import six
@@ -29,13 +27,11 @@ from six.moves import range
 from pyemma._base.estimator import Estimator
 from pyemma._base.logging import Loggable
 from pyemma.coordinates.data import DataInMemory
-from pyemma.coordinates.data.datasource import DataSource
-from pyemma.coordinates.data.datasource import DataSourceIterator
+from pyemma.coordinates.data.datasource import DataSource, DataSourceIterator
 from pyemma.coordinates.data.iterable import Iterable
 from pyemma.util import types as _types
 from pyemma.util.annotators import deprecated
 from pyemma.util.exceptions import NotConvergedWarning
-from pyemma._base.progress.reporter import ProgressReporter
 
 __all__ = ['Transformer']
 __author__ = 'noe, marscher'
@@ -65,7 +61,7 @@ class Transformer(six.with_metaclass(ABCMeta, DataSource, Estimator, Loggable)):
     """
 
     def __init__(self, chunksize=None):
-        super(Transformer, self).__init__(chunksize)
+        super(Transformer, self).__init__()
         if chunksize is not None:
             self._logger.warning("Given deprecated argument 'chunksize=%s'"
                                  " to transformer. Ignored - please set the "
@@ -203,10 +199,6 @@ class Transformer(six.with_metaclass(ABCMeta, DataSource, Estimator, Loggable)):
         # is triggered from get_output
         if self.in_memory and not self._mapping_to_mem_active:
             self._map_to_memory()
-
-        # finish parametrization
-        #if not self._custom_param_progress_handling:
-        #    self._progress_force_finish(0)
 
         self._estimated = True
 
