@@ -19,7 +19,7 @@
 
 #include "../util/_util.h"
 
-extern void _update_conf_energies(
+extern void _wham_update_conf_energies(
     double *log_therm_state_counts, double *log_conf_state_counts,
     double *therm_energies, double *bias_energies,
     int n_therm_states, int n_conf_states, double *scratch_T, double *conf_energies)
@@ -36,7 +36,7 @@ extern void _update_conf_energies(
     }
 }
 
-extern void _update_therm_energies(
+extern void _wham_update_therm_energies(
     double *conf_energies, double *bias_energies, int n_therm_states, int n_conf_states,
     double *scratch_M, double *therm_energies)
 {
@@ -50,7 +50,7 @@ extern void _update_therm_energies(
     }
 }
 
-extern void _normalize(
+extern void _wham_normalize(
     int n_therm_states, int n_conf_states,
     double *scratch_M, double *therm_energies, double *conf_energies)
 {
@@ -65,7 +65,7 @@ extern void _normalize(
         therm_energies[K] -= f0;
 }
 
-extern double _get_loglikelihood(
+extern double _wham_get_loglikelihood(
     int *therm_state_counts, int *conf_state_counts,
     double *therm_energies, double *conf_energies,
     int n_therm_states, int n_conf_states, double *scratch_S)
