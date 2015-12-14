@@ -1,3 +1,4 @@
+
 # This file is part of PyEMMA.
 #
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
@@ -14,6 +15,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 '''
 Created on 18.02.2015
 
@@ -57,6 +59,7 @@ class AbstractClustering(Transformer, Model, ClusterMixin):
 
     @clustercenters.setter
     def clustercenters(self, val):
+        val = np.asarray(val, dtype='float32', order='C')
         self._clustercenters = val
 
     @property
