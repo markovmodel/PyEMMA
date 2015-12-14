@@ -27,8 +27,7 @@ from six.moves import range
 from pyemma._base.estimator import Estimator
 from pyemma._base.logging import Loggable
 from pyemma.coordinates.data import DataInMemory
-from pyemma.coordinates.data.datasource import DataSource
-from pyemma.coordinates.data.datasource import DataSourceIterator
+from pyemma.coordinates.data.datasource import DataSource, DataSourceIterator
 from pyemma.coordinates.data.iterable import Iterable
 from pyemma.util import types as _types
 from pyemma.util.annotators import deprecated
