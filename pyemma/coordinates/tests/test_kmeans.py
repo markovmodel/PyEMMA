@@ -1,4 +1,3 @@
-
 # This file is part of PyEMMA.
 #
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
@@ -15,8 +14,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-
 '''
 Created on 28.01.2015
 
@@ -24,34 +21,41 @@ Created on 28.01.2015
 '''
 
 from __future__ import absolute_import
-import unittest
-import tempfile
+
 import os
-import numpy as np
+import unittest
+
 from pyemma.coordinates.api import cluster_kmeans
-import shutil
+from pyemma.util.files import TemporaryDirectory
+
 from six.moves import range
+import numpy as np
 
 
 class TestKmeans(unittest.TestCase):
 
-    @classmethod
-    def setUpClass(cls):
-        super(TestKmeans, cls).setUpClass()
-        cls.dtraj_dir = tempfile.mkdtemp()
-
-    def setUp(self):
+    def testDtraj(self):
         self.k = 5
         self.dim = 100
         self.data = [np.random.random((30, self.dim)),
                      np.random.random((37, self.dim))]
         self.kmeans = cluster_kmeans(data=self.data, k=self.k, max_iter=100)
 
-    def tearDown(self):
-        shutil.rmtree(self.dtraj_dir, ignore_errors=True)
-
-    def testDtrajType(self):
         assert self.kmeans.dtrajs[0].dtype == self.kmeans.output_type()
+
+        prefix = "test"
+        extension = ".dtraj"
+        with TemporaryDirectory() as outdir:
+            self.kmeans.save_dtrajs(trajfiles=None, prefix=prefix,
+                                    output_dir=outdir, extension=extension)
+
+            names = ["%s_%i%s" % (prefix, i, extension)
+                     for i in range(self.kmeans.data_producer.number_of_trajectories())]
+            names = [os.path.join(outdir, n) for n in names]
+
+            # check files with given patterns are there
+            for f in names:
+                os.stat(f)
 
     def test_3gaussian_1d_singletraj(self):
         # generate 1D data from three gaussians
@@ -61,6 +65,8 @@ class TestKmeans(unittest.TestCase):
         X = np.hstack(X)
 
         for init_strategy in ['kmeans++', 'uniform']:
+            if init_strategy == 'uniform':
+                raise RuntimeError("currently broken")
             kmeans = cluster_kmeans(X, k=10, init_strategy=init_strategy)
             cc = kmeans.clustercenters
             assert (np.any(cc < 1.0)), "failed for init_strategy=%s" % init_strategy
@@ -99,21 +105,6 @@ class TestKmeans(unittest.TestCase):
         assert(np.any(cc < 1.0))
         assert(np.any((cc > -1.0) * (cc < 1.0)))
         assert(np.any(cc > -1.0))
-
-    def testSaveDtrajs(self):
-        prefix = "test"
-        extension = ".dtraj"
-        outdir = self.dtraj_dir
-        self.kmeans.save_dtrajs(trajfiles=None, prefix=prefix,
-                                output_dir=outdir, extension=extension)
-
-        names = ["%s_%i%s" % (prefix, i, extension)
-                 for i in range(self.kmeans.data_producer.number_of_trajectories())]
-        names = [os.path.join(outdir, n) for n in names]
-
-        # check files with given patterns are there
-        for f in names:
-            os.stat(f)
 
     def test_kmeans_equilibrium_state(self):
         initial_centers_equilibrium = [np.array([0, 0, 0])]
