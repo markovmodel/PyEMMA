@@ -22,18 +22,18 @@ Created on 07.04.2015
 @author: marscher
 '''
 
+from __future__ import absolute_import
 from __future__ import print_function
 
-from __future__ import absolute_import
-import unittest
+import shutil
 import tempfile
+import unittest
 
-import numpy as np
 from pyemma.coordinates.data.numpy_filereader import NumPyFileReader
 from pyemma.util.log import getLogger
-import shutil
-from six.moves import range
-from six.moves import zip
+
+from six.moves import range, zip
+import numpy as np
 
 
 class TestNumPyFileReader(unittest.TestCase):
@@ -110,8 +110,7 @@ class TestNumPyFileReader(unittest.TestCase):
     def test_skip(self):
         for skip in [0, 3, 13]:
             r1 = NumPyFileReader(self.npy_files[0])
-            r1._skip = skip
-            out_with_skip = r1.get_output()[0]
+            out_with_skip = r1.get_output(skip=skip)[0]
             r2 = NumPyFileReader(self.npy_files[0])
             out = r2.get_output()[0]
             np.testing.assert_almost_equal(out_with_skip, out[skip::],
@@ -121,8 +120,7 @@ class TestNumPyFileReader(unittest.TestCase):
     def test_skip_input_list(self):
         for skip in [0, 3, 13]:
             r1 = NumPyFileReader(self.npy_files)
-            r1._skip = skip
-            out_with_skip = r1.get_output()
+            out_with_skip = r1.get_output(skip=skip)
             r2 = NumPyFileReader(self.npy_files)
             out = r2.get_output()
             for i in range(0, len(self.npy_files)):
@@ -177,7 +175,6 @@ class TestNumPyFileReader(unittest.TestCase):
 
     def test_lagged_stridden_access_multiple_files(self):
         reader = NumPyFileReader(self.files2d)
-        print(reader.trajectory_lengths())
         strides = [2, 3, 5, 7, 15]
         lags = [1, 3, 7, 10, 30]
         for stride in strides:
