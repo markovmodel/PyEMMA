@@ -165,6 +165,12 @@ class LaggedIterator(object):
         self._it_lagged = it_lagged
         self._return_trajindex = return_trajindex
 
+    def _n_chunks(self, stride):
+        if hasattr(self._it, '_n_chunks') and hasattr(self._it_lagged, '_n_chunks'):
+            return min(self._it._n_chunks(stride), self._it_lagged._n_chunks(stride))
+        
+        raise NotImplemented
+
     def __iter__(self):
         return self
 
@@ -172,11 +178,6 @@ class LaggedIterator(object):
         return self.next()
 
     def next(self):
-        try:
-            data_lagged = self._it_lagged.next()
-        except StopIteration:
-            self._it.close()
-            raise
         data = self._it.next()
         itraj = None
         if self._return_trajindex:
