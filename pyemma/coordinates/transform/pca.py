@@ -27,6 +27,9 @@ from pyemma.util import types
 from pyemma.util.annotators import doc_inherit
 from pyemma.util.reflection import get_default_args
 
+from pyemma.coordinates.estimators.covar.running_moments import running_covar
+
+
 __all__ = ['PCA']
 __author__ = 'noe'
 
@@ -138,55 +141,23 @@ class PCA(Transformer):
     # def mean(self, value):
     #     self._model.mean = value
 
+    def _estimate(self, iterable, **kwargs):
+        it = iterable.iterator(return_trajindex=False, **kwargs)
+        n_chunks = it._n_chunks(stride)
+        nsave = max(log(ceil(n_chunks), 2), 2)
+        self._logger.debug("using %s moments for %i chunks" % (nsave, n_chunks))
+        self._covar = running_covar(xx=True, xy=False, yy=False,
+                                    remove_mean=True, symmetrize=False,
+                                    nsave=nsave)
 
-    def _estimate(self, X, **kwargs):
-        N_mean = 0
-        N_cov = 0
-        # create mean array and covariance matrix
-        indim = X.dimension()
-        self._logger.info("Running PCA on %i dimensional input" % indim)
-        assert indim > 0, "Incoming data of PCA has 0 dimension!"
+		for chunk in X.iterator(return_trajindex=False, **kwargs):
+	        self._covar.add(X)
 
-        if self.mean is not None:
-            mean = types.ensure_ndarray(self.mean, shape=(indim,))
-            self._given_mean = True
-        else:
-            mean = np.zeros(indim)
-            self._given_mean = False
+	        # counting chunks and log of eta
+	        self._progress_update(1, 0)
 
-        self.cov = np.zeros((indim, indim))
-
-        it = X.iterator(return_trajindex=False, **kwargs)
-        # amount of chunks
-        denom = it._n_chunks(self._param_with_stride)
-        self._progress_register(denom, description="calculate mean", stage=0)
-        self._progress_register(denom, description="calculate covariances", stage=1)
-
-
-        # pass 1: means
-        for chunk in it:
-            if self._given_mean:
-                break
-
-            mean += np.sum(chunk, axis=0, dtype=np.float64)
-            N_mean += np.shape(chunk)[0]
-
-            # counting chunks and log of eta
-            self._progress_update(1, 0)
-        if not self._given_mean:
-            mean /= N_mean
-
-        self.set_params(mean=mean)
-
-        # pass 2: covariances
-        for chunk in X.iterator(return_trajindex=False, **kwargs):
-            Xm = chunk - mean
-            self.cov += np.dot(Xm.T, Xm)
-            N_cov += np.shape(chunk)[0]
-
-            self._progress_update(1, stage=1)
-
-        self.cov /= N_cov - 1
+        self.cov = self._covar.cov_XX()
+        self.mu = self._covar.mean_X()
 
         (v, R) = np.linalg.eigh(self.cov)
         # sort
