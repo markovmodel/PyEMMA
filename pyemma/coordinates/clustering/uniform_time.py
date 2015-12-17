@@ -17,7 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 import math
 
@@ -107,7 +107,6 @@ class UniformTimeClustering(AbstractClustering):
 
             # final time we can go to with this chunk
             maxt = self._tprev + t + L
-            print "max_t", maxt
             # harvest cluster centers from this chunk until we have left it
             while (self._nextt < maxt and self._n < self.n_clusters):
                 i = self._nextt - self._tprev - t
