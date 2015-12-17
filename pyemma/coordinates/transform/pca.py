@@ -19,14 +19,15 @@
 
 from __future__ import absolute_import
 
-import numpy as np
+import math
 
 from pyemma._base.model import Model
+from pyemma._base.progress.reporter import ProgressReporter
 from pyemma.coordinates.transform.transformer import Transformer
-from pyemma.util import types
 from pyemma.util.annotators import doc_inherit
 from pyemma.util.reflection import get_default_args
 
+import numpy as np
 from pyemma.coordinates.estimators.covar.running_moments import running_covar
 
 
@@ -38,7 +39,7 @@ class PCAModel(Model):
     pass
 
 
-class PCA(Transformer):
+class PCA(Transformer, ProgressReporter):
     r""" Principal component analysis."""
 
     def __init__(self, dim=-1, var_cutoff=0.95, mean=None, stride=1):
@@ -84,10 +85,9 @@ class PCA(Transformer):
         if dim != -1 and var_cutoff != default_var_cutoff:
             raise ValueError('Trying to set both the number of dimension and the subspace variance. Use either or.')
 
+        self._model = PCAModel()
         self.set_params(dim=dim, var_cutoff=var_cutoff, mean=mean)
 
-        # output options
-        self._custom_param_progress_handling = True
 
     @doc_inherit
     def describe(self):
@@ -131,30 +131,30 @@ class PCA(Transformer):
 
     @eigenvectors.setter
     def eigenvectors(self, value):
-        pass
+        raise NotImplemented
 
-    # @property
-    # def mean(self):
-    #     return self._model.mean
-    #
-    # @mean.setter
-    # def mean(self, value):
-    #     self._model.mean = value
+    @property
+    def mean(self):
+        return self._model.mean
+    
+    @mean.setter
+    def mean(self, value):
+        self._model.mean = value
 
     def _estimate(self, iterable, **kwargs):
         it = iterable.iterator(return_trajindex=False, **kwargs)
+        stride = kwargs['stride'] if 'stride' in kwargs else self.stride
         n_chunks = it._n_chunks(stride)
-        nsave = max(log(ceil(n_chunks), 2), 2)
+        self._progress_register(n_chunks, "calc mean and covar", 0)
+        nsave = max(math.log(math.ceil(n_chunks), 2), 2)
         self._logger.debug("using %s moments for %i chunks" % (nsave, n_chunks))
         self._covar = running_covar(xx=True, xy=False, yy=False,
                                     remove_mean=True, symmetrize=False,
                                     nsave=nsave)
 
-		for chunk in X.iterator(return_trajindex=False, **kwargs):
-	        self._covar.add(X)
-
-	        # counting chunks and log of eta
-	        self._progress_update(1, 0)
+        for chunk in it:
+            self._covar.add(chunk)
+            self._progress_update(1, 0)
 
         self.cov = self._covar.cov_XX()
         self.mu = self._covar.mean_X()
@@ -170,8 +170,9 @@ class PCA(Transformer):
         cumvar /= cumvar[-1]
 
         model = PCAModel()
-        model.update_model_params(cumvar=cumvar, eigenvalues=eigenvalues, eigenvectors=eigenvectors,
-                                  mean=mean, mu=mean)
+        model.update_model_params(cumvar=cumvar, eigenvalues=eigenvalues,
+                                  eigenvectors=eigenvectors,
+                                  mean=self._covar.mean_X())
         self._model = model
 
         return model
