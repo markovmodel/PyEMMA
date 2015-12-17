@@ -76,8 +76,8 @@ def update_conf_energies(
     -----
     The update_conf_energies() function computes
 
-    .. math:
-        conf_energies = -\ln\left( \frac{
+    .. math ::
+        \text{conf_energies}_i = -\ln\left( \frac{
                 \sum_{K=0}^{N_T-1} N_i^{(K)}
             }{
                 \sum_{K=0}^{N_T-1} \exp(f^{(K)}-b_i^{(K)}) \sum_{j=0}^{N_M-1} N_j^{(K)}
@@ -85,8 +85,8 @@ def update_conf_energies(
 
     which equals to
 
-    .. math:
-        conf_energies = \ln\left(
+    .. math ::
+        \text{conf_energies}_i = \ln\left(
                 \sum_{K=0}^{N_T-1} \exp\left(
                     f^{(K)} - b_i^{(K)} + \ln\left( \sum_{j=0}^{N_M-1} N_j^{(K)} \right)
                 \right)
@@ -94,8 +94,8 @@ def update_conf_energies(
 
     in the logsumexp scheme. Afterwards, we apply
 
-    .. math:
-        conf_energies \leftarrow  conf_energies - \min_i(conf_energies)
+    .. math ::
+        \text{conf_energies} \leftarrow  \text{conf_energies} - \min(\text{conf_energies})
 
     """
     _wham_update_conf_energies(
@@ -131,9 +131,9 @@ def update_therm_energies(
     -----
     The update_therm_energies() function computes
 
-    .. math:
+    .. math ::
         f^{(K)} = -\ln\left(
-                \sum_{i=0}^{N_M-1} \exp(-b_i^{(K)}-conf_energies)
+                \sum_{i=0}^{N_M-1} \exp(-b_i^{(K)}-\text{conf_energies}_i)
             \right)
 
     which is already in the logsumexp form.

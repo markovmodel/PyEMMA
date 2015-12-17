@@ -144,7 +144,7 @@ def logsumexp(_np.ndarray[double, ndim=1, mode="c"] array not None,
     -----
     The logsumexp() function returns
 
-    .. math:
+    .. math ::
         \ln\left( \sum_{i=0}^{n-1} \exp(a_i) \right)
 
     where the :math:`a_i` are the :math:`n` values in the supplied array.
@@ -184,7 +184,7 @@ def logsumexp_pair(a, b):
     -----
     The logsumexp_pair() function returns
 
-    .. math:
+    .. math ::
         \ln\left( \exp(a) + \exp(b) \right)
 
     where the :math:`a` and :math:`b` are the supplied values.
