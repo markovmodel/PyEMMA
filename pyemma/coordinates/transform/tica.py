@@ -1,4 +1,3 @@
-
 # This file is part of PyEMMA.
 #
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
@@ -15,28 +14,26 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-
-from __future__ import absolute_import
-from pyemma.util import types
 '''
 Created on 19.01.2015
 
 @author: marscher
 '''
-from .transformer import Transformer
 
-class SkipPassException(object):
-    pass
+from __future__ import absolute_import
 
-from pyemma.coordinates.estimators.covar.running_moments import running_covar
 from math import ceil, log
 
+from pyemma._base.model import Model
+from pyemma.util.annotators import doc_inherit, deprecated
 from pyemma.util.linalg import eig_corr
-from pyemma.util.annotators import doc_inherit
 from pyemma.util.reflection import get_default_args
 
 import numpy as np
+from pyemma.coordinates.estimators.covar.running_moments import running_covar
+
+from .transformer import Transformer
+
 
 __all__ = ['TICA']
 
@@ -44,17 +41,20 @@ __all__ = ['TICA']
 class MeaningOfLagWithStrideWarning(UserWarning):
     pass
 
+class TICAModel(Model):
+    pass
+
 
 class TICA(Transformer):
     r""" Time-lagged independent component analysis (TICA)"""
 
     def __init__(self, lag, dim=-1, var_cutoff=0.95, kinetic_map=True, epsilon=1e-6,
-                 force_eigenvalues_le_one=False, mean=None):
+                 force_eigenvalues_le_one=False, mean=None, stride=1):
         r""" Time-lagged independent component analysis (TICA) [1]_, [2]_, [3]_.
 
         Parameters
         ----------
-        tau : int
+        lag : int
             lag time
         dim : int, optional, default -1
             Maximum number of significant independent components to use to reduce dimension of input data. -1 means
@@ -71,9 +71,6 @@ class TICA(Transformer):
             eigenvalue norm cutoff. Eigenvalues of C0 with norms <= epsilon will be
             cut off. The remaining number of eigenvalues define the size
             of the output.
-        force_eigenvalues_le_one : boolean
-            Compute covariance matrix and time-lagged covariance matrix such
-            that the generalized eigenvalues are always guaranteed to be <= 1.
         mean : ndarray, optional, default None
             Optionally pass pre-calculated means to avoid their re-computation.
             The shape has to match the input dimension.
@@ -117,33 +114,16 @@ class TICA(Transformer):
             http://arxiv.org/abs/1506.06259
 
         """
-        super(TICA, self).__init__()
-
-        # store lag time to set it appropriately in second pass of parametrize
-        self._lag = lag
-        self._dim = dim
-        self._var_cutoff = var_cutoff
         default_var_cutoff = get_default_args(self.__init__)['var_cutoff']
         if dim != -1 and var_cutoff != default_var_cutoff:
             raise ValueError('Trying to set both the number of dimension and the subspace variance. Use either or.')
-        self._kinetic_map = kinetic_map
-        self._epsilon = epsilon
 
-        if force_eigenvalues_le_one:
-            import warnings
-            warnings.warn("Force eigenvalues <= 1 constraint parameter ignored",
-                          DeprecationWarning)
-        # covariances
-        self.cov = None
-        self.cov_tau = None
-        # mean
-        self.mu = None
+        super(TICA, self).__init__()
 
-        self._eigenvalues = None
-        self._eigenvectors = None
-        self._cumvar = None
-
-        self._custom_param_progress_handling = True
+        # empty dummy model instance
+        self._model = TICAModel()
+        self.set_params(lag=lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map,
+                        epsilon=epsilon, mean=mean, stride=stride)
 
         # skipped trajectories
         self._skipped_trajs = []
@@ -155,13 +135,11 @@ class TICA(Transformer):
 
     @lag.setter
     def lag(self, new_tau):
-        raise Exception('Changing lag time is not allowed at the moment.')
-        #self._parametrized = False
-        #self._lag = new_tau
+        self._lag = new_tau
 
     @doc_inherit
     def describe(self):
-        dim = self._dim
+        dim = self.dim
         try:
             dim = self.dimension()
         except:
@@ -171,111 +149,122 @@ class TICA(Transformer):
     def dimension(self):
         """ output dimension """
         d = None
-        if self._dim != -1:  # fixed parametrization
-            d = self._dim
-        elif self._parametrized:  # parametrization finished. Dimension is known
-            dim = len(self._eigenvalues)
-            if self._var_cutoff < 1.0:  # if subspace_variance, reduce the output dimension if needed
-                dim = min(dim, np.searchsorted(self._cumvar, self._var_cutoff)+1)
+        if self.dim != -1 and not self._estimated:  # fixed parametrization
+            d = self.dim
+        elif self._estimated:  # parametrization finished. Dimension is known
+            dim = len(self.eigenvalues)
+            if self.var_cutoff < 1.0:  # if subspace_variance, reduce the output dimension if needed
+                dim = min(dim, np.searchsorted(self.cumvar, self.var_cutoff) + 1)
             d = dim
-        elif self._var_cutoff == 1.0:  # We only know that all dimensions are wanted, so return input dim
+        elif self.var_cutoff == 1.0:  # We only know that all dimensions are wanted, so return input dim
             d = self.data_producer.dimension()
         else:  # We know nothing. Give up
             raise RuntimeError('Requested dimension, but the dimension depends on the cumulative variance and the '
-                               'transformer has not yet been parametrized. Call parametrize() before.')
+                               'transformer has not yet been estimated. Call estimate() before.')
         return d
 
     @property
     def mean(self):
         """ mean of input features """
-        return self.mu
+        return self._model.mean
+    
+    @property
+    @deprecated('please use the "mean" property')
+    def mu(self):
+        return self.mean
+    
+    @mean.setter
+    def mean(self, value):
+        self._model.mean = value
+    
+    @property
+    def cov(self):
+        return self._model.cov
+    
+    @cov.setter
+    def cov(self, value):
+        self._model.cov = value
+    
+    @property
+    def cov_tau(self):
+        return self._model.cov_tau
+
+    @cov_tau.setter
+    def cov_tau(self, value):
+        self._model.cov_tau = value
+
+    
+    @cov.setter
+    def cov(self, value):
+        self._model.cov = value
+
 
     def _param_init(self):
         indim = self.data_producer.dimension()
         assert indim > 0, "zero dimension from data producer"
-        assert self._dim <= indim, ("requested more output dimensions (%i) than dimension"
-                                    " of input data (%i)" % (self._dim, indim))
+        assert self.dim <= indim, ("requested more output dimensions (%i) than dimension"
+                                    " of input data (%i)" % (self.dim, indim))
 
         self._logger.debug("Running TICA with tau=%i; Estimating two covariance matrices"
                            " with dimension (%i, %i)" % (self._lag, indim, indim))
 
-        # amount of chunks
-        denom = self._n_chunks(self._param_with_stride)
-        self._progress_register(denom, "calculate mean+cov", 0)
-
-        # request lagged data in first pass
-        return self._lag
-
-    def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
-                        last_chunk, ipass, Y=None, stride=1):
+    def _estimate(self, iterable, **kw):
         r"""
         Chunk-based parameterization of TICA. Iterates through all data twice. In the first pass, the
         data means are estimated, in the second pass the covariance and time-lagged covariance
         matrices are estimated. Finally, the generalized eigenvalue problem is solved to determine
         the independent components.
-
-        :param X:
-            coordinates. axis 0: time, axes 1-..: coordinates
-        :param itraj:
-            index of the current trajectory
-        :param t:
-            time index of first frame within trajectory
-        :param first_chunk:
-            boolean. True if this is the first chunk globally.
-        :param last_chunk_in_traj:
-            boolean. True if this is the last chunk within the trajectory.
-        :param last_chunk:
-            boolean. True if this is the last chunk globally.
-        :param ipass:
-            number of pass through data
-        :param Y:
-            time-lagged data (if available)
-        :return:
         """
-        if t == 0:
-            n_chunks = self._data_producer._n_chunks(stride)
-            nsave = max(log(ceil(n_chunks), 2), 2)
-            self._logger.debug("using %s moments for %i chunks" % (nsave, n_chunks))
-            self._covar = running_covar(xx=True, xy=True, yy=False,
-                                        remove_mean=True, symmetrize=True,
-                                        nsave=nsave)
+        stride = kw['stride'] if 'stride' in kw else self.stride
+        
+        it = iterable.iterator(return_trajindex=True, lag=self.lag, **kw)
+        
+        n_chunks = it._n_chunks(stride)
+        self._progress_register(n_chunks, "calculate mean+cov", 0)
+        nsave = max(log(ceil(n_chunks), 2), 2)
+        self._logger.debug("using %s moments for %i chunks" % (nsave, n_chunks))
+        self._covar = running_covar(xx=True, xy=True, yy=False,
+                                    remove_mean=True, symmetrize=True,
+                                    nsave=nsave)
+        
+        for itraj, X, Y in it:
 
-        if self.trajectory_length(itraj, stride=1) - self._lag > 0:
-            assert Y is not None
-            self._covar.add(X, Y)
-
-        else:
-            self._skipped_trajs.append(itraj)
-
-        # counting chunks and log of eta
-        self._progress_update(1, stage=0)
-
-        if last_chunk:
-            return True  # finished!
-
-        return False
-
-    def _param_finish(self):
-        self.mu = self._covar.mean_X()
-        # covariance matrices
-        self.cov = self._covar.covXX()
-        self.cov_tau = self._covar.cov_XY()
+            if self.trajectory_length(itraj, stride=1) - self._lag > 0:
+                assert Y is not None
+                assert len(X) == len(Y)
+                self._covar.add(X, Y)
+    
+            else:
+                self._skipped_trajs.append(itraj)
+    
+            # counting chunks and log of eta
+            self._progress_update(1, stage=0)
+    
+        cov, cov_tau = self._covar.cov_XX(), self._covar.cov_XY()
 
         # diagonalize with low rank approximation
         self._logger.debug("diagonalize Cov and Cov_tau.")
-        self._eigenvalues, self._eigenvectors = \
-            eig_corr(self.cov, self.cov_tau, self._epsilon)
+        eigenvalues, eigenvectors = \
+            eig_corr(cov, cov_tau, self.epsilon)
         self._logger.debug("finished diagonalisation.")
 
         # compute cumulative variance
-        self._cumvar = np.cumsum(self._eigenvalues ** 2)
-        self._cumvar /= self._cumvar[-1]
+        cumvar = np.cumsum(eigenvalues ** 2)
+        cumvar /= cumvar[-1]
 
         if len(self._skipped_trajs) >= 1:
             self._skipped_trajs = np.asarray(self._skipped_trajs)
             self._logger.warning("Had to skip %u trajectories for being too short. "
                                  "Their indexes are in self._skipped_trajs."
                                  % len(self._skipped_trajs))
+            
+        self._model.update_model_params(mean=self._covar.mean_X(),
+                                        cov=self._covar.cov_XX(),
+                                        cov_tau=self._covar.cov_XY(),
+                                        cumvar=cumvar,
+                                        eigenvalues=eigenvalues,
+                                        eigenvectors=eigenvectors)
+        return self._model
 
     def _transform_array(self, X):
         r"""Projects the data onto the dominant independent components.
@@ -290,11 +279,10 @@ class TICA(Transformer):
         Y : ndarray(n,)
             the projected data
         """
-        # TODO: consider writing an extension to avoid temporary Xmeanfree
-        X_meanfree = X - self.mu
-        Y = np.dot(X_meanfree, self._eigenvectors[:, 0:self.dimension()])
-        if self._kinetic_map:  # scale by eigenvalues
-            Y *= self._eigenvalues[0:self.dimension()]
+        X_meanfree = X - self.mean
+        Y = np.dot(X_meanfree, self.eigenvectors[:, 0:self.dimension()])
+        if self.kinetic_map:  # scale by eigenvalues
+            Y *= self.eigenvalues[0:self.dimension()]
         return Y
 
     @property
@@ -318,7 +306,7 @@ class TICA(Transformer):
             for each TIC.
         """
         feature_sigma = np.sqrt(np.diag(self.cov))
-        return np.dot(self.cov, self._eigenvectors[:, : self.dimension()]) / feature_sigma[:, np.newaxis]
+        return np.dot(self.cov, self.eigenvectors[:, : self.dimension()]) / feature_sigma[:, np.newaxis]
 
     @property
     def timescales(self):
@@ -340,8 +328,8 @@ class TICA(Transformer):
             input coordinates were available. However, less eigenvalues will be returned if the TICA matrices
             were not full rank or :py:obj:`var_cutoff` was parsed
         """
-        if self._parametrized:
-            return -self.lag/np.log(np.abs(self.eigenvalues))
+        if self._estimated:
+            return -self.lag / np.log(np.abs(self.eigenvalues))
         else:
             self._logger.info("TICA not yet parametrized")
 
@@ -353,11 +341,7 @@ class TICA(Transformer):
         -------
         eigenvalues: 1D np.array
         """
-
-        if self._parametrized:
-            return(self._eigenvalues)
-        else:
-            self._logger.info("TICA not yet parametrized")
+        return self._model.eigenvalues
 
     @property
     def eigenvectors(self):
@@ -367,11 +351,7 @@ class TICA(Transformer):
         -------
         eigenvectors: (N,M) ndarray
         """
-
-        if self._parametrized:
-            return(self._eigenvectors)
-        else:
-            self._logger.info("TICA not yet parametrized")
+        return self._model.eigenvectors
 
     @property
     def cumvar(self):
@@ -381,8 +361,4 @@ class TICA(Transformer):
         -------
         cumvar: 1D np.array
         """
-
-        if self._parametrized:
-            return(self._cumvar)
-        else:
-            self._logger.info("TICA not yet parametrized")
+        return self._model.cumvar
