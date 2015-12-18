@@ -26,6 +26,7 @@ import pyemma.coordinates.api as coor
 import pkg_resources
 import mdtraj
 from six.moves import range
+from pyemma.coordinates.data.datasource import IteratorContext
 
 
 class TestRandomAccessStride(TestCase):
@@ -41,27 +42,25 @@ class TestRandomAccessStride(TestCase):
         self.stride2 = np.asarray([[2, 0]])
 
     def test_iterator_context(self):
-        from pyemma.coordinates.transform.transformer import TransformerIteratorContext
 
-        ctx = TransformerIteratorContext(stride=1, lag=5)
+        ctx = IteratorContext(stride=1)
         assert ctx.stride == 1
-        assert ctx.lag == 5
         assert ctx.uniform_stride
         assert ctx.is_stride_sorted()
         assert ctx.traj_keys is None
 
-        ctx = TransformerIteratorContext(stride=np.asarray([[0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [1, 3]]))
+        ctx = IteratorContext(stride=np.asarray([[0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [1, 3]]))
         assert not ctx.uniform_stride
         assert ctx.is_stride_sorted()
         np.testing.assert_array_equal(ctx.traj_keys, np.array([0, 1]))
 
         # sorted within trajectory, not sorted by trajectory key
         with self.assertRaises(ValueError):
-            TransformerIteratorContext(stride=np.asarray([[1, 1], [1, 2], [1, 3], [0, 0], [0, 1], [0, 2]]))
+            IteratorContext(stride=np.asarray([[1, 1], [1, 2], [1, 3], [0, 0], [0, 1], [0, 2]]))
 
         # sorted by trajectory key, not within trajectory
         with self.assertRaises(ValueError):
-            TransformerIteratorContext(stride=np.asarray([[0, 0], [0, 1], [0, 2], [1, 1], [1, 5], [1, 3]]))
+            IteratorContext(stride=np.asarray([[0, 0], [0, 1], [0, 2], [1, 1], [1, 5], [1, 3]]))
 
         np.testing.assert_array_equal(ctx.ra_indices_for_traj(0), np.array([0, 1, 2]))
         np.testing.assert_array_equal(ctx.ra_indices_for_traj(1), np.array([1, 2, 3]))
