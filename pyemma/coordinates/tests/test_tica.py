@@ -52,7 +52,7 @@ class TestTICA_Basic(unittest.TestCase):
         # right shape
         assert types.is_float_matrix(Y)
         assert Y.shape[0] == 100
-        assert Y.shape[1] == 1
+        assert Y.shape[1] == 1, Y.shape[1]
 
     def test_MD_data(self):
         # this is too little data to get reasonable results. We just test to avoid exceptions
@@ -218,10 +218,11 @@ class TestTICAExtensive(unittest.TestCase):
         assert isinstance(self.tica_obj.in_memory, bool)
 
     def test_iterator(self):
-        for itraj, chunk in self.tica_obj:
+        chunksize=1000
+        for itraj, chunk in self.tica_obj.iterator(chunk=chunksize):
             assert types.is_int(itraj)
             assert types.is_float_matrix(chunk)
-            assert chunk.shape[0] <= self.tica_obj.chunksize + self.lag
+            self.assertLessEqual(chunk.shape[0], (chunksize + self.lag))
             assert chunk.shape[1] == self.tica_obj.dimension()
 
     def test_lag(self):
@@ -284,7 +285,8 @@ class TestTICAExtensive(unittest.TestCase):
         true_corr = np.corrcoef(feature_traj.T,
                                 y = tica_traj.T)[:ticamini.data_producer.dimension(),
                                                   ticamini.data_producer.dimension():]
-        assert np.isclose(test_corr, true_corr).all()
+        #assert np.isclose(test_corr, true_corr).all()
+        np.testing.assert_allclose(test_corr, true_corr)
 
     def test_feature_correlation_data(self):
         # Create features with some correlation
@@ -302,7 +304,8 @@ class TestTICAExtensive(unittest.TestCase):
         true_corr = np.corrcoef(feature_traj.T,
                                 y = tica_traj.T)[:tica_obj.data_producer.dimension(), tica_obj.data_producer.dimension():]
 
-        assert np.isclose(test_corr, true_corr).all()
+        np.testing.assert_allclose(test_corr, true_corr)
+        #assert np.isclose(test_corr, true_corr).all()
 
     def test_skipped_trajs(self):
 
