@@ -84,9 +84,9 @@ class TestPipeline(unittest.TestCase):
             np.save(f.name, data)
             reader = api.source(f.name)
             p = api.pipeline(reader, run=False, stride=2, chunksize=5)
-            assert reader._parametrized
+            assert reader._estimated
             p.parametrize()
-            assert reader._parametrized
+            assert reader._estimated
 
     def test_add_element(self):
         # start with empty pipeline without auto-parametrization
@@ -94,9 +94,9 @@ class TestPipeline(unittest.TestCase):
         # add some reader
         reader = api.source(self.traj_files, top=self.pdb_file)
         p.add_element(reader)
-        assert reader._parametrized
+        assert reader._estimated
         p.parametrize()
-        assert reader._parametrized
+        assert reader._estimated
 
         # get the result immediately
         out1 = reader.get_output()

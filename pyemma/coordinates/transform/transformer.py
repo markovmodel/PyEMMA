@@ -69,7 +69,7 @@ class Transformer(six.with_metaclass(ABCMeta, DataSource, Estimator, Loggable)):
                                  "chunksize in the reader" % chunksize)
         self._data_producer = None
         # todo ??
-        self._parametrized = False
+        self._estimated = False
         self._param_with_stride = 1
         # allow children of this class to implement their own progressbar handling
         self._custom_param_progress_handling = False
@@ -87,7 +87,7 @@ class Transformer(six.with_metaclass(ABCMeta, DataSource, Estimator, Loggable)):
         if dp is not self._data_producer:
             self._logger.debug("reset (previous) parametrization state, since"
                                " data producer has been changed.")
-            self._parametrized = False
+            self._estimated = False
         self._data_producer = dp
 
     #@Iterable.chunksize

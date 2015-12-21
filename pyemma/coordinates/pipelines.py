@@ -17,11 +17,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import
-#from pyemma.coordinates.clustering.interface import AbstractClustering
-#from pyemma.coordinates.transform.transformer import Transformer
-#from pyemma.coordinates.data.feature_reader import FeatureReader
+from pyemma.coordinates.clustering.interface import AbstractClustering
+from pyemma.coordinates.transform.transformer import Transformer
+from pyemma.coordinates.data.feature_reader import FeatureReader
 
 from pyemma.util.log import getLogger
+from pyemma.coordinates.data.iterable import Iterable
 
 __all__ = ['Discretizer',
            'Pipeline',
@@ -55,7 +56,7 @@ class Pipeline(object):
         for e in chain:
             self.add_element(e)
 
-        self._parametrized = False
+        self._estimated = False
 
         name = "%s[%s]" % (self.__class__.__name__, hex(id(self)))
         self._logger = getLogger(name)
@@ -76,8 +77,9 @@ class Pipeline(object):
 
         Appends the given element to the end of the current chain.
         """
-        if not isinstance(e, Transformer):
-            raise TypeError("given element is not a transformer.")
+        if not isinstance(e, Iterable):
+            raise TypeError("given element is not iterable in terms of "
+                            "PyEMMAs coordinate pipeline.")
 
         # set data producer
         if len(self._chain) == 0:
@@ -144,15 +146,15 @@ class Pipeline(object):
         for element in self._chain:
             element.parametrize(stride=self.param_stride)
 
-        self._parametrized = True
+        self._estimated = True
 
     def _is_parametrized(self):
         r"""
         Iterates through the pipeline elements and checks if every element is parametrized.
         """
-        result = self._parametrized
+        result = self._estimated
         for el in self._chain:
-            result &= el._parametrized
+            result &= el._estimated
         return result
 
 
@@ -209,12 +211,12 @@ class Discretizer(Pipeline):
 
         self.add_element(cluster)
 
-        self._parametrized = False
+        self._estimated = False
 
     @property
     def dtrajs(self):
         """ get discrete trajectories """
-        if not self._parametrized:
+        if not self._estimated:
             self._logger.info("not yet parametrized, running now.")
             self.parametrize()
         return self._chain[-1].dtrajs
