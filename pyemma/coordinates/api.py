@@ -968,11 +968,10 @@ def pca(data=None, dim=-1, var_cutoff=0.95, stride=1, mean=None):
 
     """
     if mean is not None:
-        data = _get_input_stage(data)
-        indim = data.dimension()
-        mean = _types.ensure_ndarray(mean, shape=(indim,), dtype=_np.float)
+        import warnings
+        warnings.warn("provided mean ignored", DeprecationWarning)
 
-    res = _PCA(dim=dim, var_cutoff=var_cutoff, mean=mean)
+    res = _PCA(dim=dim, var_cutoff=var_cutoff, mean=None)
     return _param_stage(data, res, stride=stride)
 
 
@@ -1429,7 +1428,7 @@ def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1, metric='euc
     """
     if dmin == -1:
         raise ValueError("provide a minimum distance for clustering, e.g. 2.0")
-    res = _RegularSpaceClustering(dmin, max_centers, metric=metric)
+    res = _RegularSpaceClustering(dmin, max_centers=max_centers, metric=metric)
     return _param_stage(data, res, stride=stride)
 
 

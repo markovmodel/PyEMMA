@@ -112,6 +112,14 @@ class RegularSpaceClustering(AbstractClustering):
         self._max_centers = int(value)
         self._estimated = False
 
+    @property
+    def n_clusters(self):
+        return self.max_centers
+
+    @n_clusters.setter
+    def n_clusters(self, val):
+        self.max_centers = val
+
     def _estimate(self, iterable, **kwargs):
         ########
         # Calculate clustercenters:
