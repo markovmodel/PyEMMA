@@ -188,7 +188,6 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
         t = 0
         last_itraj = -1
         last_chunk = True if iterator.chunksize == 0 else False
-        n_frames = iterator.n_frames_total()
         last_traj_len = iterator.trajectory_lengths()[-1]
         ntraj = self.number_of_trajectories()
 
@@ -207,7 +206,6 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
             # collect data
             self._collect_data(X, first_chunk, stride)
             # initialize cluster centers
-            self._logger.debug("last_chunk: %s" % last_chunk)
             self._initialize_centers(X, itraj, t, last_chunk)
             first_chunk = False
 
