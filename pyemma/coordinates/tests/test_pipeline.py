@@ -75,9 +75,9 @@ class TestPipeline(unittest.TestCase):
                 api.cluster_uniform_time(k=20)
             ], run=False
         )
-        self.assertFalse(p._is_parametrized(), "If run=false, the pipeline should not be parametrized.")
+        self.assertFalse(p._is_estimated(), "If run=false, the pipeline should not be parametrized.")
         p.parametrize()
-        self.assertTrue(p._is_parametrized(), "If parametrized was called, the pipeline should be parametrized.")
+        self.assertTrue(p._is_estimated(), "If parametrized was called, the pipeline should be parametrized.")
 
     def test_np_reader_in_pipeline(self):
         with TemporaryDirectory() as td:
@@ -123,12 +123,12 @@ class TestPipeline(unittest.TestCase):
         reader = api.source(self.traj_files, top=self.pdb_file)
         pca = api.pca()
         p = api.pipeline([reader, pca])
-        self.assertTrue(p._is_parametrized())
+        self.assertTrue(p._is_estimated())
         pca_out = pca.get_output()
         tica = api.tica(lag=self.generated_lag)
         # replace pca with tica
         p.set_element(1, tica)
-        self.assertFalse(p._is_parametrized(), "After replacing an element, the pipeline should not be parametrized.")
+        self.assertFalse(p._is_estimated(), "After replacing an element, the pipeline should not be parametrized.")
         p.parametrize()
         tica_out = tica.get_output()
         # check if replacement actually happened

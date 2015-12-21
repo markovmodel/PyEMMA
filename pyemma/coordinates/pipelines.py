@@ -23,6 +23,7 @@ from pyemma.coordinates.data.feature_reader import FeatureReader
 
 from pyemma.util.log import getLogger
 from pyemma.coordinates.data.iterable import Iterable
+from pyemma.coordinates.data.datasource import DataSource
 
 __all__ = ['Discretizer',
            'Pipeline',
@@ -144,17 +145,19 @@ class Pipeline(object):
         Reads all data and discretizes it into discrete trajectories.
         """
         for element in self._chain:
-            element.parametrize(stride=self.param_stride)
+            if hasattr(element, 'parametrize'):
+                element.parametrize(stride=self.param_stride)
 
         self._estimated = True
 
-    def _is_parametrized(self):
+    def _is_estimated(self):
         r"""
         Iterates through the pipeline elements and checks if every element is parametrized.
         """
         result = self._estimated
         for el in self._chain:
-            result &= el._estimated
+            if not isinstance(el, DataSource):
+                result &= el._estimated
         return result
 
 
