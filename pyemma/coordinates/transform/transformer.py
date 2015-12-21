@@ -201,20 +201,16 @@ class Transformer(six.with_metaclass(ABCMeta, DataSource, Estimator, Loggable)):
         if self.in_memory and not self._mapping_to_mem_active:
             self._map_to_memory()
 
-        # finish parametrization
-        #if not self._custom_param_progress_handling:
-        #    self._progress_force_finish(0)
-
         self._estimated = True
 
         return model
 
     @deprecated("use estimate")
-    def parametrize(self):
+    def parametrize(self, stride=1):
         if self._data_producer is None:
             raise RuntimeError("This estimator has no data source given, giving up.")
 
-        return self.estimate(self.data_producer)
+        return self.estimate(self.data_producer, stride=stride)
 
     @deprecated("use fit.")
     def transform(self, X):
