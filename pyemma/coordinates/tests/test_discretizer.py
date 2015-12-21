@@ -108,7 +108,7 @@ class TestDiscretizer(unittest.TestCase):
         pcat = pca(dim=2)
 
         n_clusters = 2
-        clustering = UniformTimeClustering(k=n_clusters)
+        clustering = UniformTimeClustering(n_clusters=n_clusters)
 
         D = Discretizer(reader, transform=pcat, cluster=clustering)
         D.parametrize()
