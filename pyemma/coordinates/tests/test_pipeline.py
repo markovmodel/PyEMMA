@@ -33,6 +33,7 @@ import msmtools.generation as msmgen
 import tempfile
 from six.moves import range
 import pkg_resources
+from pyemma.util.files import TemporaryDirectory
 
 class TestPipeline(unittest.TestCase):
     @classmethod
@@ -79,14 +80,13 @@ class TestPipeline(unittest.TestCase):
         self.assertTrue(p._is_parametrized(), "If parametrized was called, the pipeline should be parametrized.")
 
     def test_np_reader_in_pipeline(self):
-        with tempfile.NamedTemporaryFile(suffix='.npy', delete=False) as f:
+        with TemporaryDirectory() as td:
+            file_name = os.path.join(td, "test.npy")
             data = np.random.random((100, 3))
-            np.save(f.name, data)
-            reader = api.source(f.name)
+            np.save(file_name, data)
+            reader = api.source(file_name)
             p = api.pipeline(reader, run=False, stride=2, chunksize=5)
-            assert reader._estimated
             p.parametrize()
-            assert reader._estimated
 
     def test_add_element(self):
         # start with empty pipeline without auto-parametrization
@@ -94,9 +94,7 @@ class TestPipeline(unittest.TestCase):
         # add some reader
         reader = api.source(self.traj_files, top=self.pdb_file)
         p.add_element(reader)
-        assert reader._estimated
         p.parametrize()
-        assert reader._estimated
 
         # get the result immediately
         out1 = reader.get_output()
