@@ -45,7 +45,7 @@ class UniformTimeClustering(AbstractClustering):
             metric to use during clustering ('euclidean', 'minRMSD')
         """
         super(UniformTimeClustering, self).__init__(metric=metric)
-        self.set_params(n_clusters=n_clusters, metric='metric', stride=stride)
+        self.set_params(n_clusters=n_clusters, metric=metric, stride=stride)
 
     def describe(self):
         return "[Uniform time clustering, k = %i, inp_dim=%i]" \
@@ -107,7 +107,6 @@ class UniformTimeClustering(AbstractClustering):
 
             # final time we can go to with this chunk
             maxt = self._tprev + t + L
-            print "max_t", maxt
             # harvest cluster centers from this chunk until we have left it
             while (self._nextt < maxt and self._n < self.n_clusters):
                 i = self._nextt - self._tprev - t
