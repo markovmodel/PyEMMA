@@ -19,13 +19,17 @@
 
 from __future__ import absolute_import
 
-import numpy as np
+import math
 
 from pyemma._base.model import Model
+from pyemma._base.progress.reporter import ProgressReporter
 from pyemma.coordinates.transform.transformer import Transformer
-from pyemma.util import types
 from pyemma.util.annotators import doc_inherit
 from pyemma.util.reflection import get_default_args
+
+from pyemma.coordinates.estimators.covar.running_moments import running_covar
+import numpy as np
+
 
 __all__ = ['PCA']
 __author__ = 'noe'
@@ -35,7 +39,7 @@ class PCAModel(Model):
     pass
 
 
-class PCA(Transformer):
+class PCA(Transformer, ProgressReporter):
     r""" Principal component analysis."""
 
     def __init__(self, dim=-1, var_cutoff=0.95, mean=None, stride=1):
@@ -81,10 +85,9 @@ class PCA(Transformer):
         if dim != -1 and var_cutoff != default_var_cutoff:
             raise ValueError('Trying to set both the number of dimension and the subspace variance. Use either or.')
 
+        self._model = PCAModel()
         self.set_params(dim=dim, var_cutoff=var_cutoff, mean=mean)
 
-        # output options
-        self._custom_param_progress_handling = True
 
     @doc_inherit
     def describe(self):
@@ -130,63 +133,31 @@ class PCA(Transformer):
     def eigenvectors(self, value):
         pass
 
-    # @property
-    # def mean(self):
-    #     return self._model.mean
-    #
-    # @mean.setter
-    # def mean(self, value):
-    #     self._model.mean = value
+    @property
+    def mean(self):
+        return self._model.mean
 
+    @mean.setter
+    def mean(self, value):
+        self._model.mean = value
 
-    def _estimate(self, X, **kwargs):
-        N_mean = 0
-        N_cov = 0
-        # create mean array and covariance matrix
-        indim = X.dimension()
-        self._logger.info("Running PCA on %i dimensional input" % indim)
-        assert indim > 0, "Incoming data of PCA has 0 dimension!"
+    def _estimate(self, iterable, **kwargs):
+        it = iterable.iterator(return_trajindex=False, **kwargs)
+        stride = kwargs['stride'] if 'stride' in kwargs else self.stride
+        n_chunks = it._n_chunks(stride)
+        self._progress_register(n_chunks, "calc mean and covar", 0)
+        nsave = max(math.log(math.ceil(n_chunks), 2), 2)
+        self._logger.debug("using %s moments for %i chunks" % (nsave, n_chunks))
+        self._covar = running_covar(xx=True, xy=False, yy=False,
+                                    remove_mean=True, symmetrize=False,
+                                    nsave=nsave)
 
-        if self.mean is not None:
-            mean = types.ensure_ndarray(self.mean, shape=(indim,))
-            self._given_mean = True
-        else:
-            mean = np.zeros(indim)
-            self._given_mean = False
-
-        self.cov = np.zeros((indim, indim))
-
-        it = X.iterator(return_trajindex=False, **kwargs)
-        # amount of chunks
-        denom = it._n_chunks(self._param_with_stride)
-        self._progress_register(denom, description="calculate mean", stage=0)
-        self._progress_register(denom, description="calculate covariances", stage=1)
-
-
-        # pass 1: means
         for chunk in it:
-            if self._given_mean:
-                break
-
-            mean += np.sum(chunk, axis=0, dtype=np.float64)
-            N_mean += np.shape(chunk)[0]
-
-            # counting chunks and log of eta
+            self._covar.add(chunk)
             self._progress_update(1, 0)
-        if not self._given_mean:
-            mean /= N_mean
 
-        self.set_params(mean=mean)
-
-        # pass 2: covariances
-        for chunk in X.iterator(return_trajindex=False, **kwargs):
-            Xm = chunk - mean
-            self.cov += np.dot(Xm.T, Xm)
-            N_cov += np.shape(chunk)[0]
-
-            self._progress_update(1, stage=1)
-
-        self.cov /= N_cov - 1
+        self.cov = self._covar.cov_XX()
+        self.mu = self._covar.mean_X()
 
         (v, R) = np.linalg.eigh(self.cov)
         # sort
@@ -199,8 +170,9 @@ class PCA(Transformer):
         cumvar /= cumvar[-1]
 
         model = PCAModel()
-        model.update_model_params(cumvar=cumvar, eigenvalues=eigenvalues, eigenvectors=eigenvectors,
-                                  mean=mean, mu=mean)
+        model.update_model_params(cumvar=cumvar, eigenvalues=eigenvalues,
+                                  eigenvectors=eigenvectors,
+                                  mean=self._covar.mean_X())
         self._model = model
 
         return model
@@ -208,7 +180,6 @@ class PCA(Transformer):
     def _transform_array(self, X):
         r"""
         Projects the data onto the dominant principal components.
-
         :param X: the input data
         :return: the projected data
         """
