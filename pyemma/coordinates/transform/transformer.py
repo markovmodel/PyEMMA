@@ -39,14 +39,13 @@ __author__ = 'noe, marscher'
 
 
 def _to_data_producer(X):
-    from pyemma.coordinates.data.data_in_memory import DataInMemory as _DataInMemory
     # this is a pipelining stage, so let's parametrize from it
     if isinstance(X, Transformer):
         inputstage = X
     # second option: data is array or list of arrays
     else:
         data = _types.ensure_traj_list(X)
-        inputstage = _DataInMemory(data)
+        inputstage = DataInMemory(data)
 
     return inputstage
 
@@ -66,14 +65,14 @@ class Transformer(six.with_metaclass(ABCMeta, DataSource, Estimator, Loggable)):
         if chunksize is not None:
             self._logger.warning("Given deprecated argument 'chunksize=%s'"
                                  " to transformer. Ignored - please set the "
-                                 "chunksize in the reader" % chunksize)
+                                 "chunksize in the reader/iterator" % chunksize)
         self._data_producer = None
-        # todo ??
         self._estimated = False
         self._param_with_stride = 1
 
     def _create_iterator(self, skip=0, chunk=0, stride=1, return_trajindex=True):
-        return TransformerIterator(self, skip=skip, chunk=chunk, stride=stride, return_trajindex=return_trajindex)
+        return TransformerIterator(self, skip=skip, chunk=chunk, stride=stride,
+                                   return_trajindex=return_trajindex)
 
     @property
     def data_producer(self):
@@ -221,20 +220,23 @@ class Transformer(six.with_metaclass(ABCMeta, DataSource, Estimator, Loggable)):
 
     @deprecated("use fit.")
     def transform(self, X):
-        r"""Maps the input data through the transformer to correspondingly shaped output data array/list.
+        r"""Maps the input data through the transformer to correspondingly
+        shaped output data array/list.
 
         Parameters
         ----------
         X : ndarray(T, n) or list of ndarray(T_i, n)
-            The input data, where T is the number of time steps and n is the number of dimensions.
-            If a list is provided, the number of time steps is allowed to vary, but the number of dimensions are
-            required to be to be consistent.
+            The input data, where T is the number of time steps and n is the
+            number of dimensions.
+            If a list is provided, the number of time steps is allowed to vary,
+            but the number of dimensions are required to be to be consistent.
 
         Returns
         -------
         Y : ndarray(T, d) or list of ndarray(T_i, d)
-            The mapped data, where T is the number of time steps of the input data and d is the output dimension
-            of this transformer. If called with a list of trajectories, Y will also be a corresponding list of
+            The mapped data, where T is the number of time steps of the input
+            data and d is the output dimension of this transformer. If called
+            with a list of trajectories, Y will also be a corresponding list of
             trajectories
         """
         if isinstance(X, np.ndarray):
@@ -264,13 +266,14 @@ class Transformer(six.with_metaclass(ABCMeta, DataSource, Estimator, Loggable)):
         Parameters
         ----------
         X : ndarray(T, n)
-            The input data, where T is the number of time steps and n is the number of dimensions.
+            The input data, where T is the number of time steps and 
+            n is the number of dimensions.
 
         Returns
         -------
         Y : ndarray(T, d)
-            The projected data, where T is the number of time steps of the input data and d is the output dimension
-            of this transformer.
+            The projected data, where T is the number of time steps of the 
+            input data and d is the output dimension of this transformer.
 
         """
         pass
