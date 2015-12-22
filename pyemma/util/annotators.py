@@ -204,6 +204,7 @@ def deprecated(*optional_message):
             # skip callee frames if they are other decorators or this file(func)
             if 'decorator' in filename or __file__ in filename:
                 continue
+            else: break
         lineno = frame[2]
 
         user_msg = 'Call to deprecated function "%s". Called from %s line %i. %s' \
