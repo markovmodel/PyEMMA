@@ -98,7 +98,7 @@ class UniformTimeClustering(AbstractClustering):
 
             if itraj != last_itraj:
                 if last_itraj != -1:
-                    self._tprev += iterator.trajectory_length(last_itraj, stride=stride)
+                    self._tprev += self.trajectory_length(itraj=last_itraj, stride=stride)
                 last_itraj = itraj
                 t = 0
 
