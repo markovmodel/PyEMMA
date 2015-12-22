@@ -183,7 +183,7 @@ class Transformer(six.with_metaclass(ABCMeta, DataSource, Estimator, Loggable)):
             if isinstance(X, np.ndarray):
                 X = DataInMemory(X, self.chunksize)
             else:
-                raise ValueError("no")
+                raise ValueError("no array given")
 
         if 'stride' in kwargs:
             self._param_with_stride = kwargs['stride']
@@ -309,4 +309,4 @@ class TransformerIterator(DataSourceIterator):
 
     def next_chunk(self):
         X = self._it.next_chunk()
-        return self._data_source.transform(X)
+        return self._data_source._transform_array(X)
