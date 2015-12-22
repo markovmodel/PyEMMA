@@ -71,8 +71,6 @@ class Transformer(six.with_metaclass(ABCMeta, DataSource, Estimator, Loggable)):
         # todo ??
         self._estimated = False
         self._param_with_stride = 1
-        # allow children of this class to implement their own progressbar handling
-        self._custom_param_progress_handling = False
 
     def _create_iterator(self, skip=0, chunk=0, stride=1, return_trajindex=True):
         return TransformerIterator(self, skip=skip, chunk=chunk, stride=stride, return_trajindex=return_trajindex)
@@ -187,6 +185,9 @@ class Transformer(six.with_metaclass(ABCMeta, DataSource, Estimator, Loggable)):
             else:
                 raise ValueError("no")
 
+        if 'stride' in kwargs:
+            self._param_with_stride = kwargs['stride']
+
         model = None
         try:
             # start
@@ -204,6 +205,12 @@ class Transformer(six.with_metaclass(ABCMeta, DataSource, Estimator, Loggable)):
         self._estimated = True
 
         return model
+
+    def get_output(self, dimensions=slice(0, None), stride=1, skip=0, chunk=0):
+        if not self._estimated:
+            self.estimate(self.data_producer, stride=self._param_with_stride)
+
+        return super(Transformer, self).get_output(dimensions, stride, skip, chunk)
 
     @deprecated("use estimate")
     def parametrize(self, stride=1):
