@@ -197,7 +197,7 @@ def deprecated(*optional_message):
 
     """
     def _deprecated(func, *args, **kw):
-        caller_stack = stack()
+        caller_stack = stack()[1:]
         while len(caller_stack) > 0:
             frame = caller_stack.pop(0)
             filename = frame[1]
