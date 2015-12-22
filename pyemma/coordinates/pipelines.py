@@ -187,7 +187,7 @@ class Discretizer(Pipeline):
             self, [], chunksize=chunksize, param_stride=param_stride)
 
         # check input
-        if not isinstance(reader, Transformer):
+        if not isinstance(reader, DataSource):
             raise ValueError('given reader is not of the correct type')
         else:
             if reader.data_producer is not reader:
