@@ -152,7 +152,7 @@ class TestRandomAccessStride(TestCase):
             for x in it:
                 ref_stride[x[0]] += len(x[1])
             for key in list(ref_stride.keys()):
-                expected = len(it._ctx.ra_indices_for_traj(key))
+                expected = len(it.ra_indices_for_traj(key))
                 assert ref_stride[key] == expected, \
                     "Expected to get exactly %s elements of trajectory %s, but got %s for chunksize=%s" \
                     % (expected, key, ref_stride[key], cs)
