@@ -33,6 +33,7 @@ from pyemma.coordinates.clustering.interface import AbstractClustering
 from pyemma.util.annotators import doc_inherit
 from pyemma.util.units import bytes_to_string
 
+from pyemma.util.contexts import numpy_random_seed, conditional, random_seed
 from six.moves import range
 import numpy as np
 
@@ -119,13 +120,10 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
         if self.init_strategy == 'uniform':
             # gives random samples from each trajectory such that the cluster centers are distributed percentage-wise
             # with respect to the trajectories length
-            if self.fixed_seed:
-                random.seed(42)
-            for idx, traj_len in enumerate(traj_lengths):
-                self._init_centers_indices[idx] = random.sample(list(range(0, traj_len)), int(
-                    math.ceil((traj_len / float(total_length)) * self.n_clusters)))
-            if self.fixed_seed:
-                random.seed(None)
+            with conditional(self.fixed_seed, random_seed(42)):
+                for idx, traj_len in enumerate(traj_lengths):
+                    self._init_centers_indices[idx] = random.sample(list(range(0, traj_len)), int(
+                        math.ceil((traj_len / float(total_length)) * self.n_clusters)))
 
     def _init_in_memory_chunks(self, size):
         available_mem = psutil.virtual_memory().available
