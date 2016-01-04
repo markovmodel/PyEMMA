@@ -28,7 +28,7 @@ __all__ = [
 
 import numpy as _np
 import scipy as _sp
-import scipy.sparse
+import scipy.sparse as _sps
 import msmtools as _msmtools
 import bar as _bar
 
@@ -252,7 +252,7 @@ def compute_csets_dTRAM(connectivity, count_matrices, nn=None):
 
     state_counts =  _np.maximum(count_matrices.sum(axis=1), count_matrices.sum(axis=2))
 
-    return _compute_csets(connectivity, state_counts, count_matrices, None, nn=nn):
+    return _compute_csets(connectivity, state_counts, count_matrices, None, nn=nn)
 
 def _compute_csets(connectivity, state_counts, count_matrices, tram_trajs, nn=None, factor=1.0):
     n_therm_states, n_conf_states = state_counts.shape    
@@ -291,7 +291,7 @@ def _compute_csets(connectivity, state_counts, count_matrices, tram_trajs, nn=No
 
         return csets, projected_cset
 
-    elif connectivity in ['neighbors', 'post_hoc_RE', 'BAR_variance']
+    elif connectivity in ['neighbors', 'post_hoc_RE', 'BAR_variance']:
         if nn is not None:
             assert nn>=1 and nn<=n_therm_states-1
         # assume overlap between nn neighboring umbrellas
