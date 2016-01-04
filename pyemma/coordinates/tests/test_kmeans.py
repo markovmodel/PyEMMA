@@ -65,8 +65,6 @@ class TestKmeans(unittest.TestCase):
         X = np.hstack(X)
 
         for init_strategy in ['kmeans++', 'uniform']:
-            if init_strategy == 'uniform':
-                raise RuntimeError("currently broken")
             kmeans = cluster_kmeans(X, k=10, init_strategy=init_strategy)
             cc = kmeans.clustercenters
             assert (np.any(cc < 1.0)), "failed for init_strategy=%s" % init_strategy

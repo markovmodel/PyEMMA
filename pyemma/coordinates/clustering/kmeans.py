@@ -182,31 +182,18 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
 
         stride = kw['stride'] if 'stride' in kw else self.stride
 
-        iterator = iterable.iterator(return_trajindex=True, **kw)
+        iter = iterable.iterator(return_trajindex=True, **kw)
         # first pass: gather data and run k-means
         first_chunk = True
-        t = 0
         last_itraj = -1
-        last_chunk = True if iterator.chunksize == 0 else False
-        last_traj_len = iterator.trajectory_lengths()[-1]
-        ntraj = self.number_of_trajectories()
-
-        for itraj, X in iterator:
+        for itraj, X in iter:
             if itraj != last_itraj:
-                t = 0
                 last_itraj = itraj
-            t += len(X)
-
-            if itraj == ntraj - 1:
-                if iterator.chunksize == 0:
-                    last_chunk = True
-                elif t >= last_traj_len - iterator.chunksize:
-                    last_chunk = True
 
             # collect data
             self._collect_data(X, first_chunk, stride)
             # initialize cluster centers
-            self._initialize_centers(X, itraj, t, last_chunk)
+            self._initialize_centers(X, itraj, iter.pos, iter.last_chunk)
             first_chunk = False
 
         # run k-means with all the data

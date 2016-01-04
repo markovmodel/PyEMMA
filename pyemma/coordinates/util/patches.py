@@ -131,13 +131,13 @@ class iterload:
     def next(self):
         if self._closed:
             raise StopIteration()
-        if self._chunksize == 0:
+        if not isinstance(self._stride, np.ndarray) and self._chunksize == 0:
             # If chunk was 0 then we want to avoid filetype-specific code
             # in case of undefined behavior in various file parsers.
             # TODO: this will first apply stride, then skip!
             if self._extension not in _TOPOLOGY_EXTS:
                 self._kwargs['top'] = self._top
-            return load(self._filename, stride=self._stride, **self._kwargs)[self._skip:]
+                return load(self._filename, stride=self._stride, **self._kwargs)[self._skip:]
         elif self._mode is 'pdb':
             # the PDBTrajectortFile class doesn't follow the standard API. Fixing it
             # to support iterload could be worthwhile, but requires a deep refactor.
@@ -173,6 +173,9 @@ class iterload:
             curr_size = 0
             traj = []
             leftovers = []
+            chunksize = self._chunksize
+            if chunksize == 0:
+                chunksize = np.iinfo(int).max
             for k, g in groupby(enumerate(self._stride), lambda a: a[0] - a[1]):
                 grouped_stride = list(map(itemgetter(1), g))
                 seek_offset = (1 if x_prev != 0 else 0)
@@ -180,25 +183,25 @@ class iterload:
                 f.seek(seek_to, whence=1)
                 x_prev = grouped_stride[-1]
                 group_size = len(grouped_stride)
-                if curr_size + group_size > self._chunksize:
+                if curr_size + group_size > chunksize:
                     leftovers = grouped_stride
                 else:
                     local_traj = _get_local_traj_object(
                         self._atom_indices, self._extension, f, group_size, self._topology, **self._kwargs)
                     traj.append(local_traj)
                     curr_size += len(grouped_stride)
-                if curr_size == self._chunksize:
+                if curr_size == chunksize:
                     yield _efficient_traj_join(traj)
                     curr_size = 0
                     traj = []
                 while leftovers:
-                    local_chunk = leftovers[:min(self._chunksize, len(leftovers))]
+                    local_chunk = leftovers[:min(chunksize, len(leftovers))]
                     local_traj = _get_local_traj_object(
                         self._atom_indices, self._extension, f, len(local_chunk), self._topology, **self._kwargs)
                     traj.append(local_traj)
-                    leftovers = leftovers[min(self._chunksize, len(leftovers)):]
+                    leftovers = leftovers[min(chunksize, len(leftovers)):]
                     curr_size += len(local_chunk)
-                    if curr_size == self._chunksize:
+                    if curr_size == chunksize:
                         yield _efficient_traj_join(traj)
                         curr_size = 0
                         traj = []
