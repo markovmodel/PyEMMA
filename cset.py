@@ -47,29 +47,29 @@ def _overlap_post_hoc_RE(state_counts, tram_sequence, factor=1.0):
         for k in therm_states:
             for l in therm_states:
                 if k!=l:
-                    kl = np.array([2+k, 2+l])
-                    a = tram_sequence[indices[k], kl]
-                    b = tram_sequence[indices[l], kl]
+                    kl = _np.array([2+k, 2+l])
+                    a = tram_sequence[indices[k],:][:, kl]
+                    b = tram_sequence[indices[l],:][:, kl]
                     delta = a[_np.newaxis,:,0]+b[:,_np.newaxis,1]-a[_np.newaxis,:,1]-b[:,_np.newaxis,0]
-                    n_avg = _np.mean(_np.minimum(np.exp(delta), 1.0))
+                    n_avg = _np.mean(_np.minimum(_np.exp(delta), 1.0))
                     if min(len(a),len(b)) * n_avg * factor >= 1.0:
                         a = i + k*n_conf_states
                         b = i + l*n_conf_states
                         edges_i.append(a)
-                        edges_j.append(a)
-                        edges_i.append(b)
                         edges_j.append(b)
+                        edges_i.append(b)
+                        edges_j.append(a)
 
     return edges_i, edges_j
 
 def _bar_variance(a, b):
     N_1 = a.shape[0]
     N_2 = b.shape[0]
-    db_IJ = np.zeros(N_1, dtype=_np.float64)
-    db_JI = np.zeros(N_2, dtype=_np.float64)
+    db_IJ = _np.zeros(N_1, dtype=_np.float64)
+    db_JI = _np.zeros(N_2, dtype=_np.float64)
     db_IJ[:] = a[:,1]-a[:,0]
     db_JI[:] = b[:,0]-b[:,1]
-    df = _bar.df(db_IJ, db_JI, np.zeros(N_1+N_2, dtype=_np.float64))
+    df = _bar.df(db_IJ, db_JI, _np.zeros(N_1+N_2, dtype=_np.float64))
     u = _np.concatenate((a,b), axis=0)
     du = u[:,1]-u[:,0]
     b = (1.0/(2.0 + 2.0*_np.cosh(df - du - _np.log(1.0*N_1/N_2)))).sum()
@@ -88,16 +88,16 @@ def _overlap_BAR_variance(state_counts, tram_sequence, factor=1.0):
         for k in therm_states:
             for l in therm_states:
                 if k!=l:
-                    kl = np.array([2+k, 2+l])
-                    a = tram_sequence[indices[k], kl]
-                    b = tram_sequence[indices[l], kl]
+                    kl = _np.array([2+k, 2+l])
+                    a = tram_sequence[indices[k],:][:, kl]
+                    b = tram_sequence[indices[l],:][:, kl]
                     if _bar_variance(a, b) < factor:
                         a = i + k*n_conf_states
                         b = i + l*n_conf_states
                         edges_i.append(a)
-                        edges_j.append(a)
-                        edges_i.append(b)
                         edges_j.append(b)
+                        edges_i.append(b)
+                        edges_j.append(a)
 
     return edges_i, edges_j
 
@@ -292,8 +292,6 @@ def _compute_csets(connectivity, state_counts, count_matrices, tram_trajs, nn=No
         return csets, projected_cset
 
     elif connectivity in ['neighbors', 'post_hoc_RE', 'BAR_variance']:
-        if nn is not None:
-            assert nn>=1 and nn<=n_therm_states-1
         # assume overlap between nn neighboring umbrellas
         dim = n_therm_states*n_conf_states
         if connectivity == 'post_hoc_RE':
@@ -301,6 +299,7 @@ def _compute_csets(connectivity, state_counts, count_matrices, tram_trajs, nn=No
         elif connectivity == 'BAR_variance':
             i_s, j_s = _overlap_BAR_variance(state_counts, tram_trajs, factor=factor)
         else: # neighbors
+            assert nn>=1 and nn<=n_therm_states-1
             i_s = []
             j_s = []
             # connectivity between thermodynamic states
@@ -330,7 +329,7 @@ def _compute_csets(connectivity, state_counts, count_matrices, tram_trajs, nn=No
         for k,i in zip(*cset):
             csets[k].append(i)
 
-        csets = [_np.array(c) for c in csets]
+        csets = [_np.array(c,dtype=int) for c in csets]
         projected_cset = _np.unique(_np.concatenate(csets))
 
         return csets, projected_cset
@@ -370,15 +369,17 @@ def restrict_to_csets(state_counts, count_matrices, tramtraj, csets):
     if state_counts is not None:
         new_state_counts = _np.zeros_like(state_counts, order='C', dtype=_np.intc)
         for k,cset in enumerate(csets):
-            new_state_counts[k, cset] = state_counts[k, cset]
+            if len(cset)>0:
+                new_state_counts[k, cset] = state_counts[k, cset]
     else:
         new_state_counts = None
 
     if count_matrices is not None:
         new_count_matrices = _np.zeros_like(count_matrices, order='C', dtype=_np.intc)
         for k,cset in enumerate(csets):
-            csetT = cset[:, _np.newaxis]
-            new_count_matrices[k, csetT, cset] = count_matrices[k, csetT, cset]
+            if len(cset)>0:
+                csetT = cset[:, _np.newaxis]
+                new_count_matrices[k, csetT, cset] = count_matrices[k, csetT, cset]
     else:
         new_count_matrices = None
 
@@ -386,7 +387,8 @@ def restrict_to_csets(state_counts, count_matrices, tramtraj, csets):
         n_therm_states, n_conf_states = state_counts.shape
         valid = _np.zeros((n_therm_states, n_conf_states), dtype=bool)
         for k,cset in enumerate(csets):
-            valid[k,cset] = True
+            if len(cset)>0:
+                valid[k,cset] = True
         therm_state_traj = tramtraj[:, 0].astype(int)
         conf_state_traj = tramtraj[:, 1].astype(int)
         ok_traj = valid[therm_state_traj, conf_state_traj]
