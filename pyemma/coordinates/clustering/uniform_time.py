@@ -88,6 +88,9 @@ class UniformTimeClustering(AbstractClustering):
         ra_stride = np.array([UniformTimeClustering._idx_to_traj_idx(x, cumsum) for x in linspace])
         self.clustercenters = np.concatenate([X for X in
                                               iterable.iterator(stride=ra_stride, return_trajindex=False, **kw)])
+        # TODO: debug
+        assert len(self.clustercenters) == self.n_clusters
+        return self
 
     @staticmethod
     def _idx_to_traj_idx(idx, cumsum):
