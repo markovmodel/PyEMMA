@@ -191,7 +191,7 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
             # collect data
             self._collect_data(X, first_chunk, stride)
             # initialize cluster centers
-            self._initialize_centers(X, itraj, iter.pos, iter.last_chunk)
+            self._initialize_centers(X, itraj, iter.pos, iter.last_chunk(itraj))
             first_chunk = False
 
         # run k-means with all the data

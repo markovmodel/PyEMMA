@@ -18,6 +18,7 @@
 
 from __future__ import absolute_import
 from pyemma.coordinates.clustering.interface import AbstractClustering
+from pyemma.coordinates.data.reader_interface import Reader
 from pyemma.coordinates.transform.transformer import Transformer
 from pyemma.coordinates.data.feature_reader import FeatureReader
 
@@ -135,7 +136,7 @@ class Pipeline(object):
 
         # since data producer of element after insertion changed, reset its status
         # TODO: make parameterized a property?
-        self._chain[index]._parameterized = False
+        self._chain[index]._estimated = False
 
         return replaced
 
@@ -156,7 +157,7 @@ class Pipeline(object):
         """
         result = self._estimated
         for el in self._chain:
-            if not isinstance(el, DataSource):
+            if not isinstance(el, Reader):
                 result &= el._estimated
         return result
 
