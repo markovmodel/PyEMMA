@@ -33,14 +33,14 @@ void _update_lagrangian_mult(
             {
                 CCT_Kij = count_matrices[KMM + i*n_conf_states + j];
                 if(i == j) {
-                    if(lagrangian_mult[Ki]<CCT_Kij) fprintf(stderr, "Not a valid nu iterate at K=%d, i=%d.\n", K, i);
+                    //if(lagrangian_mult[Ki]<CCT_Kij) fprintf(stderr, "Not a valid nu iterate at K=%d, i=%d.\n", K, i);
                     new_lagrangian_mult[Ki] += CCT_Kij;
                 } else {
                     Kj = K*n_conf_states + j;
                     CCT_Kij += count_matrices[KMM + j*n_conf_states + i];
                     if(0 < CCT_Kij) {
                         /* one of the nus can be zero */
-                        if(lagrangian_mult[Ki]+lagrangian_mult[Kj] < CCT_Kij) fprintf(stderr, "Not a valid nu iterate at K=%d, i=%d, j=%d in iteration %d.\n", K,i,j,iteration);
+                        //if(lagrangian_mult[Ki]+lagrangian_mult[Kj] < CCT_Kij) fprintf(stderr, "Not a valid nu iterate at K=%d, i=%d, j=%d in iteration %d.\n", K,i,j,iteration);
                         new_lagrangian_mult[Ki] += 
                             (double)CCT_Kij / (1.0 + 
                                                (lagrangian_mult[Kj]/lagrangian_mult[Ki])*
