@@ -106,3 +106,4 @@ class AssignCenters(AbstractClustering):
             # assign
             L = np.shape(X)[0]
             self._dtrajs[itraj][t:t+L] = self._transform_array(X).squeeze()
+        return self
