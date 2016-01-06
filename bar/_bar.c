@@ -19,7 +19,7 @@
 
 #include "../util/_util.h"
 
-extern double _df(double *db_IJ, int L1, double *db_JI, int L2, double *scratch)
+extern double _bar_df(double *db_IJ, int L1, double *db_JI, int L2, double *scratch)
 {
     int i;
     double ln_avg1;

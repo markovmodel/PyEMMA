@@ -26,35 +26,35 @@
 #define THERMOTOOLS_TRAM_PRIOR 0
 #define THERMOTOOLS_TRAM_LOG_PRIOR -INFINITY
 
-void _init_lagrangian_mult(int *count_matrices, int n_therm_states, int n_conf_states, double *log_lagrangian_mult);
+void _tram_init_lagrangian_mult(int *count_matrices, int n_therm_states, int n_conf_states, double *log_lagrangian_mult);
 
-void _update_lagrangian_mult(
+void _tram_update_lagrangian_mult(
     double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices, int* state_counts,
     int n_therm_states, int n_conf_states, double *scratch_M, double *new_log_lagrangian_mult);
 
-void _update_biased_conf_energies(
+void _tram_update_biased_conf_energies(
     double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices, double *bias_energy_sequence,
     int *state_sequence, int *state_counts, int seq_length, double *log_R_K_i,
     int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_T,
     double *new_biased_conf_energies);
 
-void _get_conf_energies(
+void _tram_get_conf_energies(
     double *bias_energy_sequence, int *state_sequence, int seq_length, double *log_R_K_i,
     int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_T,
     double *conf_energies);
 
-void _get_therm_energies(
+void _tram_get_therm_energies(
     double *biased_conf_energies, int n_therm_states, int n_conf_states, double *scratch_M, double *therm_energies);
 
-void _normalize(
+void _tram_normalize(
     double *conf_energies, double *biased_conf_energies, double *therm_energies,
     int n_therm_states, int n_conf_states, double *scratch_M);
 
-void _estimate_transition_matrix(
+void _tram_estimate_transition_matrix(
     double *log_lagrangian_mult, double *conf_energies, int *count_matrix,
     int n_conf_states, double *scratch_M, double *transition_matrix);
 
-double _log_likelihood_lower_bound(
+double _tram_log_likelihood_lower_bound(
     double *old_log_lagrangian_mult, double *new_log_lagrangian_mult,
     double *old_biased_conf_energies, double *new_biased_conf_energies,
     int *count_matrices,  int *state_counts,
