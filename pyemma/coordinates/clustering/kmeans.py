@@ -33,7 +33,7 @@ from pyemma.coordinates.clustering.interface import AbstractClustering
 from pyemma.util.annotators import doc_inherit
 from pyemma.util.units import bytes_to_string
 
-from pyemma.util.contexts import numpy_random_seed, conditional, random_seed
+from pyemma.util.contexts import conditional, random_seed
 from six.moves import range
 import numpy as np
 
@@ -183,11 +183,7 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
         iter = iterable.iterator(return_trajindex=True, **kw)
         # first pass: gather data and run k-means
         first_chunk = True
-        last_itraj = -1
         for itraj, X in iter:
-            if itraj != last_itraj:
-                last_itraj = itraj
-
             # collect data
             self._collect_data(X, first_chunk, stride)
             # initialize cluster centers
@@ -198,6 +194,7 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
         self._logger.debug("Accumulated all data, running kmeans on " + str(self._in_memory_chunks.shape))
         it = 0
         converged_in_max_iter = False
+        prev_cost = 0
         while it < self.max_iter:
             self._cluster_centers_iter = kmeans_clustering.cluster(
                                                 self._in_memory_chunks,
@@ -209,8 +206,8 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
                                                    self._cluster_centers_iter,
                                                    self.metric,
                                                    self.n_clusters)
-            rel_change = np.abs(cost - self._prev_cost) / cost
-            self._prev_cost = cost
+            rel_change = np.abs(cost - prev_cost) / cost
+            prev_cost = cost
 
             if rel_change <= self.tolerance:
                 converged_in_max_iter = True
@@ -298,7 +295,6 @@ class MiniBatchKmeansClustering(KmeansClustering):
         samples = int(math.ceil(self._total_length * self.batch_size))
         self._n_samples = 0
         self._n_samples_traj = {}
-        self._prev_cost = 0
         for idx, traj_len in enumerate(self._traj_lengths):
             traj_samples = int(math.floor(traj_len / float(self._total_length) * samples))
             self._n_samples_traj[idx] = traj_samples
@@ -311,42 +307,28 @@ class MiniBatchKmeansClustering(KmeansClustering):
     def _estimate(self, iterable, **kw):
         if 'stride' in kw:
             raise ValueError("no stride parameter allowed for minibatch kmeans.")
-        ntraj = self.number_of_trajectories()
 
         ipass = 0
         converged_in_max_iter = False
+        prev_cost = 0
 
         ra_stride = self._draw_mini_batch_sample()
         iterator = iterable.iterator(return_trajindex=True, stride=ra_stride)
 
         while not (converged_in_max_iter or ipass + 1 >= self.max_iter):
-            # TODO: move first_chunk etc. to iterable/datasource?
             first_chunk = True
-            last_chunk = False
-            last_itraj = -1
-            t = 0
             # draw new sample and re-use existing iterator instance.
             ra_stride = self._draw_mini_batch_sample()
             iterator.stride = ra_stride
             iterator.reset()
             for itraj, X in iter(iterator):
-                if last_itraj != itraj:
-                    last_itraj = itraj
-                    t = 0
-                L = len(X)
-
-                # last chunk in traj?
-                traj_len = iterator.ra_trajectory_length(itraj)
-                last_chunk_in_traj = t + L >= traj_len
-                # last chunk?
-                last_chunk = last_chunk_in_traj and itraj >= ntraj - 1
                 # collect data
-                self._collect_data(X, first_chunk, None)
+                self._collect_data(X, first_chunk, stride=None)
                 # initialize cluster centers
                 if ipass == 0:
-                    self._initialize_centers(X, itraj, t, last_chunk)
+                    self._initialize_centers(X, itraj, iterator.pos, iterator.last_chunk(itraj))
                 first_chunk = False
-                t += L
+
             # one pass over data completed
             self._cluster_centers_iter = kmeans_clustering.cluster(self._in_memory_chunks,
                                                                    self._cluster_centers_iter,
@@ -358,8 +340,8 @@ class MiniBatchKmeansClustering(KmeansClustering):
                                                    self.metric,
                                                    self.n_clusters)
 
-            rel_change = np.abs(cost - self._prev_cost) / cost
-            self._prev_cost = cost
+            rel_change = np.abs(cost - prev_cost) / cost
+            prev_cost = cost
             self._cluster_centers = np.array(self._cluster_centers_iter)
 
             if rel_change <= self.tolerance:
