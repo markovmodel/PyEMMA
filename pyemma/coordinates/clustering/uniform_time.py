@@ -33,24 +33,23 @@ __all__ = ['UniformTimeClustering']
 class UniformTimeClustering(AbstractClustering):
     r"""Uniform time clustering"""
 
-    def __init__(self, n_clusters=2, metric='euclidean', stride=1, max_clusters=5000):
+    def __init__(self, n_clusters=2, metric='euclidean', stride=1):
         """r
         Uniform time clustering
 
         Parameters
         ----------
         n_clusters : int
-            amount of desired cluster centers
+            amount of desired cluster centers. When not specified (None),
+            min(sqrt(N), 5000) is chosen as default value,
+            where N denotes the number of data points
         metric : str
             metric to use during clustering ('euclidean', 'minRMSD')
         stride : int
             stride
-        max_clusters: int, default=5000
-            maximum amount of cluster centers.
         """
         super(UniformTimeClustering, self).__init__(metric=metric)
-        self.set_params(n_clusters=n_clusters, metric=metric,
-                        stride=stride, max_clusters=max_clusters)
+        self.set_params(n_clusters=n_clusters, metric=metric, stride=stride)
 
     def describe(self):
         return "[Uniform time clustering, k = %i, inp_dim=%i]" \
@@ -60,8 +59,7 @@ class UniformTimeClustering(AbstractClustering):
 
         stride = kw['stride'] if 'stride' in kw else self.stride
 
-        if not self.n_clusters:
-            # TODO: dead code branch, because n_clusters is always set?
+        if self.n_clusters is None:
             traj_lengths = self.trajectory_lengths(stride=stride)
             total_length = sum(traj_lengths)
             self.n_clusters = min(int(math.sqrt(total_length)), 5000)
