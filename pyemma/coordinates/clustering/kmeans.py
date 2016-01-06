@@ -98,12 +98,13 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
         self._cluster_centers_iter = None
         self._centers_iter_list = []
 
-    def _param_init(self):
-        self._prev_cost = 0
+    def _param_init(self, **kwargs):
+        stride = kwargs['stride'] if 'stride' in kwargs else 1
+
         self._cluster_centers_iter = []
         self._init_centers_indices = {}
         self._t_total = 0
-        traj_lengths = self.trajectory_lengths(stride=self._param_with_stride)
+        traj_lengths = self.trajectory_lengths(stride=stride)
         total_length = sum(traj_lengths)
 
         if not self.n_clusters:
@@ -137,7 +138,7 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
                                   'Consider using a larger stride or set the oom_strategy to \'memmap\' which works '
                                   'with a memmapped temporary file.'
                                   % (bytes_to_string(required_mem), bytes_to_string(available_mem)))
-                raise MemoryError
+                raise MemoryError()
             else:
                 self._logger.warning('K-means failed to load all the data (%s required, %s available) into memory '
                                   'and now uses a memmapped temporary file which is comparably slow. '
@@ -254,7 +255,7 @@ class MiniBatchKmeansClustering(KmeansClustering):
                  batch_size=0.2, oom_strategy='memmap', fixed_seed=False, stride=None):
 
         if stride is not None:
-            raise ValueError("this is actually a dummy value... sorry")
+            raise ValueError("stride is actually a dummy value... sorry")
         if batch_size > 1:
             raise ValueError("batch_size should be less or equal to 1, but was %s" % batch_size)
 
@@ -266,8 +267,6 @@ class MiniBatchKmeansClustering(KmeansClustering):
                                                         oom_strategy, stride=stride)
 
         self.set_params(batch_size=batch_size)
-
-        self._param_with_stride = 1
 
     def _init_in_memory_chunks(self, size):
         return super(MiniBatchKmeansClustering, self)._init_in_memory_chunks(self._n_samples)
@@ -289,8 +288,9 @@ class MiniBatchKmeansClustering(KmeansClustering):
 
         return self._random_access_stride
 
-    def _param_init(self):
-        self._traj_lengths = self.trajectory_lengths(stride=self._param_with_stride)
+    def _param_init(self, **kwargs):
+        stride = kwargs['stride'] if 'stride' in kwargs else self.stride
+        self._traj_lengths = self.trajectory_lengths(stride=stride)
         self._total_length = sum(self._traj_lengths)
         samples = int(math.ceil(self._total_length * self.batch_size))
         self._n_samples = 0

@@ -205,47 +205,44 @@ class TICA(Transformer):
     def cov(self, value):
         self._model.cov = value
 
-    def _param_init(self):
-        indim = self.data_producer.dimension()
-        assert indim > 0, "zero dimension from data producer"
+    def _estimate(self, iterable, **kw):
+        r"""
+        Chunk-based parameterization of TICA. Iterates over all data and estimates
+        the mean, covariance and time lagged covariance. Finally, the
+        generalized eigenvalue problem is solved to determine
+        the independent components.
+        """
+        stride = kw['stride'] if 'stride' in kw else self.stride
+        indim = iterable.dimension()
+        assert indim > 0, "zero dimension from data source!"
         assert self.dim <= indim, ("requested more output dimensions (%i) than dimension"
                                    " of input data (%i)" % (self.dim, indim))
 
         self._logger.debug("Running TICA with tau=%i; Estimating two covariance matrices"
                            " with dimension (%i, %i)" % (self._lag, indim, indim))
 
-    def _estimate(self, iterable, **kw):
-        r"""
-        Chunk-based parameterization of TICA. Iterates through all data twice. In the first pass, the
-        data means are estimated, in the second pass the covariance and time-lagged covariance
-        matrices are estimated. Finally, the generalized eigenvalue problem is solved to determine
-        the independent components.
-        """
-        stride = kw['stride'] if 'stride' in kw else self.stride
-
         it = iterable.iterator(return_trajindex=True, lag=self.lag, **kw)
 
         n_chunks = it._n_chunks(stride)
         self._progress_register(n_chunks, "calculate mean+cov", 0)
-        nsave = max(log(ceil(n_chunks), 2), 2)
+        nsave = int(max(log(ceil(n_chunks), 2), 2))
         self._logger.debug("using %s moments for %i chunks" % (nsave, n_chunks))
-        self._covar = running_covar(xx=True, xy=True, yy=False,
-                                    remove_mean=True, symmetrize=True,
-                                    nsave=nsave)
+        covar = running_covar(xx=True, xy=True, yy=False,
+                              remove_mean=True, symmetrize=True, nsave=nsave)
 
         for itraj, X, Y in it:
 
             if self.trajectory_length(itraj, stride=1) - self._lag > 0:
                 assert Y is not None
                 assert len(X) == len(Y)
-                self._covar.add(X, Y)
+                covar.add(X, Y)
             else:
                 self._skipped_trajs.append(itraj)
 
             # counting chunks and log of eta
             self._progress_update(1, stage=0)
 
-        cov, cov_tau = self._covar.cov_XX(), self._covar.cov_XY()
+        cov, cov_tau = covar.cov_XX(), covar.cov_XY()
 
         # diagonalize with low rank approximation
         self._logger.debug("diagonalize Cov and Cov_tau.")
@@ -263,9 +260,9 @@ class TICA(Transformer):
                                  "Their indexes are in self._skipped_trajs."
                                  % len(self._skipped_trajs))
 
-        self._model.update_model_params(mean=self._covar.mean_X(),
-                                        cov=self._covar.cov_XX(),
-                                        cov_tau=self._covar.cov_XY(),
+        self._model.update_model_params(mean=covar.mean_X(),
+                                        cov=covar.cov_XX(),
+                                        cov_tau=covar.cov_XY(),
                                         cumvar=cumvar,
                                         eigenvalues=eigenvalues,
                                         eigenvectors=eigenvectors)
@@ -367,3 +364,4 @@ class TICA(Transformer):
         cumvar: 1D np.array
         """
         return self._model.cumvar
+

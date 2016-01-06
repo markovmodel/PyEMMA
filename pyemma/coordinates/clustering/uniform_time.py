@@ -33,7 +33,7 @@ __all__ = ['UniformTimeClustering']
 class UniformTimeClustering(AbstractClustering):
     r"""Uniform time clustering"""
 
-    def __init__(self, n_clusters=2, metric='euclidean', stride=1):
+    def __init__(self, n_clusters=2, metric='euclidean', stride=1, max_clusters=5000):
         """r
         Uniform time clustering
 
@@ -43,31 +43,30 @@ class UniformTimeClustering(AbstractClustering):
             amount of desired cluster centers
         metric : str
             metric to use during clustering ('euclidean', 'minRMSD')
+        stride : int
+            stride
+        max_clusters: int, default=5000
+            maximum amount of cluster centers.
         """
         super(UniformTimeClustering, self).__init__(metric=metric)
-        self.set_params(n_clusters=n_clusters, metric=metric, stride=stride)
+        self.set_params(n_clusters=n_clusters, metric=metric,
+                        stride=stride, max_clusters=max_clusters)
 
     def describe(self):
         return "[Uniform time clustering, k = %i, inp_dim=%i]" \
                 % (self.n_clusters, self.data_producer.dimension())
 
-    def _param_init(self):
-        """
-        Initializes the parametrization.
+    def _estimate(self, iterable, **kw):
 
-        :return:
-        """
-        # initialize cluster centers
+        stride = kw['stride'] if 'stride' in kw else self.stride
+
         if not self.n_clusters:
-            traj_lengths = self.trajectory_lengths(stride=self._param_with_stride)
+            # TODO: dead code branch, because n_clusters is always set?
+            traj_lengths = self.trajectory_lengths(stride=stride)
             total_length = sum(traj_lengths)
             self.n_clusters = min(int(math.sqrt(total_length)), 5000)
             self._logger.info("The number of cluster centers was not specified, "
                               "using min(sqrt(N), 5000)=%s as n_clusters." % self.n_clusters)
-
-    def _estimate(self, iterable, **kw):
-
-        stride = kw['stride'] if 'stride' in kw else self.stride
 
         # initialize time counters
         T = iterable.n_frames_total(stride=stride)

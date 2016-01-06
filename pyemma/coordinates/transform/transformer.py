@@ -60,15 +60,10 @@ class Transformer(six.with_metaclass(ABCMeta, DataSource, Estimator, Loggable)):
 
     """
 
-    def __init__(self, chunksize=0):
-        super(Transformer, self).__init__(chunksize)
-        if chunksize is not None:
-            self._logger.warning("Given deprecated argument 'chunksize=%s'"
-                                 " to transformer. Ignored - please set the "
-                                 "chunksize in the reader/iterator" % chunksize)
+    def __init__(self, chunksize=1000):
+        super(Transformer, self).__init__(chunksize=chunksize)
         self._data_producer = None
         self._estimated = False
-        self._param_with_stride = 1
 
     def _create_iterator(self, skip=0, chunk=0, stride=1, return_trajindex=True):
         return TransformerIterator(self, skip=skip, chunk=chunk, stride=stride,
@@ -185,18 +180,18 @@ class Transformer(six.with_metaclass(ABCMeta, DataSource, Estimator, Loggable)):
             else:
                 raise ValueError("no array given")
 
-        if 'stride' in kwargs:
-            self._param_with_stride = kwargs['stride']
-
         model = None
+        # for backward-compat
+        if hasattr(self, '_param_init'):
+            self._param_init(**kwargs)
+        # run estimation
         try:
-            # start
-            self._param_init()
             model = super(Transformer, self).estimate(X, **kwargs)
         except NotConvergedWarning as ncw:
             self._logger.info("Presumely finished estimation. Message: %s" % ncw)
         # finish
-        self._param_finish()
+        if hasattr(self, '_param_finish'):
+            self._param_finish()
         # memory mode? Then map all results. Avoid recursion here, if parametrization
         # is triggered from get_output
         if self.in_memory and not self._mapping_to_mem_active:
@@ -208,11 +203,12 @@ class Transformer(six.with_metaclass(ABCMeta, DataSource, Estimator, Loggable)):
 
     def get_output(self, dimensions=slice(0, None), stride=1, skip=0, chunk=0):
         if not self._estimated:
-            self.estimate(self.data_producer, stride=self._param_with_stride)
+            self.estimate(self.data_producer, stride=stride)
 
         return super(Transformer, self).get_output(dimensions, stride, skip, chunk)
 
-    @deprecated("use estimate")
+    # TODO: re-enable this warning, as soon as all tests pass
+    #@deprecated("Please use estimate")
     def parametrize(self, stride=1):
         if self._data_producer is None:
             raise RuntimeError("This estimator has no data source given, giving up.")
@@ -276,18 +272,6 @@ class Transformer(six.with_metaclass(ABCMeta, DataSource, Estimator, Loggable)):
             The projected data, where T is the number of time steps of the 
             input data and d is the output dimension of this transformer.
 
-        """
-        pass
-
-    def _param_init(self):
-        r"""
-        Initializes the parametrization.
-        """
-        pass
-
-    def _param_finish(self):
-        r"""
-        Finalizes the parametrization.
         """
         pass
 
