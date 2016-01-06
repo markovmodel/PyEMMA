@@ -25,7 +25,7 @@ import pyemma.coordinates.api as coor
 import pkg_resources
 import mdtraj
 from six.moves import range
-from pyemma.coordinates.data.datasource import IteratorModel
+from pyemma.coordinates.data.datasource import IteratorState
 
 
 class TestRandomAccessStride(TestCase):
@@ -42,24 +42,24 @@ class TestRandomAccessStride(TestCase):
 
     def test_iterator_context(self):
 
-        ctx = IteratorModel(stride=1)
+        ctx = IteratorState(stride=1)
         assert ctx.stride == 1
         assert ctx.uniform_stride
         assert ctx.is_stride_sorted()
         assert ctx.traj_keys is None
 
-        ctx = IteratorModel(stride=np.asarray([[0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [1, 3]]))
+        ctx = IteratorState(stride=np.asarray([[0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [1, 3]]))
         assert not ctx.uniform_stride
         assert ctx.is_stride_sorted()
         np.testing.assert_array_equal(ctx.traj_keys, np.array([0, 1]))
 
         # sorted within trajectory, not sorted by trajectory key
         with self.assertRaises(ValueError):
-            IteratorModel(stride=np.asarray([[1, 1], [1, 2], [1, 3], [0, 0], [0, 1], [0, 2]]))
+            IteratorState(stride=np.asarray([[1, 1], [1, 2], [1, 3], [0, 0], [0, 1], [0, 2]]))
 
         # sorted by trajectory key, not within trajectory
         with self.assertRaises(ValueError):
-            IteratorModel(stride=np.asarray([[0, 0], [0, 1], [0, 2], [1, 1], [1, 5], [1, 3]]))
+            IteratorState(stride=np.asarray([[0, 0], [0, 1], [0, 2], [1, 1], [1, 5], [1, 3]]))
 
         np.testing.assert_array_equal(ctx.ra_indices_for_traj(0), np.array([0, 1, 2]))
         np.testing.assert_array_equal(ctx.ra_indices_for_traj(1), np.array([1, 2, 3]))

@@ -18,7 +18,6 @@
 
 from __future__ import absolute_import
 from pyemma.coordinates.clustering.interface import AbstractClustering
-from pyemma.coordinates.data.reader_interface import Reader
 from pyemma.coordinates.transform.transformer import Transformer
 from pyemma.coordinates.data.feature_reader import FeatureReader
 
@@ -157,7 +156,7 @@ class Pipeline(object):
         """
         result = self._estimated
         for el in self._chain:
-            if not isinstance(el, Reader):
+            if not el.is_reader:
                 result &= el._estimated
         return result
 

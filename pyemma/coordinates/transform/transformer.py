@@ -299,7 +299,7 @@ class TransformerIterator(DataSourceIterator):
         self._it = self._data_source.data_producer._create_iterator(
                 skip=skip, chunk=chunk, stride=stride, return_trajindex=return_trajindex
         )
-        self.model = self._it.model
+        self.state = self._it.state
 
     def _n_chunks(self, stride=None):
         return self._it._n_chunks(stride=stride)

@@ -82,13 +82,12 @@ class UniformTimeClustering(AbstractClustering):
         next_t = (T // self.n_clusters) // 2
         # cumsum of lenghts
         cumsum = np.cumsum(self.trajectory_lengths())
-        # distribution of integers
-        linspace = stride * np.arange(next_t, T - next_t, (T - 2*next_t) // self.n_clusters)
+        # distribution of integers, truncate if n_clusters is too large
+        linspace = stride * np.arange(next_t, T - next_t + 1, (T - 2*next_t + 1) // self.n_clusters)[:self.n_clusters]
         # random access matrix
         ra_stride = np.array([UniformTimeClustering._idx_to_traj_idx(x, cumsum) for x in linspace])
         self.clustercenters = np.concatenate([X for X in
                                               iterable.iterator(stride=ra_stride, return_trajindex=False, **kw)])
-        # TODO: debug
         assert len(self.clustercenters) == self.n_clusters
         return self
 
