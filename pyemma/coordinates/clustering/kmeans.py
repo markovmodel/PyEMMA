@@ -99,7 +99,10 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
         self._centers_iter_list = []
 
     def _param_init(self, **kwargs):
-        stride = kwargs['stride'] if 'stride' in kwargs else 1
+        stride = kwargs['stride'] if 'stride' in kwargs else self.stride
+        # mini-batch sets stride to None
+        if stride is None:
+            stride = 1
 
         self._cluster_centers_iter = []
         self._init_centers_indices = {}
@@ -113,7 +116,13 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
                               "using min(sqrt(N), 5000)=%s as n_clusters." % self.n_clusters)
 
         if self.init_strategy == 'kmeans++':
-            self._progress_register(self.n_clusters, description="initialize kmeans++ centers", stage=0)
+            #self._logger.debug("register %i working steps with stride=%i" % (self.n_clusters, stride))
+            # TODO: avoid this (eg. move it to _estimate)
+            it = self.data_producer.iterator(stride=stride)
+
+            self._progress_register(max(it._n_chunks(stride), self.n_clusters),
+                                    description="initialize kmeans++ centers", stage=0)
+
         self._progress_register(self.max_iter, description="kmeans iterations", stage=1)
 
         self._init_in_memory_chunks(total_length)
@@ -157,9 +166,6 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
         return "[Kmeans, k=%i, inp_dim=%i]" % (self.n_clusters, self.data_producer.dimension())
 
     def _param_finish(self):
-        self.clustercenters = np.array(self._cluster_centers_iter)
-        del self._cluster_centers_iter
-
         fh = None
         if isinstance(self._in_memory_chunks, np.memmap):
             fh = self._in_memory_chunks.filename
@@ -178,15 +184,14 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
         self._progress_update(1, stage=0)
 
     def _estimate(self, iterable, **kw):
+        stride = kw.pop('stride', self.stride)
 
-        stride = kw['stride'] if 'stride' in kw else self.stride
-
-        iter = iterable.iterator(return_trajindex=True, **kw)
+        iter = iterable.iterator(return_trajindex=True, stride=stride, **kw)
         # first pass: gather data and run k-means
         first_chunk = True
         for itraj, X in iter:
             # collect data
-            self._collect_data(X, first_chunk, stride)
+            self._collect_data(X, first_chunk)
             # initialize cluster centers
             self._initialize_centers(X, itraj, iter.pos, iter.last_chunk(itraj))
             first_chunk = False
@@ -223,6 +228,9 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
             self._logger.info("Algorithm did not reach convergence criterion"
                               " of %g in %i iterations. Consider increasing max_iter."
                               % (self.tolerance, self.max_iter))
+        # set centers
+        self.clustercenters = np.array(self._cluster_centers_iter)
+        del self._cluster_centers_iter
 
         return self
 
@@ -238,7 +246,7 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
                                                 self.metric, self.n_clusters, not self.fixed_seed)
             self._cluster_centers_iter = [c for c in cc]
 
-    def _collect_data(self, X, first_chunk, stride):
+    def _collect_data(self, X, first_chunk):
         # beginning - compute
         if first_chunk:
             self._t_total = 0
@@ -255,7 +263,7 @@ class MiniBatchKmeansClustering(KmeansClustering):
                  batch_size=0.2, oom_strategy='memmap', fixed_seed=False, stride=None):
 
         if stride is not None:
-            raise ValueError("stride is actually a dummy value... sorry")
+            raise ValueError("stride is a dummy value in MiniBatch Kmeans")
         if batch_size > 1:
             raise ValueError("batch_size should be less or equal to 1, but was %s" % batch_size)
 
@@ -289,8 +297,7 @@ class MiniBatchKmeansClustering(KmeansClustering):
         return self._random_access_stride
 
     def _param_init(self, **kwargs):
-        stride = kwargs['stride'] if 'stride' in kwargs else self.stride
-        self._traj_lengths = self.trajectory_lengths(stride=stride)
+        self._traj_lengths = self.trajectory_lengths()
         self._total_length = sum(self._traj_lengths)
         samples = int(math.ceil(self._total_length * self.batch_size))
         self._n_samples = 0
@@ -305,7 +312,7 @@ class MiniBatchKmeansClustering(KmeansClustering):
         super(MiniBatchKmeansClustering, self)._param_init()
 
     def _estimate(self, iterable, **kw):
-        if 'stride' in kw:
+        if 'stride' in kw and kw['stride'] is not None:
             raise ValueError("no stride parameter allowed for minibatch kmeans.")
 
         ipass = 0
@@ -323,7 +330,7 @@ class MiniBatchKmeansClustering(KmeansClustering):
             iterator.reset()
             for itraj, X in iter(iterator):
                 # collect data
-                self._collect_data(X, first_chunk, stride=None)
+                self._collect_data(X, first_chunk)
                 # initialize cluster centers
                 if ipass == 0:
                     self._initialize_centers(X, itraj, iterator.pos, iterator.last_chunk(itraj))
@@ -357,5 +364,8 @@ class MiniBatchKmeansClustering(KmeansClustering):
             self._logger.info("Algorithm did not reach convergence criterion"
                               " of %g in %i iterations. Consider increasing max_iter."
                               % (self.tolerance, self.max_iter))
+        # set centers
+        self.clustercenters = np.array(self._cluster_centers_iter)
+        del self._cluster_centers_iter
 
         return self
