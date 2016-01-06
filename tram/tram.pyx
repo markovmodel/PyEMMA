@@ -36,28 +36,28 @@ __all__ = [
     'get_unbiased_user_free_energies']
 
 cdef extern from "_tram.h":
-    void _init_lagrangian_mult(int *count_matrices, int n_therm_states, int n_conf_states, double *log_lagrangian_mult)
-    void _update_lagrangian_mult(
+    void _tram_init_lagrangian_mult(int *count_matrices, int n_therm_states, int n_conf_states, double *log_lagrangian_mult)
+    void _tram_update_lagrangian_mult(
         double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices,  int* state_counts,
         int n_therm_states, int n_conf_states, double *scratch_M, double *new_log_lagrangian_mult)
-    void _update_biased_conf_energies(
+    void _tram_update_biased_conf_energies(
         double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices, double *bias_energy_sequence,
         int *state_sequence, int *state_counts, int seq_length, double *log_R_K_i,
         int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_T,
         double *new_biased_conf_energies)
-    void _get_conf_energies(
+    void _tram_get_conf_energies(
         double *bias_energy_sequence, int *state_sequence, int seq_length, double *log_R_K_i,
         int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_T,
         double *conf_energies)
-    void _get_therm_energies(
+    void _tram_get_therm_energies(
         double *biased_conf_energies, int n_therm_states, int n_conf_states, double *scratch_M, double *therm_energies)
-    void _normalize(
+    void _tram_normalize(
         double *conf_energies, double *biased_conf_energies, double *therm_energies,
         int n_therm_states, int n_conf_states, double *scratch_M)
-    void _estimate_transition_matrix(
+    void _tram_estimate_transition_matrix(
         double *log_lagrangian_mult, double *conf_energies, int *count_matrix,
         int n_conf_states, double *scratch_M, double *transition_matrix)
-    double _log_likelihood_lower_bound(
+    double _tram_log_likelihood_lower_bound(
         double *old_log_lagrangian_mult, double *new_log_lagrangian_mult,
         double *old_biased_conf_energies, double *new_biased_conf_energies,
         int *count_matrices, int *state_counts,
@@ -90,7 +90,7 @@ def init_lagrangian_mult(
     log_lagrangian_mult : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         log of the Lagrangian multipliers (allocated but unset)
     """
-    _init_lagrangian_mult(
+    _tram_init_lagrangian_mult(
         <int*> _np.PyArray_DATA(count_matrices),
         log_lagrangian_mult.shape[0],
         log_lagrangian_mult.shape[1],
@@ -119,7 +119,7 @@ def update_lagrangian_mult(
     new_log_lagrangian_mult : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         target array for the log of the Lagrangian multipliers
     """
-    _update_lagrangian_mult(
+    _tram_update_lagrangian_mult(
         <double*> _np.PyArray_DATA(log_lagrangian_mult),
         <double*> _np.PyArray_DATA(biased_conf_energies),
         <int*> _np.PyArray_DATA(count_matrices),
@@ -166,7 +166,7 @@ def update_biased_conf_energies(
     new_biased_conf_energies : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         target array for the reduced free energies
     """
-    _update_biased_conf_energies(
+    _tram_update_biased_conf_energies(
         <double*> _np.PyArray_DATA(log_lagrangian_mult),
         <double*> _np.PyArray_DATA(biased_conf_energies),
         <int*> _np.PyArray_DATA(count_matrices),
@@ -246,7 +246,7 @@ def get_conf_energies(
     # later this can be extended to other thermodynmic states and
     # arbitrary expectations (not only pi)
     conf_energies = _np.zeros(shape=(log_R_K_i.shape[1],), dtype=_np.float64)
-    _get_conf_energies(
+    _tram_get_conf_energies(
         <double*> _np.PyArray_DATA(bias_energy_sequence),
         <int*> _np.PyArray_DATA(state_sequence),
         state_sequence.shape[0],
@@ -277,7 +277,7 @@ def get_therm_energies(
         reduced thermodynamic free energies
     """
     therm_energies = _np.zeros(shape=(biased_conf_energies.shape[0],), dtype=_np.float64)
-    _get_therm_energies(
+    _tram_get_therm_energies(
         <double*> _np.PyArray_DATA(biased_conf_energies),
         biased_conf_energies.shape[0],
         biased_conf_energies.shape[1],
@@ -304,7 +304,7 @@ def normalize(
     scratch_M : numpy.ndarray(shape=(M), dtype=numpy.float64)
         scratch array for logsumexp operations
     """
-    _normalize(
+    _tram_normalize(
         <double*> _np.PyArray_DATA(conf_energies),
         <double*> _np.PyArray_DATA(biased_conf_energies),
         <double*> _np.PyArray_DATA(therm_energies),
@@ -435,7 +435,7 @@ def estimate_transition_matrix(
     if scratch_M is None:
         scratch_M = _np.zeros(shape=(count_matrices.shape[1],), dtype=_np.float64)
     transition_matrix = _np.zeros(shape=(biased_conf_energies.shape[1], biased_conf_energies.shape[1]), dtype=_np.float64)
-    _estimate_transition_matrix(
+    _tram_estimate_transition_matrix(
         <double*> _np.PyArray_DATA(_np.ascontiguousarray(log_lagrangian_mult[therm_state, :])),
         <double*> _np.PyArray_DATA(_np.ascontiguousarray(biased_conf_energies[therm_state, :])),
         <int*> _np.PyArray_DATA(_np.ascontiguousarray(count_matrices[therm_state, :, :])),
@@ -507,7 +507,7 @@ def log_likelihood_lower_bound(
     this yields only a lower bound on the true log-likelihood.
     """
 
-    logL = _log_likelihood_lower_bound(
+    logL = _tram_log_likelihood_lower_bound(
         <double*> _np.PyArray_DATA(old_log_lagrangian_mult),
         <double*> _np.PyArray_DATA(new_log_lagrangian_mult),
         <double*> _np.PyArray_DATA(old_biased_conf_energies),

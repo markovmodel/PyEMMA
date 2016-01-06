@@ -32,17 +32,17 @@ __all__ = [
     'estimate']
 
 cdef extern from "_wham.h":
-    void _update_conf_energies(
+    void _wham_update_conf_energies(
         double *log_therm_state_counts, double *log_conf_state_counts,
         double *therm_energies, double *bias_energies,
         int n_therm_states, int n_conf_states, double *scratch_T, double *conf_energies)
-    void _update_therm_energies(
+    void _wham_update_therm_energies(
         double *conf_energies, double *bias_energies, int n_therm_states, int n_conf_states,
         double *scratch_M, double *therm_energies)
-    void _normalize(
+    void _wham_normalize(
         int n_therm_states, int n_conf_states,
         double *scratch_M, double *therm_energies, double *conf_energies)
-    double _get_loglikelihood(
+    double _wham_get_loglikelihood(
         int *therm_state_counts, int *conf_state_counts,
         double *therm_energies, double *conf_energies,
         int n_therm_states, int n_conf_states, double *scratch_S)
@@ -76,8 +76,8 @@ def update_conf_energies(
     -----
     The update_conf_energies() function computes
 
-    .. math:
-        conf_energies = -\ln\left( \frac{
+    .. math ::
+        \text{conf_energies}_i = -\ln\left( \frac{
                 \sum_{K=0}^{N_T-1} N_i^{(K)}
             }{
                 \sum_{K=0}^{N_T-1} \exp(f^{(K)}-b_i^{(K)}) \sum_{j=0}^{N_M-1} N_j^{(K)}
@@ -85,8 +85,8 @@ def update_conf_energies(
 
     which equals to
 
-    .. math:
-        conf_energies = \ln\left(
+    .. math ::
+        \text{conf_energies}_i = \ln\left(
                 \sum_{K=0}^{N_T-1} \exp\left(
                     f^{(K)} - b_i^{(K)} + \ln\left( \sum_{j=0}^{N_M-1} N_j^{(K)} \right)
                 \right)
@@ -94,11 +94,11 @@ def update_conf_energies(
 
     in the logsumexp scheme. Afterwards, we apply
 
-    .. math:
-        conf_energies \leftarrow  conf_energies - \min_i(conf_energies)
+    .. math ::
+        \text{conf_energies} \leftarrow  \text{conf_energies} - \min(\text{conf_energies})
 
     """
-    _update_conf_energies(
+    _wham_update_conf_energies(
         <double*> _np.PyArray_DATA(log_therm_state_counts),
         <double*> _np.PyArray_DATA(log_conf_state_counts),
         <double*> _np.PyArray_DATA(therm_energies),
@@ -131,14 +131,14 @@ def update_therm_energies(
     -----
     The update_therm_energies() function computes
 
-    .. math:
+    .. math ::
         f^{(K)} = -\ln\left(
-                \sum_{i=0}^{N_M-1} \exp(-b_i^{(K)}-conf_energies)
+                \sum_{i=0}^{N_M-1} \exp(-b_i^{(K)}-\text{conf_energies}_i)
             \right)
 
     which is already in the logsumexp form.
     """
-    _update_therm_energies(
+    _wham_update_therm_energies(
         <double*> _np.PyArray_DATA(conf_energies),
         <double*> _np.PyArray_DATA(bias_energies),
         bias_energies.shape[0],
@@ -163,7 +163,7 @@ def normalize(
     conf_energies : numpy.ndarray(shape=(M,), dtype=numpy.float64)
         reduced unbiased configurational energies
     """
-    _normalize(
+    _wham_normalize(
         therm_energies.shape[0],
         conf_energies.shape[0],
         <double*> _np.PyArray_DATA(scratch_M),
@@ -188,7 +188,7 @@ def get_loglikelihood(
     loglikelihood : float
         loglikelihood of the reduced free energies given the observed state counts
     """
-    return _get_loglikelihood(
+    return _wham_get_loglikelihood(
         <int*> _np.PyArray_DATA(therm_state_counts),
         <int*> _np.PyArray_DATA(conf_state_counts),
         <double*> _np.PyArray_DATA(therm_energies),

@@ -25,7 +25,7 @@ cimport numpy as np
 __all__ = ['df']
 
 cdef extern from "_bar.h":
-    double _df(double *db_IJ, int L1, double *db_JI, int L2, double *scratch)
+    double _bar_df(double *db_IJ, int L1, double *db_JI, int L2, double *scratch)
 
 def df(np.ndarray[double, ndim=1, mode="c"] db_IJ not None,
        np.ndarray[double, ndim=1, mode="c"] db_JI not None,
@@ -60,7 +60,7 @@ def df(np.ndarray[double, ndim=1, mode="c"] db_IJ not None,
     .. [1] Bennett, C. H.: Efficient Estimation of Free Energy Differences from
         Monte Carlo Data. J. Comput. Phys. 22, 245-268 (1976)
     """
-    return _df(
+    return _bar_df(
         <double*> np.PyArray_DATA(db_IJ),
         db_IJ.shape[0],
         <double*> np.PyArray_DATA(db_JI), 

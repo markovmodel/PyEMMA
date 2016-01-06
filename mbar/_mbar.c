@@ -19,7 +19,7 @@
 
 #include "../util/_util.h"
 
-extern void _update_therm_energies(
+extern void _mbar_update_therm_energies(
     double *log_therm_state_counts, double *therm_energies, double *bias_energy_sequence,
     int n_therm_states, int seq_length, double *scratch_T, double *new_therm_energies)
 {
@@ -40,7 +40,7 @@ extern void _update_therm_energies(
         new_therm_energies[K] -= shift;
 }
 
-extern void _get_conf_energies(
+extern void _mbar_get_conf_energies(
     double *log_therm_state_counts, double *therm_energies,
     double *bias_energy_sequence, int *conf_state_sequence,
     int n_therm_states, int n_conf_states, int seq_length,
@@ -66,7 +66,7 @@ extern void _get_conf_energies(
     }
 }
 
-extern void _normalize(
+extern void _mbar_normalize(
     double *log_therm_state_counts, double *bias_energy_sequence,
     int n_therm_states, int n_conf_states, int seq_length, double *scratch_M,
     double *therm_energies, double *conf_energies, double *biased_conf_energies)

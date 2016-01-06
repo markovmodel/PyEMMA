@@ -39,30 +39,30 @@ __all__ = [
     'estimate']
 
 cdef extern from "_dtram.h":
-    void _init_log_lagrangian_mult(
+    void _dtram_init_log_lagrangian_mult(
         int *count_matrices, int n_therm_states, int n_conf_states, double *log_lagrangian_mult)
-    void _update_log_lagrangian_mult(
+    void _dtram_update_log_lagrangian_mult(
         double *log_lagrangian_mult, double *bias_energies, double *conf_energies,
         int *count_matrices, int n_therm_states, int n_conf_states,
         double *scratch_M, double *new_log_lagrangian_mult)
-    void _update_conf_energies(
+    void _dtram_update_conf_energies(
         double *log_lagrangian_mult, double *bias_energies, double *conf_energies,
         int *count_matrices, int n_therm_states, int n_conf_states,
         double *scratch_TM, double *new_conf_energies)
-    void _estimate_transition_matrix(
+    void _dtram_estimate_transition_matrix(
         double *log_lagrangian_mult, double *b_i, double *conf_energies, int *count_matrix,
         int n_conf_states, double *scratch_M, double *transition_matrix)
-    void _get_therm_energies(
+    void _dtram_get_therm_energies(
         double *bias_energies, double *conf_energies, int n_therm_states, int n_conf_states,
         double *scratch_M, double *therm_energies)
-    void _normalize(
+    void _dtram_normalize(
         int n_therm_states, int n_conf_states,
         double *scratch_M, double *therm_energies, double *conf_energies)
-    double _get_loglikelihood(
+    double _dtram_get_loglikelihood(
         int *count_matrices, double *transition_matrices,
         int n_therm_states, int n_conf_states)
-    double _get_prior()
-    double _get_log_prior()
+    double _dtram_get_prior()
+    double _dtram_get_log_prior()
 
 def init_log_lagrangian_mult(
     _np.ndarray[int, ndim=3, mode="c"] count_matrices not None):
@@ -82,7 +82,7 @@ def init_log_lagrangian_mult(
     """
     log_lagrangian_mult = _np.zeros(
         shape=(count_matrices.shape[0], count_matrices.shape[1]), dtype=_np.float64)
-    _init_log_lagrangian_mult(
+    _dtram_init_log_lagrangian_mult(
         <int*> _np.PyArray_DATA(count_matrices),
         log_lagrangian_mult.shape[0],
         log_lagrangian_mult.shape[1],
@@ -114,7 +114,7 @@ def update_log_lagrangian_mult(
     new_log_lagrangian_mult : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         target array for the logarithm of the Lagrangian multipliers
     """
-    _update_log_lagrangian_mult(
+    _dtram_update_log_lagrangian_mult(
         <double*> _np.PyArray_DATA(log_lagrangian_mult),
         <double*> _np.PyArray_DATA(bias_energies),
         <double*> _np.PyArray_DATA(conf_energies),
@@ -149,7 +149,7 @@ def update_conf_energies(
     new_conf_energies : numpy.ndarray(shape=(M,), dtype=numpy.float64)
         target array for the reduced unbiased configurational energies
     """
-    _update_conf_energies(
+    _dtram_update_conf_energies(
         <double*> _np.PyArray_DATA(log_lagrangian_mult),
         <double*> _np.PyArray_DATA(bias_energies),
         <double*> _np.PyArray_DATA(conf_energies),
@@ -226,7 +226,7 @@ def estimate_transition_matrix(
     """
     transition_matrix = _np.zeros(
         shape=(conf_energies.shape[0], conf_energies.shape[0]), dtype=_np.float64)
-    _estimate_transition_matrix(
+    _dtram_estimate_transition_matrix(
         <double*> _np.PyArray_DATA(_np.ascontiguousarray(log_lagrangian_mult[therm_state, :])),
         <double*> _np.PyArray_DATA(_np.ascontiguousarray(bias_energies[therm_state, :])),
         <double*> _np.PyArray_DATA(conf_energies),
@@ -262,7 +262,7 @@ def get_therm_energies(
     """
     if therm_energies is None:
         therm_energies = _np.zeros(shape=(bias_energies.shape[0],), dtype=_np.float64)
-    _get_therm_energies(
+    _dtram_get_therm_energies(
         <double*> _np.PyArray_DATA(bias_energies),
         <double*> _np.PyArray_DATA(conf_energies),
         bias_energies.shape[0],
@@ -288,7 +288,7 @@ def normalize(
     conf_energies : numpy.ndarray(shape=(M,), dtype=numpy.float64)
         reduced unbiased configurational energies
     """
-    _normalize(
+    _dtram_normalize(
         therm_energies.shape[0],
         conf_energies.shape[0],
         <double*> _np.PyArray_DATA(scratch_M),
@@ -313,7 +313,7 @@ def get_loglikelihood(
     loglikelihood : float
         loglikelihood of the multistate transition matrix given the observed multistate count matrix
     """
-    return _get_loglikelihood(
+    return _dtram_get_loglikelihood(
         <int*> _np.PyArray_DATA(count_matrices),
         <double*> _np.PyArray_DATA(transition_matrices),
         count_matrices.shape[0],
@@ -326,7 +326,7 @@ def get_prior():
     prior : float
         the internally used prior on the diagonal transition counts
     """
-    return _get_prior()
+    return _dtram_get_prior()
 
 def get_log_prior():
     r"""
@@ -335,7 +335,7 @@ def get_log_prior():
     log_prior : float
         the internally used log(prior) on the diagonal transition counts
     """
-    return _get_log_prior()
+    return _dtram_get_log_prior()
 
 def estimate(
     count_matrices, bias_energies,

@@ -23,7 +23,7 @@
 #include "_tram.h"
 #include "../util/_util.h"
 
-void _init_lagrangian_mult(int *count_matrices, int n_therm_states, int n_conf_states, double *log_lagrangian_mult)
+void _tram_init_lagrangian_mult(int *count_matrices, int n_therm_states, int n_conf_states, double *log_lagrangian_mult)
 {
     int i, j, K;
     int MM = n_conf_states * n_conf_states, KMM;
@@ -43,7 +43,7 @@ void _init_lagrangian_mult(int *count_matrices, int n_therm_states, int n_conf_s
 
 }
 
-void _update_lagrangian_mult(
+void _tram_update_lagrangian_mult(
     double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices, int* state_counts,
     int n_therm_states, int n_conf_states, double *scratch_M, double *new_log_lagrangian_mult)
 {
@@ -141,7 +141,7 @@ void _get_log_R_K_i(
     }
 }
 
-void _update_biased_conf_energies(
+void _tram_update_biased_conf_energies(
     double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices, double *bias_energy_sequence,
     int *state_sequence, int *state_counts, int seq_length, double *log_R_K_i,
     int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_T,
@@ -223,8 +223,7 @@ void _update_biased_conf_energies(
     }
 }
 
-/* unbiased */
-void _get_conf_energies( 
+void _tram_get_conf_energies(
     double *bias_energy_sequence, int *state_sequence, int seq_length, double *log_R_K_i,
     int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_T,
     double *conf_energies)
@@ -246,7 +245,7 @@ void _get_conf_energies(
     }
 }
 
-void _get_therm_energies(
+void _tram_get_therm_energies(
     double *biased_conf_energies, int n_therm_states, int n_conf_states, double *scratch_M, double *therm_energies)
 {
     int i, K;
@@ -258,7 +257,7 @@ void _get_therm_energies(
     }
 }
 
-void _normalize(
+void _tram_normalize(
     double *conf_energies, double *biased_conf_energies, double *therm_energies,
     int n_therm_states, int n_conf_states, double *scratch_M)
 {
@@ -275,7 +274,7 @@ void _normalize(
         therm_energies[i] -= f0;
 }
 
-void _estimate_transition_matrix(
+void _tram_estimate_transition_matrix(
     double *log_lagrangian_mult, double *conf_energies, int *count_matrix,
     int n_conf_states, double *scratch_M, double *transition_matrix)
 {
@@ -335,7 +334,7 @@ void _estimate_transition_matrix(
  * balance w.r.t. new_biased_conf_energies must implicitly be given by
  * new_log_lagrangian_mult.
  */
-double _log_likelihood_lower_bound(
+double _tram_log_likelihood_lower_bound(
     double *old_log_lagrangian_mult, double *new_log_lagrangian_mult,
     double *old_biased_conf_energies, double *new_biased_conf_energies,
     int *count_matrices,  int *state_counts,
@@ -357,7 +356,7 @@ double _log_likelihood_lower_bound(
     {
         KM = K * n_conf_states;
         KMM = KM * n_conf_states;
-        _estimate_transition_matrix(
+        _tram_estimate_transition_matrix(
            &new_log_lagrangian_mult[KM], &new_biased_conf_energies[KM], &count_matrices[KMM],
            n_conf_states, scratch_M, T_ij);
         for(i=0; i<n_conf_states; ++i)
