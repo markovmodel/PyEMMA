@@ -44,13 +44,13 @@ def mycorrcoef(X, Y, lag):
     mean_X = 0.5*(np.mean(X[lag:], axis=0)+np.mean(X[0:-lag], axis=0))
     mean_Y = 0.5*(np.mean(Y[lag:], axis=0)+np.mean(Y[0:-lag], axis=0))
     cov = ((X[0:-lag]-mean_X).T.dot(Y[0:-lag]-mean_Y) +
-           (X[lag:]-mean_X).T.dot(Y[lag:]-mean_Y)) / (2*(X.shape[0]-lag-1))
+           (X[lag:]-mean_X).T.dot(Y[lag:]-mean_Y)) / (2*(X.shape[0]-lag)-1)
 
     autocov_X = ((X[0:-lag]-mean_X).T.dot(X[0:-lag]-mean_X) +
-                 (X[lag:]-mean_X).T.dot(X[lag:]-mean_X)) / (2*(X.shape[0]-lag-1))
+                 (X[lag:]-mean_X).T.dot(X[lag:]-mean_X)) / (2*(X.shape[0]-lag)-1)
     var_X = np.diag(autocov_X)
     autocov_Y = ((Y[0:-lag]-mean_Y).T.dot(Y[0:-lag]-mean_Y) +
-                 (Y[lag:]-mean_Y).T.dot(Y[lag:]-mean_Y)) / (2*(Y.shape[0]-lag-1))
+                 (Y[lag:]-mean_Y).T.dot(Y[lag:]-mean_Y)) / (2*(Y.shape[0]-lag)-1)
     var_Y = np.diag(autocov_Y)
     return cov / np.sqrt(var_X[:,np.newaxis]) / np.sqrt(var_Y)
 
