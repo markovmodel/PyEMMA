@@ -41,6 +41,8 @@ from six.moves import range
 logger = getLogger('pyemma.'+'TestTICA')
 
 def mycorrcoef(X, Y, lag):
+    X = X.astype(np.float64)
+    Y = Y.astype(np.float64)
     mean_X = 0.5*(np.mean(X[lag:], axis=0)+np.mean(X[0:-lag], axis=0))
     mean_Y = 0.5*(np.mean(Y[lag:], axis=0)+np.mean(Y[0:-lag], axis=0))
     cov = ((X[0:-lag]-mean_X).T.dot(Y[0:-lag]-mean_Y) +
@@ -124,7 +126,7 @@ class TestTICA_Basic(unittest.TestCase):
     def test_in_memory(self):
         data = np.random.random((100, 10))
         tica_obj = api.tica(lag=10, dim=1)
-        reader = source(data)
+        reader = api.source(data)
         tica_obj.data_producer = reader
 
         tica_obj.in_memory = True
@@ -155,7 +157,8 @@ class TestTICAExtensive(unittest.TestCase):
                 cls.X[t, 1] = widths[s][1] * np.random.randn() + means[s][1]
             cls.lag = 10
             # do unscaled TICA
-            cls.tica_obj = api.tica(data=api.source(cls.X, chunk_size=0), lag=cls.lag, dim=1, kinetic_map=False)
+            reader=api.source(cls.X, chunk_size=0)
+            cls.tica_obj = api.tica(data=reader, lag=cls.lag, dim=1, kinetic_map=False)
 
     def setUp(self):
         pass
@@ -299,7 +302,7 @@ class TestTICAExtensive(unittest.TestCase):
         test_corr = ticamini.feature_TIC_correlation
         true_corr = mycorrcoef(feature_traj, tica_traj, ticamini.lag)
         #assert np.isclose(test_corr, true_corr).all()
-        np.testing.assert_allclose(test_corr, true_corr, atol=1.E-6)
+        np.testing.assert_allclose(test_corr, true_corr, atol=1.E-8)
 
     def test_feature_correlation_data(self):
         # Create features with some correlation
@@ -315,8 +318,7 @@ class TestTICAExtensive(unittest.TestCase):
         # Create correlations
         test_corr = tica_obj.feature_TIC_correlation
         true_corr = mycorrcoef(feature_traj, tica_traj, tica_obj.lag)
-
-        np.testing.assert_allclose(test_corr, true_corr, atol=1.E-7)
+        np.testing.assert_allclose(test_corr, true_corr, atol=1.E-8)
         #assert np.isclose(test_corr, true_corr).all()
 
     def test_skipped_trajs(self):
