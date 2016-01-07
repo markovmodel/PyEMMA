@@ -547,7 +547,7 @@ def discretizer(reader,
         _logger.warning('You did not specify a cluster algorithm.'
                         ' Defaulting to kmeans(k=100)')
         cluster = _KmeansClustering(n_clusters=100)
-    disc = _Discretizer(reader, transform, cluster, param_stride=stride)
+    disc = _Discretizer(reader, transform, cluster, param_stride=stride, chunksize=chunksize)
     if run:
         disc.parametrize()
     return disc

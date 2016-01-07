@@ -98,43 +98,6 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
         self._cluster_centers_iter = None
         self._centers_iter_list = []
 
-    def _param_init(self, **kwargs):
-        stride = kwargs['stride'] if 'stride' in kwargs else self.stride
-        # mini-batch sets stride to None
-        if stride is None:
-            stride = 1
-
-        self._cluster_centers_iter = []
-        self._init_centers_indices = {}
-        self._t_total = 0
-        traj_lengths = self.trajectory_lengths(stride=stride)
-        total_length = sum(traj_lengths)
-
-        if not self.n_clusters:
-            self.n_clusters = min(int(math.sqrt(total_length)), 5000)
-            self._logger.info("The number of cluster centers was not specified, "
-                              "using min(sqrt(N), 5000)=%s as n_clusters." % self.n_clusters)
-
-        if self.init_strategy == 'kmeans++':
-            #self._logger.debug("register %i working steps with stride=%i" % (self.n_clusters, stride))
-            # TODO: avoid this (eg. move it to _estimate)
-            it = self.data_producer.iterator(stride=stride)
-
-            self._progress_register(max(it._n_chunks(stride), self.n_clusters),
-                                    description="initialize kmeans++ centers", stage=0)
-
-        self._progress_register(self.max_iter, description="kmeans iterations", stage=1)
-
-        self._init_in_memory_chunks(total_length)
-
-        if self.init_strategy == 'uniform':
-            # gives random samples from each trajectory such that the cluster centers are distributed percentage-wise
-            # with respect to the trajectories length
-            with conditional(self.fixed_seed, random_seed(42)):
-                for idx, traj_len in enumerate(traj_lengths):
-                    self._init_centers_indices[idx] = random.sample(list(range(0, traj_len)), int(
-                        math.ceil((traj_len / float(total_length)) * self.n_clusters)))
-
     def _init_in_memory_chunks(self, size):
         available_mem = psutil.virtual_memory().available
         required_mem = self._calculate_required_memory(size)
@@ -165,26 +128,13 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
     def describe(self):
         return "[Kmeans, k=%i, inp_dim=%i]" % (self.n_clusters, self.data_producer.dimension())
 
-    def _param_finish(self):
-        fh = None
-        if isinstance(self._in_memory_chunks, np.memmap):
-            fh = self._in_memory_chunks.filename
-        del self._in_memory_chunks
-        if fh:
-            os.unlink(fh)
-
-        if self.init_strategy == 'uniform':
-            del self._centers_iter_list
-            del self._init_centers_indices
-        if self.init_strategy == 'kmeans++':
-            self._progress_force_finish(0)
-        self._progress_force_finish(1)
-
     def kmeanspp_center_assigned(self):
         self._progress_update(1, stage=0)
 
     def _estimate(self, iterable, **kw):
         stride = kw.pop('stride', self.stride)
+
+        self._init_estimate(stride)
 
         iter = iterable.iterator(return_trajindex=True, stride=stride, **kw)
         # first pass: gather data and run k-means
@@ -232,7 +182,54 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
         self.clustercenters = np.array(self._cluster_centers_iter)
         del self._cluster_centers_iter
 
+        self._finish_estimate()
+
         return self
+
+    def _finish_estimate(self):
+        fh = None
+        if isinstance(self._in_memory_chunks, np.memmap):
+            fh = self._in_memory_chunks.filename
+        del self._in_memory_chunks
+        if fh:
+            os.unlink(fh)
+        if self.init_strategy == 'uniform':
+            del self._centers_iter_list
+            del self._init_centers_indices
+        if self.init_strategy == 'kmeans++':
+            self._progress_force_finish(0)
+        self._progress_force_finish(1)
+
+    def _init_estimate(self, stride):
+        # mini-batch sets stride to None
+        if stride is None:
+            stride = 1
+        ###### init
+        self._cluster_centers_iter = []
+        self._init_centers_indices = {}
+        self._t_total = 0
+        traj_lengths = self.trajectory_lengths(stride=stride)
+        total_length = sum(traj_lengths)
+        if not self.n_clusters:
+            self.n_clusters = min(int(math.sqrt(total_length)), 5000)
+            self._logger.info("The number of cluster centers was not specified, "
+                              "using min(sqrt(N), 5000)=%s as n_clusters." % self.n_clusters)
+        if self.init_strategy == 'kmeans++':
+            it = self.data_producer.iterator(stride=stride)
+
+            self._progress_register(self.n_clusters,
+                                    description="initialize kmeans++ centers", stage=0)
+        self._progress_register(self.max_iter, description="kmeans iterations", stage=1)
+        self._init_in_memory_chunks(total_length)
+        if self.init_strategy == 'uniform':
+            # gives random samples from each trajectory such that the cluster centers are distributed percentage-wise
+            # with respect to the trajectories length
+            with conditional(self.fixed_seed, random_seed(42)):
+                for idx, traj_len in enumerate(traj_lengths):
+                    self._init_centers_indices[idx] = random.sample(list(range(0, traj_len)), int(
+                            math.ceil((traj_len / float(total_length)) * self.n_clusters)))
+
+        return stride
 
     def _initialize_centers(self, X, itraj, t, last_chunk):
         if self.init_strategy == 'uniform':
@@ -296,7 +293,7 @@ class MiniBatchKmeansClustering(KmeansClustering):
 
         return self._random_access_stride
 
-    def _param_init(self, **kwargs):
+    def _init_estimate(self, stride):
         self._traj_lengths = self.trajectory_lengths()
         self._total_length = sum(self._traj_lengths)
         samples = int(math.ceil(self._total_length * self.batch_size))
@@ -308,12 +305,13 @@ class MiniBatchKmeansClustering(KmeansClustering):
             self._n_samples += traj_samples
 
         self._random_access_stride = np.empty(shape=(self._n_samples, 2), dtype=int)
-
-        super(MiniBatchKmeansClustering, self)._param_init()
+        super(MiniBatchKmeansClustering, self)._init_estimate(stride)
 
     def _estimate(self, iterable, **kw):
         if 'stride' in kw and kw['stride'] is not None:
             raise ValueError("no stride parameter allowed for minibatch kmeans.")
+
+        self._init_estimate(None)
 
         ipass = 0
         converged_in_max_iter = False

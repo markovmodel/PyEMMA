@@ -145,7 +145,7 @@ class Pipeline(object):
         Reads all data and discretizes it into discrete trajectories.
         """
         for element in self._chain:
-            if hasattr(element, 'parametrize'):
+            if hasattr(element, 'parametrize') and not element._estimated:
                 element.parametrize(stride=self.param_stride)
 
         self._estimated = True
