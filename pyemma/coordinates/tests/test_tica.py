@@ -40,6 +40,19 @@ from six.moves import range
 
 logger = getLogger('pyemma.'+'TestTICA')
 
+def mycorrcoef(X, Y, lag):
+    mean_X = 0.5*(np.mean(X[lag:], axis=0)+np.mean(X[0:-lag], axis=0))
+    mean_Y = 0.5*(np.mean(Y[lag:], axis=0)+np.mean(Y[0:-lag], axis=0))
+    cov = ((X[0:-lag]-mean_X).T.dot(Y[0:-lag]-mean_Y) +
+           (X[lag:]-mean_X).T.dot(Y[lag:]-mean_Y)) / (2*(X.shape[0]-lag-1))
+
+    autocov_X = ((X[0:-lag]-mean_X).T.dot(X[0:-lag]-mean_X) +
+                 (X[lag:]-mean_X).T.dot(X[lag:]-mean_X)) / (2*(X.shape[0]-lag-1))
+    var_X = np.diag(autocov_X)
+    autocov_Y = ((Y[0:-lag]-mean_Y).T.dot(Y[0:-lag]-mean_Y) +
+                 (Y[lag:]-mean_Y).T.dot(Y[lag:]-mean_Y)) / (2*(Y.shape[0]-lag-1))
+    var_Y = np.diag(autocov_Y)
+    return cov / np.sqrt(var_X[:,np.newaxis]) / np.sqrt(var_Y)
 
 class TestTICA_Basic(unittest.TestCase):
     def test(self):
@@ -284,11 +297,9 @@ class TestTICAExtensive(unittest.TestCase):
         feature_traj =  ticamini.data_producer.get_output()[0]
         tica_traj    =  ticamini.get_output()[0]
         test_corr = ticamini.feature_TIC_correlation
-        true_corr = np.corrcoef(feature_traj.T,
-                                y = tica_traj.T)[:ticamini.data_producer.dimension(),
-                                                  ticamini.data_producer.dimension():]
+        true_corr = mycorrcoef(feature_traj, tica_traj, ticamini.lag)
         #assert np.isclose(test_corr, true_corr).all()
-        np.testing.assert_allclose(test_corr, true_corr, atol=1e-3)
+        np.testing.assert_allclose(test_corr, true_corr, atol=1.E-6)
 
     def test_feature_correlation_data(self):
         # Create features with some correlation
@@ -303,10 +314,9 @@ class TestTICAExtensive(unittest.TestCase):
 
         # Create correlations
         test_corr = tica_obj.feature_TIC_correlation
-        true_corr = np.corrcoef(feature_traj.T,
-                                y = tica_traj.T)[:tica_obj.data_producer.dimension(), tica_obj.data_producer.dimension():]
+        true_corr = mycorrcoef(feature_traj, tica_traj, tica_obj.lag)
 
-        np.testing.assert_allclose(test_corr, true_corr)
+        np.testing.assert_allclose(test_corr, true_corr, atol=1.E-7)
         #assert np.isclose(test_corr, true_corr).all()
 
     def test_skipped_trajs(self):
