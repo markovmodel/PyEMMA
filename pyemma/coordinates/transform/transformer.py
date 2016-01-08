@@ -181,17 +181,11 @@ class Transformer(six.with_metaclass(ABCMeta, DataSource, Estimator, Loggable)):
                 raise ValueError("no array given")
 
         model = None
-        # for backward-compat
-        if hasattr(self, '_param_init'):
-            self._param_init(**kwargs)
         # run estimation
         try:
             model = super(Transformer, self).estimate(X, **kwargs)
         except NotConvergedWarning as ncw:
             self._logger.info("Presumely finished estimation. Message: %s" % ncw)
-        # finish
-        if hasattr(self, '_param_finish'):
-            self._param_finish()
         # memory mode? Then map all results. Avoid recursion here, if parametrization
         # is triggered from get_output
         if self.in_memory and not self._mapping_to_mem_active:
@@ -207,8 +201,7 @@ class Transformer(six.with_metaclass(ABCMeta, DataSource, Estimator, Loggable)):
 
         return super(Transformer, self).get_output(dimensions, stride, skip, chunk)
 
-    # TODO: re-enable this warning, as soon as all tests pass
-    #@deprecated("Please use estimate")
+    @deprecated("Please use estimate")
     def parametrize(self, stride=1):
         if self._data_producer is None:
             raise RuntimeError("This estimator has no data source given, giving up.")
