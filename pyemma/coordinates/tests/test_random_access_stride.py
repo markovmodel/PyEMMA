@@ -25,7 +25,10 @@ import pyemma.coordinates.api as coor
 import pkg_resources
 import mdtraj
 from six.moves import range
+
+from pyemma.coordinates.data import DataInMemory
 from pyemma.coordinates.data.datasource import IteratorState
+from pyemma.coordinates.data.fragmented_trajectory_reader import FragmentedTrajectoryReader
 
 
 class TestRandomAccessStride(TestCase):
@@ -40,26 +43,85 @@ class TestRandomAccessStride(TestCase):
         ])
         self.stride2 = np.asarray([[2, 0]])
 
-    def test_iterator_context(self):
+    def test_is_random_accessible(self):
+        dim = DataInMemory(self.data)
+        frag = FragmentedTrajectoryReader([[self.data]])
+        assert dim.is_random_accessible is True
+        assert frag.is_random_accessible is False
 
-        ctx = IteratorState(stride=1)
+    def test_slice_random_access(self):
+        dim = DataInMemory(self.data)
+
+        all_data = dim.ra_itraj_cuboid[:, :, :]
+        # the remaining 80 frames of the first trajectory should be truncated
+        np.testing.assert_equal(all_data.shape, (3, 20, self.dim))
+        # should coincide with original data
+        np.testing.assert_equal(all_data, np.array((self.data[0][:20], self.data[1], self.data[2])))
+        # we should be able to select the 1st trajectory
+        np.testing.assert_equal(dim.ra_itraj_cuboid[0], np.array([self.data[0]]))
+        # select only dimensions 1:3 of 2nd trajectory with every 2nd frame
+        np.testing.assert_equal(dim.ra_itraj_cuboid[1, ::2, 1:3], np.array([self.data[1][::2, 1:3]]))
+        # select only last dimension of 1st trajectory every 17th frame
+        np.testing.assert_equal(dim.ra_itraj_cuboid[0, ::17, -1], np.array([np.array([self.data[0][::17, -1]]).T]))
+
+    def test_slice_random_access_linear(self):
+        dim = DataInMemory(self.data)
+
+        all_data = dim.ra_linear[:, :]
+        # all data should be all data concatenated
+        np.testing.assert_equal(all_data, np.concatenate(self.data))
+        # select first 5 frames
+        np.testing.assert_equal(dim.ra_linear[:5], self.data[0][:5])
+        # select only dimensions 1:3 of every 2nd frame
+        np.testing.assert_equal(dim.ra_linear[::2, 1:3], np.concatenate(self.data)[::2, 1:3])
+
+    def test_slice_random_access_linear_itraj(self):
+        dim = DataInMemory(self.data)
+
+        all_data = dim.ra_itraj_linear[:, :, :]
+        # all data should be all data concatenated
+        np.testing.assert_equal(all_data, np.concatenate(self.data))
+
+        # if requested 130 frames, this should yield the first two trajectories and half of the third
+        np.testing.assert_equal(dim.ra_itraj_linear[:, :130], np.concatenate(self.data)[:130])
+        # now request first 30 frames of the last two trajectories
+        np.testing.assert_equal(dim.ra_itraj_linear[[1, 2], :30], np.concatenate((self.data[1], self.data[2]))[:30])
+
+    def test_slice_random_access_jagged(self):
+        dim = DataInMemory(self.data)
+
+        all_data = dim.ra_itraj_jagged[:, :, :]
+        for idx in range(3):
+            np.testing.assert_equal(all_data[idx], self.data[idx])
+
+        jagged = dim.ra_itraj_jagged[:, :30]
+        for idx in range(3):
+            np.testing.assert_equal(jagged[idx], self.data[idx][:30])
+
+    def test_iterator_context(self):
+        dim = DataInMemory(np.array([1]))
+
+        ctx = dim.iterator(stride=1).state
         assert ctx.stride == 1
         assert ctx.uniform_stride
         assert ctx.is_stride_sorted()
         assert ctx.traj_keys is None
 
-        ctx = IteratorState(stride=np.asarray([[0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [1, 3]]))
+        ctx = dim.iterator(stride=np.asarray([[0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [1, 3]])).state
         assert not ctx.uniform_stride
         assert ctx.is_stride_sorted()
         np.testing.assert_array_equal(ctx.traj_keys, np.array([0, 1]))
 
+        # require sorted random access
+        dim._needs_sorted_random_access_stride = True
+
         # sorted within trajectory, not sorted by trajectory key
         with self.assertRaises(ValueError):
-            IteratorState(stride=np.asarray([[1, 1], [1, 2], [1, 3], [0, 0], [0, 1], [0, 2]]))
+            dim.iterator(stride=np.asarray([[1, 1], [1, 2], [1, 3], [0, 0], [0, 1], [0, 2]]))
 
         # sorted by trajectory key, not within trajectory
         with self.assertRaises(ValueError):
-            IteratorState(stride=np.asarray([[0, 0], [0, 1], [0, 2], [1, 1], [1, 5], [1, 3]]))
+            dim.iterator(stride=np.asarray([[0, 0], [0, 1], [0, 2], [1, 1], [1, 5], [1, 3]]))
 
         np.testing.assert_array_equal(ctx.ra_indices_for_traj(0), np.array([0, 1, 2]))
         np.testing.assert_array_equal(ctx.ra_indices_for_traj(1), np.array([1, 2, 3]))
