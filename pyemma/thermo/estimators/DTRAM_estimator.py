@@ -30,37 +30,32 @@ from thermotools import wham as _wham
 from thermotools import util as _util
 
 class DTRAM(_Estimator, _MEMM):
+    """
+    Example
+    -------
+    >>> from pyemma.thermo import DTRAM
+    >>> import numpy as np
+    >>> B = np.array([[0, 0],[0.5, 1.0]])
+    >>> dtram = DTRAM(B)
+    >>> traj1 = np.array([[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,1,1,1,0,0,0]]).T
+    >>> traj2 = np.array([[1,1,1,1,1,1,1,1,1,1],[0,1,0,1,0,1,1,0,0,1]]).T
+    >>> dtram = dtram.estimate([traj1, traj2])
+    >>> dtram.log_likelihood() # doctest: +ELLIPSIS
+    -9.805...
+    >>> dtram.count_matrices # doctest: +SKIP
+    array([[[5, 1],
+            [1, 2]],
 
+           [[1, 4],
+            [3, 1]]], dtype=int32)
+    >>> dtram.stationary_distribution # doctest: +ELLIPSIS
+    array([ 0.381...,  0.618...])
+    >>> dtram.meval('stationary_distribution') # doctest: +ELLIPSIS
+    [array([ 0.381...,  0.618...]), array([ 0.504...,  0.495...])]
+    """
     def __init__(
         self, bias_energies_full, lag=1, count_mode='sliding', connectivity='largest',
         dt_traj='1 step', maxiter=100000, maxerr=1e-5, err_out=0, lll_out=0, use_wham=False):
-        # """
-        # Example
-        # -------
-        # >>> from pyemma.thermo import DTRAM
-        # >>> import numpy as np
-        # >>> B = np.array([[0, 0],[0.5, 1.0]])
-        # >>> dtram = DTRAM(B)
-        # >>> traj1 = np.array([[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,1,1,1,0,0,0]]).T
-        # >>> traj2 = np.array([[1,1,1,1,1,1,1,1,1,1],[0,1,0,1,0,1,1,0,0,1]]).T
-        # >>> dtram.estimate([traj1, traj2])
-        # >>> dtram.log_likelihood()
-        # -9.8058241189353108
-
-        # >>> dtram.count_matrices
-        # array([[[5, 1],
-        #         [1, 2]],
-
-        #        [[1, 4],
-        #         [3, 1]]], dtype=int32)
-
-        # >>> dtram.stationary_distribution
-        # array([ 0.38173596,  0.61826404])
-
-        # >>> dtram.meval('stationary_distribution')
-        # [array([ 0.38173596,  0.61826404]), array([ 0.50445327,  0.49554673])]
-
-        # """
         # set all parameters
         self.bias_energies_full = _types.ensure_ndarray(bias_energies_full, ndim=2, kind='numeric')
         self.lag = lag
@@ -82,14 +77,13 @@ class DTRAM(_Estimator, _MEMM):
         self.conf_energies = None
         self.log_lagrangian_mult = None
 
-
     def _estimate(self, trajs):
         """
         Parameters
         ----------
         trajs : ndarray(T, 2) or list of ndarray(T_i, 2)
-            Thermodynamic trajectories. Each trajectory is a (T, 2)-array
-            with T time steps. The first column is the thermodynamic state
+            Thermodynamic trajectories. Each trajectory is a (T_i, 2)-array
+            with T_i time steps. The first column is the thermodynamic state
             index, the second column is the configuration state index.
 
         """
@@ -100,8 +94,9 @@ class DTRAM(_Estimator, _MEMM):
         assert _types.is_list(trajs)
         for ttraj in trajs:
             _types.assert_array(ttraj, ndim=2, kind='numeric')
+            assert _np.shape(ttraj)[1] >= 2
 
-        # count matrices
+        # harvest transition counts
         self.count_matrices_full = _util.count_matrices(
             [_np.ascontiguousarray(t[:, :2]).astype(_np.intc) for t in trajs], self.lag,
             sliding=self.count_mode, sparse_return=False, nstates=self.nstates_full)
@@ -111,7 +106,7 @@ class DTRAM(_Estimator, _MEMM):
 
         # restrict to connected set
         C_sum = self.count_matrices_full.sum(axis=0)
-        # TODO: report fraction of lost counts
+        # TODO: use improved cset
         cset = _largest_connected_set(C_sum, directed=True)
         self.active_set = cset
         # correct counts
@@ -130,7 +125,7 @@ class DTRAM(_Estimator, _MEMM):
         if self.use_wham:
             self.therm_energies, self.conf_energies, _err, _lll = _wham.estimate(
                 self.state_counts, self.bias_energies,
-                maxiter=1000, maxerr=1.0E-5,
+                maxiter=5000, maxerr=1.0E-8,
                 therm_energies=self.therm_energies, conf_energies=self.conf_energies)
 
         # run estimator
@@ -143,17 +138,18 @@ class DTRAM(_Estimator, _MEMM):
                 err_out=self.err_out, lll_out=self.lll_out)
 
         # compute models
-        fmsms = [_dtram.estimate_transition_matrix(
+        models = [_dtram.estimate_transition_matrix(
             self.log_lagrangian_mult, self.bias_energies, self.conf_energies,
             self.count_matrices, _np.zeros(
                 shape=self.conf_energies.shape, dtype=_np.float64), K) for K in range(self.nthermo)]
-        self.model_active_set = [_largest_connected_set(msm, directed=False) for msm in fmsms]
-        fmsms = [_np.ascontiguousarray(
-            (msm[lcc, :])[:, lcc]) for msm, lcc in zip(fmsms, self.model_active_set)]
-        models = [_MSM(msm, dt_model=self.timestep_traj.get_scaled(self.lag)) for msm in fmsms]
+        self.model_active_set = [_largest_connected_set(msm, directed=False) for msm in models]
+        models = [_np.ascontiguousarray(
+            (msm[lcc, :])[:, lcc]) for msm, lcc in zip(models, self.model_active_set)]
 
         # set model parameters to self
-        self.set_model_params(models=models, f_therm=self.therm_energies, f=self.conf_energies)
+        self.set_model_params(
+            models=[_MSM(msm, dt_model=self.timestep_traj.get_scaled(self.lag)) for msm in models],
+            f_therm=self.therm_energies, f=self.conf_energies)
 
         # done
         return self

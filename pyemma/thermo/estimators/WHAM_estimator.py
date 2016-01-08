@@ -23,6 +23,7 @@ from pyemma._base.estimator import Estimator as _Estimator
 from pyemma.thermo.models.multi_therm import MEMM as _MEMM
 from pyemma.thermo import StationaryModel as _StationaryModel
 from pyemma.util import types as _types
+from pyemma.util.units import TimeUnit as _TimeUnit
 from thermotools import wham as _wham
 from thermotools import util as _util
 
@@ -59,9 +60,10 @@ class WHAM(_Estimator, _MEMM):
         self.lll_out = lll_out
         # set derived quantities
         self.nthermo, self.nstates_full = bias_energies_full.shape
+        self.timestep_traj = _TimeUnit(dt_traj)
         # set iteration variables
-        self.conf_energies = None
         self.therm_energies = None
+        self.conf_energies = None
 
     def _estimate(self, trajs):
         """
@@ -79,7 +81,7 @@ class WHAM(_Estimator, _MEMM):
         assert _types.is_list(trajs)
         for ttraj in trajs:
             _types.assert_array(ttraj, ndim=2, kind='numeric')
-            assert _np.shape(ttraj)[1] == 2
+            assert _np.shape(ttraj)[1] >= 2
 
         # harvest state counts
         self.state_counts_full = _util.state_counts(
@@ -100,13 +102,13 @@ class WHAM(_Estimator, _MEMM):
             err_out=self.err_out, lll_out=self.lll_out)
 
         # get stationary models
-        sms = [_StationaryModel(
+        models = [_StationaryModel(
             pi=_np.exp(self.therm_energies[K, _np.newaxis] - self.bias_energies[K, :] - self.conf_energies),
             f=self.bias_energies[K, :] + self.conf_energies,
             normalize_energy=False, label="K=%d" % K) for K in range(self.nthermo)]
 
         # set model parameters to self
-        self.set_model_params(models=sms, f_therm=self.therm_energies, f=self.conf_energies)
+        self.set_model_params(models=models, f_therm=self.therm_energies, f=self.conf_energies)
 
         # done
         return self
