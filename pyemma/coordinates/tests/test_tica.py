@@ -40,6 +40,7 @@ from six.moves import range
 
 logger = getLogger('pyemma.'+'TestTICA')
 
+
 def mycorrcoef(X, Y, lag):
     X = X.astype(np.float64)
     Y = Y.astype(np.float64)
@@ -56,12 +57,12 @@ def mycorrcoef(X, Y, lag):
     var_Y = np.diag(autocov_Y)
     return cov / np.sqrt(var_X[:,np.newaxis]) / np.sqrt(var_Y)
 
+
 class TestTICA_Basic(unittest.TestCase):
     def test(self):
-        # FIXME: this ugly workaround is necessary...
-        np.random.seed(0)
-
-        data = np.random.randn(100, 10)
+        # make it deterministic
+        with numpy_random_seed(0):
+            data = np.random.randn(100, 10)
         tica_obj = api.tica(data=data, lag=10, dim=1)
         tica_obj.parametrize()
         Y = tica_obj._transform_array(data)
@@ -132,7 +133,6 @@ class TestTICA_Basic(unittest.TestCase):
         tica_obj.in_memory = True
         tica_obj.parametrize()
         tica_obj.get_output()
-
 
 
 class TestTICAExtensive(unittest.TestCase):
