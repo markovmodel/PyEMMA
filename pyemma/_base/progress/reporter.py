@@ -153,6 +153,8 @@ class ProgressReporter(object):
             raise RuntimeError(
                 "call _progress_register(amount_of_work, stage=x) on this instance first!")
         pg = self._prog_rep_progressbars[stage]
+        if not isinstance(pg, _ProgressBar):
+            return
         pg.numerator = pg.denominator
         pg._eta.eta_epoch = 0
         _show_progressbar(pg)
