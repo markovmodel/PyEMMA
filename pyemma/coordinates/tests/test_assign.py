@@ -15,30 +15,27 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-
-
 from __future__ import absolute_import
-import unittest
-import os
-import numpy as np
-import tempfile
 
+import os
+import unittest
+
+from pyemma.util.files import TemporaryDirectory
 from pyemma.util.log import getLogger
+from six.moves import range
+import numpy as np
 import pyemma.coordinates as coor
 import pyemma.util.types as types
-from six.moves import range
 
 
 logger = getLogger('pyemma.'+'TestCluster')
 
 
-class TestCluster(unittest.TestCase):
+class TestClusterAssign(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        super(TestCluster, cls).setUpClass()
-        cls.dtraj_dir = tempfile.mkdtemp()
+        super(TestClusterAssign, cls).setUpClass()
 
         # generate Gaussian mixture
         means = [np.array([-3,0]),
@@ -153,16 +150,16 @@ class TestCluster(unittest.TestCase):
         c = self.ass
         prefix = "test"
         extension = ".dtraj"
-        outdir = self.dtraj_dir
-        c.save_dtrajs(trajfiles=None, prefix=prefix, output_dir=outdir, extension=extension)
+        with TemporaryDirectory() as outdir:
+            c.save_dtrajs(trajfiles=None, prefix=prefix, output_dir=outdir, extension=extension)
 
-        names = ["%s_%i%s" % (prefix, i, extension)
-                 for i in range(c.data_producer.number_of_trajectories())]
-        names = [os.path.join(outdir, n) for n in names]
+            names = ["%s_%i%s" % (prefix, i, extension)
+                     for i in range(c.data_producer.number_of_trajectories())]
+            names = [os.path.join(outdir, n) for n in names]
 
-        # check files with given patterns are there
-        for f in names:
-            os.stat(f)
+            # check files with given patterns are there
+            for f in names:
+                os.stat(f)
 
     def test_trajectory_length(self):
         c = self.ass
