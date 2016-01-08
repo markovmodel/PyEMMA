@@ -129,13 +129,11 @@ class RegularSpaceClustering(AbstractClustering):
         ########
         # temporary list to store cluster centers
         clustercenters = []
-        it = iterable.iterator(return_trajindex=False, **kwargs)
-        stride = kwargs['stride'] if 'stride' in kwargs else 1
-        total_chunks = it._n_chunks(stride)
-        n_chunks = 0
+        it = iterable.iterator(return_trajindex=False)
+        used_frames = 0
         try:
             for X in it:
-                n_chunks += 1
+                used_frames += len(X)
                 regspatial.cluster(X.astype(np.float32, order='C', copy=False),
                                    clustercenters, self.dmin,
                                    self.metric, self.max_centers)
@@ -150,9 +148,8 @@ class RegularSpaceClustering(AbstractClustering):
             self.update_model_params(clustercenters=clustercenters,
                                      n_cluster=len(clustercenters))
             # pass amount of processed data
-            #if n_chu
-            used_data = total_chunks / n_chunks * 100.0
-            raise NotConvergedWarning("Used data: %f" % used_data)
+            used_data = used_frames / float(it.n_frames_total()) * 100.0
+            raise NotConvergedWarning("Used data for centers: %.2f%%" % used_data)
 
         clustercenters = np.array(clustercenters)
         self.update_model_params(clustercenters=clustercenters,

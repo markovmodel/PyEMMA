@@ -212,7 +212,6 @@ class TICA(Transformer):
         generalized eigenvalue problem is solved to determine
         the independent components.
         """
-        stride = kw['stride'] if 'stride' in kw else self.stride
         indim = iterable.dimension()
         assert indim > 0, "zero dimension from data source!"
         assert self.dim <= indim, ("requested more output dimensions (%i) than dimension"
@@ -221,9 +220,9 @@ class TICA(Transformer):
         self._logger.debug("Running TICA with tau=%i; Estimating two covariance matrices"
                            " with dimension (%i, %i)" % (self._lag, indim, indim))
 
-        it = iterable.iterator(return_trajindex=True, lag=self.lag, **kw)
+        it = iterable.iterator(return_trajindex=True, lag=self.lag)
 
-        n_chunks = it._n_chunks(stride)
+        n_chunks = it._n_chunks
         self._progress_register(n_chunks, "calculate mean+cov", 0)
         nsave = int(max(log(ceil(n_chunks), 2), 2))
         self._logger.debug("using %s moments for %i chunks" % (nsave, n_chunks))
@@ -233,8 +232,8 @@ class TICA(Transformer):
         for itraj, X, Y in it:
 
             if self.trajectory_length(itraj, stride=1) - self._lag > 0:
-                assert Y is not None
-                assert len(X) == len(Y)
+                #assert Y is not None
+                #assert len(X) == len(Y)
                 covar.add(X, Y)
             else:
                 self._skipped_trajs.append(itraj)
@@ -364,4 +363,3 @@ class TICA(Transformer):
         cumvar: 1D np.array
         """
         return self._model.cumvar
-

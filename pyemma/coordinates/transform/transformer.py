@@ -275,6 +275,14 @@ class Transformer(six.with_metaclass(ABCMeta, DataSource, Estimator, Loggable)):
         """
         pass
 
+#     def __getstate__(self):
+#         state = super(Transformer, self).__getstate__()
+#         print ("getstate transformer", state)
+#         not_to_pickle = ('_data_producer', )
+#         for k in not_to_pickle:
+#             state.pop(k, None)
+#         return state
+
 
 class TransformerIterator(DataSourceIterator):
 
@@ -285,8 +293,9 @@ class TransformerIterator(DataSourceIterator):
         )
         self.state = self._it.state
 
-    def _n_chunks(self, stride=None):
-        return self._it._n_chunks(stride=stride)
+    @property
+    def _n_chunks(self):
+        return self._it._n_chunks
 
     def close(self):
         self._it.close()

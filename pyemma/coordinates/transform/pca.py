@@ -142,9 +142,8 @@ class PCA(Transformer, ProgressReporter):
         self._model.mean = value
 
     def _estimate(self, iterable, **kwargs):
-        it = iterable.iterator(return_trajindex=False, **kwargs)
-        stride = kwargs['stride'] if 'stride' in kwargs else self.stride
-        n_chunks = it._n_chunks(stride)
+        it = iterable.iterator(return_trajindex=False)
+        n_chunks = it._n_chunks
         self._progress_register(n_chunks, "calc mean and covar", 0)
         nsave = max(math.log(math.ceil(n_chunks), 2), 2)
         self._logger.debug("using %s moments for %i chunks" % (nsave, n_chunks))

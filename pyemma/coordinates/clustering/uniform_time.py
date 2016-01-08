@@ -57,17 +57,15 @@ class UniformTimeClustering(AbstractClustering):
 
     def _estimate(self, iterable, **kw):
 
-        stride = kw['stride'] if 'stride' in kw else self.stride
-
         if self.n_clusters is None:
-            traj_lengths = self.trajectory_lengths(stride=stride)
+            traj_lengths = self.trajectory_lengths(stride=self.stride)
             total_length = sum(traj_lengths)
             self.n_clusters = min(int(math.sqrt(total_length)), 5000)
             self._logger.info("The number of cluster centers was not specified, "
                               "using min(sqrt(N), 5000)=%s as n_clusters." % self.n_clusters)
 
         # initialize time counters
-        T = iterable.n_frames_total(stride=stride)
+        T = iterable.n_frames_total(stride=self.stride)
         if self.n_clusters > T:
             self.n_clusters = T
             self._logger.info('Requested more clusters (k = %i'
@@ -80,7 +78,7 @@ class UniformTimeClustering(AbstractClustering):
         # cumsum of lenghts
         cumsum = np.cumsum(self.trajectory_lengths())
         # distribution of integers, truncate if n_clusters is too large
-        linspace = stride * np.arange(next_t, T - next_t + 1, (T - 2*next_t + 1) // self.n_clusters)[:self.n_clusters]
+        linspace = self.stride * np.arange(next_t, T - next_t + 1, (T - 2*next_t + 1) // self.n_clusters)[:self.n_clusters]
         # random access matrix
         ra_stride = np.array([UniformTimeClustering._idx_to_traj_idx(x, cumsum) for x in linspace])
         self.clustercenters = np.concatenate([X for X in

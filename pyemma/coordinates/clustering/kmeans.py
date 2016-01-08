@@ -132,11 +132,9 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
         self._progress_update(1, stage=0)
 
     def _estimate(self, iterable, **kw):
-        stride = kw.pop('stride', self.stride)
+        self._init_estimate()
 
-        self._init_estimate(stride)
-
-        iter = iterable.iterator(return_trajindex=True, stride=stride, **kw)
+        iter = iterable.iterator(return_trajindex=True, stride=self.stride)
         # first pass: gather data and run k-means
         first_chunk = True
         for itraj, X in iter:
@@ -200,10 +198,9 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
             self._progress_force_finish(0)
         self._progress_force_finish(1)
 
-    def _init_estimate(self, stride):
+    def _init_estimate(self):
         # mini-batch sets stride to None
-        if stride is None:
-            stride = 1
+        stride = self.stride if self.stride else 1
         ###### init
         self._cluster_centers_iter = []
         self._init_centers_indices = {}
@@ -293,7 +290,7 @@ class MiniBatchKmeansClustering(KmeansClustering):
 
         return self._random_access_stride
 
-    def _init_estimate(self, stride):
+    def _init_estimate(self):
         self._traj_lengths = self.trajectory_lengths()
         self._total_length = sum(self._traj_lengths)
         samples = int(math.ceil(self._total_length * self.batch_size))
@@ -305,13 +302,12 @@ class MiniBatchKmeansClustering(KmeansClustering):
             self._n_samples += traj_samples
 
         self._random_access_stride = np.empty(shape=(self._n_samples, 2), dtype=int)
-        super(MiniBatchKmeansClustering, self)._init_estimate(stride)
+        super(MiniBatchKmeansClustering, self)._init_estimate()
 
     def _estimate(self, iterable, **kw):
-        if 'stride' in kw and kw['stride'] is not None:
-            raise ValueError("no stride parameter allowed for minibatch kmeans.")
-
-        self._init_estimate(None)
+        # mini-batch kmeans does not use stride. Enforse it.
+        self.stride = None
+        self._init_estimate()
 
         ipass = 0
         converged_in_max_iter = False
