@@ -32,7 +32,7 @@ from pyemma.util.statistics import confidence_interval
 from pyemma.util import types as _types
 from pyemma._base.estimator import Estimator, get_estimator, param_grid, estimate_param_scan
 from pyemma._base.progress import ProgressReporter
-from pyemma._base.model import SampledModel
+from pyemma._base.model import SampledModel, Model
 
 __docformat__ = "restructuredtext en"
 
@@ -205,6 +205,8 @@ class ImpliedTimescales(Estimator, ProgressReporter):
         if not computed_all:
             self.logger.warning('Some timescales could not be computed. Timescales array is smaller than '
                                 'expected or contains NaNs')
+
+        return self
 
     @property
     def lagtimes(self):

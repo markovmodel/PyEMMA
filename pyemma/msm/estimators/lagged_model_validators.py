@@ -175,6 +175,8 @@ class LaggedModelValidator(Estimator, ProgressReporter):
             self._est_L = None
             self._est_R = None
 
+        return self
+
     @property
     def lagtimes(self):
         return self._lags
