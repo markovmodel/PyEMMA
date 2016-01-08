@@ -24,10 +24,9 @@ Created on 18.02.2015
 
 from __future__ import absolute_import
 
-from pyemma.coordinates.clustering.interface import AbstractClustering
-from pyemma.util import types
 import six
 
+from pyemma.coordinates.clustering.interface import AbstractClustering
 import numpy as np
 
 
@@ -64,12 +63,12 @@ class AssignCenters(AbstractClustering):
         if isinstance(clustercenters, six.string_types):
             from pyemma.coordinates.data import create_file_reader
             reader = create_file_reader(clustercenters, None, None)
-            self._clustercenters = reader.get_output()[0]
+            clustercenters = reader.get_output()[0]
         else:
-            self._clustercenters = np.array(clustercenters, dtype=np.float32, order='C')
+            clustercenters = np.array(clustercenters, dtype=np.float32, order='C')
 
         # sanity check.
-        if not self.clustercenters.ndim == 2:
+        if not clustercenters.ndim == 2:
             raise ValueError('cluster centers have to be 2d')
 
         self.set_params(clustercenters=clustercenters, metric=metric, stride=stride)
@@ -89,21 +88,12 @@ class AssignCenters(AbstractClustering):
                              ', but input has %i' % (dim, dp.dimension()))
         AbstractClustering.data_producer.fset(self, dp)
 
+    # TODO: replace with fit_predict?
     def _estimate(self, iterable, **kw):
-        # assign all data from iterable to the given centers
+        self._estimated = True
+        old_source = self._data_producer
+        self.data_producer = iterable
+        self.assign(None, self.stride)
+        self.data_producer = old_source
 
-        iterator = iterable.iterator(return_trajindex=True, stride=self.stride, **kw)
-
-        last_itraj = -1
-        for itraj, X in iterator:
-            # new trajectory?
-            if itraj != last_itraj:
-                last_itraj = itraj
-                t = 0
-                n = self.data_producer.trajectory_length(itraj, stride=self.stride)
-
-                self._dtrajs.append(np.empty(n, dtype=self.output_type()))
-            # assign
-            L = np.shape(X)[0]
-            self._dtrajs[itraj][t:t+L] = self._transform_array(X).squeeze()
         return self
