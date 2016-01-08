@@ -116,7 +116,7 @@ def dtram(ttrajs, dtrajs, bias, lag, maxiter=10000, maxerr=1.0E-15, err_out=0, l
 
     Returns
     -------
-    mtmsm : MultiThermMSM
+    memm : MEMM
         A multi-thermodynamic Markov state model which consists of stationary and kinetic
         quantities at all temperatures/thermodynamic states.
 

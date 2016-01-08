@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from pyemma.thermo.models import StationaryModel, MultiThermModel
+from pyemma.thermo.models import StationaryModel, MEMM
 from pyemma.thermo.estimators import WHAM, DTRAM
 
 # high-level api

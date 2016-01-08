@@ -16,4 +16,4 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from pyemma.thermo.models.stationary import StationaryModel
-from pyemma.thermo.models.multi_therm import MultiThermModel
+from pyemma.thermo.models.multi_therm import MEMM

@@ -20,13 +20,13 @@ __author__ = 'wehmeyer, mey'
 import numpy as _np
 from six.moves import range
 from pyemma._base.estimator import Estimator as _Estimator
-from pyemma.thermo.models.multi_therm import MultiThermModel as _MultiThermModel
+from pyemma.thermo.models.multi_therm import MEMM as _MEMM
 from pyemma.thermo import StationaryModel as _StationaryModel
 from pyemma.util import types as _types
 from thermotools import wham as _wham
 from thermotools import util as _util
 
-class WHAM(_Estimator, _MultiThermModel):
+class WHAM(_Estimator, _MEMM):
     """
     Example
     -------

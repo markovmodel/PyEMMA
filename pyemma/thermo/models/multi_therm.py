@@ -23,7 +23,7 @@ from pyemma._base.model import call_member as _call_member
 from pyemma._base.model import Model as _Model
 from pyemma.util import types as _types
 
-class MultiThermModel(_StationaryModel):
+class MEMM(_StationaryModel):
 
     # TODO: what about just setting f and not pi, as a convention in pyemma.thermo?
     def __init__(self, models, f_therm, pi=None, f=None, label='ground state'):
@@ -80,10 +80,10 @@ class MultiThermModel(_StationaryModel):
         # We set up multiple stationary models, one for a reference (ground)
         # state, and two for biased states, and group them in a
         # MultiStationaryModel.
-        # >>> from pyemma.thermo import StationaryModel, MultiThermModel
+        # >>> from pyemma.thermo import StationaryModel, MEMM
         # >>> m_1 = StationaryModel(f=[1.0, 0], label='biased 1')
         # >>> m_2 = StationaryModel(f=[2.0, 0], label='biased 2')
-        # >>> m_mult = MultiThermModel([m_1, m_2], [0, 0], label='unbiased')
+        # >>> m_mult = MEMM([m_1, m_2], [0, 0], label='unbiased')
         # Compute the stationary distribution for the two biased models
         # >>> m_mult.meval('stationary_distribution')
         # [array([ 0.73105858,  0.26894142]), array([ 0.88079708,  0.11920292])]
@@ -91,14 +91,14 @@ class MultiThermModel(_StationaryModel):
         # and group them in a MultiStationaryModel.
         # >>> import numpy as np
         # >>> from pyemma.msm import MSM
-        # >>> from pyemma.thermo import MultiThermModel
+        # >>> from pyemma.thermo import MEMM
         # >>> b = 20  # transition barrier in kJ / mol
         # >>> temps = np.arange(300, 500, 25)  # temperatures 300 to 500 K
         # >>> p_trans = [np.exp(- b / kT) for kT in 0.00831*temps ]
         # >>> # build MSMs for different temperatures
         # >>> msms = [MSM(P=np.array([[1.0-p, p], [p, 1.0-p]])) for p in p_trans]
         # >>> # build Multi-MSM
-        # >>> msm_mult = MultiThermModel(pi=msms[0].stationary_distribution, label='300 K', models=msms)
+        # >>> msm_mult = MEMM(pi=msms[0].stationary_distribution, label='300 K', models=msms)
         # Compute the timescales and see how they decay with temperature
         # Greetings to Arrhenius.
         # >>> np.hstack(msm_mult.meval('timescales'))

@@ -20,7 +20,7 @@ __author__ = 'noe, wehmeyer'
 import numpy as _np
 from six.moves import range
 from pyemma._base.estimator import Estimator as _Estimator
-from pyemma.thermo.models.multi_therm import MultiThermModel as _MultiThermModel
+from pyemma.thermo.models.multi_therm import MEMM as _MEMM
 from pyemma.msm import MSM as _MSM
 from pyemma.util import types as _types
 from pyemma.util.units import TimeUnit as _TimeUnit
@@ -29,7 +29,7 @@ from thermotools import dtram as _dtram
 from thermotools import wham as _wham
 from thermotools import util as _util
 
-class DTRAM(_Estimator, _MultiThermModel):
+class DTRAM(_Estimator, _MEMM):
 
     def __init__(
         self, bias_energies_full, lag=1, count_mode='sliding', connectivity='largest',
