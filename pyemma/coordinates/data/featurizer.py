@@ -31,7 +31,7 @@ from mdtraj.geometry.dihedral import (indices_phi,
 from pyemma.util.indices import (combinations as _combinations,
                                  product as _product,
                                  )
-from pyemma.util.types import is_iterable_of_int as _is_iterable_of_int
+from pyemma.util.types import is_iterable_of_int as _is_iterable_of_int, is_string as _is_string
 
 
 from six import PY3
@@ -198,8 +198,9 @@ def _parse_groupwise_input(group_definitions, group_pairs, MDlogger, mname=''):
                 assert not np.allclose(igroup, jgroup), "Some group definitions appear to be duplicated, e.g %u and %u"%(ii,ii+jj+1)
 
     # Create and/or check the pair-list
-    if group_pairs == 'all':
-        parsed_group_pairs = _combinations(np.arange(len(group_definitions)), 2)
+    if _is_string(group_pairs):
+        if group_pairs == 'all':
+            parsed_group_pairs = _combinations(np.arange(len(group_definitions)), 2)
     else:
         assert isinstance(group_pairs, np.ndarray)
         assert group_pairs.shape[1] == 2
@@ -266,12 +267,12 @@ class CustomFeature(object):
     Note that you need to define the output dimension, which we pass directly in
     the feature construction. The trajectory contains 58 atoms, so the output
     dimension will be 3 * 58 = 174:
-    
+
     >>> my_feature = CustomFeature(lambda x: (1.0 / x.xyz**2).reshape(-1, 174), dim=174)
     >>> reader = source(inp['trajs'][0], top=inp['top'])
 
     pass the feature to the featurizer and transform the data
-    
+
     >>> reader.featurizer.add_custom_feature(my_feature)
     >>> data = reader.get_output()
 
@@ -515,11 +516,21 @@ class GroupMinDistanceFeature(DistanceFeature):
 
 class ContactFeature(DistanceFeature):
 
-    def __init__(self, top, distance_indexes, threshold=5.0, periodic=True):
+    def __init__(self, top, distance_indexes, threshold=5.0, periodic=True, count_contacts=False):
         DistanceFeature.__init__(self, top, distance_indexes)
         self.prefix_label = "CONTACT:"
+        if count_contacts:
+            self.prefix_label="counted "+self.prefix_label
         self.threshold = threshold
         self.periodic = periodic
+        self.count_contacts = count_contacts
+
+    @property
+    def dimension(self):
+        if self.count_contacts:
+            return 1
+        else:
+            return self.distance_indexes.shape[0]
 
     @deprecated
     def map(self, traj):
@@ -535,21 +546,27 @@ class ContactFeature(DistanceFeature):
             (len(traj), self.distance_indexes.shape[0]), dtype=np.float32)
         I = np.argwhere(dists <= self.threshold)
         res[I[:, 0], I[:, 1]] = 1.0
-        return res
+        if self.count_contacts:
+            return res.sum(1, keepdims=True)
+        else:
+            return res
 
     def __hash__(self):
         hash_value = DistanceFeature.__hash__(self)
         hash_value ^= hash(self.threshold)
+        if self.count_contacts:
+            hash_value += 1
         return hash_value
 
 
 class AngleFeature(object):
 
-    def __init__(self, top, angle_indexes, deg=False, cossin=False):
+    def __init__(self, top, angle_indexes, deg=False, cossin=False, periodic=True):
         self.top = top
         self.angle_indexes = np.array(angle_indexes)
         self.deg = deg
         self.cossin = cossin
+        self.periodic = periodic
 
     def describe(self):
         if self.cossin:
@@ -583,7 +600,7 @@ class AngleFeature(object):
         return self.transform(traj)
 
     def transform(self, traj):
-        rad = mdtraj.compute_angles(traj, self.angle_indexes)
+        rad = mdtraj.compute_angles(traj, self.angle_indexes, self.periodic)
         if self.cossin:
             rad = np.dstack((np.cos(rad), np.sin(rad)))
             rad = rad.reshape(functools.reduce(lambda x, y: x * y, rad.shape),)
@@ -605,11 +622,12 @@ class AngleFeature(object):
 
 class DihedralFeature(object):
 
-    def __init__(self, top, dih_indexes, deg=False, cossin=False):
+    def __init__(self, top, dih_indexes, deg=False, cossin=False, periodic=True):
         self.top = top
         self.dih_indexes = np.array(dih_indexes)
         self.deg = deg
         self.cossin = cossin
+        self.periodic = periodic
         self._dim = self.dih_indexes.shape[0]
         if self.cossin:
             self._dim *= 2
@@ -646,7 +664,7 @@ class DihedralFeature(object):
         return self.transform(traj)
 
     def transform(self, traj):
-        rad = mdtraj.compute_dihedrals(traj, self.dih_indexes)
+        rad = mdtraj.compute_dihedrals(traj, self.dih_indexes, self.periodic)
         if self.cossin:
             rad = np.dstack((np.cos(rad), np.sin(rad)))
             rad = rad.reshape(rad.shape[0], rad.shape[1]*rad.shape[2])
@@ -670,7 +688,7 @@ class DihedralFeature(object):
 
 class BackboneTorsionFeature(DihedralFeature):
 
-    def __init__(self, topology, selstr=None, deg=False, cossin=False):
+    def __init__(self, topology, selstr=None, deg=False, cossin=False, periodic=True):
         indices = indices_phi(topology)
 
         if not selstr:
@@ -691,7 +709,8 @@ class BackboneTorsionFeature(DihedralFeature):
                                     zip(self._phi_inds, self._psi_inds))).reshape(-1, 4)
 
         super(BackboneTorsionFeature, self).__init__(topology, dih_indexes,
-                                                     deg=deg, cossin=cossin)
+                                                     deg=deg, cossin=cossin,
+                                                     periodic=periodic)
 
     def describe(self):
         top = self.top
@@ -716,7 +735,7 @@ class BackboneTorsionFeature(DihedralFeature):
 
 class Chi1TorsionFeature(DihedralFeature):
 
-    def __init__(self, topology, selstr=None, deg=False, cossin=False):
+    def __init__(self, topology, selstr=None, deg=False, cossin=False, periodic=True):
         indices = indices_chi1(topology)
         if not selstr:
             dih_indexes = indices
@@ -725,7 +744,8 @@ class Chi1TorsionFeature(DihedralFeature):
                                           topology.select(selstr),
                                           assume_unique=True)]
         super(Chi1TorsionFeature, self).__init__(topology, dih_indexes,
-                                                 deg=deg, cossin=cossin)
+                                                 deg=deg, cossin=cossin,
+                                                 periodic=periodic)
 
     def describe(self):
         top = self.top
@@ -1092,7 +1112,7 @@ class MDFeaturizer(Loggable):
         f = InverseDistanceFeature(self.topology, atom_pairs, periodic=True)
         self.__add_feature(f)
 
-    def add_contacts(self, indices, indices2=None, threshold=0.3, periodic=True):
+    def add_contacts(self, indices, indices2=None, threshold=0.3, periodic=True, count_contacts=False):
         r"""
         Adds the contacts to the feature list.
 
@@ -1114,6 +1134,13 @@ class MDFeaturizer(Loggable):
             distances below this threshold (in nm) will result in a feature 1.0, distances above will result in 0.0.
             The default is set to .3 nm (3 Angstrom)
 
+        periodic : boolean, default True
+            use the minimum image convention if unitcell information is available
+
+        count_contacts : boolean, default False
+            If set to true, this feature will return the number of formed contacts (and not feature values with either 1.0 or 0)
+            The ouput of this feature will be of shape (Nt,1), and not (Nt, nr_of_contacts)
+
         .. note::
             When using the *iterable of integers* input, :py:obj:`indices` and :py:obj:`indices2`
             will be sorted numerically and made unique before converting them to a pairlist.
@@ -1124,7 +1151,7 @@ class MDFeaturizer(Loggable):
             indices, indices2, self._logger, fname='add_contacts()')
 
         atom_pairs = self._check_indices(atom_pairs)
-        f = ContactFeature(self.topology, atom_pairs, threshold, periodic)
+        f = ContactFeature(self.topology, atom_pairs, threshold, periodic, count_contacts)
         self.__add_feature(f)
 
     def add_residue_mindist(self,
@@ -1163,9 +1190,10 @@ class MDFeaturizer(Loggable):
             via :py:obj:`residue_pairs`.
         """
 
-        if scheme != 'ca' and residue_pairs == 'all':
-            self._logger.warning("Using all residue pairs with schemes like closest or closest-heavy is "
-                                 "very time consuming. Consider reducing the residue pairs")
+        if scheme != 'ca' and _is_string(residue_pairs):
+            if residue_pairs == 'all':
+                self._logger.warning("Using all residue pairs with schemes like closest or closest-heavy is "
+                                     "very time consuming. Consider reducing the residue pairs")
 
         f = ResidueMinDistanceFeature(self.topology, residue_pairs, scheme, ignore_nonprotein, threshold)
         self.__add_feature(f)
@@ -1206,7 +1234,7 @@ class MDFeaturizer(Loggable):
         f = GroupMinDistanceFeature(self.topology, group_definitions, group_pairs, distance_list, group_identifiers, threshold)
         self.__add_feature(f)
 
-    def add_angles(self, indexes, deg=False, cossin=False):
+    def add_angles(self, indexes, deg=False, cossin=False, periodic=True):
         """
         Adds the list of angles to the feature list
 
@@ -1221,13 +1249,18 @@ class MDFeaturizer(Loggable):
             If True, each angle will be returned as a pair of (sin(x), cos(x)).
             This is useful, if you calculate the mean (e.g TICA/PCA, clustering)
             in that space.
+        periodic : bool, optional, default = True
+            If `periodic` is True and the trajectory contains unitcell
+            information, we will treat dihedrals that cross periodic images
+            using the minimum image convention.
 
         """
         indexes = self._check_indices(indexes, pair_n=3)
-        f = AngleFeature(self.topology, indexes, deg=deg, cossin=cossin)
+        f = AngleFeature(self.topology, indexes, deg=deg, cossin=cossin,
+                         periodic=periodic)
         self.__add_feature(f)
 
-    def add_dihedrals(self, indexes, deg=False, cossin=False):
+    def add_dihedrals(self, indexes, deg=False, cossin=False, periodic=True):
         """
         Adds the list of dihedrals to the feature list
 
@@ -1242,13 +1275,18 @@ class MDFeaturizer(Loggable):
             If True, each angle will be returned as a pair of (sin(x), cos(x)).
             This is useful, if you calculate the mean (e.g TICA/PCA, clustering)
             in that space.
+        periodic : bool, optional, default = True
+            If `periodic` is True and the trajectory contains unitcell
+            information, we will treat dihedrals that cross periodic images
+            using the minimum image convention.
 
         """
         indexes = self._check_indices(indexes, pair_n=4)
-        f = DihedralFeature(self.topology, indexes, deg=deg, cossin=cossin)
+        f = DihedralFeature(self.topology, indexes, deg=deg, cossin=cossin,
+                            periodic=periodic)
         self.__add_feature(f)
 
-    def add_backbone_torsions(self, selstr=None, deg=False, cossin=False):
+    def add_backbone_torsions(self, selstr=None, deg=False, cossin=False, periodic=True):
         """
         Adds all backbone phi/psi angles or the ones specified in :obj:`selstr` to the feature list.
 
@@ -1265,12 +1303,16 @@ class MDFeaturizer(Loggable):
             If True, each angle will be returned as a pair of (sin(x), cos(x)).
             This is useful, if you calculate the mean (e.g TICA/PCA, clustering)
             in that space.
+        periodic : bool, optional, default = True
+            If `periodic` is True and the trajectory contains unitcell
+            information, we will treat dihedrals that cross periodic images
+            using the minimum image convention.
         """
         f = BackboneTorsionFeature(
-            self.topology, selstr=selstr, deg=deg, cossin=cossin)
+            self.topology, selstr=selstr, deg=deg, cossin=cossin, periodic=periodic)
         self.__add_feature(f)
 
-    def add_chi1_torsions(self, selstr="", deg=False, cossin=False):
+    def add_chi1_torsions(self, selstr="", deg=False, cossin=False, periodic=True):
         """
         Adds all chi1 angles or the ones specified in :obj:`selstr` to the feature list.
 
@@ -1287,9 +1329,13 @@ class MDFeaturizer(Loggable):
             If True, each angle will be returned as a pair of (sin(x), cos(x)).
             This is useful, if you calculate the mean (e.g TICA/PCA, clustering)
             in that space.
+        periodic : bool, optional, default = True
+            If `periodic` is True and the trajectory contains unitcell
+            information, we will treat dihedrals that cross periodic images
+            using the minimum image convention.
         """
         f = Chi1TorsionFeature(
-            self.topology, selstr=selstr, deg=deg, cossin=cossin)
+            self.topology, selstr=selstr, deg=deg, cossin=cossin, periodic=periodic)
         self.__add_feature(f)
 
     def add_custom_feature(self, feature):

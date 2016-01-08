@@ -17,7 +17,7 @@ requirements:
     - joblib ==0.8.4
     - matplotlib
     - mdtraj >=1.5
-    - mock
+    - mock # [py27]
     - msmtools
     - thermotools >=0.1.12
     - nose
@@ -35,7 +35,7 @@ requirements:
     - joblib ==0.8.4
     - matplotlib
     - mdtraj >=1.5
-    - mock
+    - mock # [py27]
     - msmtools
     - thermotools >=0.1.12
     - numpy >=1.7

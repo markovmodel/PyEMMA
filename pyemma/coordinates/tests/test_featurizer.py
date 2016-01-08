@@ -201,6 +201,25 @@ class TestFeaturizer(unittest.TestCase):
         C[I[:, 0], I[:, 1]] = 1.0
         assert(np.allclose(C, self.feat.transform(self.traj)))
 
+    def test_contacts_count_contacts(self):
+        sel = np.array([1, 2, 5, 20], dtype=int)
+        pairs_expected = np.array([[1, 5], [1, 20], [2, 5], [2, 20], [5, 20]])
+        pairs = self.feat.pairs(sel, excluded_neighbors=2)
+        assert(pairs.shape == pairs_expected.shape)
+        assert(np.all(pairs == pairs_expected))
+        self.feat.add_contacts(pairs, threshold=0.5, periodic=False, count_contacts=True)  # unperiodic distances such that we can compare
+        # The dimensionality of the feature is now one
+        assert(self.feat.dimension() == 1)
+        X = self.traj.xyz[:, pairs_expected[:, 0], :]
+        Y = self.traj.xyz[:, pairs_expected[:, 1], :]
+        D = np.sqrt(np.sum((X - Y) ** 2, axis=2))
+        C = np.zeros(D.shape)
+        I = np.argwhere(D <= 0.5)
+        C[I[:, 0], I[:, 1]] = 1.0
+        # Count the contacts
+        C = C.sum(1, keepdims=True)
+        assert(np.allclose(C, self.feat.transform(self.traj)))
+
     def test_angles(self):
         sel = np.array([[1, 2, 5],
                         [1, 3, 8],

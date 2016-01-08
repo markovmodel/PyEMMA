@@ -197,18 +197,24 @@ def deprecated(*optional_message):
 
     """
     def _deprecated(func, *args, **kw):
-        caller_frame = stack()[1]
-        filename = caller_frame[0].f_globals.get('__file__', None)
-        lineno = func.__code__.co_firstlineno + 1
+        caller_stack = stack()[1:]
+        while len(caller_stack) > 0:
+            frame = caller_stack.pop(0)
+            filename = frame[1]
+            # skip callee frames if they are other decorators or this file(func)
+            if 'decorator' in filename or __file__ in filename:
+                continue
+            else: break
+        lineno = frame[2]
 
-        user_msg = "Call to deprecated function %s. Called from %s line %i. %s" \
+        user_msg = 'Call to deprecated function "%s". Called from %s line %i. %s' \
                    % (func.__name__, filename, lineno, msg)
 
         warnings.warn_explicit(
             user_msg,
             category=DeprecationWarning,
-            filename=func.__code__.co_filename,
-            lineno=func.__code__.co_firstlineno + 1
+            filename=filename,
+            lineno=lineno
         )
         return func(*args, **kw)
     if len(optional_message) == 1 and callable(optional_message[0]):
@@ -219,6 +225,7 @@ def deprecated(*optional_message):
         # actually got a message (or empty parenthesis)
         msg = optional_message[0] if len(optional_message) > 0 else ""
         return decorator(_deprecated)
+
 
 @decorator
 def estimation_required(func, *args, **kw):

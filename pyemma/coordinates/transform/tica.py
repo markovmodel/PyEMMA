@@ -165,10 +165,13 @@ class TICA(Transformer):
     def dimension(self):
         """ output dimension """
         d = None
-        if self._dim != -1:  # fixed parametrization
+        if self._dim != -1 and not self._parametrized:  # fixed parametrization
             d = self._dim
         elif self._parametrized:  # parametrization finished. Dimension is known
-            dim = len(self._eigenvalues)
+            if self._dim != -1:
+                dim = min(len(self._eigenvalues), self._dim)
+            else:
+                dim = len(self._eigenvalues)
             if self._var_cutoff < 1.0:  # if subspace_variance, reduce the output dimension if needed
                 dim = min(dim, np.searchsorted(self._cumvar, self._var_cutoff)+1)
             d = dim

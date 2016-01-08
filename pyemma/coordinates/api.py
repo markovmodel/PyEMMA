@@ -832,7 +832,7 @@ def _param_stage(previous_stage, this_stage, stride=1):
     return this_stage
 
 
-def pca(data=None, dim=2, var_cutoff=0.95, stride=1, mean=None):
+def pca(data=None, dim=-1, var_cutoff=0.95, stride=1, mean=None):
     r""" Principal Component Analysis (PCA).
 
     PCA is a linear transformation method that finds coordinates of maximal
