@@ -5,12 +5,12 @@ sudo: false
 env:
   global:
     - PATH=$HOME/miniconda/bin:$PATH
-    - common_py_deps="pylint jinja2 conda-build"
+    - common_py_deps="jinja2 conda-build"
   matrix:
-    - python=2.7  CONDA_PY=27  CONDA_NPY=17
+    - python=2.7  CONDA_PY=27  CONDA_NPY=18
     - python=3.4  CONDA_PY=34  CONDA_NPY=18
     - python=3.4  CONDA_PY=34  CONDA_NPY=19
-    - python=3.5  CONDA_PY=35  CONDA_NPY=19
+    - python=3.5  CONDA_PY=35  CONDA_NPY=110
    
 before_install:
 - tools/ci/travis/install_miniconda.sh

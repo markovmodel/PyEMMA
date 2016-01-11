@@ -20,7 +20,7 @@ requirements:
     - mock # [py27]
     - msmtools
     - nose
-    - numpy >=1.7
+    - numpy x.x 
     - pyyaml
     - scipy
     - six
@@ -36,7 +36,7 @@ requirements:
     - mdtraj >=1.5
     - mock # [py27]
     - msmtools
-    - numpy >=1.7
+    - numpy x.x
     - pyyaml
     - scipy
     - six
