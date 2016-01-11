@@ -98,6 +98,10 @@ class TestRandomAccessStride(TestCase):
         for idx in range(3):
             np.testing.assert_equal(jagged[idx], self.data[idx][:30])
 
+        jagged_last_dim = dim.ra_itraj_jagged[:, :, -1]
+        for idx in range(3):
+            np.testing.assert_equal(jagged_last_dim[idx], self.data[idx][:, -1])
+
     def test_iterator_context(self):
         dim = DataInMemory(np.array([1]))
 
