@@ -141,7 +141,7 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
             # collect data
             self._collect_data(X, first_chunk)
             # initialize cluster centers
-            self._initialize_centers(X, itraj, iter.pos, iter.last_chunk(itraj))
+            self._initialize_centers(X, itraj, iter.pos, iter.last_chunk)
             first_chunk = False
 
         # run k-means with all the data
@@ -327,7 +327,7 @@ class MiniBatchKmeansClustering(KmeansClustering):
                 self._collect_data(X, first_chunk)
                 # initialize cluster centers
                 if ipass == 0:
-                    self._initialize_centers(X, itraj, iterator.pos, iterator.last_chunk(itraj))
+                    self._initialize_centers(X, itraj, iterator.pos, iterator.last_chunk)
                 first_chunk = False
 
             # one pass over data completed

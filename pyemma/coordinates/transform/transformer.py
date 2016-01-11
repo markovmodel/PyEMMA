@@ -293,10 +293,6 @@ class TransformerIterator(DataSourceIterator):
     def close(self):
         self._it.close()
 
-    @property
-    def current_trajindex(self):
-        return self._it.current_trajindex
-
-    def next_chunk(self):
-        X = self._it.next_chunk()
+    def _next_chunk(self):
+        X = self._it._next_chunk()
         return self._data_source._transform_array(X)
