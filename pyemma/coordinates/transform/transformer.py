@@ -208,7 +208,6 @@ class Transformer(six.with_metaclass(ABCMeta, DataSource, Estimator, Loggable)):
 
         return self.estimate(self.data_producer, stride=stride)
 
-    @deprecated("use fit.")
     def transform(self, X):
         r"""Maps the input data through the transformer to correspondingly
         shaped output data array/list.
