@@ -27,19 +27,32 @@ import sys
 from pyemma import config
 
 __all__ = ('is_interactive_session', 'show_progressbar')
+__widget_version = None
 
 
 def __attached_to_ipy_notebook():
-    import warnings
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
+    global __widget_version
+    try:
+        import ipywidgets
+        __widget_version = 4
+    except:
+        import warnings
         try:
-            from IPython.html.widgets import IntProgress
-            IntProgress(100)
-        except:
+            # hide future warning of ipython and show custom message
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                import IPython.html.widgets
+            __widget_version = 3
+            warnings.warn("Consider upgrading to Jupyter (new IPython version) and ipywidgets.",
+                          DeprecationWarning)
+        except ImportError:
             return False
         else:
             return True
+        # no widgets available:
+        return False
+    else:
+        return True
 
 
 def __is_interactive():
@@ -62,7 +75,12 @@ is_interactive_session = __is_tty_or_interactive_session()
 
 if ipython_notebook_session:
     from IPython.display import display
-    from IPython.html.widgets import IntProgress, Box, Text
+
+    if __widget_version >= 4:
+        from ipywidgets import Box, Text, IntProgress
+    elif __widget_version == 3:
+        from IPython.html.widgets import Box, Text, IntProgress
+    #else:
 
 
 def hide_widget(widget):
