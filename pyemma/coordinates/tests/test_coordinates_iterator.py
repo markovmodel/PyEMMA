@@ -5,7 +5,6 @@ from pyemma.coordinates.data import DataInMemory
 
 
 class TestCoordinatesIterator(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls):
         cls.d = [np.random.random((100, 3)) for _ in range(3)]
@@ -23,6 +22,35 @@ class TestCoordinatesIterator(unittest.TestCase):
             if it.pos == 0:
                 expected_itraj += 1
             assert itraj == expected_itraj == it.current_trajindex
+
+    def test_n_chunks(self):
+        r = DataInMemory(self.d)
+
+        it0 = r.iterator(chunk=0)
+        assert it0._n_chunks == 3  # 3 trajs
+
+        it1 = r.iterator(chunk=50)
+        assert it1._n_chunks == 3 * 2 # 2 chunks per trajectory
+
+        it2 = r.iterator(chunk=30)
+        assert it2._n_chunks == 3 * 4  # 3 full chunks and 1 small chunk per trajectory
+
+        it3 = r.iterator(chunk=30)
+        it3.skip = 10
+        assert it3._n_chunks == 3*3  # 3 full chunks per traj
+
+        it4 = r.iterator(chunk=30)
+        it4.skip = 5
+        assert it4._n_chunks == 3 * 4  # 3 full chunks and 1 chunk of 5 frames per trajectory
+
+        # test for lagged iterator
+        for stride in range(1, 5):
+            for lag in range(0, 18):
+                it = r.iterator(lag=lag, chunk=30, stride=stride, return_trajindex=False)
+                chunks = 0
+                for _ in it:
+                    chunks += 1
+                assert chunks == it._n_chunks
 
     def test_skip(self):
         r = DataInMemory(self.d)
