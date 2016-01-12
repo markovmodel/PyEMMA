@@ -35,7 +35,6 @@ from pyemma.coordinates.data.util.reader_utils import create_file_reader as _cre
     copy_traj_attributes as _copy_traj_attributes
 from pyemma.coordinates.data.frames_from_file import frames_from_file as _frames_from_file
 # transforms
-from pyemma.coordinates.transform.transformer import Transformer as _Transformer
 from pyemma.coordinates.transform.pca import PCA as _PCA
 from pyemma.coordinates.transform.tica import TICA as _TICA
 # clustering
@@ -58,7 +57,7 @@ from six.moves import zip
 import numpy as _np
 import itertools as _itertools
 
-_logger = _getLogger('coordinates.api')
+_logger = _getLogger('pyemma.coordinates.api')
 
 __docformat__ = "restructuredtext en"
 __author__ = "Frank Noe, Martin Scherer"
