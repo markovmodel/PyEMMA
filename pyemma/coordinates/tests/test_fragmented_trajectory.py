@@ -108,7 +108,6 @@ class TestFragmentedTrajectory(unittest.TestCase):
             for stride in [1, 3, 5]:
                 for chunksize in [1, 34, 53, 72]:
                     reader.chunksize = chunksize
-
                     if lag > 0:
                         collected = None
                         collected_lagged = None

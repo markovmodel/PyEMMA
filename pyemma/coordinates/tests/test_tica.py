@@ -329,8 +329,9 @@ class TestTICAExtensive(unittest.TestCase):
                          np.arange(13)]
 
         tica_obj = tica(data=feature_trajs, lag=11)
-        assert (len(tica_obj._skipped_trajs)==2)
-        assert np.allclose(tica_obj._skipped_trajs, [0,1])
+        # we skip the trajs right away in the iterator
+        assert (len(tica_obj._skipped_trajs) == 0)
+        # assert np.allclose(tica_obj._skipped_trajs, [0,1])
 
     def test_provided_means(self):
         data = np.random.random((300, 3))

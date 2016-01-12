@@ -137,8 +137,8 @@ class ProgressReporter(object):
 
         pg = self._prog_rep_progressbars[stage]
         pg.numerator += numerator_increment
-        #if pg.numerator > pg.denominator:
-        #    raise Exception("This should not happen")
+        if pg.numerator > pg.denominator:
+            raise Exception("This should not happen")
 
         _show_progressbar(pg)
         if hasattr(self, '_prog_rep_callbacks'):
