@@ -33,6 +33,7 @@ from pyemma.coordinates.data.iterable import Iterable
 from pyemma.util import types as _types
 from pyemma.util.annotators import deprecated
 from pyemma.util.exceptions import NotConvergedWarning
+from pyemma._base.progress.reporter import ProgressReporter
 
 __all__ = ['Transformer']
 __author__ = 'noe, marscher'
