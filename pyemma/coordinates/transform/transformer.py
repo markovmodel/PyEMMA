@@ -29,25 +29,11 @@ from pyemma._base.logging import Loggable
 from pyemma.coordinates.data import DataInMemory
 from pyemma.coordinates.data.datasource import DataSource, DataSourceIterator
 from pyemma.coordinates.data.iterable import Iterable
-from pyemma.util import types as _types
 from pyemma.util.annotators import deprecated
 from pyemma.util.exceptions import NotConvergedWarning
-from pyemma._base.progress.reporter import ProgressReporter
 
 __all__ = ['Transformer']
 __author__ = 'noe, marscher'
-
-
-def _to_data_producer(X):
-    # this is a pipelining stage, so let's parametrize from it
-    if isinstance(X, Transformer):
-        inputstage = X
-    # second option: data is array or list of arrays
-    else:
-        data = _types.ensure_traj_list(X)
-        inputstage = DataInMemory(data)
-
-    return inputstage
 
 
 class Transformer(six.with_metaclass(ABCMeta, DataSource, Estimator, Loggable)):
