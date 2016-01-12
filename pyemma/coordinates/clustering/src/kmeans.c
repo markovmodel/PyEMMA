@@ -82,6 +82,7 @@ static PyObject *cluster(PyObject *self, PyObject *args) {
 
     if(debug) printf("KMEANS: attempting to parse args...");
     if (!PyArg_ParseTuple(args, "O!O!s", &PyArray_Type, &np_chunk, &PyList_Type, &py_centers, &metric)) {
+        if(debug) printf("FAILED\n");
         goto error;
     }
     if(debug) printf("done\n");

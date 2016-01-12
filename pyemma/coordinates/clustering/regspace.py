@@ -156,7 +156,7 @@ class RegularSpaceClustering(AbstractClustering):
 
         clustercenters = np.array(clustercenters)
         self.update_model_params(clustercenters=clustercenters,
-                                 n_cluster=len(clustercenters))
+                                 n_clusters=len(clustercenters))
 
         if len(clustercenters) == 1:
             self._logger.warning('Have found only one center according to '

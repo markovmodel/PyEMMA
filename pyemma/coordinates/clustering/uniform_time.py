@@ -65,9 +65,6 @@ class UniformTimeClustering(AbstractClustering):
             self._logger.info("The number of cluster centers was not specified, "
                               "using min(sqrt(N), 5000)=%s as n_clusters." % self.n_clusters)
 
-        self._clustercenters = np.zeros(
-            (self.n_clusters, self.data_producer.dimension()), dtype=np.float32)
-
     def _estimate(self, iterable, **kw):
 
         stride = kw['stride'] if 'stride' in kw else self.stride
@@ -81,35 +78,22 @@ class UniformTimeClustering(AbstractClustering):
                               '. Will do clustering with k = %i'
                               % (self.n_clusters, T, T))
 
-        # time in previous trajectories
-        self._tprev = 0
-        # number of clusters yet
-        self._n = 0
-        # time segment length between cluster centers
-        self._dt = T // self.n_clusters
         # first data point in the middle of the time segment
-        self._nextt = self._dt // 2
+        next_t = (T // self.n_clusters) // 2
+        # cumsum of lenghts
+        cumsum = np.cumsum(self.trajectory_lengths())
+        # distribution of integers
+        linspace = stride * np.arange(next_t, T - next_t, (T - 2*next_t) // self.n_clusters)
+        # random access matrix
+        ra_stride = np.array([UniformTimeClustering._idx_to_traj_idx(x, cumsum) for x in linspace])
+        self.clustercenters = np.concatenate([X for X in
+                                              iterable.iterator(stride=ra_stride, return_trajindex=False, **kw)])
 
-        last_itraj = -1
-        t = 0
-        iterator = iterable.iterator(stride=self.stride, return_trajindex=True, **kw)
-
-        for itraj, X in iterator:
-
-            if itraj != last_itraj:
-                if last_itraj != -1:
-                    self._tprev += self.trajectory_length(itraj=last_itraj, stride=stride)
-                last_itraj = itraj
-                t = 0
-
-            L = np.shape(X)[0]
-            t += L
-
-            # final time we can go to with this chunk
-            maxt = self._tprev + t + L
-            # harvest cluster centers from this chunk until we have left it
-            while (self._nextt < maxt and self._n < self.n_clusters):
-                i = self._nextt - self._tprev - t
-                self._clustercenters[self._n] = X[i]
-                self._n += 1
-                self._nextt += self._dt
+    @staticmethod
+    def _idx_to_traj_idx(idx, cumsum):
+        prev_len = 0
+        for trajIdx, length in enumerate(cumsum):
+            if prev_len <= idx < length:
+                return trajIdx, idx - prev_len
+            prev_len = length
+        raise ValueError("Requested index %s was out of bounds [0,%s)" % (idx, cumsum[-1]))

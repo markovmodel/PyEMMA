@@ -181,6 +181,7 @@ class Transformer(six.with_metaclass(ABCMeta, DataSource, Estimator, Loggable)):
         if not isinstance(X, Iterable):
             if isinstance(X, np.ndarray):
                 X = DataInMemory(X, self.chunksize)
+                self.data_producer = X
             else:
                 raise ValueError("no array given")
 

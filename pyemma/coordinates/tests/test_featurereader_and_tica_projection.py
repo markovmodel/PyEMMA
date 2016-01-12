@@ -33,6 +33,7 @@ import numpy as np
 import mdtraj
 from pyemma.coordinates.api import tica, _TICA as TICA
 from pyemma.coordinates.data.feature_reader import FeatureReader
+from pyemma.util.contexts import numpy_random_seed
 from pyemma.util.log import getLogger
 from six.moves import range
 
@@ -52,38 +53,39 @@ from nose.plugins.attrib import attr
 class TestFeatureReaderAndTICAProjection(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        c = super(TestFeatureReaderAndTICAProjection, cls).setUpClass()
+        with numpy_random_seed(52):
+            c = super(TestFeatureReaderAndTICAProjection, cls).setUpClass()
 
-        cls.dim = 99  # dimension (must be divisible by 3)
-        N = 5000  # length of single trajectory # 500000
-        N_trajs = 10  # number of trajectories
+            cls.dim = 99  # dimension (must be divisible by 3)
+            N = 5000  # length of single trajectory # 500000 # 50000
+            N_trajs = 10  # number of trajectories
 
-        A = random_invertible(cls.dim)  # mixing matrix
-        # tica will approximate its inverse with the projection matrix
-        mean = np.random.randn(cls.dim)
+            A = random_invertible(cls.dim)  # mixing matrix
+            # tica will approximate its inverse with the projection matrix
+            mean = np.random.randn(cls.dim)
 
-        # create topology file
-        cls.temppdb = tempfile.mktemp('.pdb')
-        with open(cls.temppdb, 'w') as f:
-            for i in range(cls.dim // 3):
-                print(('ATOM  %5d C    ACE A   1      28.490  31.600  33.379  0.00  1.00' % i), file=f)
+            # create topology file
+            cls.temppdb = tempfile.mktemp('.pdb')
+            with open(cls.temppdb, 'w') as f:
+                for i in range(cls.dim // 3):
+                    print(('ATOM  %5d C    ACE A   1      28.490  31.600  33.379  0.00  1.00' % i), file=f)
 
-        t = np.arange(0, N)
-        cls.trajnames = []  # list of xtc file names
-        for i in range(N_trajs):
-            # set up data
-            white = np.random.randn(N, cls.dim)
-            brown = np.cumsum(white, axis=0)
-            correlated = np.dot(brown, A)
-            data = correlated + mean
-            xyz = data.reshape((N, cls.dim // 3, 3))
-            # create trajectory file
-            traj = mdtraj.load(cls.temppdb)
-            traj.xyz = xyz
-            traj.time = t
-            tempfname = tempfile.mktemp('.xtc')
-            traj.save(tempfname)
-            cls.trajnames.append(tempfname)
+            t = np.arange(0, N)
+            cls.trajnames = []  # list of xtc file names
+            for i in range(N_trajs):
+                # set up data
+                white = np.random.randn(N, cls.dim)
+                brown = np.cumsum(white, axis=0)
+                correlated = np.dot(brown, A)
+                data = correlated + mean
+                xyz = data.reshape((N, cls.dim // 3, 3))
+                # create trajectory file
+                traj = mdtraj.load(cls.temppdb)
+                traj.xyz = xyz
+                traj.time = t
+                tempfname = tempfile.mktemp('.xtc')
+                traj.save(tempfname)
+                cls.trajnames.append(tempfname)
 
     @classmethod
     def tearDownClass(cls):
@@ -95,7 +97,7 @@ class TestFeatureReaderAndTICAProjection(unittest.TestCase):
     def test_covariances_and_eigenvalues(self):
         reader = FeatureReader(self.trajnames, self.temppdb)
         for tau in [1, 10, 100, 1000, 2000]:
-            trans = TICA(lag=tau, kinetic_map=False, force_eigenvalues_le_one=True, var_cutoff=1.0)
+            trans = TICA(lag=tau, dim=self.dim, kinetic_map=False, force_eigenvalues_le_one=True)
             trans.data_producer = reader
 
             log.info('number of trajectories reported by tica %d' % trans.number_of_trajectories())
@@ -111,7 +113,7 @@ class TestFeatureReaderAndTICAProjection(unittest.TestCase):
             check.parametrize()
 
             np.testing.assert_allclose(np.eye(self.dim), check.cov, atol=1e-8)
-            np.testing.assert_allclose(check.mu, 0.0, atol=1e-8)
+            np.testing.assert_allclose(check.mean, 0.0, atol=1e-8)
             ic_cov_tau = np.zeros((self.dim, self.dim))
             ic_cov_tau[np.diag_indices(self.dim)] = trans.eigenvalues
             np.testing.assert_allclose(ic_cov_tau, check.cov_tau, atol=1e-8)

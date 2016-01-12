@@ -121,7 +121,7 @@ class TestCluster(unittest.TestCase):
         for itraj, chunk in c:
             assert types.is_int(itraj)
             assert types.is_int_matrix(chunk)
-            assert chunk.shape[0] <= c.chunksize
+            assert chunk.shape[0] <= c.chunksize or c.chunksize == 0
             assert chunk.shape[1] == c.dimension()
 
     def test_map(self):

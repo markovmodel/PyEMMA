@@ -33,6 +33,7 @@ from pyemma.coordinates import api
 
 from pyemma.coordinates.data.data_in_memory import DataInMemory
 from pyemma.coordinates import source, tica
+from pyemma.util.contexts import numpy_random_seed
 from pyemma.util.log import getLogger
 import pyemma.util.types as types
 from six.moves import range
@@ -122,25 +123,26 @@ class TestTICA_Basic(unittest.TestCase):
 class TestTICAExtensive(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        import msmtools.generation as msmgen
+        with numpy_random_seed(123):
+            import msmtools.generation as msmgen
 
-        # generate HMM with two Gaussians
-        cls.P = np.array([[0.99, 0.01],
-                          [0.01, 0.99]])
-        cls.T = 40000
-        means = [np.array([-1, 1]), np.array([1, -1])]
-        widths = [np.array([0.3, 2]), np.array([0.3, 2])]
-        # continuous trajectory
-        cls.X = np.zeros((cls.T, 2))
-        # hidden trajectory
-        dtraj = msmgen.generate_traj(cls.P, cls.T)
-        for t in range(cls.T):
-            s = dtraj[t]
-            cls.X[t, 0] = widths[s][0] * np.random.randn() + means[s][0]
-            cls.X[t, 1] = widths[s][1] * np.random.randn() + means[s][1]
-        cls.lag = 10
-        # do unscaled TICA
-        cls.tica_obj = api.tica(data=cls.X, lag=cls.lag, dim=1, kinetic_map=False)
+            # generate HMM with two Gaussians
+            cls.P = np.array([[0.99, 0.01],
+                              [0.01, 0.99]])
+            cls.T = 40000
+            means = [np.array([-1, 1]), np.array([1, -1])]
+            widths = [np.array([0.3, 2]), np.array([0.3, 2])]
+            # continuous trajectory
+            cls.X = np.zeros((cls.T, 2))
+            # hidden trajectory
+            dtraj = msmgen.generate_traj(cls.P, cls.T)
+            for t in range(cls.T):
+                s = dtraj[t]
+                cls.X[t, 0] = widths[s][0] * np.random.randn() + means[s][0]
+                cls.X[t, 1] = widths[s][1] * np.random.randn() + means[s][1]
+            cls.lag = 10
+            # do unscaled TICA
+            cls.tica_obj = api.tica(data=api.source(cls.X, chunk_size=0), lag=cls.lag, dim=1, kinetic_map=False)
 
     def setUp(self):
         pass
@@ -169,7 +171,7 @@ class TestTICAExtensive(unittest.TestCase):
     def test_cov(self):
         cov_ref = np.dot(self.X.T, self.X) / float(self.T)
         assert (np.all(self.tica_obj.cov.shape == cov_ref.shape))
-        assert (np.max(self.tica_obj.cov - cov_ref) < 5e-2)
+        np.testing.assert_allclose(self.tica_obj.cov, cov_ref, atol=5e-2)
 
     def test_cov_tau(self):
         cov_tau_ref = np.dot(self.X[self.lag:].T, self.X[:self.T - self.lag]) / float(self.T - self.lag)
@@ -286,7 +288,7 @@ class TestTICAExtensive(unittest.TestCase):
                                 y = tica_traj.T)[:ticamini.data_producer.dimension(),
                                                   ticamini.data_producer.dimension():]
         #assert np.isclose(test_corr, true_corr).all()
-        np.testing.assert_allclose(test_corr, true_corr)
+        np.testing.assert_allclose(test_corr, true_corr, atol=1e-3)
 
     def test_feature_correlation_data(self):
         # Create features with some correlation

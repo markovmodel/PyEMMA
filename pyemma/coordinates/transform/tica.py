@@ -34,12 +34,12 @@ from pyemma.coordinates.estimators.covar.running_moments import running_covar
 
 from .transformer import Transformer
 
-
 __all__ = ['TICA']
 
 
 class MeaningOfLagWithStrideWarning(UserWarning):
     pass
+
 
 class TICAModel(Model):
     pass
@@ -120,6 +120,9 @@ class TICA(Transformer):
 
         super(TICA, self).__init__()
 
+        if dim > -1:
+            var_cutoff = 1.0
+
         # empty dummy model instance
         self._model = TICAModel()
         self.set_params(lag=lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map,
@@ -148,6 +151,8 @@ class TICA(Transformer):
 
     def dimension(self):
         """ output dimension """
+        if self.dim > -1:
+            return self.dim
         d = None
         if self._dim != -1 and not self._parametrized:  # fixed parametrization
             d = self._dim
@@ -204,7 +209,7 @@ class TICA(Transformer):
         indim = self.data_producer.dimension()
         assert indim > 0, "zero dimension from data producer"
         assert self.dim <= indim, ("requested more output dimensions (%i) than dimension"
-                                    " of input data (%i)" % (self.dim, indim))
+                                   " of input data (%i)" % (self.dim, indim))
 
         self._logger.debug("Running TICA with tau=%i; Estimating two covariance matrices"
                            " with dimension (%i, %i)" % (self._lag, indim, indim))

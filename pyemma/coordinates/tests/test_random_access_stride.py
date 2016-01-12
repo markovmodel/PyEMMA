@@ -1,4 +1,3 @@
-
 # This file is part of PyEMMA.
 #
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
@@ -79,7 +78,7 @@ class TestRandomAccessStride(TestCase):
         out3 = data_in_memory.get_output(stride=self.stride)
 
         for idx in np.unique(self.stride[:, 0]):
-            np.testing.assert_array_almost_equal(self.data[idx][self.stride[self.stride[:,0] == idx][:,1]], out1[idx])
+            np.testing.assert_array_almost_equal(self.data[idx][self.stride[self.stride[:, 0] == idx][:, 1]], out1[idx])
             np.testing.assert_array_almost_equal(out1[idx], out2[idx])
             np.testing.assert_array_almost_equal(out2[idx], out3[idx])
 
@@ -103,7 +102,8 @@ class TestRandomAccessStride(TestCase):
             out2 = np_fr.get_output(stride=self.stride)
 
             for idx in np.unique(self.stride[:, 0]):
-                np.testing.assert_array_almost_equal(self.data[idx][self.stride[self.stride[:, 0] == idx][:, 1]], out1[idx])
+                np.testing.assert_array_almost_equal(self.data[idx][self.stride[self.stride[:, 0] == idx][:, 1]],
+                                                     out1[idx])
                 np.testing.assert_array_almost_equal(out1[idx], out2[idx])
         finally:
             for tmp in tmpfiles:
@@ -129,8 +129,9 @@ class TestRandomAccessStride(TestCase):
             np_fr = coor.source(tmpfiles, chunk_size=0)
             out3 = np_fr.get_output(stride=self.stride)
 
-            for idx in np.unique(self.stride[:,0]):
-                np.testing.assert_array_almost_equal(self.data[idx][self.stride[self.stride[:,0] == idx][:,1]], out1[idx])
+            for idx in np.unique(self.stride[:, 0]):
+                np.testing.assert_array_almost_equal(self.data[idx][self.stride[self.stride[:, 0] == idx][:, 1]],
+                                                     out1[idx])
                 np.testing.assert_array_almost_equal(out1[idx], out2[idx])
                 np.testing.assert_array_almost_equal(out2[idx], out3[idx])
 
@@ -145,7 +146,7 @@ class TestRandomAccessStride(TestCase):
         kmeans = coor.cluster_kmeans(self.data, k=2)
         kmeans.in_memory = True
 
-        for cs in range(1, 5):
+        for cs in range(0, 5):
             kmeans.chunksize = cs
             ref_stride = {0: 0, 1: 0, 2: 0}
             it = kmeans.iterator(stride=self.stride)
@@ -170,11 +171,14 @@ class TestRandomAccessStride(TestCase):
             source.chunksize = 2
 
             out = source.get_output(stride=self.stride)
-            keys = np.unique(self.stride[:,0])
+            keys = np.unique(self.stride[:, 0])
             for i, coords in enumerate(out):
                 if i in keys:
                     traj = mdtraj.load(trajfiles[i], top=topfile)
-                    np.testing.assert_equal(coords, traj.xyz[np.array(self.stride[self.stride[:, 0] == i][:,1])].reshape(-1, 9))
+                    np.testing.assert_equal(coords,
+                                            traj.xyz[
+                                                np.array(self.stride[self.stride[:, 0] == i][:, 1])
+                                            ].reshape(-1, 9))
         finally:
             for t in trajfiles:
                 try:
