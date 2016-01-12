@@ -340,8 +340,8 @@ class Estimator(_BaseEstimator, Loggable):
             self.set_params(**params)
         self._model = self._estimate(X)
         # debug:
-        if self._model is None:
-            raise RuntimeError("underlying estimator did not returned a valid model")
+        #if self._model is None:
+        #    raise RuntimeError("underlying estimator did not returned a valid model")
         self._estimated = True
         return self._model
 
