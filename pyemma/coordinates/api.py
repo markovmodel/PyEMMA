@@ -1034,7 +1034,7 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, stride=1,
         object is independent, so you can parametrize at a long stride, and
         still map all frames through the transformer.
 
-    force_eigenvalues_le_one : boolean
+    force_eigenvalues_le_one : boolean, deprecated (eigenvalues are always <= 1, since 2.1)
         Compute covariance matrix and time-lagged covariance matrix such
         that the generalized eigenvalues are always guaranteed to be <= 1.
 
@@ -1140,8 +1140,7 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, stride=1,
         data = _get_input_stage(data)
         indim = data.dimension()
         mean = _types.ensure_ndarray(mean, shape=(indim,), dtype=_np.float)
-    res = _TICA(lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map,
-                force_eigenvalues_le_one=force_eigenvalues_le_one, mean=mean)
+    res = _TICA(lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map, mean=mean)
     return _param_stage(data, res, stride=stride)
 
 

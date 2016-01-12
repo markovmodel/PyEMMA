@@ -23,21 +23,26 @@ cov(ic_i,ic_j) = delta_ij and cov(ic_i,ic_j,tau) = lambda_i delta_ij
 @author: Fabian Paul
 '''
 
+from __future__ import absolute_import
 from __future__ import print_function
 
-from __future__ import absolute_import
-import unittest
 import os
 import tempfile
-import numpy as np
+import unittest
+
+from nose.plugins.attrib import attr
 import mdtraj
-from pyemma.coordinates.api import tica, _TICA as TICA
+
+from pyemma.coordinates.api import tica#, _TICA as TICA
 from pyemma.coordinates.data.feature_reader import FeatureReader
 from pyemma.util.contexts import numpy_random_seed
 from pyemma.util.log import getLogger
 from six.moves import range
+import numpy as np
+
 
 log = getLogger('pyemma.'+'TestFeatureReaderAndTICAProjection')
+
 
 def random_invertible(n, eps=0.01):
     'generate real random invertible matrix'
@@ -45,8 +50,6 @@ def random_invertible(n, eps=0.01):
     u, s, v = np.linalg.svd(m)
     s = np.maximum(s, eps)
     return u.dot(np.diag(s)).dot(v)
-
-from nose.plugins.attrib import attr
 
 
 @attr(slow=True)
@@ -93,11 +96,11 @@ class TestFeatureReaderAndTICAProjection(unittest.TestCase):
             os.unlink(fname)
         os.unlink(cls.temppdb)
         super(TestFeatureReaderAndTICAProjection, cls).tearDownClass()
-        
+
     def test_covariances_and_eigenvalues(self):
         reader = FeatureReader(self.trajnames, self.temppdb)
         for tau in [1, 10, 100, 1000, 2000]:
-            trans = TICA(lag=tau, dim=self.dim, kinetic_map=False, force_eigenvalues_le_one=True)
+            trans = tica(lag=tau, dim=self.dim, kinetic_map=False)
             trans.data_producer = reader
 
             log.info('number of trajectories reported by tica %d' % trans.number_of_trajectories())

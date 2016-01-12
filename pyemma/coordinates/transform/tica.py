@@ -37,10 +37,6 @@ from .transformer import Transformer
 __all__ = ['TICA']
 
 
-class MeaningOfLagWithStrideWarning(UserWarning):
-    pass
-
-
 class TICAModel(Model):
     pass
 
@@ -49,7 +45,7 @@ class TICA(Transformer):
     r""" Time-lagged independent component analysis (TICA)"""
 
     def __init__(self, lag, dim=-1, var_cutoff=0.95, kinetic_map=True, epsilon=1e-6,
-                 force_eigenvalues_le_one=False, mean=None, stride=1):
+                 mean=None, stride=1):
         r""" Time-lagged independent component analysis (TICA) [1]_, [2]_, [3]_.
 
         Parameters
@@ -154,15 +150,12 @@ class TICA(Transformer):
         if self.dim > -1:
             return self.dim
         d = None
-        if self._dim != -1 and not self._parametrized:  # fixed parametrization
-            d = self._dim
-        elif self._parametrized:  # parametrization finished. Dimension is known
-            if self._dim != -1:
-                dim = min(len(self._eigenvalues), self._dim)
-            else:
-                dim = len(self._eigenvalues)
-            if self._var_cutoff < 1.0:  # if subspace_variance, reduce the output dimension if needed
-                dim = min(dim, np.searchsorted(self._cumvar, self._var_cutoff)+1)
+        if self.dim != -1 and not self._estimated:  # fixed parametrization
+            d = self.dim
+        elif self._estimated:  # parametrization finished. Dimension is known
+            dim = len(self.eigenvalues)
+            if self.var_cutoff < 1.0:  # if subspace_variance, reduce the output dimension if needed
+                dim = min(dim, np.searchsorted(self.cumvar, self.var_cutoff) + 1)
             d = dim
         elif self.var_cutoff == 1.0:  # We only know that all dimensions are wanted, so return input dim
             d = self.data_producer.dimension()

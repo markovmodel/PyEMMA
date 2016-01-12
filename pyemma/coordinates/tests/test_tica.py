@@ -114,14 +114,14 @@ class TestTICA_Basic(unittest.TestCase):
         tica_obj = api.tica(data=d, lag=lag, dim=1)
 
         cov = tica_obj.cov.copy()
-        mean = tica_obj.mu.copy()
+        mean = tica_obj.mean.copy()
 
         # ------- run again with new chunksize -------
         d = DataInMemory(X)
         d.chunksize = chunk
         tica_obj = tica(data=d, lag=lag, dim=1)
 
-        np.testing.assert_allclose(tica_obj.mu, mean)
+        np.testing.assert_allclose(tica_obj.mean, mean)
         np.testing.assert_allclose(tica_obj.cov, cov)
 
     def test_in_memory(self):
@@ -261,7 +261,7 @@ class TestTICAExtensive(unittest.TestCase):
         assert np.max(mean < 0.5)
 
     def test_mu(self):
-        mean = self.tica_obj.mu
+        mean = self.tica_obj.mean
         assert len(mean) == 2
         assert np.max(mean < 0.5)
 
@@ -339,7 +339,7 @@ class TestTICAExtensive(unittest.TestCase):
         tica_obj = tica(data, mean=mean)
         tica_calc_mean = tica(data)
 
-        np.testing.assert_allclose(tica_obj.mu, tica_calc_mean.mu)
+        np.testing.assert_allclose(tica_obj.mean, tica_calc_mean.mean)
         np.testing.assert_allclose(tica_obj.cov, tica_calc_mean.cov)
         np.testing.assert_allclose(tica_obj.cov_tau, tica_calc_mean.cov_tau)
 
