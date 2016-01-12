@@ -27,32 +27,47 @@ import sys
 from pyemma import config
 
 __all__ = ('is_interactive_session', 'show_progressbar')
-__widget_version = None
 
 
-def __attached_to_ipy_notebook():
-    global __widget_version
+def __ipy_widget_version():
     try:
         import ipywidgets
-        __widget_version = 4
-    except:
+    except ImportError:
         import warnings
         try:
             # hide future warning of ipython and show custom message
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
                 import IPython.html.widgets
-            __widget_version = 3
             warnings.warn("Consider upgrading to Jupyter (new IPython version) and ipywidgets.",
                           DeprecationWarning)
         except ImportError:
             return False
         else:
-            return True
+            return 3
         # no widgets available:
-        return False
+        return None
     else:
-        return True
+        return 4
+
+
+def __attached_to_ipy_notebook():
+    # first determine which IPython version we have (eg. ipywidgets or ipy3 deprecated,
+    # then try to instanciate a widget to determine if we're interactive (raises, if not).
+    ipy_widget_version = __ipy_widget_version()
+
+    if ipy_widget_version is None:
+        return False
+
+    if ipy_widget_version == 4:
+        from ipywidgets import Box
+    elif ipy_widget_version == 3:
+        from IPython.html.widgets import Box
+    # FIXME: this unfortunately does not raise if frontend is QT...
+    try:
+        Box()
+    except:
+        return False
 
 
 def __is_interactive():
@@ -73,6 +88,7 @@ ipython_notebook_session = __attached_to_ipy_notebook()
 is_interactive_session = __is_tty_or_interactive_session()
 """ do we have a tty or an interactive session? """
 
+
 if ipython_notebook_session:
     from IPython.display import display
 
@@ -80,7 +96,6 @@ if ipython_notebook_session:
         from ipywidgets import Box, Text, IntProgress
     elif __widget_version == 3:
         from IPython.html.widgets import Box, Text, IntProgress
-    #else:
 
 
 def hide_widget(widget):
