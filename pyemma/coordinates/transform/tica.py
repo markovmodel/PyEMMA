@@ -212,9 +212,16 @@ class TICA(Transformer):
 
         self._logger.debug("Running TICA with tau=%i; Estimating two covariance matrices"
                            " with dimension (%i, %i)" % (self._lag, indim, indim))
+        if not any(iterable.trajectory_lengths(self.stride) > self.lag):
+            raise ValueError("None single dataset [longest=%i] is longer than"
+                             " lag time [%i]." % (max(iterable.trajectory_lengths(self.stride)), self.lag))
 
-        it = iterable.iterator(return_trajindex=True, lag=self.lag)
+        self._skipped_trajs = np.fromiter((i for i in range(self._ntraj) if
+                                           iterable.trajectory_length(i) < self.lag),
+                                          dtype=int)
+        it = iterable.iterator(lag=self.lag, return_trajindex=False)
 
+        # register progress
         n_chunks = it._n_chunks
         self._progress_register(n_chunks, "calculate mean+cov", 0)
         nsave = int(max(log(ceil(n_chunks), 2), 2))
@@ -222,15 +229,8 @@ class TICA(Transformer):
         covar = running_covar(xx=True, xy=True, yy=False,
                               remove_mean=True, symmetrize=True, nsave=nsave)
 
-        for itraj, X, Y in it:
-
-            if self.trajectory_length(itraj, stride=1) - self._lag > 0:
-                #assert Y is not None
-                #assert len(X) == len(Y)
-                covar.add(X, Y)
-            else:
-                self._skipped_trajs.append(itraj)
-
+        for X, Y in it:
+            covar.add(X, Y)
             # counting chunks and log of eta
             self._progress_update(1, stage=0)
 
@@ -247,7 +247,7 @@ class TICA(Transformer):
         cumvar /= cumvar[-1]
 
         if len(self._skipped_trajs) >= 1:
-            self._skipped_trajs = np.asarray(self._skipped_trajs)
+            self._skipped_trajs = self._skipped_trajs
             self._logger.warning("Had to skip %u trajectories for being too short. "
                                  "Their indexes are in self._skipped_trajs."
                                  % len(self._skipped_trajs))

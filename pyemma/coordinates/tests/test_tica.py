@@ -134,6 +134,11 @@ class TestTICA_Basic(unittest.TestCase):
         tica_obj.parametrize()
         tica_obj.get_output()
 
+    def test_too_short_trajs(self):
+        trajs = [np.empty((100, 1))]
+        with self.assertRaises(ValueError):
+            tica(trajs, lag=100)
+
 
 class TestTICAExtensive(unittest.TestCase):
     @classmethod
