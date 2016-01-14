@@ -29,7 +29,7 @@ import os
 from pyemma._base.model import Model
 from pyemma._ext.sklearn.base import ClusterMixin
 from pyemma.coordinates.clustering import regspatial
-from pyemma.coordinates.transform.transformer import Transformer
+from pyemma.coordinates.transform.transformer import StreamingTransformer
 from pyemma.util.discrete_trajectories import index_states, sample_indexes_by_state
 from pyemma.util.files import mkdir_p
 
@@ -37,7 +37,7 @@ from six.moves import range, zip
 import numpy as np
 
 
-class AbstractClustering(Transformer, Model, ClusterMixin):
+class AbstractClustering(StreamingTransformer, Model, ClusterMixin):
 
     """
     provides a common interface for cluster algorithms.

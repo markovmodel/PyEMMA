@@ -23,7 +23,7 @@ import math
 
 from pyemma._base.model import Model
 from pyemma._base.progress.reporter import ProgressReporter
-from pyemma.coordinates.transform.transformer import Transformer
+from pyemma.coordinates.transform.transformer import StreamingTransformer
 from pyemma.util.annotators import doc_inherit
 from pyemma.util.reflection import get_default_args
 
@@ -39,7 +39,7 @@ class PCAModel(Model):
     pass
 
 
-class PCA(Transformer, ProgressReporter):
+class PCA(StreamingTransformer, ProgressReporter):
     r""" Principal component analysis."""
 
     def __init__(self, dim=-1, var_cutoff=0.95, mean=None, stride=1):

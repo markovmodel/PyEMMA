@@ -22,7 +22,7 @@ import mdtraj
 import six
 
 from pyemma import config
-from pyemma.coordinates.data.datasource import DataSourceIterator, DataSource
+from pyemma.coordinates.data._base.datasource import DataSourceIterator, DataSource
 from pyemma.coordinates.data.featurizer import MDFeaturizer
 from pyemma.coordinates.util import patches
 
