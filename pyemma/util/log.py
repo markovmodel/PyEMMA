@@ -31,11 +31,11 @@ import warnings
 import os.path
 
 __all__ = ['getLogger',
-           'enabled',
-          ]
+           ]
 
 def_conf_file = pkg_resources.resource_filename('pyemma', 'logging.yml')
 del pkg_resources
+
 
 def setupLogging():
     """
@@ -44,7 +44,7 @@ def setupLogging():
     from logging.config import dictConfig
     from pyemma.util import config
     import yaml
-    
+
     # copy default cfg to users dir
     cfg_dir = config.create_cfg_dir(def_conf_file)
 
@@ -91,6 +91,17 @@ def setupLogging():
 
     # configure using the dict
     dictConfig(D)
+
+    # get log file name of pyemmas root logger
+    logger = logging.getLogger('pyemma')
+    log_files = [getattr(h, 'baseFilename', None) for h in logger.handlers]
+
+    import atexit
+    @atexit.register
+    def clean_empty_log_files():
+        for f in log_files:
+            if f is not None and os.stat(f).st_size == 0:
+                os.remove(f)
 
 
 def getLogger(name=None):
