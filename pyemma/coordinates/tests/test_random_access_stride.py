@@ -27,7 +27,7 @@ import mdtraj
 from six.moves import range
 
 from pyemma.coordinates.data import DataInMemory
-from pyemma.coordinates.data.datasource import IteratorState
+from pyemma.coordinates.data._base.datasource import IteratorState
 from pyemma.coordinates.data.fragmented_trajectory_reader import FragmentedTrajectoryReader
 
 

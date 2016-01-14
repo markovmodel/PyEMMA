@@ -32,7 +32,7 @@ from pyemma.util.reflection import get_default_args
 import numpy as np
 from pyemma.coordinates.estimators.covar.running_moments import running_covar
 
-from .transformer import Transformer
+from .transformer import StreamingTransformer
 
 __all__ = ['TICA']
 
@@ -41,7 +41,7 @@ class TICAModel(Model):
     pass
 
 
-class TICA(Transformer):
+class TICA(StreamingTransformer):
     r""" Time-lagged independent component analysis (TICA)"""
 
     def __init__(self, lag, dim=-1, var_cutoff=0.95, kinetic_map=True, epsilon=1e-6,

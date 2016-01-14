@@ -19,25 +19,95 @@
 from __future__ import absolute_import
 
 from abc import ABCMeta, abstractmethod
-
-import numpy as np
 import six
-from six.moves import range
 
 from pyemma._base.estimator import Estimator
-from pyemma._base.logging import Loggable
+from pyemma._ext.sklearn.base import TransformerMixin
 from pyemma.coordinates.data import DataInMemory
-from pyemma.coordinates.data.datasource import DataSource, DataSourceIterator
-from pyemma.coordinates.data.iterable import Iterable
-from pyemma.util.annotators import deprecated
+from pyemma.coordinates.data._base.datasource import DataSource, DataSourceIterator
+from pyemma.coordinates.data._base.iterable import Iterable
+from pyemma.coordinates.util.change_notification import (inform_children_upon_change,
+                                                         NotifyOnChangesMixIn)
 from pyemma.util.exceptions import NotConvergedWarning
+from six.moves import range
+import numpy as np
 
-__all__ = ['Transformer']
+
+__all__ = ['Transformer', 'StreamingTransformer']
 __author__ = 'noe, marscher'
 
 
-class Transformer(six.with_metaclass(ABCMeta, DataSource, Estimator, Loggable)):
-    r""" Basis class for pipeline objects
+class Transformer(six.with_metaclass(ABCMeta, Estimator, TransformerMixin)):
+    """ A transformer takes data and transforms it """
+
+    @abstractmethod
+    def describe(self):
+        r""" Get a descriptive string representation of this class."""
+        pass
+
+    def transform(self, X):
+        r"""Maps the input data through the transformer to correspondingly
+        shaped output data array/list.
+
+        Parameters
+        ----------
+        X : ndarray(T, n) or list of ndarray(T_i, n)
+            The input data, where T is the number of time steps and n is the
+            number of dimensions.
+            If a list is provided, the number of time steps is allowed to vary,
+            but the number of dimensions are required to be to be consistent.
+
+        Returns
+        -------
+        Y : ndarray(T, d) or list of ndarray(T_i, d)
+            The mapped data, where T is the number of time steps of the input
+            data and d is the output dimension of this transformer. If called
+            with a list of trajectories, Y will also be a corresponding list of
+            trajectories
+        """
+        if isinstance(X, np.ndarray):
+            if X.ndim == 2:
+                mapped = self._transform_array(X)
+                return mapped
+            else:
+                raise TypeError('Input has the wrong shape: %s with %i'
+                                ' dimensions. Expecting a matrix (2 dimensions)'
+                                % (str(X.shape), X.ndim))
+        elif isinstance(X, (list, tuple)):
+            out = []
+            for x in X:
+                mapped = self._transform_array(x)
+                out.append(mapped)
+            return out
+        else:
+            raise TypeError('Input has the wrong type: %s '
+                            '. Either accepting numpy arrays of dimension 2 '
+                            'or lists of such arrays' % (str(type(X))))
+
+    @abstractmethod
+    def _transform_array(self, X):
+        r"""
+        Initializes the parametrization.
+
+        Parameters
+        ----------
+        X : ndarray(T, n)
+            The input data, where T is the number of time steps and
+            n is the number of dimensions.
+
+        Returns
+        -------
+        Y : ndarray(T, d)
+            The projected data, where T is the number of time steps of the
+            input data and d is the output dimension of this transformer.
+
+        """
+        pass
+
+
+class StreamingTransformer(Transformer, DataSource, NotifyOnChangesMixIn):
+
+    r""" Basis class for pipelined Transformers
 
     Parameters
     ----------
@@ -47,33 +117,78 @@ class Transformer(six.with_metaclass(ABCMeta, DataSource, Estimator, Loggable)):
     """
 
     def __init__(self, chunksize=1000):
-        super(Transformer, self).__init__(chunksize=chunksize)
-        self._data_producer = None
+        super(StreamingTransformer, self).__init__(chunksize)
         self._estimated = False
-
-    def _create_iterator(self, skip=0, chunk=0, stride=1, return_trajindex=True):
-        return TransformerIterator(self, skip=skip, chunk=chunk, stride=stride,
-                                   return_trajindex=return_trajindex)
+        self._data_producer = None
 
     @property
+    # overload of DataSource
     def data_producer(self):
-        r"""where the transformer obtains its data."""
         return self._data_producer
 
     @data_producer.setter
+    @inform_children_upon_change
     def data_producer(self, dp):
         if dp is not self._data_producer:
-            self._logger.debug("reset (previous) parametrization state, since"
-                               " data producer has been changed.")
-            self._estimated = False
+            # first unregister from current dataproducer
+            if self._data_producer is not None and isinstance(self._data_producer, NotifyOnChangesMixIn):
+                self._data_producer._stream_unregister_child(self)
+            # then register this instance as a child of the new one.
+            if dp is not None and isinstance(dp, NotifyOnChangesMixIn):
+                dp._stream_register_child(self)
         self._data_producer = dp
 
-    #@Iterable.chunksize
+    def _create_iterator(self, skip=0, chunk=0, stride=1, return_trajindex=True):
+        return StreamingTransformerIterator(self, skip=skip, chunk=chunk, stride=stride,
+                                            return_trajindex=return_trajindex)
+
+    def estimate(self, X, **kwargs):
+        # TODO: X is either Iterable of an array
+        if not isinstance(X, Iterable):
+            if isinstance(X, np.ndarray):
+                X = DataInMemory(X, self.chunksize)
+                self.data_producer = X
+            else:
+                raise ValueError("no array given")
+
+        model = None
+        # run estimation
+        try:
+            model = super(StreamingTransformer, self).estimate(X, **kwargs)
+        except NotConvergedWarning as ncw:
+            self._logger.info(
+                "Presumely finished estimation. Message: %s" % ncw)
+        # memory mode? Then map all results. Avoid recursion here, if parametrization
+        # is triggered from get_output
+        if self.in_memory and not self._mapping_to_mem_active:
+            self._map_to_memory()
+
+        self._estimated = True
+
+        return model
+
+    def get_output(self, dimensions=slice(0, None), stride=1, skip=0, chunk=0):
+        if not self._estimated:
+            self.estimate(self.data_producer, stride=stride)
+
+        return super(StreamingTransformer, self).get_output(dimensions, stride, skip, chunk)
+
+    #@deprecated("Please use estimate")
+    def parametrize(self, stride=1):
+        if self._data_producer is None:
+            raise RuntimeError(
+                "This estimator has no data source given, giving up.")
+
+        return self.estimate(self.data_producer, stride=stride)
+
+    # get lengths etc. info from parent
+
+    @DataSource.chunksize.getter
     def chunksize(self):
         """chunksize defines how much data is being processed at once."""
         return self.data_producer.chunksize
 
-    @Iterable.chunksize.setter
+    @DataSource.chunksize.setter
     def chunksize(self, size):
         if not size >= 0:
             raise ValueError("chunksize has to be positive")
@@ -142,138 +257,16 @@ class Transformer(six.with_metaclass(ABCMeta, DataSource, Estimator, Loggable)):
         """
         return self.data_producer.n_frames_total(stride=stride)
 
-    @abstractmethod
-    def describe(self):
-        r""" Get a descriptive string representation of this class."""
-        pass
 
-    def fit(self, X, **kwargs):
-        r"""For compatibility with sklearn"""
-        self.data_producer = _to_data_producer(X)
-        self.estimate(X, **kwargs)
-        return self
-
-    def fit_transform(self, X, **kwargs):
-        r"""For compatibility with sklearn"""
-        self.fit(X, **kwargs)
-        return self.transform(X)
-
-    def estimate(self, X, **kwargs):
-        if not isinstance(X, Iterable):
-            if isinstance(X, np.ndarray):
-                X = DataInMemory(X, self.chunksize)
-                self.data_producer = X
-            else:
-                raise ValueError("no array given")
-
-        model = None
-        # run estimation
-        try:
-            model = super(Transformer, self).estimate(X, **kwargs)
-        except NotConvergedWarning as ncw:
-            self._logger.info("Presumely finished estimation. Message: %s" % ncw)
-        # memory mode? Then map all results. Avoid recursion here, if parametrization
-        # is triggered from get_output
-        if self.in_memory and not self._mapping_to_mem_active:
-            self._map_to_memory()
-
-        self._estimated = True
-
-        return model
-
-    def get_output(self, dimensions=slice(0, None), stride=1, skip=0, chunk=0):
-        if not self._estimated:
-            self.estimate(self.data_producer, stride=stride)
-
-        return super(Transformer, self).get_output(dimensions, stride, skip, chunk)
-
-    @deprecated("Please use estimate")
-    def parametrize(self, stride=1):
-        if self._data_producer is None:
-            raise RuntimeError("This estimator has no data source given, giving up.")
-
-        return self.estimate(self.data_producer, stride=stride)
-
-    def transform(self, X):
-        r"""Maps the input data through the transformer to correspondingly
-        shaped output data array/list.
-
-        Parameters
-        ----------
-        X : ndarray(T, n) or list of ndarray(T_i, n)
-            The input data, where T is the number of time steps and n is the
-            number of dimensions.
-            If a list is provided, the number of time steps is allowed to vary,
-            but the number of dimensions are required to be to be consistent.
-
-        Returns
-        -------
-        Y : ndarray(T, d) or list of ndarray(T_i, d)
-            The mapped data, where T is the number of time steps of the input
-            data and d is the output dimension of this transformer. If called
-            with a list of trajectories, Y will also be a corresponding list of
-            trajectories
-        """
-        if isinstance(X, np.ndarray):
-            if X.ndim == 2:
-                mapped = self._transform_array(X)
-                return mapped
-            else:
-                raise TypeError('Input has the wrong shape: %s with %i'
-                                ' dimensions. Expecting a matrix (2 dimensions)'
-                                % (str(X.shape), X.ndim))
-        elif isinstance(X, (list, tuple)):
-            out = []
-            for x in X:
-                mapped = self._transform_array(x)
-                out.append(mapped)
-            return out
-        else:
-            raise TypeError('Input has the wrong type: %s '
-                            '. Either accepting numpy arrays of dimension 2 '
-                            'or lists of such arrays' % (str(type(X))))
-
-    @abstractmethod
-    def _transform_array(self, X):
-        r"""
-        Initializes the parametrization.
-
-        Parameters
-        ----------
-        X : ndarray(T, n)
-            The input data, where T is the number of time steps and 
-            n is the number of dimensions.
-
-        Returns
-        -------
-        Y : ndarray(T, d)
-            The projected data, where T is the number of time steps of the 
-            input data and d is the output dimension of this transformer.
-
-        """
-        pass
-
-#     def __getstate__(self):
-#         state = super(Transformer, self).__getstate__()
-#         print ("getstate transformer", state)
-#         not_to_pickle = ('_data_producer', )
-#         for k in not_to_pickle:
-#             state.pop(k, None)
-#         return state
-
-
-class TransformerIterator(DataSourceIterator):
+class StreamingTransformerIterator(DataSourceIterator):
 
     def __init__(self, data_source, skip=0, chunk=0, stride=1, return_trajindex=False):
-        super(TransformerIterator, self).__init__(data_source, return_trajindex=return_trajindex)
+        super(StreamingTransformerIterator, self).__init__(
+            data_source, return_trajindex=return_trajindex)
         self._it = self._data_source.data_producer._create_iterator(
-                skip=skip, chunk=chunk, stride=stride, return_trajindex=return_trajindex
+            skip=skip, chunk=chunk, stride=stride, return_trajindex=return_trajindex
         )
         self.state = self._it.state
-
-    @property
-    def _n_chunks(self):
-        return self._it._n_chunks
 
     def close(self):
         self._it.close()
