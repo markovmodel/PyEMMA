@@ -33,7 +33,7 @@ from pyemma.coordinates.data.data_in_memory import DataInMemory as _DataInMemory
 from pyemma.coordinates.data.util.reader_utils import create_file_reader as _create_file_reader, \
     preallocate_empty_trajectory as _preallocate_empty_trajectory, enforce_top as _enforce_top, \
     copy_traj_attributes as _copy_traj_attributes
-from pyemma.coordinates.data.frames_from_file import frames_from_file as _frames_from_file
+from pyemma.coordinates.data.util.frames_from_file import frames_from_file as _frames_from_file
 # transforms
 from pyemma.coordinates.transform.pca import PCA as _PCA
 from pyemma.coordinates.transform.tica import TICA as _TICA
@@ -800,7 +800,7 @@ def save_trajs(traj_inp, indexes, prefix = 'set_', fmt = None, outfiles = None,
 
 def _get_input_stage(previous_stage):
     # this is a pipelining stage, so let's parametrize from it
-    from pyemma.coordinates.data.iterable import Iterable
+    from pyemma.coordinates.data._base.iterable import Iterable
     if isinstance(previous_stage, Iterable):
         inputstage = previous_stage
     # second option: data is array or list of arrays
