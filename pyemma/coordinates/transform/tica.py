@@ -253,8 +253,8 @@ class TICA(StreamingTransformer):
                                  % len(self._skipped_trajs))
 
         self._model.update_model_params(mean=covar.mean_X(),
-                                        cov=covar.cov_XX(),
-                                        cov_tau=covar.cov_XY(),
+                                        cov=cov,
+                                        cov_tau=cov_tau,
                                         cumvar=cumvar,
                                         eigenvalues=eigenvalues,
                                         eigenvectors=eigenvectors)
