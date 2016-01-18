@@ -49,9 +49,9 @@ class DTRAM(_Estimator, _MEMM):
            [[1, 4],
             [3, 1]]], dtype=int32)
     >>> dtram.stationary_distribution # doctest: +ELLIPSIS
-    array([ 0.381...,  0.618...])
+    array([ 0.38...,  0.61...])
     >>> dtram.meval('stationary_distribution') # doctest: +ELLIPSIS
-    [array([ 0.381...,  0.618...]), array([ 0.504...,  0.495...])]
+    [array([ 0.38...,  0.61...]), array([ 0.50...,  0.49...])]
     """
     def __init__(
         self, bias_energies_full, lag=1, count_mode='sliding', connectivity='largest',
