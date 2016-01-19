@@ -85,7 +85,8 @@ class WHAM(_Estimator, _MEMM):
 
         # harvest state counts
         self.state_counts_full = _util.state_counts(
-            trajs, nthermo=self.nthermo, nstates=self.nstates_full)
+            [_np.ascontiguousarray(t[:, :2]).astype(_np.intc) for t in trajs],
+            nthermo=self.nthermo, nstates=self.nstates_full)
 
         # active set
         self.active_set = _np.where(self.state_counts_full.sum(axis=0) > 0)[0]
