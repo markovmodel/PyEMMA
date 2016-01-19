@@ -239,7 +239,7 @@ else:
                                   'nose',
                                   ]
     if sys.version_info.major == 2:
-       metadata['install_requires'] += ['mock']
+        metadata['install_requires'] += ['mock']
 
     metadata['package_data'] = {
                                 'pyemma': ['pyemma.cfg', 'logging.yml'],
