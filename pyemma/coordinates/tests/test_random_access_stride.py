@@ -16,32 +16,50 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import
+
 import os
 import tempfile
 import unittest
 from unittest import TestCase
-import numpy as np
-import pyemma.coordinates.api as coor
-import pkg_resources
+
 import mdtraj
+import numpy as np
+import pkg_resources
 from six.moves import range
 
-from pyemma.coordinates.data import DataInMemory
-from pyemma.coordinates.data._base.datasource import IteratorState
+import pyemma.coordinates.api as coor
+from pyemma.coordinates.data import DataInMemory, FeatureReader
 from pyemma.coordinates.data.fragmented_trajectory_reader import FragmentedTrajectoryReader
+from pyemma.coordinates.tests.test_featurereader import create_traj
 
 
 class TestRandomAccessStride(TestCase):
     def setUp(self):
+        self.tmpdir = tempfile.mkdtemp('test_random_access')
         self.dim = 5
-        self.data = [np.random.random((100, self.dim)),
-                     np.random.random((20, self.dim)),
-                     np.random.random((20, self.dim))]
+        self.data = [np.random.random((100, self.dim)).astype(np.float32),
+                     np.random.random((20, self.dim)).astype(np.float32),
+                     np.random.random((20, self.dim)).astype(np.float32)]
         self.stride = np.asarray([
             [0, 1], [0, 3], [0, 3], [0, 5], [0, 6], [0, 7],
             [2, 1], [2, 1]
         ])
         self.stride2 = np.asarray([[2, 0]])
+        self.topfile = pkg_resources.resource_filename(__name__, 'data/test.pdb')
+        trajfile1, xyz1, n_frames1 = create_traj(self.topfile, dir=self.tmpdir, format=".binpos", length=100)
+        trajfile2, xyz2, n_frames2 = create_traj(self.topfile, dir=self.tmpdir, format=".binpos", length=20)
+        trajfile3, xyz3, n_frames3 = create_traj(self.topfile, dir=self.tmpdir, format=".binpos", length=20)
+        self.data_feature_reader = [trajfile1, trajfile2, trajfile3]
+
+    def tearDown(self):
+        import shutil
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def _get_reader_instance(self, instance_number):
+        if instance_number == 0:
+            return DataInMemory(self.data)
+        elif instance_number == 1:
+            return FeatureReader(self.data_feature_reader, topologyfile=self.topfile)
 
     def test_is_random_accessible(self):
         dim = DataInMemory(self.data)
@@ -63,6 +81,77 @@ class TestRandomAccessStride(TestCase):
         np.testing.assert_equal(dim.ra_itraj_cuboid[1, ::2, 1:3], np.array([self.data[1][::2, 1:3]]))
         # select only last dimension of 1st trajectory every 17th frame
         np.testing.assert_equal(dim.ra_itraj_cuboid[0, ::17, -1], np.array([np.array([self.data[0][::17, -1]]).T]))
+
+    def test_transfomer_random_access(self):
+        for r in range(0, 2):
+            dim = self._get_reader_instance(r)
+
+            tica = coor.tica(dim, dim=3)
+            out = tica.get_output()
+
+            # linear random access
+            np.testing.assert_array_equal(tica.ra_linear[0:2, 0], out[0][0:2, 0])
+            # linear itraj random access
+            np.testing.assert_array_equal(tica.ra_itraj_linear[0, :12, 0], out[0][:12, 0])
+            # jagged random access
+            jagged = tica.ra_itraj_jagged[:, ::-3, 0]
+            for i, X in enumerate(jagged):
+                np.testing.assert_array_equal(X, out[i][::-3, 0])
+            # cuboid random access
+            cube = tica.ra_itraj_cuboid[:, 0, 0]
+            for i in range(3):
+                np.testing.assert_array_equal(cube[i], out[i][0, 0])
+
+
+    def test_linear_random_access_with_mixed_trajs(self):
+        for r in range(0, 2):
+            dim = self._get_reader_instance(r)
+            Y = dim.get_output()
+
+            X = dim.ra_linear[np.array([1, 115, 2, 139, 0])]
+            np.testing.assert_equal(X[0, :], Y[0][1, :])
+            np.testing.assert_equal(X[1, :], Y[1][15, :])
+            np.testing.assert_equal(X[2, :], Y[0][2, :])
+            np.testing.assert_equal(X[3, :], Y[2][19, :])
+            np.testing.assert_equal(X[4, :], Y[0][0, :])
+
+    def test_cuboid_random_access_with_mixed_trajs(self):
+        for r in range(0, 2):
+            dim = self._get_reader_instance(r)
+            output = dim.get_output()
+
+            # take two times the first trajectory, one time the third with
+            # two times the third frame and one time the second, each
+            trajs = np.array([0, 2, 0])
+            frames = np.array([2, 2, 1])
+            X = dim.ra_itraj_cuboid[trajs, frames]
+            np.testing.assert_equal(X[0], output[0][frames])
+            np.testing.assert_equal(X[1], output[2][frames])
+            np.testing.assert_equal(X[2], output[0][frames])
+
+    def test_linear_itraj_random_access_with_mixed_trajs(self):
+        for r in range(0, 2):
+            dim = self._get_reader_instance(r)
+            Y = dim.get_output()
+
+            itrajs = np.array([2, 2, 0])
+            frames = np.array([3, 23, 42])
+            X = dim.ra_itraj_linear[itrajs, frames]
+
+            np.testing.assert_equal(X[0], Y[2][3, :])
+            np.testing.assert_equal(X[1], Y[2][3, :])
+            np.testing.assert_equal(X[2], Y[0][2, :])
+
+    def test_jagged_random_access_with_mixed_trajs(self):
+        for r in range(0, 2):
+            dim = self._get_reader_instance(r)
+            Y = dim.get_output()
+
+            itrajs = np.array([2, 2, 0])
+            X = dim.ra_itraj_jagged[itrajs, ::-3]  #
+            np.testing.assert_array_almost_equal(X[0], Y[2][::-3])
+            np.testing.assert_array_almost_equal(X[1], Y[2][::-3])
+            np.testing.assert_array_almost_equal(X[2], Y[0][::-3])
 
     def test_slice_random_access_linear(self):
         dim = DataInMemory(self.data)

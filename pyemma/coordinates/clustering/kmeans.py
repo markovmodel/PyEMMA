@@ -305,29 +305,29 @@ class MiniBatchKmeansClustering(KmeansClustering):
         super(MiniBatchKmeansClustering, self)._init_estimate()
 
     def _estimate(self, iterable, **kw):
-        # mini-batch kmeans does not use stride. Enforse it.
+        # mini-batch kmeans does not use stride. Enforce it.
         self.stride = None
         self._init_estimate()
 
-        ipass = 0
+        i_pass = 0
         converged_in_max_iter = False
         prev_cost = 0
 
         ra_stride = self._draw_mini_batch_sample()
-        iterator = iterable.iterator(return_trajindex=True, stride=ra_stride)
+        iterator = iterable.iterator(return_trajindex=False, stride=ra_stride)
 
-        while not (converged_in_max_iter or ipass + 1 >= self.max_iter):
+        while not (converged_in_max_iter or i_pass + 1 >= self.max_iter):
             first_chunk = True
             # draw new sample and re-use existing iterator instance.
             ra_stride = self._draw_mini_batch_sample()
             iterator.stride = ra_stride
             iterator.reset()
-            for itraj, X in iter(iterator):
+            for X in iter(iterator):
                 # collect data
                 self._collect_data(X, first_chunk)
                 # initialize cluster centers
-                if ipass == 0:
-                    self._initialize_centers(X, itraj, iterator.pos, iterator.last_chunk)
+                if i_pass == 0:
+                    self._initialize_centers(X, iterator.current_trajindex, iterator.pos, iterator.last_chunk)
                 first_chunk = False
 
             # one pass over data completed
@@ -347,12 +347,12 @@ class MiniBatchKmeansClustering(KmeansClustering):
 
             if rel_change <= self.tolerance:
                 converged_in_max_iter = True
-                self._logger.info("Cluster centers converged after %i steps." % (ipass + 1))
+                self._logger.info("Cluster centers converged after %i steps." % (i_pass + 1))
                 self._progress_force_finish(stage=1)
             else:
                 self._progress_update(1, stage=1)
 
-            ipass += 1
+            i_pass += 1
 
         if not converged_in_max_iter:
             self._logger.info("Algorithm did not reach convergence criterion"
