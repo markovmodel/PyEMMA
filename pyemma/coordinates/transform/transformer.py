@@ -139,7 +139,16 @@ class StreamingTransformer(Transformer, DataSource, NotifyOnChangesMixIn):
                 dp._stream_register_child(self)
         self._data_producer = dp
         # register random access strategies
-        if dp is not None:
+        self._set_random_access_strategies()
+
+    def _set_random_access_strategies(self):
+        if self.in_memory and self._Y_source is not None:
+            self._ra_cuboid = self._Y_source._ra_cuboid
+            self._ra_linear_strategy = self._Y_source._ra_linear_strategy
+            self._ra_linear_itraj_strategy = self._Y_source._ra_linear_itraj_strategy
+            self._ra_jagged = self._Y_source._ra_jagged
+            self._is_random_accessible = True
+        elif self.data_producer is not None:
             self._ra_jagged = \
                 StreamingTransformerRandomAccessStrategy(self, self.data_producer._ra_jagged)
             self._ra_linear_itraj_strategy = \
@@ -148,7 +157,19 @@ class StreamingTransformer(Transformer, DataSource, NotifyOnChangesMixIn):
                 StreamingTransformerRandomAccessStrategy(self, self.data_producer._ra_linear_strategy)
             self._ra_cuboid = \
                 StreamingTransformerRandomAccessStrategy(self, self.data_producer._ra_cuboid)
-            self._is_random_accessible = self._in_memory or self.data_producer._is_random_accessible
+            self._is_random_accessible = self.data_producer._is_random_accessible
+        else:
+            self._ra_jagged = self._ra_linear_itraj_strategy = self._ra_linear_strategy \
+                = self._ra_cuboid = None
+            self._is_random_accessible = False
+
+    def _map_to_memory(self, stride=1):
+        super(StreamingTransformer, self)._map_to_memory(stride)
+        self._set_random_access_strategies()
+
+    def _clear_in_memory(self):
+        super(StreamingTransformer, self)._clear_in_memory()
+        self._set_random_access_strategies()
 
     def _create_iterator(self, skip=0, chunk=0, stride=1, return_trajindex=True):
         return StreamingTransformerIterator(self, skip=skip, chunk=chunk, stride=stride,

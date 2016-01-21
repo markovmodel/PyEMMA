@@ -83,25 +83,51 @@ class TestRandomAccessStride(TestCase):
         np.testing.assert_equal(dim.ra_itraj_cuboid[0, ::17, -1], np.array([np.array([self.data[0][::17, -1]]).T]))
 
     def test_transfomer_random_access(self):
-        for r in range(0, 2):
-            dim = self._get_reader_instance(r)
+        for in_memory in [True, False]:
+            for r in range(0, 2):
+                dim = self._get_reader_instance(r)
 
-            tica = coor.tica(dim, dim=3)
-            out = tica.get_output()
+                tica = coor.tica(dim, dim=3)
+                tica.in_memory = in_memory
+                out = tica.get_output()
 
-            # linear random access
-            np.testing.assert_array_equal(tica.ra_linear[0:2, 0], out[0][0:2, 0])
-            # linear itraj random access
-            np.testing.assert_array_equal(tica.ra_itraj_linear[0, :12, 0], out[0][:12, 0])
-            # jagged random access
-            jagged = tica.ra_itraj_jagged[:, ::-3, 0]
-            for i, X in enumerate(jagged):
-                np.testing.assert_array_equal(X, out[i][::-3, 0])
-            # cuboid random access
-            cube = tica.ra_itraj_cuboid[:, 0, 0]
-            for i in range(3):
-                np.testing.assert_array_equal(cube[i], out[i][0, 0])
+                # linear random access
+                np.testing.assert_array_equal(np.squeeze(tica.ra_linear[0:2, 0]), out[0][0:2, 0])
+                # linear itraj random access
+                np.testing.assert_array_equal(np.squeeze(tica.ra_itraj_linear[0, :12, 0]), out[0][:12, 0])
+                # jagged random access
+                jagged = tica.ra_itraj_jagged[:, ::-3, 0]
+                for i, X in enumerate(jagged):
+                    np.testing.assert_array_equal(X, out[i][::-3, 0])
+                # cuboid random access
+                cube = tica.ra_itraj_cuboid[:, 0, 0]
+                for i in range(3):
+                    np.testing.assert_array_equal(cube[i], out[i][0, 0])
 
+    def test_transformer_random_access_in_memory(self):
+        feature_reader = self._get_reader_instance(1)
+        tica = coor.tica(feature_reader)
+        # everything normal
+        assert tica.is_random_accessible
+        from pyemma.coordinates.transform.transformer import StreamingTransformerRandomAccessStrategy
+        assert isinstance(tica._ra_jagged, StreamingTransformerRandomAccessStrategy)
+
+        # set to memory
+        tica.in_memory = True
+        assert tica.is_random_accessible
+        from pyemma.coordinates.data.data_in_memory import DataInMemoryJaggedRandomAccessStrategy
+        assert isinstance(tica._ra_jagged, DataInMemoryJaggedRandomAccessStrategy)
+
+        # not in memory anymore, expect to fall back
+        tica.in_memory = False
+        assert tica.is_random_accessible
+        from pyemma.coordinates.transform.transformer import StreamingTransformerRandomAccessStrategy
+        assert isinstance(tica._ra_jagged, StreamingTransformerRandomAccessStrategy)
+
+        # remove data source
+        tica.data_producer = None
+        assert not tica.is_random_accessible
+        assert tica._ra_jagged is None
 
     def test_linear_random_access_with_mixed_trajs(self):
         for r in range(0, 2):
