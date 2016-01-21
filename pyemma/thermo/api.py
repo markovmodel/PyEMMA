@@ -48,8 +48,8 @@ def umbrella_sampling_data_discrete(
     for i in range(len(us_dtrajs)):
         state = None
         for j in range(nthermo):
-            if indiv_centers[j] == us_centers[i] and \
-                indiv_force_constants[j] == us_force_constants[i]:
+            if _np.all(indiv_centers[j] == us_centers[i]) and \
+                _np.all(indiv_force_constants[j] == us_force_constants[i]):
                 state = j
                 break
         if state is None:
