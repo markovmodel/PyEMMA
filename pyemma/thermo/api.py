@@ -134,7 +134,9 @@ def multitemperature_to_bias(utrajs, ttrajs, kTs):
 # Estimators
 # ===================================
 
-def dtram(ttrajs, dtrajs, bias, lag, maxiter=10000, maxerr=1.0E-15, err_out=0, lll_out=0, dt_traj='1 step'):
+def dtram(
+    ttrajs, dtrajs, bias, lag,
+    maxiter=10000, maxerr=1.0E-15, err_out=0, lll_out=0, dt_traj='1 step', use_wham=False):
     r"""
     Discrete transition-based reweighting analysis method
     Parameters
@@ -193,8 +195,10 @@ def dtram(ttrajs, dtrajs, bias, lag, maxiter=10000, maxerr=1.0E-15, err_out=0, l
         X.append(_np.ascontiguousarray(_np.array([ttraj, dtraj]).T))
     # build DTRAM
     from pyemma.thermo.estimators import DTRAM
-    dtram_estimator = DTRAM(bias, lag=lag, count_mode='sliding',
-        maxiter=maxiter, maxerr=maxerr, err_out=err_out, lll_out=lll_out, dt_traj=dt_traj)
+    dtram_estimator = DTRAM(
+        bias, lag=lag, count_mode='sliding',
+        maxiter=maxiter, maxerr=maxerr, err_out=err_out, lll_out=lll_out,
+        dt_traj=dt_traj, use_wham=use_wham)
     # run estimation
     return dtram_estimator.estimate(X)
 
