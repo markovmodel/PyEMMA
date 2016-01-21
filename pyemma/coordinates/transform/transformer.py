@@ -26,6 +26,7 @@ from pyemma._ext.sklearn.base import TransformerMixin
 from pyemma.coordinates.data import DataInMemory
 from pyemma.coordinates.data._base.datasource import DataSource, DataSourceIterator
 from pyemma.coordinates.data._base.iterable import Iterable
+from pyemma.coordinates.data._base.random_accessible import RandomAccessStrategy
 from pyemma.coordinates.util.change_notification import (inform_children_upon_change,
                                                          NotifyOnChangesMixIn)
 from pyemma.util.exceptions import NotConvergedWarning
@@ -137,6 +138,38 @@ class StreamingTransformer(Transformer, DataSource, NotifyOnChangesMixIn):
             if dp is not None and isinstance(dp, NotifyOnChangesMixIn):
                 dp._stream_register_child(self)
         self._data_producer = dp
+        # register random access strategies
+        self._set_random_access_strategies()
+
+    def _set_random_access_strategies(self):
+        if self.in_memory and self._Y_source is not None:
+            self._ra_cuboid = self._Y_source._ra_cuboid
+            self._ra_linear_strategy = self._Y_source._ra_linear_strategy
+            self._ra_linear_itraj_strategy = self._Y_source._ra_linear_itraj_strategy
+            self._ra_jagged = self._Y_source._ra_jagged
+            self._is_random_accessible = True
+        elif self.data_producer is not None:
+            self._ra_jagged = \
+                StreamingTransformerRandomAccessStrategy(self, self.data_producer._ra_jagged)
+            self._ra_linear_itraj_strategy = \
+                StreamingTransformerRandomAccessStrategy(self, self.data_producer._ra_linear_itraj_strategy)
+            self._ra_linear_strategy = \
+                StreamingTransformerRandomAccessStrategy(self, self.data_producer._ra_linear_strategy)
+            self._ra_cuboid = \
+                StreamingTransformerRandomAccessStrategy(self, self.data_producer._ra_cuboid)
+            self._is_random_accessible = self.data_producer._is_random_accessible
+        else:
+            self._ra_jagged = self._ra_linear_itraj_strategy = self._ra_linear_strategy \
+                = self._ra_cuboid = None
+            self._is_random_accessible = False
+
+    def _map_to_memory(self, stride=1):
+        super(StreamingTransformer, self)._map_to_memory(stride)
+        self._set_random_access_strategies()
+
+    def _clear_in_memory(self):
+        super(StreamingTransformer, self)._clear_in_memory()
+        self._set_random_access_strategies()
 
     def _create_iterator(self, skip=0, chunk=0, stride=1, return_trajindex=True):
         return StreamingTransformerIterator(self, skip=skip, chunk=chunk, stride=stride,
@@ -274,3 +307,34 @@ class StreamingTransformerIterator(DataSourceIterator):
     def _next_chunk(self):
         X = self._it._next_chunk()
         return self._data_source._transform_array(X)
+
+
+class StreamingTransformerRandomAccessStrategy(RandomAccessStrategy):
+    def __init__(self, source, parent_strategy):
+        super(StreamingTransformerRandomAccessStrategy, self).__init__(source)
+        self._parent_strategy = parent_strategy
+        self._max_slice_dimension = self._parent_strategy._max_slice_dimension
+
+    def _handle_slice(self, idx):
+        dimension_slice = slice(None, None, None)
+        if len(idx) == self.max_slice_dimension:
+            # a dimension slice was passed
+            idx, dimension_slice = idx[0:self.max_slice_dimension-1], idx[-1]
+        X = self._parent_strategy[idx]
+        if isinstance(X, list):
+            return [self._source._transform_array(Y)[:, dimension_slice].astype(self._source.output_type()) for Y in X]
+        elif isinstance(X, np.ndarray):
+            if X.ndim == 2:
+                return self._source._transform_array(X)[:, dimension_slice].astype(self._source.output_type())
+            elif X.ndim == 3:
+                dims = self._get_indices(dimension_slice, self._source.ndim)
+                ndims = len(dims)
+                old_shape = X.shape
+                new_shape = (X.shape[0], X.shape[1], ndims)
+                mapped_data = np.empty(new_shape, dtype=self._source.output_type())
+                for i in range(old_shape[0]):
+                    mapped_data[i] = self._source._transform_array(X[i])[:, dims]
+                return mapped_data
+
+        else:
+            raise IndexError("Could not handle object of type %s for transformer slicing" % str(type(X)))

@@ -1,4 +1,3 @@
-
 # This file is part of PyEMMA.
 #
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
@@ -33,7 +32,6 @@ from operator import itemgetter
 
 from pyemma.coordinates.data.util.reader_utils import copy_traj_attributes, preallocate_empty_trajectory
 from six.moves import map
-from six.moves import range
 
 
 class iterload:
@@ -179,7 +177,7 @@ class iterload:
             for k, g in groupby(enumerate(self._stride), lambda a: a[0] - a[1]):
                 grouped_stride = list(map(itemgetter(1), g))
                 seek_offset = (1 if x_prev != 0 else 0)
-                seek_to = grouped_stride[0] - x_prev - seek_offset
+                seek_to = grouped_stride[0] - f.tell() #x_prev - seek_offset
                 f.seek(seek_to, whence=1)
                 x_prev = grouped_stride[-1]
                 group_size = len(grouped_stride)

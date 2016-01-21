@@ -1,3 +1,20 @@
+# This file is part of PyEMMA.
+#
+# Copyright (c) 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+#
+# PyEMMA is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 from abc import ABCMeta, abstractmethod
 import six
 import numpy as np
@@ -16,11 +33,6 @@ class Iterable(six.with_metaclass(ABCMeta, ProgressReporter, Loggable)):
         self._in_memory = False
         # should be set in subclass
         self._ndim = 0
-        self._needs_sorted_random_access_stride = True
-
-    @property
-    def needs_sorted_ra_stride(self):
-        return self._needs_sorted_random_access_stride
 
     def dimension(self):
         return self._ndim
@@ -65,6 +77,7 @@ class Iterable(six.with_metaclass(ABCMeta, ProgressReporter, Loggable)):
             self._logger.debug("clear memory")
         assert self.in_memory, "tried to delete in memory results which are not set"
         self._Y = None
+        self._Y_source = None
 
     def _map_to_memory(self, stride=1):
         r"""Maps results to memory. Will be stored in attribute :attr:`_Y`."""
@@ -72,6 +85,8 @@ class Iterable(six.with_metaclass(ABCMeta, ProgressReporter, Loggable)):
         assert self._in_memory
         self._mapping_to_mem_active = True
         self._Y = self.get_output(stride=stride)
+        from pyemma.coordinates.data import DataInMemory
+        self._Y_source = DataInMemory(self._Y)
         self._mapping_to_mem_active = False
 
     def iterator(self, stride=1, lag=0, chunk=None, return_trajindex=True):

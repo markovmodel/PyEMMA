@@ -41,9 +41,9 @@ from pyemma.util.log import getLogger
 log = getLogger('pyemma.' + 'TestFeatureReader')
 
 
-def create_traj(top, format='.xtc', dir=None):
+def create_traj(top, format='.xtc', dir=None, length=1666):
     trajfile = tempfile.mktemp(suffix=format, dir=dir)
-    n_frames = 1666  # np.random.randint(500, 1500)
+    n_frames = length  # np.random.randint(500, 1500)
     log.debug("create traj with %i frames" % n_frames)
     xyz = np.arange(n_frames * 3 * 3).reshape((n_frames, 3, 3))
 
