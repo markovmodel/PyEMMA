@@ -38,6 +38,45 @@ __all__ = ['dtram', 'wham']
 # Data Loaders and Readers
 # ===================================
 
+def umbrella_sampling_data_discrete(
+    us_dtrajs, us_centers, us_force_constants, clustercenters, md_dtrajs=None, kT=1.0):
+    # TODO: check input
+    indiv_centers = []
+    indiv_force_constants = []
+    ttrajs = []
+    nthermo = 0
+    for i in range(len(us_dtrajs)):
+        state = None
+        for j in range(nthermo):
+            if indiv_centers[j] == us_centers[i] and \
+                indiv_force_constants[j] == us_force_constants[i]:
+                state = j
+                break
+        if state is None:
+            indiv_centers.append(us_centers[i])
+            indiv_force_constants.append(us_force_constants[i])
+            ttrajs.append(nthermo * _np.ones(shape=us_dtrajs[i].shape, dtype=_np.intc))
+            nthermo += 1
+        else:
+            ttrajs.append(state * _np.ones(shape=us_dtrajs[i].shape, dtype=_np.intc))
+    if md_dtrajs is not None:
+        indiv_centers.append(
+            _np.zeros(shape=indiv_centers[-1].shape, dtype=indiv_centers[-1].dtype))
+        indiv_force_constants.append(
+            _np.zeros(shape=indiv_force_constants[-1].shape, dtype=indiv_force_constants[-1].dtype))
+        for dtraj in md_dtrajs:
+            ttrajs.append(nthermo * _np.ones(shape=dtraj.shape, dtype=_np.intc))
+        nthermo += 1
+    else:
+        md_dtrajs = []
+    # assume us_centers and us_force_constants are, like clustercenters, 2dim ndarrays
+    k = _np.array(indiv_force_constants, dtype=_np.float64)
+    x = _np.array(indiv_centers, dtype=_np.float64)
+    bias = 0.5 * _np.sum(
+        k[:, _np.newaxis, :] * (clustercenters[_np.newaxis, :, :] - x[:, _np.newaxis, :])**2,
+        axis=-1)
+    return ttrajs, us_dtrajs + md_dtrajs, bias
+
 # TODO: what about simple molecular dynamics data? How do we combine MD data with US data?
 
 # This corresponds to the source function in coordinates.api
