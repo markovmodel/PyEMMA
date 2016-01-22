@@ -69,6 +69,9 @@ class _csv_chunked_numpy_iterator:
 
     def _convert_to_np_chunk(self, list_of_strings):
         stack_of_strings = np.vstack(list_of_strings)
+        # filter double delimiter values (empty strings)
+        inds = stack_of_strings != ''
+        stack_of_strings = stack_of_strings[inds].reshape(len(stack_of_strings), -1)
         result = stack_of_strings.astype(float)
         return result
 
@@ -155,8 +158,15 @@ class PyCSVReader(ReaderInterface):
                     # count rows
                     self._lengths.append(sum(1 for _ in fh))
                     fh.seek(0)
-                    # determine if file has header here:
-                    sample = fh.read(2048)
+                    # determine if file has header here, assuming we can read at
+                    # least two lines
+
+                    sample = fh.readline()
+                    len_sample = len(sample)
+                    sample += fh.readline()
+                    if len(sample) == len_sample:
+                        raise RuntimeError('file "%i" only contains one line.'
+                                           'Could not determine dimensions')
                     self._dialects[ii] = csv.Sniffer().sniff(sample)
                     self._has_header[ii] = csv.Sniffer().has_header(sample)
                     # if we have a header subtract it from total length
@@ -167,6 +177,8 @@ class PyCSVReader(ReaderInterface):
                     if self._has_header[ii]:
                         next(r)
                     line = next(r)
+                    # filter empty strings
+                    line = [x for x in line if len(x) > 0]
                     arr = np.array(line).astype(float)
                     dim = arr.squeeze().shape[0]
                     ndims.append(dim)
