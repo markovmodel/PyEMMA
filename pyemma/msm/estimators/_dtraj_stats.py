@@ -106,11 +106,15 @@ class DiscreteTrajectoryStats(object):
             self._C_sub[i] = submatrix(self._C, self._connected_sets[i])
 
         # largest connected set
-        lcs = self._connected_sets[0]
+        self._lcs = self._connected_sets[0]
+
+        # if lcs has no counts, make lcs empty
+        if submatrix(self._C, self._lcs).sum() == 0:
+            self._lcs = np.array([], dtype=int)
 
         # mapping from full to lcs
         self._full2lcs = -1 * np.ones((self._nstates), dtype=int)
-        self._full2lcs[lcs] = np.array(list(range(len(lcs))), dtype=int)
+        self._full2lcs[self._lcs] = np.array(list(range(len(self._lcs))), dtype=int)
 
         # remember that this function was called
         self._counted_at_lag = True
@@ -135,6 +139,8 @@ class DiscreteTrajectoryStats(object):
         A : int or int array
             set of states
         """
+        if np.size(A) == 0:
+            return True  # empty set is always contained
         assert np.max(A) < self._nstates, 'Chosen set contains states that are not included in the data.'
 
     @property
@@ -254,7 +260,7 @@ class DiscreteTrajectoryStats(object):
 
         """
         self._assert_counted_at_lag()
-        return self._connected_sets[0]
+        return self._lcs
 
     @property
     def visited_set(self):

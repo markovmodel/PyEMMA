@@ -66,8 +66,9 @@ def _lag_observations(observations, lag, stride=1):
 class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
     r"""Maximum likelihood estimator for a Hidden MSM given a MSM"""
 
-    def __init__(self, nstates=2, lag=1, stride=1, msm_init=None, reversible=True, connectivity='largest',
-                 observe_active=True, dt_traj='1 step', accuracy=1e-3, maxit=1000):
+    def __init__(self, nstates=2, lag=1, stride=1, msm_init=None, reversible=True,
+                 connectivity='largest', mincount_connectivity=1e-6, observe_active=True,
+                 dt_traj='1 step', accuracy=1e-3, maxit=1000):
         r"""Maximum likelihood estimator for a Hidden MSM given a MSM
 
         Parameters
@@ -102,6 +103,10 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
             * 'none' : The active set is the full set of states. Estimation will be conducted on the full set of
               states without ensuring connectivity. This only permits nonreversible estimation. Currently not
               implemented.
+        mincount_connectivity
+            minimum number of counts to consider a connection between two states.
+            Counts lower than that will count zero in the connectivity check and
+            may thus separate the resulting transition matrix.
         observe_active : bool, optional, default=True
             True: Restricts the observation set to the active states of the MSM.
             False: All states are in the observation set.
@@ -135,6 +140,7 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
         self.msm_init = msm_init
         self.reversible = reversible
         self.connectivity = connectivity
+        self.mincount_connectivity = mincount_connectivity
         self.observe_active = observe_active
         self.dt_traj = dt_traj
         self.timestep_traj = TimeUnit(dt_traj)
@@ -157,6 +163,16 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
         """
         # ensure right format
         dtrajs = _types.ensure_dtraj_list(dtrajs)
+
+        # check lag
+        trajlengths = [np.size(dtraj) for dtraj in dtrajs]
+        if self.lag >= np.max(trajlengths):
+            raise ValueError('Illegal lag time ' + str(self.lag) + ' exceeds longest trajectory length')
+        if self.lag > np.mean(trajlengths):
+            self.logger.warning('Lag time ' + str(self.lag) + ' is on the order of mean trajectory length'
+                                + np.mean(trajlengths) + '. It is recommended to fit four lag times in each '
+                                + 'trajectory. HMM might be inaccurate.')
+
         # if no initial MSM is given, estimate it now
         if self.msm_init is None:
             # estimate with sparse=False, because we need to do PCCA which is currently not implemented for sparse
@@ -164,6 +180,8 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
             msm_estimator = _MSMEstimator(lag=self.lag, reversible=self.reversible, sparse=False,
                                           connectivity=self.connectivity, dt_traj=self.timestep_traj)
             msm_init = msm_estimator.estimate(dtrajs)
+            np.save('C.npy', msm_init.count_matrix_active)
+            np.save('P.npy', msm_init.transition_matrix)
         else:
             assert isinstance(self.msm_init, _EstimatedMSM), 'msm_init must be of type EstimatedMSM'
             msm_init = self.msm_init
@@ -191,15 +209,15 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
         # if hmm.nstates = msm.nstates there is no problem. Otherwise, check spectral gap
         if msm_init.nstates > self.nstates:
             timescale_ratios = msm_init.timescales()[:-1] / msm_init.timescales()[1:]
-            if timescale_ratios[self.nstates-2] < 2.0:
+            if timescale_ratios[self.nstates-2] < 1.5:
                 self.logger.warning('Requested coarse-grained model with ' + str(self.nstates) + ' metastable states at ' +
                                  'lag=' + str(self.lag) + '.' + 'The ratio of relaxation timescales between ' +
                                  str(self.nstates) + ' and ' + str(self.nstates+1) + ' states is only ' +
-                                 str(timescale_ratios[self.nstates-2]) + ' while we recommend at least 2. ' +
+                                 str(timescale_ratios[self.nstates-2]) + ' while we recommend at least 1.5. ' +
                                  ' It is possible that the resulting HMM is inaccurate. Handle with caution.')
 
         # set things from MSM
-        # TODO: dtrajs_obs is set here, but not used in estimation. Estimation is alwas done with
+        # TODO: dtrajs_obs is set here, but not used in estimation. Estimation is always done with
         # TODO: respect to full observation (see above). This is confusing. Define how we want to do this in gen.
         # TODO: observable set is also not used, it is just saved.
         nstates_obs_full = msm_init.nstates_full
@@ -251,16 +269,27 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
         # lazy import bhmm here in order to avoid dependency loops
         import bhmm
         # initialize discrete HMM
-        hmm_init = bhmm.discrete_hmm(A, B, stationary=True, reversible=self.reversible)
+        hmm_init = bhmm.discrete_hmm(A, B, stationary=False, reversible=self.reversible)
         # run EM
-        hmm = bhmm.estimate_hmm(dtrajs_lagged, self.nstates, lag=1, initial_model=hmm_init,
-                                accuracy=self.accuracy, maxit=self.maxit)
+        hmm = bhmm.estimate_hmm(dtrajs_lagged, self.nstates, lag=1, initial_model=hmm_init, stationary=False,
+                                reversible=self.reversible, accuracy=self.accuracy, maxit=self.maxit,
+                                mincount_connectivity=self.mincount_connectivity)
         self.hmm = bhmm.DiscreteHMM(hmm)
 
-        # find observable set
+        # rescue estimated parameters
         transition_matrix = self.hmm.transition_matrix
         observation_probabilities = self.hmm.output_probabilities
-        # TODO: Cutting down... OK, this can be done
+
+        # deal with connectivity
+        if self.connectivity == 'largest':
+            from msmtools.estimation import connected_sets
+            csets = connected_sets(transition_matrix)
+            if len(csets) > 1:  # disconnected - reduce to largest connected set.
+                transition_matrix = transition_matrix[csets[0], :][:, csets[0]]
+                observation_probabilities = observation_probabilities[csets[0], :]
+                self.nstates = len(csets[0])
+
+        # find observable set
         if self.observe_active:  # cut down observation probabilities to active set
             observation_probabilities = observation_probabilities[:, msm_init.active_set]
             observation_probabilities /= observation_probabilities.sum(axis=1)[:,None]  # renormalize

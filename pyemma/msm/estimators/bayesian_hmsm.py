@@ -37,7 +37,7 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporter):
     def __init__(self, nstates=2, lag=1, stride='effective', prior='mixed',
                  nsamples=100, init_hmsm=None, reversible=True,
                  connectivity='largest', observe_active=True,
-                 dt_traj='1 step', conf=0.95, show_progress=True):
+                 dt_traj='1 step', conf=0.95, store_hidden=False, show_progress=True):
         r"""Estimator for a Bayesian HMSM
 
         Parameters
@@ -93,6 +93,8 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporter):
         observe_active : bool, optional, default=True
             True: Restricts the observation set to the active states of the MSM.
             False: All states are in the observation set.
+        store_hidden : bool, optional, default=False
+            store hidden trajectories in sampled HMMs
         show_progress : bool, default=True
             Show progressbars for calculation?
 
@@ -118,6 +120,7 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporter):
         self.dt_traj = dt_traj
         self.timestep_traj = TimeUnit(dt_traj)
         self.conf = conf
+        self.store_hidden = store_hidden
         self.show_progress = show_progress
 
     def _estimate(self, dtrajs):
@@ -139,6 +142,7 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporter):
                                             reversible=self.reversible, connectivity=self.connectivity,
                                             observe_active=self.observe_active, dt_traj=self.dt_traj)
             init_hmsm = hmsm_estimator.estimate(dtrajs)  # estimate with lagged trajectories
+            self.nstates = init_hmsm.nstates  # might have changed due to connectivity
         else:
             # check input
             assert isinstance(self.init_hmsm, _EstimatedHMSM), 'hmsm must be of type EstimatedHMSM'
@@ -189,7 +193,8 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporter):
             raise ValueError('Unknown prior mode: '+self.prior)
 
         sampled_hmm = bayesian_hmm(init_hmsm.discrete_trajectories_lagged, hmm_mle, nsample=self.nsamples,
-                                   transition_matrix_prior=self.prior_count_matrix, call_back=call_back)
+                                   transition_matrix_prior=self.prior_count_matrix, store_hidden=self.store_hidden,
+                                   call_back=call_back)
 
         if self.show_progress:
             self._progress_force_finish(stage=0)
@@ -203,6 +208,9 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporter):
             Bobs = sample_pobs[i][:, init_hmsm.observable_set]
             sample_pobs[i] = Bobs / Bobs.sum(axis=1)[:, None]  # renormalize
             samples.append(_HMSM(sample_Ps[i], sample_pobs[i], pi=sample_pis[i], dt_model=init_hmsm.dt_model))
+
+        # store hidden trajectories
+        self.sampled_trajs = [sampled_hmm.sampled_hmms[i].hidden_state_trajectories for i in range(self.nsamples)]
 
         # parametrize self
         self._dtrajs_full = dtrajs

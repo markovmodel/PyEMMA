@@ -243,6 +243,10 @@ class MaximumLikelihoodMSM(_Estimator, _EstimatedMSM):
         # is estimated
         self._is_estimated = True
 
+        # if active set is empty, we can't do anything.
+        if _np.size(self.active_set) == 0:
+            raise RuntimeError('Active set is empty. Cannot estimate MSM.')
+
         # active count matrix and number of states
         self._C_active = dtrajstats.count_matrix(subset=self.active_set)
         self._nstates = self._C_active.shape[0]

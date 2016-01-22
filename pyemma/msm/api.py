@@ -1007,7 +1007,7 @@ def bayesian_markov_model(dtrajs, lag, reversible=True, statdist=None,
 
 
 def bayesian_hidden_markov_model(dtrajs, nstates, lag, nsamples=100, reversible=True, connectivity='largest',
-                                 observe_active=True, conf=0.95, dt_traj='1 step',
+                                 observe_active=True, conf=0.95, dt_traj='1 step', store_hidden=False,
                                  show_progress=True):
     r""" Bayesian Hidden Markov model estimate using Gibbs sampling of the posterior
 
@@ -1064,6 +1064,8 @@ def bayesian_hidden_markov_model(dtrajs, nstates, lag, nsamples=100, reversible=
         |  'us',  'microsecond*'
         |  'ms',  'millisecond*'
         |  's',   'second*'
+    store_hidden : bool, optional, default=False
+        store hidden trajectories in sampled HMMs
     show_progress : bool, default=True
         Show progressbars for calculation?
 
@@ -1140,7 +1142,7 @@ def bayesian_hidden_markov_model(dtrajs, nstates, lag, nsamples=100, reversible=
     """
     bhmsm_estimator = _Bayes_HMSM(lag=lag, nstates=nstates, nsamples=nsamples, reversible=reversible,
                                   connectivity=connectivity, observe_active=observe_active,
-                                  dt_traj=dt_traj, conf=conf, show_progress=show_progress)
+                                  dt_traj=dt_traj, conf=conf, store_hidden=store_hidden, show_progress=show_progress)
     return bhmsm_estimator.estimate(dtrajs)
 
 # TODO: need code examples

@@ -143,7 +143,7 @@ class ImpliedTimescales(Estimator, ProgressReporter):
             self.estimator.show_progress = False
 
         # run estimation on all lag times
-        self._models, self._estimators = estimate_param_scan(self.estimator, data, param_sets, failfast=False,
+        self._models, self._estimators = estimate_param_scan(self.estimator, data, param_sets, failfast=True,
                                                              return_estimators=True, n_jobs=self.n_jobs,
                                                              progress_reporter=self)
 
@@ -191,13 +191,14 @@ class ImpliedTimescales(Estimator, ProgressReporter):
             # samples
             timescales_samples = [m.sample_f('timescales') for m in self._models]
             nsamples = np.shape(timescales_samples[0])[0]
-            self._its_samples = np.zeros((nsamples, len(self._lags), self.nits))
+            self._its_samples = np.empty((nsamples, len(self._lags), self.nits))
+            self._its_samples[:] = np.NAN  # initialize with NaN in order to point out timescales that were not computed
 
             for i, ts in enumerate(timescales_samples):
                 if ts is not None:
                     ts = np.vstack(ts)
                     ts = ts[:, :self.nits]
-                    self._its_samples[:, i, :ts.shape[1]] = ts  # copy into array. Leave 0 if there is no timescales
+                    self._its_samples[:, i, :ts.shape[1]] = ts  # copy into array. Leave NaN if there is no timescales
 
             if np.any(np.isnan(self._its_samples)):
                 computed_all = False
