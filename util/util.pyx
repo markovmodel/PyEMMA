@@ -32,6 +32,7 @@ __all__ = [
     'count_matrices',
     'state_counts',
     'restrict_samples_to_cset',
+    'get_umbrella_bias',
     'renormalize_transition_matrix',
     'renormalize_transition_matrices']
 
@@ -338,6 +339,20 @@ def restrict_samples_to_cset(state_sequence, bias_energy_sequence, cset):
     new_state_sequence[:, 1] = conf_state_sequence[valid_samples]
     new_bias_energy_sequence = _np.ascontiguousarray(bias_energy_sequence[:, valid_samples])
     return new_state_sequence, new_bias_energy_sequence
+
+####################################################################################################
+#   bias calculation tools
+####################################################################################################
+
+def get_umbrella_bias(
+    _np.ndarray[double, ndim=2, mode="c"] traj not None,
+    _np.ndarray[double, ndim=2, mode="c"] umbrella_centers not None,
+    _np.ndarray[double, ndim=3, mode="c"] force_constants not None):
+    nsamples = traj.shape[0]
+    nthermo = umbrella_centers.shape[0]
+    ndim = traj.shape[1]
+    bias = _np.zeros(shape=(nsamples, nthermo), dtype=_np.float64)
+    return bias
 
 ####################################################################################################
 #   transition matrix renormalization
