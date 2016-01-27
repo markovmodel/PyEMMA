@@ -49,10 +49,12 @@ cdef extern from "_util.h":
     double _logsumexp_pair(double a, double b)
     # counting states and transitions
     int _get_therm_state_break_points(int *T_x, int seq_length, int *break_points)
+    # bias calculation tools
+    void _get_umbrella_bias(
+        double *traj, double *umbrella_centers, double *force_constants,
+        int nsamples, int nthermo, int ndim, double *bias)
     # transition matrix renormalization
     void _renormalize_transition_matrix(double *p, int n_conf_states, double *scratch_M)
-    # misc functions
-    double _mirrored_sigmoid(double x)
 
 ####################################################################################################
 #   sorting
@@ -352,6 +354,14 @@ def get_umbrella_bias(
     nthermo = umbrella_centers.shape[0]
     ndim = traj.shape[1]
     bias = _np.zeros(shape=(nsamples, nthermo), dtype=_np.float64)
+    _get_umbrella_bias(
+        <double*> _np.PyArray_DATA(traj),
+        <double*> _np.PyArray_DATA(umbrella_centers),
+        <double*> _np.PyArray_DATA(force_constants),
+        nsamples,
+        nthermo,
+        ndim,
+        <double*> _np.PyArray_DATA(bias))
     return bias
 
 ####################################################################################################

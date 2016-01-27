@@ -157,6 +157,44 @@ extern int _get_therm_state_break_points(int *T_x, int seq_length, int *break_po
 }
 
 /***************************************************************************************************
+*   bias calculation tools
+***************************************************************************************************/
+
+extern void _get_umbrella_bias(
+    double *traj, double *umbrella_centers, double *force_constants,
+    int nsamples, int nthermo, int ndim, double *bias)
+{
+    int i, j, s, k;
+    int dd = ndim * ndim, kdd, kdim, sdim;
+    double sum, isum, fc;
+    for(s=0; s<nsamples; ++s)
+    {
+        sdim = s * ndim;
+        for(k=0; k<nthermo; ++k)
+        {
+            sum = 0.0;
+            kdd = k * dd;
+            kdim = k * ndim;
+            for(i=0; i<ndim; ++i)
+            {
+                isum = 0.0;
+                for(j=0; j<ndim; ++j)
+                {
+                    fc = force_constants[kdd + i * ndim + j];
+                    if(0.0 == fc)
+                        continue;
+                    isum += fc
+                        * (traj[sdim + i] - umbrella_centers[kdim + i])
+                        * (traj[sdim + j] - umbrella_centers[kdim + j]);
+                }
+                sum += isum;
+            }
+            bias[s * nthermo + k] = 0.5 * sum;
+        }
+    }
+}
+
+/***************************************************************************************************
 *   transition matrix renormalization
 ***************************************************************************************************/
 

@@ -72,6 +72,14 @@ extern double _logsumexp_pair(double a, double b);
 extern int _get_therm_state_break_points(int *T_x, int seq_length, int *break_points);
 
 /***************************************************************************************************
+*   bias calculation tools
+***************************************************************************************************/
+
+extern void _get_umbrella_bias(
+    double *traj, double *umbrella_centers, double *force_constants,
+    int nsamples, int nthermo, int ndim, double *bias);
+
+/***************************************************************************************************
 *   transition matrix renormalization
 ***************************************************************************************************/
 
