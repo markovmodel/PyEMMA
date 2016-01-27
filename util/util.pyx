@@ -350,6 +350,23 @@ def get_umbrella_bias(
     _np.ndarray[double, ndim=2, mode="c"] traj not None,
     _np.ndarray[double, ndim=2, mode="c"] umbrella_centers not None,
     _np.ndarray[double, ndim=3, mode="c"] force_constants not None):
+    r"""
+    Restrict full list of samples to a subset and relabel configurational state indices.
+
+    Parameters
+    ----------
+    traj : numpy.ndarray(shape=(X, D), dtype=numpy.float64)
+        sequence of the D-dimensional reaction coordinate values of the X samples
+    umbrella_centers : numpy.ndarray(shape=(T, D), dtype=numpy.float64)
+        sequence of T unique D-dimensional umbrella centers
+    force_constants : numpy.ndarray(shape=(T, D, D), dtype=numpy.float64)
+        sequence of T unique DxD-dimensional force constants (matrices)
+
+    Returns
+    -------
+    bias : numpy.ndarray(shape=(X, T), dtype=numpy.float64)
+        sequence of the T bias energies for each of the X samples
+    """
     nsamples = traj.shape[0]
     nthermo = umbrella_centers.shape[0]
     ndim = traj.shape[1]
