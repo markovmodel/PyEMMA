@@ -32,6 +32,7 @@ __all__ = [
     'count_matrices',
     'state_counts',
     'restrict_samples_to_cset',
+    'get_umbrella_bias',
     'renormalize_transition_matrix',
     'renormalize_transition_matrices']
 
@@ -48,10 +49,12 @@ cdef extern from "_util.h":
     double _logsumexp_pair(double a, double b)
     # counting states and transitions
     int _get_therm_state_break_points(int *T_x, int seq_length, int *break_points)
+    # bias calculation tools
+    void _get_umbrella_bias(
+        double *traj, double *umbrella_centers, double *force_constants,
+        int nsamples, int nthermo, int ndim, double *bias)
     # transition matrix renormalization
     void _renormalize_transition_matrix(double *p, int n_conf_states, double *scratch_M)
-    # misc functions
-    double _mirrored_sigmoid(double x)
 
 ####################################################################################################
 #   sorting
@@ -338,6 +341,45 @@ def restrict_samples_to_cset(state_sequence, bias_energy_sequence, cset):
     new_state_sequence[:, 1] = conf_state_sequence[valid_samples]
     new_bias_energy_sequence = _np.ascontiguousarray(bias_energy_sequence[:, valid_samples])
     return new_state_sequence, new_bias_energy_sequence
+
+####################################################################################################
+#   bias calculation tools
+####################################################################################################
+
+def get_umbrella_bias(
+    _np.ndarray[double, ndim=2, mode="c"] traj not None,
+    _np.ndarray[double, ndim=2, mode="c"] umbrella_centers not None,
+    _np.ndarray[double, ndim=3, mode="c"] force_constants not None):
+    r"""
+    Restrict full list of samples to a subset and relabel configurational state indices.
+
+    Parameters
+    ----------
+    traj : numpy.ndarray(shape=(X, D), dtype=numpy.float64)
+        sequence of the D-dimensional reaction coordinate values of the X samples
+    umbrella_centers : numpy.ndarray(shape=(T, D), dtype=numpy.float64)
+        sequence of T unique D-dimensional umbrella centers
+    force_constants : numpy.ndarray(shape=(T, D, D), dtype=numpy.float64)
+        sequence of T unique DxD-dimensional force constants (matrices)
+
+    Returns
+    -------
+    bias : numpy.ndarray(shape=(X, T), dtype=numpy.float64)
+        sequence of the T bias energies for each of the X samples
+    """
+    nsamples = traj.shape[0]
+    nthermo = umbrella_centers.shape[0]
+    ndim = traj.shape[1]
+    bias = _np.zeros(shape=(nsamples, nthermo), dtype=_np.float64)
+    _get_umbrella_bias(
+        <double*> _np.PyArray_DATA(traj),
+        <double*> _np.PyArray_DATA(umbrella_centers),
+        <double*> _np.PyArray_DATA(force_constants),
+        nsamples,
+        nthermo,
+        ndim,
+        <double*> _np.PyArray_DATA(bias))
+    return bias
 
 ####################################################################################################
 #   transition matrix renormalization
