@@ -35,13 +35,50 @@ __credits__ = ["Frank Noe", "Christoph Wehmeyer"]
 __maintainer__ = "Christoph Wehmeyer"
 __email__ = "christoph.wehmeyer@fu-berlin.de"
 
-__all__ = ['dtram', 'wham']
+__all__ = [
+    'umbrella_sampling_data',
+    'umbrella_sampling_estimate',
+    'dtram',
+    'wham']
 
 # ===================================
 # Data Loaders and Readers
 # ===================================
 
 def umbrella_sampling_data(us_trajs, us_centers, us_force_constants, md_trajs=None, kT=None):
+    r"""
+    Wraps umbrella sampling data or a mix of umbrella sampling and and direct molecular dynamics
+
+    Parameters
+    ----------
+    us_trajs : list of N arrays, each of shape (T_i, d)
+        List of arrays, each having T_i rows, one for each time step, and d columns where d is the
+        dimension in which umbrella sampling was applied. Often d=1, and thus us_trajs will
+        be a list of 1d-arrays.
+    us_centers : array-like of size N
+        List or array of N center positions. Each position must be a d-dimensional vector. For 1d
+        umbrella sampling, one can simply pass a list of centers, e.g. [-5.0, -4.0, -3.0, ... ].
+    _us_force_constants : float or array-like of float
+        The force constants used in the umbrellas, unit-less (e.g. kT per length unit). If different
+        force constants were used for different umbrellas, a list or array of N force constants
+        can be given. For multidimensional umbrella sampling, the force matrix must be used.
+    md_trajs : list of M arrays, each of shape (T_i, d), optional, default=None
+        Unbiased molecular dynamics simulations. Format like umbrella_trajs.
+    kT : float (optinal)
+        Use this attribute if the supplied force constants are NOT unit-less.
+
+    Returns
+    -------
+    ttrajs : list of N+M int arrays, each of shape (T_i,)
+        The integers are indexes in 0,...,K-1 enumerating the thermodynamic states the trajectories
+        are in at any time.
+    btrajs : list of N+M float arrays, each of shape (T_i, K)
+        The floats are the reduced bias energies for each thermodynamic states and configuration.
+    umbrella_centers : float array of shape (K, d)
+        The individual umbrella centers labelled accordingly to ttrajs.
+    force_constants : float array of shape (K, d, d)
+        The individual force matrices labelled accordingly to ttrajs.
+    """
     ttrajs, umbrella_centers, force_constants = _get_umbrella_sampling_parameters(
         us_trajs, us_centers, us_force_constants, md_trajs=md_trajs, kT=kT)
     if md_trajs is None:
@@ -73,34 +110,6 @@ def umbrella_sampling_estimate(
             err_out=err_out, lll_out=lll_out,
             lag=lag, dt_traj=dt_traj, use_wham=use_wham)
     return _estimator, umbrella_centers, force_constants
-
-
-# TODO: what about simple molecular dynamics data? How do we combine MD data with US data?
-
-# This corresponds to the source function in coordinates.api
-def _umbrella_sampling_data(umbrella_trajs, centers, k, md_trajs=None, nbin=None):
-    r"""
-    Wraps umbrella sampling data or a mix of umbrella sampling and and direct molecular dynamics
-
-    Parameters
-    ----------
-    umbrella_trajs : list of K arrays, each of shape (T_i, d)
-        List of arrays, each having T_i rows, one for each time step, and d columns where d is the
-        dimension in which umbrella sampling was applied. Often d=1, and thus umbrella_trajs will
-        be a list of 1d-arrays.
-    centers : array-like of size K
-        List or array of K center positions. Each position must be a d-dimensional vector. For 1d
-        umbrella sampling, one can simply pass a list of centers, e.g. [-5.0, -4.0, -3.0, ... ].
-    k : int or array-like of int
-        The force constant used in the umbrellas, unit-less (e.g. kT per length unit). If different
-        force constants were used for different umbrellas, a list or array of K force constants
-        can be given. For multidimensional umbrella sampling, the force matrix must be used.
-    md_trajs : list of K arrays, each of shape (T_i, d), optional, default=None
-        Unbiased molecular dynamics simulations. Format like umbrella_trajs.
-    nbin : int
-        ???
-    """
-    pass
 
 # This corresponds to the source function in coordinates.api
 def multitemperature_to_bias(utrajs, ttrajs, kTs):
@@ -141,7 +150,7 @@ def dtram(
     ----------
     ttrajs : ndarray(T) of int, or list of ndarray(T_i) of int
         A single discrete trajectory or a list of discrete trajectories. The integers are
-        indexes in 1,...,K enumerating the thermodynamic states the trajectory is in at any time.
+        indexes in 0,...,K-1 enumerating the thermodynamic states the trajectory is in at any time.
     dtrajs : ndarray(T) of int, or list of ndarray(T_i) of int
         A single discrete trajectory or a list of discrete trajectories. The integers are indexes
         in 1,...,n enumerating the n Markov states or the bins the trajectory is in at any time.
