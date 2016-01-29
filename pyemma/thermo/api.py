@@ -1,4 +1,4 @@
-# Copyright (c) 2015 Computational Molecular Biology Group, Free University
+# Copyright (c) 2015, 2016 Computational Molecular Biology Group, Free University
 # Berlin, 14195 Berlin, Germany.
 # All rights reserved.
 #
@@ -24,6 +24,9 @@
 
 import numpy as _np
 from pyemma.util import types as _types
+from .util import get_umbrella_sampling_parameters as _get_umbrella_sampling_parameters
+from .util import get_umbrella_bias_sequences as _get_umbrella_bias_sequences
+from .util import get_averaged_bias_matrix as _get_averaged_bias_matrix
 
 __docformat__ = "restructuredtext en"
 __author__ = "Frank Noe, Christoph Wehmeyer"
@@ -38,49 +41,44 @@ __all__ = ['dtram', 'wham']
 # Data Loaders and Readers
 # ===================================
 
-def umbrella_sampling_data_discrete(
-    us_dtrajs, us_centers, us_force_constants, clustercenters, md_dtrajs=None, kT=1.0):
-    # TODO: check input
-    indiv_centers = []
-    indiv_force_constants = []
-    ttrajs = []
-    nthermo = 0
-    for i in range(len(us_dtrajs)):
-        state = None
-        for j in range(nthermo):
-            if _np.all(indiv_centers[j] == us_centers[i]) and \
-                _np.all(indiv_force_constants[j] == us_force_constants[i]):
-                state = j
-                break
-        if state is None:
-            indiv_centers.append(us_centers[i])
-            indiv_force_constants.append(us_force_constants[i])
-            ttrajs.append(nthermo * _np.ones(shape=us_dtrajs[i].shape, dtype=_np.intc))
-            nthermo += 1
-        else:
-            ttrajs.append(state * _np.ones(shape=us_dtrajs[i].shape, dtype=_np.intc))
-    if md_dtrajs is not None:
-        indiv_centers.append(
-            _np.zeros(shape=indiv_centers[-1].shape, dtype=indiv_centers[-1].dtype))
-        indiv_force_constants.append(
-            _np.zeros(shape=indiv_force_constants[-1].shape, dtype=indiv_force_constants[-1].dtype))
-        for dtraj in md_dtrajs:
-            ttrajs.append(nthermo * _np.ones(shape=dtraj.shape, dtype=_np.intc))
-        nthermo += 1
-    else:
+def umbrella_sampling_data(us_trajs, us_centers, us_force_constants, md_trajs=None, kT=None):
+    ttrajs, umbrella_centers, force_constants = _get_umbrella_sampling_parameters(
+        us_trajs, us_centers, us_force_constants, md_trajs=md_trajs, kT=kT)
+    if md_trajs is None:
+        md_trajs = []
+    btrajs = _get_umbrella_bias_sequences(us_trajs + md_trajs, umbrella_centers, force_constants)
+    return ttrajs, btrajs, umbrella_centers, force_constants
+
+def umbrella_sampling_estimate(
+    us_trajs, us_dtrajs, us_centers, us_force_constants, md_trajs=None, md_dtrajs=None, kT=None,
+    maxiter=1000, maxerr=1.0E-5, err_out=0, lll_out=0,
+    estimator='wham', lag=1, dt_traj='1 step', use_wham=False):
+    assert estimator in ['wham', 'dtram'], "unsupported estimator: %s" % estimator
+    ttrajs, btrajs, umbrella_centers, force_constants = umbrella_sampling_data(
+        us_trajs, us_centers, us_force_constants, md_trajs=md_trajs, kT=kT)
+    if md_dtrajs is None:
         md_dtrajs = []
-    # assume us_centers and us_force_constants are, like clustercenters, 2dim ndarrays
-    k = _np.array(indiv_force_constants, dtype=_np.float64)
-    x = _np.array(indiv_centers, dtype=_np.float64)
-    bias = 0.5 * _np.sum(
-        k[:, _np.newaxis, :] * (clustercenters[_np.newaxis, :, :] - x[:, _np.newaxis, :])**2,
-        axis=-1)
-    return ttrajs, us_dtrajs + md_dtrajs, bias
+    _estimator = None
+    if estimator == 'wham':
+        _estimator = wham(
+            ttrajs, us_dtrajs + md_dtrajs,
+            _get_averaged_bias_matrix(btrajs, us_dtrajs + md_dtrajs),
+            maxiter=maxiter, maxerr=maxerr,
+            err_out=err_out, lll_out=lll_out)
+    elif estimator == 'dtram':
+        _estimator = dtram(
+            ttrajs, us_dtrajs + md_dtrajs,
+            _get_averaged_bias_matrix(btrajs, us_dtrajs + md_dtrajs),
+            maxiter=maxiter, maxerr=maxerr,
+            err_out=err_out, lll_out=lll_out,
+            lag=lag, dt_traj=dt_traj, use_wham=use_wham)
+    return _estimator, umbrella_centers, force_constants
+
 
 # TODO: what about simple molecular dynamics data? How do we combine MD data with US data?
 
 # This corresponds to the source function in coordinates.api
-def umbrella_sampling_data(umbrella_trajs, centers, k, md_trajs=None, nbin=None):
+def _umbrella_sampling_data(umbrella_trajs, centers, k, md_trajs=None, nbin=None):
     r"""
     Wraps umbrella sampling data or a mix of umbrella sampling and and direct molecular dynamics
 
