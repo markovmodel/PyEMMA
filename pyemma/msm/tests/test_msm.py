@@ -537,7 +537,7 @@ class TestMSMDoubleWell(unittest.TestCase):
         assert (np.all(ts > 0))
         # REVERSIBLE: should be all real
         if msm.is_reversible:
-            ts_ref = np.array([310.87248087, 8.50933441, 5.09082957])
+            ts_ref = np.array([310.87247577, 8.50933442, 5.09082957])
             assert (np.all(np.isreal(ts)))
             # HERE:
             assert (np.max(np.abs(ts[0:3] - ts_ref)) < 1e-6)
@@ -587,7 +587,7 @@ class TestMSMDoubleWell(unittest.TestCase):
         assert (t > 0)
         # HERE:
         if msm.is_reversible:
-            assert (np.abs(t - 872.69132618104049) < 1e-6)
+            assert (np.abs(t - 872.692184) < 1e-6)
         else:
             assert (np.abs(t - 872.07000910307738) < 1e-6)
 
