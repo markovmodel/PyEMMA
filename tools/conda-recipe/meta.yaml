@@ -19,7 +19,7 @@ requirements:
     - mdtraj >=1.5
     - mock # [py27]
     - msmtools
-    - thermotools >=0.1.12
+    - thermotools >=0.1.13
     - nose
     - numpy >=1.7
     - pyyaml
@@ -37,7 +37,7 @@ requirements:
     - mdtraj >=1.5
     - mock # [py27]
     - msmtools
-    - thermotools >=0.1.12
+    - thermotools >=0.1.13
     - numpy >=1.7
     - pyyaml
     - scipy
