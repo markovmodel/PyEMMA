@@ -307,7 +307,7 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
 
               .. math::
 
-                    (0 \rightarrow \tau), (\tau \rightarrow 2 \tau), ..., (((T/tau)-1) \tau \rightarrow T)
+                    (0 \rightarrow \tau), (\tau \rightarrow 2 \tau), ..., (((T/\tau)-1) \tau \rightarrow T)
     sparse : bool, optional
         If true compute count matrix, transition matrix and all
         derived quantities using sparse matrix algebra.  In this case
