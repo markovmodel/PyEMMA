@@ -40,8 +40,7 @@ class TestBHMM(unittest.TestCase):
         cls.nsamples = 100
 
         cls.lag = 10
-        cls.bhmm = bayesian_hidden_markov_model([obs], cls.nstates, cls.lag, reversible=True,
-                                                             nsamples=cls.nsamples)
+        cls.bhmm = bayesian_hidden_markov_model([obs], cls.nstates, cls.lag, reversible=True, nsamples=cls.nsamples)
         
     def test_reversible(self):
         self._reversible(self.bhmm)
@@ -306,6 +305,20 @@ class TestBHMM(unittest.TestCase):
 
     # TODO: these tests can be made compact because they are almost the same. can define general functions for testing
     # TODO: samples and stats, only need to implement consistency check individually.
+
+class TestBHMMSpecialCases(unittest.TestCase):
+
+    def test_separate_states(self):
+        dtrajs = [np.array([0, 1, 1, 1, 1, 1, 0, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1]),
+                  np.array([2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2]),]
+        hmm_bayes = bayesian_hidden_markov_model(dtrajs, 3, lag=1, separate=[0], nsamples=100)
+        # we expect zeros in all samples at the following indexes:
+        pobs_zeros = [[0, 1, 2, 2, 2], [0, 0, 1, 2, 3]]
+        for s in hmm_bayes.samples:
+            assert np.allclose(s.observation_probabilities[pobs_zeros], 0)
+        for strajs in hmm_bayes.sampled_trajs:
+            assert strajs[0][0] == 2
+            assert strajs[0][6] == 2
 
 if __name__ == "__main__":
     unittest.main()

@@ -18,9 +18,9 @@
 
 from __future__ import absolute_import
 from six.moves import range
-__author__ = 'noe'
 
 import numpy as np
+import msmtools.estimation as msmest
 from pyemma.msm.estimators.estimated_hmsm import EstimatedHMSM as _EstimatedHMSM
 
 from pyemma.msm.estimators.estimated_msm import EstimatedMSM as _EstimatedMSM
@@ -30,45 +30,21 @@ from pyemma.util import types as _types
 from pyemma.util.units import TimeUnit
 
 
-def _lag_observations(observations, lag, stride=1):
-    r""" Create new trajectories that are subsampled at lag but shifted
-
-    Given a trajectory (s0, s1, s2, s3, s4, ...) and lag 3, this function will generate 3 trajectories
-    (s0, s3, s6, ...), (s1, s4, s7, ...) and (s2, s5, s8, ...). Use this function in order to parametrize a MLE
-    at lag times larger than 1 without discarding data. Do not use this function for Bayesian estimators, where
-    data must be given such that subsequent transitions are uncorrelated.
-
-    Parameters
-    ----------
-    observations : list of int arrays
-        observation trajectories
-    lag : int
-        lag time
-    stride : int, default=1
-        will return only one trajectory for every stride. Use this for Bayesian analysis.
-
-    """
-    obsnew = []
-    for obs in observations:
-        for shift in range(0, lag, stride):
-            obsnew.append(obs[shift:][::lag])
-    return obsnew
-
-
 # TODO: This parameter was in the docstring but is not used:
 #     store_data : bool
 #         True: estimate() returns an :class:`pyemma.msm.EstimatedMSM` object
 #         with discrete trajectories and counts stored. False: estimate() returns
 #         a plain :class:`pyemma.msm.MSM` object that only contains the
 #         transition matrix and quantities derived from it.
+# TODO: currently, it's not possible to start with disconnected matrices.
 
 
 class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
     r"""Maximum likelihood estimator for a Hidden MSM given a MSM"""
 
-    def __init__(self, nstates=2, lag=1, stride=1, msm_init=None, reversible=True,
-                 connectivity='largest', mincount_connectivity=1e-6, observe_active=True,
-                 dt_traj='1 step', accuracy=1e-3, maxit=1000):
+    def __init__(self, nstates=2, lag=1, stride=1, msm_init=None, reversible=True, stationary=False,
+                 connectivity=None, mincount_connectivity='1/n', observe_active=False,
+                 separate=None, dt_traj='1 step', accuracy=1e-3, maxit=1000):
         r"""Maximum likelihood estimator for a Hidden MSM given a MSM
 
         Parameters
@@ -92,24 +68,36 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
             MSM object to initialize the estimation
         reversible : bool, optional, default = True
             If true compute reversible MSM, else non-reversible MSM
-        connectivity : str, optional, default = 'largest'
-            Connectivity mode. Three methods are intended (currently only 'largest' is implemented)
-            * 'largest' : The active set is the largest reversibly connected set. All estimation will be done on this
-              subset and all quantities (transition matrix, stationary distribution, etc) are only defined on this
-              subset and are correspondingly smaller than the full set of states
-            * 'all' : The active set is the full set of states. Estimation will be conducted on each reversibly
-              connected set separately. That means the transition matrix will decompose into disconnected
-              submatrices, the stationary vector is only defined within subsets, etc. Currently not implemented.
-            * 'none' : The active set is the full set of states. Estimation will be conducted on the full set of
-              states without ensuring connectivity. This only permits nonreversible estimation. Currently not
-              implemented.
-        mincount_connectivity
+        stationary : bool, optional, default=False
+            If True, the initial distribution of hidden states is self-consistently computed as the stationary
+            distribution of the transition matrix. If False, it will be estimated from the starting states.
+            Only set this to true if you're sure that the observation trajectories are initiated from a global
+            equilibrium distribution.
+        connectivity : str, optional, default = None
+            Defines if the resulting HMM will be defined on all hidden states or on
+            a connected subset. Connectivity is defined by counting only
+            transitions with at least mincount_connectivity counts.
+            If a subset of states is used, all estimated quantities (transition
+            matrix, stationary distribution, etc) are only defined on this subset
+            and are correspondingly smaller than nstates.
+            Following modes are available:
+            * None or 'all' : The active set is the full set of states.
+              Estimation is done on all weakly connected subsets separately. The
+              resulting transition matrix may be disconnected.
+            * 'largest' : The active set is the largest reversibly connected set.
+            * 'populous' : The active set is the reversibly connected set with
+               most counts.
+        mincount_connectivity : float or '1/n'
             minimum number of counts to consider a connection between two states.
             Counts lower than that will count zero in the connectivity check and
-            may thus separate the resulting transition matrix.
-        observe_active : bool, optional, default=True
-            True: Restricts the observation set to the active states of the MSM.
+            may thus separate the resulting transition matrix. The default
+            evaluates to 1/nstates.
+        observe_active : bool, optional, default=False
+            True: Restricts the observation set to the active states of the initial MSM.
             False: All states are in the observation set.
+        separate : None or iterable of int
+            Force the given set of observed states to stay in a separate hidden state.
+            The remaining nstates-1 states will be assigned by a metastable decomposition.
         dt_traj : str, optional, default='1 step'
             Description of the physical time corresponding to the trajectory time
             step.  May be used by analysis algorithms such as plotting tools to
@@ -139,9 +127,13 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
         self.stride = stride
         self.msm_init = msm_init
         self.reversible = reversible
+        self.stationary = stationary
         self.connectivity = connectivity
+        if mincount_connectivity == '1/n':
+            mincount_connectivity = 1.0/float(nstates)
         self.mincount_connectivity = mincount_connectivity
         self.observe_active = observe_active
+        self.separate = separate
         self.dt_traj = dt_traj
         self.timestep_traj = TimeUnit(dt_traj)
         self.accuracy = accuracy
@@ -161,6 +153,7 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
             Estimated Hidden Markov state model
 
         """
+        import bhmm
         # ensure right format
         dtrajs = _types.ensure_dtraj_list(dtrajs)
 
@@ -176,12 +169,10 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
         # if no initial MSM is given, estimate it now
         if self.msm_init is None:
             # estimate with sparse=False, because we need to do PCCA which is currently not implemented for sparse
-            # estimate with store_data=True, because we need an EstimatedMSM
+            # estimate with connectivity='largest', because otherwise we might have a lot of singlet states
             msm_estimator = _MSMEstimator(lag=self.lag, reversible=self.reversible, sparse=False,
-                                          connectivity=self.connectivity, dt_traj=self.timestep_traj)
+                                          connectivity='largest', dt_traj=self.timestep_traj)
             msm_init = msm_estimator.estimate(dtrajs)
-            np.save('C.npy', msm_init.count_matrix_active)
-            np.save('P.npy', msm_init.transition_matrix)
         else:
             assert isinstance(self.msm_init, _EstimatedMSM), 'msm_init must be of type EstimatedMSM'
             msm_init = self.msm_init
@@ -201,7 +192,7 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
                 # use the smaller of these two pessimistic estimates
                 self.stride = min(self.stride, 2*corrtime)
         # TODO: Here we always use the full observation state space for the estimation.
-        dtrajs_lagged = _lag_observations(dtrajs, self.lag, stride=self.stride)
+        dtrajs_lagged = bhmm.lag_observations(dtrajs, self.lag, stride=self.stride)
 
         # check input
         assert _types.is_int(self.nstates) and self.nstates > 1 and self.nstates <= msm_init.nstates, \
@@ -230,55 +221,54 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
             observable_set = np.arange(nstates_obs_full)
             dtrajs_obs = msm_init.discrete_trajectories_full
 
-        # TODO: this is redundant with BHMM code because that code is currently not easily accessible and
-        # TODO: we don't want to re-estimate. Should be reengineered in bhmm.
-        # ---------------------------------------------------------------------------------------
-        # PCCA-based coarse-graining
-        # ---------------------------------------------------------------------------------------
-        # pcca- to number of metastable states
-        pcca = msm_init.pcca(self.nstates)
-
-        # HMM output matrix
-        eps = 0.01 * (1.0/nstates_obs_full)  # default output probability, in order to avoid zero columns
-        # Use PCCA distributions, but at least eps to avoid 100% assignment to any state (breaks convergence)
-        B_conn = np.maximum(msm_init.metastable_distributions, eps)
-        # full state space output matrix
-        B = eps * np.ones((self.nstates, nstates_obs_full), dtype=np.float64)
-        # expand B_conn to full state space
-        # TODO: here we always select the active set, no matter if observe_active=True or False.
-        B[:, msm_init.active_set] = B_conn[:, :]
-        # TODO: at this point we will have zero observation probabilities for states that are not in the active
-        # TODO: set. If these occur in the trajectory, that will mean zero columns in the output probabilities
-        # TODO: and crash of forward-backward and sampling algorithms.
-        # renormalize B to make it row-stochastic
-        B /= B.sum(axis=1)[:, None]
-
-        # coarse-grained transition matrix
-        P_coarse = pcca.coarse_grained_transition_matrix
-        # take care of unphysical values. First symmetrize
-        X = np.dot(np.diag(pcca.coarse_grained_stationary_probability), P_coarse)
-        X = 0.5*(X + X.T)
-        # if there are values < 0, set to eps
-        X = np.maximum(X, eps)
-        # turn into coarse-grained transition matrix
-        A = X / X.sum(axis=1)[:, None]
-
         # ---------------------------------------------------------------------------------------
         # Estimate discrete HMM
         # ---------------------------------------------------------------------------------------
-        # lazy import bhmm here in order to avoid dependency loops
-        import bhmm
-        # initialize discrete HMM
-        hmm_init = bhmm.discrete_hmm(A, B, stationary=False, reversible=self.reversible)
-        # run EM
-        hmm = bhmm.estimate_hmm(dtrajs_lagged, self.nstates, lag=1, initial_model=hmm_init, stationary=False,
-                                reversible=self.reversible, accuracy=self.accuracy, maxit=self.maxit,
-                                mincount_connectivity=self.mincount_connectivity)
-        self.hmm = bhmm.DiscreteHMM(hmm)
 
-        # rescue estimated parameters
+        # TODO: this is really not observe_active, but this chooses how to initialize the HMM.
+        # TODO: Do we need a separate flag here? And if we estimate disconnected (here observe_active=True),
+        # TODO: Why do we even need the initial MSM? It's just a waste of time in that case.
+        if self.observe_active:
+            Cinit = msm_init.count_matrix_full
+            Pinit = msm_init.transition_matrix
+            # TODO: active_set confusing name. msm_active_set or similar?
+            active_set = msm_init.active_set
+        else:
+            Cinit = msm_init.count_matrix_full
+            # make sure we're strongly connected
+            Cinit += msmest.prior_neighbor(Cinit, 0.001)
+            nonempty = np.where(Cinit.sum(axis=0) + Cinit.sum(axis=1) > 0)[0]
+            Cinit[nonempty, nonempty] = np.maximum(Cinit[nonempty, nonempty], 0.001)
+            Pinit = None
+            active_set = None
+
+        from bhmm.init.discrete import estimate_initial_hmm
+        hmm_init = estimate_initial_hmm(Cinit, self.nstates, reversible=self.reversible,
+                                        active_set=active_set, P=Pinit, separate=self.separate)
+
+        # run EM
+        from bhmm.estimators.maximum_likelihood import MaximumLikelihoodEstimator as _MaximumLikelihoodEstimator
+        hmm_est = _MaximumLikelihoodEstimator(dtrajs_lagged, self.nstates, initial_model=hmm_init, type='discrete',
+                                              reversible=self.reversible, stationary=self.stationary,
+                                              accuracy=self.accuracy, maxit=self.maxit,
+                                              mincount_connectivity=self.mincount_connectivity)
+        # run
+        hmm_est.fit()
+        # package in discrete HMM
+        self.hmm = bhmm.DiscreteHMM(hmm_est.hmm)
+
+        # get model parameters
+        self.initial_distribution = self.hmm.initial_distribution
         transition_matrix = self.hmm.transition_matrix
         observation_probabilities = self.hmm.output_probabilities
+
+        # get estimation parameters
+        self.likelihoods = hmm_est.likelihoods  # Likelihood history
+        self.likelihood = self.likelihoods[-1]
+        self.hidden_state_probabilities = hmm_est.hidden_state_probabilities  # gamma variables
+        self.hidden_state_trajectories = hmm_est.hmm.hidden_state_trajectories  # Viterbi path
+        self.count_matrix = hmm_est.count_matrix  # hidden count matrix
+        self.initial_count = hmm_est.initial_count  # hidden init count
 
         # deal with connectivity
         if self.connectivity == 'largest':

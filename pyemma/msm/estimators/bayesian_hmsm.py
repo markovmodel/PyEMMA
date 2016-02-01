@@ -34,9 +34,10 @@ __author__ = 'noe'
 class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporter):
     r"""Estimator for a Bayesian Hidden Markov state model"""
 
-    def __init__(self, nstates=2, lag=1, stride='effective', prior='mixed',
-                 nsamples=100, init_hmsm=None, reversible=True,
-                 connectivity='largest', observe_active=True,
+    def __init__(self, nstates=2, lag=1, stride='effective',
+                 p0_prior='mixed', transition_matrix_prior='mixed',
+                 nsamples=100, init_hmsm=None, reversible=True, stationary=False,
+                 connectivity='largest', observe_active=True, separate=None,
                  dt_traj='1 step', conf=0.95, store_hidden=False, show_progress=True):
         r"""Estimator for a Bayesian HMSM
 
@@ -58,34 +59,50 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporter):
             trajectories. Setting stride = None 'effective' uses the largest
             neglected timescale as an estimate for the correlation time and
             sets the stride accordingly.
-        prior : str, optional, default='mixed'
-            prior used in the estimation of the transition matrix. While 'sparse'
-            would be preferred as it doesn't bias the distribution way from the
-            maximum-likelihood, this prior is sensitive to loss of connectivity.
-            Loss of connectivity can occur in the Gibbs sampling algorithm used
-            here because in each iteration the hidden state sequence is randomly
-            generated. Once full connectivity is lost in one of these steps, the
-            current algorithm cannot recover from that. As a solution we suggest
-            using a prior that ensures that the estimated transition matrix is
-            connected even if the sampled state sequence is not.
-
-            * 'sparse' : the sparse prior proposed in [1]_ which centers the
-              posterior around the maximum likelihood estimator. This is the
-              preferred option if there are no connectivity problems. However
-              this prior is sensitive to loss of connectivity.
-            * 'uniform' : uniform prior probability for every transition matrix
-              element. Compared to the sparse prior, 'uniform' adds +1 to
-              every transition count. Weak prior that ensures connectivity,
-              but can lead to large biases if some states have small exit
-              probabilities.
-            * 'mixed' : ensures connectivity by adding a prior taken from the
-              maximum likelihood estimate (MLE) of the hidden transition
-              matrix P. The rows of P are scaled in order to have total
-              outgoing transition counts of at least 1 out of each state.
-              While this operation centers the posterior around the MLE, it
-              can be a very strong prior if states with small exit
-              probabilities are involved, and can therefore artificially
-              reduce the error bars.
+        p0_prior : None, str, float or ndarray(n)
+            Prior for the initial distribution of the HMM. Will only be active
+            if stationary=False (stationary=True means that p0 is identical to
+            the stationary distribution of the transition matrix).
+            Currently implements different versions of the Dirichlet prior that
+            is conjugate to the Dirichlet distribution of p0. p0 is sampled from:
+            .. math:
+                p0 \sim \prod_i (p0)_i^{a_i + n_i - 1}
+            where :math:`n_i` are the number of times a hidden trajectory was in
+            state :math:`i` at time step 0 and :math:`a_i` is the prior count.
+            Following options are available:
+            |  'mixed' (default),  :math:`a_i = p_{0,init}`, where :math:`p_{0,init}`
+                is the initial distribution of initial_model.
+            |  ndarray(n) or float,
+                the given array will be used as A.
+            |  'uniform',  :math:`a_i = 1`
+            |  None,  :math:`a_i = 0`. This option ensures coincidence between
+                sample mean an MLE. Will sooner or later lead to sampling problems,
+                because as soon as zero trajectories are drawn from a given state,
+                the sampler cannot recover and that state will never serve as a starting
+                state subsequently. Only recommended in the large data regime and
+                when the probability to sample zero trajectories from any state
+                is negligible.
+        transition_matrix_prior : str or ndarray(n, n)
+            Prior for the HMM transition matrix.
+            Currently implements Dirichlet priors if reversible=False and reversible
+            transition matrix priors as described in [3]_ if reversible=True. For the
+            nonreversible case the posterior of transition matrix :math:`P` is:
+            .. math:
+                P \sim \prod_{i,j} p_{ij}^{b_{ij} + c_{ij} - 1}
+            where :math:`c_{ij}` are the number of transitions found for hidden
+            trajectories and :math:`b_{ij}` are prior counts.
+            |  'mixed' (default),  :math:`b_{ij} = p_{ij,init}`, where :math:`p_{ij,init}`
+                is the transition matrix of initial_model. That means one prior
+                count will be used per row.
+            |  ndarray(n, n) or broadcastable,
+                the given array will be used as B.
+            |  'uniform',  :math:`b_{ij} = 1`
+            |  None,  :math:`b_ij = 0`. This option ensures coincidence between
+                sample mean an MLE. Will sooner or later lead to sampling problems,
+                because as soon as a transition :math:`ij` will not occur in a
+                sample, the sampler cannot recover and that transition will never
+                be sampled again. This option is not recommended unless you have
+                a small HMM and a lot of data.
         init_hmsm : :class:`HMSM <pyemma.msm.models.HMSM>`, default=None
             Single-point estimate of HMSM object around which errors will be evaluated.
             If None is give an initial estimate will be automatically generated using the
@@ -106,17 +123,23 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporter):
         .. [2] J. D. Chodera Et Al: Bayesian hidden Markov model analysis of
             single-molecule force spectroscopy: Characterizing kinetics under
             measurement uncertainty. arXiv:1108.1430 (2011)
+        .. [3] Trendelkamp-Schroer, B., H. Wu, F. Paul and F. Noe:
+            Estimation and uncertainty of reversible Markov models.
+            J. Chem. Phys. 143, 174101 (2015).
 
         """
         self.lag = lag
         self.stride = stride
         self.nstates = nstates
-        self.prior = prior
+        self.p0_prior = p0_prior
+        self.transition_matrix_prior = transition_matrix_prior
         self.nsamples = nsamples
         self.init_hmsm = init_hmsm
         self.reversible = reversible
+        self.stationary = stationary
         self.connectivity = connectivity
         self.observe_active = observe_active
+        self.separate = separate
         self.dt_traj = dt_traj
         self.timestep_traj = TimeUnit(dt_traj)
         self.conf = conf
@@ -139,8 +162,9 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporter):
         if self.init_hmsm is None:
             # estimate with store_data=True, because we need an EstimatedHMSM
             hmsm_estimator = _MaximumLikelihoodHMSM(lag=self.lag, stride=self.stride, nstates=self.nstates,
-                                            reversible=self.reversible, connectivity=self.connectivity,
-                                            observe_active=self.observe_active, dt_traj=self.dt_traj)
+                                                    reversible=self.reversible, stationary=self.stationary,
+                                                    connectivity=self.connectivity, observe_active=self.observe_active,
+                                                    separate=self.separate, dt_traj=self.dt_traj)
             init_hmsm = hmsm_estimator.estimate(dtrajs)  # estimate with lagged trajectories
             self.nstates = init_hmsm.nstates  # might have changed due to connectivity
         else:
@@ -149,6 +173,7 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporter):
             init_hmsm = self.init_hmsm
             self.nstates = init_hmsm.nstates
             self.reversible = init_hmsm.is_reversible
+            # TODO: check if separate is fulfilled.
 
         # here we blow up the output matrix (if needed) to the FULL state space because we want to use dtrajs in the
         # Bayesian HMM sampler
@@ -176,25 +201,26 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporter):
             call_back = None
 
         from bhmm import discrete_hmm, bayesian_hmm
-        hmm_mle = discrete_hmm(init_hmsm.transition_matrix, pobs, stationary=True, reversible=self.reversible)
+        hmm_mle = discrete_hmm(init_hmsm.stationary_distribution, init_hmsm.transition_matrix, pobs)
 
-        # define prior
-        if self.prior == 'sparse':
-            self.prior_count_matrix = _np.zeros((self.nstates, self.nstates), dtype=_np.float64)
-        elif self.prior == 'uniform':
-            self.prior_count_matrix = _np.ones((self.nstates, self.nstates), dtype=_np.float64)
-        elif self.prior == 'mixed':
-            # C0 = _np.dot(_np.diag(init_hmsm.stationary_distribution), init_hmsm.transition_matrix)
-            P0 = init_hmsm.transition_matrix
-            P0_offdiag = P0 - _np.diag(_np.diag(P0))
-            scaling_factor = 1.0 / _np.sum(P0_offdiag, axis=1)
-            self.prior_count_matrix = P0 * scaling_factor[:, None]
-        else:
-            raise ValueError('Unknown prior mode: '+self.prior)
-
+        # # define prior
+        # if self.prior == 'sparse':
+        #     self.prior_count_matrix = _np.zeros((self.nstates, self.nstates), dtype=_np.float64)
+        # elif self.prior == 'uniform':
+        #     self.prior_count_matrix = _np.ones((self.nstates, self.nstates), dtype=_np.float64)
+        # elif self.prior == 'mixed':
+        #     # C0 = _np.dot(_np.diag(init_hmsm.stationary_distribution), init_hmsm.transition_matrix)
+        #     P0 = init_hmsm.transition_matrix
+        #     P0_offdiag = P0 - _np.diag(_np.diag(P0))
+        #     scaling_factor = 1.0 / _np.sum(P0_offdiag, axis=1)
+        #     self.prior_count_matrix = P0 * scaling_factor[:, None]
+        # else:
+        #     raise ValueError('Unknown prior mode: '+self.prior)
+        #
         sampled_hmm = bayesian_hmm(init_hmsm.discrete_trajectories_lagged, hmm_mle, nsample=self.nsamples,
-                                   transition_matrix_prior=self.prior_count_matrix, store_hidden=self.store_hidden,
-                                   call_back=call_back)
+                                   reversible=self.reversible, stationary=self.stationary,
+                                   p0_prior=self.p0_prior, transition_matrix_prior=self.transition_matrix_prior,
+                                   store_hidden=self.store_hidden, call_back=call_back)
 
         if self.show_progress:
             self._progress_force_finish(stage=0)

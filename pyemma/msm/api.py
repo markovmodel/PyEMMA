@@ -503,7 +503,7 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
     return mlmsm.estimate(dtrajs)
 
 
-def timescales_hmsm(dtrajs, nstates, lags=None, nits=None, reversible=True,
+def timescales_hmsm(dtrajs, nstates, lags=None, nits=None, reversible=True, stationary=False,
                     connected=True, errors=None, nsamples=100, n_jobs=1,
                     show_progress=True):
     r""" Calculate implied timescales from Hidden Markov state models estimated at a series of lag times.
@@ -514,38 +514,35 @@ def timescales_hmsm(dtrajs, nstates, lags=None, nits=None, reversible=True,
     ----------
     dtrajs : array-like or list of array-likes
         discrete trajectories
-
     nstates : int
         number of hidden states
-
     lags : array-like of integers (optional)
         integer lag times at which the implied timescales will be calculated
-
     nits : int (optional)
         number of implied timescales to be computed. Will compute less if the
         number of states are smaller. None means the number of timescales will
         be determined automatically.
-
     connected : boolean (optional)
         If true compute the connected set before transition matrix
         estimation at each lag separately
-
     reversible : boolean (optional)
         Estimate transition matrix reversibly (True) or nonreversibly (False)
-
+    stationary : bool, optional, default=False
+        If True, the initial distribution of hidden states is self-consistently
+        computed as the stationary distribution of the transition matrix. If False,
+        it will be estimated from the starting states. Only set this to true if
+        you're sure that the observation trajectories are initiated from a global
+        equilibrium distribution.
     errors : None | 'bayes'
         Specifies whether to compute statistical uncertainties (by default not),
         an which algorithm to use if yes. The only option is currently 'bayes'.
         This algorithm is much faster than MSM-based error calculation because
         the involved matrices are much smaller.
-
     nsamples : int
         Number of approximately independent HMSM samples generated for each lag
         time for uncertainty quantification. Only used if errors is not None.
-
     n_jobs = 1 : int
         how many subprocesses to start to estimate the models for each lag time.
-
     show_progress : bool, default=True
         Show progressbars for calculation?
 
@@ -565,14 +562,13 @@ def timescales_hmsm(dtrajs, nstates, lags=None, nits=None, reversible=True,
     >>> from pyemma import msm
     >>> import numpy as np
     >>> np.set_printoptions(precision=3)
-    >>> dtraj = [0,1,1,2,2,2,1,2,2,2,1,0,0,1,1,1,2,2,1,1,2,1,1,0,0,0,1,1,2,2,1]   # mini-trajectory
-    >>> ts = msm.timescales_hmsm(dtraj, 2, [1,2,3,4,5])
+    >>> dtraj = [0,1,1,0,0,0,1,1,0,0,0,1,2,2,2,2,2,2,2,2,2,1,1,0,0,0,1,1,0,1,0]   # mini-trajectory
+    >>> ts = msm.timescales_hmsm(dtraj, 2, [1,2,3,4])
     >>> print(ts.timescales) # doctest: +ELLIPSIS
-    [[  1.691]
-     [  7.184]
-     [  2.037]
-     [ 41.015]
-     [ 10.853]]
+    [[ 5.786]
+     [ 5.143]
+     [ 4.44 ]
+     [ 3.677]]
 
     .. autoclass:: pyemma.msm.estimators.implied_timescales.ImpliedTimescales
         :members:
@@ -619,11 +615,10 @@ def timescales_hmsm(dtrajs, nstates, lags=None, nits=None, reversible=True,
 
     # MLE or error estimation?
     if errors is None:
-        estimator = _ML_HMSM(nstates=nstates, reversible=reversible, connectivity=connectivity)
+        estimator = _ML_HMSM(nstates=nstates, reversible=reversible, stationary=stationary, connectivity=connectivity)
     elif errors == 'bayes':
-        estimator = _Bayes_HMSM(nstates=nstates, reversible=reversible,
-                                connectivity=connectivity,
-                                show_progress=show_progress, nsamples=nsamples)
+        estimator = _Bayes_HMSM(nstates=nstates, reversible=reversible, stationary=stationary,
+                                connectivity=connectivity, show_progress=show_progress, nsamples=nsamples)
     else:
         raise NotImplementedError('Error estimation method'+str(errors)+'currently not implemented')
 
@@ -634,7 +629,8 @@ def timescales_hmsm(dtrajs, nstates, lags=None, nits=None, reversible=True,
     return itsobj
 
 
-def estimate_hidden_markov_model(dtrajs, nstates, lag, reversible=True, connectivity='largest', observe_active=True,
+def estimate_hidden_markov_model(dtrajs, nstates, lag, reversible=True, stationary=False,
+                                 connectivity='largest', observe_active=True, separate=None,
                                  dt_traj='1 step', accuracy=1e-3, maxit=1000):
     r""" Estimates a Hidden Markov state model from discrete trajectories
 
@@ -655,6 +651,12 @@ def estimate_hidden_markov_model(dtrajs, nstates, lag, reversible=True, connecti
         the number of metastable states in the resulting HMM
     reversible : bool, optional, default = True
         If true compute reversible MSM, else non-reversible MSM
+    stationary : bool, optional, default=False
+        If True, the initial distribution of hidden states is self-consistently
+        computed as the stationary distribution of the transition matrix. If False,
+        it will be estimated from the starting states. Only set this to true if
+        you're sure that the observation trajectories are initiated from a global
+        equilibrium distribution.
     connectivity : str, optional, default = 'largest'
         Connectivity mode. Three methods are intended (currently only 'largest'
         is implemented):
@@ -676,6 +678,9 @@ def estimate_hidden_markov_model(dtrajs, nstates, lag, reversible=True, connecti
     observe_active : bool, optional, default=True
         True: Restricts the observation set to the active states of the MSM.
         False: All states are in the observation set.
+    separate : None or iterable of int
+        Force the given set of observed states to stay in a separate hidden state.
+        The remaining nstates-1 states will be assigned by a metastable decomposition.
     dt_traj : str, optional, default='1 step'
         Description of the physical time corresponding to the trajectory time
         step. May be used by analysis algorithms such as plotting tools to
@@ -715,13 +720,13 @@ def estimate_hidden_markov_model(dtrajs, nstates, lag, reversible=True, connecti
     states:
 
     >>> print(mm.transition_matrix)
-    [[ 0.711  0.289]
-     [ 0.206  0.794]]
+    [[ 0.684  0.316]
+     [ 0.242  0.758]]
 
     With the equilibrium distribution:
 
     >>> print(mm.stationary_distribution) # doctest: +ELLIPSIS
-    [ 0.41...  0.58...]
+    [ 0.43...  0.56...]
 
     The observed states are the three discrete clusters that we have in our
     discrete trajectory:
@@ -746,18 +751,18 @@ def estimate_hidden_markov_model(dtrajs, nstates, lag, reversible=True, connecti
     We can print the lifetimes of the metastable states:
 
     >>> print(mm.lifetimes) # doctest: +ELLIPSIS
-    [ 5...  8...]
+    [ 5...  7...]
 
     And the timescale of the hidden transition matrix - now we only have one
     relaxation timescale:
 
     >>> print(mm.timescales())  # doctest: +ELLIPSIS
-    [ 2.9...]
+    [ 2.4...]
 
     The mean first passage times can also be computed between metastable states:
 
     >>> print(mm.mfpt(0, 1))  # doctest: +ELLIPSIS
-    6.9...
+    6.3...
 
     See also
     --------
@@ -802,7 +807,8 @@ def estimate_hidden_markov_model(dtrajs, nstates, lag, reversible=True, connecti
     """
     # initialize HMSM estimator
     hmsm_estimator = _ML_HMSM(lag=lag, nstates=nstates, reversible=reversible, connectivity=connectivity,
-                              observe_active=observe_active, dt_traj=dt_traj, accuracy=accuracy, maxit=maxit)
+                              observe_active=observe_active, separate=separate,
+                              dt_traj=dt_traj, accuracy=accuracy, maxit=maxit)
     # run estimation
     return hmsm_estimator.estimate(dtrajs)
 
@@ -998,17 +1004,15 @@ def bayesian_markov_model(dtrajs, lag, reversible=True, statdist=None,
 
     """
     # TODO: store_data=True
-    bmsm_estimator = _Bayes_MSM(lag=lag, reversible=reversible,
-                                statdist_constraint=statdist,
-                                count_mode=count_mode,
-                                sparse=sparse, connectivity=connectivity,
+    bmsm_estimator = _Bayes_MSM(lag=lag, reversible=reversible, statdist_constraint=statdist,
+                                count_mode=count_mode, sparse=sparse, connectivity=connectivity,
                                 dt_traj=dt_traj, nsamples=nsamples, conf=conf, show_progress=show_progress)
     return bmsm_estimator.estimate(dtrajs)
 
 
-def bayesian_hidden_markov_model(dtrajs, nstates, lag, nsamples=100, reversible=True, connectivity='largest',
-                                 observe_active=True, conf=0.95, dt_traj='1 step', store_hidden=False,
-                                 show_progress=True):
+def bayesian_hidden_markov_model(dtrajs, nstates, lag, nsamples=100, reversible=True, stationary=False,
+                                 connectivity='largest', observe_active=True, separate=None,
+                                 conf=0.95, dt_traj='1 step', store_hidden=False, show_progress=True):
     r""" Bayesian Hidden Markov model estimate using Gibbs sampling of the posterior
 
     Returns a :class:`BayesianHMSM` that contains
@@ -1026,6 +1030,12 @@ def bayesian_hidden_markov_model(dtrajs, nstates, lag, nsamples=100, reversible=
         the number of metastable states in the resulting HMM
     reversible : bool, optional, default = True
         If true compute reversible MSM, else non-reversible MSM
+    stationary : bool, optional, default=False
+        If True, the initial distribution of hidden states is self-consistently
+        computed as the stationary distribution of the transition matrix. If False,
+        it will be estimated from the starting states. Only set this to true if
+        you're sure that the observation trajectories are initiated from a global
+        equilibrium distribution.
     connectivity : str, optional, default = 'largest'
         Connectivity mode. Three methods are intended (currently only 'largest'
         is implemented):
@@ -1047,6 +1057,9 @@ def bayesian_hidden_markov_model(dtrajs, nstates, lag, nsamples=100, reversible=
     observe_active : bool, optional, default=True
         True: Restricts the observation set to the active states of the MSM.
         False: All states are in the observation set.
+    separate : None or iterable of int
+        Force the given set of observed states to stay in a separate hidden state.
+        The remaining nstates-1 states will be assigned by a metastable decomposition.
     nsamples : int, optional, default=100
         number of transition matrix samples to compute and store
     conf : float, optional, default=0.95
@@ -1141,7 +1154,7 @@ def bayesian_hidden_markov_model(dtrajs, nstates, lag, nsamples=100, reversible=
 
     """
     bhmsm_estimator = _Bayes_HMSM(lag=lag, nstates=nstates, nsamples=nsamples, reversible=reversible,
-                                  connectivity=connectivity, observe_active=observe_active,
+                                  connectivity=connectivity, observe_active=observe_active, separate=separate,
                                   dt_traj=dt_traj, conf=conf, store_hidden=store_hidden, show_progress=show_progress)
     return bhmsm_estimator.estimate(dtrajs)
 

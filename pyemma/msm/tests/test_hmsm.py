@@ -415,5 +415,16 @@ class TestMLHMM(unittest.TestCase):
         k2 = 1.0 / t2
         assert np.abs(k2 - ksum) < 1e-4
 
+
+class TestHMMSpecialCases(unittest.TestCase):
+
+    def test_separate_states(self):
+        dtrajs = [np.array([0, 1, 1, 1, 1, 1, 0, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1]),
+                  np.array([2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2]),]
+        hmm = msm.estimate_hidden_markov_model(dtrajs, 3, lag=1, separate=[0])
+        # we expect zeros in all samples at the following indexes:
+        pobs_zeros = [[0, 1, 2, 2, 2], [0, 0, 1, 2, 3]]
+        assert np.allclose(hmm.observation_probabilities[pobs_zeros], 0)
+
 if __name__=="__main__":
     unittest.main()
