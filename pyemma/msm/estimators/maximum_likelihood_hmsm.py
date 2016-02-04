@@ -42,7 +42,7 @@ from pyemma.util.units import TimeUnit
 class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
     r"""Maximum likelihood estimator for a Hidden MSM given a MSM"""
 
-    def __init__(self, nstates=2, lag=1, stride=1, msm_init=None, reversible=True, stationary=False,
+    def __init__(self, nstates=2, lag=1, stride=1, msm_init='largest-strong', reversible=True, stationary=False,
                  connectivity=None, mincount_connectivity='1/n', observe_active=False,
                  separate=None, dt_traj='1 step', accuracy=1e-3, maxit=1000):
         r"""Maximum likelihood estimator for a Hidden MSM given a MSM
@@ -64,8 +64,12 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
             stride in order to have statistically uncorrelated trajectories.
             Setting stride = 'effective' uses the largest neglected timescale as
             an estimate for the correlation time and sets the stride accordingly
-        msm_init : :class:`MSM <pyemma.msm.estimators.msm_estimated.MSM>`
-            MSM object to initialize the estimation
+        msm_init : str or :class:`MSM <pyemma.msm.estimators.msm_estimated.MSM>`
+            MSM object to initialize the estimation, or one of following keywords:
+            * 'largest-strong' | None (default) : Estimate a MSM and use its largest
+              strongly connected set to generate an initial HMM
+            * 'all' : Estimate MSM(s) on the full state space to initialize the
+              HMM. This estimate maybe weakly connected or disconnected.
         reversible : bool, optional, default = True
             If true compute reversible MSM, else non-reversible MSM
         stationary : bool, optional, default=False
@@ -167,7 +171,7 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
                                 + 'trajectory. HMM might be inaccurate.')
 
         # if no initial MSM is given, estimate it now
-        if self.msm_init is None:
+        if self.msm_init is None or self.msm_init=='largest-strong':
             # estimate with sparse=False, because we need to do PCCA which is currently not implemented for sparse
             # estimate with connectivity='largest', because otherwise we might have a lot of singlet states
             msm_estimator = _MSMEstimator(lag=self.lag, reversible=self.reversible, sparse=False,
@@ -213,11 +217,9 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
         # TODO: observable set is also not used, it is just saved.
         nstates_obs_full = msm_init.nstates_full
         if self.observe_active:
-            nstates_obs = msm_init.nstates
             observable_set = msm_init.active_set
             dtrajs_obs = msm_init.discrete_trajectories_active
         else:
-            nstates_obs = msm_init.nstates_full
             observable_set = np.arange(nstates_obs_full)
             dtrajs_obs = msm_init.discrete_trajectories_full
 

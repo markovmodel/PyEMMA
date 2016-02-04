@@ -203,20 +203,6 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporter):
         from bhmm import discrete_hmm, bayesian_hmm
         hmm_mle = discrete_hmm(init_hmsm.stationary_distribution, init_hmsm.transition_matrix, pobs)
 
-        # # define prior
-        # if self.prior == 'sparse':
-        #     self.prior_count_matrix = _np.zeros((self.nstates, self.nstates), dtype=_np.float64)
-        # elif self.prior == 'uniform':
-        #     self.prior_count_matrix = _np.ones((self.nstates, self.nstates), dtype=_np.float64)
-        # elif self.prior == 'mixed':
-        #     # C0 = _np.dot(_np.diag(init_hmsm.stationary_distribution), init_hmsm.transition_matrix)
-        #     P0 = init_hmsm.transition_matrix
-        #     P0_offdiag = P0 - _np.diag(_np.diag(P0))
-        #     scaling_factor = 1.0 / _np.sum(P0_offdiag, axis=1)
-        #     self.prior_count_matrix = P0 * scaling_factor[:, None]
-        # else:
-        #     raise ValueError('Unknown prior mode: '+self.prior)
-        #
         sampled_hmm = bayesian_hmm(init_hmsm.discrete_trajectories_lagged, hmm_mle, nsample=self.nsamples,
                                    reversible=self.reversible, stationary=self.stationary,
                                    p0_prior=self.p0_prior, transition_matrix_prior=self.transition_matrix_prior,
