@@ -170,6 +170,9 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
                                 + np.mean(trajlengths) + '. It is recommended to fit four lag times in each '
                                 + 'trajectory. HMM might be inaccurate.')
 
+        corrtime = self.lag  # initial estimate of the data correlation time
+
+
         # if no initial MSM is given, estimate it now
         if self.msm_init is None or self.msm_init=='largest-strong':
             # estimate with sparse=False, because we need to do PCCA which is currently not implemented for sparse
@@ -178,7 +181,7 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
                                           connectivity='largest', dt_traj=self.timestep_traj)
             msm_init = msm_estimator.estimate(dtrajs)
         else:
-            assert isinstance(self.msm_init, _EstimatedMSM), 'msm_init must be of type EstimatedMSM'
+            assert isinstance(self.msm_init, _EstimatedMSM), 'msm_init must be known keyword or of type EstimatedMSM'
             msm_init = self.msm_init
             self.reversible = msm_init.is_reversible
 
@@ -244,13 +247,14 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
             Pinit = None
             active_set = None
 
-        from bhmm.init.discrete import estimate_initial_hmm
-        hmm_init = estimate_initial_hmm(Cinit, self.nstates, reversible=self.reversible,
-                                        active_set=active_set, P=Pinit, separate=self.separate)
+        from bhmm.init.discrete import init_discrete_hmm_spectral
+        p0, P0, pobs0 = init_discrete_hmm_spectral(Cinit, self.nstates, reversible=self.reversible,
+                                             active_set=active_set, P=Pinit, separate=self.separate)
+        hmm_init = bhmm.discrete_hmm(p0, P0, pobs0)
 
         # run EM
         from bhmm.estimators.maximum_likelihood import MaximumLikelihoodEstimator as _MaximumLikelihoodEstimator
-        hmm_est = _MaximumLikelihoodEstimator(dtrajs_lagged, self.nstates, initial_model=hmm_init, type='discrete',
+        hmm_est = _MaximumLikelihoodEstimator(dtrajs_lagged, self.nstates, initial_model=hmm_init, output='discrete',
                                               reversible=self.reversible, stationary=self.stationary,
                                               accuracy=self.accuracy, maxit=self.maxit,
                                               mincount_connectivity=self.mincount_connectivity)
