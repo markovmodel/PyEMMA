@@ -28,7 +28,7 @@ __maintainer__ = "Christoph Wehmeyer"
 __email__ = "christoph.wehmeyer@fu-berlin.de"
 
 __all__ = [
-    'umbrella_sampling_estimation',
+    'umbrella_sampling',
     'dtram',
     'wham']
 
@@ -36,7 +36,7 @@ __all__ = [
 # Data Loaders and Readers
 # ===================================
 
-def umbrella_sampling_estimation(
+def umbrella_sampling(
     us_trajs, us_dtrajs, us_centers, us_force_constants, md_trajs=None, md_dtrajs=None, kT=None,
     maxiter=1000, maxerr=1.0E-5, save_convergence_info=0,
     estimator='wham', lag=1, dt_traj='1 step', init=None):
