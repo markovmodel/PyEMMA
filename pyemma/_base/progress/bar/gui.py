@@ -29,17 +29,45 @@ from pyemma import config
 __all__ = ('is_interactive_session', 'show_progressbar')
 
 
-def __attached_to_ipy_notebook():
-    import warnings
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
+def __ipy_widget_version():
+    try:
+        import ipywidgets
+    except ImportError:
+        import warnings
         try:
-            from IPython.html.widgets import IntProgress
-            IntProgress(100)
-        except:
+            # hide future warning of ipython and show custom message
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                import IPython.html.widgets
+            warnings.warn("Consider upgrading to Jupyter (new IPython version) and ipywidgets.",
+                          DeprecationWarning)
+        except ImportError:
             return False
         else:
-            return True
+            return 3
+        # no widgets available:
+        return None
+    else:
+        return 4
+
+
+def __attached_to_ipy_notebook():
+    # first determine which IPython version we have (eg. ipywidgets or ipy3 deprecated,
+    # then try to instanciate a widget to determine if we're interactive (raises, if not).
+    ipy_widget_version = __ipy_widget_version()
+
+    if ipy_widget_version is None:
+        return False
+
+    if ipy_widget_version == 4:
+        from ipywidgets import Box
+    elif ipy_widget_version == 3:
+        from IPython.html.widgets import Box
+    # FIXME: this unfortunately does not raise if frontend is QT...
+    try:
+        Box()
+    except:
+        return False
 
 
 def __is_interactive():
@@ -60,9 +88,14 @@ ipython_notebook_session = __attached_to_ipy_notebook()
 is_interactive_session = __is_tty_or_interactive_session()
 """ do we have a tty or an interactive session? """
 
+
 if ipython_notebook_session:
     from IPython.display import display
-    from IPython.html.widgets import IntProgress, Box, Text
+
+    if __widget_version >= 4:
+        from ipywidgets import Box, Text, IntProgress
+    elif __widget_version == 3:
+        from IPython.html.widgets import Box, Text, IntProgress
 
 
 def hide_widget(widget):
@@ -88,7 +121,7 @@ def show_progressbar(bar, show_eta=True):
 
     """
     if not (str(config['show_progress_bars']) == 'True' and
-            is_interactive_session):
+                is_interactive_session):
         return
 
     # note: this check ensures we have IPython.display and so on.

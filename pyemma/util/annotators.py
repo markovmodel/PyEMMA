@@ -206,6 +206,8 @@ def deprecated(*optional_message):
                 continue
             else: break
         lineno = frame[2]
+        # avoid cyclic references!
+        del caller_stack, frame
 
         user_msg = 'Call to deprecated function "%s". Called from %s line %i. %s' \
                    % (func.__name__, filename, lineno, msg)
