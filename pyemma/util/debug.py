@@ -26,7 +26,7 @@ Created on 15.10.2015
 
 @author: marscher
 '''
-from __future__ import absolute_import as _
+from __future__ import absolute_import, print_function
 
 import signal
 from .log import getLogger as _getLogger
@@ -39,13 +39,13 @@ SIGNAL_PDB = 43
 
 def _show_stacktrace(sig, frame):
     import traceback
-    import StringIO
+    from six import StringIO
 
     global _logger
     if _logger is None:
         _logger = _getLogger('dbg')
 
-    out = StringIO.StringIO()
+    out = StringIO()
 
     traceback.print_stack(frame, file=out)
 

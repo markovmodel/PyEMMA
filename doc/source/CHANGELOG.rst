@@ -1,6 +1,34 @@
 Changelog
 =========
 
+2.0.3 (29-1-2016)
+-----------------
+
+**New features**:
+
+- msm: added keyword "count_mode" to estimate_markov_model, to specify the way 
+  of counting during creation of a count matrix. It defaults to the same behaviour
+  like prior versions (sliding window). New options:
+
+  - 'effective': Uses an estimate of the transition counts that are
+     statistically uncorrelated. Recommended when used with a Bayesian MSM.
+  - 'sample': A trajectory of length T will have T/tau counts at time indices
+     0 -> tau, tau -> 2 tau, ..., T/tau - 1 -> T
+
+- msm: added possibility to constrain the stationary distribution for BayesianMSM
+- coordinates: added "periodic" keyword to features in Featurizer to indicate a
+  unit cell with periodic boundary conditions.
+- coordinates: added "count_contacts" keyword to Featurizer.add_contacts() method
+  to count formed contacts instead of dimension of all possible contacts.
+- logging: pyemma.log file will be rotated after reaching a size of 1 MB
+
+**Fixes**:
+
+- logging: do not replace existing loggers anymore. Use hierarchical logging (all loggers
+  "derive" from 'pyemma' logger. So log levels etc. can be manipulated by changing this
+  new 'pyemma' root logger.
+- some deprecation warnings have been fixed (IPython and Python-3.5 related).
+
 2.0.2 (11-9-2015)
 -----------------
 
