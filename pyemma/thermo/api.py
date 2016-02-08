@@ -82,7 +82,7 @@ def umbrella_sampling_data(us_trajs, us_centers, us_force_constants, md_trajs=No
 def umbrella_sampling_estimate(
     us_trajs, us_dtrajs, us_centers, us_force_constants, md_trajs=None, md_dtrajs=None, kT=None,
     maxiter=1000, maxerr=1.0E-5, save_convergence_info=0,
-    estimator='wham', lag=1, dt_traj='1 step', use_wham=False):
+    estimator='wham', lag=1, dt_traj='1 step', init=None):
     assert estimator in ['wham', 'dtram'], "unsupported estimator: %s" % estimator
     ttrajs, btrajs, umbrella_centers, force_constants = umbrella_sampling_data(
         us_trajs, us_centers, us_force_constants, md_trajs=md_trajs, kT=kT)
@@ -99,7 +99,7 @@ def umbrella_sampling_estimate(
             ttrajs, us_dtrajs + md_dtrajs,
             _get_averaged_bias_matrix(btrajs, us_dtrajs + md_dtrajs),
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
-            lag=lag, dt_traj=dt_traj, use_wham=use_wham)
+            lag=lag, dt_traj=dt_traj, init=init)
     _estimator.umbrella_centers = umbrella_centers
     _estimator.force_constants = force_constants
     return _estimator
@@ -136,7 +136,7 @@ def multitemperature_to_bias(utrajs, ttrajs, kTs):
 
 def dtram(
     ttrajs, dtrajs, bias, lag,
-    maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step', use_wham=False):
+    maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step', init=None):
     r"""
     Discrete transition-based reweighting analysis method
     Parameters
@@ -198,7 +198,7 @@ def dtram(
     dtram_estimator = DTRAM(
         bias, lag=lag, count_mode='sliding',
         maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
-        dt_traj=dt_traj, use_wham=use_wham)
+        dt_traj=dt_traj, init=init)
     # run estimation
     return dtram_estimator.estimate(X)
 

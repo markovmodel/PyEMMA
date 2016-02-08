@@ -55,7 +55,7 @@ class DTRAM(_Estimator, _MEMM):
     """
     def __init__(
         self, bias_energies_full, lag=1, count_mode='sliding', connectivity='largest',
-        dt_traj='1 step', maxiter=100000, maxerr=1e-5, save_convergence_info=0, use_wham=False):
+        dt_traj='1 step', maxiter=100000, maxerr=1e-5, save_convergence_info=0, init=None):
         # set all parameters
         self.bias_energies_full = _types.ensure_ndarray(bias_energies_full, ndim=2, kind='numeric')
         self.lag = lag
@@ -63,11 +63,12 @@ class DTRAM(_Estimator, _MEMM):
         self.count_mode = count_mode
         assert connectivity == 'largest', 'Currently the only implemented connectivity is \'largest\''
         self.connectivity = connectivity
+        assert init in (None, 'wham'), 'Currently only None and \'wham\' are supported'
+        self.init = init
         self.dt_traj = dt_traj
         self.maxiter = maxiter
         self.maxerr = maxerr
         self.save_convergence_info = save_convergence_info
-        self.use_wham = use_wham
         # set derived quantities
         self.nthermo, self.nstates_full = bias_energies_full.shape
         self.timestep_traj = _TimeUnit(dt_traj)
@@ -120,12 +121,14 @@ class DTRAM(_Estimator, _MEMM):
         self.state_counts = self.state_counts_full[:, cset]
         self.state_counts = _np.require(self.state_counts, dtype=_np.intc ,requirements=['C', 'A'])
 
-        # run WHAM
-        if self.use_wham:
-            self.therm_energies, self.conf_energies, _increments, _loglikelihoods = _wham.estimate(
-                self.state_counts, self.bias_energies,
-                maxiter=5000, maxerr=1.0E-8,
-                therm_energies=self.therm_energies, conf_energies=self.conf_energies)
+        # run initialisation
+        if self.init is not None:
+            if self.init == 'wham':
+                self.therm_energies, self.conf_energies, _increments, _loglikelihoods = \
+                    _wham.estimate(
+                        self.state_counts, self.bias_energies,
+                        maxiter=5000, maxerr=1.0E-8, save_convergence_info=0,
+                        therm_energies=self.therm_energies, conf_energies=self.conf_energies)
 
         # run estimator
         self.therm_energies, self.conf_energies, self.log_lagrangian_mult, \
