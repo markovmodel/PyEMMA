@@ -1,6 +1,6 @@
 # This file is part of thermotools.
 #
-# Copyright 2015 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+# Copyright 2015, 2016 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
 #
 # thermotools is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -23,7 +23,12 @@ import numpy as _np
 cimport numpy as _np
 from .callback import CallbackInterrupt
 
-__all__ = ['update_therm_energies', 'normalize', 'get_conf_energies', 'get_biased_conf_energies', 'estimate']
+__all__ = [
+    'update_therm_energies',
+    'normalize',
+    'get_conf_energies',
+    'get_biased_conf_energies',
+    'estimate']
 
 cdef extern from "_mbar.h":
     void _mbar_update_therm_energies(
@@ -46,7 +51,7 @@ def update_therm_energies(
     _np.ndarray[double, ndim=1, mode="c"] scratch_T not None,
     _np.ndarray[double, ndim=1, mode="c"] new_therm_energies not None):
     r"""
-    Calculate the reduced thermodynamic free energies therm_energies
+    Calculate the reduced thermodynamic free energies therm_energies.
         
     Parameters
     ----------
@@ -78,7 +83,7 @@ def get_conf_energies(
     _np.ndarray[double, ndim=1, mode="c"] scratch_T not None,
     n_conf_states):
     r"""
-    Calculate the reduced unbiased free energies conf_energies
+    Calculate the reduced unbiased free energies conf_energies.
         
     Parameters
     ----------
@@ -101,7 +106,8 @@ def get_conf_energies(
         reduced unbiased free energies
     """
     conf_energies = _np.zeros(shape=(n_conf_states,), dtype=_np.float64)
-    biased_conf_energies = _np.zeros(shape=(therm_energies.shape[0], n_conf_states), dtype=_np.float64)
+    biased_conf_energies = _np.zeros(
+        shape=(therm_energies.shape[0], n_conf_states), dtype=_np.float64)
     _mbar_get_conf_energies(
         <double*> _np.PyArray_DATA(log_therm_state_counts),
         <double*> _np.PyArray_DATA(therm_energies),
@@ -123,8 +129,8 @@ def normalize(
     _np.ndarray[double, ndim=1, mode="c"] conf_energies not None,
     _np.ndarray[double, ndim=2, mode="c"] biased_conf_energies not None):
     r"""
-    Shift the reduced thermodynamic free energies therm_energies such that the unbiased thermodynamic
-    free energy is zero
+    Shift the reduced thermodynamic free energies therm_energies such that the
+    unbiased thermodynamic free energy is zero.
         
     Parameters
     ----------
@@ -153,7 +159,7 @@ def estimate(
     maxiter=1000, maxerr=1.0E-8, therm_energies=None,
     n_conf_states=None, save_convergence_info=0, callback=None):
     r"""
-    Estimate the (un)biased reduced free energies and thermodynamic free energies
+    Estimate the (un)biased reduced free energies and thermodynamic free energies.
         
     Parameters
     ----------
@@ -203,7 +209,9 @@ def estimate(
     stop = False
     for _m in range(maxiter):
         sci_count += 1
-        update_therm_energies(log_therm_state_counts, old_therm_energies, bias_energy_sequence, scratch_T, therm_energies)
+        update_therm_energies(
+            log_therm_state_counts, old_therm_energies, bias_energy_sequence,
+            scratch_T, therm_energies)
         delta_therm_energies = _np.abs(therm_energies - old_therm_energies)
         err = _np.max(delta_therm_energies)
         if sci_count == save_convergence_info:
@@ -227,8 +235,11 @@ def estimate(
         if stop:
             break
     conf_energies, biased_conf_energies = get_conf_energies(
-        log_therm_state_counts, therm_energies, bias_energy_sequence, conf_state_sequence, scratch_T, M)
-    normalize(log_therm_state_counts, bias_energy_sequence, scratch_M, therm_energies, conf_energies, biased_conf_energies)
+        log_therm_state_counts, therm_energies, bias_energy_sequence, conf_state_sequence,
+        scratch_T, M)
+    normalize(
+        log_therm_state_counts, bias_energy_sequence, scratch_M,
+        therm_energies, conf_energies, biased_conf_energies)
     if save_convergence_info == 0:
         increments = None
     else:
