@@ -100,7 +100,9 @@ def umbrella_sampling_estimate(
             _get_averaged_bias_matrix(btrajs, us_dtrajs + md_dtrajs),
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
             lag=lag, dt_traj=dt_traj, use_wham=use_wham)
-    return _estimator, umbrella_centers, force_constants
+    _estimator.umbrella_centers = umbrella_centers
+    _estimator.force_constants = force_constants
+    return _estimator
 
 # This corresponds to the source function in coordinates.api
 def multitemperature_to_bias(utrajs, ttrajs, kTs):
