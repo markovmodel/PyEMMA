@@ -201,7 +201,7 @@ def estimate(
     state_counts, bias_energies,
     maxiter=1000, maxerr=1.0E-8,
     therm_energies=None, conf_energies=None,
-    err_out=0, lll_out=0, callback=None):
+    save_convergence_info=0, callback=None):
     r"""
     Estimate the unbiased reduced free energies and thermodynamic free energies
         
@@ -219,10 +219,9 @@ def estimate(
         initial guess for the reduced thermodynamic energies
     conf_energies : numpy.ndarray(shape=(M,), dtype=numpy.float64)
         initial guess for the reduced unbiased free energies
-    err_out : int, optional
-        every err_out iteration steps, store the actual increment
-    lll_out : int, optional
-        every lll_out iteration steps, store the actual loglikelihood
+    save_convergence_info : int, optional
+        every save_convergence_info iteration steps, store the actual increment
+        and the actual loglikelihood
 
     Returns
     -------
@@ -230,9 +229,9 @@ def estimate(
         reduced thermodynamic energies
     conf_energies : numpy.ndarray(shape=(M,), dtype=numpy.float64)
         reduced unbiased configurational energies
-    err : numpy.ndarray(dtype=numpy.float64, ndim=1)
+    increments : numpy.ndarray(dtype=numpy.float64, ndim=1)
         stored sequence of increments
-    lll : numpy.ndarray(dtype=numpy.float64, ndim=1)
+    loglikelihoods : numpy.ndarray(dtype=numpy.float64, ndim=1)
         stored sequence of loglikelihoods
 
     Notes
@@ -255,13 +254,11 @@ def estimate(
     old_therm_energies = therm_energies.copy()
     old_conf_energies = conf_energies.copy()
     scratch = _np.zeros(shape=(S,), dtype=_np.float64)
-    err_traj = []
-    lll_traj = []
-    err_count = 0
-    lll_count = 0
+    increments = []
+    loglikelihoods = []
+    sci_count = 0
     for m in range(maxiter):
-        err_count += 1
-        lll_count += 1
+        sci_count += 1
         update_therm_energies(conf_energies, bias_energies, scratch, therm_energies)
         update_conf_energies(
             log_therm_state_counts, log_conf_state_counts, therm_energies, bias_energies,
@@ -270,12 +267,10 @@ def estimate(
         delta_conf_energies = _np.abs(conf_energies - old_conf_energies)
         err = _np.max([_np.max(delta_conf_energies), _np.max(delta_therm_energies)])
         normalize(scratch, therm_energies, conf_energies)
-        if err_count == err_out:
-            err_count = 0
-            err_traj.append(err)
-        if lll_count == lll_out:
-            lll_count = 0
-            lll_traj.append(
+        if sci_count == save_convergence_info:
+            sci_count = 0
+            increments.append(err)
+            loglikelihoods.append(
                 get_loglikelihood(
                     therm_state_counts, conf_state_counts, therm_energies, conf_energies, scratch))
         if callback is not None:
@@ -298,12 +293,10 @@ def estimate(
         else:
             old_therm_energies[:] = therm_energies[:]
             old_conf_energies[:] = conf_energies[:]
-    if err_out == 0:
-        err_traj = None
+    if save_convergence_info == 0:
+        increments = None
+        loglikelihoods = None
     else:
-        err_traj = _np.array(err_traj, dtype=_np.float64)
-    if lll_out == 0:
-        lll_traj = None
-    else:
-        lll_traj = _np.array(lll_traj, dtype=_np.float64)
-    return therm_energies, conf_energies, err_traj, lll_traj
+        increments = _np.array(increments, dtype=_np.float64)
+        loglikelihoods = _np.array(loglikelihoods, dtype=_np.float64)
+    return therm_energies, conf_energies, increments, loglikelihoods
