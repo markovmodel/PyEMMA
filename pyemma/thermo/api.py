@@ -38,8 +38,57 @@ __all__ = [
 
 def umbrella_sampling(
     us_trajs, us_dtrajs, us_centers, us_force_constants, md_trajs=None, md_dtrajs=None, kT=None,
-    maxiter=1000, maxerr=1.0E-5, save_convergence_info=0,
+    maxiter=10000, maxerr=1.0E-15, save_convergence_info=0,
     estimator='wham', lag=1, dt_traj='1 step', init=None):
+    r"""
+    Wraps umbrella sampling data or a mix of umbrella sampling and and direct molecular dynamics.
+
+    Parameters
+    ----------
+    us_trajs : list of N arrays, each of shape (T_i, d)
+        List of arrays, each having T_i rows, one for each time step, and d columns where d is the
+        dimension in which umbrella sampling was applied. Often d=1, and thus us_trajs will
+        be a list of 1d-arrays.
+    us_dtrajs : list of N int arrays, each of shape (T_i,)
+        The integers are indexes in 0,...,n-1 enumerating the n discrete states or the bins the
+        trajectory is in at any time.
+    us_centers : array-like of size N
+        List or array of N center positions. Each position must be a d-dimensional vector. For 1d
+        umbrella sampling, one can simply pass a list of centers, e.g. [-5.0, -4.0, -3.0, ... ].
+    us_force_constants : float or array-like of float
+        The force constants used in the umbrellas, unit-less (e.g. kT per length unit). If different
+        force constants were used for different umbrellas, a list or array of N force constants
+        can be given. For multidimensional umbrella sampling, the force matrix must be used.
+    md_trajs : list of M arrays, each of shape (T_i, d), optional, default=None
+        Unbiased molecular dynamics simulations. Format like umbrella_trajs.
+    md_dtrajs : list of M int arrays, each of shape (T_i,)
+        The integers are indexes in 0,...,n-1 enumerating the n discrete states or the bins the
+        trajectory is in at any time.
+    kT : float (optinal)
+        Use this attribute if the supplied force constants are NOT unit-less.
+    maxiter : int, optional, default=10000
+        The maximum number of dTRAM iterations before the estimator exits unsuccessfully.
+    maxerr : float, optional, default=1E-15
+        Convergence criterion based on the maximal free energy change in a self-consistent
+        iteration step.
+    save_convergence_info : int, optional, default=0
+        Every save_convergence_info iteration steps, store the actual increment
+        and the actual loglikelihood; 0 means no storage.
+    estimator : string, optional, default='wham'
+        Specify one of the following estimators, 'wham' or 'dtram'.
+    lag : int, optional, default=1
+        Lag time in trajectory steps.
+    dt_traj : string, optional, default='1 step'
+        Specify the temporal stride int the trajectories.
+    init : None or string, optional, default=None
+        Specify the initialisation of the estimation: expensive estimators can be initialised
+        with cheaper methods, e.g., dTRAM can use a preliminary WHAM run.
+
+    Returns
+    -------
+    _estimator : estimator object
+        The requested estimator object, e.g. WHAM or DTRAM.
+    """
     assert estimator in ['wham', 'dtram'], "unsupported estimator: %s" % estimator
     ttrajs, btrajs, umbrella_centers, force_constants = _get_umbrella_sampling_data(
         us_trajs, us_centers, us_force_constants, md_trajs=md_trajs, kT=kT)

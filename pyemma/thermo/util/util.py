@@ -137,7 +137,7 @@ def get_umbrella_sampling_data(us_trajs, us_centers, us_force_constants, md_traj
     us_centers : array-like of size N
         List or array of N center positions. Each position must be a d-dimensional vector. For 1d
         umbrella sampling, one can simply pass a list of centers, e.g. [-5.0, -4.0, -3.0, ... ].
-    _us_force_constants : float or array-like of float
+    us_force_constants : float or array-like of float
         The force constants used in the umbrellas, unit-less (e.g. kT per length unit). If different
         force constants were used for different umbrellas, a list or array of N force constants
         can be given. For multidimensional umbrella sampling, the force matrix must be used.
