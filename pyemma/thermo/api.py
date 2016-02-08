@@ -17,8 +17,7 @@
 
 import numpy as _np
 from pyemma.util import types as _types
-from .util import get_umbrella_sampling_parameters as _get_umbrella_sampling_parameters
-from .util import get_umbrella_bias_sequences as _get_umbrella_bias_sequences
+from .util import get_umbrella_sampling_data as _get_umbrella_sampling_data
 from .util import get_averaged_bias_matrix as _get_averaged_bias_matrix
 
 __docformat__ = "restructuredtext en"
@@ -29,8 +28,7 @@ __maintainer__ = "Christoph Wehmeyer"
 __email__ = "christoph.wehmeyer@fu-berlin.de"
 
 __all__ = [
-    'umbrella_sampling_data',
-    'umbrella_sampling_estimate',
+    'umbrella_sampling_estimation',
     'dtram',
     'wham']
 
@@ -38,53 +36,12 @@ __all__ = [
 # Data Loaders and Readers
 # ===================================
 
-def umbrella_sampling_data(us_trajs, us_centers, us_force_constants, md_trajs=None, kT=None):
-    r"""
-    Wraps umbrella sampling data or a mix of umbrella sampling and and direct molecular dynamics
-
-    Parameters
-    ----------
-    us_trajs : list of N arrays, each of shape (T_i, d)
-        List of arrays, each having T_i rows, one for each time step, and d columns where d is the
-        dimension in which umbrella sampling was applied. Often d=1, and thus us_trajs will
-        be a list of 1d-arrays.
-    us_centers : array-like of size N
-        List or array of N center positions. Each position must be a d-dimensional vector. For 1d
-        umbrella sampling, one can simply pass a list of centers, e.g. [-5.0, -4.0, -3.0, ... ].
-    _us_force_constants : float or array-like of float
-        The force constants used in the umbrellas, unit-less (e.g. kT per length unit). If different
-        force constants were used for different umbrellas, a list or array of N force constants
-        can be given. For multidimensional umbrella sampling, the force matrix must be used.
-    md_trajs : list of M arrays, each of shape (T_i, d), optional, default=None
-        Unbiased molecular dynamics simulations. Format like umbrella_trajs.
-    kT : float (optinal)
-        Use this attribute if the supplied force constants are NOT unit-less.
-
-    Returns
-    -------
-    ttrajs : list of N+M int arrays, each of shape (T_i,)
-        The integers are indexes in 0,...,K-1 enumerating the thermodynamic states the trajectories
-        are in at any time.
-    btrajs : list of N+M float arrays, each of shape (T_i, K)
-        The floats are the reduced bias energies for each thermodynamic states and configuration.
-    umbrella_centers : float array of shape (K, d)
-        The individual umbrella centers labelled accordingly to ttrajs.
-    force_constants : float array of shape (K, d, d)
-        The individual force matrices labelled accordingly to ttrajs.
-    """
-    ttrajs, umbrella_centers, force_constants = _get_umbrella_sampling_parameters(
-        us_trajs, us_centers, us_force_constants, md_trajs=md_trajs, kT=kT)
-    if md_trajs is None:
-        md_trajs = []
-    btrajs = _get_umbrella_bias_sequences(us_trajs + md_trajs, umbrella_centers, force_constants)
-    return ttrajs, btrajs, umbrella_centers, force_constants
-
-def umbrella_sampling_estimate(
+def umbrella_sampling_estimation(
     us_trajs, us_dtrajs, us_centers, us_force_constants, md_trajs=None, md_dtrajs=None, kT=None,
     maxiter=1000, maxerr=1.0E-5, save_convergence_info=0,
     estimator='wham', lag=1, dt_traj='1 step', init=None):
     assert estimator in ['wham', 'dtram'], "unsupported estimator: %s" % estimator
-    ttrajs, btrajs, umbrella_centers, force_constants = umbrella_sampling_data(
+    ttrajs, btrajs, umbrella_centers, force_constants = _get_umbrella_sampling_data(
         us_trajs, us_centers, us_force_constants, md_trajs=md_trajs, kT=kT)
     if md_dtrajs is None:
         md_dtrajs = []

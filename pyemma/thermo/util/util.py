@@ -20,7 +20,8 @@ import numpy as _np
 __all__ = [
     'get_umbrella_sampling_parameters',
     'get_umbrella_bias_sequences',
-    'get_averaged_bias_matrix']
+    'get_averaged_bias_matrix',
+    'get_umbrella_sampling_data']
 
 def _ensure_umbrella_center(candidate, dimension):
     if isinstance(candidate, (_np.ndarray)):
@@ -122,3 +123,44 @@ def get_averaged_bias_matrix(bias_sequences, dtrajs, nstates=None):
                         _np.ascontiguousarray(-selected_bias_sequence[:, k]),
                         inplace=False))
     return _np.log(counts)[_np.newaxis, :] - bias_matrix
+
+def get_umbrella_sampling_data(us_trajs, us_centers, us_force_constants, md_trajs=None, kT=None):
+    r"""
+    Wraps umbrella sampling data or a mix of umbrella sampling and and direct molecular dynamics
+
+    Parameters
+    ----------
+    us_trajs : list of N arrays, each of shape (T_i, d)
+        List of arrays, each having T_i rows, one for each time step, and d columns where d is the
+        dimension in which umbrella sampling was applied. Often d=1, and thus us_trajs will
+        be a list of 1d-arrays.
+    us_centers : array-like of size N
+        List or array of N center positions. Each position must be a d-dimensional vector. For 1d
+        umbrella sampling, one can simply pass a list of centers, e.g. [-5.0, -4.0, -3.0, ... ].
+    _us_force_constants : float or array-like of float
+        The force constants used in the umbrellas, unit-less (e.g. kT per length unit). If different
+        force constants were used for different umbrellas, a list or array of N force constants
+        can be given. For multidimensional umbrella sampling, the force matrix must be used.
+    md_trajs : list of M arrays, each of shape (T_i, d), optional, default=None
+        Unbiased molecular dynamics simulations. Format like umbrella_trajs.
+    kT : float (optinal)
+        Use this attribute if the supplied force constants are NOT unit-less.
+
+    Returns
+    -------
+    ttrajs : list of N+M int arrays, each of shape (T_i,)
+        The integers are indexes in 0,...,K-1 enumerating the thermodynamic states the trajectories
+        are in at any time.
+    btrajs : list of N+M float arrays, each of shape (T_i, K)
+        The floats are the reduced bias energies for each thermodynamic states and configuration.
+    umbrella_centers : float array of shape (K, d)
+        The individual umbrella centers labelled accordingly to ttrajs.
+    force_constants : float array of shape (K, d, d)
+        The individual force matrices labelled accordingly to ttrajs.
+    """
+    ttrajs, umbrella_centers, force_constants = get_umbrella_sampling_parameters(
+        us_trajs, us_centers, us_force_constants, md_trajs=md_trajs, kT=kT)
+    if md_trajs is None:
+        md_trajs = []
+    btrajs = get_umbrella_bias_sequences(us_trajs + md_trajs, umbrella_centers, force_constants)
+    return ttrajs, btrajs, umbrella_centers, force_constants
