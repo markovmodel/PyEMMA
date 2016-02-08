@@ -1,6 +1,6 @@
 # This file is part of PyEMMA.
 #
-# Copyright (c) 2015 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+# Copyright (c) 2015, 2016 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
 #
 # PyEMMA is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -50,14 +50,13 @@ class WHAM(_Estimator, _MEMM):
     """
     def __init__(
         self, bias_energies_full,
-        stride=1, dt_traj='1 step', maxiter=100000, maxerr=1e-5, err_out=0, lll_out=0):
+        stride=1, dt_traj='1 step', maxiter=100000, maxerr=1e-5, save_convergence_info=0):
         self.bias_energies_full = _types.ensure_ndarray(bias_energies_full, ndim=2, kind='numeric')
         self.stride = stride
         self.dt_traj = dt_traj
         self.maxiter = maxiter
         self.maxerr = maxerr
-        self.err_out = err_out
-        self.lll_out = lll_out
+        self.save_convergence_info = save_convergence_info
         # set derived quantities
         self.nthermo, self.nstates_full = bias_energies_full.shape
         self.timestep_traj = _TimeUnit(dt_traj)
@@ -96,11 +95,12 @@ class WHAM(_Estimator, _MEMM):
             self.bias_energies_full[:, self.active_set], dtype=_np.float64)
 
         # run estimator
-        self.therm_energies, self.conf_energies, self.err, self.lll = _wham.estimate(
-            self.state_counts, self.bias_energies,
-            maxiter=self.maxiter, maxerr=self.maxerr,
-            therm_energies=self.therm_energies, conf_energies=self.conf_energies,
-            err_out=self.err_out, lll_out=self.lll_out)
+        self.therm_energies, self.conf_energies, self.increments, self.loglikelihoods = \
+            _wham.estimate(
+                self.state_counts, self.bias_energies,
+                maxiter=self.maxiter, maxerr=self.maxerr,
+                therm_energies=self.therm_energies, conf_energies=self.conf_energies,
+                save_convergence_info=self.save_convergence_info)
 
         # get stationary models
         models = [_StationaryModel(

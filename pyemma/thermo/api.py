@@ -81,7 +81,7 @@ def umbrella_sampling_data(us_trajs, us_centers, us_force_constants, md_trajs=No
 
 def umbrella_sampling_estimate(
     us_trajs, us_dtrajs, us_centers, us_force_constants, md_trajs=None, md_dtrajs=None, kT=None,
-    maxiter=1000, maxerr=1.0E-5, err_out=0, lll_out=0,
+    maxiter=1000, maxerr=1.0E-5, save_convergence_info=0,
     estimator='wham', lag=1, dt_traj='1 step', use_wham=False):
     assert estimator in ['wham', 'dtram'], "unsupported estimator: %s" % estimator
     ttrajs, btrajs, umbrella_centers, force_constants = umbrella_sampling_data(
@@ -93,14 +93,12 @@ def umbrella_sampling_estimate(
         _estimator = wham(
             ttrajs, us_dtrajs + md_dtrajs,
             _get_averaged_bias_matrix(btrajs, us_dtrajs + md_dtrajs),
-            maxiter=maxiter, maxerr=maxerr,
-            err_out=err_out, lll_out=lll_out)
+            maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info)
     elif estimator == 'dtram':
         _estimator = dtram(
             ttrajs, us_dtrajs + md_dtrajs,
             _get_averaged_bias_matrix(btrajs, us_dtrajs + md_dtrajs),
-            maxiter=maxiter, maxerr=maxerr,
-            err_out=err_out, lll_out=lll_out,
+            maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
             lag=lag, dt_traj=dt_traj, use_wham=use_wham)
     return _estimator, umbrella_centers, force_constants
 
@@ -136,7 +134,7 @@ def multitemperature_to_bias(utrajs, ttrajs, kTs):
 
 def dtram(
     ttrajs, dtrajs, bias, lag,
-    maxiter=10000, maxerr=1.0E-15, err_out=0, lll_out=0, dt_traj='1 step', use_wham=False):
+    maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step', use_wham=False):
     r"""
     Discrete transition-based reweighting analysis method
     Parameters
@@ -197,12 +195,12 @@ def dtram(
     from pyemma.thermo.estimators import DTRAM
     dtram_estimator = DTRAM(
         bias, lag=lag, count_mode='sliding',
-        maxiter=maxiter, maxerr=maxerr, err_out=err_out, lll_out=lll_out,
+        maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
         dt_traj=dt_traj, use_wham=use_wham)
     # run estimation
     return dtram_estimator.estimate(X)
 
-def wham(ttrajs, dtrajs, bias, maxiter=100000, maxerr=1.0E-15, err_out=0, lll_out=0):
+def wham(ttrajs, dtrajs, bias, maxiter=100000, maxerr=1.0E-15, save_convergence_info=0):
     r"""
     Weighted histogram analysis method
 
@@ -263,6 +261,6 @@ def wham(ttrajs, dtrajs, bias, maxiter=100000, maxerr=1.0E-15, err_out=0, lll_ou
     # build WHAM
     from pyemma.thermo.estimators import WHAM
     wham_estimator = WHAM(
-        bias, maxiter=maxiter, maxerr=maxerr, err_out=err_out, lll_out=lll_out)
+        bias, maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info)
     # run estimation
     return wham_estimator.estimate(X)
