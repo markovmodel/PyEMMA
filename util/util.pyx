@@ -254,16 +254,18 @@ def count_matrices(dtraj, lag, sliding=True, sparse_return=True, nthermo=None, n
         nstates = nmax + 1
     elif nstates < nmax + 1:
         raise ValueError("nstates is smaller than the number of observed microstates")
-    C_K = [_csr((nstates, nstates), dtype=_np.intc)] * nthermo
+    C_K = [_csr((nstates, nstates), dtype=_np.intc) for _ in range(nthermo)]
     for d in dtraj:
         bp = get_therm_state_break_points(_np.ascontiguousarray(d[:, 0]))
         for b in range(1, bp.shape[0]):
-            C_K[d[bp[b - 1], 0]] = C_K[d[bp[b - 1], 0]] + _cm(
-                _np.ascontiguousarray(d[bp[b - 1]:bp[b], 1]), lag,
+            if bp[b] - bp[b - 1] > lag:
+                C_K[d[bp[b - 1], 0]] = C_K[d[bp[b - 1], 0]] + _cm(
+                    _np.ascontiguousarray(d[bp[b - 1]:bp[b], 1]), lag,
+                    sliding=sliding, sparse_return=True, nstates=nstates)
+        if d.shape[0] - bp[-1] > lag:
+            C_K[d[bp[-1], 0]] = C_K[d[bp[-1], 0]] + _cm(
+                _np.ascontiguousarray(d[bp[-1]:, 1]), lag,
                 sliding=sliding, sparse_return=True, nstates=nstates)
-        C_K[d[bp[-1], 0]] = C_K[d[bp[-1], 0]] + _cm(
-            _np.ascontiguousarray(d[bp[-1]:, 1]), lag,
-            sliding=sliding, sparse_return=True, nstates=nstates)
     if sparse_return:
         return C_K
     return _np.array([C.toarray() for C in C_K], dtype=_np.intc)

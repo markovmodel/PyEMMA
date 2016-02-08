@@ -1,6 +1,6 @@
 # This file is part of thermotools.
 #
-# Copyright 2015 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+# Copyright 2015, 2016 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
 #
 # thermotools is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -341,7 +341,7 @@ def estimate(
     count_matrices, bias_energies,
     maxiter=1000, maxerr=1.0E-8,
     log_lagrangian_mult=None, conf_energies=None,
-    err_out=0, lll_out=0, callback=None):
+    save_convergence_info=0, callback=None):
     r"""
     Estimate the reduced unbiased and thermodynamic free energies.
         
@@ -359,10 +359,9 @@ def estimate(
         initial guess for the reduced unbiased free energies
     log_lagrangian_mult : numpy.ndarray(shape=(T, M), dtype=numpy.float64), optional
         initial guess for the logarithm of the Lagrangian multipliers
-    err_out : int, optional
-        every err_out iteration steps, store the actual increment
-    lll_out : int, optional
-        every lll_out iteration steps, store the actual loglikelihood
+    save_convergence_info : int, optional
+        every save_convergence_info iteration steps, store the actual increment
+        and the actual loglikelihood
 
     Returns
     -------
@@ -372,9 +371,9 @@ def estimate(
         reduced unbiased configurational energies
     log_lagrangian_mult : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         logarithm of the Lagrangian multipliers
-    err : numpy.ndarray(dtype=numpy.float64, ndim=1)
+    increments : numpy.ndarray(dtype=numpy.float64, ndim=1)
         stored sequence of increments
-    lll : numpy.ndarray(dtype=numpy.float64, ndim=1)
+    loglikelihoods : numpy.ndarray(dtype=numpy.float64, ndim=1)
         stored sequence of loglikelihoods
 
     Notes
@@ -388,10 +387,9 @@ def estimate(
         log_lagrangian_mult = init_log_lagrangian_mult(count_matrices)
     if conf_energies is None:
         conf_energies = _np.zeros(shape=bias_energies.shape[1], dtype=_np.float64)
-    err_traj = []
-    lll_traj = []
-    err_count = 0
-    lll_count = 0
+    increments = []
+    loglikelihoods = []
+    sci_count = 0
     scratch_TM = _np.zeros(shape=bias_energies.shape, dtype=_np.float64)
     scratch_M = _np.zeros(shape=conf_energies.shape, dtype=_np.float64)
     therm_energies = _np.zeros(shape=(bias_energies.shape[0],), dtype=_np.float64)
@@ -399,8 +397,7 @@ def estimate(
     old_conf_energies = conf_energies.copy()
     old_therm_energies = therm_energies.copy()
     for m in range(maxiter):
-        err_count += 1
-        lll_count += 1
+        sci_count += 1
         update_log_lagrangian_mult(
             old_log_lagrangian_mult, bias_energies, conf_energies, count_matrices,
             scratch_M, log_lagrangian_mult)
@@ -413,12 +410,10 @@ def estimate(
         delta_therm_energies = _np.abs((therm_energies - old_therm_energies))
         normalize(scratch_M, therm_energies, conf_energies)
         err = _np.max([_np.max(delta_conf_energies), _np.max(delta_therm_energies)])
-        if err_count == err_out:
-            err_count = 0
-            err_traj.append(err)
-        if lll_count == lll_out:
-            lll_count = 0
-            lll_traj.append(get_loglikelihood(count_matrices, estimate_transition_matrices(
+        if sci_count == save_convergence_info:
+            sci_count = 0
+            increments.append(err)
+            loglikelihoods.append(get_loglikelihood(count_matrices, estimate_transition_matrices(
                 log_lagrangian_mult, bias_energies, conf_energies, count_matrices, scratch_M)))
         if callback is not None:
             try:
@@ -443,12 +438,10 @@ def estimate(
             old_log_lagrangian_mult[:] = log_lagrangian_mult[:]
             old_conf_energies[:] = conf_energies[:]
             old_therm_energies[:] = therm_energies[:]
-    if err_out == 0:
-        err_traj = None
+    if save_convergence_info == 0:
+        increments = None
+        loglikelihoods = None
     else:
-        err_traj = _np.array(err_traj, dtype=_np.float64)
-    if lll_out == 0:
-        lll_traj = None
-    else:
-        lll_traj = _np.array(lll_traj, dtype=_np.float64)
-    return therm_energies, conf_energies, log_lagrangian_mult, err_traj, lll_traj
+        increments = _np.array(increments, dtype=_np.float64)
+        loglikelihoods = _np.array(loglikelihoods, dtype=_np.float64)
+    return therm_energies, conf_energies, log_lagrangian_mult, increments, loglikelihoods
