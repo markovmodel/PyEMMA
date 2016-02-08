@@ -24,7 +24,12 @@ cimport numpy as _np
 from thermotools import mbar as _mbar
 from .callback import CallbackInterrupt
 
-__all__ = ['update_therm_energies', 'normalize', 'get_conf_energies', 'get_biased_conf_energies', 'estimate']
+__all__ = [
+    'update_therm_energies',
+    'normalize',
+    'get_conf_energies',
+    'get_biased_conf_energies',
+    'estimate']
 
 cdef extern from "_mbar_direct.h":
     void _update_therm_weights(
@@ -125,7 +130,8 @@ def estimate(
     stop = False
     for _m in range(maxiter):
         sci_count += 1
-        update_therm_weights(therm_state_counts, old_therm_weights, bias_weight_sequence, scratch_T, therm_weights)
+        update_therm_weights(
+            therm_state_counts, old_therm_weights, bias_weight_sequence, scratch_T, therm_weights)
         therm_energies = -_np.log(therm_weights)
         delta_therm_energies = _np.abs(therm_energies - old_therm_energies)
         err = _np.max(delta_therm_energies)
@@ -151,8 +157,11 @@ def estimate(
             break
     therm_energies = -_np.log(therm_weights) + shift
     conf_energies, biased_conf_energies = _mbar.get_conf_energies(
-        log_therm_state_counts, therm_energies, bias_energy_sequence, conf_state_sequence, scratch_T, M)
-    _mbar.normalize(log_therm_state_counts, bias_energy_sequence, scratch_M, therm_energies, conf_energies, biased_conf_energies)
+        log_therm_state_counts, therm_energies,
+        bias_energy_sequence, conf_state_sequence, scratch_T, M)
+    _mbar.normalize(
+        log_therm_state_counts, bias_energy_sequence, scratch_M,
+        therm_energies, conf_energies, biased_conf_energies)
     if save_convergence_info == 0:
         increments = None
     else:
