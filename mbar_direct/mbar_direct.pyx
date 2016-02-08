@@ -63,8 +63,10 @@ def update_therm_weights(
         <double*> _np.PyArray_DATA(new_therm_weights))
 
 
-def estimate(therm_state_counts, bias_energy_sequence, conf_state_sequence,
-    maxiter=1000, maxerr=1.0E-8, therm_energies=None, err_out=0, callback=None, n_conf_states=None):
+def estimate(
+    therm_state_counts, bias_energy_sequence, conf_state_sequence,
+    maxiter=1000, maxerr=1.0E-8, therm_energies=None,
+    n_conf_states=None, save_convergence_info=0, callback=None):
     r"""
     Estimate the (un)biased reduced free energies and thermodynamic free energies
         
@@ -82,11 +84,11 @@ def estimate(therm_state_counts, bias_energy_sequence, conf_state_sequence,
         convergence criterion based on absolute change in free energies
     therm_energies : numpy.ndarray(shape=(T), dtype=numpy.float64), OPTIONAL
         initial guess for the reduced free energies of the T thermodynamic states
-    err_out : int, optional
-        every err_out iteration steps, store the actual increment
     n_conf_states : int, optional, default=None
         the number of configurational states in `conf_state_sequence`.
         If None, this is set to max(conf_state_sequence)+1.
+    save_convergence_info : int, optional
+        every save_convergence_info iteration steps, store the actual increment
 
     Returns
     -------
@@ -97,7 +99,7 @@ def estimate(therm_state_counts, bias_energy_sequence, conf_state_sequence,
     biased_conf_energies : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         reduced discrete state free energies for all combinations of
         T thermodynamic states and M discrete states
-    err : numpy.ndarray(dtype=numpy.float64, ndim=1)
+    increments : numpy.ndarray(dtype=numpy.float64, ndim=1)
         stored sequence of increments
     """
     T = therm_state_counts.shape[0]
@@ -116,20 +118,20 @@ def estimate(therm_state_counts, bias_energy_sequence, conf_state_sequence,
     bias_weight_sequence = _np.exp(-(bias_energy_sequence - shift[:, _np.newaxis]))
     old_therm_energies = therm_energies.copy()
     old_therm_weights = therm_weights.copy()
-    err_traj = []
-    err_count = 0
+    increments = []
+    sci_count = 0
     scratch_M = _np.zeros(shape=(M,), dtype=_np.float64)
     scratch_T = _np.zeros(shape=(T,), dtype=_np.float64)
     stop = False
     for _m in range(maxiter):
-        err_count += 1
+        sci_count += 1
         update_therm_weights(therm_state_counts, old_therm_weights, bias_weight_sequence, scratch_T, therm_weights)
         therm_energies = -_np.log(therm_weights)
         delta_therm_energies = _np.abs(therm_energies - old_therm_energies)
         err = _np.max(delta_therm_energies)
-        if err_count == err_out:
-            err_count = 0
-            err_traj.append(err)
+        if sci_count == save_convergence_info:
+            sci_count = 0
+            increments.append(err)
         if callback is not None:
             try:
                 callback(iteration_step = _m,
@@ -151,9 +153,8 @@ def estimate(therm_state_counts, bias_energy_sequence, conf_state_sequence,
     conf_energies, biased_conf_energies = _mbar.get_conf_energies(
         log_therm_state_counts, therm_energies, bias_energy_sequence, conf_state_sequence, scratch_T, M)
     _mbar.normalize(log_therm_state_counts, bias_energy_sequence, scratch_M, therm_energies, conf_energies, biased_conf_energies)
-
-    if err_out == 0:
-        err_traj = None
+    if save_convergence_info == 0:
+        increments = None
     else:
-        err_traj = _np.array(err_traj, dtype=_np.float64)
-    return therm_energies, conf_energies, biased_conf_energies, err_traj
+        increments = _np.array(increments, dtype=_np.float64)
+    return therm_energies, conf_energies, biased_conf_energies, increments
