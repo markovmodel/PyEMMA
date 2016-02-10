@@ -41,10 +41,15 @@ class TestCSVReader(unittest.TestCase):
         cls.nd = 4
         cls.data = np.arange(cls.nt * cls.nd).reshape(cls.nt, cls.nd)
         cls.filename1 = os.path.join(cls.dir, "data.dat")
+        cls.filename2 = os.path.join(cls.dir, "data2.dat")
         np.savetxt(cls.filename1, cls.data)
+        np.savetxt(cls.filename2, cls.data)
 
-        cls.file_with_header = tempfile.mktemp(prefix=".dat", dir=cls.dir)
+        cls.file_with_header = tempfile.mktemp(suffix=".dat", dir=cls.dir)
+        cls.file_with_header2 = tempfile.mktemp(suffix=".dat", dir=cls.dir)
+
         np.savetxt(cls.file_with_header, cls.data, header="x y z")
+        np.savetxt(cls.file_with_header2, cls.data, header="x y z")
 
         return cls
 
@@ -63,6 +68,12 @@ class TestCSVReader(unittest.TestCase):
 
         np.testing.assert_almost_equal(output[0], self.data)
 
+    def test_read_1file_oneline(self):
+        with tempfile.NamedTemporaryFile(suffix='.dat', delete=False) as f:
+            np.savetxt(f, [1,2,3])
+            f.close()
+            CSVReader(f.name, delimiters=" ")
+
     def test_read_1file_with_header(self):
         reader = CSVReader(self.file_with_header)
         self.assertEqual(reader.number_of_trajectories(), 1)
@@ -72,6 +83,17 @@ class TestCSVReader(unittest.TestCase):
         output = reader.get_output()
 
         np.testing.assert_almost_equal(output[0], self.data)
+
+    def test_read_2file_with_header(self):
+        reader = CSVReader([self.file_with_header, self.file_with_header2])
+        self.assertEqual(reader.number_of_trajectories(), 2)
+        self.assertEqual(reader.dimension(), self.nd)
+        self.assertEqual(reader.n_frames_total(), self.nt*2)
+
+        output = reader.get_output()
+
+        np.testing.assert_almost_equal(output[0], self.data)
+        np.testing.assert_almost_equal(output[1], self.data)
 
     def test_read_with_skipping_first_few_couple_lines(self):
         for skip in [0, 3, 13]:
@@ -85,9 +107,9 @@ class TestCSVReader(unittest.TestCase):
 
     def test_read_with_skipping_first_few_couple_lines_multiple_trajectoryfiles(self):
         for skip in [0, 3, 13]:
-            r1 = CSVReader([self.filename1, self.filename1])
+            r1 = CSVReader([self.filename1, self.filename2])
             out_with_skip = r1.get_output(skip=skip)
-            r2 = CSVReader([self.filename1, self.filename1])
+            r2 = CSVReader([self.filename1, self.filename2])
             out = r2.get_output()
             np.testing.assert_almost_equal(out_with_skip[0], out[0][skip::],
                                            err_msg="The first %s rows of the first file were skipped, but that did not "
@@ -121,7 +143,7 @@ class TestCSVReader(unittest.TestCase):
         np.testing.assert_almost_equal(output[0], self.data)
 
     def test_with_multiple_files(self):
-        files = [self.filename1, self.filename1]
+        files = [self.filename1, self.file_with_header]
         reader = CSVReader(files)
 
         self.assertEqual(reader.number_of_trajectories(), len(files))
@@ -131,7 +153,7 @@ class TestCSVReader(unittest.TestCase):
 
         for s in [2, 3, 7, 10]:
             output = reader.get_output(stride=s)[0]
-            np.testing.assert_almost_equal(output, self.data[::s])
+            np.testing.assert_almost_equal(output, self.data[::s], err_msg="stride=%s"%s)
 
     def test_with_lag(self):
         reader = CSVReader(self.filename1)
@@ -174,13 +196,10 @@ class TestCSVReader(unittest.TestCase):
                     chunks_lag.append(Y)
                 chunks = np.vstack(chunks)
                 chunks_lag = np.vstack(chunks_lag)
-                actual = self.data[::s]
                 actual_lagged = self.data[t::s]
                 np.testing.assert_almost_equal(chunks, self.data[::s][0:len(actual_lagged)])
                 np.testing.assert_almost_equal(chunks_lag, self.data[t::s],
                                                err_msg="output is not equal for"
                                                        " lag %i and stride %i" % (t, s))
-
-
 if __name__ == '__main__':
     unittest.main()

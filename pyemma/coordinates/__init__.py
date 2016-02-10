@@ -105,3 +105,9 @@ Find here a documentation how to extract features from them.
 
 """
 from .api import *
+
+
+def setup_package():
+    # do not use traj cache for tests
+    from pyemma import config
+    config['use_trajectory_lengths_cache'] = False

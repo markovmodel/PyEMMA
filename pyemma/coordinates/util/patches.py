@@ -114,11 +114,17 @@ class iterload(object):
                 if self._extension in ('.crd', '.mdcrd')
                 else open(self._filename)
             )(self._filename)
+
+            # offset array handling
+            offsets = kwargs.pop('offsets', None)
+            if hasattr(self._f, 'offsets') and offsets is not None:
+                self._f.offsets = offsets
+
             if self._skip > 0:
                 self._f.seek(self._skip)
 
     def __iter__(self):
-            return self
+        return self
 
     def close(self):
         if hasattr(self, '_t'):
