@@ -18,10 +18,45 @@
 import numpy as _np
 
 __all__ = [
-    'get_umbrella_sampling_parameters',
-    'get_umbrella_bias_sequences',
     'get_averaged_bias_matrix',
-    'get_umbrella_sampling_data']
+    'get_umbrella_sampling_data',
+    'get_multi_temperature_data']
+
+# ==================================================================================================
+# helpers for discrete estimations
+# ==================================================================================================
+
+def get_averaged_bias_matrix(bias_sequences, dtrajs, nstates=None):
+    from thermotools.util import logsumexp as _logsumexp
+    from thermotools.util import logsumexp_pair as _logsumexp_pair
+    from thermotools.util import kahan_summation as _kahan_summation
+    nmax = int(_np.max([dtraj.max() for dtraj in dtrajs]))
+    if nstates is None:
+        nstates = nmax + 1
+    elif nstates < nmax + 1:
+        raise ValueError("nstates is smaller than the number of observed microstates")
+    nthermo = bias_sequences[0].shape[1]
+    bias_matrix = -_np.ones(shape=(nthermo, nstates), dtype=_np.float64) * _np.inf
+    counts = _np.zeros(shape=(nstates,), dtype=_np.intc)
+    for s in range(len(bias_sequences)):
+        for i in range(nstates):
+            idx = (dtrajs[s] == i)
+            nidx = idx.sum()
+            if nidx == 0:
+                continue
+            counts[i] += nidx
+            selected_bias_sequence = bias_sequences[s][idx, :]
+            for k in range(nthermo):
+                bias_matrix[k, i] = _logsumexp_pair(
+                    bias_matrix[k, i],
+                    _logsumexp(
+                        _np.ascontiguousarray(-selected_bias_sequence[:, k]),
+                        inplace=False))
+    return _np.log(counts)[_np.newaxis, :] - bias_matrix
+
+# ==================================================================================================
+# helpers for umbrella sampling simulations
+# ==================================================================================================
 
 def _ensure_umbrella_center(candidate, dimension):
     if isinstance(candidate, (_np.ndarray)):
@@ -48,7 +83,7 @@ def _ensure_force_constant(candidate, dimension):
     else:
         raise TypeError("unsupported type")
 
-def get_umbrella_sampling_parameters(
+def _get_umbrella_sampling_parameters(
     us_trajs, us_centers, us_force_constants, md_trajs=None, kT=None):
     umbrella_centers = []
     force_constants = []
@@ -88,41 +123,13 @@ def get_umbrella_sampling_parameters(
         force_constants /= kT
     return ttrajs, umbrella_centers, force_constants
 
-def get_umbrella_bias_sequences(trajs, umbrella_centers, force_constants):
+def _get_umbrella_bias_sequences(trajs, umbrella_centers, force_constants):
     from thermotools.util import get_umbrella_bias as _get_umbrella_bias
     bias_sequences = []
     for traj in trajs:
         bias_sequences.append(
             _get_umbrella_bias(traj, umbrella_centers, force_constants))
     return bias_sequences
-
-def get_averaged_bias_matrix(bias_sequences, dtrajs, nstates=None):
-    from thermotools.util import logsumexp as _logsumexp
-    from thermotools.util import logsumexp_pair as _logsumexp_pair
-    from thermotools.util import kahan_summation as _kahan_summation
-    nmax = int(_np.max([dtraj.max() for dtraj in dtrajs]))
-    if nstates is None:
-        nstates = nmax + 1
-    elif nstates < nmax + 1:
-        raise ValueError("nstates is smaller than the number of observed microstates")
-    nthermo = bias_sequences[0].shape[1]
-    bias_matrix = -_np.ones(shape=(nthermo, nstates), dtype=_np.float64) * _np.inf
-    counts = _np.zeros(shape=(nstates,), dtype=_np.intc)
-    for s in range(len(bias_sequences)):
-        for i in range(nstates):
-            idx = (dtrajs[s] == i)
-            nidx = idx.sum()
-            if nidx == 0:
-                continue
-            counts[i] += nidx
-            selected_bias_sequence = bias_sequences[s][idx, :]
-            for k in range(nthermo):
-                bias_matrix[k, i] = _logsumexp_pair(
-                    bias_matrix[k, i],
-                    _logsumexp(
-                        _np.ascontiguousarray(-selected_bias_sequence[:, k]),
-                        inplace=False))
-    return _np.log(counts)[_np.newaxis, :] - bias_matrix
 
 def get_umbrella_sampling_data(us_trajs, us_centers, us_force_constants, md_trajs=None, kT=None):
     r"""
@@ -158,9 +165,61 @@ def get_umbrella_sampling_data(us_trajs, us_centers, us_force_constants, md_traj
     force_constants : float array of shape (K, d, d)
         The individual force matrices labelled accordingly to ttrajs.
     """
-    ttrajs, umbrella_centers, force_constants = get_umbrella_sampling_parameters(
+    ttrajs, umbrella_centers, force_constants = _get_umbrella_sampling_parameters(
         us_trajs, us_centers, us_force_constants, md_trajs=md_trajs, kT=kT)
     if md_trajs is None:
         md_trajs = []
-    btrajs = get_umbrella_bias_sequences(us_trajs + md_trajs, umbrella_centers, force_constants)
+    btrajs = _get_umbrella_bias_sequences(us_trajs + md_trajs, umbrella_centers, force_constants)
     return ttrajs, btrajs, umbrella_centers, force_constants
+
+# ==================================================================================================
+# helpers for multi-temperature simulations
+# ==================================================================================================
+
+def _get_multi_temperature_parameters(temptrajs):
+    temperatures = []
+    for temptraj in temptrajs:
+        temperatures += _np.unique(temptraj).tolist()
+    temperatures = _np.array(_np.unique(temperatures), dtype=_np.float64)
+    nthermo = temperatures.shape[0]
+    ttrajs = []
+    for temptraj in temptrajs:
+        ttraj = _np.zeros(shape=temptraj.shape, dtype=_np.intc)
+        for k in range(nthermo):
+            ttraj[(temptraj == temperatures[k])] = k
+        ttrajs.append(ttraj.copy())
+    return ttrajs, temperatures
+
+boltzmann_constant_in_kcal_per_mol = 0.0019872041
+conversion_factor_J_per_cal = 4.184
+
+def _get_multi_temperature_bias_sequences(
+    utrajs, temptrajs, temperatures, ref_temp,
+    energy_column_in_kT, temperature_column_in_kT, use_kJ_per_mol):
+    btrajs = []
+    for utraj, temptraj in zip(utrajs, temptrajs):
+        if energy_column_in_kT:
+            btrajs.append(
+                (1.0 / temperatures[_np.newaxis, :] - 1.0 / ref_temp) * \
+                (temptraj * utraj)[:, _np.newaxis])
+        elif temperature_column_in_kT:
+            btrajs.append(
+                (1.0 / temperatures[_np.newaxis, :] - 1.0 / ref_temp) * utraj[:, _np.newaxis])
+        else:
+            btrajs.append(
+                (1.0 / temperatures[_np.newaxis, :] - 1.0 / ref_temp) * \
+                utraj[:, _np.newaxis] / boltzmann_constant_in_kcal_per_mol)
+            if use_kJ_per_mol:
+                btrajs[-1] /= conversion_factor_J_per_cal
+    return btrajs
+
+def get_multi_temperature_data(
+    utrajs, temptrajs, ref_temp=None,
+    energy_column_in_kT=False, temperature_column_in_kT=False, use_kJ_per_mol=False):
+    ttrajs, temperatures = _get_multi_temperature_parameters(temptrajs)
+    if ref_temp is None:
+        ref_temp = temperatures[0]
+    btrajs = _get_multi_temperature_bias_sequences(
+        utrajs, temptrajs, temperatures, ref_temp,
+        energy_column_in_kT, temperature_column_in_kT, use_kJ_per_mol)
+    return ttrajs, btrajs, temperatures

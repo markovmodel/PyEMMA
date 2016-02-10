@@ -18,6 +18,7 @@
 import numpy as _np
 from pyemma.util import types as _types
 from .util import get_umbrella_sampling_data as _get_umbrella_sampling_data
+from .util import get_multi_temperature_data as _get_multi_temperature_data
 from .util import get_averaged_bias_matrix as _get_averaged_bias_matrix
 
 __docformat__ = "restructuredtext en"
@@ -29,12 +30,13 @@ __email__ = "christoph.wehmeyer@fu-berlin.de"
 
 __all__ = [
     'umbrella_sampling',
+    'multi_temperature',
     'dtram',
     'wham']
 
-# ===================================
-# Data Loaders and Readers
-# ===================================
+# ==================================================================================================
+# wrappers for specific simulation types
+# ==================================================================================================
 
 def umbrella_sampling(
     us_trajs, us_dtrajs, us_centers, us_force_constants, md_trajs=None, md_dtrajs=None, kT=None,
@@ -110,6 +112,32 @@ def umbrella_sampling(
     _estimator.force_constants = force_constants
     return _estimator
 
+def multi_temperature(
+    utrajs, temptrajs, dtrajs, reference_temperature=None,
+    energy_column_in_kT=False, temperature_column_in_kT=False, use_kJ_per_mol=False,
+    maxiter=10000, maxerr=1.0E-15, save_convergence_info=0,
+    estimator='wham', lag=1, dt_traj='1 step', init=None):
+    assert estimator in ['wham', 'dtram'], "unsupported estimator: %s" % estimator
+    ttrajs, btrajs, temperatures = _get_multi_temperature_data(
+        utrajs, temptrajs, ref_temp=reference_temperature,
+        energy_column_in_kT=energy_column_in_kT,
+        temperature_column_in_kT=temperature_column_in_kT,
+        use_kJ_per_mol=use_kJ_per_mol)
+    _estimator = None
+    if estimator == 'wham':
+        _estimator = wham(
+            ttrajs, dtrajs,
+            _get_averaged_bias_matrix(btrajs, dtrajs),
+            maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info)
+    elif estimator == 'dtram':
+        _estimator = dtram(
+            ttrajs, dtrajs,
+            _get_averaged_bias_matrix(btrajs, dtrajs),
+            maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
+            lag=lag, dt_traj=dt_traj, init=init)
+    _estimator.temperatures = temperatures
+    return _estimator
+
 # This corresponds to the source function in coordinates.api
 def multitemperature_to_bias(utrajs, ttrajs, kTs):
     r""" Wraps umbrella sampling data or a mix of umbrella sampling and and direct molecular dynamics
@@ -136,9 +164,9 @@ def multitemperature_to_bias(utrajs, ttrajs, kTs):
     """
     pass
 
-# ===================================
-# Estimators
-# ===================================
+# ==================================================================================================
+# wrappers for the estimators
+# ==================================================================================================
 
 def dtram(
     ttrajs, dtrajs, bias, lag,
