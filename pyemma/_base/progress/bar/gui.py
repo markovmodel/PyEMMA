@@ -1,4 +1,3 @@
-
 # This file is part of PyEMMA.
 #
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
@@ -15,7 +14,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 '''
 Created on 24.04.2015
 
@@ -23,8 +21,12 @@ Created on 24.04.2015
 '''
 
 from __future__ import absolute_import
+
 import sys
+import warnings
+
 from pyemma import config
+
 
 __all__ = ('is_interactive_session', 'show_progressbar')
 
@@ -38,15 +40,13 @@ def __ipy_widget_version():
             # hide future warning of ipython and show custom message
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                import IPython.html.widgets
+                from IPython.html.widgets import Box
             warnings.warn("Consider upgrading to Jupyter (new IPython version) and ipywidgets.",
                           DeprecationWarning)
         except ImportError:
-            return False
+            return None
         else:
             return 3
-        # no widgets available:
-        return None
     else:
         return 4
 
@@ -68,6 +68,9 @@ def __attached_to_ipy_notebook():
         Box()
     except:
         return False
+    else:
+        return True
+
 
 
 def __is_interactive():
@@ -91,6 +94,8 @@ is_interactive_session = __is_tty_or_interactive_session()
 
 if ipython_notebook_session:
     from IPython.display import display
+    __widget_version = __ipy_widget_version()
+    __widget_version = __widget_version if __widget_version is not None else 0
 
     if __widget_version >= 4:
         from ipywidgets import Box, Text, IntProgress
@@ -121,40 +126,43 @@ def show_progressbar(bar, show_eta=True):
 
     """
     if not (str(config['show_progress_bars']) == 'True' and
-                is_interactive_session):
+            is_interactive_session):
         return
 
     # note: this check ensures we have IPython.display and so on.
     if ipython_notebook_session:
-        # create IPython widgets on first call
-        if not hasattr(bar, 'widget'):
-            box = Box()
-            text = Text()
-            progress_widget = IntProgress()
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', DeprecationWarning)
+            # create IPython widgets on first call
+            if not hasattr(bar, 'widget'):
 
-            box.children = [text, progress_widget]
-            bar.widget = box
-            widget = box
+                box = Box()
+                text = Text()
+                progress_widget = IntProgress()
 
-            # make it visible once
-            display(box)
+                box.children = [text, progress_widget]
+                bar.widget = box
+                widget = box
 
-            # update css for a more compact view
-            progress_widget._css = [
-                ("div", "margin-top", "0px")
-            ]
-            progress_widget.height = "8px"
-        else:
-            widget = bar.widget
+                # make it visible once
+                display(box)
 
-        # update widgets slider value and description text
-        desc = bar.description
-        if show_eta:
-            desc += ':\tETA:' + bar._generate_eta(bar._eta.eta_seconds)
-        assert isinstance(widget.children[0], Text)
-        assert isinstance(widget.children[1], IntProgress)
-        widget.children[0].placeholder = desc
-        widget.children[1].value = bar.percent
+                # update css for a more compact view
+                progress_widget._css = [
+                    ("div", "margin-top", "0px")
+                ]
+                progress_widget.height = "8px"
+            else:
+                widget = bar.widget
+
+            # update widgets slider value and description text
+            desc = bar.description
+            if show_eta:
+                desc += ':\tETA:' + bar._generate_eta(bar._eta.eta_seconds)
+            assert isinstance(widget.children[0], Text)
+            assert isinstance(widget.children[1], IntProgress)
+            widget.children[0].placeholder = desc
+            widget.children[1].value = bar.percent
     else:
         sys.stdout.write("\r" + str(bar))
         sys.stdout.flush()
