@@ -37,7 +37,7 @@ class ProgressReporter(object):
     # Note: this class has intentionally no constructor, because it is more
     # comfortable for the user of this class (who is then not in the need to call it).
 
-    def _progress_register(self, amount_of_work, description=None, stage=0):
+    def _progress_register(self, amount_of_work, description='', stage=0):
         """ Registers a progress which can be reported/displayed via a progress bar.
 
         Parameters
