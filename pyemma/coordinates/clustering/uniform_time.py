@@ -81,8 +81,10 @@ class UniformTimeClustering(AbstractClustering):
         linspace = self.stride * np.arange(next_t, T - next_t + 1, (T - 2*next_t + 1) // self.n_clusters)[:self.n_clusters]
         # random access matrix
         ra_stride = np.array([UniformTimeClustering._idx_to_traj_idx(x, cumsum) for x in linspace])
-        self.clustercenters = np.concatenate([X for X in
-                                              iterable.iterator(stride=ra_stride, return_trajindex=False)])
+        with iterable.iterator(stride=ra_stride, return_trajindex=False) as it:
+            assert it is not None
+            self.clustercenters = np.concatenate([X for X in it])
+
         assert len(self.clustercenters) == self.n_clusters
         return self
 

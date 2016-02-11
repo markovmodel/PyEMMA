@@ -120,7 +120,7 @@ class iterload:
         self._closed = True
         if self._mode is 'pdb':
             self._t.close()
-        elif self._mode is 'traj':
+        elif self._mode in ('traj', 'random_access'):
             self._f.close()
 
     def __next__(self):

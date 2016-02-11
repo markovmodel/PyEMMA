@@ -23,7 +23,6 @@ Created on 19.01.2015
 '''
 
 from __future__ import absolute_import
-import itertools
 import os
 import tempfile
 import unittest
@@ -144,10 +143,6 @@ class TestDiscretizer(unittest.TestCase):
 
     def test_save_dtrajs(self):
         reader = source(self.trajfiles, top=self.topfile)
-        # select all possible distances
-        pairs = np.array(
-            [x for x in itertools.combinations(list(range(self.n_residues)), 2)])
-
         cluster = cluster_kmeans(k=2)
         d = Discretizer(reader, cluster=cluster)
         d.parametrize()

@@ -219,20 +219,19 @@ class TICA(StreamingTransformer):
         self._skipped_trajs = np.fromiter((i for i in range(self._ntraj) if
                                            iterable.trajectory_length(i) < self.lag),
                                           dtype=int)
-        it = iterable.iterator(lag=self.lag, return_trajindex=False)
+        with iterable.iterator(lag=self.lag, return_trajindex=False) as it:
+            # register progress
+            n_chunks = it._n_chunks
+            self._progress_register(n_chunks, "calculate mean+cov", 0)
+            nsave = int(max(log(ceil(n_chunks), 2), 2))
+            self._logger.debug("using %s moments for %i chunks" % (nsave, n_chunks))
+            covar = running_covar(xx=True, xy=True, yy=False,
+                                  remove_mean=True, symmetrize=True, nsave=nsave)
 
-        # register progress
-        n_chunks = it._n_chunks
-        self._progress_register(n_chunks, "calculate mean+cov", 0)
-        nsave = int(max(log(ceil(n_chunks), 2), 2))
-        self._logger.debug("using %s moments for %i chunks" % (nsave, n_chunks))
-        covar = running_covar(xx=True, xy=True, yy=False,
-                              remove_mean=True, symmetrize=True, nsave=nsave)
-
-        for X, Y in it:
-            covar.add(X, Y)
-            # counting chunks and log of eta
-            self._progress_update(1, stage=0)
+            for X, Y in it:
+                covar.add(X, Y)
+                # counting chunks and log of eta
+                self._progress_update(1, stage=0)
 
         cov, cov_tau = covar.cov_XX(), covar.cov_XY()
 

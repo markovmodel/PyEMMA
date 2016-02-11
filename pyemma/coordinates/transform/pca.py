@@ -142,18 +142,18 @@ class PCA(StreamingTransformer, ProgressReporter):
         self._model.mean = value
 
     def _estimate(self, iterable, **kwargs):
-        it = iterable.iterator(return_trajindex=False)
-        n_chunks = it._n_chunks
-        self._progress_register(n_chunks, "calc mean and covar", 0)
-        nsave = max(math.log(math.ceil(n_chunks), 2), 2)
-        self._logger.debug("using %s moments for %i chunks" % (nsave, n_chunks))
-        self._covar = running_covar(xx=True, xy=False, yy=False,
-                                    remove_mean=True, symmetrize=False,
-                                    nsave=nsave)
+        with iterable.iterator(return_trajindex=False) as it:
+            n_chunks = it._n_chunks
+            self._progress_register(n_chunks, "calc mean and covar", 0)
+            nsave = max(math.log(math.ceil(n_chunks), 2), 2)
+            self._logger.debug("using %s moments for %i chunks" % (nsave, n_chunks))
+            self._covar = running_covar(xx=True, xy=False, yy=False,
+                                        remove_mean=True, symmetrize=False,
+                                        nsave=nsave)
 
-        for chunk in it:
-            self._covar.add(chunk)
-            self._progress_update(1, 0)
+            for chunk in it:
+                self._covar.add(chunk)
+                self._progress_update(1, 0)
 
         self.cov = self._covar.cov_XX()
         self.mu = self._covar.mean_X()

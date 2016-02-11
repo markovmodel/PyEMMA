@@ -132,11 +132,12 @@ class RegularSpaceClustering(AbstractClustering):
         it = iterable.iterator(return_trajindex=False)
         used_frames = 0
         try:
-            for X in it:
-                used_frames += len(X)
-                regspatial.cluster(X.astype(np.float32, order='C', copy=False),
-                                   clustercenters, self.dmin,
-                                   self.metric, self.max_centers)
+            with iterable.iterator(return_trajindex=False) as it:
+                for X in it:
+                    used_frames += len(X)
+                    regspatial.cluster(X.astype(np.float32, order='C', copy=False),
+                                       clustercenters, self.dmin,
+                                       self.metric, self.max_centers)
         except RuntimeError:
             msg = 'Maximum number of cluster centers reached.' \
                   ' Consider increasing max_centers or choose' \
