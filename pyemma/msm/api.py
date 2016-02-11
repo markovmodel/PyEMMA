@@ -504,7 +504,7 @@ def estimate_markov_model(dtrajs, lag, reversible=True, statdist=None,
 
 
 def timescales_hmsm(dtrajs, nstates, lags=None, nits=None, reversible=True, stationary=False,
-                    connected=True, errors=None, nsamples=100, n_jobs=1,
+                    connectivity=None, errors=None, nsamples=100, n_jobs=1,
                     show_progress=True):
     r""" Calculate implied timescales from Hidden Markov state models estimated at a series of lag times.
 
@@ -522,9 +522,20 @@ def timescales_hmsm(dtrajs, nstates, lags=None, nits=None, reversible=True, stat
         number of implied timescales to be computed. Will compute less if the
         number of states are smaller. None means the number of timescales will
         be determined automatically.
-    connected : boolean (optional)
-        If true compute the connected set before transition matrix
-        estimation at each lag separately
+    connectivity : str, optional, default = None
+        Defines if the resulting HMM will be defined on all hidden states or on
+        a connected subset. Connectivity is defined by counting only
+        transitions with at least mincount_connectivity counts.
+        If a subset of states is used, all estimated quantities (transition
+        matrix, stationary distribution, etc) are only defined on this subset
+        and are correspondingly smaller than nstates.
+        Following modes are available:
+        * None or 'all' : The active set is the full set of states.
+          Estimation is done on all weakly connected subsets separately. The
+          resulting transition matrix may be disconnected.
+        * 'largest' : The active set is the largest reversibly connected set.
+        * 'populous' : The active set is the reversibly connected set with
+           most counts.
     reversible : boolean (optional)
         Estimate transition matrix reversibly (True) or nonreversibly (False)
     stationary : bool, optional, default=False
@@ -608,11 +619,6 @@ def timescales_hmsm(dtrajs, nstates, lags=None, nits=None, reversible=True, stat
     # format data
     dtrajs = _types.ensure_dtraj_list(dtrajs)
 
-    if connected:
-        connectivity = 'largest'
-    else:
-        connectivity = 'none'
-
     # MLE or error estimation?
     if errors is None:
         estimator = _ML_HMSM(nstates=nstates, reversible=reversible, stationary=stationary, connectivity=connectivity)
@@ -630,7 +636,7 @@ def timescales_hmsm(dtrajs, nstates, lags=None, nits=None, reversible=True, stat
 
 
 def estimate_hidden_markov_model(dtrajs, nstates, lag, reversible=True, stationary=False,
-                                 connectivity='largest', observe_active=True, separate=None,
+                                 connectivity=None, separate=None,
                                  dt_traj='1 step', accuracy=1e-3, maxit=1000):
     r""" Estimates a Hidden Markov state model from discrete trajectories
 
@@ -657,27 +663,20 @@ def estimate_hidden_markov_model(dtrajs, nstates, lag, reversible=True, stationa
         it will be estimated from the starting states. Only set this to true if
         you're sure that the observation trajectories are initiated from a global
         equilibrium distribution.
-    connectivity : str, optional, default = 'largest'
-        Connectivity mode. Three methods are intended (currently only 'largest'
-        is implemented):
-
-        * 'largest' : The active set is the largest reversibly
-          connected set. All estimation will be done on this subset
-          and all quantities (transition matrix, stationary
-          distribution, etc) are only defined on this subset and are
-          correspondingly smaller than the full set of states
-        * 'all' : The active set is the full set of states. Estimation
-          will be conducted on each reversibly connected set
-          separately. That means the transition matrix will decompose
-          into disconnected submatrices, the stationary vector is only
-          defined within subsets, etc. Currently not implemented.
-        * 'none' : The active set is the full set of
-          states. Estimation will be conducted on the full set of
-          states without ensuring connectivity. This only permits
-          nonreversible estimation. Currently not implemented.
-    observe_active : bool, optional, default=True
-        True: Restricts the observation set to the active states of the MSM.
-        False: All states are in the observation set.
+    connectivity : str, optional, default = None
+        Defines if the resulting HMM will be defined on all hidden states or on
+        a connected subset. Connectivity is defined by counting only
+        transitions with at least mincount_connectivity counts.
+        If a subset of states is used, all estimated quantities (transition
+        matrix, stationary distribution, etc) are only defined on this subset
+        and are correspondingly smaller than nstates.
+        Following modes are available:
+        * None or 'all' : The active set is the full set of states.
+          Estimation is done on all weakly connected subsets separately. The
+          resulting transition matrix may be disconnected.
+        * 'largest' : The active set is the largest reversibly connected set.
+        * 'populous' : The active set is the reversibly connected set with
+           most counts.
     separate : None or iterable of int
         Force the given set of observed states to stay in a separate hidden state.
         The remaining nstates-1 states will be assigned by a metastable decomposition.
@@ -806,8 +805,8 @@ def estimate_hidden_markov_model(dtrajs, nstates, lag, reversible=True, stationa
 
     """
     # initialize HMSM estimator
-    hmsm_estimator = _ML_HMSM(lag=lag, nstates=nstates, reversible=reversible, connectivity=connectivity,
-                              observe_active=observe_active, separate=separate,
+    hmsm_estimator = _ML_HMSM(lag=lag, nstates=nstates, reversible=reversible, msm_init='largest-strong',
+                              connectivity=connectivity, separate=separate,
                               dt_traj=dt_traj, accuracy=accuracy, maxit=maxit)
     # run estimation
     return hmsm_estimator.estimate(dtrajs)
@@ -864,24 +863,20 @@ def bayesian_markov_model(dtrajs, lag, reversible=True, statdist=None,
               .. math::
 
                     (0 \rightarrow \tau), (\tau \rightarrow 2 \tau), ..., (((T/tau)-1) \tau \rightarrow T)
-    connectivity : str, optional, default = 'largest'
-        Connectivity mode. Three methods are intended (currently only 'largest'
-        is implemented):
-
-        * 'largest' : The active set is the largest reversibly
-          connected set. All estimation will be done on this subset
-          and all quantities (transition matrix, stationary
-          distribution, etc) are only defined on this subset and are
-          correspondingly smaller than the full set of states
-        * 'all' : The active set is the full set of states. Estimation
-          will be conducted on each reversibly connected set
-          separately. That means the transition matrix will decompose
-          into disconnected submatrices, the stationary vector is only
-          defined within subsets, etc. Currently not implemented.
-        * 'none' : The active set is the full set of
-          states. Estimation will be conducted on the full set of
-          states without ensuring connectivity. This only permits
-          nonreversible estimation. Currently not implemented.
+    connectivity : str, optional, default = None
+        Defines if the resulting HMM will be defined on all hidden states or on
+        a connected subset. Connectivity is defined by counting only
+        transitions with at least mincount_connectivity counts.
+        If a subset of states is used, all estimated quantities (transition
+        matrix, stationary distribution, etc) are only defined on this subset
+        and are correspondingly smaller than nstates.
+        Following modes are available:
+        * None or 'all' : The active set is the full set of states.
+          Estimation is done on all weakly connected subsets separately. The
+          resulting transition matrix may be disconnected.
+        * 'largest' : The active set is the largest reversibly connected set.
+        * 'populous' : The active set is the reversibly connected set with
+           most counts.
     nsample : int, optional, default=100
         number of transition matrix samples to compute and store
     conf : float, optional, default=0.95
@@ -1011,7 +1006,7 @@ def bayesian_markov_model(dtrajs, lag, reversible=True, statdist=None,
 
 
 def bayesian_hidden_markov_model(dtrajs, nstates, lag, nsamples=100, reversible=True, stationary=False,
-                                 connectivity='largest', observe_active=True, separate=None,
+                                 connectivity=None, separate=None,
                                  conf=0.95, dt_traj='1 step', store_hidden=False, show_progress=True):
     r""" Bayesian Hidden Markov model estimate using Gibbs sampling of the posterior
 
@@ -1036,27 +1031,20 @@ def bayesian_hidden_markov_model(dtrajs, nstates, lag, nsamples=100, reversible=
         it will be estimated from the starting states. Only set this to true if
         you're sure that the observation trajectories are initiated from a global
         equilibrium distribution.
-    connectivity : str, optional, default = 'largest'
-        Connectivity mode. Three methods are intended (currently only 'largest'
-        is implemented):
-
-        * 'largest' : The active set is the largest reversibly
-          connected set. All estimation will be done on this subset
-          and all quantities (transition matrix, stationary
-          distribution, etc) are only defined on this subset and are
-          correspondingly smaller than the full set of states
-        * 'all' : The active set is the full set of states. Estimation
-          will be conducted on each reversibly connected set
-          separately. That means the transition matrix will decompose
-          into disconnected submatrices, the stationary vector is only
-          defined within subsets, etc. Currently not implemented.
-        * 'none' : The active set is the full set of
-          states. Estimation will be conducted on the full set of
-          states without ensuring connectivity. This only permits
-          nonreversible estimation. Currently not implemented.
-    observe_active : bool, optional, default=True
-        True: Restricts the observation set to the active states of the MSM.
-        False: All states are in the observation set.
+    connectivity : str, optional, default = None
+        Defines if the resulting HMM will be defined on all hidden states or on
+        a connected subset. Connectivity is defined by counting only
+        transitions with at least mincount_connectivity counts.
+        If a subset of states is used, all estimated quantities (transition
+        matrix, stationary distribution, etc) are only defined on this subset
+        and are correspondingly smaller than nstates.
+        Following modes are available:
+        * None or 'all' : The active set is the full set of states.
+          Estimation is done on all weakly connected subsets separately. The
+          resulting transition matrix may be disconnected.
+        * 'largest' : The active set is the largest reversibly connected set.
+        * 'populous' : The active set is the reversibly connected set with
+           most counts.
     separate : None or iterable of int
         Force the given set of observed states to stay in a separate hidden state.
         The remaining nstates-1 states will be assigned by a metastable decomposition.
@@ -1154,7 +1142,7 @@ def bayesian_hidden_markov_model(dtrajs, nstates, lag, nsamples=100, reversible=
 
     """
     bhmsm_estimator = _Bayes_HMSM(lag=lag, nstates=nstates, nsamples=nsamples, reversible=reversible,
-                                  connectivity=connectivity, observe_active=observe_active, separate=separate,
+                                  connectivity=connectivity, separate=separate,
                                   dt_traj=dt_traj, conf=conf, store_hidden=store_hidden, show_progress=show_progress)
     return bhmsm_estimator.estimate(dtrajs)
 

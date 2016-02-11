@@ -51,7 +51,8 @@ def _confidence_interval_1d(data, alpha):
     """
     if alpha < 0 or alpha > 1:
         raise ValueError('Not a meaningful confidence level: '+str(alpha))
-      # exception: if data are constant, return three times the constant and raise a warning
+    if np.any(np.isnan(data)):
+        return np.nan, np.nan, np.nan
     dmin = np.min(data)
     dmax = np.max(data)
     # if dmin == dmax:
@@ -65,7 +66,7 @@ def _confidence_interval_1d(data, alpha):
     sdata = np.sort(data)
     # index of the mean
     im = np.searchsorted(sdata, m)
-    if im == 0 or im == len(sdata):
+    if im == 0 or im == len(sdata) or (np.isinf(m-sdata[im-1]) and np.isinf(sdata[im]-sdata[im-1])):
         pm = im
     else:
         pm = (im-1) + (m-sdata[im-1])/(sdata[im]-sdata[im-1])
@@ -73,12 +74,18 @@ def _confidence_interval_1d(data, alpha):
     pl = pm - alpha*pm
     il1 = max(0, int(math.floor(pl)))
     il2 = min(len(sdata)-1, int(math.ceil(pl)))
-    l = sdata[il1] + (pl - il1)*(sdata[il2] - sdata[il1])
+    if sdata[il1] == sdata[il2]:  # catch infs
+        l = sdata[il1]
+    else:
+        l = sdata[il1] + (pl - il1)*(sdata[il2] - sdata[il1])
     # right interval boundary
     pr = pm + alpha*(len(data)-im)
     ir1 = max(0, int(math.floor(pr)))
     ir2 = min(len(sdata)-1, int(math.ceil(pr)))
-    r = sdata[ir1] + (pr - ir1)*(sdata[ir2] - sdata[ir1])
+    if sdata[ir1] == sdata[ir2]:  # catch infs
+        r = sdata[ir1]
+    else:
+        r = sdata[ir1] + (pr - ir1)*(sdata[ir2] - sdata[ir1])
 
     # return
     return m, l, r

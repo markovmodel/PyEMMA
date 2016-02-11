@@ -24,7 +24,6 @@ import msmtools.estimation as msmest
 from pyemma.msm.estimators.estimated_hmsm import EstimatedHMSM as _EstimatedHMSM
 
 from pyemma.msm.estimators.estimated_msm import EstimatedMSM as _EstimatedMSM
-from pyemma.msm.estimators.maximum_likelihood_msm import MaximumLikelihoodMSM as _MSMEstimator
 from pyemma._base.estimator import Estimator as _Estimator
 from pyemma.util import types as _types
 from pyemma.util.units import TimeUnit
@@ -43,7 +42,7 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
     r"""Maximum likelihood estimator for a Hidden MSM given a MSM"""
 
     def __init__(self, nstates=2, lag=1, stride=1, msm_init='largest-strong', reversible=True, stationary=False,
-                 connectivity=None, mincount_connectivity='1/n', observe_active=False,
+                 connectivity=None, mincount_connectivity='1/n',
                  separate=None, dt_traj='1 step', accuracy=1e-3, maxit=1000):
         r"""Maximum likelihood estimator for a Hidden MSM given a MSM
 
@@ -66,10 +65,11 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
             an estimate for the correlation time and sets the stride accordingly
         msm_init : str or :class:`MSM <pyemma.msm.estimators.msm_estimated.MSM>`
             MSM object to initialize the estimation, or one of following keywords:
-            * 'largest-strong' | None (default) : Estimate a MSM and use its largest
-              strongly connected set to generate an initial HMM
+            * 'largest-strong' | None (default) : Estimate MSM on the largest
+                strongly connected set and use spectral clustering to generate an
+                initial HMM
             * 'all' : Estimate MSM(s) on the full state space to initialize the
-              HMM. This estimate maybe weakly connected or disconnected.
+                HMM. This estimate maybe weakly connected or disconnected.
         reversible : bool, optional, default = True
             If true compute reversible MSM, else non-reversible MSM
         stationary : bool, optional, default=False
@@ -96,9 +96,6 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
             Counts lower than that will count zero in the connectivity check and
             may thus separate the resulting transition matrix. The default
             evaluates to 1/nstates.
-        observe_active : bool, optional, default=False
-            True: Restricts the observation set to the active states of the initial MSM.
-            False: All states are in the observation set.
         separate : None or iterable of int
             Force the given set of observed states to stay in a separate hidden state.
             The remaining nstates-1 states will be assigned by a metastable decomposition.
@@ -136,7 +133,6 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
         if mincount_connectivity == '1/n':
             mincount_connectivity = 1.0/float(nstates)
         self.mincount_connectivity = mincount_connectivity
-        self.observe_active = observe_active
         self.separate = separate
         self.dt_traj = dt_traj
         self.timestep_traj = TimeUnit(dt_traj)
@@ -161,7 +157,7 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
         # ensure right format
         dtrajs = _types.ensure_dtraj_list(dtrajs)
 
-        # check lag
+        # CHECK LAG
         trajlengths = [np.size(dtraj) for dtraj in dtrajs]
         if self.lag >= np.max(trajlengths):
             raise ValueError('Illegal lag time ' + str(self.lag) + ' exceeds longest trajectory length')
@@ -170,94 +166,58 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
                                 + np.mean(trajlengths) + '. It is recommended to fit four lag times in each '
                                 + 'trajectory. HMM might be inaccurate.')
 
-        corrtime = self.lag  # initial estimate of the data correlation time
-
-
-        # if no initial MSM is given, estimate it now
-        if self.msm_init is None or self.msm_init=='largest-strong':
-            # estimate with sparse=False, because we need to do PCCA which is currently not implemented for sparse
-            # estimate with connectivity='largest', because otherwise we might have a lot of singlet states
-            msm_estimator = _MSMEstimator(lag=self.lag, reversible=self.reversible, sparse=False,
-                                          connectivity='largest', dt_traj=self.timestep_traj)
-            msm_init = msm_estimator.estimate(dtrajs)
-        else:
-            assert isinstance(self.msm_init, _EstimatedMSM), 'msm_init must be known keyword or of type EstimatedMSM'
-            msm_init = self.msm_init
-            self.reversible = msm_init.is_reversible
-
-        # print 'Connected set: ', msm_init.active_set
-
-        # generate lagged observations
+        # EVALUATE STRIDE
         if self.stride == 'effective':
             # by default use lag as stride (=lag sampling), because we currently have no better theory for deciding
             # how many uncorrelated counts we can make
             self.stride = self.lag
+            # get a quick estimate from the spectral radius of the nonreversible
+            from pyemma.msm import estimate_markov_model
+            msm_nr = estimate_markov_model(dtrajs, lag=self.lag, reversible=False, sparse=False,
+                                           connectivity='largest', dt_traj=self.timestep_traj)
             # if we have more than nstates timescales in our MSM, we use the next (neglected) timescale as an
             # estimate of the decorrelation time
-            if msm_init.nstates > self.nstates:
-                corrtime = int(max(1, msm_init.timescales()[self.nstates-1]))
+            if msm_nr.nstates > self.nstates:
+                corrtime = max(1, msm_nr.timescales()[self.nstates-1])
                 # use the smaller of these two pessimistic estimates
-                self.stride = min(self.stride, 2*corrtime)
-        # TODO: Here we always use the full observation state space for the estimation.
-        dtrajs_lagged = bhmm.lag_observations(dtrajs, self.lag, stride=self.stride)
+                self.stride = int(min(self.lag, 2*corrtime))
 
-        # check input
-        assert _types.is_int(self.nstates) and self.nstates > 1 and self.nstates <= msm_init.nstates, \
-            'nstates must be an int in [2,msmobj.nstates]'
-        # if hmm.nstates = msm.nstates there is no problem. Otherwise, check spectral gap
-        if msm_init.nstates > self.nstates:
-            timescale_ratios = msm_init.timescales()[:-1] / msm_init.timescales()[1:]
-            if timescale_ratios[self.nstates-2] < 1.5:
-                self.logger.warning('Requested coarse-grained model with ' + str(self.nstates) + ' metastable states at ' +
-                                 'lag=' + str(self.lag) + '.' + 'The ratio of relaxation timescales between ' +
-                                 str(self.nstates) + ' and ' + str(self.nstates+1) + ' states is only ' +
-                                 str(timescale_ratios[self.nstates-2]) + ' while we recommend at least 1.5. ' +
-                                 ' It is possible that the resulting HMM is inaccurate. Handle with caution.')
+        # LAG AND STRIDE DATA
+        dtrajs_lagged_strided = bhmm.lag_observations(dtrajs, self.lag, stride=self.stride)
 
-        # set things from MSM
-        # TODO: dtrajs_obs is set here, but not used in estimation. Estimation is always done with
-        # TODO: respect to full observation (see above). This is confusing. Define how we want to do this in gen.
-        # TODO: observable set is also not used, it is just saved.
-        nstates_obs_full = msm_init.nstates_full
-        if self.observe_active:
-            observable_set = msm_init.active_set
-            dtrajs_obs = msm_init.discrete_trajectories_active
+        # OBSERVATION SET
+        observe_subset = None
+
+        # INIT HMM
+        from bhmm import init_discrete_hmm
+        if self.msm_init=='largest-strong':
+            hmm_init = init_discrete_hmm(dtrajs_lagged_strided, self.nstates, lag=1,
+                                         reversible=self.reversible, stationary=True, regularize=True,
+                                         method='lcs-spectral', separate=self.separate)
+        elif self.msm_init=='all':
+            hmm_init = init_discrete_hmm(dtrajs_lagged_strided, self.nstates, lag=1,
+                                         reversible=self.reversible, stationary=True, regularize=True,
+                                         method='spectral', separate=self.separate)
+        elif isinstance(self.msm_init, _EstimatedMSM):  # initial MSM given.
+            from bhmm.init.discrete import init_discrete_hmm_spectral
+            p0, P0, pobs0 = init_discrete_hmm_spectral(self.msm_init.count_matrix_full, self.nstates,
+                                                       reversible=self.reversible, stationary=True,
+                                                       active_set=self.msm_init.active_set,
+                                                       P=self.msm_init.transition_matrix, separate=self.separate)
+            hmm_init = bhmm.discrete_hmm(p0, P0, pobs0)
+            observe_subset = self.msm_init.active_set
         else:
-            observable_set = np.arange(nstates_obs_full)
-            dtrajs_obs = msm_init.discrete_trajectories_full
+            raise ValueError('Unknown MSM initialization option: ' + str(self.msm_init))
 
         # ---------------------------------------------------------------------------------------
         # Estimate discrete HMM
         # ---------------------------------------------------------------------------------------
 
-        # TODO: this is really not observe_active, but this chooses how to initialize the HMM.
-        # TODO: Do we need a separate flag here? And if we estimate disconnected (here observe_active=True),
-        # TODO: Why do we even need the initial MSM? It's just a waste of time in that case.
-        if self.observe_active:
-            Cinit = msm_init.count_matrix_full
-            Pinit = msm_init.transition_matrix
-            # TODO: active_set confusing name. msm_active_set or similar?
-            active_set = msm_init.active_set
-        else:
-            Cinit = msm_init.count_matrix_full
-            # make sure we're strongly connected
-            Cinit += msmest.prior_neighbor(Cinit, 0.001)
-            nonempty = np.where(Cinit.sum(axis=0) + Cinit.sum(axis=1) > 0)[0]
-            Cinit[nonempty, nonempty] = np.maximum(Cinit[nonempty, nonempty], 0.001)
-            Pinit = None
-            active_set = None
-
-        from bhmm.init.discrete import init_discrete_hmm_spectral
-        p0, P0, pobs0 = init_discrete_hmm_spectral(Cinit, self.nstates, reversible=self.reversible,
-                                             active_set=active_set, P=Pinit, separate=self.separate)
-        hmm_init = bhmm.discrete_hmm(p0, P0, pobs0)
-
         # run EM
         from bhmm.estimators.maximum_likelihood import MaximumLikelihoodEstimator as _MaximumLikelihoodEstimator
-        hmm_est = _MaximumLikelihoodEstimator(dtrajs_lagged, self.nstates, initial_model=hmm_init, output='discrete',
-                                              reversible=self.reversible, stationary=self.stationary,
-                                              accuracy=self.accuracy, maxit=self.maxit,
-                                              mincount_connectivity=self.mincount_connectivity)
+        hmm_est = _MaximumLikelihoodEstimator(dtrajs_lagged_strided, self.nstates, initial_model=hmm_init,
+                                              output='discrete', reversible=self.reversible, stationary=self.stationary,
+                                              accuracy=self.accuracy, maxit=self.maxit)
         # run
         hmm_est.fit()
         # package in discrete HMM
@@ -275,30 +235,27 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
         self.hidden_state_trajectories = hmm_est.hmm.hidden_state_trajectories  # Viterbi path
         self.count_matrix = hmm_est.count_matrix  # hidden count matrix
         self.initial_count = hmm_est.initial_count  # hidden init count
+        self._active_set = np.arange(self.nstates)
 
-        # deal with connectivity
-        if self.connectivity == 'largest':
-            from msmtools.estimation import connected_sets
-            csets = connected_sets(transition_matrix)
-            if len(csets) > 1:  # disconnected - reduce to largest connected set.
-                transition_matrix = transition_matrix[csets[0], :][:, csets[0]]
-                observation_probabilities = observation_probabilities[csets[0], :]
-                self.nstates = len(csets[0])
-
-        # find observable set
-        if self.observe_active:  # cut down observation probabilities to active set
-            observation_probabilities = observation_probabilities[:, msm_init.active_set]
-            observation_probabilities /= observation_probabilities.sum(axis=1)[:,None]  # renormalize
-
+        # TODO: it can happen that we loose states due to striding. Should we lift the output probabilities afterwards?
         # parametrize self
         self._dtrajs_full = dtrajs
-        self._dtrajs_lagged = dtrajs_lagged
-        self._observable_set = observable_set
-        self._dtrajs_obs = dtrajs_obs
+        self._dtrajs_lagged = dtrajs_lagged_strided
+        self._observable_set = np.arange(msmest.number_of_states(dtrajs_lagged_strided))
+        self._dtrajs_obs = dtrajs
         self.set_model_params(P=transition_matrix, pobs=observation_probabilities,
                               reversible=self.reversible, dt_model=self.timestep_traj.get_scaled(self.lag))
 
-        return self
+        # TODO: perhaps remove connectivity and just rely on .submodel()?
+        # deal with connectivity
+        states_subset = None
+        if self.connectivity == 'largest':
+            states_subset = 'largest-strong'
+        elif self.connectivity == 'populous':
+            states_subset = 'populous-strong'
+
+        # return submodel (will return self if all None)
+        return self.submodel(states=states_subset, obs=observe_subset, mincount_connectivity=self.mincount_connectivity)
 
     def cktest(self, mlags=10, conf=0.95, err_est=False, show_progress=True):
         """ Conducts a Chapman-Kolmogorow test.

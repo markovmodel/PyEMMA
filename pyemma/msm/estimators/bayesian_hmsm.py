@@ -37,7 +37,7 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporter):
     def __init__(self, nstates=2, lag=1, stride='effective',
                  p0_prior='mixed', transition_matrix_prior='mixed',
                  nsamples=100, init_hmsm=None, reversible=True, stationary=False,
-                 connectivity='largest', observe_active=True, separate=None,
+                 connectivity='largest', separate=None,
                  dt_traj='1 step', conf=0.95, store_hidden=False, show_progress=True):
         r"""Estimator for a Bayesian HMSM
 
@@ -107,9 +107,6 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporter):
             Single-point estimate of HMSM object around which errors will be evaluated.
             If None is give an initial estimate will be automatically generated using the
             given parameters.
-        observe_active : bool, optional, default=True
-            True: Restricts the observation set to the active states of the MSM.
-            False: All states are in the observation set.
         store_hidden : bool, optional, default=False
             store hidden trajectories in sampled HMMs
         show_progress : bool, default=True
@@ -138,7 +135,6 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporter):
         self.reversible = reversible
         self.stationary = stationary
         self.connectivity = connectivity
-        self.observe_active = observe_active
         self.separate = separate
         self.dt_traj = dt_traj
         self.timestep_traj = TimeUnit(dt_traj)
@@ -161,9 +157,10 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporter):
         # if no initial MSM is given, estimate it now
         if self.init_hmsm is None:
             # estimate with store_data=True, because we need an EstimatedHMSM
+            # connective=None (always estimate full)
             hmsm_estimator = _MaximumLikelihoodHMSM(lag=self.lag, stride=self.stride, nstates=self.nstates,
                                                     reversible=self.reversible, stationary=self.stationary,
-                                                    connectivity=self.connectivity, observe_active=self.observe_active,
+                                                    connectivity=None,
                                                     separate=self.separate, dt_traj=self.dt_traj)
             init_hmsm = hmsm_estimator.estimate(dtrajs)  # estimate with lagged trajectories
             self.nstates = init_hmsm.nstates  # might have changed due to connectivity
@@ -173,14 +170,12 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporter):
             init_hmsm = self.init_hmsm
             self.nstates = init_hmsm.nstates
             self.reversible = init_hmsm.is_reversible
-            # TODO: check if separate is fulfilled.
 
         # here we blow up the output matrix (if needed) to the FULL state space because we want to use dtrajs in the
         # Bayesian HMM sampler
-        if self.observe_active:
-            import msmtools.estimation as msmest
-            nstates_full = msmest.number_of_states(dtrajs)
-            # pobs = _np.zeros((init_hmsm.nstates, nstates_full))  # currently unused because that produces zero cols
+        import msmtools.estimation as msmest
+        nstates_full = msmest.number_of_states(dtrajs)
+        if init_hmsm.nstates_obs < nstates_full:
             eps = 0.01 / nstates_full  # default output probability, in order to avoid zero columns
             # full state space output matrix. make sure there are no zero columns
             pobs = eps * _np.ones((self.nstates, nstates_full), dtype=_np.float64)
@@ -201,7 +196,7 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporter):
             call_back = None
 
         from bhmm import discrete_hmm, bayesian_hmm
-        hmm_mle = discrete_hmm(init_hmsm.stationary_distribution, init_hmsm.transition_matrix, pobs)
+        hmm_mle = discrete_hmm(init_hmsm.initial_distribution, init_hmsm.transition_matrix, pobs)
 
         sampled_hmm = bayesian_hmm(init_hmsm.discrete_trajectories_lagged, hmm_mle, nsample=self.nsamples,
                                    reversible=self.reversible, stationary=self.stationary,
@@ -226,8 +221,19 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporter):
 
         # parametrize self
         self._dtrajs_full = dtrajs
+        self._dtrajs_lagged = init_hmsm._dtrajs_lagged
         self._observable_set = init_hmsm._observable_set
         self._dtrajs_obs = init_hmsm._dtrajs_obs
+
+        # get estimation parameters
+        self.likelihoods = init_hmsm.likelihoods  # Likelihood history
+        self.likelihood = init_hmsm.likelihood
+        self.hidden_state_probabilities = init_hmsm.hidden_state_probabilities  # gamma variables
+        self.hidden_state_trajectories = init_hmsm.hmm.hidden_state_trajectories  # Viterbi path
+        self.count_matrix = init_hmsm.count_matrix  # hidden count matrix
+        self.initial_count = init_hmsm.initial_count  # hidden init count
+        self._active_set = init_hmsm._active_set
+
         self.set_model_params(samples=samples, P=init_hmsm.transition_matrix, pobs=init_hmsm.observation_probabilities,
                               dt_model=init_hmsm.dt_model)
 

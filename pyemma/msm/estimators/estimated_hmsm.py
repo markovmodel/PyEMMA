@@ -63,7 +63,10 @@ class EstimatedHMSM(_HMSM):
         The active set of hidden states on which all hidden state computations are done
 
         """
-        return _np.arange(self.nstates)  # currently assume all hidden states are active.
+        if hasattr(self, '_active_set'):
+            return self._active_set
+        else:
+            return _np.arange(self.nstates)  # all hidden states are active.
 
     @property
     def observable_set(self):
@@ -102,6 +105,100 @@ class EstimatedHMSM(_HMSM):
 
         """
         return self._dtrajs_obs
+
+    ################################################################################
+    # Submodel functions using estimation information (counts)
+    ################################################################################
+
+    def submodel(self, states=None, obs=None, mincount_connectivity='1/n'):
+        """Returns a HMM with restricted state space
+
+        Parameters
+        ----------
+        states : None, str or int-array
+            Hidden states to restrict the model to. In addition to specifying
+            the subset, possible options are:
+            * None : all states - don't restrict
+            * 'populous-strong' : strongly connected subset with maximum counts
+            * 'populous-weak' : weakly connected subset with maximum counts
+            * 'largest-strong' : strongly connected subset with maximum size
+            * 'largest-weak' : weakly connected subset with maximum size
+        obs : None, str or int-array
+            Observed states to restrict the model to. In addition to specifying
+            the subset, possible options are:
+            * None : all observed states - don't restrict
+            * 'nonempty' : all states with at least one observation
+        mincount_connectivity : float or '1/n'
+          minimum number of counts to consider a connection between two states.
+          Counts lower than that will count zero in the connectivity check and
+          may thus separate the resulting transition matrix. The default
+          evaluates to 1/nstates.
+
+        Returns
+        -------
+        hmm : HMM
+            The restricted HMM.
+
+        """
+        if states is None and obs is None:
+            return self
+        if states is None:
+            states = _np.arange(self.nstates)
+        if obs is None:
+            obs = _np.arange(self.nstates_obs)
+
+        if str(mincount_connectivity) == '1/n':
+            mincount_connectivity = 1.0/float(self.nstates)
+
+        if isinstance(states, str):
+            from bhmm.estimators import _tmatrix_disconnected
+            strong = 'strong' in states
+            largest = 'largest' in states
+            S = _tmatrix_disconnected.connected_sets(self.count_matrix, mincount_connectivity=mincount_connectivity,
+                                                     strong=strong)
+            if largest:
+                score = [len(s) for s in S]
+            else:
+                score = [self.count_matrix[_np.ix_(s, s)].sum() for s in S]
+            states = _np.array(S[_np.argmax(score)])
+
+        if str(obs) == 'nonempty':
+            import msmtools.estimation as msmest
+            obs = _np.where(msmest.count_states(self.discrete_trajectories_full) > 0)[0]
+
+        # full2active mapping
+        _full2active = -1 * _np.ones(self.nstates_obs, dtype=int)
+        _full2active[obs] = _np.arange(len(obs), dtype=int)
+        # observable trajectories
+        dtrajs_obs = []
+        for dtraj in self.discrete_trajectories_full:
+            dtrajs_obs.append(_full2active[dtraj])
+
+        sub_hmsm = super(EstimatedHMSM, self).submodel(states=states, obs=obs)
+
+        est_hmsm = EstimatedHMSM(self.discrete_trajectories_full, self.discrete_trajectories_lagged,
+                                 self.get_model_params()['dt_model'], self.lagtime, _np.size(obs), obs,
+                                 dtrajs_obs, sub_hmsm.transition_matrix, sub_hmsm.observation_probabilities)
+        est_hmsm._active_set = states
+        est_hmsm.count_matrix = self.count_matrix[_np.ix_(states, states)]
+        est_hmsm.initial_count = self.initial_count[states]
+        return est_hmsm
+
+    def largest_connected_submodel(self, strong=True, connectivity_mincount='1/n'):
+        """ Returns the largest connected sub-HMM (convenience function)
+        """
+        if strong:
+            return self.submodel(states='largest-strong')
+        else:
+            return self.submodel(states='largest-weak')
+
+    def populous_connected_submodel(self, strong=True, connectivity_mincount='1/n'):
+        """ Returns the most populous connected sub-HMM (convenience function)
+        """
+        if strong:
+            return self.submodel(states='populous-strong')
+        else:
+            return self.submodel(states='populous-weak')
 
     ################################################################################
     # TODO: there is redundancy between this code and EstimatedMSM
