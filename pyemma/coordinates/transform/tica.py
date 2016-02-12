@@ -219,7 +219,8 @@ class TICA(StreamingTransformer):
         self._skipped_trajs = np.fromiter((i for i in range(self._ntraj) if
                                            iterable.trajectory_length(i) < self.lag),
                                           dtype=int)
-        with iterable.iterator(lag=self.lag, return_trajindex=False) as it:
+        it = iterable.iterator(lag=self.lag, return_trajindex=False)
+        with it:
             # register progress
             n_chunks = it._n_chunks
             self._progress_register(n_chunks, "calculate mean+cov", 0)
