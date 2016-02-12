@@ -55,11 +55,9 @@ class TestUniformTimeClustering(unittest.TestCase):
         c.parametrize()
 
     def test_big_k(self):
-        # TODO: fix this (some error handling should be done in _param_init)
         x = np.random.random((300, 3))
         reader = DataInMemory(x)
-
-        k = 298
+        k=151
         c = api.cluster_uniform_time(k=k)
 
         c.data_producer = reader

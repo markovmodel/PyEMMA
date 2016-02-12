@@ -33,9 +33,8 @@ from pyemma.coordinates.data.data_in_memory import DataInMemory as _DataInMemory
 from pyemma.coordinates.data.util.reader_utils import create_file_reader as _create_file_reader, \
     preallocate_empty_trajectory as _preallocate_empty_trajectory, enforce_top as _enforce_top, \
     copy_traj_attributes as _copy_traj_attributes
-from pyemma.coordinates.data.frames_from_file import frames_from_file as _frames_from_file
+from pyemma.coordinates.data.util.frames_from_file import frames_from_file as _frames_from_file
 # transforms
-from pyemma.coordinates.transform.transformer import Transformer as _Transformer
 from pyemma.coordinates.transform.pca import PCA as _PCA
 from pyemma.coordinates.transform.tica import TICA as _TICA
 # clustering
@@ -58,7 +57,7 @@ from six.moves import zip
 import numpy as _np
 import itertools as _itertools
 
-_logger = _getLogger('coordinates.api')
+_logger = _getLogger('pyemma.coordinates.api')
 
 __docformat__ = "restructuredtext en"
 __author__ = "Frank Noe, Martin Scherer"
@@ -217,7 +216,8 @@ def load(trajfiles, features=None, top=None, stride=1, chunk_size=100):
     """
     if isinstance(trajfiles, string_types) or (
         isinstance(trajfiles, (list, tuple))
-            and (any(isinstance(item, string_types) for item in trajfiles) or len(trajfiles) is 0)):
+            and (any(isinstance(item, (list, tuple, string_types)) for item in trajfiles)
+                 or len(trajfiles) is 0)):
         reader = _create_file_reader(trajfiles, top, features, chunk_size=chunk_size)
         trajs = reader.get_output(stride=stride)
         if len(trajs) == 1:
@@ -344,12 +344,13 @@ def source(inp, features=None, top=None, chunk_size=None):
     """
     # CASE 1: input is a string or list of strings
     # check: if single string create a one-element list
-    if isinstance(inp, string_types) or (isinstance(inp, (list, tuple))
-                                       and (any(isinstance(item, string_types) for item in inp) or len(inp) is 0)):
+    if isinstance(inp, string_types) or (
+            isinstance(inp, (list, tuple))
+            and (any(isinstance(item, (list, tuple, string_types)) for item in inp) or len(inp) is 0)):
         reader = _create_file_reader(inp, top, features, chunk_size=chunk_size if chunk_size else 100)
 
     elif isinstance(inp, _np.ndarray) or (isinstance(inp, (list, tuple))
-                                      and (any(isinstance(item, _np.ndarray) for item in inp) or len(inp) is 0)):
+                                          and (any(isinstance(item, _np.ndarray) for item in inp) or len(inp) is 0)):
         # CASE 2: input is a (T, N, 3) array or list of (T_i, N, 3) arrays
         # check: if single array, create a one-element list
         # check: do all arrays have compatible dimensions (*, N, 3)? If not: raise ValueError.
@@ -545,7 +546,7 @@ def discretizer(reader,
         _logger.warning('You did not specify a cluster algorithm.'
                         ' Defaulting to kmeans(k=100)')
         cluster = _KmeansClustering(n_clusters=100)
-    disc = _Discretizer(reader, transform, cluster, param_stride=stride)
+    disc = _Discretizer(reader, transform, cluster, param_stride=stride, chunksize=chunksize)
     if run:
         disc.parametrize()
     return disc
@@ -799,7 +800,8 @@ def save_trajs(traj_inp, indexes, prefix = 'set_', fmt = None, outfiles = None,
 
 def _get_input_stage(previous_stage):
     # this is a pipelining stage, so let's parametrize from it
-    if isinstance(previous_stage, _Transformer):
+    from pyemma.coordinates.data._base.iterable import Iterable
+    if isinstance(previous_stage, Iterable):
         inputstage = previous_stage
     # second option: data is array or list of arrays
     else:
@@ -824,11 +826,11 @@ def _param_stage(previous_stage, this_stage, stride=1):
     if previous_stage is None:
         return this_stage
 
-    inputstage = _get_input_stage(previous_stage)
+    input_stage = _get_input_stage(previous_stage)
     # parametrize transformer
-    this_stage.data_producer = inputstage
-    this_stage.chunksize = inputstage.chunksize
-    this_stage.parametrize(stride=stride)
+    this_stage.data_producer = input_stage
+    this_stage.chunksize = input_stage.chunksize
+    this_stage.estimate(X=input_stage, stride=stride)
     return this_stage
 
 
@@ -965,11 +967,10 @@ def pca(data=None, dim=-1, var_cutoff=0.95, stride=1, mean=None):
 
     """
     if mean is not None:
-        data = _get_input_stage(data)
-        indim = data.dimension()
-        mean = _types.ensure_ndarray(mean, shape=(indim,), dtype=_np.float)
+        import warnings
+        warnings.warn("provided mean ignored", DeprecationWarning)
 
-    res = _PCA(dim=dim, var_cutoff=var_cutoff, mean=mean)
+    res = _PCA(dim=dim, var_cutoff=var_cutoff, mean=None)
     return _param_stage(data, res, stride=stride)
 
 
@@ -1033,7 +1034,7 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, stride=1,
         object is independent, so you can parametrize at a long stride, and
         still map all frames through the transformer.
 
-    force_eigenvalues_le_one : boolean
+    force_eigenvalues_le_one : boolean, deprecated (eigenvalues are always <= 1, since 2.1)
         Compute covariance matrix and time-lagged covariance matrix such
         that the generalized eigenvalues are always guaranteed to be <= 1.
 
@@ -1139,8 +1140,7 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, stride=1,
         data = _get_input_stage(data)
         indim = data.dimension()
         mean = _types.ensure_ndarray(mean, shape=(indim,), dtype=_np.float)
-    res = _TICA(lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map,
-                force_eigenvalues_le_one=force_eigenvalues_le_one, mean=mean)
+    res = _TICA(lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map, mean=mean)
     return _param_stage(data, res, stride=stride)
 
 
@@ -1426,7 +1426,7 @@ def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1, metric='euc
     """
     if dmin == -1:
         raise ValueError("provide a minimum distance for clustering, e.g. 2.0")
-    res = _RegularSpaceClustering(dmin, max_centers, metric=metric)
+    res = _RegularSpaceClustering(dmin, max_centers=max_centers, metric=metric)
     return _param_stage(data, res, stride=stride)
 
 

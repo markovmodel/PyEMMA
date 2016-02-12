@@ -155,7 +155,6 @@ def eig_corr(C0, Ct, epsilon=1e-6):
     (S, V) = scipy.linalg.schur(C0)
     s = np.diag(S)
     (s, V) = _sort_by_norm(s, V) # sort them
-    S = np.diag(s)
 
     # determine the cutoff. We know that C0 is an spd matrix,
     # so we select the truncation threshold such that everything that is negative vanishes

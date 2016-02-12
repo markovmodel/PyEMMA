@@ -82,6 +82,7 @@ static PyObject *cluster(PyObject *self, PyObject *args) {
 
     if(debug) printf("KMEANS: attempting to parse args...");
     if (!PyArg_ParseTuple(args, "O!O!s", &PyArray_Type, &np_chunk, &PyList_Type, &py_centers, &metric)) {
+        if(debug) printf("FAILED\n");
         goto error;
     }
     if(debug) printf("done\n");
@@ -198,7 +199,7 @@ static PyObject *cluster(PyObject *self, PyObject *args) {
     if(debug) printf("KMEANS: attempting memcopy...");
     memcpy(arr_data, new_centers, PyArray_ITEMSIZE((PyArrayObject*) return_new_centers) * N_centers * dim);
     if(debug) printf("done\n");
-    if(debug) printf("KMEANS: increasting ref to return_new_centers thingy...");
+    if(debug) printf("KMEANS: increasing ref to return_new_centers object...");
     Py_INCREF(return_new_centers);  /* The returned list should still exist after calling the C extension */
     if(debug) printf("done\n");
     /* fall through */

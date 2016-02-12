@@ -468,7 +468,7 @@ def ensure_traj(traj):
             else:
                 raise TypeError('Argument traj cannot be cast into a two-dimensional array. Check type.')
         except:
-            raise TypeError('Argument traj is not a trajectory - only float-arrays or list of float-arrays are allowed. Check type.')
+            raise TypeError('Argument traj is not a trajectory - only float-arrays or list of float-arrays are allowed. Types is %s' % type(traj))
 
 def ensure_traj_list(trajs):
     if isinstance(trajs, list):

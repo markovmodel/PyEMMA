@@ -23,19 +23,21 @@ Created on 18.02.2015
 '''
 
 from __future__ import absolute_import
-from pyemma.coordinates.transform.transformer import Transformer
-from pyemma.util.files import mkdir_p
-from pyemma.util.discrete_trajectories import index_states, sample_indexes_by_state
 
-import numpy as np
 import os
 
+from pyemma._base.model import Model
+from pyemma._ext.sklearn.base import ClusterMixin
 from pyemma.coordinates.clustering import regspatial
-from six.moves import range
-from six.moves import zip
+from pyemma.coordinates.transform.transformer import StreamingTransformer
+from pyemma.util.discrete_trajectories import index_states, sample_indexes_by_state
+from pyemma.util.files import mkdir_p
+
+from six.moves import range, zip
+import numpy as np
 
 
-class AbstractClustering(Transformer):
+class AbstractClustering(StreamingTransformer, Model, ClusterMixin):
 
     """
     provides a common interface for cluster algorithms.
@@ -54,6 +56,11 @@ class AbstractClustering(Transformer):
     def clustercenters(self):
         """ Array containing the coordinates of the calculated cluster centers. """
         return self._clustercenters
+
+    @clustercenters.setter
+    def clustercenters(self, val):
+        val = np.asarray(val, dtype='float32', order='C')
+        self._clustercenters = val
 
     @property
     def overwrite_dtrajs(self):

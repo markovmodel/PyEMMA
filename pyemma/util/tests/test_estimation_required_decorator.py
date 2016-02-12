@@ -31,7 +31,7 @@ class TestEstimator(Estimator):
         pass
 
     def _estimate(self, X):
-        pass
+        return self
 
 @deprecated
 def _deprecated_method():

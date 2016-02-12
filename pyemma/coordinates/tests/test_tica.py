@@ -33,6 +33,7 @@ from pyemma.coordinates import api
 
 from pyemma.coordinates.data.data_in_memory import DataInMemory
 from pyemma.coordinates import source, tica
+from pyemma.util.contexts import numpy_random_seed
 from pyemma.util.log import getLogger
 import pyemma.util.types as types
 from six.moves import range
@@ -40,19 +41,35 @@ from six.moves import range
 logger = getLogger('pyemma.'+'TestTICA')
 
 
+def mycorrcoef(X, Y, lag):
+    X = X.astype(np.float64)
+    Y = Y.astype(np.float64)
+    mean_X = 0.5*(np.mean(X[lag:], axis=0)+np.mean(X[0:-lag], axis=0))
+    mean_Y = 0.5*(np.mean(Y[lag:], axis=0)+np.mean(Y[0:-lag], axis=0))
+    cov = ((X[0:-lag]-mean_X).T.dot(Y[0:-lag]-mean_Y) +
+           (X[lag:]-mean_X).T.dot(Y[lag:]-mean_Y)) / (2*(X.shape[0]-lag)-1)
+
+    autocov_X = ((X[0:-lag]-mean_X).T.dot(X[0:-lag]-mean_X) +
+                 (X[lag:]-mean_X).T.dot(X[lag:]-mean_X)) / (2*(X.shape[0]-lag)-1)
+    var_X = np.diag(autocov_X)
+    autocov_Y = ((Y[0:-lag]-mean_Y).T.dot(Y[0:-lag]-mean_Y) +
+                 (Y[lag:]-mean_Y).T.dot(Y[lag:]-mean_Y)) / (2*(Y.shape[0]-lag)-1)
+    var_Y = np.diag(autocov_Y)
+    return cov / np.sqrt(var_X[:,np.newaxis]) / np.sqrt(var_Y)
+
+
 class TestTICA_Basic(unittest.TestCase):
     def test(self):
-        # FIXME: this ugly workaround is necessary...
-        np.random.seed(0)
-
-        data = np.random.randn(100, 10)
+        # make it deterministic
+        with numpy_random_seed(0):
+            data = np.random.randn(100, 10)
         tica_obj = api.tica(data=data, lag=10, dim=1)
         tica_obj.parametrize()
         Y = tica_obj._transform_array(data)
         # right shape
         assert types.is_float_matrix(Y)
         assert Y.shape[0] == 100
-        assert Y.shape[1] == 1
+        assert Y.shape[1] == 1, Y.shape[1]
 
     def test_MD_data(self):
         # this is too little data to get reasonable results. We just test to avoid exceptions
@@ -97,50 +114,56 @@ class TestTICA_Basic(unittest.TestCase):
         tica_obj = api.tica(data=d, lag=lag, dim=1)
 
         cov = tica_obj.cov.copy()
-        mean = tica_obj.mu.copy()
+        mean = tica_obj.mean.copy()
 
         # ------- run again with new chunksize -------
         d = DataInMemory(X)
         d.chunksize = chunk
         tica_obj = tica(data=d, lag=lag, dim=1)
 
-        np.testing.assert_allclose(tica_obj.mu, mean)
+        np.testing.assert_allclose(tica_obj.mean, mean)
         np.testing.assert_allclose(tica_obj.cov, cov)
 
     def test_in_memory(self):
         data = np.random.random((100, 10))
         tica_obj = api.tica(lag=10, dim=1)
-        reader = source(data)
+        reader = api.source(data)
         tica_obj.data_producer = reader
 
         tica_obj.in_memory = True
         tica_obj.parametrize()
         tica_obj.get_output()
 
+    def test_too_short_trajs(self):
+        trajs = [np.empty((100, 1))]
+        with self.assertRaises(ValueError):
+            tica(trajs, lag=100)
 
 
 class TestTICAExtensive(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        import msmtools.generation as msmgen
+        with numpy_random_seed(123):
+            import msmtools.generation as msmgen
 
-        # generate HMM with two Gaussians
-        cls.P = np.array([[0.99, 0.01],
-                          [0.01, 0.99]])
-        cls.T = 40000
-        means = [np.array([-1, 1]), np.array([1, -1])]
-        widths = [np.array([0.3, 2]), np.array([0.3, 2])]
-        # continuous trajectory
-        cls.X = np.zeros((cls.T, 2))
-        # hidden trajectory
-        dtraj = msmgen.generate_traj(cls.P, cls.T)
-        for t in range(cls.T):
-            s = dtraj[t]
-            cls.X[t, 0] = widths[s][0] * np.random.randn() + means[s][0]
-            cls.X[t, 1] = widths[s][1] * np.random.randn() + means[s][1]
-        cls.lag = 10
-        # do unscaled TICA
-        cls.tica_obj = api.tica(data=cls.X, lag=cls.lag, dim=1, kinetic_map=False)
+            # generate HMM with two Gaussians
+            cls.P = np.array([[0.99, 0.01],
+                              [0.01, 0.99]])
+            cls.T = 40000
+            means = [np.array([-1, 1]), np.array([1, -1])]
+            widths = [np.array([0.3, 2]), np.array([0.3, 2])]
+            # continuous trajectory
+            cls.X = np.zeros((cls.T, 2))
+            # hidden trajectory
+            dtraj = msmgen.generate_traj(cls.P, cls.T)
+            for t in range(cls.T):
+                s = dtraj[t]
+                cls.X[t, 0] = widths[s][0] * np.random.randn() + means[s][0]
+                cls.X[t, 1] = widths[s][1] * np.random.randn() + means[s][1]
+            cls.lag = 10
+            # do unscaled TICA
+            reader=api.source(cls.X, chunk_size=0)
+            cls.tica_obj = api.tica(data=reader, lag=cls.lag, dim=1, kinetic_map=False)
 
     def setUp(self):
         pass
@@ -169,7 +192,7 @@ class TestTICAExtensive(unittest.TestCase):
     def test_cov(self):
         cov_ref = np.dot(self.X.T, self.X) / float(self.T)
         assert (np.all(self.tica_obj.cov.shape == cov_ref.shape))
-        assert (np.max(self.tica_obj.cov - cov_ref) < 5e-2)
+        np.testing.assert_allclose(self.tica_obj.cov, cov_ref, atol=5e-2)
 
     def test_cov_tau(self):
         cov_tau_ref = np.dot(self.X[self.lag:].T, self.X[:self.T - self.lag]) / float(self.T - self.lag)
@@ -218,10 +241,11 @@ class TestTICAExtensive(unittest.TestCase):
         assert isinstance(self.tica_obj.in_memory, bool)
 
     def test_iterator(self):
-        for itraj, chunk in self.tica_obj:
+        chunksize=1000
+        for itraj, chunk in self.tica_obj.iterator(chunk=chunksize):
             assert types.is_int(itraj)
             assert types.is_float_matrix(chunk)
-            assert chunk.shape[0] <= self.tica_obj.chunksize + self.lag
+            self.assertLessEqual(chunk.shape[0], (chunksize + self.lag))
             assert chunk.shape[1] == self.tica_obj.dimension()
 
     def test_lag(self):
@@ -242,7 +266,7 @@ class TestTICAExtensive(unittest.TestCase):
         assert np.max(mean < 0.5)
 
     def test_mu(self):
-        mean = self.tica_obj.mu
+        mean = self.tica_obj.mean
         assert len(mean) == 2
         assert np.max(mean < 0.5)
 
@@ -281,10 +305,9 @@ class TestTICAExtensive(unittest.TestCase):
         feature_traj =  ticamini.data_producer.get_output()[0]
         tica_traj    =  ticamini.get_output()[0]
         test_corr = ticamini.feature_TIC_correlation
-        true_corr = np.corrcoef(feature_traj.T,
-                                y = tica_traj.T)[:ticamini.data_producer.dimension(),
-                                                  ticamini.data_producer.dimension():]
-        assert np.isclose(test_corr, true_corr).all()
+        true_corr = mycorrcoef(feature_traj, tica_traj, ticamini.lag)
+        #assert np.isclose(test_corr, true_corr).all()
+        np.testing.assert_allclose(test_corr, true_corr, atol=1.E-8)
 
     def test_feature_correlation_data(self):
         # Create features with some correlation
@@ -299,10 +322,9 @@ class TestTICAExtensive(unittest.TestCase):
 
         # Create correlations
         test_corr = tica_obj.feature_TIC_correlation
-        true_corr = np.corrcoef(feature_traj.T,
-                                y = tica_traj.T)[:tica_obj.data_producer.dimension(), tica_obj.data_producer.dimension():]
-
-        assert np.isclose(test_corr, true_corr).all()
+        true_corr = mycorrcoef(feature_traj, tica_traj, tica_obj.lag)
+        np.testing.assert_allclose(test_corr, true_corr, atol=1.E-8)
+        #assert np.isclose(test_corr, true_corr).all()
 
     def test_skipped_trajs(self):
 
@@ -312,8 +334,9 @@ class TestTICAExtensive(unittest.TestCase):
                          np.arange(13)]
 
         tica_obj = tica(data=feature_trajs, lag=11)
-        assert (len(tica_obj._skipped_trajs)==2)
-        assert np.allclose(tica_obj._skipped_trajs, [0,1])
+        # we skip the trajs right away in the iterator
+        assert (len(tica_obj._skipped_trajs) == 0)
+        # assert np.allclose(tica_obj._skipped_trajs, [0,1])
 
     def test_provided_means(self):
         data = np.random.random((300, 3))
@@ -321,7 +344,7 @@ class TestTICAExtensive(unittest.TestCase):
         tica_obj = tica(data, mean=mean)
         tica_calc_mean = tica(data)
 
-        np.testing.assert_allclose(tica_obj.mu, tica_calc_mean.mu)
+        np.testing.assert_allclose(tica_obj.mean, tica_calc_mean.mean)
         np.testing.assert_allclose(tica_obj.cov, tica_calc_mean.cov)
         np.testing.assert_allclose(tica_obj.cov_tau, tica_calc_mean.cov_tau)
 
