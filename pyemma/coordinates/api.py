@@ -975,7 +975,7 @@ def pca(data=None, dim=-1, var_cutoff=0.95, stride=1, mean=None):
 
 
 def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, stride=1,
-         force_eigenvalues_le_one=False, mean=None):
+         force_eigenvalues_le_one=False, mean=None, remove_mean=True):
     r""" Time-lagged independent component analysis (TICA).
 
     TICA is a linear transformation method. In contrast to PCA, which finds
@@ -1039,8 +1039,10 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, stride=1,
         that the generalized eigenvalues are always guaranteed to be <= 1.
 
     mean : ndarray, optional, default None
-        Optionally pass pre-calculated means to avoid their re-computation.
-        The shape has to match the input dimension.
+        This option is deprecated, and setting this value is non-effective.
+
+    remove_mean: bool, optional, default True
+        remove mean during covariance estimation. Should not be turned off.
 
 
     Returns
@@ -1140,7 +1142,8 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, stride=1,
         data = _get_input_stage(data)
         indim = data.dimension()
         mean = _types.ensure_ndarray(mean, shape=(indim,), dtype=_np.float)
-    res = _TICA(lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map, mean=mean)
+    res = _TICA(lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map,
+                mean=mean, remove_mean=remove_mean)
     return _param_stage(data, res, stride=stride)
 
 
