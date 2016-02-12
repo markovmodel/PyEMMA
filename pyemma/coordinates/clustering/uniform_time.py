@@ -82,7 +82,6 @@ class UniformTimeClustering(AbstractClustering):
         # random access matrix
         ra_stride = np.array([UniformTimeClustering._idx_to_traj_idx(x, cumsum) for x in linspace])
         with iterable.iterator(stride=ra_stride, return_trajindex=False) as it:
-            assert it is not None
             self.clustercenters = np.concatenate([X for X in it])
 
         assert len(self.clustercenters) == self.n_clusters

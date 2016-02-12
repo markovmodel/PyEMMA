@@ -34,7 +34,7 @@ from pyemma.coordinates.data.util.reader_utils import copy_traj_attributes, prea
 from six.moves import map
 
 
-class iterload:
+class iterload(object):
 
     def __init__(self, filename, chunk=100, **kwargs):
         """An iterator over a trajectory from one or more files on disk, in fragments
