@@ -102,7 +102,11 @@ class iterload:
             self._i = 0
         elif isinstance(self._stride, np.ndarray):
             self._mode = 'random_access'
-            self._ra_it = self._random_access_generator()
+            self._f = (lambda x:
+                       open(x, n_atoms=self._topology.n_atoms)
+                       if self._extension in ('.crd', '.mdcrd')
+                       else open(self._filename))(self._filename)
+            self._ra_it = self._random_access_generator(self._f)
         else:
             self._mode = 'traj'
             self._f = (
@@ -117,11 +121,11 @@ class iterload:
             return self
 
     def close(self):
-        self._closed = True
-        if self._mode is 'pdb':
+        if hasattr(self, '_t'):
             self._t.close()
-        elif self._mode in ('traj', 'random_access'):
+        elif hasattr(self, '_f'):
             self._f.close()
+        self._closed = True
 
     def __next__(self):
         return self.next()
@@ -163,11 +167,8 @@ class iterload:
     def __exit__(self, *args):
         self.close()
 
-    def _random_access_generator(self):
-        with (lambda x:
-              open(x, n_atoms=self._topology.n_atoms) if self._extension in ('.crd', '.mdcrd')
-              else open(self._filename))(self._filename) as f:
-            x_prev = 0
+    def _random_access_generator(self, f):
+        with f:
             curr_size = 0
             traj = []
             leftovers = []
@@ -176,10 +177,8 @@ class iterload:
                 chunksize = np.iinfo(int).max
             for k, g in groupby(enumerate(self._stride), lambda a: a[0] - a[1]):
                 grouped_stride = list(map(itemgetter(1), g))
-                seek_offset = (1 if x_prev != 0 else 0)
-                seek_to = grouped_stride[0] - f.tell() #x_prev - seek_offset
+                seek_to = grouped_stride[0] - f.tell()
                 f.seek(seek_to, whence=1)
-                x_prev = grouped_stride[-1]
                 group_size = len(grouped_stride)
                 if curr_size + group_size > chunksize:
                     leftovers = grouped_stride
