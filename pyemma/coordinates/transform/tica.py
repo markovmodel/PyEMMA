@@ -247,9 +247,8 @@ class TICA(StreamingTransformer):
         cumvar /= cumvar[-1]
 
         if len(self._skipped_trajs) >= 1:
-            self._skipped_trajs = self._skipped_trajs
-            self._logger.warning("Had to skip %u trajectories for being too short. "
-                                 "Their indexes are in self._skipped_trajs."
+            self._logger.warning("Had to skip %u trajectories for being too short (len<lag). "
+                                 "Their indices are in tica_obj._skipped_trajs."
                                  % len(self._skipped_trajs))
 
         self._model.update_model_params(mean=covar.mean_X(),
