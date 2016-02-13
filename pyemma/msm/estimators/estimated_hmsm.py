@@ -38,8 +38,8 @@ from pyemma.util.annotators import alias, aliased
 class EstimatedHMSM(_HMSM):
 
     def __init__(self, dtrajs_full, dtrajs_lagged, dt_model, lagtime, nstates_obs, observable_set, dtrajs_obs,
-                 transition_matrix, observation_probabilities):
-        _HMSM.__init__(self, transition_matrix, observation_probabilities, dt_model=dt_model)
+                 transition_matrix, observation_probabilities, pi=None):
+        _HMSM.__init__(self, transition_matrix, observation_probabilities, pi=pi, dt_model=dt_model)
         self.lag = lagtime
         self._nstates_obs = nstates_obs
         self._observable_set = observable_set
@@ -129,10 +129,10 @@ class EstimatedHMSM(_HMSM):
             * None : all observed states - don't restrict
             * 'nonempty' : all states with at least one observation
         mincount_connectivity : float or '1/n'
-          minimum number of counts to consider a connection between two states.
-          Counts lower than that will count zero in the connectivity check and
-          may thus separate the resulting transition matrix. The default
-          evaluates to 1/nstates.
+            minimum number of counts to consider a connection between two states.
+            Counts lower than that will count zero in the connectivity check and
+            may thus separate the resulting transition matrix. Default value:
+            1/nstates.
 
         Returns
         -------
@@ -140,7 +140,7 @@ class EstimatedHMSM(_HMSM):
             The restricted HMM.
 
         """
-        if states is None and obs is None:
+        if states is None and obs is None and mincount_connectivity==0:
             return self
         if states is None:
             states = _np.arange(self.nstates)
@@ -150,6 +150,27 @@ class EstimatedHMSM(_HMSM):
         if str(mincount_connectivity) == '1/n':
             mincount_connectivity = 1.0/float(self.nstates)
 
+        # handle new connectivity
+        from bhmm.estimators import _tmatrix_disconnected
+        S = _tmatrix_disconnected.connected_sets(self.count_matrix,
+                                                     mincount_connectivity=mincount_connectivity,
+                                                     strong=True)
+        if len(S) > 1:
+            # keep only non-negligible transitions
+            C = _np.zeros(self.count_matrix.shape)
+            large = _np.where(self.count_matrix >= mincount_connectivity)
+            C[large] = self.count_matrix[large]
+            for s in S:  # keep all (also small) transition counts within strongly connected subsets
+                C[_np.ix_(s, s)] = self.count_matrix[_np.ix_(s, s)]
+            # re-estimate transition matrix with disc.
+            P = _tmatrix_disconnected.estimate_P(C, reversible=self.reversible, mincount_connectivity=0)
+            pi = _tmatrix_disconnected.stationary_distribution(P, C)
+        else:
+            C = self.count_matrix
+            P = self.transition_matrix
+            pi = self.stationary_distribution
+
+        # determine substates
         if isinstance(states, str):
             from bhmm.estimators import _tmatrix_disconnected
             strong = 'strong' in states
@@ -161,44 +182,98 @@ class EstimatedHMSM(_HMSM):
             else:
                 score = [self.count_matrix[_np.ix_(s, s)].sum() for s in S]
             states = _np.array(S[_np.argmax(score)])
+        if states is not None:  # sub-transition matrix
+            C = C[_np.ix_(states, states)].copy()
+            P = P[_np.ix_(states, states)].copy()
+            P /= P.sum(axis=1)[:, None]
+            pi = _tmatrix_disconnected.stationary_distribution(P, C)
 
+        # determine observed states
         if str(obs) == 'nonempty':
             import msmtools.estimation as msmest
             obs = _np.where(msmest.count_states(self.discrete_trajectories_full) > 0)[0]
-
-        # full2active mapping
-        _full2active = -1 * _np.ones(self.nstates_obs, dtype=int)
-        _full2active[obs] = _np.arange(len(obs), dtype=int)
-        # observable trajectories
-        dtrajs_obs = []
-        for dtraj in self.discrete_trajectories_full:
-            dtrajs_obs.append(_full2active[dtraj])
-
-        sub_hmsm = super(EstimatedHMSM, self).submodel(states=states, obs=obs)
+        if obs is not None:
+            # full2active mapping
+            _full2active = -1 * _np.ones(self.nstates_obs, dtype=int)
+            _full2active[obs] = _np.arange(len(obs), dtype=int)
+            # observable trajectories
+            dtrajs_obs = []
+            for dtraj in self.discrete_trajectories_full:
+                dtrajs_obs.append(_full2active[dtraj])
+            # observation matrix
+            B = self.observation_probabilities[_np.ix_(states, obs)].copy()
+            B /= B.sum(axis=1)[:, None]
+        else:
+            dtrajs_obs = self.discrete_trajectories_obs
+            B = self.observation_probabilities
 
         est_hmsm = EstimatedHMSM(self.discrete_trajectories_full, self.discrete_trajectories_lagged,
                                  self.get_model_params()['dt_model'], self.lagtime, _np.size(obs), obs,
-                                 dtrajs_obs, sub_hmsm.transition_matrix, sub_hmsm.observation_probabilities)
+                                 dtrajs_obs, P, B, pi=pi)
         est_hmsm._active_set = states
-        est_hmsm.count_matrix = self.count_matrix[_np.ix_(states, states)]
+        est_hmsm.count_matrix_EM = self.count_matrix[_np.ix_(states, states)]  # unchanged count matrix
+        est_hmsm.count_matrix = C  # count matrix consistent with P
         est_hmsm.initial_count = self.initial_count[states]
+        est_hmsm.initial_distribution = self.initial_distribution[states] / self.initial_distribution[states].sum()
+        est_hmsm.likelihoods = self.likelihoods  # Likelihood history
+        est_hmsm.likelihood = self.likelihood
+        est_hmsm.hidden_state_probabilities = self.hidden_state_probabilities  # gamma variables
+        est_hmsm.hidden_state_trajectories = self.hidden_state_trajectories  # Viterbi path
+
         return est_hmsm
 
-    def largest_connected_submodel(self, strong=True, connectivity_mincount='1/n'):
+    def submodel_largest(self, strong=True, connectivity_mincount='1/n'):
         """ Returns the largest connected sub-HMM (convenience function)
+
+        Returns
+        -------
+        hmm : HMM
+            The restricted HMM.
+
         """
         if strong:
             return self.submodel(states='largest-strong')
         else:
             return self.submodel(states='largest-weak')
 
-    def populous_connected_submodel(self, strong=True, connectivity_mincount='1/n'):
+    def submodel_populous(self, strong=True, connectivity_mincount='1/n'):
         """ Returns the most populous connected sub-HMM (convenience function)
+
+        Returns
+        -------
+        hmm : HMM
+            The restricted HMM.
+
         """
         if strong:
             return self.submodel(states='populous-strong')
         else:
             return self.submodel(states='populous-weak')
+
+    def submodel_disconnect(self, mincount_connectivity='1/n'):
+        """Disconnects sets of hidden states that are barely connected
+
+        Runs a connectivity check excluding all transition counts below
+        mincount_connectivity. The transition matrix and stationary distribution
+        will be re-estimated. Note that the resulting transition matrix
+        may have both strongly and weakly connected subsets.
+
+        Parameters
+        ----------
+        mincount_connectivity : float or '1/n'
+            minimum number of counts to consider a connection between two states.
+            Counts lower than that will count zero in the connectivity check and
+            may thus separate the resulting transition matrix. The default
+            evaluates to 1/nstates.
+
+        Returns
+        -------
+        hmm : HMM
+            The restricted HMM.
+
+        """
+        return self.submodel(mincount_connectivity=mincount_connectivity)
+
 
     ################################################################################
     # TODO: there is redundancy between this code and EstimatedMSM

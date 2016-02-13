@@ -42,8 +42,8 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
     r"""Maximum likelihood estimator for a Hidden MSM given a MSM"""
 
     def __init__(self, nstates=2, lag=1, stride=1, msm_init='largest-strong', reversible=True, stationary=False,
-                 connectivity=None, mincount_connectivity='1/n',
-                 separate=None, dt_traj='1 step', accuracy=1e-3, maxit=1000):
+                 connectivity=None, mincount_connectivity='1/n', observe_nonempty=True, separate=None,
+                 dt_traj='1 step', accuracy=1e-3, maxit=1000):
         r"""Maximum likelihood estimator for a Hidden MSM given a MSM
 
         Parameters
@@ -99,6 +99,11 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
         separate : None or iterable of int
             Force the given set of observed states to stay in a separate hidden state.
             The remaining nstates-1 states will be assigned by a metastable decomposition.
+        observe_nonempty : bool
+            If True, will restricted the observed states to the states that have
+            at least one observation in the lagged input trajectories.
+            If an initial MSM is given, this option is ignored and the observed
+            subset is always identical to the active set of that MSM.
         dt_traj : str, optional, default='1 step'
             Description of the physical time corresponding to the trajectory time
             step.  May be used by analysis algorithms such as plotting tools to
@@ -134,6 +139,7 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
             mincount_connectivity = 1.0/float(nstates)
         self.mincount_connectivity = mincount_connectivity
         self.separate = separate
+        self.observe_nonempty = observe_nonempty
         self.dt_traj = dt_traj
         self.timestep_traj = TimeUnit(dt_traj)
         self.accuracy = accuracy
@@ -186,7 +192,10 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
         dtrajs_lagged_strided = bhmm.lag_observations(dtrajs, self.lag, stride=self.stride)
 
         # OBSERVATION SET
-        observe_subset = None
+        if self.observe_nonempty:
+            observe_subset = 'nonempty'
+        else:
+            observe_subset = None
 
         # INIT HMM
         from bhmm import init_discrete_hmm
@@ -205,7 +214,7 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
                                                        active_set=self.msm_init.active_set,
                                                        P=self.msm_init.transition_matrix, separate=self.separate)
             hmm_init = bhmm.discrete_hmm(p0, P0, pobs0)
-            observe_subset = self.msm_init.active_set
+            observe_subset = self.msm_init.active_set  # override observe_subset.
         else:
             raise ValueError('Unknown MSM initialization option: ' + str(self.msm_init))
 
