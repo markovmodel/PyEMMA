@@ -17,13 +17,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import
-from six.moves import range
+# from six.moves import range
+from pyemma.util.annotators import alias, aliased
 
-import numpy as np
+import numpy as _np
 import msmtools.estimation as msmest
-from pyemma.msm.estimators.estimated_hmsm import EstimatedHMSM as _EstimatedHMSM
+from pyemma.msm.models.hmsm import HMSM as _HMSM
 
-from pyemma.msm.estimators.estimated_msm import EstimatedMSM as _EstimatedMSM
 from pyemma._base.estimator import Estimator as _Estimator
 from pyemma.util import types as _types
 from pyemma.util.units import TimeUnit
@@ -38,7 +38,8 @@ from pyemma.util.units import TimeUnit
 # TODO: currently, it's not possible to start with disconnected matrices.
 
 
-class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
+@aliased
+class MaximumLikelihoodHMSM(_Estimator, _HMSM):
     r"""Maximum likelihood estimator for a Hidden MSM given a MSM"""
 
     def __init__(self, nstates=2, lag=1, stride=1, msm_init='largest-strong', reversible=True, stationary=False,
@@ -164,12 +165,12 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
         dtrajs = _types.ensure_dtraj_list(dtrajs)
 
         # CHECK LAG
-        trajlengths = [np.size(dtraj) for dtraj in dtrajs]
-        if self.lag >= np.max(trajlengths):
+        trajlengths = [_np.size(dtraj) for dtraj in dtrajs]
+        if self.lag >= _np.max(trajlengths):
             raise ValueError('Illegal lag time ' + str(self.lag) + ' exceeds longest trajectory length')
-        if self.lag > np.mean(trajlengths):
+        if self.lag > _np.mean(trajlengths):
             self.logger.warning('Lag time ' + str(self.lag) + ' is on the order of mean trajectory length'
-                                + np.mean(trajlengths) + '. It is recommended to fit four lag times in each '
+                                + _np.mean(trajlengths) + '. It is recommended to fit four lag times in each '
                                 + 'trajectory. HMM might be inaccurate.')
 
         # EVALUATE STRIDE
@@ -207,7 +208,7 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
             hmm_init = init_discrete_hmm(dtrajs_lagged_strided, self.nstates, lag=1,
                                          reversible=self.reversible, stationary=True, regularize=True,
                                          method='spectral', separate=self.separate)
-        elif isinstance(self.msm_init, _EstimatedMSM):  # initial MSM given.
+        elif issubclass(self.msm_init.__class__, MaximumLikelihoodHMSM):  # initial MSM given.
             from bhmm.init.discrete import init_discrete_hmm_spectral
             p0, P0, pobs0 = init_discrete_hmm_spectral(self.msm_init.count_matrix_full, self.nstates,
                                                        reversible=self.reversible, stationary=True,
@@ -244,13 +245,15 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
         self.hidden_state_trajectories = hmm_est.hmm.hidden_state_trajectories  # Viterbi path
         self.count_matrix = hmm_est.count_matrix  # hidden count matrix
         self.initial_count = hmm_est.initial_count  # hidden init count
-        self._active_set = np.arange(self.nstates)
+        self._active_set = _np.arange(self.nstates)
 
         # TODO: it can happen that we loose states due to striding. Should we lift the output probabilities afterwards?
         # parametrize self
         self._dtrajs_full = dtrajs
         self._dtrajs_lagged = dtrajs_lagged_strided
-        self._observable_set = np.arange(msmest.number_of_states(dtrajs_lagged_strided))
+        self._nstates_obs_full = msmest.number_of_states(dtrajs)
+        self._nstates_obs = msmest.number_of_states(dtrajs_lagged_strided)
+        self._observable_set = _np.arange(self._nstates_obs)
         self._dtrajs_obs = dtrajs
         self.set_model_params(P=transition_matrix, pobs=observation_probabilities,
                               reversible=self.reversible, dt_model=self.timestep_traj.get_scaled(self.lag))
@@ -265,6 +268,339 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
 
         # return submodel (will return self if all None)
         return self.submodel(states=states_subset, obs=observe_subset, mincount_connectivity=self.mincount_connectivity)
+
+
+    @property
+    def lagtime(self):
+        """ The lag time in steps """
+        return self.lag
+
+    @property
+    def nstates_obs(self):
+        r""" Number of states in discrete trajectories """
+        return self._nstates_obs
+
+    @property
+    def active_set(self):
+        """
+        The active set of hidden states on which all hidden state computations are done
+
+        """
+        if hasattr(self, '_active_set'):
+            return self._active_set
+        else:
+            return _np.arange(self.nstates)  # all hidden states are active.
+
+    @property
+    def observable_set(self):
+        """
+        The active set of states on which all computations and estimations will be done
+
+        """
+        return self._observable_set
+
+    @property
+    @alias('dtrajs_full')
+    def discrete_trajectories_full(self):
+        """
+        A list of integer arrays with the original trajectories.
+
+        """
+        return self._dtrajs_full
+
+    @property
+    @alias('dtrajs_lagged')
+    def discrete_trajectories_lagged(self):
+        """
+        Transformed original trajectories that are used as an input into the HMM estimation
+
+        """
+        return self._dtrajs_lagged
+
+    @property
+    @alias('dtrajs_obs')
+    def discrete_trajectories_obs(self):
+        """
+        A list of integer arrays with the discrete trajectories mapped to the observation mode used.
+        When using observe_active = True, the indexes will be given on the MSM active set. Frames that are not in the
+        observation set will be -1. When observe_active = False, this attribute is identical to
+        discrete_trajectories_full
+
+        """
+        return self._dtrajs_obs
+
+    ################################################################################
+    # Submodel functions using estimation information (counts)
+    ################################################################################
+
+    def submodel(self, states=None, obs=None, mincount_connectivity='1/n'):
+        """Returns a HMM with restricted state space
+
+        Parameters
+        ----------
+        states : None, str or int-array
+            Hidden states to restrict the model to. In addition to specifying
+            the subset, possible options are:
+            * None : all states - don't restrict
+            * 'populous-strong' : strongly connected subset with maximum counts
+            * 'populous-weak' : weakly connected subset with maximum counts
+            * 'largest-strong' : strongly connected subset with maximum size
+            * 'largest-weak' : weakly connected subset with maximum size
+        obs : None, str or int-array
+            Observed states to restrict the model to. In addition to specifying
+            an array with the state labels to be observed, possible options are:
+            * None : all states - don't restrict
+            * 'nonempty' : all states with at least one observation in the estimator
+        mincount_connectivity : float or '1/n'
+            minimum number of counts to consider a connection between two states.
+            Counts lower than that will count zero in the connectivity check and
+            may thus separate the resulting transition matrix. Default value:
+            1/nstates.
+
+        Returns
+        -------
+        hmm : HMM
+            The restricted HMM.
+
+        """
+        if states is None and obs is None and mincount_connectivity == 0:
+            return self
+        if states is None:
+            states = _np.arange(self.nstates)
+        if obs is None:
+            obs = _np.arange(self.nstates_obs)
+
+        if str(mincount_connectivity) == '1/n':
+            mincount_connectivity = 1.0/float(self.nstates)
+
+        # handle new connectivity
+        from bhmm.estimators import _tmatrix_disconnected
+        S = _tmatrix_disconnected.connected_sets(self.count_matrix,
+                                                 mincount_connectivity=mincount_connectivity,
+                                                 strong=True)
+        if len(S) > 1:
+            # keep only non-negligible transitions
+            C = _np.zeros(self.count_matrix.shape)
+            large = _np.where(self.count_matrix >= mincount_connectivity)
+            C[large] = self.count_matrix[large]
+            for s in S:  # keep all (also small) transition counts within strongly connected subsets
+                C[_np.ix_(s, s)] = self.count_matrix[_np.ix_(s, s)]
+            # re-estimate transition matrix with disc.
+            P = _tmatrix_disconnected.estimate_P(C, reversible=self.reversible, mincount_connectivity=0)
+            pi = _tmatrix_disconnected.stationary_distribution(P, C)
+        else:
+            C = self.count_matrix
+            P = self.transition_matrix
+            pi = self.stationary_distribution
+
+        # determine substates
+        if isinstance(states, str):
+            from bhmm.estimators import _tmatrix_disconnected
+            strong = 'strong' in states
+            largest = 'largest' in states
+            S = _tmatrix_disconnected.connected_sets(self.count_matrix, mincount_connectivity=mincount_connectivity,
+                                                     strong=strong)
+            if largest:
+                score = [len(s) for s in S]
+            else:
+                score = [self.count_matrix[_np.ix_(s, s)].sum() for s in S]
+            states = _np.array(S[_np.argmax(score)])
+        if states is not None:  # sub-transition matrix
+            self._active_set = states
+            C = C[_np.ix_(states, states)].copy()
+            P = P[_np.ix_(states, states)].copy()
+            P /= P.sum(axis=1)[:, None]
+            pi = _tmatrix_disconnected.stationary_distribution(P, C)
+            self.initial_count = self.initial_count[states]
+            self.initial_distribution = self.initial_distribution[states] / self.initial_distribution[states].sum()
+
+        # determine observed states
+        if str(obs) == 'nonempty':
+            import msmtools.estimation as msmest
+            obs = _np.where(msmest.count_states(self.discrete_trajectories_lagged) > 0)[0]
+        if obs is not None:
+            # set observable set
+            self._observable_set = obs
+            self._nstates_obs = obs.size
+            # full2active mapping
+            _full2obs = -1 * _np.ones(self._nstates_obs_full, dtype=int)
+            _full2obs[obs] = _np.arange(len(obs), dtype=int)
+            # observable trajectories
+            self._dtrajs_obs = []
+            for dtraj in self.discrete_trajectories_full:
+                self._dtrajs_obs.append(_full2obs[dtraj])
+            # observation matrix
+            B = self.observation_probabilities[_np.ix_(states, obs)].copy()
+            B /= B.sum(axis=1)[:, None]
+        else:
+            B = self.observation_probabilities
+
+        # set quantities back.
+        self.update_model_params(P=P, pobs=B, pi=pi)
+        self.count_matrix_EM = self.count_matrix[_np.ix_(states, states)]  # unchanged count matrix
+        self.count_matrix = C  # count matrix consistent with P
+        return self
+
+    def submodel_largest(self, strong=True, mincount_connectivity='1/n'):
+        """ Returns the largest connected sub-HMM (convenience function)
+
+        Returns
+        -------
+        hmm : HMM
+            The restricted HMM.
+
+        """
+        if strong:
+            return self.submodel(states='largest-strong', mincount_connectivity=mincount_connectivity)
+        else:
+            return self.submodel(states='largest-weak', mincount_connectivity=mincount_connectivity)
+
+    def submodel_populous(self, strong=True, mincount_connectivity='1/n'):
+        """ Returns the most populous connected sub-HMM (convenience function)
+
+        Returns
+        -------
+        hmm : HMM
+            The restricted HMM.
+
+        """
+        if strong:
+            return self.submodel(states='populous-strong', mincount_connectivity=mincount_connectivity)
+        else:
+            return self.submodel(states='populous-weak', mincount_connectivity=mincount_connectivity)
+
+    def submodel_disconnect(self, mincount_connectivity='1/n'):
+        """Disconnects sets of hidden states that are barely connected
+
+        Runs a connectivity check excluding all transition counts below
+        mincount_connectivity. The transition matrix and stationary distribution
+        will be re-estimated. Note that the resulting transition matrix
+        may have both strongly and weakly connected subsets.
+
+        Parameters
+        ----------
+        mincount_connectivity : float or '1/n'
+            minimum number of counts to consider a connection between two states.
+            Counts lower than that will count zero in the connectivity check and
+            may thus separate the resulting transition matrix. The default
+            evaluates to 1/nstates.
+
+        Returns
+        -------
+        hmm : HMM
+            The restricted HMM.
+
+        """
+        return self.submodel(mincount_connectivity=mincount_connectivity)
+
+    ################################################################################
+    # TODO: there is redundancy between this code and EstimatedMSM
+    ################################################################################
+
+    def trajectory_weights(self):
+        r"""Uses the HMSM to assign a probability weight to each trajectory frame.
+
+        This is a powerful function for the calculation of arbitrary observables in the trajectories one has
+        started the analysis with. The stationary probability of the MSM will be used to reweigh all states.
+        Returns a list of weight arrays, one for each trajectory, and with a number of elements equal to
+        trajectory frames. Given :math:`N` trajectories of lengths :math:`T_1` to :math:`T_N`, this function
+        returns corresponding weights:
+        .. math::
+
+            (w_{1,1}, ..., w_{1,T_1}), (w_{N,1}, ..., w_{N,T_N})
+
+        that are normalized to one:
+        .. math::
+
+            \sum_{i=1}^N \sum_{t=1}^{T_i} w_{i,t} = 1
+
+        Suppose you are interested in computing the expectation value of a function :math:`a(x)`, where :math:`x`
+        are your input configurations. Use this function to compute the weights of all input configurations and
+        obtain the estimated expectation by:
+        .. math::
+
+            \langle a \rangle = \sum_{i=1}^N \sum_{t=1}^{T_i} w_{i,t} a(x_{i,t})
+
+        Or if you are interested in computing the time-lagged correlation between functions :math:`a(x)` and
+        :math:`b(x)` you could do:
+        .. math::
+
+            \langle a(t) b(t+\tau) \rangle_t = \sum_{i=1}^N \sum_{t=1}^{T_i} w_{i,t} a(x_{i,t}) a(x_{i,t+\tau})
+
+        Returns
+        -------
+        The normalized trajectory weights. Given :math:`N` trajectories of lengths :math:`T_1` to :math:`T_N`,
+        returns the corresponding weights:
+        .. math::
+
+            (w_{1,1}, ..., w_{1,T_1}), (w_{N,1}, ..., w_{N,T_N})
+
+        """
+        # compute stationary distribution, expanded to full set
+        statdist = self.stationary_distribution_obs
+        statdist = _np.append(statdist, [-1])  # add a zero weight at index -1, to deal with unobserved states
+        # histogram observed states
+        import msmtools.dtraj as msmtraj
+        hist = 1.0 * msmtraj.count_states(self.discrete_trajectories_obs, ignore_negative=True)
+        # simply read off stationary distribution and accumulate total weight
+        W = []
+        wtot = 0.0
+        for dtraj in self.discrete_trajectories_obs:
+            w = statdist[dtraj] / hist[dtraj]
+            W.append(w)
+            wtot += _np.sum(W)
+        # normalize
+        for w in W:
+            w /= wtot
+        # done
+        return W
+
+    ################################################################################
+    # Generation of trajectories and samples
+    ################################################################################
+
+    @property
+    def observable_state_indexes(self):
+        """
+        Ensures that the observable states are indexed and returns the indices
+        """
+        try:  # if we have this attribute, return it
+            return self._observable_state_indexes
+        except:  # didn't exist? then create it.
+            import pyemma.util.discrete_trajectories as dt
+
+            self._observable_state_indexes = dt.index_states(self.discrete_trajectories_obs)
+            return self._observable_state_indexes
+
+    # TODO: generate_traj. How should that be defined? Probably indexes of observable states, but should we specify
+    #                      hidden or observable states as start and stop states?
+    # TODO: sample_by_state. How should that be defined?
+
+    def sample_by_observation_probabilities(self, nsample):
+        r"""Generates samples according to given probability distributions
+
+        Parameters
+        ----------
+        distributions : list or array of ndarray ( (n) )
+            m distributions over states. Each distribution must be of length n and must sum up to 1.0
+        nsample : int
+            Number of samples per distribution. If replace = False, the number of returned samples per state could be
+            smaller if less than nsample indexes are available for a state.
+
+        Returns
+        -------
+        indexes : length m list of ndarray( (nsample, 2) )
+            List of the sampled indices by distribution.
+            Each element is an index array with a number of rows equal to nsample, with rows consisting of a
+            tuple (i, t), where i is the index of the trajectory and t is the time index within the trajectory.
+
+        """
+        import pyemma.util.discrete_trajectories as dt
+        return dt.sample_indexes_by_distribution(self.observable_state_indexes, self.observation_probabilities, nsample)
+
+    ################################################################################
+    # Model Validation
+    ################################################################################
 
     def cktest(self, mlags=10, conf=0.95, err_est=False, show_progress=True):
         """ Conducts a Chapman-Kolmogorow test.
@@ -305,7 +641,7 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
 
         """
         from pyemma.msm.estimators import ChapmanKolmogorovValidator
-        ck = ChapmanKolmogorovValidator(self, self, np.eye(self.nstates),
+        ck = ChapmanKolmogorovValidator(self, self, _np.eye(self.nstates),
                                         mlags=mlags, conf=conf, err_est=err_est,
                                         show_progress=show_progress)
         ck.estimate(self._dtrajs_full)

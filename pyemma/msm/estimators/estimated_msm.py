@@ -327,11 +327,14 @@ class EstimatedMSM(MSM):
         # compute stationary distribution, expanded to full set
         statdist_full = np.zeros([self._nstates_full])
         statdist_full[self.active_set] = self.stationary_distribution
+        # histogram observed states
+        import msmtools.dtraj as msmtraj
+        hist = 1.0 * msmtraj.count_states(self.discrete_trajectories_full)
         # simply read off stationary distribution and accumulate total weight
         W = []
         wtot = 0.0
         for dtraj in self.discrete_trajectories_full:
-            w = statdist_full[dtraj]
+            w = statdist_full[dtraj] / hist[dtraj]
             W.append(w)
             wtot += np.sum(W)
         # normalize

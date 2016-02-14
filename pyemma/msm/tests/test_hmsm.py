@@ -44,20 +44,18 @@ class TestMLHMM(unittest.TestCase):
 
         # run with lag 1 and 10
         cls.msm_lag1 = msm.estimate_markov_model([obs], 1, reversible=True, connectivity='largest')
-        cls.hmsm_lag1 = msm.estimate_hidden_markov_model([obs], nstates, 1, reversible=True, connectivity='largest')
-        cls.hmsm_lag1 = cls.hmsm_lag1.submodel(obs='nonempty')
+        cls.hmsm_lag1 = msm.estimate_hidden_markov_model([obs], nstates, 1, reversible=True, observe_nonempty=True)
         cls.msm_lag10 = msm.estimate_markov_model([obs], 10, reversible=True, connectivity='largest')
-        cls.hmsm_lag10 = msm.estimate_hidden_markov_model([obs], nstates, 10, reversible=True, connectivity='largest')
-        cls.hmsm_lag10 = cls.hmsm_lag10.submodel(obs='nonempty')
+        cls.hmsm_lag10 = msm.estimate_hidden_markov_model([obs], nstates, 10, reversible=True, observe_nonempty=True)
 
     # =============================================================================
     # Test basic HMM properties
     # =============================================================================
 
     def test_hmm_type(self):
-        from pyemma.msm.estimators.estimated_hmsm import EstimatedHMSM
-        assert isinstance(self.hmsm_lag1, EstimatedHMSM)
-        assert isinstance(self.hmsm_lag10, EstimatedHMSM)
+        from pyemma.msm.estimators.maximum_likelihood_hmsm import MaximumLikelihoodHMSM
+        assert isinstance(self.hmsm_lag1, MaximumLikelihoodHMSM)
+        assert isinstance(self.hmsm_lag10, MaximumLikelihoodHMSM)
 
     def test_reversible(self):
         assert self.hmsm_lag1.is_reversible

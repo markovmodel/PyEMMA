@@ -707,7 +707,7 @@ def bayesian_markov_model(dtrajs, lag, reversible=True, statdist=None,
 
 def timescales_hmsm(dtrajs, nstates, lags=None, nits=None, reversible=True, stationary=False,
                     connectivity=None, mincount_connectivity='1/n', separate=None, errors=None, nsamples=100,
-                    n_jobs=1, show_progress=True):
+                    stride=None, n_jobs=1, show_progress=True):
     r""" Calculate implied timescales from Hidden Markov state models estimated at a series of lag times.
 
     Warning: this can be slow!
@@ -831,12 +831,16 @@ def timescales_hmsm(dtrajs, nstates, lags=None, nits=None, reversible=True, stat
 
     # MLE or error estimation?
     if errors is None:
+        if stride is None:
+            stride = 1
         estimator = _ML_HMSM(nstates=nstates, reversible=reversible, stationary=stationary, connectivity=connectivity,
-                             mincount_connectivity=mincount_connectivity, separate=separate)
+                             stride=stride, mincount_connectivity=mincount_connectivity, separate=separate)
     elif errors == 'bayes':
+        if stride is None:
+            stride = 'effective'
         estimator = _Bayes_HMSM(nstates=nstates, reversible=reversible, stationary=stationary,
                                 connectivity=connectivity, mincount_connectivity=mincount_connectivity,
-                                separate=separate, show_progress=show_progress, nsamples=nsamples)
+                                stride=stride, separate=separate, show_progress=show_progress, nsamples=nsamples)
     else:
         raise NotImplementedError('Error estimation method'+str(errors)+'currently not implemented')
 
@@ -849,7 +853,7 @@ def timescales_hmsm(dtrajs, nstates, lags=None, nits=None, reversible=True, stat
 
 def estimate_hidden_markov_model(dtrajs, nstates, lag, reversible=True, stationary=False,
                                  connectivity=None, mincount_connectivity='1/n', separate=None, observe_nonempty=True,
-                                 dt_traj='1 step', accuracy=1e-3, maxit=1000):
+                                 stride=1, dt_traj='1 step', accuracy=1e-3, maxit=1000):
     r""" Estimates a Hidden Markov state model from discrete trajectories
 
     Returns a :class:`MaximumLikelihoodHMSM` that contains a transition
@@ -1027,14 +1031,15 @@ def estimate_hidden_markov_model(dtrajs, nstates, lag, reversible=True, stationa
     # initialize HMSM estimator
     hmsm_estimator = _ML_HMSM(lag=lag, nstates=nstates, reversible=reversible, msm_init='largest-strong',
                               connectivity=connectivity, mincount_connectivity=mincount_connectivity, separate=separate,
-                              observe_nonempty=observe_nonempty, dt_traj=dt_traj, accuracy=accuracy, maxit=maxit)
+                              observe_nonempty=observe_nonempty, stride=stride, dt_traj=dt_traj,
+                              accuracy=accuracy, maxit=maxit)
     # run estimation
     return hmsm_estimator.estimate(dtrajs)
 
 
 def bayesian_hidden_markov_model(dtrajs, nstates, lag, nsamples=100, reversible=True, stationary=False,
                                  connectivity=None, mincount_connectivity='1/n', separate=None, observe_nonempty=True,
-                                 conf=0.95, dt_traj='1 step', store_hidden=False, show_progress=True):
+                                 stride='effective', conf=0.95, dt_traj='1 step', store_hidden=False, show_progress=True):
     r""" Bayesian Hidden Markov model estimate using Gibbs sampling of the posterior
 
     Returns a :class:`BayesianHMSM` that contains
@@ -1085,6 +1090,18 @@ def bayesian_hidden_markov_model(dtrajs, nstates, lag, nsamples=100, reversible=
         at least one observation in the lagged input trajectories.
     nsamples : int, optional, default=100
         number of transition matrix samples to compute and store
+    stride : str or int, default='effective'
+        stride between two lagged trajectories extracted from the input
+        trajectories. Given trajectory s[t], stride and lag will result
+        in trajectories
+            s[0], s[tau], s[2 tau], ...
+            s[stride], s[stride + tau], s[stride + 2 tau], ...
+        Setting stride = 1 will result in using all data (useful for
+        maximum likelihood estimator), while a Bayesian estimator requires
+        a longer stride in order to have statistically uncorrelated
+        trajectories. Setting stride = None 'effective' uses the largest
+        neglected timescale as an estimate for the correlation time and
+        sets the stride accordingly.
     conf : float, optional, default=0.95
         size of confidence intervals
     dt_traj : str, optional, default='1 step'
@@ -1176,7 +1193,7 @@ def bayesian_hidden_markov_model(dtrajs, nstates, lag, nsamples=100, reversible=
         measurement uncertainty. arXiv:1108.1430 (2011)
 
     """
-    bhmsm_estimator = _Bayes_HMSM(lag=lag, nstates=nstates, nsamples=nsamples, reversible=reversible,
+    bhmsm_estimator = _Bayes_HMSM(lag=lag, nstates=nstates, stride=stride, nsamples=nsamples, reversible=reversible,
                                   connectivity=connectivity, mincount_connectivity=mincount_connectivity,
                                   separate=separate, observe_nonempty=observe_nonempty,
                                   dt_traj=dt_traj, conf=conf, store_hidden=store_hidden, show_progress=show_progress)

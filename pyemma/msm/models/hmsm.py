@@ -256,7 +256,7 @@ class HMSM(_MSM):
         B = self.observation_probabilities[_np.ix_(states, obs)].copy()
         B /= B.sum(axis=1)[:, None]
 
-        sub_hmsm = HMSM(P, B)
+        sub_hmsm = HMSM(P, B, dt_model=self.dt_model)
         sub_hmsm.update_model_params(reversible=self.reversible)
         return sub_hmsm
 

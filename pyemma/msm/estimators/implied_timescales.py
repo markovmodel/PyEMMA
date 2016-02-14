@@ -143,7 +143,7 @@ class ImpliedTimescales(Estimator, ProgressReporter):
             self.estimator.show_progress = False
 
         # run estimation on all lag times
-        self._models, self._estimators = estimate_param_scan(self.estimator, data, param_sets, failfast=True,
+        self._models, self._estimators = estimate_param_scan(self.estimator, data, param_sets, failfast=False,
                                                              return_estimators=True, n_jobs=self.n_jobs,
                                                              progress_reporter=self)
 
