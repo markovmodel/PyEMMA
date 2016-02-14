@@ -703,7 +703,7 @@ class MaximumLikelihoodMSM(_Estimator, _MSM):
         # if hmm.nstates = msm.nstates there is no problem. Otherwise, check spectral gap
         if self.nstates > nhidden:
             timescale_ratios = self.timescales()[:-1] / self.timescales()[1:]
-            if timescale_ratios[self.nstates-2] < 1.5:
+            if timescale_ratios[nhidden-2] < 1.5:
                 self.logger.warning('Requested coarse-grained model with ' + str(nhidden) + ' metastable states at ' +
                                  'lag=' + str(self.lag) + '.' + 'The ratio of relaxation timescales between ' +
                                  str(nhidden) + ' and ' + str(nhidden+1) + ' states is only ' +
