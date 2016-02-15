@@ -30,7 +30,7 @@ import unittest
 
 import mdtraj
 import pyemma
-from pyemma.coordinates.data.traj_info_cache import _TrajectoryInfoCache as TrajectoryInfoCache
+from pyemma.coordinates.data.util.traj_info_cache import _TrajectoryInfoCache as TrajectoryInfoCache
 from pyemma.util.files import TemporaryDirectory
 from pyemma.datasets import get_bpti_test_data
 
@@ -44,13 +44,23 @@ pdbfile = get_bpti_test_data()['top']
 
 class TestTrajectoryInfoCache(unittest.TestCase):
 
+    @classmethod
+    def setUpClass(cls):
+        super(TestTrajectoryInfoCache, cls).setUpClass()
+        cls.work_dir = tempfile.mkdtemp("traj_cache_test")
+
     def setUp(self):
-        self.tmpfile = tempfile.mktemp()
+        self.tmpfile = tempfile.mktemp(dir=self.work_dir)
         self.db = TrajectoryInfoCache(self.tmpfile)
-        
+
     def tearDown(self):
         del self.db
-        #os.unlink(self.tmpfile)
+
+    @classmethod
+    def tearDownClass(cls):
+        super(TestTrajectoryInfoCache, cls).tearDownClass()
+        import shutil
+        shutil.rmtree(cls.work_dir, ignore_errors=True)
 
     def testCacheResults(self):
         # cause cache failures
@@ -78,10 +88,11 @@ class TestTrajectoryInfoCache(unittest.TestCase):
 
             # cache it and compare
             results = {f: self.db[f] for f in files}
-            expected = {fn: len(different_lengths_array[i]) for i, fn in enumerate(files)}
+            expected = {
+                fn: len(different_lengths_array[i]) for i, fn in enumerate(files)}
 
             self.assertEqual(results, expected)
-            
+
     def test_xyz(self):
         traj = mdtraj.load(xtcfiles, top=pdbfile)
         expected = len(traj)
@@ -93,12 +104,12 @@ class TestTrajectoryInfoCache(unittest.TestCase):
             traj.save_xyz(fn)
             with warnings.catch_warnings(record=True) as w:
                 reader = pyemma.coordinates.source(fn, top=pdbfile)
-                
+
                 self.assertEqual(len(w), 1)
                 self.assertEqual(w[0].category, EfficiencyWarning)
-                
+
             self.assertEqual(reader.trajectory_length(0), expected)
-            
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -17,11 +17,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import
-from pyemma.coordinates.clustering.interface import AbstractClustering
-from pyemma.coordinates.transform.transformer import Transformer
+#from pyemma.coordinates.clustering.interface import AbstractClustering
+from pyemma.coordinates.transform.transformer import StreamingTransformer
 from pyemma.coordinates.data.feature_reader import FeatureReader
 
 from pyemma.util.log import getLogger
+from pyemma.coordinates.data._base.iterable import Iterable
+from pyemma.coordinates.data._base.datasource import DataSource
 
 __all__ = ['Discretizer',
            'Pipeline',
@@ -55,7 +57,7 @@ class Pipeline(object):
         for e in chain:
             self.add_element(e)
 
-        self._parametrized = False
+        self._estimated = False
 
         name = "%s[%s]" % (self.__class__.__name__, hex(id(self)))
         self._logger = getLogger(name)
@@ -76,20 +78,17 @@ class Pipeline(object):
 
         Appends the given element to the end of the current chain.
         """
-        if not isinstance(e, Transformer):
-            raise TypeError("given element is not a transformer.")
+        if not isinstance(e, Iterable):
+            raise TypeError("given element is not iterable in terms of "
+                            "PyEMMAs coordinate pipeline.")
 
-        # set data producer
-        if len(self._chain) == 0:
-            data_producer = e
-        else:
+        # only if we have more than one element
+        if not e.is_reader and len(self._chain) >= 1:
             data_producer = self._chain[-1]
-
-        # avoid calling the setter of Transformer.data_producer, since this
-        # triggers a re-parametrization even on readers (where it makes not sense)
-        e._data_producer = data_producer
+            # avoid calling the setter of StreamingTransformer.data_producer, since this
+            # triggers a re-parametrization even on readers (where it makes not sense)
+            e._data_producer = data_producer
         e.chunksize = self.chunksize
-
         self._chain.append(e)
 
     def set_element(self, index, e):
@@ -110,7 +109,8 @@ class Pipeline(object):
 
         # remove current index and its data producer
         replaced = self._chain.pop(index)
-        replaced.data_producer = None
+        if not replaced.is_reader:
+            replaced.data_producer = None
 
         self._chain.insert(index, e)
 
@@ -132,7 +132,7 @@ class Pipeline(object):
 
         # since data producer of element after insertion changed, reset its status
         # TODO: make parameterized a property?
-        self._chain[index]._parameterized = False
+        self._chain[index]._estimated = False
 
         return replaced
 
@@ -142,17 +142,19 @@ class Pipeline(object):
         Reads all data and discretizes it into discrete trajectories.
         """
         for element in self._chain:
-            element.parametrize(stride=self.param_stride)
+            if not element.is_reader and not element._estimated:
+                element.estimate(element.data_producer, stride=self.param_stride)
 
-        self._parametrized = True
+        self._estimated = True
 
-    def _is_parametrized(self):
+    def _is_estimated(self):
         r"""
         Iterates through the pipeline elements and checks if every element is parametrized.
         """
-        result = self._parametrized
+        result = self._estimated
         for el in self._chain:
-            result &= el._parametrized
+            if not el.is_reader:
+                result &= el._estimated
         return result
 
 
@@ -161,15 +163,15 @@ class Discretizer(Pipeline):
     r"""
     A Discretizer gets a FeatureReader, which extracts features (distances,
     angles etc.) of given trajectory data and passes this data in a memory
-    efficient way through the given pipeline of a Transformer and Clustering.
+    efficient way through the given pipeline of a StreamingTransformer and Clustering.
     The clustering object is responsible for assigning the data to the cluster centers.
 
     Parameters
     ----------
     reader : a FeatureReader object
         reads trajectory data and selects features.
-    transform : a Transformer object (optional)
-        the Transformer will be used to e.g reduce dimensionality of inputs.
+    transform : a StreamingTransformer object (optional)
+        the StreamingTransformer will be used to e.g reduce dimensionality of inputs.
     cluster : a clustering object
         used to assign input data to discrete states/ discrete trajectories.
     chunksize : int, optional
@@ -182,19 +184,20 @@ class Discretizer(Pipeline):
             self, [], chunksize=chunksize, param_stride=param_stride)
 
         # check input
-        if not isinstance(reader, Transformer):
+        if not isinstance(reader, DataSource):
             raise ValueError('given reader is not of the correct type')
         else:
             if reader.data_producer is not reader:
                 raise ValueError("given reader is not a first stance data source."
                                  " Check if its a FeatureReader or DataInMemory")
         if transform is not None:
-            if not isinstance(transform, Transformer):
+            if not isinstance(transform, StreamingTransformer):
                 raise ValueError('transform is not a transformer but "%s"' %
                                  str(type(transform)))
         if cluster is None:
             raise ValueError('Must specify a clustering algorithm!')
         else:
+            from pyemma.coordinates.clustering.interface import AbstractClustering
             assert isinstance(cluster, AbstractClustering), \
                 'cluster is not of the correct type'
 
@@ -209,12 +212,12 @@ class Discretizer(Pipeline):
 
         self.add_element(cluster)
 
-        self._parametrized = False
+        self._estimated = False
 
     @property
     def dtrajs(self):
         """ get discrete trajectories """
-        if not self._parametrized:
+        if not self._estimated:
             self._logger.info("not yet parametrized, running now.")
             self.parametrize()
         return self._chain[-1].dtrajs
@@ -242,7 +245,7 @@ class Discretizer(Pipeline):
 
         clustering = self._chain[-1]
         reader = self._chain[0]
-
+        from pyemma.coordinates.clustering.interface import AbstractClustering
         assert isinstance(clustering, AbstractClustering)
 
         trajfiles = None

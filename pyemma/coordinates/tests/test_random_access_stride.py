@@ -1,4 +1,3 @@
-
 # This file is part of PyEMMA.
 #
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
@@ -17,51 +16,231 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import
+
 import os
 import tempfile
 import unittest
 from unittest import TestCase
-import numpy as np
-import pyemma.coordinates.api as coor
-import pkg_resources
+
 import mdtraj
+import numpy as np
+import pkg_resources
 from six.moves import range
+
+import pyemma.coordinates.api as coor
+from pyemma.coordinates.data import DataInMemory, FeatureReader
+from pyemma.coordinates.data.fragmented_trajectory_reader import FragmentedTrajectoryReader
+from pyemma.coordinates.tests.test_featurereader import create_traj
 
 
 class TestRandomAccessStride(TestCase):
     def setUp(self):
+        self.tmpdir = tempfile.mkdtemp('test_random_access')
         self.dim = 5
-        self.data = [np.random.random((100, self.dim)),
-                     np.random.random((20, self.dim)),
-                     np.random.random((20, self.dim))]
+        self.data = [np.random.random((100, self.dim)).astype(np.float32),
+                     np.random.random((20, self.dim)).astype(np.float32),
+                     np.random.random((20, self.dim)).astype(np.float32)]
         self.stride = np.asarray([
             [0, 1], [0, 3], [0, 3], [0, 5], [0, 6], [0, 7],
             [2, 1], [2, 1]
         ])
         self.stride2 = np.asarray([[2, 0]])
+        self.topfile = pkg_resources.resource_filename(__name__, 'data/test.pdb')
+        trajfile1, xyz1, n_frames1 = create_traj(self.topfile, dir=self.tmpdir, format=".binpos", length=100)
+        trajfile2, xyz2, n_frames2 = create_traj(self.topfile, dir=self.tmpdir, format=".binpos", length=20)
+        trajfile3, xyz3, n_frames3 = create_traj(self.topfile, dir=self.tmpdir, format=".binpos", length=20)
+        self.data_feature_reader = [trajfile1, trajfile2, trajfile3]
+
+    def tearDown(self):
+        import shutil
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def _get_reader_instance(self, instance_number):
+        if instance_number == 0:
+            return DataInMemory(self.data)
+        elif instance_number == 1:
+            return FeatureReader(self.data_feature_reader, topologyfile=self.topfile)
+
+    def test_is_random_accessible(self):
+        dim = DataInMemory(self.data)
+        frag = FragmentedTrajectoryReader([[self.data]])
+        assert dim.is_random_accessible is True
+        assert frag.is_random_accessible is False
+
+    def test_slice_random_access(self):
+        dim = DataInMemory(self.data)
+
+        all_data = dim.ra_itraj_cuboid[:, :, :]
+        # the remaining 80 frames of the first trajectory should be truncated
+        np.testing.assert_equal(all_data.shape, (3, 20, self.dim))
+        # should coincide with original data
+        np.testing.assert_equal(all_data, np.array((self.data[0][:20], self.data[1], self.data[2])))
+        # we should be able to select the 1st trajectory
+        np.testing.assert_equal(dim.ra_itraj_cuboid[0], np.array([self.data[0]]))
+        # select only dimensions 1:3 of 2nd trajectory with every 2nd frame
+        np.testing.assert_equal(dim.ra_itraj_cuboid[1, ::2, 1:3], np.array([self.data[1][::2, 1:3]]))
+        # select only last dimension of 1st trajectory every 17th frame
+        np.testing.assert_equal(dim.ra_itraj_cuboid[0, ::17, -1], np.array([np.array([self.data[0][::17, -1]]).T]))
+
+    def test_transfomer_random_access(self):
+        for in_memory in [True, False]:
+            for r in range(0, 2):
+                dim = self._get_reader_instance(r)
+
+                tica = coor.tica(dim, dim=3)
+                tica.in_memory = in_memory
+                out = tica.get_output()
+
+                # linear random access
+                np.testing.assert_array_equal(np.squeeze(tica.ra_linear[0:2, 0]), out[0][0:2, 0])
+                # linear itraj random access
+                np.testing.assert_array_equal(np.squeeze(tica.ra_itraj_linear[0, :12, 0]), out[0][:12, 0])
+                # jagged random access
+                jagged = tica.ra_itraj_jagged[:, ::-3, 0]
+                for i, X in enumerate(jagged):
+                    np.testing.assert_array_equal(X, out[i][::-3, 0])
+                # cuboid random access
+                cube = tica.ra_itraj_cuboid[:, 0, 0]
+                for i in range(3):
+                    np.testing.assert_array_equal(cube[i], out[i][0, 0])
+
+    def test_transformer_random_access_in_memory(self):
+        feature_reader = self._get_reader_instance(1)
+        tica = coor.tica(feature_reader)
+        # everything normal
+        assert tica.is_random_accessible
+        from pyemma.coordinates.transform.transformer import StreamingTransformerRandomAccessStrategy
+        assert isinstance(tica._ra_jagged, StreamingTransformerRandomAccessStrategy)
+
+        # set to memory
+        tica.in_memory = True
+        assert tica.is_random_accessible
+        from pyemma.coordinates.data.data_in_memory import DataInMemoryJaggedRandomAccessStrategy
+        assert isinstance(tica._ra_jagged, DataInMemoryJaggedRandomAccessStrategy)
+
+        # not in memory anymore, expect to fall back
+        tica.in_memory = False
+        assert tica.is_random_accessible
+        from pyemma.coordinates.transform.transformer import StreamingTransformerRandomAccessStrategy
+        assert isinstance(tica._ra_jagged, StreamingTransformerRandomAccessStrategy)
+
+        # remove data source
+        tica.data_producer = None
+        assert not tica.is_random_accessible
+        assert tica._ra_jagged is None
+
+    def test_linear_random_access_with_mixed_trajs(self):
+        for r in range(0, 2):
+            dim = self._get_reader_instance(r)
+            Y = dim.get_output()
+
+            X = dim.ra_linear[np.array([1, 115, 2, 139, 0])]
+            np.testing.assert_equal(X[0, :], Y[0][1, :])
+            np.testing.assert_equal(X[1, :], Y[1][15, :])
+            np.testing.assert_equal(X[2, :], Y[0][2, :])
+            np.testing.assert_equal(X[3, :], Y[2][19, :])
+            np.testing.assert_equal(X[4, :], Y[0][0, :])
+
+    def test_cuboid_random_access_with_mixed_trajs(self):
+        for r in range(0, 2):
+            dim = self._get_reader_instance(r)
+            output = dim.get_output()
+
+            # take two times the first trajectory, one time the third with
+            # two times the third frame and one time the second, each
+            trajs = np.array([0, 2, 0])
+            frames = np.array([2, 2, 1])
+            X = dim.ra_itraj_cuboid[trajs, frames]
+            np.testing.assert_equal(X[0], output[0][frames])
+            np.testing.assert_equal(X[1], output[2][frames])
+            np.testing.assert_equal(X[2], output[0][frames])
+
+    def test_linear_itraj_random_access_with_mixed_trajs(self):
+        for r in range(0, 2):
+            dim = self._get_reader_instance(r)
+            Y = dim.get_output()
+
+            itrajs = np.array([2, 2, 0])
+            frames = np.array([3, 23, 42])
+            X = dim.ra_itraj_linear[itrajs, frames]
+
+            np.testing.assert_equal(X[0], Y[2][3, :])
+            np.testing.assert_equal(X[1], Y[2][3, :])
+            np.testing.assert_equal(X[2], Y[0][2, :])
+
+    def test_jagged_random_access_with_mixed_trajs(self):
+        for r in range(0, 2):
+            dim = self._get_reader_instance(r)
+            Y = dim.get_output()
+
+            itrajs = np.array([2, 2, 0])
+            X = dim.ra_itraj_jagged[itrajs, ::-3]  #
+            np.testing.assert_array_almost_equal(X[0], Y[2][::-3])
+            np.testing.assert_array_almost_equal(X[1], Y[2][::-3])
+            np.testing.assert_array_almost_equal(X[2], Y[0][::-3])
+
+    def test_slice_random_access_linear(self):
+        dim = DataInMemory(self.data)
+
+        all_data = dim.ra_linear[:, :]
+        # all data should be all data concatenated
+        np.testing.assert_equal(all_data, np.concatenate(self.data))
+        # select first 5 frames
+        np.testing.assert_equal(dim.ra_linear[:5], self.data[0][:5])
+        # select only dimensions 1:3 of every 2nd frame
+        np.testing.assert_equal(dim.ra_linear[::2, 1:3], np.concatenate(self.data)[::2, 1:3])
+
+    def test_slice_random_access_linear_itraj(self):
+        dim = DataInMemory(self.data)
+
+        all_data = dim.ra_itraj_linear[:, :, :]
+        # all data should be all data concatenated
+        np.testing.assert_equal(all_data, np.concatenate(self.data))
+
+        # if requested 130 frames, this should yield the first two trajectories and half of the third
+        np.testing.assert_equal(dim.ra_itraj_linear[:, :130], np.concatenate(self.data)[:130])
+        # now request first 30 frames of the last two trajectories
+        np.testing.assert_equal(dim.ra_itraj_linear[[1, 2], :30], np.concatenate((self.data[1], self.data[2]))[:30])
+
+    def test_slice_random_access_jagged(self):
+        dim = DataInMemory(self.data)
+
+        all_data = dim.ra_itraj_jagged[:, :, :]
+        for idx in range(3):
+            np.testing.assert_equal(all_data[idx], self.data[idx])
+
+        jagged = dim.ra_itraj_jagged[:, :30]
+        for idx in range(3):
+            np.testing.assert_equal(jagged[idx], self.data[idx][:30])
+
+        jagged_last_dim = dim.ra_itraj_jagged[:, :, -1]
+        for idx in range(3):
+            np.testing.assert_equal(jagged_last_dim[idx], self.data[idx][:, -1])
 
     def test_iterator_context(self):
-        from pyemma.coordinates.transform.transformer import TransformerIteratorContext
+        dim = DataInMemory(np.array([1]))
 
-        ctx = TransformerIteratorContext(stride=1, lag=5)
+        ctx = dim.iterator(stride=1).state
         assert ctx.stride == 1
-        assert ctx.lag == 5
         assert ctx.uniform_stride
         assert ctx.is_stride_sorted()
         assert ctx.traj_keys is None
 
-        ctx = TransformerIteratorContext(stride=np.asarray([[0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [1, 3]]))
+        ctx = dim.iterator(stride=np.asarray([[0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [1, 3]])).state
         assert not ctx.uniform_stride
         assert ctx.is_stride_sorted()
         np.testing.assert_array_equal(ctx.traj_keys, np.array([0, 1]))
 
+        # require sorted random access
+        dim._needs_sorted_random_access_stride = True
+
         # sorted within trajectory, not sorted by trajectory key
         with self.assertRaises(ValueError):
-            TransformerIteratorContext(stride=np.asarray([[1, 1], [1, 2], [1, 3], [0, 0], [0, 1], [0, 2]]))
+            dim.iterator(stride=np.asarray([[1, 1], [1, 2], [1, 3], [0, 0], [0, 1], [0, 2]]))
 
         # sorted by trajectory key, not within trajectory
         with self.assertRaises(ValueError):
-            TransformerIteratorContext(stride=np.asarray([[0, 0], [0, 1], [0, 2], [1, 1], [1, 5], [1, 3]]))
+            dim.iterator(stride=np.asarray([[0, 0], [0, 1], [0, 2], [1, 1], [1, 5], [1, 3]]))
 
         np.testing.assert_array_equal(ctx.ra_indices_for_traj(0), np.array([0, 1, 2]))
         np.testing.assert_array_equal(ctx.ra_indices_for_traj(1), np.array([1, 2, 3]))
@@ -80,7 +259,7 @@ class TestRandomAccessStride(TestCase):
         out3 = data_in_memory.get_output(stride=self.stride)
 
         for idx in np.unique(self.stride[:, 0]):
-            np.testing.assert_array_almost_equal(self.data[idx][self.stride[self.stride[:,0] == idx][:,1]], out1[idx])
+            np.testing.assert_array_almost_equal(self.data[idx][self.stride[self.stride[:, 0] == idx][:, 1]], out1[idx])
             np.testing.assert_array_almost_equal(out1[idx], out2[idx])
             np.testing.assert_array_almost_equal(out2[idx], out3[idx])
 
@@ -104,7 +283,8 @@ class TestRandomAccessStride(TestCase):
             out2 = np_fr.get_output(stride=self.stride)
 
             for idx in np.unique(self.stride[:, 0]):
-                np.testing.assert_array_almost_equal(self.data[idx][self.stride[self.stride[:, 0] == idx][:, 1]], out1[idx])
+                np.testing.assert_array_almost_equal(self.data[idx][self.stride[self.stride[:, 0] == idx][:, 1]],
+                                                     out1[idx])
                 np.testing.assert_array_almost_equal(out1[idx], out2[idx])
         finally:
             for tmp in tmpfiles:
@@ -130,8 +310,9 @@ class TestRandomAccessStride(TestCase):
             np_fr = coor.source(tmpfiles, chunk_size=0)
             out3 = np_fr.get_output(stride=self.stride)
 
-            for idx in np.unique(self.stride[:,0]):
-                np.testing.assert_array_almost_equal(self.data[idx][self.stride[self.stride[:,0] == idx][:,1]], out1[idx])
+            for idx in np.unique(self.stride[:, 0]):
+                np.testing.assert_array_almost_equal(self.data[idx][self.stride[self.stride[:, 0] == idx][:, 1]],
+                                                     out1[idx])
                 np.testing.assert_array_almost_equal(out1[idx], out2[idx])
                 np.testing.assert_array_almost_equal(out2[idx], out3[idx])
 
@@ -146,14 +327,14 @@ class TestRandomAccessStride(TestCase):
         kmeans = coor.cluster_kmeans(self.data, k=2)
         kmeans.in_memory = True
 
-        for cs in range(1, 5):
+        for cs in range(0, 5):
             kmeans.chunksize = cs
             ref_stride = {0: 0, 1: 0, 2: 0}
             it = kmeans.iterator(stride=self.stride)
             for x in it:
                 ref_stride[x[0]] += len(x[1])
             for key in list(ref_stride.keys()):
-                expected = len(it._ctx.ra_indices_for_traj(key))
+                expected = len(it.ra_indices_for_traj(key))
                 assert ref_stride[key] == expected, \
                     "Expected to get exactly %s elements of trajectory %s, but got %s for chunksize=%s" \
                     % (expected, key, ref_stride[key], cs)
@@ -171,11 +352,14 @@ class TestRandomAccessStride(TestCase):
             source.chunksize = 2
 
             out = source.get_output(stride=self.stride)
-            keys = np.unique(self.stride[:,0])
+            keys = np.unique(self.stride[:, 0])
             for i, coords in enumerate(out):
                 if i in keys:
                     traj = mdtraj.load(trajfiles[i], top=topfile)
-                    np.testing.assert_equal(coords, traj.xyz[np.array(self.stride[self.stride[:, 0] == i][:,1])].reshape(-1, 9))
+                    np.testing.assert_equal(coords,
+                                            traj.xyz[
+                                                np.array(self.stride[self.stride[:, 0] == i][:, 1])
+                                            ].reshape(-1, 9))
         finally:
             for t in trajfiles:
                 try:

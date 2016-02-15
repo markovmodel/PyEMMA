@@ -16,15 +16,16 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import
-from pyemma.util import types
-import six
-
 '''
 Created on 18.02.2015
 
 @author: marscher
 '''
+
+from __future__ import absolute_import
+
+import six
+
 from pyemma.coordinates.clustering.interface import AbstractClustering
 import numpy as np
 
@@ -56,22 +57,24 @@ class AssignCenters(AbstractClustering):
 
     """
 
-    def __init__(self, clustercenters, metric='euclidean'):
+    def __init__(self, clustercenters, metric='euclidean', stride=1):
         super(AssignCenters, self).__init__(metric=metric)
 
         if isinstance(clustercenters, six.string_types):
             from pyemma.coordinates.data import create_file_reader
             reader = create_file_reader(clustercenters, None, None)
-            self._clustercenters = reader.get_output()[0]
+            clustercenters = reader.get_output()[0]
         else:
-            self._clustercenters = np.array(clustercenters, dtype=np.float32, order='C')
+            clustercenters = np.array(clustercenters, dtype=np.float32, order='C')
 
         # sanity check.
-        if not self.clustercenters.ndim == 2:
+        if not clustercenters.ndim == 2:
             raise ValueError('cluster centers have to be 2d')
 
+        self.set_params(clustercenters=clustercenters, metric=metric, stride=stride)
+
         # since we provided centers, this transformer is already parametrized.
-        self._parametrized = True
+        self._estimated = True
 
     def describe(self):
         return "[AssignCenters c=%s]" % self.clustercenters
@@ -85,15 +88,12 @@ class AssignCenters(AbstractClustering):
                              ', but input has %i' % (dim, dp.dimension()))
         AbstractClustering.data_producer.fset(self, dp)
 
-    def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
-                        last_chunk, ipass, Y=None, stride=1):
-        # discretize all
-        if t == 0:
-            n = self.data_producer.trajectory_length(itraj, stride=stride)
-            self._dtrajs.append(np.empty(n, dtype=self.output_type()))
+    # TODO: replace with fit_predict?
+    def _estimate(self, iterable, **kw):
+        self._estimated = True
+        old_source = self._data_producer
+        self.data_producer = iterable
+        self.assign(None, self.stride)
+        self.data_producer = old_source
 
-        L = np.shape(X)[0]
-        self._dtrajs[itraj][t:t+L] = self._transform_array(X).squeeze()
-
-        if last_chunk:
-            return True
+        return self

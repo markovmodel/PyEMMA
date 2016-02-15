@@ -33,6 +33,7 @@ import msmtools.generation as msmgen
 import tempfile
 from six.moves import range
 import pkg_resources
+from pyemma.util.files import TemporaryDirectory
 
 class TestPipeline(unittest.TestCase):
     @classmethod
@@ -74,19 +75,18 @@ class TestPipeline(unittest.TestCase):
                 api.cluster_uniform_time(k=20)
             ], run=False
         )
-        self.assertFalse(p._is_parametrized(), "If run=false, the pipeline should not be parametrized.")
+        self.assertFalse(p._is_estimated(), "If run=false, the pipeline should not be parametrized.")
         p.parametrize()
-        self.assertTrue(p._is_parametrized(), "If parametrized was called, the pipeline should be parametrized.")
+        self.assertTrue(p._is_estimated(), "If parametrized was called, the pipeline should be parametrized.")
 
     def test_np_reader_in_pipeline(self):
-        with tempfile.NamedTemporaryFile(suffix='.npy', delete=False) as f:
+        with TemporaryDirectory() as td:
+            file_name = os.path.join(td, "test.npy")
             data = np.random.random((100, 3))
-            np.save(f.name, data)
-            reader = api.source(f.name)
+            np.save(file_name, data)
+            reader = api.source(file_name)
             p = api.pipeline(reader, run=False, stride=2, chunksize=5)
-            assert reader._parametrized
             p.parametrize()
-            assert reader._parametrized
 
     def test_add_element(self):
         # start with empty pipeline without auto-parametrization
@@ -94,9 +94,7 @@ class TestPipeline(unittest.TestCase):
         # add some reader
         reader = api.source(self.traj_files, top=self.pdb_file)
         p.add_element(reader)
-        assert reader._parametrized
         p.parametrize()
-        assert reader._parametrized
 
         # get the result immediately
         out1 = reader.get_output()
@@ -125,12 +123,12 @@ class TestPipeline(unittest.TestCase):
         reader = api.source(self.traj_files, top=self.pdb_file)
         pca = api.pca()
         p = api.pipeline([reader, pca])
-        self.assertTrue(p._is_parametrized())
+        self.assertTrue(p._is_estimated())
         pca_out = pca.get_output()
         tica = api.tica(lag=self.generated_lag)
         # replace pca with tica
         p.set_element(1, tica)
-        self.assertFalse(p._is_parametrized(), "After replacing an element, the pipeline should not be parametrized.")
+        self.assertFalse(p._is_estimated(), "After replacing an element, the pipeline should not be parametrized.")
         p.parametrize()
         tica_out = tica.get_output()
         # check if replacement actually happened

@@ -1,4 +1,3 @@
-
 # This file is part of PyEMMA.
 #
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
@@ -35,7 +34,6 @@ import shutil
 
 
 class TestCSVReader(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls):
         cls.dir = tempfile.mkdtemp(prefix='pyemma_filereader')
@@ -74,6 +72,29 @@ class TestCSVReader(unittest.TestCase):
         output = reader.get_output()
 
         np.testing.assert_almost_equal(output[0], self.data)
+
+    def test_read_with_skipping_first_few_couple_lines(self):
+        for skip in [0, 3, 13]:
+            r1 = CSVReader(self.filename1, chunksize=30)
+            out_with_skip = r1.get_output(skip=skip)[0]
+            r2 = CSVReader(self.filename1, chunksize=30)
+            out = r2.get_output()[0]
+            np.testing.assert_almost_equal(out_with_skip, out[skip::],
+                                           err_msg="The first %s rows were skipped, but that did not "
+                                                   "match the rows with skip=0 and sliced by [%s::]" % (skip, skip))
+
+    def test_read_with_skipping_first_few_couple_lines_multiple_trajectoryfiles(self):
+        for skip in [0, 3, 13]:
+            r1 = CSVReader([self.filename1, self.filename1])
+            out_with_skip = r1.get_output(skip=skip)
+            r2 = CSVReader([self.filename1, self.filename1])
+            out = r2.get_output()
+            np.testing.assert_almost_equal(out_with_skip[0], out[0][skip::],
+                                           err_msg="The first %s rows of the first file were skipped, but that did not "
+                                                   "match the rows with skip=0 and sliced by [%s::]" % (skip, skip))
+            np.testing.assert_almost_equal(out_with_skip[1], out[1][skip::],
+                                           err_msg="The first %s rows of the second file were skipped, but that did not"
+                                                   " match the rows with skip=0 and sliced by [%s::]" % (skip, skip))
 
     def test_read_lagged_small_chunks(self):
         lag = 200
@@ -134,10 +155,12 @@ class TestCSVReader(unittest.TestCase):
                     chunks_lag.append(Y)
                 chunks = np.vstack(chunks)
                 chunks_lag = np.vstack(chunks_lag)
-                np.testing.assert_almost_equal(chunks, self.data[::s])
+                actual = self.data[::s]
+                actual_lagged = self.data[t::s]
+                np.testing.assert_almost_equal(chunks, self.data[::s][0:len(actual_lagged)])
                 np.testing.assert_almost_equal(chunks_lag, self.data[t::s],
                                                err_msg="output is not equal for"
-                                               " lag %i and stride %i" % (t, s))
+                                                       " lag %i and stride %i" % (t, s))
 
     def test_with_stride_and_lag_with_header(self):
         reader = CSVReader(self.file_with_header)
@@ -151,9 +174,13 @@ class TestCSVReader(unittest.TestCase):
                     chunks_lag.append(Y)
                 chunks = np.vstack(chunks)
                 chunks_lag = np.vstack(chunks_lag)
-                np.testing.assert_almost_equal(chunks, self.data[::s])
+                actual = self.data[::s]
+                actual_lagged = self.data[t::s]
+                np.testing.assert_almost_equal(chunks, self.data[::s][0:len(actual_lagged)])
                 np.testing.assert_almost_equal(chunks_lag, self.data[t::s],
                                                err_msg="output is not equal for"
-                                               " lag %i and stride %i" % (t, s))
+                                                       " lag %i and stride %i" % (t, s))
+
+
 if __name__ == '__main__':
     unittest.main()

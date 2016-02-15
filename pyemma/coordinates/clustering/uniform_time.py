@@ -18,9 +18,12 @@
 
 
 from __future__ import absolute_import, division
+
 import math
-import numpy as np
+
 from pyemma.coordinates.clustering.interface import AbstractClustering
+
+import numpy as np
 
 
 __author__ = 'noe'
@@ -30,94 +33,65 @@ __all__ = ['UniformTimeClustering']
 class UniformTimeClustering(AbstractClustering):
     r"""Uniform time clustering"""
 
-    def __init__(self, k=2, metric='euclidean'):
+    def __init__(self, n_clusters=2, metric='euclidean', stride=1):
         """r
         Uniform time clustering
 
         Parameters
         ----------
-        k : int
-            amount of desired cluster centers
+        n_clusters : int
+            amount of desired cluster centers. When not specified (None),
+            min(sqrt(N), 5000) is chosen as default value,
+            where N denotes the number of data points
         metric : str
             metric to use during clustering ('euclidean', 'minRMSD')
+        stride : int
+            stride
         """
         super(UniformTimeClustering, self).__init__(metric=metric)
-        self.n_clusters = k
+        self.set_params(n_clusters=n_clusters, metric=metric, stride=stride)
 
     def describe(self):
-        return "[Uniform time clustering, k = %i, inp_dim=%i]" % (self.n_clusters, self.data_producer.dimension())
+        return "[Uniform time clustering, k = %i, inp_dim=%i]" \
+                % (self.n_clusters, self.data_producer.dimension())
 
-    def _param_init(self):
-        """
-        Initializes the parametrization.
+    def _estimate(self, iterable, **kw):
 
-        :return:
-        """
-        # initialize cluster centers
-        if not self.n_clusters:
-            traj_lengths = self.trajectory_lengths(stride=self._param_with_stride)
+        if self.n_clusters is None:
+            traj_lengths = self.trajectory_lengths(stride=self.stride)
             total_length = sum(traj_lengths)
             self.n_clusters = min(int(math.sqrt(total_length)), 5000)
             self._logger.info("The number of cluster centers was not specified, "
                               "using min(sqrt(N), 5000)=%s as n_clusters." % self.n_clusters)
 
-        self._clustercenters = np.zeros(
-            (self.n_clusters, self.data_producer.dimension()), dtype=np.float32)
+        # initialize time counters
+        T = iterable.n_frames_total(stride=self.stride)
+        if self.n_clusters > T:
+            self.n_clusters = T
+            self._logger.info('Requested more clusters (k = %i'
+                              ' than there are total data points %i)'
+                              '. Will do clustering with k = %i'
+                              % (self.n_clusters, T, T))
 
-    def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj, last_chunk, ipass, Y=None, stride=1):
-        """
+        # first data point in the middle of the time segment
+        next_t = (T // self.n_clusters) // 2
+        # cumsum of lenghts
+        cumsum = np.cumsum(self.trajectory_lengths())
+        # distribution of integers, truncate if n_clusters is too large
+        linspace = self.stride * np.arange(next_t, T - next_t + 1, (T - 2*next_t + 1) // self.n_clusters)[:self.n_clusters]
+        # random access matrix
+        ra_stride = np.array([UniformTimeClustering._idx_to_traj_idx(x, cumsum) for x in linspace])
+        with iterable.iterator(stride=ra_stride, return_trajindex=False) as it:
+            self.clustercenters = np.concatenate([X for X in it])
 
-        :param X:
-            coordinates. axis 0: time, axes 1-..: coordinates
-        :param itraj:
-            index of the current trajectory
-        :param t:
-            time index of first frame within trajectory
-        :param first_chunk:
-            boolean. True if this is the first chunk globally.
-        :param last_chunk_in_traj:
-            boolean. True if this is the last chunk within the trajectory.
-        :param last_chunk:
-            boolean. True if this is the last chunk globally.
-        :param _ipass:
-            number of pass through data
-        :param Y:
-            time-lagged data (if available)
-        :return:
-        """
-        L = np.shape(X)[0]
-        if ipass == 0:
-            # initialize
-            if (first_chunk):
-                # initialize time counters
-                T = self.data_producer.n_frames_total(stride=stride)
-                if self.n_clusters > T:
-                    self.n_clusters = T
-                    self._logger.info('Requested more clusters (k = %i'
-                                      ' than there are total data points %i)'
-                                      '. Will do clustering with k = %i'
-                                      % (self.n_clusters, T, T))
+        assert len(self.clustercenters) == self.n_clusters
+        return self
 
-                # time in previous trajectories
-                self._tprev = 0
-                # number of clusters yet
-                self._n = 0
-                # time segment length between cluster centers
-                self._dt = T // self.n_clusters
-                # first data point in the middle of the time segment
-                self._nextt = self._dt // 2
-            # final time we can go to with this chunk
-            maxt = self._tprev + t + L
-            # harvest cluster centers from this chunk until we have left it
-            while (self._nextt < maxt and self._n < self.n_clusters):
-                i = self._nextt - self._tprev - t
-                self._clustercenters[self._n] = X[i]
-                self._n += 1
-                self._nextt += self._dt
-            if last_chunk_in_traj:
-                self._tprev += self.data_producer.trajectory_length(
-                    itraj, stride=stride)
-            if last_chunk:
-                return True  # done!
-
-        return False  # not done yet.
+    @staticmethod
+    def _idx_to_traj_idx(idx, cumsum):
+        prev_len = 0
+        for trajIdx, length in enumerate(cumsum):
+            if prev_len <= idx < length:
+                return trajIdx, idx - prev_len
+            prev_len = length
+        raise ValueError("Requested index %s was out of bounds [0,%s)" % (idx, cumsum[-1]))

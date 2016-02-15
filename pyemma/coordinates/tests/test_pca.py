@@ -61,7 +61,6 @@ class TestPCAExtensive(unittest.TestCase):
             s = dtraj[t]
             cls.X[t,0] = widths[s][0] * np.random.randn() + means[s][0]
             cls.X[t,1] = widths[s][1] * np.random.randn() + means[s][1]
-        cls.lag = 10
         cls.pca_obj = pca(data = cls.X, dim=1)
 
     @classmethod
@@ -129,7 +128,6 @@ class TestPCAExtensive(unittest.TestCase):
         for itraj, chunk in self.pca_obj:
             assert types.is_int(itraj)
             assert types.is_float_matrix(chunk)
-            assert chunk.shape[0] <= self.pca_obj.chunksize + self.lag
             assert chunk.shape[1] == self.pca_obj.dimension()
 
     def test_map(self):
@@ -144,11 +142,6 @@ class TestPCAExtensive(unittest.TestCase):
         assert len(mean) == 2
         assert np.max(mean < 0.5)
 
-    def test_mu(self):
-        mean = self.pca_obj.mu
-        assert len(mean) == 2
-        assert np.max(mean < 0.5)
-
     def test_n_frames_total(self):
         # map not defined for source
         assert self.pca_obj.n_frames_total() == self.T
@@ -160,10 +153,6 @@ class TestPCAExtensive(unittest.TestCase):
     def test_output_type(self):
         assert self.pca_obj.output_type() == np.float32
 
-    def test_parametrize(self):
-        # nothing should happen
-        self.pca_obj.parametrize()
-
     def test_trajectory_length(self):
         assert self.pca_obj.trajectory_length(0) == self.T
         with self.assertRaises(IndexError):
@@ -172,7 +161,7 @@ class TestPCAExtensive(unittest.TestCase):
     def test_trajectory_lengths(self):
         assert len(self.pca_obj.trajectory_lengths()) == 1
         assert self.pca_obj.trajectory_lengths()[0] == self.pca_obj.trajectory_length(0)
-    
+
     def test_provided_means(self):
         data = np.random.random((300, 3))
         mean = data.mean(axis=0)

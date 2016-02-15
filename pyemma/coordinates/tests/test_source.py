@@ -119,9 +119,6 @@ class TestSourceCallAll(unittest.TestCase):
     def test_chunksize(self):
         assert types.is_int(self.inp.chunksize)
 
-    def test_data_producer(self):
-        assert self.inp.data_producer is not None
-
     def test_describe(self):
         desc = self.inp.describe()
         assert types.is_string(desc) or types.is_list_of_string(desc)
@@ -151,11 +148,6 @@ class TestSourceCallAll(unittest.TestCase):
             assert chunk.shape[0] == self.inp.chunksize
             assert chunk.shape[1] == self.inp.dimension()
 
-    def test_map(self):
-        # map not defined for source
-        with self.assertRaises(NotImplementedError):
-            self.inp.transform(np.zeros((10,10)))
-
     def test_n_frames_total(self):
         # map not defined for source
         self.inp.n_frames_total() == 100
@@ -166,10 +158,6 @@ class TestSourceCallAll(unittest.TestCase):
 
     def test_output_type(self):
         assert self.inp.output_type() == np.float32
-
-    def test_parametrize(self):
-        # nothing should happen
-        self.inp.parametrize()
 
     def test_topfile(self):
         types.is_string(self.inp.topfile)

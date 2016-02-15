@@ -1,4 +1,3 @@
-
 # This file is part of PyEMMA.
 #
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
@@ -24,57 +23,63 @@ Created on 23.01.2015
 '''
 
 from __future__ import absolute_import
-import mdtraj
+
 import tempfile
 import unittest
-from pyemma.coordinates import api
-from pyemma.coordinates.data.feature_reader import FeatureReader
-from pyemma.util.log import getLogger
-import pkg_resources
 
+import mdtraj
 import numpy as np
-from pyemma.coordinates.api import discretizer, tica, source
+import pkg_resources
 from six.moves import range
 
-log = getLogger('pyemma.'+'TestFeatureReader')
+from pyemma.coordinates import api
+from pyemma.coordinates.api import discretizer, tica, source
+from pyemma.coordinates.data.data_in_memory import DataInMemoryIterator
+from pyemma.coordinates.data.feature_reader import FeatureReader
+from pyemma.util.log import getLogger
 
-def create_traj(top, format='.xtc', dir=None):
+log = getLogger('pyemma.' + 'TestFeatureReader')
+
+
+def create_traj(top, format='.xtc', dir=None, length=1666):
     trajfile = tempfile.mktemp(suffix=format, dir=dir)
-    n_frames = np.random.randint(500, 1500)
+    n_frames = length  # np.random.randint(500, 1500)
     log.debug("create traj with %i frames" % n_frames)
     xyz = np.arange(n_frames * 3 * 3).reshape((n_frames, 3, 3))
 
     t = mdtraj.load(top)
     t.xyz = xyz
-    t.unitcell_vectors = np.array(n_frames*[[0,0,1], [0,1,0], [1,0,0]]).reshape(n_frames, 3,3)
+    t.unitcell_vectors = np.array(n_frames * [[0, 0, 1], [0, 1, 0], [1, 0, 0]]).reshape(n_frames, 3, 3)
     t.time = np.arange(n_frames)
     t.save(trajfile)
 
     return trajfile, xyz, n_frames
 
+
 def create_loader_case(traj_file, top):
     def test_format_loading_via_feature_reader(self):
         reader = source(traj_file, top=top, dir=tmpdir)
         reader.get_output()
+
     return test_format_loading_via_feature_reader
 
-class TestFeatureReader(unittest.TestCase):
 
+class TestFeatureReader(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         c = super(TestFeatureReader, cls).setUpClass()
         # create a fake trajectory which has 3 atoms and coordinates are just a range
         # over all frames.
         cls.tmpdir = tempfile.mkdtemp('test_feature_reader')
-        
+
         cls.topfile = pkg_resources.resource_filename(__name__, 'data/test.pdb')
         cls.trajfile, cls.xyz, cls.n_frames = create_traj(cls.topfile, dir=cls.tmpdir)
         cls.trajfile2, cls.xyz2, cls.n_frames2 = create_traj(cls.topfile, dir=cls.tmpdir)
         traj = mdtraj.load(cls.trajfile, top=cls.topfile)
         for fo in traj._savers():
-            if fo in ('.crd', '.mdcrd', '.h5',  '.ncrst', '.lh5'):
+            if fo in ('.crd', '.mdcrd', '.h5', '.ncrst', '.lh5'):
                 continue
-            log.debug( "creating traj for " + fo)
+            log.debug("creating traj for " + fo)
             traj_file = create_traj(cls.topfile, format=fo, dir=cls.tmpdir)[0]
             test_mtd = create_loader_case(traj_file, cls.topfile)
             test_mtd.__name__ = 'test_loader_' + fo
@@ -121,6 +126,29 @@ class TestFeatureReader(unittest.TestCase):
         np.testing.assert_equal(data[0], self.xyz.reshape(-1, 9))
         np.testing.assert_equal(data[1], self.xyz2.reshape(-1, 9))
 
+    def test_skip(self):
+        for skip in [0, 3, 13]:
+            r1 = FeatureReader(self.trajfile, self.topfile)
+            out_with_skip = r1.get_output(skip=skip)[0]
+            r2 = FeatureReader(self.trajfile, self.topfile)
+            out = r2.get_output()[0]
+            np.testing.assert_almost_equal(out_with_skip, out[skip::],
+                                           err_msg="The first %s rows were skipped, but that did not "
+                                                   "match the rows with skip=0 and sliced by [%s::]" % (skip, skip))
+
+    def test_skip_input_list(self):
+        for skip in [0, 3, 13]:
+            r1 = FeatureReader([self.trajfile, self.trajfile2], self.topfile)
+            out_with_skip = r1.get_output(skip=skip)
+            r2 = FeatureReader([self.trajfile, self.trajfile2], self.topfile)
+            out = r2.get_output()
+            np.testing.assert_almost_equal(out_with_skip[0], out[0][skip::],
+                                           err_msg="The first %s rows of the first file were skipped, but that did not "
+                                                   "match the rows with skip=0 and sliced by [%s::]" % (skip, skip))
+            np.testing.assert_almost_equal(out_with_skip[1], out[1][skip::],
+                                           err_msg="The first %s rows of the second file were skipped, but that did not"
+                                                   " match the rows with skip=0 and sliced by [%s::]" % (skip, skip))
+
     def testTimeLaggedIterator(self):
         lag = 10
         reader = FeatureReader(self.trajfile, self.topfile)
@@ -143,17 +171,17 @@ class TestFeatureReader(unittest.TestCase):
         self.assertTrue(np.allclose(merged_lagged, fake_lagged))
 
         # restore shape of input
-        data = np.vstack(data).reshape(self.xyz.shape)
+        data = np.vstack(data).reshape(self.xyz[lag:].shape)
 
-        self.assertEqual(frames, reader.trajectory_lengths()[0])
-        self.assertTrue(np.allclose(data, self.xyz))
+        self.assertEqual(frames, reader.trajectory_lengths()[0] - lag)
+        self.assertTrue(np.allclose(data, self.xyz[:len(self.xyz) - lag]))
 
     def test_with_pipeline_time_lagged(self):
         reader = api.source(self.trajfile, top=self.topfile)
         assert isinstance(reader, FeatureReader)
 
         t = tica(dim=2, lag=1)
-        d = discretizer(reader, t)
+        d = discretizer(reader, t, chunksize=10)
         d.parametrize()
 
     def test_in_memory(self):
@@ -178,13 +206,14 @@ class TestFeatureReader(unittest.TestCase):
         # map "results" to memory
         reader = api.source(self.trajfile, top=self.topfile)
         reader.in_memory = True
-        assert reader._parametrized
-        reader.parametrize(stride=2)
+        mem_it = reader.iterator(stride=2, chunk=0, return_trajindex=False)
+        assert isinstance(mem_it, DataInMemoryIterator)
+        mem_data = [X for X in mem_it]
 
         reader2 = api.source(self.trajfile, top=self.topfile)
         out = reader2.get_output(stride=2)
 
-        np.testing.assert_equal(reader._Y[0], out[0])
+        np.testing.assert_equal(mem_data[0], out[0])
 
     def test_in_memory_switch_stride_dim(self):
         reader = api.source(self.trajfile, top=self.topfile)
@@ -206,17 +235,17 @@ class TestFeatureReader(unittest.TestCase):
         err_msg = "not equal for stride=%i, lag=%i"
         for stride in strides:
             for lag in lags:
-                chunks = {itraj: []
-                          for itraj in range(reader.number_of_trajectories())}
-                for itraj, _, Y in reader.iterator(stride, lag):
+                chunks = {itraj: [] for itraj in range(reader.number_of_trajectories())}
+                for itraj, _, Y in reader.iterator(stride=stride, lag=lag):
                     chunks[itraj].append(Y)
                 chunks[0] = np.vstack(chunks[0])
                 np.testing.assert_almost_equal(
-                    chunks[0], self.xyz.reshape(-1, 9)[lag::stride], err_msg=err_msg % (stride, lag))
+                        chunks[0], self.xyz.reshape(-1, 9)[lag::stride], err_msg=err_msg % (stride, lag))
 
                 chunks[1] = np.vstack(chunks[1])
                 np.testing.assert_almost_equal(
-                    chunks[1], self.xyz2.reshape(-1, 9)[lag::stride], err_msg=err_msg % (stride, lag))
+                        chunks[1], self.xyz2.reshape(-1, 9)[lag::stride], err_msg=err_msg % (stride, lag))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -125,10 +125,20 @@ def extensions():
                   library_dirs=[mdtraj.capi()['lib_dir']],
                   extra_compile_args=['-std=c99'])
 
-    exts += [regspatial_module,
-             kmeans_module]
+    covar_module = \
+        Extension('pyemma.coordinates.estimators.covar.covar_c.covartools',
+                  sources=['pyemma/coordinates/estimators/covar/covar_c/covartools.pyx',
+                           'pyemma/coordinates/estimators/covar/covar_c/_covartools.c'],
+                  include_dirs=['pyemma/coordinates/estimators/covar/covar_c/',
+                                np_inc,
+                                ],
+                  extra_compile_args=['-std=c99', '-O3'])
 
-    if not USE_CYTHON: 
+    exts += [regspatial_module,
+             kmeans_module,
+             covar_module]
+
+    if not USE_CYTHON:
         # replace pyx files by their pre generated c code.
         for e in exts:
             new_src = []
@@ -153,7 +163,7 @@ def extensions():
 
 def get_cmdclass():
     versioneer_cmds = versioneer.get_cmdclass()
-    
+
     sdist_class = versioneer_cmds['sdist']
     class sdist(sdist_class):
         """ensure cython files are compiled to c, when distributing"""
@@ -230,7 +240,7 @@ else:
                                   'nose',
                                   ]
     if sys.version_info.major == 2:
-       metadata['install_requires'] += ['mock']
+        metadata['install_requires'] += ['mock']
 
     metadata['package_data'] = {
                                 'pyemma': ['pyemma.cfg', 'logging.yml'],

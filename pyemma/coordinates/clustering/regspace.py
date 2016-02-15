@@ -17,21 +17,23 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from __future__ import absolute_import
-from pyemma.util.exceptions import NotConvergedWarning
-
 '''
 Created on 26.01.2015
 
 @author: marscher
 '''
 
-from pyemma.util.annotators import doc_inherit
-from pyemma.coordinates.clustering.interface import AbstractClustering
+from __future__ import absolute_import
+
+import warnings
+
 from pyemma.coordinates.clustering import regspatial
+from pyemma.coordinates.clustering.interface import AbstractClustering
+from pyemma.util.annotators import doc_inherit
+from pyemma.util.exceptions import NotConvergedWarning
 
 import numpy as np
-import warnings
+
 
 __all__ = ['RegularSpaceClustering']
 
@@ -39,7 +41,7 @@ __all__ = ['RegularSpaceClustering']
 class RegularSpaceClustering(AbstractClustering):
     r"""Regular space clustering"""
 
-    def __init__(self, dmin, max_centers=1000, metric='euclidean'):
+    def __init__(self, dmin, max_centers=1000, metric='euclidean', stride=1):
         """Clusters data objects in such a way, that cluster centers are at least in
         distance of dmin to each other according to the given metric.
         The assignment of data objects to cluster centers is performed by
@@ -75,10 +77,7 @@ class RegularSpaceClustering(AbstractClustering):
         """
         super(RegularSpaceClustering, self).__init__(metric=metric)
 
-        self._dmin = dmin
-        # temporary list to store cluster centers
-        self.__clustercenters = []
-        self._max_centers = max_centers
+        self.set_params(dmin=dmin, metric=metric, max_centers=max_centers, stride=stride)
 
     @doc_inherit
     def describe(self):
@@ -95,7 +94,7 @@ class RegularSpaceClustering(AbstractClustering):
             raise ValueError("d has to be positive")
 
         self._dmin = float(d)
-        self._parametrized = False
+        self._estimated = False
 
     @property
     def max_centers(self):
@@ -111,23 +110,34 @@ class RegularSpaceClustering(AbstractClustering):
             raise ValueError("max_centers has to be positive")
 
         self._max_centers = int(value)
-        self._parametrized = False
+        self._estimated = False
 
-    def _param_add_data(self, X, itraj, t, first_chunk, last_chunk_in_traj,
-                        last_chunk, ipass, Y=None, stride=1):
-        """
-        first pass: calculate clustercenters
-         1. choose first datapoint as centroid
-         2. for all X: calc distances to all clustercenters
-         3. add new centroid, if min(distance to all other clustercenters) >= dmin
-        """
+    @property
+    def n_clusters(self):
+        return self.max_centers
+
+    @n_clusters.setter
+    def n_clusters(self, val):
+        self.max_centers = val
+
+    def _estimate(self, iterable, **kwargs):
+        ########
+        # Calculate clustercenters:
+        # 1. choose first datapoint as centroid
+        # 2. for all X: calc distances to all clustercenters
+        # 3. add new centroid, if min(distance to all other clustercenters) >= dmin
+        ########
+        # temporary list to store cluster centers
+        clustercenters = []
+        it = iterable.iterator(return_trajindex=False)
+        used_frames = 0
         try:
-            regspatial.cluster(X.astype(np.float32, order='C', copy=False),
-                               self.__clustercenters, self._dmin,
-                               self.metric, self._max_centers)
-            # finished regularly
-            if last_chunk:
-                return True  # finished!
+            with iterable.iterator(return_trajindex=False) as it:
+                for X in it:
+                    used_frames += len(X)
+                    regspatial.cluster(X.astype(np.float32, order='C', copy=False),
+                                       clustercenters, self.dmin,
+                                       self.metric, self.max_centers)
         except RuntimeError:
             msg = 'Maximum number of cluster centers reached.' \
                   ' Consider increasing max_centers or choose' \
@@ -135,18 +145,19 @@ class RegularSpaceClustering(AbstractClustering):
             self._logger.warning(msg)
             warnings.warn(msg)
             # finished anyway, because we have no more space for clusters. Rest of trajectory has no effect
-            self._clustercenters = np.array(self.__clustercenters)
-            self.n_clusters = self.clustercenters.shape[0]
-            # TODO: pass amount of processed data
-            raise NotConvergedWarning
+            clustercenters = np.array(clustercenters)
+            self.update_model_params(clustercenters=clustercenters,
+                                     n_cluster=len(clustercenters))
+            # pass amount of processed data
+            used_data = used_frames / float(it.n_frames_total()) * 100.0
+            raise NotConvergedWarning("Used data for centers: %.2f%%" % used_data)
 
-        return False
+        clustercenters = np.array(clustercenters)
+        self.update_model_params(clustercenters=clustercenters,
+                                 n_clusters=len(clustercenters))
 
-    def _param_finish(self):
-        self._clustercenters = np.array(self.__clustercenters)
-        self.n_clusters = self.clustercenters.shape[0]
-
-        if len(self.__clustercenters) == 1:
+        if len(clustercenters) == 1:
             self._logger.warning('Have found only one center according to '
                                  'minimum distance requirement of %f' % self.dmin)
-        del self.__clustercenters  # delete temporary
+
+        return self
