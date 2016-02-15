@@ -60,6 +60,14 @@ class Loggable(object):
     def _logger(self):
         return self.logger
 
+    @property
+    def _logger_has_instance(self):
+        return hasattr(self, 'logger_instance')
+
+    def _logger_is_active(self, level):
+        """ @param level: int log level (debug=10, info=20, warn=30, error=40, critical=50)"""
+        return self._logger_has_instance and self.logger.level >= level
+
     def __create_logger(self):
         _weak_logger_refs = Loggable.__refs
         # creates a logger based on the the attribe "name" of self
