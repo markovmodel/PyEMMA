@@ -45,7 +45,7 @@ class TICA(StreamingTransformer):
     r""" Time-lagged independent component analysis (TICA)"""
 
     def __init__(self, lag, dim=-1, var_cutoff=0.95, kinetic_map=True, epsilon=1e-6,
-                 mean=None, stride=1):
+                 mean=None, stride=1, remove_mean=True):
         r""" Time-lagged independent component analysis (TICA) [1]_, [2]_, [3]_.
 
         Parameters
@@ -68,8 +68,9 @@ class TICA(StreamingTransformer):
             cut off. The remaining number of eigenvalues define the size
             of the output.
         mean : ndarray, optional, default None
-            Optionally pass pre-calculated means to avoid their re-computation.
-            The shape has to match the input dimension.
+            This option is deprecated
+        remove_mean: bool, optional, default True
+            remove mean during covariance estimation. Should not be turned off.
 
         Notes
         -----
@@ -122,7 +123,7 @@ class TICA(StreamingTransformer):
         # empty dummy model instance
         self._model = TICAModel()
         self.set_params(lag=lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map,
-                        epsilon=epsilon, mean=mean, stride=stride)
+                        epsilon=epsilon, mean=mean, stride=stride, remove_mean=remove_mean)
 
         # skipped trajectories
         self._skipped_trajs = []
@@ -227,7 +228,8 @@ class TICA(StreamingTransformer):
             nsave = int(max(log(ceil(n_chunks), 2), 2))
             self._logger.debug("using %s moments for %i chunks" % (nsave, n_chunks))
             covar = running_covar(xx=True, xy=True, yy=False,
-                                  remove_mean=True, symmetrize=True, nsave=nsave)
+                                  remove_mean=self.remove_mean,
+                                  symmetrize=True, nsave=nsave)
 
             for X, Y in it:
                 covar.add(X, Y)
