@@ -29,7 +29,7 @@ Created on 15.10.2015
 from __future__ import absolute_import, print_function
 
 import signal
-from .log import getLogger as _getLogger
+from logging import getLogger
 
 _logger = None
 
@@ -43,7 +43,7 @@ def _show_stacktrace(sig, frame):
 
     global _logger
     if _logger is None:
-        _logger = _getLogger('dbg')
+        _logger = getLogger('pyemma.dbg')
 
     out = StringIO()
 
@@ -52,9 +52,6 @@ def _show_stacktrace(sig, frame):
     out.seek(0)
     trace = out.read()
     _logger.info(trace)
-
-    unregister_signal_handlers()
-
 
 def _handle_pdb(sig, frame):
     import pdb
