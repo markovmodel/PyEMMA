@@ -577,7 +577,9 @@ class TestFeaturizerNoDubs(unittest.TestCase):
         """ just checks for exceptions """
         featurizer = MDFeaturizer(pdbfile)
         featurizer.add_angles([[1, 2, 3], [4, 5, 6]])
-        featurizer.add_backbone_torsions()
+        with self.assertRaises(ValueError) as cm:
+            featurizer.add_backbone_torsions()
+            assert 'emtpy indices' in cm.exception.message
         featurizer.add_contacts([[0, 1], [0, 3]])
         featurizer.add_distances([[0, 1], [0, 3]])
         featurizer.add_inverse_distances([[0, 1], [0, 3]])
