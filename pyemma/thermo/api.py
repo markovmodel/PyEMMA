@@ -69,27 +69,42 @@ def estimate_umbrella_sampling(
     kT : float (optinal)
         Use this attribute if the supplied force constants are NOT unit-less.
     maxiter : int, optional, default=10000
-        The maximum number of dTRAM iterations before the estimator exits unsuccessfully.
+        The maximum number of self-consistent iterations before the estimator exits unsuccessfully.
     maxerr : float, optional, default=1E-15
         Convergence criterion based on the maximal free energy change in a self-consistent
         iteration step.
     save_convergence_info : int, optional, default=0
         Every save_convergence_info iteration steps, store the actual increment
         and the actual loglikelihood; 0 means no storage.
-    estimator : string, optional, default='wham'
-        Specify one of the following estimators, 'wham' or 'dtram'.
+    estimator : str, optional, default='wham'
+        Specify one of the available estimators
+
+        | 'wham':   use WHAM
+        | 'dtram':  use the discrete version of TRAM
     lag : int, optional, default=1
-        Lag time in trajectory steps.
-    dt_traj : string, optional, default='1 step'
-        Specify the temporal stride int the trajectories.
-    init : None or string, optional, default=None
-        Specify the initialisation of the estimation: expensive estimators can be initialised
-        with cheaper methods, e.g., dTRAM can use a preliminary WHAM run.
+        Integer lag time at which transitions are counted.
+    dt_traj : str, optional, default='1 step'
+        Description of the physical time corresponding to the lag. May be used by analysis
+        algorithms such as plotting tools to pretty-print the axes. By default '1 step', i.e.
+        there is no physical time unit.  Specify by a number, whitespace and unit. Permitted
+        units are (* is an arbitrary string):
+
+        |  'fs',   'femtosecond*'
+        |  'ps',   'picosecond*'
+        |  'ns',   'nanosecond*'
+        |  'us',   'microsecond*'
+        |  'ms',   'millisecond*'
+        |  's',    'second*'
+    init : str, optional, default=None
+        Use a specific initialization for self-consistent iteration:
+
+        | None:    use a hard-coded guess for free energies and Lagrangian multipliers
+        | 'wham':  perform a short WHAM estimate to initialize the free energies
 
     Returns
     -------
-    _estimator : estimator object
-        The requested estimator object, e.g. WHAM or DTRAM.
+    _estimator : MEMM or StationaryModel
+        The requested estimator/model object, i.e., WHAM or DTRAM.
     """
     assert estimator in ['wham', 'dtram'], "unsupported estimator: %s" % estimator
     ttrajs, btrajs, umbrella_centers, force_constants = _get_umbrella_sampling_data(
@@ -157,11 +172,33 @@ def dtram(
         in 1,...,n enumerating the n Markov states or the bins the trajectory is in at any time.
     bias : ndarray(K, n)
         bias[j,i] is the bias energy for each discrete state i at thermodynamic state j.
+    lag : int
+        Integer lag time at which transitions are counted.
     maxiter : int, optional, default=10000
         The maximum number of dTRAM iterations before the estimator exits unsuccessfully.
     maxerr : float, optional, default=1e-15
         Convergence criterion based on the maximal free energy change in a self-consistent
         iteration step.
+    save_convergence_info : int, optional, default=0
+        Every save_convergence_info iteration steps, store the actual increment
+        and the actual loglikelihood; 0 means no storage.
+    dt_traj : str, optional, default='1 step'
+        Description of the physical time corresponding to the lag. May be used by analysis
+        algorithms such as plotting tools to pretty-print the axes. By default '1 step', i.e.
+        there is no physical time unit.  Specify by a number, whitespace and unit. Permitted
+        units are (* is an arbitrary string):
+
+        |  'fs',   'femtosecond*'
+        |  'ps',   'picosecond*'
+        |  'ns',   'nanosecond*'
+        |  'us',   'microsecond*'
+        |  'ms',   'millisecond*'
+        |  's',    'second*'
+    init : str, optional, default=None
+        Use a specific initialization for self-consistent iteration:
+
+        | None:    use a hard-coded guess for free energies and Lagrangian multipliers
+        | 'wham':  perform a short WHAM estimate to initialize the free energies
 
     Returns
     -------
@@ -229,11 +266,14 @@ def wham(ttrajs, dtrajs, bias, maxiter=100000, maxerr=1.0E-15, save_convergence_
     maxerr : float, optional, default=1e-15
         Convergence criterion based on the maximal free energy change in a self-consistent
         iteration step.
+    save_convergence_info : int, optional, default=0
+        Every save_convergence_info iteration steps, store the actual increment
+        and the actual loglikelihood; 0 means no storage.
 
     Returns
     -------
-    ??? : ???
-        A ??? model which consists of stationary quantities at all
+    sm : StationaryModel
+        A stationary model which consists of thermodynamic quantities at all
         temperatures/thermodynamic states.
 
     Example
