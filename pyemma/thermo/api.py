@@ -138,32 +138,6 @@ def multi_temperature(
     _estimator.temperatures = temperatures
     return _estimator
 
-# This corresponds to the source function in coordinates.api
-def multitemperature_to_bias(utrajs, ttrajs, kTs):
-    r""" Wraps umbrella sampling data or a mix of umbrella sampling and and direct molecular dynamics
-    The probability at the thermodynamic ground state is:
-    .. math:
-        \pi(x) = \mathrm{e}^{-\frac{U(x)}{kT_{0}}}
-    The probability at excited thermodynamic states is:
-    .. math:
-        \pi^I(x) = \mathrm{e}^{-\frac{U(x)}{kT_{I}}}
-                 = \mathrm{e}^{-\frac{U(x)}{kT_{0}}+\frac{U(x)}{kT_{0}}-\frac{U(x)}{kT_{I}}}
-                 = \mathrm{e}^{-\frac{U(x)}{kT_{0}}}\mathrm{e}^{-\left(\frac{U(x)}{kT_{I}}-\frac{U(x)}{kT_{0}}\right)}
-                 = \mathrm{e}^{-u(x)}\mathrm{e}^{-b_{I}(x)}
-    where we have defined the bias energies:
-    .. math:
-        b_{I}(x) = U(x)\left(\frac{1}{kT_{I}}-\frac{1}{kT_{0}}\right)
-    Parameters
-    ----------
-    utrajs : ndarray or list of ndarray
-        Potential energy trajectories.
-    ttrajs : ndarray or list of ndarray
-        Generating thermodynamic state trajectories.
-    kTs : ndarray of float
-        kT values of the different temperatures.
-    """
-    pass
-
 # ==================================================================================================
 # wrappers for the estimators
 # ==================================================================================================
