@@ -30,6 +30,7 @@ from pyemma.msm.estimators.estimated_msm import EstimatedMSM as _EstimatedMSM
 from pyemma.util.units import TimeUnit as _TimeUnit
 from pyemma.util import types as _types
 
+
 class MaximumLikelihoodMSM(_Estimator, _EstimatedMSM):
     r"""Maximum likelihood estimator for MSMs given discrete trajectory statistics"""
 
@@ -319,6 +320,11 @@ class MaximumLikelihoodMSM(_Estimator, _EstimatedMSM):
             sufficient to validate a model.
         show_progress : bool, optional
             Show progressbars for calculation?
+
+        Returns
+        -------
+        cktest : :class:`ChapmanKolmogorovValidator <pyemma.msm.ChapmanKolmogorovValidator>`
+
 
         References
         ----------

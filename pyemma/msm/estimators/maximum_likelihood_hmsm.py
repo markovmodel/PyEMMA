@@ -294,6 +294,9 @@ class MaximumLikelihoodHMSM(_Estimator, _EstimatedHMSM):
         show_progress : bool, default=True
             Show progressbars for calculation?
 
+        Returns
+        -------
+        cktest : :class:`ChapmanKolmogorovValidator <pyemma.msm.ChapmanKolmogorovValidator>`
 
         References
         ----------
