@@ -32,7 +32,30 @@ class WHAM(_Estimator, _MEMM):
 
     Parameters
     ----------
-    TODO: doc'em
+    bias_energies_full : ndarray(K, n)
+        bias_energies_full[j,i] is the bias energy for each discrete state i at thermodynamic
+        state j.
+    maxiter : int, optional, default=10000
+        The maximum number of self-consistent iterations before the estimator exits unsuccessfully.
+    maxerr : float, optional, default=1E-15
+        Convergence criterion based on the maximal free energy change in a self-consistent
+        iteration step.
+    dt_traj : str, optional, default='1 step'
+        Description of the physical time corresponding to the lag. May be used by analysis
+        algorithms such as plotting tools to pretty-print the axes. By default '1 step', i.e.
+        there is no physical time unit.  Specify by a number, whitespace and unit. Permitted
+        units are (* is an arbitrary string):
+
+        |  'fs',   'femtosecond*'
+        |  'ps',   'picosecond*'
+        |  'ns',   'nanosecond*'
+        |  'us',   'microsecond*'
+        |  'ms',   'millisecond*'
+        |  's',    'second*'
+    save_convergence_info : int, optional, default=0
+        Every save_convergence_info iteration steps, store the actual increment
+        and the actual loglikelihood; 0 means no storage.
+    TODO: stride
 
     Example
     -------
@@ -55,7 +78,7 @@ class WHAM(_Estimator, _MEMM):
     """
     def __init__(
         self, bias_energies_full,
-        stride=1, dt_traj='1 step', maxiter=100000, maxerr=1e-5, save_convergence_info=0):
+        stride=1, dt_traj='1 step', maxiter=10000, maxerr=1E-15, save_convergence_info=0):
         self.bias_energies_full = _types.ensure_ndarray(bias_energies_full, ndim=2, kind='numeric')
         self.stride = stride
         self.dt_traj = dt_traj
