@@ -66,8 +66,8 @@ Find here a documentation how to extract features from them.
 .. autosummary::
    :toctree: generated/
 
-   data.ReaderInterface
    data.MDFeaturizer
+   data.CustomFeature
 
 **Transformation estimators**
 
@@ -92,7 +92,7 @@ Find here a documentation how to extract features from them.
 .. autosummary::
    :toctree: generated/
 
-   transform.Transformer
+   transform.transformer.StreamingTransformer
    pipelines.Pipeline
 
 **Discretization**
