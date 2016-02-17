@@ -29,17 +29,17 @@ class StationaryModel(_Model):
     ----------
     pi : ndarray(n)
         Stationary distribution. If not already normalized, pi will be
-        scaled to fulfill :math:`\sum_i pi_i = 1`. The free energies f
+        scaled to fulfill :math:`\sum_i \pi_i = 1`. The free energies f
         will be computed from pi via :math:`f_i = - \log(\pi_i)`. Only
         if normalize_f is True, a constant will be added to ensure
-        consistency with :math:`\sum_i pi_i = 1`.
+        consistency with :math:`\sum_i \pi_i = 1`.
     f : ndarray(n)
         Discrete-state free energies. If normalized_f = True, a constant
         will be added to normalize the stationary distribution. Otherwise
         f is left as given.
     normalize_energy : bool, default=True
         If parametrized by free energy f, normalize them such that
-        :math:`\sum_i pi_i = 1`, which is achieved by :math:`\log \sum_i \exp(-f_i) = 0`.
+        :math:`\sum_i \pi_i = 1`, which is achieved by :math:`\log \sum_i \exp(-f_i) = 0`.
     label : str, default='ground state'
         Human-readable description for the thermodynamic state of this
         model. May contain a temperature description, such as '300 K' or
@@ -55,17 +55,17 @@ class StationaryModel(_Model):
         ----------
         pi : ndarray(n)
             Stationary distribution. If not already normalized, pi will be
-            scaled to fulfill :math:`\sum_i pi_i = 1`. The free energies f
+            scaled to fulfill :math:`\sum_i \pi_i = 1`. The free energies f
             will be computed from pi via :math:`f_i = - \log(\pi_i)`. Only
             if normalize_f is True, a constant will be added to ensure
-            consistency with :math:`\sum_i pi_i = 1`.
+            consistency with :math:`\sum_i \pi_i = 1`.
         f : ndarray(n)
             Discrete-state free energies. If normalized_f = True, a constant
             will be added to normalize the stationary distribution. Otherwise
             f is left as given.
         normalize_f : bool, default=True
             If parametrized by free energy f, normalize them such that
-            :math:`\sum_i pi_i = 1`, which is achieved by :math:`\log \sum_i \exp(-f_i) = 0`.
+            :math:`\sum_i \pi_i = 1`, which is achieved by :math:`\log \sum_i \exp(-f_i) = 0`.
         label : str, default='ground state'
             Human-readable description for the thermodynamic state of this
             model. May contain a temperature description, such as '300 K' or
