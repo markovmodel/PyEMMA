@@ -115,7 +115,8 @@ def estimate_umbrella_sampling(
         _estimator = wham(
             ttrajs, us_dtrajs + md_dtrajs,
             _get_averaged_bias_matrix(btrajs, us_dtrajs + md_dtrajs),
-            maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info)
+            maxiter=maxiter, maxerr=maxerr,
+            save_convergence_info=save_convergence_info, dt_traj=dt_traj)
     elif estimator == 'dtram':
         _estimator = dtram(
             ttrajs, us_dtrajs + md_dtrajs,
@@ -198,7 +199,8 @@ def estimate_multi_temperature(
         _estimator = wham(
             ttrajs, dtrajs,
             _get_averaged_bias_matrix(btrajs, dtrajs),
-            maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info)
+            maxiter=maxiter, maxerr=maxerr,
+            save_convergence_info=save_convergence_info, dt_traj=dt_traj)
     elif estimator == 'dtram':
         _estimator = dtram(
             ttrajs, dtrajs,
@@ -303,7 +305,9 @@ def dtram(
     # run estimation
     return dtram_estimator.estimate(X)
 
-def wham(ttrajs, dtrajs, bias, maxiter=100000, maxerr=1.0E-15, save_convergence_info=0):
+def wham(
+    ttrajs, dtrajs, bias,
+    maxiter=100000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step'):
     r"""
     Weighted histogram analysis method
 
@@ -325,6 +329,18 @@ def wham(ttrajs, dtrajs, bias, maxiter=100000, maxerr=1.0E-15, save_convergence_
     save_convergence_info : int, optional, default=0
         Every save_convergence_info iteration steps, store the actual increment
         and the actual loglikelihood; 0 means no storage.
+    dt_traj : str, optional, default='1 step'
+        Description of the physical time corresponding to the lag. May be used by analysis
+        algorithms such as plotting tools to pretty-print the axes. By default '1 step', i.e.
+        there is no physical time unit.  Specify by a number, whitespace and unit. Permitted
+        units are (* is an arbitrary string):
+
+        |  'fs',   'femtosecond*'
+        |  'ps',   'picosecond*'
+        |  'ns',   'nanosecond*'
+        |  'us',   'microsecond*'
+        |  'ms',   'millisecond*'
+        |  's',    'second*'
 
     Returns
     -------
@@ -372,6 +388,8 @@ def wham(ttrajs, dtrajs, bias, maxiter=100000, maxerr=1.0E-15, save_convergence_
     # build WHAM
     from pyemma.thermo import WHAM
     wham_estimator = WHAM(
-        bias, maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info)
+        bias,
+        maxiter=maxiter, maxerr=maxerr,
+        save_convergence_info=save_convergence_info, dt_traj=dt_traj)
     # run estimation
     return wham_estimator.estimate(X)

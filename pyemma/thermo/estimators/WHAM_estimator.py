@@ -78,7 +78,7 @@ class WHAM(_Estimator, _MEMM):
     """
     def __init__(
         self, bias_energies_full,
-        stride=1, dt_traj='1 step', maxiter=10000, maxerr=1E-15, save_convergence_info=0):
+        stride=1, maxiter=10000, maxerr=1E-15, dt_traj='1 step', save_convergence_info=0):
         self.bias_energies_full = _types.ensure_ndarray(bias_energies_full, ndim=2, kind='numeric')
         self.stride = stride
         self.dt_traj = dt_traj
