@@ -29,8 +29,8 @@ __maintainer__ = "Christoph Wehmeyer"
 __email__ = "christoph.wehmeyer@fu-berlin.de"
 
 __all__ = [
-    'umbrella_sampling',
-    'multi_temperature',
+    'estimate_umbrella_sampling',
+    'estimate_multi_temperature',
     'dtram',
     'wham']
 
@@ -38,7 +38,7 @@ __all__ = [
 # wrappers for specific simulation types
 # ==================================================================================================
 
-def umbrella_sampling(
+def estimate_umbrella_sampling(
     us_trajs, us_dtrajs, us_centers, us_force_constants, md_trajs=None, md_dtrajs=None, kT=None,
     maxiter=10000, maxerr=1.0E-15, save_convergence_info=0,
     estimator='wham', lag=1, dt_traj='1 step', init=None):
@@ -112,7 +112,7 @@ def umbrella_sampling(
     _estimator.force_constants = force_constants
     return _estimator
 
-def multi_temperature(
+def estimate_multi_temperature(
     utrajs, temptrajs, dtrajs, reference_temperature=None,
     energy_column_in_kT=False, temperature_column_in_kT=False, use_kJ_per_mol=False,
     maxiter=10000, maxerr=1.0E-15, save_convergence_info=0,
