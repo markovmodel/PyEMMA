@@ -22,11 +22,12 @@ Python/C package for analysis of extensive molecular dynamics simulations.
 In particular, it includes algorithms for estimation, validation and analysis
 of:
 
+  * Clustering and Featurization
   * Markov state models (MSMs)
   * Hidden Markov models (HMMs)
   * multi-ensemble Markov models (MEMMs)
   * Time-lagged independent component analysis (TICA)
-  * Clustering and Featurization.
+  * Transition Path Theory (TPT)
 
 PyEMMA can be used from Jupyther (former IPython, recommended), or by
 writing Python scripts. The docs, can be found at
