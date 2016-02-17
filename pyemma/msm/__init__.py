@@ -49,6 +49,7 @@ use the API functions above.
    :toctree: generated/
 
    ImpliedTimescales
+   ChapmanKolmogorovValidator
    MaximumLikelihoodMSM
    BayesianMSM
    MaximumLikelihoodHMSM
@@ -99,6 +100,7 @@ from .estimators import MaximumLikelihoodMSM, BayesianMSM
 from .estimators import MaximumLikelihoodHMSM, BayesianHMSM
 from .estimators import ImpliedTimescales
 from .estimators import EstimatedMSM, EstimatedHMSM
+from .estimators import ChapmanKolmogorovValidator
 
 from .models import MSM, HMSM, SampledMSM, SampledHMSM
 
