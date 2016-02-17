@@ -17,8 +17,6 @@
 
 import numpy as _np
 from pyemma.util import types as _types
-from .util import get_umbrella_sampling_data as _get_umbrella_sampling_data
-from .util import get_multi_temperature_data as _get_multi_temperature_data
 from .util import get_averaged_bias_matrix as _get_averaged_bias_matrix
 
 __docformat__ = "restructuredtext en"
@@ -107,6 +105,7 @@ def estimate_umbrella_sampling(
         The requested estimator/model object, i.e., WHAM or DTRAM.
     """
     assert estimator in ['wham', 'dtram'], "unsupported estimator: %s" % estimator
+    from .util import get_umbrella_sampling_data as _get_umbrella_sampling_data
     ttrajs, btrajs, umbrella_centers, force_constants = _get_umbrella_sampling_data(
         us_trajs, us_centers, us_force_constants, md_trajs=md_trajs, kT=kT)
     if md_dtrajs is None:
@@ -190,6 +189,7 @@ def estimate_multi_temperature(
         The requested estimator/model object, i.e., WHAM or DTRAM.
     """
     assert estimator in ['wham', 'dtram'], "unsupported estimator: %s" % estimator
+    from .util import get_multi_temperature_data as _get_multi_temperature_data
     ttrajs, btrajs, temperatures = _get_multi_temperature_data(
         energy_trajs, temp_trajs, energy_unit, temp_unit, ref_temp=reference_temperature)
     _estimator = None
@@ -293,7 +293,7 @@ def dtram(
         assert len(ttraj) == len(dtraj)
         X.append(_np.ascontiguousarray(_np.array([ttraj, dtraj]).T))
     # build DTRAM
-    from pyemma.thermo.estimators import DTRAM
+    from pyemma.thermo import DTRAM
     dtram_estimator = DTRAM(
         bias, lag=lag, count_mode='sliding',
         maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
@@ -363,7 +363,7 @@ def wham(ttrajs, dtrajs, bias, maxiter=100000, maxerr=1.0E-15, save_convergence_
         assert len(ttraj) == len(dtraj)
         X.append(_np.ascontiguousarray(_np.array([ttraj, dtraj]).T))
     # build WHAM
-    from pyemma.thermo.estimators import WHAM
+    from pyemma.thermo import WHAM
     wham_estimator = WHAM(
         bias, maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info)
     # run estimation
