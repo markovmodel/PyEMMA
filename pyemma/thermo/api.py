@@ -121,8 +121,9 @@ def estimate_umbrella_sampling(
         _estimator = dtram(
             ttrajs, us_dtrajs + md_dtrajs,
             _get_averaged_bias_matrix(btrajs, us_dtrajs + md_dtrajs),
+            lag,
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
-            lag=lag, dt_traj=dt_traj, init=init)
+            dt_traj=dt_traj, init=init)
     _estimator.umbrella_centers = umbrella_centers
     _estimator.force_constants = force_constants
     return _estimator
@@ -205,8 +206,9 @@ def estimate_multi_temperature(
         _estimator = dtram(
             ttrajs, dtrajs,
             _get_averaged_bias_matrix(btrajs, dtrajs),
+            lag,
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
-            lag=lag, dt_traj=dt_traj, init=init)
+            dt_traj=dt_traj, init=init)
     _estimator.temperatures = temperatures
     return _estimator
 
@@ -299,7 +301,8 @@ def dtram(
     # build DTRAM
     from pyemma.thermo import DTRAM
     dtram_estimator = DTRAM(
-        bias, lag=lag, count_mode='sliding',
+        bias, lag,
+        count_mode='sliding', connectivity='largest',
         maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
         dt_traj=dt_traj, init=init)
     # run estimation
