@@ -15,5 +15,39 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+r"""
+.. currentmodule:: pyemma.thermo
+
+User-Functions
+==============
+For most users, the following high-level functions are sufficient to
+estimate models from data.
+
+.. autosummary::
+   :toctree: generated/
+
+   estimate_umbrella_sampling
+   estimate_multi_temperature
+   dtram
+   wham
+
+Thermo classes
+==============
+**Estimators** to generate models from data. If you are not an expert user,
+use the API functions above.
+
+.. autosummary::
+    :toctree: generated/
+
+    StationaryModel
+    MEMM
+    WHAM
+    DTRAM
+
+"""
+
+from pyemma.thermo.models import StationaryModel, MEMM
+from pyemma.thermo.estimators import WHAM, DTRAM
+
 # high-level api
 from .api import *

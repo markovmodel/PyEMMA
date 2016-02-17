@@ -14,9 +14,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-__author__ = 'noe, wehmeyer'
-
 import numpy as _np
 from six.moves import range
 from pyemma._base.estimator import Estimator as _Estimator
@@ -29,8 +26,16 @@ from thermotools import dtram as _dtram
 from thermotools import wham as _wham
 from thermotools import util as _util
 
+__author__ = 'noe, wehmeyer'
+
+
 class DTRAM(_Estimator, _MEMM):
-    """
+    """ Discrete Transition(-based) Re-weighted Analysis Method
+
+    Parameters
+    ----------
+    TODO: doc'em
+
     Example
     -------
     >>> from pyemma.thermo import DTRAM

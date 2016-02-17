@@ -14,9 +14,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-__author__ = 'wehmeyer, mey'
-
 import numpy as _np
 from six.moves import range
 from pyemma._base.estimator import Estimator as _Estimator
@@ -27,8 +24,16 @@ from pyemma.util.units import TimeUnit as _TimeUnit
 from thermotools import wham as _wham
 from thermotools import util as _util
 
+__author__ = 'wehmeyer, mey'
+
+
 class WHAM(_Estimator, _MEMM):
-    """
+    r""" Weighted Histogram Analysis Method
+
+    Parameters
+    ----------
+    TODO: doc'em
+
     Example
     -------
     >>> from pyemma.thermo import WHAM

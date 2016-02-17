@@ -127,6 +127,7 @@ def estimate_umbrella_sampling(
     _estimator.force_constants = force_constants
     return _estimator
 
+
 def estimate_multi_temperature(
     energy_trajs, temp_trajs, dtrajs, reference_temperature=None,
     energy_unit='kcal/mol', temp_unit='K',
@@ -216,6 +217,7 @@ def dtram(
     maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step', init=None):
     r"""
     Discrete transition-based reweighting analysis method
+
     Parameters
     ----------
     ttrajs : ndarray(T) of int, or list of ndarray(T_i) of int
@@ -334,23 +336,28 @@ def wham(ttrajs, dtrajs, bias, maxiter=100000, maxerr=1.0E-15, save_convergence_
     -------
     **Example: Umbrella sampling**. Suppose we simulate in K umbrellas, centered at
     positions :math:`y_1,...,y_K` with bias energies
+
     .. math::
         b_k(x) = 0.5 * c_k * (x - y_k)^2 / kT
+
     Suppose we have one simulation of length T in each umbrella, and they are ordered from 1 to K.
     We have discretized the x-coordinate into 100 bins.
     Then dtrajs and ttrajs should each be a list of :math:`K` arrays.
-    dtrajs would look for example like this:
+    dtrajs would look for example like this::
+    
     [ (1, 2, 2, 3, 2, ...),  (2, 4, 5, 4, 4, ...), ... ]
     where each array has length T, and is the sequence of bins (in the range 0 to 99) visited along
     the trajectory. ttrajs would look like this:
     [ (0, 0, 0, 0, 0, ...),  (1, 1, 1, 1, 1, ...), ... ]
     Because trajectory 1 stays in umbrella 1 (index 0), trajectory 2 stays in umbrella 2 (index 1),
     and so forth. bias is a :math:`K \times n` matrix with all reduced bias energies evaluated at
-    all centers:
+    all centers::
+
     [[b_0(y_0), b_0(y_1), ..., b_0(y_n)],
      [b_1(y_0), b_1(y_1), ..., b_1(y_n)],
      ...
      [b_K(y_0), b_K(y_1), ..., b_K(y_n)]]
+
     """
     # prepare trajectories
     ttrajs = _types.ensure_dtraj_list(ttrajs)
