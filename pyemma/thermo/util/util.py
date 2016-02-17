@@ -192,34 +192,51 @@ def _get_multi_temperature_parameters(temptrajs):
 
 boltzmann_constant_in_kcal_per_mol = 0.0019872041
 conversion_factor_J_per_cal = 4.184
+conversion_shift_Celsius_to_Kelvin = 273.15
 
 def _get_multi_temperature_bias_sequences(
-    utrajs, temptrajs, temperatures, ref_temp,
-    energy_column_in_kT, temperature_column_in_kT, use_kJ_per_mol):
+    energy_trajs, temp_trajs, temperatures, ref_temp,
+    energy_unit, temp_unit):
+    assert isinstance(energy_unit, str), 'energy_unit must be type str'
+    assert isinstance(temp_unit, str), 'temp_unit must be type str'
+    assert energy_unit.lower() in ('kcal/mol', 'kj/mol', 'kt'), \
+        'energy_unit must be \'kcal/mol\', \'kJ/mol\' or \'kT\''
+    assert temp_unit.lower() in ('kt', 'k', 'c'), \
+        'temp_unit must be \'K\', \'C\' or \'kT\''
     btrajs = []
-    for utraj, temptraj in zip(utrajs, temptrajs):
-        if energy_column_in_kT:
+    if energy_unit.lower() == 'kt':
+        # reduced case: energy_trajs in kT, temp_trajs unit does not matter as it cancels
+        for energy_traj, temp_traj in zip(energy_trajs, temp_trajs):
             btrajs.append(
                 (1.0 / temperatures[_np.newaxis, :] - 1.0 / ref_temp) * \
-                (temptraj * utraj)[:, _np.newaxis])
-        elif temperature_column_in_kT:
+                (temp_traj * energy_traj)[:, _np.newaxis])
+    elif temp_unit.lower() == 'kt':
+        # non-reduced case with kT values instead of temperatures
+        # this implicitly assumes the users' unit of k_B equals unit of energy_trajs
+        for energy_traj, temp_traj in zip(energy_trajs, temp_trajs):
             btrajs.append(
-                (1.0 / temperatures[_np.newaxis, :] - 1.0 / ref_temp) * utraj[:, _np.newaxis])
-        else:
-            btrajs.append(
-                (1.0 / temperatures[_np.newaxis, :] - 1.0 / ref_temp) * \
-                utraj[:, _np.newaxis] / boltzmann_constant_in_kcal_per_mol)
-            if use_kJ_per_mol:
-                btrajs[-1] /= conversion_factor_J_per_cal
+                (1.0 / temperatures[_np.newaxis, :] - 1.0 / ref_temp) * energy_traj[:, _np.newaxis])
+    else:
+        # non-reduced case and temperatures given
+        kT = temperatures
+        rT = ref_temp
+        if temp_unit.lower() == 'c':
+            kT += conversion_shift_Celsius_to_Kelvin
+            rT += conversion_shift_Celsius_to_Kelvin
+        kT *= boltzmann_constant_in_kcal_per_mol
+        rT *= boltzmann_constant_in_kcal_per_mol
+        if energy_unit.lower() == 'kj/mol':
+            kT *= conversion_factor_J_per_cal
+            rT *= conversion_factor_J_per_cal
+        for energy_traj, temp_traj in zip(energy_trajs, temp_trajs):
+            btrajs.append((1.0 / kT[_np.newaxis, :] - 1.0 / rT) * energy_traj[:, _np.newaxis])
     return btrajs
 
 def get_multi_temperature_data(
-    utrajs, temptrajs, ref_temp=None,
-    energy_column_in_kT=False, temperature_column_in_kT=False, use_kJ_per_mol=False):
-    ttrajs, temperatures = _get_multi_temperature_parameters(temptrajs)
+    energy_trajs, temp_trajs, energy_unit, temp_unit, ref_temp=None):
+    ttrajs, temperatures = _get_multi_temperature_parameters(temp_trajs)
     if ref_temp is None:
         ref_temp = temperatures[0]
     btrajs = _get_multi_temperature_bias_sequences(
-        utrajs, temptrajs, temperatures, ref_temp,
-        energy_column_in_kT, temperature_column_in_kT, use_kJ_per_mol)
+        energy_trajs, temp_trajs, temperatures, ref_temp, energy_unit, temp_unit)
     return ttrajs, btrajs, temperatures

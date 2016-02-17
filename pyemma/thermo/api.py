@@ -128,8 +128,8 @@ def estimate_umbrella_sampling(
     return _estimator
 
 def estimate_multi_temperature(
-    utrajs, temptrajs, dtrajs, reference_temperature=None,
-    energy_column_in_kT=False, temperature_column_in_kT=False, use_kJ_per_mol=False,
+    energy_trajs, temp_trajs, dtrajs, reference_temperature=None,
+    energy_unit='kcal/mol', temp_unit='K',
     maxiter=10000, maxerr=1.0E-15, save_convergence_info=0,
     estimator='wham', lag=1, dt_traj='1 step', init=None):
     r"""
@@ -137,25 +137,20 @@ def estimate_multi_temperature(
 
     Parameters
     ----------
-    utrajs : list of N arrays, each of shape (T_i,)
+    energy_trajs : list of N arrays, each of shape (T_i,)
         List of arrays, each having T_i rows, one for each time step, containing the potential
         energies time series in units of kT, kcal/mol or kJ/mol.
-    temptrajs : list of N int arrays, each of shape (T_i,)
+    temp_trajs : list of N int arrays, each of shape (T_i,)
         List of arrays, each having T_i rows, one for each time step, containing the heat bath
-        temperature time series (at which temperatures the frames were created) in units of Kelvin.
+        temperature time series (at which temperatures the frames were created) in units of K or C.
         Alternatively, these trajectories may contain kT values instead of temperatures.
     dtrajs : list of N int arrays, each of shape (T_i,)
         The integers are indexes in 0,...,n-1 enumerating the n discrete states or the bins the
         trajectory is in at any time.
-    energy_column_in_kT : bool, optional, default=False
-        Assume that the energy trajectories are dimensionless, i.e., are given in kT.
-    temperature_column_in_kT : bool, optional, default=False
-        Assume that the temperature trajectories contain kT values instead of temperatures.
-    use_kJ_per_mol : bool, optional, default=False
-        This parameter is only necessary if the energy trajectories are dimensionless and the
-        temperature trajectories are given in Kelvin. In that case, we use a Boltzmann constant of
-        either 0.0019872041 kcal/mol or 4.184 * 0.0019872041 kJ/mol for the internal conversion
-        depending on the value of the use_kJ_per_mol parameter.
+    energy_unit: str, optional, default='kcal/mol'
+        The physical unit used for energies. Current options: kcal/mol, kJ/mol, kT.
+    temp_unit : str, optional, default='K'
+        The physical unit used for the temperature. Current options: K, C, kT
     maxiter : int, optional, default=10000
         The maximum number of self-consistent iterations before the estimator exits unsuccessfully.
     maxerr : float, optional, default=1E-15
@@ -196,10 +191,7 @@ def estimate_multi_temperature(
     """
     assert estimator in ['wham', 'dtram'], "unsupported estimator: %s" % estimator
     ttrajs, btrajs, temperatures = _get_multi_temperature_data(
-        utrajs, temptrajs, ref_temp=reference_temperature,
-        energy_column_in_kT=energy_column_in_kT,
-        temperature_column_in_kT=temperature_column_in_kT,
-        use_kJ_per_mol=use_kJ_per_mol)
+        energy_trajs, temp_trajs, energy_unit, temp_unit, ref_temp=reference_temperature)
     _estimator = None
     if estimator == 'wham':
         _estimator = wham(
