@@ -20,8 +20,8 @@ __author__ = 'wehmeyer, mey'
 import numpy as _np
 from six.moves import range
 from pyemma._base.estimator import Estimator as _Estimator
-from pyemma.thermo.models import MEMM as _MEMM
-from pyemma.thermo.models import StationaryModel as _StationaryModel
+from pyemma.thermo import MEMM as _MEMM
+from pyemma.thermo import StationaryModel as _StationaryModel
 from pyemma.util import types as _types
 from pyemma.util.units import TimeUnit as _TimeUnit
 from thermotools import wham as _wham

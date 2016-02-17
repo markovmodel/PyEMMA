@@ -15,5 +15,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from .models import StationaryModel, MEMM
+from .estimators import WHAM, DTRAM
+
 # high-level api
 from .api import *

@@ -1,6 +1,6 @@
 # This file is part of PyEMMA.
 #
-# Copyright (c) 2015 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+# Copyright (c) 2015, 2016 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
 #
 # PyEMMA is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -15,5 +15,5 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from pyemma.thermo.estimators.WHAM_estimator import WHAM
-from pyemma.thermo.estimators.DTRAM_estimator import DTRAM
+from .WHAM_estimator import WHAM
+from .DTRAM_estimator import DTRAM
