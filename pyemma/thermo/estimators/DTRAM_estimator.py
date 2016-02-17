@@ -71,7 +71,7 @@ class DTRAM(_Estimator, _MEMM):
     >>> from pyemma.thermo import DTRAM
     >>> import numpy as np
     >>> B = np.array([[0, 0],[0.5, 1.0]])
-    >>> dtram = DTRAM(B)
+    >>> dtram = DTRAM(B, 1)
     >>> traj1 = np.array([[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,1,1,1,0,0,0]]).T
     >>> traj2 = np.array([[1,1,1,1,1,1,1,1,1,1],[0,1,0,1,0,1,1,0,0,1]]).T
     >>> dtram = dtram.estimate([traj1, traj2])
@@ -90,7 +90,7 @@ class DTRAM(_Estimator, _MEMM):
     """
     def __init__(
         self, bias_energies_full, lag, count_mode='sliding', connectivity='largest',
-        dt_traj='1 step', maxiter=10000, maxerr=1E-15, save_convergence_info=0, init=None):
+        maxiter=10000, maxerr=1E-15, dt_traj='1 step', save_convergence_info=0, init=None):
         # set all parameters
         self.bias_energies_full = _types.ensure_ndarray(bias_energies_full, ndim=2, kind='numeric')
         self.lag = lag
