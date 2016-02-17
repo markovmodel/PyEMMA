@@ -14,37 +14,58 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-__author__ = 'noe'
-
 import numpy as _np
 from pyemma._base.model import Model as _Model
 from pyemma.util import types as _types
 from thermotools.util import logsumexp as _logsumexp
 
+__author__ = 'noe'
+
+
 class StationaryModel(_Model):
+    r""" StationaryModel combines a stationary vector with discrete-state free energies.
+
+    Parameters
+    ----------
+    pi : ndarray(n)
+        Stationary distribution. If not already normalized, pi will be
+        scaled to fulfill :math:`\sum_i pi_i = 1`. The free energies f
+        will be computed from pi via :math:`f_i = - \log(\pi_i)`. Only
+        if normalize_f is True, a constant will be added to ensure
+        consistency with :math:`\sum_i pi_i = 1`.
+    f : ndarray(n)
+        Discrete-state free energies. If normalized_f = True, a constant
+        will be added to normalize the stationary distribution. Otherwise
+        f is left as given.
+    normalize_energy : bool, default=True
+        If parametrized by free energy f, normalize them such that
+        :math:`\sum_i pi_i = 1`, which is achieved by :math:`\log \sum_i \exp(-f_i) = 0`.
+    label : str, default='ground state'
+        Human-readable description for the thermodynamic state of this
+        model. May contain a temperature description, such as '300 K' or
+        a description of bias energy such as 'unbiased' or 'Umbrella 1'
+    """
 
     def __init__(self, pi=None, f=None, normalize_energy=True, label='ground state'):
         self.set_model_params(pi=pi, f=f, normalize_f=normalize_energy)
 
-
     def set_model_params(self, pi=None, f=None, normalize_f=True):
-        """
+        r"""
         Parameters
         ----------
         pi : ndarray(n)
             Stationary distribution. If not already normalized, pi will be
-            scaled to fulfill :math:`sum_i pi_i = 1`. The free energies f
+            scaled to fulfill :math:`\sum_i pi_i = 1`. The free energies f
             will be computed from pi via :math:`f_i = - \log(\pi_i)`. Only
             if normalize_f is True, a constant will be added to ensure
-            consistency with :math:`sum_i pi_i = 1`.
+            consistency with :math:`\sum_i pi_i = 1`.
         f : ndarray(n)
             Discrete-state free energies. If normalized_f = True, a constant
             will be added to normalize the stationary distribution. Otherwise
             f is left as given.
         normalize_f : bool, default=True
             If parametrized by free energy f, normalize them such that
-            :math:`sum_i pi_i = 1`, which is achieved by :math:`\log \sum_i \exp(-f_i) = 0`.
+            :math:`\sum_i pi_i = 1`, which is achieved by :math:`\log \sum_i \exp(-f_i) = 0`.
         label : str, default='ground state'
             Human-readable description for the thermodynamic state of this
             model. May contain a temperature description, such as '300 K' or
@@ -52,8 +73,10 @@ class StationaryModel(_Model):
         """
         # check input
         if pi is None and f is None:
-            raise AssertionError('Trying to initialize model without parameters: Both pi (stationary distribution)'
-                                 'and f (free energy) are None. At least one of them needs to be set.')
+            raise ValueError('Trying to initialize model without parameters:'
+                             ' Both pi (stationary distribution)'
+                             'and f (free energy) are None.'
+                             'At least one of them needs to be set.')
         # use f with preference
         if f is not None:
             _types.assert_array(f, ndim=1, kind='numeric')
@@ -70,7 +93,6 @@ class StationaryModel(_Model):
         self.update_model_params(pi=pi, f=f, normalize_energy=normalize_f)
         # set derived quantities
         self._nstates = len(pi)
-
 
     @property
     def nstates(self):
@@ -101,8 +123,10 @@ class StationaryModel(_Model):
         Notes
         -----
         The equilibrium expectation value of an observable a is defined as follows
+
         .. math::
             \mathbb{E}_{\mu}[a] = \sum_i \mu_i a_i
+
         :math:`\mu=(\mu_i)` is the stationary vector of the transition matrix :math:`T`.
         """
         # check input and go

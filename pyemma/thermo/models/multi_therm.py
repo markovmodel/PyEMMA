@@ -14,50 +14,50 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-__author__ = 'noe'
-
 import numpy as _np
 from pyemma.thermo.models.stationary import StationaryModel as _StationaryModel
 from pyemma._base.model import call_member as _call_member
 from pyemma._base.model import Model as _Model
 from pyemma.util import types as _types
 
+__author__ = 'noe'
+
+
 class MEMM(_StationaryModel):
+    r""" Coupled set of Models at multiple thermodynamic states
+
+    Parameters
+    ----------
+    models : list of Model objects
+        List of Model objects, e.g. StationaryModel or MSM objects, at the
+        different thermodynamic states. This list may include the ground
+        state, such that self.pi = self.models[0].pi holds. An example for
+        that is data obtained from parallel tempering or replica-exchange,
+        where the lowest simulated temperature is usually identical to the
+        thermodynamic ground state. However, the list does not have to
+        include the thermodynamic ground state. For example, when obtaining
+        data from umbrella sampling, models might be the list of
+        stationary models for n umbrellas (biased ensembles), while the
+        thermodynamic ground state is the unbiased ensemble. In that
+        case, self.pi would be different from any self.models[i].pi
+    f_therm : ndarray(k)
+        free energies at the different thermodynamic states
+    pi : ndarray(n), default=None
+        Stationary distribution of the thermodynamic ground state.
+        If not already normalized, pi will be scaled to fulfill
+        :math:`\sum_i \pi_i = 1`. If None, models[0].pi will be used
+    f : ndarray(n)
+        Discrete-state free energies of the thermodynamic ground state.
+    label : str, default='ground state'
+        Human-readable description for the thermodynamic ground state
+        or reference state of this multiensemble. May contain a temperature
+        description, such as '300 K' or a description of bias energy such
+        as 'unbiased'.
+    """
 
     # TODO: what about just setting f and not pi, as a convention in pyemma.thermo?
     def __init__(self, models, f_therm, pi=None, f=None, label='ground state'):
-        """ Coupled set of Models at multiple thermodynamic states
-        Parameters
-        ----------
-        models : list of Model objects
-            List of Model objects, e.g. StationaryModel or MSM objects, at the
-            different thermodynamic states. This list may include the ground
-            state, such that self.pi = self.models[0].pi holds. An example for
-            that is data obtained from parallel tempering or replica-exchange,
-            where the lowest simulated temperature is usually identical to the
-            thermodynamic ground state. However, the list does not have to
-            include the thermodynamic ground state. For example, when obtaining
-            data from umbrella sampling, models might be the list of
-            stationary models for n umbrellas (biased ensembles), while the
-            thermodynamic ground state is the unbiased ensemble. In that
-            case, self.pi would be different from any self.models[i].pi
-        f_therm : ndarray(k)
-            free energies at the different thermodynamic states
-        pi : ndarray(n), default=None
-            Stationary distribution of the thermodynamic ground state.
-            If not already normalized, pi will be scaled to fulfill
-            :math:`sum_i pi_i = 1`. If None, models[0].pi will be used
-        f : ndarray(n)
-            Discrete-state free energies of the thermodynamic ground state.
-        label : str, default='ground state'
-            Human-readable description for the thermodynamic ground state
-            or reference state of this multiensemble. May contain a temperature
-            description, such as '300 K' or a description of bias energy such
-            as 'unbiased'.
-        """
         self.set_model_params(models=models, f_therm=f_therm, pi=pi, f=f, label=label)
-
 
     def set_model_params(self, models=None, f_therm=None, pi=None, f=None, label='ground state'):
         # don't normalize f, because in a multiensemble the relative energy levels matter

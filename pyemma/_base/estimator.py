@@ -322,12 +322,15 @@ class Estimator(_BaseEstimator, Loggable):
         ----------
         X : object
             A reference to the data from which the model will be estimated
-        **params : New estimation parameter values. The parameters must that have been announced in the
-            __init__ method of this estimator. The present settings will overwrite the settings of parameters
-            given in the __init__ method, i.e. the parameter values after this call will be those that have been
-            used for this estimation. Use this option if only one or a few parameters change with respect to
-            the __init__ settings for this run, and if you don't need to remember the original settings of these
-            changed parameters.
+        params : dict
+            New estimation parameter values. The parameters must that have been
+            announced in the __init__ method of this estimator. The present
+            settings will overwrite the settings of parameters given in the
+            __init__ method, i.e. the parameter values after this call will be
+            those that have been used for this estimation. Use this option if
+            only one or a few parameters change with respect to
+            the __init__ settings for this run, and if you don't need to
+            remember the original settings of these changed parameters.
 
         Returns
         -------
@@ -339,9 +342,6 @@ class Estimator(_BaseEstimator, Loggable):
         if params:
             self.set_params(**params)
         self._model = self._estimate(X)
-        # debug:
-        #if self._model is None:
-        #    raise RuntimeError("underlying estimator did not returned a valid model")
         self._estimated = True
         return self._model
 
