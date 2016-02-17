@@ -132,6 +132,68 @@ def estimate_multi_temperature(
     energy_column_in_kT=False, temperature_column_in_kT=False, use_kJ_per_mol=False,
     maxiter=10000, maxerr=1.0E-15, save_convergence_info=0,
     estimator='wham', lag=1, dt_traj='1 step', init=None):
+    r"""
+    Wraps multi-temperature data.
+
+    Parameters
+    ----------
+    utrajs : list of N arrays, each of shape (T_i,)
+        List of arrays, each having T_i rows, one for each time step, containing the potential
+        energies time series in units of kT, kcal/mol or kJ/mol.
+    temptrajs : list of N int arrays, each of shape (T_i,)
+        List of arrays, each having T_i rows, one for each time step, containing the heat bath
+        temperature time series (at which temperatures the frames were created) in units of Kelvin.
+        Alternatively, these trajectories may contain kT values instead of temperatures.
+    dtrajs : list of N int arrays, each of shape (T_i,)
+        The integers are indexes in 0,...,n-1 enumerating the n discrete states or the bins the
+        trajectory is in at any time.
+    energy_column_in_kT : bool, optional, default=False
+        Assume that the energy trajectories are dimensionless, i.e., are given in kT.
+    temperature_column_in_kT : bool, optional, default=False
+        Assume that the temperature trajectories contain kT values instead of temperatures.
+    use_kJ_per_mol : bool, optional, default=False
+        This parameter is only necessary if the energy trajectories are dimensionless and the
+        temperature trajectories are given in Kelvin. In that case, we use a Boltzmann constant of
+        either 0.0019872041 kcal/mol or 4.184 * 0.0019872041 kJ/mol for the internal conversion
+        depending on the value of the use_kJ_per_mol parameter.
+    maxiter : int, optional, default=10000
+        The maximum number of self-consistent iterations before the estimator exits unsuccessfully.
+    maxerr : float, optional, default=1E-15
+        Convergence criterion based on the maximal free energy change in a self-consistent
+        iteration step.
+    save_convergence_info : int, optional, default=0
+        Every save_convergence_info iteration steps, store the actual increment
+        and the actual loglikelihood; 0 means no storage.
+    estimator : str, optional, default='wham'
+        Specify one of the available estimators
+
+        | 'wham':   use WHAM
+        | 'dtram':  use the discrete version of TRAM
+    lag : int, optional, default=1
+        Integer lag time at which transitions are counted.
+    dt_traj : str, optional, default='1 step'
+        Description of the physical time corresponding to the lag. May be used by analysis
+        algorithms such as plotting tools to pretty-print the axes. By default '1 step', i.e.
+        there is no physical time unit.  Specify by a number, whitespace and unit. Permitted
+        units are (* is an arbitrary string):
+
+        |  'fs',   'femtosecond*'
+        |  'ps',   'picosecond*'
+        |  'ns',   'nanosecond*'
+        |  'us',   'microsecond*'
+        |  'ms',   'millisecond*'
+        |  's',    'second*'
+    init : str, optional, default=None
+        Use a specific initialization for self-consistent iteration:
+
+        | None:    use a hard-coded guess for free energies and Lagrangian multipliers
+        | 'wham':  perform a short WHAM estimate to initialize the free energies
+
+    Returns
+    -------
+    _estimator : MEMM or StationaryModel
+        The requested estimator/model object, i.e., WHAM or DTRAM.
+    """
     assert estimator in ['wham', 'dtram'], "unsupported estimator: %s" % estimator
     ttrajs, btrajs, temperatures = _get_multi_temperature_data(
         utrajs, temptrajs, ref_temp=reference_temperature,
