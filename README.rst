@@ -17,19 +17,30 @@ EMMA (Emma's Markov Model Algorithms)
 
 What is it?
 -----------
-EMMA is an open source collection of algorithms implemented mostly in
-`NumPy <http://www.numpy.org/>`_ and `SciPy <http://www.scipy.org>`_ to analyze
-trajectories generated from any kind of simulation (e.g. molecular
-trajectories) via Markov state models (MSM).
+PyEMMA (EMMA = Emma's Markov Model Algorithms) is an open source
+Python/C package for analysis of extensive molecular dynamics simulations.
+In particular, it includes algorithms for estimation, validation and analysis
+of:
 
-It provides APIs for estimation and analyzing MSM and various utilities to
-process input data (clustering, coordinate transformations etc). For
-documentation of the API, please have a look at the sphinx docs in doc
-directory or `online <http://www.emma-project.org/>`__.
+  * Markov state models (MSMs)
+  * Hidden Markov models (HMMs)
+  * multi-ensemble Markov models (MEMMs)
+  * Time-lagged independent component analysis (TICA)
+  * Clustering and Featurization.
 
-For some examples on how to apply the software, please have a look in the
-ipython directory, which shows the most common use cases as documentated
-IPython notebooks.
+PyEMMA can be used from Jupyther (former IPython, recommended), or by
+writing Python scripts. The docs, can be found at
+`http://pyemma.org <http://www.pyemma.org/>`__.
+
+Citation
+--------
+If you use PyEMMA in scientific work, please cite:
+
+    M. K. Scherer, B. Trendelkamp-Schroer, F. Paul, G. Pérez-Hernández,
+    M. Hoffmann, N. Plattner, C. Wehmeyer, J.-H. Prinz and F. Noé:
+    PyEMMA 2: A Software Package for Estimation, Validation, and Analysis of Markov Models,
+	J. Chem. Theory Comput. 11, 5525-5542 (2015)
+
 
 Installation
 ------------
