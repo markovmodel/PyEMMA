@@ -69,10 +69,12 @@ class TestCSVReader(unittest.TestCase):
         np.testing.assert_almost_equal(output[0], self.data)
 
     def test_read_1file_oneline(self):
-        with tempfile.NamedTemporaryFile(suffix='.dat', delete=False) as f:
-            np.savetxt(f, [1,2,3])
+        tiny = np.array([1, 2, 3])
+        with tempfile.NamedTemporaryFile(mode='wb', suffix='.dat', delete=False) as f:
+            np.savetxt(f, tiny)
             f.close()
-            CSVReader(f.name, delimiters=" ")
+            reader = CSVReader(f.name, delimiters=" ")
+            np.testing.assert_equal(reader.get_output()[0], np.atleast_2d(tiny).T)
 
     def test_read_1file_with_header(self):
         reader = CSVReader(self.file_with_header)

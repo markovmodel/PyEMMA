@@ -130,14 +130,14 @@ class TestTrajectoryInfoCache(unittest.TestCase):
 
     def test_csvreader(self):
         data = np.random.random((101, 3))
-        with tempfile.NamedTemporaryFile(delete=False) as fh:
+        with tempfile.NamedTemporaryFile(mode='wb', delete=False) as fh:
             np.savetxt(fh, data)
             # calc offsets
             fh.seek(0)
             offsets = [0]
-            while fh.readline():
-                offsets.append(fh.tell())
-            fh.close()
+            with open(fh.name, 'rb') as new_fh:
+                for _ in new_fh:
+                    offsets.append(new_fh.tell())
             reader = PyCSVReader(fh.name)
             assert reader.dimension() == 3
             trajinfo = reader._get_traj_info(fh.name)
@@ -165,7 +165,7 @@ class TestTrajectoryInfoCache(unittest.TestCase):
         import warnings
         from pyemma.util.exceptions import EfficiencyWarning
 
-        with NamedTemporaryFile(suffix='.xyz', delete=False) as f:
+        with NamedTemporaryFile(mode='wb', suffix='.xyz', delete=False) as f:
             fn = f.name
             traj.save_xyz(fn)
             f.close()
