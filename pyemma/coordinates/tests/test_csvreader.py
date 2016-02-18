@@ -76,6 +76,14 @@ class TestCSVReader(unittest.TestCase):
             reader = CSVReader(f.name, delimiters=" ")
             np.testing.assert_equal(reader.get_output()[0], np.atleast_2d(tiny).T)
 
+    def test_read_1file_with_header_2lines(self):
+        data = np.array([1,2,3])
+        with tempfile.NamedTemporaryFile(delete=False) as f:
+            np.savetxt(f.name, data, header='x')
+            f.close()
+            out = CSVReader(f.name, delimiters=' ').get_output()[0]
+            np.testing.assert_equal(out, np.atleast_2d(data).T)
+
     def test_read_1file_with_header(self):
         reader = CSVReader(self.file_with_header)
         self.assertEqual(reader.number_of_trajectories(), 1)
@@ -127,9 +135,10 @@ class TestCSVReader(unittest.TestCase):
         lagged_data = self.data[lag:]
 
         lagged_chunks = []
-        for _, _, Y in reader.iterator(lag=lag):
-            # kick out empty chunks
-            if Y.shape[0] > 0:
+        it = reader.iterator(lag=lag)
+        with it:
+            for _, _, Y in it:
+                assert len(Y) > 0
                 lagged_chunks.append(Y)
 
         lagged_chunks = np.vstack(lagged_chunks)
@@ -159,7 +168,7 @@ class TestCSVReader(unittest.TestCase):
 
     def test_with_binary_written_file(self):
         data = np.arange(9).reshape(3, 3)
-        with tempfile.NamedTemporaryFile('w+b',delete=False) as tmp:
+        with tempfile.NamedTemporaryFile('w+b', delete=False) as tmp:
             np.savetxt(tmp.name, data)
             tmp.close()
             out = CSVReader(tmp.name).get_output()[0]
@@ -170,8 +179,10 @@ class TestCSVReader(unittest.TestCase):
 
         for t in [23, 7, 59]:
             chunks = []
-            for _, _, Y in reader.iterator(stride=1, lag=t):
-                chunks.append(Y)
+            it = reader.iterator(stride=1, lag=t)
+            with it:
+                for _, _, Y in it:
+                    chunks.append(Y)
             chunks = np.vstack(chunks)
             np.testing.assert_almost_equal(chunks, self.data[t:])
 
@@ -182,12 +193,13 @@ class TestCSVReader(unittest.TestCase):
             for t in [1, 23, 7, 59]:
                 chunks = []
                 chunks_lag = []
-                for _, X, Y in reader.iterator(stride=s, lag=t):
-                    chunks.append(X)
-                    chunks_lag.append(Y)
+                it = reader.iterator(stride=s, lag=t)
+                with it:
+                    for _, X, Y in it:
+                        chunks.append(X)
+                        chunks_lag.append(Y)
                 chunks = np.vstack(chunks)
                 chunks_lag = np.vstack(chunks_lag)
-                actual = self.data[::s]
                 actual_lagged = self.data[t::s]
                 np.testing.assert_almost_equal(chunks, self.data[::s][0:len(actual_lagged)])
                 np.testing.assert_almost_equal(chunks_lag, self.data[t::s],
@@ -201,9 +213,11 @@ class TestCSVReader(unittest.TestCase):
             for t in [1, 23, 7, 59]:
                 chunks = []
                 chunks_lag = []
-                for _, X, Y in reader.iterator(stride=s, lag=t):
-                    chunks.append(X)
-                    chunks_lag.append(Y)
+                it = reader.iterator(stride=s, lag=t)
+                with it:
+                    for _, X, Y in it:
+                        chunks.append(X)
+                        chunks_lag.append(Y)
                 chunks = np.vstack(chunks)
                 chunks_lag = np.vstack(chunks_lag)
                 actual_lagged = self.data[t::s]

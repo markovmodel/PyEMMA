@@ -136,7 +136,7 @@ class TestTrajectoryInfoCache(unittest.TestCase):
             fh.close()
             offsets = [0]
             with open(fh.name, PyCSVReader.DEFAULT_OPEN_MODE) as new_fh:
-                for _ in new_fh:
+                while new_fh.readline():
                     offsets.append(new_fh.tell())
             reader = PyCSVReader(fh.name)
             assert reader.dimension() == 3
