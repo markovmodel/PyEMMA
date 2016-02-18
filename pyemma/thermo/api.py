@@ -194,7 +194,8 @@ def estimate_multi_temperature(
     assert estimator in ['wham', 'dtram'], "unsupported estimator: %s" % estimator
     from .util import get_multi_temperature_data as _get_multi_temperature_data
     ttrajs, btrajs, temperatures = _get_multi_temperature_data(
-        energy_trajs, temp_trajs, energy_unit, temp_unit, ref_temp=reference_temperature)
+        energy_trajs, temp_trajs, energy_unit, temp_unit,
+        reference_temperature=reference_temperature)
     _estimator = None
     if estimator == 'wham':
         _estimator = wham(

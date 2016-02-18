@@ -195,7 +195,7 @@ conversion_factor_J_per_cal = 4.184
 conversion_shift_Celsius_to_Kelvin = 273.15
 
 def _get_multi_temperature_bias_sequences(
-    energy_trajs, temp_trajs, temperatures, ref_temp,
+    energy_trajs, temp_trajs, temperatures, reference_temperature,
     energy_unit, temp_unit):
     assert isinstance(energy_unit, str), 'energy_unit must be type str'
     assert isinstance(temp_unit, str), 'temp_unit must be type str'
@@ -208,18 +208,19 @@ def _get_multi_temperature_bias_sequences(
         # reduced case: energy_trajs in kT, temp_trajs unit does not matter as it cancels
         for energy_traj, temp_traj in zip(energy_trajs, temp_trajs):
             btrajs.append(
-                (1.0 / temperatures[_np.newaxis, :] - 1.0 / ref_temp) * \
+                (1.0 / temperatures[_np.newaxis, :] - 1.0 / reference_temperature) * \
                 (temp_traj * energy_traj)[:, _np.newaxis])
     elif temp_unit.lower() == 'kt':
         # non-reduced case with kT values instead of temperatures
         # this implicitly assumes the users' unit of k_B equals unit of energy_trajs
         for energy_traj, temp_traj in zip(energy_trajs, temp_trajs):
             btrajs.append(
-                (1.0 / temperatures[_np.newaxis, :] - 1.0 / ref_temp) * energy_traj[:, _np.newaxis])
+                (1.0 / temperatures[_np.newaxis, :] - 1.0 / reference_temperature) \
+                    * energy_traj[:, _np.newaxis])
     else:
         # non-reduced case and temperatures given
         kT = temperatures
-        rT = ref_temp
+        rT = reference_temperature
         if temp_unit.lower() == 'c':
             kT += conversion_shift_Celsius_to_Kelvin
             rT += conversion_shift_Celsius_to_Kelvin
@@ -233,10 +234,10 @@ def _get_multi_temperature_bias_sequences(
     return btrajs
 
 def get_multi_temperature_data(
-    energy_trajs, temp_trajs, energy_unit, temp_unit, ref_temp=None):
+    energy_trajs, temp_trajs, energy_unit, temp_unit, reference_temperature=None):
     ttrajs, temperatures = _get_multi_temperature_parameters(temp_trajs)
-    if ref_temp is None:
-        ref_temp = temperatures[0]
+    if reference_temperature is None:
+        reference_temperature = temperatures[0]
     btrajs = _get_multi_temperature_bias_sequences(
-        energy_trajs, temp_trajs, temperatures, ref_temp, energy_unit, temp_unit)
+        energy_trajs, temp_trajs, temperatures, reference_temperature, energy_unit, temp_unit)
     return ttrajs, btrajs, temperatures
