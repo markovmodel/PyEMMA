@@ -133,9 +133,9 @@ class TestTrajectoryInfoCache(unittest.TestCase):
         with tempfile.NamedTemporaryFile(mode='wb', delete=False) as fh:
             np.savetxt(fh, data)
             # calc offsets
-            fh.seek(0)
+            fh.close()
             offsets = [0]
-            with open(fh.name, 'rb') as new_fh:
+            with open(fh.name, PyCSVReader.DEFAULT_OPEN_MODE) as new_fh:
                 for _ in new_fh:
                     offsets.append(new_fh.tell())
             reader = PyCSVReader(fh.name)
