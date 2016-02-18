@@ -13,6 +13,7 @@ The API (Application Programming Interface) is currently divided into two main p
 
    index_coor
    index_msm
+   index_thermo
 
 Plotting functions for aiding in the scientific analysis are found here:
 
