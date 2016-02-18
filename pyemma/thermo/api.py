@@ -130,8 +130,8 @@ def estimate_umbrella_sampling(
 
 
 def estimate_multi_temperature(
-    energy_trajs, temp_trajs, dtrajs, reference_temperature=None,
-    energy_unit='kcal/mol', temp_unit='K',
+    energy_trajs, temp_trajs, dtrajs,
+    energy_unit='kcal/mol', temp_unit='K', reference_temperature=None,
     maxiter=10000, maxerr=1.0E-15, save_convergence_info=0,
     estimator='wham', lag=1, dt_traj='1 step', init=None):
     r"""
@@ -153,6 +153,10 @@ def estimate_multi_temperature(
         The physical unit used for energies. Current options: kcal/mol, kJ/mol, kT.
     temp_unit : str, optional, default='K'
         The physical unit used for the temperature. Current options: K, C, kT
+    reference_temperature : float or None, optional, default=None
+        Reference temperature against which the bias energies are computed. If not given, the lowest
+        temperature or kT value is used. If given, this parameter must have the same unit as the
+        temp_trajs.
     maxiter : int, optional, default=10000
         The maximum number of self-consistent iterations before the estimator exits unsuccessfully.
     maxerr : float, optional, default=1E-15
