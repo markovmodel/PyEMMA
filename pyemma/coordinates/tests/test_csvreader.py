@@ -155,6 +155,14 @@ class TestCSVReader(unittest.TestCase):
             output = reader.get_output(stride=s)[0]
             np.testing.assert_almost_equal(output, self.data[::s], err_msg="stride=%s"%s)
 
+    def test_with_binary_written_file(self):
+        data = np.arange(9).reshape(3, 3)
+        with tempfile.NamedTemporaryFile('w+b',delete=False) as tmp:
+            np.savetxt(tmp.name, data)
+            tmp.close()
+            out = CSVReader(tmp.name).get_output()[0]
+        np.testing.assert_allclose(out, data)
+
     def test_with_lag(self):
         reader = CSVReader(self.filename1)
 
