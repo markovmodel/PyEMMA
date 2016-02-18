@@ -615,7 +615,7 @@ def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=1000, 
 
     # Determine the type of input and extract necessary parameters
     if isinstance(traj_inp, _FeatureReader):
-        trajfiles = traj_inp.trajfiles
+        trajfiles = traj_inp.filenames
         top = traj_inp.topfile
         chunksize = traj_inp.chunksize
     else:
@@ -755,7 +755,7 @@ def save_trajs(traj_inp, indexes, prefix = 'set_', fmt = None, outfiles = None,
     if fmt is None:
         import os
 
-        _, fmt = os.path.splitext(traj_inp.trajfiles[0])
+        _, fmt = os.path.splitext(traj_inp.filenames[0])
     else:
         fmt = '.' + fmt
 
