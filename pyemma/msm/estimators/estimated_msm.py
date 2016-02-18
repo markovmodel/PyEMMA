@@ -27,6 +27,7 @@ import numpy as np
 from pyemma.msm.models.msm import MSM
 from pyemma.util.annotators import alias, aliased
 from pyemma.util.units import TimeUnit
+import pyemma.util.types as _types
 
 @aliased
 class EstimatedMSM(MSM):
@@ -326,11 +327,14 @@ class EstimatedMSM(MSM):
         # compute stationary distribution, expanded to full set
         statdist_full = np.zeros([self._nstates_full])
         statdist_full[self.active_set] = self.stationary_distribution
+        # histogram observed states
+        import msmtools.dtraj as msmtraj
+        hist = 1.0 * msmtraj.count_states(self.discrete_trajectories_full)
         # simply read off stationary distribution and accumulate total weight
         W = []
         wtot = 0.0
         for dtraj in self.discrete_trajectories_full:
-            w = statdist_full[dtraj]
+            w = statdist_full[dtraj] / hist[dtraj]
             W.append(w)
             wtot += np.sum(W)
         # normalize
@@ -480,8 +484,13 @@ class EstimatedMSM(MSM):
     # HMM-based coarse graining
     ################################################################################
 
-    def hmm(self, nstates):
+    def hmm(self, nhidden):
         """Estimates a hidden Markov state model as described in [1]_
+
+        Parameters
+        ----------
+        nhidden : int
+            number of hidden (metastable) states
 
         Returns
         -------
@@ -495,19 +504,33 @@ class EstimatedMSM(MSM):
 
         """
         self._check_is_estimated()
-        # run estimate
+        # check if the time-scale separation is OK
+        # if hmm.nstates = msm.nstates there is no problem. Otherwise, check spectral gap
+        if self.nstates > nhidden:
+            timescale_ratios = self.timescales()[:-1] / self.timescales()[1:]
+            if timescale_ratios[self.nstates-2] < 1.5:
+                self.logger.warning('Requested coarse-grained model with ' + str(nhidden) + ' metastable states at ' +
+                                 'lag=' + str(self.lag) + '.' + 'The ratio of relaxation timescales between ' +
+                                 str(nhidden) + ' and ' + str(nhidden+1) + ' states is only ' +
+                                 str(timescale_ratios[nhidden-2]) + ' while we recommend at least 1.5. ' +
+                                 ' It is possible that the resulting HMM is inaccurate. Handle with caution.')
+        # run HMM estimate
         from pyemma.msm.estimators.maximum_likelihood_hmsm import MaximumLikelihoodHMSM
-        estimator = MaximumLikelihoodHMSM(lag=self.lagtime, nstates=nstates, msm_init=self,
-                                          reversible=self.is_reversible, connectivity=self.connectivity,
-                                          observe_active=True, dt_traj=self.dt_traj)
+        estimator = MaximumLikelihoodHMSM(lag=self.lagtime, nstates=nhidden, msm_init=self,
+                                          reversible=self.is_reversible, observe_active=True, dt_traj=self.dt_traj)
         estimator.estimate(self.discrete_trajectories_full)
         return estimator.model
 
-    def coarse_grain(self, nstates, method='hmm'):
+    def coarse_grain(self, ncoarse, method='hmm'):
         r"""Returns a coarse-grained Markov model.
 
         Currently only the HMM method described in [1]_ is available for coarse-graining MSMs.
 
+        Parameters
+        ----------
+        ncoarse : int
+            number of coarse states
+
         Returns
         -------
         hmsm : :class:`MaximumLikelihoodHMSM`
@@ -520,4 +543,8 @@ class EstimatedMSM(MSM):
 
         """
         self._check_is_estimated()
-        return self.hmm(nstates)
+        # check input
+        assert _types.is_int(self.nstates) and ncoarse > 1 and ncoarse <= self.nstates, \
+            'nstates must be an int in [2,msmobj.nstates]'
+
+        return self.hmm(ncoarse)

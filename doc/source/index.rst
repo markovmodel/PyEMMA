@@ -35,23 +35,24 @@ Technical features:
 Citation |DOI for Citing PyEMMA|
 --------------------------------
 
-PyEMMA is scientific software, if you use it in your scientific work, please
-consider citing this paper: ::
+If you use PyEMMA in scientific software, please cite the following paper: ::
 
 	@article{scherer_pyemma_2015,
+		author = {Scherer, Martin K. and Trendelkamp-Schroer, Benjamin
+                          and Paul, Fabian and Pérez-Hernández, Guillermo and Hoffmann, Moritz and
+                          Plattner, Nuria and Wehmeyer, Christoph and Prinz, Jan-Hendrik and Noé, Frank},
 		title = {{PyEMMA} 2: {A} {Software} {Package} for {Estimation},
                          {Validation}, and {Analysis} of {Markov} {Models}},
+		journal = {Journal of Chemical Theory and Computation},
+		volume = {11},
+		pages = {5525-5542},
+		year = {2015},
 		issn = {1549-9618},
 		shorttitle = {{PyEMMA} 2},
 		url = {http://dx.doi.org/10.1021/acs.jctc.5b00743},
 		doi = {10.1021/acs.jctc.5b00743},
 		urldate = {2015-10-19},
-		journal = {Journal of Chemical Theory and Computation},
-		author = {Scherer, Martin K. and Trendelkamp-Schroer, Benjamin
-                          and Paul, Fabian and Pérez-Hernández, Guillermo and Hoffmann, Moritz and
-                          Plattner, Nuria and Wehmeyer, Christoph and Prinz, Jan-Hendrik and Noé, Frank},
 		month = oct,
-		year = {2015},
 	}
 
 .. |DOI for Citing PyEMMA| image:: _static/pyemma_paper_doi.svg

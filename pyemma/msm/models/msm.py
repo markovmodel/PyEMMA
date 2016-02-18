@@ -140,15 +140,8 @@ class MSM(_Model):
         import msmtools.analysis as msmana
         # check input
         if P is not None:
-            import msmtools.estimation as msmest
             if not msmana.is_transition_matrix(P, tol=1e-8):
                 raise ValueError('T is not a transition matrix.')
-            # check connectivity
-            # TODO: abusing C-connectivity test for T. Either provide separate T-connectivity test or move to a central
-            # TODO: location because it's the same code.
-            if not msmest.is_connected(P):
-                raise NotImplementedError('Transition matrix T is disconnected. ' +
-                                          'This is currently not supported in the MSM object.')
 
         # update all parameters
         self.update_model_params(P=P, pi=pi, reversible=reversible, dt_model=dt_model, neig=neig)

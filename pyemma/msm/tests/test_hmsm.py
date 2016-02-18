@@ -37,24 +37,25 @@ class TestMLHMM(unittest.TestCase):
         # load observations
         import pyemma.datasets
         obs = pyemma.datasets.load_2well_discrete().dtraj_T100K_dt10
+        obs -= np.min(obs)  # remove empty states
 
         # hidden states
         nstates = 2
 
         # run with lag 1 and 10
         cls.msm_lag1 = msm.estimate_markov_model([obs], 1, reversible=True, connectivity='largest')
-        cls.hmsm_lag1 = msm.estimate_hidden_markov_model([obs], nstates, 1, reversible=True, connectivity='largest')
+        cls.hmsm_lag1 = msm.estimate_hidden_markov_model([obs], nstates, 1, reversible=True, observe_nonempty=True)
         cls.msm_lag10 = msm.estimate_markov_model([obs], 10, reversible=True, connectivity='largest')
-        cls.hmsm_lag10 = msm.estimate_hidden_markov_model([obs], nstates, 10, reversible=True, connectivity='largest')
+        cls.hmsm_lag10 = msm.estimate_hidden_markov_model([obs], nstates, 10, reversible=True, observe_nonempty=True)
 
     # =============================================================================
     # Test basic HMM properties
     # =============================================================================
 
     def test_hmm_type(self):
-        from pyemma.msm.estimators.estimated_hmsm import EstimatedHMSM
-        assert isinstance(self.hmsm_lag1, EstimatedHMSM)
-        assert isinstance(self.hmsm_lag10, EstimatedHMSM)
+        from pyemma.msm.estimators.maximum_likelihood_hmsm import MaximumLikelihoodHMSM
+        assert isinstance(self.hmsm_lag1, MaximumLikelihoodHMSM)
+        assert isinstance(self.hmsm_lag10, MaximumLikelihoodHMSM)
 
     def test_reversible(self):
         assert self.hmsm_lag1.is_reversible
@@ -414,6 +415,17 @@ class TestMLHMM(unittest.TestCase):
         ksum = 1.0 / t12 + 1.0 / t21
         k2 = 1.0 / t2
         assert np.abs(k2 - ksum) < 1e-4
+
+
+class TestHMMSpecialCases(unittest.TestCase):
+
+    def test_separate_states(self):
+        dtrajs = [np.array([0, 1, 1, 1, 1, 1, 0, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1]),
+                  np.array([2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2]),]
+        hmm = msm.estimate_hidden_markov_model(dtrajs, 3, lag=1, separate=[0])
+        # we expect zeros in all samples at the following indexes:
+        pobs_zeros = [[0, 1, 2, 2, 2], [0, 0, 1, 2, 3]]
+        assert np.allclose(hmm.observation_probabilities[pobs_zeros], 0)
 
 if __name__=="__main__":
     unittest.main()

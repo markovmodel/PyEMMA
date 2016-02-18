@@ -131,10 +131,8 @@ class LaggedModelValidator(Estimator, ProgressReporter):
             progress_reporter = None
 
         estimated_models, estimators = \
-            estimate_param_scan(self.test_estimator, data, pargrid,
-                                return_estimators=True,
-                                progress_reporter=progress_reporter,
-                                n_jobs=self.n_jobs)
+            estimate_param_scan(self.test_estimator, data, pargrid, return_estimators=True, failfast=False,
+                                progress_reporter=progress_reporter, n_jobs=self.n_jobs)
         if include0:
             estimated_models = [None] + estimated_models
             estimators = [None] + estimators

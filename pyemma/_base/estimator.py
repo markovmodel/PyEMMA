@@ -133,7 +133,7 @@ def _estimate_param_scan_worker(estimator, params, X, evaluate, evaluate_args,
     except:
         e = sys.exc_info()[0]
         if failfast:
-            raise e
+            raise  # re-raise
         else:
             pass  # just return model=None
 

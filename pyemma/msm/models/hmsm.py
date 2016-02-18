@@ -225,6 +225,42 @@ class HMSM(_MSM):
         # normalize to 1.0 and return
         return pk / pk.sum()
 
+    def submodel(self, states=None, obs=None):
+        """Returns a HMM with restricted state space
+
+        Parameters
+        ----------
+        states : None or int-array
+            Hidden states to restrict the model to (if not None).
+        obs : None, str or int-array
+            Observed states to restrict the model to (if not None).
+
+        Returns
+        -------
+        hmm : HMM
+            The restricted HMM.
+
+        """
+        if states is None and obs is None:
+            return self  # do nothing
+        if states is None:
+            states = _np.arange(self.nstates)
+        if obs is None:
+            obs = _np.arange(self.nstates_obs)
+
+        # transition matrix
+        P = self.transition_matrix[_np.ix_(states, states)].copy()
+        P /= P.sum(axis=1)[:, None]
+
+        # observation matrix
+        B = self.observation_probabilities[_np.ix_(states, obs)].copy()
+        B /= B.sum(axis=1)[:, None]
+
+        sub_hmsm = HMSM(P, B, dt_model=self.dt_model)
+        sub_hmsm.update_model_params(reversible=self.reversible)
+        return sub_hmsm
+
+
     # ================================================================================================================
     # Experimental properties: Here we allow to use either coarse-grained or microstate observables
     # ================================================================================================================
@@ -331,10 +367,12 @@ class HMSM(_MSM):
             complex molecules. J. Chem. Phys. 139, 184114 (2013)
 
         """
-        A = _np.dot(_np.diag(self.stationary_distribution), self.observation_probabilities)
-        M = _np.dot(A, _np.diag(1.0/self.stationary_distribution_obs)).T
+        nonzero = _np.nonzero(self.stationary_distribution_obs)[0]
+        M = _np.zeros((self.nstates_obs, self.nstates))
+        M[nonzero, :] = _np.transpose(_np.diag(self.stationary_distribution).dot(
+            self.observation_probabilities[:, nonzero]) / self.stationary_distribution_obs[nonzero])
         # renormalize
-        M /= M.sum(axis=1)[:, None]
+        M[nonzero, :] /= M.sum(axis=1)[nonzero, None]
         return M
 
     @property
