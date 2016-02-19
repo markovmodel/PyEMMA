@@ -833,6 +833,12 @@ class MSM(_Model):
             your interest with the following MSM functions: :func:`metastable_memberships`,
             :func:`metastable_distributions`, :func:`metastable_sets` and :func:`metastable_assignments`.
 
+        Notes
+        -----
+        If you coarse grain with PCCA++, the order of the obtained memberships
+        might not be preserved. This also applies for :func:`metastable_memberships`, 
+        :func:`metastable_distributions`, :func:`metastable_sets`, :func:`metastable_assignments`
+
         References
         ----------
         .. [1] Roeblitz, S and M Weber. 2013. Fuzzy spectral clustering by
