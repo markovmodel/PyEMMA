@@ -32,6 +32,7 @@ import sys
 import os
 import versioneer
 import warnings
+from io import open
 
 DOCLINES = __doc__.split("\n")
 
@@ -196,7 +197,7 @@ metadata = dict(
     url='http://github.com/markovmodel/PyEMMA',
     license='LGPLv3+',
     description=DOCLINES[0],
-    long_description=open('README.rst').read(),
+    long_description=open('README.rst', encoding='utf8').read(),
     version=versioneer.get_version(),
     platforms=["Windows", "Linux", "Solaris", "Mac OS-X", "Unix"],
     classifiers=[c for c in CLASSIFIERS.split('\n') if c],
