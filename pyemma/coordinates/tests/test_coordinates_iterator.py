@@ -4,6 +4,7 @@ import numpy as np
 from pyemma.coordinates.data import DataInMemory
 from pyemma.util.files import TemporaryDirectory
 import os
+from glob import glob
 
 
 class TestCoordinatesIterator(unittest.TestCase):
@@ -141,16 +142,18 @@ class TestCoordinatesIterator(unittest.TestCase):
     def test_write_to_csv_propagate_filenames(self):
         from pyemma.coordinates import source, tica
         with TemporaryDirectory() as td:
-            data = [np.random.random((20, 3))]*3
-            fns = [os.path.join(td, f) for f in ('blah.npy', 'blub.npy', 'foo.npy')]
+            data = [np.random.random((20, 3))] * 3
+            fns = [os.path.join(td, f)
+                   for f in ('blah.npy', 'blub.npy', 'foo.npy')]
             for x, fn in zip(data, fns):
                 np.save(fn, x)
             reader = source(fns)
+            assert reader.filenames == fns
             tica_obj = tica(reader, lag=1)
             tica_obj.write_to_csv(extension=".exotic")
-            res = os.listdir(td)
-            assert len(res) == len(fns)
-            desired_fns = [s.replace('.npy', '.exotic') for s in fns]
+            res = sorted([os.path.abspath(x) for x in glob(td + os.path.sep + '*.exotic')])
+            self.assertEqual(len(res), len(fns))
+            desired_fns = sorted([s.replace('.npy', '.exotic') for s in fns])
             self.assertEqual(res, desired_fns)
 
 if __name__ == '__main__':
