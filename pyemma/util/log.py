@@ -23,7 +23,7 @@ Created on 15.10.2013
 @author: marscher
 '''
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 import pkg_resources
 import logging
@@ -99,9 +99,14 @@ def setupLogging():
     import atexit
     @atexit.register
     def clean_empty_log_files():
+        # gracefully shutdown logging system
+        logging.shutdown()
         for f in log_files:
             if f is not None and os.stat(f).st_size == 0:
-                os.remove(f)
+                try:
+                    os.remove(f)
+                except OSError as o:
+                    print("during removal of empty logfiles there was a problem: ", o)
 
 
 def getLogger(name=None):
