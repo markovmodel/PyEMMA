@@ -132,7 +132,7 @@ def featurizer(topfile):
 
 
 # TODO: DOC - which topology file formats does mdtraj support? Find out and complete docstring
-def load(trajfiles, features=None, top=None, stride=1, chunk_size=100):
+def load(trajfiles, features=None, top=None, stride=1, chunk_size=100, **kw):
     r""" Loads coordinate features into memory.
 
     If your memory is not big enough consider the use of **pipeline**, or use
@@ -218,7 +218,7 @@ def load(trajfiles, features=None, top=None, stride=1, chunk_size=100):
         isinstance(trajfiles, (list, tuple))
             and (any(isinstance(item, (list, tuple, string_types)) for item in trajfiles)
                  or len(trajfiles) is 0)):
-        reader = _create_file_reader(trajfiles, top, features, chunk_size=chunk_size)
+        reader = _create_file_reader(trajfiles, top, features, chunk_size=chunk_size, **kw)
         trajs = reader.get_output(stride=stride)
         if len(trajs) == 1:
             return trajs[0]
@@ -228,7 +228,7 @@ def load(trajfiles, features=None, top=None, stride=1, chunk_size=100):
         raise ValueError('unsupported type (%s) of input' % type(trajfiles))
 
 
-def source(inp, features=None, top=None, chunk_size=None):
+def source(inp, features=None, top=None, chunk_size=None, **kw):
     r""" Defines trajectory data source
 
     This function defines input trajectories without loading them. You can pass
@@ -347,7 +347,7 @@ def source(inp, features=None, top=None, chunk_size=None):
     if isinstance(inp, string_types) or (
             isinstance(inp, (list, tuple))
             and (any(isinstance(item, (list, tuple, string_types)) for item in inp) or len(inp) is 0)):
-        reader = _create_file_reader(inp, top, features, chunk_size=chunk_size if chunk_size else 100)
+        reader = _create_file_reader(inp, top, features, chunk_size=chunk_size if chunk_size else 100, **kw)
 
     elif isinstance(inp, _np.ndarray) or (isinstance(inp, (list, tuple))
                                           and (any(isinstance(item, _np.ndarray) for item in inp) or len(inp) is 0)):
@@ -357,7 +357,7 @@ def source(inp, features=None, top=None, chunk_size=None):
         # check: if single array, create a one-element list
         # check: do all arrays have compatible dimensions (*, N)? If not: raise ValueError.
         # create MemoryReader
-        reader = _DataInMemory(inp, chunksize=chunk_size if chunk_size else 5000)
+        reader = _DataInMemory(inp, chunksize=chunk_size if chunk_size else 5000, **kw)
     else:
         raise ValueError('unsupported type (%s) of input' % type(inp))
 
@@ -615,7 +615,7 @@ def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=1000, 
 
     # Determine the type of input and extract necessary parameters
     if isinstance(traj_inp, _FeatureReader):
-        trajfiles = traj_inp.trajfiles
+        trajfiles = traj_inp.filenames
         top = traj_inp.topfile
         chunksize = traj_inp.chunksize
     else:
@@ -755,7 +755,7 @@ def save_trajs(traj_inp, indexes, prefix = 'set_', fmt = None, outfiles = None,
     if fmt is None:
         import os
 
-        _, fmt = os.path.splitext(traj_inp.trajfiles[0])
+        _, fmt = os.path.splitext(traj_inp.filenames[0])
     else:
         fmt = '.' + fmt
 

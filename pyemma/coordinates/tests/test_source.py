@@ -48,7 +48,7 @@ class TestSource(unittest.TestCase):
         reader = api.source(self.traj_files, top=self.pdb_file)
         self.assertIsNotNone(reader, "The reader should not be none.")
         self.assertEqual(reader.topfile, self.pdb_file, "Reader topology file and input topology file should coincide.")
-        self.assertListEqual(reader.trajfiles, self.traj_files, "Reader trajectories and input"
+        self.assertListEqual(reader.filenames, self.traj_files, "Reader trajectories and input"
                                                                 " trajectories should coincide.")
         self.assertEqual(reader.featurizer.topologyfile, self.pdb_file, "Featurizers topology file and input "
                                                                         "topology file should coincide.")
@@ -58,7 +58,7 @@ class TestSource(unittest.TestCase):
         reader = api.source(self.traj_files, features=featurizer)
         self.assertIsNotNone(reader, "The reader should not be none.")
         self.assertEqual(reader.topfile, self.pdb_file, "Reader topology file and input topology file should coincide.")
-        self.assertListEqual(reader.trajfiles, self.traj_files, "Reader trajectories and input"
+        self.assertListEqual(reader.filenames, self.traj_files, "Reader trajectories and input"
                                                                 " trajectories should coincide.")
         self.assertEqual(reader.featurizer.topologyfile, self.pdb_file, "Featurizers topology file and input "
                                                                         "topology file should coincide.")
@@ -67,7 +67,7 @@ class TestSource(unittest.TestCase):
         reader = api.source(self.traj_files[0], top=self.pdb_file)
         self.assertIsNotNone(reader, "The reader should not be none.")
         self.assertEqual(reader.topfile, self.pdb_file, "Reader topology file and input topology file should coincide.")
-        self.assertListEqual(reader.trajfiles, [self.traj_files[0]], "Reader trajectories and input"
+        self.assertListEqual(reader.filenames, [self.traj_files[0]], "Reader trajectories and input"
                                                                      " trajectories should coincide.")
         self.assertEqual(reader.featurizer.topologyfile, self.pdb_file, "Featurizers topology file and input "
                                                                         "topology file should coincide.")
@@ -77,7 +77,7 @@ class TestSource(unittest.TestCase):
         reader = api.source(self.traj_files[0], features=featurizer)
         self.assertIsNotNone(reader, "The reader should not be none.")
         self.assertEqual(reader.topfile, self.pdb_file, "Reader topology file and input topology file should coincide.")
-        self.assertListEqual(reader.trajfiles, [self.traj_files[0]], "Reader trajectories and input"
+        self.assertListEqual(reader.filenames, [self.traj_files[0]], "Reader trajectories and input"
                                                                      " trajectories should coincide.")
         self.assertEqual(reader.featurizer.topologyfile, self.pdb_file, "Featurizers topology file and input "
                                                                         "topology file should coincide.")
@@ -172,7 +172,7 @@ class TestSourceCallAll(unittest.TestCase):
         assert self.inp.trajectory_lengths()[0] == self.inp.trajectory_length(0)
 
     def test_trajfiles(self):
-        assert types.is_list_of_string(self.inp.trajfiles)
+        assert types.is_list_of_string(self.inp.filenames)
 
 if __name__ == "__main__":
     unittest.main()

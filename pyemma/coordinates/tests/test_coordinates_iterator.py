@@ -2,9 +2,13 @@ import unittest
 import numpy as np
 
 from pyemma.coordinates.data import DataInMemory
+from pyemma.util.files import TemporaryDirectory
+import os
+from glob import glob
 
 
 class TestCoordinatesIterator(unittest.TestCase):
+
     @classmethod
     def setUpClass(cls):
         cls.d = [np.random.random((100, 3)) for _ in range(3)]
@@ -30,23 +34,26 @@ class TestCoordinatesIterator(unittest.TestCase):
         assert it0._n_chunks == 3  # 3 trajs
 
         it1 = r.iterator(chunk=50)
-        assert it1._n_chunks == 3 * 2 # 2 chunks per trajectory
+        assert it1._n_chunks == 3 * 2  # 2 chunks per trajectory
 
         it2 = r.iterator(chunk=30)
-        assert it2._n_chunks == 3 * 4  # 3 full chunks and 1 small chunk per trajectory
+        # 3 full chunks and 1 small chunk per trajectory
+        assert it2._n_chunks == 3 * 4
 
         it3 = r.iterator(chunk=30)
         it3.skip = 10
-        assert it3._n_chunks == 3*3  # 3 full chunks per traj
+        assert it3._n_chunks == 3 * 3  # 3 full chunks per traj
 
         it4 = r.iterator(chunk=30)
         it4.skip = 5
-        assert it4._n_chunks == 3 * 4  # 3 full chunks and 1 chunk of 5 frames per trajectory
+        # 3 full chunks and 1 chunk of 5 frames per trajectory
+        assert it4._n_chunks == 3 * 4
 
         # test for lagged iterator
         for stride in range(1, 5):
             for lag in range(0, 18):
-                it = r.iterator(lag=lag, chunk=30, stride=stride, return_trajindex=False)
+                it = r.iterator(
+                    lag=lag, chunk=30, stride=stride, return_trajindex=False)
                 chunks = 0
                 for _ in it:
                     chunks += 1
@@ -131,3 +138,23 @@ class TestCoordinatesIterator(unittest.TestCase):
             t += len(X)
             if it.last_chunk_in_traj:
                 t = 0
+
+    def test_write_to_csv_propagate_filenames(self):
+        from pyemma.coordinates import source, tica
+        with TemporaryDirectory() as td:
+            data = [np.random.random((20, 3))] * 3
+            fns = [os.path.join(td, f)
+                   for f in ('blah.npy', 'blub.npy', 'foo.npy')]
+            for x, fn in zip(data, fns):
+                np.save(fn, x)
+            reader = source(fns)
+            assert reader.filenames == fns
+            tica_obj = tica(reader, lag=1)
+            tica_obj.write_to_csv(extension=".exotic")
+            res = sorted([os.path.abspath(x) for x in glob(td + os.path.sep + '*.exotic')])
+            self.assertEqual(len(res), len(fns))
+            desired_fns = sorted([s.replace('.npy', '.exotic') for s in fns])
+            self.assertEqual(res, desired_fns)
+
+if __name__ == '__main__':
+    unittest.main()

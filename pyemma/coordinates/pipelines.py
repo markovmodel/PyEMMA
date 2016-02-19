@@ -250,7 +250,7 @@ class Discretizer(Pipeline):
 
         trajfiles = None
         if isinstance(reader, FeatureReader):
-            trajfiles = reader.trajfiles
+            trajfiles = reader.filenames
 
         clustering.save_dtrajs(
             trajfiles, prefix, output_dir, output_format, extension)
