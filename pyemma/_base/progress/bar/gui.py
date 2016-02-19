@@ -127,7 +127,7 @@ def show_progressbar(bar, show_eta=True):
 
     """
     if not (str(config['show_progress_bars']) == 'True' and
-                is_interactive_session):
+            is_interactive_session):
         return
 
     # note: this check ensures we have IPython.display and so on.
@@ -147,6 +147,7 @@ def show_progressbar(bar, show_eta=True):
 
                 # make it visible once
                 display(box)
+                # box.visible=True
 
                 # update css for a more compact view
                 progress_widget._css = [

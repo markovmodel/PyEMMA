@@ -32,7 +32,7 @@ class ProgressReporter(object):
     """ Derive from this class to make some protected methods available to register
     and update status of different stages of an algorithm.
     """
-    _pg_threshold = 1
+    _pg_threshold = 2
 
     # Note: this class has intentionally no constructor, because it is more
     # comfortable for the user of this class (who is then not in the need to call it).
@@ -66,13 +66,13 @@ class ProgressReporter(object):
         # if we do not have enough work to do for the overhead of a progress bar,
         # we just define a dummy here
         if amount_of_work <= ProgressReporter._pg_threshold:
-            class dummy:
+            class dummy(object):
                 pass
             pg = dummy()
             pg.__str__ = lambda: description
+            pg.__repr__ = pg.__str__
+            pg._dummy=None
             pg.description = ''
-            pg.numerator = 0
-            pg.denominator = 1
         else:
             pg = _ProgressBar(amount_of_work, description=description)
 
@@ -135,9 +135,15 @@ class ProgressReporter(object):
         if stage not in self._prog_rep_progressbars:
             raise RuntimeError(
                 "call _progress_register(amount_of_work, stage=x) on this instance first!")
+        if hasattr(self._prog_rep_progressbars[stage], '_dummy'):
+            return
 
         pg = self._prog_rep_progressbars[stage]
         pg.numerator += numerator_increment
+
+        if pg.numerator == pg.denominator:
+            _hide_progressbar(pg)
+
         if pg.numerator > pg.denominator:
             raise Exception("This should not happen")
 
