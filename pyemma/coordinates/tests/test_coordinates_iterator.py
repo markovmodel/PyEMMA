@@ -145,14 +145,12 @@ class TestCoordinatesIterator(unittest.TestCase):
             fns = [os.path.join(td, f) for f in ('blah.npy', 'blub.npy', 'foo.npy')]
             for x, fn in zip(data, fns):
                 np.save(fn, x)
-            reader = source(fn)
+            reader = source(fns)
             tica_obj = tica(reader, lag=1)
             tica_obj.write_to_csv(extension=".exotic")
             res = os.listdir(td)
-            print (res)
             assert len(res) == len(fns)
             desired_fns = [s.replace('.npy', '.exotic') for s in fns]
-            print "des",desired_fns
             self.assertEqual(res, desired_fns)
 
 if __name__ == '__main__':
