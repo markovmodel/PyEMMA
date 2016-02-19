@@ -228,24 +228,26 @@ class TestCSVReader(unittest.TestCase):
 
     def test_compare_readline(self):
         data = np.arange(99*3).reshape(-1, 3)
-        with tempfile.NamedTemporaryFile(mode='wb', delete=False) as fh:
-            np.savetxt(fh, data)
+        fn = tempfile.mktemp()
+        try:
+            np.savetxt(fn, data)
             # calc offsets
-        reader = CSVReader(fh.name)
-        assert reader.dimension() == 3
-        trajinfo = reader._get_traj_info(fh.name)
-        offset = [0]
-        with open(fh.name, CSVReader.DEFAULT_OPEN_MODE) as fh2:
-            while fh2.readline():
-                offset.append(fh2.tell())
-            fh2.seek(0)
-            lines = []
-            for ii, off in enumerate(trajinfo.offsets):
-                fh2.seek(off)
-                line = fh2.readline()
-                fh2.seek(offset[ii])
-                line2 = fh2.readline()
-                self.assertEqual(line, line2, "differs at offset %i (%s != %s)" % (ii, off, offset[ii]))
+            reader = CSVReader(fn)
+            assert reader.dimension() == 3
+            trajinfo = reader._get_traj_info(fn)
+            offset = [0]
+            with open(fn, CSVReader.DEFAULT_OPEN_MODE) as fh2:
+                while fh2.readline():
+                    offset.append(fh2.tell())
+                fh2.seek(0)
+                for ii, off in enumerate(trajinfo.offsets):
+                    fh2.seek(off)
+                    line = fh2.readline()
+                    fh2.seek(offset[ii])
+                    line2 = fh2.readline()
+                    self.assertEqual(line, line2, "differs at offset %i (%s != %s)" % (ii, off, offset[ii]))
+        finally:
+            os.unlink(fn)
 
 if __name__ == '__main__':
     unittest.main()
