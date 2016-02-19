@@ -1,6 +1,74 @@
 Changelog
 =========
 
+2.1rc1 (19-2-2016)
+------------------
+
+**New features**:
+
+- thermo package: calculate thermodynamic and kinetic quantities from multi-ensemble data
+  - Added estimators (WHAM, DTRAM) for multi-ensemble MD data.
+  - Added API functions to handle umbrella sampling and multi-temperature MD data.
+
+- msm/hmsm:
+  - Maximum likelihood estimation can deal with disconnected hidden transition
+    matrices. The desired connectivity is selected only at the end of the
+    estimation (optionally), or a posteriori.
+  - Much more robust estimation of initial Hidden Markov model. 
+  - Added option stationary that controls whether input data is assumed to be
+    sampled from the stationary distribution (and then the initial HMM
+    distribution is taken as the stationary distribution of the hidden
+    transition matrix), or not (then it's independently estimated using the EM
+    standard approach). Default: stationary=False. This changes the default
+    behaviour w.r.t. the previous version, but in a good way: Now the
+    maximum-likelihood estimator always converges. Unfortunately that also
+    means it is much slower compared to previous versions which stopped
+    without proper convergence.
+  - Hidden connectivity: By default delivers a HMM with the full hidden
+    transition matrix, that may be disconnected. This changes the default
+    behaviour w.r.t. the previous version. Set connectivity='largest' or
+    connectivity='populous' to focus the model on the largest or most populous
+    connected set of hidden states
+  - Provides a way to measure connectivity in HMM transition matrices: A
+    transition only counts as real if the hidden count matrix element is
+    larger than mincount_connectivity (by default 1 over the number of hidden
+    states). This seems to be a much more robust metric of real connectivity
+    than MSM count matrix connectivity.
+  - Observable set: If HMMs are used for MSM coarse-graining, the MSM active
+    set will become the observed set (as before). If a HMM is estimated
+    directly, by default will focus on the nonempty set (states with nonzero
+    counts in the lagged trajectories). Optionally can also use the full set
+    labels - in this case no indexing or relabelling with respect to the
+    original clustered data is needed.
+  - Hidden Markov Model provides estimator results (Viterbi hidden
+    trajectories, convergence information, hidden count matrix). Fixes #528
+  - BayesianHMSM object now accepts Dirichlet priors for transition matrix and
+    initial distribution. Fixes #640 (general, not only for HMMs) by allowing
+    estimates at individual lag times to fail in an ImpliedTimescales run
+    (reported as Warnings).
+
+- coordinates:
+  - Added trajectory info cache
+  - Random access strategies supported (eg. via slices).
+  - FeatureReader supports random access for XTC and TRR (in conjunction with mdtraj-1.6).
+  - Re-design API to support scikit-learn interface (fit, transform).
+  - Pipeline elements (former Transformer class) now uses iterator pattern to
+    obtain data and therefore supports now pipeline trees.
+  - pipeline elements support writing their output to csv files.
+  - TICA/PCA uses covartools to estimate covariance matrices.
+    - This now saves one pass over the data set.
+    - Supports sparsification data on the fly.
+
+
+**Fixes**:
+- HMM Chapman Kolmogorov test for large datasets #636.
+- Progressbars now auto-hide, when work is done.
+
+
+2.0.4 (9-2-2016)
+----------------
+Patch release to address DeprecationWarning flood in conjunction with Jupyther notebook.
+
 2.0.3 (29-1-2016)
 -----------------
 
