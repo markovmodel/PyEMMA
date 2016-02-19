@@ -130,18 +130,17 @@ class TestTrajectoryInfoCache(unittest.TestCase):
 
     def test_csvreader(self):
         data = np.random.random((101, 3))
-        with tempfile.NamedTemporaryFile(mode='wb', delete=False) as fh:
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as fh:
             np.savetxt(fh, data)
             # calc offsets
-            fh.close()
-            offsets = [0]
-            with open(fh.name, PyCSVReader.DEFAULT_OPEN_MODE) as new_fh:
-                while new_fh.readline():
-                    offsets.append(new_fh.tell())
-            reader = PyCSVReader(fh.name)
-            assert reader.dimension() == 3
-            trajinfo = reader._get_traj_info(fh.name)
-            np.testing.assert_equal(offsets, trajinfo.offsets)
+        offsets = [0]
+        with open(fh.name, PyCSVReader.DEFAULT_OPEN_MODE) as new_fh:
+            while new_fh.readline():
+                offsets.append(new_fh.tell())
+        reader = PyCSVReader(fh.name)
+        assert reader.dimension() == 3
+        trajinfo = reader._get_traj_info(fh.name)
+        np.testing.assert_equal(offsets, trajinfo.offsets)
 
     def test_fragmented_reader(self):
         top_file = pkg_resources.resource_filename(__name__, 'data/test.pdb')
