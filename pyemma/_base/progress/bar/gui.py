@@ -26,6 +26,7 @@ import sys
 import warnings
 
 from pyemma import config
+from pyemma._base.progress.bar import ProgressBar
 
 
 __all__ = ('is_interactive_session', 'show_progressbar')
@@ -130,7 +131,7 @@ def show_progressbar(bar, show_eta=True):
         return
 
     # note: this check ensures we have IPython.display and so on.
-    if ipython_notebook_session:
+    if ipython_notebook_session and isinstance(bar, ProgressBar):
         with warnings.catch_warnings():
             warnings.simplefilter('ignore', DeprecationWarning)
             # create IPython widgets on first call

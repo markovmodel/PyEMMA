@@ -70,6 +70,7 @@ class ProgressReporter(object):
                 pass
             pg = dummy()
             pg.__str__ = lambda: description
+            pg.description = ''
             pg.numerator = 0
             pg.denominator = 1
         else:
