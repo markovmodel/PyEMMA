@@ -7,10 +7,12 @@ Changelog
 **New features**:
 
 - thermo package: calculate thermodynamic and kinetic quantities from multi-ensemble data
+
   - Added estimators (WHAM, DTRAM) for multi-ensemble MD data.
   - Added API functions to handle umbrella sampling and multi-temperature MD data.
 
 - msm/hmsm:
+
   - Maximum likelihood estimation can deal with disconnected hidden transition
     matrices. The desired connectivity is selected only at the end of the
     estimation (optionally), or a posteriori.
@@ -48,6 +50,7 @@ Changelog
     (reported as Warnings).
 
 - coordinates:
+
   - Added trajectory info cache
   - Random access strategies supported (eg. via slices).
   - FeatureReader supports random access for XTC and TRR (in conjunction with mdtraj-1.6).
@@ -61,6 +64,7 @@ Changelog
 
 
 **Fixes**:
+
 - HMM Chapman Kolmogorov test for large datasets #636.
 - Progressbars now auto-hide, when work is done.
 
