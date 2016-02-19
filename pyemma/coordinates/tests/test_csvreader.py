@@ -228,7 +228,7 @@ class TestCSVReader(unittest.TestCase):
 
     def test_compare_readline(self):
         data = np.arange(99*3).reshape(-1, 3)
-        with tempfile.NamedTemporaryFile(mode='w', delete=False) as fh:
+        with tempfile.NamedTemporaryFile(mode='wb', delete=False) as fh:
             np.savetxt(fh, data)
             # calc offsets
         reader = CSVReader(fh.name)
