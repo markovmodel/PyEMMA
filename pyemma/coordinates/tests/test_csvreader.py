@@ -225,5 +225,27 @@ class TestCSVReader(unittest.TestCase):
                 np.testing.assert_almost_equal(chunks_lag, self.data[t::s],
                                                err_msg="output is not equal for"
                                                        " lag %i and stride %i" % (t, s))
+
+    def test_compare_readline(self):
+        data = np.arange(99*3).reshape(-1, 3)
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as fh:
+            np.savetxt(fh, data)
+            # calc offsets
+        reader = CSVReader(fh.name)
+        assert reader.dimension() == 3
+        trajinfo = reader._get_traj_info(fh.name)
+        offset = [0]
+        with open(fh.name, CSVReader.DEFAULT_OPEN_MODE) as fh2:
+            while fh2.readline():
+                offset.append(fh2.tell())
+            fh2.seek(0)
+            lines = []
+            for ii, off in enumerate(trajinfo.offsets):
+                fh2.seek(off)
+                line = fh2.readline()
+                fh2.seek(offset[ii])
+                line2 = fh2.readline()
+                self.assertEqual(line, line2, "differs at offset %i (%s != %s)" % (ii, off, offset[ii]))
+
 if __name__ == '__main__':
     unittest.main()
