@@ -34,6 +34,7 @@ import tempfile
 from six.moves import range
 import pkg_resources
 from pyemma.util.files import TemporaryDirectory
+import pyemma.coordinates as coor
 
 class TestPipeline(unittest.TestCase):
     @classmethod
@@ -78,6 +79,17 @@ class TestPipeline(unittest.TestCase):
         self.assertFalse(p._is_estimated(), "If run=false, the pipeline should not be parametrized.")
         p.parametrize()
         self.assertTrue(p._is_estimated(), "If parametrized was called, the pipeline should be parametrized.")
+
+    def test_notify_changes_mixin(self):
+        X_t = np.random.random((30,30))
+        source = coor.source(np.array(X_t))
+
+        t1 = coor.tica(source)
+        from pyemma.coordinates.transform import TICA
+        t2 = TICA(lag=10)
+        assert len(t1._stream_children) == 0
+        t2.data_producer = t1
+        assert t1._stream_children[0] == t2
 
     def test_np_reader_in_pipeline(self):
         with TemporaryDirectory() as td:
