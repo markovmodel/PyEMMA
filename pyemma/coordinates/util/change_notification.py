@@ -38,8 +38,12 @@ def inform_children_upon_change(f):
 
 class NotifyOnChangesMixIn(object):
     #### interface to handle events
-    def __init__(self):
-        self._stream_children = []
+
+    @property
+    def _stream_children(self):
+        if not hasattr(self, "_stream_children_list"):
+            self._stream_children_list = []
+        return self._stream_children_list
 
     def _stream_register_child(self, data_producer):
         """ should be called upon setting of data_producer """
