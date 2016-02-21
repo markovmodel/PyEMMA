@@ -363,7 +363,7 @@ class Estimator(_BaseEstimator, Loggable):
             The estimated model.
 
         """
-        self.estimate(X)
+        return self.estimate(X)
 
     @property
     def model(self):
