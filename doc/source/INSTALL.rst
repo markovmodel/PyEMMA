@@ -21,10 +21,15 @@ but play at your own risk.
 If you already have a conda installation, directly go to step 3:
 
 1. Download and install miniconda for Python 2.7, 32 or 64 bit depending on your system:
-
    http://conda.pydata.org/miniconda.html
 
-   select **yes** to add conda to the **PATH** variable.
+
+   For Windows users, who do not know what to choose for 32 or 64 bit, it is strongly
+   recommended to read the second question of this FAQ first:
+   http://windows.microsoft.com/en-us/windows/32-bit-and-64-bit-windows
+
+
+   Run the installer and select **yes** to add conda to the **PATH** variable.
 
 2. If you have installed from a Linux shell, either open a new shell to have an updated PATH,
    or update your PATH variable by ``source ~/.bashrc`` (or .tcsh, .csh - whichever shell you are using).
@@ -206,4 +211,18 @@ Frequently Asked Questions (FAQ)
 
         conda config --add channels omnia
 
- 
+* Q: I'm using Windows, have a fresh Anaconda installation and I get strange errors
+  during "import xyz".
+
+  A: Possible answer 1: you have probably mixed 32 and 64 bit. Using 32 bit Python
+     on 64 bit Windows is fine, but not the other way around. 
+     Possible answer 2: Do you have Python2 and Python3 on the same computer?
+     To figure that you, open a cmd prompt and type in::
+
+     where python
+     "X:\somepath\miniconda2\Scripts\python.exe"
+    
+     This should only display one line like. If it is displaying more than one .exe,
+     you either know what you are doing or you should remove one installation (eg. decide,
+     which branch of Python [2 or 3] to keep). 
+
