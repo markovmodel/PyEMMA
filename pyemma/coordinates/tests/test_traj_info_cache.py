@@ -201,5 +201,16 @@ class TestTrajectoryInfoCache(unittest.TestCase):
             assert info.ndim == 1
             assert info.offsets == []
 
+    def test_corrupted_db(self):
+        with NamedTemporaryFile(mode='w', suffix='.dat', delete=False) as f:
+            f.write("makes no sense!!!!")
+            f.close()
+        name = f.name
+        db = TrajectoryInfoCache(name)
+
+        # ensure we can perform lookups on the broken db without exception.
+        r = api.source(xtcfiles[0], top=pdbfile)
+        db[xtcfiles[0], r]
+
 if __name__ == "__main__":
     unittest.main()
