@@ -202,7 +202,7 @@ class TestTrajectoryInfoCache(unittest.TestCase):
             assert info.offsets == []
 
     def test_corrupted_db(self):
-        with NamedTemporaryFile(suffix='.dat', delete=False) as f:
+        with NamedTemporaryFile(mode='w', suffix='.dat', delete=False) as f:
             f.write("makes no sense!!!!")
             f.close()
         name = f.name
