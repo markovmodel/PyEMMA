@@ -1020,7 +1020,7 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, stride=1,
         dimensions (see epsilon) will be used, unless set by dim. Setting
         var_cutoff smaller than 1.0 is exclusive with dim
 
-    kinetic_map : bool, optional, default False
+    kinetic_map : bool, optional, default True
         Eigenvectors will be scaled by eigenvalues. As a result, Euclidean
         distances in the transformed data approximate kinetic distances [4]_.
         This is a good choice when the data is further processed by clustering.
