@@ -78,24 +78,18 @@ class TestProgress(unittest.TestCase):
         self.has_been_called = 0
 
         def call_back(stage, progressbar, *args, **kw):
-            global has_been_called
             self.has_been_called += 1
             assert isinstance(stage, int)
             assert isinstance(progressbar, ProgressBar)
 
-        class Worker(ProgressReporter):
-
-            def work(self, count):
-                self._progress_register(
-                    count, description="hard working", stage=0)
-                for _ in range(count):
-                    self._progress_update(1, stage=0)
-
-        worker = Worker()
+        amount_of_work = 100
+        worker = ProgressReporter()
+        worker._progress_register(
+            amount_of_work, description="hard working", stage=0)
         worker.register_progress_callback(call_back, stage=0)
-        expected_calls = 100
-        worker.work(count=expected_calls)
-        self.assertEqual(self.has_been_called, expected_calls)
+        for _ in range(amount_of_work):
+            worker._progress_update(1, stage=0)
+        self.assertEqual(self.has_been_called, amount_of_work)
 
 if __name__ == "__main__":
     unittest.main()
