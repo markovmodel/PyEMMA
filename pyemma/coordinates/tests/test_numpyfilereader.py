@@ -44,7 +44,7 @@ class TestNumPyFileReader(unittest.TestCase):
         cls.logger = getLogger('pyemma.'+cls.__class__.__name__)
 
         d = np.arange(3 * 100).reshape((100, 3))
-        d2 = np.arange(300, 900).reshape((200,3))
+        cls.d2 = np.arange(300, 900).reshape((200,3))
         d_1d = np.random.random(100)
 
         cls.dir = tempfile.mkdtemp(prefix='pyemma_npyreader')
@@ -57,7 +57,7 @@ class TestNumPyFileReader(unittest.TestCase):
 
         # 2d
         np.save(cls.f1, d)
-        np.save(cls.f4, d2)
+        np.save(cls.f4, cls.d2)
 
         # 1d
         np.save(cls.f2, d_1d)
@@ -189,6 +189,16 @@ class TestNumPyFileReader(unittest.TestCase):
                     np.testing.assert_equal(stack, d[lag::stride],
                                             "not equal for stride=%i"
                                             " and lag=%i" % (stride, lag))
+
+    def test_usecols(self):
+        reader = NumPyFileReader(self.f4)
+        cols=(0, 2)
+        it = reader.iterator(chunk=0, return_trajindex=False, cols=cols)
+        with it:
+            for x in it:
+                np.testing.assert_equal(x, self.d2[:, cols])
+        
+
 
 if __name__ == "__main__":
     unittest.main()

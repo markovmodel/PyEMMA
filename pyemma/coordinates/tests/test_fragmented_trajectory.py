@@ -133,5 +133,6 @@ class TestFragmentedTrajectory(unittest.TestCase):
         with self.assertRaises(ValueError):
             reader._index_to_reader_index(200, 0)
 
-    def test_simple(self):
-        pass
+    def test_cols(self):
+        reader = FragmentedTrajectoryReader([self.d, self.d])
+        assert len(reader.filenames) == 2, len(reader.filenames)

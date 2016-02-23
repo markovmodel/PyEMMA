@@ -246,6 +246,15 @@ class TestFeatureReader(unittest.TestCase):
                 np.testing.assert_almost_equal(
                         chunks[1], self.xyz2.reshape(-1, 9)[lag::stride], err_msg=err_msg % (stride, lag))
 
+    def test_cols(self):
+        reader = api.source(self.trajfile, top=self.topfile)
+        cols=(0, 3)
+        ref =mdtraj.load(self.trajfile, top=self.topfile, atom_indices=cols)
+
+        it = reader.iterator(chunk=0, return_trajindex=False, cols=cols)
+        with it:
+            for x in it:
+                np.testing.assert_equal(x, ref.xyz)
 
 if __name__ == "__main__":
     unittest.main()
