@@ -26,7 +26,6 @@ from pyemma._base.progress.bar import ProgressBar as _ProgressBar
 from pyemma._base.progress.bar import show_progressbar as _show_progressbar
 from pyemma._base.progress.bar.gui import hide_progressbar as _hide_progressbar
 from pyemma.util.types import is_int
-from pyemma.util.reflection import has_private_attr
 
 
 class ProgressReporter(object):
@@ -51,14 +50,14 @@ class ProgressReporter(object):
     @property
     def _prog_rep_progressbars(self):
         # stores progressbar representation per stage
-        if not has_private_attr(self, '__prog_rep_progressbars'):
+        if not hasattr(self, '_ProgressReporter__prog_rep_progressbars'):
             self.__prog_rep_progressbars = {}
         return self.__prog_rep_progressbars
 
     @property
     def _prog_rep_callbacks(self):
         # store callback by stage
-        if not has_private_attr(self, '__callbacks'):
+        if not hasattr(self, '_ProgressReporter__callbacks'):
             self.__callbacks = {}
         return self.__callbacks
 
