@@ -134,5 +134,19 @@ class TestFragmentedTrajectory(unittest.TestCase):
             reader._index_to_reader_index(200, 0)
 
     def test_cols(self):
-        reader = FragmentedTrajectoryReader([self.d, self.d])
-        assert len(reader.filenames) == 2, len(reader.filenames)
+        dim = 5
+        arr = np.arange(60).reshape(-1, dim)
+        data = [(arr, arr), arr, (arr, arr, arr)]
+        reader = FragmentedTrajectoryReader(data)
+        cols = (0, 3)
+        for itraj, x in reader.iterator(chunk=0, return_trajindex=True, cols=cols):
+            if isinstance(data[itraj], tuple):
+                syn_traj = np.concatenate(data[itraj])
+            else:
+                syn_traj = data[itraj]
+            np.testing.assert_equal(x, syn_traj[:, cols])
+
+    def test_raise_different_dims(self):
+        data = [self.d, np.array([[1,2,3], [4,5,6]])]
+        with self.assertRaises(ValueError):
+            FragmentedTrajectoryReader(data)

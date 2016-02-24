@@ -14,8 +14,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-
 '''
 Created on 23.01.2015
 
@@ -24,19 +22,21 @@ Created on 23.01.2015
 
 from __future__ import absolute_import
 
+import glob
 import tempfile
 import unittest
-
-import mdtraj
-import numpy as np
-import pkg_resources
-from six.moves import range
 
 from pyemma.coordinates import api
 from pyemma.coordinates.api import discretizer, tica, source
 from pyemma.coordinates.data.data_in_memory import DataInMemoryIterator
 from pyemma.coordinates.data.feature_reader import FeatureReader
 from pyemma.util.log import getLogger
+import mdtraj
+import pkg_resources
+
+from six.moves import range
+import numpy as np
+
 
 log = getLogger('pyemma.' + 'TestFeatureReader')
 
@@ -58,7 +58,7 @@ def create_traj(top, format='.xtc', dir=None, length=1666):
 
 def create_loader_case(traj_file, top):
     def test_format_loading_via_feature_reader(self):
-        reader = source(traj_file, top=top, dir=tmpdir)
+        reader = source(traj_file, top=top, dir=self.tmpdir)
         reader.get_output()
 
     return test_format_loading_via_feature_reader
@@ -176,6 +176,39 @@ class TestFeatureReader(unittest.TestCase):
         self.assertEqual(frames, reader.trajectory_lengths()[0] - lag)
         self.assertTrue(np.allclose(data, self.xyz[:len(self.xyz) - lag]))
 
+    def test_cols(self):
+        reader = api.source(self.trajfile, top=self.topfile)
+        # select first and second atom?
+        cols = np.array((0, 2))
+        ref = mdtraj.load(self.trajfile, top=self.topfile).xyz
+        s = ref.shape
+        new_shape = (s[0], s[1] * s[2])
+        ref = ref.reshape(new_shape)
+        ref = ref[:, cols]
+
+        it = reader.iterator(chunk=0, return_trajindex=False, cols=cols)
+        with it:
+            for x in it:
+                np.testing.assert_equal(x, ref)
+
+    def test_cols_with_features(self):
+        trajs = glob.glob(pkg_resources.resource_filename('pyemma.coordinates.tests', 'data/bpti_mini.xtc'))
+        top = pkg_resources.resource_filename('pyemma.coordinates.tests', 'data/bpti_ca.pdb')
+        reader = api.source(trajs, top=top)
+        feat = reader.featurizer
+        inds = feat.pairs(feat.select('name CA'))
+        reader.featurizer.add_distances(inds)
+        # select first and second atom?
+        cols = np.array((0, 2))
+        ref = mdtraj.load(trajs, top=top)
+        ref = mdtraj.compute_distances(ref, inds)
+        ref = ref[:, cols]
+
+        it = reader.iterator(chunk=0, return_trajindex=False, cols=cols)
+        with it:
+            for x in it:
+                np.testing.assert_equal(x, ref)
+
     def test_with_pipeline_time_lagged(self):
         reader = api.source(self.trajfile, top=self.topfile)
         assert isinstance(reader, FeatureReader)
@@ -240,21 +273,11 @@ class TestFeatureReader(unittest.TestCase):
                     chunks[itraj].append(Y)
                 chunks[0] = np.vstack(chunks[0])
                 np.testing.assert_almost_equal(
-                        chunks[0], self.xyz.reshape(-1, 9)[lag::stride], err_msg=err_msg % (stride, lag))
+                    chunks[0], self.xyz.reshape(-1, 9)[lag::stride], err_msg=err_msg % (stride, lag))
 
                 chunks[1] = np.vstack(chunks[1])
                 np.testing.assert_almost_equal(
-                        chunks[1], self.xyz2.reshape(-1, 9)[lag::stride], err_msg=err_msg % (stride, lag))
-
-    def test_cols(self):
-        reader = api.source(self.trajfile, top=self.topfile)
-        cols=(0, 3)
-        ref =mdtraj.load(self.trajfile, top=self.topfile, atom_indices=cols)
-
-        it = reader.iterator(chunk=0, return_trajindex=False, cols=cols)
-        with it:
-            for x in it:
-                np.testing.assert_equal(x, ref.xyz)
+                    chunks[1], self.xyz2.reshape(-1, 9)[lag::stride], err_msg=err_msg % (stride, lag))
 
 if __name__ == "__main__":
     unittest.main()

@@ -171,9 +171,9 @@ class StreamingTransformer(Transformer, DataSource, NotifyOnChangesMixIn):
         super(StreamingTransformer, self)._clear_in_memory()
         self._set_random_access_strategies()
 
-    def _create_iterator(self, skip=0, chunk=0, stride=1, return_trajindex=True):
+    def _create_iterator(self, skip=0, chunk=0, stride=1, return_trajindex=True, cols=None):
         return StreamingTransformerIterator(self, skip=skip, chunk=chunk, stride=stride,
-                                            return_trajindex=return_trajindex)
+                                            return_trajindex=return_trajindex, cols=cols)
 
     def estimate(self, X, **kwargs):
         # TODO: X is either Iterable of an array
@@ -293,11 +293,11 @@ class StreamingTransformer(Transformer, DataSource, NotifyOnChangesMixIn):
 
 class StreamingTransformerIterator(DataSourceIterator):
 
-    def __init__(self, data_source, skip=0, chunk=0, stride=1, return_trajindex=False):
+    def __init__(self, data_source, skip=0, chunk=0, stride=1, return_trajindex=False, cols=None):
         super(StreamingTransformerIterator, self).__init__(
             data_source, return_trajindex=return_trajindex)
         self._it = self._data_source.data_producer._create_iterator(
-            skip=skip, chunk=chunk, stride=stride, return_trajindex=return_trajindex
+            skip=skip, chunk=chunk, stride=stride, return_trajindex=return_trajindex, cols=cols
         )
         self.state = self._it.state
 
