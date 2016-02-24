@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as _np
+from pyemma.util import types
 
 __all__ = [
     'get_averaged_bias_matrix',
@@ -63,7 +64,7 @@ def _ensure_umbrella_center(candidate, dimension):
         assert candidate.ndim == 1
         assert candidate.shape[0] == dimension
         return candidate.astype(_np.float64)
-    elif isinstance(candidate, (int, long, float)):
+    elif types.is_int(candidate) or types.is_float(candidate):
         return candidate * _np.ones(shape=(dimension,), dtype=_np.float64)
     else:
         raise TypeError("unsupported type")
