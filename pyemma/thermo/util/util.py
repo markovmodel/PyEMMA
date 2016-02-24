@@ -17,6 +17,10 @@
 
 import numpy as _np
 
+import sys
+if sys.version_info.major == 3:
+    long = int
+
 __all__ = [
     'get_averaged_bias_matrix',
     'get_umbrella_sampling_data',
