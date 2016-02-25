@@ -140,10 +140,14 @@ def load(trajfiles, features=None, top=None, stride=1, chunk_size=100, **kw):
 
     Parameters
     ----------
-    trajfiles : str or list of str
+    trajfiles : str, list of str or nested list (one level) of str
         A filename or a list of filenames to trajectory files that can be
         processed by pyemma. Both molecular dynamics trajectory files and raw
         data files (tabulated ASCII or binary) can be loaded.
+
+        If a nested list of filenames is given, eg.:
+            [['traj1_0.xtc', 'traj1_1.xtc'], 'traj2_full.xtc'], ['traj3_0.xtc, ...]]
+        the grouped fragments will be treated as a joint trajectory.
 
         When molecular dynamics trajectory files are loaded either a featurizer
         must be specified (for reading specific quantities such as distances or
@@ -241,8 +245,8 @@ def source(inp, features=None, top=None, chunk_size=None, **kw):
 
     Parameters
     ----------
-    inp : str (file name) or ndarray or list of strings (file names) or list
-        of ndarrays The inp file names or input data. Can be given in any of
+    inp : str (file name) or ndarray or list of strings (file names) or list of ndarrays or nested list of str|ndarray (1 level)
+        The inp file names or input data. Can be given in any of
         these ways:
 
         1. File name of a single trajectory. It can have any of the molecular
@@ -264,6 +268,9 @@ def source(inp, features=None, top=None, chunk_size=None, **kw):
            arrays are not being loaded completely, but mapped into memory
            (read-only).
         8. List of tabulated ASCII files of shape (T, N).
+        9. Nested lists (1 level) like), eg.:
+                [['traj1_0.xtc', 'traj1_1.xtc'], 'traj2_full.xtc'], ['traj3_0.xtc, ...]]
+           the grouped fragments will be treated as a joint trajectory.
 
     features : MDFeaturizer, optional, default = None
         a featurizer object specifying how molecular dynamics files should be
@@ -283,7 +290,7 @@ def source(inp, features=None, top=None, chunk_size=None, **kw):
 
     Returns
     -------
-    reader : :class:`ReaderInterface <pyemma.coordinates.data.ReaderInterface>` object
+    reader : :class:`DataSource <pyemma.coordinates.data._base.datasource.DataSource>` object
 
     See also
     --------
