@@ -10,6 +10,11 @@
     #define NAN (INFINITY-INFINITY)
 #endif
 
+#if _MSC_VER && !__INTEL_COMPILER
+    #define isinf(x) (!_finite(x))
+    #define isnan(x) _isnan(x)
+#endif
+
 #define LAGRANGIAN_MULT_LOWER_BOUND 1.E-100
 
 /* direct space implementation */
