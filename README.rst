@@ -40,7 +40,7 @@ If you use PyEMMA in scientific work, please cite:
     M. K. Scherer, B. Trendelkamp-Schroer, F. Paul, G. Pérez-Hernández,
     M. Hoffmann, N. Plattner, C. Wehmeyer, J.-H. Prinz and F. Noé:
     PyEMMA 2: A Software Package for Estimation, Validation, and Analysis of Markov Models,
-	J. Chem. Theory Comput. 11, 5525-5542 (2015)
+    J. Chem. Theory Comput. 11, 5525-5542 (2015)
 
 
 Installation
