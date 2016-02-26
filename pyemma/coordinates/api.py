@@ -27,7 +27,7 @@ from pyemma.util import types as _types
 from pyemma.coordinates.pipelines import Discretizer as _Discretizer
 from pyemma.coordinates.pipelines import Pipeline as _Pipeline
 # io
-from pyemma.coordinates.data.featurizer import MDFeaturizer as _MDFeaturizer
+from pyemma.coordinates.data.featurization.featurizer import MDFeaturizer as _MDFeaturizer
 from pyemma.coordinates.data.feature_reader import FeatureReader as _FeatureReader
 from pyemma.coordinates.data.data_in_memory import DataInMemory as _DataInMemory
 from pyemma.coordinates.data.util.reader_utils import create_file_reader as _create_file_reader, \
@@ -100,7 +100,7 @@ def featurizer(topfile):
 
     Returns
     -------
-    feat : :class:`Featurizer <pyemma.coordinates.data.featurizer.MDFeaturizer>`
+    feat : :class:`Featurizer <pyemma.coordinates.data.featurization.featurizer.MDFeaturizer>`
 
     Examples
     --------
@@ -114,18 +114,18 @@ def featurizer(topfile):
     >>> reader = pyemma.coordinates.source(["my_traj01.xtc", "my_traj02.xtc"], features=feat) # doctest: +SKIP
 
 
-    .. autoclass:: pyemma.coordinates.data.featurizer.MDFeaturizer
+    .. autoclass:: pyemma.coordinates.data.featurization.featurizer.MDFeaturizer
         :members:
         :undoc-members:
 
         .. rubric:: Methods
 
-        .. autoautosummary:: pyemma.coordinates.data.featurizer.MDFeaturizer
+        .. autoautosummary:: pyemma.coordinates.data.featurization.featurizer.MDFeaturizer
            :methods:
 
         .. rubric:: Attributes
 
-        .. autoautosummary:: pyemma.coordinates.data.featurizer.MDFeaturizer
+        .. autoautosummary:: pyemma.coordinates.data.featurization.featurizer.MDFeaturizer
             :attributes:
     """
     return _MDFeaturizer(topfile)
