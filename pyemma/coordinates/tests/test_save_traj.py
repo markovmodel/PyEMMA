@@ -40,6 +40,7 @@ from pyemma.coordinates.data.util.reader_utils import single_traj_from_n_files, 
 from pyemma.coordinates.api import save_traj
 from six.moves import range
 
+
 class TestSaveTraj(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -154,7 +155,7 @@ class TestSaveTraj(unittest.TestCase):
             sets[1][:, 1] = np.random.randint(0, high=30 / stride, size=np.shape(sets[1])[0])
 
             traj = save_traj(self.reader, sets, None,
-                            stride=stride, verbose = False)
+                             stride=stride, verbose=False)
 
             # Also the reference has to be re-drawn using the stride. For this, we use the re-scale the strided
             # frame-indexes to the unstrided value
@@ -165,6 +166,18 @@ class TestSaveTraj(unittest.TestCase):
             # Check for diffs
             (found_diff, errmsg) = compare_coords_md_trajectory_objects(traj, traj_ref, atom=0)
             self.assertFalse(found_diff, errmsg)
+
+    def test_with_fragmented_reader(self):
+        # intenionally group bpti dataset to a fake fragmented traj
+        frag_traj = [[self.trajfiles[0], self.trajfiles[1]], self.trajfiles[2]]
+        reader = coor.source(frag_traj, top=self.pdbfile)
+
+        traj = save_traj(reader, self.sets, None)
+        traj_ref = save_traj_w_md_load_frame(self.reader, self.sets)
+
+        # Check for diffs
+        (found_diff, errmsg) = compare_coords_md_trajectory_objects(traj, traj_ref, atom=0)
+        self.assertFalse(found_diff, errmsg)
 
 if __name__ == "__main__":
     unittest.main()

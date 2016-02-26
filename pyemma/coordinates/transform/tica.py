@@ -139,11 +139,10 @@ class TICA(StreamingTransformer):
 
     @doc_inherit
     def describe(self):
-        dim = self.dim
         try:
             dim = self.dimension()
-        except:
-            pass
+        except AttributeError:
+            dim = self.dim
         return "[TICA, lag = %i; max. output dim. = %i]" % (self._lag, dim)
 
     def dimension(self):
