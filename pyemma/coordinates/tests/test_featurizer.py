@@ -27,7 +27,8 @@ import mdtraj
 from itertools import combinations, product
 
 # from pyemma.coordinates.data import featurizer as ft
-from pyemma.coordinates.data.featurizer import MDFeaturizer, CustomFeature, _parse_pairwise_input
+from pyemma.coordinates.data.featurization.featurizer import MDFeaturizer, CustomFeature
+from pyemma.coordinates.data.featurization.util import _parse_pairwise_input
 from six.moves import range
 import pkg_resources
 
