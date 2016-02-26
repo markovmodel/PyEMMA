@@ -137,9 +137,10 @@ class _FragmentedTrajectoryIterator(object):
 
 class FragmentIterator(DataSourceIterator):
 
-    def __init__(self, data_source, skip=0, chunk=0, stride=1, return_trajindex=False):
+    def __init__(self, data_source, skip=0, chunk=0, stride=1, return_trajindex=False, cols=None):
         super(FragmentIterator, self).__init__(data_source, skip=skip, chunk=chunk,
-                                               stride=stride, return_trajindex=return_trajindex)
+                                               stride=stride, return_trajindex=return_trajindex,
+                                               cols=cols)
         self._it = None
         self._itraj = 0
 
@@ -174,9 +175,8 @@ class FragmentedTrajectoryReader(DataSource):
     """
     Parameters
     ----------
-    trajectories: list or tuple
-        ....
-
+    trajectories: nested list or nested tuple, 1 level depth
+    
     topologyfile, str, default None
     
     chunksize: int, default 100
@@ -197,6 +197,7 @@ class FragmentedTrajectoryReader(DataSource):
         assert len(trajectories) > 0, "no input trajectories provided"
         # call super
         super(FragmentedTrajectoryReader, self).__init__(chunksize=chunksize)
+        self._is_reader = True
         # number of trajectories
         self._ntraj = len(trajectories)
         # store readers
@@ -204,6 +205,18 @@ class FragmentedTrajectoryReader(DataSource):
 
         self._readers = [[source(input_item, features=featurizer, top=topologyfile, chunk_size=chunksize)
                           for input_item in trajectories[itraj]] for itraj in range(0, self._ntraj)]
+
+        # check all readers have same dimension
+        if not len(set(itraj_r.ndim for r in self._readers for itraj_r in r)) == 1:
+            # lookup the evil reader:
+            last_dim = -1
+            for r in self._readers:
+                for itraj_r in r:
+                    if last_dim == -1:
+                        last_dim = itraj_r.ndim
+                    if itraj_r.ndim != last_dim:
+                        raise ValueError("%s has different dimension (%i) than expected (%i)"
+                                         % (itraj_r.describe(), itraj_r.ndim, last_dim))
 
         self._reader_by_filename = {}
         for r in self._readers:
@@ -223,9 +236,10 @@ class FragmentedTrajectoryReader(DataSource):
         self._cumulative_lengths = [np.cumsum(self._reader_lengths[itraj]) for itraj in range(0, self._ntraj)]
         # store trajectory files
         self._trajectories = trajectories
+        self._filenames = trajectories
 
-    def _create_iterator(self, skip=0, chunk=0, stride=1, return_trajindex=True):
-        return FragmentIterator(self, skip, chunk, stride, return_trajindex)
+    def _create_iterator(self, skip=0, chunk=0, stride=1, return_trajindex=True, cols=None):
+        return FragmentIterator(self, skip, chunk, stride, return_trajindex, cols=cols)
 
     def describe(self):
         return "[FragmentedTrajectoryReader files=%s]" % self._trajectories
@@ -249,6 +263,5 @@ class FragmentedTrajectoryReader(DataSource):
 
     def _get_traj_info(self, filename):
         # get info for a fragment from specific reader
-        #reader = filter( lambda x: filename in x,r for itraj in range(0, self._ntraj))
         reader = self._reader_by_filename[filename]
         return reader._get_traj_info(filename)

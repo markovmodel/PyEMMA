@@ -55,6 +55,9 @@ def __ipy_widget_version():
 def __attached_to_ipy_notebook():
     # first determine which IPython version we have (eg. ipywidgets or ipy3 deprecated,
     # then try to instanciate a widget to determine if we're interactive (raises, if not).
+    import sys
+    if 'IPython' not in sys.modules:
+        return
     ipy_widget_version = __ipy_widget_version()
 
     if ipy_widget_version is None:

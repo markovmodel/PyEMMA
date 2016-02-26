@@ -248,6 +248,14 @@ class TestCSVReader(unittest.TestCase):
                     self.assertEqual(line, line2, "differs at offset %i (%s != %s)" % (ii, off, offset[ii]))
         finally:
             os.unlink(fn)
+            
+            
+    def test_use_cols(self):
+        reader = CSVReader(self.filename1)
+        cols = (0, 2)
+        with reader.iterator(chunk=0, cols=cols, return_trajindex=False) as it:
+            for x in it:
+                np.testing.assert_equal(x, self.data[:, cols])
 
 if __name__ == '__main__':
     unittest.main()

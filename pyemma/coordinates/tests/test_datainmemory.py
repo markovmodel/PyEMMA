@@ -260,6 +260,11 @@ class TestDataInMemory(unittest.TestCase):
                 chunks = np.vstack(chunks)
                 np.testing.assert_equal(chunks, data[lag::stride], "failed for stride=%s, lag=%s" % (stride, lag))
 
+    def test_cols(self):
+        reader = DataInMemory(self.d)
+        cols=(2, 0)
+        for x in reader.iterator(chunk=0, return_trajindex=False, cols=cols):
+            np.testing.assert_equal(x, self.d[:, cols])
 
 if __name__ == "__main__":
     unittest.main()
