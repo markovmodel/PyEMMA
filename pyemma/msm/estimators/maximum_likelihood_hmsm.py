@@ -549,7 +549,7 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
         for dtraj in self.discrete_trajectories_obs:
             w = statdist[dtraj] / hist[dtraj]
             W.append(w)
-            wtot += _np.sum(W)
+            wtot += _np.sum([iW.sum() for iW in W])
         # normalize
         for w in W:
             w /= wtot
