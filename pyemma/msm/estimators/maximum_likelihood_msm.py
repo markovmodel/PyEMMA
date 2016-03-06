@@ -531,7 +531,7 @@ class MaximumLikelihoodMSM(_Estimator, _MSM):
         for dtraj in self.discrete_trajectories_full:
             w = statdist_full[dtraj] / hist[dtraj]
             W.append(w)
-            wtot += _np.sum(W)
+            wtot += _np.sum(w)
         # normalize
         for w in W:
             w /= wtot
