@@ -173,5 +173,17 @@ class TestPCAExtensive(unittest.TestCase):
 
         np.testing.assert_allclose(pca_spec_mean.cov, pca_calc_mean.cov)
 
+    def test_partial_fit(self):
+        data = [np.random.random((100, 3)), np.random.random((100, 3))]
+        pca_part = pca()
+        pca_part.partial_fit(data[0])
+        pca_part.partial_fit(data[1])
+
+        ref = pca(data)
+        np.testing.assert_allclose(pca_part.mean, ref.mean)
+
+        np.testing.assert_allclose(pca_part.eigenvalues, ref.eigenvalues)
+        np.testing.assert_allclose(pca_part.eigenvectors, ref.eigenvectors)
+
 if __name__ == "__main__":
     unittest.main()
