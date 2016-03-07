@@ -30,10 +30,7 @@ from pyemma.coordinates.pipelines import Pipeline as _Pipeline
 from pyemma.coordinates.data.featurization.featurizer import MDFeaturizer as _MDFeaturizer
 from pyemma.coordinates.data.feature_reader import FeatureReader as _FeatureReader
 from pyemma.coordinates.data.data_in_memory import DataInMemory as _DataInMemory
-from pyemma.coordinates.data.util.reader_utils import create_file_reader as _create_file_reader, \
-    preallocate_empty_trajectory as _preallocate_empty_trajectory, enforce_top as _enforce_top, \
-    copy_traj_attributes as _copy_traj_attributes
-from pyemma.coordinates.data.util.frames_from_file import frames_from_file as _frames_from_file
+
 # transforms
 from pyemma.coordinates.transform.pca import PCA as _PCA
 from pyemma.coordinates.transform.tica import TICA as _TICA
@@ -44,6 +41,8 @@ from pyemma.coordinates.clustering.uniform_time import UniformTimeClustering as 
 from pyemma.coordinates.clustering.regspace import RegularSpaceClustering as _RegularSpaceClustering
 from pyemma.coordinates.clustering.assign import AssignCenters as _AssignCenters
 
+from pyemma.coordinates.data.util.reader_utils import create_file_reader as _create_file_reader
+
 # stat
 from pyemma.coordinates.util.stat import histogram
 
@@ -51,11 +50,10 @@ from pyemma.coordinates.util.stat import histogram
 from mdtraj import Topology as _Topology, Trajectory as _Trajectory
 
 from six import string_types
-from six.moves import range
-from six.moves import zip
+from six.moves import range, zip
 
 import numpy as _np
-import itertools as _itertools
+
 
 _logger = _getLogger('pyemma.coordinates.api')
 
@@ -619,55 +617,41 @@ def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=1000, 
     traj : :py:obj:`mdtraj.Trajectory` object
         Will only return this object if :py:obj:`outfile` is None
     """
-
+    from pyemma.coordinates.data.fragmented_trajectory_reader import FragmentedTrajectoryReader
+    from pyemma.coordinates.data.util.frames_from_file import frames_from_files
+    from pyemma.coordinates.data.util.reader_utils import enforce_top
     # Determine the type of input and extract necessary parameters
-    if isinstance(traj_inp, _FeatureReader):
-        trajfiles = traj_inp.filenames
-        top = traj_inp.topfile
+    if isinstance(traj_inp, (_FeatureReader, FragmentedTrajectoryReader)):
+        if isinstance(traj_inp, FragmentedTrajectoryReader):
+            trajfiles = traj_inp.filenames_flat
+            top = traj_inp._readers[0][0].topfile
+        else:
+            top = traj_inp.topfile
+            trajfiles = traj_inp.filenames
         chunksize = traj_inp.chunksize
     else:
         # Do we have what we need?
-        assert isinstance(traj_inp, list), "traj_inp has to be of type list, not %"%type(traj_inp)
-        assert isinstance(top,(str,_Topology, _Trajectory)), "traj_inp cannot be a list of files without an input " \
-                                        "top of type str (eg filename.pdb), mdtraj.Trajectory or mdtraj.Topology. " \
-                                        "Got type %s instead"%type(top)
+        if not isinstance(traj_inp, list):
+            raise TypeError("traj_inp has to be of type list, not %s" % type(traj_inp))
+        if not isinstance(top, (string_types, _Topology, _Trajectory)):
+            raise TypeError("traj_inp cannot be a list of files without an input "
+                            "top of type str (eg filename.pdb), mdtraj.Trajectory or mdtraj.Topology. "
+                            "Got type %s instead" % type(top))
         trajfiles = traj_inp
 
     # Enforce the input topology to actually be an md.Topology object
-    top = _enforce_top(top)
+    top = enforce_top(top)
 
     # Convert to index (T,2) array if parsed a list or a list of arrays
     indexes = _np.vstack(indexes)
 
     # Check that we've been given enough filenames
-    assert (len(trajfiles) >= indexes[:,0].max()), "traj_inp contains %u trajfiles, " \
-                                                   "but indexes will ask for file nr. %u"%(len(trajfiles), indexes[0].max())
+    if (len(trajfiles) < indexes[:, 0].max()):
+        raise ValueError("traj_inp contains %u trajfiles, "
+                         "but indexes will ask for file nr. %u"
+                         % (len(trajfiles), indexes[0].max()))
 
-    # Instantiate  a list of iterables that will contain mdtraj trajectory objects
-    trajectory_iterator_list = []
-
-    # Cycle only over files that are actually mentioned in "indexes"
-    file_idxs, file_pos = _np.unique(indexes[:, 0], return_inverse=True)
-    for ii, ff in enumerate(file_idxs):
-        # Slice the indexes array (frame column) where file ff was mentioned
-        frames = indexes[file_pos == ii, 1]
-        # Store the trajectory object that comes out of _frames_from_file
-        # directly as an iterator in trajectory_iterator_list
-        trajectory_iterator_list.append(_itertools.islice(_frames_from_file(trajfiles[ff],
-                                                                            top,
-                                                                            frames, chunksize=chunksize,
-                                                                            verbose=verbose, stride = stride,
-                                                                            copy_not_join=True),
-                                                          None)
-                                        )
-    # Prepare the trajectory object
-    traj = _preallocate_empty_trajectory(top, indexes.shape[0])
-
-    # Iterate directly over the index of files and pick the trajectory that you need from the iterator list
-    for ii, traj_idx in enumerate(file_pos):
-        # Append the trajectory from the respective list of iterators
-        # and advance that iterator
-        traj = _copy_traj_attributes(traj, next(trajectory_iterator_list[traj_idx]), ii)
+    traj = frames_from_files(trajfiles, top, indexes, chunksize, stride)
 
     # Return to memory as an mdtraj trajectory object
     if outfile is None:
@@ -679,8 +663,8 @@ def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=1000, 
     _logger.info("Created file %s" % outfile)
 
 
-def save_trajs(traj_inp, indexes, prefix = 'set_', fmt = None, outfiles = None,
-               inmemory = False, stride = 1, verbose = False):
+def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None,
+               inmemory=False, stride=1, verbose=False):
     r""" Saves sequences of frames as multiple trajectories.
 
     Extracts a number of specified sequences of time/trajectory indexes from the
@@ -816,6 +800,7 @@ def _get_input_stage(previous_stage):
         inputstage = _DataInMemory(data)
 
     return inputstage
+
 
 def _param_stage(previous_stage, this_stage, stride=1):
     r""" Parametrizes the given pipelining stage if a valid source is given.
