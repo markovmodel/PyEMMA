@@ -136,9 +136,6 @@ class TICA(StreamingTransformer):
         self.set_params(lag=lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map,
                         epsilon=epsilon, mean=mean, stride=stride, remove_mean=remove_mean)
 
-        # skipped trajectories
-        self._skipped_trajs = []
-
     @property
     def lag(self):
         """ lag time of correlation matrix :math:`C_{\tau}` """
@@ -219,11 +216,6 @@ class TICA(StreamingTransformer):
         return self
 
     def _diagonalize(self):
-        if len(self._skipped_trajs) >= 1:
-            self._logger.warning("Had to skip %u trajectories for being too short (len<lag). "
-                                 "Their indices are in tica_obj._skipped_trajs."
-                                 % len(self._skipped_trajs))
-
         # diagonalize with low rank approximation
         self._logger.debug("diagonalize Cov and Cov_tau.")
         eigenvalues, eigenvectors = eig_corr(self.cov, self.cov_tau, self.epsilon)
@@ -264,10 +256,9 @@ class TICA(StreamingTransformer):
             # register progresss
             n_chunks = it._n_chunks
             self._progress_register(n_chunks, "calculate mean+cov", 0)
-            nsave = int(max(log(ceil(n_chunks), 2), 2))
-            self._logger.debug(
-                "using %s moments for %i chunks" % (nsave, n_chunks))
             if not hasattr(self, '_covar'):
+                nsave = int(max(log(ceil(n_chunks), 2), 2))
+                self._logger.debug("using %s moments for %i chunks" % (nsave, n_chunks))
                 self._covar = running_covar(xx=True, xy=True, yy=False,
                                             remove_mean=self.remove_mean,
                                             symmetrize=True, nsave=nsave)
