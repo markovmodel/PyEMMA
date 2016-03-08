@@ -184,7 +184,7 @@ class PCA(StreamingTransformer, ProgressReporter):
 
         with iterable.iterator(return_trajindex=False) as it:
             n_chunks = it._n_chunks
-            self._progress_register(n_chunks, "calc mean and covar", 0)
+            self._progress_register(n_chunks, "calc mean+cov", 0)
             if not hasattr(self, '_covar'):
                 nsave = max(math.log(math.ceil(n_chunks), 2), 2)
                 self._logger.debug("using %s moments for %i chunks" % (nsave, n_chunks))
