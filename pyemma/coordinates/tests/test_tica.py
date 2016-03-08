@@ -340,40 +340,5 @@ class TestTICAExtensive(unittest.TestCase):
         its = -self.tica_obj.lag/np.log(np.abs(self.tica_obj.eigenvalues))
         assert np.allclose(self.tica_obj.timescales, its)
 
-    def test_partial_fit(self):
-        d = 2
-        arrays = [np.arange(300).reshape(-1, d),
-                  np.arange(300, 600).reshape(-1, d)]
-
-        means = [np.mean(x, axis=0) for x in arrays]
-
-        tica_obj = tica(lag=1)
-        tica_obj.partial_fit(arrays[0])
-        assert not tica_obj._estimated
-        np.testing.assert_almost_equal(tica_obj.mean, means[0], decimal=2)
-        # acccess eigenvectors to force diagonalization
-        tica_obj.eigenvectors
-        assert tica_obj._estimated
-
-        tica_obj.partial_fit(arrays[1])
-        assert not tica_obj._estimated
-        np.testing.assert_almost_equal(tica_obj.mean, (means[0] + means[1]) / 2, decimal=2)
-
-        tica_obj.eigenvalues
-        assert tica_obj._estimated
-
-    def test_partial_fit_sequences(self):
-        # update tica with a bunch of trajs
-        arrays = [np.random.random((100, 3)), np.random.random((300, 3)),
-                  np.random.random((400, 3)), np.random.random((9,3))]
-        lag = 20
-        tica_part = tica(lag=lag)
-        tica_part.partial_fit(arrays)
-
-        tica_one_batch = tica(arrays, lag=lag)
-        np.testing.assert_equal(tica_part.mean, tica_one_batch.mean)
-        np.testing.assert_equal(tica_part.eigenvalues, tica_one_batch.eigenvalues)
-        np.testing.assert_equal(tica_part.eigenvectors, tica_one_batch.eigenvectors)
-
 if __name__ == "__main__":
     unittest.main()

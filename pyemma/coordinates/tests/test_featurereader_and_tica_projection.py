@@ -106,21 +106,50 @@ class TestFeatureReaderAndTICAProjection(unittest.TestCase):
             log.info('number of trajectories reported by tica %d' % trans.number_of_trajectories())
             trans.parametrize()
             data = trans.get_output()
-            # print '@@cov', trans.cov
-            # print '@@cov_tau', trans.cov_tau
 
             log.info('max. eigenvalue: %f' % np.max(trans.eigenvalues))
             self.assertTrue(np.all(trans.eigenvalues <= 1.0))
             # check ICs
             check = tica(data=data, lag=tau, dim=self.dim)
-            check.parametrize()
 
             np.testing.assert_allclose(np.eye(self.dim), check.cov, atol=1e-8)
             np.testing.assert_allclose(check.mean, 0.0, atol=1e-8)
             ic_cov_tau = np.zeros((self.dim, self.dim))
             ic_cov_tau[np.diag_indices(self.dim)] = trans.eigenvalues
             np.testing.assert_allclose(ic_cov_tau, check.cov_tau, atol=1e-8)
-            # print '@@cov_tau', check.cov_tau
+
+    def test_partial_fit(self):
+        from pyemma.coordinates import source
+        reader = source(self.trajnames, top=self.temppdb)
+        reader_output = reader.get_output()
+
+        params = {'lag': 10, 'kinetic_map': False, 'dim': self.dim}
+
+        tica_obj = tica(**params)
+        tica_obj.partial_fit(reader_output[0])
+        assert not tica_obj._estimated
+        # acccess eigenvectors to force diagonalization
+        tica_obj.eigenvectors
+        assert tica_obj._estimated
+
+        tica_obj.partial_fit(reader_output[1])
+        assert not tica_obj._estimated
+
+        tica_obj.eigenvalues
+        assert tica_obj._estimated
+
+        for traj in reader_output[2:]:
+            tica_obj.partial_fit(traj)
+
+        # reference
+        ref = tica(reader, **params)
+
+        np.testing.assert_allclose(tica_obj.cov, ref.cov, atol=1e-15)
+        np.testing.assert_allclose(tica_obj.cov_tau, ref.cov_tau, atol=1e-15)
+
+        np.testing.assert_allclose(tica_obj.eigenvalues, ref.eigenvalues, atol=1e-15)
+        # we do not test eigenvectors here, since the system is very metastable and
+        # we have multiple eigenvalues very close to one.
 
 if __name__ == "__main__":
     unittest.main()
