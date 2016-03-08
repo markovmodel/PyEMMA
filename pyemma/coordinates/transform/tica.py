@@ -215,6 +215,64 @@ class TICA(StreamingTransformer):
 
         return self
 
+    def _init_covar(self, partial_fit, n_chunks):
+        nsave = int(max(log(n_chunks, 2), 2))
+        # in case we do a one shot estimation, we want to re-initialize running_covar
+        if not hasattr(self, '_covar') or not partial_fit:
+            self._logger.debug("using %s moments for %i chunks" % (nsave, n_chunks))
+            self._covar = running_covar(xx=True, xy=True, yy=False,
+                                        remove_mean=self.remove_mean,
+                                        symmetrize=True, nsave=nsave)
+        else:
+            # check storage size vs. n_chunks of the new iterator
+            old_nsave = self._covar.storage_XX.nsave
+            if old_nsave < nsave or old_nsave > nsave:
+                self.logger.info("adopting storage size")
+                self._covar.storage_XX.nsave = nsave
+                self._covar.storage_XY.nsave = nsave
+
+    def _estimate(self, iterable, **kw):
+        r"""
+        Chunk-based parameterization of TICA. Iterates over all data and estimates
+        the mean, covariance and time lagged covariance. Finally, the
+        generalized eigenvalue problem is solved to determine
+        the independent components.
+        """
+        partial_fit = 'partial' in kw
+        indim = iterable.dimension()
+        if not indim:
+            raise ValueError("zero dimension from data source!")
+
+        if not self.dim <= indim:
+            raise RuntimeError("requested more output dimensions (%i) than dimension"
+                               " of input data (%i)" % (self.dim, indim))
+
+        if not partial_fit and self._logger_is_active(self._loglevel_DEBUG):
+            self._logger.debug("Running TICA with tau=%i; Estimating two covariance matrices"
+                               " with dimension (%i, %i)" % (self._lag, indim, indim))
+
+        if not partial_fit and not any(iterable.trajectory_lengths(self.stride) > self.lag):
+            raise ValueError("None single dataset [longest=%i] is longer than"
+                             " lag time [%i]." % (max(iterable.trajectory_lengths(self.stride)), self.lag))
+
+        it = iterable.iterator(lag=self.lag, return_trajindex=False)
+        with it:
+            self._progress_register(it._n_chunks, "calculate mean+cov", 0)
+            self._init_covar(partial_fit, it._n_chunks)
+            for X, Y in it:
+                self._covar.add(X, Y)
+                # counting chunks and log of eta
+                self._progress_update(1, stage=0)
+
+        self._model.update_model_params(mean=self._covar.mean_X(),
+                                        cov=self._covar.cov_XX(),
+                                        cov_tau=self._covar.cov_XY())
+
+        if not partial_fit:
+            self._diagonalize()
+
+        return self._model
+
     def _diagonalize(self):
         # diagonalize with low rank approximation
         self._logger.debug("diagonalize Cov and Cov_tau.")
@@ -230,52 +288,6 @@ class TICA(StreamingTransformer):
                                         eigenvectors=eigenvectors)
 
         self._estimated = True
-
-    def _estimate(self, iterable, **kw):
-        r"""
-        Chunk-based parameterization of TICA. Iterates over all data and estimates
-        the mean, covariance and time lagged covariance. Finally, the
-        generalized eigenvalue problem is solved to determine
-        the independent components.
-        """
-        partial_fit = 'partial' in kw
-        indim = iterable.dimension()
-        assert indim > 0, "zero dimension from data source!"
-        assert self.dim <= indim, ("requested more output dimensions (%i) than dimension"
-                                   " of input data (%i)" % (self.dim, indim))
-
-        self._logger.debug("Running TICA with tau=%i; Estimating two covariance matrices"
-                           " with dimension (%i, %i)" % (self._lag, indim, indim))
-
-        if not partial_fit and not any(iterable.trajectory_lengths(self.stride) > self.lag):
-            raise ValueError("None single dataset [longest=%i] is longer than"
-                             " lag time [%i]." % (max(iterable.trajectory_lengths(self.stride)), self.lag))
-
-        it = iterable.iterator(lag=self.lag, return_trajindex=False)
-        with it:
-            # register progresss
-            n_chunks = it._n_chunks
-            self._progress_register(n_chunks, "calculate mean+cov", 0)
-            if not hasattr(self, '_covar'):
-                nsave = int(max(log(ceil(n_chunks), 2), 2))
-                self._logger.debug("using %s moments for %i chunks" % (nsave, n_chunks))
-                self._covar = running_covar(xx=True, xy=True, yy=False,
-                                            remove_mean=self.remove_mean,
-                                            symmetrize=True, nsave=nsave)
-
-            for X, Y in it:
-                self._covar.add(X, Y)
-                # counting chunks and log of eta
-                self._progress_update(1, stage=0)
-
-        self._model.update_model_params(mean=self._covar.mean_X(),
-                                        cov=self._covar.cov_XX(),
-                                        cov_tau=self._covar.cov_XY())
-
-        if not partial_fit:
-            self._diagonalize()
-
-        return self._model
 
     def _transform_array(self, X):
         r"""Projects the data onto the dominant independent components.

@@ -164,6 +164,22 @@ class PCA(StreamingTransformer, ProgressReporter):
 
         return self
 
+    def _init_covar(self, partial_fit, n_chunks):
+        nsave = int(max(math.log(n_chunks, 2), 2))
+        # in case we do a one shot estimation, we want to re-initialize running_covar
+        if not hasattr(self, '_covar') or not partial_fit:
+            self._logger.debug("using %s moments for %i chunks" % (nsave, n_chunks))
+            self._covar = running_covar(xx=True, xy=False, yy=False,
+                                        remove_mean=True, symmetrize=False,
+                                        nsave=nsave)
+        else:
+            # check storage size vs. n_chunks of the new iterator
+            old_nsave = self._covar.storage_XX.nsave
+            if old_nsave < nsave or old_nsave > nsave:
+                self.logger.info("adopting storage size")
+                self._covar.storage_XX.nsave = nsave
+                self._covar.storage_XY.nsave = nsave
+
     def _diagonalize(self):
         (v, R) = np.linalg.eigh(self.cov)
         # sort
@@ -185,12 +201,7 @@ class PCA(StreamingTransformer, ProgressReporter):
         with iterable.iterator(return_trajindex=False) as it:
             n_chunks = it._n_chunks
             self._progress_register(n_chunks, "calc mean+cov", 0)
-            if not hasattr(self, '_covar'):
-                nsave = max(math.log(math.ceil(n_chunks), 2), 2)
-                self._logger.debug("using %s moments for %i chunks" % (nsave, n_chunks))
-                self._covar = running_covar(xx=True, xy=False, yy=False,
-                                            remove_mean=True, symmetrize=False,
-                                            nsave=nsave)
+            self._init_covar(partial_fit, n_chunks)
 
             for chunk in it:
                 self._covar.add(chunk)
