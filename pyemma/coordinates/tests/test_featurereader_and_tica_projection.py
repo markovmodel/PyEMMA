@@ -33,7 +33,7 @@ import unittest
 from nose.plugins.attrib import attr
 import mdtraj
 
-from pyemma.coordinates.api import tica#, _TICA as TICA
+from pyemma.coordinates.api import tica
 from pyemma.coordinates.data.feature_reader import FeatureReader
 from pyemma.util.contexts import numpy_random_seed
 from pyemma.util.log import getLogger
@@ -112,7 +112,7 @@ class TestFeatureReaderAndTICAProjection(unittest.TestCase):
             log.info('max. eigenvalue: %f' % np.max(trans.eigenvalues))
             self.assertTrue(np.all(trans.eigenvalues <= 1.0))
             # check ICs
-            check = tica(data=data, lag=tau, dim=self.dim, force_eigenvalues_le_one=True)
+            check = tica(data=data, lag=tau, dim=self.dim)
             check.parametrize()
 
             np.testing.assert_allclose(np.eye(self.dim), check.cov, atol=1e-8)
