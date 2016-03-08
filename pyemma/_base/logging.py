@@ -22,8 +22,7 @@ Created on 30.08.2015
 @author: marscher
 '''
 from __future__ import absolute_import
-
-from logging import getLogger
+import logging
 import weakref
 from itertools import count
 
@@ -35,6 +34,12 @@ class Loggable(object):
     __ids = count(0)
     # holds weak references to instances of this, to clean up logger instances.
     __refs = {}
+
+    _loglevel_DEBUG = logging.DEBUG
+    _loglevel_INFO = logging.INFO
+    _loglevel_WARN = logging.WARN
+    _loglevel_ERROR = logging.ERROR
+    _loglevel_CRITICAL = logging.CRITICAL
 
     @property
     def name(self):
@@ -60,18 +65,14 @@ class Loggable(object):
     def _logger(self):
         return self.logger
 
-    @property
-    def _logger_has_instance(self):
-        return hasattr(self, 'logger_instance')
-
     def _logger_is_active(self, level):
         """ @param level: int log level (debug=10, info=20, warn=30, error=40, critical=50)"""
-        return self._logger_has_instance and self.logger.level >= level
+        return hasattr(self, '_logger_instance') and self.logger.level >= level
 
     def __create_logger(self):
         _weak_logger_refs = Loggable.__refs
         # creates a logger based on the the attribe "name" of self
-        self._logger_instance = getLogger(self.name)
+        self._logger_instance = logging.getLogger(self.name)
 
         # store a weakref to this instance to clean the logger instance.
         logger_id = id(self._logger_instance)
@@ -84,7 +85,7 @@ class Loggable(object):
         # removes logger from root manager
 
         def remove_logger(weak):
-            d = getLogger().manager.loggerDict
+            d = logging.getLogger().manager.loggerDict
             del d[logger_name]
             del Loggable.__refs[logger_id]
         return remove_logger
