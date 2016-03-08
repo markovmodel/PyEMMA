@@ -101,14 +101,15 @@ class TestFeatureReaderAndTICA(unittest.TestCase):
     def test_partial_fit(self):
         reader = FeatureReader(self.trajnames, self.temppdb, chunksize=10000)
         output = reader.get_output()
-        params = {'dim': self.dim, 'lag': 1001, }
+        params = {'dim': self.dim, 'lag': 1001}
         ref = api.tica(reader, **params)
         partial = api.tica(**params)
 
         for traj in output:
             partial.partial_fit(traj)
+
         np.testing.assert_allclose(partial.eigenvalues, ref.eigenvalues)
-        np.testing.assert_allclose(np.abs(partial.eigenvectors), np.abs(ref.eigenvectors))
+        np.testing.assert_allclose(np.abs(partial.eigenvectors), np.abs(ref.eigenvectors), atol=1e-12)
 
 if __name__ == "__main__":
     unittest.main()
