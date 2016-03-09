@@ -27,7 +27,11 @@ import logging
 
 from pyemma.util import log
 from pyemma.util import config
-import mock
+import six
+if six.PY2:
+    import mock
+else:
+    from unittest import mock
 
 
 class TestNonWriteableLogFile(unittest.TestCase):
@@ -38,7 +42,7 @@ class TestNonWriteableLogFile(unittest.TestCase):
 
     @unittest.skipIf('win32' in sys.platform, "disabled on win")
     def test(self):
-        conf = """
+        conf = b"""
 # do not disable other loggers by default.
 disable_existing_loggers: False
 
