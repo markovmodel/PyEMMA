@@ -30,7 +30,8 @@ import pkg_resources
 
 
 # for IDE stupidity, just add a new cfg var here, if you add a property to Wrapper
-cfg_dir = default_config_file = logging_config = show_progress_bars = used_filenames = use_trajectory_lengths_cache = None
+cfg_dir = default_config_file = default_logging_config = logging_config = \
+    show_progress_bars = used_filenames = use_trajectory_lengths_cache = None
 
 __all__ = (
            'cfg_dir',
@@ -114,6 +115,13 @@ False
             warnings.warn("unable to read default configuration file. Logging and "
                           " progress bar handling could behave bad! Error: %s" % re)
 
+        from pyemma.util.log import setupLogging, LoggingConfigurationError
+        try:
+            setupLogging(self)
+        except LoggingConfigurationError as e:
+            warnings.warn("Error during logging configuration. Logging might not be functional!"
+                          "Error: %s" % e)
+
         # wrap this module
         self.wrapped = wrapped
         self.__wrapped__ = wrapped
@@ -134,6 +142,10 @@ False
     def default_config_file(self):
         """ default config file living in PyEMMA package """
         return pkg_resources.resource_filename('pyemma', Wrapper.DEFAULT_CONFIG_FILE_NAME)
+
+    @property
+    def default_logging_file(self):
+        return pkg_resources.resource_filename('pyemma', Wrapper.DEFAULT_LOGGING_FILE_NAME)
 
     @deprecated("do not use this!")
     def conf_values(self):
