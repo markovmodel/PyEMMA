@@ -109,7 +109,7 @@ class TestFeatureReaderAndTICA(unittest.TestCase):
             partial.partial_fit(traj)
 
         np.testing.assert_allclose(partial.eigenvalues, ref.eigenvalues)
-        np.testing.assert_allclose(np.abs(partial.eigenvectors), np.abs(ref.eigenvectors), atol=1e-12)
+        np.testing.assert_allclose(np.abs(partial.eigenvectors), np.abs(ref.eigenvectors), atol=1e-8)
 
 if __name__ == "__main__":
     unittest.main()
