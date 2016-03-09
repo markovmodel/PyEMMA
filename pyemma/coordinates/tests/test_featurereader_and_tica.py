@@ -83,7 +83,6 @@ class TestFeatureReaderAndTICA(unittest.TestCase):
 
     def test_covariances_and_eigenvalues(self):
         reader = FeatureReader(self.trajnames, self.temppdb, chunksize=10000)
-        #TICA(tau=1, output_dimension=self.dim)
         for lag in [1, 11, 101, 1001, 2001]:  # avoid cos(w*tau)==0
             trans = api.tica(data=reader, dim=self.dim, lag=lag)
             log.info('number of trajectories reported by tica %d' % trans.number_of_trajectories())
@@ -98,6 +97,19 @@ class TestFeatureReaderAndTICA(unittest.TestCase):
             self.assertTrue(np.allclose(ana_cov_tau, trans.cov_tau, atol=1.E-3))
             log.info('max. eigenvalue: %f' % np.max(trans.eigenvalues))
             self.assertTrue(np.all(trans.eigenvalues <= 1.0))
+
+    def test_partial_fit(self):
+        reader = FeatureReader(self.trajnames, self.temppdb, chunksize=10000)
+        output = reader.get_output()
+        params = {'dim': self.dim, 'lag': 1001}
+        ref = api.tica(reader, **params)
+        partial = api.tica(**params)
+
+        for traj in output:
+            partial.partial_fit(traj)
+
+        np.testing.assert_allclose(partial.eigenvalues, ref.eigenvalues)
+        np.testing.assert_allclose(np.abs(partial.eigenvectors), np.abs(ref.eigenvectors), atol=1e-8)
 
 if __name__ == "__main__":
     unittest.main()

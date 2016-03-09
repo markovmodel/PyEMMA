@@ -326,18 +326,6 @@ class TestTICAExtensive(unittest.TestCase):
         np.testing.assert_allclose(test_corr, true_corr, atol=1.E-8)
         #assert np.isclose(test_corr, true_corr).all()
 
-    def test_skipped_trajs(self):
-
-        feature_trajs = [np.arange(10),
-                         np.arange(11),
-                         np.arange(12),
-                         np.arange(13)]
-
-        tica_obj = tica(data=feature_trajs, lag=11)
-        # we skip the trajs right away in the iterator
-        assert (len(tica_obj._skipped_trajs) == 0)
-        # assert np.allclose(tica_obj._skipped_trajs, [0,1])
-
     def test_provided_means(self):
         data = np.random.random((300, 3))
         mean = data.mean(axis=0)

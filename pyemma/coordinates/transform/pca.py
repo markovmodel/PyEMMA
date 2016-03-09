@@ -29,10 +29,21 @@ from pyemma.util.reflection import get_default_args
 
 from pyemma.coordinates.estimators.covar.running_moments import running_covar
 import numpy as np
+from decorator import decorator
 
 
 __all__ = ['PCA']
 __author__ = 'noe'
+
+
+@decorator
+def _lazy_estimation(func, *args, **kw):
+    assert isinstance(args[0], PCA)
+    tica_obj = args[0]
+    if not tica_obj._estimated:
+        tica_obj._diagonalize()
+    return func(*args, **kw)
+
 
 class PCAModel(Model):
     # todo: do we really want this?
@@ -87,7 +98,7 @@ class PCA(StreamingTransformer, ProgressReporter):
 
         self._model = PCAModel()
         self.set_params(dim=dim, var_cutoff=var_cutoff, mean=mean)
-
+        self._model = PCAModel()
 
     @doc_inherit
     def describe(self):
@@ -110,6 +121,7 @@ class PCA(StreamingTransformer, ProgressReporter):
         return d
 
     @property
+    @_lazy_estimation
     def cumvar(self):
         return self._model.cumvar
 
@@ -118,6 +130,7 @@ class PCA(StreamingTransformer, ProgressReporter):
         self._model.cumvar = value
 
     @property
+    @_lazy_estimation
     def eigenvalues(self):
         return self._model.eigenvalues
 
@@ -126,12 +139,13 @@ class PCA(StreamingTransformer, ProgressReporter):
         self._model.eigenvalues = value
 
     @property
+    @_lazy_estimation
     def eigenvectors(self):
         return self._model.eigenvectors
 
     @eigenvectors.setter
     def eigenvectors(self, value):
-        pass
+        self._model.eigenvectors = value
 
     @property
     def mean(self):
@@ -141,23 +155,32 @@ class PCA(StreamingTransformer, ProgressReporter):
     def mean(self, value):
         self._model.mean = value
 
-    def _estimate(self, iterable, **kwargs):
-        with iterable.iterator(return_trajindex=False) as it:
-            n_chunks = it._n_chunks
-            self._progress_register(n_chunks, "calc mean and covar", 0)
-            nsave = max(math.log(math.ceil(n_chunks), 2), 2)
+    def partial_fit(self, X):
+        from pyemma.coordinates import source
+        iterable = source(X)
+
+        self._estimate(iterable, partial=True)
+        self._estimated = False
+
+        return self
+
+    def _init_covar(self, partial_fit, n_chunks):
+        nsave = int(max(math.log(n_chunks, 2), 2))
+        # in case we do a one shot estimation, we want to re-initialize running_covar
+        if not hasattr(self, '_covar') or not partial_fit:
             self._logger.debug("using %s moments for %i chunks" % (nsave, n_chunks))
             self._covar = running_covar(xx=True, xy=False, yy=False,
                                         remove_mean=True, symmetrize=False,
                                         nsave=nsave)
+        else:
+            # check storage size vs. n_chunks of the new iterator
+            old_nsave = self._covar.storage_XX.nsave
+            if old_nsave < nsave or old_nsave > nsave:
+                self.logger.info("adopting storage size")
+                self._covar.storage_XX.nsave = nsave
+                self._covar.storage_XY.nsave = nsave
 
-            for chunk in it:
-                self._covar.add(chunk)
-                self._progress_update(1, 0)
-
-        self.cov = self._covar.cov_XX()
-        self.mu = self._covar.mean_X()
-
+    def _diagonalize(self):
         (v, R) = np.linalg.eigh(self.cov)
         # sort
         I = np.argsort(v)[::-1]
@@ -168,13 +191,30 @@ class PCA(StreamingTransformer, ProgressReporter):
         cumvar = np.cumsum(eigenvalues)
         cumvar /= cumvar[-1]
 
-        model = PCAModel()
-        model.update_model_params(cumvar=cumvar, eigenvalues=eigenvalues,
-                                  eigenvectors=eigenvectors,
-                                  mean=self._covar.mean_X())
-        self._model = model
+        self._model.update_model_params(eigenvalues=eigenvalues,
+                                        eigenvectors=eigenvectors,
+                                        cumvar=cumvar)
 
-        return model
+    def _estimate(self, iterable, **kw):
+        partial_fit = 'partial' in kw
+
+        with iterable.iterator(return_trajindex=False) as it:
+            n_chunks = it._n_chunks
+            self._progress_register(n_chunks, "calc mean+cov", 0)
+            self._init_covar(partial_fit, n_chunks)
+
+            for chunk in it:
+                self._covar.add(chunk)
+                self._progress_update(1, 0)
+
+        self.cov = self._covar.cov_XX()
+        self.mu = self._covar.mean_X()
+
+        self._model.update_model_params(mean=self._covar.mean_X())
+        if not partial_fit:
+            self._diagonalize()
+
+        return self._model
 
     def _transform_array(self, X):
         r"""

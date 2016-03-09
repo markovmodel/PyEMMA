@@ -83,17 +83,6 @@ void _subtract_row_float_copy(float* X0, float* X, float* row, int M, int N)
 }
 
 
-int* _bool_to_list(int* b, int N, int nnz)
-{
-        int i;
-        int k=0;
-        int* list = (int*)malloc(nnz*sizeof(int));
-        for (i=0; i<N; i++)
-                if (b[i] == 1)
-                        list[k++] = i;
-        return (list);
-}
-
 /** Checks each column whether it is constant in the rows or not
 
 @param cols : (N) result array that will be filled with 0 (column constant) or 1 (column variable)
