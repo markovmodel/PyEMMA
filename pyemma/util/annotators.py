@@ -36,7 +36,6 @@ Now, Bar.foo.__doc__ == Bar().foo.__doc__ == Foo.foo.__doc__ == "Frobber"
 from __future__ import absolute_import
 from functools import wraps
 import warnings
-from six import PY2
 from decorator import decorator, decorate
 from inspect import stack
 

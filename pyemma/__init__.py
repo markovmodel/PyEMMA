@@ -33,3 +33,11 @@ from . import thermo
 from ._version import get_versions
 __version__ = get_versions()['version']
 del get_versions
+
+
+def setup_package():
+    # purpose is for nose testing only to silence progress bars etc.
+    import warnings
+    warnings.warn('You should never see this, only in unit testing!'
+                  ' This switches off progress bars')
+    config.show_progress_bars = False

@@ -94,8 +94,8 @@ class ProgressReporter(object):
             pg.description = ''
         else:
             pg = _ProgressBar(amount_of_work, description=description)
+
         self._prog_rep_progressbars[stage] = pg
-        assert stage in self._prog_rep_progressbars
 
 #     def _progress_set_description(self, stage, description):
 #         """ set description of an already existing progress """
@@ -158,12 +158,15 @@ class ProgressReporter(object):
 
         pg = self._prog_rep_progressbars[stage]
         pg.numerator += numerator_increment
-
+        # we are done
         if pg.numerator == pg.denominator:
-            _hide_progressbar(pg)
-
-        if pg.numerator > pg.denominator:
-            raise Exception("This should not happen")
+            self._progress_force_finish(stage)
+            return
+        elif pg.numerator > pg.denominator:
+            import warnings
+            warnings.warn("This should not happen. An caller pretended to have "
+                          "achieved more work than registered")
+            return
 
         _show_progressbar(pg)
         if hasattr(self, '_prog_rep_callbacks') and stage in self._prog_rep_callbacks:

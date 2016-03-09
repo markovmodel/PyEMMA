@@ -55,7 +55,6 @@ def __ipy_widget_version():
 def __attached_to_ipy_notebook():
     # first determine which IPython version we have (eg. ipywidgets or ipy3 deprecated,
     # then try to instanciate a widget to determine if we're interactive (raises, if not).
-    import sys
     if 'IPython' not in sys.modules:
         return
     ipy_widget_version = __ipy_widget_version()
@@ -74,7 +73,6 @@ def __attached_to_ipy_notebook():
         return False
     else:
         return True
-
 
 
 def __is_interactive():
@@ -129,8 +127,7 @@ def show_progressbar(bar, show_eta=True):
     show_eta : bool (optional)
 
     """
-    if not (str(config['show_progress_bars']) == 'True' and
-            is_interactive_session):
+    if not config.show_progress_bars:
         return
 
     # note: this check ensures we have IPython.display and so on.
@@ -150,7 +147,6 @@ def show_progressbar(bar, show_eta=True):
 
                 # make it visible once
                 display(box)
-                # box.visible=True
 
                 # update css for a more compact view
                 progress_widget._css = [

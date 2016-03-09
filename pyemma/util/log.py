@@ -1,4 +1,3 @@
-
 # This file is part of PyEMMA.
 #
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
@@ -15,48 +14,40 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-
 '''
 Created on 15.10.2013
 
 @author: marscher
 '''
 
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import
 
-import pkg_resources
 import logging
-import warnings
+from logging.config import dictConfig
 import os.path
+import warnings
+
 
 __all__ = ['getLogger',
            ]
 
-def_conf_file = pkg_resources.resource_filename('pyemma', 'logging.yml')
-del pkg_resources
+
+class LoggingConfigurationError(RuntimeError):
+    pass
 
 
-def setupLogging():
+def setupLogging(config):
+    """ set up the logging system with the configured (in pyemma.cfg) logging config (logging.yml)
+    @param config: instance of pyemma.config module (wrapper)
     """
-    parses pyemma configuration file and creates a logger conf_values from that
-    """
-    from logging.config import dictConfig
-    from pyemma.util import config
     import yaml
-
-    # copy default cfg to users dir
-    cfg_dir = config.create_cfg_dir(def_conf_file)
-
-    class LoggingConfigurationError(RuntimeError):
-        pass
 
     args = config.logging_config
     default = False
 
     if args.upper() == 'DEFAULT':
         default = True
-        src = os.path.join(cfg_dir, 'logging.yml')
+        src = os.path.join(config.cfg_dir, 'logging.yml')
     else:
         src = args
 
@@ -68,7 +59,7 @@ def setupLogging():
         # fall back to default
         if not default:
             try:
-                with open(def_conf_file) as f:
+                with open(config.default_logging_file) as f:
                     D = yaml.load(f)
                     warnings.warn('Your set logging configuration could not '
                                   'be used. Used default as fallback.')
@@ -90,7 +81,19 @@ def setupLogging():
     D.setdefault('disable_existing_loggers', False)
 
     # configure using the dict
-    dictConfig(D)
+    try:
+        dictConfig(D)
+    except ValueError as ve:
+        # issue with file handler?
+        if 'files' in str(ve) and 'rotating_files' in D['handlers']:
+            print("cfg dir", config.cfg_dir)
+            new_file = os.path.join(config.cfg_dir, 'pyemma.log')
+            warnings.warn("set logfile to %s, because there was"
+                          " an error writing to the desired one" % new_file)
+            D['handlers']['rotating_files']['filename'] = new_file
+        else:
+            raise
+        dictConfig(D)
 
     # get log file name of pyemmas root logger
     logger = logging.getLogger('pyemma')
@@ -117,7 +120,3 @@ def getLogger(name=None):
         name = t[0][0]
 
     return logging.getLogger(name)
-
-
-# init logging
-setupLogging()

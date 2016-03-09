@@ -1,4 +1,3 @@
-
 # This file is part of PyEMMA.
 #
 # Copyright (c) 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
@@ -15,78 +14,86 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 '''
 Created on 11.06.2015
 
 @author: marscher
 '''
 
-from __future__ import absolute_import
-import warnings
-import unittest
+from __future__ import absolute_import, print_function
+
 import os
 import sys
+import unittest
 
-from pyemma.util.config import readConfiguration
 from pyemma.util.files import TemporaryDirectory
+import pkg_resources
+import pyemma
 
 
 class TestConfig(unittest.TestCase):
 
+    def setUp(self):
+        self.config_inst = pyemma.config()
+
+    def tearDown(self):
+        try:
+            del os.environ['PYEMMA_CFG_DIR']
+        except KeyError:
+            pass
+
+    def test_config_vals_match_properties_in_wrapper(self):
+        with TemporaryDirectory() as td:
+            os.environ['PYEMMA_CFG_DIR'] = td
+            self.config_inst._create_cfg_dir()
+            self.assertEqual(self.config_inst.cfg_dir, td)
+            from pyemma import config as config_module
+            assert hasattr(config_module, 'default_config_file')
+            my_cfg = os.path.join(td, 'pyemma.cfg')
+            self.assertEqual(pkg_resources.resource_filename('pyemma', 'pyemma.cfg') , config_module.default_config_file)
+            from six.moves import configparser
+            reader = configparser.ConfigParser()
+            reader.read(my_cfg)
+
+            opts = sorted(reader.options('pyemma'))
+            actual = sorted(config_module.keys())
+            self.assertEqual(opts, actual)
+
     @unittest.skipIf(sys.platform == 'win32', 'unix based test')
     def test_can_not_create_cfg_dir(self):
-        os.environ['HOME'] = '/dev/null'
+        os.environ['PYEMMA_CFG_DIR'] = '/dev/null'
 
-        exp_homedir = os.path.expanduser('~')
-        assert exp_homedir == '/dev/null'
-
-        with warnings.catch_warnings(record=True) as w:
-            # Cause all warnings to always be triggered.
-            warnings.simplefilter("always")
-            # Trigger a warning.
-            readConfiguration()
-            assert len(w) == 1
-            assert issubclass(w[-1].category, UserWarning)
-            assert "could not create" in str(w[-1].message)
+        with self.assertRaises(RuntimeError) as cm:
+            self.config_inst._create_cfg_dir()
+        self.assertIn("no valid directory", str(cm.exception))
 
     @unittest.skipIf(sys.platform == 'win32', 'unix based test')
     def test_non_writeable_cfg_dir(self):
-
         with TemporaryDirectory() as tmp:
-            cfg_dir = os.path.join(tmp, '.pyemma')
-            os.mkdir(cfg_dir)
-            os.environ['HOME'] = tmp
+            os.environ['PYEMMA_CFG_DIR'] = tmp
             # make cfg dir non-writeable
-            os.chmod(cfg_dir, 444)
+            os.chmod(tmp, 0x300)
+            assert not os.access(tmp, os.W_OK)
 
-            exp_homedir = os.path.expanduser('~')
-            assert exp_homedir == tmp
-
-            with warnings.catch_warnings(record=True) as w:
-                # Cause all warnings to always be triggered.
-                warnings.simplefilter("always")
-                # Trigger a warning.
-                readConfiguration()
-                assert len(w) == 1
-                assert issubclass(w[-1].category, UserWarning)
-                assert "is not writeable" in str(w[-1].message)
+            with self.assertRaises(RuntimeError) as cm:
+                self.config_inst._create_cfg_dir()
+            self.assertIn("is not writeable", str(cm.exception))
 
     def test_shortcuts(self):
-        import pyemma
-        pyemma.util.config.show_progress_bars = False
-        assert pyemma.config.show_progress_bars == False
+        self.config_inst.show_progress_bars = False
+        assert not self.config_inst.show_progress_bars
 
     def test_shortcuts2(self):
-        import pyemma
-        pyemma.config.show_progress_bars = 'True'
-        assert pyemma.config.show_progress_bars == 'True'
+        self.config_inst.show_progress_bars = 'True'
+        assert self.config_inst.show_progress_bars
 
     def test_shortcut3(self):
-        import pyemma
-        pyemma.config['show_progress_bars'] = 'True'
-        assert pyemma.config.show_progress_bars == 'True'
+        self.config_inst['show_progress_bars'] = 'True'
+        assert self.config_inst.show_progress_bars
 
+    def test_types(self):
+        self.config_inst.show_progress_bars = 0
+        assert isinstance(self.config_inst.show_progress_bars, bool)
 
 if __name__ == "__main__":
     unittest.main()
