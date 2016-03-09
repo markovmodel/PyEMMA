@@ -36,6 +36,7 @@ cfg_dir = default_config_file = default_logging_config = logging_config = \
 __all__ = (
            'cfg_dir',
            'default_config_file',
+           'default_logging_file',
            'logging_config',
            'show_progress_bars',
            'used_filenames',
@@ -125,6 +126,9 @@ False
         # wrap this module
         self.wrapped = wrapped
         self.__wrapped__ = wrapped
+
+    def __call__(self, ):
+        return Wrapper(sys.modules[__name__])
 
     @property
     def cfg_dir(self):
@@ -225,7 +229,6 @@ False
         reads config files from various locations to build final config.
         """
         from six.moves import configparser
-        from six import PY2
 
         # use these files to extend/overwrite the conf_values.
         # Last red file always overwrites existing values!
@@ -288,5 +291,4 @@ False
         self._conf_values['pyemma'][name] = value
 
 # assign an alias to the wrapped module under 'config._impl'
-sys.modules['pyemma.config._impl'] = Wrapper(sys.modules[__name__])
-sys.modules[__name__] = sys.modules['pyemma.config._impl']
+sys.modules[__name__] = Wrapper(sys.modules[__name__])

@@ -40,7 +40,6 @@ def setupLogging(config):
     """ set up the logging system with the configured (in pyemma.cfg) logging config (logging.yml)
     @param config: instance of pyemma.config module (wrapper)
     """
-    #from pyemma.util import config
     import yaml
 
     args = config.logging_config
@@ -60,7 +59,7 @@ def setupLogging(config):
         # fall back to default
         if not default:
             try:
-                with open(config.default_logging_config) as f:
+                with open(config.default_logging_file) as f:
                     D = yaml.load(f)
                     warnings.warn('Your set logging configuration could not '
                                   'be used. Used default as fallback.')
@@ -87,7 +86,11 @@ def setupLogging(config):
     except ValueError as ve:
         # issue with file handler?
         if 'files' in str(ve) and 'rotating_files' in D['handlers']:
-                D['handlers']['rotating_files']['filename'] = os.path.join(config.cfg_dir, 'pyemma.log')
+            print("cfg dir", config.cfg_dir)
+            new_file = os.path.join(config.cfg_dir, 'pyemma.log')
+            warnings.warn("set logfile to %s, because there was"
+                          " an error writing to the desired one" % new_file)
+            D['handlers']['rotating_files']['filename'] = new_file
         else:
             raise
         dictConfig(D)

@@ -33,38 +33,42 @@ import pyemma
 
 class TestConfig(unittest.TestCase):
 
-    def test_config_vals_match_properties_in_wrapper(self):
-        wrapper_instance = sys.modules['pyemma.config._impl']
-        try:
-            with TemporaryDirectory() as td:
-                os.environ['PYEMMA_CFG_DIR'] = td
-                wrapper_instance._create_cfg_dir()
-                self.assertEqual(wrapper_instance.cfg_dir, td)
-                from pyemma import config as config_module
-                assert hasattr(config_module, 'default_config_file')
-                my_cfg = os.path.join(td, 'pyemma.cfg')
-                self.assertEqual(pkg_resources.resource_filename('pyemma', 'pyemma.cfg') , config_module.default_config_file)
-                from six.moves import configparser
-                reader = configparser.ConfigParser()
-                reader.read(my_cfg)
+    def setUp(self):
+        self.config_inst = pyemma.config()
 
-                opts = sorted(reader.options('pyemma'))
-                actual = sorted(config_module.keys())
-                self.assertEqual(opts, actual)
-        finally:
+    def tearDown(self):
+        try:
             del os.environ['PYEMMA_CFG_DIR']
+        except KeyError:
+            pass
+
+    def test_config_vals_match_properties_in_wrapper(self):
+        with TemporaryDirectory() as td:
+            os.environ['PYEMMA_CFG_DIR'] = td
+            self.config_inst._create_cfg_dir()
+            self.assertEqual(self.config_inst.cfg_dir, td)
+            from pyemma import config as config_module
+            assert hasattr(config_module, 'default_config_file')
+            my_cfg = os.path.join(td, 'pyemma.cfg')
+            self.assertEqual(pkg_resources.resource_filename('pyemma', 'pyemma.cfg') , config_module.default_config_file)
+            from six.moves import configparser
+            reader = configparser.ConfigParser()
+            reader.read(my_cfg)
+
+            opts = sorted(reader.options('pyemma'))
+            actual = sorted(config_module.keys())
+            self.assertEqual(opts, actual)
 
     @unittest.skipIf(sys.platform == 'win32', 'unix based test')
     def test_can_not_create_cfg_dir(self):
         os.environ['PYEMMA_CFG_DIR'] = '/dev/null'
 
         with self.assertRaises(RuntimeError) as cm:
-            pyemma.config._create_cfg_dir()
+            self.config_inst._create_cfg_dir()
         self.assertIn("no valid directory", str(cm.exception))
 
     @unittest.skipIf(sys.platform == 'win32', 'unix based test')
     def test_non_writeable_cfg_dir(self):
-
         with TemporaryDirectory() as tmp:
             os.environ['PYEMMA_CFG_DIR'] = tmp
             # make cfg dir non-writeable
@@ -72,24 +76,24 @@ class TestConfig(unittest.TestCase):
             assert not os.access(tmp, os.W_OK)
 
             with self.assertRaises(RuntimeError) as cm:
-                pyemma.config._create_cfg_dir()
+                self.config_inst._create_cfg_dir()
             self.assertIn("is not writeable", str(cm.exception))
 
     def test_shortcuts(self):
-        pyemma.util.config.show_progress_bars = False
-        assert pyemma.config.show_progress_bars == False
+        self.config_inst.show_progress_bars = False
+        assert not self.config_inst.show_progress_bars
 
     def test_shortcuts2(self):
-        pyemma.config.show_progress_bars = 'True'
-        assert pyemma.config.show_progress_bars
+        self.config_inst.show_progress_bars = 'True'
+        assert self.config_inst.show_progress_bars
 
     def test_shortcut3(self):
-        pyemma.config['show_progress_bars'] = 'True'
-        assert pyemma.config.show_progress_bars
+        self.config_inst['show_progress_bars'] = 'True'
+        assert self.config_inst.show_progress_bars
 
     def test_types(self):
-        pyemma.config.show_progress_bars = 0
-        assert isinstance(pyemma.config.show_progress_bars, bool)
+        self.config_inst.show_progress_bars = 0
+        assert isinstance(self.config_inst.show_progress_bars, bool)
 
 if __name__ == "__main__":
     unittest.main()
