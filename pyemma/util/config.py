@@ -16,9 +16,38 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
 from __future__ import absolute_import
-doc=r'''
+
+import os
+import shutil
+import sys
+import warnings
+
+from pyemma.util.annotators import deprecated
+from pyemma.util.files import mkdir_p
+
+import pkg_resources
+
+
+# for IDE stupidity, just add a new cfg var here, if you add a property to Wrapper
+cfg_dir = default_config_file = logging_config = show_progress_bars = used_filenames = use_trajectory_lengths_cache = None
+
+__all__ = (
+           'cfg_dir',
+           'default_config_file',
+           'logging_config',
+           'show_progress_bars',
+           'used_filenames',
+           'use_trajectory_lengths_cache',
+           )
+
+
+class NotADirectoryError(Exception):
+    pass
+
+
+class Wrapper(object):
+    r'''
 Runtime Configuration
 =====================
 To configure the runtime behavior such as the logging system or other parameters,
@@ -33,13 +62,17 @@ locations with different priorities:
 
 The same applies for the filename ".pyemma.cfg" (hidden file).
 
+Note that you can also override the location of the configuration directory by
+setting an environment variable named "PYEMMA_CFG_DIR" to a writeable path to 
+override the location of the config files.
+
 The default values are stored in latter file to ensure these values are always
 defined. This is preferred over hardcoding them somewhere in the Python code.
 
 After the first import of pyemma, you will find a .pyemma directory in your
 user directory. It contains a pyemma.cfg and logging.yml. The latter is a YAML
 file to configure the logging system.
-For details have a look at the brief documentation: 
+For details have a look at the brief documentation:
 https://docs.python.org/2/howto/logging.html
 
 Default configuration file
@@ -52,214 +85,196 @@ the Python package:
 
 To access the config at runtime eg. the logging section:
 
->>> from pyemma import config
->>> print(config.show_progress_bars)
+>>> from pyemma import config # doctest: +SKIP
+>>> print(config.show_progress_bars) # doctest: +SKIP
 True
 
 or
 
->>> config.show_progress_bars = False
->>> print(config.show_progress_bars)
+>>> config.show_progress_bars = False # doctest: +SKIP
+>>> print(config.show_progress_bars) # doctest: +SKIP
 False
+    '''
+    DEFAULT_CONFIG_FILE_NAME = 'pyemma.cfg'
+    DEFAULT_LOGGING_FILE_NAME = 'logging.yml'
 
+    __name__ = 'pyemma.util.config'
+    __file__ = __file__
 
-
-Notes
------
-All values are being stored as strings, so to compare eg. if a value is True,
-compare for:
-
-.. code-block:: python
-
-    if pyemma.config.show_progress_bars == 'True':
-        ...
-
-'''
-import os
-import sys
-import warnings
-
-from six.moves import configparser
-from six import PY2
-from pyemma.util.files import mkdir_p
-
-__docformat__ = "restructuredtext en"
-__all__ = ['configParser', 'used_filenames', 'AttribStore']
-
-configParser = None
-"""instance of `ConfigParser.SafeConfigParser` to have always valid config values."""
-
-used_filenames = []
-"""these filenames have been tried to red to obtain basic configuration values."""
-
-conf_values = None
-"""holds all value pairs of a conf_values file section in a dict under its section name
-eg. { 'Java' : { 'initheap' : '32m', ... }, ... }
-"""
-
-class AttribStore(dict):
-    """ store arbitrary attributes in this dictionary like class."""
-    def __init__(self, *a, **kw):
-        super(AttribStore, self).__init__(*a, **kw)
-        self.__wrapped__ = None
-
-    def __getattr__(self, name):
-        """ return attribute with given name or raise."""
-        return self[name]
-
-    def __setattr__(self, name, value):
-        """ store attribute with given name and value."""
-        self[name] = value
-
-
-def create_cfg_dir(default_config):
-    home = os.path.expanduser("~")
-    pyemma_cfg_dir = os.path.join(home, ".pyemma")
-    if not os.path.exists(pyemma_cfg_dir):
-        try:
-            mkdir_p(pyemma_cfg_dir)
-        except EnvironmentError:
-            raise RuntimeError("could not create configuration directory '%s'" %
-                               pyemma_cfg_dir)
-
-    def touch(fname, times=None):
-        with open(fname, 'a'):
-            os.utime(fname, times)
-
-    test_fn = os.path.join(pyemma_cfg_dir, "dummy")
-    try:
-        touch(test_fn)
-        os.unlink(test_fn)
-    except:
-        raise RuntimeError("%s is not writeable" % pyemma_cfg_dir)
-
-    # give user the default cfg file, if its not there
-    import shutil
-    if not os.path.exists(os.path.join(pyemma_cfg_dir, os.path.basename(default_config))):
-        shutil.copy(default_config, pyemma_cfg_dir)
-
-    return pyemma_cfg_dir
-
-
-def readConfiguration():
-    """
-    TODO: consider using json to support arbitrary python objects in ini file (if this getting more complex)
-    """
-    import pkg_resources
-
-    global configParser, conf_values, used_filenames
-
-    cfg = 'pyemma.cfg'
-    default_pyemma_conf = pkg_resources.resource_filename('pyemma', cfg)
-
-    # create .pyemma dir in home
-    pyemma_cfg_dir = ''
-    try:
-        pyemma_cfg_dir = create_cfg_dir(default_pyemma_conf)
-    except RuntimeError as re:
-        warnings.warn(str(re))
-
-    # use these files to extend/overwrite the conf_values.
-    # Last red file always overwrites existing values!
-    filenames = [
-        cfg,  # conf_values in current dir
-        os.path.join(pyemma_cfg_dir, cfg),
-        os.path.join(os.path.expanduser(
-                     '~' + os.path.sep), cfg)  # config in user dir
-    ]
-
-    cfg_hidden = '.pyemma.cfg'
-    filenames += [
-        cfg_hidden,
-        os.path.join(pyemma_cfg_dir, cfg),
-        os.path.join(os.path.expanduser(
-                     '~' + os.path.sep), cfg_hidden)
-    ]
-
-    # read defaults from default_pyemma_conf first.
-    defParser = configparser.RawConfigParser()
-    
-    def readline_generator(f):
-        line = f.readline()
-        while line:
-            yield line
-            line = f.readline()
-
-    try:
-        with open(default_pyemma_conf) as f:
-            if PY2:
-                defParser.readfp(f)
-            else:
-                defParser.read_file(readline_generator(f), default_pyemma_conf)
-    except EnvironmentError as e:
-        raise RuntimeError("FATAL ERROR: could not read default configuration"
-                           " file %s\n%s" % (default_pyemma_conf, e))
-
-    # store values of defParser in configParser with sections
-    if PY2:
-        configParser = configparser.SafeConfigParser()
-    else:
-        configParser = configparser.ConfigParser()
-    for section in defParser.sections():
-        configParser.add_section(section)
-        for item in defParser.items(section):
-            configParser.set(section, item[0], item[1])
-
-    # this is a list of used configuration filenames during parsing the conf
-    used_filenames = configParser.read(filenames)
-
-    # store values in dictionaries for easy access
-    conf_values = AttribStore()
-    for section in configParser.sections():
-        conf_values[section] = AttribStore()
-        for item in configParser.items(section):
-            conf_values[section][item[0]] = item[1]
-
-    # remember cfg dir
-    conf_values['pyemma']['cfg_dir'] = pyemma_cfg_dir
-
-# read configuration once at import time
-readConfiguration()
-
-
-class Wrapper(object):
-
-    __doc__ = doc
-
-    # wrap attribute access for this module to enable shortcuts to config values
     def __init__(self, wrapped):
+        # create .pyemma dir in home
+        try:
+            self._create_cfg_dir()
+        except RuntimeError as re:
+            warnings.warn(str(re))
+
+        try:
+            self.__readConfiguration()
+        except RuntimeError as re:
+            warnings.warn("unable to read default configuration file. Logging and "
+                          " progress bar handling could behave bad! Error: %s" % re)
+
+        # wrap this module
         self.wrapped = wrapped
         self.__wrapped__ = wrapped
 
-    def __getattr__(self, name):
-        # try to lookup in conf_values first, then fall back to module attributes
-        try:
-            return conf_values['pyemma'][name]
-        except KeyError:
-            try:
-                return conf_values[name]
-            except KeyError:
-                return getattr(self.wrapped, name)
+    @property
+    def cfg_dir(self):
+        """ configuration directory (eg. in ~/.pyemma """
+        if self._cfg_dir is None:
+            self._cfg_dir = self._create_cfg_dir()
+        return self._cfg_dir
 
+    @property
+    def used_filenames(self):
+        """these filenames have been tried to red to obtain basic configuration values."""
+        return self._used_filenames
+
+    @property
+    def default_config_file(self):
+        """ default config file living in PyEMMA package """
+        return pkg_resources.resource_filename('pyemma', Wrapper.DEFAULT_CONFIG_FILE_NAME)
+
+    @deprecated("do not use this!")
+    def conf_values(self):
+        return self._conf_values
+
+    def keys(self):
+        return ['show_progress_bars',
+                'use_trajectory_lengths_cache',
+                'logging_config',
+                ]
+
+    ### SETTINGS
+    @property
+    def logging_config(self):
+        cfg = self._conf_values['pyemma']['logging_config']
+        if cfg == 'DEFAULT':
+            cfg = os.path.join(self.cfg_dir, Wrapper.DEFAULT_LOGGING_FILE_NAME)
+        return cfg
+
+    @property
+    def show_progress_bars(self):
+        return bool(self._conf_values['pyemma']['show_progress_bars'])
+
+    @show_progress_bars.setter
+    def show_progress_bars(self, val):
+        self._conf_values['pyemma']['show_progress_bars'] = bool(val)
+
+    @property
+    def use_trajectory_lengths_cache(self):
+        return bool(self._conf_values['pyemma']['use_trajectory_lengths_cache'])
+
+    @use_trajectory_lengths_cache.setter
+    def use_trajectory_lengths_cache(self, val):
+        self._conf_values['pyemma']['use_trajectory_lengths_cache'] = bool(val)
+
+    def _create_cfg_dir(self):
+        try:
+            os.stat(self.default_config_file)
+        except OSError:
+            raise RuntimeError('Error during accessing default config file "%s"' %
+                               self.default_config_file)
+
+        if 'PYEMMA_CFG_DIR' in os.environ:
+            pyemma_cfg_dir = os.environ['PYEMMA_CFG_DIR']
+        else:
+            pyemma_cfg_dir = os.path.join(os.path.expanduser("~"), ".pyemma")
+
+        self._cfg_dir = pyemma_cfg_dir
+        if not os.path.exists(pyemma_cfg_dir):
+            try:
+                mkdir_p(pyemma_cfg_dir)
+            except EnvironmentError:
+                raise RuntimeError("could not create configuration directory '%s'" %
+                                   pyemma_cfg_dir)
+            except NotADirectoryError:
+                raise RuntimeWarning("pyemma cfg dir (%s) is not a directory" %
+                                     pyemma_cfg_dir)
+
+        if not os.path.isdir(pyemma_cfg_dir):
+            raise RuntimeError("%s is no valid directory" % pyemma_cfg_dir)
+        if not os.access(pyemma_cfg_dir, os.W_OK):
+            raise RuntimeError("%s is not writeable" % pyemma_cfg_dir)
+
+        # give user the default cfg file, if its not there
+        files_to_check_copy = [
+               Wrapper.DEFAULT_CONFIG_FILE_NAME,
+               Wrapper.DEFAULT_LOGGING_FILE_NAME,
+        ]
+        dests = [os.path.join(pyemma_cfg_dir, f) for f in files_to_check_copy]
+        srcs = [pkg_resources.resource_filename('pyemma', f) for f in files_to_check_copy]
+        for src, dest in zip(srcs, dests):
+            if not os.path.exists(dest):
+                shutil.copyfile(src, dest)
+
+    def __readConfiguration(self):
+        """
+        reads config files from various locations to build final config.
+        """
+        from six.moves import configparser
+        from six import PY2
+
+        # use these files to extend/overwrite the conf_values.
+        # Last red file always overwrites existing values!
+        cfg = Wrapper.DEFAULT_CONFIG_FILE_NAME
+        filenames = [
+            cfg,  # conf_values in current dir
+            os.path.join(self.cfg_dir, cfg),
+            os.path.join(os.path.expanduser(
+                         '~' + os.path.sep), cfg)  # config in user dir
+        ]
+
+        cfg_hidden = '.pyemma.cfg'
+        filenames += [
+            cfg_hidden,
+            # deprecated:
+            os.path.join(self.cfg_dir, cfg_hidden),
+            os.path.join(os.path.expanduser(
+                         '~' + os.path.sep), cfg_hidden)
+        ]
+
+        # read defaults from default_pyemma_conf first.
+        defParser = configparser.RawConfigParser()
+
+        try:
+            defParser.read(self.default_config_file)
+        except EnvironmentError as e:
+            raise RuntimeError("FATAL ERROR: could not read default configuration"
+                               " file %s\n%s" % (self.default_config_file, e))
+
+        # store values of defParser in configParser with sections
+        configParser = configparser.SafeConfigParser()
+
+        for section in defParser.sections():
+            configParser.add_section(section)
+            for item in defParser.items(section):
+                configParser.set(section, item[0], item[1])
+
+        # this is a list of used configuration filenames during parsing the
+        # conf
+        self._used_filenames = configParser.read(filenames)
+
+        # store values in dictionaries for easy access
+        conf_values = dict()
+        for section in configParser.sections():
+            conf_values[section] = dict()
+            for item in configParser.items(section):
+                conf_values[section][item[0]] = item[1]
+
+        conf_values['pyemma']['cfg_dir'] = self.cfg_dir
+        self._conf_values = conf_values
+
+    # for dictionary like lookups
     def __getitem__(self, name):
         try:
-            return conf_values['pyemma'][name]
+            return self._conf_values['pyemma'][name]
         except KeyError:
-            return conf_values[name]
+            return self._conf_values[name]
 
     def __setitem__(self, name, value):
-        if name in conf_values['pyemma']:
-            conf_values['pyemma'][name] = value
-        elif name in conf_values:
-            conf_values[name] = value
-        else:
-            raise KeyError('"%s" is not a valid config section.' % name)
+        self._conf_values['pyemma'][name] = value
 
-    def __setattr__(self, name, value):
-        if name not in ('wrapped', '__wrapped__'):
-            self.__setitem__(name, value)
-        else:
-            object.__setattr__(self, name, value)
-
-sys.modules[__name__] = Wrapper(sys.modules[__name__])
-
+# assign an alias to the wrapped module under 'config._impl'
+sys.modules['pyemma.config._impl'] = Wrapper(sys.modules[__name__])
+sys.modules[__name__] = sys.modules['pyemma.config._impl']
