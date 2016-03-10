@@ -20,13 +20,14 @@ from __future__ import absolute_import
 
 from six.moves import range
 import numpy as _np
+from pyemma.util.types import  is_iterable_of_int as _is_iterable_of_int, is_int as _is_int
 
 __author__ = 'noe'
 
 
 def plot_implied_timescales(ITS, ax=None, outfile=None, show_mle=True, show_mean=True,
-                            xlog=False, ylog=True, confidence=0.95, refs=None,
-                            units='steps', dt=1., **kwargs):
+                            xlog=False, ylog=True, confidence=0.95, refs=None, nits=-1,
+                            process=None, units='steps', dt=1., **kwargs):
     r"""Implied timescale plot
 
     Parameters
@@ -51,6 +52,13 @@ def plot_implied_timescales(ITS, ax=None, outfile=None, show_mle=True, show_mean
     refs : ndarray((m), dtype=float), optional, default = None
         Reference (exact solution or other reference) timescales if known. The number of timescales must match those
         in the ITS object
+    nits: integer, default = -1
+        Number of implied timescales to be shown. The default behaviour (-1) is to show all timescales available.
+        :py:obj:`nits` != -1 and :py:obj:`process` != None are mutually exclusive
+    process : iterable of integers, default is None
+        list or ndarray((m), dtype=int) containing a list of the processes to be shown. The default behaviour is
+        to show all timescales available.
+        :py:obj:`process` != None and :py:obj:`nits` != -1 are mutually exclusive
     units: str or list (len=2) of strings, optional, default = 'steps'
         Affects the labeling of the axes. Used with :py:obj:`dt`, allows for changing the physical units of the axes.
         Accepts simple LaTeX math strings, eg. '$\mu$s'
@@ -78,6 +86,21 @@ def plot_implied_timescales(ITS, ax=None, outfile=None, show_mle=True, show_mean
     lags = ITS.lagtimes
     xmax = _np.max(lags)
 
+    # Check the processes to be shown
+    if process is not None:
+        if nits != -1:
+            raise TypeError('optional arguments nits and process are mutually exclusive:', nits, process)
+        if not _is_iterable_of_int(process):
+            raise ValueError('process has to be an iterable of integers')
+        if _np.max(process) > ITS.number_of_timescales:
+            raise ValueError('requested process %u, whereas ITS only contains %u timescales'%(_np.max(process), ITS.number_of_timescales))
+        # Now that it's for sure that nits==-1, process is iter_of_ints, and the requested processes exist in its object:
+        its_idx = process
+    else:
+        if not _is_int(nits):
+            raise TypeError('nits is not an integer, ',nits)
+        its_idx = _np.arange(ITS.number_of_timescales)[:nits]
+
     # Check units and dt for user error.
     if isinstance(units,list) and len(units)!=2:
         raise TypeError("If units is a list, len(units) has to be = 2")
@@ -92,7 +115,7 @@ def plot_implied_timescales(ITS, ax=None, outfile=None, show_mle=True, show_mean
 
     #ymin = min(_np.min(lags), _np.min(ITS.get_timescales()))
     #ymax = 1.5*_np.min(ITS.get_timescales())
-    for i in range(ITS.number_of_timescales):
+    for i in its_idx:
         # plot estimate
         if show_mle:
             ax.plot(lags*dt[0], ITS.get_timescales(process=i)*dt[1], color=colors[i % len(colors)], **kwargs)
@@ -106,8 +129,8 @@ def plot_implied_timescales(ITS, ax=None, outfile=None, show_mle=True, show_mean
             ax.fill_between(lags*dt[0], lconf*dt[1], rconf*dt[1], alpha=0.2, color=colors[i % len(colors)])
         # reference available?
         if (refs is not None):
-            tref = refs[i]
-            ax.plot([0,min(tref,xmax)]*dt[0], [tref,tref]*dt[1], color='black', linewidth=1)
+            tref = refs[i]*dt[1]
+            ax.plot([0,min(tref,xmax)*dt[0]], [tref,tref], color='black', linewidth=1)
     # cutoff
     ax.plot(lags*dt[0], lags*dt[1], linewidth=2, color='black')
     ax.set_xlim([1*dt[0], xmax*dt[0]])
