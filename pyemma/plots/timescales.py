@@ -53,10 +53,11 @@ def plot_implied_timescales(ITS, ax=None, outfile=None, show_mle=True, show_mean
         Reference (exact solution or other reference) timescales if known. The number of timescales must match those
         in the ITS object
     nits: integer, default = -1
-        Number of implied timescales to be shown. The default behaviour (-1) is to show all available.
+        Number of implied timescales to be shown. The default behaviour (-1) is to show all timescales available.
         :py:obj:`nits` != -1 and :py:obj:`process` != None are mutually exclusive
     process : iterable of integers, default is None
-        list or ndarray((m), dtype=int) containing a list of the processes to be shown.
+        list or ndarray((m), dtype=int) containing a list of the processes to be shown. The default behaviour is
+        to show all timescales available.
         :py:obj:`process` != -1 and :py:obj:`nits` != None are mutually exclusive
     units: str or list (len=2) of strings, optional, default = 'steps'
         Affects the labeling of the axes. Used with :py:obj:`dt`, allows for changing the physical units of the axes.
@@ -127,8 +128,8 @@ def plot_implied_timescales(ITS, ax=None, outfile=None, show_mle=True, show_mean
             ax.fill_between(lags*dt[0], lconf*dt[1], rconf*dt[1], alpha=0.2, color=colors[i % len(colors)])
         # reference available?
         if (refs is not None):
-            tref = refs[i]
-            ax.plot([0,min(tref,xmax)]*dt[0], [tref,tref]*dt[1], color='black', linewidth=1)
+            tref = refs[i]*dt[1]
+            ax.plot([0,min(tref,xmax)*dt[0]], [tref,tref], color='black', linewidth=1)
     # cutoff
     ax.plot(lags*dt[0], lags*dt[1], linewidth=2, color='black')
     ax.set_xlim([1*dt[0], xmax*dt[0]])
