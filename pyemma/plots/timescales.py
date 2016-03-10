@@ -58,7 +58,7 @@ def plot_implied_timescales(ITS, ax=None, outfile=None, show_mle=True, show_mean
     process : iterable of integers, default is None
         list or ndarray((m), dtype=int) containing a list of the processes to be shown. The default behaviour is
         to show all timescales available.
-        :py:obj:`process` != -1 and :py:obj:`nits` != None are mutually exclusive
+        :py:obj:`process` != None and :py:obj:`nits` != -1 are mutually exclusive
     units: str or list (len=2) of strings, optional, default = 'steps'
         Affects the labeling of the axes. Used with :py:obj:`dt`, allows for changing the physical units of the axes.
         Accepts simple LaTeX math strings, eg. '$\mu$s'
@@ -98,7 +98,6 @@ def plot_implied_timescales(ITS, ax=None, outfile=None, show_mle=True, show_mean
         its_idx = process
     else:
         its_idx = range(ITS.number_of_timescales)[:nits]
-        pass
 
     # Check units and dt for user error.
     if isinstance(units,list) and len(units)!=2:
