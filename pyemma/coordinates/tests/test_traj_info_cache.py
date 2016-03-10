@@ -39,6 +39,12 @@ import mdtraj
 import pkg_resources
 import pyemma
 
+import six
+if six.PY2:
+    import anydbm
+else:
+    import dbm as anydbm
+
 from pyemma.coordinates.data.util.traj_info_cache import TrajectoryInfoCache
 import numpy as np
 
@@ -51,7 +57,6 @@ class TestTrajectoryInfoCache(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        super(TestTrajectoryInfoCache, cls).setUpClass()
         cls.work_dir = tempfile.mkdtemp("traj_cache_test")
 
     def setUp(self):
@@ -67,9 +72,30 @@ class TestTrajectoryInfoCache(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        super(TestTrajectoryInfoCache, cls).tearDownClass()
         import shutil
         shutil.rmtree(cls.work_dir, ignore_errors=True)
+
+    def test_get_instance(self):
+        # test for exceptions in singleton creation
+        inst = TrajectoryInfoCache.instance()
+        inst.current_db_version
+        
+    def test_store_load_traj_info(self):
+        x = np.random.random((10, 3))
+        try:
+            old_val = config.conf_values['pyemma']['cfg_dir']
+            config.conf_values['pyemma']['cfg_dir'] = self.work_dir
+            with NamedTemporaryFile(delete=False) as fh:
+                np.savetxt(fh.name, x)
+                reader = api.source(fh.name)
+                info = self.db[fh.name, reader]
+                self.db._database.close()
+                self.db._database = anydbm.open(self.db.database_filename, 'r')
+                info2 = self.db[fh.name, reader]
+                self.assertEqual(info2, info)
+        finally:
+            config.conf_values['pyemma']['cfg_dir'] = old_val
+
 
     def test_exceptions(self):
         # in accessible files
