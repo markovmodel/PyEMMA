@@ -20,7 +20,7 @@ from __future__ import absolute_import
 
 from six.moves import range
 import numpy as _np
-from pyemma.util.types import  is_iterable_of_int as _is_iterable_of_int
+from pyemma.util.types import  is_iterable_of_int as _is_iterable_of_int, is_int as _is_int
 
 __author__ = 'noe'
 
@@ -97,7 +97,9 @@ def plot_implied_timescales(ITS, ax=None, outfile=None, show_mle=True, show_mean
         # Now that it's for sure that nits==-1, process is iter_of_ints, and the requested processes exist in its object:
         its_idx = process
     else:
-        its_idx = range(ITS.number_of_timescales)[:nits]
+        if not _is_int(nits):
+            raise TypeError('nits is not an integer, ',nits)
+        its_idx = _np.arange(ITS.number_of_timescales)[:nits]
 
     # Check units and dt for user error.
     if isinstance(units,list) and len(units)!=2:
