@@ -571,6 +571,7 @@ class TestFeaturizer(unittest.TestCase):
         assert np.allclose(D.squeeze(), Dref)
         assert len(self.feat.describe())==self.feat.dimension()
 
+
 class TestFeaturizerNoDubs(unittest.TestCase):
 
     def testAddFeaturesWithDuplicates(self):
@@ -618,7 +619,7 @@ class TestFeaturizerNoDubs(unittest.TestCase):
         my_feature = CustomFeature(my_func)
         my_feature.dimension = 3
         featurizer.add_custom_feature(my_feature)
-        
+
         self.assertEqual(len(featurizer.active_features), expected_active)
         featurizer.add_custom_feature(my_feature)
         self.assertEqual(len(featurizer.active_features), expected_active)
@@ -634,22 +635,22 @@ class TestFeaturizerNoDubs(unittest.TestCase):
         ref = mdtraj.load(xtcfile, top=pdbfile)
         featurizer.add_minrmsd_to_ref(ref)
         featurizer.add_minrmsd_to_ref(ref)
-        self.assertEquals(len(featurizer.active_features), expected_active)
+        self.assertEqual(len(featurizer.active_features), expected_active)
 
         expected_active += 1
         featurizer.add_minrmsd_to_ref(pdbfile)
         featurizer.add_minrmsd_to_ref(pdbfile)
-        self.assertEquals(len(featurizer.active_features), expected_active)
+        self.assertEqual(len(featurizer.active_features), expected_active)
 
         expected_active += 1
         featurizer.add_residue_mindist()
         featurizer.add_residue_mindist()
-        self.assertEquals(len(featurizer.active_features), expected_active)
+        self.assertEqual(len(featurizer.active_features), expected_active)
 
         expected_active += 1
         featurizer.add_group_mindist([[0,1],[0,2]])
         featurizer.add_group_mindist([[0,1],[0,2]])
-        self.assertEquals(len(featurizer.active_features), expected_active)
+        self.assertEqual(len(featurizer.active_features), expected_active)
 
     def test_labels(self):
         """ just checks for exceptions """
