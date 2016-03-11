@@ -23,7 +23,15 @@ Created on 30.04.2015
 from __future__ import absolute_import
 
 from tempfile import NamedTemporaryFile
+
+try:
+    import bsddb
+    have_bsddb = True
+except ImportError:
+    have_bsddb = False
+
 import os
+import six
 import tempfile
 import unittest
 
@@ -31,6 +39,7 @@ from pyemma.coordinates import api
 from pyemma.coordinates.data.feature_reader import FeatureReader
 from pyemma.coordinates.data.numpy_filereader import NumPyFileReader
 from pyemma.coordinates.data.py_csv_reader import PyCSVReader
+from pyemma.coordinates.data.util.traj_info_cache import TrajectoryInfoCache
 from pyemma.coordinates.tests.test_featurereader import create_traj
 from pyemma.datasets import get_bpti_test_data
 from pyemma.util import config
@@ -38,16 +47,12 @@ from pyemma.util.files import TemporaryDirectory
 import mdtraj
 import pkg_resources
 import pyemma
-
-import six
-if six.PY2:
-    import anydbm
-else:
-    import dbm as anydbm
-
-from pyemma.coordinates.data.util.traj_info_cache import TrajectoryInfoCache
 import numpy as np
 
+if six.PY2:
+    import dumbdbm
+else:
+    from dbm import dumb as dumbdbm
 
 xtcfiles = get_bpti_test_data()['trajs']
 pdbfile = get_bpti_test_data()['top']
@@ -79,7 +84,7 @@ class TestTrajectoryInfoCache(unittest.TestCase):
         # test for exceptions in singleton creation
         inst = TrajectoryInfoCache.instance()
         inst.current_db_version
-        
+
     def test_store_load_traj_info(self):
         x = np.random.random((10, 3))
         try:
@@ -90,12 +95,11 @@ class TestTrajectoryInfoCache(unittest.TestCase):
                 reader = api.source(fh.name)
                 info = self.db[fh.name, reader]
                 self.db._database.close()
-                self.db._database = anydbm.open(self.db.database_filename, 'r')
+                self.db._database = dumbdbm.open(self.db.database_filename, 'r')
                 info2 = self.db[fh.name, reader]
                 self.assertEqual(info2, info)
         finally:
             config.conf_values['pyemma']['cfg_dir'] = old_val
-
 
     def test_exceptions(self):
         # in accessible files
