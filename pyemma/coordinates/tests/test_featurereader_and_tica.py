@@ -109,7 +109,8 @@ class TestFeatureReaderAndTICA(unittest.TestCase):
             partial.partial_fit(traj)
 
         np.testing.assert_allclose(partial.eigenvalues, ref.eigenvalues)
-        np.testing.assert_allclose(np.abs(partial.eigenvectors), np.abs(ref.eigenvectors), atol=1e-8)
+        # only compare first two eigenvectors, because we only have two metastable processes
+        np.testing.assert_allclose(np.abs(partial.eigenvectors[:2]), np.abs(ref.eigenvectors[:2]), atol=1e-8)
 
 if __name__ == "__main__":
     unittest.main()

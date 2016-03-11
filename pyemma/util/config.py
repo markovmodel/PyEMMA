@@ -151,6 +151,7 @@ False
     def default_logging_file(self):
         return pkg_resources.resource_filename('pyemma', Wrapper.DEFAULT_LOGGING_FILE_NAME)
 
+    @property
     @deprecated("do not use this!")
     def conf_values(self):
         return self._conf_values
