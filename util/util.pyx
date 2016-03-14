@@ -304,8 +304,9 @@ def state_counts(ttrajs, dtrajs, nstates=None, nthermo=None):
     N = _np.zeros(shape=(nthermo, nstates), dtype=_np.intc)
     for d, t in zip(dtrajs, ttrajs):
         for K in range(nthermo):
+            idx = (t == K)
             for i in range(nstates):
-                N[K, i] += ((t == K) * (d == i)).sum()
+                N[K, i] += _np.sum(_np.logical_and(idx, (d == i)))
     return N
 
 def restrict_samples_to_cset(state_sequence, bias_energy_sequence, cset):
