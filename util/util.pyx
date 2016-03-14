@@ -270,7 +270,8 @@ def count_matrices(dtraj, lag, sliding=True, sparse_return=True, nthermo=None, n
         return C_K
     return _np.array([C.toarray() for C in C_K], dtype=_np.intc)
 
-def state_counts(dtraj, nstates=None, nthermo=None):
+def state_counts(ttrajs, dtrajs, nstates=None, nthermo=None):
+    # TODO: fix docstring
     r"""
     Count discrete states visits in all thermodynamic states.
 
@@ -288,8 +289,8 @@ def state_counts(dtraj, nstates=None, nthermo=None):
     N : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
         state counts
     """
-    kmax = int(_np.max([d[:, 0].max() for d in dtraj]))
-    nmax = int(_np.max([d[:, 1].max() for d in dtraj]))
+    kmax = int(_np.max([t.max() for t in ttrajs]))
+    nmax = int(_np.max([d.max() for d in dtrajs]))
     if nthermo is None:
         nthermo = kmax + 1
     elif nthermo < kmax + 1:
@@ -299,10 +300,10 @@ def state_counts(dtraj, nstates=None, nthermo=None):
     elif nstates < nmax + 1:
         raise ValueError("nstates is smaller than the number of observed microstates")
     N = _np.zeros(shape=(nthermo, nstates), dtype=_np.intc)
-    for d in dtraj:
+    for d, t in zip(dtrajs, ttrajs):
         for K in range(nthermo):
             for i in range(nstates):
-                N[K, i] += ((d[:, 0] == K) * (d[:, 1] == i)).sum()
+                N[K, i] += ((t == K) * (d == i)).sum()
     return N
 
 def restrict_samples_to_cset(state_sequence, bias_energy_sequence, cset):
