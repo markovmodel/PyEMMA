@@ -226,8 +226,8 @@ class TestCSVReader(unittest.TestCase):
 
     def test_compare_readline(self):
         data = np.arange(99*3).reshape(-1, 3)
-        fn = tempfile.mktemp()
-        try:
+        with tempfile.NamedTemporaryFile(delete=False) as f:
+            fn = f.name
             np.savetxt(fn, data)
             # calc offsets
             reader = CSVReader(fn)
@@ -244,8 +244,6 @@ class TestCSVReader(unittest.TestCase):
                     fh2.seek(offset[ii])
                     line2 = fh2.readline()
                     self.assertEqual(line, line2, "differs at offset %i (%s != %s)" % (ii, off, offset[ii]))
-        finally:
-            os.unlink(fn)
 
     def test_use_cols(self):
         reader = CSVReader(self.filename1)
@@ -257,7 +255,7 @@ class TestCSVReader(unittest.TestCase):
     def test_newline_at_eof(self):
         x = "1 2 3\n4 5 6\n\n"
         desired = np.fromstring(x, sep=" ", dtype=np.float32).reshape(-1, 3)
-        with tempfile.NamedTemporaryFile(mode='wb', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
             f.write(x)
             f.close()
             reader = CSVReader(f.name)
@@ -267,7 +265,7 @@ class TestCSVReader(unittest.TestCase):
     def test_newline_at_eof_carriage_return(self):
         x = "1 2 3\r\n4 5 6\r\n"
         desired = np.fromstring(x, sep=" ", dtype=np.float32).reshape(-1, 3)
-        with tempfile.NamedTemporaryFile(mode='wb', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
             f.write(x)
             f.close()
             reader = CSVReader(f.name)
@@ -277,7 +275,7 @@ class TestCSVReader(unittest.TestCase):
     def test_holes_in_file(self):
         x = "1 2 3\n4 5 6\n7 8 9"
         desired = np.fromstring(x, sep=" ", dtype=np.float32).reshape(-1, 3)
-        with tempfile.NamedTemporaryFile(mode='wb', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
             f.write(x)
             f.close()
             reader = CSVReader(f.name)

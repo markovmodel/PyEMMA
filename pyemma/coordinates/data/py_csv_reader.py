@@ -104,7 +104,7 @@ class PyCSVIterator(DataSourceIterator):
 
     def _convert_to_np_chunk(self, list_of_strings):
         # filter empty strings
-        list_of_strings = filter(bool, list_of_strings)
+        list_of_strings = list(filter(bool, list_of_strings))
         stack_of_strings = np.vstack(list_of_strings)
         if self._custom_cols:
             stack_of_strings = stack_of_strings[:, self._custom_cols]
@@ -187,7 +187,7 @@ class PyCSVReader(DataSource):
     -----
     For reading files with only one column, one needs to specify a delimter...
     """
-    DEFAULT_OPEN_MODE = 'r' # read, text, unified-newlines (always \n)
+    DEFAULT_OPEN_MODE = 'r' # read in text-mode
 
     def __init__(self, filenames, chunksize=1000, delimiters=None, comments='#',
                  converters=None, **kwargs):
@@ -253,11 +253,11 @@ class PyCSVReader(DataSource):
             offsets = offsets[:i]
 
             # filter empty lines (offset between two lines is only 1 or 2 chars)
-            diff = np.diff(offsets)
-            #print "old",offsets
+            # insert an diff of 2 at the beginning to match the same indices
+            diff = np.ediff1d(offsets, to_begin=2)
+            assert diff[0] == 2
             offsets = offsets[diff >= 2]
-            #print "new", offsets
-            length = len(offsets)
+            length = len(offsets) - 1
             fh.seek(0)
 
             # auto detect delimiter with csv.Sniffer
@@ -298,7 +298,7 @@ class PyCSVReader(DataSource):
             # if we have a header subtract it from total length
             fh.seek(0)
             r = csv.reader(fh, dialect=self._dialects[idx])
-            for _ in range(self._skip[idx]+1):
+            for _ in range(self._skip[idx] + 1):
                 line = next(r)
 
             try:
