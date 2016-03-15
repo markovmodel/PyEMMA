@@ -14,8 +14,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-
 '''
 Created on 09.04.2015
 
@@ -248,14 +246,43 @@ class TestCSVReader(unittest.TestCase):
                     self.assertEqual(line, line2, "differs at offset %i (%s != %s)" % (ii, off, offset[ii]))
         finally:
             os.unlink(fn)
-            
-            
+
     def test_use_cols(self):
         reader = CSVReader(self.filename1)
         cols = (0, 2)
         with reader.iterator(chunk=0, cols=cols, return_trajindex=False) as it:
             for x in it:
                 np.testing.assert_equal(x, self.data[:, cols])
+
+    def test_newline_at_eof(self):
+        x = "1 2 3\n4 5 6\n\n"
+        desired = np.fromstring(x, sep=" ", dtype=np.float32).reshape(-1, 3)
+        with tempfile.NamedTemporaryFile(mode='wb', delete=False) as f:
+            f.write(x)
+            f.close()
+            reader = CSVReader(f.name)
+            result = reader.get_output()[0]
+            np.testing.assert_allclose(result, desired)
+
+    def test_newline_at_eof_carriage_return(self):
+        x = "1 2 3\r\n4 5 6\r\n"
+        desired = np.fromstring(x, sep=" ", dtype=np.float32).reshape(-1, 3)
+        with tempfile.NamedTemporaryFile(mode='wb', delete=False) as f:
+            f.write(x)
+            f.close()
+            reader = CSVReader(f.name)
+            result = reader.get_output()[0]
+            np.testing.assert_allclose(result, desired)
+
+    def test_holes_in_file(self):
+        x = "1 2 3\n4 5 6\n7 8 9"
+        desired = np.fromstring(x, sep=" ", dtype=np.float32).reshape(-1, 3)
+        with tempfile.NamedTemporaryFile(mode='wb', delete=False) as f:
+            f.write(x)
+            f.close()
+            reader = CSVReader(f.name)
+            result = reader.get_output()[0]
+            np.testing.assert_allclose(result, desired)
 
 if __name__ == '__main__':
     unittest.main()

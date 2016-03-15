@@ -71,6 +71,7 @@ class PyCSVIterator(DataSourceIterator):
                 lines.append(row)
             if self.chunksize != 0 and len(lines) % self.chunksize == 0:
                 result = self._convert_to_np_chunk(lines)
+                del lines[:]  # free some space
                 if self._t >= traj_len:
                     self._next_traj()
                 return result
@@ -102,10 +103,11 @@ class PyCSVIterator(DataSourceIterator):
                                       dialect=self._data_source._get_dialect(self._itraj))
 
     def _convert_to_np_chunk(self, list_of_strings):
+        # filter empty strings
+        list_of_strings = filter(bool, list_of_strings)
         stack_of_strings = np.vstack(list_of_strings)
         if self._custom_cols:
             stack_of_strings = stack_of_strings[:, self._custom_cols]
-        del list_of_strings[:]
         try:
             result = stack_of_strings.astype(float)
         except ValueError:
@@ -249,13 +251,19 @@ class PyCSVReader(DataSource):
                 if i >= len(offsets):
                     offsets = np.resize(offsets, new_size(len(offsets)))
             offsets = offsets[:i]
-            length = len(offsets) - 1
+
+            # filter empty lines (offset between two lines is only 1 or 2 chars)
+            diff = np.diff(offsets)
+            #print "old",offsets
+            offsets = offsets[diff >= 2]
+            #print "new", offsets
+            length = len(offsets)
             fh.seek(0)
 
             # auto detect delimiter with csv.Sniffer
             if self._delimiters[idx] is None:
                 # determine delimiter
-                sample = fh.read(2048)
+                sample = fh.readline() + fh.readline()
                 sniffer = csv.Sniffer()
                 try:
                     self._dialects[idx] = sniffer.sniff(sample)
