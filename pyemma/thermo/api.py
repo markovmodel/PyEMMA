@@ -297,12 +297,8 @@ def dtram(
     ttrajs = _types.ensure_dtraj_list(ttrajs)
     dtrajs = _types.ensure_dtraj_list(dtrajs)
     assert len(ttrajs) == len(dtrajs)
-    X = []
-    for i in range(len(ttrajs)):
-        ttraj = ttrajs[i]
-        dtraj = dtrajs[i]
+    for ttraj, dtraj in zip(ttrajs, dtrajs):
         assert len(ttraj) == len(dtraj)
-        X.append(_np.ascontiguousarray(_np.array([ttraj, dtraj]).T))
     # build DTRAM
     from pyemma.thermo import DTRAM
     dtram_estimator = DTRAM(
@@ -311,11 +307,12 @@ def dtram(
         maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
         dt_traj=dt_traj, init=init)
     # run estimation
-    return dtram_estimator.estimate(X)
+    return dtram_estimator.estimate((ttrajs, dtrajs))
 
 def wham(
     ttrajs, dtrajs, bias,
     maxiter=100000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step'):
+    #TODO fix docstring
     r"""
     Weighted histogram analysis method
 
@@ -383,16 +380,12 @@ def wham(
      [b_K(y_0), b_K(y_1), ..., b_K(y_n)]]
 
     """
-    # prepare trajectories
+    # check trajectories
     ttrajs = _types.ensure_dtraj_list(ttrajs)
     dtrajs = _types.ensure_dtraj_list(dtrajs)
     assert len(ttrajs) == len(dtrajs)
-    X = []
-    for i in range(len(ttrajs)):
-        ttraj = ttrajs[i]
-        dtraj = dtrajs[i]
-        assert len(ttraj) == len(dtraj)
-        X.append(_np.ascontiguousarray(_np.array([ttraj, dtraj]).T))
+    for ttraj, dtraj in zip(ttrajs, dtrajs):
+        assert len(ttrajs) == len(dtrajs)
     # build WHAM
     from pyemma.thermo import WHAM
     wham_estimator = WHAM(
@@ -400,4 +393,4 @@ def wham(
         maxiter=maxiter, maxerr=maxerr,
         save_convergence_info=save_convergence_info, dt_traj=dt_traj)
     # run estimation
-    return wham_estimator.estimate(X)
+    return wham_estimator.estimate((ttrajs, dtrajs))
