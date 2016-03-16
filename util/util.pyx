@@ -266,7 +266,7 @@ def count_matrices(
             _np.require(ttraj, dtype=_np.intc ,requirements=['C', 'A']))
         for b in range(1, bp.shape[0]):
             if bp[b] - bp[b - 1] > lag:
-                C_K[d[bp[b - 1], 0]] = C_K[d[bp[b - 1], 0]] + _cm(
+                C_K[ttraj[bp[b - 1]]] = C_K[ttraj[bp[b - 1]]] + _cm(
                     _np.require(dtraj[bp[b - 1]:bp[b]], dtype=_np.intc ,requirements=['C', 'A']),
                     lag, sliding=sliding, sparse_return=True, nstates=nstates)
         if dtraj.shape[0] - bp[-1] > lag:
