@@ -28,6 +28,7 @@ __author__ = 'wehmeyer, mey'
 
 
 class WHAM(_Estimator, _MEMM):
+    #TODO: fix docstring
     r""" Weighted Histogram Analysis Method
 
     Parameters
@@ -63,9 +64,9 @@ class WHAM(_Estimator, _MEMM):
     >>> import numpy as np
     >>> B = np.array([[0, 0],[0.5, 1.0]])
     >>> wham = WHAM(B)
-    >>> traj1 = np.array([[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,1,1,1,0,0,0]]).T
-    >>> traj2 = np.array([[1,1,1,1,1,1,1,1,1,1],[0,1,0,1,0,1,1,0,0,1]]).T
-    >>> wham = wham.estimate([traj1, traj2])
+    >>> ttrajs = [np.array([0,0,0,0,0,0,0,0,0,0]),np.array([1,1,1,1,1,1,1,1,1,1])]
+    >>> dtrajs = [np.array([0,0,0,0,1,1,1,0,0,0]),np.array([0,1,0,1,0,1,1,0,0,1])]
+    >>> wham = wham.estimate((ttrajs, dtrajs))
     >>> wham.log_likelihood() # doctest: +ELLIPSIS
     -6.6...
     >>> wham.state_counts # doctest: +SKIP
@@ -93,6 +94,7 @@ class WHAM(_Estimator, _MEMM):
         self.conf_energies = None
 
     def _estimate(self, trajs):
+        # TODO: fix docstring
         """
         Parameters
         ----------
@@ -101,19 +103,20 @@ class WHAM(_Estimator, _MEMM):
             with T_i time steps. The first column is the thermodynamic state
             index, the second column is the configuration state index.
         """
-        # format input if needed
-        if isinstance(trajs, _np.ndarray):
-            trajs = [trajs]
+        # check input
+        assert isinstance(trajs, (tuple, list))
+        assert len(trajs) == 2
+        ttrajs = trajs[0]
+        dtrajs = trajs[1]
         # validate input
-        assert _types.is_list(trajs)
-        for ttraj in trajs:
-            _types.assert_array(ttraj, ndim=2, kind='numeric')
-            assert _np.shape(ttraj)[1] >= 2
+        for ttraj, dtraj in zip(ttrajs, dtrajs):
+            _types.assert_array(ttraj, ndim=1, kind='numeric')
+            _types.assert_array(dtraj, ndim=1, kind='numeric')
+            assert _np.shape(ttraj)[0] == _np.shape(dtraj)[0]
 
         # harvest state counts
         self.state_counts_full = _util.state_counts(
-            [_np.ascontiguousarray(t[:, :2]).astype(_np.intc) for t in trajs],
-            nthermo=self.nthermo, nstates=self.nstates_full)
+            ttrajs, dtrajs, nthermo=self.nthermo, nstates=self.nstates_full)
 
         # active set
         self.active_set = _np.where(self.state_counts_full.sum(axis=0) > 0)[0]
