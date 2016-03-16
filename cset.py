@@ -22,8 +22,7 @@ This module provides functions to deal with connected sets.
 __all__ = [
     'compute_csets_TRAM',
     'compute_csets_dTRAM',
-    'restrict_to_csets',
-    'relabel_states']
+    'restrict_to_csets']
 
 
 import numpy as _np
@@ -31,75 +30,8 @@ import scipy as _sp
 import scipy.sparse as _sps
 import msmtools as _msmtools
 import bar as _bar
+import util as _util
 
-
-def _overlap_post_hoc_RE(state_counts, tram_sequence, factor=1.0):
-    edges_i = []
-    edges_j = []
-    n_conf_states = state_counts.shape[1]
-
-    for i in range(n_conf_states):
-        therm_states = _np.where(state_counts[:, i]>0)[0] # therm states that have samples
-        # prepare list of indices for all thermodynamic states
-        indices = {}
-        for k in therm_states:
-            indices[k] = _np.where(_np.logical_and(tram_sequence[:, 1]==i, tram_sequence[:, 0]==k))[0]
-        for k in therm_states:
-            for l in therm_states:
-                if k!=l:
-                    kl = _np.array([2+k, 2+l])
-                    a = tram_sequence[indices[k],:][:, kl]
-                    b = tram_sequence[indices[l],:][:, kl]
-                    delta = a[_np.newaxis,:,0]+b[:,_np.newaxis,1]-a[_np.newaxis,:,1]-b[:,_np.newaxis,0]
-                    n_avg = _np.mean(_np.minimum(_np.exp(delta), 1.0))
-                    if min(len(a),len(b)) * n_avg * factor >= 1.0:
-                        a = i + k*n_conf_states
-                        b = i + l*n_conf_states
-                        edges_i.append(a)
-                        edges_j.append(b)
-                        edges_i.append(b)
-                        edges_j.append(a)
-
-    return edges_i, edges_j
-
-def _bar_variance(a, b):
-    N_1 = a.shape[0]
-    N_2 = b.shape[0]
-    db_IJ = _np.zeros(N_1, dtype=_np.float64)
-    db_JI = _np.zeros(N_2, dtype=_np.float64)
-    db_IJ[:] = a[:,1]-a[:,0]
-    db_JI[:] = b[:,0]-b[:,1]
-    df = _bar.df(db_IJ, db_JI, _np.zeros(N_1+N_2, dtype=_np.float64))
-    u = _np.concatenate((a,b), axis=0)
-    du = u[:,1]-u[:,0]
-    b = (1.0/(2.0 + 2.0*_np.cosh(df - du - _np.log(1.0*N_1/N_2)))).sum()
-    return 1/b - (N_1+N_2)/(N_1*N_2)
-
-def _overlap_BAR_variance(state_counts, tram_sequence, factor=1.0):
-    edges_i = []
-    edges_j = []
-    n_conf_states = state_counts.shape[1]
-
-    for i in range(n_conf_states):
-        therm_states = _np.where(state_counts[:, i]>0)[0]
-        indices = {}
-        for k in therm_states:
-            indices[k] = _np.where(_np.logical_and(tram_sequence[:, 1]==i, tram_sequence[:, 0]==k))[0]
-        for k in therm_states:
-            for l in therm_states:
-                if k!=l:
-                    kl = _np.array([2+k, 2+l])
-                    a = tram_sequence[indices[k],:][:, kl]
-                    b = tram_sequence[indices[l],:][:, kl]
-                    if _bar_variance(a, b) < factor:
-                        a = i + k*n_conf_states
-                        b = i + l*n_conf_states
-                        edges_i.append(a)
-                        edges_j.append(b)
-                        edges_i.append(b)
-                        edges_j.append(a)
-
-    return edges_i, edges_j
 
 def compute_csets_TRAM(connectivity, state_counts, count_matrices, tram_trajs, nn=None, factor=1.0):
     r'''
@@ -110,7 +42,7 @@ def compute_csets_TRAM(connectivity, state_counts, count_matrices, tram_trajs, n
     connectivity : string
         one of 'summed_count_matrix', 'strong_in_every_ensemble', 
         'neighbors', 'post_hoc_RE' or 'BAR_variance'
-        Selects the algortihm for measuring overlap between thermodynamic
+        Selects the algorithm for measuring overlap between thermodynamic
         states. 
 
         summed_count_matrix: all thermodynamic states are assumed to 
@@ -131,9 +63,9 @@ def compute_csets_TRAM(connectivity, state_counts, count_matrices, tram_trajs, n
         Technically this is computed by building an adjacency matrix on
         the product space of thermodynamic states and conformational
         states. The largest strongly connected set of that adjacency
-        matrix determines the TRAM connted sets. In the matrix, the
+        matrix determines the TRAM connected sets. In the matrix, the
         links within each thermodynamic state (between different
-        conformationals states) are just copied from the count matrices.
+        conformational states) are just copied from the count matrices.
         The links between different thermodynamic states (within the
         same conformational state) are set according to the value of nn;
         if there are samples in both states (k,n) and (l,n) and
@@ -142,15 +74,16 @@ def compute_csets_TRAM(connectivity, state_counts, count_matrices, tram_trajs, n
         post_hoc_RE: like neighbors but don't assume any neighborhood
         relations between ensembles but compute them. A combination
         (i,k) of configuration state i and thermodynamic state k
-        overlaps with (i,l) if a replica exchange simulation restricted
-        to state i would show at least one transition from k to l and
+        overlaps with (i,l) if a replica exchange simulation [1]_ restricted
+        to state i would show at least one transition from k to l or
         one transition from from l to k.
         The parameter tram_trajs must be set.
 
         BAR_variance: like neighbors but compute overlap between 
-        thermodynamic states using the BAR variance _[1]. Two states (i,k)
+        thermodynamic states using the BAR variance [2]_. Two states (i,k)
         and (i,l) overlap if the variance of the free energy difference
-        \Delta f_{kl} is less or equal than one.
+        \Delta f_{kl} (restricted to conformational state i) is less or
+        equal than one.
         The parameter tram_trajs must be set.
 
     state_counts : ndarray((T,M))
@@ -168,7 +101,7 @@ def compute_csets_TRAM(connectivity, state_counts, count_matrices, tram_trajs, n
         scaling factor used for connectivity = 'post_hoc_RE' or
         'BAR_variance'. Values greater than 1.0 weaken the connectivity
         conditions. For 'post_hoc_RE' this multiplies the number of
-        hypothetically overseved transtions. For 'BAR_variance' this 
+        hypothetically observed transtions. For 'BAR_variance' this
         scales the threshold for the minimal allowd variance of free
         energy differences.
 
@@ -180,13 +113,13 @@ def compute_csets_TRAM(connectivity, state_counts, count_matrices, tram_trajs, n
         connected set of thermodynamic state k.
     projected_cset : ndarray(M, dtype=int)
         The overall connected set. This is the union of the individual
-        connected sets of the thermodynamic states. It is useful for
-        relabeling states in order to compress the data a bit while
-        keeping the data structures non-ragged.
+        connected sets of the thermodynamic states.
 
     References:
     -----------
-    _[1] Shirts and Chodera, Statistically optimal analysis of samples
+    [1]_ Hukushima et al, Exchange Monte Carlo method and application to spin
+    glass simulations, J. Phys. Soc. Jan. 65, 1604 (1996)
+    [2]_ Shirts and Chodera, Statistically optimal analysis of samples
     from multiple equilibrium states, J. Chem. Phys. 129, 124105 (2008)
     '''
     return _compute_csets(connectivity, state_counts, count_matrices, tram_trajs, nn=nn, factor=factor)
@@ -246,7 +179,7 @@ def compute_csets_dTRAM(connectivity, count_matrices, nn=None):
         connected sets of the thermodynamic states. It is useful for
         relabeling states in order to compress the data a bit while
         keeping the data structures non-ragged.
-    '''        
+    '''
     if connectivity=='post_hoc_RE' or connectivity=='BAR_variance':
         raise Exception('Connectivity type %s not supported for dTRAM data.'%connectivity)
 
@@ -254,8 +187,21 @@ def compute_csets_dTRAM(connectivity, count_matrices, nn=None):
 
     return _compute_csets(connectivity, state_counts, count_matrices, None, nn=nn)
 
+def _overlap_BAR_variance(a, b, factor=1.0):
+    N_1 = a.shape[0]
+    N_2 = b.shape[0]
+    db_IJ = _np.zeros(N_1, dtype=_np.float64)
+    db_JI = _np.zeros(N_2, dtype=_np.float64)
+    db_IJ[:] = a[:,1]-a[:,0]
+    db_JI[:] = b[:,0]-b[:,1]
+    df = _bar.df(db_IJ, db_JI, _np.zeros(N_1+N_2, dtype=_np.float64))
+    u = _np.concatenate((a,b), axis=0)
+    du = u[:,1]-u[:,0]
+    b = (1.0/(2.0 + 2.0*_np.cosh(df - du - _np.log(1.0*N_1/N_2)))).sum()
+    return (1/b - (N_1+N_2)/(N_1*N_2)) < factor
+
 def _compute_csets(connectivity, state_counts, count_matrices, tram_trajs, nn=None, factor=1.0):
-    n_therm_states, n_conf_states = state_counts.shape    
+    n_therm_states, n_conf_states = state_counts.shape
 
     if connectivity == 'summed_count_matrix':
         # assume _direct_ overlap between all umbrellas
@@ -270,7 +216,7 @@ def _compute_csets(connectivity, state_counts, count_matrices, tram_trajs, nn=No
         return csets, cset_projected
 
     elif connectivity == 'strong_in_every_ensemble':
-        # within every thermodynamic state, restrict count this state's 
+        # within every thermodynamic state, restrict counts to this state's
         # largest connected set
         csets = []
         C_sum = _np.zeros((n_conf_states, n_conf_states), dtype=count_matrices.dtype)
@@ -292,26 +238,59 @@ def _compute_csets(connectivity, state_counts, count_matrices, tram_trajs, nn=No
         return csets, projected_cset
 
     elif connectivity in ['neighbors', 'post_hoc_RE', 'BAR_variance']:
-        # assume overlap between nn neighboring umbrellas
         dim = n_therm_states*n_conf_states
-        if connectivity == 'post_hoc_RE':
-            i_s, j_s = _overlap_post_hoc_RE(state_counts, tram_trajs, factor=factor)
-        elif connectivity == 'BAR_variance':
-            i_s, j_s = _overlap_BAR_variance(state_counts, tram_trajs, factor=factor)
-        else: # neighbors
-            assert nn>=1 and nn<=n_therm_states-1
+
+        if connectivity == 'post_hoc_RE' or connectivity == 'BAR_variance':
+            if isinstance(tram_trajs, list):
+                if len(tram_trajs)==1:
+                    tram_sequence = tram_trajs[0]
+                else:
+                    tram_sequence = _np.concatenate(tram_trajs, axis=0)
+            else:
+                tram_sequence = tram_trajs
+
+            if connectivity == 'post_hoc_RE':
+                overlap = _util._overlap_post_hoc_RE
+            else:
+                overlap = _overlap_BAR_variance
+
+            i_s = []
+            j_s = []
+            for i in range(n_conf_states):
+                therm_states = _np.where(state_counts[:, i]>0)[0] # therm states that have samples
+                # prepare list of indices for all thermodynamic states
+                indices = {}
+                for k in therm_states:
+                    indices[k] = _np.where(_np.logical_and(tram_sequence[:, 1]==i, tram_sequence[:, 0]==k))[0]
+                for k in therm_states:
+                    for l in therm_states:
+                        if k!=l:
+                            kl = _np.array([2+k, 2+l])
+                            a = tram_sequence[:, kl][indices[k],:]
+                            b = tram_sequence[:, kl][indices[l],:]
+                            if overlap(a, b, factor=factor):
+                                x = i + k*n_conf_states
+                                y = i + l*n_conf_states
+                                i_s.append(x)
+                                j_s.append(y)
+                                i_s.append(y)
+                                j_s.append(x)
+
+        else: # assume overlap between nn neighboring umbrellas
+            assert nn>=1 and nn<=n_therm_states - 1
             i_s = []
             j_s = []
             # connectivity between thermodynamic states
-            for l in range(1,nn + 1):
+            for l in range(1, nn + 1):
                 for k in range(n_therm_states - l):
-                        w = _np.where(_np.logical_and(state_counts[k, :]>0, state_counts[k + l, :]>0))[0] 
-                        a = w + k*n_conf_states
-                        b = w + (k + l)*n_conf_states
-                        i_s += list(a) # bi
-                        j_s += list(b) # di
-                        i_s += list(b) # rec
-                        j_s += list(a) # tional
+                    w = _np.where(_np.logical_and(state_counts[k, :]>0, state_counts[k + l, :]>0))[0]
+                    a = w + k*n_conf_states
+                    b = w + (k + l)*n_conf_states
+                    i_s += list(a) # bi
+                    j_s += list(b) # di
+                    i_s += list(b) # rec
+                    j_s += list(a) # tional
+
         # connectivity between conformational states:
         # just copy it from the count matrices
         for k in range(n_therm_states):
@@ -397,50 +376,3 @@ def restrict_to_csets(state_counts, count_matrices, tramtraj, csets):
         new_tramtraj = None
 
     return new_state_counts, new_count_matrices, new_tramtraj
-
-def relabel_states(state_counts, count_matrices, dtraj, projected_cset):
-    r'''
-    Relabel states and remove zero columns/rows.
-
-    Parameters
-    ----------
-    state_counts : ndarray((T,M)), optional
-        Number of visits to the combiantions of thermodynamic state
-        t and Markov state m
-    count_matrices : ndarray((T,M,M)), optional
-        Count matrices for all T thermodynamic states.
-    dtraj : ndarray((X,)), optional
-        trajectory of Markov states. If the trajectory contains
-        states that are not in the connected set, an exception
-        is raised.
-    projected_cset : ndarray((Y,))
-        Union of the connected sets of all thermodynamic states.
-
-    Returns
-    -------
-    state_counts and count_matrices are reduced in dimensions
-    along the Markov state axes. Zero rows/columns are removed.
-    dtraj is unchanged in dimension, but the Markov states have
-    been relabeled.
-    '''
-    if state_counts is not None:
-        new_state_counts = state_counts[:, projected_cset]
-        new_state_counts = _np.require(new_state_counts, dtype=_np.intc, requirements=['C', 'A'])
-    else:
-        new_state_counts = None
-
-    if count_matrices is not None:
-        new_count_matrices = count_matrices[:, projected_cset[:, _np.newaxis], projected_cset]
-        new_count_matrices = _np.require(new_count_matrices, dtype=_np.intc, requirements=['C', 'A'])
-    else:
-        new_count_matrices = None
-
-    if dtraj is not None:
-        mapping = _np.ones(max(_np.max(projected_cset), _np.max(dtraj)) + 1, dtype=int)*(-1)
-        mapping[projected_cset] = _np.arange(len(projected_cset), dtype=_np.intc)
-        new_dtraj = mapping[dtraj]
-        assert _np.all(new_dtraj != -1)
-    else:
-        new_dtraj = None
-
-    return new_state_counts, new_count_matrices, new_dtraj
