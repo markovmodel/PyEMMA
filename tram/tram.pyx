@@ -71,9 +71,6 @@ cdef extern from "_tram.h":
         int k, double *bias_energy_sequence, double *therm_energies, int *state_sequence,
         int seq_length, double *log_R_K_i, int n_therm_states, int n_conf_states,
         double *scratch_T, double *pointwise_unbiased_free_energies)
-    void _get_unbiased_user_free_energies(double *pointwise_unbiased_free_energies,
-        int *user_index_sequence, int seq_length, int n_user_states, double *unbiased_user_free_energies)
-    double _get_unbiased_expectation(double *pointwise_unbiased_free_energies, double *observable_sequence, int seq_length)
 
 
 def init_lagrangian_mult(
@@ -735,9 +732,9 @@ def estimate(count_matrices, state_counts, bias_energy_sequence, state_sequence,
 
     return biased_conf_energies, conf_energies, therm_energies, log_lagrangian_mult, increments, loglikelihoods
 
-def simple_error(call_back=None):
+def simple_error(callback=None):
     r"""
-    Stopping condition for `estimate`. Can be given as the value of `call_back`.
+    Stopping condition for `estimate`. Can be given as the value of `callback`.
     
     Stop the estimation when the difference of the biased energies
     (logarithms of the joint probability of conformational state and
@@ -745,8 +742,8 @@ def simple_error(call_back=None):
 
     Parameters
     ----------
-    call_back : optional 
-        user call back. Because `simple_error` takes the `call_back`
+    callback : optional
+        user call back. Because `simple_error` takes the `callback`
         slot of `estimate`, this allows to chain `simple_error` with
         another call back.
     """
@@ -754,39 +751,8 @@ def simple_error(call_back=None):
         biased_conf_energies = kwargs['biased_conf_energies']
         old_biased_conf_energies = kwargs['old_biased_conf_energies']
         maxerr = kwargs['maxerr']
-        if call_back is not None:
-            call_back(**kwargs)
+        if callback is not None:
+            callback(**kwargs)
         if _np.max(_np.abs(biased_conf_energies - old_biased_conf_energies)) < maxerr:
             raise CallbackInterrupt('biased configuration energies have converged')
     return function
-
-def get_unbiased_user_free_energies(
-    _np.ndarray[double, ndim=1, mode="c"] unbiased_pointwise_free_energies not None,
-    _np.ndarray[int, ndim=1, mode="c"] user_index_sequence not None,
-    _np.ndarray[double, ndim=1, mode="c"] unbiased_user_free_energies not None):
-    r"""
-    Compute free energies of user-defined states in the unbiased ensemble.
-
-    Parameters
-    ----------
-    unbiased_pointwise_free_energies :  numpy.ndarray(shape=(X,), dtype=numpy.float64)
-        pointwise free energies in the unbiased ensemble for all X samples
-    user_index_sequence : numpy.ndarray(shape=(X,), dtype=numpy.intc)
-        User state indices for all X samples
-    unbiased_user_conf_energies : numpy.ndarray(shape=(Y,), dtype=numpy.float64)
-        where Y is 1 + the largest index in user_index_sequence
-        target array for the user free energies
-    """
-    assert unbiased_pointwise_free_energies.shape[0] == user_index_sequence.shape[0]
-    n_user_states = unbiased_user_free_energies.shape[0]
-    assert _np.all(user_index_sequence < n_user_states)
-    assert _np.all(user_index_sequence >= 0)
-
-    _get_unbiased_user_free_energies(
-        <double*> _np.PyArray_DATA(unbiased_pointwise_free_energies),
-        <int*> _np.PyArray_DATA(user_index_sequence),
-        unbiased_pointwise_free_energies.shape[0],
-        n_user_states,
-        <double*> _np.PyArray_DATA(unbiased_user_free_energies))
-
-

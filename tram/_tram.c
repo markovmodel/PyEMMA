@@ -445,8 +445,6 @@ double _tram_log_likelihood_lower_bound(
     return a+b+c;
 }
 
-/* pointwise expectations
-   ---------------------- */
 void _get_pointwise_unbiased_free_energies(
     int k, double *bias_energy_sequence, double *therm_energies, int *state_sequence,
     int seq_length, double *log_R_K_i, int n_therm_states, int n_conf_states,
@@ -470,42 +468,4 @@ void _get_pointwise_unbiased_free_energies(
         else
             pointwise_unbiased_free_energies[x] = bias_energy_sequence[k * seq_length + x] + log_divisor - therm_energies[k];
     }
-}
-
-/* TODO: these two functions are general enough to be used for MBAR and TRAM, put them somewhere else */
-void _get_unbiased_user_free_energies(
-    double *pointwise_unbiased_free_energies,
-    int *user_index_sequence,
-    int seq_length,
-    int n_user_states,
-    double *unbiased_user_free_energies)
-{
-    int u, x;
-
-    for(u=0; u<n_user_states; ++u)
-        unbiased_user_free_energies[u] = INFINITY;
-
-    for(x=0; x<seq_length; ++x)
-    {
-        u = user_index_sequence[x];
-        unbiased_user_free_energies[u] = -_logsumexp_pair(
-                -unbiased_user_free_energies[u], -pointwise_unbiased_free_energies[x]);
-    }
-}
-
-double _get_unbiased_expectation(
-    double *unbiased_pointwise_free_energies,
-    double *observable_sequence,
-    int seq_length)
-{
-    int x;
-    double expectation, obs;
-    
-    expectation = 0;
-    for(x=0; x<seq_length; ++x)
-    {
-        obs = observable_sequence[x];
-        expectation += obs * exp(-unbiased_pointwise_free_energies[x]);
-    }
-    return expectation;
 }
