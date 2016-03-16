@@ -19,8 +19,10 @@ r"""
 Python interface to utility functions.
 """
 
+cimport cython
 import numpy as _np
 cimport numpy as _np
+from libc.math cimport exp as _libc_exp
 from scipy.sparse import csr_matrix as _csr
 from msmtools.estimation import count_matrix as _cm
 
@@ -347,6 +349,22 @@ def restrict_samples_to_cset(state_sequence, bias_energy_sequence, cset):
     new_state_sequence[:, 1] = conf_state_sequence[valid_samples]
     new_bias_energy_sequence = _np.ascontiguousarray(bias_energy_sequence[:, valid_samples])
     return new_state_sequence, new_bias_energy_sequence
+
+@cython.boundscheck(False)
+def _overlap_post_hoc_RE(_np.ndarray[double, ndim=2, mode="c"] a not None,
+                         _np.ndarray[double, ndim=2, mode="c"] b not None,
+                         factor=1.0):
+    cdef unsigned int i, j, n, m
+    cdef double n_sum, delta
+    n = a.shape[0]
+    m = b.shape[0]
+    n_sum = 0
+    for i in range(n):
+        for j in range(m):
+            delta = a[i,0]+b[j,1]-a[i,1]-b[j,0]
+            n_sum += min(_libc_exp(delta), 1.0)
+            n_avg = n_sum / (n*m)
+    return (n+m) * n_avg * factor >= 1.0
 
 ####################################################################################################
 #   bias calculation tools
