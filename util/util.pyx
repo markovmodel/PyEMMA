@@ -262,16 +262,17 @@ def count_matrices(
         raise ValueError("nstates is smaller than the number of observed microstates")
     C_K = [_csr((nstates, nstates), dtype=_np.intc) for _ in range(nthermo)]
     for ttraj, dtraj in zip(ttrajs, dtrajs):
-        bp = get_therm_state_break_points(ttraj)
+        bp = get_therm_state_break_points(
+            _np.require(ttraj, dtype=_np.intc ,requirements=['C', 'A']))
         for b in range(1, bp.shape[0]):
             if bp[b] - bp[b - 1] > lag:
                 C_K[d[bp[b - 1], 0]] = C_K[d[bp[b - 1], 0]] + _cm(
-                    dtraj[bp[b - 1]:bp[b], 1], lag,
-                    sliding=sliding, sparse_return=True, nstates=nstates)
+                    _np.require(dtraj[bp[b - 1]:bp[b]], dtype=_np.intc ,requirements=['C', 'A']),
+                    lag, sliding=sliding, sparse_return=True, nstates=nstates)
         if dtraj.shape[0] - bp[-1] > lag:
             C_K[ttraj[bp[-1]]] = C_K[ttraj[bp[-1]]] + _cm(
-                dtraj[bp[-1]:], lag,
-                sliding=sliding, sparse_return=True, nstates=nstates)
+                _np.require(dtraj[bp[-1]:], dtype=_np.intc ,requirements=['C', 'A']),
+                lag, sliding=sliding, sparse_return=True, nstates=nstates)
     if sparse_return:
         return C_K
     return _np.array([C.toarray() for C in C_K], dtype=_np.intc)
