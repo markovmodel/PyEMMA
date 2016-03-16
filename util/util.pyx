@@ -222,7 +222,9 @@ def get_therm_state_break_points(
         <int*> _np.PyArray_DATA(T_B))
     return _np.ascontiguousarray(T_B[:nb])
 
-def count_matrices(dtraj, lag, sliding=True, sparse_return=True, nthermo=None, nstates=None):
+def count_matrices(
+    ttrajs, dtrajs, lag, sliding=True, sparse_return=True, nthermo=None, nstates=None):
+    # TODO: fix docstring
     r"""
     Count transitions at given lagtime.
 
@@ -246,8 +248,10 @@ def count_matrices(dtraj, lag, sliding=True, sparse_return=True, nthermo=None, n
     C_K : [scipy.sparse.coo_matrix] or numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
         count matrices at given lagtime
     """
-    kmax = _np.max([d[:, 0].max() for d in dtraj])
-    nmax = _np.max([d[:, 1].max() for d in dtraj])
+    cdef:
+        int kmax = int(_np.max([t.max() for t in ttrajs]))
+        int nmax = int(_np.max([d.max() for d in dtrajs]))
+        int K, i, b
     if nthermo is None:
         nthermo = kmax + 1
     elif nthermo < kmax + 1:
@@ -257,16 +261,16 @@ def count_matrices(dtraj, lag, sliding=True, sparse_return=True, nthermo=None, n
     elif nstates < nmax + 1:
         raise ValueError("nstates is smaller than the number of observed microstates")
     C_K = [_csr((nstates, nstates), dtype=_np.intc) for _ in range(nthermo)]
-    for d in dtraj:
-        bp = get_therm_state_break_points(_np.ascontiguousarray(d[:, 0]))
+    for ttraj, dtraj in zip(ttrajs, dtrajs):
+        bp = get_therm_state_break_points(ttraj)
         for b in range(1, bp.shape[0]):
             if bp[b] - bp[b - 1] > lag:
                 C_K[d[bp[b - 1], 0]] = C_K[d[bp[b - 1], 0]] + _cm(
-                    _np.ascontiguousarray(d[bp[b - 1]:bp[b], 1]), lag,
+                    dtraj[bp[b - 1]:bp[b], 1], lag,
                     sliding=sliding, sparse_return=True, nstates=nstates)
-        if d.shape[0] - bp[-1] > lag:
-            C_K[d[bp[-1], 0]] = C_K[d[bp[-1], 0]] + _cm(
-                _np.ascontiguousarray(d[bp[-1]:, 1]), lag,
+        if dtraj.shape[0] - bp[-1] > lag:
+            C_K[ttraj[bp[-1]]] = C_K[ttraj[bp[-1]]] + _cm(
+                dtraj[bp[-1]:], lag,
                 sliding=sliding, sparse_return=True, nstates=nstates)
     if sparse_return:
         return C_K
