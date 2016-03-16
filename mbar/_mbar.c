@@ -57,6 +57,7 @@ extern void _mbar_get_conf_energies(
         for(L=0; L<n_therm_states; ++L)
             scratch_T[L] = log_therm_state_counts[L] + therm_energies[L] - bias_energy_sequence[L * seq_length + x];
         i = conf_state_sequence[x];
+        if(i < 0) continue;
         divisor = _logsumexp_sort_kahan_inplace(scratch_T, n_therm_states);
         conf_energies[i] = -_logsumexp_pair(-conf_energies[i], -divisor);
         for(K=0; K<n_therm_states; ++K)

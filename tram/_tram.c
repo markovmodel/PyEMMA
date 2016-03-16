@@ -201,6 +201,7 @@ void _tram_update_biased_conf_energies(
     for(x=0; x<seq_length; ++x)
     {
         i = state_sequence[x];
+        if(i < 0) continue; /* skip frames that have negative Markov state indices */
         o = 0;
         for(K=0; K<n_therm_states; ++K)
         {
@@ -235,6 +236,7 @@ void _tram_get_conf_energies(
     for( x=0; x<seq_length; ++x )
     {
         i = state_sequence[x];
+        if(i < 0) continue;
         o = 0;
         for(K=0; K<n_therm_states; ++K) {
             if(-INFINITY == log_R_K_i[K * n_conf_states + i]) continue;
@@ -433,6 +435,7 @@ double _tram_log_likelihood_lower_bound(
     for(x=0; x<seq_length; ++x) {
         o = 0;
         i = state_sequence[x];
+        if(i < 0) continue;
         for(K=0; K<n_therm_states; ++K) {
             KM = K*n_conf_states;
             Ki = KM + i;
@@ -456,6 +459,10 @@ void _get_pointwise_unbiased_free_energies(
     for(x=0; x<seq_length; ++x)
     {
         i = state_sequence[x];
+        if(i < 0) {
+            pointwise_unbiased_free_energies[x] = INFINITY;
+            continue;
+        }
         o = 0;
         for(L=0; L<n_therm_states; ++L)
         {

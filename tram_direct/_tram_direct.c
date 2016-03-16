@@ -112,6 +112,7 @@ void _update_biased_conf_weights(
     for(x=0; x < seq_length; ++x) 
     {
         i = state_sequence[x];
+        if(i < 0) continue; /* skip frames that have negative Markov state indices */
         divisor = 0;
         /* calulate normal divisor */
         for(K=0; K<n_therm_states; ++K)
