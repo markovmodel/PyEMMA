@@ -30,6 +30,7 @@ __author__ = 'noe, wehmeyer'
 
 
 class DTRAM(_Estimator, _MEMM):
+    # TODO: fix docstring
     r""" Discrete Transition(-based) Reweighting Analysis Method
 
     Parameters
@@ -72,9 +73,9 @@ class DTRAM(_Estimator, _MEMM):
     >>> import numpy as np
     >>> B = np.array([[0, 0],[0.5, 1.0]])
     >>> dtram = DTRAM(B, 1)
-    >>> traj1 = np.array([[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,1,1,1,0,0,0]]).T
-    >>> traj2 = np.array([[1,1,1,1,1,1,1,1,1,1],[0,1,0,1,0,1,1,0,0,1]]).T
-    >>> dtram = dtram.estimate([traj1, traj2])
+    >>> ttrajs = [np.array([0,0,0,0,0,0,0,0,0,0]),np.array([1,1,1,1,1,1,1,1,1,1])]
+    >>> dtrajs = [np.array([0,0,0,0,1,1,1,0,0,0]),np.array([0,1,0,1,0,1,1,0,0,1])]
+    >>> dtram = dtram.estimate((ttrajs, dtrajs))
     >>> dtram.log_likelihood() # doctest: +ELLIPSIS
     -9.805...
     >>> dtram.count_matrices # doctest: +SKIP
@@ -113,6 +114,7 @@ class DTRAM(_Estimator, _MEMM):
         self.log_lagrangian_mult = None
 
     def _estimate(self, trajs):
+        # TODO: fix docstring
         """
         Parameters
         ----------
@@ -122,22 +124,24 @@ class DTRAM(_Estimator, _MEMM):
             index, the second column is the configuration state index.
 
         """
-        # format input if needed
-        if isinstance(trajs, _np.ndarray):
-            trajs = [trajs]
+        # check input
+        assert isinstance(trajs, (tuple, list))
+        assert len(trajs) == 2
+        ttrajs = trajs[0]
+        dtrajs = trajs[1]
         # validate input
-        assert _types.is_list(trajs)
-        for ttraj in trajs:
-            _types.assert_array(ttraj, ndim=2, kind='numeric')
-            assert _np.shape(ttraj)[1] >= 2
+        for ttraj, dtraj in zip(ttrajs, dtrajs):
+            _types.assert_array(ttraj, ndim=1, kind='numeric')
+            _types.assert_array(dtraj, ndim=1, kind='numeric')
+            assert _np.shape(ttraj)[0] == _np.shape(dtraj)[0]
 
         # harvest transition counts
         self.count_matrices_full = _util.count_matrices(
-            [_np.ascontiguousarray(t[:, :2]).astype(_np.intc) for t in trajs], self.lag,
+            ttrajs, dtrajs, self.lag,
             sliding=self.count_mode, sparse_return=False, nstates=self.nstates_full)
         # harvest state counts (for WHAM)
         self.state_counts_full = _util.state_counts(
-            trajs, nthermo=self.nthermo, nstates=self.nstates_full)
+            ttrajs, dtrajs, nthermo=self.nthermo, nstates=self.nstates_full)
 
         # restrict to connected set
         C_sum = self.count_matrices_full.sum(axis=0)
