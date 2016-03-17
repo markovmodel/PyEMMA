@@ -19,9 +19,9 @@
 
 /* direct space implementation */
 
-void _update_lagrangian_mult(
+void _tram_direct_update_lagrangian_mult(
     double *lagrangian_mult, double *biased_conf_weights, int *count_matrices, int* state_counts,
-    int n_therm_states, int n_conf_states, int iteration, double *new_lagrangian_mult)
+    int n_therm_states, int n_conf_states, double *new_lagrangian_mult)
 {
     int i, j, K, KMM, Ki, Kj;
     int CCT_Kij;
@@ -38,14 +38,11 @@ void _update_lagrangian_mult(
             {
                 CCT_Kij = count_matrices[KMM + i*n_conf_states + j];
                 if(i == j) {
-                    //if(lagrangian_mult[Ki]<CCT_Kij) fprintf(stderr, "Not a valid nu iterate at K=%d, i=%d.\n", K, i);
                     new_lagrangian_mult[Ki] += CCT_Kij;
                 } else {
                     Kj = K*n_conf_states + j;
                     CCT_Kij += count_matrices[KMM + j*n_conf_states + i];
                     if(0 < CCT_Kij) {
-                        /* one of the nus can be zero */
-                        //if(lagrangian_mult[Ki]+lagrangian_mult[Kj] < CCT_Kij) fprintf(stderr, "Not a valid nu iterate at K=%d, i=%d, j=%d in iteration %d.\n", K,i,j,iteration);
                         new_lagrangian_mult[Ki] += 
                             (double)CCT_Kij / (1.0 + 
                                                (lagrangian_mult[Kj]/lagrangian_mult[Ki])*
@@ -60,14 +57,12 @@ void _update_lagrangian_mult(
     }
 }
 
-void _update_biased_conf_weights(
-    double *lagrangian_mult, double *biased_conf_weights, int *count_matrices, double *bias_sequence,
-    int *state_sequence, int *state_counts, int seq_length, double *R_K_i,
-    int n_therm_states, int n_conf_states, double *scratch_TM, double *new_biased_conf_weights)
+void _tram_direct_get_Ref_K_i(
+    double *lagrangian_mult, double *biased_conf_weights, int *count_matrices,
+    int *state_counts, int n_therm_states, int n_conf_states, double *R_K_i)
 {
-    int i, j, K, Ki, Kj, KMM, x;
+    int i, j, K, Ki, Kj, KMM;
     int CCT_Kij, CKi;
-    double divisor;
 
     /* compute R */
     for(K=0; K<n_therm_states; ++K)
@@ -103,12 +98,16 @@ void _update_biased_conf_weights(
             if(0 < R_K_i[Ki]) R_K_i[Ki] /= biased_conf_weights[Ki];
         }
     }
+}
 
-    /* actual update */
-    for(i=0; i < n_conf_states*n_therm_states; ++i) {
-        new_biased_conf_weights[i] = 0.0;
-    }
+void _tram_direct_update_biased_conf_weights(
+    double *bias_sequence, int *state_sequence, int seq_length, double *R_K_i,
+    int n_therm_states, int n_conf_states, double *new_biased_conf_weights)
+{
+    int i, K, Ki, x;
+    double divisor;
 
+    /* assume that new_biased_conf_weights have been set to 0 by the caller on the first call */
     for(x=0; x < seq_length; ++x) 
     {
         i = state_sequence[x];
@@ -136,7 +135,7 @@ void _update_biased_conf_weights(
     }
 }
 
-void _dtram_like_update(
+void _tram_direct_dtram_like_update(
     double *lagrangian_mult, double *biased_conf_weights, int *count_matrices, int *state_counts, 
     int n_therm_states, int n_conf_states, double *scratch_M, int *scratch_M_int, double *new_biased_conf_weights)
 {

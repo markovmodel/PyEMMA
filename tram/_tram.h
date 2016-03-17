@@ -32,9 +32,9 @@ void _tram_update_lagrangian_mult(
     double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices, int* state_counts,
     int n_therm_states, int n_conf_states, double *scratch_M, double *new_log_lagrangian_mult);
 
-void _tram_update_biased_conf_energies(
+double _tram_update_biased_conf_energies(
     double *bias_energy_sequence, int *state_sequence, int seq_length, double *log_R_K_i,
-    int n_therm_states, int n_conf_states, double *scratch_T, double *new_biased_conf_energies);
+    int n_therm_states, int n_conf_states, double *scratch_T, double *new_biased_conf_energies, int return_log_L);
 
 void _tram_get_conf_energies(
     double *bias_energy_sequence, int *state_sequence, int seq_length, double *log_R_K_i,
@@ -51,13 +51,10 @@ void _tram_estimate_transition_matrix(
     double *log_lagrangian_mult, double *conf_energies, int *count_matrix,
     int n_conf_states, double *scratch_M, double *transition_matrix);
 
-double _tram_log_likelihood_lower_bound(
-    double *old_log_lagrangian_mult, double *new_log_lagrangian_mult,
-    double *old_biased_conf_energies, double *new_biased_conf_energies,
-    int *count_matrices,  int *state_counts,
-    int n_therm_states, int n_conf_states,
-    double *bias_energy_sequence, int *state_sequence, int seq_length,
-    double *scratch_T, double *scratch_M, double *scratch_TM, double *scratch_MM);
+double _tram_discrete_log_likelihood_lower_bound(
+    double *log_lagrangian_mult, double *biased_conf_energies,
+    int *count_matrices,  int *state_counts, int n_therm_states, int n_conf_states,
+    double *scratch_M, double *scratch_MM);
 
 void _tram_get_log_Ref_K_i(double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices,
     int *state_counts, int n_therm_states, int n_conf_states, double *scratch_M,

@@ -141,15 +141,15 @@ void _tram_get_log_Ref_K_i(
     }
 }
 
-void _tram_update_biased_conf_energies(
+double _tram_update_biased_conf_energies(
     double *bias_energy_sequence, int *state_sequence, int seq_length, double *log_R_K_i,
-    int n_therm_states, int n_conf_states, double *scratch_T, double *new_biased_conf_energies)
+    int n_therm_states, int n_conf_states, double *scratch_T, double *new_biased_conf_energies, int return_log_L)
 {
-    int i, K, x, o;
-    double divisor;
+    int i, K, x, o, Ki;
+    int KM;
+    double divisor, log_L;
 
     /* assume that new_biased_conf_energies have been set to INF by the caller in the first call */
-    /* compute new biased_conf_energies */
     for(x=0; x<seq_length; ++x)
     {
         i = state_sequence[x];
@@ -172,6 +172,27 @@ void _tram_update_biased_conf_energies(
                     -(divisor + bias_energy_sequence[K * seq_length + x]));
         }
     }
+
+    if(return_log_L) {
+        /* -\sum_{x}\log\sum_{l}R_{i(x)}^{(l)}e^{-b^{(l)}(x)+f_{i(x)}^{(l)}} */
+        log_L = 0;
+        for(x=0; x<seq_length; ++x) {
+            o = 0;
+            i = state_sequence[x];
+            if(i < 0) continue;
+            for(K=0; K<n_therm_states; ++K) {
+                KM = K*n_conf_states;
+                Ki = KM + i;
+                if(log_R_K_i[Ki] > 0)
+                    scratch_T[o++] =
+                        log_R_K_i[Ki] - bias_energy_sequence[K * seq_length + x];
+                }
+            log_L -= _logsumexp_sort_kahan_inplace(scratch_T,o);
+        }
+        return log_L;
+    } else
+        return 0;
+
 }
 
 void _tram_get_conf_energies(
@@ -276,27 +297,17 @@ void _tram_estimate_transition_matrix(
 
 }
 
-/* Internally this function computes mu(old_log_lagrangian_mult,old_biased_conf_energies).
- * Unless old_log_lagrangian_mult and old_biased_conf_energies are converged
- * values, this mu is an abitrary mu (this is ok).
- * new_biased_conf_energies must normalize mu.
- * The (possibly non normalized) transition matrix that fulfills detailled
- * balance w.r.t. new_biased_conf_energies must implicitly be given by
- * new_log_lagrangian_mult.
- */
-double _tram_log_likelihood_lower_bound(
-    double *old_log_lagrangian_mult, double *new_log_lagrangian_mult,
-    double *old_biased_conf_energies, double *new_biased_conf_energies,
-    int *count_matrices,  int *state_counts,
-    int n_therm_states, int n_conf_states,
-    double *bias_energy_sequence, int *state_sequence, int seq_length,
-    double *scratch_T, double *scratch_M, double *scratch_TM, double *scratch_MM)
+/* TRAM log-likelihood that comes from the terms containing discrete quantities */
+double _tram_discrete_log_likelihood_lower_bound(
+    double *log_lagrangian_mult, double *biased_conf_energies,
+    int *count_matrices,  int *state_counts, int n_therm_states, int n_conf_states,
+    double *scratch_M, double *scratch_MM)
 {
-    double a, b, c;
-    int K, i, j, x, o;
+    double a, b;
+    int K, i, j;
     int KM, KMM, Ki;
     int CKij;
-    double *old_log_R_K_i, *T_ij;
+    double *T_ij;
 
     /* \sum_{i,j,k}c_{ij}^{(k)}\log p_{ij}^{(k)} */
     a = 0;
@@ -306,7 +317,7 @@ double _tram_log_likelihood_lower_bound(
         KM = K * n_conf_states;
         KMM = KM * n_conf_states;
         _tram_estimate_transition_matrix(
-           &new_log_lagrangian_mult[KM], &new_biased_conf_energies[KM], &count_matrices[KMM],
+           &log_lagrangian_mult[KM], &biased_conf_energies[KM], &count_matrices[KMM],
            n_conf_states, scratch_M, T_ij);
         for(i=0; i<n_conf_states; ++i)
         {
@@ -330,31 +341,11 @@ double _tram_log_likelihood_lower_bound(
         for(i=0; i<n_conf_states; ++i) {
             Ki = KM + i;
             if(state_counts[Ki]>0)
-                b += (state_counts[Ki] + THERMOTOOLS_TRAM_PRIOR) * new_biased_conf_energies[Ki];
+                b += (state_counts[Ki] + THERMOTOOLS_TRAM_PRIOR) * biased_conf_energies[Ki];
         }
     }
 
-    /* compute R_{i(x)}^{(k)} */
-    old_log_R_K_i = scratch_TM;
-    _tram_get_log_Ref_K_i(old_log_lagrangian_mult, old_biased_conf_energies, count_matrices,
-                          state_counts, n_therm_states, n_conf_states, scratch_M, old_log_R_K_i);
-
-    /* -\sum_{x}\log\sum_{l}R_{i(x)}^{(l)}e^{-b^{(l)}(x)+f_{i(x)}^{(l)}} */
-    c = 0;
-    for(x=0; x<seq_length; ++x) {
-        o = 0;
-        i = state_sequence[x];
-        if(i < 0) continue;
-        for(K=0; K<n_therm_states; ++K) {
-            KM = K*n_conf_states;
-            Ki = KM + i;
-            if(state_counts[Ki]>0)
-                scratch_T[o++] =
-                    old_log_R_K_i[Ki] - bias_energy_sequence[K * seq_length + x];
-        }
-        c -= _logsumexp_sort_kahan_inplace(scratch_T,o);
-    }
-    return a+b+c;
+    return a+b;
 }
 
 void _tram_get_pointwise_unbiased_free_energies(
