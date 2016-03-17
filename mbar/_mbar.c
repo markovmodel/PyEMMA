@@ -24,9 +24,8 @@ extern void _mbar_update_therm_energies(
     int n_therm_states, int seq_length, double *scratch_T, double *new_therm_energies)
 {
     int K, x, L;
-    double divisor, shift;
-    for(K=0; K<n_therm_states; ++K)
-        new_therm_energies[K] = INFINITY;
+    double divisor;
+    /* assume that new_therm_energies were set to INF by the caller on the first call */
     for(x=0; x<seq_length; ++x)
     {
         for(L=0; L<n_therm_states; ++L)
@@ -35,9 +34,6 @@ extern void _mbar_update_therm_energies(
         for(K=0; K<n_therm_states; ++K)
             new_therm_energies[K] = -_logsumexp_pair(-new_therm_energies[K], -(bias_energy_sequence[K * seq_length + x] + divisor));
     }
-    shift = new_therm_energies[0];
-    for(K=0; K<n_therm_states; ++K)
-        new_therm_energies[K] -= shift;
 }
 
 extern void _mbar_get_conf_energies(
@@ -48,10 +44,7 @@ extern void _mbar_get_conf_energies(
 {
     int i, x, L, K;
     double divisor;
-    for(i=0; i<n_conf_states; ++i)
-        conf_energies[i] = INFINITY;
-    for(i=0; i<n_therm_states*n_conf_states; ++i)
-        biased_conf_energies[i] = INFINITY;
+    /* assume that conf_energies and biased_conf_energies were set to INF by the caller on the first call */
     for(x=0; x<seq_length; ++x)
     {
         for(L=0; L<n_therm_states; ++L)
@@ -68,8 +61,7 @@ extern void _mbar_get_conf_energies(
 }
 
 extern void _mbar_normalize(
-    double *log_therm_state_counts, double *bias_energy_sequence,
-    int n_therm_states, int n_conf_states, int seq_length, double *scratch_M,
+    int n_therm_states, int n_conf_states, double *scratch_M,
     double *therm_energies, double *conf_energies, double *biased_conf_energies)
 {
     int i, KM = n_therm_states * n_conf_states;
@@ -85,8 +77,8 @@ extern void _mbar_normalize(
         therm_energies[i] -= f0;
 }
 
-void _get_pointwise_unbiased_free_energies(
-    double *log_therm_state_counts, double *therm_energies,
+void _mbar_get_pointwise_unbiased_free_energies(
+    int k, double *log_therm_state_counts, double *therm_energies,
     double *bias_energy_sequence,
     int n_therm_states,  int seq_length,
     double *scratch_T, double *pointwise_unbiased_free_energies)
@@ -99,6 +91,9 @@ void _get_pointwise_unbiased_free_energies(
         for(L=0; L<n_therm_states; ++L)
             scratch_T[L] = log_therm_state_counts[L] + therm_energies[L] - bias_energy_sequence[L * seq_length + x];
         log_divisor = _logsumexp_sort_kahan_inplace(scratch_T, n_therm_states);
-        pointwise_unbiased_free_energies[x] = log_divisor;
+        if(k==-1)
+            pointwise_unbiased_free_energies[x] = log_divisor;
+        else
+            pointwise_unbiased_free_energies[x] = bias_energy_sequence[k * seq_length + x] + log_divisor - therm_energies[k];
     }
 }

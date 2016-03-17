@@ -32,15 +32,14 @@ __all__ = [
     'estimate']
 
 cdef extern from "_mbar_direct.h":
-    void _update_therm_weights(
-        int *therm_state_counts, double *therm_weights, double *bias_weight_sequence,
-        int n_therm_states, int seq_length, double *scratch_T, double *new_therm_weights)
+    void _mbar_direct_update_therm_weights(
+        int *therm_state_counts, double *therm_weights, double *bias_weight_sequences,
+        int n_therm_states, int seq_length, double *new_therm_weights)
 
 def update_therm_weights(
     _np.ndarray[int, ndim=1, mode="c"] therm_state_counts not None,
     _np.ndarray[double, ndim=1, mode="c"] therm_weights not None,
-    _np.ndarray[double, ndim=2, mode="c"] bias_weight_sequence not None,
-    _np.ndarray[double, ndim=1, mode="c"] scratch_T not None,
+    bias_weight_sequences, # _np.ndarray[double, ndim=2, mode="c"]
     _np.ndarray[double, ndim=1, mode="c"] new_therm_weights not None):
     r"""
     Calculate the reduced thermodynamic free energies therm_energies
@@ -51,25 +50,24 @@ def update_therm_weights(
         state counts in each of the T thermodynamic states
     therm_weights : numpy.ndarray(shape=(T), dtype=numpy.float64)
         probabilities of the T thermodynamic states
-    bias_weight_sequence : numpy.ndarray(shape=(T, X), dtype=numpy.float64)
+    bias_weight_sequences : list of numpy.ndarray(shape=(T, X_i), dtype=numpy.float64)
         bias weights in the T thermodynamic states for all X samples
-    scratch_T : numpy.ndarray(shape=(T), dtype=numpy.float64)
-        scratch array
     new_therm_weights : numpy.ndarray(shape=(T), dtype=numpy.float64)
         target array for the probabilities of the T thermodynamic states
     """
-    _update_therm_weights(
-        <int*> _np.PyArray_DATA(therm_state_counts),
-        <double*> _np.PyArray_DATA(therm_weights),
-        <double*> _np.PyArray_DATA(bias_weight_sequence),
-        bias_weight_sequence.shape[0],
-        bias_weight_sequence.shape[1],
-        <double*> _np.PyArray_DATA(scratch_T),
-        <double*> _np.PyArray_DATA(new_therm_weights))
-
+    new_therm_weights[:] = 0.0
+    for i in range(len(bias_weight_sequences)):
+        _mbar_direct_update_therm_weights(
+            <int*> _np.PyArray_DATA(therm_state_counts),
+            <double*> _np.PyArray_DATA(therm_weights),
+            <double*> _np.PyArray_DATA(bias_weight_sequences[i]),
+            bias_weight_sequences[i].shape[0],
+            bias_weight_sequences[i].shape[1],
+            <double*> _np.PyArray_DATA(new_therm_weights))
+    new_therm_weights /= new_therm_weights[0]
 
 def estimate(
-    therm_state_counts, bias_energy_sequence, conf_state_sequence,
+    therm_state_counts, bias_energy_sequences, conf_state_sequences,
     maxiter=1000, maxerr=1.0E-8, therm_energies=None,
     n_conf_states=None, save_convergence_info=0, callback=None):
     r"""
@@ -79,9 +77,9 @@ def estimate(
     ----------
     therm_state_counts : numpy.ndarray(shape=(T), dtype=numpy.intc)
         numbers of samples in the T thermodynamic states
-    bias_energy_sequence : numpy.ndarray(shape=(T, X), dtype=numpy.float64)
+    bias_energy_sequences : list of numpy.ndarray(shape=(T, X_i), dtype=numpy.float64)
         reduced bias energies in the T thermodynamic states for all X samples
-    conf_state_sequence : numpy.ndarray(shape=(X), dtype=numpy.float64)
+    conf_state_sequences : list of numpy.ndarray(shape=(X_i), dtype=numpy.float64)
         discrete state indices (cluster indices) for all X samples
     maxiter : int
         maximum number of iterations
@@ -110,17 +108,27 @@ def estimate(
     T = therm_state_counts.shape[0]
     therm_state_counts = therm_state_counts.astype(_np.intc)
     if n_conf_states is None:
-        M = 1 + _np.max(conf_state_sequence)
+        M = 1 + max([_np.max(c) for c in conf_state_sequences])
     else:
         M = n_conf_states
+    assert len(conf_state_sequences)==len(bias_energy_sequences)
+    for s, b in zip(conf_state_sequences, bias_energy_sequences):
+        assert s.ndim == 1
+        assert s.dtype == _np.intc
+        assert b.ndim == 2
+        assert b.dtype == _np.float64
+        assert s.shape[0] == b.shape[1]
+        assert b.shape[0] == T
+        assert s.flags.c_contiguous
+        assert b.flags.c_contiguous
     log_therm_state_counts = _np.log(therm_state_counts)
-    shift = _np.min(bias_energy_sequence, axis=1)
+    shift = _np.min([_np.min(b, axis=1) for b in bias_energy_sequences], axis=0)
     if therm_energies is None:
         therm_energies = _np.zeros(shape=(T,), dtype=_np.float64)
         therm_weights = _np.ones(shape=(T,), dtype=_np.float64)
     else:
         therm_weights = _np.exp(-(therm_energies - shift))
-    bias_weight_sequence = _np.exp(-(bias_energy_sequence - shift[:, _np.newaxis]))
+    bias_weight_sequences = [_np.exp(-(b - shift[:, _np.newaxis])) for b in bias_energy_sequences]
     old_therm_energies = therm_energies.copy()
     old_therm_weights = therm_weights.copy()
     increments = []
@@ -131,7 +139,7 @@ def estimate(
     for _m in range(maxiter):
         sci_count += 1
         update_therm_weights(
-            therm_state_counts, old_therm_weights, bias_weight_sequence, scratch_T, therm_weights)
+            therm_state_counts, old_therm_weights, bias_weight_sequences, therm_weights)
         therm_energies = -_np.log(therm_weights)
         delta_therm_energies = _np.abs(therm_energies - old_therm_energies)
         err = _np.max(delta_therm_energies)
@@ -158,10 +166,9 @@ def estimate(
     therm_energies = -_np.log(therm_weights) + shift
     conf_energies, biased_conf_energies = _mbar.get_conf_energies(
         log_therm_state_counts, therm_energies,
-        bias_energy_sequence, conf_state_sequence, scratch_T, M)
+        bias_energy_sequences, conf_state_sequences, scratch_T, M)
     _mbar.normalize(
-        log_therm_state_counts, bias_energy_sequence, scratch_M,
-        therm_energies, conf_energies, biased_conf_energies)
+        scratch_M, therm_energies, conf_energies, biased_conf_energies)
     if save_convergence_info == 0:
         increments = None
     else:

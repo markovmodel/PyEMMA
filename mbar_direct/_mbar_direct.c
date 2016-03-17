@@ -21,14 +21,13 @@
 #include "../util/_util.h"
 #include "_mbar_direct.h"
 
-void _update_therm_weights(
+void _mbar_direct_update_therm_weights(
     int *therm_state_counts, double *therm_weights, double *bias_weight_sequence,
-    int n_therm_states, int seq_length, double *scratch_T, double *new_therm_weights)
+    int n_therm_states, int seq_length, double *new_therm_weights)
 {
     int K, x, L;
-    double divisor, maximum;
-    for(K=0; K<n_therm_states; ++K)
-        new_therm_weights[K] = 0;
+    double divisor;
+    /* assume that new_therm_weights was set to zero by the caller on the first call */
     for(x=0; x<seq_length; ++x)
     {
         divisor = 0;
@@ -37,10 +36,4 @@ void _update_therm_weights(
         for(K=0; K<n_therm_states; ++K)
             new_therm_weights[K] += bias_weight_sequence[K * seq_length + x] / divisor;
     }
-    maximum = 0;
-    for(K=0; K<n_therm_states; ++K)
-        if(new_therm_weights[K] > maximum)
-            maximum = new_therm_weights[K];
-    for(K=0; K<n_therm_states; ++K)
-        new_therm_weights[K] /= maximum;
 }

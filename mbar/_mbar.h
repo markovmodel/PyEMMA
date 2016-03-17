@@ -31,12 +31,11 @@ extern void _mbar_get_conf_energies(
     double *scratch_T, double *conf_energies, double *biased_conf_energies);
 
 extern void _mbar_normalize(
-    double *log_therm_state_counts, double *bias_energy_sequence,
-    int n_therm_states, int n_conf_states, int seq_length, double *scratch_M,
+    int n_therm_states, int n_conf_states, double *scratch_M,
     double *therm_energies, double *conf_energies, double *biased_conf_energies);
 
-void _get_pointwise_unbiased_free_energies(
-    double *log_therm_state_counts, double *therm_energies,
+void _mbar_get_pointwise_unbiased_free_energies(
+    int k, double *log_therm_state_counts, double *therm_energies,
     double *bias_energy_sequence,
     int n_therm_states,  int seq_length,
     double *scratch_T, double *pointwise_unbiased_free_energies);

@@ -338,7 +338,7 @@ def get_pointwise_unbiased_free_energies(
     ----------
     k : int or None
         thermodynamic state, if k is None, compute pointwise free energies
-        of the unbiased state.
+        of the unbiased ensemble.
     log_lagrangian_mult : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         log of the Lagrangian multipliers
     biased_conf_energies : numpy.ndarray(shape=(T, M), dtype=numpy.float64)

@@ -20,8 +20,8 @@
 #ifndef THERMOTOOLS_MBAR
 #define THERMOTOOLS_MBAR
 
-void _update_therm_weights(
+void _mbar_direct_update_therm_weights(
     int *therm_state_counts, double *therm_weights, double *bias_weight_sequence,
-    int n_therm_states, int seq_length, double *scratch_T, double *new_therm_weights);
+    int n_therm_states, int seq_length, double *new_therm_weights);
 
 #endif
