@@ -162,8 +162,7 @@ def update_biased_conf_energies(
         scratch array for likelihood computation (only needed when
         return_log_L = True)
     return_log_L : bool
-        If true, return the part of the TRAM-log-likelihood that contains
-        the biasing energies.
+        If true, retrun the TRAM-log-likelihood.
     """
     new_biased_conf_energies[:] = _np.inf
     get_log_Ref_K_i(log_lagrangian_mult, biased_conf_energies, 
@@ -602,7 +601,6 @@ def estimate(count_matrices, state_counts, bias_energy_sequences, state_sequence
     log_R_K_i = _np.zeros(shape=state_counts.shape, dtype=_np.float64)
     scratch_T = _np.zeros(shape=(count_matrices.shape[0],), dtype=_np.float64)
     scratch_M = _np.zeros(shape=(count_matrices.shape[1],), dtype=_np.float64)
-    scratch_TM = _np.zeros(shape=count_matrices.shape[0:2], dtype=_np.float64)
     scratch_MM = _np.zeros(shape=count_matrices.shape[1:3], dtype=_np.float64)
     old_biased_conf_energies = biased_conf_energies.copy()
     old_log_lagrangian_mult = log_lagrangian_mult.copy()
