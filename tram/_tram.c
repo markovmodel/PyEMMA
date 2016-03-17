@@ -88,7 +88,7 @@ void _tram_update_lagrangian_mult(
     }
 }
 
-void _get_log_R_K_i(/* TODO: refactor get_pointwise_unbiased_free_energies in pyx and make this static */
+void _tram_get_log_Ref_K_i(
     double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices,
     int *state_counts, int n_therm_states, int n_conf_states, double *scratch_M,
     double *log_R_K_i)
@@ -142,22 +142,13 @@ void _get_log_R_K_i(/* TODO: refactor get_pointwise_unbiased_free_energies in py
 }
 
 void _tram_update_biased_conf_energies(
-    double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices, double *bias_energy_sequence,
-    int *state_sequence, int *state_counts, int seq_length, double *log_R_K_i,
-    int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_T,
-    double *new_biased_conf_energies)
+    double *bias_energy_sequence, int *state_sequence, int seq_length, double *log_R_K_i,
+    int n_therm_states, int n_conf_states, double *scratch_T, double *new_biased_conf_energies)
 {
     int i, K, x, o;
-    int KM;
     double divisor;
 
-    _get_log_R_K_i(log_lagrangian_mult, biased_conf_energies, count_matrices,
-                   state_counts, n_therm_states, n_conf_states, scratch_M, log_R_K_i);
-
-    /* set new_biased_conf_energies to infinity (z_K_i==0) */
-    KM = n_therm_states * n_conf_states;
-    for(i=0; i<KM; ++i)
-        new_biased_conf_energies[i] = INFINITY;
+    /* assume that new_biased_conf_energies have been set to INF by the caller in the first call */
     /* compute new biased_conf_energies */
     for(x=0; x<seq_length; ++x)
     {
@@ -176,8 +167,6 @@ void _tram_update_biased_conf_energies(
         
         for(K=0; K<n_therm_states; ++K)
         {
-            assert(K<n_therm_states);
-            assert(K>=0);
             new_biased_conf_energies[K * n_conf_states + i] = -_logsumexp_pair(
                     -new_biased_conf_energies[K * n_conf_states + i],
                     -(divisor + bias_energy_sequence[K * seq_length + x]));
@@ -187,13 +176,11 @@ void _tram_update_biased_conf_energies(
 
 void _tram_get_conf_energies(
     double *bias_energy_sequence, int *state_sequence, int seq_length, double *log_R_K_i,
-    int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_T,
-    double *conf_energies)
+    int n_therm_states, int n_conf_states, double *scratch_T, double *conf_energies)
 {
     int i, K, x, o;
     double divisor;
-    for(i=0; i<n_conf_states; ++i)
-        conf_energies[i] = INFINITY;
+    /* assume that conf_energies was set to INF by the caller on the first call */
     for( x=0; x<seq_length; ++x )
     {
         i = state_sequence[x];
@@ -271,7 +258,7 @@ void _tram_estimate_transition_matrix(
             sum[i] += transition_matrix[ij];
         }
     }
-    /* normalize T matrix */
+    /* normalize T matrix */ /* TODO: unify with util._renormalize_transition_matrix? */
     max_sum = 0;
     for(i=0; i<n_conf_states; ++i) if(sum[i] > max_sum) max_sum = sum[i];
     if(max_sum==0) max_sum = 1.0; /* completely empty T matrix -> generate Id matrix */
@@ -349,8 +336,8 @@ double _tram_log_likelihood_lower_bound(
 
     /* compute R_{i(x)}^{(k)} */
     old_log_R_K_i = scratch_TM;
-    _get_log_R_K_i(old_log_lagrangian_mult, old_biased_conf_energies, count_matrices,
-                   state_counts, n_therm_states, n_conf_states, scratch_M, old_log_R_K_i);
+    _tram_get_log_Ref_K_i(old_log_lagrangian_mult, old_biased_conf_energies, count_matrices,
+                          state_counts, n_therm_states, n_conf_states, scratch_M, old_log_R_K_i);
 
     /* -\sum_{x}\log\sum_{l}R_{i(x)}^{(l)}e^{-b^{(l)}(x)+f_{i(x)}^{(l)}} */
     c = 0;
@@ -370,7 +357,7 @@ double _tram_log_likelihood_lower_bound(
     return a+b+c;
 }
 
-void _get_pointwise_unbiased_free_energies(
+void _tram_get_pointwise_unbiased_free_energies(
     int k, double *bias_energy_sequence, double *therm_energies, int *state_sequence,
     int seq_length, double *log_R_K_i, int n_therm_states, int n_conf_states,
     double *scratch_T, double *pointwise_unbiased_free_energies)
