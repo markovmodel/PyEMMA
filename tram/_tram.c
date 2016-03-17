@@ -88,7 +88,7 @@ void _tram_update_lagrangian_mult(
     }
 }
 
-void _get_log_R_K_i(
+void _get_log_R_K_i(/* TODO: refactor get_pointwise_unbiased_free_energies in pyx and make this static */
     double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices,
     int *state_counts, int n_therm_states, int n_conf_states, double *scratch_M,
     double *log_R_K_i)
@@ -147,52 +147,13 @@ void _tram_update_biased_conf_energies(
     int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_T,
     double *new_biased_conf_energies)
 {
-    int i, j, K, x, o;
-    int Ki, Kj, KM, KMM;
-    int Ci, CK, CKij, CKji, NC;
-    double divisor, R_addon;
-    /* compute R_K_i */ /* TODO: refactor */
-    for(K=0; K<n_therm_states; ++K)
-    {
-        KM = K * n_conf_states;
-        KMM = KM * n_conf_states;
-        for(i=0; i<n_conf_states; ++i)
-        {
-            Ki = KM + i;
-            if(0 == state_counts[Ki]) /* applying Hao's speed-up recomendation */
-            {
-                log_R_K_i[Ki] = -INFINITY;
-                continue;
-            }
-            Ci = 0;
-            o = 0;
-            for(j=0; j<n_conf_states; ++j)
-            {
-                CKij = count_matrices[KMM + i * n_conf_states + j];
-                CKji = count_matrices[KMM + j * n_conf_states + i];
-                Ci += CKji;
-                /* special case: most variables cancel out, here */
-                if(i == j)
-                {
-                    scratch_M[o] = (0 == CKij) ? THERMOTOOLS_TRAM_LOG_PRIOR : log(THERMOTOOLS_TRAM_PRIOR + (double) CKij);
-                    scratch_M[o++] += biased_conf_energies[Ki];
-                    continue;
-                }
-                CK = CKij + CKji;
-                /* special case */
-                if(0 == CK) continue;
-                /* regular case */
-                Kj = KM + j;
-                divisor = _logsumexp_pair(
-                    log_lagrangian_mult[Kj] - biased_conf_energies[Ki],
-                    log_lagrangian_mult[Ki] - biased_conf_energies[Kj]);
-                scratch_M[o++] = log((double) CK) + log_lagrangian_mult[Kj] - divisor;
-            }
-            NC = state_counts[Ki] - Ci;
-            R_addon = (0 < NC) ? log((double) NC) + biased_conf_energies[Ki] : -INFINITY; /* IGNORE PRIOR */
-            log_R_K_i[Ki] = _logsumexp_pair(_logsumexp_sort_kahan_inplace(scratch_M, o), R_addon);
-        }
-    }
+    int i, K, x, o;
+    int KM;
+    double divisor;
+
+    _get_log_R_K_i(log_lagrangian_mult, biased_conf_energies, count_matrices,
+                   state_counts, n_therm_states, n_conf_states, scratch_M, log_R_K_i);
+
     /* set new_biased_conf_energies to infinity (z_K_i==0) */
     KM = n_therm_states * n_conf_states;
     for(i=0; i<KM; ++i)
@@ -346,9 +307,8 @@ double _tram_log_likelihood_lower_bound(
 {
     double a, b, c;
     int K, i, j, x, o;
-    int KM, KMM, Ki, Kj;
-    int CKij, CKji, Ci, NC, CK;
-    double divisor, R_addon;
+    int KM, KMM, Ki;
+    int CKij;
     double *old_log_R_K_i, *T_ij;
 
     /* \sum_{i,j,k}c_{ij}^{(k)}\log p_{ij}^{(k)} */
@@ -388,47 +348,9 @@ double _tram_log_likelihood_lower_bound(
     }
 
     /* compute R_{i(x)}^{(k)} */
-    /* TODO: refactor computation of R. or the one of sum_x log mu(x)*/
     old_log_R_K_i = scratch_TM;
-    for(K=0; K<n_therm_states; ++K)
-    {
-        KM = K * n_conf_states;
-        KMM = KM * n_conf_states;
-        for(i=0; i<n_conf_states; ++i)
-        {
-            Ki = KM + i;
-            if(0 == state_counts[Ki]) /* applying Hao's speed-up recomendation */
-            {
-                old_log_R_K_i[Ki] = -INFINITY;
-                continue;
-            }
-            Ci = 0;
-            o = 0;
-            for(j=0; j<n_conf_states; ++j)
-            {
-                CKij = count_matrices[KMM + i * n_conf_states + j];
-                CKji = count_matrices[KMM + j * n_conf_states + i];
-                Ci += CKji;
-                /* special case: most variables cancel out, here */
-                if(i == j)
-                {
-                    scratch_M[o] = (0 == CKij) ? THERMOTOOLS_TRAM_LOG_PRIOR : log(THERMOTOOLS_TRAM_PRIOR + (double) CKij);
-                    scratch_M[o++] += old_biased_conf_energies[Ki];
-                    continue;
-                }
-                CK = CKij + CKji;
-                /* special case */
-                if(0 == CK) continue;
-                /* regular case */
-                Kj = KM + j;
-                divisor = _logsumexp_pair(old_log_lagrangian_mult[Kj] - old_biased_conf_energies[Ki], old_log_lagrangian_mult[Ki] - old_biased_conf_energies[Kj]);
-                scratch_M[o++] = log((double) CK) + old_log_lagrangian_mult[Kj] - divisor;
-            }
-            NC = state_counts[Ki] - Ci;
-            R_addon = (0 < NC) ? log((double) NC) + old_biased_conf_energies[Ki] : -INFINITY; /* IGNORE PRIOR */
-            old_log_R_K_i[Ki] = _logsumexp_pair(_logsumexp_sort_kahan_inplace(scratch_M, o), R_addon);
-        }
-    }
+    _get_log_R_K_i(old_log_lagrangian_mult, old_biased_conf_energies, count_matrices,
+                   state_counts, n_therm_states, n_conf_states, scratch_M, old_log_R_K_i);
 
     /* -\sum_{x}\log\sum_{l}R_{i(x)}^{(l)}e^{-b^{(l)}(x)+f_{i(x)}^{(l)}} */
     c = 0;
