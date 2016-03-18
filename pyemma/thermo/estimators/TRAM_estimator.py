@@ -66,11 +66,11 @@ class TRAM(_Estimator, _MEMM):
         # shape and type checks
         assert len(ttrajs) == len(dtrajs_full) == len(btrajs)
         for t in ttrajs:
-            _types.assert_array(t, ndim=1, kind='i'):
+            _types.assert_array(t, ndim=1, kind='i')
         for d in dtrajs_full:
-            _types.assert_array(d, ndim=1, kind='i'):
+            _types.assert_array(d, ndim=1, kind='i')
         for b in btrajs:
-            _types.assert_array(b, ndim=2, kind='f'):
+            _types.assert_array(b, ndim=2, kind='f')
         # find dimensions
         self.nstates_full = max(_np.max(d) for d in dtrajs_full)+1
         self.nthermo = max(_np.max(t) for t in ttrajs)+1
