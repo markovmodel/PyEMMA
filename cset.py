@@ -87,16 +87,16 @@ def compute_csets_TRAM(connectivity, state_counts, count_matrices, ttrajs=None, 
         equal than one.
         The parameter ttrajs, dtrajs, bias_trajs must be set.
 
-    state_counts : ndarray((K, M), dtype=intc)
-        Number of visits to the combiantions of thermodynamic state k
+    state_counts : numpy.ndarray((T, M), dtype=numpy.intc)
+        Number of visits to the combiantions of thermodynamic state t
         and Markov state m
-    count_matrices : ndarray((K, M, M), dtype=intc)
-        Count matrices for all K thermodynamic states.
-    ttrajs : list of ndarray(X_i, dtype=intc), optional
+    count_matrices : numpy.ndarray((T, M, M), dtype=numpy.intc)
+        Count matrices for all T thermodynamic states.
+    ttrajs : list of numpy.ndarray(X_i, dtype=numpy.intc), optional
         List of generating thermodynamic state trajectories.
-    dtrajs : list of ndarray(X_i, dtype=intc), optional
+    dtrajs : list of numpy.ndarray(X_i, dtype=numpy.intc), optional
         List of configurational state trajectories (disctrajs).
-    bias_trajs : list of ndarray((X_i, K), dtype=float64), optional
+    bias_trajs : list of numpy.ndarray((X_i, T), dtype=numpy.float64), optional
         List of bias energy trajectories.
         The last three parameters are only required for
         connectivity = 'post_hoc_RE' or connectivity = 'BAR_variance'.
@@ -168,8 +168,8 @@ def compute_csets_dTRAM(connectivity, count_matrices, nn=None):
         if there are samples in both states (k,n) and (l,n) and
         |l-n|<=nn, a bidirectional link is added.
 
-    count_matrices : ndarray((K, M, M))
-        Count matrices for all K thermodynamic states.
+    count_matrices : numpy.ndarray((T, M, M))
+        Count matrices for all T thermodynamic states.
     nn : int or None, optional
         Number of neighbors that are assumed to overlap when
         connectivity='neighbors'
@@ -177,10 +177,10 @@ def compute_csets_dTRAM(connectivity, count_matrices, nn=None):
     Returns
     -------
     csets, projected_cset
-    csets : list of ndarrays((X_i,), dtype=int)
+    csets : list of numpy.ndarray((M_prime_k,), dtype=int)
         List indexed by thermodynamic state. Every element csets[k] is
         the largest connected set at thermodynamic state k.
-    projected_cset : ndarray(M, dtype=int)
+    projected_cset : numpy.ndarray(M_prime, dtype=int)
         The overall connected set. This is the union of the individual
         connected sets of the thermodynamic states.
     '''
@@ -323,23 +323,23 @@ def restrict_to_csets(csets, state_counts=None, count_matrices=None, ttrajs=None
 
     Parameters
     ----------
-    csets : list of ndarray((X_i), dtype=int), length=K
-        List of connected sets for every thermodynamic state k.
-    state_counts : ndarray((K, M)), optional
+    csets : list of numpy.ndarray((M_i), dtype=int), length=T
+        List of connected sets for every thermodynamic state t.
+    state_counts : numpy.ndarray((T, M)), optional
         Number of visits to the combinations of thermodynamic state
-        k and Markov state m.
-    count_matrices : ndarray((K, M, M)), optional
-        Count matrices for all K thermodynamic states.
-    ttrajs : list of ndarray(X_i), optional
+        t and Markov state m.
+    count_matrices : numpy.ndarray((T, M, M)), optional
+        Count matrices for all T thermodynamic states.
+    ttrajs : list of numpy.ndarray(X_i), optional
         List of generating thermodynamic state trajectories.
         Only needed if dtrajs or bias_trajs are given as well.
         Is used to determine which frames are in the connected sets.
     dtrajs : list of ndarray(X_i), optional
         List of configurational state trajectories (disctrajs).
         If given, ttrajs must be set as well.
-    bias_trajs : list of ndarray((X_i, K)), optional
-        List of bias energy trajectories. If given, ttrajs and dtrajs
-        must be given as well.
+    bias_trajs : list of ndarray((X_i, T)), optional
+        List of bias energy trajectories for all T thermodynamic states.
+        If given, ttrajs and dtrajs must be given as well.
 
     Returns
     -------
