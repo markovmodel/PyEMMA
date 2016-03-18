@@ -302,11 +302,11 @@ def normalize(
 
     Parameters
     ----------
-    conf_energies : numpy.ndarray(shape=(M), dtype=numpy.intc)
+    conf_energies : numpy.ndarray(shape=(M), dtype=numpy.float64)
         unbiased reduced bias energies in the M discrete states
-    biased_conf_energies : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
+    biased_conf_energies : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         reduced bias energies in the T thermodynamic and M discrete states
-    therm_energies : numpy.ndarray(shape=(T), dtype=numpy.intc)
+    therm_energies : numpy.ndarray(shape=(T), dtype=numpy.float64)
         reduced thermodynamic free energies
     scratch_M : numpy.ndarray(shape=(M), dtype=numpy.float64)
         scratch array for logsumexp operations

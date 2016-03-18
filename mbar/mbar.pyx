@@ -25,9 +25,9 @@ from .callback import CallbackInterrupt
 
 __all__ = [
     'update_therm_energies',
-    'normalize',
     'get_conf_energies',
-    'get_biased_conf_energies',
+    'normalize',
+    'get_pointwise_unbiased_free_energies',
     'estimate']
 
 cdef extern from "_mbar.h":
@@ -112,6 +112,8 @@ def get_conf_energies(
     -------
     conf_energies : numpy.ndarray(shape=(M), dtype=numpy.float64)
         reduced unbiased free energies
+    biased_conf_energies : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+        reduced bias energies in the T thermodynamic and M discrete states
     """
     conf_energies = _np.zeros(shape=(n_conf_states,), dtype=_np.float64)
     biased_conf_energies = _np.zeros(
