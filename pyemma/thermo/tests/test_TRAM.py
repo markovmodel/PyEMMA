@@ -145,8 +145,8 @@ class TestTRAMwith5StateDTRAMModel(unittest.TestCase):
         assert np.all(tram.loglikelihoods[-1]+1.E-5>=tram.loglikelihoods[0:-1])
 
         # simple test: just call the methods
-        tram.pointwise_unbiased_free_energies()
-        tram.mbar_pointwise_unbiased_free_energies()
+        tram.pointwise_free_energies()
+        tram.mbar_pointwise_free_energies()
 
 
 class TestTRAMasReversibleMSM(unittest.TestCase):
@@ -308,8 +308,8 @@ class TestTRAMwithTRAMmodel(unittest.TestCase):
             f0 = -np.log(self.mu[k, :].sum())
             reference_fel = self.energy[k, :] - f0
             # TRAM result
-            test_p_u_f_es = np.concatenate(tram.pointwise_unbiased_free_energies(k))
-            counts,_ = np.histogram(self.xes, weights=np.exp(-test_p_u_f_es), bins=self.n_micro_states)
+            test_p_f_es = np.concatenate(tram.pointwise_free_energies(k))
+            counts,_ = np.histogram(self.xes, weights=np.exp(-test_p_f_es), bins=self.n_micro_states)
             test_fel = -np.log(counts) + np.log(counts.sum())
             assert np.allclose(reference_fel, test_fel, atol=0.1)
 

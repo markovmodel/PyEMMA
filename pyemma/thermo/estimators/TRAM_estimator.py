@@ -34,16 +34,90 @@ class EmptyState(RuntimeWarning):
     pass
 
 class TRAM(_Estimator, _MEMM):
-    def __init__(self, lag=1, count_mode='sliding', connectivity = 'summed_count_matrix', nn=None,
-                 dt_traj='1 step', ground_state=None,
+    r"""Transition(-based) Reweighting Analysis Method
+
+    Parameters
+    ----------
+    lag : int
+        Integer lag time at which transitions are counted.
+    count_mode : str, optional, default='sliding'
+        mode to obtain count matrices from discrete trajectories. Should be
+        one of:
+        * 'sliding' : A trajectory of length T will have :math:`T-tau` counts
+          at time indexes
+              .. math::
+                 (0 \rightarrow \tau), (1 \rightarrow \tau+1), ..., (T-\tau-1 \rightarrow T-1)
+        * 'sample' : A trajectory of length T will have :math:`T/tau` counts
+          at time indexes
+              .. math::
+                    (0 \rightarrow \tau), (\tau \rightarrow 2 \tau), ..., (((T/\tau)-1) \tau \rightarrow T)
+        Currently only 'sliding' is supported.
+    maxiter : int, optional, default=10000
+        The maximum number of self-consistent iterations before the estimator exits unsuccessfully.
+    maxerr : float, optional, default=1E-15
+        Convergence criterion based on the maximal free energy change in a self-consistent
+        iteration step.
+    dt_traj : str, optional, default='1 step'
+        Description of the physical time corresponding to the lag. May be used by analysis
+        algorithms such as plotting tools to pretty-print the axes. By default '1 step', i.e.
+        there is no physical time unit.  Specify by a number, whitespace and unit. Permitted
+        units are (* is an arbitrary string):
+
+        |  'fs',   'femtosecond*'
+        |  'ps',   'picosecond*'
+        |  'ns',   'nanosecond*'
+        |  'us',   'microsecond*'
+        |  'ms',   'millisecond*'
+        |  's',    'second*'
+    connectivity : string
+        One of 'summed_count_matrix', 'strong_in_every_ensemble',
+        'neighbors', 'post_hoc_RE' or 'BAR_variance'.
+        Defines what should be considered a connected set in the joint space
+        of conformations and thermodynamic ensembles.
+        For details see thermotools.cset.compute_csets_TRAM.
+    nn : int, optional
+        Only needed if connectivity='neighbors'
+        See thermotools.cset.compute_csets_TRAM.
+    connectivity_factor : float, optional, default=1.0
+        Only needed if connectivity='post_hoc_RE' or 'BAR_variance'.
+        Weakens the connectivity requirement, see thermotools.cset.compute_csets_TRAM.
+    direct_space : bool, default=False
+        Whether to perform the self-consitent iteration with Boltzmann factors
+        (direct space) or free energies (log-space). When analyzing data from
+        multi-temperature simulations, direct-space is not recommended.
+    N_dtram_accelerations : int, optional, default=0
+        Convergence of TRAM can be speeded up by interleaving the updates
+        in the self-consitent iteration with a dTRAM-like update step.
+        N_dtram_accelerations says how many times the dTRAM-like update
+        step should be applied in every iteration of the TRAM equations.
+        Currently this is only effective if direct_space=True.
+    save_convergence_info : int, optional, default=0
+        Every save_convergence_info iteration steps, store the actual increment
+        and the actual loglikelihood; 0 means no storage.
+    init : str, optional, default=None
+        Use a specific initialization for self-consistent iteration:
+
+        | None:    use a hard-coded guess for free energies and Lagrangian multipliers
+        | 'mbar':  perform a short MBAR estimate to initialize the free energies
+    mbar_maxiter : int, optional, default=10000
+        Same as maxiter but for the (optional) MBAR initialization step.
+        If MBAR doesn't converge in mbar_maxiter iterations, the results
+        is still used for intializing TRAM.
+    mbar_maxerr : float, optional, default=1e-8
+        same as maxerr but for the (optional) MBAR initialization step
+    """
+    def __init__(self, lag=1, count_mode='sliding', dt_traj='1 step',
+                 connectivity = 'summed_count_matrix', nn=None, connectivity_factor=1.0,
+                 ground_state=None,
                  maxiter=10000, maxerr=1e-15, direct_space=False, N_dtram_accelerations=0,
-                 callback=None, save_convergence_info=0, init='mbar'):
+                 callback=None, save_convergence_info=0, init='mbar', mbar_maxiter=10000, mbar_maxerr=1e-8):
 
         self.lag = lag
         assert count_mode == 'sliding', 'Currently the only implemented count_mode is \'sliding\''
         self.count_mode = count_mode
         self.connectivity = connectivity
         self.nn = nn
+        self.connectivity_factor = connectivity_factor
         self.dt_traj = dt_traj
         self.timestep_traj = _TimeUnit(dt_traj)
         self.ground_state = ground_state
@@ -55,13 +129,35 @@ class TRAM(_Estimator, _MEMM):
         self.save_convergence_info = save_convergence_info
         assert init in (None, 'mbar'), 'Currently only None and \'mbar\' are supported'
         self.init = init
+        self.mbar_maxiter = mbar_maxiter
+        self.mbar_maxerr = mbar_maxerr
 
         self.active_set = None
         self.biased_conf_energies = None
-        self.mbar_biased_conf_energies = None
+        self.mbar_therm_energies = None
         self.log_lagrangian_mult = None
+        self.loglikelihoods = None
 
     def _estimate(self, data):
+        """
+        Parameters
+        ----------
+        data : tuple of (ttrajs, dtrajs, btrajs)
+            Simulations trajectories of equal length. ttrajs contain the
+            indices of the thermodynamic state, dtrajs contains the indices
+            of the configurational states and btrajs contain the biases.
+        ttrajs : list of numpy.ndarray(X_i, dtype=int)
+            Every elements is a trajectory (time series). ttrajs[i][t] is
+            the index of the thermodynamic state visited in trajectory i at time step t.
+        dtrajs : list of numpy.ndarray(X_i, dtype=int)
+            dtrajs[i][t] is the index of the configurational state (Markov state)
+            visited in trajectory i at time step t.
+        btrajs : list of numpy.ndarray((X_i, T), dtype=float)
+            For every simulation frame seen in trajectory i and time step
+            t, btrajs[i][t,k] is the bias energy of that frame evaluated
+            in the k'th thermodynamic state (i.e. at the k'th Umbrella/
+            Hamiltonian/temperature)
+        """
         ttrajs, dtrajs_full, btrajs = data
         # shape and type checks
         assert len(ttrajs) == len(dtrajs_full) == len(btrajs)
@@ -92,7 +188,7 @@ class TRAM(_Estimator, _MEMM):
 
         self.csets, pcset = _cset.compute_csets_TRAM(self.connectivity,
                                 state_counts_full, count_matrices_full,
-                                ttrajs=ttrajs, dtrajs=dtrajs_full, bias_trajs=btrajs, nn=self.nn)
+                                ttrajs=ttrajs, dtrajs=dtrajs_full, bias_trajs=btrajs, nn=self.nn, factor=self.connectivity_factor)
         self.active_set = pcset
 
         # check for empty states
@@ -115,7 +211,7 @@ class TRAM(_Estimator, _MEMM):
             if self.count_matrices[k, :, :].sum() == 0:
                 _warnings.warn('Thermodynamic state %d contains no transitions after reducing to the connected set.'%k, EmptyState)
 
-        if self.init == 'mbar' and self.mbar_biased_conf_energies is None:
+        if self.init == 'mbar' and self.biased_conf_energies is None:
             #def MBAR_printer(**kwargs):
             #    if kwargs['iteration_step'] % 100 == 0:
             #         print 'preMBAR', kwargs['iteration_step'], kwargs['err']
@@ -124,7 +220,7 @@ class TRAM(_Estimator, _MEMM):
             else:
                 mbar = _mbar
             mbar_result = mbar.estimate(state_counts_full.sum(axis=1), btrajs, dtrajs_full,
-                                        maxiter=1000000, maxerr=1.0E-8, #callback=MBAR_printer,
+                                        maxiter=self.mbar_maxiter, maxerr=self.mbar_maxerr, #callback=MBAR_printer,
                                         n_conf_states=self.nstates_full)
             self.mbar_therm_energies, self.mbar_unbiased_conf_energies, self.mbar_biased_conf_energies, _ = mbar_result
             self.biased_conf_energies = self.mbar_biased_conf_energies.copy()
@@ -162,12 +258,38 @@ class TRAM(_Estimator, _MEMM):
         return self
 
     def log_likelihood(self):
+        r"""
+        Returns the value of the log-likelihood of the converged TRAM estimate.
+        """
         if self.loglikelihoods is None:
             raise Exception('Computation of log likelihood wasn\'t enabled during estimation.')
         else:
             return self.loglikelihoods[-1]
 
-    def pointwise_unbiased_free_energies(self, therm_state=None):
+    def pointwise_free_energies(self, therm_state=None):
+        r"""
+        Computes the pointwise free energies :math:`-\log(\mu^k(x))` for all points x.
+
+        :math:`\mu^k(x)` is the optimal estimate of the Boltzmann distribution
+        of the k'th ensemble defined on the set of all samples.
+
+        Parameters
+        ----------
+        therm_state : int or None, default=None
+            Selects the thermodynamic state k for which to compute the
+            pointwise free energies.
+            None selects the "unbiased" state which is defined by having
+            zero bias energy.
+
+        Returns
+        -------
+        mu_k : list of numpy.ndarray(X_i dtype=numpy.float64)
+             list of the same layout as dtrajs (or ttrajs). mu_k[i][t]
+             contains the pointwise free energy of the frame seen in
+             trajectory i and time step t.
+             Frames that are not in the connected sets, get assiged an
+             infinite pointwise free energy.
+        """
         assert self.therm_energies is not None, \
             'MEMM has to be estimate()\'d before pointwise free energies can be calculated.'
         if therm_state is not None:
@@ -181,7 +303,7 @@ class TRAM(_Estimator, _MEMM):
             self.state_counts, None, None, mu)
         return mu
 
-    def mbar_pointwise_unbiased_free_energies(self, therm_state=None):
+    def mbar_pointwise_free_energies(self, therm_state=None):
         assert self.mbar_therm_energies is not None, \
             'MEMM has to be estimate()\'d with init=\'mbar\' before pointwise free energies can be calculated.'
         if therm_state is not None:
