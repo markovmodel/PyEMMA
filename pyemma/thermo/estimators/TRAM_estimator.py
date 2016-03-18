@@ -29,7 +29,6 @@ from thermotools import util as _util
 from thermotools import cset as _cset
 from msmtools.estimation import largest_connected_set as _largest_connected_set
 import warnings as _warnings
-import sys as _sys
 
 class EmptyState(RuntimeWarning):
     pass
@@ -83,24 +82,23 @@ class TRAM(_Estimator, _MEMM):
         # cast types and change axis order if needed
         ttrajs = [_np.require(t, dtype=_np.intc, requirements='C') for t in ttrajs]
         dtrajs_full = [_np.require(d, dtype=_np.intc, requirements='C') for d in dtrajs_full]
-        btrajs = [_np.require(b, dtype=_np.float64, requirements='C') for t in btrajs]
+        btrajs = [_np.require(b, dtype=_np.float64, requirements='C') for b in btrajs]
 
         # find state visits and transition counts
         state_counts_full = _util.state_counts(ttrajs, dtrajs_full)
         count_matrices_full = _util.count_matrices(ttrajs, dtrajs_full,
             self.lag, sliding=self.count_mode, sparse_return=False, nstates=self.nstates_full)
-        self.therm_state_counts_full = self.state_counts_full.sum(axis=1)
-
+        self.therm_state_counts_full = state_counts_full.sum(axis=1)
 
         self.csets, pcset = _cset.compute_csets_TRAM(self.connectivity,
                                 state_counts_full, count_matrices_full,
-                                ttrajs=ttrajs, dtraj=dtrajs_full, bias_trajs=btrajs, nn=self.nn)
+                                ttrajs=ttrajs, dtrajs=dtrajs_full, bias_trajs=btrajs, nn=self.nn)
         self.active_set = pcset
 
         # check for empty states
         for k in range(self.nthermo):
             if len(self.csets[k]) == 0:
-                warnings.warn('Thermodynamic state %d contains no samples after reducing to the connected set.'%k, EmptyState)
+                _warnings.warn('Thermodynamic state %d contains no samples after reducing to the connected set.'%k, EmptyState)
 
         # deactivate samples not in the csets, states are *not* relabeled
         res = _cset.restrict_to_csets(self.csets, state_counts=state_counts_full, 
@@ -109,24 +107,24 @@ class TRAM(_Estimator, _MEMM):
 
         # self-consistency tests
         assert _np.all(self.state_counts >= _np.maximum(self.count_matrices.sum(axis=1), self.count_matrices.sum(axis=2)))
-        assert _np.all(_np.sum([_np.bincount(d[d>=0], minlength=self.nthermo) for d in self.dtrajs], axis=0) == self.state_counts.sum(axis=0))
-        assert _np.all(_np.sum([_np.bincount(t[d>=0], minlength=self.nthermo) for t,d in zip(ttrajs, self.dtrajs)], axis=0) == self.state_counts.sum(axis=1))
+        assert _np.all(_np.sum([_np.bincount(d[d>=0], minlength=self.nstates_full) for d in self.dtrajs], axis=0) == self.state_counts.sum(axis=0))
+        assert _np.all(_np.sum([_np.bincount(t[d>=0], minlength=self.nthermo) for t, d in zip(ttrajs, self.dtrajs)], axis=0) == self.state_counts.sum(axis=1))
 
         # check for empty states
         for k in range(self.state_counts.shape[0]):
-            if self.count_matrices[k,:,:].sum() == 0:
-                warnings.warn('Thermodynamic state %d contains no transitions after reducing to the connected set.'%k, EmptyState)
+            if self.count_matrices[k, :, :].sum() == 0:
+                _warnings.warn('Thermodynamic state %d contains no transitions after reducing to the connected set.'%k, EmptyState)
 
         if self.init == 'mbar' and self.mbar_biased_conf_energies is None:
-            def MBAR_printer(**kwargs):
-                if kwargs['iteration_step'] % 100 == 0:
-                     print 'preMBAR', kwargs['iteration_step'], kwargs['err']
+            #def MBAR_printer(**kwargs):
+            #    if kwargs['iteration_step'] % 100 == 0:
+            #         print 'preMBAR', kwargs['iteration_step'], kwargs['err']
             if self.direct_space:
                 mbar = _mbar_direct
             else:
                 mbar = _mbar
             mbar_result = mbar.estimate(state_counts_full.sum(axis=1), btrajs, dtrajs_full,
-                                        maxiter=1000000, maxerr=1.0E-8, callback=MBAR_printer,
+                                        maxiter=1000000, maxerr=1.0E-8, #callback=MBAR_printer,
                                         n_conf_states=self.nstates_full)
             self.mbar_therm_energies, self.mbar_unbiased_conf_energies, self.mbar_biased_conf_energies, _ = mbar_result
             self.biased_conf_energies = self.mbar_biased_conf_energies.copy()
@@ -170,7 +168,7 @@ class TRAM(_Estimator, _MEMM):
             return self.loglikelihoods[-1]
 
     def pointwise_unbiased_free_energies(self, therm_state=None):
-        assert self.therm_energies is None, \
+        assert self.therm_energies is not None, \
             'MEMM has to be estimate()\'d before pointwise free energies can be calculated.'
         if therm_state is not None:
             assert therm_state<=self.nthermo
