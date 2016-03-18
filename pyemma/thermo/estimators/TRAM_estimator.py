@@ -88,11 +88,11 @@ class TRAM(_Estimator, _MEMM):
         self.state_counts_full = _util.state_counts(ttrajs, dtrajs_full)
         self.count_matrices_full = _util.count_matrices(ttrajs, dtrajs_full,
             self.lag, sliding=self.count_mode, sparse_return=False, nstates=self.nstates_full)
-        self.therm_state_counts_full = state_counts_full.sum(axis=1)
+        self.therm_state_counts_full = self.state_counts_full.sum(axis=1)
 
         self.csets, pcset = _cset.compute_csets_TRAM(self.connectivity, 
                                 self.state_counts_full, self.count_matrices_full, 
-                                ttrajs=trajs, dtraj=dtrajs_full, bias_trajs=btrajs, nn=self.nn)
+                                ttrajs=ttrajs, dtrajs=dtrajs_full, bias_trajs=btrajs, nn=self.nn)
         self.active_set = pcset
 
         # check for empty states
@@ -105,10 +105,10 @@ class TRAM(_Estimator, _MEMM):
                     count_matrices=self.count_matrices_full, ttrajs=ttrajs, dtrajs=dtrajs_full)
         self.state_counts, self.count_matrices, self.dtrajs, _ = res
 
-        # self-consitency tests
+        # self-consistency tests
         assert _np.all(self.state_counts >= _np.maximum(self.count_matrices.sum(axis=1), self.count_matrices.sum(axis=2)))
         assert _np.all(_np.sum([_np.bincount(d[d>=0], minlength=self.nthermo) for d in self.dtrajs], axis=0) == self.state_counts.sum(axis=0))
-        assert _np.all(_np.sum([_np.bincount(t[d>=0], minlength=self.nthermo) for t,d in zip(trajs, self.dtrajs)], axis=0) == self.state_counts.sum(axis=1))
+        assert _np.all(_np.sum([_np.bincount(t[d>=0], minlength=self.nthermo) for t,d in zip(ttrajs, self.dtrajs)], axis=0) == self.state_counts.sum(axis=1))
 
         # check for empty states
         for k in range(self.state_counts.shape[0]):
