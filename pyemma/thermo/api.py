@@ -30,7 +30,8 @@ __all__ = [
     'estimate_umbrella_sampling',
     'estimate_multi_temperature',
     'dtram',
-    'wham']
+    'wham',
+    'tram']
 
 # ==================================================================================================
 # wrappers for specific simulation types
@@ -40,6 +41,7 @@ def estimate_umbrella_sampling(
     us_trajs, us_dtrajs, us_centers, us_force_constants, md_trajs=None, md_dtrajs=None, kT=None,
     maxiter=10000, maxerr=1.0E-15, save_convergence_info=0,
     estimator='wham', lag=1, dt_traj='1 step', init=None):
+    # TODO: fix docstring
     r"""
     Wraps umbrella sampling data or a mix of umbrella sampling and and direct molecular dynamics.
 
@@ -104,7 +106,7 @@ def estimate_umbrella_sampling(
     _estimator : MEMM or StationaryModel
         The requested estimator/model object, i.e., WHAM or DTRAM.
     """
-    assert estimator in ['wham', 'dtram'], "unsupported estimator: %s" % estimator
+    assert estimator in ['wham', 'dtram', 'tram'], "unsupported estimator: %s" % estimator
     from .util import get_umbrella_sampling_data as _get_umbrella_sampling_data
     ttrajs, btrajs, umbrella_centers, force_constants = _get_umbrella_sampling_data(
         us_trajs, us_centers, us_force_constants, md_trajs=md_trajs, kT=kT)
@@ -124,6 +126,11 @@ def estimate_umbrella_sampling(
             lag,
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
             dt_traj=dt_traj, init=init)
+    elif estimator == 'tram':
+        _estimator = tram(
+            ttrajs, dtrajs, btrajs, lag,
+            maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
+            dt_traj=dt_traj, init=init)
     try:
         _estimator.umbrella_centers = umbrella_centers
         _estimator.force_constants = force_constants
@@ -139,6 +146,7 @@ def estimate_multi_temperature(
     energy_unit='kcal/mol', temp_unit='K', reference_temperature=None,
     maxiter=10000, maxerr=1.0E-15, save_convergence_info=0,
     estimator='wham', lag=1, dt_traj='1 step', init=None):
+    # TODO: fix docstring
     r"""
     Wraps multi-temperature data.
 
@@ -200,7 +208,7 @@ def estimate_multi_temperature(
     _estimator : MEMM or StationaryModel
         The requested estimator/model object, i.e., WHAM or DTRAM.
     """
-    assert estimator in ['wham', 'dtram'], "unsupported estimator: %s" % estimator
+    assert estimator in ['wham', 'dtram', 'tram'], "unsupported estimator: %s" % estimator
     from .util import get_multi_temperature_data as _get_multi_temperature_data
     ttrajs, btrajs, temperatures = _get_multi_temperature_data(
         energy_trajs, temp_trajs, energy_unit, temp_unit,
@@ -219,6 +227,11 @@ def estimate_multi_temperature(
             lag,
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
             dt_traj=dt_traj, init=init)
+    elif estimator == 'tram':
+        _estimator = tram(
+            ttrajs, dtrajs, btrajs, lag,
+            maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
+            dt_traj=dt_traj, init=init)
     try:
         _estimator.temperatures = temperatures
     except AttributeError:
@@ -229,6 +242,102 @@ def estimate_multi_temperature(
 # ==================================================================================================
 # wrappers for the estimators
 # ==================================================================================================
+
+def tram(
+    ttrajs, dtrajs, bias, lag,
+    maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step', init=None):
+    # TODO: fix docstring
+    r"""
+    Discrete transition-based reweighting analysis method
+
+    Parameters
+    ----------
+    ttrajs : ndarray(T) of int, or list of ndarray(T_i) of int
+        A single discrete trajectory or a list of discrete trajectories. The integers are
+        indexes in 0,...,K-1 enumerating the thermodynamic states the trajectory is in at any time.
+    dtrajs : ndarray(T) of int, or list of ndarray(T_i) of int
+        A single discrete trajectory or a list of discrete trajectories. The integers are indexes
+        in 1,...,n enumerating the n Markov states or the bins the trajectory is in at any time.
+    bias : ndarray(K, n)
+        bias[j,i] is the bias energy for each discrete state i at thermodynamic state j.
+    lag : int
+        Integer lag time at which transitions are counted.
+    maxiter : int, optional, default=10000
+        The maximum number of dTRAM iterations before the estimator exits unsuccessfully.
+    maxerr : float, optional, default=1e-15
+        Convergence criterion based on the maximal free energy change in a self-consistent
+        iteration step.
+    save_convergence_info : int, optional, default=0
+        Every save_convergence_info iteration steps, store the actual increment
+        and the actual loglikelihood; 0 means no storage.
+    dt_traj : str, optional, default='1 step'
+        Description of the physical time corresponding to the lag. May be used by analysis
+        algorithms such as plotting tools to pretty-print the axes. By default '1 step', i.e.
+        there is no physical time unit.  Specify by a number, whitespace and unit. Permitted
+        units are (* is an arbitrary string):
+
+        |  'fs',   'femtosecond*'
+        |  'ps',   'picosecond*'
+        |  'ns',   'nanosecond*'
+        |  'us',   'microsecond*'
+        |  'ms',   'millisecond*'
+        |  's',    'second*'
+    init : str, optional, default=None
+        Use a specific initialization for self-consistent iteration:
+
+        | None:    use a hard-coded guess for free energies and Lagrangian multipliers
+        | 'wham':  perform a short WHAM estimate to initialize the free energies
+
+    Returns
+    -------
+    memm : MEMM
+        A multi-thermodynamic Markov state model which consists of stationary and kinetic
+        quantities at all temperatures/thermodynamic states.
+
+    Example
+    -------
+    **Example: Umbrella sampling**. Suppose we simulate in K umbrellas, centered at
+    positions :math:`y_1,...,y_K` with bias energies
+    .. math::
+        b_k(x) = 0.5 * c_k * (x - y_k)^2 / kT
+    Suppose we have one simulation of length T in each umbrella, and they are ordered from 1 to K.
+    We have discretized the x-coordinate into 100 bins.
+    Then dtrajs and ttrajs should each be a list of :math:`K` arrays.
+    dtrajs would look for example like this:
+    [ (1, 2, 2, 3, 2, ...),  (2, 4, 5, 4, 4, ...), ... ]
+    where each array has length T, and is the sequence of bins (in the range 0 to 99) visited along
+    the trajectory. ttrajs would look like this:
+    [ (0, 0, 0, 0, 0, ...),  (1, 1, 1, 1, 1, ...), ... ]
+    Because trajectory 1 stays in umbrella 1 (index 0), trajectory 2 stays in umbrella 2 (index 1),
+    and so forth. bias is a :math:`K \times n` matrix with all reduced bias energies evaluated at
+    all centers:
+    [[b_0(y_0), b_0(y_1), ..., b_0(y_n)],
+     [b_1(y_0), b_1(y_1), ..., b_1(y_n)],
+     ...
+     [b_K(y_0), b_K(y_1), ..., b_K(y_n)]]
+    """
+    # prepare trajectories
+    ttrajs = _types.ensure_dtraj_list(ttrajs)
+    dtrajs = _types.ensure_dtraj_list(dtrajs)
+    assert len(ttrajs) == len(dtrajs)
+    assert len(ttrajs) == len(bias)
+    for ttraj, dtraj, btraj in zip(ttrajs, dtrajs, bias):
+        assert len(ttraj) == len(dtraj)
+        assert len(ttraj) == btraj.shape[0]
+    # check lag time(s)
+    lags = _np.asarray(lag, dtype=_np.intc).tolist()
+    # build TRAM and run estimation
+    from pyemma.thermo import TRAM as _TRAM
+    tram_estimators = [
+        _TRAM(
+            lag=_lag,
+            count_mode='sliding', connectivity='summed_count_matrix',
+            maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
+            dt_traj=dt_traj, init='mbar').estimate((ttrajs, dtrajs, bias)) for _lag in lags]
+    # return
+    if len(tram_estimators) == 1:
+        return tram_estimators[0]
+    return tram_estimators
 
 def dtram(
     ttrajs, dtrajs, bias, lag,

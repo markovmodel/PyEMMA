@@ -19,6 +19,7 @@ import numpy as _np
 import matplotlib.pyplot as _plt
 from pyemma.thermo import WHAM as _WHAM
 from pyemma.thermo import DTRAM as _DTRAM
+from pyemma.thermo import TRAM as _TRAM
 
 def plot_increments(thermo_estimator, ax=None):
     # TODO: write docstring
@@ -34,6 +35,8 @@ def plot_increments(thermo_estimator, ax=None):
             label = "WHAM"
         elif isinstance(obj, _DTRAM):
             label = "dTRAM, lag=%d" % obj.lag
+        elif isinstance(obj, _TTRAM):
+            label = "TRAM, lag=%d" % obj.lag
         else:
             label = None
         ax.plot(
@@ -60,6 +63,8 @@ def plot_loglikelihoods(thermo_estimator, ax=None):
             label = "WHAM"
         elif isinstance(obj, _DTRAM):
             label = "dTRAM, lag=%d" % obj.lag
+        elif isinstance(obj, _TRAM):
+            label = "TRAM, lag=%d" % obj.lag
         else:
             label = None
         ax.plot(
