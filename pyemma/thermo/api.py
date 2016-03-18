@@ -124,8 +124,13 @@ def estimate_umbrella_sampling(
             lag,
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
             dt_traj=dt_traj, init=init)
-    _estimator.umbrella_centers = umbrella_centers
-    _estimator.force_constants = force_constants
+    try:
+        _estimator.umbrella_centers = umbrella_centers
+        _estimator.force_constants = force_constants
+    except AttributeError:
+        for obj in _estimator:
+            obj.umbrella_centers = umbrella_centers
+            obj.force_constants = force_constants
     return _estimator
 
 
@@ -214,7 +219,11 @@ def estimate_multi_temperature(
             lag,
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
             dt_traj=dt_traj, init=init)
-    _estimator.temperatures = temperatures
+    try:
+        _estimator.temperatures = temperatures
+    except AttributeError:
+        for obj in _estimator:
+            obj.temperatures = temperatures
     return _estimator
 
 # ==================================================================================================
@@ -224,6 +233,7 @@ def estimate_multi_temperature(
 def dtram(
     ttrajs, dtrajs, bias, lag,
     maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step', init=None):
+    # TODO: fix docstring
     r"""
     Discrete transition-based reweighting analysis method
 
@@ -299,15 +309,20 @@ def dtram(
     assert len(ttrajs) == len(dtrajs)
     for ttraj, dtraj in zip(ttrajs, dtrajs):
         assert len(ttraj) == len(dtraj)
-    # build DTRAM
+    # check lag time(s)
+    lags = _np.asarray(lag, dtype=_np.intc).tolist()
+    # build DTRAM and run estimation
     from pyemma.thermo import DTRAM
-    dtram_estimator = DTRAM(
-        bias, lag,
-        count_mode='sliding', connectivity='largest',
-        maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
-        dt_traj=dt_traj, init=init)
-    # run estimation
-    return dtram_estimator.estimate((ttrajs, dtrajs))
+    dtram_estimators = [
+        DTRAM(
+            bias, _lag,
+            count_mode='sliding', connectivity='largest',
+            maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
+            dt_traj=dt_traj, init=init).estimate((ttrajs, dtrajs)) for _lag in lags]
+    # return
+    if len(dtram_estimators) == 1:
+        return dtram_estimators[0]
+    return dtram_estimators
 
 def wham(
     ttrajs, dtrajs, bias,
