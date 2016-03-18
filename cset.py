@@ -259,14 +259,14 @@ def _compute_csets(connectivity, state_counts, count_matrices, ttrajs, dtrajs, b
                 frame_indices = {}
                 for k in therm_states:
                     frame_indices[k] = [ _np.where(_np.logical_and(d==i, t==k))[0] for t, d in zip(ttrajs, dtrajs) ]
-                    traj_indices[k] = [ i for i, fi in enumerate(frame_indices[k]) if len(fi)>0 ]
+                    traj_indices[k] = [ j for j, fi in enumerate(frame_indices[k]) if len(fi)>0 ]
 
                 for k in therm_states:
                     for l in therm_states:
                         if k!=l:
                             kl = _np.array([k, l])
-                            a = _np.concatenate([ bias_trajs[i][:, kl][frame_indices[k][i], :] for i in traj_indices[k] ])
-                            b = _np.concatenate([ bias_trajs[i][:, kl][frame_indices[l][i], :] for i in traj_indices[l] ])
+                            a = _np.concatenate([ bias_trajs[j][:, kl][frame_indices[k][j], :] for j in traj_indices[k] ])
+                            b = _np.concatenate([ bias_trajs[j][:, kl][frame_indices[l][j], :] for j in traj_indices[l] ])
                             if overlap(a, b, factor=factor):
                                 x = i + k*n_conf_states
                                 y = i + l*n_conf_states
