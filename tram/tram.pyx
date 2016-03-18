@@ -144,7 +144,7 @@ def update_biased_conf_energies(
         reduced free energies
     count_matrices : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
         multistate count matrix
-    bias_energy_sequences : list of numpy.ndarray(shape=(T, X_i), dtype=numpy.intc)
+    bias_energy_sequences : list of numpy.ndarray(shape=(X_i, T), dtype=numpy.float64)
         reduced bias energies in the T thermodynamic states for all X samples
     state_sequences : list of numpy.ndarray(shape=(X_i,), dtype=numpy.intc)
         Markov state indices for all X samples
@@ -237,9 +237,9 @@ def get_conf_energies(
 
     Parameters
     ----------
-    bias_energy_sequence : numpy.ndarray(shape=(T, X), dtype=numpy.intc)
+    bias_energy_sequences : list of numpy.ndarray(shape=(X_i, T), dtype=numpy.float64)
         reduced bias energies in the T thermodynamic states for all X samples
-    state_sequence : numpy.ndarray(shape=(X,), dtype=numpy.intc)
+    state_sequence : list of numpy.ndarray(shape=(X_i,), dtype=numpy.intc)
         Markov state indices for all X samples
     log_R_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         precomputed sum of TRAM log pseudo-counts and biased_conf_energies
@@ -273,8 +273,8 @@ def get_therm_energies(
 
     Parameters
     ----------
-    biased_conf_energies : numpy.ndarray(shape=(T, X), dtype=numpy.intc)
-        reduced discrete state free energies for all T thermodynamic states
+    biased_conf_energies : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
+        reduced bias energies in the T thermodynamic and M discrete states
     scratch_M : numpy.ndarray(shape=(M), dtype=numpy.float64)
         scratch array for logsumexp operations
 
@@ -343,11 +343,11 @@ def get_pointwise_unbiased_free_energies(
         log of the Lagrangian multipliers
     biased_conf_energies : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         reduced free energies
-    therm_energies : numpy.ndarray(shape=(T), dtype=numpy.intc)
+    therm_energies : numpy.ndarray(shape=(T), dtype=numpy.float64)
         reduced thermodynamic free energies
     count_matrices : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
         multistate count matrix
-    bias_energy_sequences : list of numpy.ndarray(shape=(T, X_i), dtype=numpy.intc)
+    bias_energy_sequences : list of numpy.ndarray(shape=(X_i, T), dtype=numpy.float64)
         reduced bias energies in the T thermodynamic states for all X samples
     state_sequences : list of numpy.ndarray(shape=(X_i,), dtype=numpy.intc)
         Markov state indices for all X samples
@@ -368,7 +368,7 @@ def get_pointwise_unbiased_free_energies(
         scratch_M = _np.zeros(shape=(state_counts.shape[1]), dtype=_np.float64)
 
     get_log_Ref_K_i(log_lagrangian_mult, biased_conf_energies,
-                  count_matrices, state_counts, scratch_M, log_R_K_i)
+                    count_matrices, state_counts, scratch_M, log_R_K_i)
 
     if k is None:
         k = -1
@@ -381,8 +381,8 @@ def get_pointwise_unbiased_free_energies(
         assert b.dtype == _np.float64
         assert p.ndim == 1
         assert p.dtype == _np.float64
-        assert s.shape[0] == b.shape[1] == p.shape[0]
-        assert b.shape[0] == count_matrices.shape[0]
+        assert s.shape[0] == b.shape[0] == p.shape[0]
+        assert b.shape[1] == count_matrices.shape[0]
         assert s.flags.c_contiguous
         assert b.flags.c_contiguous
         assert p.flags.c_contiguous
@@ -412,10 +412,12 @@ def estimate_transition_matrices(
     ----------
     log_lagrangian_mult : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         log of the Lagrangian multipliers
-    biased_conf_energies : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
+    biased_conf_energies : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         reduced unbiased free energies
     count_matrices : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
         multistate count matrix
+    scratch_M : numpy.ndarray(shape=(M), dtype=numpy.float64)
+        scratch array for logsumexp operations
 
     Returns
     -------
@@ -442,10 +444,12 @@ def estimate_transition_matrix(
     ----------
     log_lagrangian_mult : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         log of the Lagrangian multipliers
-    biased_conf_energies : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
+    biased_conf_energies : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         reduced unbiased free energies
     count_matrices : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
         multistate count matrix
+    scratch_M : numpy.ndarray(shape=(M), dtype=numpy.float64)
+        scratch array for logsumexp operations
     therm_state : int
         target thermodynamic state
 
@@ -489,7 +493,7 @@ def log_likelihood_lower_bound(
         reduced free energies
     count_matrices : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
         multistate count matrix
-    bias_energy_sequences : list of numpy.ndarray(shape=(T, X_i), dtype=numpy.intc)
+    bias_energy_sequences : list of numpy.ndarray(shape=(X_i, T), dtype=numpy.float64)
         reduced bias energies in the T thermodynamic states for all X samples
     state_sequences : list of numpy.ndarray(shape=(X_i,), dtype=numpy.intc)
         Markov state indices for all X samples
@@ -538,7 +542,7 @@ def estimate(count_matrices, state_counts, bias_energy_sequences, state_sequence
         transition count matrices for all T thermodynamic states
     state_counts : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
         state counts for all M discrete and T thermodynamic states
-    bias_energy_sequences : list of numpy.ndarray(shape=(T, X_i), dtype=numpy.float64)
+    bias_energy_sequences : list of numpy.ndarray(shape=(X_i, T), dtype=numpy.float64)
         reduced bias energies in the T thermodynamic states for all X samples
     state_sequences : list of numpy.ndarray(shape=(X_i), dtype=numpy.float64)
         discrete state indices for all X samples
@@ -553,6 +557,8 @@ def estimate(count_matrices, state_counts, bias_energy_sequences, state_sequence
     save_convergence_info : int, optional
         every save_convergence_info iteration steps, store the actual increment
         and the actual loglikelihood
+    N_dtram_accelerations : int
+        not used
 
     Returns
     -------
@@ -593,8 +599,8 @@ def estimate(count_matrices, state_counts, bias_energy_sequences, state_sequence
         assert s.dtype == _np.intc
         assert b.ndim == 2
         assert b.dtype == _np.float64
-        assert s.shape[0] == b.shape[1]
-        assert b.shape[0] == count_matrices.shape[0]
+        assert s.shape[0] == b.shape[0]
+        assert b.shape[1] == count_matrices.shape[0]
         assert s.flags.c_contiguous
         assert b.flags.c_contiguous
 

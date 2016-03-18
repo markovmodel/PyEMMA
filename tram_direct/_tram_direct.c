@@ -118,7 +118,7 @@ void _tram_direct_update_biased_conf_weights(
         {
             Ki = K*n_conf_states + i;
             if(0 < R_K_i[Ki]) {
-                divisor += R_K_i[Ki]*bias_sequence[K*seq_length + x];
+                divisor += R_K_i[Ki]*bias_sequence[x * n_therm_states + K];
             }
         }
         if(divisor==0) fprintf(stderr, "divisor is zero. should never happen!\n");
@@ -128,9 +128,9 @@ void _tram_direct_update_biased_conf_weights(
         for(K=0; K<n_therm_states; ++K)
         {
             Ki = K*n_conf_states + i;
-            new_biased_conf_weights[Ki] += bias_sequence[K*seq_length + x]/divisor;
-            if(isnan(new_biased_conf_weights[Ki])) fprintf(stderr, "Z:Warning Z[%d,%d]=NaN (%f,%f) %d\n",K,i,bias_sequence[K*seq_length + x],divisor,x);
-            if(isinf(new_biased_conf_weights[Ki])) fprintf(stderr, "Z:Warning Z[%d,%d]=Inf (%f,%f) %d\n",K,i,bias_sequence[K*seq_length + x],divisor,x);
+            new_biased_conf_weights[Ki] += bias_sequence[x * n_therm_states + K]/divisor;
+            if(isnan(new_biased_conf_weights[Ki])) fprintf(stderr, "Z:Warning Z[%d,%d]=NaN (%f,%f) %d\n",K, i, bias_sequence[x * n_therm_states + K], divisor, x);
+            if(isinf(new_biased_conf_weights[Ki])) fprintf(stderr, "Z:Warning Z[%d,%d]=Inf (%f,%f) %d\n",K, i, bias_sequence[x * n_therm_states + K], divisor, x);
         }
     }
 }

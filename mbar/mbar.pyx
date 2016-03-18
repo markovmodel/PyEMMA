@@ -64,7 +64,7 @@ def update_therm_energies(
         log of the state counts in each of the T thermodynamic states
     therm_energies : numpy.ndarray(shape=(T), dtype=numpy.float64)
         reduced free energies of the T thermodynamic states
-    bias_energy_sequences : list of numpy.ndarray(shape=(T, X_i), dtype=numpy.float64)
+    bias_energy_sequences : list of numpy.ndarray(shape=(X_i, T), dtype=numpy.float64)
         bias energies in the T thermodynamic states for all X samples
     scratch_T : numpy.ndarray(shape=(T), dtype=numpy.float64)
         scratch array
@@ -77,8 +77,8 @@ def update_therm_energies(
             <double*> _np.PyArray_DATA(log_therm_state_counts),
             <double*> _np.PyArray_DATA(therm_energies),
             <double*> _np.PyArray_DATA(bias_energy_sequences[i]),
+            therm_energies.shape[0],
             bias_energy_sequences[i].shape[0],
-            bias_energy_sequences[i].shape[1],
             <double*> _np.PyArray_DATA(scratch_T),
             <double*> _np.PyArray_DATA(new_therm_energies))
     new_therm_energies -= new_therm_energies[0]
@@ -99,7 +99,7 @@ def get_conf_energies(
         log of the state counts in each of the T thermodynamic states
     therm_energies : numpy.ndarray(shape=(T), dtype=numpy.float64)
         reduced free energies of the T thermodynamic states
-    bias_energy_sequences : list of numpy.ndarray(shape=(T, X_i), dtype=numpy.float64)
+    bias_energy_sequences : list of numpy.ndarray(shape=(X_i, T), dtype=numpy.float64)
         bias energies in the T thermodynamic states for all X samples
     conf_state_sequences : list of numpy.ndarray(shape=(X_i), dtype=numpy.intc)
         discrete states indices for all X samples
@@ -124,9 +124,9 @@ def get_conf_energies(
             <double*> _np.PyArray_DATA(therm_energies),
             <double*> _np.PyArray_DATA(bias_energy_sequences[i]),
             <int*> _np.PyArray_DATA(conf_state_sequences[i]),
-            bias_energy_sequences[i].shape[0],
+            therm_energies.shape[0],
             n_conf_states,
-            bias_energy_sequences[i].shape[1],
+            conf_state_sequences[i].shape[0],
             <double*> _np.PyArray_DATA(scratch_T),
             <double*> _np.PyArray_DATA(conf_energies),
             <double*> _np.PyArray_DATA(biased_conf_energies))
@@ -178,7 +178,7 @@ def get_pointwise_unbiased_free_energies(
         of the unbiased ensemble.
     log_therm_state_counts : numpy.ndarray(shape=(T), dtype=numpy.float64)
         log of the state counts in each of the T thermodynamic states
-    bias_energy_sequences : list of numpy.ndarray(shape=(T, X_i), dtype=numpy.float64)
+    bias_energy_sequences : list of numpy.ndarray(shape=(X_i, T), dtype=numpy.float64)
         bias energies in the T thermodynamic states for all X samples
     therm_energies : numpy.ndarray(shape=(T), dtype=numpy.float64)
         reduced free energies of the T thermodynamic states
@@ -200,8 +200,8 @@ def get_pointwise_unbiased_free_energies(
         assert b.dtype == _np.float64
         assert p.ndim == 1
         assert p.dtype == _np.float64
-        assert b.shape[1] == p.shape[0]
-        assert b.shape[0] == log_therm_state_counts.shape[0]
+        assert b.shape[0] == p.shape[0]
+        assert b.shape[1] == log_therm_state_counts.shape[0]
         assert b.flags.c_contiguous
         assert p.flags.c_contiguous
 
@@ -212,7 +212,7 @@ def get_pointwise_unbiased_free_energies(
             <double*> _np.PyArray_DATA(therm_energies),
             <double*> _np.PyArray_DATA(bias_energy_sequences[i]),
             log_therm_state_counts.shape[0],
-            bias_energy_sequences[i].shape[1],
+            bias_energy_sequences[i].shape[0],
             <double*> _np.PyArray_DATA(scratch_T),
             <double*> _np.PyArray_DATA(pointwise_unbiased_free_energies[i]))
 
@@ -227,7 +227,7 @@ def estimate(
     ----------
     therm_state_counts : numpy.ndarray(shape=(T), dtype=numpy.intc)
         numbers of samples in the T thermodynamic states
-    bias_energy_sequences : list of numpy.ndarray(shape=(T, X_i), dtype=numpy.float64)
+    bias_energy_sequences : list of numpy.ndarray(shape=(X_i, T), dtype=numpy.float64)
         reduced bias energies in the T thermodynamic states for all X samples
     conf_state_sequences : list of numpy.ndarray(shape=(X_i), dtype=numpy.float64)
         discrete state indices (cluster indices) for all X samples
@@ -266,8 +266,8 @@ def estimate(
         assert s.dtype == _np.intc
         assert b.ndim == 2
         assert b.dtype == _np.float64
-        assert s.shape[0] == b.shape[1]
-        assert b.shape[0] == T
+        assert s.shape[0] == b.shape[0]
+        assert b.shape[1] == T
         assert s.flags.c_contiguous
         assert b.flags.c_contiguous
     log_therm_state_counts = _np.log(therm_state_counts)

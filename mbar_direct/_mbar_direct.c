@@ -32,8 +32,8 @@ void _mbar_direct_update_therm_weights(
     {
         divisor = 0;
         for(L=0; L<n_therm_states; ++L)
-            divisor += (double)therm_state_counts[L] * bias_weight_sequence[L * seq_length + x] / therm_weights[L] ;
+            divisor += (double)therm_state_counts[L] * bias_weight_sequence[x * n_therm_states + L] / therm_weights[L];
         for(K=0; K<n_therm_states; ++K)
-            new_therm_weights[K] += bias_weight_sequence[K * seq_length + x] / divisor;
+            new_therm_weights[K] += bias_weight_sequence[x * n_therm_states + K] / divisor;
     }
 }

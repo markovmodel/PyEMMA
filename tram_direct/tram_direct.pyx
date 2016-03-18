@@ -123,7 +123,7 @@ def estimate(count_matrices, state_counts, bias_energy_sequences, state_sequence
         transition count matrices for all T thermodynamic states
     state_counts : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
         state counts for all M discrete and T thermodynamic states
-    bias_energy_sequences : lift of numpy.ndarray(shape=(T, X_i), dtype=numpy.float64)
+    bias_energy_sequences : lift of numpy.ndarray(shape=(X_i, T), dtype=numpy.float64)
         reduced bias energies in the T thermodynamic states for all X samples
     state_sequences : list of numpy.ndarray(shape=(X_i), dtype=numpy.float64)
         discrete state indices for all X samples
@@ -163,8 +163,8 @@ def estimate(count_matrices, state_counts, bias_energy_sequences, state_sequence
         assert s.dtype == _np.intc
         assert b.ndim == 2
         assert b.dtype == _np.float64
-        assert s.shape[0] == b.shape[1]
-        assert b.shape[0] == n_therm_states
+        assert s.shape[0] == b.shape[0]
+        assert b.shape[1] == n_therm_states
         assert s.flags.c_contiguous
         assert b.flags.c_contiguous
 
@@ -181,7 +181,7 @@ def estimate(count_matrices, state_counts, bias_energy_sequences, state_sequence
     # bias_energy^k(x)   -> bias_energy^k(x) - alpha^k
     # free_energy_i^k    -> free_energy_i^k - alpha^k
     # log \tilde{R}_i^k  -> log \tilde{R}_i^k - alpha^k
-    shift = _np.min([_np.min(b, axis=1) for b in bias_energy_sequences], axis=0) # minimum energy for every th. state
+    shift = _np.min([_np.min(b, axis=0) for b in bias_energy_sequences], axis=0) # minimum energy for every th. state
     # init weights
     if biased_conf_energies is not None:
         biased_conf_weights = _np.exp(-(biased_conf_energies - shift[:, _np.newaxis]))
@@ -189,8 +189,8 @@ def estimate(count_matrices, state_counts, bias_energy_sequences, state_sequence
         biased_conf_weights = _np.ones(shape=(n_therm_states, n_conf_states), dtype=_np.float64)
         biased_conf_energies = _np.zeros(shape=(n_therm_states, n_conf_states), dtype=_np.float64)
 
-    # init Boltzmann factors
-    bias_weight_sequences = [ _np.exp(-(b - shift[:, _np.newaxis])) for b in bias_energy_sequences ]
+    # init Boltzmann factors # TODO: offer in-place option
+    bias_weight_sequences = [ _np.exp(-(b - shift)) for b in bias_energy_sequences ]
 
     increments = []
     loglikelihoods = []

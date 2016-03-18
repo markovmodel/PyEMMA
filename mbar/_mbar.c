@@ -29,10 +29,10 @@ extern void _mbar_update_therm_energies(
     for(x=0; x<seq_length; ++x)
     {
         for(L=0; L<n_therm_states; ++L)
-            scratch_T[L] = log_therm_state_counts[L] + therm_energies[L] - bias_energy_sequence[L * seq_length + x];
+            scratch_T[L] = log_therm_state_counts[L] + therm_energies[L] - bias_energy_sequence[x * n_therm_states + L];
         divisor = _logsumexp_sort_kahan_inplace(scratch_T, n_therm_states);
         for(K=0; K<n_therm_states; ++K)
-            new_therm_energies[K] = -_logsumexp_pair(-new_therm_energies[K], -(bias_energy_sequence[K * seq_length + x] + divisor));
+            new_therm_energies[K] = -_logsumexp_pair(-new_therm_energies[K], -(bias_energy_sequence[x * n_therm_states + K] + divisor));
     }
 }
 
@@ -48,7 +48,7 @@ extern void _mbar_get_conf_energies(
     for(x=0; x<seq_length; ++x)
     {
         for(L=0; L<n_therm_states; ++L)
-            scratch_T[L] = log_therm_state_counts[L] + therm_energies[L] - bias_energy_sequence[L * seq_length + x];
+            scratch_T[L] = log_therm_state_counts[L] + therm_energies[L] - bias_energy_sequence[x * n_therm_states + L];
         i = conf_state_sequence[x];
         if(i < 0) continue;
         divisor = _logsumexp_sort_kahan_inplace(scratch_T, n_therm_states);
@@ -56,7 +56,7 @@ extern void _mbar_get_conf_energies(
         for(K=0; K<n_therm_states; ++K)
             biased_conf_energies[K * n_conf_states + i] = -_logsumexp_pair(
                 -biased_conf_energies[K * n_conf_states + i],
-                -(bias_energy_sequence[K * seq_length + x] + divisor));
+                -(bias_energy_sequence[x * n_therm_states + K] + divisor));
     }
 }
 
@@ -89,11 +89,11 @@ void _mbar_get_pointwise_unbiased_free_energies(
     for(x=0; x<seq_length; ++x)
     {
         for(L=0; L<n_therm_states; ++L)
-            scratch_T[L] = log_therm_state_counts[L] + therm_energies[L] - bias_energy_sequence[L * seq_length + x];
+            scratch_T[L] = log_therm_state_counts[L] + therm_energies[L] - bias_energy_sequence[x * n_therm_states + L];
         log_divisor = _logsumexp_sort_kahan_inplace(scratch_T, n_therm_states);
         if(k==-1)
             pointwise_unbiased_free_energies[x] = log_divisor;
         else
-            pointwise_unbiased_free_energies[x] = bias_energy_sequence[k * seq_length + x] + log_divisor - therm_energies[k];
+            pointwise_unbiased_free_energies[x] = bias_energy_sequence[x * n_therm_states + k] + log_divisor - therm_energies[k];
     }
 }

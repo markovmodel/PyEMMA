@@ -46,11 +46,11 @@ def update_therm_weights(
         
     Parameters
     ----------
-    therm_state_counts : numpy.ndarray(shape=(T), dtype=numpy.float64)
+    therm_state_counts : numpy.ndarray(shape=(T), dtype=numpy.intc)
         state counts in each of the T thermodynamic states
     therm_weights : numpy.ndarray(shape=(T), dtype=numpy.float64)
         probabilities of the T thermodynamic states
-    bias_weight_sequences : list of numpy.ndarray(shape=(T, X_i), dtype=numpy.float64)
+    bias_weight_sequences : list of numpy.ndarray(shape=(X_i, T), dtype=numpy.float64)
         bias weights in the T thermodynamic states for all X samples
     new_therm_weights : numpy.ndarray(shape=(T), dtype=numpy.float64)
         target array for the probabilities of the T thermodynamic states
@@ -61,8 +61,8 @@ def update_therm_weights(
             <int*> _np.PyArray_DATA(therm_state_counts),
             <double*> _np.PyArray_DATA(therm_weights),
             <double*> _np.PyArray_DATA(bias_weight_sequences[i]),
+            therm_state_counts.shape[0],
             bias_weight_sequences[i].shape[0],
-            bias_weight_sequences[i].shape[1],
             <double*> _np.PyArray_DATA(new_therm_weights))
     new_therm_weights /= new_therm_weights[0]
 
@@ -77,9 +77,9 @@ def estimate(
     ----------
     therm_state_counts : numpy.ndarray(shape=(T), dtype=numpy.intc)
         numbers of samples in the T thermodynamic states
-    bias_energy_sequences : list of numpy.ndarray(shape=(T, X_i), dtype=numpy.float64)
+    bias_energy_sequences : list of numpy.ndarray(shape=(X_i, T), dtype=numpy.float64)
         reduced bias energies in the T thermodynamic states for all X samples
-    conf_state_sequences : list of numpy.ndarray(shape=(X_i), dtype=numpy.float64)
+    conf_state_sequences : list of numpy.ndarray(shape=(X_i), dtype=numpy.intc)
         discrete state indices (cluster indices) for all X samples
     maxiter : int
         maximum number of iterations
@@ -117,18 +117,18 @@ def estimate(
         assert s.dtype == _np.intc
         assert b.ndim == 2
         assert b.dtype == _np.float64
-        assert s.shape[0] == b.shape[1]
-        assert b.shape[0] == T
+        assert s.shape[0] == b.shape[0]
+        assert b.shape[1] == T
         assert s.flags.c_contiguous
         assert b.flags.c_contiguous
     log_therm_state_counts = _np.log(therm_state_counts)
-    shift = _np.min([_np.min(b, axis=1) for b in bias_energy_sequences], axis=0)
+    shift = _np.min([_np.min(b, axis=0) for b in bias_energy_sequences], axis=0)
     if therm_energies is None:
         therm_energies = _np.zeros(shape=(T,), dtype=_np.float64)
         therm_weights = _np.ones(shape=(T,), dtype=_np.float64)
     else:
         therm_weights = _np.exp(-(therm_energies - shift))
-    bias_weight_sequences = [_np.exp(-(b - shift[:, _np.newaxis])) for b in bias_energy_sequences]
+    bias_weight_sequences = [_np.exp(-(b - shift)) for b in bias_energy_sequences]
     old_therm_energies = therm_energies.copy()
     old_therm_weights = therm_weights.copy()
     increments = []
