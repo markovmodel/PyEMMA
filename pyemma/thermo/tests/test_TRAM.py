@@ -33,26 +33,27 @@ def tower_sample(distribution):
 def generate_trajectory(transition_matrices, bias_energies, K, n_samples, x0):
     """generates a list of TRAM trajs"""
 
-    traj = np.zeros((n_samples,2+bias_energies.shape[0]))
+    ttraj = np.ones(n_samples, np.intc)*K
+    dtraj = np.zeros(n_samples, dtype=np.intc)
+    btraj = np.zeros((n_samples, bias_energies.shape[0]), dtype=np.float64)
+
     x = x0
-    traj[0,0] = K
-    traj[0,1] = x
-    traj[0,2:] = bias_energies[:,x]
+    dtraj[0] = x
+    btraj[0, :] = bias_energies[:, x]
     h = 1
     for s in range(n_samples-1):
-        x_new = tower_sample(transition_matrices[K,x,:])
+        x_new = tower_sample(transition_matrices[K, x, :])
         x = x_new
-        traj[h,0] = K
-        traj[h,1] = x
-        traj[h,2:] = bias_energies[:,x]
+        dtraj[h] = x
+        btraj[h, :] = bias_energies[:, x]
         h += 1
-    return traj
+    return (ttraj, dtraj, btraj)
 
 def generate_simple_trajectory(transition_matrix, n_samples, x0):
     """generates a list of TRAM trajs"""
 
     n_states = transition_matrix.shape[0]
-    traj = np.zeros(n_samples)
+    traj = np.zeros(n_samples, dtype=int)
     x = x0
     traj[0] = x
     h = 1
@@ -83,12 +84,13 @@ def T_matrix(energy):
 class TestTRAMexceptions(unittest.TestCase):
     def test_warning_empty_ensemble(self):
         # have no samples in ensemble #0
-        bias_energies = np.zeros((2,2))
-        bias_energies[1,:] = np.array([0.0,0.0])
-        T = np.zeros((2,2,2))
-        T[1,:,:] = T_matrix(bias_energies[1,:])
+        bias_energies = np.zeros((2, 2))
+        bias_energies[1, :] = np.array([0.0, 0.0])
+        T = np.zeros((2, 2, 2))
+        T[1, :, :] = T_matrix(bias_energies[1,:])
         n_samples = 100
-        trajs = [generate_trajectory(T,bias_energies,1,n_samples,0)]
+        trajs = generate_trajectory(T, bias_energies, 1, n_samples, 0)
+        trajs = ([trajs[0]], [trajs[1]], [trajs[2]])
         tram = pyemma.thermo.TRAM(lag=1)
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
@@ -97,11 +99,12 @@ class TestTRAMexceptions(unittest.TestCase):
             assert any(issubclass(v.category, EmptyState) for v in w)
 
     def test_exception_wrong_format(self):
-        traj = np.zeros((10,3))
-        traj[:,0] = 4
+        btraj = np.zeros((10,3))
+        ttraj = 4*np.ones(10, dtype=int)
+        dtraj = np.ones(10, dtype=int)
         tram = pyemma.thermo.TRAM(lag=1)
         with self.assertRaises(AssertionError):
-            tram.estimate([traj])
+            tram.estimate(([ttraj], [dtraj], [btraj]))
 
 
 class TestTRAMwith5StateDTRAMModel(unittest.TestCase):
@@ -115,11 +118,13 @@ class TestTRAMwith5StateDTRAMModel(unittest.TestCase):
         cls.T[1,:,:] = T_matrix(cls.bias_energies[1,:])
 
         n_samples = 50000
-        cls.trajs = []
+
         cls.bias_energies_sh = cls.bias_energies - cls.bias_energies[0,:]
-        cls.trajs.append(generate_trajectory(cls.T,cls.bias_energies_sh,0,n_samples,0))
-        cls.trajs.append(generate_trajectory(cls.T,cls.bias_energies_sh,0,n_samples,4))
-        cls.trajs.append(generate_trajectory(cls.T,cls.bias_energies_sh,1,n_samples,2))
+        data = []
+        data.append(generate_trajectory(cls.T, cls.bias_energies_sh, 0, n_samples, 0))
+        data.append(generate_trajectory(cls.T, cls.bias_energies_sh, 0, n_samples, 4))
+        data.append(generate_trajectory(cls.T, cls.bias_energies_sh, 1, n_samples, 2))
+        cls.trajs = tuple(list(x) for x in zip(*data)) # "transpose" list of tuples to a tuple of lists
 
     def test_5_state_model(self):
         self.run_5_state_model(False)
@@ -128,22 +133,20 @@ class TestTRAMwith5StateDTRAMModel(unittest.TestCase):
         self.run_5_state_model(True)
 
     def run_5_state_model(self, direct_space):
-        tram = pyemma.thermo.TRAM(lag=1, maxerr=1E-12, save_convergence_info=10, direct_space=direct_space, nn=1)
+        tram = pyemma.thermo.TRAM(lag=1, maxerr=1E-12, save_convergence_info=10, direct_space=direct_space, nn=1, init='mbar')
         tram.estimate(self.trajs)
 
         log_pi_K_i = tram.biased_conf_energies.copy()
         log_pi_K_i[0,:] -= np.min(log_pi_K_i[0,:])
         log_pi_K_i[1,:] -= np.min(log_pi_K_i[1,:])
-
         assert np.allclose(log_pi_K_i, self.bias_energies, atol=0.1)
 
         # lower bound on the log-likelihood must be maximal at convergence
-        assert np.all(tram.logL_history[-1]+1.E-5>=tram.logL_history[0:-1])
+        assert np.all(tram.loglikelihoods[-1]+1.E-5>=tram.loglikelihoods[0:-1])
 
         # simple test: just call the methods
-        mu = tram.pointwise_unbiased_free_energies()
-        x = [traj[:,1] for traj in self.trajs]
-        pyemma.thermo.TRAM(mu, x, x, np.arange(0,4).astype(np.float64))
+        tram.pointwise_unbiased_free_energies()
+        tram.mbar_pointwise_unbiased_free_energies()
 
 
 class TestTRAMasReversibleMSM(unittest.TestCase):
@@ -152,18 +155,19 @@ class TestTRAMasReversibleMSM(unittest.TestCase):
         n_states = 50
         traj_length = 10000
 
-        traj = np.zeros(traj_length, dtype=int)
-        traj[::2] = np.random.randint(1,n_states,size=(traj_length-1)//2+1)
+        dtraj = np.zeros(traj_length, dtype=int)
+        dtraj[::2] = np.random.randint(1, n_states, size=(traj_length-1)//2+1)
 
-        c = msmtools.estimation.count_matrix(traj, lag=1)
+        c = msmtools.estimation.count_matrix(dtraj, lag=1)
         while not msmtools.estimation.is_connected(c, directed=True):
-            traj = np.zeros(traj_length, dtype=int)
-            traj[::2] = np.random.randint(1,n_states,size=(traj_length-1)//2+1)
-            c = msmtools.estimation.count_matrix(traj, lag=1)
+            dtraj = np.zeros(traj_length, dtype=int)
+            dtraj[::2] = np.random.randint(1, n_states, size=(traj_length-1)//2+1)
+            c = msmtools.estimation.count_matrix(dtraj, lag=1)
 
-        state_counts = np.bincount(traj)[:,np.newaxis]
-        cls.tram_traj = np.zeros((traj_length,3))
-        cls.tram_traj[:,1] = traj
+        #state_counts = np.bincount(dtraj)[:,np.newaxis]
+        ttraj = np.zeros(traj_length, dtype=int)
+        btraj = np.zeros((traj_length,1))
+        cls.tram_trajs = ([ttraj], [dtraj], [btraj])
 
         cls.T_ref = msmtools.estimation.tmatrix(c, reversible=True).toarray()
         
@@ -174,14 +178,14 @@ class TestTRAMasReversibleMSM(unittest.TestCase):
         self.reversible_msm(True)
 
     def reversible_msm(self, direct_space):
-        tram = pyemma.thermo.TRAM(lag=1,maxerr=1.E-20, save_convergence_info=10, direct_space=direct_space, nn=None)
-        tram.estimate(self.tram_traj)
+        tram = pyemma.thermo.TRAM(lag=1, maxerr=1.E-20, save_convergence_info=10, direct_space=direct_space, nn=None)
+        tram.estimate(self.tram_trajs)
         assert np.allclose(self.T_ref,  tram.models[0].transition_matrix, atol=1.E-4)
 
         # Lagrange multipliers should be > 0
         assert np.all(tram.log_lagrangian_mult > -1.E300)
         # lower bound on the log-likelihood must be maximal at convergence
-        assert np.all(tram.logL_history[-1]+1.E-5>=tram.logL_history[0:-1])
+        assert np.all(tram.loglikelihoods[-1]+1.E-5 >= tram.loglikelihoods[0:-1])
 
 class TestTRAMwithTRAMmodel(unittest.TestCase):
     @classmethod
@@ -225,23 +229,26 @@ class TestTRAMwithTRAMmodel(unittest.TestCase):
             T[k,:,:] = T_matrix(-np.log(pi[k,:]))
             assert np.allclose(T[k,:,:].sum(axis=1), np.ones(n_conf_states))
         # (5)
-        tramtrajs = [np.zeros((traj_length, 2+n_therm_states)) for k in range(n_therm_states)]
+        ttrajs = [None] * n_therm_states
+        dtrajs = [None] * n_therm_states
+        btrajs = [None] * n_therm_states
         xes = np.zeros(n_therm_states*traj_length, dtype=int)
         C = np.zeros((n_therm_states, n_conf_states, n_conf_states), dtype=int)
         for k in range(n_therm_states):
-            tramtrajs[k][:,0] = k
-            tramtrajs[k][:,1] = generate_simple_trajectory(T[k,:,:], traj_length, 0)
-            C[k,:,:] = msmtools.estimation.count_matrix(tramtrajs[k][:,1].astype(int), lag=1).toarray()
-            for t,i in enumerate(tramtrajs[k][:,1]):
-                x = tower_sample(mu_conditional[k,:,int(i)])
-                assert mu_conditional[k,x,int(i)] > 0
-                xes[k*traj_length+t] = x
-                tramtrajs[k][t,2:] = energy[:,x] - energy[0,x] # define k=0 as "unbiased"
+            ttrajs[k] = k*np.ones(traj_length, dtype=int)
+            dtrajs[k] = generate_simple_trajectory(T[k, :, :], traj_length, 0)
+            C[k,:,:] = msmtools.estimation.count_matrix(dtrajs[k], lag=1).toarray()
+            btrajs[k] = np.zeros((traj_length, n_therm_states))
+            for t,i in enumerate(dtrajs[k]):
+                x = tower_sample(mu_conditional[k, :, i])
+                assert mu_conditional[k, x, i] > 0
+                xes[k*traj_length + t] = x
+                btrajs[k][t, :] = energy[:, x] - energy[0, x] # define k=0 as "unbiased"
 
         cls.n_conf_states = n_conf_states
         cls.n_therm_states = n_therm_states
         cls.n_micro_states = n_micro_states
-        cls.tramtrajs = tramtrajs
+        cls.tramtrajs = (ttrajs, dtrajs, btrajs)
         cls.z = z
         cls.T = T
         cls.n_therm_states = n_therm_states
@@ -258,7 +265,7 @@ class TestTRAMwithTRAMmodel(unittest.TestCase):
 
     def with_TRAM_model(self, direct_space):
         # run TRAM
-        tram = pyemma.thermo.TRAM(lag=1, maxerr=1E-12, save_convergence_info=10, direct_space=direct_space, nn=None)
+        tram = pyemma.thermo.TRAM(lag=1, maxerr=1E-12, save_convergence_info=10, direct_space=direct_space, nn=None, init='mbar')
         tram.estimate(self.tramtrajs)
 
         # csets must include all states
@@ -293,7 +300,7 @@ class TestTRAMwithTRAMmodel(unittest.TestCase):
         assert np.allclose(tram.stationary_distribution, pi) # self-consistency of TRAM
 
         # check log-likelihood
-        assert np.all(tram.logL_history[-1]+1.E-5>=tram.logL_history[0:-1])
+        assert np.all(tram.loglikelihoods[-1]+1.E-5 >= tram.loglikelihoods[0:-1])
 
         # check mu
         for k in range(self.n_therm_states):
@@ -305,7 +312,6 @@ class TestTRAMwithTRAMmodel(unittest.TestCase):
             counts,_ = np.histogram(self.xes, weights=np.exp(-test_p_u_f_es), bins=self.n_micro_states)
             test_fel = -np.log(counts) + np.log(counts.sum())
             assert np.allclose(reference_fel, test_fel, atol=0.1)
-
 
 if __name__ == "__main__":
     unittest.main()
