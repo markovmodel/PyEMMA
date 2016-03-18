@@ -27,6 +27,7 @@ from thermotools import mbar as _mbar
 from thermotools import mbar_direct as _mbar_direct
 from thermotools import util as _util
 from thermotools import cset as _cset
+from msmtools.estimation import largest_connected_set as _largest_connected_set
 import warnings as _warnings
 import sys as _sys
 
