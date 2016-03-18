@@ -35,7 +35,7 @@ def plot_increments(thermo_estimator, ax=None):
             label = "WHAM"
         elif isinstance(obj, _DTRAM):
             label = "dTRAM, lag=%d" % obj.lag
-        elif isinstance(obj, _TTRAM):
+        elif isinstance(obj, _TRAM):
             label = "TRAM, lag=%d" % obj.lag
         else:
             label = None
