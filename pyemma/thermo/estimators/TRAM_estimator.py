@@ -86,14 +86,15 @@ class TRAM(_Estimator, _MEMM):
         btrajs = [_np.require(b, dtype=_np.float64, requirements='C') for t in btrajs]
 
         # find state visits and transition counts
-        self.state_counts_full = _util.state_counts(ttrajs, dtrajs_full)
-        self.count_matrices_full = _util.count_matrices(ttrajs, dtrajs_full,
+        state_counts_full = _util.state_counts(ttrajs, dtrajs_full)
+        count_matrices_full = _util.count_matrices(ttrajs, dtrajs_full,
             self.lag, sliding=self.count_mode, sparse_return=False, nstates=self.nstates_full)
         self.therm_state_counts_full = self.state_counts_full.sum(axis=1)
 
-        self.csets, pcset = _cset.compute_csets_TRAM(self.connectivity, 
-                                self.state_counts_full, self.count_matrices_full, 
-                                ttrajs=ttrajs, dtrajs=dtrajs_full, bias_trajs=btrajs, nn=self.nn)
+
+        self.csets, pcset = _cset.compute_csets_TRAM(self.connectivity,
+                                state_counts_full, count_matrices_full,
+                                ttrajs=ttrajs, dtraj=dtrajs_full, bias_trajs=btrajs, nn=self.nn)
         self.active_set = pcset
 
         # check for empty states
@@ -102,8 +103,8 @@ class TRAM(_Estimator, _MEMM):
                 warnings.warn('Thermodynamic state %d contains no samples after reducing to the connected set.'%k, EmptyState)
 
         # deactivate samples not in the csets, states are *not* relabeled
-        res = _cset.restrict_to_csets(self.csets, state_counts=self.state_counts_full, 
-                    count_matrices=self.count_matrices_full, ttrajs=ttrajs, dtrajs=dtrajs_full)
+        res = _cset.restrict_to_csets(self.csets, state_counts=state_counts_full, 
+                    count_matrices=count_matrices_full, ttrajs=ttrajs, dtrajs=dtrajs_full)
         self.state_counts, self.count_matrices, self.dtrajs, _ = res
 
         # self-consistency tests
@@ -124,7 +125,7 @@ class TRAM(_Estimator, _MEMM):
                 mbar = _mbar_direct
             else:
                 mbar = _mbar
-            mbar_result = mbar.estimate(self.state_counts_full.sum(axis=1), btrajs, self.dtrajs,
+            mbar_result = mbar.estimate(state_counts_full.sum(axis=1), btrajs, dtrajs_full,
                                         maxiter=1000000, maxerr=1.0E-8, callback=MBAR_printer,
                                         n_conf_states=self.nstates_full)
             self.mbar_therm_energies, self.mbar_unbiased_conf_energies, self.mbar_biased_conf_energies, _ = mbar_result

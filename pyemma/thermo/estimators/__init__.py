@@ -17,4 +17,4 @@
 
 from .WHAM_estimator import WHAM
 from .DTRAM_estimator import DTRAM
-from .TRAM_estimator import TRAM
+from .TRAM_estimator import TRAM, EmptyState
