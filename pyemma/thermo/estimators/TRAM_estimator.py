@@ -143,7 +143,7 @@ class TRAM(_Estimator, _MEMM):
         Parameters
         ----------
         data : tuple of (ttrajs, dtrajs, btrajs)
-            Simulations trajectories of equal length. ttrajs contain the
+            Simulation trajectories of equal length. ttrajs contain the
             indices of the thermodynamic state, dtrajs contains the indices
             of the configurational states and btrajs contain the biases.
         ttrajs : list of numpy.ndarray(X_i, dtype=int)
@@ -152,7 +152,7 @@ class TRAM(_Estimator, _MEMM):
         dtrajs : list of numpy.ndarray(X_i, dtype=int)
             dtrajs[i][t] is the index of the configurational state (Markov state)
             visited in trajectory i at time step t.
-        btrajs : list of numpy.ndarray((X_i, T), dtype=float)
+        btrajs : list of numpy.ndarray((X_i, T), dtype=numpy.float64)
             For every simulation frame seen in trajectory i and time step
             t, btrajs[i][t,k] is the bias energy of that frame evaluated
             in the k'th thermodynamic state (i.e. at the k'th Umbrella/
@@ -283,11 +283,11 @@ class TRAM(_Estimator, _MEMM):
 
         Returns
         -------
-        mu_k : list of numpy.ndarray(X_i dtype=numpy.float64)
+        mu_k : list of numpy.ndarray(X_i, dtype=numpy.float64)
              list of the same layout as dtrajs (or ttrajs). mu_k[i][t]
              contains the pointwise free energy of the frame seen in
              trajectory i and time step t.
-             Frames that are not in the connected sets, get assiged an
+             Frames that are not in the connected sets get assiged an
              infinite pointwise free energy.
         """
         assert self.therm_energies is not None, \
