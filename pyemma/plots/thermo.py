@@ -17,11 +17,15 @@
 
 import numpy as _np
 import matplotlib.pyplot as _plt
+from pyemma.thermo import WHAM as _WHAM
+from pyemma.thermo import DTRAM as _DTRAM
 
-def plot_convergence_info(thermo_estimator, figsize=(12, 4.5)):
-    from pyemma.thermo import WHAM as _WHAM
-    from pyemma.thermo import DTRAM as _DTRAM
-    fig, ax = _plt.subplots(1, 2, figsize=figsize)
+def plot_increments(thermo_estimator, ax=None):
+    # TODO: write docstring
+    if ax is None:
+        fig, ax = _plt.subplots()
+    else:
+        fig = None
     obj_list = thermo_estimator
     if not isinstance(obj_list, (list, tuple)):
         obj_list = [obj_list]
@@ -32,23 +36,58 @@ def plot_convergence_info(thermo_estimator, figsize=(12, 4.5)):
             label = "dTRAM, lag=%d" % obj.lag
         else:
             label = None
-        ax[0].plot(
+        ax.plot(
             (_np.arange(obj.increments.shape[0]) + 1) * obj.save_convergence_info,
-            obj.increments, '-s', markersize=10, label=label)
-        ax[1].plot(
-            (_np.arange(1, obj.loglikelihoods.shape[0]) + 1) * obj.save_convergence_info,
-            obj.loglikelihoods[1:] - obj.loglikelihoods[:-1], '-s', markersize=10, label=label)
+            obj.increments, '-s', label=label)
+    ax.set_xlabel(r"iteration")
+    ax.set_ylabel(r"increment / kT")
+    ax.semilogx()
+    ax.semilogy()
+    ax.legend(loc=1, fancybox=True, framealpha=0.5)
+    return ax
 
-    ax[0].set_ylabel(r"increment / kT", fontsize=20)
-    ax[1].set_ylabel(r"loglikelihood increase", fontsize=20)
-    for _ax in ax:
-        _ax.set_xlabel(r"iteration", fontsize=20)
-        _ax.tick_params(labelsize=15)
-        _ax.semilogx()
-        _ax.semilogy()
-        _ax.legend(loc=1, fontsize=12, fancybox=True, framealpha=0.5)
-    fig.tight_layout()
-    return fig, ax
+def plot_loglikelihoods(thermo_estimator, ax=None):
+    # TODO: write docstring
+    if ax is None:
+        fig, ax = _plt.subplots()
+    else:
+        fig = None
+    obj_list = thermo_estimator
+    if not isinstance(obj_list, (list, tuple)):
+        obj_list = [obj_list]
+    for obj in obj_list:
+        if isinstance(obj, _WHAM):
+            label = "WHAM"
+        elif isinstance(obj, _DTRAM):
+            label = "dTRAM, lag=%d" % obj.lag
+        else:
+            label = None
+        ax.plot(
+            (_np.arange(1, obj.loglikelihoods.shape[0]) + 1) * obj.save_convergence_info,
+            obj.loglikelihoods[1:] - obj.loglikelihoods[:-1], '-s', label=label)
+    ax.set_xlabel(r"iteration")
+    ax.set_ylabel(r"loglikelihood increase")
+    ax.semilogx()
+    ax.semilogy()
+    ax.legend(loc=1, fancybox=True, framealpha=0.5)
+    return ax
+
+
+
+def plot_convergence_info(thermo_estimator, axes=None):
+    # TODO: write docstring
+    if axes is None:
+        fs = _plt.rcParams['figure.figsize']
+        fig, axes = _plt.subplots(2, 1, figsize=(fs[0], fs[1] * 1.5), sharex=True)
+    else:
+        assert len(axes) == 2
+        fig = None
+    plot_increments(thermo_estimator, ax=axes[0])
+    plot_loglikelihoods(thermo_estimator, ax=axes[1])
+    if fig is not None:
+        fig.tight_layout()
+        axes[0].set_xlabel('')
+    return axes
 
 
 
