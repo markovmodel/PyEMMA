@@ -19,7 +19,8 @@
 from __future__ import division, print_function, absolute_import
 
 import inspect
-from six import string_types
+import six
+#from six import string_types
 from collections import namedtuple
 
 __author__ = 'noe, marscher'
@@ -87,10 +88,10 @@ try:
             if (p.kind == inspect.Parameter.POSITIONAL_OR_KEYWORD and
                p.default is not p.empty)
         ] or None
-        
+
         if args[0] == 'self':
             args.pop(0)
-        
+
         return ArgSpec(args, varargs, varkw, defaults)
 
 except AttributeError:
@@ -137,7 +138,7 @@ def call_member(obj, f, *args, **kwargs):
         in that case
     """
     # get function name
-    if not isinstance(f, string_types):
+    if not isinstance(f, six.string_types):
         fname = f.__func__.__name__
     else:
         fname = f
@@ -155,5 +156,5 @@ def get_default_args(func):
     """
     returns a dictionary of arg_name:default_values for the input function
     """
-    args, varargs, keywords, defaults = inspect.getargspec(func)
+    args, varargs, keywords, defaults = getargspec_no_self(func)
     return dict(zip(args[-len(defaults):], defaults))

@@ -21,41 +21,17 @@ r"""User-API for the pyemma.coordinates package
 
 .. currentmodule:: pyemma.coordinates.api
 """
-from pyemma.util.log import getLogger as _getLogger
+import numpy as _np
+import logging as _logging
+
 from pyemma.util import types as _types
-
-from pyemma.coordinates.pipelines import Discretizer as _Discretizer
-from pyemma.coordinates.pipelines import Pipeline as _Pipeline
-# io
-from pyemma.coordinates.data.featurization.featurizer import MDFeaturizer as _MDFeaturizer
-from pyemma.coordinates.data.feature_reader import FeatureReader as _FeatureReader
-from pyemma.coordinates.data.data_in_memory import DataInMemory as _DataInMemory
-
-# transforms
-from pyemma.coordinates.transform.pca import PCA as _PCA
-from pyemma.coordinates.transform.tica import TICA as _TICA
-# clustering
-from pyemma.coordinates.clustering.kmeans import KmeansClustering as _KmeansClustering
-from pyemma.coordinates.clustering.kmeans import MiniBatchKmeansClustering as _MiniBatchKmeansClustering
-from pyemma.coordinates.clustering.uniform_time import UniformTimeClustering as _UniformTimeClustering
-from pyemma.coordinates.clustering.regspace import RegularSpaceClustering as _RegularSpaceClustering
-from pyemma.coordinates.clustering.assign import AssignCenters as _AssignCenters
-
-from pyemma.coordinates.data.util.reader_utils import create_file_reader as _create_file_reader
-
-# stat
+# lift this function to the api
 from pyemma.coordinates.util.stat import histogram
-
-# types
-from mdtraj import Topology as _Topology, Trajectory as _Trajectory
 
 from six import string_types
 from six.moves import range, zip
 
-import numpy as _np
-
-
-_logger = _getLogger('pyemma.coordinates.api')
+_logger = _logging.getLogger(__name__)
 
 __docformat__ = "restructuredtext en"
 __author__ = "Frank Noe, Martin Scherer"
@@ -126,7 +102,8 @@ def featurizer(topfile):
         .. autoautosummary:: pyemma.coordinates.data.featurization.featurizer.MDFeaturizer
             :attributes:
     """
-    return _MDFeaturizer(topfile)
+    from pyemma.coordinates.data.featurization.featurizer import MDFeaturizer
+    return MDFeaturizer(topfile)
 
 
 # TODO: DOC - which topology file formats does mdtraj support? Find out and complete docstring
@@ -216,11 +193,13 @@ def load(trajfiles, features=None, top=None, stride=1, chunk_size=100, **kw):
     >>> output = load(files, top='my_structure.pdb') # doctest: +SKIP
 
     """
+    from pyemma.coordinates.data.util.reader_utils import create_file_reader
+
     if isinstance(trajfiles, string_types) or (
         isinstance(trajfiles, (list, tuple))
             and (any(isinstance(item, (list, tuple, string_types)) for item in trajfiles)
                  or len(trajfiles) is 0)):
-        reader = _create_file_reader(trajfiles, top, features, chunk_size=chunk_size, **kw)
+        reader = create_file_reader(trajfiles, top, features, chunk_size=chunk_size, **kw)
         trajs = reader.get_output(stride=stride)
         if len(trajs) == 1:
             return trajs[0]
@@ -347,12 +326,13 @@ def source(inp, features=None, top=None, chunk_size=None, **kw):
             :attributes:
 
     """
+    from pyemma.coordinates.data.util.reader_utils import create_file_reader
     # CASE 1: input is a string or list of strings
     # check: if single string create a one-element list
     if isinstance(inp, string_types) or (
             isinstance(inp, (list, tuple))
             and (any(isinstance(item, (list, tuple, string_types)) for item in inp) or len(inp) is 0)):
-        reader = _create_file_reader(inp, top, features, chunk_size=chunk_size if chunk_size else 100, **kw)
+        reader = create_file_reader(inp, top, features, chunk_size=chunk_size if chunk_size else 100, **kw)
 
     elif isinstance(inp, _np.ndarray) or (isinstance(inp, (list, tuple))
                                           and (any(isinstance(item, _np.ndarray) for item in inp) or len(inp) is 0)):
@@ -362,6 +342,7 @@ def source(inp, features=None, top=None, chunk_size=None, **kw):
         # check: if single array, create a one-element list
         # check: do all arrays have compatible dimensions (*, N)? If not: raise ValueError.
         # create MemoryReader
+        from pyemma.coordinates.data.data_in_memory import DataInMemory as _DataInMemory
         reader = _DataInMemory(inp, chunksize=chunk_size if chunk_size else 5000, **kw)
     else:
         raise ValueError('unsupported type (%s) of input' % type(inp))
@@ -441,10 +422,11 @@ def pipeline(stages, run=True, stride=1, chunksize=100):
             :attributes:
 
     """
+    from pyemma.coordinates.pipelines import Pipeline
 
     if not isinstance(stages, list):
         stages = [stages]
-    p = _Pipeline(stages, param_stride=stride, chunksize=chunksize)
+    p = Pipeline(stages, param_stride=stride, chunksize=chunksize)
     if run:
         p.parametrize()
     return p
@@ -547,11 +529,13 @@ def discretizer(reader,
             :attributes:
 
     """
+    from pyemma.coordinates.clustering.kmeans import KmeansClustering
+    from pyemma.coordinates.pipelines import Discretizer
     if cluster is None:
         _logger.warning('You did not specify a cluster algorithm.'
                         ' Defaulting to kmeans(k=100)')
-        cluster = _KmeansClustering(n_clusters=100)
-    disc = _Discretizer(reader, transform, cluster, param_stride=stride, chunksize=chunksize)
+        cluster = KmeansClustering(n_clusters=100)
+    disc = Discretizer(reader, transform, cluster, param_stride=stride, chunksize=chunksize)
     if run:
         disc.parametrize()
     return disc
@@ -617,11 +601,15 @@ def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=1000, 
     traj : :py:obj:`mdtraj.Trajectory` object
         Will only return this object if :py:obj:`outfile` is None
     """
+    from mdtraj import Topology as _Topology, Trajectory as _Trajectory
+
+    from pyemma.coordinates.data.feature_reader import FeatureReader as FeatureReader
     from pyemma.coordinates.data.fragmented_trajectory_reader import FragmentedTrajectoryReader
     from pyemma.coordinates.data.util.frames_from_file import frames_from_files
     from pyemma.coordinates.data.util.reader_utils import enforce_top
+
     # Determine the type of input and extract necessary parameters
-    if isinstance(traj_inp, (_FeatureReader, FragmentedTrajectoryReader)):
+    if isinstance(traj_inp, (FeatureReader, FragmentedTrajectoryReader)):
         if isinstance(traj_inp, FragmentedTrajectoryReader):
             trajfiles = traj_inp.filenames_flat
             top = traj_inp._readers[0][0].topfile
@@ -792,6 +780,8 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None,
 def _get_input_stage(previous_stage):
     # this is a pipelining stage, so let's parametrize from it
     from pyemma.coordinates.data._base.iterable import Iterable
+    from pyemma.coordinates.data.data_in_memory import DataInMemory as _DataInMemory
+
     if isinstance(previous_stage, Iterable):
         inputstage = previous_stage
     # second option: data is array or list of arrays
@@ -958,11 +948,13 @@ def pca(data=None, dim=-1, var_cutoff=0.95, stride=1, mean=None):
         J. Edu. Psych. 24, 417-441 and 498-520.
 
     """
+    from pyemma.coordinates.transform.pca import PCA
+
     if mean is not None:
         import warnings
         warnings.warn("provided mean ignored", DeprecationWarning)
 
-    res = _PCA(dim=dim, var_cutoff=var_cutoff, mean=None)
+    res = PCA(dim=dim, var_cutoff=var_cutoff, mean=None)
     return _param_stage(data, res, stride=stride)
 
 
@@ -1130,12 +1122,13 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, stride=1,
         (in preparation).
 
     """
+    from pyemma.coordinates.transform.tica import TICA
     if mean is not None:
-        data = _get_input_stage(data)
-        indim = data.dimension()
-        mean = _types.ensure_ndarray(mean, shape=(indim,), dtype=_np.float)
-    res = _TICA(lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map,
-                mean=mean, remove_mean=remove_mean)
+        import warnings
+        warnings.warn("user provided mean for TICA is deprecated and its value is ignored.")
+
+    res = TICA(lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map,
+               mean=mean, remove_mean=remove_mean)
     return _param_stage(data, res, stride=stride)
 
 
@@ -1182,7 +1175,8 @@ def cluster_mini_batch_kmeans(data=None, k=100, max_iter=10, batch_size=0.2, met
     .. [1] http://www.eecs.tufts.edu/~dsculley/papers/fastkmeans.pdf
 
     """
-    res = _MiniBatchKmeansClustering(n_clusters=k, max_iter=max_iter, metric=metric, init_strategy=init_strategy, batch_size=batch_size)
+    from pyemma.coordinates.clustering.kmeans import MiniBatchKmeansClustering
+    res = MiniBatchKmeansClustering(n_clusters=k, max_iter=max_iter, metric=metric, init_strategy=init_strategy, batch_size=batch_size)
     return _param_stage(data, res, stride=1)
 
 
@@ -1283,7 +1277,8 @@ def cluster_kmeans(data=None, k=None, max_iter=10, tolerance=1e-5, stride=1,
         Probability 1. University of California Press. pp. 281-297
 
     """
-    res = _KmeansClustering(n_clusters=k, max_iter=max_iter, metric=metric, tolerance=tolerance,
+    from pyemma.coordinates.clustering.kmeans import KmeansClustering
+    res = KmeansClustering(n_clusters=k, max_iter=max_iter, metric=metric, tolerance=tolerance,
                             init_strategy=init_strategy, fixed_seed=fixed_seed)
     return _param_stage(data, res, stride=stride)
 
@@ -1339,7 +1334,8 @@ def cluster_uniform_time(data=None, k=None, stride=1, metric='euclidean'):
              :attributes:
 
     """
-    res = _UniformTimeClustering(k, metric=metric)
+    from pyemma.coordinates.clustering.uniform_time import UniformTimeClustering 
+    res = UniformTimeClustering(k, metric=metric)
     return _param_stage(data, res, stride=stride)
 
 
@@ -1421,6 +1417,7 @@ def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1, metric='euc
     """
     if dmin == -1:
         raise ValueError("provide a minimum distance for clustering, e.g. 2.0")
+    from pyemma.coordinates.clustering.regspace import RegularSpaceClustering as _RegularSpaceClustering
     res = _RegularSpaceClustering(dmin, max_centers=max_centers, metric=metric)
     return _param_stage(data, res, stride=stride)
 
@@ -1501,6 +1498,7 @@ def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True,
     if centers is None:
         raise ValueError('You have to provide centers in form of a filename'
                          ' or NumPy array or a reader created by source function')
+    from pyemma.coordinates.clustering.assign import AssignCenters as _AssignCenters
     res = _AssignCenters(centers, metric=metric)
     parametrized_stage = _param_stage(data, res, stride=stride)
     if return_dtrajs and data is not None:

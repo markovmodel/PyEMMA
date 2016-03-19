@@ -22,25 +22,21 @@ Created on 30.04.2015
 
 from __future__ import absolute_import
 
-from six import PY2
-from threading import Semaphore
-import os
-
-from pyemma.util.config import conf_values
+from io import BytesIO
 from logging import getLogger
+import os
+from threading import Semaphore
+
+from pyemma.util import config
+import six
 import numpy as np
+if six.PY2:
+    import dumbdbm
+else:
+    from dbm import dumb as dumbdbm
 
 logger = getLogger(__name__)
 
-if PY2:
-    import anydbm
-else:
-    import dbm as anydbm
-
-try:
-    from cStringIO import StringIO as BytesIO
-except ImportError:
-    from io import BytesIO
 
 __all__ = ('TrajectoryInfoCache', 'TrajInfo')
 
@@ -86,9 +82,26 @@ class TrajInfo(object):
     def hash_value(self):
         return self._hash
 
+    @hash_value.setter
+    def hash_value(self, val):
+        self._hash = val
+
+    def __eq__(self, other):
+        return (isinstance(other, self.__class__)
+                and self.version == other.version
+                and self.hash_value == other.hash_value
+                and self.ndim == other.ndim
+                and self.length == other.length
+                and np.all(self.offsets == other.offsets)
+                )
+
 
 def create_traj_info(db_val):
-    fh = BytesIO(str.encode(db_val))
+    assert isinstance(db_val, (six.string_types, bytes))
+    if six.PY3 and isinstance(db_val, six.string_types):
+        db_val = bytes(db_val.encode('utf-8', errors='ignore'))
+    fh = BytesIO(db_val)
+
     try:
         arr = np.load(fh)['data']
         info = TrajInfo()
@@ -131,31 +144,32 @@ class TrajectoryInfoCache(object):
     def instance():
         if TrajectoryInfoCache._instance is None:
             # singleton pattern
-            cfg_dir = conf_values['pyemma']['cfg_dir']
-            filename = os.path.join(cfg_dir, "trajlen_cache")
+            filename = os.path.join(config.cfg_dir, "trajlen_cache")
             TrajectoryInfoCache._instance = TrajectoryInfoCache(filename)
-            import atexit
 
-            @atexit.register
-            def write_at_exit():
-                if hasattr(TrajectoryInfoCache._instance._database, 'sync'):
+            # sync db to hard drive at exit.
+            if hasattr(TrajectoryInfoCache._instance._database, 'sync'):
+                import atexit
+                @atexit.register
+                def write_at_exit():
                     TrajectoryInfoCache._instance._database.sync()
 
         return TrajectoryInfoCache._instance
 
     def __init__(self, database_filename=None):
+        self.database_filename = database_filename
         if database_filename is not None:
             try:
-                self._database = anydbm.open(database_filename, flag="c")
-            except anydbm.error as e:
+                self._database = dumbdbm.open(database_filename, flag="c")
+            except dumbdbm.error as e:
                 try:
                     os.unlink(database_filename)
-                    self._database = anydbm.open(database_filename, flag="n")
+                    self._database = dumbdbm.open(database_filename, flag="n")
                     # persist file right now, since it was broken
                     self._set_curr_db_version(TrajectoryInfoCache.DB_VERSION)
                     # close and re-open to ensure file exists
                     self._database.close()
-                    self._database = anydbm.open(database_filename, flag="w")
+                    self._database = dumbdbm.open(database_filename, flag="w")
                 except OSError:
                     raise RuntimeError('corrupted database in "%s" could not be deleted'
                                        % os.path.abspath(database_filename))
@@ -178,12 +192,13 @@ class TrajectoryInfoCache(object):
         key = self._get_file_hash(filename)
         result = None
         try:
-            result = self._database[key]
+            result = str(self._database[key])
             info = create_traj_info(result)
         # handle cache misses and not interpreteable results by re-computation.
         # Note: this also handles UnknownDBFormatExceptions!
         except KeyError:
             info = reader._get_traj_info(filename)
+            info.hash_value = key
             # store info in db
             result = self.__setitem__(filename, info)
 
@@ -195,6 +210,7 @@ class TrajectoryInfoCache(object):
         return info
 
     def __format_value(self, traj_info):
+        assert traj_info.hash_value != -1
         fh = BytesIO()
 
         header = {'data_format_version': 1,
