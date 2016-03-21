@@ -30,6 +30,7 @@ estimate models from data.
    estimate_multi_temperature
    dtram
    wham
+   tram
 
 Thermo classes
 ==============
@@ -43,6 +44,7 @@ use the API functions above.
     MEMM
     WHAM
     DTRAM
+    TRAM
 
 """
 

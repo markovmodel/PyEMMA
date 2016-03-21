@@ -44,14 +44,13 @@ class TRAM(_Estimator, _MEMM):
     count_mode : str, optional, default='sliding'
         mode to obtain count matrices from discrete trajectories. Should be
         one of:
-        * 'sliding' : A trajectory of length T will have :math:`T-tau` counts
-          at time indexes
+        * 'sliding' : A trajectory of length T will have :math:`T-\tau` counts at time indexes
               .. math::
                  (0 \rightarrow \tau), (1 \rightarrow \tau+1), ..., (T-\tau-1 \rightarrow T-1)
-        * 'sample' : A trajectory of length T will have :math:`T/tau` counts
+        * 'sample' : A trajectory of length T will have :math:`T/\tau` counts
           at time indexes
               .. math::
-                    (0 \rightarrow \tau), (\tau \rightarrow 2 \tau), ..., (((T/\tau)-1) \tau \rightarrow T)
+                    (0 \rightarrow \tau), (\tau \rightarrow 2 \tau), ..., ((T/\tau-1) \tau \rightarrow T)
         Currently only 'sliding' is supported.
     maxiter : int, optional, default=10000
         The maximum number of self-consistent iterations before the estimator exits unsuccessfully.
@@ -142,27 +141,26 @@ class TRAM(_Estimator, _MEMM):
         self.log_lagrangian_mult = None
         self.loglikelihoods = None
 
-    def _estimate(self, data):
+    def _estimate(self, X):
         """
         Parameters
         ----------
-        data : tuple of (ttrajs, dtrajs, btrajs)
-            Simulation trajectories of equal length. ttrajs contain the
-            indices of the thermodynamic state, dtrajs contains the indices
-            of the configurational states and btrajs contain the biases.
+        X : tuple of (ttrajs, dtrajs, btrajs)
+            Simulation trajectories. ttrajs contain the indices of the thermodynamic
+            state, dtrajs contains the indices of the configurational states and
+            btrajs contain the biases.
         ttrajs : list of numpy.ndarray(X_i, dtype=int)
-            Every elements is a trajectory (time series). ttrajs[i][t] is
-            the index of the thermodynamic state visited in trajectory i at time step t.
+            Every elements is a trajectory (time series). ttrajs[i][t] is the index
+            of the thermodynamic state visited in trajectory i at time step t.
         dtrajs : list of numpy.ndarray(X_i, dtype=int)
             dtrajs[i][t] is the index of the configurational state (Markov state)
             visited in trajectory i at time step t.
         btrajs : list of numpy.ndarray((X_i, T), dtype=numpy.float64)
-            For every simulation frame seen in trajectory i and time step
-            t, btrajs[i][t,k] is the bias energy of that frame evaluated
-            in the k'th thermodynamic state (i.e. at the k'th Umbrella/
-            Hamiltonian/temperature)
+            For every simulation frame seen in trajectory i and time step t,
+            btrajs[i][t,k] is the bias energy of that frame evaluated in the k'th
+            thermodynamic state (i.e. at the k'th Umbrella/Hamiltonian/temperature)
         """
-        ttrajs, dtrajs_full, btrajs = data
+        ttrajs, dtrajs_full, btrajs = X
         # shape and type checks
         assert len(ttrajs) == len(dtrajs_full) == len(btrajs)
         for t in ttrajs:

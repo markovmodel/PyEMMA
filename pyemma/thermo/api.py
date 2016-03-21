@@ -269,7 +269,7 @@ def tram(
     init='mbar', init_maxiter=10000, init_maxerr=1e-8):
     # TODO: fix docstring
     r"""
-    Discrete transition-based reweighting analysis method
+    Transition-based reweighting analysis method
 
     Parameters
     ----------
@@ -279,8 +279,11 @@ def tram(
     dtrajs : ndarray(T) of int, or list of ndarray(T_i) of int
         A single discrete trajectory or a list of discrete trajectories. The integers are indexes
         in 1,...,n enumerating the n Markov states or the bins the trajectory is in at any time.
-    bias : ndarray(K, n)
-        bias[j,i] is the bias energy for each discrete state i at thermodynamic state j.
+    btrajs : ndarray(T, K) of float, or list of ndarray(T_i, K) of float
+        A single reduced bias energy trajectory or a list of reduced bias energy trajectories.
+        For every simulation frame seen in trajectory i and time step t, btrajs[i][t, k] is the
+        reduced bias energy of that frame evaluated in the k'th thermodynamic state (i.e. at
+        the k'th Umbrella/Hamiltonian/temperature)
     lag : int
         Integer lag time at which transitions are counted.
     maxiter : int, optional, default=10000
