@@ -181,6 +181,7 @@ def update_biased_conf_energies(
             int(return_log_L))
 
     if return_log_L:
+        assert scratch_MM is not None
         log_L += _tram_discrete_log_likelihood_lower_bound(
             <double*> _np.PyArray_DATA(log_lagrangian_mult),
             <double*> _np.PyArray_DATA(new_biased_conf_energies),
@@ -477,11 +478,11 @@ def log_likelihood_lower_bound(
     bias_energy_sequences,
     state_sequences,
     _np.ndarray[int, ndim=2, mode="c"] state_counts not None,
-    _np.ndarray[double, ndim=2, mode="c"] log_R_K_i not None,
-    _np.ndarray[double, ndim=1, mode="c"] scratch_M not None,
-    _np.ndarray[double, ndim=1, mode="c"] scratch_T not None,
-    _np.ndarray[double, ndim=2, mode="c"] scratch_TM not None,
-    _np.ndarray[double, ndim=2, mode="c"] scratch_MM not None):
+    _np.ndarray[double, ndim=2, mode="c"] log_R_K_i,
+    _np.ndarray[double, ndim=1, mode="c"] scratch_M,
+    _np.ndarray[double, ndim=1, mode="c"] scratch_T,
+    _np.ndarray[double, ndim=2, mode="c"] scratch_TM,
+    _np.ndarray[double, ndim=2, mode="c"] scratch_MM):
     r"""
     Computes a lower bound on the TRAM log-likelihood
 
@@ -507,7 +508,7 @@ def log_likelihood_lower_bound(
         scratch array for logsumexp operations
     scratch_TM : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         scratch array for logsumexp operations
-    scratch_MM : numpy.ndarray(shape=(M, M), dtype=numpy.float64), optional
+    scratch_MM : numpy.ndarray(shape=(M, M), dtype=numpy.float64)
         scratch array for likelihood computation
 
     Note
@@ -526,6 +527,18 @@ def log_likelihood_lower_bound(
     (in the likelihood sense) this yields only a lower bound on the
     true log-likelihood.
     """
+    T = biased_conf_energies.shape[0]
+    M = biased_conf_energies.shape[1]
+    if log_R_K_i is None:
+        log_R_K_i = _np.zeros((T, M), dtype=_np.float64)
+    if scratch_M is None:
+        scratch_M = _np.zeros((M,), dtype=_np.float64)
+    if scratch_T is None:
+        scratch_T = _np.zeros((T,), dtype=_np.float64)
+    if scratch_TM is None:
+        scratch_TM = _np.zeros((T, M), dtype=_np.float64)
+    if scratch_MM is None:
+        scratch_MM = _np.zeros((M, M), dtype=_np.float64)
     return update_biased_conf_energies(
                log_lagrangian_mult, biased_conf_energies, count_matrices,
                bias_energy_sequences, state_sequences, state_counts,
