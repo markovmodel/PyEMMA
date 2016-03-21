@@ -22,6 +22,9 @@ Python interface to the dTRAM estimator's lowlevel functions.
 import numpy as _np
 cimport numpy as _np
 
+from warnings import warn as _warn
+from msmtools.util.exceptions import NotConvergedWarning as _NotConvergedWarning
+
 from . import util
 from .callback import CallbackInterrupt
 
@@ -438,6 +441,8 @@ def estimate(
             old_log_lagrangian_mult[:] = log_lagrangian_mult[:]
             old_conf_energies[:] = conf_energies[:]
             old_therm_energies[:] = therm_energies[:]
+    if err >= maxerr:
+        _warn("dTRAM did not converge: last increment = %.5e" % err, _NotConvergedWarning)
     if save_convergence_info == 0:
         increments = None
         loglikelihoods = None

@@ -2,6 +2,10 @@ import numpy as _np
 cimport numpy as _np
 import sys
 from thermotools import tram as _tram
+
+from warnings import warn as _warn
+from msmtools.util.exceptions import NotConvergedWarning as _NotConvergedWarning
+
 from .callback import CallbackInterrupt
 
 __all__ = [
@@ -276,6 +280,9 @@ def estimate(count_matrices, state_counts, bias_energy_sequences, state_sequence
     conf_energies = _tram.get_conf_energies(bias_energy_sequences, state_sequences, log_R_K_i, scratch_T)
     therm_energies = _tram.get_therm_energies(biased_conf_energies, scratch_M)
     _tram.normalize(conf_energies, biased_conf_energies, therm_energies, scratch_M)
+
+    if err >= maxerr:
+        _warn("TRAM did not converge: last increment = %.5e" % err, _NotConvergedWarning)
 
     if save_convergence_info == 0:
         increments = None

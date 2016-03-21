@@ -22,6 +22,9 @@ Python interface to the WHAM estimator's lowlevel functions.
 import numpy as _np
 cimport numpy as _np
 
+from warnings import warn as _warn
+from msmtools.util.exceptions import NotConvergedWarning as _NotConvergedWarning
+
 from .callback import CallbackInterrupt
 
 __all__ = [
@@ -293,6 +296,8 @@ def estimate(
         else:
             old_therm_energies[:] = therm_energies[:]
             old_conf_energies[:] = conf_energies[:]
+    if err >= maxerr:
+        _warn("WHAM did not converge: last increment = %.5e" % err, _NotConvergedWarning)
     if save_convergence_info == 0:
         increments = None
         loglikelihoods = None
