@@ -272,10 +272,9 @@ class TRAM(_Estimator, _MEMM):
         r"""
         Returns the value of the log-likelihood of the converged TRAM estimate.
         """
-        if self.loglikelihoods is None:
-            raise Exception('Computation of log likelihood wasn\'t enabled during estimation.')
-        else:
-            return self.loglikelihoods[-1]
+        # TODO: check that we are estimated...
+        return _tram.log_likelihood_lower_bound(self.log_lagrangian_mult, self.biased_conf_energies,
+            self.count_matrices, self.btrajs, self.dtrajs, self.state_counts, None, None, None, None, None)
 
     def pointwise_free_energies(self, therm_state=None):
         r"""

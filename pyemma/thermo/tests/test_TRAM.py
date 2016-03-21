@@ -142,7 +142,7 @@ class TestTRAMwith5StateDTRAMModel(unittest.TestCase):
         assert np.allclose(log_pi_K_i, self.bias_energies, atol=0.1)
 
         # lower bound on the log-likelihood must be maximal at convergence
-        assert np.all(tram.loglikelihoods[-1]+1.E-5>=tram.loglikelihoods[0:-1])
+        assert np.all(tram.log_likelihood()+1.E-5>=tram.loglikelihoods[0:-1])
 
         # simple test: just call the methods
         tram.pointwise_free_energies()
@@ -185,7 +185,7 @@ class TestTRAMasReversibleMSM(unittest.TestCase):
         # Lagrange multipliers should be > 0
         assert np.all(tram.log_lagrangian_mult > -1.E300)
         # lower bound on the log-likelihood must be maximal at convergence
-        assert np.all(tram.loglikelihoods[-1]+1.E-5 >= tram.loglikelihoods[0:-1])
+        assert np.all(tram.log_likelihood()+1.E-5 >= tram.loglikelihoods[0:-1])
 
 class TestTRAMwithTRAMmodel(unittest.TestCase):
     @classmethod
@@ -300,7 +300,7 @@ class TestTRAMwithTRAMmodel(unittest.TestCase):
         assert np.allclose(tram.stationary_distribution, pi) # self-consistency of TRAM
 
         # check log-likelihood
-        assert np.all(tram.loglikelihoods[-1]+1.E-5 >= tram.loglikelihoods[0:-1])
+        assert np.all(tram.log_likelihood()+1.E-5 >= tram.loglikelihoods[0:-1])
 
         # check mu
         for k in range(self.n_therm_states):
