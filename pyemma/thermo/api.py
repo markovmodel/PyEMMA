@@ -346,6 +346,7 @@ def tram(
 
 def dtram(
     ttrajs, dtrajs, bias, lag,
+    count_mode='sliding', connectivity='largest',
     maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step',
     init=None, init_maxiter=10000, init_maxerr=1e-8):
     # TODO: fix docstring
@@ -431,7 +432,7 @@ def dtram(
     dtram_estimators = [
         DTRAM(
             bias, _lag,
-            count_mode='sliding', connectivity='largest',
+            count_mode=count_mode, connectivity=connectivity,
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
             dt_traj=dt_traj, init=init, init_maxiter=init_maxiter,
             init_maxerr=init_maxerr).estimate((ttrajs, dtrajs)) for _lag in lags]
