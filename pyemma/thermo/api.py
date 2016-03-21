@@ -40,7 +40,8 @@ __all__ = [
 def estimate_umbrella_sampling(
     us_trajs, us_dtrajs, us_centers, us_force_constants, md_trajs=None, md_dtrajs=None, kT=None,
     maxiter=10000, maxerr=1.0E-15, save_convergence_info=0,
-    estimator='wham', lag=1, dt_traj='1 step', init=None, init_maxiter=10000, init_maxerr=1e-8):
+    estimator='wham', lag=1, dt_traj='1 step', init=None, init_maxiter=10000, init_maxerr=1e-8,
+    **kwargs):
     # TODO: fix docstring
     r"""
     Wraps umbrella sampling data or a mix of umbrella sampling and and direct molecular dynamics.
@@ -120,17 +121,25 @@ def estimate_umbrella_sampling(
             maxiter=maxiter, maxerr=maxerr,
             save_convergence_info=save_convergence_info, dt_traj=dt_traj)
     elif estimator == 'dtram':
+        allowed_keys = ['count_mode', 'connectivity']
+        parsed_kwargs = dict([(i, kwargs[i]) for i in allowed_keys if i in kwargs])
         _estimator = dtram(
             ttrajs, us_dtrajs + md_dtrajs,
             _get_averaged_bias_matrix(btrajs, us_dtrajs + md_dtrajs),
             lag,
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
-            dt_traj=dt_traj, init=init, init_maxiter=init_maxiter, init_maxerr=init_maxerr)
+            dt_traj=dt_traj, init=init, init_maxiter=init_maxiter, init_maxerr=init_maxerr,
+            **parsed_kwargs)
     elif estimator == 'tram':
+        allowed_keys = [
+            'count_mode', 'connectivity', 'connectivity_factor','nn',
+            'direct_space', 'N_dtram_accelerations']
+        parsed_kwargs = dict([(i, kwargs[i]) for i in allowed_keys if i in kwargs])
         _estimator = tram(
             ttrajs, us_dtrajs + md_dtrajs, btrajs, lag,
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
-            dt_traj=dt_traj, init=init, init_maxiter=init_maxiter, init_maxerr=init_maxerr)
+            dt_traj=dt_traj, init=init, init_maxiter=init_maxiter, init_maxerr=init_maxerr,
+            **parsed_kwargs)
     try:
         _estimator.umbrella_centers = umbrella_centers
         _estimator.force_constants = force_constants
@@ -145,7 +154,8 @@ def estimate_multi_temperature(
     energy_trajs, temp_trajs, dtrajs,
     energy_unit='kcal/mol', temp_unit='K', reference_temperature=None,
     maxiter=10000, maxerr=1.0E-15, save_convergence_info=0,
-    estimator='wham', lag=1, dt_traj='1 step', init=None, init_maxiter=10000, init_maxerr=1e-8):
+    estimator='wham', lag=1, dt_traj='1 step', init=None, init_maxiter=10000, init_maxerr=1e-8,
+    **kwargs):
     # TODO: fix docstring
     r"""
     Wraps multi-temperature data.
@@ -221,17 +231,25 @@ def estimate_multi_temperature(
             maxiter=maxiter, maxerr=maxerr,
             save_convergence_info=save_convergence_info, dt_traj=dt_traj)
     elif estimator == 'dtram':
+        allowed_keys = ['count_mode', 'connectivity']
+        parsed_kwargs = dict([(i, kwargs[i]) for i in allowed_keys if i in kwargs])
         _estimator = dtram(
             ttrajs, dtrajs,
             _get_averaged_bias_matrix(btrajs, dtrajs),
             lag,
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
-            dt_traj=dt_traj, init=init, init_maxiter=init_maxiter, init_maxerr=init_maxerr)
+            dt_traj=dt_traj, init=init, init_maxiter=init_maxiter, init_maxerr=init_maxerr,
+            **parsed_kwargs)
     elif estimator == 'tram':
+        allowed_keys = [
+            'count_mode', 'connectivity', 'connectivity_factor','nn',
+            'direct_space', 'N_dtram_accelerations']
+        parsed_kwargs = dict([(i, kwargs[i]) for i in allowed_keys if i in kwargs])
         _estimator = tram(
             ttrajs, dtrajs, btrajs, lag,
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
-            dt_traj=dt_traj, init=init, init_maxiter=init_maxiter, init_maxerr=init_maxerr)
+            dt_traj=dt_traj, init=init, init_maxiter=init_maxiter, init_maxerr=init_maxerr,
+            **parsed_kwargs)
     try:
         _estimator.temperatures = temperatures
     except AttributeError:
