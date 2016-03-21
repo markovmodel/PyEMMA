@@ -40,7 +40,7 @@ __all__ = [
 def estimate_umbrella_sampling(
     us_trajs, us_dtrajs, us_centers, us_force_constants, md_trajs=None, md_dtrajs=None, kT=None,
     maxiter=10000, maxerr=1.0E-15, save_convergence_info=0,
-    estimator='wham', lag=1, dt_traj='1 step', init=None):
+    estimator='wham', lag=1, dt_traj='1 step', init=None, init_maxiter=10000, init_maxerr=1e-8):
     # TODO: fix docstring
     r"""
     Wraps umbrella sampling data or a mix of umbrella sampling and and direct molecular dynamics.
@@ -125,12 +125,12 @@ def estimate_umbrella_sampling(
             _get_averaged_bias_matrix(btrajs, us_dtrajs + md_dtrajs),
             lag,
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
-            dt_traj=dt_traj, init=init)
+            dt_traj=dt_traj, init=init, init_maxiter=init_maxiter, init_maxerr=init_maxerr)
     elif estimator == 'tram':
         _estimator = tram(
             ttrajs, dtrajs, btrajs, lag,
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
-            dt_traj=dt_traj, init=init)
+            dt_traj=dt_traj, init=init, init_maxiter=init_maxiter, init_maxerr=init_maxerr)
     try:
         _estimator.umbrella_centers = umbrella_centers
         _estimator.force_constants = force_constants
@@ -145,7 +145,7 @@ def estimate_multi_temperature(
     energy_trajs, temp_trajs, dtrajs,
     energy_unit='kcal/mol', temp_unit='K', reference_temperature=None,
     maxiter=10000, maxerr=1.0E-15, save_convergence_info=0,
-    estimator='wham', lag=1, dt_traj='1 step', init=None):
+    estimator='wham', lag=1, dt_traj='1 step', init=None, init_maxiter=10000, init_maxerr=1e-8):
     # TODO: fix docstring
     r"""
     Wraps multi-temperature data.
@@ -226,12 +226,12 @@ def estimate_multi_temperature(
             _get_averaged_bias_matrix(btrajs, dtrajs),
             lag,
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
-            dt_traj=dt_traj, init=init)
+            dt_traj=dt_traj, init=init, init_maxiter=init_maxiter, init_maxerr=init_maxerr)
     elif estimator == 'tram':
         _estimator = tram(
             ttrajs, dtrajs, btrajs, lag,
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
-            dt_traj=dt_traj, init=init)
+            dt_traj=dt_traj, init=init, init_maxiter=init_maxiter, init_maxerr=init_maxerr)
     try:
         _estimator.temperatures = temperatures
     except AttributeError:
