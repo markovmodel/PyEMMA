@@ -245,7 +245,10 @@ def estimate_multi_temperature(
 
 def tram(
     ttrajs, dtrajs, bias, lag,
-    maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step', init=None):
+    count_mode='sliding', connectivity='summed_count_matrix', connectivity_factor=1.0, nn=None,
+    maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step',
+    direct_space=False, N_dtram_accelerations=0, callback=None,
+    init='mbar', init_maxiter=10000, init_maxerr=1e-8):
     # TODO: fix docstring
     r"""
     Discrete transition-based reweighting analysis method
@@ -330,10 +333,12 @@ def tram(
     from pyemma.thermo import TRAM as _TRAM
     tram_estimators = [
         _TRAM(
-            lag=_lag,
-            count_mode='sliding', connectivity='summed_count_matrix',
+            _lag, count_mode=count_mode, connectivity=connectivity,
+            connectivity_factor=connectivity_factor, nn=nn,
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
-            dt_traj=dt_traj, init='mbar').estimate((ttrajs, dtrajs, bias)) for _lag in lags]
+            dt_traj=dt_traj, direct_space=direct_space, N_dtram_accelerations=N_dtram_accelerations,
+            callback=callback, init='mbar', init_maxiter=init_maxiter,
+            init_maxerr=init_maxerr).estimate((ttrajs, dtrajs, bias)) for _lag in lags]
     # return
     if len(tram_estimators) == 1:
         return tram_estimators[0]
