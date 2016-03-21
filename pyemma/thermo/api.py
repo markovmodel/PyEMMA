@@ -328,7 +328,7 @@ def tram(
         assert len(ttraj) == len(dtraj)
         assert len(ttraj) == btraj.shape[0]
     # check lag time(s)
-    lags = _np.asarray(lag, dtype=_np.intc).tolist()
+    lags = _np.asarray(lag, dtype=_np.intc).reshape((-1,)).tolist()
     # build TRAM and run estimation
     from pyemma.thermo import TRAM as _TRAM
     tram_estimators = [
@@ -426,7 +426,7 @@ def dtram(
     for ttraj, dtraj in zip(ttrajs, dtrajs):
         assert len(ttraj) == len(dtraj)
     # check lag time(s)
-    lags = _np.asarray(lag, dtype=_np.intc).tolist()
+    lags = _np.asarray(lag, dtype=_np.intc).reshape((-1,)).tolist()
     # build DTRAM and run estimation
     from pyemma.thermo import DTRAM
     dtram_estimators = [
