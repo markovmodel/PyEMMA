@@ -107,13 +107,14 @@ class TRAM(_Estimator, _MEMM):
     init_maxerr : float, optional, default=1e-8
         same as maxerr but for the (optional) MBAR initialization step
     """
-    def __init__(self, lag=1, count_mode='sliding', dt_traj='1 step',
-                 connectivity='summed_count_matrix', nn=None, connectivity_factor=1.0,
-                 ground_state=None,
-                 maxiter=10000, maxerr=1e-15, save_convergence_info=0,
-                 direct_space=False, N_dtram_accelerations=0,
-                 callback=None,
-                 init='mbar', init_maxiter=10000, init_maxerr=1e-8):
+    def __init__(
+        self, lag, count_mode='sliding', dt_traj='1 step',
+        connectivity='summed_count_matrix', nn=None, connectivity_factor=1.0,
+        ground_state=None,
+        maxiter=10000, maxerr=1e-15, save_convergence_info=0,
+        direct_space=False, N_dtram_accelerations=0,
+        callback=None,
+        init='mbar', init_maxiter=10000, init_maxerr=1e-8):
 
         self.lag = lag
         assert count_mode == 'sliding', 'Currently the only implemented count_mode is \'sliding\''
