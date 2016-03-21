@@ -29,10 +29,7 @@ from thermotools import mbar as _mbar
 from .callback import CallbackInterrupt
 
 __all__ = [
-    'update_therm_energies',
-    'normalize',
-    'get_conf_energies',
-    'get_biased_conf_energies',
+    'update_therm_weights',
     'estimate']
 
 cdef extern from "_mbar_direct.h":

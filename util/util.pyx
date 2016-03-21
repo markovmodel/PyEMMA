@@ -368,7 +368,7 @@ def _overlap_post_hoc_RE(_np.ndarray[double, ndim=2, mode="c"] a not None,
         for j in range(m):
             delta = a[i,0]+b[j,1]-a[i,1]-b[j,0]
             n_sum += min(_libc_exp(delta), 1.0)
-            n_avg = n_sum / (n*m)
+    n_avg = n_sum / (n*m)
     return (n+m) * n_avg * factor >= 1.0
 
 ####################################################################################################
