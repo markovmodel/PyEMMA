@@ -128,7 +128,7 @@ def estimate_umbrella_sampling(
             dt_traj=dt_traj, init=init, init_maxiter=init_maxiter, init_maxerr=init_maxerr)
     elif estimator == 'tram':
         _estimator = tram(
-            ttrajs, dtrajs, btrajs, lag,
+            ttrajs, us_dtrajs + md_dtrajs, btrajs, lag,
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
             dt_traj=dt_traj, init=init, init_maxiter=init_maxiter, init_maxerr=init_maxerr)
     try:
