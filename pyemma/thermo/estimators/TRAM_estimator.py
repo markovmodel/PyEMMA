@@ -99,18 +99,20 @@ class TRAM(_Estimator, _MEMM):
 
         | None:    use a hard-coded guess for free energies and Lagrangian multipliers
         | 'mbar':  perform a short MBAR estimate to initialize the free energies
-    mbar_maxiter : int, optional, default=10000
+    init_maxiter : int, optional, default=10000
         Same as maxiter but for the (optional) MBAR initialization step.
         If MBAR doesn't converge in mbar_maxiter iterations, the results
         is still used for intializing TRAM.
-    mbar_maxerr : float, optional, default=1e-8
+    init_maxerr : float, optional, default=1e-8
         same as maxerr but for the (optional) MBAR initialization step
     """
     def __init__(self, lag=1, count_mode='sliding', dt_traj='1 step',
-                 connectivity = 'summed_count_matrix', nn=None, connectivity_factor=1.0,
+                 connectivity='summed_count_matrix', nn=None, connectivity_factor=1.0,
                  ground_state=None,
-                 maxiter=10000, maxerr=1e-15, direct_space=False, N_dtram_accelerations=0,
-                 callback=None, save_convergence_info=0, init='mbar', mbar_maxiter=10000, mbar_maxerr=1e-8):
+                 maxiter=10000, maxerr=1e-15, save_convergence_info=0,
+                 direct_space=False, N_dtram_accelerations=0,
+                 callback=None,
+                 init='mbar', init_maxiter=10000, init_maxerr=1e-8):
 
         self.lag = lag
         assert count_mode == 'sliding', 'Currently the only implemented count_mode is \'sliding\''
@@ -129,8 +131,8 @@ class TRAM(_Estimator, _MEMM):
         self.save_convergence_info = save_convergence_info
         assert init in (None, 'mbar'), 'Currently only None and \'mbar\' are supported'
         self.init = init
-        self.mbar_maxiter = mbar_maxiter
-        self.mbar_maxerr = mbar_maxerr
+        self.init_maxiter = init_maxiter
+        self.init_maxerr = init_maxerr
 
         self.active_set = None
         self.biased_conf_energies = None
@@ -220,7 +222,7 @@ class TRAM(_Estimator, _MEMM):
             else:
                 mbar = _mbar
             mbar_result = mbar.estimate(state_counts_full.sum(axis=1), btrajs, dtrajs_full,
-                                        maxiter=self.mbar_maxiter, maxerr=self.mbar_maxerr, #callback=MBAR_printer,
+                                        maxiter=self.init_maxiter, maxerr=self.init_maxerr, #callback=MBAR_printer,
                                         n_conf_states=self.nstates_full)
             self.mbar_therm_energies, self.mbar_unbiased_conf_energies, self.mbar_biased_conf_energies, _ = mbar_result
             self.biased_conf_energies = self.mbar_biased_conf_energies.copy()
