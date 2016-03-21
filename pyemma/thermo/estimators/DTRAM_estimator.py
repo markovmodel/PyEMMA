@@ -91,7 +91,8 @@ class DTRAM(_Estimator, _MEMM):
     """
     def __init__(
         self, bias_energies_full, lag, count_mode='sliding', connectivity='largest',
-        maxiter=10000, maxerr=1E-15, dt_traj='1 step', save_convergence_info=0, init=None):
+        maxiter=10000, maxerr=1E-15, dt_traj='1 step', save_convergence_info=0,
+        init=None, init_maxiter=10000, init_maxerr=1e-8):
         # set all parameters
         self.bias_energies_full = _types.ensure_ndarray(bias_energies_full, ndim=2, kind='numeric')
         self.lag = lag
@@ -99,12 +100,14 @@ class DTRAM(_Estimator, _MEMM):
         self.count_mode = count_mode
         assert connectivity == 'largest', 'Currently the only implemented connectivity is \'largest\''
         self.connectivity = connectivity
-        assert init in (None, 'wham'), 'Currently only None and \'wham\' are supported'
-        self.init = init
         self.dt_traj = dt_traj
         self.maxiter = maxiter
         self.maxerr = maxerr
         self.save_convergence_info = save_convergence_info
+        assert init in (None, 'wham'), 'Currently only None and \'wham\' are supported'
+        self.init = init
+        self.init_maxiter = init_maxiter
+        self.init_maxerr = maxerr
         # set derived quantities
         self.nthermo, self.nstates_full = bias_energies_full.shape
         self.timestep_traj = _TimeUnit(dt_traj)
@@ -166,7 +169,7 @@ class DTRAM(_Estimator, _MEMM):
                 self.therm_energies, self.conf_energies, _increments, _loglikelihoods = \
                     _wham.estimate(
                         self.state_counts, self.bias_energies,
-                        maxiter=5000, maxerr=1.0E-8, save_convergence_info=0,
+                        maxiter=self.init_maxiter, maxerr=self.init_maxerr, save_convergence_info=0,
                         therm_energies=self.therm_energies, conf_energies=self.conf_energies)
 
         # run estimator

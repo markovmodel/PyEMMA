@@ -346,7 +346,8 @@ def tram(
 
 def dtram(
     ttrajs, dtrajs, bias, lag,
-    maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step', init=None):
+    maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step',
+    init=None, init_maxiter=10000, init_maxerr=1e-8):
     # TODO: fix docstring
     r"""
     Discrete transition-based reweighting analysis method
@@ -432,7 +433,8 @@ def dtram(
             bias, _lag,
             count_mode='sliding', connectivity='largest',
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
-            dt_traj=dt_traj, init=init).estimate((ttrajs, dtrajs)) for _lag in lags]
+            dt_traj=dt_traj, init=init, init_maxiter=init_maxiter,
+            init_maxerr=init_maxerr).estimate((ttrajs, dtrajs)) for _lag in lags]
     # return
     if len(dtram_estimators) == 1:
         return dtram_estimators[0]
