@@ -14,6 +14,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import numpy as _np
 from six.moves import range
 from pyemma._base.estimator import Estimator as _Estimator
@@ -188,20 +189,24 @@ class TRAM(_Estimator, _MEMM):
             self.lag, sliding=self.count_mode, sparse_return=False, nstates=self.nstates_full)
         self.therm_state_counts_full = state_counts_full.sum(axis=1)
 
-        self.csets, pcset = _cset.compute_csets_TRAM(self.connectivity,
-                                state_counts_full, count_matrices_full,
-                                ttrajs=ttrajs, dtrajs=dtrajs_full, bias_trajs=btrajs, nn=self.nn, factor=self.connectivity_factor)
+        self.csets, pcset = _cset.compute_csets_TRAM(
+            self.connectivity, state_counts_full, count_matrices_full,
+            ttrajs=ttrajs, dtrajs=dtrajs_full, bias_trajs=btrajs,
+            nn=self.nn, factor=self.connectivity_factor)
         self.active_set = pcset
 
         # check for empty states
         for k in range(self.nthermo):
             if len(self.csets[k]) == 0:
-                _warnings.warn('Thermodynamic state %d contains no samples after reducing to the connected set.'%k, EmptyState)
+                _warnings.warn(
+                    'Thermodynamic state %d' % k \
+                    + ' contains no samples after reducing to the connected set.', EmptyState)
 
         # deactivate samples not in the csets, states are *not* relabeled
-        res = _cset.restrict_to_csets(self.csets, state_counts=state_counts_full, 
-                    count_matrices=count_matrices_full, ttrajs=ttrajs, dtrajs=dtrajs_full)
-        self.state_counts, self.count_matrices, self.dtrajs, _ = res
+        self.state_counts, self.count_matrices, self.dtrajs, _  = _cset.restrict_to_csets(
+            self.csets,
+            state_counts=state_counts_full, count_matrices=count_matrices_full,
+            ttrajs=ttrajs, dtrajs=dtrajs_full)
 
         # self-consistency tests
         assert _np.all(self.state_counts >= _np.maximum(self.count_matrices.sum(axis=1), self.count_matrices.sum(axis=2)))
@@ -211,7 +216,9 @@ class TRAM(_Estimator, _MEMM):
         # check for empty states
         for k in range(self.state_counts.shape[0]):
             if self.count_matrices[k, :, :].sum() == 0:
-                _warnings.warn('Thermodynamic state %d contains no transitions after reducing to the connected set.'%k, EmptyState)
+                _warnings.warn(
+                    'Thermodynamic state %d' % k \
+                    + 'contains no transitions after reducing to the connected set.', EmptyState)
 
         if self.init == 'mbar' and self.biased_conf_energies is None:
             #def MBAR_printer(**kwargs):
@@ -221,10 +228,11 @@ class TRAM(_Estimator, _MEMM):
                 mbar = _mbar_direct
             else:
                 mbar = _mbar
-            mbar_result = mbar.estimate(state_counts_full.sum(axis=1), btrajs, dtrajs_full,
-                                        maxiter=self.init_maxiter, maxerr=self.init_maxerr, #callback=MBAR_printer,
-                                        n_conf_states=self.nstates_full)
-            self.mbar_therm_energies, self.mbar_unbiased_conf_energies, self.mbar_biased_conf_energies, _ = mbar_result
+            self.mbar_therm_energies, self.mbar_unbiased_conf_energies, \
+                self.mbar_biased_conf_energies, _ = mbar.estimate(
+                    state_counts_full.sum(axis=1), btrajs, dtrajs_full,
+                    maxiter=self.init_maxiter, maxerr=self.init_maxerr, #callback=MBAR_printer,
+                    n_conf_states=self.nstates_full)
             self.biased_conf_energies = self.mbar_biased_conf_energies.copy()
 
         # run estimator
@@ -232,7 +240,7 @@ class TRAM(_Estimator, _MEMM):
             tram = _tram_direct
         else:
             tram = _tram
-        self.biased_conf_energies, conf_energies, self.therm_energies, self.log_lagrangian_mult,\
+        self.biased_conf_energies, conf_energies, self.therm_energies, self.log_lagrangian_mult, \
             self.increments, self.loglikelihoods  = tram.estimate(
                 self.count_matrices, self.state_counts, btrajs, self.dtrajs,
                 maxiter = self.maxiter, maxerr = self.maxerr,
