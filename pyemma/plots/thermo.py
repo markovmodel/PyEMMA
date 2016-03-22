@@ -21,6 +21,15 @@ from pyemma.thermo import WHAM as _WHAM
 from pyemma.thermo import DTRAM as _DTRAM
 from pyemma.thermo import TRAM as _TRAM
 
+def get_estimator_label(thermo_estimator):
+    if isinstance(thermo_estimator, _WHAM):
+        return "WHAM"
+    elif isinstance(thermo_estimator, _DTRAM):
+        return "dTRAM, lag=%d" % thermo_estimator.lag
+    elif isinstance(thermo_estimator, _TRAM):
+        return "TRAM, lag=%d" % thermo_estimator.lag
+    return None
+
 def plot_increments(thermo_estimator, ax=None):
     # TODO: write docstring
     if ax is None:
@@ -31,17 +40,9 @@ def plot_increments(thermo_estimator, ax=None):
     if not isinstance(obj_list, (list, tuple)):
         obj_list = [obj_list]
     for obj in obj_list:
-        if isinstance(obj, _WHAM):
-            label = "WHAM"
-        elif isinstance(obj, _DTRAM):
-            label = "dTRAM, lag=%d" % obj.lag
-        elif isinstance(obj, _TRAM):
-            label = "TRAM, lag=%d" % obj.lag
-        else:
-            label = None
         ax.plot(
             (_np.arange(obj.increments.shape[0]) + 1) * obj.save_convergence_info,
-            obj.increments, '-s', label=label)
+            obj.increments, '-s', label=get_estimator_label(obj))
     ax.set_xlabel(r"iteration")
     ax.set_ylabel(r"increment / kT")
     ax.semilogx()
@@ -59,17 +60,9 @@ def plot_loglikelihoods(thermo_estimator, ax=None):
     if not isinstance(obj_list, (list, tuple)):
         obj_list = [obj_list]
     for obj in obj_list:
-        if isinstance(obj, _WHAM):
-            label = "WHAM"
-        elif isinstance(obj, _DTRAM):
-            label = "dTRAM, lag=%d" % obj.lag
-        elif isinstance(obj, _TRAM):
-            label = "TRAM, lag=%d" % obj.lag
-        else:
-            label = None
         ax.plot(
             (_np.arange(1, obj.loglikelihoods.shape[0]) + 1) * obj.save_convergence_info,
-            obj.loglikelihoods[1:] - obj.loglikelihoods[:-1], '-s', label=label)
+            obj.loglikelihoods[1:] - obj.loglikelihoods[:-1], '-s', label=get_estimator_label(obj))
     ax.set_xlabel(r"iteration")
     ax.set_ylabel(r"loglikelihood increase")
     ax.semilogx()
