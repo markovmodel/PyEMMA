@@ -107,7 +107,7 @@ class DTRAM(_Estimator, _MEMM):
         assert init in (None, 'wham'), 'Currently only None and \'wham\' are supported'
         self.init = init
         self.init_maxiter = init_maxiter
-        self.init_maxerr = maxerr
+        self.init_maxerr = init_maxerr
         # set derived quantities
         self.nthermo, self.nstates_full = bias_energies_full.shape
         self.timestep_traj = _TimeUnit(dt_traj)
