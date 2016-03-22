@@ -340,5 +340,20 @@ class TestTICAExtensive(unittest.TestCase):
         its = -self.tica_obj.lag/np.log(np.abs(self.tica_obj.eigenvalues))
         assert np.allclose(self.tica_obj.timescales, its)
 
+    def test_too_short_traj_partial_fit(self):
+        data = [np.empty((20, 3)), np.empty((10, 3))]
+        lag = 11
+        tica_obj = tica(lag=lag)
+        from pyemma.util.testing_tools import MockLoggingHandler
+        log_handler = MockLoggingHandler()
+        tica_obj.logger.addHandler(log_handler)
+        for x in data:
+            tica_obj.partial_fit(x)
+
+        self.assertEqual(tica_obj._used_data, 20 - lag)
+        self.assertEqual(len(log_handler.messages['warning']), 1)
+        self.assertIn("longer than lag time", log_handler.messages['warning'][0])
+
+
 if __name__ == "__main__":
     unittest.main()
