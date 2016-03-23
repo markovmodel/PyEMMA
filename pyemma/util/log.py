@@ -65,10 +65,10 @@ def setupLogging(config):
                                   'be used. Used default as fallback.')
             except EnvironmentError as ee2:
                 raise LoggingConfigurationError('Could not read either configured nor '
-                                                'default logging configuration!\n%s' % ee)
+                                                'default logging configuration!\n%s' % ee2)
         else:
             raise LoggingConfigurationError('could not handle default logging '
-                                            'configuration file\n%s' % ee2)
+                                            'configuration file\n%s' % ee)
 
     if D is None:
         raise LoggingConfigurationError('Empty logging config! Try using default config by'
@@ -105,7 +105,7 @@ def setupLogging(config):
         # gracefully shutdown logging system
         logging.shutdown()
         for f in log_files:
-            if f is not None and os.stat(f).st_size == 0:
+            if f is not None and os.path.exists(f) and os.stat(f).st_size == 0:
                 try:
                     os.remove(f)
                 except OSError as o:
