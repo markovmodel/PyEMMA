@@ -27,7 +27,7 @@ def coverage_report():
     # fix paths in .coverage file
     with open(dest, 'r') as fh:
         data = fh.read()
-    match= '"/home/travis/miniconda/envs/_test/lib/python.+?/site-packages/.+?/({test_pkg}/.+?)"'.format(test_pkg=test_pkg)
+    match= '"/.+?/miniconda/envs/_test/lib/python.+?/site-packages/.+?/({test_pkg}/.+?)"'.format(test_pkg=test_pkg)
     repl = '"%s/\\1"' % build_dir
     data = re.sub(match, repl, data)
     os.unlink(dest)
