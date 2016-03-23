@@ -24,7 +24,7 @@ import os
 import numpy as np
 
 from pyemma.coordinates.data import MDFeaturizer
-from pyemma.util.log import getLogger
+from logging import getLogger
 import pyemma.coordinates.api as api
 import pyemma.util.types as types
 import pkg_resources

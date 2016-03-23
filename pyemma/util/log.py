@@ -27,6 +27,7 @@ from logging.config import dictConfig
 import os.path
 import warnings
 
+from pyemma.util.annotators import deprecated
 
 __all__ = ['getLogger',
            ]
@@ -111,7 +112,7 @@ def setupLogging(config):
                 except OSError as o:
                     print("during removal of empty logfiles there was a problem: ", o)
 
-
+@deprecated("use logging.getLogger")
 def getLogger(name=None):
     # if name is not given, return a logger with name of the calling module.
     if not name:
