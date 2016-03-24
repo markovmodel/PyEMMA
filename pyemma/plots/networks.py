@@ -71,6 +71,15 @@ class NetworkPlot(object):
                           " time for large networks! It is recommended to"
                           " coarse grain your model first!")
         self.A = A
+        if pos and len(pos) < len(A):
+            raise ValueError('Given less positions (%i) than states (%i)'
+                             % (len(pos), len(A)))
+        if xpos and len(xpos) < len(A):
+            raise ValueError('Given less positions (%i) than states (%i)'
+                             % (len(xpos), len(A)))
+        if ypos and len(ypos) < len(A):
+            raise ValueError('Given less positions (%i) than states (%i)'
+                             % (len(ypos), len(A)))
         self.pos = pos
         self.xpos = xpos
         self.ypos = ypos
