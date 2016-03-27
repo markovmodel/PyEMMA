@@ -167,7 +167,7 @@ def plot_free_energy(xall, yall, weights=None, ax=None, nbins=100, ncountours=10
     extent = [yedge[0], yedge[-1], xedge[0], xedge[-1]]
     if ax is None:
         ax = _plt.gca()
-    CS = ax.contourf(F.T, ncountours, extent=extent, cmap=cmap, vmin=vmin, vmax=vmax)
+    CS = ax.contourf(x, y, F.T, ncountours, extent=extent, cmap=cmap, vmin=vmin, vmax=vmax)
     if cbar:
         cbar = _plt.colorbar(CS)
         if cbar_label is not None:
