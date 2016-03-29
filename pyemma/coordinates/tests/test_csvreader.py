@@ -32,28 +32,25 @@ import shutil
 
 
 class TestCSVReader(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.dir = tempfile.mkdtemp(prefix='pyemma_filereader')
-        cls.nt = 300
-        cls.nd = 4
-        cls.data = np.arange(cls.nt * cls.nd).reshape(cls.nt, cls.nd)
-        cls.filename1 = os.path.join(cls.dir, "data.dat")
-        cls.filename2 = os.path.join(cls.dir, "data2.dat")
-        np.savetxt(cls.filename1, cls.data)
-        np.savetxt(cls.filename2, cls.data)
 
-        cls.file_with_header = tempfile.mktemp(suffix=".dat", dir=cls.dir)
-        cls.file_with_header2 = tempfile.mktemp(suffix=".dat", dir=cls.dir)
+    def setUp(self):
+        self.dir = tempfile.mkdtemp(prefix='pyemma_filereader')
+        self.nt = 300
+        self.nd = 4
+        self.data = np.arange(self.nt * self.nd).reshape(self.nt, self.nd)
+        self.filename1 = os.path.join(self.dir, "data.dat")
+        self.filename2 = os.path.join(self.dir, "data2.dat")
+        np.savetxt(self.filename1, self.data)
+        np.savetxt(self.filename2, self.data)
+    
+        self.file_with_header = tempfile.mktemp(suffix=".dat", dir=self.dir)
+        self.file_with_header2 = tempfile.mktemp(suffix=".dat", dir=self.dir)
+    
+        np.savetxt(self.file_with_header, self.data, header="x y z")
+        np.savetxt(self.file_with_header2, self.data, header="x y z")
 
-        np.savetxt(cls.file_with_header, cls.data, header="x y z")
-        np.savetxt(cls.file_with_header2, cls.data, header="x y z")
-
-        return cls
-
-    @classmethod
-    def tearDownClass(cls):
-        shutil.rmtree(cls.dir, ignore_errors=True)
+    def tearDown(self):
+        shutil.rmtree(self.dir, ignore_errors=True)
 
     def test_read_1file(self):
         reader = CSVReader(self.filename1, chunksize=30)
@@ -105,9 +102,13 @@ class TestCSVReader(unittest.TestCase):
 
     def test_read_with_skipping_first_few_couple_lines(self):
         for skip in [0, 3, 13]:
+            # FIXME: opening the same file twice is not being liked by py27
             r1 = CSVReader(self.filename1, chunksize=30)
             out_with_skip = r1.get_output(skip=skip)[0]
+            assert len(out_with_skip) == len(self.data[skip:])
             r2 = CSVReader(self.filename1, chunksize=30)
+            self.maxDiff=None
+            #self.assertDictEqual(r1.__dict__, r2.__dict__)
             out = r2.get_output()[0]
             np.testing.assert_almost_equal(out_with_skip, out[skip::],
                                            err_msg="The first %s rows were skipped, but that did not "
@@ -255,6 +256,7 @@ class TestCSVReader(unittest.TestCase):
     def test_newline_at_eof(self):
         x = "1 2 3\n4 5 6\n\n"
         desired = np.fromstring(x, sep=" ", dtype=np.float32).reshape(-1, 3)
+        assert len(desired) == 2
         with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
             f.write(x)
             f.close()
