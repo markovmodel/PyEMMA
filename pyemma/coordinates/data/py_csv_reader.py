@@ -287,7 +287,7 @@ class PyCSVReader(DataSource):
         # auto detect delimiter with csv.Sniffer
         if self._delimiters[idx] is None:
             # use a sample of three lines
-            sample = ''.join(fh.readline() for x in xrange(3))
+            sample = ''.join(fh.readline() for _ in range(3))
             sniffer = csv.Sniffer()
             try:
                 dialect = sniffer.sniff(sample)
