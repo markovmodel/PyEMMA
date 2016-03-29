@@ -18,7 +18,7 @@ environment:
       CONDA_PY: "35"
 
     - PYTHON: "C:\\Miniconda3-x64"
-      CONDA_PY: "35"
+      CONDA_PY: "34"
       ARCH: "64"
 
 install:
