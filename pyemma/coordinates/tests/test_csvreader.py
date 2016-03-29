@@ -33,24 +33,27 @@ import shutil
 
 class TestCSVReader(unittest.TestCase):
 
-    def setUp(self):
-        self.dir = tempfile.mkdtemp(prefix='pyemma_filereader')
-        self.nt = 300
-        self.nd = 4
-        self.data = np.arange(self.nt * self.nd).reshape(self.nt, self.nd)
-        self.filename1 = os.path.join(self.dir, "data.dat")
-        self.filename2 = os.path.join(self.dir, "data2.dat")
-        np.savetxt(self.filename1, self.data)
-        np.savetxt(self.filename2, self.data)
+    @classmethod
+    def setUpClass(cls):
+        cls.dir = tempfile.mkdtemp(prefix='pyemma_filereader')
+        cls.nt = 300
+        cls.nd = 4
+        cls.data = np.arange(cls.nt * cls.nd).reshape(cls.nt, cls.nd)
+        cls.filename1 = os.path.join(cls.dir, "data.dat")
+        cls.filename2 = os.path.join(cls.dir, "data2.dat")
+        np.savetxt(cls.filename1, cls.data)
+        np.savetxt(cls.filename2, cls.data)
     
-        self.file_with_header = tempfile.mktemp(suffix=".dat", dir=self.dir)
-        self.file_with_header2 = tempfile.mktemp(suffix=".dat", dir=self.dir)
+        cls.file_with_header = tempfile.mktemp(suffix=".dat", dir=cls.dir)
+        cls.file_with_header2 = tempfile.mktemp(suffix=".dat", dir=cls.dir)
     
-        np.savetxt(self.file_with_header, self.data, header="x y z")
-        np.savetxt(self.file_with_header2, self.data, header="x y z")
+        np.savetxt(cls.file_with_header, cls.data, header="x y z")
+        np.savetxt(cls.file_with_header2, cls.data, header="x y z")
+        return cls
 
-    def tearDown(self):
-        shutil.rmtree(self.dir, ignore_errors=True)
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.dir, ignore_errors=True)
 
     def test_read_1file(self):
         reader = CSVReader(self.filename1, chunksize=30)
