@@ -30,7 +30,7 @@ import tempfile
 import unittest
 
 from pyemma.coordinates.data.numpy_filereader import NumPyFileReader
-from pyemma.util.log import getLogger
+from logging import getLogger
 
 from six.moves import range, zip
 import numpy as np

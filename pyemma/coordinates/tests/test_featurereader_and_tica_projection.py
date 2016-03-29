@@ -36,7 +36,7 @@ import mdtraj
 from pyemma.coordinates.api import tica
 from pyemma.coordinates.data.feature_reader import FeatureReader
 from pyemma.util.contexts import numpy_random_seed
-from pyemma.util.log import getLogger
+from logging import getLogger
 from six.moves import range
 import numpy as np
 

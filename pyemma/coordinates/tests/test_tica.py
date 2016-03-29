@@ -34,7 +34,7 @@ from pyemma.coordinates import api
 from pyemma.coordinates.data.data_in_memory import DataInMemory
 from pyemma.coordinates import source, tica
 from pyemma.util.contexts import numpy_random_seed
-from pyemma.util.log import getLogger
+from logging import getLogger
 import pyemma.util.types as types
 from six.moves import range
 
