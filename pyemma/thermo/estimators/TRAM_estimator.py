@@ -262,7 +262,8 @@ class TRAM(_Estimator, _MEMM):
         models = [_MSM(msm, dt_model=self.timestep_traj.get_scaled(self.lag)) for msm in fmsms]
 
         # set model parameters to self
-        self.set_model_params(models=models, f_therm=self.therm_energies, f=conf_energies)
+        self.set_model_params(
+            models=models, f_therm=self.therm_energies, f=conf_energies[self.active_set].copy())
 
         return self
 
