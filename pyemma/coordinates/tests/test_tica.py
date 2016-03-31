@@ -92,6 +92,15 @@ class TestTICA_Basic(unittest.TestCase):
         assert tica_obj.eigenvectors.dtype == np.float64
         assert tica_obj.eigenvalues.dtype == np.float64
 
+    def test_duplicated_data_in_fit_transform(self):
+        X = np.random.randn(100, 2)
+        d = DataInMemory([X, X])
+        tica = api.tica(data=d, lag=1, dim=1)
+        out1 = tica.get_output()
+        out2 = tica.fit_transform([X, X])
+        np.testing.assert_array_almost_equal(out1, out2)
+
+
     def test_singular_zeros(self):
         # make some data that has one column of all zeros
         X = np.random.randn(100, 2)

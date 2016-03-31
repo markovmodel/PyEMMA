@@ -178,11 +178,12 @@ class StreamingTransformer(Transformer, DataSource, NotifyOnChangesMixIn):
     def estimate(self, X, **kwargs):
         # TODO: X is either Iterable of an array
         if not isinstance(X, Iterable):
-            if isinstance(X, np.ndarray):
+            if isinstance(X, np.ndarray) or \
+                    (isinstance(X, (list, tuple)) and len(X) > 0 and all([isinstance(x, np.ndarray) for x in X])):
                 X = DataInMemory(X, self.chunksize)
                 self.data_producer = X
             else:
-                raise ValueError("no array given")
+                raise ValueError("no np.ndarray or non-empty list of np.ndarrays given")
 
         model = None
         # run estimation
