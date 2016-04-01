@@ -127,9 +127,8 @@ def _estimate_param_scan_worker(estimator, params, X, evaluate, evaluate_args,
 
     """
     # run estimation
-    model = None
     try:  # catch any exception
-        model = estimator.estimate(X, **params)
+        estimator.estimate(X, **params)
     except:
         e = sys.exc_info()[0]
         if failfast:
@@ -142,7 +141,7 @@ def _estimate_param_scan_worker(estimator, params, X, evaluate, evaluate_args,
 
     # deal with result
     if evaluate is None:  # we want full models
-        res.append(model)
+        res.append(estimator.model)
     # we want to evaluate function(s) of the model
     elif _types.is_iterable(evaluate):
         values = []  # the function values the model
@@ -155,7 +154,7 @@ def _estimate_param_scan_worker(estimator, params, X, evaluate, evaluate_args,
             # evaluate
             try:
                 # try calling method/property/attribute
-                value = _call_member(model, name, args=args)
+                value = _call_member(estimator.model, name, args=args)
             # couldn't find method/property/attribute
             except AttributeError as e:
                 if failfast:
@@ -334,8 +333,8 @@ class Estimator(_BaseEstimator, Loggable):
 
         Returns
         -------
-        model : object
-            The estimated model.
+        estimator : object
+            The estimated estimator with the model being available.
 
         """
         # set params
@@ -343,7 +342,7 @@ class Estimator(_BaseEstimator, Loggable):
             self.set_params(**params)
         self._model = self._estimate(X)
         self._estimated = True
-        return self._model
+        return self
 
     def _estimate(self, X):
         raise NotImplementedError(
@@ -359,11 +358,12 @@ class Estimator(_BaseEstimator, Loggable):
 
         Returns
         -------
-        model : object
-            The estimated model.
+        estimator : object
+            The estimator (self) with estimated model.
 
         """
-        return self.estimate(X)
+        self.estimate(X)
+        return self
 
     @property
     def model(self):
