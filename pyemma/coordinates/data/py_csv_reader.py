@@ -352,17 +352,18 @@ class PyCSVReader(DataSource):
         fh.seek(0)
         # approx by filesize / (first line + 20%)
         fh.readline()  # skip first line, because it may contain a much shorter header, which will give a bad estimate
-        line_len = len(fh.readline())
-        size = new_size(os.stat(filename).st_size / line_len)
-        fh.seek(0)
+        size = new_size(os.stat(filename).st_size / len(fh.readline()))
         offsets = np.empty(size, dtype=np.int64)
         offsets[0] = 0
         i = 1
-        while fh.readline():
-            offsets[i] = fh.tell()
-            i += 1
-            if i >= len(offsets):
-                offsets = np.resize(offsets, new_size(len(offsets)))
+        # re-open in binary mode to circumvent a bug in Py3.5 win, where the first offset reported by tell
+        # overflows int64.
+        with open(filename, 'rb') as fh:
+            while fh.readline():
+                offsets[i] = fh.tell()
+                i += 1
+                if i >= len(offsets):
+                    offsets = np.resize(offsets, new_size(len(offsets)))
         offsets = offsets[:i]
 
         # filter empty lines (offset between two lines is only 1 or 2 chars)
@@ -370,7 +371,6 @@ class PyCSVReader(DataSource):
         diff = np.diff(offsets)
         mask = diff > 2
         mask = np.insert(mask, 0, True)
-        assert len(mask) == len(offsets), "%s != %s" %(len(mask), len(offsets))
         offsets = offsets[mask]
         length = len(offsets) - 1
 
