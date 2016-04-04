@@ -18,6 +18,7 @@
 import numpy as _np
 from six.moves import range
 from pyemma._base.estimator import Estimator as _Estimator
+from pyemma._base.progress import ProgressReporter as _ProgressReporter
 from pyemma.thermo import MEMM as _MEMM
 from pyemma.msm import MSM as _MSM
 from pyemma.util import types as _types
@@ -31,10 +32,30 @@ from thermotools import cset as _cset
 from msmtools.estimation import largest_connected_set as _largest_connected_set
 import warnings as _warnings
 
+
 class EmptyState(RuntimeWarning):
     pass
 
-class TRAM(_Estimator, _MEMM):
+
+class _CallBack(object):
+    def __init__(self, reporter, description, stage, maxiter, maxerr):
+        reporter._progress_register(maxiter, description, stage=stage)
+        self.last_err = _np.inf
+        self.stage = stage
+        self.reporter = reporter
+        self.maxiter = maxiter
+        self.maxerr = maxerr
+
+    def __call__(self, *args, **kwargs):
+        err = kwargs['err']
+        k = -_np.log(err/self.last_err)
+        i = -1.0/k * _np.log(self.maxerr/err)
+        self.reporter._prog_rep_progressbars[self.stage].denominator = min(i + kwargs['iteration_step'], self.maxiter)
+        self.reporter._progress_update(1, stage=self.stage, **kwargs)
+        self.last_err = err
+
+
+class TRAM(_Estimator, _MEMM, _ProgressReporter):
     r"""Transition(-based) Reweighting Analysis Method
 
     Parameters
@@ -220,9 +241,6 @@ class TRAM(_Estimator, _MEMM):
                     + 'contains no transitions after reducing to the connected set.', EmptyState)
 
         if self.init == 'mbar' and self.biased_conf_energies is None:
-            #def MBAR_printer(**kwargs):
-            #    if kwargs['iteration_step'] % 100 == 0:
-            #         print 'preMBAR', kwargs['iteration_step'], kwargs['err']
             if self.direct_space:
                 mbar = _mbar_direct
             else:
@@ -230,7 +248,8 @@ class TRAM(_Estimator, _MEMM):
             self.mbar_therm_energies, self.mbar_unbiased_conf_energies, \
                 self.mbar_biased_conf_energies, _ = mbar.estimate(
                     state_counts_full.sum(axis=1), btrajs, dtrajs_full,
-                    maxiter=self.init_maxiter, maxerr=self.init_maxerr, #callback=MBAR_printer,
+                    maxiter=self.init_maxiter, maxerr=self.init_maxerr,
+                    callback=_CallBack(self, 'MBAR iterations', 'MBAR', self.init_maxiter, self.init_maxerr),
                     n_conf_states=self.nstates_full)
             self.biased_conf_energies = self.mbar_biased_conf_energies.copy()
 
@@ -239,15 +258,18 @@ class TRAM(_Estimator, _MEMM):
             tram = _tram_direct
         else:
             tram = _tram
+        #import warnings
+        #with warnings.catch_warnings() as cm:
+        # warnings.filterwarnings('ignore', RuntimeWarning)
         self.biased_conf_energies, conf_energies, self.therm_energies, self.log_lagrangian_mult, \
-            self.increments, self.loglikelihoods  = tram.estimate(
+            self.increments, self.loglikelihoods = tram.estimate(
                 self.count_matrices, self.state_counts, btrajs, self.dtrajs,
-                maxiter = self.maxiter, maxerr = self.maxerr,
-                biased_conf_energies = self.biased_conf_energies,
-                log_lagrangian_mult = self.log_lagrangian_mult,
-                save_convergence_info = self.save_convergence_info,
-                callback = self.callback,
-                N_dtram_accelerations = self.N_dtram_accelerations)
+                maxiter=self.maxiter, maxerr=self.maxerr,
+                biased_conf_energies=self.biased_conf_energies,
+                log_lagrangian_mult=self.log_lagrangian_mult,
+                save_convergence_info=self.save_convergence_info,
+                callback=_CallBack(self, 'TRAM iterations err={err:0.1e} i={iteration_step}', 'TRAM', self.maxiter, self.maxerr),
+                N_dtram_accelerations=self.N_dtram_accelerations)
 
         self.btrajs = btrajs
 
@@ -256,6 +278,7 @@ class TRAM(_Estimator, _MEMM):
         fmsms = [_tram.estimate_transition_matrix(
             self.log_lagrangian_mult, self.biased_conf_energies,
             self.count_matrices, None, K) for K in range(self.nthermo)]
+
         self.model_active_set = [_largest_connected_set(msm, directed=False) for msm in fmsms]
         fmsms = [_np.ascontiguousarray(
             (msm[lcc, :])[:, lcc]) for msm, lcc in zip(fmsms, self.model_active_set)]
