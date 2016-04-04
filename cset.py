@@ -34,7 +34,7 @@ import util as _util
 import collections as _collections
 
 
-def compute_csets_TRAM(connectivity, state_counts, count_matrices, ttrajs=None, dtrajs=None, bias_trajs=None, nn=None, factor=1.0):
+def compute_csets_TRAM(connectivity, state_counts, count_matrices, ttrajs=None, dtrajs=None, bias_trajs=None, nn=None, factor=1.0, callback=None):
     r'''
     Computes the largest connected sets for TRAM data.
 
@@ -128,9 +128,9 @@ def compute_csets_TRAM(connectivity, state_counts, count_matrices, ttrajs=None, 
     [2]_ Shirts and Chodera, Statistically optimal analysis of samples
     from multiple equilibrium states, J. Chem. Phys. 129, 124105 (2008)
     '''
-    return _compute_csets(connectivity, state_counts, count_matrices, ttrajs, dtrajs, bias_trajs, nn=nn, factor=factor)
+    return _compute_csets(connectivity, state_counts, count_matrices, ttrajs, dtrajs, bias_trajs, nn=nn, factor=factor, callback=callback)
 
-def compute_csets_dTRAM(connectivity, count_matrices, nn=None):
+def compute_csets_dTRAM(connectivity, count_matrices, nn=None, callback=None):
     r'''
     Computes the largest connected sets for dTRAM data.
 
@@ -189,7 +189,7 @@ def compute_csets_dTRAM(connectivity, count_matrices, nn=None):
 
     state_counts =  _np.maximum(count_matrices.sum(axis=1), count_matrices.sum(axis=2))
 
-    return _compute_csets(connectivity, state_counts, count_matrices, None, None, None, nn=nn)
+    return _compute_csets(connectivity, state_counts, count_matrices, None, None, None, nn=nn, callback=callback)
 
 def _overlap_BAR_variance(a, b, factor=1.0):
     N_1 = a.shape[0]
@@ -204,7 +204,7 @@ def _overlap_BAR_variance(a, b, factor=1.0):
     b = (1.0/(2.0 + 2.0*_np.cosh(df - du - _np.log(1.0*N_1/N_2)))).sum()
     return (1/b - (N_1+N_2)/(N_1*N_2)) < factor
 
-def _compute_csets(connectivity, state_counts, count_matrices, ttrajs, dtrajs, bias_trajs, nn, factor=1.0):
+def _compute_csets(connectivity, state_counts, count_matrices, ttrajs, dtrajs, bias_trajs, nn, factor=1.0, callback=None):
     n_therm_states, n_conf_states = state_counts.shape
 
     if connectivity == 'summed_count_matrix':
@@ -225,6 +225,8 @@ def _compute_csets(connectivity, state_counts, count_matrices, ttrajs, dtrajs, b
         csets = []
         C_sum = _np.zeros((n_conf_states, n_conf_states), dtype=count_matrices.dtype)
         for k in range(n_therm_states):
+            if callback is not None:
+                callback(maxiter=n_therm_states, iteration_step=k)
             cset = _msmtools.estimation.largest_connected_set(count_matrices[k,:,:], directed=True)
             csetT = cset[:, _np.newaxis]
             C_sum[csetT, cset] += count_matrices[k, csetT, cset]
@@ -253,6 +255,9 @@ def _compute_csets(connectivity, state_counts, count_matrices, ttrajs, dtrajs, b
             i_s = []
             j_s = []
             for i in range(n_conf_states):
+                # can take a very long time, allow to report progress via callback
+                if callback is not None:
+                    callback(maxiter=n_conf_states, iteration_step=i)
                 therm_states = _np.where(state_counts[:, i]>0)[0] # therm states that have samples
                 # prepare list of indices for all thermodynamic states
                 traj_indices = {}
@@ -282,6 +287,8 @@ def _compute_csets(connectivity, state_counts, count_matrices, ttrajs, dtrajs, b
             j_s = []
             # connectivity between thermodynamic states
             for l in range(1, nn + 1):
+                if callback is not None:
+                    callback(maxiter=nn, iteration_step=l)
                 for k in range(n_therm_states - l):
                     w = _np.where(_np.logical_and(state_counts[k, :]>0, state_counts[k + l, :]>0))[0]
                     a = w + k*n_conf_states
