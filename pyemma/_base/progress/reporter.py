@@ -55,6 +55,13 @@ class ProgressReporter(object):
         return self.__prog_rep_progressbars
 
     @property
+    def _prog_rep_descriptions(self):
+        # stores progressbar description strings per stage. Can contain format parameters
+        if not hasattr(self, '_ProgressReporter__prog_rep_descriptions'):
+            self.__prog_rep_descriptions = {}#defaultdict(str)
+        return self.__prog_rep_descriptions
+
+    @property
     def _prog_rep_callbacks(self):
         # store callback by stage
         if not hasattr(self, '_ProgressReporter__callbacks'):
@@ -96,6 +103,8 @@ class ProgressReporter(object):
             pg = _ProgressBar(amount_of_work, description=description)
 
         self._prog_rep_progressbars[stage] = pg
+       # pg.description = description
+        self._prog_rep_descriptions[stage] = description
 
 #     def _progress_set_description(self, stage, description):
 #         """ set description of an already existing progress """
@@ -135,7 +144,7 @@ class ProgressReporter(object):
 
         self._prog_rep_callbacks[stage].append(call_back)
 
-    def _progress_update(self, numerator_increment, stage=0):
+    def _progress_update(self, numerator_increment, stage=0, **kw):
         """ Updates the progress. Will update progress bars or other progress output.
 
         Parameters
@@ -168,10 +177,14 @@ class ProgressReporter(object):
                           "achieved more work than registered")
             return
 
-        _show_progressbar(pg)
+        desc = self._prog_rep_descriptions[stage].format(**kw)
+        pg.description = desc
+
+        _show_progressbar(pg, description=desc)
+
         if hasattr(self, '_prog_rep_callbacks') and stage in self._prog_rep_callbacks:
             for callback in self._prog_rep_callbacks[stage]:
-                callback(stage, pg)
+                callback(stage, pg, **kw)
 
     def _progress_force_finish(self, stage=0):
         """ forcefully finish the progress for given stage """
@@ -185,5 +198,5 @@ class ProgressReporter(object):
             return
         pg.numerator = pg.denominator
         pg._eta.eta_epoch = 0
-        _show_progressbar(pg)
+        _show_progressbar(pg, description=self._prog_rep_descriptions[stage])
         _hide_progressbar(pg)

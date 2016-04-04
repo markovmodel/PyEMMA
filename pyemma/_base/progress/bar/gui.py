@@ -110,13 +110,17 @@ def hide_widget(widget):
 
 
 def hide_progressbar(bar):
+
     if ipython_notebook_session and hasattr(bar, 'widget'):
+        # TODO: close the widget in browser (eg. via Javascript)
         from threading import Timer
         timeout = 2
         Timer(timeout, hide_widget, args=(bar.widget, )).start()
+        #import time
+        #time.sleep(0.5)
+        #bar.widget.close()
 
-
-def show_progressbar(bar, show_eta=True):
+def show_progressbar(bar, show_eta=True, description=''):
     """ shows given bar either using an ipython widget, if in
     interactive session or simply use the string format of it and print it
     to stdout.
@@ -125,6 +129,10 @@ def show_progressbar(bar, show_eta=True):
     ----------
     bar : instance of pyemma.util.progressbar.ProgressBar
     show_eta : bool (optional)
+
+    show_eta: bool
+
+    description: str
 
     """
     if not config.show_progress_bars:
@@ -157,7 +165,7 @@ def show_progressbar(bar, show_eta=True):
                 widget = bar.widget
 
             # update widgets slider value and description text
-            desc = bar.description
+            desc = description
             if show_eta:
                 desc += ':\tETA:' + bar._generate_eta(bar._eta.eta_seconds)
             assert isinstance(widget.children[0], Text)
