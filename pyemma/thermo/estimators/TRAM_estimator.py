@@ -37,7 +37,17 @@ class EmptyState(RuntimeWarning):
     pass
 
 
-class _CallBack(object):
+class _ProgressIndicatorCallBack(object):
+    def __init__(self, reporter, description, stage):
+        reporter._progress_register(10, description, stage=stage)
+        self.stage = stage
+        self.reporter = reporter
+
+    def __call__(self, *args, **kwargs):
+        self.reporter._prog_rep_progressbars[self.stage].denominator = kwargs['maxiter']
+        self.reporter._progress_update(1, stage=self.stage)
+
+class _ExpModelProgressIndicator(object):
     def __init__(self, reporter, description, stage, maxiter, maxerr):
         reporter._progress_register(maxiter, description, stage=stage)
         self.last_err = _np.inf
@@ -49,7 +59,7 @@ class _CallBack(object):
     def __call__(self, *args, **kwargs):
         err = kwargs['err']
         k = -_np.log(err/self.last_err)
-        i = -1.0/k * _np.log(self.maxerr/err)
+        i = int(-1.0/k * _np.log(self.maxerr/err))
         self.reporter._prog_rep_progressbars[self.stage].denominator = min(i + kwargs['iteration_step'], self.maxiter)
         self.reporter._progress_update(1, stage=self.stage, **kwargs)
         self.last_err = err
@@ -212,7 +222,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
         self.csets, pcset = _cset.compute_csets_TRAM(
             self.connectivity, state_counts_full, count_matrices_full,
             ttrajs=ttrajs, dtrajs=dtrajs_full, bias_trajs=btrajs,
-            nn=self.nn, factor=self.connectivity_factor)
+            nn=self.nn, factor=self.connectivity_factor, callback=_ProgressIndicatorCallBack(self, 'finding connected set', 'cset'))
         self.active_set = pcset
 
         # check for empty states
@@ -249,7 +259,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
                 self.mbar_biased_conf_energies, _ = mbar.estimate(
                     state_counts_full.sum(axis=1), btrajs, dtrajs_full,
                     maxiter=self.init_maxiter, maxerr=self.init_maxerr,
-                    callback=_CallBack(self, 'MBAR iterations', 'MBAR', self.init_maxiter, self.init_maxerr),
+                    callback=_ExpModelProgressIndicator(self, 'MBAR init. error={err:0.1e} iteration={iteration_step}', 'MBAR', self.init_maxiter, self.init_maxerr),
                     n_conf_states=self.nstates_full)
             self.biased_conf_energies = self.mbar_biased_conf_energies.copy()
 
@@ -268,7 +278,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
                 biased_conf_energies=self.biased_conf_energies,
                 log_lagrangian_mult=self.log_lagrangian_mult,
                 save_convergence_info=self.save_convergence_info,
-                callback=_CallBack(self, 'TRAM iterations err={err:0.1e} i={iteration_step}', 'TRAM', self.maxiter, self.maxerr),
+                callback=_ExpModelProgressIndicator(self, 'TRAM error={err:0.1e} iteration={iteration_step}', 'TRAM', self.maxiter, self.maxerr),
                 N_dtram_accelerations=self.N_dtram_accelerations)
 
         self.btrajs = btrajs
