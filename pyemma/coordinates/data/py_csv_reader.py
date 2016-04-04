@@ -122,7 +122,7 @@ class PyCSVIterator(DataSourceIterator):
                         float(value)
                     except ValueError as ve:
                         s = str("Invalid entry in file {fn}, line {line}: {error}."
-                                " Used dialect to parse: {dialect}").format(fn=fn, line=self._t+idx,
+                                " Used dialect to parse: {dialect}").format(fn=fn, line=self._t + idx,
                                                                             error=repr(ve),
                                                                             dialect=dialect_str)
                         raise ValueError(s)
@@ -151,7 +151,7 @@ class PyCSVIterator(DataSourceIterator):
             else:
                 wanted_frames = np.arange(0, nt, self.stride)
             skip_rows = np.setdiff1d(
-                    all_frames, wanted_frames, assume_unique=True)
+                all_frames, wanted_frames, assume_unique=True)
 
         self._skip_rows = skip_rows
         try:
@@ -213,7 +213,7 @@ class PyCSVReader(DataSource):
     -----
     For reading files with only one column, one needs to specify a delimter...
     """
-    DEFAULT_OPEN_MODE = 'r' # read in text-mode
+    DEFAULT_OPEN_MODE = 'r'  # read in text-mode
 
     def __init__(self, filenames, chunksize=1000, delimiters=None, comments='#',
                  converters=None, **kwargs):
@@ -241,11 +241,11 @@ class PyCSVReader(DataSource):
     @staticmethod
     def __parse_args(arg, default, n):
         if arg is None:
-            return [default]*n
+            return [default] * n
         if isinstance(arg, (list, tuple)):
             assert len(arg) == n
             return arg
-        return [arg]*n
+        return [arg] * n
 
     def _create_iterator(self, skip=0, chunk=0, stride=1, return_trajindex=True, cols=None):
         return PyCSVIterator(self, skip=skip, chunk=chunk, stride=stride,
@@ -283,7 +283,7 @@ class PyCSVReader(DataSource):
         filename = fh.name
         idx = self.filenames.index(filename)
         fh.seek(0)
-        skip = 0 # rows to skip (for a eventually found header)
+        skip = 0  # rows to skip (for a eventually found header)
         # auto detect delimiter with csv.Sniffer
         if self._delimiters[idx] is None:
             # use a sample of three lines
@@ -291,10 +291,6 @@ class PyCSVReader(DataSource):
             sniffer = csv.Sniffer()
             try:
                 dialect = sniffer.sniff(sample)
-                if not dialect.delimiter:
-                    raise RuntimeError("Unable to detect delimiter char. Please set it by passing 'delimiter'=..."
-                                       " to source() or load().")
-
             except csv.Error as e:
                 s = ('During handling of file "%s" following error occurred:'
                      ' "%s". Sample was "%s"' % (filename, e, sample))
@@ -348,14 +344,16 @@ class PyCSVReader(DataSource):
         offsets : ndarray(dtype=int64)
             byte offsets
         """
+
         def new_size(x):
             return int(ceil(x * 1.2))
 
         filename = fh.name
         fh.seek(0)
         # approx by filesize / (first line + 20%)
-        fh.readline()  # skip first line, because it may contain a much shorter header
-        size = new_size(os.stat(filename).st_size / len(fh.readline()))
+        fh.readline()  # skip first line, because it may contain a much shorter header, which will give a bad estimate
+        line_len = len(fh.readline())
+        size = new_size(os.stat(filename).st_size / line_len)
         fh.seek(0)
         offsets = np.empty(size, dtype=np.int64)
         offsets[0] = 0
@@ -368,13 +366,14 @@ class PyCSVReader(DataSource):
         offsets = offsets[:i]
 
         # filter empty lines (offset between two lines is only 1 or 2 chars)
-        # insert an diff of 2 at the beginning to match the same indices
-        diff = np.ediff1d(offsets, to_begin=2)
-        assert diff[0] == 2
-
-        offsets = offsets[diff >= 2]
+        # insert an diff of 2 at the beginning to match the amount of indices
+        diff = np.diff(offsets)
+        mask = diff > 2
+        mask = np.insert(mask, 0, True)
+        assert len(mask) == len(offsets), "%s != %s" %(len(mask), len(offsets))
+        offsets = offsets[mask]
         length = len(offsets) - 1
-        fh.seek(0)
+
         return length, offsets
 
     @staticmethod

@@ -242,11 +242,13 @@ class TestCSVReader(unittest.TestCase):
                 while fh2.readline():
                     offset.append(fh2.tell())
                 fh2.seek(0)
+                np.testing.assert_equal(trajinfo.offsets, offset)
                 for ii, off in enumerate(trajinfo.offsets):
                     fh2.seek(off)
                     line = fh2.readline()
                     fh2.seek(offset[ii])
                     line2 = fh2.readline()
+
                     self.assertEqual(line, line2, "differs at offset %i (%s != %s)" % (ii, off, offset[ii]))
 
     def test_use_cols(self):
@@ -263,6 +265,15 @@ class TestCSVReader(unittest.TestCase):
         with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
             f.write(x)
             f.close()
+            reader = CSVReader(f.name)
+            result = reader.get_output()[0]
+            np.testing.assert_allclose(result, desired)
+
+    def test_newline_at_eof_with_header(self):
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
+            f.write("#x y z\n1 2 3\n4 5 6\n\n")
+            f.close()
+            desired = np.genfromtxt(f.name, dtype=np.float32).reshape(-1, 3)
             reader = CSVReader(f.name)
             result = reader.get_output()[0]
             np.testing.assert_allclose(result, desired)
