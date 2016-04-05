@@ -279,7 +279,7 @@ class TestCSVReader(unittest.TestCase):
             np.testing.assert_allclose(result, desired)
 
     def test_newline_at_eof_carriage_return(self):
-        x = "1 2 3\n\r4 5 6\n\r"
+        x = "1 2 3\r\n4 5 6\r\n"
         desired = np.fromstring(x, sep=" ", dtype=np.float32).reshape(-1, 3)
         with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
             f.write(x)
