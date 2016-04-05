@@ -217,7 +217,7 @@ metadata = dict(
                       'msmtools',
                       'thermotools>=0.1.14',
                       'bhmm<0.7',
-                      'joblib==0.8.4',
+                      'joblib>0.8.4',
                       'pyyaml',
                       'psutil>=3.1.1',
                       'decorator>=4.0.0',
