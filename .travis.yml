@@ -20,10 +20,10 @@ env:
 matrix:
    exclude:
      - os: osx
-       python: 3.4   
+       env: python=3.4
      - os: osx
-       python: 2.7
-       CONDA_NPY: 19
+       env: python=2.7
+       env: CONDA_NPY=19
 
 before_install:
 - tools/ci/travis/install_miniconda.sh
