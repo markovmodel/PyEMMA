@@ -17,8 +17,10 @@
 import numpy as _np
 from six.moves import range
 from pyemma._base.estimator import Estimator as _Estimator
+from pyemma._base.progress import ProgressReporter as _ProgressReporter
 from pyemma.thermo import MEMM as _MEMM
 from pyemma.thermo import StationaryModel as _StationaryModel
+from pyemma.thermo.estimators._callback import _ConvergenceProgressIndicatorCallBack
 from pyemma.util import types as _types
 from pyemma.util.units import TimeUnit as _TimeUnit
 from thermotools import wham as _wham
@@ -27,7 +29,7 @@ from thermotools import util as _util
 __author__ = 'wehmeyer, mey'
 
 
-class WHAM(_Estimator, _MEMM):
+class WHAM(_Estimator, _MEMM, _ProgressReporter):
     #TODO: fix docstring
     r""" Weighted Histogram Analysis Method
 
@@ -131,7 +133,8 @@ class WHAM(_Estimator, _MEMM):
                 self.state_counts, self.bias_energies,
                 maxiter=self.maxiter, maxerr=self.maxerr,
                 therm_energies=self.therm_energies, conf_energies=self.conf_energies,
-                save_convergence_info=self.save_convergence_info)
+                save_convergence_info=self.save_convergence_info,
+                callback=_ConvergenceProgressIndicatorCallBack(self, 'WHAM', self.maxiter, self.maxerr))
 
         # get stationary models
         models = [_StationaryModel(

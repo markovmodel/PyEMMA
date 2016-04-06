@@ -17,10 +17,13 @@
 import numpy as _np
 from six.moves import range
 from pyemma._base.estimator import Estimator as _Estimator
+from pyemma._base.progress import ProgressReporter as _ProgressReporter
 from pyemma.thermo import MEMM as _MEMM
 from pyemma.msm import MSM as _MSM
 from pyemma.util import types as _types
 from pyemma.util.units import TimeUnit as _TimeUnit
+from pyemma.thermo.estimators._callback import _ConvergenceProgressIndicatorCallBack
+from pyemma.thermo.estimators._callback import _IterationProgressIndicatorCallBack
 from msmtools.estimation import largest_connected_set as _largest_connected_set
 from thermotools import dtram as _dtram
 from thermotools import wham as _wham
@@ -29,7 +32,7 @@ from thermotools import util as _util
 __author__ = 'noe, wehmeyer'
 
 
-class DTRAM(_Estimator, _MEMM):
+class DTRAM(_Estimator, _MEMM, _ProgressReporter):
     # TODO: fix docstring
     r""" Discrete Transition(-based) Reweighting Analysis Method
 
@@ -179,7 +182,8 @@ class DTRAM(_Estimator, _MEMM):
                 maxiter=self.maxiter, maxerr=self.maxerr,
                 log_lagrangian_mult=self.log_lagrangian_mult,
                 conf_energies=self.conf_energies,
-                save_convergence_info=self.save_convergence_info)
+                save_convergence_info=self.save_convergence_info,
+                callback=_ConvergenceProgressIndicatorCallBack(self, 'DTRAM', self.maxiter, self.maxerr))
 
         # compute models
         models = [_dtram.estimate_transition_matrix(
