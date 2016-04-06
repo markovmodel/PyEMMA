@@ -141,8 +141,8 @@ class MaximumLikelihoodMSM(_Estimator, _MSM):
         self.sparse = sparse
 
         # store counting mode (lowercase)
-        self.count_mode = count_mode.lower()
-        if not any([count_mode == count_option for count_option in ['sliding', 'effective', 'sample']]):
+        self.count_mode = str(count_mode).lower()
+        if self.count_mode not in ('sliding', 'effective', 'sample'):
             raise ValueError('count mode ' + count_mode + ' is unknown.')
 
         # store connectivity mode (lowercase)
@@ -254,7 +254,7 @@ class MaximumLikelihoodMSM(_Estimator, _MSM):
         # computed derived quantities
         # back-mapping from full to lcs
         self._full2active = -1 * _np.ones((dtrajstats.nstates), dtype=int)
-        self._full2active[self.active_set] = _np.array(list(range(len(self.active_set))), dtype=int)
+        self._full2active[self.active_set] = _np.arange(len(self.active_set))
 
         # restrict stationary distribution to active set
         if self.statdist_constraint is None:
@@ -273,14 +273,14 @@ class MaximumLikelihoodMSM(_Estimator, _MSM):
             # - in this case all visited states are connected and thus
             # this mode is identical to 'largest'
             if self.reversible and not msmest.is_connected(self._C_active):
-                raise ValueError('Reversible MSM estimation is not possible with connectivity mode \'none\', '+
+                raise ValueError('Reversible MSM estimation is not possible with connectivity mode "none", '
                                  'because the set of all visited states is not reversibly connected')
             P = msmest.transition_matrix(self._C_active, reversible=self.reversible,
                                          mu=statdist_active,
                                          maxiter=self.maxiter, maxerr=self.maxerr)
         else:
             raise NotImplementedError(
-                'MSM estimation with connectivity=\'self.connectivity\' is currently not implemented.')
+                'MSM estimation with connectivity=%s is currently not implemented.' % self.connectivity)
 
         # continue sparse or dense?
         if not self.sparse:

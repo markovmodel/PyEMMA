@@ -14,8 +14,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-
 '''
 Created on 09.04.2015
 
@@ -34,6 +32,7 @@ import shutil
 
 
 class TestCSVReader(unittest.TestCase):
+
     @classmethod
     def setUpClass(cls):
         cls.dir = tempfile.mkdtemp(prefix='pyemma_filereader')
@@ -44,13 +43,12 @@ class TestCSVReader(unittest.TestCase):
         cls.filename2 = os.path.join(cls.dir, "data2.dat")
         np.savetxt(cls.filename1, cls.data)
         np.savetxt(cls.filename2, cls.data)
-
+    
         cls.file_with_header = tempfile.mktemp(suffix=".dat", dir=cls.dir)
         cls.file_with_header2 = tempfile.mktemp(suffix=".dat", dir=cls.dir)
-
+    
         np.savetxt(cls.file_with_header, cls.data, header="x y z")
         np.savetxt(cls.file_with_header2, cls.data, header="x y z")
-
         return cls
 
     @classmethod
@@ -107,9 +105,13 @@ class TestCSVReader(unittest.TestCase):
 
     def test_read_with_skipping_first_few_couple_lines(self):
         for skip in [0, 3, 13]:
+            # FIXME: opening the same file twice is not being liked by py27
             r1 = CSVReader(self.filename1, chunksize=30)
             out_with_skip = r1.get_output(skip=skip)[0]
+            assert len(out_with_skip) == len(self.data[skip:])
             r2 = CSVReader(self.filename1, chunksize=30)
+            self.maxDiff=None
+            #self.assertDictEqual(r1.__dict__, r2.__dict__)
             out = r2.get_output()[0]
             np.testing.assert_almost_equal(out_with_skip, out[skip::],
                                            err_msg="The first %s rows were skipped, but that did not "
@@ -228,8 +230,8 @@ class TestCSVReader(unittest.TestCase):
 
     def test_compare_readline(self):
         data = np.arange(99*3).reshape(-1, 3)
-        fn = tempfile.mktemp()
-        try:
+        with tempfile.NamedTemporaryFile(delete=False) as f:
+            fn = f.name
             np.savetxt(fn, data)
             # calc offsets
             reader = CSVReader(fn)
@@ -240,22 +242,61 @@ class TestCSVReader(unittest.TestCase):
                 while fh2.readline():
                     offset.append(fh2.tell())
                 fh2.seek(0)
+                np.testing.assert_equal(trajinfo.offsets, offset)
                 for ii, off in enumerate(trajinfo.offsets):
                     fh2.seek(off)
                     line = fh2.readline()
                     fh2.seek(offset[ii])
                     line2 = fh2.readline()
+
                     self.assertEqual(line, line2, "differs at offset %i (%s != %s)" % (ii, off, offset[ii]))
-        finally:
-            os.unlink(fn)
-            
-            
+
     def test_use_cols(self):
         reader = CSVReader(self.filename1)
         cols = (0, 2)
         with reader.iterator(chunk=0, cols=cols, return_trajindex=False) as it:
             for x in it:
                 np.testing.assert_equal(x, self.data[:, cols])
+
+    def test_newline_at_eof(self):
+        x = "1 2 3\n4 5 6\n\n"
+        desired = np.fromstring(x, sep=" ", dtype=np.float32).reshape(-1, 3)
+        assert len(desired) == 2
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
+            f.write(x)
+            f.close()
+            reader = CSVReader(f.name)
+            result = reader.get_output()[0]
+            np.testing.assert_allclose(result, desired)
+
+    def test_newline_at_eof_with_header(self):
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
+            f.write("#x y z\n1 2 3\n4 5 6\n\n")
+            f.close()
+            desired = np.genfromtxt(f.name, dtype=np.float32).reshape(-1, 3)
+            reader = CSVReader(f.name)
+            result = reader.get_output()[0]
+            np.testing.assert_allclose(result, desired)
+
+    def test_newline_at_eof_carriage_return(self):
+        x = "1 2 3\r\n4 5 6\r\n"
+        desired = np.fromstring(x, sep=" ", dtype=np.float32).reshape(-1, 3)
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
+            f.write(x)
+            f.close()
+            reader = CSVReader(f.name)
+            result = reader.get_output()[0]
+            np.testing.assert_allclose(result, desired)
+
+    def test_holes_in_file(self):
+        x = "1 2 3\n4 5 6\n7 8 9"
+        desired = np.fromstring(x, sep=" ", dtype=np.float32).reshape(-1, 3)
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
+            f.write(x)
+            f.close()
+            reader = CSVReader(f.name)
+            result = reader.get_output()[0]
+            np.testing.assert_allclose(result, desired)
 
 if __name__ == '__main__':
     unittest.main()

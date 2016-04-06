@@ -211,7 +211,7 @@ class Iterable(six.with_metaclass(ABCMeta, ProgressReporter, Loggable)):
                          in range(self.number_of_trajectories())]
         else:
             raise TypeError("filename should be str or None")
-        print("filenames", filenames)
+        self.logger.debug("write_to_csv, filenames=%s" % filenames)
         # check files before starting to write
         import errno
         for f in filenames:
@@ -236,9 +236,11 @@ class Iterable(six.with_metaclass(ABCMeta, ProgressReporter, Loggable)):
                     if f is not None:
                         f.close()
                     fn = filenames[it.current_trajindex]
-                    self.logger.debug("opening file %s for writing csv.")
+                    self.logger.debug("opening file %s for writing csv." % fn)
                     f = open(fn, 'wb')
-                np.savetxt(f, X)
+                    oldtraj = it.current_trajindex
+                np.savetxt(f, X, **kw)
+                f.flush()
                 self._progress_update(1, 0)
         if f is not None:
             f.close()
@@ -275,6 +277,9 @@ class LaggedIterator(object):
         n1 = self._it._n_chunks
         n2 = self._it_lagged._n_chunks
         return min(n1, n2)
+
+    def __len__(self):
+        return min(self._it.trajectory_lengths(), self._it_lagged.trajectory_lengths())
 
     def __iter__(self):
         return self

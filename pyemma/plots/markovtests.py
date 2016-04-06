@@ -87,6 +87,12 @@ def plot_cktest(cktest, figsize=None, diag=False,  y01=True, layout=None,
     padding_top : float, default=0.05
         padding space on top of subplots (as a fraction of 1.0)
 
+    Returns
+    -------
+    fig : Figure object
+
+    axes : Axis objects with subplots
+
     """
     import matplotlib.pylab as plt
 

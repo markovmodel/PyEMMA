@@ -47,7 +47,7 @@ ipython-rst: source/generated
                                find ../../../pyemma-ipython/ -name \*.ipynb \
                                     -and -not -name \*-checkpoint.ipynb))
 	# convert notebooks to rst
-	cd source/generated; ipython nbconvert --to rst $(notebooks)
+	cd source/generated; jupyter nbconvert --to rst $(notebooks)
 	# strip directory part and extensions
 	#@$(eval notebooks=$$(notdir $(notebooks)))
 	#@$(eval notebooks=$$(basename $(notebooks)))

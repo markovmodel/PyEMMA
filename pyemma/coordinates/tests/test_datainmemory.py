@@ -30,7 +30,7 @@ import unittest
 import numpy as np
 
 from pyemma.coordinates.data.data_in_memory import DataInMemory
-from pyemma.util.log import getLogger
+from logging import getLogger
 
 logger = getLogger('pyemma.'+'TestDataInMemory')
 

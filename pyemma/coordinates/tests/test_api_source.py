@@ -24,7 +24,7 @@ import os
 import tempfile
 
 from pyemma.coordinates.data import MDFeaturizer
-from pyemma.util.log import getLogger
+from logging import getLogger
 import pyemma.coordinates.api as api
 import numpy as np
 from pyemma.coordinates.data.numpy_filereader import NumPyFileReader

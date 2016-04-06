@@ -230,6 +230,11 @@ class BaseProgressBar(object):
         """Returns the denominator as an integer."""
         return int(self._eta.denominator)
 
+    @denominator.setter
+    def denominator(self, val):
+        val = int(val)
+        self._eta.denominator = int(val)
+
     @property
     def done(self):
         """Returns True if the progress has completed."""
@@ -314,8 +319,9 @@ class ProgressBar(BaseProgressBar):
         else:
             self.template = '{percent:3d}% ({fraction}) {bar} eta {eta} {spinner}'
             self.bar = Bar()
+
         if description:
-            self.template = description + ': ' + self.template
+            self.template = '{desc:.60}: ' + self.template
 
     def __str__(self):
         """Returns the fully-built progress bar and other data."""
