@@ -44,3 +44,5 @@ def setup_package():
     warnings.warn('You should never see this, only in unit testing!'
                   ' This switches off progress bars')
     config.show_progress_bars = False
+    from .util.debug import register_signal_handlers
+    register_signal_handlers()

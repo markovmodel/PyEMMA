@@ -33,7 +33,7 @@ from logging import getLogger
 
 _logger = None
 
-SIGNAL_STACKTRACE = 42
+SIGNAL_STACKTRACE = 23
 SIGNAL_PDB = 43
 
 
@@ -87,6 +87,7 @@ def register_signal_handlers():
 
     kill -42 34588
     """
+    signal.getsignal()
     signal.signal(SIGNAL_STACKTRACE, _show_stacktrace)
     signal.signal(SIGNAL_PDB, _handle_pdb)
 
