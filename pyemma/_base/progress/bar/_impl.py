@@ -245,7 +245,7 @@ class BaseProgressBar(object):
     @property
     def numerator(self):
         """Returns the numerator as an integer."""
-        return int(self._eta.numerator)
+        return self._eta.numerator
 
     @numerator.setter
     def numerator(self, value):
