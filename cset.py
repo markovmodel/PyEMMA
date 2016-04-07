@@ -1,6 +1,6 @@
 # This file is part of thermotools.
 #
-# Copyright 2015 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+# Copyright 2015, 2016 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
 #
 # thermotools is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -34,7 +34,9 @@ import util as _util
 import collections as _collections
 
 
-def compute_csets_TRAM(connectivity, state_counts, count_matrices, ttrajs=None, dtrajs=None, bias_trajs=None, nn=None, factor=1.0, callback=None):
+def compute_csets_TRAM(
+    connectivity, state_counts, count_matrices,
+    ttrajs=None, dtrajs=None, bias_trajs=None, nn=None, factor=1.0, callback=None):
     r'''
     Computes the largest connected sets for TRAM data.
 
@@ -128,7 +130,9 @@ def compute_csets_TRAM(connectivity, state_counts, count_matrices, ttrajs=None, 
     [2]_ Shirts and Chodera, Statistically optimal analysis of samples
     from multiple equilibrium states, J. Chem. Phys. 129, 124105 (2008)
     '''
-    return _compute_csets(connectivity, state_counts, count_matrices, ttrajs, dtrajs, bias_trajs, nn=nn, factor=factor, callback=callback)
+    return _compute_csets(
+        connectivity, state_counts, count_matrices, ttrajs, dtrajs, bias_trajs,
+        nn=nn, factor=factor, callback=callback)
 
 def compute_csets_dTRAM(connectivity, count_matrices, nn=None, callback=None):
     r'''
@@ -186,39 +190,36 @@ def compute_csets_dTRAM(connectivity, count_matrices, nn=None, callback=None):
     '''
     if connectivity=='post_hoc_RE' or connectivity=='BAR_variance':
         raise Exception('Connectivity type %s not supported for dTRAM data.'%connectivity)
-
     state_counts =  _np.maximum(count_matrices.sum(axis=1), count_matrices.sum(axis=2))
-
-    return _compute_csets(connectivity, state_counts, count_matrices, None, None, None, nn=nn, callback=callback)
+    return _compute_csets(
+        connectivity, state_counts, count_matrices, None, None, None, nn=nn, callback=callback)
 
 def _overlap_BAR_variance(a, b, factor=1.0):
     N_1 = a.shape[0]
     N_2 = b.shape[0]
     db_IJ = _np.zeros(N_1, dtype=_np.float64)
     db_JI = _np.zeros(N_2, dtype=_np.float64)
-    db_IJ[:] = a[:,1]-a[:,0]
-    db_JI[:] = b[:,0]-b[:,1]
-    df = _bar.df(db_IJ, db_JI, _np.zeros(N_1+N_2, dtype=_np.float64))
-    u = _np.concatenate((a,b), axis=0)
-    du = u[:,1]-u[:,0]
-    b = (1.0/(2.0 + 2.0*_np.cosh(df - du - _np.log(1.0*N_1/N_2)))).sum()
-    return (1/b - (N_1+N_2)/(N_1*N_2)) < factor
+    db_IJ[:] = a[:, 1] - a[:, 0]
+    db_JI[:] = b[:, 0] - b[:, 1]
+    df = _bar.df(db_IJ, db_JI, _np.zeros(N_1 + N_2, dtype=_np.float64))
+    u = _np.concatenate((a, b), axis=0)
+    du = u[:, 1] - u[:, 0]
+    b = (1.0 / (2.0 + 2.0 * _np.cosh(df - du - _np.log(1.0 * N_1 / N_2)))).sum()
+    return (1 / b - (N_1 + N_2) / (N_1 * N_2)) < factor
 
-def _compute_csets(connectivity, state_counts, count_matrices, ttrajs, dtrajs, bias_trajs, nn, factor=1.0, callback=None):
+def _compute_csets(
+    connectivity, state_counts, count_matrices, ttrajs, dtrajs, bias_trajs, nn,
+    factor=1.0, callback=None):
     n_therm_states, n_conf_states = state_counts.shape
-
     if connectivity == 'summed_count_matrix':
         # assume _direct_ overlap between all umbrellas
         C_sum = count_matrices.sum(axis=0)
         cset_projected = _msmtools.estimation.largest_connected_set(C_sum, directed=True)
-
         csets = []
         for k in range(n_therm_states):
-            cset = _np.intersect1d(_np.where(state_counts[k, :]>0), cset_projected)
+            cset = _np.intersect1d(_np.where(state_counts[k, :] > 0), cset_projected)
             csets.append(cset)
-
         return csets, cset_projected
-
     elif connectivity == 'strong_in_every_ensemble':
         # within every thermodynamic state, restrict counts to this state's
         # largest connected set
@@ -227,62 +228,58 @@ def _compute_csets(connectivity, state_counts, count_matrices, ttrajs, dtrajs, b
         for k in range(n_therm_states):
             if callback is not None:
                 callback(maxiter=n_therm_states, iteration_step=k)
-            cset = _msmtools.estimation.largest_connected_set(count_matrices[k,:,:], directed=True)
+            cset = _msmtools.estimation.largest_connected_set(
+                count_matrices[k, :, :], directed=True)
             csetT = cset[:, _np.newaxis]
             C_sum[csetT, cset] += count_matrices[k, csetT, cset]
             csets.append(cset)
-
         projected_cset = _msmtools.estimation.largest_connected_set(C_sum, directed=True)
-
         if len(_msmtools.estimation.connected_sets(C_sum, directed=True)) > 1:
             # if C_sum contained more than one strongly connected component,
             # restrict the individual csets of the thermodynamic states to
             # the largest one
             for k in range(n_therm_states):
                 csets[k] = _np.intersect1d(csets[k], projected_cset)
-
         return csets, projected_cset
-
     elif connectivity in ['neighbors', 'post_hoc_RE', 'BAR_variance']:
-        dim = n_therm_states*n_conf_states
-
+        dim = n_therm_states * n_conf_states
         if connectivity == 'post_hoc_RE' or connectivity == 'BAR_variance':
             if connectivity == 'post_hoc_RE':
                 overlap = _util._overlap_post_hoc_RE
             else:
                 overlap = _overlap_BAR_variance
-
             i_s = []
             j_s = []
             for i in range(n_conf_states):
                 # can take a very long time, allow to report progress via callback
                 if callback is not None:
                     callback(maxiter=n_conf_states, iteration_step=i)
-                therm_states = _np.where(state_counts[:, i]>0)[0] # therm states that have samples
+                therm_states = _np.where(state_counts[:, i] > 0)[0] # therm states that have samples
                 # prepare list of indices for all thermodynamic states
                 traj_indices = {}
                 frame_indices = {}
                 for k in therm_states:
-                    frame_indices[k] = [ _np.where(_np.logical_and(d==i, t==k))[0] for t, d in zip(ttrajs, dtrajs) ]
-                    traj_indices[k] = [ j for j, fi in enumerate(frame_indices[k]) if len(fi)>0 ]
-
+                    frame_indices[k] = [_np.where(
+                        _np.logical_and(d == i, t == k))[0] for t, d in zip(ttrajs, dtrajs)]
+                    traj_indices[k] = [j for j, fi in enumerate(frame_indices[k]) if len(fi) > 0]
                 for k in therm_states:
                     for l in therm_states:
                         if k!=l:
                             kl = _np.array([k, l])
-                            a = _np.concatenate([ bias_trajs[j][:, kl][frame_indices[k][j], :] for j in traj_indices[k] ])
-                            b = _np.concatenate([ bias_trajs[j][:, kl][frame_indices[l][j], :] for j in traj_indices[l] ])
+                            a = _np.concatenate([
+                                bias_trajs[j][:, kl][frame_indices[k][j], :] for j in traj_indices[k]])
+                            b = _np.concatenate([
+                                bias_trajs[j][:, kl][frame_indices[l][j], :] for j in traj_indices[l]])
                             if overlap(a, b, factor=factor):
-                                x = i + k*n_conf_states
-                                y = i + l*n_conf_states
+                                x = i + k * n_conf_states
+                                y = i + l * n_conf_states
                                 i_s.append(x)
                                 j_s.append(y)
                                 i_s.append(y)
                                 j_s.append(x)
-
         else: # assume overlap between nn neighboring umbrellas
             assert nn is not None, 'With connectivity="neighbors", nn can\'t be None.'
-            assert nn>=1 and nn<=n_therm_states - 1
+            assert nn >= 1 and nn <= n_therm_states - 1
             i_s = []
             j_s = []
             # connectivity between thermodynamic states
@@ -290,9 +287,10 @@ def _compute_csets(connectivity, state_counts, count_matrices, ttrajs, dtrajs, b
                 if callback is not None:
                     callback(maxiter=nn, iteration_step=l)
                 for k in range(n_therm_states - l):
-                    w = _np.where(_np.logical_and(state_counts[k, :]>0, state_counts[k + l, :]>0))[0]
-                    a = w + k*n_conf_states
-                    b = w + (k + l)*n_conf_states
+                    w = _np.where(_np.logical_and(
+                        state_counts[k, :] > 0, state_counts[k + l, :] > 0))[0]
+                    a = w + k * n_conf_states
+                    b = w + (k + l) * n_conf_states
                     i_s += list(a) # bi
                     j_s += list(b) # di
                     i_s += list(b) # rec
@@ -302,29 +300,28 @@ def _compute_csets(connectivity, state_counts, count_matrices, ttrajs, dtrajs, b
         # just copy it from the count matrices
         for k in range(n_therm_states):
             temp = _sp.sparse.coo_matrix(count_matrices[k, :, :])
-            i_s += list(temp.row + k*n_conf_states)
-            j_s += list(temp.col + k*n_conf_states)
+            i_s += list(temp.row + k * n_conf_states)
+            j_s += list(temp.col + k * n_conf_states)
 
         data = _np.ones(len(i_s), dtype=int)
         A = _sp.sparse.coo_matrix((data, (i_s, j_s)), shape=(dim, dim))
         cset = _msmtools.estimation.largest_connected_set(A, directed=True)
-
         # group by thermodynamic state
         cset = _np.unravel_index(cset, (n_therm_states, n_conf_states), order='C')
         csets = [[] for k in range(n_therm_states)]
         for k,i in zip(*cset):
             csets[k].append(i)
-
         csets = [_np.array(c,dtype=int) for c in csets]
         projected_cset = _np.unique(_np.concatenate(csets))
-
         return csets, projected_cset
     else:
-        raise Exception('Unknown value "%s" of connectivity. Should be one of: \
-                         summed_count_matrix, strong_in_every_ensemble, neighbors, \
-                         post_hoc_RE or BAR_variance.' % connectivity)
+        raise Exception(
+            'Unknown value "%s" of connectivity. Should be one of: \
+            summed_count_matrix, strong_in_every_ensemble, neighbors, \
+            post_hoc_RE or BAR_variance.' % connectivity)
 
-def restrict_to_csets(csets, state_counts=None, count_matrices=None, ttrajs=None, dtrajs=None, bias_trajs=None):
+def restrict_to_csets(
+    csets, state_counts=None, count_matrices=None, ttrajs=None, dtrajs=None, bias_trajs=None):
     r'''
     Delete or deactivate elements that are not in the connected sets.
 
@@ -370,7 +367,6 @@ def restrict_to_csets(csets, state_counts=None, count_matrices=None, ttrajs=None
                 new_state_counts[k, cset] = state_counts[k, cset]
     else:
         new_state_counts = None
-
     if count_matrices is not None:
         new_count_matrices = _np.zeros_like(count_matrices, order='C', dtype=_np.intc)
         for k,cset in enumerate(csets):
@@ -379,42 +375,39 @@ def restrict_to_csets(csets, state_counts=None, count_matrices=None, ttrajs=None
                 new_count_matrices[k, csetT, cset] = count_matrices[k, csetT, cset]
     else:
         new_count_matrices = None
-
     if dtrajs is not None:
         assert ttrajs is not None, 'ttrajs can\'t be None, when dtrajs are given.'
         n_therm_states, n_conf_states = state_counts.shape
         invalid = _np.ones((n_therm_states, n_conf_states), dtype=bool)
         for k, cset in enumerate(csets):
-            if len(cset)>0:
+            if len(cset) > 0:
                 invalid[k, cset] = False
         new_dtrajs = []
-        assert len(ttrajs)==len(dtrajs)
+        assert len(ttrajs) == len(dtrajs)
         for t, d in zip(ttrajs, dtrajs):
-            assert len(t)==len(d)
+            assert len(t) == len(d)
             new_d = _np.array(d, dtype=_np.intc, copy=True, order='C', ndmin=1)
             bad = invalid[t, d]
             new_d[bad] = -new_d[bad] - 1
             new_dtrajs.append(new_d)
     else:
         new_dtrajs = None
-
     if bias_trajs is not None:
         assert ttrajs is not None, 'ttrajs can\'t be None, when bias_trajs are given.'
         assert dtrajs is not None, 'dtrajs can\'t be None, when bias_trajs are given.'
         n_therm_states, n_conf_states = state_counts.shape
         valid = _np.zeros((n_therm_states, n_conf_states), dtype=bool)
         for k, cset in enumerate(csets):
-            if len(cset)>0:
+            if len(cset) > 0:
                 valid[k, cset] = True
         new_bias_trajs = []
-        assert len(ttrajs)==len(dtrajs)==len(bias_trajs)
+        assert len(ttrajs) == len(dtrajs) == len(bias_trajs)
         for t, d, b in zip(ttrajs, dtrajs, bias_trajs):
-            assert len(t)==len(d)==len(b)
+            assert len(t) == len(d) == len(b)
             ok_traj = valid[t, d]
             new_b = _np.zeros((_np.count_nonzero(ok_traj), b.shape[1]), dtype=_np.float64)
             new_b[:] = b[ok_traj, :]
             new_bias_trajs.append(new_b)
     else:
         new_bias_trajs = None
-
     return new_state_counts, new_count_matrices, new_dtrajs, new_bias_trajs
