@@ -356,20 +356,22 @@ def restrict_samples_to_cset(state_sequence, bias_energy_sequence, cset):
     return new_state_sequence, new_bias_energy_sequence
 
 @cython.boundscheck(False)
-def _overlap_post_hoc_RE(_np.ndarray[double, ndim=2, mode="c"] a not None,
-                         _np.ndarray[double, ndim=2, mode="c"] b not None,
-                         factor=1.0):
-    cdef unsigned int i, j, n, m
-    cdef double n_sum, delta
+def _overlap_post_hoc_RE(
+    _np.ndarray[double, ndim=2, mode="c"] a not None,
+    _np.ndarray[double, ndim=2, mode="c"] b not None,
+    factor=1.0):
+    cdef:
+        unsigned int i, j, n, m
+        double n_sum, delta
     n = a.shape[0]
     m = b.shape[0]
     n_sum = 0
     for i in range(n):
         for j in range(m):
-            delta = a[i,0]+b[j,1]-a[i,1]-b[j,0]
+            delta = a[i, 0] + b[j, 1] - a[i, 1] - b[j, 0]
             n_sum += min(_libc_exp(delta), 1.0)
-    n_avg = n_sum / (n*m)
-    return (n+m) * n_avg * factor >= 1.0
+    n_avg = n_sum / (n * m)
+    return (n + m) * n_avg * factor >= 1.0
 
 ####################################################################################################
 #   bias calculation tools

@@ -1,6 +1,6 @@
 # This file is part of thermotools.
 #
-# Copyright 2015 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+# Copyright 2015, 2016 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
 #
 # thermotools is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -112,7 +112,7 @@ def estimate(
         M = 1 + max([_np.max(c) for c in conf_state_sequences])
     else:
         M = n_conf_states
-    assert len(conf_state_sequences)==len(bias_energy_sequences)
+    assert len(conf_state_sequences) == len(bias_energy_sequences)
     for s, b in zip(conf_state_sequences, bias_energy_sequences):
         assert s.ndim == 1
         assert s.dtype == _np.intc
@@ -128,8 +128,8 @@ def estimate(
         therm_energies = _np.zeros(shape=(T,), dtype=_np.float64)
         therm_weights = _np.ones(shape=(T,), dtype=_np.float64)
     else:
-        therm_weights = _np.exp(-(therm_energies - shift))
-    bias_weight_sequences = [_np.exp(-(b - shift)) for b in bias_energy_sequences]
+        therm_weights = _np.exp(shift - therm_energies)
+    bias_weight_sequences = [_np.exp(shift - b) for b in bias_energy_sequences]
     old_therm_energies = therm_energies.copy()
     old_therm_weights = therm_weights.copy()
     increments = []
@@ -137,7 +137,7 @@ def estimate(
     scratch_M = _np.zeros(shape=(M,), dtype=_np.float64)
     scratch_T = _np.zeros(shape=(T,), dtype=_np.float64)
     stop = False
-    for _m in range(maxiter):
+    for m in range(maxiter):
         sci_count += 1
         update_therm_weights(
             therm_state_counts, old_therm_weights, bias_weight_sequences, therm_weights)
@@ -149,22 +149,20 @@ def estimate(
             increments.append(err)
         if callback is not None:
             try:
-                callback(iteration_step = _m,
+                callback(iteration_step = m,
                          therm_weights = therm_weights,
                          old_therm_weights = old_therm_weights,
                          err=err,
                          maxerr=maxerr,
                          maxiter=maxiter)
             except CallbackInterrupt:
-                stop = True
+                break
         if err < maxerr:
-            stop = True
+            break
         else:
             old_therm_weights[:] = therm_weights[:]
             old_therm_energies[:] = therm_energies[:]
-        if stop:
-            break
-    therm_energies = -_np.log(therm_weights) + shift
+    therm_energies = shift - _np.log(therm_weights)
     conf_energies, biased_conf_energies = _mbar.get_conf_energies(
         log_therm_state_counts, therm_energies,
         bias_energy_sequences, conf_state_sequences, scratch_T, M)

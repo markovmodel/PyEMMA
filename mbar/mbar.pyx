@@ -196,10 +196,8 @@ def get_pointwise_unbiased_free_energies(
 
     if scratch_T is None:
         scratch_T = _np.zeros(log_therm_state_counts.shape[0], dtype=_np.float64)
-
     if k is None:
         k = -1
-
     assert len(bias_energy_sequences)==len(pointwise_unbiased_free_energies)
     for b, p in zip(bias_energy_sequences, pointwise_unbiased_free_energies):
         assert b.ndim == 2
@@ -210,7 +208,6 @@ def get_pointwise_unbiased_free_energies(
         assert b.shape[1] == log_therm_state_counts.shape[0]
         assert b.flags.c_contiguous
         assert p.flags.c_contiguous
-
     for i in range(len(bias_energy_sequences)):
         _mbar_get_pointwise_unbiased_free_energies(
             k,
@@ -285,7 +282,7 @@ def estimate(
     scratch_T = _np.zeros(shape=(T,), dtype=_np.float64)
     scratch_M = _np.zeros(shape=(M,), dtype=_np.float64)
     stop = False
-    for _m in range(maxiter):
+    for m in range(maxiter):
         sci_count += 1
         update_therm_energies(
             log_therm_state_counts, old_therm_energies, bias_energy_sequences,
@@ -300,18 +297,16 @@ def estimate(
                 callback(therm_energies=therm_energies,
                          old_therm_energies=old_therm_energies,
                          delta_therm_energies=delta_therm_energies,
-                         iteration_step=_m,
+                         iteration_step=m,
                          err=err,
                          maxerr=maxerr,
                          maxiter=maxiter)
             except CallbackInterrupt:
-                stop = True
+                break
         if err < maxerr:
-            stop = True
+            break
         else:
             old_therm_energies[:] = therm_energies[:]
-        if stop:
-            break
     conf_energies, biased_conf_energies = get_conf_energies(
         log_therm_state_counts, therm_energies, bias_energy_sequences, conf_state_sequences,
         scratch_T, M)
