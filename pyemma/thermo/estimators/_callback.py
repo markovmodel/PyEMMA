@@ -59,7 +59,9 @@ class _ConvergenceProgressIndicatorCallBack(_ProgressIndicatorCallBack):
     def __call__(self, *args, **kwargs):
         if self.waiting(): return
         current = -np.log10(kwargs['err'])
-        if current > 0.0 and current > self.state and current <= self.final:
+        if current > 0.0 and current <= self.final:
             difference = current - self.state
             self.reporter._progress_update(difference, stage=self.stage, show_eta=False, **kwargs)
             self.state = current
+        else:
+            self.reporter._progress_update(0, stage=self.stage, show_eta=False, **kwargs)
