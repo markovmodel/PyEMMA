@@ -53,12 +53,27 @@ void _tram_estimate_transition_matrix(
 
 double _tram_discrete_log_likelihood_lower_bound(
     double *log_lagrangian_mult, double *biased_conf_energies,
-    int *count_matrices,  int *state_counts, int n_therm_states, int n_conf_states,
-    double *scratch_M, double *scratch_MM);
+#ifdef TRAMMBAR
+    double *therm_energies,
+#endif
+    int *count_matrices, int *state_counts,
+#ifdef TRAMMBAR
+    int *equilibrium_therm_state_counts,
+#endif
+    int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_MM);
 
-void _tram_get_log_Ref_K_i(double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices,
-    int *state_counts, int n_therm_states, int n_conf_states, double *scratch_M,
-    double *log_R_K_i);
+void _tram_get_log_Ref_K_i(
+#ifdef TRAMMBAR
+    double *log_lagrangian_mult, double *biased_conf_energies, double *therm_energies,
+    int *count_matrices, int *state_counts, int *equilibrium_therm_state_counts,
+    int n_therm_states, int n_conf_states, double *scratch_M, double *log_R_K_i,
+    double overcounting_factor
+#else
+    double *log_lagrangian_mult, double *biased_conf_energies,
+    int *count_matrices, int *state_counts,
+    int n_therm_states, int n_conf_states, double *scratch_M, double *log_R_K_i
+#endif
+);
 
 void _tram_get_pointwise_unbiased_free_energies(
     int k, double *bias_energy_sequence, double *therm_energies, int *state_sequence,
