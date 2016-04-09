@@ -36,8 +36,9 @@ __all__ = [
     'get_pointwise_unbiased_free_energies',
     'estimate_transition_matrix',
     'estimate_transition_matrices',
-    'estimate',
-    'get_unbiased_user_free_energies']
+    'estimate']
+
+DEF TRAMMBAR = True
 
 cdef extern from "../tram/_tram.h":
     void _tram_init_lagrangian_mult(
@@ -139,7 +140,7 @@ def update_biased_conf_energies(
     equilibrium_bias_energy_sequences,
     equilibrium_state_sequences,
     _np.ndarray[int, ndim=2, mode="c"] state_counts not None,
-    _np.ndarray[int, ndim=1, mode="c"] equilibrium_therm_state_counts not None,
+    _np.ndarray[int, ndim=1, mode="c"] equilibrium_therm_state_counts,
     _np.ndarray[double, ndim=2, mode="c"] log_R_K_i not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_M not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_T not None,
@@ -194,7 +195,7 @@ def update_biased_conf_energies(
     get_log_Ref_K_i(log_lagrangian_mult, biased_conf_energies, therm_energies,
                     count_matrices, state_counts, equilibrium_therm_state_counts,
                     scratch_M, log_R_K_i, overcounting_factor)
-    log_L = 0
+    log_L = 0.0
     for i in range(len(bias_energy_sequences)):
         log_L += _tram_update_biased_conf_energies(
             <double*> _np.PyArray_DATA(bias_energy_sequences[i]),
@@ -206,20 +207,25 @@ def update_biased_conf_energies(
             <double*> _np.PyArray_DATA(scratch_T),
             <double*> _np.PyArray_DATA(new_biased_conf_energies),
             int(return_log_L))
-    if equilibrium_bias_energy_sequences is not None: # TRAMMBAR
-        log_L += _np.log(overcounting_factor) # TODO ???
-        new_biased_conf_energies += _np.log(overcounting_factor)
-        for i in range(len(equilibrium_bias_energy_sequences)):
-            log_L += _tram_update_biased_conf_energies(
-                <double*> _np.PyArray_DATA(equilibrium_bias_energy_sequences[i]),
-                <int*> _np.PyArray_DATA(equilibrium_state_sequences[i]),
-                equilibrium_state_sequences[i].shape[0],
-                <double*> _np.PyArray_DATA(log_R_K_i),
-                log_lagrangian_mult.shape[0],
-                log_lagrangian_mult.shape[1],
-                <double*> _np.PyArray_DATA(scratch_T),
-                <double*> _np.PyArray_DATA(new_biased_conf_energies),
-                int(return_log_L))
+    if TRAMMBAR:
+        if equilibrium_bias_energy_sequences is not None:
+            log_L += _np.log(overcounting_factor) # TODO ???
+            new_biased_conf_energies += _np.log(overcounting_factor)
+            for i in range(len(equilibrium_bias_energy_sequences)):
+                log_L += _tram_update_biased_conf_energies(
+                    <double*> _np.PyArray_DATA(equilibrium_bias_energy_sequences[i]),
+                    <int*> _np.PyArray_DATA(equilibrium_state_sequences[i]),
+                    equilibrium_state_sequences[i].shape[0],
+                    <double*> _np.PyArray_DATA(log_R_K_i),
+                    log_lagrangian_mult.shape[0],
+                    log_lagrangian_mult.shape[1],
+                    <double*> _np.PyArray_DATA(scratch_T),
+                    <double*> _np.PyArray_DATA(new_biased_conf_energies),
+                    int(return_log_L))
+    else:
+        assert equilibrium_bias_energy_sequences is None
+        assert equilibrium_state_sequences is None
+        assert equilibrium_therm_state_counts is None
     if return_log_L:
         assert scratch_MM is not None
         log_L += _tram_discrete_log_likelihood_lower_bound(
@@ -228,7 +234,7 @@ def update_biased_conf_energies(
             <double*> _np.PyArray_DATA(therm_energies),
             <int*> _np.PyArray_DATA(count_matrices),
             <int*> _np.PyArray_DATA(state_counts),
-            <int*> _np.PyArray_DATA(equilibrium_therm_state_counts),
+            <int*> _np.PyArray_DATA(equilibrium_therm_state_counts) if equilibrium_therm_state_counts is not None else NULL,
             state_counts.shape[0],
             state_counts.shape[1],
             <double*> _np.PyArray_DATA(scratch_M),
@@ -241,7 +247,7 @@ def get_log_Ref_K_i(
     _np.ndarray[double, ndim=1, mode="c"] therm_energies not None,
     _np.ndarray[int, ndim=3, mode="c"] count_matrices not None,
     _np.ndarray[int, ndim=2, mode="c"] state_counts not None,
-    _np.ndarray[int, ndim=1, mode="c"] equilibrium_therm_state_counts not None,
+    _np.ndarray[int, ndim=1, mode="c"] equilibrium_therm_state_counts,
     _np.ndarray[double, ndim=1, mode="c"] scratch_M not None,
     _np.ndarray[double, ndim=2, mode="c"] log_R_K_i not None,
     double overcounting_factor=1.0):
@@ -271,13 +277,15 @@ def get_log_Ref_K_i(
         frames. An overcounting_factor of value n means that every
         non-equilibrium frame is assumed to be repeated n times in the data.
     """
+    if not TRAMMBAR:
+        assert equilibrium_therm_state_counts is None
     _tram_get_log_Ref_K_i(
         <double*> _np.PyArray_DATA(log_lagrangian_mult),
         <double*> _np.PyArray_DATA(biased_conf_energies),
         <double*> _np.PyArray_DATA(therm_energies),
         <int*> _np.PyArray_DATA(count_matrices),
         <int*> _np.PyArray_DATA(state_counts),
-        <int*> _np.PyArray_DATA(equilibrium_therm_state_counts),
+        <int*> _np.PyArray_DATA(equilibrium_therm_state_counts) if equilibrium_therm_state_counts is not None else NULL,
         log_lagrangian_mult.shape[0],
         log_lagrangian_mult.shape[1],
         <double*> _np.PyArray_DATA(scratch_M),
@@ -331,18 +339,22 @@ def get_conf_energies(
             log_R_K_i.shape[1],
             <double*> _np.PyArray_DATA(scratch_T),
             <double*> _np.PyArray_DATA(conf_energies))
-    if equilibrium_bias_energy_sequences is not None: # TRAMMBAR
-        conf_energies += _np.log(overcounting_factor)
-        for i in range(len(equilibrium_bias_energy_sequences)):
-            _tram_get_conf_energies(
-                <double*> _np.PyArray_DATA(equilibrium_bias_energy_sequences[i]),
-                <int*> _np.PyArray_DATA(equilibrium_state_sequences[i]),
-                equilibrium_state_sequences[i].shape[0],
-                <double*> _np.PyArray_DATA(log_R_K_i),
-                log_R_K_i.shape[0],
-                log_R_K_i.shape[1],
-                <double*> _np.PyArray_DATA(scratch_T),
-                <double*> _np.PyArray_DATA(conf_energies))
+    if TRAMMBAR:
+        if equilibrium_bias_energy_sequences is not None:
+            conf_energies += _np.log(overcounting_factor)
+            for i in range(len(equilibrium_bias_energy_sequences)):
+                _tram_get_conf_energies(
+                    <double*> _np.PyArray_DATA(equilibrium_bias_energy_sequences[i]),
+                    <int*> _np.PyArray_DATA(equilibrium_state_sequences[i]),
+                    equilibrium_state_sequences[i].shape[0],
+                    <double*> _np.PyArray_DATA(log_R_K_i),
+                    log_R_K_i.shape[0],
+                    log_R_K_i.shape[1],
+                    <double*> _np.PyArray_DATA(scratch_T),
+                    <double*> _np.PyArray_DATA(conf_energies))
+    else:
+        assert equilibrium_bias_energy_sequences is None
+        assert equilibrium_state_sequences is None
     return conf_energies
 
 def get_therm_energies(
@@ -454,8 +466,6 @@ def get_pointwise_unbiased_free_energies(
         scratch_T = _np.zeros(shape=(state_counts.shape[0]), dtype=_np.float64)
     if scratch_M is None:
         scratch_M = _np.zeros(shape=(state_counts.shape[1]), dtype=_np.float64)
-    if equilibrium_therm_state_counts is None:
-        equilibrium_therm_state_counts = _np.zeros(shape=(state_counts.shape[0]), dtype=_np.intc)
     get_log_Ref_K_i(
         log_lagrangian_mult, biased_conf_energies, therm_energies,
         count_matrices, state_counts, equilibrium_therm_state_counts, scratch_M, log_R_K_i, overcounting_factor)
@@ -571,7 +581,7 @@ def log_likelihood_lower_bound(
     equilibrium_bias_energy_sequences,
     equilibrium_state_sequences,
     _np.ndarray[int, ndim=2, mode="c"] state_counts not None,
-    _np.ndarray[int, ndim=1, mode="c"] equilibrium_therm_state_counts not None,
+    _np.ndarray[int, ndim=1, mode="c"] equilibrium_therm_state_counts,
     _np.ndarray[double, ndim=2, mode="c"] log_R_K_i,
     _np.ndarray[double, ndim=1, mode="c"] scratch_M,
     _np.ndarray[double, ndim=1, mode="c"] scratch_T,
@@ -726,8 +736,11 @@ def estimate(count_matrices, state_counts,
     if log_lagrangian_mult is None:
         log_lagrangian_mult = _np.zeros(shape=state_counts.shape, dtype=_np.float64)
         init_lagrangian_mult(count_matrices, log_lagrangian_mult)
-    if equilibrium_therm_state_counts is None:
-        equilibrium_therm_state_counts = _np.zeros(shape=(count_matrices.shape[0],), dtype=_np.intc)
+    if TRAMMBAR:
+        if equilibrium_therm_state_counts is None:
+            equilibrium_therm_state_counts = _np.zeros(shape=(count_matrices.shape[0],), dtype=_np.intc)
+    else:
+        assert equilibrium_therm_state_counts is None
     increments = []
     loglikelihoods = []
     sci_count = 0
@@ -741,17 +754,21 @@ def estimate(count_matrices, state_counts,
         assert b.shape[1] == count_matrices.shape[0]
         assert s.flags.c_contiguous
         assert b.flags.c_contiguous
-    if equilibrium_state_sequences is not None:
-        assert len(equilibrium_state_sequences) == len(equilibrium_bias_energy_sequences)
-        for s, b in zip(equilibrium_state_sequences, equilibrium_bias_energy_sequences):
-            assert s.ndim == 1
-            assert s.dtype == _np.intc
-            assert b.ndim == 2
-            assert b.dtype == _np.float64
-            assert s.shape[0] == b.shape[0]
-            assert b.shape[1] == count_matrices.shape[0]
-            assert s.flags.c_contiguous
-            assert b.flags.c_contiguous
+    if TRAMMBAR:
+        if equilibrium_state_sequences is not None:
+            assert len(equilibrium_state_sequences) == len(equilibrium_bias_energy_sequences)
+            for s, b in zip(equilibrium_state_sequences, equilibrium_bias_energy_sequences):
+                assert s.ndim == 1
+                assert s.dtype == _np.intc
+                assert b.ndim == 2
+                assert b.dtype == _np.float64
+                assert s.shape[0] == b.shape[0]
+                assert b.shape[1] == count_matrices.shape[0]
+                assert s.flags.c_contiguous
+                assert b.flags.c_contiguous
+    else:
+        assert equilibrium_bias_energy_sequences is None
+        assert equilibrium_state_sequences is None
     log_R_K_i = _np.zeros(shape=state_counts.shape, dtype=_np.float64)
     scratch_T = _np.zeros(shape=(count_matrices.shape[0],), dtype=_np.float64)
     scratch_M = _np.zeros(shape=(count_matrices.shape[1],), dtype=_np.float64)

@@ -5,11 +5,13 @@ from thermotools import tram as _tram
 
 from warnings import warn as _warn
 from msmtools.util.exceptions import NotConvergedWarning as _NotConvergedWarning
+from thermotools.tram import get_pointwise_unbiased_free_energies
 
 from .callback import CallbackInterrupt
 
 __all__ = [
-    'estimate']
+    'estimate',
+    'get_pointwise_unbiased_free_energies']
 
 cdef extern from "_tram_direct.h":
     void _tram_direct_update_lagrangian_mult(
