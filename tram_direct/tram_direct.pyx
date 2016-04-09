@@ -5,11 +5,13 @@ from thermotools import tram as _tram
 
 from warnings import warn as _warn
 from msmtools.util.exceptions import NotConvergedWarning as _NotConvergedWarning
-from thermotools.tram import get_pointwise_unbiased_free_energies
+from thermotools.tram import get_pointwise_unbiased_free_energies, estimate_transition_matrix, estimate_transition_matrices
 
 from .callback import CallbackInterrupt
 
 __all__ = [
+    'estimate_transition_matrix',
+    'estimate_transition_matrices',
     'estimate',
     'get_pointwise_unbiased_free_energies']
 

@@ -36,8 +36,7 @@ __all__ = [
     'get_pointwise_unbiased_free_energies',
     'estimate_transition_matrix',
     'estimate_transition_matrices',
-    'estimate',
-    'get_unbiased_user_free_energies']
+    'estimate']
 
 cdef extern from "_tram.h":
     void _tram_init_lagrangian_mult(
