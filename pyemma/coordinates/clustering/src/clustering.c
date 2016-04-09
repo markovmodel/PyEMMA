@@ -71,18 +71,22 @@ int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric, Py_ss
         goto error;
     }
 
-    /* do the assignment */
+    /* Do the assignment in parallel with OpenMP. Each thread finds the minimum
+     * distance for a couple of frames index by i.
+     */
+    #pragma omp parallel
     {
-        Py_ssize_t i,j;
-//        #pragma omp for private(j, argmin, mindist)
+        int i, j;
+
+        #pragma omp for private(i, j, argmin, mindist, d) schedule(static, 10)
         for(i = 0; i < N_frames; ++i) {
-			mindist = FLT_MAX;
+            mindist = FLT_MAX;
             argmin = -1;
             for(j = 0; j < N_centers; ++j) {
                 d = distance(&chunk[i*dim], &centers[j*dim], dim, buffer_a, buffer_b);
-//				#pragma omp critical
+
             	{
-                	if(d<mindist) { mindist = d; argmin = j; }
+                	if(d < mindist) { mindist = d; argmin = j; }
             	}
             }
             dtraj[i] = argmin;
@@ -165,3 +169,4 @@ PyObject *assign(PyObject *self, PyObject *args) {
 error:
     return py_res;
 }
+

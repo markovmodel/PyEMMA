@@ -32,6 +32,7 @@ from pyemma.coordinates.clustering import regspatial
 from pyemma.coordinates.transform.transformer import StreamingTransformer
 from pyemma.util.discrete_trajectories import index_states, sample_indexes_by_state
 from pyemma.util.files import mkdir_p
+from pyemma.util.omp_threads import num_threads 
 
 from six.moves import range, zip
 import numpy as np
@@ -41,9 +42,18 @@ class AbstractClustering(StreamingTransformer, Model, ClusterMixin):
 
     """
     provides a common interface for cluster algorithms.
+    
+    Parameters
+    ----------
+
+    metric: str, default='euclidean'
+       metric to pass to c extension
+    n_jobs: int or None, default=None
+        How much threads to use during assignment
+        If None, all available CPUs will be used.
     """
 
-    def __init__(self, metric='euclidean'):
+    def __init__(self, metric='euclidean', n_jobs=None):
         super(AbstractClustering, self).__init__()
         self.metric = metric
         self._clustercenters = None
@@ -51,6 +61,27 @@ class AbstractClustering(StreamingTransformer, Model, ClusterMixin):
         self._dtrajs = []
         self._overwrite_dtrajs = False
         self._index_states = []
+        self._n_jobs = n_jobs
+
+    @property
+    def n_jobs(self):
+        """ Returns number of jobs/threads to use during assignment of data.
+            If None it will return number of processors /or cores.
+        """
+        if self._n_jobs is None:
+           import psutil
+           return psutil.cpu_count()
+        return self._n_jobs
+
+    @n_jobs.setter    
+    def n_jobs(self, val):
+        """ set number of jobs/threads to use via assignment of data.
+        Parameters
+        ----------
+        val: int or None
+            a positive int for the number of jobs. Or None to usage all available resources.
+        """
+        self._n_jobs = val if val is None else int(val)
 
     @property
     def clustercenters(self):
@@ -133,8 +164,9 @@ class AbstractClustering(StreamingTransformer, Model, ClusterMixin):
     def _transform_array(self, X):
         """get closest index of point in :attr:`clustercenters` to x."""
         dtraj = np.empty(X.shape[0], dtype=self.output_type())
-        regspatial.assign(X.astype(np.float32, order='C', copy=False),
-                          self.clustercenters, dtraj, self.metric)
+        with num_threads(self.n_jobs):
+            regspatial.assign(X.astype(np.float32, order='C', copy=False),
+                              self.clustercenters, dtraj, self.metric)
         res = dtraj[:, None]  # always return a column vector in this function
         return res
 
@@ -142,8 +174,6 @@ class AbstractClustering(StreamingTransformer, Model, ClusterMixin):
         """output dimension of clustering algorithm (always 1)."""
         return 1
 
-    #@doc_inherit
-    # TODO: inheritance of docstring should work
     def output_type(self):
         return np.int32
 
@@ -184,7 +214,7 @@ class AbstractClustering(StreamingTransformer, Model, ClusterMixin):
                 return self._dtrajs
             self._previous_stride = stride
             # map to column vectors
-            mapped = self.get_output(stride=stride)
+            mapped = self.get_output(stride=stride, chunk=self.chunksize)
             # flatten and save
             self._dtrajs = [np.transpose(m)[0] for m in mapped]
             # return

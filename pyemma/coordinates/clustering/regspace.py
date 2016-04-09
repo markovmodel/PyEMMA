@@ -41,7 +41,7 @@ __all__ = ['RegularSpaceClustering']
 class RegularSpaceClustering(AbstractClustering):
     r"""Regular space clustering"""
 
-    def __init__(self, dmin, max_centers=1000, metric='euclidean', stride=1):
+    def __init__(self, dmin, max_centers=1000, metric='euclidean', stride=1, n_jobs=None):
         """Clusters data objects in such a way, that cluster centers are at least in
         distance of dmin to each other according to the given metric.
         The assignment of data objects to cluster centers is performed by
@@ -64,6 +64,9 @@ class RegularSpaceClustering(AbstractClustering):
         max_centers : int
             if this cutoff is hit during finding the centers,
             the algorithm will abort.
+        n_jobs : int or None, default None
+            Number of threads to use during assignment of the data.
+            If None, all available CPUs will be used.
 
         References
         ----------
@@ -75,7 +78,7 @@ class RegularSpaceClustering(AbstractClustering):
             New York: Wiley; 1975.
 
         """
-        super(RegularSpaceClustering, self).__init__(metric=metric)
+        super(RegularSpaceClustering, self).__init__(metric=metric, n_jobs=n_jobs)
 
         self.set_params(dmin=dmin, metric=metric, max_centers=max_centers, stride=stride)
 

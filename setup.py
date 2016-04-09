@@ -134,10 +134,15 @@ def extensions():
                                 np_inc,
                                 ],
                   extra_compile_args=['-std=c99', '-O3'])
+    omp_threads = \
+        Extension('pyemma.util.omp_threads',
+                  sources=['pyemma/util/omp_threads.pyx', ])
 
     exts += [regspatial_module,
              kmeans_module,
-             covar_module]
+             covar_module,
+             omp_threads,
+             ]
 
     if not USE_CYTHON:
         # replace pyx files by their pre generated c code.
@@ -158,6 +163,8 @@ def extensions():
             e.extra_compile_args += omp_compiler_args
             e.extra_link_args += omp_libraries
             e.define_macros += omp_defines
+    else:
+        del exts[exts.find(omp_threads)]
 
     return exts
 
