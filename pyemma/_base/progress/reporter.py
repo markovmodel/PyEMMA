@@ -40,7 +40,9 @@ class ProgressReporter(object):
     @property
     def show_progress(self):
         if not hasattr(self, "_show_progress"):
-            self._show_progress = True
+            from pyemma import config
+            val = config.show_progress_bars
+            self._show_progress = val 
         return self._show_progress
 
     @show_progress.setter
