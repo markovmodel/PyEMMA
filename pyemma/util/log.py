@@ -106,9 +106,10 @@ def setupLogging(config):
         # gracefully shutdown logging system
         logging.shutdown()
         for f in log_files:
-            if f is not None and os.path.exists(f) and os.stat(f).st_size == 0:
+            if f is not None and os.path.exists(f):
                 try:
-                    os.remove(f)
+                    if os.stat(f).st_size == 0:
+                        os.remove(f)
                 except OSError as o:
                     print("during removal of empty logfiles there was a problem: ", o)
 
