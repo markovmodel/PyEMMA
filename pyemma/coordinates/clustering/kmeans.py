@@ -105,17 +105,17 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
             self._in_memory_chunks = np.empty(shape=(size, self.data_producer.dimension()),
                                               order='C', dtype=np.float32)
         else:
-            if self._oom_strategy == 'raise':
-                self._logger.warning('K-means failed to load all the data (%s required, %s available) into memory. '
-                                  'Consider using a larger stride or set the oom_strategy to \'memmap\' which works '
-                                  'with a memmapped temporary file.'
-                                  % (bytes_to_string(required_mem), bytes_to_string(available_mem)))
+            if self.oom_strategy == 'raise':
+                self.logger.warning('K-means failed to load all the data (%s required, %s available) into memory. '
+                                     'Consider using a larger stride or set the oom_strategy to \'memmap\' which works '
+                                     'with a memmapped temporary file.'
+                                     % (bytes_to_string(required_mem), bytes_to_string(available_mem)))
                 raise MemoryError()
             else:
-                self._logger.warning('K-means failed to load all the data (%s required, %s available) into memory '
-                                  'and now uses a memmapped temporary file which is comparably slow. '
-                                  'Consider using a larger stride.'
-                                  % (bytes_to_string(required_mem), bytes_to_string(available_mem)))
+                self.logger.warning('K-means failed to load all the data (%s required, %s available) into memory '
+                                     'and now uses a memmapped temporary file which is comparably slow. '
+                                     'Consider using a larger stride.'
+                                     % (bytes_to_string(required_mem), bytes_to_string(available_mem)))
                 self._in_memory_chunks = np.memmap(tempfile.mkstemp()[1], mode="w+",
                                                    shape=(size, self.data_producer.dimension()), order='C',
                                                    dtype=np.float32)
