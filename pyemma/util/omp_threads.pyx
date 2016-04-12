@@ -26,16 +26,18 @@ class num_threads(object):
         self.num_threads = num_threads
 
     def __enter__(self):
+        cdef int i
         try:
             os.environ['OMP_NUM_THREADS']
             self._have_env_setting = True
         except KeyError:
             self._have_env_setting = False
-            cdef int i = self.num_threads
+            i = self.num_threads
             omp.omp_set_num_threads(i)
 
     def __exit__(self, *args):
+        cdef int i
         if self._have_env_setting:
-            cdef int i = self._old_num_threads
+            i = self._old_num_threads
             omp.omp_set_num_threads(i)
 
