@@ -192,30 +192,37 @@ class TestClusterAssign(unittest.TestCase):
         import os
         old_val = os.getenv('OMP_NUM_THREADS', '')
         os.environ['OMP_NUM_THREADS'] = '4'
+        desired_n_jobs=2
         try:
             assert os.environ['OMP_NUM_THREADS'] == "4"
-            X = np.random.random((10000, 3))
-            centers = X[np.random.choice(10000, 10)]
+            X = np.random.random((1000, 3))
+            centers = X[np.random.choice(1000, 10)]
+            res = coor.assign_to_centers(X, centers, n_jobs=desired_n_jobs, return_dtrajs=False)
+            self.assertEqual(res.n_jobs, desired_n_jobs)
+        finally:
+            del os.environ['OMP_NUM_THREADS']
+
+    def test_threads_env_num_threads_fixed_def_arg(self):
+        import os
+        desired_n_jobs = 3
+        os.environ['OMP_NUM_THREADS'] = str(desired_n_jobs)
+        try:
+            assert os.environ['OMP_NUM_THREADS'] == str(desired_n_jobs)
+            X = np.random.random((1000, 3))
+            centers = X[np.random.choice(1000, 10)]
             # note: we want another job number here, but it will be ignored!
-            res = coor.assign_to_centers(X, centers, n_jobs=2, return_dtrajs=False)
-            self.assertEqual(res.n_jobs, 2)
+            res = coor.assign_to_centers(X, centers, n_jobs=None, return_dtrajs=False)
+            self.assertEqual(res.n_jobs, desired_n_jobs)
         finally:
             del os.environ['OMP_NUM_THREADS']
 
     def test_threads_cpu_count_def_arg(self):
-        import os
-        old_val = os.getenv('OMP_NUM_THREADS', '')
-        os.environ['OMP_NUM_THREADS'] = '4'
-        try:
-            import psutil
-            assert os.environ['OMP_NUM_THREADS'] == "4"
-            X = np.random.random((10000, 3))
-            centers = X[np.random.choice(10000, 10)]
-            # note: we want another job number here, but it will be ignored!
-            res = coor.assign_to_centers(X, centers, return_dtrajs=False)
-            self.assertEqual(res.n_jobs, psutil.cpu_count())
-        finally:
-            del os.environ['OMP_NUM_THREADS']
+        import psutil
+        X = np.random.random((1000, 3))
+        centers = X[np.random.choice(1000, 10)]
+        # note: we want another job number here, but it will be ignored!
+        res = coor.assign_to_centers(X, centers, return_dtrajs=False)
+        self.assertEqual(res.n_jobs, psutil.cpu_count())
 
 if __name__ == "__main__":
     unittest.main()

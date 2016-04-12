@@ -85,7 +85,6 @@ int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric,
     #pragma omp parallel
     {
         #ifdef USE_OPENMP
-        printf("n threads in c_assign: %i\n", n_threads);
         assert(omp_get_num_threads() == n_threads);
         #endif
 
