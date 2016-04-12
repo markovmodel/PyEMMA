@@ -11,7 +11,7 @@ class num_threads(object):
     """ Within the context set the number of threads OpenMP will use.
 
     If environment variable 'OMP_NUM_THREADS' is set, the context does nothing.
-
+    >>> from __future__ import print_function
     >>> print("Before", get_num_threads()) # doctest: +ELLIPSIS
     Before ...
     >>> with num_threads(2):
