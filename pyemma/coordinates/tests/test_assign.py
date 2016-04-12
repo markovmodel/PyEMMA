@@ -189,15 +189,18 @@ class TestClusterAssign(unittest.TestCase):
             c = coor.assign_to_centers(data, centers)
 
     def test_threads_env_num_threads_fixed(self):
-        import subprocess, sys, os
-
-        env_for_child = os.environ.copy()
-        env_for_child['OMP_NUM_THREADS'] = '4'
-
-        cwd= os.path.dirname(__file__)
-        cmd = [sys.executable, "test_assign_parallel.py"]
-        print ("cmd", cmd)
-        subprocess.check_call(cmd, env=env_for_child, cwd=cwd)
+        import os
+        old_val = os.getenv('OMP_NUM_THREADS', '')
+        os.environ['OMP_NUM_THREADS'] = '4'
+        try:
+            assert os.environ['OMP_NUM_THREADS'] == "4"
+            X = np.random.random((10000, 3))
+            centers = X[np.random.choice(10000, 10)]
+            # note: we want another job number here, but it will be ignored!
+            res = coor.assign_to_centers(X, centers, n_jobs=6, return_dtrajs=False)
+            assert res.n_jobs == int(os.environ['OMP_NUM_THREADS']), res.n_jobs
+        finally:
+            os.environ['OMP_NUM_THREADS'] = old_val
 
 if __name__ == "__main__":
     unittest.main()
