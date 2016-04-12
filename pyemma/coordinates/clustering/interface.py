@@ -32,11 +32,7 @@ from pyemma.coordinates.clustering import regspatial
 from pyemma.coordinates.transform.transformer import StreamingTransformer
 from pyemma.util.discrete_trajectories import index_states, sample_indexes_by_state
 from pyemma.util.files import mkdir_p
-try:
-    from pyemma.util.omp_threads import num_threads
-except ImportError:
-    # define a dummy
-    def numthreads(n): pass
+
 
 from six.moves import range, zip
 import numpy as np
@@ -65,7 +61,7 @@ class AbstractClustering(StreamingTransformer, Model, ClusterMixin):
         self._dtrajs = []
         self._overwrite_dtrajs = False
         self._index_states = []
-        self._n_jobs = n_jobs
+        self.n_jobs = n_jobs
 
     @property
     def n_jobs(self):
@@ -73,8 +69,17 @@ class AbstractClustering(StreamingTransformer, Model, ClusterMixin):
             If None it will return number of processors /or cores.
         """
         if self._n_jobs is None:
-           import psutil
-           return psutil.cpu_count()
+            import psutil
+            try:
+                self._n_jobs = int(os.getenv('OMP_NUM_THREADS', psutil.cpu_count()))
+            except ValueError as ve:
+                # handle parser error
+                if not hasattr(self, '_have_warned_omp_threads'):
+                    import warnings
+                    from pyemma.util.exceptions import ParserWarning
+                    warnings.warn("could not convert value of environment variable"
+                                  "'OMP_NUM_THREADS' to int: %s" % ve, category=ParserWarning)
+                    self._have_warned_omp_threads = True
         return self._n_jobs
 
     @n_jobs.setter    
@@ -85,7 +90,11 @@ class AbstractClustering(StreamingTransformer, Model, ClusterMixin):
         val: int or None
             a positive int for the number of jobs. Or None to usage all available resources.
         """
-        self._n_jobs = val if val is None else int(val)
+        omp_threads_from_env = os.getenv('OMP_NUM_THREADS', None)
+        if not omp_threads_from_env:
+            self._n_jobs = val if val is None else int(val)
+        else:
+            self._n_jobs = int(omp_threads_from_env)
 
     @property
     def clustercenters(self):
@@ -168,9 +177,8 @@ class AbstractClustering(StreamingTransformer, Model, ClusterMixin):
     def _transform_array(self, X):
         """get closest index of point in :attr:`clustercenters` to x."""
         dtraj = np.empty(X.shape[0], dtype=self.output_type())
-        with num_threads(self.n_jobs):
-            regspatial.assign(X.astype(np.float32, order='C', copy=False),
-                              self.clustercenters, dtraj, self.metric)
+        regspatial.assign(X.astype(np.float32, order='C', copy=False),
+                          self.clustercenters, dtraj, self.metric, self.n_jobs)
         res = dtraj[:, None]  # always return a column vector in this function
         return res
 
