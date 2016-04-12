@@ -32,7 +32,11 @@ from pyemma.coordinates.clustering import regspatial
 from pyemma.coordinates.transform.transformer import StreamingTransformer
 from pyemma.util.discrete_trajectories import index_states, sample_indexes_by_state
 from pyemma.util.files import mkdir_p
-from pyemma.util.omp_threads import num_threads 
+try:
+    from pyemma.util.omp_threads import num_threads
+except ImportError:
+    # define a dummy
+    def numthreads(n): pass
 
 from six.moves import range, zip
 import numpy as np
