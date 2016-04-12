@@ -22,6 +22,7 @@ requirements:
     - thermotools >=0.1.14
     - nose
     - numpy x.x 
+    - ordereddict # [py27]
     - pyyaml
     - scipy
     - six
