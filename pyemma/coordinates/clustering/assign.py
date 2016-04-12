@@ -77,7 +77,7 @@ class AssignCenters(AbstractClustering):
         self._estimated = True
 
     def describe(self):
-        return "[AssignCenters centers shape={}]".format(self.clustercenters.shape)
+        return "[{name} centers shape={shape}]".format(name=self.name, shape=self.clustercenters.shape)
 
     @AbstractClustering.data_producer.setter
     def data_producer(self, dp):
