@@ -10,13 +10,13 @@ class num_threads(object):
     """
     Set the thread context:
 
-    >>> print("Before ", get_num_threads())
-    0
-    >>> with num_threads(n):
+    >>> print("Before ", get_num_threads()) # doctest: +ELLIPSIS
+    Before ...
+    >>> with num_threads(2):
     ...     print( "In thread context: ", get_num_threads())
-
-    >>> print("After ", get_num_threads())
-
+    In thread context: 2
+    >>> print("After ", get_num_threads()) # doctest: +ELLIPSIS
+    After ...
     """
 
     def __init__(self, num_threads):
