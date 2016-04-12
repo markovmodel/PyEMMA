@@ -20,6 +20,10 @@
 #include <clustering.h>
 #include <assert.h>
 
+#ifdef USE_OPENMP
+    #include <omp.h>
+#endif
+
 float euclidean_distance(float *SKP_restrict a, float *SKP_restrict b, size_t n, float *buffer_a, float *buffer_b)
 {
     double sum;
@@ -46,7 +50,8 @@ float minRMSD_distance(float *SKP_restrict a, float *SKP_restrict b, size_t n, f
     return sqrt(msd);
 }
 
-int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric, Py_ssize_t N_frames, Py_ssize_t N_centers, Py_ssize_t dim) {
+int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric,
+             Py_ssize_t N_frames, Py_ssize_t N_centers, Py_ssize_t dim, int n_threads) {
     int ret;
     float d, mindist;
     size_t argmin;
@@ -74,8 +79,16 @@ int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric, Py_ss
     /* Do the assignment in parallel with OpenMP. Each thread finds the minimum
      * distance for a couple of frames index by i.
      */
+    #ifdef _OpenMP
+    omp_set_num_threads(n_threads);
+    #endif
     #pragma omp parallel
     {
+        #ifdef _OpenMP
+        printf("n threads in c_assign: %i\n", n_threads);
+        assert(omp_get_num_threads() == n_threads);
+        #endif
+
         int i, j;
 
         #pragma omp for private(i, j, argmin, mindist, d) schedule(static, 10)
@@ -108,12 +121,13 @@ PyObject *assign(PyObject *self, PyObject *args) {
     float *centers;
     npy_int32 *dtraj;
     char *metric;
+    int n_threads;
 
     py_centers = NULL; py_res = NULL;
     np_chunk = NULL; np_dtraj = NULL;
-    centers = NULL; metric=""; chunk = NULL; dtraj = NULL;
+    centers = NULL; metric=""; chunk = NULL; dtraj = NULL; n_threads = -1;
 
-    if (!PyArg_ParseTuple(args, "O!OO!s", &PyArray_Type, &np_chunk, &py_centers, &PyArray_Type, &np_dtraj, &metric)) goto error; /* ref:borr. */
+    if (!PyArg_ParseTuple(args, "O!OO!si", &PyArray_Type, &np_chunk, &py_centers, &PyArray_Type, &np_dtraj, &metric, &n_threads)) goto error; /* ref:borr. */
 
     /* import chunk */
     if(PyArray_TYPE(np_chunk)!=NPY_FLOAT32) { PyErr_SetString(PyExc_ValueError, "dtype of \"chunk\" isn\'t float (32)."); goto error; };
@@ -155,7 +169,7 @@ PyObject *assign(PyObject *self, PyObject *args) {
     centers = (float*)PyArray_DATA(np_centers);
 
     /* do the assignment */
-    switch(c_assign(chunk, centers, dtraj, metric, N_frames, N_centers, dim)) {
+    switch(c_assign(chunk, centers, dtraj, metric, N_frames, N_centers, dim, n_threads)) {
         case ASSIGN_ERR_INVALID_METRIC:
             PyErr_SetString(PyExc_ValueError, "metric must be one of \"euclidean\" or \"minRMSD\".");
             goto error;

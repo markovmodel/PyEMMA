@@ -82,7 +82,8 @@ float minRMSD_distance(float *SKP_restrict a, float *SKP_restrict b, size_t n, f
 // assignment to cluster centers from python
 PyObject *assign(PyObject *self, PyObject *args);
 // assignment to cluster centers from c
-int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric, Py_ssize_t N_frames, Py_ssize_t N_centers, Py_ssize_t dim);
+int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric,
+             Py_ssize_t N_frames, Py_ssize_t N_centers, Py_ssize_t dim, int n_threads);
 
 #ifdef __cplusplus
 }
