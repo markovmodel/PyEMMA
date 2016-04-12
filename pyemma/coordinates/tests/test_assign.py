@@ -216,6 +216,19 @@ class TestClusterAssign(unittest.TestCase):
         finally:
             del os.environ['OMP_NUM_THREADS']
 
+    def test_threads_omp_env_arg_borked(self):
+        import os
+        os.environ['OMP_NUM_THREADS'] = 'this is not right'
+        try:
+            import psutil
+            X = np.random.random((1000, 3))
+            centers = X[np.random.choice(1000, 10)]
+            # note: we want another job number here, but it will be ignored!
+            res = coor.assign_to_centers(X, centers, n_jobs=None, return_dtrajs=False)
+            self.assertEqual(res.n_jobs, psutil.cpu_count())
+        finally:
+            del os.environ['OMP_NUM_THREADS']
+
     def test_threads_cpu_count_def_arg(self):
         import psutil
         X = np.random.random((1000, 3))

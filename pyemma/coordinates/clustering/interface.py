@@ -94,22 +94,23 @@ class AbstractClustering(StreamingTransformer, Model, ClusterMixin):
         from pyemma.util.reflection import get_default_args
         def_args = get_default_args(self.__init__)
 
-
         # default value from constructor?
         if val == def_args['n_jobs']:
             omp_threads_from_env = os.getenv('OMP_NUM_THREADS', None)
+            import psutil
+            n_cpus = psutil.cpu_count()
             if omp_threads_from_env:
-                self.logger.info("'OMP_NUM_THREADS'=%s" % omp_threads_from_env)
                 try:
                     self._n_jobs = int(omp_threads_from_env)
+                    self.logger.info("number of threads obtained from env variable"
+                                     " 'OMP_NUM_THREADS'=%s" % omp_threads_from_env)
                 except ValueError as ve:
-                    self.logger.warning("could not parse env variable 'OMP_NUM_THREADS'. Value='%s'" % omp_threads_from_env)
-                    del os.environ['OMP_NUM_THREADS']
+                    self.logger.warning("could not parse env variable 'OMP_NUM_THREADS'."
+                                        "Value='%s'. Error=%s" % (omp_threads_from_env, ve))
                     # re-invoke setter to get cpu count
-                    self.n_jobs = None
+                    self.n_jobs = n_cpus
             else:
-                import psutil
-                self._n_jobs = psutil.cpu_count()
+                self._n_jobs = n_cpus
         else:
             self._n_jobs = int(val)
 
