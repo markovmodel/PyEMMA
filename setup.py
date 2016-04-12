@@ -164,7 +164,7 @@ def extensions():
             e.extra_link_args += omp_libraries
             e.define_macros += omp_defines
     else:
-        del exts[exts.find(omp_threads)]
+        del exts[exts.index(omp_threads)]
 
     return exts
 
