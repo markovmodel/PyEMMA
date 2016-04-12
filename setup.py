@@ -134,14 +134,10 @@ def extensions():
                                 np_inc,
                                 ],
                   extra_compile_args=['-std=c99', '-O3'])
-    omp_threads = \
-        Extension('pyemma.util.omp_threads',
-                  sources=['pyemma/util/omp_threads.pyx', ])
 
     exts += [regspatial_module,
              kmeans_module,
              covar_module,
-             omp_threads,
              ]
 
     if not USE_CYTHON:
