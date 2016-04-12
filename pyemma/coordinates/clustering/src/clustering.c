@@ -79,12 +79,12 @@ int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric,
     /* Do the assignment in parallel with OpenMP. Each thread finds the minimum
      * distance for a couple of frames index by i.
      */
-    #ifdef _OpenMP
+    #ifdef USE_OPENMP
     omp_set_num_threads(n_threads);
     #endif
     #pragma omp parallel
     {
-        #ifdef _OpenMP
+        #ifdef USE_OPENMP
         printf("n threads in c_assign: %i\n", n_threads);
         assert(omp_get_num_threads() == n_threads);
         #endif

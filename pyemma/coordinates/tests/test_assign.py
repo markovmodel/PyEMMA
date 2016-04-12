@@ -199,9 +199,23 @@ class TestClusterAssign(unittest.TestCase):
             # note: we want another job number here, but it will be ignored!
             res = coor.assign_to_centers(X, centers, n_jobs=2, return_dtrajs=False)
             self.assertEqual(res.n_jobs, 2)
-            #assert res.n_jobs == int(os.environ['OMP_NUM_THREADS']), res.n_jobs
         finally:
-            os.environ['OMP_NUM_THREADS'] = old_val
+            del os.environ['OMP_NUM_THREADS']
+
+    def test_threads_cpu_count_def_arg(self):
+        import os
+        old_val = os.getenv('OMP_NUM_THREADS', '')
+        os.environ['OMP_NUM_THREADS'] = '4'
+        try:
+            import psutil
+            assert os.environ['OMP_NUM_THREADS'] == "4"
+            X = np.random.random((10000, 3))
+            centers = X[np.random.choice(10000, 10)]
+            # note: we want another job number here, but it will be ignored!
+            res = coor.assign_to_centers(X, centers, return_dtrajs=False)
+            self.assertEqual(res.n_jobs, psutil.cpu_count())
+        finally:
+            del os.environ['OMP_NUM_THREADS']
 
 if __name__ == "__main__":
     unittest.main()
