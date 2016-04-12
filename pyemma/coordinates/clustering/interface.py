@@ -66,35 +66,52 @@ class AbstractClustering(StreamingTransformer, Model, ClusterMixin):
     @property
     def n_jobs(self):
         """ Returns number of jobs/threads to use during assignment of data.
-            If None it will return number of processors /or cores.
+
+        Returns
+        -------
+        If None it will return number of processors /or cores or the setting of 'OMP_NUM_THREADS' env variable.
+
+        Notes
+        -----
+        By setting the environment variable 'OMP_NUM_THREADS' to an integer,
+        one will override the default argument of n_jobs (currently None).
         """
-        if self._n_jobs is None:
-            import psutil
-            try:
-                self._n_jobs = int(os.getenv('OMP_NUM_THREADS', psutil.cpu_count()))
-            except ValueError as ve:
-                # handle parser error
-                if not hasattr(self, '_have_warned_omp_threads'):
-                    import warnings
-                    from pyemma.util.exceptions import ParserWarning
-                    warnings.warn("could not convert value of environment variable"
-                                  "'OMP_NUM_THREADS' to int: %s" % ve, category=ParserWarning)
-                    self._have_warned_omp_threads = True
+        assert isinstance(self._n_jobs, int)
         return self._n_jobs
 
-    @n_jobs.setter    
+    @n_jobs.setter
     def n_jobs(self, val):
         """ set number of jobs/threads to use via assignment of data.
         Parameters
         ----------
         val: int or None
             a positive int for the number of jobs. Or None to usage all available resources.
+
+        Notes
+        -----
+
         """
-        omp_threads_from_env = os.getenv('OMP_NUM_THREADS', None)
-        if not omp_threads_from_env:
-            self._n_jobs = val if val is None else int(val)
+        from pyemma.util.reflection import get_default_args
+        def_args = get_default_args(self.__init__)
+
+
+        # default value from constructor?
+        if val == def_args['n_jobs']:
+            omp_threads_from_env = os.getenv('OMP_NUM_THREADS', None)
+            if omp_threads_from_env:
+                self.logger.info("'OMP_NUM_THREADS'=%s" % omp_threads_from_env)
+                try:
+                    self._n_jobs = int(omp_threads_from_env)
+                except ValueError as ve:
+                    self.logger.warning("could not parse env variable 'OMP_NUM_THREADS'. Value='%s'" % omp_threads_from_env)
+                    del os.environ['OMP_NUM_THREADS']
+                    # re-invoke setter to get cpu count
+                    self.n_jobs = None
+            else:
+                import psutil
+                self._n_jobs = psutil.cpu_count()
         else:
-            self._n_jobs = int(omp_threads_from_env)
+            self._n_jobs = int(val)
 
     @property
     def clustercenters(self):

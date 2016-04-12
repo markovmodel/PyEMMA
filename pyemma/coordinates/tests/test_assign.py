@@ -197,8 +197,9 @@ class TestClusterAssign(unittest.TestCase):
             X = np.random.random((10000, 3))
             centers = X[np.random.choice(10000, 10)]
             # note: we want another job number here, but it will be ignored!
-            res = coor.assign_to_centers(X, centers, n_jobs=6, return_dtrajs=False)
-            assert res.n_jobs == int(os.environ['OMP_NUM_THREADS']), res.n_jobs
+            res = coor.assign_to_centers(X, centers, n_jobs=2, return_dtrajs=False)
+            self.assertEqual(res.n_jobs, 2)
+            #assert res.n_jobs == int(os.environ['OMP_NUM_THREADS']), res.n_jobs
         finally:
             os.environ['OMP_NUM_THREADS'] = old_val
 
