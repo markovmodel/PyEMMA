@@ -17,6 +17,8 @@ requirements:
     - joblib >0.8.4
     - matplotlib
     - mdtraj >=1.6
+    - mock
+    - funcsigs
     - msmtools
     - thermotools >=0.1.14
     - nose
@@ -34,6 +36,8 @@ requirements:
     - joblib >0.8.4
     - matplotlib
     - mdtraj >=1.6
+    - mock
+    - funcsigs
     - msmtools
     - thermotools >=0.1.14
     - numpy x.x
