@@ -194,18 +194,12 @@ class TestTrajectoryInfoCache(unittest.TestCase):
     def test_feature_reader_xyz(self):
         traj = mdtraj.load(xtcfiles, top=pdbfile)
         length = len(traj)
-        import warnings
-        from pyemma.util.exceptions import EfficiencyWarning
 
         with NamedTemporaryFile(mode='wb', suffix='.xyz', delete=False) as f:
             fn = f.name
             traj.save_xyz(fn)
             f.close()
-            with warnings.catch_warnings(record=True) as w:
-                reader = pyemma.coordinates.source(fn, top=pdbfile)
-
-                self.assertEqual(w[0].category, EfficiencyWarning)
-
+            reader = pyemma.coordinates.source(fn, top=pdbfile)
             self.assertEqual(reader.trajectory_length(0), length)
 
     def test_data_in_mem(self):
