@@ -242,7 +242,9 @@ else:
                                   'nose',
                                   ]
     if sys.version_info.major == 2:
-        metadata['install_requires'] += ['mock']
+        # kick it since causes headages with conda recently...
+        #metadata['install_requires'] += ['mock']
+        pass
 
     metadata['package_data'] = {
                                 'pyemma': ['pyemma.cfg', 'logging.yml'],

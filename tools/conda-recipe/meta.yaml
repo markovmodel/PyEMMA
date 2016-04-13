@@ -16,13 +16,11 @@ requirements:
     - bhmm >=0.6,<0.7
     - joblib >0.8.4
     - matplotlib
-    - mdtraj >=1.5
-    - mock # [py27]
+    - mdtraj >=1.6
     - msmtools
     - thermotools >=0.1.14
     - nose
     - numpy x.x 
-    - ordereddict # [py27]
     - pyyaml
     - scipy
     - six
@@ -35,8 +33,7 @@ requirements:
     - bhmm >=0.6,<0.7
     - joblib >0.8.4
     - matplotlib
-    - mdtraj >=1.5
-    - mock # [py27]
+    - mdtraj >=1.6
     - msmtools
     - thermotools >=0.1.14
     - numpy x.x
