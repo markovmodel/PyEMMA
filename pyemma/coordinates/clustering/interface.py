@@ -326,7 +326,7 @@ class AbstractClustering(StreamingTransformer, Model, ClusterMixin):
             try:
                 if path.exists(dest) and not self.overwrite_dtrajs:
                     raise EnvironmentError('Attempted to write dtraj "%s" which already existed. To automatically'
-                                           'overwrite existing files, set source.overwrite_dtrajs=True.' % dest)
+                                           ' overwrite existing files, set source.overwrite_dtrajs=True.' % dest)
                 write_dtraj(dest, dtraj)
             except IOError:
                 self._logger.exception('Exception during writing dtraj to "%s"' % dest)
