@@ -186,7 +186,7 @@ class TestTRAMasReversibleMSM(unittest.TestCase):
         self.reversible_msm(True)
 
     def reversible_msm(self, direct_space):
-        tram = pyemma.thermo.TRAM(lag=1, maxerr=1.E-15, save_convergence_info=10, direct_space=direct_space, nn=None)
+        tram = pyemma.thermo.TRAM(lag=1, maxerr=1.E-12, save_convergence_info=10, direct_space=direct_space, nn=None)
         tram.estimate(self.tram_trajs)
         assert np.allclose(self.T_ref,  tram.models[0].transition_matrix, atol=1.E-4)
 
@@ -255,7 +255,7 @@ class TestTRAMwithTRAMmodel(unittest.TestCase):
                 assert mu_conditional[k, x, i] > 0
                 xes[k*traj_length + t] = x
                 btrajs[k][t, :] = energy[:, x] - energy[0, x] # define k=0 as "unbiased"
-
+        # (6)
         if init_trammbar:
             eq_ttrajs = [None] * n_therm_states
             eq_dtrajs = [None] * n_therm_states

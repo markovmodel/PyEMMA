@@ -209,7 +209,8 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
             equilibrium_ttrajs = [ttraj for eq, ttraj in zip(self.equilibrium, _ttrajs) if eq]
             equilibrium_dtrajs_full = [dtraj for eq, dtraj in zip(self.equilibrium, _dtrajs_full) if eq]
             self.equilibrium_btrajs = [btraj for eq, btraj in zip(self.equilibrium, _btrajs) if eq]
-        else:
+        else: # set dummy values
+            equilibrium_ttrajs = []
             equilibrium_dtrajs_full = []
             self.equilibrium_btrajs = []
             self.btrajs = btrajs
@@ -226,9 +227,10 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
         else:
             self.equilibrium_state_counts_full = _np.zeros((self.nthermo, self.nstates_full), dtype=_np.float64)
 
-        self.csets, pcset = _cset.compute_csets_TRAM( # TODO: TRAMMBAR
+        self.csets, pcset = _cset.compute_csets_TRAM(
             self.connectivity, state_counts_full, count_matrices_full,
-            ttrajs=ttrajs, dtrajs=dtrajs_full, bias_trajs=self.btrajs, # TODO: TRAMMBAR
+            equilibrium_state_counts=self.equilibrium_state_counts_full,
+            ttrajs=ttrajs+equilibrium_ttrajs, dtrajs=dtrajs_full+equilibrium_dtrajs_full, bias_trajs=self.btrajs+self.equilibrium_btrajs,
             nn=self.nn, factor=self.connectivity_factor, callback=_IterationProgressIndicatorCallBack(self, 'finding connected set', 'cset'))
         self.active_set = pcset
 
@@ -250,13 +252,18 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
                 self.csets,
                 state_counts=self.equilibrium_state_counts_full, ttrajs=equilibrium_ttrajs, dtrajs=equilibrium_dtrajs_full)
         else:
-            self.equilibrium_state_counts = _np.zeros((self.nthermo, self.nstates_full), dtype=_np.float64)
+            self.equilibrium_state_counts = _np.zeros((self.nthermo, self.nstates_full), dtype=_np.intc) # (remember: no relabeling)
             self.equilibrium_dtrajs = []
 
         # self-consistency tests
         assert _np.all(self.state_counts >= _np.maximum(self.count_matrices.sum(axis=1), self.count_matrices.sum(axis=2)))
         assert _np.all(_np.sum([_np.bincount(d[d>=0], minlength=self.nstates_full) for d in self.dtrajs], axis=0) == self.state_counts.sum(axis=0))
         assert _np.all(_np.sum([_np.bincount(t[d>=0], minlength=self.nthermo) for t, d in zip(ttrajs, self.dtrajs)], axis=0) == self.state_counts.sum(axis=1))
+        if self.equilibrium is not None:
+            assert _np.all(_np.sum([_np.bincount(d[d >= 0], minlength=self.nstates_full) for d in self.equilibrium_dtrajs], axis=0) ==
+                       self.equilibrium_state_counts.sum(axis=0))
+            assert _np.all(_np.sum([_np.bincount(t[d >= 0], minlength=self.nthermo) for t, d in zip(equilibrium_ttrajs, self.equilibrium_dtrajs)], axis=0) ==
+                       self.equilibrium_state_counts.sum(axis=1))
 
         # check for empty states
         for k in range(self.state_counts.shape[0]):
@@ -272,7 +279,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
                 mbar = _mbar
             self.mbar_therm_energies, self.mbar_unbiased_conf_energies, \
                 self.mbar_biased_conf_energies, _ = mbar.estimate(
-                    state_counts_full.sum(axis=1)+self.equilibrium_state_counts_full.sum(axis=1),
+                    (state_counts_full.sum(axis=1)+self.equilibrium_state_counts_full.sum(axis=1)).astype(_np.intc),
                     self.btrajs+self.equilibrium_btrajs, dtrajs_full+equilibrium_dtrajs_full,
                     maxiter=self.init_maxiter, maxerr=self.init_maxerr,
                     callback=_ConvergenceProgressIndicatorCallBack(self, 'MBAR init.', self.init_maxiter, self.init_maxerr),
@@ -298,6 +305,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
                     callback=_ConvergenceProgressIndicatorCallBack(self, 'TRAM', self.maxiter, self.maxerr),
                     N_dtram_accelerations=self.N_dtram_accelerations)
         else: # use trammbar
+            # TODO: direct space TRAMMBAR
             self.biased_conf_energies, conf_energies, self.therm_energies, self.log_lagrangian_mult, \
                 self.increments, self.loglikelihoods = _trammbar.estimate(
                     self.count_matrices, self.state_counts, self.btrajs, self.dtrajs,
