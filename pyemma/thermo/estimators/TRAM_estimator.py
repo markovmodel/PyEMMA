@@ -267,10 +267,10 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
 
         # check for empty states
         for k in range(self.state_counts.shape[0]):
-            if self.count_matrices[k, :, :].sum() == 0:
+            if self.count_matrices[k, :, :].sum() == 0 and self.equilibrium_state_counts[k, :].sum()==0:
                 _warnings.warn(
                     'Thermodynamic state %d' % k \
-                    + 'contains no transitions after reducing to the connected set.', EmptyState)
+                    + 'contains no transitions and no equilibrium data after reducing to the connected set.', EmptyState)
 
         if self.init == 'mbar' and self.biased_conf_energies is None:
             if self.direct_space:
