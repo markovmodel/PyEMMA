@@ -393,8 +393,8 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
             'MEMM has to be estimate()\'d with init=\'mbar\' before pointwise free energies can be calculated.'
         if therm_state is not None:
             assert therm_state<=self.nthermo
-        mu = [_np.zeros(d.shape[0], dtype=_np.float64) for d in self.dtrajs]
+        mu = [_np.zeros(d.shape[0], dtype=_np.float64) for d in self.dtrajs+self.equilibrium_dtrajs]
         _mbar.get_pointwise_unbiased_free_energies(therm_state,
-            _np.log(self.therm_state_counts_full + self.equilibrium_state_counts_full.sum(axis=1)), self.btrajs+self.equilibrium_btrajs,
-            self.mbar_therm_energies, None, mu)
+            _np.log(self.therm_state_counts_full + self.equilibrium_state_counts_full.sum(axis=1)).astype(_np.float64),
+            self.btrajs+self.equilibrium_btrajs, self.mbar_therm_energies, None, mu)
         return mu
