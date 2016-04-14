@@ -218,15 +218,23 @@ def _compute_csets(
     if connectivity == 'summed_count_matrix':
         # assume _direct_ overlap between all umbrellas
         C_sum = count_matrices.sum(axis=0)
+        if equilibrium_state_counts is not None:
+            eq_states = _np.where(equilibrium_state_counts.sum(axis=0) > 0)[0]
+            C_sum[eq_states, eq_states[:, _np.newaxis]] = 1
+            all_state_counts = state_counts + equilibrium_state_counts
+        else:
+            all_state_counts = state_counts
         cset_projected = _msmtools.estimation.largest_connected_set(C_sum, directed=True)
         csets = []
         for k in range(n_therm_states):
-            cset = _np.intersect1d(_np.where(state_counts[k, :] > 0), cset_projected)
+            cset = _np.intersect1d(_np.where(all_state_counts[k, :] > 0), cset_projected)
             csets.append(cset)
         return csets, cset_projected
     elif connectivity == 'strong_in_every_ensemble':
         # within every thermodynamic state, restrict counts to this state's
         # largest connected set
+        if equilibrium_state_counts is not None:
+            raise Excpetion('Connectivity mode "strong_in_every_ensemble" doesn\'t yet support equilibrium data.')
         csets = []
         C_sum = _np.zeros((n_conf_states, n_conf_states), dtype=count_matrices.dtype)
         for k in range(n_therm_states):
