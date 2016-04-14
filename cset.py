@@ -35,7 +35,7 @@ import collections as _collections
 
 
 def compute_csets_TRAM(
-    connectivity, state_counts, count_matrices,
+    connectivity, state_counts, count_matrices, equilibrium_state_counts=None,
     ttrajs=None, dtrajs=None, bias_trajs=None, nn=None, factor=1.0, callback=None):
     r'''
     Computes the largest connected sets for TRAM data.
@@ -90,10 +90,13 @@ def compute_csets_TRAM(
         The parameter ttrajs, dtrajs, bias_trajs must be set.
 
     state_counts : numpy.ndarray((T, M), dtype=numpy.intc)
-        Number of visits to the combiantions of thermodynamic state t
+        Number of visits to the combinations of thermodynamic state t
         and Markov state m
     count_matrices : numpy.ndarray((T, M, M), dtype=numpy.intc)
         Count matrices for all T thermodynamic states.
+    equilibrium_state_counts : numpy.dnarray((T, M)), optional
+        Number of visits to the combinations of thermodynamic state t
+        and Markov state m in the equilibrium data (for use with TRAMMBAR).
     ttrajs : list of numpy.ndarray(X_i, dtype=numpy.intc), optional
         List of generating thermodynamic state trajectories.
     dtrajs : list of numpy.ndarray(X_i, dtype=numpy.intc), optional
@@ -132,7 +135,8 @@ def compute_csets_TRAM(
     '''
     return _compute_csets(
         connectivity, state_counts, count_matrices, ttrajs, dtrajs, bias_trajs,
-        nn=nn, factor=factor, callback=callback)
+        nn=nn, equilibrium_state_counts=equilibrium_state_counts,
+        factor=factor, callback=callback)
 
 def compute_csets_dTRAM(connectivity, count_matrices, nn=None, callback=None):
     r'''
@@ -209,7 +213,7 @@ def _overlap_BAR_variance(a, b, factor=1.0):
 
 def _compute_csets(
     connectivity, state_counts, count_matrices, ttrajs, dtrajs, bias_trajs, nn,
-    factor=1.0, callback=None):
+    equilibrium_state_counts=None, factor=1.0, callback=None):
     n_therm_states, n_conf_states = state_counts.shape
     if connectivity == 'summed_count_matrix':
         # assume _direct_ overlap between all umbrellas
@@ -303,6 +307,18 @@ def _compute_csets(
             i_s += list(temp.row + k * n_conf_states)
             j_s += list(temp.col + k * n_conf_states)
 
+        # If there is global equilibrium data, assume full connectivity
+        # between all visited conformational states within the same thermodynamic state.
+        if equilibrium_state_counts is not None:
+            for k in range(n_therm_states):
+                vertices = np.where(equilibrium_state_counts[k, :]>0)[0]
+                # add bidirectional chain that links all states
+                chain = (vertices[0:-1], vertices[1:])
+                i_s += list(chain[0] + k * n_conf_states)
+                j_s += list(chain[1] + k * n_conf_states)
+                i_s += list(chain[1] + k * n_conf_states)
+                j_s += list(chain[0] + k * n_conf_states)
+
         data = _np.ones(len(i_s), dtype=int)
         A = _sp.sparse.coo_matrix((data, (i_s, j_s)), shape=(dim, dim))
         cset = _msmtools.estimation.largest_connected_set(A, directed=True)
@@ -388,7 +404,8 @@ def restrict_to_csets(
             assert len(t) == len(d)
             new_d = _np.array(d, dtype=_np.intc, copy=True, order='C', ndmin=1)
             bad = invalid[t, d]
-            new_d[bad] = -new_d[bad] - 1
+            new_d[bad] = new_d[bad] - n_conf_states # 'numpy equivalent' indices as in x[i]==x[i-len(x)]
+            assert _np.all(new_d[bad] - n_conf_states < 0)
             new_dtrajs.append(new_d)
     else:
         new_dtrajs = None
