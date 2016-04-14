@@ -66,7 +66,8 @@ cdef extern from "../tram/_tram.h":
     double _tram_discrete_log_likelihood_lower_bound(
         double *log_lagrangian_mult, double *biased_conf_energies, double *therm_energies,
         int *count_matrices,  int *state_counts, int *equilibrium_therm_state_counts,
-        int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_MM)
+        int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_MM,
+        double overcounting_factor)
     void _tram_get_log_Ref_K_i(
         double *log_lagrangian_mult, double *biased_conf_energies, double *therm_energies,
         int *count_matrices, int *state_counts, int *equilibrium_therm_state_counts,
@@ -209,8 +210,8 @@ def update_biased_conf_energies(
             int(return_log_L))
     if TRAMMBAR:
         if equilibrium_bias_energy_sequences is not None:
-            log_L += _np.log(overcounting_factor) # TODO ???
-            new_biased_conf_energies += _np.log(overcounting_factor)
+            log_L *= overcounting_factor
+            new_biased_conf_energies -= _np.log(overcounting_factor)
             for i in range(len(equilibrium_bias_energy_sequences)):
                 log_L += _tram_update_biased_conf_energies(
                     <double*> _np.PyArray_DATA(equilibrium_bias_energy_sequences[i]),
@@ -238,7 +239,8 @@ def update_biased_conf_energies(
             state_counts.shape[0],
             state_counts.shape[1],
             <double*> _np.PyArray_DATA(scratch_M),
-            <double*> _np.PyArray_DATA(scratch_MM))
+            <double*> _np.PyArray_DATA(scratch_MM),
+            overcounting_factor)
         return log_L
 
 def get_log_Ref_K_i(
@@ -341,7 +343,7 @@ def get_conf_energies(
             <double*> _np.PyArray_DATA(conf_energies))
     if TRAMMBAR:
         if equilibrium_bias_energy_sequences is not None:
-            conf_energies += _np.log(overcounting_factor)
+            conf_energies -= _np.log(overcounting_factor)
             for i in range(len(equilibrium_bias_energy_sequences)):
                 _tram_get_conf_energies(
                     <double*> _np.PyArray_DATA(equilibrium_bias_energy_sequences[i]),

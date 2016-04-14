@@ -52,15 +52,19 @@ void _tram_estimate_transition_matrix(
     int n_conf_states, double *scratch_M, double *transition_matrix);
 
 double _tram_discrete_log_likelihood_lower_bound(
+#ifdef TRAMMBAR
     double *log_lagrangian_mult, double *biased_conf_energies,
-#ifdef TRAMMBAR
     double *therm_energies,
-#endif
     int *count_matrices, int *state_counts,
-#ifdef TRAMMBAR
     int *equilibrium_therm_state_counts,
+    int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_MM,
+    double overcounting_factor
+#else
+    double *log_lagrangian_mult, double *biased_conf_energies,
+    int *count_matrices, int *state_counts,
+    int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_MM
 #endif
-    int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_MM);
+);
 
 void _tram_get_log_Ref_K_i(
 #ifdef TRAMMBAR

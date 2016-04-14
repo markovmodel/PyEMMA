@@ -149,14 +149,22 @@ void _tram_get_log_Ref_K_i(
     }
 
 #ifdef TRAMMBAR
-    if(equilibrium_therm_state_counts && therm_energies) {
-        for(K=0; K<n_therm_states; ++K) {
-            if(0 < equilibrium_therm_state_counts[K]) {
+    if(equilibrium_therm_state_counts && therm_energies)
+    {
+        for(K=0; K<n_therm_states; ++K)
+        {
+            KM = K * n_conf_states;
+            for(i=0; i<n_conf_states; ++i)
+                log_R_K_i[KM + i] += log(overcounting_factor);
+        }
+        for(K=0; K<n_therm_states; ++K)
+        {
+            if(0 < equilibrium_therm_state_counts[K])
+            {
                 KM = K * n_conf_states;
                 for(i=0; i<n_conf_states; ++i)
                 {
                     Ki = KM + i;
-                    log_R_K_i[Ki] += log(overcounting_factor);
                     log_R_K_i[Ki] = _logsumexp_pair(log_R_K_i[Ki], log(equilibrium_therm_state_counts[K]) + therm_energies[K]);
                 }
             }
@@ -322,15 +330,19 @@ void _tram_estimate_transition_matrix(
 
 /* TRAM log-likelihood that comes from the terms containing discrete quantities */
 double _tram_discrete_log_likelihood_lower_bound(
+#ifdef TRAMMBAR
     double *log_lagrangian_mult, double *biased_conf_energies,
-#ifdef TRAMMBAR
     double *therm_energies,
-#endif
     int *count_matrices, int *state_counts,
-#ifdef TRAMMBAR
     int *equilibrium_therm_state_counts,
+    int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_MM,
+    double overcounting_factor
+#else
+    double *log_lagrangian_mult, double *biased_conf_energies,
+    int *count_matrices, int *state_counts,
+    int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_MM
 #endif
-    int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_MM)
+)
 {
     double a, b;
     int K, i, j;
@@ -375,6 +387,9 @@ double _tram_discrete_log_likelihood_lower_bound(
     }
 
 #ifdef TRAMMBAR
+    a *= overcounting_factor;
+    b *= overcounting_factor;
+
     /* \sum_k N_{eq}^{(k)}f^{(k)}*/
     if(equilibrium_therm_state_counts && therm_energies) {
         for(K=0; K<n_therm_states; ++K) {
