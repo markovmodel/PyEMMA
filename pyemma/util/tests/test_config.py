@@ -26,7 +26,10 @@ import os
 import sys
 import unittest
 
+from six.moves import configparser
+
 from pyemma.util.files import TemporaryDirectory
+from pyemma.util.exceptions import ConfigDirectoryException
 import pkg_resources
 import pyemma
 
@@ -44,14 +47,13 @@ class TestConfig(unittest.TestCase):
 
     def test_config_vals_match_properties_in_wrapper(self):
         with TemporaryDirectory() as td:
-            os.environ['PYEMMA_CFG_DIR'] = td
-            self.config_inst._create_cfg_dir()
+            self.config_inst.cfg_dir = td
             self.assertEqual(self.config_inst.cfg_dir, td)
             from pyemma import config as config_module
             assert hasattr(config_module, 'default_config_file')
             my_cfg = os.path.join(td, 'pyemma.cfg')
-            self.assertEqual(pkg_resources.resource_filename('pyemma', 'pyemma.cfg') , config_module.default_config_file)
-            from six.moves import configparser
+            self.assertEqual(pkg_resources.resource_filename('pyemma', 'pyemma.cfg'),
+                             config_module.default_config_file)
             reader = configparser.ConfigParser()
             reader.read(my_cfg)
 
@@ -61,22 +63,19 @@ class TestConfig(unittest.TestCase):
 
     @unittest.skipIf(sys.platform == 'win32', 'unix based test')
     def test_can_not_create_cfg_dir(self):
-        os.environ['PYEMMA_CFG_DIR'] = '/dev/null'
-
-        with self.assertRaises(RuntimeError) as cm:
-            self.config_inst._create_cfg_dir()
+        with self.assertRaises(ConfigDirectoryException) as cm:
+            self.config_inst.cfg_dir = '/dev/null'
         self.assertIn("no valid directory", str(cm.exception))
 
     @unittest.skipIf(sys.platform == 'win32', 'unix based test')
     def test_non_writeable_cfg_dir(self):
         with TemporaryDirectory() as tmp:
-            os.environ['PYEMMA_CFG_DIR'] = tmp
             # make cfg dir non-writeable
             os.chmod(tmp, 0x300)
             assert not os.access(tmp, os.W_OK)
 
-            with self.assertRaises(RuntimeError) as cm:
-                self.config_inst._create_cfg_dir()
+            with self.assertRaises(ConfigDirectoryException) as cm:
+                self.config_inst.cfg_dir = tmp
             self.assertIn("is not writeable", str(cm.exception))
 
     def test_shortcuts(self):
@@ -94,6 +93,54 @@ class TestConfig(unittest.TestCase):
     def test_types(self):
         self.config_inst.show_progress_bars = 0
         assert isinstance(self.config_inst.show_progress_bars, bool)
+
+    def test_keys(self):
+        self.config_inst.keys()
+
+    def test_save_load_user_cfg_file(self):
+        # replace a value with a non default value:
+        self.config_inst.show_progress_bars = not self.config_inst.show_progress_bars
+        import tempfile
+        from six.moves import configparser
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.cfg') as f:
+            self.config_inst.save(f.name)
+            cfg = configparser.ConfigParser()
+            cfg.read(f.name)
+            self.assertEqual(cfg.getboolean('pyemma', 'show_progress_bars'), self.config_inst.show_progress_bars)
+
+    def test_save_load_no_cfg_file_given(self):
+        """ test that in case no cfg dir has been set, the default location is being used and values changed at
+        runtime are used afterwards."""
+        # replace a value with a non default value:
+        with TemporaryDirectory() as td:
+            os.environ['PYEMMA_CFG_DIR'] = td
+            self.config_inst = pyemma.config()
+            self.config_inst.show_progress_bars = not self.config_inst.show_progress_bars
+            self.config_inst.save()
+
+            supposed_to_use_cfg = os.path.join(td, self.config_inst.DEFAULT_CONFIG_FILE_NAME)
+
+            cfg = configparser.RawConfigParser()
+            cfg.read(supposed_to_use_cfg)
+            self.assertEqual(cfg.getboolean('pyemma', 'show_progress_bars'),
+                             self.config_inst.show_progress_bars)
+
+    def test_load(self):
+        with TemporaryDirectory() as td:
+            new_file = os.path.join(td, "test.cfg")
+            self.config_inst.show_progress_bars = not self.config_inst.show_progress_bars
+            old_val = self.config_inst.show_progress_bars
+            self.config_inst.save(new_file)
+
+            # set a runtime value, differing from what used to be state before save
+            self.config_inst.show_progress_bars = not self.config_inst.show_progress_bars
+
+            self.config_inst.load(new_file)
+            self.assertEqual(self.config_inst.show_progress_bars, old_val)
+
+    def test_interpolation_from_multiple_files(self):
+        # TODO: impl
+        pass
 
 if __name__ == "__main__":
     unittest.main()

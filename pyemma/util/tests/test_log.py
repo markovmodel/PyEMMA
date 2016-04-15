@@ -44,7 +44,7 @@ class TestNonWriteableLogFile(unittest.TestCase):
 
     def tearDown(self):
         # reset logging
-        log.setupLogging(config)
+        log.setup_logging(config)
 
     @unittest.skipIf('win32' in sys.platform, "disabled on win")
     def test(self):
@@ -71,7 +71,7 @@ loggers:
             with mock.patch('pyemma.util.log.open', create=True) as mock_open:
                 mock_open.return_value = open(f.name)
 
-                log.setupLogging(config)
+                log.setup_logging(config)
                 assert logging.getLogger('pyemma').handlers[0].baseFilename.startswith(config.cfg_dir)
 
 if __name__ == "__main__":

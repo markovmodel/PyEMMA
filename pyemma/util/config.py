@@ -1,7 +1,6 @@
-
 # This file is part of PyEMMA.
 #
-# Copyright (c) 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+# Copyright (c) 2016, 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
 #
 # PyEMMA is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -18,13 +17,16 @@
 
 from __future__ import absolute_import
 
+import six
+from six.moves import configparser
+
 import os
 import shutil
 import sys
 import warnings
 
-from pyemma.util.annotators import deprecated
 from pyemma.util.files import mkdir_p
+from pyemma.util.exceptions import ConfigDirectoryException
 
 import pkg_resources
 
@@ -43,8 +45,13 @@ __all__ = (
            'use_trajectory_lengths_cache',
            )
 
+if six.PY2:
+    class NotADirectoryError(Exception):
+        pass
 
-class NotADirectoryError(Exception):
+
+# indicate error during reading
+class ReadConfigException(Exception):
     pass
 
 
@@ -97,6 +104,7 @@ or
 >>> print(config.show_progress_bars) # doctest: +SKIP
 False
     '''
+    DEFAULT_CONFIG_DIR = os.path.join(os.path.expanduser('~'), '.pyemma')
     DEFAULT_CONFIG_FILE_NAME = 'pyemma.cfg'
     DEFAULT_LOGGING_FILE_NAME = 'logging.yml'
 
@@ -104,30 +112,33 @@ False
     __file__ = __file__
 
     def __init__(self, wrapped):
-        # try to create cfg dir, then fallback to standard (not editable) cfg files.
-        created = False
-        for _ in range(3):
-            try:
-                created = self._create_cfg_dir()
-            except RuntimeError as re:
-                warnings.warn(str(re))
-            if created:
-                break
-            import time
-            time.sleep(0.5)
+        # this is a SafeConfigParser instance
+        self._conf_values = None
 
-        if not created:
-            self._cfg_dir = ""
+        # note we do not invoke the cfg_dir setter here, because we do not want anything to be created/copied yet.
+        # first check if there is a config dir set via environment
+        if 'PYEMMA_CFG_DIR' in os.environ:
+            # TODO: probe?
+            self._cfg_dir = os.environ['PYEMMA_CFG_DIR']
+        # try to read default cfg dir
+        elif os.path.isdir(self.DEFAULT_CONFIG_DIR) and os.access(self.DEFAULT_CONFIG_DIR, os.W_OK):
+            self._cfg_dir = self.DEFAULT_CONFIG_DIR
+        # use defaults
+        else:
+            self._cfg_dir = None
+            from pyemma import __version__
+            print("[PyEMMA {version}]: no configuration directory set or usable."
+                  "Falling back to defaults.".format(version=__version__))
 
         try:
-            self.__readConfiguration()
+            self.load()
         except RuntimeError as re:
             warnings.warn("unable to read default configuration file. Logging and "
                           " progress bar handling could behave bad! Error: %s" % re)
 
-        from pyemma.util.log import setupLogging, LoggingConfigurationError
+        from pyemma.util.log import setup_logging, LoggingConfigurationError
         try:
-            setupLogging(self)
+            setup_logging(self)
         except LoggingConfigurationError as e:
             warnings.warn("Error during logging configuration. Logging might not be functional!"
                           "Error: %s" % e)
@@ -139,16 +150,68 @@ False
     def __call__(self, ):
         return Wrapper(sys.modules[__name__])
 
-    @property
-    def cfg_dir(self):
-        """ configuration directory (eg. in ~/.pyemma """
-        if self._cfg_dir is None:
-            self._create_cfg_dir()
-        return self._cfg_dir
+    def load(self, filename=None):
+        """ load runtime configuration from given filename.
+        If filename is None try to read from default file from
+        default location. """
+        if not filename:
+            filename = self.default_config_file
+
+        files = self._cfgs_to_read()
+        # insert last, so it will override all values,
+        # which have already been set in previous files.
+        files.insert(-1, filename)
+
+        try:
+            config = self.__read_cfg(files)
+        except ReadConfigException as e:
+            print('config.load("{file}") failed with {error}'.format(file=filename, error=e))
+        else:
+            self._conf_values = config
+
+    def save(self, filename=None):
+        """ Saves the runtime configuration to disk.
+
+        Parameters
+        ----------
+        filename ; str or None, default=None
+            writeable path to configuration filename. If None, use default location and filename.
+        """
+        if not filename:
+            filename = self.DEFAULT_CONFIG_FILE_NAME
+        else:
+            filename = str(filename)
+            # try to extract the path from filename and use is as cfg_dir
+            head, tail = os.path.split(filename)
+            if head:
+                self._cfg_dir = head
+
+            # we are search for .cfg files in cfg_dir so make sure it contains the proper extension.
+            base, ext = os.path.splitext(tail)
+            if ext != ".cfg":
+                filename += ".cfg"
+
+        filename = os.path.join(self.cfg_dir, filename)
+
+        # if we have no cfg dir, try to create it first. Return if it failed.
+        if not self.cfg_dir:
+            try:
+                self.cfg_dir = self.DEFAULT_CONFIG_DIR
+            except ConfigDirectoryException as cde:
+                print('Could not create configuration directory "{dir}"! config.save() failed.'
+                      ' Please set a writeable location with config.cfg_dir = val. Error was {exc}'
+                      .format(dir=self.cfg_dir, exc=cde))
+                return
+
+        try:
+            with open(filename, 'w') as fh:
+                self._conf_values.write(fh)
+        except IOError as ioe:
+            print("Save failed with error %s" % ioe)
 
     @property
     def used_filenames(self):
-        """these filenames have been tried to red to obtain basic configuration values."""
+        """these filenames have been red to obtain basic configuration values."""
         return self._used_filenames
 
     @property
@@ -160,16 +223,43 @@ False
     def default_logging_file(self):
         return pkg_resources.resource_filename('pyemma', Wrapper.DEFAULT_LOGGING_FILE_NAME)
 
-    @property
-    @deprecated("do not use this!")
-    def conf_values(self):
-        return self._conf_values
-
     def keys(self):
         return ['show_progress_bars',
                 'use_trajectory_lengths_cache',
                 'logging_config',
                 ]
+
+    @property
+    def cfg_dir(self):
+        """ PyEMMAs configuration directory (eg. ~/.pyemma)"""
+        return self._cfg_dir
+
+    @cfg_dir.setter
+    def cfg_dir(self, pyemma_cfg_dir):
+        """ Sets PyEMMAs configuration directory.
+        Also creates it with some default files, if does not exists."""
+        if not os.path.exists(pyemma_cfg_dir):
+            try:
+                mkdir_p(pyemma_cfg_dir)
+            except EnvironmentError:
+                raise ConfigDirectoryException("could not create configuration directory '%s'" % pyemma_cfg_dir)
+            except NotADirectoryError:  # on Python 3
+                raise ConfigDirectoryException("pyemma cfg dir (%s) is not a directory" % pyemma_cfg_dir)
+
+        if not os.path.isdir(pyemma_cfg_dir):
+            raise ConfigDirectoryException("%s is no valid directory" % pyemma_cfg_dir)
+        if not os.access(pyemma_cfg_dir, os.W_OK):
+            raise ConfigDirectoryException("%s is not writeable" % pyemma_cfg_dir)
+
+        # give user the default cfg file, if its not there
+        self.__copy_default_files_to_cfg_dir(pyemma_cfg_dir)
+        self._cfg_dir = pyemma_cfg_dir
+
+        print('*'*80, '\n',
+              'Changed PyEMMAs config directory to "{dir}".\n'
+              'To make this change permanent, export the environment variable'
+              ' "PYEMMA_CFG_DIR" \nto point to this location. Eg. edit your .bashrc file!'.format(dir=pyemma_cfg_dir),
+              '\n', '*' * 80)
 
     ### SETTINGS
     @property
@@ -181,127 +271,73 @@ False
 
     @property
     def show_progress_bars(self):
-        cfg_val = self._conf_values['pyemma']['show_progress_bars']
-        if isinstance(cfg_val, bool):
-            return cfg_val
-        # TODO: think about a professional type checking/converting lib
-        parsed = True if cfg_val.lower() == 'true' else False
-        return parsed
+        return self._conf_values.getboolean('pyemma', 'show_progress_bars')
 
     @show_progress_bars.setter
     def show_progress_bars(self, val):
-        self._conf_values['pyemma']['show_progress_bars'] = bool(val)
+        self._conf_values['pyemma']['show_progress_bars'] = str(val)
 
     @property
     def use_trajectory_lengths_cache(self):
-        return bool(self._conf_values['pyemma']['use_trajectory_lengths_cache'])
+        return self._conf_values.getboolean('pyemma', 'use_trajectory_lengths_cache')
 
     @use_trajectory_lengths_cache.setter
     def use_trajectory_lengths_cache(self, val):
-        self._conf_values['pyemma']['use_trajectory_lengths_cache'] = bool(val)
+        self._conf_values['pyemma']['use_trajectory_lengths_cache'] = str(val)
 
-    def _create_cfg_dir(self):
+    def __copy_default_files_to_cfg_dir(self, target_dir):
         try:
             os.stat(self.default_config_file)
+            os.stat(self.default_logging_file)
         except OSError:
-            raise RuntimeError('Error during accessing default config file "%s"' %
-                               self.default_config_file)
-
-        if 'PYEMMA_CFG_DIR' in os.environ:
-            pyemma_cfg_dir = os.environ['PYEMMA_CFG_DIR']
-        else:
-            pyemma_cfg_dir = os.path.join(os.path.expanduser("~"), ".pyemma")
-
-        if not os.path.exists(pyemma_cfg_dir):
-            try:
-                mkdir_p(pyemma_cfg_dir)
-            except EnvironmentError:
-                raise RuntimeError("could not create configuration directory '%s'" %
-                                   pyemma_cfg_dir)
-            except NotADirectoryError:
-                raise RuntimeWarning("pyemma cfg dir (%s) is not a directory" %
-                                     pyemma_cfg_dir)
-
-        if not os.path.isdir(pyemma_cfg_dir):
-            raise RuntimeError("%s is no valid directory" % pyemma_cfg_dir)
-        if not os.access(pyemma_cfg_dir, os.W_OK):
-            raise RuntimeError("%s is not writeable" % pyemma_cfg_dir)
-
-        # give user the default cfg file, if its not there
-        files_to_check_copy = [
-               Wrapper.DEFAULT_CONFIG_FILE_NAME,
-               Wrapper.DEFAULT_LOGGING_FILE_NAME,
+            raise ConfigDirectoryException('Error during accessing default file "%s"' %
+                                           self.default_config_file)
+        files_to_copy = [
+            self.default_config_file,
+            self.default_logging_file,
         ]
-        dests = [os.path.join(pyemma_cfg_dir, f) for f in files_to_check_copy]
-        srcs = [pkg_resources.resource_filename('pyemma', f) for f in files_to_check_copy]
-        for src, dest in zip(srcs, dests):
+
+        dests = [os.path.join(target_dir, os.path.basename(f)) for f in files_to_copy]
+        for src, dest in zip(files_to_copy, dests):
             if not os.path.exists(dest):
                 shutil.copyfile(src, dest)
 
-        self._cfg_dir = pyemma_cfg_dir
-        return True
+    def __read_cfg(self, filenames):
+        config = configparser.SafeConfigParser()
 
-    def __readConfiguration(self):
+        try:
+            self._used_filenames = config.read(filenames)
+        except EnvironmentError as e:
+            # note: this file is mission crucial, so fail badly if this is not readable.
+            raise ReadConfigException("FATAL ERROR: could not read default configuration"
+                                      " file %s\n%s" % (self.default_config_file, e))
+        return config
+
+    def _cfgs_to_read(self):
         """
         reads config files from various locations to build final config.
         """
-        from six.moves import configparser
-
         # use these files to extend/overwrite the conf_values.
         # Last red file always overwrites existing values!
         cfg = Wrapper.DEFAULT_CONFIG_FILE_NAME
         filenames = [
-            cfg,  # conf_values in current dir
-            os.path.join(self.cfg_dir, cfg),
-            os.path.join(os.path.expanduser(
-                         '~' + os.path.sep), cfg)  # config in user dir
+            self.default_config_file,
+            cfg,  # conf_values in current directory
+            os.path.join(os.path.expanduser('~' + os.path.sep), cfg),  # config in user dir
+            '.pyemma.cfg',
         ]
 
-        cfg_hidden = '.pyemma.cfg'
-        filenames += [
-            cfg_hidden,
-            # deprecated:
-            os.path.join(self.cfg_dir, cfg_hidden),
-            os.path.join(os.path.expanduser(
-                         '~' + os.path.sep), cfg_hidden)
-        ]
-
-        # read defaults from default_pyemma_conf first.
-        defParser = configparser.RawConfigParser()
-
-        try:
-            defParser.read(self.default_config_file)
-        except EnvironmentError as e:
-            raise RuntimeError("FATAL ERROR: could not read default configuration"
-                               " file %s\n%s" % (self.default_config_file, e))
-
-        # store values of defParser in configParser with sections
-        configParser = configparser.SafeConfigParser()
-
-        for section in defParser.sections():
-            configParser.add_section(section)
-            for item in defParser.items(section):
-                configParser.set(section, item[0], item[1])
-
-        # this is a list of used configuration filenames during parsing the
-        # conf
-        self._used_filenames = configParser.read(filenames)
-
-        # store values in dictionaries for easy access
-        conf_values = dict()
-        for section in configParser.sections():
-            conf_values[section] = dict()
-            for item in configParser.items(section):
-                conf_values[section][item[0]] = item[1]
-
-        conf_values['pyemma']['cfg_dir'] = self.cfg_dir
-        self._conf_values = conf_values
+        # look for user defined files
+        if self.cfg_dir:
+            from glob import glob
+            filenames.extend(glob(self.cfg_dir + os.path.sep + "*.cfg"))
+        return filenames
 
     # for dictionary like lookups
     def __getitem__(self, name):
         try:
             return self._conf_values['pyemma'][name]
-        except KeyError:
+        except KeyError:  # re-try with default section
             return self._conf_values[name]
 
     def __setitem__(self, name, value):

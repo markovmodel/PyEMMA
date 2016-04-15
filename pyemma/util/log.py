@@ -37,7 +37,7 @@ class LoggingConfigurationError(RuntimeError):
     pass
 
 
-def setupLogging(config):
+def setup_logging(config):
     """ set up the logging system with the configured (in pyemma.cfg) logging config (logging.yml)
     @param config: instance of pyemma.config module (wrapper)
     """
@@ -60,10 +60,10 @@ def setupLogging(config):
         # fall back to default
         if not default:
             try:
-                with open(config.default_logging_file) as f:
-                    D = yaml.load(f)
-                    warnings.warn('Your set logging configuration could not '
-                                  'be used. Used default as fallback.')
+                with open(config.default_logging_file) as f2:
+                    D = yaml.load(f2)
+                    warnings.warn('Your set logging configuration file "%s" could not '
+                                  'be used. Used default as fallback.' % src)
             except EnvironmentError as ee2:
                 raise LoggingConfigurationError('Could not read either configured nor '
                                                 'default logging configuration!\n%s' % ee2)
