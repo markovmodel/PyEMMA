@@ -85,7 +85,7 @@ int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric,
 
     buffer_a = NULL; buffer_b = NULL; trace_centers_p = NULL;
     ret = ASSIGN_SUCCESS;
-    debug=0;
+    debug=1;
 
     /* init metric */
     if(strcmp(metric, "euclidean")==0) {
@@ -128,7 +128,7 @@ int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric,
     for (i = 0; i < N_frames; ++i)
         dtraj[i] = -1;
 
-    #pragma omp parallel for private(i, j, mindist, argmin) schedule(guided, 4)
+    #pragma omp parallel for private(i, j, mindist, argmin)
     for(i = 0; i < N_frames; ++i) {
 
         float* dists = malloc(N_centers*sizeof(float));
@@ -138,7 +138,7 @@ int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric,
             dists[j] = distance(&centers[j*dim], chunk_p, dim, buffer_a, buffer_b, trace_centers_p);
         }
 
-        # pragma omp critical
+        //# pragma omp critical
         {
             mindist = FLT_MAX; argmin = -1;
             for (j=0; j < N_centers; ++j) {
