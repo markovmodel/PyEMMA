@@ -81,7 +81,11 @@ int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric,
     float *buffer_a, *buffer_b;
     float *centers_precentered;
     float *trace_centers_p;
+    float* dists;
     float (*distance)(float*, float*, size_t, float*, float*, float*);
+    #ifdef USE_OPENMP
+    float * SKP_restrict chunk_p;
+    #endif
 
     buffer_a = NULL; buffer_b = NULL; trace_centers_p = NULL;
     ret = ASSIGN_SUCCESS;
@@ -122,33 +126,31 @@ int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric,
      */
     #ifdef USE_OPENMP
     omp_set_num_threads(n_threads);
-    float * SKP_restrict chunk_p = NULL;
+    if(debug) printf("using openmp; n_threads=%i\n", n_threads);
+    chunk_p = NULL;
     assert(omp_get_num_threads() == n_threads);
 
-    for (i = 0; i < N_frames; ++i)
-        dtraj[i] = -1;
-
-    #pragma omp parallel for private(i, j, mindist, argmin)
+    #pragma omp parallel for private(i, j, dists, mindist, argmin, chunk_p)
     for(i = 0; i < N_frames; ++i) {
-
-        float* dists = malloc(N_centers*sizeof(float));
+        dists = malloc(N_centers*sizeof(float));
         chunk_p = &chunk[i*dim];
-        //printf("i: %i\tt_id: %i\n", i, omp_get_thread_num());
+
         for(j = 0; j < N_centers; ++j) {
             dists[j] = distance(&centers[j*dim], chunk_p, dim, buffer_a, buffer_b, trace_centers_p);
         }
 
-        //# pragma omp critical
         {
             mindist = FLT_MAX; argmin = -1;
             for (j=0; j < N_centers; ++j) {
                 if (dists[j] < mindist) { mindist = dists[j]; argmin = j; }
             }
             dtraj[i] = argmin;
-            if (debug) printf("dtraj[%i] = %i in thread[%i]\n", i, argmin, omp_get_thread_num());
         }
         free(dists);
     }
+
+    free(dists);
+
     #else // serial version
     {
         for(i = 0; i < N_frames; ++i) {
