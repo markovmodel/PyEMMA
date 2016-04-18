@@ -51,17 +51,15 @@ float minRMSD_distance(float *SKP_restrict a, float *SKP_restrict b, size_t n,
     float trace_a, trace_b;
 
     if (! trace_a_precalc) {
-    printf("not using pre calc centers\n");
+    	memcpy(buffer_a, a, n*sizeof(float));
+    	memcpy(buffer_b, b, n*sizeof(float));
 
-    memcpy(buffer_a, a, n*sizeof(float));
-    memcpy(buffer_b, b, n*sizeof(float));
+    	inplace_center_and_trace_atom_major(buffer_a, &trace_a, 1, n/3);
+    	inplace_center_and_trace_atom_major(buffer_b, &trace_b, 1, n/3);
 
-    inplace_center_and_trace_atom_major(buffer_a, &trace_a, 1, n/3);
-    inplace_center_and_trace_atom_major(buffer_b, &trace_b, 1, n/3);
-
-    msd = msd_atom_major(n/3, n/3, buffer_a, buffer_b, trace_a, trace_b, 0, NULL);
+    	msd = msd_atom_major(n/3, n/3, buffer_a, buffer_b, trace_a, trace_b, 0, NULL);
     } else {
-    // only copy b, since a has been pre-centered,
+    	// only copy b, since a has been pre-centered,
         memcpy(buffer_b, b, n*sizeof(float));
         inplace_center_and_trace_atom_major(buffer_b, &trace_b, 1, n/3);
 
@@ -89,7 +87,7 @@ int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric,
 
     buffer_a = NULL; buffer_b = NULL; trace_centers_p = NULL;
     ret = ASSIGN_SUCCESS;
-    debug=1;
+    debug=0;
 
     /* init metric */
     if(strcmp(metric, "euclidean")==0) {
