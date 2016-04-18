@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 import six
 from six.moves import configparser
@@ -255,11 +255,12 @@ False
         self.__copy_default_files_to_cfg_dir(pyemma_cfg_dir)
         self._cfg_dir = pyemma_cfg_dir
 
-        print('*'*80, '\n',
+        stars = '*' * 80
+        print(stars, '\n',
               'Changed PyEMMAs config directory to "{dir}".\n'
               'To make this change permanent, export the environment variable'
               ' "PYEMMA_CFG_DIR" \nto point to this location. Eg. edit your .bashrc file!'.format(dir=pyemma_cfg_dir),
-              '\n', '*' * 80, sep='')
+              '\n', stars, sep='')
 
     ### SETTINGS
     @property
