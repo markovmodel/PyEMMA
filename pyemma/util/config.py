@@ -123,12 +123,12 @@ False
         # try to read default cfg dir
         elif os.path.isdir(self.DEFAULT_CONFIG_DIR) and os.access(self.DEFAULT_CONFIG_DIR, os.W_OK):
             self._cfg_dir = self.DEFAULT_CONFIG_DIR
-        # use defaults
+        # use defaults, have no cfg_dir set.
         else:
-            self._cfg_dir = None
+            self._cfg_dir = ''
             from pyemma import __version__
             print("[PyEMMA {version}]: no configuration directory set or usable."
-                  "Falling back to defaults.".format(version=__version__))
+                  " Falling back to defaults.".format(version=__version__))
 
         try:
             self.load()
@@ -259,7 +259,7 @@ False
               'Changed PyEMMAs config directory to "{dir}".\n'
               'To make this change permanent, export the environment variable'
               ' "PYEMMA_CFG_DIR" \nto point to this location. Eg. edit your .bashrc file!'.format(dir=pyemma_cfg_dir),
-              '\n', '*' * 80)
+              '\n', '*' * 80, sep='')
 
     ### SETTINGS
     @property

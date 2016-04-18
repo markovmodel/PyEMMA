@@ -48,7 +48,7 @@ def setup_logging(config):
 
     if args.upper() == 'DEFAULT':
         default = True
-        src = os.path.join(config.cfg_dir, 'logging.yml')
+        src = config.default_logging_file
     else:
         src = args
 
