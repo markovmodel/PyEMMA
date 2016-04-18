@@ -24,6 +24,8 @@ from __future__ import absolute_import
 
 from tempfile import NamedTemporaryFile
 
+import mock
+
 try:
     import bsddb
     have_bsddb = True
@@ -87,9 +89,9 @@ class TestTrajectoryInfoCache(unittest.TestCase):
 
     def test_store_load_traj_info(self):
         x = np.random.random((10, 3))
-        try:
-            old_val = config.conf_values['pyemma']['cfg_dir']
-            config.conf_values['pyemma']['cfg_dir'] = self.work_dir
+        my_conf = config()
+        my_conf.cfg_dir = self.work_dir
+        with mock.patch('pyemma.coordinates.data.util.traj_info_cache.config', my_conf):
             with NamedTemporaryFile(delete=False) as fh:
                 np.savetxt(fh.name, x)
                 reader = api.source(fh.name)
@@ -98,8 +100,6 @@ class TestTrajectoryInfoCache(unittest.TestCase):
                 self.db._database = dumbdbm.open(self.db.database_filename, 'r')
                 info2 = self.db[fh.name, reader]
                 self.assertEqual(info2, info)
-        finally:
-            config.conf_values['pyemma']['cfg_dir'] = old_val
 
     def test_exceptions(self):
         # in accessible files
