@@ -24,8 +24,6 @@ from __future__ import absolute_import
 
 from tempfile import NamedTemporaryFile
 
-import mock
-
 try:
     import bsddb
     have_bsddb = True
@@ -53,8 +51,10 @@ import numpy as np
 
 if six.PY2:
     import dumbdbm
+    import mock
 else:
     from dbm import dumb as dumbdbm
+    from unittest import mock
 
 xtcfiles = get_bpti_test_data()['trajs']
 pdbfile = get_bpti_test_data()['top']
