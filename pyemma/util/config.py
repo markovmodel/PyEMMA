@@ -82,8 +82,8 @@ Store your changes / Create a configuration directory
 
 To create an editable configuration file, use the :py:func:`pyemma.config.save` method:
 
->>> from pyemma import config
->>> config.save('/tmp/pyemma_current.cfg')
+>>> from pyemma import config # doctest: +SKIP
+>>> config.save('/tmp/pyemma_current.cfg') # doctest: +SKIP
 
 This will store the current runtime configuration values in the given file.
 Note that these settings will not be used on the next start of PyEMMA, because

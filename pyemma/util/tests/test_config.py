@@ -106,7 +106,8 @@ class TestConfig(unittest.TestCase):
         self.config_inst.show_progress_bars = not self.config_inst.show_progress_bars
         import tempfile
         from six.moves import configparser
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.cfg') as f:
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.cfg', delete=False) as f:
+            f.close()
             self.config_inst.save(f.name)
             cfg = configparser.ConfigParser()
             cfg.read(f.name)
