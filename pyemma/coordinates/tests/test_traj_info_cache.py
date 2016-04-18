@@ -87,6 +87,7 @@ class TestTrajectoryInfoCache(unittest.TestCase):
         inst = TrajectoryInfoCache.instance()
         inst.current_db_version
 
+    @unittest.skip("persistence currently disabled.")
     def test_store_load_traj_info(self):
         x = np.random.random((10, 3))
         my_conf = config()
