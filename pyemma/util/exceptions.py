@@ -60,3 +60,8 @@ class EfficiencyWarning(UserWarning):
 class ParserWarning(UserWarning):
     """ Some user defined variable could not be parsed and is ignored/replaced. """
     pass
+
+
+class ConfigDirectoryException(Exception):
+    """ Some operation with PyEMMAs configuration directory went wrong. """
+    pass

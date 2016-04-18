@@ -1,5 +1,13 @@
 Changelog
 =========
+2.1.1 (to-be-released)
+----------------------
+
+**Fixes**:
+- In parallel environments (clusters with shared filesystem) there will be no
+  crashes due to the config module, which tried to write files in users home
+  directory. Config files are optional by now.
+
 
 2.1 (29-3-2016)
 ---------------

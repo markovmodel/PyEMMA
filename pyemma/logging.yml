@@ -14,19 +14,22 @@ formatters:
         datefmt: '%d-%m-%y %H:%M:%S'
 
 handlers:
+    # log to stdout
     console:
         class: logging.StreamHandler
         formatter: simpleFormater
         stream: ext://sys.stdout
-    rotating_files:
-        class: logging.handlers.RotatingFileHandler
-        formatter: simpleFormater
-        filename: pyemma.log
-        maxBytes: 1048576 # 1 MB
-        backupCount: 3
+    # example for rotating log files, disabled by default
+    #rotating_files:
+    #    class: logging.handlers.RotatingFileHandler
+    #    formatter: simpleFormater
+    #    filename: pyemma.log
+    #    maxBytes: 1048576 # 1 MB
+    #    backupCount: 3
 
 loggers:
     pyemma:
         level: INFO
-        handlers: [console, rotating_files]
+        # by default no file logging!
+        handlers: [console] #, rotating_files]
 
