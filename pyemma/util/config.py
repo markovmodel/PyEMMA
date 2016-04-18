@@ -264,7 +264,7 @@ False
     ### SETTINGS
     @property
     def logging_config(self):
-        cfg = self._conf_values['pyemma']['logging_config']
+        cfg = self._conf_values.get('pyemma', 'logging_config')
         if cfg == 'DEFAULT':
             cfg = os.path.join(self.cfg_dir, Wrapper.DEFAULT_LOGGING_FILE_NAME)
         return cfg
@@ -275,7 +275,7 @@ False
 
     @show_progress_bars.setter
     def show_progress_bars(self, val):
-        self._conf_values['pyemma']['show_progress_bars'] = str(val)
+        self._conf_values.set('pyemma', 'show_progress_bars', str(val))
 
     @property
     def use_trajectory_lengths_cache(self):
@@ -283,7 +283,7 @@ False
 
     @use_trajectory_lengths_cache.setter
     def use_trajectory_lengths_cache(self, val):
-        self._conf_values['pyemma']['use_trajectory_lengths_cache'] = str(val)
+        self._conf_values.set('pyemma', 'use_trajectory_lengths_cache', str(val))
 
     def __copy_default_files_to_cfg_dir(self, target_dir):
         try:
@@ -336,12 +336,13 @@ False
     # for dictionary like lookups
     def __getitem__(self, name):
         try:
-            return self._conf_values['pyemma'][name]
+            return self._conf_values.get('pyemma', name)
         except KeyError:  # re-try with default section
-            return self._conf_values[name]
+            return self._conf_values.get(name)
 
     def __setitem__(self, name, value):
-        self._conf_values['pyemma'][name] = value
+        value = str(value)
+        self._conf_values.set('pyemma', name, value)
 
 # assign an alias to the wrapped module under 'config._impl'
 sys.modules[__name__] = Wrapper(sys.modules[__name__])
