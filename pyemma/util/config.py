@@ -56,31 +56,48 @@ class ReadConfigException(Exception):
 
 
 class Wrapper(object):
-    r'''
+    r"""
 Runtime Configuration
 =====================
-To configure the runtime behavior such as the logging system or other parameters,
-the configuration module reads several config files to build
-its final set of settings. It searches for the file 'pyemma.cfg' in several
-locations with different priorities:
 
-#. $CWD/pyemma.cfg
-#. $HOME/.pyemma/pyemma.cfg
-#. ~/pyemma.cfg
-#. $PYTHONPATH/pyemma/pyemma.cfg (always taken as default configuration file)
+You can change some runtime behaviour of PyEMMA by setting a configuration
+value in PyEMMAs config module. These can be persisted to hard disk to be
+permanent on every import of the package.
 
-The same applies for the filename ".pyemma.cfg" (hidden file).
 
-Note that you can also override the location of the configuration directory by
-setting an environment variable named "PYEMMA_CFG_DIR" to a writeable path to 
-override the location of the config files.
+Change values
+-------------
+To access the config at runtime eg. if progress bars should be shown:
 
-The default values are stored in latter file to ensure these values are always
-defined. This is preferred over hardcoding them somewhere in the Python code.
+>>> from pyemma import config # doctest: +SKIP
+>>> print(config.show_progress_bars) # doctest: +SKIP
+True
+>>> config.show_progress_bars = False # doctest: +SKIP
+>>> print(config.show_progress_bars) # doctest: +SKIP
+False
 
-After the first import of pyemma, you will find a .pyemma directory in your
-user directory. It contains a pyemma.cfg and logging.yml. The latter is a YAML
-file to configure the logging system.
+
+Store your changes / Create a configuration directory
+-----------------------------------------------------
+
+To create an editable configuration file, use the :py:func:`pyemma.config.save` method:
+
+>>> from pyemma import config
+>>> config.save('/tmp/pyemma_current.cfg')
+
+This will store the current runtime configuration values in the given file.
+Note that these settings will not be used on the next start of PyEMMA, because
+you first need to tell us, where you have stored this file. To do so, please
+set the environment variable **"PYEMMA_CFG_DIR"** to the directory, where you have
+stored the config file.
+
+* For Linux/OSX this thread `thread
+  <https://unix.stackexchange.com/questions/117467/how-to-permanently-set-environmental-variables>`_
+  may be helpful.
+* For Windows have a look at
+  `this <https://stackoverflow.com/questions/17312348/how-do-i-set-windows-environment-variables-permanently>`_.
+
+
 For details have a look at the brief documentation:
 https://docs.python.org/2/howto/logging.html
 
@@ -92,18 +109,38 @@ the Python package:
 .. literalinclude:: ../../pyemma/pyemma.cfg
     :language: ini
 
-To access the config at runtime eg. the logging section:
+Configuration files
+-------------------
 
+To configure the runtime behavior such as the logging system or other parameters,
+the configuration module reads several config files to build
+its final set of settings. It searches for the file 'pyemma.cfg' in several
+locations with different priorities:
+
+#. $CWD/pyemma.cfg
+#. $HOME/.pyemma/pyemma.cfg
+#. ~/pyemma.cfg
+#. $PYTHONPATH/pyemma/pyemma.cfg (always taken as default configuration file)
+
+Note that you can also override the location of the configuration directory by
+setting an environment variable named **"PYEMMA_CFG_DIR"** to a writeable path to
+override the location of the config files.
+
+The default values are stored in latter file to ensure these values are always
+defined.
+
+If no configuration file could be found, the defaults from the shipped package
+will apply.
+
+
+Load a configuration file
+-------------------------
+
+In order to load a pre-saved configuration file, use the :py:func:`load` method:
 >>> from pyemma import config # doctest: +SKIP
->>> print(config.show_progress_bars) # doctest: +SKIP
-True
+>>> config.load('pyemma_silent.cfg') # doctest: +SKIP
 
-or
-
->>> config.show_progress_bars = False # doctest: +SKIP
->>> print(config.show_progress_bars) # doctest: +SKIP
-False
-    '''
+    """
     DEFAULT_CONFIG_DIR = os.path.join(os.path.expanduser('~'), '.pyemma')
     DEFAULT_CONFIG_FILE_NAME = 'pyemma.cfg'
     DEFAULT_LOGGING_FILE_NAME = 'logging.yml'
@@ -126,10 +163,6 @@ False
         # use defaults, have no cfg_dir set.
         else:
             self._cfg_dir = ''
-            from pyemma import __version__
-            print("[PyEMMA {version}]: no configuration directory set or usable."
-                  " Falling back to defaults.".format(version=__version__))
-
         try:
             self.load()
         except RuntimeError as re:
@@ -165,9 +198,14 @@ False
         try:
             config = self.__read_cfg(files)
         except ReadConfigException as e:
-            print('config.load("{file}") failed with {error}'.format(file=filename, error=e))
+            print(Wrapper._format_msg('config.load("{file}") failed with {error}'.format(file=filename, error=e)))
         else:
             self._conf_values = config
+
+        # notice user?
+        if self.show_config_notification and not self.cfg_dir:
+            print(Wrapper._format_msg("no configuration directory set or usable."
+                                      " Falling back to defaults."))
 
     def save(self, filename=None):
         """ Saves the runtime configuration to disk.
@@ -198,16 +236,17 @@ False
             try:
                 self.cfg_dir = self.DEFAULT_CONFIG_DIR
             except ConfigDirectoryException as cde:
-                print('Could not create configuration directory "{dir}"! config.save() failed.'
-                      ' Please set a writeable location with config.cfg_dir = val. Error was {exc}'
-                      .format(dir=self.cfg_dir, exc=cde))
+
+                print(Wrapper._format_msg('Could not create configuration directory "{dir}"! config.save() failed.'
+                                          ' Please set a writeable location with config.cfg_dir = val. Error was {exc}'
+                                          .format(dir=self.cfg_dir, exc=cde)))
                 return
 
         try:
             with open(filename, 'w') as fh:
                 self._conf_values.write(fh)
         except IOError as ioe:
-            print("Save failed with error %s" % ioe)
+            print(Wrapper._format_msg("Save failed with error %s" % ioe))
 
     @property
     def used_filenames(self):
@@ -224,10 +263,7 @@ False
         return pkg_resources.resource_filename('pyemma', Wrapper.DEFAULT_LOGGING_FILE_NAME)
 
     def keys(self):
-        return ['show_progress_bars',
-                'use_trajectory_lengths_cache',
-                'logging_config',
-                ]
+        return self._conf_values.options('pyemma')
 
     @property
     def cfg_dir(self):
@@ -237,7 +273,7 @@ False
     @cfg_dir.setter
     def cfg_dir(self, pyemma_cfg_dir):
         """ Sets PyEMMAs configuration directory.
-        Also creates it with some default files, if does not exists."""
+        Also creates it with some default files, if does not exists. """
         if not os.path.exists(pyemma_cfg_dir):
             try:
                 mkdir_p(pyemma_cfg_dir)
@@ -255,12 +291,13 @@ False
         self.__copy_default_files_to_cfg_dir(pyemma_cfg_dir)
         self._cfg_dir = pyemma_cfg_dir
 
-        stars = '*' * 80
-        print(stars, '\n',
-              'Changed PyEMMAs config directory to "{dir}".\n'
-              'To make this change permanent, export the environment variable'
-              ' "PYEMMA_CFG_DIR" \nto point to this location. Eg. edit your .bashrc file!'.format(dir=pyemma_cfg_dir),
-              '\n', stars, sep='')
+        if self.show_config_notification:
+            stars = '*' * 80
+            print(stars, '\n',
+                  'Changed PyEMMAs config directory to "{dir}".\n'
+                  'To make this change permanent, export the environment variable'
+                  ' "PYEMMA_CFG_DIR" \nto point to this location. Eg. edit your .bashrc file!'
+                  .format(dir=pyemma_cfg_dir), '\n', stars, sep='')
 
     ### SETTINGS
     @property
@@ -269,6 +306,20 @@ False
         if cfg == 'DEFAULT':
             cfg = os.path.join(self.cfg_dir, Wrapper.DEFAULT_LOGGING_FILE_NAME)
         return cfg
+
+    # FIXME: how should we re-initialize logging without interfering with existing loggers?
+    #@logging_config.setter
+    #def logging_config(self, config):
+    #    """ Try to re-initialize logging system for package 'pyemma'.
+    #
+    #    Parameters
+    #    ----------
+    #    config: dict
+    #        A dictionary which contains at least the keys 'loggers' and 'handlers'.
+    #    """
+    #    from pyemma.util.log import setup_logging
+    #   #config['incremental'] = True
+    #    setup_logging(self, config)
 
     @property
     def show_progress_bars(self):
@@ -285,6 +336,16 @@ False
     @use_trajectory_lengths_cache.setter
     def use_trajectory_lengths_cache(self, val):
         self._conf_values.set('pyemma', 'use_trajectory_lengths_cache', str(val))
+
+    @property
+    def show_config_notification(self):
+        return self._conf_values.getboolean('pyemma', 'show_config_notification')
+
+    @show_config_notification.setter
+    def show_config_notification(self, val):
+        self._conf_values.set('pyemma', 'show_config_notification', str(val))
+
+    ### FIlE HANDLING
 
     def __copy_default_files_to_cfg_dir(self, target_dir):
         try:
@@ -345,5 +406,9 @@ False
         value = str(value)
         self._conf_values.set('pyemma', name, value)
 
-# assign an alias to the wrapped module under 'config._impl'
+    @staticmethod
+    def _format_msg(msg):
+        from pyemma import __version__
+        return "[PyEMMA {version}] {msg}".format(version=__version__, msg=msg)
+
 sys.modules[__name__] = Wrapper(sys.modules[__name__])

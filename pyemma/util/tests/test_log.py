@@ -74,5 +74,27 @@ loggers:
                 log.setup_logging(config)
                 assert logging.getLogger('pyemma').handlers[0].baseFilename.startswith(config.cfg_dir)
 
+    @unittest.skip("not yet functional")
+    def test_set_new_log_conf(self):
+        import logging, copy, tempfile
+        old_handlers = copy.copy(logging.getLogger('pyemma').handlers)
+        log_file = tempfile.mktemp()
+        file_handler = {'my_filehandler': {'class': 'logging.FileHandler', 'filename': log_file}, }
+        new_conf = {'handlers': file_handler}
+
+        from pyemma import config
+        config.logging_config = new_conf
+
+        logger = logging.getLogger('pyemma')
+        log_str = "test-test-test-test-" + self.test_set_new_log_conf.__name__
+        logger.info(log_str)
+        for h in logger.handlers:
+            h.flush()
+
+        with open(log_file) as fh:
+            out = fh.read()
+
+        self.assertIn(log_str, out)
+
 if __name__ == "__main__":
     unittest.main()

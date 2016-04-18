@@ -37,43 +37,43 @@ class LoggingConfigurationError(RuntimeError):
     pass
 
 
-def setup_logging(config):
+def setup_logging(config, D=None):
     """ set up the logging system with the configured (in pyemma.cfg) logging config (logging.yml)
     @param config: instance of pyemma.config module (wrapper)
     """
-    import yaml
+    if not D:
+        import yaml
 
-    args = config.logging_config
-    default = False
+        args = config.logging_config
+        default = False
 
-    if args.upper() == 'DEFAULT':
-        default = True
-        src = config.default_logging_file
-    else:
-        src = args
-
-    # first try to read configured file
-    try:
-        with open(src) as f:
-            D = yaml.load(f)
-    except EnvironmentError as ee:
-        # fall back to default
-        if not default:
-            try:
-                with open(config.default_logging_file) as f2:
-                    D = yaml.load(f2)
-                    warnings.warn('Your set logging configuration file "%s" could not '
-                                  'be used. Used default as fallback.' % src)
-            except EnvironmentError as ee2:
-                raise LoggingConfigurationError('Could not read either configured nor '
-                                                'default logging configuration!\n%s' % ee2)
+        if args.upper() == 'DEFAULT':
+            default = True
+            src = config.default_logging_file
         else:
-            raise LoggingConfigurationError('could not handle default logging '
-                                            'configuration file\n%s' % ee)
+            src = args
 
-    if D is None:
-        raise LoggingConfigurationError('Empty logging config! Try using default config by'
-                                        ' setting logging_conf=DEFAULT in pyemma.cfg')
+        # first try to read configured file
+        try:
+            with open(src) as f:
+                D = yaml.load(f)
+        except EnvironmentError as ee:
+            # fall back to default
+            if not default:
+                try:
+                    with open(config.default_logging_file) as f2:
+                        D = yaml.load(f2)
+                except EnvironmentError as ee2:
+                    raise LoggingConfigurationError('Could not read either configured nor '
+                                                    'default logging configuration!\n%s' % ee2)
+            else:
+                raise LoggingConfigurationError('could not handle default logging '
+                                                'configuration file\n%s' % ee)
+
+        if D is None:
+            raise LoggingConfigurationError('Empty logging config! Try using default config by'
+                                            ' setting logging_conf=DEFAULT in pyemma.cfg')
+    assert D
 
     # this has not been set in PyEMMA version prior 2.0.2+
     D.setdefault('version', 1)
