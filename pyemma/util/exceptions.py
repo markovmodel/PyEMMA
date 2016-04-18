@@ -55,3 +55,8 @@ class NotConvergedWarning(RuntimeWarning):
 class EfficiencyWarning(UserWarning):
     r"""Some operation or input data leads to a lack of efficiency"""
     pass
+
+
+class ParserWarning(UserWarning):
+    """ Some user defined variable could not be parsed and is ignored/replaced. """
+    pass

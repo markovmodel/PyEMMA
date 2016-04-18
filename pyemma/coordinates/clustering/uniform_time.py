@@ -33,7 +33,7 @@ __all__ = ['UniformTimeClustering']
 class UniformTimeClustering(AbstractClustering):
     r"""Uniform time clustering"""
 
-    def __init__(self, n_clusters=2, metric='euclidean', stride=1):
+    def __init__(self, n_clusters=2, metric='euclidean', stride=1, n_jobs=None):
         """r
         Uniform time clustering
 
@@ -47,8 +47,11 @@ class UniformTimeClustering(AbstractClustering):
             metric to use during clustering ('euclidean', 'minRMSD')
         stride : int
             stride
+        n_jobs : int or None, default None
+            Number of threads to use during assignment of the data.
+            If None, all available CPUs will be used.
         """
-        super(UniformTimeClustering, self).__init__(metric=metric)
+        super(UniformTimeClustering, self).__init__(metric=metric, n_jobs=n_jobs)
         self.set_params(n_clusters=n_clusters, metric=metric, stride=stride)
 
     def describe(self):

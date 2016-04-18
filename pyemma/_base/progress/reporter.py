@@ -40,7 +40,9 @@ class ProgressReporter(object):
     @property
     def show_progress(self):
         if not hasattr(self, "_show_progress"):
-            self._show_progress = True
+            from pyemma import config
+            val = config.show_progress_bars
+            self._show_progress = val 
         return self._show_progress
 
     @show_progress.setter
@@ -58,15 +60,15 @@ class ProgressReporter(object):
     def _prog_rep_descriptions(self):
         # stores progressbar description strings per stage. Can contain format parameters
         if not hasattr(self, '_ProgressReporter__prog_rep_descriptions'):
-            self.__prog_rep_descriptions = {}#defaultdict(str)
+            self.__prog_rep_descriptions = {}
         return self.__prog_rep_descriptions
 
     @property
     def _prog_rep_callbacks(self):
         # store callback by stage
-        if not hasattr(self, '_ProgressReporter__callbacks'):
-            self.__callbacks = {}
-        return self.__callbacks
+        if not hasattr(self, '_ProgressReporter__prog_rep_callbacks'):
+            self.__prog_rep_callbacks = {}
+        return self.__prog_rep_callbacks
 
     def _progress_register(self, amount_of_work, description='', stage=0):
         """ Registers a progress which can be reported/displayed via a progress bar.

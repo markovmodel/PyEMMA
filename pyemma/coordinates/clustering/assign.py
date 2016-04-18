@@ -57,8 +57,8 @@ class AssignCenters(AbstractClustering):
 
     """
 
-    def __init__(self, clustercenters, metric='euclidean', stride=1):
-        super(AssignCenters, self).__init__(metric=metric)
+    def __init__(self, clustercenters, metric='euclidean', stride=1, n_jobs=None):
+        super(AssignCenters, self).__init__(metric=metric, n_jobs=n_jobs)
 
         if isinstance(clustercenters, six.string_types):
             from pyemma.coordinates.data import create_file_reader
@@ -77,7 +77,7 @@ class AssignCenters(AbstractClustering):
         self._estimated = True
 
     def describe(self):
-        return "[AssignCenters c=%s]" % self.clustercenters
+        return "[{name} centers shape={shape}]".format(name=self.name, shape=self.clustercenters.shape)
 
     @AbstractClustering.data_producer.setter
     def data_producer(self, dp):
@@ -88,12 +88,12 @@ class AssignCenters(AbstractClustering):
                              ', but input has %i' % (dim, dp.dimension()))
         AbstractClustering.data_producer.fset(self, dp)
 
-    # TODO: replace with fit_predict?
     def _estimate(self, iterable, **kw):
-        self._estimated = True
         old_source = self._data_producer
         self.data_producer = iterable
-        self.assign(None, self.stride)
-        self.data_producer = old_source
+        try:
+            self.assign(None, self.stride)
+        finally:
+            self.data_producer = old_source
 
         return self

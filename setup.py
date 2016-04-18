@@ -112,7 +112,7 @@ def extensions():
                   ],
                   libraries=[lib_prefix+'theobald'],
                   library_dirs=[mdtraj.capi()['lib_dir']],
-                  extra_compile_args=['-std=c99'])
+                  extra_compile_args=['-std=c99', '-g', '-O3', '-pg'])
     kmeans_module = \
         Extension('pyemma.coordinates.clustering.kmeans_clustering',
                   sources=[
@@ -137,7 +137,8 @@ def extensions():
 
     exts += [regspatial_module,
              kmeans_module,
-             covar_module]
+             covar_module,
+             ]
 
     if not USE_CYTHON:
         # replace pyx files by their pre generated c code.
@@ -241,7 +242,9 @@ else:
                                   'nose',
                                   ]
     if sys.version_info.major == 2:
-        metadata['install_requires'] += ['mock']
+        # kick it since causes headages with conda recently...
+        #metadata['install_requires'] += ['mock']
+        pass
 
     metadata['package_data'] = {
                                 'pyemma': ['pyemma.cfg', 'logging.yml'],

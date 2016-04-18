@@ -48,7 +48,7 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
 
     def __init__(self, n_clusters, max_iter=5, metric='euclidean',
                  tolerance=1e-5, init_strategy='kmeans++', fixed_seed=False,
-                 oom_strategy='memmap', stride=1):
+                 oom_strategy='memmap', stride=1, n_jobs=None):
         r"""Kmeans clustering
 
         Parameters
@@ -87,8 +87,12 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
         stride : int
             stridden data
 
+        n_jobs : int or None, default None
+            Number of threads to use during assignment of the data.
+            If None, all available CPUs will be used.
+
         """
-        super(KmeansClustering, self).__init__(metric=metric)
+        super(KmeansClustering, self).__init__(metric=metric, n_jobs=n_jobs)
 
         self.set_params(n_clusters=n_clusters, max_iter=max_iter, tolerance=tolerance,
                         init_strategy=init_strategy, oom_strategy=oom_strategy,
@@ -107,15 +111,15 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
         else:
             if self.oom_strategy == 'raise':
                 self.logger.warning('K-means failed to load all the data (%s required, %s available) into memory. '
-                                     'Consider using a larger stride or set the oom_strategy to \'memmap\' which works '
-                                     'with a memmapped temporary file.'
-                                     % (bytes_to_string(required_mem), bytes_to_string(available_mem)))
+                                    'Consider using a larger stride or set the oom_strategy to \'memmap\' which works '
+                                    'with a memmapped temporary file.'
+                                    % (bytes_to_string(required_mem), bytes_to_string(available_mem)))
                 raise MemoryError()
             else:
                 self.logger.warning('K-means failed to load all the data (%s required, %s available) into memory '
-                                     'and now uses a memmapped temporary file which is comparably slow. '
-                                     'Consider using a larger stride.'
-                                     % (bytes_to_string(required_mem), bytes_to_string(available_mem)))
+                                    'and now uses a memmapped temporary file which is comparably slow. '
+                                    'Consider using a larger stride.'
+                                    % (bytes_to_string(required_mem), bytes_to_string(available_mem)))
                 self._in_memory_chunks = np.memmap(tempfile.mkstemp()[1], mode="w+",
                                                    shape=(size, self.data_producer.dimension()), order='C',
                                                    dtype=np.float32)
@@ -252,7 +256,7 @@ class MiniBatchKmeansClustering(KmeansClustering):
     r"""Mini-batch k-means clustering"""
 
     def __init__(self, n_clusters, max_iter=5, metric='euclidean', tolerance=1e-5, init_strategy='kmeans++',
-                 batch_size=0.2, oom_strategy='memmap', fixed_seed=False, stride=None):
+                 batch_size=0.2, oom_strategy='memmap', fixed_seed=False, stride=None, n_jobs=None):
 
         if stride is not None:
             raise ValueError("stride is a dummy value in MiniBatch Kmeans")
@@ -264,7 +268,7 @@ class MiniBatchKmeansClustering(KmeansClustering):
 
         super(MiniBatchKmeansClustering, self).__init__(n_clusters, max_iter, metric,
                                                         tolerance, init_strategy, False,
-                                                        oom_strategy, stride=stride)
+                                                        oom_strategy, stride=stride, n_jobs=n_jobs)
 
         self.set_params(batch_size=batch_size)
 

@@ -20,7 +20,12 @@
 #include <clustering.h>
 #include <assert.h>
 
-float euclidean_distance(float *SKP_restrict a, float *SKP_restrict b, size_t n, float *buffer_a, float *buffer_b)
+#ifdef USE_OPENMP
+    #include <omp.h>
+#endif
+
+float euclidean_distance(float *SKP_restrict a, float *SKP_restrict b, size_t n, float *buffer_a, float *buffer_b,
+float*dummy)
 {
     double sum;
     size_t i;
@@ -32,63 +37,134 @@ float euclidean_distance(float *SKP_restrict a, float *SKP_restrict b, size_t n,
     return sqrt(sum);
 }
 
-float minRMSD_distance(float *SKP_restrict a, float *SKP_restrict b, size_t n, float *SKP_restrict buffer_a, float *SKP_restrict buffer_b)
+void in_place_center(float* a, size_t n) {
+    float trace;
+    inplace_center_and_trace_atom_major(a, &trace, 1, n/3);
+}
+
+
+float minRMSD_distance(float *SKP_restrict a, float *SKP_restrict b, size_t n,
+                       float *SKP_restrict buffer_a, float *SKP_restrict buffer_b,
+                       float* trace_a_precalc)
 {
     float msd;
     float trace_a, trace_b;
 
-    memcpy(buffer_a, a, n*sizeof(float));
-    memcpy(buffer_b, b, n*sizeof(float));
+    if (! trace_a_precalc) {
+    	memcpy(buffer_a, a, n*sizeof(float));
+    	memcpy(buffer_b, b, n*sizeof(float));
 
-    inplace_center_and_trace_atom_major(buffer_a, &trace_a, 1, n/3);
-    inplace_center_and_trace_atom_major(buffer_b, &trace_b, 1, n/3);
-    msd = msd_atom_major(n/3, n/3, buffer_a, buffer_b, trace_a, trace_b, 0, NULL);
+    	inplace_center_and_trace_atom_major(buffer_a, &trace_a, 1, n/3);
+    	inplace_center_and_trace_atom_major(buffer_b, &trace_b, 1, n/3);
+
+    	msd = msd_atom_major(n/3, n/3, buffer_a, buffer_b, trace_a, trace_b, 0, NULL);
+    } else {
+    	// only copy b, since a has been pre-centered,
+        memcpy(buffer_b, b, n*sizeof(float));
+        inplace_center_and_trace_atom_major(buffer_b, &trace_b, 1, n/3);
+
+        msd = msd_atom_major(n/3, n/3, a, buffer_b, *trace_a_precalc, trace_b, 0, NULL);
+    }
+
     return sqrt(msd);
 }
 
-int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric, Py_ssize_t N_frames, Py_ssize_t N_centers, Py_ssize_t dim) {
+int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric,
+             Py_ssize_t N_frames, Py_ssize_t N_centers, Py_ssize_t dim, int n_threads) {
     int ret;
-    float d, mindist;
+    int debug;
+    Py_ssize_t i, j;
+    float d, mindist, trace_centers;
     size_t argmin;
     float *buffer_a, *buffer_b;
-    float (*distance)(float*, float*, size_t, float*, float*);
+    float *centers_precentered;
+    float *trace_centers_p;
+    float* dists;
+    float (*distance)(float*, float*, size_t, float*, float*, float*);
+    #ifdef USE_OPENMP
+    float * SKP_restrict chunk_p;
+    #endif
 
-    buffer_a = NULL; buffer_b = NULL;
+    buffer_a = NULL; buffer_b = NULL; trace_centers_p = NULL;
     ret = ASSIGN_SUCCESS;
+    debug=0;
 
     /* init metric */
-    if(strcmp(metric,"euclidean")==0) {
+    if(strcmp(metric, "euclidean")==0) {
         distance = euclidean_distance;
-    } else if(strcmp(metric,"minRMSD")==0) {
+    } else if(strcmp(metric, "minRMSD")==0) {
         distance = minRMSD_distance;
         buffer_a = malloc(dim*sizeof(float));
         buffer_b = malloc(dim*sizeof(float));
-        if(!buffer_a || !buffer_b) {
+        centers_precentered = malloc(N_centers*dim*sizeof(float));
+
+        if(!buffer_a || !buffer_b || !centers_precentered) {
             ret = ASSIGN_ERR_NO_MEMORY; goto error;
         }
+
+        memcpy(centers_precentered, centers, N_centers*dim*sizeof(float));
+
+        // pre-center cluster centers
+        for (j = 0; j < N_centers; ++j) {
+            inplace_center_and_trace_atom_major(centers_precentered, &trace_centers, 1, dim/3);
+        }
+        trace_centers_p = &trace_centers;
+        //trace_centers_p = NULL;
+        centers = centers_precentered;
     } else {
         ret = ASSIGN_ERR_INVALID_METRIC;
         goto error;
     }
 
-    /* do the assignment */
+    /* Do the assignment in parallel with OpenMP. Each thread finds the minimum
+     * distance for a couple of frames index by i.
+
+     Better: pass the same frame to multiple threads and parallelize over N_centers to avoid
+     cache misses.
+     */
+    #ifdef USE_OPENMP
+    omp_set_num_threads(n_threads);
+    if(debug) printf("using openmp; n_threads=%i\n", n_threads);
+    chunk_p = NULL;
+    assert(omp_get_num_threads() == n_threads);
+
+    #pragma omp parallel for private(i, j, dists, mindist, argmin, chunk_p)
+    for(i = 0; i < N_frames; ++i) {
+        dists = malloc(N_centers*sizeof(float));
+        chunk_p = &chunk[i*dim];
+
+        for(j = 0; j < N_centers; ++j) {
+            dists[j] = distance(&centers[j*dim], chunk_p, dim, buffer_a, buffer_b, trace_centers_p);
+        }
+
+        {
+            mindist = FLT_MAX; argmin = -1;
+            for (j=0; j < N_centers; ++j) {
+                if (dists[j] < mindist) { mindist = dists[j]; argmin = j; }
+            }
+            dtraj[i] = argmin;
+        }
+        free(dists);
+    }
+
+    free(dists);
+
+    #else // serial version
     {
-        Py_ssize_t i,j;
-//        #pragma omp for private(j, argmin, mindist)
         for(i = 0; i < N_frames; ++i) {
-			mindist = FLT_MAX;
+            mindist = FLT_MAX;
             argmin = -1;
             for(j = 0; j < N_centers; ++j) {
-                d = distance(&chunk[i*dim], &centers[j*dim], dim, buffer_a, buffer_b);
-//				#pragma omp critical
+                d = distance(&chunk[i*dim], &centers[j*dim], dim, buffer_a, buffer_b, trace_centers_p);
+
             	{
-                	if(d<mindist) { mindist = d; argmin = j; }
+                	if(d < mindist) { mindist = d; argmin = j; }
             	}
             }
             dtraj[i] = argmin;
         }
     }
-
+    #endif
 error:
     free(buffer_a);
     free(buffer_b);
@@ -104,12 +180,13 @@ PyObject *assign(PyObject *self, PyObject *args) {
     float *centers;
     npy_int32 *dtraj;
     char *metric;
+    int n_threads;
 
     py_centers = NULL; py_res = NULL;
     np_chunk = NULL; np_dtraj = NULL;
-    centers = NULL; metric=""; chunk = NULL; dtraj = NULL;
+    centers = NULL; metric=""; chunk = NULL; dtraj = NULL; n_threads = -1;
 
-    if (!PyArg_ParseTuple(args, "O!OO!s", &PyArray_Type, &np_chunk, &py_centers, &PyArray_Type, &np_dtraj, &metric)) goto error; /* ref:borr. */
+    if (!PyArg_ParseTuple(args, "O!OO!si", &PyArray_Type, &np_chunk, &py_centers, &PyArray_Type, &np_dtraj, &metric, &n_threads)) goto error; /* ref:borr. */
 
     /* import chunk */
     if(PyArray_TYPE(np_chunk)!=NPY_FLOAT32) { PyErr_SetString(PyExc_ValueError, "dtype of \"chunk\" isn\'t float (32)."); goto error; };
@@ -151,7 +228,7 @@ PyObject *assign(PyObject *self, PyObject *args) {
     centers = (float*)PyArray_DATA(np_centers);
 
     /* do the assignment */
-    switch(c_assign(chunk, centers, dtraj, metric, N_frames, N_centers, dim)) {
+    switch(c_assign(chunk, centers, dtraj, metric, N_frames, N_centers, dim, n_threads)) {
         case ASSIGN_ERR_INVALID_METRIC:
             PyErr_SetString(PyExc_ValueError, "metric must be one of \"euclidean\" or \"minRMSD\".");
             goto error;
@@ -165,3 +242,4 @@ PyObject *assign(PyObject *self, PyObject *args) {
 error:
     return py_res;
 }
+

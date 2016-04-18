@@ -181,7 +181,12 @@ False
 
     @property
     def show_progress_bars(self):
-        return bool(self._conf_values['pyemma']['show_progress_bars'])
+        cfg_val = self._conf_values['pyemma']['show_progress_bars']
+        if isinstance(cfg_val, bool):
+            return cfg_val
+        # TODO: think about a professional type checking/converting lib
+        parsed = True if cfg_val.lower() == 'true' else False
+        return parsed
 
     @show_progress_bars.setter
     def show_progress_bars(self, val):
