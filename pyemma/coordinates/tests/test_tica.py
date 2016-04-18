@@ -34,7 +34,7 @@ from pyemma.coordinates import api
 from pyemma.coordinates.data.data_in_memory import DataInMemory
 from pyemma.coordinates import source, tica
 from pyemma.util.contexts import numpy_random_seed
-from pyemma.util.log import getLogger
+from logging import getLogger
 import pyemma.util.types as types
 from six.moves import range
 
@@ -91,6 +91,15 @@ class TestTICA_Basic(unittest.TestCase):
 
         assert tica_obj.eigenvectors.dtype == np.float64
         assert tica_obj.eigenvalues.dtype == np.float64
+
+    def test_duplicated_data_in_fit_transform(self):
+        X = np.random.randn(100, 2)
+        d = DataInMemory([X, X])
+        tica = api.tica(data=d, lag=1, dim=1)
+        out1 = tica.get_output()
+        out2 = tica.fit_transform([X, X])
+        np.testing.assert_array_almost_equal(out1, out2)
+
 
     def test_singular_zeros(self):
         # make some data that has one column of all zeros
@@ -339,6 +348,21 @@ class TestTICAExtensive(unittest.TestCase):
     def test_timescales(self):
         its = -self.tica_obj.lag/np.log(np.abs(self.tica_obj.eigenvalues))
         assert np.allclose(self.tica_obj.timescales, its)
+
+    def test_too_short_traj_partial_fit(self):
+        data = [np.empty((20, 3)), np.empty((10, 3))]
+        lag = 11
+        tica_obj = tica(lag=lag)
+        from pyemma.util.testing_tools import MockLoggingHandler
+        log_handler = MockLoggingHandler()
+        tica_obj.logger.addHandler(log_handler)
+        for x in data:
+            tica_obj.partial_fit(x)
+
+        self.assertEqual(tica_obj._used_data, 20 - lag)
+        self.assertEqual(len(log_handler.messages['warning']), 1)
+        self.assertIn("longer than lag time", log_handler.messages['warning'][0])
+
 
 if __name__ == "__main__":
     unittest.main()

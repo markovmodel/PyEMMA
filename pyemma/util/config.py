@@ -104,11 +104,20 @@ False
     __file__ = __file__
 
     def __init__(self, wrapped):
-        # create .pyemma dir in home
-        try:
-            self._create_cfg_dir()
-        except RuntimeError as re:
-            warnings.warn(str(re))
+        # try to create cfg dir, then fallback to standard (not editable) cfg files.
+        created = False
+        for _ in range(3):
+            try:
+                created = self._create_cfg_dir()
+            except RuntimeError as re:
+                warnings.warn(str(re))
+            if created:
+                break
+            import time
+            time.sleep(0.5)
+
+        if not created:
+            self._cfg_dir = ""
 
         try:
             self.__readConfiguration()
@@ -134,7 +143,7 @@ False
     def cfg_dir(self):
         """ configuration directory (eg. in ~/.pyemma """
         if self._cfg_dir is None:
-            self._cfg_dir = self._create_cfg_dir()
+            self._create_cfg_dir()
         return self._cfg_dir
 
     @property
@@ -198,7 +207,6 @@ False
         else:
             pyemma_cfg_dir = os.path.join(os.path.expanduser("~"), ".pyemma")
 
-        self._cfg_dir = pyemma_cfg_dir
         if not os.path.exists(pyemma_cfg_dir):
             try:
                 mkdir_p(pyemma_cfg_dir)
@@ -224,6 +232,9 @@ False
         for src, dest in zip(srcs, dests):
             if not os.path.exists(dest):
                 shutil.copyfile(src, dest)
+
+        self._cfg_dir = pyemma_cfg_dir
+        return True
 
     def __readConfiguration(self):
         """

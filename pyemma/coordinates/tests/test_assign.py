@@ -21,7 +21,7 @@ import os
 import unittest
 
 from pyemma.util.files import TemporaryDirectory
-from pyemma.util.log import getLogger
+from logging import getLogger
 from six.moves import range
 import numpy as np
 import pyemma.coordinates as coor

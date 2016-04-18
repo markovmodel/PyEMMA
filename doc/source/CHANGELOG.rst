@@ -1,8 +1,8 @@
 Changelog
 =========
 
-2.1rc1 (19-2-2016)
-------------------
+2.1 (29-3-2016)
+---------------
 
 **New features**:
 
@@ -50,8 +50,9 @@ Changelog
     (reported as Warnings).
 
 - coordinates:
-
-  - Added trajectory info cache
+  - Completly re-designed class hierachy (user-code/API unaffected).
+  - Added trajectory info cache to avoid re-computing lengths, dimensions and
+    byte offsets of data sets.
   - Random access strategies supported (eg. via slices).
   - FeatureReader supports random access for XTC and TRR (in conjunction with mdtraj-1.6).
   - Re-design API to support scikit-learn interface (fit, transform).

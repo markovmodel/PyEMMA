@@ -15,7 +15,15 @@ env:
     - python=2.7  CONDA_PY=27  CONDA_NPY=110
     - python=3.4  CONDA_PY=34  CONDA_NPY=19
     - python=3.5  CONDA_PY=35  CONDA_NPY=110
-   
+
+# exclude too verbose configs on osx, since these are dead slow.
+matrix:
+   exclude:
+     - os: osx
+       env: python=3.4  CONDA_PY=34  CONDA_NPY=19
+     - os: osx
+       env: python=2.7  CONDA_PY=27  CONDA_NPY=19
+
 before_install:
 - tools/ci/travis/install_miniconda.sh
 - conda config --set always_yes true 

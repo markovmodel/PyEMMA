@@ -30,7 +30,7 @@ from pyemma.coordinates import api
 from pyemma.coordinates.api import discretizer, tica, source
 from pyemma.coordinates.data.data_in_memory import DataInMemoryIterator
 from pyemma.coordinates.data.feature_reader import FeatureReader
-from pyemma.util.log import getLogger
+from logging import getLogger
 import mdtraj
 import pkg_resources
 

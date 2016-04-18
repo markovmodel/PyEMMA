@@ -13,8 +13,8 @@ requirements:
     - setuptools
     - cython >=0.20
 
-    - bhmm <0.7
-    - joblib ==0.8.4
+    - bhmm >=0.6,<0.7
+    - joblib >0.8.4
     - matplotlib
     - mdtraj >=1.5
     - mock # [py27]
@@ -31,8 +31,8 @@ requirements:
   run:
     - python
     - setuptools
-    - bhmm <0.7
-    - joblib ==0.8.4
+    - bhmm >=0.6,<0.7
+    - joblib >0.8.4
     - matplotlib
     - mdtraj >=1.5
     - mock # [py27]

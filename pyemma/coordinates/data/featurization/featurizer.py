@@ -242,6 +242,10 @@ class MDFeaturizer(Loggable):
                 iterable of integers (either list or ndarray(n, dtype=int)):
                     indices (not pairs of indices) of the atoms between which the distances shall be computed.
 
+        periodic : optional, boolean, default is True
+            If periodic is True and the trajectory contains unitcell information,
+            distances will be computed under the minimum image convention.
+
         indices2: iterable of integers (either list or ndarray(n, dtype=int)), optional:
                     Only has effect if :py:obj:`indices` is an iterable of integers. Instead of the above behaviour,
                     only the distances between the atoms in :py:obj:`indices` and :py:obj:`indices2` will be computed.
@@ -271,18 +275,24 @@ class MDFeaturizer(Loggable):
             Use the minimum image convetion when computing distances
 
         excluded_neighbors : int, default is 2
-            Number of exclusions when compiling the list of pairs.
+            Number of exclusions when compiling the list of pairs. Two CA-atoms are considered
+            neighbors if they belong to adjacent residues.
 
         """
 
-        ca_at_idxs = self.select_Ca()
-        # For every ca_atom, get its residue index
-        ca_res_idxs = [self.topology.atom(ca).residue.index for ca in ca_at_idxs]
-        # Since there is one Ca per resiue, we compile the
-        # pairlist and the neigbor exclusion using residue idxs
-        # that gets translated back to actual ca_at_idxs:
-        distance_indexes = self.pairs(ca_res_idxs, excluded_neighbors=excluded_neighbors)
-        distance_indexes = ca_at_idxs[distance_indexes]
+        # Atom indices for CAs
+        at_idxs_ca = self.select_Ca()
+        # Residue indices for residues contatinig CAs
+        res_idxs_ca = [self.topology.atom(ca).residue.index for ca in at_idxs_ca]
+        # Pairs of those residues, with possibility to exclude neighbors
+        res_idxs_ca_pairs = self.pairs(res_idxs_ca, excluded_neighbors=excluded_neighbors)
+        # Mapping back pairs of residue indices to pairs of CA indices
+        distance_indexes = []
+        for ri, rj in res_idxs_ca_pairs:
+            distance_indexes.append([self.topology.residue(ri).atom('CA').index,
+                                     self.topology.residue(rj).atom('CA').index
+                                     ])
+        distance_indexes = np.array(distance_indexes)
 
         self.add_distances(distance_indexes, periodic=periodic)
 
@@ -300,6 +310,10 @@ class MDFeaturizer(Loggable):
                 iterable of integers (either list or ndarray(n, dtype=int)):
                     indices (not pairs of indices) of the atoms between which the inverse distances shall be computed.
 
+        periodic : optional, boolean, default is True
+            If periodic is True and the trajectory contains unitcell information,
+            distances will be computed under the minimum image convention.
+
         indices2: iterable of integers (either list or ndarray(n, dtype=int)), optional:
                     Only has effect if :py:obj:`indices` is an iterable of integers. Instead of the above behaviour,
                     only the inverse distances between the atoms in :py:obj:`indices` and :py:obj:`indices2` will be computed.
@@ -316,7 +330,7 @@ class MDFeaturizer(Loggable):
             indices, indices2, self._logger, fname='add_inverse_distances()')
 
         atom_pairs = self._check_indices(atom_pairs)
-        f = InverseDistanceFeature(self.topology, atom_pairs, periodic=True)
+        f = InverseDistanceFeature(self.topology, atom_pairs, periodic=periodic)
         self.__add_feature(f)
 
     def add_contacts(self, indices, indices2=None, threshold=0.3, periodic=True, count_contacts=False):
@@ -368,7 +382,9 @@ class MDFeaturizer(Loggable):
                             threshold=None):
         r"""
         Adds the minimum distance between residues to the feature list. See below how
-        the minimum distance can be defined.
+        the minimum distance can be defined. If the topology generated out of :py:obj:`topfile`
+        contains information on periodic boundary conditions, the minimum image convention
+        will be used when computing distances.
 
         Parameters
         ----------
@@ -395,6 +411,8 @@ class MDFeaturizer(Loggable):
             will compute nearly all interatomic distances, for every frame, before extracting the closest pairs.
             This can be very time consuming. Those schemes are intended to be used with a subset of residues chosen
             via :py:obj:`residue_pairs`.
+
+
         """
         from .distances import ResidueMinDistanceFeature
         if scheme != 'ca' and is_string(residue_pairs):
