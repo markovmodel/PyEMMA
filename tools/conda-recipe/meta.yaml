@@ -16,8 +16,9 @@ requirements:
     - bhmm >=0.6,<0.7
     - joblib >0.8.4
     - matplotlib
-    - mdtraj >=1.5
-    - mock # [py27]
+    - mdtraj >=1.6
+    - mock
+    - funcsigs
     - msmtools
     - thermotools >=0.1.14
     - nose
@@ -34,8 +35,9 @@ requirements:
     - bhmm >=0.6,<0.7
     - joblib >0.8.4
     - matplotlib
-    - mdtraj >=1.5
-    - mock # [py27]
+    - mdtraj >=1.6
+    - mock
+    - funcsigs
     - msmtools
     - thermotools >=0.1.14
     - numpy x.x

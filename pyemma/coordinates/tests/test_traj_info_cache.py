@@ -51,8 +51,10 @@ import numpy as np
 
 if six.PY2:
     import dumbdbm
+    import mock
 else:
     from dbm import dumb as dumbdbm
+    from unittest import mock
 
 xtcfiles = get_bpti_test_data()['trajs']
 pdbfile = get_bpti_test_data()['top']
@@ -85,11 +87,12 @@ class TestTrajectoryInfoCache(unittest.TestCase):
         inst = TrajectoryInfoCache.instance()
         inst.current_db_version
 
+    @unittest.skip("persistence currently disabled.")
     def test_store_load_traj_info(self):
         x = np.random.random((10, 3))
-        try:
-            old_val = config.conf_values['pyemma']['cfg_dir']
-            config.conf_values['pyemma']['cfg_dir'] = self.work_dir
+        my_conf = config()
+        my_conf.cfg_dir = self.work_dir
+        with mock.patch('pyemma.coordinates.data.util.traj_info_cache.config', my_conf):
             with NamedTemporaryFile(delete=False) as fh:
                 np.savetxt(fh.name, x)
                 reader = api.source(fh.name)
@@ -98,8 +101,6 @@ class TestTrajectoryInfoCache(unittest.TestCase):
                 self.db._database = dumbdbm.open(self.db.database_filename, 'r')
                 info2 = self.db[fh.name, reader]
                 self.assertEqual(info2, info)
-        finally:
-            config.conf_values['pyemma']['cfg_dir'] = old_val
 
     def test_exceptions(self):
         # in accessible files
@@ -194,18 +195,12 @@ class TestTrajectoryInfoCache(unittest.TestCase):
     def test_feature_reader_xyz(self):
         traj = mdtraj.load(xtcfiles, top=pdbfile)
         length = len(traj)
-        import warnings
-        from pyemma.util.exceptions import EfficiencyWarning
 
         with NamedTemporaryFile(mode='wb', suffix='.xyz', delete=False) as f:
             fn = f.name
             traj.save_xyz(fn)
             f.close()
-            with warnings.catch_warnings(record=True) as w:
-                reader = pyemma.coordinates.source(fn, top=pdbfile)
-
-                self.assertEqual(w[0].category, EfficiencyWarning)
-
+            reader = pyemma.coordinates.source(fn, top=pdbfile)
             self.assertEqual(reader.trajectory_length(0), length)
 
     def test_data_in_mem(self):

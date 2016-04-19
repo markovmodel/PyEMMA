@@ -1,7 +1,24 @@
 Changelog
 =========
 
-2.1 (29-3-2016)
+2.1.1 (4-18-2016)
+-----------------
+Service release. Fixes some
+
+**New features**:
+
+- clustering: parallelized clustering assignment. Especially useful for expensive to
+  compute metrics like minimum RMSD. Clustering objects now a **n_jobs** attribute
+  to set the desired number of threads. For a high job number one should use a
+  considerable high chunk size as well.
+
+**Fixes**:
+- In parallel environments (clusters with shared filesystem) there will be no
+  crashes due to the config module, which tried to write files in users home
+  directory. Config files are optional by now.
+
+
+2.1 (3-29-2016)
 ---------------
 
 **New features**:
@@ -70,11 +87,11 @@ Changelog
 - Progressbars now auto-hide, when work is done.
 
 
-2.0.4 (9-2-2016)
+2.0.4 (2-9-2016)
 ----------------
 Patch release to address DeprecationWarning flood in conjunction with Jupyther notebook.
 
-2.0.3 (29-1-2016)
+2.0.3 (1-29-2016)
 -----------------
 
 **New features**:

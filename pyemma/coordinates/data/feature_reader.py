@@ -121,39 +121,11 @@ class FeatureReader(DataSource):
         return self.filenames
 
     def _get_traj_info(self, filename):
-        # workaround NotImplementedError __len__ for xyz files
-        # Github issue: markovmodel/pyemma#621
-        if six.PY2:
-            from mock import patch
-        else:
-            from unittest.mock import patch
-        from mdtraj.formats import XYZTrajectoryFile
-        def _make_len_func(top):
-            def _len_xyz(self):
-                assert isinstance(self, XYZTrajectoryFile)
-                assert hasattr(self, '_filename'), "structual change in xyzfile class!"
-                import warnings
-                from pyemma.util.exceptions import EfficiencyWarning
-                warnings.warn("reading all of your data,"
-                              " just to determine number of frames." +
-                              " Happens only once, because this is cached."
-                              if config['use_trajectory_lengths_cache'] else "",
-                              EfficiencyWarning)
-                # obtain len by reading whole file!
-                mditer = mdtraj.iterload(self._filename, top=top)
-                return sum(t.n_frames for t in mditer)
-
-            return _len_xyz
-
-        f = _make_len_func(self.topfile)
-
-        # lookups pre-computed lengths, or compute it on the fly and store it in db.
-        with patch.object(XYZTrajectoryFile, '__len__', f):
-            with mdtraj.open(filename, mode='r') as fh:
-                length = len(fh)
-                frame = fh.read(1)[0]
-                ndim = np.shape(frame)[1]
-                offsets = fh.offsets if hasattr(fh, 'offsets') else []
+        with mdtraj.open(filename, mode='r') as fh:
+            length = len(fh)
+            frame = fh.read(1)[0]
+            ndim = np.shape(frame)[1]
+            offsets = fh.offsets if hasattr(fh, 'offsets') else []
 
         return TrajInfo(ndim, length, offsets)
 
@@ -331,7 +303,7 @@ class FeatureReaderIterator(DataSourceIterator, Loggable):
 
     def close(self):
         if self._mditer is not None:
-            self._logger.debug('closing current trajectory "%s"' % self._data_source.filenames[self._itraj])
+            #self._logger.debug('closing current trajectory "%s"' % self._data_source.filenames[self.current_trajindex])
             self._mditer.close()
 
     def _next_chunk(self):
@@ -351,6 +323,7 @@ class FeatureReaderIterator(DataSourceIterator, Loggable):
 
             self._t = 0
             self._itraj += 1
+            self.logger.debug("incremented _itraj. Current value: %s" % self._itraj)
             self._create_mditer()
 
         if not self.uniform_stride:

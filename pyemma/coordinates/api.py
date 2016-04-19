@@ -792,7 +792,7 @@ def _get_input_stage(previous_stage):
     return inputstage
 
 
-def _param_stage(previous_stage, this_stage, stride=1):
+def _param_stage(previous_stage, this_stage, stride=1, chunk_size=0):
     r""" Parametrizes the given pipelining stage if a valid source is given.
 
     Parameters
@@ -809,9 +809,12 @@ def _param_stage(previous_stage, this_stage, stride=1):
         return this_stage
 
     input_stage = _get_input_stage(previous_stage)
+    input_stage.chunksize = chunk_size
+    assert input_stage.default_chunksize == chunk_size
     # parametrize transformer
     this_stage.data_producer = input_stage
     this_stage.chunksize = input_stage.chunksize
+    assert this_stage.chunksize == chunk_size
     this_stage.estimate(X=input_stage, stride=stride)
     return this_stage
 
@@ -1138,7 +1141,8 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, stride=1,
 #
 # =========================================================================
 
-def cluster_mini_batch_kmeans(data=None, k=100, max_iter=10, batch_size=0.2, metric='euclidean', init_strategy='kmeans++'):
+def cluster_mini_batch_kmeans(data=None, k=100, max_iter=10, batch_size=0.2, metric='euclidean',
+                              init_strategy='kmeans++', n_jobs=None, chunk_size=5000):
     r"""k-means clustering with mini-batch strategy
 
     Mini-batch k-means is an approximation to k-means which picks a randomly
@@ -1176,12 +1180,13 @@ def cluster_mini_batch_kmeans(data=None, k=100, max_iter=10, batch_size=0.2, met
 
     """
     from pyemma.coordinates.clustering.kmeans import MiniBatchKmeansClustering
-    res = MiniBatchKmeansClustering(n_clusters=k, max_iter=max_iter, metric=metric, init_strategy=init_strategy, batch_size=batch_size)
-    return _param_stage(data, res, stride=1)
+    res = MiniBatchKmeansClustering(n_clusters=k, max_iter=max_iter, metric=metric, init_strategy=init_strategy,
+                                    batch_size=batch_size, n_jobs=n_jobs)
+    return _param_stage(data, res, stride=1, chunk_size=chunk_size)
 
 
 def cluster_kmeans(data=None, k=None, max_iter=10, tolerance=1e-5, stride=1,
-                   metric='euclidean', init_strategy='kmeans++', fixed_seed=False):
+                   metric='euclidean', init_strategy='kmeans++', fixed_seed=False, n_jobs=None, chunk_size=5000):
     r"""k-means clustering
 
     If data is given, it performs a k-means clustering and then assigns the
@@ -1222,11 +1227,21 @@ def cluster_kmeans(data=None, k=None, max_iter=10, tolerance=1e-5, stride=1,
 
     metric : str
         metric to use during clustering ('euclidean', 'minRMSD')
+
     init_strategy : str
         determines if the initial cluster centers are chosen according to the kmeans++-algorithm
         or drawn uniformly distributed from the provided data set
+
     fixed_seed : bool
         if set to true, the random seed gets fixed resulting in deterministic behavior; default is false
+
+    n_jobs : int or None, default None
+        Number of threads to use during assignment of the data.
+        If None, all available CPUs will be used.
+
+    chunk_size: int, default=5000
+        Number of data frames to process at once. Choose a higher value here,
+        to optimize thread usage and gain processing speed.
 
     Returns
     -------
@@ -1279,11 +1294,11 @@ def cluster_kmeans(data=None, k=None, max_iter=10, tolerance=1e-5, stride=1,
     """
     from pyemma.coordinates.clustering.kmeans import KmeansClustering
     res = KmeansClustering(n_clusters=k, max_iter=max_iter, metric=metric, tolerance=tolerance,
-                            init_strategy=init_strategy, fixed_seed=fixed_seed)
-    return _param_stage(data, res, stride=stride)
+                           init_strategy=init_strategy, fixed_seed=fixed_seed, n_jobs=n_jobs)
+    return _param_stage(data, res, stride=stride, chunk_size=chunk_size)
 
 
-def cluster_uniform_time(data=None, k=None, stride=1, metric='euclidean'):
+def cluster_uniform_time(data=None, k=None, stride=1, metric='euclidean', n_jobs=None, chunk_size=5000):
     r"""Uniform time clustering
 
     If given data, performs a clustering that selects data points uniformly in
@@ -1312,6 +1327,14 @@ def cluster_uniform_time(data=None, k=None, stride=1, metric='euclidean'):
         object is independent, so you can parametrize at a long stride, and
         still map all frames through the transformer.
 
+    n_jobs : int or None, default None
+        Number of threads to use during assignment of the data.
+        If None, all available CPUs will be used.
+
+    chunk_size: int, default=5000
+        Number of data frames to process at once. Choose a higher value here,
+        to optimize thread usage and gain processing speed.
+
     Returns
     -------
     uniformTime : a :class:`UniformTimeClustering <pyemma.coordinates.clustering.UniformTimeClustering>` clustering object
@@ -1335,11 +1358,11 @@ def cluster_uniform_time(data=None, k=None, stride=1, metric='euclidean'):
 
     """
     from pyemma.coordinates.clustering.uniform_time import UniformTimeClustering 
-    res = UniformTimeClustering(k, metric=metric)
-    return _param_stage(data, res, stride=stride)
+    res = UniformTimeClustering(k, metric=metric, n_jobs=n_jobs)
+    return _param_stage(data, res, stride=stride, chunk_size=chunk_size)
 
 
-def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1, metric='euclidean'):
+def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1, metric='euclidean', n_jobs=None, chunk_size=5000):
     r"""Regular space clustering
 
     If given data, it performs a regular space clustering [1]_ and returns a
@@ -1383,6 +1406,14 @@ def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1, metric='euc
     metric : str
         metric to use during clustering ('euclidean', 'minRMSD')
 
+    n_jobs : int or None, default None
+        Number of threads to use during assignment of the data.
+        If None, all available CPUs will be used.
+
+    chunk_size: int, default=5000
+        Number of data frames to process at once. Choose a higher value here,
+        to optimize thread usage and gain processing speed.
+
 
     Returns
     -------
@@ -1418,12 +1449,12 @@ def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1, metric='euc
     if dmin == -1:
         raise ValueError("provide a minimum distance for clustering, e.g. 2.0")
     from pyemma.coordinates.clustering.regspace import RegularSpaceClustering as _RegularSpaceClustering
-    res = _RegularSpaceClustering(dmin, max_centers=max_centers, metric=metric)
-    return _param_stage(data, res, stride=stride)
+    res = _RegularSpaceClustering(dmin, max_centers=max_centers, metric=metric, n_jobs=n_jobs)
+    return _param_stage(data, res, stride=stride, chunk_size=chunk_size)
 
 
 def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True,
-                      metric='euclidean'):
+                      metric='euclidean', n_jobs=None, chunk_size=5000):
     r"""Assigns data to the nearest cluster centers
 
     Creates a Voronoi partition with the given cluster centers. If given
@@ -1458,6 +1489,13 @@ def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True,
     metric : str
         metric to use during clustering ('euclidean', 'minRMSD')
 
+    n_jobs : int or None, default None
+        Number of threads to use during assignment of the data.
+        If None, all available CPUs will be used.
+
+    chunk_size: int, default=3000
+        Number of data frames to process at once. Choose a higher value here,
+        to optimize thread usage and gain processing speed.
 
     Returns
     -------
@@ -1498,9 +1536,10 @@ def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True,
     if centers is None:
         raise ValueError('You have to provide centers in form of a filename'
                          ' or NumPy array or a reader created by source function')
-    from pyemma.coordinates.clustering.assign import AssignCenters as _AssignCenters
-    res = _AssignCenters(centers, metric=metric)
-    parametrized_stage = _param_stage(data, res, stride=stride)
+    from pyemma.coordinates.clustering.assign import AssignCenters
+    res = AssignCenters(centers, metric=metric, n_jobs=n_jobs)
+
+    parametrized_stage = _param_stage(data, res, stride=stride, chunk_size=chunk_size)
     if return_dtrajs and data is not None:
         return parametrized_stage.dtrajs
 

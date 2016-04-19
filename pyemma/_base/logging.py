@@ -67,7 +67,7 @@ class Loggable(object):
 
     def _logger_is_active(self, level):
         """ @param level: int log level (debug=10, info=20, warn=30, error=40, critical=50)"""
-        return hasattr(self, '_logger_instance') and self.logger.level >= level
+        return self.logger.level >= level
 
     def __create_logger(self):
         _weak_logger_refs = Loggable.__refs

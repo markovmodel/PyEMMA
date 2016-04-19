@@ -116,9 +116,8 @@ class StreamingTransformer(Transformer, Estimator, DataSource, NotifyOnChangesMi
         the chunksize used to batch process underlying data
 
     """
-
     def __init__(self, chunksize=1000):
-        super(StreamingTransformer, self).__init__(chunksize)
+        super(StreamingTransformer, self).__init__(chunksize=chunksize)
         self._estimated = False
         self._data_producer = None
 
@@ -205,7 +204,6 @@ class StreamingTransformer(Transformer, Estimator, DataSource, NotifyOnChangesMi
 
         return super(StreamingTransformer, self).get_output(dimensions, stride, skip, chunk)
 
-    #@deprecated("Please use estimate")
     def parametrize(self, stride=1):
         if self._data_producer is None:
             raise RuntimeError(
@@ -213,14 +211,12 @@ class StreamingTransformer(Transformer, Estimator, DataSource, NotifyOnChangesMi
 
         return self.estimate(self.data_producer, stride=stride)
 
-    # get lengths etc. info from parent
-
-    @DataSource.chunksize.getter
+    @property
     def chunksize(self):
         """chunksize defines how much data is being processed at once."""
         return self.data_producer.chunksize
 
-    @DataSource.chunksize.setter
+    @chunksize.setter
     def chunksize(self, size):
         if not size >= 0:
             raise ValueError("chunksize has to be positive")
