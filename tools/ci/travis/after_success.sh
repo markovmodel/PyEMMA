@@ -9,5 +9,13 @@ fi
 
 
 # Deploy to binstar
-conda install --yes anaconda-client 
-anaconda -t $BINSTAR_TOKEN upload --force -u omnia -p ${PACKAGENAME}-dev $HOME/miniconda/conda-bld/*/${PACKAGENAME}-dev-*.tar.bz2
+conda install --yes anaconda-client jinja2
+pushd .
+cd $HOME/miniconda/conda-bld
+FILES=*/${PACKAGENAME}-dev-*.tar.bz2
+for filename in $FILES; do
+    anaconda -t $BINSTAR_TOKEN remove --force ${ORGNAME}/${PACKAGENAME}-dev/${filename}
+    anaconda -t $BINSTAR_TOKEN upload --force -u ${ORGNAME} -p ${PACKAGENAME}-dev ${filename}
+done
+popd
+
