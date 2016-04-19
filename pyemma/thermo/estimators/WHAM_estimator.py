@@ -134,7 +134,8 @@ class WHAM(_Estimator, _MEMM, _ProgressReporter):
                 maxiter=self.maxiter, maxerr=self.maxerr,
                 therm_energies=self.therm_energies, conf_energies=self.conf_energies,
                 save_convergence_info=self.save_convergence_info,
-                callback=_ConvergenceProgressIndicatorCallBack(self, 'WHAM', self.maxiter, self.maxerr))
+                callback=_ConvergenceProgressIndicatorCallBack(
+                    self, 'WHAM', self.maxiter, self.maxerr))
 
         # get stationary models
         models = [_StationaryModel(

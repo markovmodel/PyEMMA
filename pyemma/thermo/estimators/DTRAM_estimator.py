@@ -1,6 +1,6 @@
 # This file is part of PyEMMA.
 #
-# Copyright (c) 2015 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+# Copyright (c) 2015, 2016 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
 #
 # PyEMMA is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -14,6 +14,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import numpy as _np
 from six.moves import range
 from pyemma._base.estimator import Estimator as _Estimator
@@ -173,7 +174,9 @@ class DTRAM(_Estimator, _MEMM, _ProgressReporter):
                     _wham.estimate(
                         self.state_counts, self.bias_energies,
                         maxiter=self.init_maxiter, maxerr=self.init_maxerr, save_convergence_info=0,
-                        therm_energies=self.therm_energies, conf_energies=self.conf_energies)
+                        therm_energies=self.therm_energies, conf_energies=self.conf_energies,
+                        callback=_ConvergenceProgressIndicatorCallBack(
+                            self, 'WHAM init.', self.init_maxiter, self.init_maxerr))
 
         # run estimator
         self.therm_energies, self.conf_energies, self.log_lagrangian_mult, \
@@ -183,7 +186,8 @@ class DTRAM(_Estimator, _MEMM, _ProgressReporter):
                 log_lagrangian_mult=self.log_lagrangian_mult,
                 conf_energies=self.conf_energies,
                 save_convergence_info=self.save_convergence_info,
-                callback=_ConvergenceProgressIndicatorCallBack(self, 'DTRAM', self.maxiter, self.maxerr))
+                callback=_ConvergenceProgressIndicatorCallBack(
+                    self, 'DTRAM', self.maxiter, self.maxerr))
 
         # compute models
         models = [_dtram.estimate_transition_matrix(
