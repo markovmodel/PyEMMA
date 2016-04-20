@@ -11,7 +11,7 @@ env:
     - common_py_deps="jinja2 conda-build"
     - PACKAGENAME=pyemma
     - ORGNAME=omnia
-    - secure: BBcvn2SDTrKtCQdJFJ6ezv5lmYWYtoukS1maptS2RuEHrBqVMN++go5U9BTNDHBLUESewolaR9GFng2xXBLpPYgCE2XOGsJPKM0L15/Ae/QWSmqUbLNJFVZz3I3EliJJV9si1EaWQnQY0axPqSXRTA8CyVOeO9zxMewWozGIHE0=
+    - secure: "YI89RGfpxB29XoyPzBGXsCWSgdhP4i+DS7gFmwaDoOz3R+ZW8yG3ZaexW15WUe7h0tb1L2aYvZCcqgaBrH2SNCiR0SRbhk3EBPg1C3baMVlVhDeQru9S/FrEJ1ZUGhnUitbEEIdG2MYexETjoGef6K+7dXBJWJMy/rNRm61PSJw="
   matrix:
     # minimum possible numpy version = 1.8, because of mdtraj
     - python=2.7  CONDA_PY=27  CONDA_NPY=19
