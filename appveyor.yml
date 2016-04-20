@@ -8,7 +8,7 @@ environment:
     CONDA_NPY: "110"
 
   matrix:
-    - MINICONDA_MINICONDA_PYTHON: "C:\\Miniconda"
+    - MINICONDA_PYTHON: "C:\\Miniconda"
       CONDA_PY: "27"
     
     - MINICONDA_PYTHON: "C:\\Miniconda-x64"
