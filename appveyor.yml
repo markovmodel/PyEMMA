@@ -8,22 +8,22 @@ environment:
     CONDA_NPY: "110"
 
   matrix:
-    - PYTHON: "C:\\Miniconda"
+    - MINICONDA_MINICONDA_PYTHON: "C:\\Miniconda"
       CONDA_PY: "27"
     
-    - PYTHON: "C:\\Miniconda-x64"
+    - MINICONDA_PYTHON: "C:\\Miniconda-x64"
       CONDA_PY: "27" 
       ARCH: "64"
 
-    - PYTHON: "C:\\Miniconda3"
+    - MINICONDA_PYTHON: "C:\\Miniconda3"
       CONDA_PY: "35"
 
-    - PYTHON: "C:\\Miniconda3-x64"
+    - MINICONDA_PYTHON: "C:\\Miniconda3-x64"
       CONDA_PY: "34"
       ARCH: "64"
 
 install:
-  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%;"
+  - "SET PATH=%MINICONDA_PYTHON%;%MINICONDA_PYTHON%\\Scripts;%PATH%;"
 
   - conda config --set always_yes true 
   - conda config --add channels omnia 
