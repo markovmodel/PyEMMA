@@ -1,3 +1,3 @@
 #!/bin/bash
-#$PYTHON setup.py install
-pip install . -vv
+$PYTHON setup.py install
+$PYTHON tools/conda-recipe/dev_version.py
