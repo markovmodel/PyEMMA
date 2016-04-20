@@ -1,4 +1,5 @@
 environment:
+  BINSTAR_TOKEN: o5nTvV9PwJQgt5HXoqAl1iWi1ivyOrGb9ZL20puP4xklAEfvN/0EDHbhDHpVwjC7
   global:
     # SDK v7.0 MSVC Express 2008's SetEnv.cmd script will fail if the
     # /E:ON and /V:ON options are not enabled in the batch script intepreter
@@ -38,3 +39,7 @@ build: false # Not a C# project, build stuff at the test step instead.
 test_script:
   # run testsuite and upload test results to AppVeyor; return exit code of testsuite
   - conda build -q devtools/conda-recipe
+
+on_success:
+  - devtools/ci/appveyor/after_success.bat  
+
