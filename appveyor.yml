@@ -40,6 +40,6 @@ test_script:
   # run testsuite and upload test results to AppVeyor; return exit code of testsuite
   - conda build -q devtools/conda-recipe
 
-on_success:
-  - devtools/ci/appveyor/after_success.bat  
+#on_success:
+#  - devtools/ci/appveyor/after_success.bat  
 
