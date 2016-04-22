@@ -165,6 +165,7 @@ def _estimate_param_scan_worker(estimator, params, X, evaluate, evaluate_args,
         # if we only have one value, unpack it
         if len(values) == 1:
             values = values[0]
+        res.append(values)
     else:
         raise ValueError('Invalid setting for evaluate: ' + str(evaluate))
 
