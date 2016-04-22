@@ -171,6 +171,9 @@ class ProgressReporter(object):
         pg.numerator += numerator_increment
         # we are done
         if pg.numerator == pg.denominator:
+            if stage in self._prog_rep_callbacks:
+                for callback in self._prog_rep_callbacks[stage]:
+                    callback(stage, pg, **kw)
             self._progress_force_finish(stage)
             return
         elif pg.numerator > pg.denominator:
@@ -184,7 +187,7 @@ class ProgressReporter(object):
 
         _show_progressbar(pg, description=desc)
 
-        if hasattr(self, '_prog_rep_callbacks') and stage in self._prog_rep_callbacks:
+        if stage in self._prog_rep_callbacks:
             for callback in self._prog_rep_callbacks[stage]:
                 callback(stage, pg, **kw)
 
