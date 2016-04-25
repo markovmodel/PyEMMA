@@ -17,7 +17,7 @@ PAPEROPT_letter = -D latex_paper_size=letter
 ALLSPHINXOPTS   = -d build/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) source
 
 # ipython notebook index file
-NBCONVERT_CONFIG = jupyter_nbconvert_config.py
+NBCONVERT_CONFIG = $(realpath jupyter_nbconvert_config.py)
 NBCONVERT_CMD = jupyter nbconvert $(nbflags) --config $(NBCONVERT_CONFIG)
 
 .PHONY: help clean html ipython-rst
@@ -42,6 +42,7 @@ source/generated:
 	mkdir -p source/generated
 
 ipython-rst: source/generated
+	@$(eval nbs_in_doc:= $$(shell grep generated source/ipython.rst | sed -re 's/\s+generated\/(.+)/\1/g' ))
 	@$(eval notebooks:= $$(shell cd source/generated && \
                                find ../../../pyemma-ipython/ -name \*.ipynb \
                                     -and -not -name \*-checkpoint.ipynb))
