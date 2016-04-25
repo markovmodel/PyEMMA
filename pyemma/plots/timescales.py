@@ -92,13 +92,15 @@ def plot_implied_timescales(ITS, ax=None, outfile=None, show_mle=True, show_mean
             raise TypeError('optional arguments nits and process are mutually exclusive:', nits, process)
         if not _is_iterable_of_int(process):
             raise ValueError('process has to be an iterable of integers')
-        if _np.max(process) > ITS.number_of_timescales:
+        if _np.max(process)+1 > ITS.number_of_timescales:
             raise ValueError('requested process %u, whereas ITS only contains %u timescales'%(_np.max(process), ITS.number_of_timescales))
         # Now that it's for sure that nits==-1, process is iter_of_ints, and the requested processes exist in its object:
         its_idx = process
     else:
         if not _is_int(nits):
             raise TypeError('nits is not an integer, ',nits)
+        if nits == -1:
+            nits = ITS.number_of_timescales
         its_idx = _np.arange(ITS.number_of_timescales)[:nits]
 
     # Check units and dt for user error.
