@@ -1,6 +1,12 @@
 Changelog
 =========
 
+2.1.2 (4-25-2016)
+-----------------
+
+Service release to fix release fix for memory leak in minRMSD cluster assignment.
+
+
 2.1.1 (4-18-2016)
 -----------------
 Service release. Fixes some
