@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 r"""
-this module provides a custom exception to interrupt estimation runs via callback functions
+This module provides a custom exception to interrupt estimation runs via callback functions.
 """
 
 __all__ = [
