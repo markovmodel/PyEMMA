@@ -127,10 +127,13 @@ def _estimate_param_scan_worker(estimator, params, X, evaluate, evaluate_args,
 
     """
     # run estimation
+    model = None
     try:  # catch any exception
-        estimator.estimate(X, **params)
+        model = estimator.estimate(X, **params)
     except:
-        e = sys.exc_info()[0]
+        e = sys.exc_info()[1]
+        if isinstance(estimator, Loggable):
+            estimator.logger.warning("Ignored error during estimation: %s" % e)
         if failfast:
             raise  # re-raise
         else:
@@ -141,7 +144,7 @@ def _estimate_param_scan_worker(estimator, params, X, evaluate, evaluate_args,
 
     # deal with result
     if evaluate is None:  # we want full models
-        res.append(estimator.model)
+        res.append(model)
     # we want to evaluate function(s) of the model
     elif _types.is_iterable(evaluate):
         values = []  # the function values the model
