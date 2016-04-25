@@ -46,7 +46,7 @@ ipython-rst: source/generated
 	@$(eval nb_names:= $$(shell grep generated source/ipython.rst | sed -re 's/\s+generated\/(.+)/\1|/g'))
 	@$(eval notebooks:= $$(shell find ../pyemma-ipython -name *.ipynb | grep -E "$(nb_names)" ))
 	cd source/generated
-	for nb in $(notebooks); do $(NBCONVERT_CMD) $(nb); done
+	set -x; for nb in $(notebooks); do $(NBCONVERT_CMD) $$nb; done
 	@echo "Conversion finished."
 
 latex:
