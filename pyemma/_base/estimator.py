@@ -129,7 +129,8 @@ def _estimate_param_scan_worker(estimator, params, X, evaluate, evaluate_args,
     # run estimation
     model = None
     try:  # catch any exception
-        model = estimator.estimate(X, **params)
+        estimator.estimate(X, **params)
+        model = estimator.model
     except:
         e = sys.exc_info()[1]
         if isinstance(estimator, Loggable):
