@@ -1,6 +1,7 @@
 # Makefile for Sphinx documentation
 #
 
+SHELL := /bin/bash
 PYVER = 2.7
 PYTHON = python$(PYVER)
 
@@ -42,11 +43,10 @@ source/generated:
 	mkdir -p source/generated
 
 ipython-rst: source/generated
-	@$(eval nbs_in_doc:= $$(shell grep generated source/ipython.rst | sed -re 's/\s+generated\/(.+)/\1/g' ))
-	@$(eval notebooks:= $$(shell cd source/generated && \
-                               find ../../../pyemma-ipython/ -name \*.ipynb \
-                                    -and -not -name \*-checkpoint.ipynb))
-	cd source/generated; $(NBCONVERT_CMD) $(notebooks)
+	@$(eval nb_names:= $$(shell grep generated source/ipython.rst | sed -re 's/\s+generated\/(.+)/\1|/g'))
+	@$(eval notebooks:= $$(shell find ../pyemma-ipython -name *.ipynb | grep -E "$(nb_names)" ))
+	cd source/generated
+	for nb in $(notebooks); do $(NBCONVERT_CMD) $(nb); done
 	@echo "Conversion finished."
 
 latex:
