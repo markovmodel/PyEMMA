@@ -39,6 +39,7 @@ class _IterationProgressIndicatorCallBack(_ProgressIndicatorCallBack):
         self.reporter = reporter
 
     def __call__(self, *args, **kwargs):
+        if not self.reporter.show_progress: return
         if self.waiting(): return
         self.reporter._prog_rep_progressbars[self.stage].denominator = kwargs['maxiter']
         self.reporter._progress_update(1, stage=self.stage)
@@ -50,13 +51,15 @@ class _ConvergenceProgressIndicatorCallBack(_ProgressIndicatorCallBack):
         super(_ConvergenceProgressIndicatorCallBack, self).__init__()
         self.final = maxiter
         reporter._progress_register(int(self.final), description, stage=stage)
-        reporter._prog_rep_progressbars[stage].denominator = self.final
-        reporter._prog_rep_progressbars[stage].template = '{desc:.60}: {percent:3d}% ({fraction}) {bar} {spinner}'
         self.stage = stage
         self.reporter = reporter
         self.state = 0.0
+        if not reporter.show_progress: return
+        reporter._prog_rep_progressbars[stage].denominator = self.final
+        reporter._prog_rep_progressbars[stage].template = '{desc:.60}: {percent:3d}% ({fraction}) {bar} {spinner}'
 
     def __call__(self, *args, **kwargs):
+        if not self.reporter.show_progress: return
         if self.waiting(): return
         current = kwargs['iteration_step']
         if current > 0.0 and current > self.state and current <= self.final:
