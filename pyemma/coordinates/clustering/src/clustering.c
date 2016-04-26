@@ -85,7 +85,7 @@ int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric,
     float * SKP_restrict chunk_p;
     #endif
 
-    buffer_a = NULL; buffer_b = NULL; trace_centers_p = NULL;
+    buffer_a = NULL; buffer_b = NULL; trace_centers_p = NULL; centers_precentered = NULL;
     ret = ASSIGN_SUCCESS;
     debug=0;
 
@@ -109,7 +109,6 @@ int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric,
             inplace_center_and_trace_atom_major(centers_precentered, &trace_centers, 1, dim/3);
         }
         trace_centers_p = &trace_centers;
-        //trace_centers_p = NULL;
         centers = centers_precentered;
     } else {
         ret = ASSIGN_ERR_INVALID_METRIC;
@@ -168,6 +167,7 @@ int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric,
 error:
     free(buffer_a);
     free(buffer_b);
+    free(centers_precentered);
     return ret;
 }
 

@@ -169,8 +169,8 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
         if self.lag >= _np.max(trajlengths):
             raise ValueError('Illegal lag time ' + str(self.lag) + ' exceeds longest trajectory length')
         if self.lag > _np.mean(trajlengths):
-            self.logger.warning('Lag time ' + str(self.lag) + ' is on the order of mean trajectory length'
-                                + _np.mean(trajlengths) + '. It is recommended to fit four lag times in each '
+            self.logger.warning('Lag time ' + str(self.lag) + ' is on the order of mean trajectory length '
+                                + str(_np.mean(trajlengths)) + '. It is recommended to fit four lag times in each '
                                 + 'trajectory. HMM might be inaccurate.')
 
         # EVALUATE STRIDE

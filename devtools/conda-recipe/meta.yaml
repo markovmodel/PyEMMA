@@ -1,6 +1,6 @@
 package:
-  name: pyemma
-  version: !!str dev
+  name: pyemma-dev
+  #version: 0 
 source:
   path: ../..
 

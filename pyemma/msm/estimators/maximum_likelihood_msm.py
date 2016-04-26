@@ -771,7 +771,7 @@ class MaximumLikelihoodMSM(_Estimator, _MSM):
             If False, only the prediction will get error bars, which is often
             sufficient to validate a model.
         show_progress : bool, optional
-            Show progressbars for calculation?
+            Show progress bars for calculation?
 
         Returns
         -------
@@ -796,6 +796,7 @@ class MaximumLikelihoodMSM(_Estimator, _MSM):
         if memberships is None:
             self.pcca(nsets)
             memberships = self.metastable_memberships
-        ck = ChapmanKolmogorovValidator(self, self, memberships, mlags=mlags, conf=conf, err_est=err_est)
+        ck = ChapmanKolmogorovValidator(self, self, memberships, mlags=mlags, conf=conf,
+                                        err_est=err_est, show_progress=show_progress)
         ck.estimate(self._dtrajs_full)
         return ck
