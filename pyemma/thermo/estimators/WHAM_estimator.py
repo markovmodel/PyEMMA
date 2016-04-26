@@ -31,19 +31,21 @@ __author__ = 'wehmeyer, mey'
 
 
 class WHAM(_Estimator, _MEMM, _ProgressReporter):
-    #TODO: fix docstring
-    r""" Weighted Histogram Analysis Method
+    r"""Weighted Histogram Analysis Method
 
     Parameters
     ----------
-    bias_energies_full : ndarray(K, n)
-        bias_energies_full[j,i] is the bias energy for each discrete state i at thermodynamic
-        state j.
+    bias_energies_full : numpy.ndarray(shape=(num_therm_states, num_conf_states)) object
+        bias_energies_full[j, i] is the bias energy in units of kT for each discrete state i
+        at thermodynamic state j.
     maxiter : int, optional, default=10000
         The maximum number of self-consistent iterations before the estimator exits unsuccessfully.
-    maxerr : float, optional, default=1E-15
+    maxerr : float, optional, default=1.0E-15
         Convergence criterion based on the maximal free energy change in a self-consistent
         iteration step.
+    save_convergence_info : int, optional, default=0
+        Every save_convergence_info iteration steps, store the actual increment
+        and the actual loglikelihood; 0 means no storage.
     dt_traj : str, optional, default='1 step'
         Description of the physical time corresponding to the lag. May be used by analysis
         algorithms such as plotting tools to pretty-print the axes. By default '1 step', i.e.
@@ -56,10 +58,8 @@ class WHAM(_Estimator, _MEMM, _ProgressReporter):
         |  'us',   'microsecond*'
         |  'ms',   'millisecond*'
         |  's',    'second*'
-    save_convergence_info : int, optional, default=0
-        Every save_convergence_info iteration steps, store the actual increment
-        and the actual loglikelihood; 0 means no storage.
-    TODO: stride
+    stride : int, optional, default=1
+        not used
 
     Example
     -------
@@ -82,7 +82,7 @@ class WHAM(_Estimator, _MEMM, _ProgressReporter):
     """
     def __init__(
         self, bias_energies_full,
-        stride=1, maxiter=10000, maxerr=1E-15, dt_traj='1 step', save_convergence_info=0):
+        maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step', stride=1):
         self.bias_energies_full = _types.ensure_ndarray(bias_energies_full, ndim=2, kind='numeric')
         self.stride = stride
         self.dt_traj = dt_traj
@@ -101,10 +101,15 @@ class WHAM(_Estimator, _MEMM, _ProgressReporter):
         """
         Parameters
         ----------
-        trajs : ndarray(T, 2) or list of ndarray(T_i, 2)
-            Thermodynamic trajectories. Each trajectory is a (T_i, 2)-array
-            with T_i time steps. The first column is the thermodynamic state
-            index, the second column is the configuration state index.
+        X : tuple of (ttrajs, dtrajs)
+            Simulation trajectories. ttrajs contain the indices of the thermodynamic state and
+            dtrajs contains the indices of the configurational states.
+        ttrajs : list of numpy.ndarray(X_i, dtype=int)
+            Every elements is a trajectory (time series). ttrajs[i][t] is the index of the
+            thermodynamic state visited in trajectory i at time step t.
+        dtrajs : list of numpy.ndarray(X_i, dtype=int)
+            dtrajs[i][t] is the index of the configurational state (Markov state) visited in
+            trajectory i at time step t.
         """
         # check input
         assert isinstance(trajs, (tuple, list))

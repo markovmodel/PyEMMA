@@ -63,6 +63,9 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
     maxerr : float, optional, default=1E-15
         Convergence criterion based on the maximal free energy change in a self-consistent
         iteration step.
+    save_convergence_info : int, optional, default=0
+        Every save_convergence_info iteration steps, store the actual increment
+        and the actual loglikelihood; 0 means no storage.
     dt_traj : str, optional, default='1 step'
         Description of the physical time corresponding to the lag. May be used by analysis
         algorithms such as plotting tools to pretty-print the axes. By default '1 step', i.e.
@@ -75,19 +78,19 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
         |  'us',   'microsecond*'
         |  'ms',   'millisecond*'
         |  's',    'second*'
-    connectivity : string
+    connectivity : str, optional, default='summed_count_matrix'
         One of 'summed_count_matrix', 'strong_in_every_ensemble',
         'neighbors', 'post_hoc_RE' or 'BAR_variance'.
         Defines what should be considered a connected set in the joint space
         of conformations and thermodynamic ensembles.
         For details see thermotools.cset.compute_csets_TRAM.
-    nn : int, optional
+    nn : int, optional, default=None
         Only needed if connectivity='neighbors'
         See thermotools.cset.compute_csets_TRAM.
     connectivity_factor : float, optional, default=1.0
-        Only needed if connectivity='post_hoc_RE' or 'BAR_variance'.
-        Weakens the connectivity requirement, see thermotools.cset.compute_csets_TRAM.
-    direct_space : bool, default=False
+        Only needed if connectivity='post_hoc_RE' or 'BAR_variance'. Weakens the connectivity
+        requirement, see thermotools.cset.compute_csets_TRAM.
+    direct_space : bool, optional, default=False
         Whether to perform the self-consitent iteration with Boltzmann factors
         (direct space) or free energies (log-space). When analyzing data from
         multi-temperature simulations, direct-space is not recommended.
@@ -97,29 +100,24 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
         N_dtram_accelerations says how many times the dTRAM-like update
         step should be applied in every iteration of the TRAM equations.
         Currently this is only effective if direct_space=True.
-    save_convergence_info : int, optional, default=0
-        Every save_convergence_info iteration steps, store the actual increment
-        and the actual loglikelihood; 0 means no storage.
     init : str, optional, default=None
         Use a specific initialization for self-consistent iteration:
 
         | None:    use a hard-coded guess for free energies and Lagrangian multipliers
         | 'mbar':  perform a short MBAR estimate to initialize the free energies
-    init_maxiter : int, optional, default=10000
-        Same as maxiter but for the (optional) MBAR initialization step.
-        If MBAR doesn't converge in mbar_maxiter iterations, the results
-        is still used for intializing TRAM.
-    init_maxerr : float, optional, default=1e-8
-        same as maxerr but for the (optional) MBAR initialization step
+    init_maxiter : int, optional, default=5000
+        The maximum number of self-consistent iterations during the initialization.
+    init_maxerr : float, optional, default=1.0E-8
+        Convergence criterion for the initialization.
     """
     def __init__(
-        self, lag, count_mode='sliding', dt_traj='1 step',
-        connectivity='summed_count_matrix', nn=None, connectivity_factor=1.0,
+        self, lag, count_mode='sliding',
+        connectivity='summed_count_matrix',
         ground_state=None,
-        maxiter=10000, maxerr=1e-15, save_convergence_info=0,
-        direct_space=False, N_dtram_accelerations=0,
+        maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step',
+        nn=None, connectivity_factor=1.0, direct_space=False, N_dtram_accelerations=0,
         callback=None,
-        init='mbar', init_maxiter=10000, init_maxerr=1e-8):
+        init='mbar', init_maxiter=5000, init_maxerr=1.0E-8):
 
         self.lag = lag
         assert count_mode == 'sliding', 'Currently the only implemented count_mode is \'sliding\''
@@ -152,19 +150,18 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
         Parameters
         ----------
         X : tuple of (ttrajs, dtrajs, btrajs)
-            Simulation trajectories. ttrajs contain the indices of the thermodynamic
-            state, dtrajs contains the indices of the configurational states and
-            btrajs contain the biases.
+            Simulation trajectories. ttrajs contain the indices of the thermodynamic state, dtrajs
+            contains the indices of the configurational states and btrajs contain the biases.
         ttrajs : list of numpy.ndarray(X_i, dtype=int)
-            Every elements is a trajectory (time series). ttrajs[i][t] is the index
-            of the thermodynamic state visited in trajectory i at time step t.
+            Every elements is a trajectory (time series). ttrajs[i][t] is the index of the
+            thermodynamic state visited in trajectory i at time step t.
         dtrajs : list of numpy.ndarray(X_i, dtype=int)
-            dtrajs[i][t] is the index of the configurational state (Markov state)
-            visited in trajectory i at time step t.
+            dtrajs[i][t] is the index of the configurational state (Markov state) visited in
+            trajectory i at time step t.
         btrajs : list of numpy.ndarray((X_i, T), dtype=numpy.float64)
-            For every simulation frame seen in trajectory i and time step t,
-            btrajs[i][t,k] is the bias energy of that frame evaluated in the k'th
-            thermodynamic state (i.e. at the k'th Umbrella/Hamiltonian/temperature)
+            For every simulation frame seen in trajectory i and time step t, btrajs[i][t,k] is the
+            bias energy of that frame evaluated in the k'th thermodynamic state (i.e. at the k'th
+            Umbrella/Hamiltonian/temperature).
         """
         ttrajs, dtrajs_full, btrajs = X
         # shape and type checks
