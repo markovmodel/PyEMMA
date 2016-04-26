@@ -14,6 +14,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import numpy as _np
 from six.moves import range
 from pyemma._base.estimator import Estimator as _Estimator
@@ -153,6 +154,6 @@ class WHAM(_Estimator, _MEMM, _ProgressReporter):
         return _wham.get_loglikelihood(
             self.state_counts.sum(axis=1).astype(_np.intc),
             self.state_counts.sum(axis=0).astype(_np.intc),
-            self.f_therm,
-            self.f,
+            self.therm_energies,
+            self.conf_energies,
             _np.zeros(shape=(self.nthermo + self.nstates,), dtype=_np.float64))

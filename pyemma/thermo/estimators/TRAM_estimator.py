@@ -197,7 +197,8 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
         self.csets, pcset = _cset.compute_csets_TRAM(
             self.connectivity, state_counts_full, count_matrices_full,
             ttrajs=ttrajs, dtrajs=dtrajs_full, bias_trajs=btrajs,
-            nn=self.nn, factor=self.connectivity_factor, callback=_IterationProgressIndicatorCallBack(self, 'finding connected set', 'cset'))
+            nn=self.nn, factor=self.connectivity_factor,
+            callback=_IterationProgressIndicatorCallBack(self, 'finding connected set', 'cset'))
         self.active_set = pcset
 
         # check for empty states
@@ -214,9 +215,14 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
             ttrajs=ttrajs, dtrajs=dtrajs_full)
 
         # self-consistency tests
-        assert _np.all(self.state_counts >= _np.maximum(self.count_matrices.sum(axis=1), self.count_matrices.sum(axis=2)))
-        assert _np.all(_np.sum([_np.bincount(d[d>=0], minlength=self.nstates_full) for d in self.dtrajs], axis=0) == self.state_counts.sum(axis=0))
-        assert _np.all(_np.sum([_np.bincount(t[d>=0], minlength=self.nthermo) for t, d in zip(ttrajs, self.dtrajs)], axis=0) == self.state_counts.sum(axis=1))
+        assert _np.all(self.state_counts >= _np.maximum(self.count_matrices.sum(axis=1), \
+            self.count_matrices.sum(axis=2)))
+        assert _np.all(_np.sum(
+            [_np.bincount(d[d>=0], minlength=self.nstates_full) for d in self.dtrajs],
+            axis=0) == self.state_counts.sum(axis=0))
+        assert _np.all(_np.sum(
+            [_np.bincount(t[d>=0], minlength=self.nthermo) for t, d in zip(ttrajs, self.dtrajs)],
+            axis=0) == self.state_counts.sum(axis=1))
 
         # check for empty states
         for k in range(self.state_counts.shape[0]):
@@ -234,7 +240,8 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
                 self.mbar_biased_conf_energies, _ = mbar.estimate(
                     state_counts_full.sum(axis=1), btrajs, dtrajs_full,
                     maxiter=self.init_maxiter, maxerr=self.init_maxerr,
-                    callback=_ConvergenceProgressIndicatorCallBack(self, 'MBAR init.', self.init_maxiter, self.init_maxerr),
+                    callback=_ConvergenceProgressIndicatorCallBack(
+                        self, 'MBAR init.', self.init_maxiter, self.init_maxerr),
                     n_conf_states=self.nstates_full)
             self.biased_conf_energies = self.mbar_biased_conf_energies.copy()
 
@@ -253,7 +260,8 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
                 biased_conf_energies=self.biased_conf_energies,
                 log_lagrangian_mult=self.log_lagrangian_mult,
                 save_convergence_info=self.save_convergence_info,
-                callback=_ConvergenceProgressIndicatorCallBack(self, 'TRAM', self.maxiter, self.maxerr),
+                callback=_ConvergenceProgressIndicatorCallBack(
+                    self, 'TRAM', self.maxiter, self.maxerr),
                 N_dtram_accelerations=self.N_dtram_accelerations)
 
         self.btrajs = btrajs
@@ -279,8 +287,10 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
         Returns the value of the log-likelihood of the converged TRAM estimate.
         """
         # TODO: check that we are estimated...
-        return _tram.log_likelihood_lower_bound(self.log_lagrangian_mult, self.biased_conf_energies,
-            self.count_matrices, self.btrajs, self.dtrajs, self.state_counts, None, None, None, None, None)
+        return _tram.log_likelihood_lower_bound(
+            self.log_lagrangian_mult, self.biased_conf_energies,
+            self.count_matrices, self.btrajs, self.dtrajs, self.state_counts,
+            None, None, None, None, None)
 
     def pointwise_free_energies(self, therm_state=None):
         r"""
