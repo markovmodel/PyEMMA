@@ -40,9 +40,8 @@ __all__ = [
 def estimate_umbrella_sampling(
     us_trajs, us_dtrajs, us_centers, us_force_constants, md_trajs=None, md_dtrajs=None, kT=None,
     maxiter=10000, maxerr=1.0E-15, save_convergence_info=0,
-    estimator='wham', lag=1, dt_traj='1 step', init=None, init_maxiter=10000, init_maxerr=1e-8,
+    estimator='wham', lag=1, dt_traj='1 step', init=None, init_maxiter=10000, init_maxerr=1.0E-8,
     **kwargs):
-    # TODO: fix docstring
     r"""
     Wraps umbrella sampling data or a mix of umbrella sampling and and direct molecular dynamics.
 
@@ -71,7 +70,7 @@ def estimate_umbrella_sampling(
         Use this attribute if the supplied force constants are NOT unit-less.
     maxiter : int, optional, default=10000
         The maximum number of self-consistent iterations before the estimator exits unsuccessfully.
-    maxerr : float, optional, default=1E-15
+    maxerr : float, optional, default=1.0E-15
         Convergence criterion based on the maximal free energy change in a self-consistent
         iteration step.
     save_convergence_info : int, optional, default=0
@@ -82,8 +81,10 @@ def estimate_umbrella_sampling(
 
         | 'wham':   use WHAM
         | 'dtram':  use the discrete version of TRAM
-    lag : int, optional, default=1
-        Integer lag time at which transitions are counted.
+        | 'tram':  use TRAM
+    lag : int or list of int, optional, default=1
+        Integer lag time at which transitions are counted. Providing a list of lag times will
+        trigger one estimation per lag time.
     dt_traj : str, optional, default='1 step'
         Description of the physical time corresponding to the lag. May be used by analysis
         algorithms such as plotting tools to pretty-print the axes. By default '1 step', i.e.
@@ -97,15 +98,21 @@ def estimate_umbrella_sampling(
         |  'ms',   'millisecond*'
         |  's',    'second*'
     init : str, optional, default=None
-        Use a specific initialization for self-consistent iteration:
+        Use a specific initialization for the self-consistent iteration:
 
         | None:    use a hard-coded guess for free energies and Lagrangian multipliers
-        | 'wham':  perform a short WHAM estimate to initialize the free energies
+        | 'wham':  perform a short WHAM estimate to initialize the free energies (only with dtram)
+        | 'mbar':  perform a short MBAR estimate to initialize the free energies (only with tram)
+    init_maxiter : int, optional, default=10000
+        The maximum number of self-consistent iterations during the initialization.
+    init_maxerr : float, optional, default=1.0E-8
+        Convergence criterion for the initialization.
 
     Returns
     -------
-    _estimator : MEMM or StationaryModel
-        The requested estimator/model object, i.e., WHAM or DTRAM.
+    _estimator : MEMM or list of MEMMs
+        The requested estimator/model object, i.e., WHAM, DTRAM or TRAM. If multiple lag times are
+        given, a list of objects is returned (one MEMM per lag time).
     """
     assert estimator in ['wham', 'dtram', 'tram'], "unsupported estimator: %s" % estimator
     from .util import get_umbrella_sampling_data as _get_umbrella_sampling_data
@@ -193,8 +200,10 @@ def estimate_multi_temperature(
 
         | 'wham':   use WHAM
         | 'dtram':  use the discrete version of TRAM
-    lag : int, optional, default=1
-        Integer lag time at which transitions are counted.
+        | 'tram':  use TRAM
+    lag : int or list of int, optional, default=1
+        Integer lag time at which transitions are counted. Providing a list of lag times will
+        trigger one estimation per lag time.
     dt_traj : str, optional, default='1 step'
         Description of the physical time corresponding to the lag. May be used by analysis
         algorithms such as plotting tools to pretty-print the axes. By default '1 step', i.e.
@@ -208,15 +217,21 @@ def estimate_multi_temperature(
         |  'ms',   'millisecond*'
         |  's',    'second*'
     init : str, optional, default=None
-        Use a specific initialization for self-consistent iteration:
+        Use a specific initialization for the self-consistent iteration:
 
         | None:    use a hard-coded guess for free energies and Lagrangian multipliers
-        | 'wham':  perform a short WHAM estimate to initialize the free energies
+        | 'wham':  perform a short WHAM estimate to initialize the free energies (only with dtram)
+        | 'mbar':  perform a short MBAR estimate to initialize the free energies (only with tram)
+    init_maxiter : int, optional, default=10000
+        The maximum number of self-consistent iterations during the initialization.
+    init_maxerr : float, optional, default=1.0E-8
+        Convergence criterion for the initialization.
 
     Returns
     -------
-    _estimator : MEMM or StationaryModel
-        The requested estimator/model object, i.e., WHAM or DTRAM.
+    _estimator : MEMM or list of MEMMs
+        The requested estimator/model object, i.e., WHAM, DTRAM or TRAM. If multiple lag times are
+        given, a list of objects is returned (one MEMM per lag time).
     """
     assert estimator in ['wham', 'dtram', 'tram'], "unsupported estimator: %s" % estimator
     from .util import get_multi_temperature_data as _get_multi_temperature_data
@@ -263,29 +278,31 @@ def estimate_multi_temperature(
 
 def tram(
     ttrajs, dtrajs, bias, lag,
-    count_mode='sliding', connectivity='summed_count_matrix', connectivity_factor=1.0, nn=None,
+    count_mode='sliding', connectivity='summed_count_matrix',
     maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step',
-    direct_space=False, N_dtram_accelerations=0, callback=None,
+    connectivity_factor=1.0, nn=None, direct_space=False, N_dtram_accelerations=0, callback=None,
     init='mbar', init_maxiter=10000, init_maxerr=1e-8):
-    # TODO: fix docstring
     r"""
     Transition-based reweighting analysis method
 
     Parameters
     ----------
-    ttrajs : ndarray(T) of int, or list of ndarray(T_i) of int
+    ttrajs : numpy.ndarray(T), or list of numpy.ndarray(T_i)
         A single discrete trajectory or a list of discrete trajectories. The integers are
-        indexes in 0,...,K-1 enumerating the thermodynamic states the trajectory is in at any time.
-    dtrajs : ndarray(T) of int, or list of ndarray(T_i) of int
+        indexes in 0,...,num_therm_states-1 enumerating the thermodynamic states the trajectory is
+        in at any time.
+    dtrajs : ndarray(T), or list of ndarray(T_i)
         A single discrete trajectory or a list of discrete trajectories. The integers are indexes
-        in 1,...,n enumerating the n Markov states or the bins the trajectory is in at any time.
-    btrajs : ndarray(T, K) of float, or list of ndarray(T_i, K) of float
+        in 0,...,num_conf_states-1 enumerating the num_conf_states Markov states or the bins the
+        trajectory is in at any time.
+    btrajs : numpy.ndarray(T, num_therm_states), or list of numpy.ndarray(T_i, num_therm_states)
         A single reduced bias energy trajectory or a list of reduced bias energy trajectories.
         For every simulation frame seen in trajectory i and time step t, btrajs[i][t, k] is the
         reduced bias energy of that frame evaluated in the k'th thermodynamic state (i.e. at
         the k'th Umbrella/Hamiltonian/temperature)
-    lag : int
-        Integer lag time at which transitions are counted.
+    lag : int or list of int, optional, default=1
+        Integer lag time at which transitions are counted. Providing a list of lag times will
+        trigger one estimation per lag time.
     maxiter : int, optional, default=10000
         The maximum number of dTRAM iterations before the estimator exits unsuccessfully.
     maxerr : float, optional, default=1e-15
@@ -306,17 +323,43 @@ def tram(
         |  'us',   'microsecond*'
         |  'ms',   'millisecond*'
         |  's',    'second*'
+    connectivity : str, optional, default='summed_count_matrix'
+        One of 'summed_count_matrix', 'strong_in_every_ensemble',
+        'neighbors', 'post_hoc_RE' or 'BAR_variance'.
+        Defines what should be considered a connected set in the joint space
+        of conformations and thermodynamic ensembles.
+        For details see thermotools.cset.compute_csets_TRAM.
+    nn : int, optional, default=None
+        Only needed if connectivity='neighbors'
+        See thermotools.cset.compute_csets_TRAM.
+    connectivity_factor : float, optional, default=1.0
+        Only needed if connectivity='post_hoc_RE' or 'BAR_variance'. Weakens the connectivity
+        requirement, see thermotools.cset.compute_csets_TRAM.
+    direct_space : bool, optional, default=False
+        Whether to perform the self-consitent iteration with Boltzmann factors
+        (direct space) or free energies (log-space). When analyzing data from
+        multi-temperature simulations, direct-space is not recommended.
+    N_dtram_accelerations : int, optional, default=0
+        Convergence of TRAM can be speeded up by interleaving the updates
+        in the self-consitent iteration with a dTRAM-like update step.
+        N_dtram_accelerations says how many times the dTRAM-like update
+        step should be applied in every iteration of the TRAM equations.
+        Currently this is only effective if direct_space=True.
     init : str, optional, default=None
         Use a specific initialization for self-consistent iteration:
 
         | None:    use a hard-coded guess for free energies and Lagrangian multipliers
         | 'wham':  perform a short WHAM estimate to initialize the free energies
+    init_maxiter : int, optional, default=10000
+        The maximum number of self-consistent iterations during the initialization.
+    init_maxerr : float, optional, default=1.0E-8
+        Convergence criterion for the initialization.
 
     Returns
     -------
-    memm : MEMM
-        A multi-thermodynamic Markov state model which consists of stationary and kinetic
-        quantities at all temperatures/thermodynamic states.
+    memm : MEMM or list of MEMMs
+        A multi-ensemble Markov state model (for each given lag time) which consists of stationary
+        and kinetic quantities at all temperatures/thermodynamic states.
 
     Example
     -------
@@ -355,9 +398,9 @@ def tram(
     tram_estimators = [
         _TRAM(
             _lag, count_mode=count_mode, connectivity=connectivity,
-            connectivity_factor=connectivity_factor, nn=nn,
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
-            dt_traj=dt_traj, direct_space=direct_space, N_dtram_accelerations=N_dtram_accelerations,
+            dt_traj=dt_traj, connectivity_factor=connectivity_factor, nn=nn,
+            direct_space=direct_space, N_dtram_accelerations=N_dtram_accelerations,
             callback=callback, init='mbar', init_maxiter=init_maxiter,
             init_maxerr=init_maxerr).estimate((ttrajs, dtrajs, bias)) for _lag in lags]
     # return
@@ -369,23 +412,38 @@ def dtram(
     ttrajs, dtrajs, bias, lag,
     count_mode='sliding', connectivity='largest',
     maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step',
-    init=None, init_maxiter=10000, init_maxerr=1e-8):
-    # TODO: fix docstring
+    init=None, init_maxiter=10000, init_maxerr=1.0E-8):
     r"""
     Discrete transition-based reweighting analysis method
 
     Parameters
     ----------
-    ttrajs : ndarray(T) of int, or list of ndarray(T_i) of int
+    ttrajs : numpy.ndarray(T) of int, or list of numpy.ndarray(T_i) of int
         A single discrete trajectory or a list of discrete trajectories. The integers are
-        indexes in 0,...,K-1 enumerating the thermodynamic states the trajectory is in at any time.
+        indexes in 0,...,num_therm_states-1 enumerating the thermodynamic states the trajectory is
+        in at any time.
     dtrajs : ndarray(T) of int, or list of ndarray(T_i) of int
         A single discrete trajectory or a list of discrete trajectories. The integers are indexes
-        in 1,...,n enumerating the n Markov states or the bins the trajectory is in at any time.
-    bias : ndarray(K, n)
-        bias[j,i] is the bias energy for each discrete state i at thermodynamic state j.
-    lag : int
-        Integer lag time at which transitions are counted.
+        in 0,...,num_conf_states-1 enumerating the num_conf_states Markov states or the bins the
+        trajectory is in at any time.
+    bias : numpy.ndarray(shape=(num_therm_states, num_conf_states)) object
+        bias_energies_full[j, i] is the bias energy in units of kT for each discrete state i
+        at thermodynamic state j.
+    lag : int or list of int, optional, default=1
+        Integer lag time at which transitions are counted. Providing a list of lag times will
+        trigger one estimation per lag time.
+    count_mode : str, optional, default='sliding'
+        Mode to obtain count matrices from discrete trajectories. Should be one of:
+        * 'sliding' : a trajectory of length T will have :math:`T-\tau` counts at time indexes
+              .. math::
+                 (0 \rightarrow \tau), (1 \rightarrow \tau+1), ..., (T-\tau-1 \rightarrow T-1)
+        * 'sample' : a trajectory of length T will have :math:`T/\tau` counts at time indexes
+              .. math::
+                    (0 \rightarrow \tau), (\tau \rightarrow 2 \tau), ..., ((T/\tau-1) \tau \rightarrow T)
+        Currently only 'sliding' is supported.
+    connectivity : str, optional, default='largest'
+        Defines what should be considered a connected set in the joint space of conformations and
+        thermodynamic ensembles. Currently only 'largest' is supported.
     maxiter : int, optional, default=10000
         The maximum number of dTRAM iterations before the estimator exits unsuccessfully.
     maxerr : float, optional, default=1e-15
@@ -411,12 +469,16 @@ def dtram(
 
         | None:    use a hard-coded guess for free energies and Lagrangian multipliers
         | 'wham':  perform a short WHAM estimate to initialize the free energies
+    init_maxiter : int, optional, default=10000
+        The maximum number of self-consistent iterations during the initialization.
+    init_maxerr : float, optional, default=1.0E-8
+        Convergence criterion for the initialization.
 
     Returns
     -------
-    memm : MEMM
-        A multi-thermodynamic Markov state model which consists of stationary and kinetic
-        quantities at all temperatures/thermodynamic states.
+    memm : MEMM or list of MEMMs
+        A multi-ensemble Markov state model (for each given lag time) which consists of stationary
+        and kinetic quantities at all temperatures/thermodynamic states.
 
     Example
     -------
@@ -471,14 +533,17 @@ def wham(
 
     Parameters
     ----------
-    ttrajs : ndarray(T) of int, or list of ndarray(T_i) of int
+    ttrajs : numpy.ndarray(T) of int, or list of numpy.ndarray(T_i) of int
         A single discrete trajectory or a list of discrete trajectories. The integers are
-        indexes in 1,...,K enumerating the thermodynamic states the trajectory is in at any time.
+        indexes in 0,...,num_therm_states-1 enumerating the thermodynamic states the trajectory is
+        in at any time.
     dtrajs : ndarray(T) of int, or list of ndarray(T_i) of int
         A single discrete trajectory or a list of discrete trajectories. The integers are indexes
-        in 1,...,n enumerating the n Markov states or the bins the trajectory is in at any time.
-    bias : ndarray(K, n)
-        bias[j,i] is the bias energy for each discrete state i at thermodynamic state j.
+        in 0,...,num_conf_states-1 enumerating the num_conf_states Markov states or the bins the
+        trajectory is in at any time.
+    bias : numpy.ndarray(shape=(num_therm_states, num_conf_states)) object
+        bias_energies_full[j, i] is the bias energy in units of kT for each discrete state i
+        at thermodynamic state j.
     maxiter : int, optional, default=10000
         The maximum number of dTRAM iterations before the estimator exits unsuccessfully.
     maxerr : float, optional, default=1e-15
