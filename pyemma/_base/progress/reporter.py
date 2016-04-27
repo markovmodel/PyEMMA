@@ -146,7 +146,7 @@ class ProgressReporter(object):
 
         self._prog_rep_callbacks[stage].append(call_back)
 
-    def _progress_update(self, numerator_increment, stage=0, **kw):
+    def _progress_update(self, numerator_increment, stage=0, show_eta=True, **kw):
         """ Updates the progress. Will update progress bars or other progress output.
 
         Parameters
@@ -185,7 +185,7 @@ class ProgressReporter(object):
         desc = self._prog_rep_descriptions[stage].format(**kw)
         pg.description = desc
 
-        _show_progressbar(pg, description=desc)
+        _show_progressbar(pg, show_eta=show_eta, description=desc)
 
         if stage in self._prog_rep_callbacks:
             for callback in self._prog_rep_callbacks[stage]:

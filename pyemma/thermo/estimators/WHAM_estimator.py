@@ -14,11 +14,14 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import numpy as _np
 from six.moves import range
 from pyemma._base.estimator import Estimator as _Estimator
+from pyemma._base.progress import ProgressReporter as _ProgressReporter
 from pyemma.thermo import MEMM as _MEMM
 from pyemma.thermo import StationaryModel as _StationaryModel
+from pyemma.thermo.estimators._callback import _ConvergenceProgressIndicatorCallBack
 from pyemma.util import types as _types
 from pyemma.util.units import TimeUnit as _TimeUnit
 from thermotools import wham as _wham
@@ -27,19 +30,22 @@ from thermotools import util as _util
 __author__ = 'wehmeyer, mey'
 
 
-class WHAM(_Estimator, _MEMM):
-    r""" Weighted Histogram Analysis Method
+class WHAM(_Estimator, _MEMM, _ProgressReporter):
+    r"""Weighted Histogram Analysis Method
 
     Parameters
     ----------
-    bias_energies_full : ndarray(K, n)
-        bias_energies_full[j,i] is the bias energy for each discrete state i at thermodynamic
-        state j.
+    bias_energies_full : numpy.ndarray(shape=(num_therm_states, num_conf_states)) object
+        bias_energies_full[j, i] is the bias energy in units of kT for each discrete state i
+        at thermodynamic state j.
     maxiter : int, optional, default=10000
         The maximum number of self-consistent iterations before the estimator exits unsuccessfully.
-    maxerr : float, optional, default=1E-15
+    maxerr : float, optional, default=1.0E-15
         Convergence criterion based on the maximal free energy change in a self-consistent
         iteration step.
+    save_convergence_info : int, optional, default=0
+        Every save_convergence_info iteration steps, store the actual increment
+        and the actual loglikelihood; 0 means no storage.
     dt_traj : str, optional, default='1 step'
         Description of the physical time corresponding to the lag. May be used by analysis
         algorithms such as plotting tools to pretty-print the axes. By default '1 step', i.e.
@@ -52,10 +58,8 @@ class WHAM(_Estimator, _MEMM):
         |  'us',   'microsecond*'
         |  'ms',   'millisecond*'
         |  's',    'second*'
-    save_convergence_info : int, optional, default=0
-        Every save_convergence_info iteration steps, store the actual increment
-        and the actual loglikelihood; 0 means no storage.
-    TODO: stride
+    stride : int, optional, default=1
+        not used
 
     Example
     -------
@@ -63,9 +67,9 @@ class WHAM(_Estimator, _MEMM):
     >>> import numpy as np
     >>> B = np.array([[0, 0],[0.5, 1.0]])
     >>> wham = WHAM(B)
-    >>> traj1 = np.array([[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,1,1,1,0,0,0]]).T
-    >>> traj2 = np.array([[1,1,1,1,1,1,1,1,1,1],[0,1,0,1,0,1,1,0,0,1]]).T
-    >>> wham = wham.estimate([traj1, traj2])
+    >>> ttrajs = [np.array([0,0,0,0,0,0,0,0,0,0]),np.array([1,1,1,1,1,1,1,1,1,1])]
+    >>> dtrajs = [np.array([0,0,0,0,1,1,1,0,0,0]),np.array([0,1,0,1,0,1,1,0,0,1])]
+    >>> wham = wham.estimate((ttrajs, dtrajs))
     >>> wham.log_likelihood() # doctest: +ELLIPSIS
     -6.6...
     >>> wham.state_counts # doctest: +SKIP
@@ -78,7 +82,7 @@ class WHAM(_Estimator, _MEMM):
     """
     def __init__(
         self, bias_energies_full,
-        stride=1, maxiter=10000, maxerr=1E-15, dt_traj='1 step', save_convergence_info=0):
+        maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step', stride=1):
         self.bias_energies_full = _types.ensure_ndarray(bias_energies_full, ndim=2, kind='numeric')
         self.stride = stride
         self.dt_traj = dt_traj
@@ -93,27 +97,34 @@ class WHAM(_Estimator, _MEMM):
         self.conf_energies = None
 
     def _estimate(self, trajs):
+        # TODO: fix docstring
         """
         Parameters
         ----------
-        trajs : ndarray(T, 2) or list of ndarray(T_i, 2)
-            Thermodynamic trajectories. Each trajectory is a (T_i, 2)-array
-            with T_i time steps. The first column is the thermodynamic state
-            index, the second column is the configuration state index.
+        X : tuple of (ttrajs, dtrajs)
+            Simulation trajectories. ttrajs contain the indices of the thermodynamic state and
+            dtrajs contains the indices of the configurational states.
+        ttrajs : list of numpy.ndarray(X_i, dtype=int)
+            Every elements is a trajectory (time series). ttrajs[i][t] is the index of the
+            thermodynamic state visited in trajectory i at time step t.
+        dtrajs : list of numpy.ndarray(X_i, dtype=int)
+            dtrajs[i][t] is the index of the configurational state (Markov state) visited in
+            trajectory i at time step t.
         """
-        # format input if needed
-        if isinstance(trajs, _np.ndarray):
-            trajs = [trajs]
+        # check input
+        assert isinstance(trajs, (tuple, list))
+        assert len(trajs) == 2
+        ttrajs = trajs[0]
+        dtrajs = trajs[1]
         # validate input
-        assert _types.is_list(trajs)
-        for ttraj in trajs:
-            _types.assert_array(ttraj, ndim=2, kind='numeric')
-            assert _np.shape(ttraj)[1] >= 2
+        for ttraj, dtraj in zip(ttrajs, dtrajs):
+            _types.assert_array(ttraj, ndim=1, kind='numeric')
+            _types.assert_array(dtraj, ndim=1, kind='numeric')
+            assert _np.shape(ttraj)[0] == _np.shape(dtraj)[0]
 
         # harvest state counts
         self.state_counts_full = _util.state_counts(
-            [_np.ascontiguousarray(t[:, :2]).astype(_np.intc) for t in trajs],
-            nthermo=self.nthermo, nstates=self.nstates_full)
+            ttrajs, dtrajs, nthermo=self.nthermo, nstates=self.nstates_full)
 
         # active set
         self.active_set = _np.where(self.state_counts_full.sum(axis=0) > 0)[0]
@@ -128,7 +139,9 @@ class WHAM(_Estimator, _MEMM):
                 self.state_counts, self.bias_energies,
                 maxiter=self.maxiter, maxerr=self.maxerr,
                 therm_energies=self.therm_energies, conf_energies=self.conf_energies,
-                save_convergence_info=self.save_convergence_info)
+                save_convergence_info=self.save_convergence_info,
+                callback=_ConvergenceProgressIndicatorCallBack(
+                    self, 'WHAM', self.maxiter, self.maxerr))
 
         # get stationary models
         models = [_StationaryModel(
@@ -146,6 +159,6 @@ class WHAM(_Estimator, _MEMM):
         return _wham.get_loglikelihood(
             self.state_counts.sum(axis=1).astype(_np.intc),
             self.state_counts.sum(axis=0).astype(_np.intc),
-            self.f_therm,
-            self.f,
+            self.therm_energies,
+            self.conf_energies,
             _np.zeros(shape=(self.nthermo + self.nstates,), dtype=_np.float64))

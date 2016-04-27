@@ -30,6 +30,7 @@ estimate models from data.
    estimate_multi_temperature
    dtram
    wham
+   tram
 
 Thermo classes
 ==============
@@ -43,11 +44,12 @@ use the API functions above.
     MEMM
     WHAM
     DTRAM
+    TRAM
 
 """
 
 from pyemma.thermo.models import StationaryModel, MEMM
-from pyemma.thermo.estimators import WHAM, DTRAM
+from pyemma.thermo.estimators import WHAM, DTRAM, TRAM, EmptyState
 
 # high-level api
 from .api import *
