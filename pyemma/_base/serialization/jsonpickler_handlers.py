@@ -17,7 +17,7 @@ def register_ndarray_handler():
     """
     from jsonpickle.ext.numpy import unregister_handlers
     unregister_handlers()
-    NumpyHandler.handles(np.ndarray)
+    NumpyNPZHandler.handles(np.ndarray)
 
 
 def unregister_ndarray_handler():
@@ -29,10 +29,10 @@ def unregister_ndarray_handler():
     register_handlers()
 
 
-class NumpyHandler(handlers.BaseHandler):
+class NumpyNPZHandler(handlers.BaseHandler):
     """ stores NumPy array as a compressed NPZ file. """
     def __init__(self, context):
-        super(NumpyHandler, self).__init__(context=context)
+        super(NumpyNPZHandler, self).__init__(context=context)
 
     def flatten(self, obj, data):
         assert isinstance(obj, np.ndarray)
