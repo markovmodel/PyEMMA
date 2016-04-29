@@ -57,7 +57,7 @@ class SerializableMixIn(object):
         obj = load(file_like)
 
         if obj.__class__ != cls:
-            pass
-            #raise ValueError("given file did not contain the right type?!")
+            raise ValueError("Given file '%s' did not contain the right type:"
+                             " desired(%s) vs. actual(%s)" % (file_like, cls, obj.__class__))
 
         return obj
