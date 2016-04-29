@@ -178,7 +178,8 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
             length of trajectory
         """
         if itraj >= self._ntraj:
-            raise IndexError
+            raise IndexError("given index (%s) exceeds number of data sets (%s)."
+                             " Zero based indexing!" % (itraj, self._ntraj))
         if isinstance(stride, np.ndarray):
             selection = stride[stride[:, 0] == itraj][:, 0]
             return 0 if itraj not in selection else len(selection)

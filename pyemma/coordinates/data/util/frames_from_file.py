@@ -1,7 +1,7 @@
 
 # This file is part of PyEMMA.
 #
-# Copyright (c) 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+# Copyright (c) 2016, 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
 #
 # PyEMMA is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -17,23 +17,59 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import absolute_import
 
+from logging import getLogger
+
 import mdtraj as md
 import numpy as np
-from logging import getLogger
-from pyemma.coordinates.data.util.reader_utils import copy_traj_attributes as _copy_traj_attributes, \
-    preallocate_empty_trajectory as _preallocate_empty_trajectory, enforce_top as _enforce_top
-from mdtraj.core.trajectory import Trajectory
-__all__ = ['frames_from_file']
+
+from pyemma._base.progress import ProgressReporter
+from pyemma.coordinates import source
+from pyemma.coordinates.data import FeatureReader
+from pyemma.coordinates.data.fragmented_trajectory_reader import FragmentedTrajectoryReader
+from pyemma.coordinates.data.util.reader_utils import (copy_traj_attributes as _copy_traj_attributes,
+                                                       preallocate_empty_trajectory as _preallocate_empty_trajectory,
+                                                       enforce_top as _enforce_top)
+from pyemma.coordinates.data.util.traj_info_cache import TrajectoryInfoCache
+from pyemma.util.annotators import deprecated
+
+__all__ = ['frames_from_files']
 
 log = getLogger(__name__)
 
 
-def frames_from_files(files, top, frames, chunksize=1000, stride=1, verbose=False, copy_not_join=None):
-    from pyemma.coordinates import source
+def frames_from_files(files, top, frames, chunksize=1000, stride=1, verbose=False, copy_not_join=None, reader=None):
+    """
+
+    :param files: source files
+    :param top: topology file
+    :param frames: indices
+    :param chunksize:
+    :param stride:
+    :param verbose:
+    :param copy_not_join: not used
+    :param reader: if a reader is given, ignore files and top param!
+    :return:
+    """
     # Enforce topology to be a md.Topology object
-    top = _enforce_top(top)
-    reader = source(files, top=top)
+    if reader is None:
+        top = _enforce_top(top)
+    else:
+        if isinstance(reader, FragmentedTrajectoryReader):
+            top = reader._readers[0][0].featurizer.topology
+        elif isinstance(reader, FeatureReader):
+            top = reader.featurizer.topology
+        else:
+            raise ValueError("unsupported reader (only md readers).")
+
     stride = int(stride)
+    frames = np.array(frames)
+
+    # only one file, so we expect frames to be a one dimensional array
+    if isinstance(files, str):
+        files = [files]
+        if frames.ndim == 1:
+            # insert a constant column for file index
+            frames = np.insert(np.atleast_2d(frames), 0, np.zeros_like(frames), axis=0).T
 
     if stride != 1:
         frames[:, 1] *= int(stride)
@@ -46,27 +82,62 @@ def frames_from_files(files, top, frames, chunksize=1000, stride=1, verbose=Fals
     sorted_inds = frames[sort_inds]
     assert len(sorted_inds) == len(frames)
 
-    for u in np.unique(sorted_inds[:, 0]):
-        largest_ind_in_traj = np.max(sorted_inds[sorted_inds == u])
-        if reader.trajectory_length(u) < largest_ind_in_traj:
-            raise ValueError("largest specified index (%i * stride=%i * %i=%i) "
-                             "is larger than trajectory length '%s' = %i"
-                             (largest_ind_in_traj/stride, largest_ind_in_traj/stride,
-                              stride, largest_ind_in_traj, reader.filenames[u],
-                              reader.trajectory_length(u)))
+    file_inds_unique = np.unique(sorted_inds[:, 0])
+    # construct reader
+    if reader is None:
+        # filter out files, we would never read, because no indices are pointing to them
+        reader = source(np.array(files)[file_inds_unique].tolist(), top=top)
+        # re-map indices to reflect filtered files:
+        import itertools
+        for itraj, c in zip(file_inds_unique, itertools.count(0)):
+            mask = sorted_inds[:, 0] == itraj
+            sorted_inds[mask, 0] = c
 
+        inds_to_check = np.arange(len(file_inds_unique))
+    else:
+        inds_to_check = file_inds_unique
+
+    # sanity check of indices
+    for itraj in inds_to_check:
+        inds_by_traj = sorted_inds[sorted_inds[:, 0] == itraj]
+        largest_ind_in_traj = np.max(inds_by_traj)
+        if isinstance(reader, FeatureReader):
+            length = reader.trajectory_length(itraj)
+        else:
+            length = TrajectoryInfoCache.instance()[(reader.filenames_flat[itraj], reader)].length
+        if length < largest_ind_in_traj:
+            raise ValueError("largest specified index (%i * stride=%i * %i=%i) "
+                             "is larger than trajectory length '%s' = %i" %
+                             (largest_ind_in_traj/stride, largest_ind_in_traj/stride,
+                              stride, largest_ind_in_traj, reader.filenames[itraj],
+                              length))
+
+    if isinstance(reader, FeatureReader):
+        reader.return_traj_obj = True
+    elif isinstance(reader, FragmentedTrajectoryReader):
+        for r in set(reader.reader_by_filename):
+            if isinstance(r, FeatureReader):
+                r.return_traj_obj = True
+
+    it = reader.iterator(chunk=chunksize, stride=sorted_inds, return_trajindex=False)
+    reporter = ProgressReporter()
+    reporter._progress_register(it._n_chunks, description="collecting frames")
     collected_frames = []
-    with reader.iterator(chunk=chunksize, stride=sorted_inds, return_trajindex=False) as it:
+    with it:
         for x in it:
             collected_frames.append(x)
+            reporter._progress_update(1)
 
-    collected_frames = np.vstack(collected_frames)
-    collected_frames = collected_frames[sort_inds.argsort()]
-    collected_frames = collected_frames.reshape(-1, top.n_atoms, 3)
+    dest = _preallocate_empty_trajectory(top, len(frames))
+    i = 0
+    for chunk in collected_frames:
+        _copy_traj_attributes(dest, chunk, i)
+        i += len(chunk)
+    dest = dest.slice(sort_inds.argsort(), copy=False)
+    return dest
 
-    return Trajectory(collected_frames, top)
 
-
+@deprecated("use_frame_from_files")
 def frames_from_file(file_name, top, frames, chunksize=100,
                      stride=1, verbose=False, copy_not_join=False):
     r"""Reads one "file_name" molecular trajectory and returns an mdtraj trajectory object 

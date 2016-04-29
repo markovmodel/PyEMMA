@@ -41,9 +41,6 @@ import pkg_resources
 
 
 class TestSaveTrajs(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        super(TestSaveTrajs, cls).setUpClass()
 
     def setUp(self):
         self.eps = 1e-10
@@ -160,6 +157,12 @@ class TestSaveTrajs(unittest.TestCase):
             # Check for diffs
             (found_diff, errmsg) = compare_coords_md_trajectory_objects(traj_1_pass, traj_ref, atom=0)
             self.assertFalse(found_diff, errmsg)
+
+    def test_out_of_bound_indexes(self):
+        # assert ValueError with index info is raised for faulty input
+        self.sets[0][:,1] *= 100000
+        with self.assertRaises(ValueError) as raised:
+            save_trajs(self.reader, self.sets, outfiles=self.one_pass_files)
 
 if __name__ == "__main__":
     unittest.main()

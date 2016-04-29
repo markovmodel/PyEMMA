@@ -42,9 +42,6 @@ from six.moves import range
 
 
 class TestSaveTraj(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        super(TestSaveTraj, cls).setUpClass()
 
     def setUp(self):
         self.eps = 1e-10
