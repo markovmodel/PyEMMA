@@ -8,6 +8,16 @@ from pyemma._base.serialization.jsonpickler_handlers import register_ndarray_han
 from pyemma._base.serialization.serialization import SerializableMixIn
 
 
+class test_cls(SerializableMixIn):
+    def __init__(self):
+        self.a = np.random.random((100, 10))
+        self.x = 'foo'
+        self.y = None
+
+    def __eq__(self, other):
+        return np.allclose(self.a, other.a) and self.x == other.x and self.y == other.y
+
+
 class TestSerialisation(unittest.TestCase):
     def test_numpy(self):
         try:
@@ -22,12 +32,6 @@ class TestSerialisation(unittest.TestCase):
             unregister_ndarray_handler()
 
     def test_save_interface(self):
-        class test_cls(SerializableMixIn):
-            def __init__(self):
-                self.a = np.random.random((100, 10))
-                self.x = 'foo'
-                self.y = None
-
         inst = test_cls()
         with tempfile.NamedTemporaryFile(delete=False) as fh:
             inst.save(filename=fh.name)
@@ -35,3 +39,16 @@ class TestSerialisation(unittest.TestCase):
             new = test_cls.load(fh.name)
 
             self.assertEqual(new, inst)
+
+
+def test():
+    class test_cls(object):
+        def __init__(self):
+            self.x = 'test'
+            self.y = None
+
+    import jsonpickle
+    inst = test_cls()
+    serialized = jsonpickle.dumps(inst)
+    restored = jsonpickle.loads(serialized)
+    assert inst.x == restored.x and inst.y == restored.y

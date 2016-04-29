@@ -1,4 +1,6 @@
 import jsonpickle
+
+from pyemma._base.logging import Loggable
 from pyemma.util.types import is_string
 
 
@@ -32,6 +34,9 @@ class SerializableMixIn(object):
         try:
             flattened = jsonpickle.dumps(self)
         except Exception as e:
+            if isinstance(self, Loggable):
+                self.logger.exception('During saving the object ("%s")'
+                                      'the following error occured' % e)
             raise
         import bz2
         try:
