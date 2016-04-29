@@ -51,6 +51,17 @@ class FeatureReader(DataSource):
     topologyfile: string
         path to topology file (e.g. pdb)
 
+    chunksize: int
+        how many frames to process in one batch.
+
+    featurizer: MDFeaturizer
+        a preconstructed featurizer
+
+
+    return_traj_obj : boolean, default=False
+        if True the FeatureReader will not calculate anything but instead
+        just return mdtraj.Trajectory objects.
+
     Examples
     --------
     >>> from pyemma.datasets import get_bpti_test_data
@@ -78,7 +89,7 @@ class FeatureReader(DataSource):
     """
     SUPPORTED_RANDOM_ACCESS_FORMATS = (".h5", ".dcd", ".binpos", ".nc", ".xtc", ".trr")
 
-    def __init__(self, trajectories, topologyfile=None, chunksize=100, featurizer=None):
+    def __init__(self, trajectories, topologyfile=None, chunksize=100, featurizer=None, return_traj_obj=False):
         assert (topologyfile is not None) or (featurizer is not None), \
             "Needs either a topology file or a featurizer for instantiation"
 
@@ -86,6 +97,7 @@ class FeatureReader(DataSource):
         self._is_reader = True
         self.topfile = topologyfile
         self.filenames = trajectories
+        self.return_traj_obj = return_traj_obj
 
         self._is_random_accessible = all(
             (f.endswith(FeatureReader.SUPPORTED_RANDOM_ACCESS_FORMATS)
@@ -323,7 +335,6 @@ class FeatureReaderIterator(DataSourceIterator, Loggable):
 
             self._t = 0
             self._itraj += 1
-            self.logger.debug("incremented _itraj. Current value: %s" % self._itraj)
             self._create_mditer()
 
         if not self.uniform_stride:
@@ -333,12 +344,20 @@ class FeatureReaderIterator(DataSourceIterator, Loggable):
         if self._t >= traj_len and self._itraj == len(self._data_source.filenames) - 1:
             self.close()
 
-        # map data
-        if len(self._data_source.featurizer.active_features) == 0:
-            shape_2d = (shape[0], shape[1] * shape[2])
-            return chunk.xyz.reshape(shape_2d)
+        # 3 cases:
+        # --------
+        # 1. raw mdtraj.Trajectory objects
+        # 2. plain reshaped coordinates
+        # 3. extracted features
+        if self._data_source.return_traj_obj:
+            return chunk
         else:
-            return self._data_source.featurizer.transform(chunk)
+            # map data
+            if len(self._data_source.featurizer.active_features) == 0:
+                shape_2d = (shape[0], shape[1] * shape[2])
+                return chunk.xyz.reshape(shape_2d)
+            else:
+                return self._data_source.featurizer.transform(chunk)
 
     def _create_mditer(self):
         if not self.uniform_stride:
