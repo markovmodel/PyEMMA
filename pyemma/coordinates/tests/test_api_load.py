@@ -45,6 +45,13 @@ traj_files = [
 
 class TestAPILoad(unittest.TestCase):
 
+    @classmethod
+    def setUpClass(cls):
+        path = pkg_resources.resource_filename(__name__, 'data') + os.path.sep
+        cls.bpti_pdbfile = os.path.join(path, 'bpti_ca.pdb')
+        extensions = ['.xtc', '.binpos', '.dcd', '.h5', '.lh5', '.nc', '.netcdf', '.trr']
+        cls.bpti_mini_files = [os.path.join(path, 'bpti_mini%s' % ext) for ext in extensions]
+
     def testUnicodeString_without_featurizer(self):
         filename = text_type(traj_files[0])
 
@@ -56,6 +63,19 @@ class TestAPILoad(unittest.TestCase):
         features = api.featurizer(pdb_file)
 
         load(filename, features)
+
+    def test_various_formats_load(self):
+        chunksizes = [0, 13]
+        X = None
+        bpti_mini_previous = None
+        for cs in chunksizes:
+            for bpti_mini in self.bpti_mini_files:
+                Y = api.load(bpti_mini, top=self.bpti_pdbfile, chunksize=cs)
+                if X is not None:
+                    np.testing.assert_array_almost_equal(X, Y, err_msg='Comparing %s to %s failed for chunksize %s'
+                                                                       % (bpti_mini, bpti_mini_previous, cs))
+                X = Y
+                bpti_mini_previous = bpti_mini
 
     def test_load_traj(self):
         filename = traj_files[0]

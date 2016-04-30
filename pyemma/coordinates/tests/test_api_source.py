@@ -61,9 +61,27 @@ class TestApiSourceFileReader(unittest.TestCase):
         np.savetxt(cls.dat, data_raw)
         np.savetxt(cls.csv, data_raw)
 
+        path = pkg_resources.resource_filename(__name__, 'data') + os.path.sep
+        cls.bpti_pdbfile = os.path.join(path, 'bpti_ca.pdb')
+        extensions = ['.xtc', '.binpos', '.dcd', '.h5', '.lh5', '.nc', '.netcdf', '.trr']
+        cls.bpti_mini_files = [os.path.join(path, 'bpti_mini%s' % ext) for ext in extensions]
+
     @classmethod
     def tearDownClass(cls):
         shutil.rmtree(cls.dir, ignore_errors=True)
+
+    def test_various_formats_source(self):
+        chunksizes = [0, 13]
+        X = None
+        bpti_mini_previous = None
+        for cs in chunksizes:
+            for bpti_mini in self.bpti_mini_files:
+                Y = api.source(bpti_mini, top=self.bpti_pdbfile).get_output(chunk=cs)
+                if X is not None:
+                    np.testing.assert_array_almost_equal(X, Y, err_msg='Comparing %s to %s failed for chunksize %s'
+                                                                       % (bpti_mini, bpti_mini_previous, cs))
+                X = Y
+                bpti_mini_previous = bpti_mini
 
     def test_obtain_numpy_file_reader_npy(self):
         reader = api.source(self.npy)
