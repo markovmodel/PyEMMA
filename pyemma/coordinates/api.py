@@ -625,7 +625,7 @@ def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=1000, 
         reader = traj_inp
     else:
         # Do we have what we need?
-        if not isinstance(traj_inp, list):
+        if not isinstance(traj_inp, (list, tuple)):
             raise TypeError("traj_inp has to be of type list, not %s" % type(traj_inp))
         if not isinstance(top, (_string_types, Topology, Trajectory)):
             raise TypeError("traj_inp cannot be a list of files without an input "
@@ -760,11 +760,11 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None,
     if not inmemory:
         for i_indexes, outfile in zip(indexes, outfiles):
             # TODO: use **kwargs to parse to save_traj
-            save_traj(traj_inp, i_indexes, outfile, stride = stride, verbose=verbose)
+            save_traj(traj_inp, i_indexes, outfile, stride=stride, verbose=verbose)
 
     # This implementation is "one file - one pass" but might temporally create huge memory objects
     else:
-        traj = save_traj(traj_inp, indexes, outfile=None, stride = stride, verbose=verbose)
+        traj = save_traj(traj_inp, indexes, outfile=None, stride=stride, verbose=verbose)
         i_idx = 0
         for i_indexes, outfile in zip(indexes, outfiles):
             # Create indices for slicing the mdtraj trajectory object
