@@ -20,6 +20,7 @@
 from __future__ import absolute_import
 import math
 import numpy as np
+import six
 
 from pyemma.util import types as _types
 from six.moves import range
@@ -213,9 +214,10 @@ class NetworkPlot(object):
             L = arrow_labels
         else:
             L = np.empty(np.shape(self.A), dtype=object)
+
         if arrow_labels is None:
             L[:, :] = ''
-        elif arrow_labels.lower() == 'weights':
+        elif isinstance(arrow_labels, six.string_types) and arrow_labels.lower() == 'weights':
             for i in range(n):
                 for j in range(n):
                     L[i, j] = arrow_label_format % self.A[i, j]
