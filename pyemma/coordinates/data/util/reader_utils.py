@@ -137,10 +137,10 @@ def copy_traj_attributes(target, origin, start):
     # The list of copied attributes can be extended here with time
     # Or perhaps ask the mdtraj guys to implement something similar?
 
-    target._xyz[start:start+origin.n_frames] = origin._xyz
-    target._unitcell_lengths[start:start+origin.n_frames] = origin._unitcell_lengths
-    target._unitcell_angles[start:start+origin.n_frames] = origin._unitcell_angles
-    target._time[start:start+origin.n_frames] = origin._time
+    target.xyz[start:start+origin.n_frames] = origin.xyz
+    target.unitcell_lengths[start:start+origin.n_frames] = origin.unitcell_lengths
+    target.unitcell_angles[start:start+origin.n_frames] = origin.unitcell_angles
+    target.time[start:start+origin.n_frames] = origin.time
 
     return target
 
