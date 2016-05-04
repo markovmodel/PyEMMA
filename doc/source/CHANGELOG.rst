@@ -1,10 +1,19 @@
 Changelog
 =========
 
-2.1.2 (4-25-2016)
------------------
+2.1.2 (5-4-2016)
+----------------
 
-Service release to fix release fix for memory leak in minRMSD cluster assignment.
+**New features**:
+- thermo: added TRAM estimation.
+- thermo: show convergence progress during estimation.
+
+**Fixes**:
+- clustering: fix for memory leak in minRMSD cluster assignment.
+- base: during estimation the model was accessed in an inappropriate way,
+  which led to the crash "AttributeError: object has no attribute '_model'" #764.
+- coordinates.io: fixed a bug when trying to pyemma.coordinates.load certain MD formats.
+  The iterator could have returned None in some cases #790.
 
 
 2.1.1 (4-18-2016)
