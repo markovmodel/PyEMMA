@@ -209,21 +209,18 @@ class NetworkPlot(object):
             state_colors = [plt.cm.binary(int(256.0 * colorscales[i])) for i in range(n)]
         except:
             pass  # assume we have a list of strings now.
+
         # set arrow labels
         if isinstance(arrow_labels, np.ndarray):
             L = arrow_labels
-        else:
-            L = np.empty(np.shape(self.A), dtype=object)
-
-        if arrow_labels is None:
-            L[:, :] = ''
         elif isinstance(arrow_labels, six.string_types) and arrow_labels.lower() == 'weights':
-            for i in range(n):
-                for j in range(n):
-                    L[i, j] = arrow_label_format % self.A[i, j]
+            L = self.A[:, :]
+        elif arrow_labels is None:
+            L = np.empty(np.shape(self.A), dtype=object)
+            L[:, :] = ''
         else:
             rcParams['font.size'] = old_fontsize
-            raise ValueError('invalid arrow label format')
+            raise ValueError('invalid arrow labels')
 
         # Set the default values for the text dictionary
         textkwargs.setdefault('size', 14)
@@ -252,7 +249,7 @@ class NetworkPlot(object):
                 if (abs(self.A[i, j]) > 0):
                     self._draw_arrow(self.pos[i, 0], self.pos[i, 1],
                                      self.pos[j, 0], self.pos[j, 1], Dx, Dy,
-                                     label=str(L[i, j]),
+                                     label=arrow_label_format%L[i, j],
                                      width=arrow_scale * self.A[i, j],
                                      arrow_curvature=arrow_curvature,
                                      patchA=circles[i], patchB=circles[j],
@@ -260,7 +257,7 @@ class NetworkPlot(object):
                 if (abs(self.A[j, i]) > 0):
                     self._draw_arrow(self.pos[j, 0], self.pos[j, 1],
                                      self.pos[i, 0], self.pos[i, 1], Dx, Dy,
-                                     label=str(L[j, i]),
+                                     label=arrow_label_format%L[j, i],
                                      width=arrow_scale * self.A[j, i],
                                      arrow_curvature=arrow_curvature,
                                      patchA=circles[j], patchB=circles[i],
