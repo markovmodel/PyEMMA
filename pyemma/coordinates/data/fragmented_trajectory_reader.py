@@ -345,7 +345,6 @@ class FragmentedTrajectoryReader(DataSource):
         flat_readers = itertools.chain.from_iterable(self._readers)
         return [f for flat_reader in flat_readers for f in flat_reader.filenames]
 
-    @property
     def reader_by_filename(self, filename):
         return self._reader_by_filename[filename]
 
