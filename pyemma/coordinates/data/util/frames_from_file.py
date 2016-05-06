@@ -104,7 +104,8 @@ def frames_from_files(files, top, frames, chunksize=1000, stride=1, verbose=Fals
         if isinstance(reader, FeatureReader):
             length = reader.trajectory_length(itraj)
         else:
-            length = TrajectoryInfoCache.instance()[(reader.filenames_flat[itraj], reader)].length
+            fn = reader.filenames_flat[itraj]
+            length = TrajectoryInfoCache.instance()[(fn, reader.reader_by_filename(fn))].length
         if length < largest_ind_in_traj:
             raise ValueError("largest specified index (%i * stride=%i * %i=%i) "
                              "is larger than trajectory length '%s' = %i" %
