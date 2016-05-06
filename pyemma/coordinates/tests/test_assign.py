@@ -250,6 +250,19 @@ class TestClusterAssign(unittest.TestCase):
 
         np.testing.assert_equal(assignment_mp, assignment_sp)
 
+    def test_assignment_multithread_minrsmd(self):
+        # re-do assignment with multiple threads and compare results
+        n = 10000
+        dim = 100
+        chunksize = 1000
+        X = np.random.random((n, dim))
+        centers = X[np.random.choice(n, dim)]
+
+        assignment_mp = coor.assign_to_centers(X, centers, n_jobs=4, chunk_size=chunksize, metric='minRMSD')
+        assignment_sp = coor.assign_to_centers(X, centers, n_jobs=1, chunk_size=chunksize, metric='minRMSD')
+
+        np.testing.assert_equal(assignment_mp, assignment_sp)
+
 
 if __name__ == "__main__":
     unittest.main()
