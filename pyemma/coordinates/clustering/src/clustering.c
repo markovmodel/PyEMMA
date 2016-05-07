@@ -81,93 +81,98 @@ int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric,
     float *trace_centers_p;
     float* dists;
     float (*distance)(float*, float*, size_t, float*, float*, float*);
+    float *SKP_restrict chunk_p;
+
     #ifdef USE_OPENMP
-    float * SKP_restrict chunk_p;
+    /* Create a parallel thread block. */
+    omp_set_num_threads(n_threads);
+    if(debug) printf("using openmp; n_threads=%i\n", n_threads);
+    assert(omp_get_num_threads() == n_threads);
     #endif
 
+    /* Initialize variables */
     buffer_a = NULL; buffer_b = NULL; trace_centers_p = NULL; centers_precentered = NULL;
+    chunk_p = NULL; dists = NULL;
     ret = ASSIGN_SUCCESS;
     debug=0;
 
     /* init metric */
     if(strcmp(metric, "euclidean")==0) {
         distance = euclidean_distance;
+        dists = malloc(N_centers*sizeof(float));
+        if(!dists) {
+            ret = ASSIGN_ERR_NO_MEMORY;
+        }
     } else if(strcmp(metric, "minRMSD")==0) {
         distance = minRMSD_distance;
-        buffer_a = malloc(dim*sizeof(float));
-        buffer_b = malloc(dim*sizeof(float));
         centers_precentered = malloc(N_centers*dim*sizeof(float));
-
-        if(!buffer_a || !buffer_b || !centers_precentered) {
-            ret = ASSIGN_ERR_NO_MEMORY; goto error;
+        dists = malloc(N_centers*sizeof(float));
+        if(!centers_precentered || !dists) {
+            ret = ASSIGN_ERR_NO_MEMORY;
         }
 
-        memcpy(centers_precentered, centers, N_centers*dim*sizeof(float));
+        if (ret == ASSIGN_SUCCESS) {
+            memcpy(centers_precentered, centers, N_centers*dim*sizeof(float));
 
-        // pre-center cluster centers
-        for (j = 0; j < N_centers; ++j) {
-            inplace_center_and_trace_atom_major(centers_precentered, &trace_centers, 1, dim/3);
-        }
-        trace_centers_p = &trace_centers;
-        centers = centers_precentered;
+	        /* Parallelize centering of cluster generators */
+	        /* Note that this is already OpenMP-enabled */
+	        inplace_center_and_trace_atom_major(centers_precentered, &trace_centers, 1, dim/3);
+                trace_centers_p = &trace_centers;
+                centers = centers_precentered;
+            }
     } else {
         ret = ASSIGN_ERR_INVALID_METRIC;
-        goto error;
     }
 
-    /* Do the assignment in parallel with OpenMP. Each thread finds the minimum
-     * distance for a couple of frames index by i.
-
-     Better: pass the same frame to multiple threads and parallelize over N_centers to avoid
-     cache misses.
-     */
-    #ifdef USE_OPENMP
-    omp_set_num_threads(n_threads);
-    if(debug) printf("using openmp; n_threads=%i\n", n_threads);
-    chunk_p = NULL;
-    assert(omp_get_num_threads() == n_threads);
-
-    #pragma omp parallel for private(i, j, dists, mindist, argmin, chunk_p)
-    for(i = 0; i < N_frames; ++i) {
-        dists = malloc(N_centers*sizeof(float));
-        chunk_p = &chunk[i*dim];
-
-        for(j = 0; j < N_centers; ++j) {
-            dists[j] = distance(&centers[j*dim], chunk_p, dim, buffer_a, buffer_b, trace_centers_p);
-        }
-
-        {
-            mindist = FLT_MAX; argmin = -1;
-            for (j=0; j < N_centers; ++j) {
-                if (dists[j] < mindist) { mindist = dists[j]; argmin = j; }
-            }
-            dtraj[i] = argmin;
-        }
-        free(dists);
-    }
-
-    free(dists);
-
-    #else // serial version
+    #pragma omp parallel private(buffer_a, buffer_b, i, j, chunk_p, mindist, argmin)
     {
-        for(i = 0; i < N_frames; ++i) {
-            mindist = FLT_MAX;
-            argmin = -1;
-            for(j = 0; j < N_centers; ++j) {
-                d = distance(&chunk[i*dim], &centers[j*dim], dim, buffer_a, buffer_b, trace_centers_p);
+        /* Allocate thread storage */
+        buffer_a = malloc(dim*sizeof(float));
+        buffer_b = malloc(dim*sizeof(float));
+	    #pragma omp critical
+        if(!buffer_a || !buffer_b) {
+          ret = ASSIGN_ERR_NO_MEMORY;
+        }
+        #pragma omp barrier
+        #pragma omp flush(ret)
 
-            	{
-                	if(d < mindist) { mindist = d; argmin = j; }
-            	}
+	    /* Only proceed if no error occurred. */
+        if (ret == ASSIGN_SUCCESS) {
+
+            /* Assign each frame */
+            for(i = 0; i < N_frames; ++i) {
+                chunk_p = &chunk[i*dim];
+
+                /* Parallelize distance calculations to cluster centers to avoid cache misses */
+                #pragma omp for
+                for(j = 0; j < N_centers; ++j) {
+                    dists[j] = distance(&centers[j*dim], chunk_p, dim, buffer_a, buffer_b, trace_centers_p);
+                }
+                #pragma omp flush(dists)
+
+                /* Only one thread can make actual assignment */
+                #pragma omp single
+                {
+                    mindist = FLT_MAX; argmin = -1;
+                    for (j=0; j < N_centers; ++j) {
+                        if (dists[j] < mindist) { mindist = dists[j]; argmin = j; }
+                    }
+                    dtraj[i] = argmin;
+                }
+
+		    /* Have all threads synchronize in progress through cluster assignments */
+		    #pragma omp barrier
             }
-            dtraj[i] = argmin;
+
+            /* Clean up thread storage*/
+            free(buffer_a);
+            free(buffer_b);
         }
     }
-    #endif
-error:
-    free(buffer_a);
-    free(buffer_b);
-    free(centers_precentered);
+
+    /* Clean up global storage */
+    if (dists) free(dists);
+    if (centers_precentered) free(centers_precentered);
     return ret;
 }
 
@@ -242,4 +247,3 @@ PyObject *assign(PyObject *self, PyObject *args) {
 error:
     return py_res;
 }
-
