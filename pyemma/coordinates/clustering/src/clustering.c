@@ -73,7 +73,7 @@ int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric,
              Py_ssize_t N_frames, Py_ssize_t N_centers, Py_ssize_t dim, int n_threads) {
     int ret;
     int debug;
-    Py_ssize_t i, j, k;
+    Py_ssize_t i, j;
     float d, mindist, trace_centers;
     size_t argmin;
     float *buffer_a, *buffer_b;
@@ -92,7 +92,7 @@ int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric,
 
     /* Initialize variables */
     buffer_a = NULL; buffer_b = NULL; trace_centers_p = NULL; centers_precentered = NULL;
-    chunk_p = NULL;
+    chunk_p = NULL; dists = NULL;
     ret = ASSIGN_SUCCESS;
     debug=0;
 
@@ -120,7 +120,7 @@ int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric,
         ret = ASSIGN_ERR_INVALID_METRIC;
     }
 
-    #pragma omp parallel private(buffer_a, buffer_b, i, j, chunk_p) default(shared)
+    #pragma omp parallel shared(ret, dim, N_frames, centers, trace_centers_p, dists) default(private)
     {
         /* Allocate thread storage */
         buffer_a = malloc(dim*sizeof(float));
@@ -140,9 +140,9 @@ int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric,
                 chunk_p = &chunk[i*dim];
 
                 /* Parallelize distance calculations to cluster centers to avoid cache misses */
-                #pragma omp for
-                for(k = 0; k < N_centers; ++k) {
-                    dists[k] = distance(&centers[k*dim], chunk_p, dim, buffer_a, buffer_b, trace_centers_p);
+                // #pragma omp for
+                for(j = 0; j < N_centers; ++j) {
+                    dists[j] = distance(&centers[j*dim], chunk_p, dim, buffer_a, buffer_b, trace_centers_p);
                 }
                 #pragma omp flush(dists)
 
