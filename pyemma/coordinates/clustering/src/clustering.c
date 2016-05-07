@@ -99,6 +99,10 @@ int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric,
     /* init metric */
     if(strcmp(metric, "euclidean")==0) {
         distance = euclidean_distance;
+        dists = malloc(N_centers*sizeof(float));
+        if(!dists) {
+            ret = ASSIGN_ERR_NO_MEMORY;
+        }
     } else if(strcmp(metric, "minRMSD")==0) {
         distance = minRMSD_distance;
         centers_precentered = malloc(N_centers*dim*sizeof(float));
@@ -140,7 +144,7 @@ int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric,
                 chunk_p = &chunk[i*dim];
 
                 /* Parallelize distance calculations to cluster centers to avoid cache misses */
-                // #pragma omp for
+                #pragma omp for
                 for(j = 0; j < N_centers; ++j) {
                     dists[j] = distance(&centers[j*dim], chunk_p, dim, buffer_a, buffer_b, trace_centers_p);
                 }
@@ -159,11 +163,11 @@ int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric,
 		    /* Have all threads synchronize in progress through cluster assignments */
 		    #pragma omp barrier
             }
-        }
 
-        /* Clean up thread storage*/
-        free(buffer_a);
-        free(buffer_b);
+            /* Clean up thread storage*/
+            free(buffer_a);
+            free(buffer_b);
+        }
     }
 
     /* Clean up global storage */
