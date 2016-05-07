@@ -120,7 +120,7 @@ int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric,
         ret = ASSIGN_ERR_INVALID_METRIC;
     }
 
-    #pragma omp parallel shared(ret, dim, N_frames, centers, trace_centers_p, dists) default(private)
+    #pragma omp parallel private(buffer_a, buffer_b, i, j, chunk_p, mindist, argmin)
     {
         /* Allocate thread storage */
         buffer_a = malloc(dim*sizeof(float));
