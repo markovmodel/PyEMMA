@@ -92,7 +92,7 @@ int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric,
 
     /* Initialize variables */
     buffer_a = NULL; buffer_b = NULL; trace_centers_p = NULL; centers_precentered = NULL;
-    chunk_p = NULL; 
+    chunk_p = NULL;
     ret = ASSIGN_SUCCESS;
     debug=0;
 
@@ -102,39 +102,39 @@ int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric,
     } else if(strcmp(metric, "minRMSD")==0) {
         distance = minRMSD_distance;
         centers_precentered = malloc(N_centers*dim*sizeof(float));
-	dists = malloc(N_centers*sizeof(float));
+        dists = malloc(N_centers*sizeof(float));
         if(!centers_precentered || !dists) {
             ret = ASSIGN_ERR_NO_MEMORY;
         }
 
-	if (ret == ASSIGN_SUCCESS) {
-	  memcpy(centers_precentered, centers, N_centers*dim*sizeof(float));
+        if (ret == ASSIGN_SUCCESS) {
+            memcpy(centers_precentered, centers, N_centers*dim*sizeof(float));
 
-	  /* Parallelize centering of cluster generators */
-	  /* Note that this is already OpenMP-enabled */
-	  inplace_center_and_trace_atom_major(centers_precentered, &trace_centers, 1, dim/3);
-          trace_centers_p = &trace_centers;
-          centers = centers_precentered;
-	}
+	        /* Parallelize centering of cluster generators */
+	        /* Note that this is already OpenMP-enabled */
+	        inplace_center_and_trace_atom_major(centers_precentered, &trace_centers, 1, dim/3);
+                trace_centers_p = &trace_centers;
+                centers = centers_precentered;
+            }
     } else {
         ret = ASSIGN_ERR_INVALID_METRIC;
     }
 
-#pragma omp parallel private(buffer_a, buffer_b, i, j, chunk_p) default(shared)
+    #pragma omp parallel private(buffer_a, buffer_b, i, j, chunk_p) default(shared)
     {
         /* Allocate thread storage */
         buffer_a = malloc(dim*sizeof(float));
         buffer_b = malloc(dim*sizeof(float));
-	#pragma omp critical
-	if(!buffer_a || !buffer_b) {
+	    #pragma omp critical
+        if(!buffer_a || !buffer_b) {
           ret = ASSIGN_ERR_NO_MEMORY;
         }
-	#pragma omp barrier
+        #pragma omp barrier
         #pragma omp flush(ret)
 
-	/* Only proceed if no error occurred. */
+	    /* Only proceed if no error occurred. */
         if (ret == ASSIGN_SUCCESS) {
-	  
+
             /* Assign each frame */
             for(i = 0; i < N_frames; ++i) {
                 chunk_p = &chunk[i*dim];
@@ -156,19 +156,19 @@ int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric,
                     dtraj[i] = argmin;
                 }
 
-		/* Have all threads synchronize in progress through cluster assignments */
-		#pragma omp barrier
+		    /* Have all threads synchronize in progress through cluster assignments */
+		    #pragma omp barrier
             }
         }
-    
+
         /* Clean up thread storage*/
         free(buffer_a);
         free(buffer_b);
     }
 
     /* Clean up global storage */
-    free(dists);
-    free(centers_precentered);
+    if (dists) free(dists);
+    if (centers_precentered) free(centers_precentered);
     return ret;
 }
 
@@ -243,4 +243,3 @@ PyObject *assign(PyObject *self, PyObject *args) {
 error:
     return py_res;
 }
-
