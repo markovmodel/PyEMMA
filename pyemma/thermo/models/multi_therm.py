@@ -1,6 +1,6 @@
 # This file is part of PyEMMA.
 #
-# Copyright (c) 2015 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+# Copyright (c) 2015, 2016 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
 #
 # PyEMMA is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -58,6 +58,17 @@ class MEMM(_StationaryModel):
     # TODO: what about just setting f and not pi, as a convention in pyemma.thermo?
     def __init__(self, models, f_therm, pi=None, f=None, label='ground state'):
         self.set_model_params(models=models, f_therm=f_therm, pi=pi, f=f, label=label)
+        self._msm = None
+        self._msm_active_set = None
+
+    @property
+    def msm(self):
+        return self._msm
+
+    @property
+    def msm_active_set(self):
+        return self._msm_active_set
+    
 
     def set_model_params(self, models=None, f_therm=None, pi=None, f=None, label='ground state'):
         # don't normalize f, because in a multiensemble the relative energy levels matter
