@@ -20,6 +20,7 @@ import matplotlib.pyplot as _plt
 from pyemma.thermo import WHAM as _WHAM
 from pyemma.thermo import DTRAM as _DTRAM
 from pyemma.thermo import TRAM as _TRAM
+from pyemma.msm import MSM as _MSM
 
 def get_estimator_label(thermo_estimator):
     if isinstance(thermo_estimator, _WHAM):
@@ -70,8 +71,6 @@ def plot_loglikelihoods(thermo_estimator, ax=None):
     ax.legend(loc=1, fancybox=True, framealpha=0.5)
     return ax
 
-
-
 def plot_convergence_info(thermo_estimator, axes=None):
     # TODO: write docstring
     if axes is None:
@@ -87,5 +86,63 @@ def plot_convergence_info(thermo_estimator, axes=None):
         axes[0].set_xlabel('')
     return axes
 
-
-
+def plot_memm_implied_timescales(thermo_estimators,
+    ax=None, nits=None, therm_state=None, xlog=False, ylog=True, units='steps', dt=1.0, refs=None,
+    annotate=True):
+    # Check units and dt for user error.
+    if isinstance(units, list) and len(units) != 2:
+        raise TypeError("If units is a list, len(units) has to be = 2")
+    if isinstance(dt, list) and len(dt) != 2:
+        raise TypeError("If dt is a list, len(dt) has to be = 2")
+    # Create list of units and dts for different axis
+    if isinstance(units, str):
+        units = [units] * 2
+    if isinstance(dt, (float, int)):
+        dt = [dt] * 2
+    # Create figure/ax
+    if ax is None:
+        fig, ax = _plt.subplots()
+    else:
+        fig = None
+    # Get timescales from all MEMM instances for the requested thermodynamic state
+    lags = []
+    ts = []
+    for memm in thermo_estimators:
+        assert isinstance(memm, (_DTRAM, _TRAM)), 'only dTRAM + TRAM accepted'
+        if therm_state is None:
+            assert memm.msm is not None, 'unbiased observations required'
+            msm = memm.msm
+        else:
+            assert 0 <= therm_state < memm.nthermo, 'therm_state out of range'
+            msm = memm.models[therm_state]
+        assert isinstance(msm, _MSM), 'kinetic model must be MSM'
+        lags.append(memm.lag)
+        ts.append(msm.timescales(k=nits))
+    lags = _np.asarray(lags)
+    ts = _np.asarray(ts)
+    srt = _np.argsort(lags)
+    # Plot the implied timescales
+    for i in range(ts.shape[1]):
+        ax.plot(lags[srt], ts[srt, i], '-o')
+    # Set boundaries
+    ax.set_xlim([lags.min() * dt[0], lags.max() * dt[0]])
+    # Plot cutoff
+    ax.plot(lags[srt] * dt[0], lags[srt] * dt[1], linewidth=2, color='black')
+    ax.fill_between(
+        lags[srt] * dt[0], _np.max([1, ax.get_ylim()[0]]) * _np.ones(len(lags)) * dt[1],
+        lags[srt] * dt[1], alpha=0.5, color='grey')
+    # formatting
+    ax.set_xlabel('lag time / %s'%units[0])
+    ax.set_ylabel('timescale / %s'%units[1])
+    # Make the plot look pretty
+    if xlog:
+        ax.semilogx()
+    if ylog:
+        ax.semilogy()
+    if therm_state is None:
+        state_label = "unbiased"
+    else:
+        state_label = "therm_state=%d" % therm_state
+    if annotate:
+        ax.text(0.02, 0.95, state_label, transform=ax.transAxes)
+    return ax
