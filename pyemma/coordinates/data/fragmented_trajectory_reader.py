@@ -91,7 +91,9 @@ class _FragmentedTrajectoryIterator(object):
                     reader_trajlen = self.__get_reader_trajlen()
                     if reader_trajlen - self._reader_t > 0:
                         chunk = next(self._reader_it)
-                        L = chunk.shape[0]
+                        L = len(chunk)
+                        print("L:", L)
+                        print("read:", read)
                         X[read:read + L, :] = chunk[:]
                         read += L
                         self._reader_t += L

@@ -314,8 +314,7 @@ class FeatureReaderIterator(DataSourceIterator, Loggable):
         self._create_mditer()
 
     def close(self):
-        if self._mditer is not None:
-            #self._logger.debug('closing current trajectory "%s"' % self._data_source.filenames[self.current_trajindex])
+        if hasattr(self, '_mditer') and self._mditer is not None:
             self._mditer.close()
 
     def _next_chunk(self):

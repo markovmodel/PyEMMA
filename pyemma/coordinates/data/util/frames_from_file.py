@@ -117,7 +117,8 @@ def frames_from_files(files, top, frames, chunksize=1000, stride=1, verbose=Fals
     if isinstance(reader, FeatureReader):
         reader.return_traj_obj = True
     elif isinstance(reader, FragmentedTrajectoryReader):
-        for r in reader.filenames_flat:
+        for file in reader.filenames_flat:
+            r = reader.reader_by_filename(file)
             if isinstance(r, FeatureReader):
                 r.return_traj_obj = True
 
