@@ -29,9 +29,31 @@ __all__ = [
 # ==================================================================================================
 
 def get_averaged_bias_matrix(bias_sequences, dtrajs, nstates=None):
+    r"""
+    Computes a bias matrix via an exponential average of the observed frame wise bias energies.
+
+    Parameters
+    ----------
+    bias_sequences : list of numpy.ndarray(T_i, num_therm_states)
+        A single reduced bias energy trajectory or a list of reduced bias energy trajectories.
+        For every simulation frame seen in trajectory i and time step t, btrajs[i][t, k] is the
+        reduced bias energy of that frame evaluated in the k'th thermodynamic state (i.e. at
+        the k'th Umbrella/Hamiltonian/temperature)
+    dtrajs : list of numpy.ndarray(T_i) of int
+        A single discrete trajectory or a list of discrete trajectories. The integers are indexes
+        in 0,...,num_conf_states-1 enumerating the num_conf_states Markov states or the bins the
+        trajectory is in at any time.
+    nstates : int, optional, default=None
+        Number of configuration states.
+
+    Returns
+    -------
+    bias_matrix : numpy.ndarray(shape=(num_therm_states, num_conf_states)) object
+        bias_energies_full[j, i] is the bias energy in units of kT for each discrete state i
+        at thermodynamic state j.
+    """
     from thermotools.util import logsumexp as _logsumexp
     from thermotools.util import logsumexp_pair as _logsumexp_pair
-    from thermotools.util import kahan_summation as _kahan_summation
     nmax = int(_np.max([dtraj.max() for dtraj in dtrajs]))
     if nstates is None:
         nstates = nmax + 1
@@ -54,7 +76,11 @@ def get_averaged_bias_matrix(bias_sequences, dtrajs, nstates=None):
                     _logsumexp(
                         _np.ascontiguousarray(-selected_bias_sequence[:, k]),
                         inplace=False))
-    return _np.log(counts)[_np.newaxis, :] - bias_matrix
+    idx = counts.nonzero()
+    log_counts = _np.log(counts[idx])
+    bias_matrix *= -1.0
+    bias_matrix[:, idx] += log_counts[_np.newaxis, :]
+    return bias_matrix
 
 # ==================================================================================================
 # helpers for umbrella sampling simulations
@@ -144,7 +170,7 @@ def _get_umbrella_bias_sequences(trajs, umbrella_centers, force_constants):
 
 def get_umbrella_sampling_data(us_trajs, us_centers, us_force_constants, md_trajs=None, kT=None):
     r"""
-    Wraps umbrella sampling data or a mix of umbrella sampling and and direct molecular dynamics
+    Wraps umbrella sampling data or a mix of umbrella sampling and and direct molecular dynamics.
 
     Parameters
     ----------
@@ -170,7 +196,7 @@ def get_umbrella_sampling_data(us_trajs, us_centers, us_force_constants, md_traj
         The integers are indexes in 0,...,K-1 enumerating the thermodynamic states the trajectories
         are in at any time.
     btrajs : list of N+M float arrays, each of shape (T_i, K)
-        The floats are the reduced bias energies for each thermodynamic states and configuration.
+        The floats are the reduced bias energies for each thermodynamic state and configuration.
     umbrella_centers : float array of shape (K, d)
         The individual umbrella centers labelled accordingly to ttrajs.
     force_constants : float array of shape (K, d, d)
@@ -248,6 +274,39 @@ def _get_multi_temperature_bias_sequences(
 
 def get_multi_temperature_data(
     energy_trajs, temp_trajs, energy_unit, temp_unit, reference_temperature=None):
+    r"""
+    Wraps data from multi-temperature molecular dynamics.
+
+    Parameters
+    ----------
+    energy_trajs : list of N arrays, each of shape (T_i,)
+        List of arrays, each having T_i rows, one for each time step, containing the potential
+        energies time series in units of kT, kcal/mol or kJ/mol.
+    temp_trajs : list of N int arrays, each of shape (T_i,)
+        List of arrays, each having T_i rows, one for each time step, containing the heat bath
+        temperature time series (at which temperatures the frames were created) in units of K or C.
+        Alternatively, these trajectories may contain kT values instead of temperatures.
+    energy_unit: str, optional, default='kcal/mol'
+        The physical unit used for energies. Current options: kcal/mol, kJ/mol, kT.
+    temp_unit : str, optional, default='K'
+        The physical unit used for the temperature. Current options: K, C, kT
+    reference_temperature : float or None, optional, default=None
+        Reference temperature against which the bias energies are computed. If not given, the lowest
+        temperature or kT value is used. If given, this parameter must have the same unit as the
+        temp_trajs.
+
+    Returns
+    -------
+    ttrajs : list of N+M int arrays, each of shape (T_i,)
+        The integers are indexes in 0,...,K-1 enumerating the thermodynamic states the trajectories
+        are in at any time.
+    btrajs : list of N+M float arrays, each of shape (T_i, K)
+        The floats are the reduced bias energies for each thermodynamic state and configuration.
+    temperatures : float array of length K
+        The individual temperatures labelled accordingly to ttrajs.
+    unbiased_state : int or None
+        Index of the unbiased thermodynamic state (if present).
+    """
     ttrajs, temperatures = _get_multi_temperature_parameters(temp_trajs)
     if reference_temperature is None:
         reference_temperature = temperatures.min()
@@ -268,6 +327,16 @@ def get_multi_temperature_data(
 # ==================================================================================================
 
 def assign_unbiased_state_label(memm_list, unbiased_state):
+    r"""
+    Sets the msm and msm_active_set labels for the given list of estimated MEMM objects.
+
+    Parameters
+    ----------
+    memm_list : list of estimated MEMM objects
+        The MEMM objects which shall have the msm and msm_active_set labels set.
+    unbiased_state : int or None
+        Index of the unbiased thermodynamic state (if present).
+    """
     if unbiased_state is None:
         return
     for memm in memm_list:
