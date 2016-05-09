@@ -87,10 +87,10 @@ def create_file_reader(input_files, topology, featurizer, chunk_size=100, **kw):
                                  " or did not exist:\n%s" % err_msg)
 
             if all_exist:
-                from mdtraj.formats.registry import _FormatRegistry
+                from mdtraj.formats.registry import FormatRegistry
 
                 # CASE 1.1: file types are MD files
-                if suffix in list(_FormatRegistry.loaders.keys()):
+                if suffix in list(FormatRegistry.loaders.keys()):
                     # check: do we either have a featurizer or a topology file name? If not: raise ValueError.
                     # create a MD reader with file names and topology
                     if not featurizer and not topology:
