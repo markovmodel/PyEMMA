@@ -138,12 +138,13 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
         self.init = init
         self.init_maxiter = init_maxiter
         self.init_maxerr = init_maxerr
-
         self.active_set = None
         self.biased_conf_energies = None
         self.mbar_therm_energies = None
         self.log_lagrangian_mult = None
         self.loglikelihoods = None
+        self._msm = None
+        self._msm_active_set = None
 
     def _estimate(self, X):
         """

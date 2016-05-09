@@ -58,8 +58,6 @@ class MEMM(_StationaryModel):
     # TODO: what about just setting f and not pi, as a convention in pyemma.thermo?
     def __init__(self, models, f_therm, pi=None, f=None, label='ground state'):
         self.set_model_params(models=models, f_therm=f_therm, pi=pi, f=f, label=label)
-        self._msm = None
-        self._msm_active_set = None
 
     @property
     def msm(self):

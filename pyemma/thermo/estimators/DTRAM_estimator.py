@@ -133,6 +133,8 @@ class DTRAM(_Estimator, _MEMM, _ProgressReporter):
         self.therm_energies = None
         self.conf_energies = None
         self.log_lagrangian_mult = None
+        self._msm = None
+        self._msm_active_set = None
 
     def _estimate(self, trajs):
         """
