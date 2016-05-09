@@ -292,7 +292,7 @@ def tram(
         A single discrete trajectory or a list of discrete trajectories. The integers are
         indexes in 0,...,num_therm_states-1 enumerating the thermodynamic states the trajectory is
         in at any time.
-    dtrajs : ndarray(T), or list of ndarray(T_i)
+    dtrajs : numpy.ndarray(T) of int, or list of numpy.ndarray(T_i) of int
         A single discrete trajectory or a list of discrete trajectories. The integers are indexes
         in 0,...,num_conf_states-1 enumerating the num_conf_states Markov states or the bins the
         trajectory is in at any time.
@@ -300,7 +300,7 @@ def tram(
         A single reduced bias energy trajectory or a list of reduced bias energy trajectories.
         For every simulation frame seen in trajectory i and time step t, btrajs[i][t, k] is the
         reduced bias energy of that frame evaluated in the k'th thermodynamic state (i.e. at
-        the k'th Umbrella/Hamiltonian/temperature)
+        the k'th umbrella/Hamiltonian/temperature)
     lag : int or list of int, optional, default=1
         Integer lag time at which transitions are counted. Providing a list of lag times will
         trigger one estimation per lag time.
@@ -419,7 +419,7 @@ def dtram(
         A single discrete trajectory or a list of discrete trajectories. The integers are
         indexes in 0,...,num_therm_states-1 enumerating the thermodynamic states the trajectory is
         in at any time.
-    dtrajs : ndarray(T) of int, or list of ndarray(T_i) of int
+    dtrajs : numpy.ndarray(T) of int, or list of numpy.ndarray(T_i) of int
         A single discrete trajectory or a list of discrete trajectories. The integers are indexes
         in 0,...,num_conf_states-1 enumerating the num_conf_states Markov states or the bins the
         trajectory is in at any time.
@@ -535,7 +535,7 @@ def wham(
         A single discrete trajectory or a list of discrete trajectories. The integers are
         indexes in 0,...,num_therm_states-1 enumerating the thermodynamic states the trajectory is
         in at any time.
-    dtrajs : ndarray(T) of int, or list of ndarray(T_i) of int
+    dtrajs : numpy.ndarray(T) of int, or list of numpy.ndarray(T_i) of int
         A single discrete trajectory or a list of discrete trajectories. The integers are indexes
         in 0,...,num_conf_states-1 enumerating the num_conf_states Markov states or the bins the
         trajectory is in at any time.
