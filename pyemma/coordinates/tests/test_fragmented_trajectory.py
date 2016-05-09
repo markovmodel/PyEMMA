@@ -38,6 +38,18 @@ class TestFragmentedTrajectory(unittest.TestCase):
         expected = np.vstack((self.d, self.d))
         np.testing.assert_array_almost_equal(expected, reader.get_output(stride=1)[0])
 
+    def test_full_trajectory_random_access(self):
+        reader = FragmentedTrajectoryReader([self.d, self.d])
+        indices = np.asarray([[0, 1], [0, 3], [0, 3], [0, 99], [0, 100], [0, 199]])
+        out = reader.get_output(stride=indices, chunk=0)
+        np.testing.assert_array_equal(np.array(out).squeeze(), np.array([1, 3, 3, 99, 0, 99]))
+
+    def test_chunked_trajectory_random_access(self):
+        reader = FragmentedTrajectoryReader([self.d, self.d])
+        indices = np.asarray([[0, 1], [0, 3], [0, 3], [0, 99], [0, 100], [0, 199]])
+        out = reader.get_output(stride=indices, chunk=1)
+        np.testing.assert_array_equal(np.array(out).squeeze(), np.array([1,3,3,99,0,99]))
+
     def test_full_trajectory_stridden(self):
         for stride in [1, 3, 5, 7, 13, 20]:
             reader = FragmentedTrajectoryReader([self.d, self.d])
@@ -87,6 +99,20 @@ class TestFragmentedTrajectory(unittest.TestCase):
                     os.unlink(t)
                 except EnvironmentError:
                     pass
+
+    def test_multiple_input_trajectories_random_access(self):
+        indices = np.asarray([
+            [0, 1], [0, 3], [0, 3], [0, 99], [0, 100], [0, 199],
+            [1, 0], [1, 5], [1, 99],
+            [2, 5], [2, 7], [2, 23]
+        ])
+        expected = [np.array([1, 3, 3, 99, 0, 99]), np.array([0, 5, 99]), np.array([5, 7, 23])]
+        for chunk_size in [0, 1, 3, 5, 13]:
+            reader = FragmentedTrajectoryReader([[self.d, self.d], self.d, [self.d, self.d]])
+            out_full_trajectory_mode = reader.get_output(chunk=chunk_size, stride=indices)
+            for i in range(3):
+                np.testing.assert_array_equal(expected[i], out_full_trajectory_mode[i].squeeze())
+
 
     def test_multiple_input_trajectories(self):
         reader = FragmentedTrajectoryReader([[self.d, self.d], self.d, [self.d, self.d]])
