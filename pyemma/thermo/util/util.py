@@ -21,7 +21,8 @@ from pyemma.util import types
 __all__ = [
     'get_averaged_bias_matrix',
     'get_umbrella_sampling_data',
-    'get_multi_temperature_data']
+    'get_multi_temperature_data',
+    'assign_unbiased_state_label']
 
 # ==================================================================================================
 # helpers for discrete estimations
@@ -90,7 +91,7 @@ def _get_umbrella_sampling_parameters(
     force_constants = []
     ttrajs = []
     nthermo = 0
-    unbiased_index = None
+    unbiased_state = None
     for i in range(len(us_trajs)):
         state = None
         this_center = _ensure_umbrella_center(
@@ -116,22 +117,22 @@ def _get_umbrella_sampling_parameters(
         this_force_constant = force_constants[-1] * 0.0
         for j in range(nthermo):
             if _np.all(force_constants[j] == this_force_constant):
-                unbiased_index = j
+                unbiased_state = j
                 break
-        if unbiased_index is None:
+        if unbiased_state is None:
             umbrella_centers.append(this_center.copy())
             force_constants.append(this_force_constant.copy())
-            unbiased_index = nthermo
+            unbiased_state = nthermo
             nthermo += 1
         for md_traj in md_trajs:
-            ttrajs.append(unbiased_index * _np.ones(shape=(md_traj.shape[0],), dtype=_np.intc))
+            ttrajs.append(unbiased_state * _np.ones(shape=(md_traj.shape[0],), dtype=_np.intc))
     umbrella_centers = _np.array(umbrella_centers, dtype=_np.float64)
     force_constants = _np.array(force_constants, dtype=_np.float64)
     if kT is not None:
         assert isinstance(kT, (int, long, float))
         assert kT > 0.0
         force_constants /= kT
-    return ttrajs, umbrella_centers, force_constants, unbiased_index
+    return ttrajs, umbrella_centers, force_constants, unbiased_state
 
 def _get_umbrella_bias_sequences(trajs, umbrella_centers, force_constants):
     from thermotools.util import get_umbrella_bias as _get_umbrella_bias
@@ -174,15 +175,15 @@ def get_umbrella_sampling_data(us_trajs, us_centers, us_force_constants, md_traj
         The individual umbrella centers labelled accordingly to ttrajs.
     force_constants : float array of shape (K, d, d)
         The individual force matrices labelled accordingly to ttrajs.
-    unbiased_index : int or None
+    unbiased_state : int or None
         Index of the unbiased thermodynamic state (if present).
     """
-    ttrajs, umbrella_centers, force_constants, unbiased_index = _get_umbrella_sampling_parameters(
+    ttrajs, umbrella_centers, force_constants, unbiased_state = _get_umbrella_sampling_parameters(
         us_trajs, us_centers, us_force_constants, md_trajs=md_trajs, kT=kT)
     if md_trajs is None:
         md_trajs = []
     btrajs = _get_umbrella_bias_sequences(us_trajs + md_trajs, umbrella_centers, force_constants)
-    return ttrajs, btrajs, umbrella_centers, force_constants, unbiased_index
+    return ttrajs, btrajs, umbrella_centers, force_constants, unbiased_state
 
 # ==================================================================================================
 # helpers for multi-temperature simulations
@@ -257,7 +258,19 @@ def get_multi_temperature_data(
     btrajs = _get_multi_temperature_bias_sequences(
         energy_trajs, temp_trajs, temperatures, reference_temperature, energy_unit, temp_unit)
     if reference_temperature in temperatures:
-        temperature_index = _np.where(temperatures == reference_temperature)[0]
+        unbiased_state = _np.where(temperatures == reference_temperature)[0]
     else:
-        temperature_index = None
-    return ttrajs, btrajs, temperatures, temperature_index
+        unbiased_state = None
+    return ttrajs, btrajs, temperatures, unbiased_state
+
+# ==================================================================================================
+# helpers for marking the unbiased state
+# ==================================================================================================
+
+def assign_unbiased_state_label(memm_list, unbiased_state):
+    if unbiased_state is None:
+        return
+    for memm in memm_list:
+        assert 0 <= unbiased_state < len(memm.models)
+        memm._msm = memm.models[unbiased_state]
+        memm._msm_active_set = memm.model_active_set[unbiased_state]

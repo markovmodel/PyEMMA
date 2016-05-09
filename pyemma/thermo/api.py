@@ -18,6 +18,7 @@
 import numpy as _np
 from pyemma.util import types as _types
 from .util import get_averaged_bias_matrix as _get_averaged_bias_matrix
+from .util import assign_unbiased_state_label as _assign_unbiased_state_label
 
 __docformat__ = "restructuredtext en"
 __author__ = "Frank Noe, Christoph Wehmeyer"
@@ -116,7 +117,7 @@ def estimate_umbrella_sampling(
     """
     assert estimator in ['wham', 'dtram', 'tram'], "unsupported estimator: %s" % estimator
     from .util import get_umbrella_sampling_data as _get_umbrella_sampling_data
-    ttrajs, btrajs, umbrella_centers, force_constants, unbiased_index = _get_umbrella_sampling_data(
+    ttrajs, btrajs, umbrella_centers, force_constants, unbiased_state = _get_umbrella_sampling_data(
         us_trajs, us_centers, us_force_constants, md_trajs=md_trajs, kT=kT)
     if md_dtrajs is None:
         md_dtrajs = []
@@ -133,7 +134,7 @@ def estimate_umbrella_sampling(
         _estimator = dtram(
             ttrajs, us_dtrajs + md_dtrajs,
             _get_averaged_bias_matrix(btrajs, us_dtrajs + md_dtrajs),
-            lag,
+            lag, unbiased_state=unbiased_state,
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
             dt_traj=dt_traj, init=init, init_maxiter=init_maxiter, init_maxerr=init_maxerr,
             **parsed_kwargs)
@@ -143,25 +144,17 @@ def estimate_umbrella_sampling(
             'direct_space', 'N_dtram_accelerations']
         parsed_kwargs = dict([(i, kwargs[i]) for i in allowed_keys if i in kwargs])
         _estimator = tram(
-            ttrajs, us_dtrajs + md_dtrajs, btrajs, lag,
+            ttrajs, us_dtrajs + md_dtrajs, btrajs, lag, unbiased_state=unbiased_state,
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
             dt_traj=dt_traj, init=init, init_maxiter=init_maxiter, init_maxerr=init_maxerr,
             **parsed_kwargs)
-    if estimator not in ['dtram', 'tram']:
-        unbiased_index = None
     try:
         _estimator.umbrella_centers = umbrella_centers
         _estimator.force_constants = force_constants
-        if unbiased_index is not None:
-            _estimator._msm = _estimator.models[unbiased_index]
-            _estimator._msm_active_set = _estimator.model_active_set[unbiased_index]
     except AttributeError:
         for obj in _estimator:
             obj.umbrella_centers = umbrella_centers
             obj.force_constants = force_constants
-        if unbiased_index is not None:
-            _estimator._msm = _estimator.models[unbiased_index]
-            _estimator._msm_active_set = _estimator.model_active_set[unbiased_index]
     return _estimator
 
 
@@ -243,7 +236,7 @@ def estimate_multi_temperature(
     """
     assert estimator in ['wham', 'dtram', 'tram'], "unsupported estimator: %s" % estimator
     from .util import get_multi_temperature_data as _get_multi_temperature_data
-    ttrajs, btrajs, temperatures, temperature_index = _get_multi_temperature_data(
+    ttrajs, btrajs, temperatures, unbiased_state = _get_multi_temperature_data(
         energy_trajs, temp_trajs, energy_unit, temp_unit,
         reference_temperature=reference_temperature)
     _estimator = None
@@ -259,7 +252,7 @@ def estimate_multi_temperature(
         _estimator = dtram(
             ttrajs, dtrajs,
             _get_averaged_bias_matrix(btrajs, dtrajs),
-            lag,
+            lag, unbiased_state=unbiased_state,
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
             dt_traj=dt_traj, init=init, init_maxiter=init_maxiter, init_maxerr=init_maxerr,
             **parsed_kwargs)
@@ -269,23 +262,15 @@ def estimate_multi_temperature(
             'direct_space', 'N_dtram_accelerations']
         parsed_kwargs = dict([(i, kwargs[i]) for i in allowed_keys if i in kwargs])
         _estimator = tram(
-            ttrajs, dtrajs, btrajs, lag,
+            ttrajs, dtrajs, btrajs, lag, unbiased_state=unbiased_state,
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
             dt_traj=dt_traj, init=init, init_maxiter=init_maxiter, init_maxerr=init_maxerr,
             **parsed_kwargs)
-    if estimator not in ['dtram', 'tram']:
-        temperature_index = None
     try:
         _estimator.temperatures = temperatures
-        if temperature_index is not None:
-            _estimator._msm = _estimator.models[temperature_index]
-            _estimator._msm_active_set = _estimator.model_active_set[temperature_index]
     except AttributeError:
         for obj in _estimator:
             obj.temperatures = temperatures
-            if temperature_index is not None:
-                obj._msm = obj.models[temperature_index]
-                obj._msm_active_set = obj.model_active_set[temperature_index]
     return _estimator
 
 # ==================================================================================================
@@ -293,7 +278,7 @@ def estimate_multi_temperature(
 # ==================================================================================================
 
 def tram(
-    ttrajs, dtrajs, bias, lag,
+    ttrajs, dtrajs, bias, lag, unbiased_state=None,
     count_mode='sliding', connectivity='summed_count_matrix',
     maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step',
     connectivity_factor=1.0, nn=None, direct_space=False, N_dtram_accelerations=0, callback=None,
@@ -414,13 +399,14 @@ def tram(
             direct_space=direct_space, N_dtram_accelerations=N_dtram_accelerations,
             callback=callback, init='mbar', init_maxiter=init_maxiter,
             init_maxerr=init_maxerr).estimate((ttrajs, dtrajs, bias)) for _lag in lags]
+    _assign_unbiased_state_label(tram_estimators, unbiased_state)
     # return
     if len(tram_estimators) == 1:
         return tram_estimators[0]
     return tram_estimators
 
 def dtram(
-    ttrajs, dtrajs, bias, lag,
+    ttrajs, dtrajs, bias, lag, unbiased_state=None,
     count_mode='sliding', connectivity='largest',
     maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step',
     init=None, init_maxiter=10000, init_maxerr=1.0E-8):
@@ -530,6 +516,7 @@ def dtram(
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
             dt_traj=dt_traj, init=init, init_maxiter=init_maxiter,
             init_maxerr=init_maxerr).estimate((ttrajs, dtrajs)) for _lag in lags]
+    _assign_unbiased_state_label(dtram_estimators, unbiased_state)
     # return
     if len(dtram_estimators) == 1:
         return dtram_estimators[0]
