@@ -116,7 +116,7 @@ def estimate_umbrella_sampling(
     """
     assert estimator in ['wham', 'dtram', 'tram'], "unsupported estimator: %s" % estimator
     from .util import get_umbrella_sampling_data as _get_umbrella_sampling_data
-    ttrajs, btrajs, umbrella_centers, force_constants = _get_umbrella_sampling_data(
+    ttrajs, btrajs, umbrella_centers, force_constants, unbiased_index = _get_umbrella_sampling_data(
         us_trajs, us_centers, us_force_constants, md_trajs=md_trajs, kT=kT)
     if md_dtrajs is None:
         md_dtrajs = []
@@ -147,13 +147,21 @@ def estimate_umbrella_sampling(
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
             dt_traj=dt_traj, init=init, init_maxiter=init_maxiter, init_maxerr=init_maxerr,
             **parsed_kwargs)
+    if estimator not in ['dtram', 'tram']:
+        unbiased_index = None
     try:
         _estimator.umbrella_centers = umbrella_centers
         _estimator.force_constants = force_constants
+        if unbiased_index is not None:
+            _estimator._msm = _estimator.models[unbiased_index]
+            _estimator._msm_active_set = _estimator.model_active_set[unbiased_index]
     except AttributeError:
         for obj in _estimator:
             obj.umbrella_centers = umbrella_centers
             obj.force_constants = force_constants
+        if unbiased_index is not None:
+            _estimator._msm = _estimator.models[unbiased_index]
+            _estimator._msm_active_set = _estimator.model_active_set[unbiased_index]
     return _estimator
 
 
