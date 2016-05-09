@@ -261,13 +261,13 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
                 callback=_ConvergenceProgressIndicatorCallBack(
                     self, 'TRAM', self.maxiter, self.maxerr),
                 N_dtram_accelerations=self.N_dtram_accelerations)
-
         self.btrajs = btrajs
 
         # compute models
-        fmsms = [_tram.estimate_transition_matrix(
-            self.log_lagrangian_mult, self.biased_conf_energies,
-            self.count_matrices, None, K) for K in range(self.nthermo)]
+        fmsms = [_np.ascontiguousarray((
+            _tram.estimate_transition_matrix(
+                self.log_lagrangian_mult, self.biased_conf_energies, self.count_matrices, None,
+                K)[self.active_set, :])[:, self.active_set]) for K in range(self.nthermo)]
 
         self.model_active_set = [_largest_connected_set(msm, directed=False) for msm in fmsms]
         fmsms = [_np.ascontiguousarray(
