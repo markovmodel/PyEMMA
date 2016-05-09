@@ -238,11 +238,15 @@ def get_multi_temperature_data(
     energy_trajs, temp_trajs, energy_unit, temp_unit, reference_temperature=None):
     ttrajs, temperatures = _get_multi_temperature_parameters(temp_trajs)
     if reference_temperature is None:
-        reference_temperature = temperatures[0]
+        reference_temperature = temperatures.min()
     else:
         assert isinstance(reference_temperature, (int, long, float)), \
             'reference_temperature must be numeric'
         assert reference_temperature > 0.0, 'reference_temperature must be positive'
     btrajs = _get_multi_temperature_bias_sequences(
         energy_trajs, temp_trajs, temperatures, reference_temperature, energy_unit, temp_unit)
-    return ttrajs, btrajs, temperatures
+    if reference_temperature in temperatures:
+        temperature_index = _np.where(temperatures == reference_temperature)[0]
+    else:
+        temperature_index = None
+    return ttrajs, btrajs, temperatures, temperature_index

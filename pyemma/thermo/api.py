@@ -235,7 +235,7 @@ def estimate_multi_temperature(
     """
     assert estimator in ['wham', 'dtram', 'tram'], "unsupported estimator: %s" % estimator
     from .util import get_multi_temperature_data as _get_multi_temperature_data
-    ttrajs, btrajs, temperatures = _get_multi_temperature_data(
+    ttrajs, btrajs, temperatures, temperature_index = _get_multi_temperature_data(
         energy_trajs, temp_trajs, energy_unit, temp_unit,
         reference_temperature=reference_temperature)
     _estimator = None
@@ -265,11 +265,19 @@ def estimate_multi_temperature(
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
             dt_traj=dt_traj, init=init, init_maxiter=init_maxiter, init_maxerr=init_maxerr,
             **parsed_kwargs)
+    if estimator not in ['dtram', 'tram']:
+        temperature_index = None
     try:
         _estimator.temperatures = temperatures
+        if temperature_index is not None:
+            _estimator._msm = _estimator.models[temperature_index]
+            _estimator._msm_active_set = _estimator.model_active_set[temperature_index]
     except AttributeError:
         for obj in _estimator:
             obj.temperatures = temperatures
+            if temperature_index is not None:
+                obj._msm = obj.models[temperature_index]
+                obj._msm_active_set = obj.model_active_set[temperature_index]
     return _estimator
 
 # ==================================================================================================
