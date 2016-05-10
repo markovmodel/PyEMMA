@@ -88,7 +88,7 @@ def plot_convergence_info(thermo_estimator, axes=None):
 
 def plot_memm_implied_timescales(thermo_estimators,
     ax=None, nits=None, therm_state=None, xlog=False, ylog=True, units='steps', dt=1.0, refs=None,
-    annotate=True):
+    annotate=True, **kwargs):
     colors = ['blue', 'red', 'green', 'cyan', 'purple', 'orange', 'violet']
     # Check units and dt for user error.
     if isinstance(units, list) and len(units) != 2:
@@ -124,7 +124,7 @@ def plot_memm_implied_timescales(thermo_estimators,
     srt = _np.argsort(lags)
     # Plot the implied timescales
     for i in range(ts.shape[1]):
-        ax.plot(lags[srt], ts[srt, i], '-o', color=colors[i % len(colors)])
+        ax.plot(lags[srt], ts[srt, i], color=colors[i % len(colors)], **kwargs)
     # Set boundaries
     ax.set_xlim([lags.min() * dt[0], lags.max() * dt[0]])
     # Plot cutoff
