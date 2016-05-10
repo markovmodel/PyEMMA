@@ -87,7 +87,6 @@ def register_signal_handlers():
 
     kill -42 34588
     """
-    signal.getsignal()
     signal.signal(SIGNAL_STACKTRACE, _show_stacktrace)
     signal.signal(SIGNAL_PDB, _handle_pdb)
 
