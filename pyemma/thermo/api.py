@@ -324,6 +324,7 @@ def tram(
         |  'us',   'microsecond*'
         |  'ms',   'millisecond*'
         |  's',    'second*'
+
     connectivity : str, optional, default='summed_count_matrix'
         One of 'summed_count_matrix', 'strong_in_every_ensemble',
         'neighbors', 'post_hoc_RE' or 'BAR_variance'.
@@ -351,6 +352,7 @@ def tram(
 
         | None:    use a hard-coded guess for free energies and Lagrangian multipliers
         | 'wham':  perform a short WHAM estimate to initialize the free energies
+
     init_maxiter : int, optional, default=10000
         The maximum number of self-consistent iterations during the initialization.
     init_maxerr : float, optional, default=1.0E-8
@@ -364,20 +366,27 @@ def tram(
 
     Example
     -------
-    **Example: Umbrella sampling**. Suppose we simulate in K umbrellas, centered at
+    **Umbrella sampling**. Suppose we simulate in K umbrellas, centered at
     positions :math:`y_0,...,y_{K-1}` with bias energies
+
     .. math::
-        b_k(x) = 0.5 * c_k * (x - y_k)^2 / kT
+        b_k(x) = \frac{c_k}{2 \textrm{kT}} \cdot (x - y_k)^2
+
     Suppose we have one simulation of length T in each umbrella, and they are ordered from 0 to K-1.
     We have discretized the x-coordinate into 100 bins.
     Then dtrajs and ttrajs should each be a list of :math:`K` arrays.
-    dtrajs would look for example like this:
+    dtrajs would look for example like this::
+
     [ (1, 2, 2, 3, 2, ...),  (2, 4, 5, 4, 4, ...), ... ]
+
     where each array has length T, and is the sequence of bins (in the range 0 to 99) visited along
-    the trajectory. ttrajs would look like this:
+    the trajectory. ttrajs would look like this::
+
     [ (0, 0, 0, 0, 0, ...),  (1, 1, 1, 1, 1, ...), ... ]
+
     Because trajectory 1 stays in umbrella 1 (index 0), trajectory 2 stays in umbrella 2 (index 1),
     and so forth...
+
     """
     # prepare trajectories
     ttrajs = _types.ensure_dtraj_list(ttrajs)
@@ -431,12 +440,14 @@ def dtram(
         trigger one estimation per lag time.
     count_mode : str, optional, default='sliding'
         Mode to obtain count matrices from discrete trajectories. Should be one of:
+
         * 'sliding' : a trajectory of length T will have :math:`T-\tau` counts at time indexes
-              .. math::
+            .. math::
                  (0 \rightarrow \tau), (1 \rightarrow \tau+1), ..., (T-\tau-1 \rightarrow T-1)
         * 'sample' : a trajectory of length T will have :math:`T/\tau` counts at time indexes
-              .. math::
+            .. math::
                     (0 \rightarrow \tau), (\tau \rightarrow 2 \tau), ..., ((T/\tau-1) \tau \rightarrow T)
+
         Currently only 'sliding' is supported.
     connectivity : str, optional, default='largest'
         Defines what should be considered a connected set in the joint space of conformations and
@@ -461,11 +472,13 @@ def dtram(
         |  'us',   'microsecond*'
         |  'ms',   'millisecond*'
         |  's',    'second*'
+
     init : str, optional, default=None
         Use a specific initialization for self-consistent iteration:
 
         | None:    use a hard-coded guess for free energies and Lagrangian multipliers
         | 'wham':  perform a short WHAM estimate to initialize the free energies
+
     init_maxiter : int, optional, default=10000
         The maximum number of self-consistent iterations during the initialization.
     init_maxerr : float, optional, default=1.0E-8
@@ -479,25 +492,54 @@ def dtram(
 
     Example
     -------
-    **Example: Umbrella sampling**. Suppose we simulate in K umbrellas, centered at
+    **Umbrella sampling**. Suppose we simulate in K umbrellas, centered at
     positions :math:`y_0,...,y_{K-1}` with bias energies
+
     .. math::
-        b_k(x) = 0.5 * c_k * (x - y_k)^2 / kT
+        b_k(x) = \frac{c_k}{2 \textrm{kT}} \cdot (x - y_k)^2
+
     Suppose we have one simulation of length T in each umbrella, and they are ordered from 0 to K-1.
     We have discretized the x-coordinate into 100 bins.
     Then dtrajs and ttrajs should each be a list of :math:`K` arrays.
-    dtrajs would look for example like this:
-    [ (1, 2, 2, 3, 2, ...),  (2, 4, 5, 4, 4, ...), ... ]
+    dtrajs would look for example like this::
+
+    [ (0, 0, 0, 0, 1, 1, 1, 0, 0, 0, ...),  (0, 1, 0, 1, 0, 1, 1, 0, 0, 1, ...), ... ]
+
     where each array has length T, and is the sequence of bins (in the range 0 to 99) visited along
-    the trajectory. ttrajs would look like this:
-    [ (0, 0, 0, 0, 0, ...),  (1, 1, 1, 1, 1, ...), ... ]
+    the trajectory. ttrajs would look like this::
+
+    [ (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...),  (1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ...), ... ]
+
     Because trajectory 1 stays in umbrella 1 (index 0), trajectory 2 stays in umbrella 2 (index 1),
     and so forth. bias is a :math:`K \times n` matrix with all reduced bias energies evaluated at
     all centers:
-    [[b_0(y_0), b_0(y_1), ..., b_0(y_{n-1})],
-     [b_1(y_0), b_1(y_1), ..., b_1(y_{n-1})],
-     ...
-     [b_{K-1}(y_0), b_{K-1}(y_1), ..., b_{K-1}(y_{n-1})]]
+
+    .. math::
+        \left(\begin{array}{cccc}
+            b_0(y_0) &  b_0(y_1) &  ... &  b_0(y_{n-1}) \\
+            b_1(y_0) &  b_1(y_1) &  ... &  b_1(y_{n-1}) \\
+            ... \\
+            b_{K-1}(y_0) &  b_{K-1}(y_1) &  ... &  b_{K-1}(y_{n-1})
+        \end{array}\right)
+
+    Let us try the above example:
+
+    >>> from pyemma.thermo import dtram
+    >>> import numpy as np
+    >>> ttrajs = [np.array([0,0,0,0,0,0,0,0,0,0]), np.array([1,1,1,1,1,1,1,1,1,1])]
+    >>> dtrajs = [np.array([0,0,0,0,1,1,1,0,0,0]), np.array([0,1,0,1,0,1,1,0,0,1])]
+    >>> bias = np.array([[0.0, 0.0], [0.5, 1.0]])
+    >>> dtram_obj = dtram(ttrajs, dtrajs, bias, 1)
+    >>> dtram_obj.log_likelihood() # doctest: +ELLIPSIS
+    -9.805...
+    >>> dtram_obj.count_matrices # doctest: +SKIP
+    array([[[5, 1],
+            [1, 2]],
+           [[1, 4],
+            [3, 1]]], dtype=int32)
+    >>> dtram_obj.stationary_distribution # doctest: +ELLIPSIS
+    array([ 0.38...,  0.61...])
+
     """
     # prepare trajectories
     ttrajs = _types.ensure_dtraj_list(ttrajs)
@@ -571,30 +613,52 @@ def wham(
 
     Example
     -------
-    **Example: Umbrella sampling**. Suppose we simulate in K umbrellas, centered at
+    **Umbrella sampling**. Suppose we simulate in K umbrellas, centered at
     positions :math:`y_0,...,y_{K-1}` with bias energies
 
     .. math::
-        b_k(x) = 0.5 * c_k * (x - y_k)^2 / kT
+        b_k(x) = \frac{c_k}{2 \textrm{kT}} \cdot (x - y_k)^2
 
     Suppose we have one simulation of length T in each umbrella, and they are ordered from 0 to K-1.
     We have discretized the x-coordinate into 100 bins.
     Then dtrajs and ttrajs should each be a list of :math:`K` arrays.
     dtrajs would look for example like this::
     
-    [ (1, 2, 2, 3, 2, ...),  (2, 4, 5, 4, 4, ...), ... ]
+    [ (0, 0, 0, 0, 1, 1, 1, 0, 0, 0, ...),  (0, 1, 0, 1, 0, 1, 1, 0, 0, 1, ...), ... ]
+    
     where each array has length T, and is the sequence of bins (in the range 0 to 99) visited along
-    the trajectory. ttrajs would look like this:
-    [ (0, 0, 0, 0, 0, ...),  (1, 1, 1, 1, 1, ...), ... ]
+    the trajectory. ttrajs would look like this::
+
+    [ (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...),  (1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ...), ... ]
+    
     Because trajectory 1 stays in umbrella 1 (index 0), trajectory 2 stays in umbrella 2 (index 1),
     and so forth. bias is a :math:`K \times n` matrix with all reduced bias energies evaluated at
-    all centers::
+    all centers:
 
-    [[b_0(y_0), b_0(y_1), ..., b_0(y_{n-1})],
-     [b_1(y_0), b_1(y_1), ..., b_1(y_{n-1})],
-     ...
-     [b_{K-1}(y_0), b_{K-1}(y_1), ..., b_{K-1}(y_{n-1})]]
+    .. math::
+        \left(\begin{array}{cccc}
+            b_0(y_0) &  b_0(y_1) &  ... &  b_0(y_{n-1}) \\
+            b_1(y_0) &  b_1(y_1) &  ... &  b_1(y_{n-1}) \\
+            ... \\
+            b_{K-1}(y_0) &  b_{K-1}(y_1) &  ... &  b_{K-1}(y_{n-1})
+        \end{array}\right)
 
+    Let us try the above example:
+
+    >>> from pyemma.thermo import wham
+    >>> import numpy as np
+    >>> ttrajs = [np.array([0,0,0,0,0,0,0,0,0,0]), np.array([1,1,1,1,1,1,1,1,1,1])]
+    >>> dtrajs = [np.array([0,0,0,0,1,1,1,0,0,0]), np.array([0,1,0,1,0,1,1,0,0,1])]
+    >>> bias = np.array([[0.0, 0.0], [0.5, 1.0]])
+    >>> wham_obj = wham(ttrajs, dtrajs, bias)
+    >>> wham_obj.log_likelihood() # doctest: +ELLIPSIS
+    -6.6...
+    >>> wham_obj.state_counts # doctest: +SKIP
+    array([[7, 3],
+           [5, 5]])
+    >>> wham_obj.stationary_distribution # doctest: +ELLIPSIS +REPORT_NDIFF
+    array([ 0.5...,  0.4...])
+    
     """
     # check trajectories
     ttrajs = _types.ensure_dtraj_list(ttrajs)
