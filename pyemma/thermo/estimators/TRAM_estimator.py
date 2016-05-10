@@ -241,6 +241,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
                     callback=_ConvergenceProgressIndicatorCallBack(
                         self, 'MBAR init.', self.init_maxiter, self.init_maxerr),
                     n_conf_states=self.nstates_full)
+            self._progress_force_finish(stage='MBAR init.')
             self.biased_conf_energies = self.mbar_biased_conf_energies.copy()
 
         # run estimator
@@ -261,6 +262,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
                 callback=_ConvergenceProgressIndicatorCallBack(
                     self, 'TRAM', self.maxiter, self.maxerr),
                 N_dtram_accelerations=self.N_dtram_accelerations)
+        self._progress_force_finish(stage='TRAM')
         self.btrajs = btrajs
 
         # compute models
