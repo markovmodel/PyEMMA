@@ -77,58 +77,6 @@ def plot_implied_timescales(ITS, ax=None, outfile=None, show_mle=True, show_mean
     ax : Axes object containing the plot
 
     """
-def plot_implied_timescales(ITS, ax=None, outfile=None, show_mle=True, show_mean=True,
-                            xlog=False, ylog=True, confidence=0.95, refs=None, nits=-1,
-                            process=None, units='steps', dt=1., **kwargs):
-    r"""Implied timescale plot
-
-    Parameters
-    ----------
-    ITS : implied timescales object.
-        Object whose data will be plotted. Must provide the functions: get_timescales() and get_timescales(i) where i is the
-        the property samples_available
-    ax : matplotlib Axes object, optional, default = None
-        the axes to plot to. When set to None the default Axes object will be used.
-    outfile : str, optional, default = None
-        output file to write the figure to. When not given, the plot will be displayed
-    show_mean : bool, default = True
-        Line for mean value will be shown, if available
-    show_mle : bool, default = True
-        Line for maximum likelihood estimate will be shown
-    xlog : bool, optional, default = False
-        Iff true, the x-Axis is logarithmized
-    ylog : bool, optional, default = True
-        Iff true, the y-Axis is logarithmized
-    confidence : float, optional, default = 0.95
-        The confidence interval for plotting error bars (if available)
-    refs : ndarray((m), dtype=float), optional, default = None
-        Reference (exact solution or other reference) timescales if known. The number of timescales must match those
-        in the ITS object
-    nits: integer, default = -1
-        Number of implied timescales to be shown. The default behaviour (-1) is to show all timescales available.
-        :py:obj:`nits` != -1 and :py:obj:`process` != None are mutually exclusive
-    process : iterable of integers, default is None
-        list or ndarray((m), dtype=int) containing a list of the processes to be shown. The default behaviour is
-        to show all timescales available.
-        :py:obj:`process` != None and :py:obj:`nits` != -1 are mutually exclusive
-    units: str or list (len=2) of strings, optional, default = 'steps'
-        Affects the labeling of the axes. Used with :py:obj:`dt`, allows for changing the physical units of the axes.
-        Accepts simple LaTeX math strings, eg. '$\mu$s'
-        If this parameter is a list, it will be assumed that units[0] is for the x-axis and units[1] for the y-axis.
-    dt: float or list(len=2) of floats, optional, default = 1.0
-        Physical time between frames, expressed the units given in :py:obj:`units`. E.g, if you know that each
-        frame corresponds to .010 ns, you can use the combination of parameters :py:obj:`dt` =0.01,
-        :py:obj:`units` ='ns' to display the implied timescales in ns (instead of frames)
-        If this parameter is a list, it will be assumed that dt[0] is for the x-axis and dt[1] for the y-axis.
-
-    **kwargs: Will be parsed to pyplot.plo when plotting the MLE datapoints (not the bootstrapped means).
-            See the doc of pyplot for more options. Most useful lineproperties like `marker='o'` and/or :markersize=5
-
-    Returns
-    -------
-    ax : Axes object containing the plot
-
-    """
     import matplotlib.pyplot as _plt
     # check input
     if ax is None:
