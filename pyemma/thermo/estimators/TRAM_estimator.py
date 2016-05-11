@@ -143,8 +143,6 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
         self.mbar_therm_energies = None
         self.log_lagrangian_mult = None
         self.loglikelihoods = None
-        self._msm = None
-        self._msm_active_set = None
 
     def _estimate(self, X):
         """

@@ -60,13 +60,25 @@ class MEMM(_StationaryModel):
         self.set_model_params(models=models, f_therm=f_therm, pi=pi, f=f, label=label)
 
     @property
+    def unbiased_state(self):
+        try:
+            return self._unbiased_state
+        except AttributeError:
+            return None
+
+    @property
     def msm(self):
-        return self._msm
+        try:
+            return self.models[self.unbiased_state]
+        except TypeError:
+            return None
 
     @property
     def msm_active_set(self):
-        return self._msm_active_set
-    
+        try:
+            return self.model_active_set[self.unbiased_state]
+        except TypeError:
+            return None
 
     def set_model_params(self, models=None, f_therm=None, pi=None, f=None, label='ground state'):
         # don't normalize f, because in a multiensemble the relative energy levels matter

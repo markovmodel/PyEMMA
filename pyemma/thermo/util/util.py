@@ -341,5 +341,4 @@ def assign_unbiased_state_label(memm_list, unbiased_state):
         return
     for memm in memm_list:
         assert 0 <= unbiased_state < len(memm.models)
-        memm._msm = memm.models[unbiased_state]
-        memm._msm_active_set = memm.model_active_set[unbiased_state]
+        memm._unbiased_state = unbiased_state

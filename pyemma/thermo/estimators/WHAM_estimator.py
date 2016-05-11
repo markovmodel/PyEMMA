@@ -95,8 +95,6 @@ class WHAM(_Estimator, _MEMM, _ProgressReporter):
         # set iteration variables
         self.therm_energies = None
         self.conf_energies = None
-        self._msm = None
-        self._msm_active_set = None
 
     def _estimate(self, trajs):
         # TODO: fix docstring
