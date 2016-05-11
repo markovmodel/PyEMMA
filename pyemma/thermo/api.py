@@ -114,6 +114,7 @@ def estimate_umbrella_sampling(
     _estimator : MEMM or list of MEMMs
         The requested estimator/model object, i.e., WHAM, DTRAM or TRAM. If multiple lag times are
         given, a list of objects is returned (one MEMM per lag time).
+
     """
     assert estimator in ['wham', 'dtram', 'tram'], "unsupported estimator: %s" % estimator
     from .util import get_umbrella_sampling_data as _get_umbrella_sampling_data
@@ -233,6 +234,7 @@ def estimate_multi_temperature(
     _estimator : MEMM or list of MEMMs
         The requested estimator/model object, i.e., WHAM, DTRAM or TRAM. If multiple lag times are
         given, a list of objects is returned (one MEMM per lag time).
+
     """
     assert estimator in ['wham', 'dtram', 'tram'], "unsupported estimator: %s" % estimator
     from .util import get_multi_temperature_data as _get_multi_temperature_data
@@ -366,7 +368,7 @@ def tram(
 
     Example
     -------
-    **Umbrella sampling**. Suppose we simulate in K umbrellas, centered at
+    **Umbrella sampling**: Suppose we simulate in K umbrellas, centered at
     positions :math:`y_0,...,y_{K-1}` with bias energies
 
     .. math::
@@ -377,12 +379,12 @@ def tram(
     Then dtrajs and ttrajs should each be a list of :math:`K` arrays.
     dtrajs would look for example like this::
 
-    [ (1, 2, 2, 3, 2, ...),  (2, 4, 5, 4, 4, ...), ... ]
+    [ (0, 0, 0, 0, 1, 1, 1, 0, 0, 0, ...),  (0, 1, 0, 1, 0, 1, 1, 0, 0, 1, ...), ... ]
 
     where each array has length T, and is the sequence of bins (in the range 0 to 99) visited along
     the trajectory. ttrajs would look like this::
 
-    [ (0, 0, 0, 0, 0, ...),  (1, 1, 1, 1, 1, ...), ... ]
+    [ (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...),  (1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ...), ... ]
 
     Because trajectory 1 stays in umbrella 1 (index 0), trajectory 2 stays in umbrella 2 (index 1),
     and so forth...
@@ -492,7 +494,7 @@ def dtram(
 
     Example
     -------
-    **Umbrella sampling**. Suppose we simulate in K umbrellas, centered at
+    **Umbrella sampling**: Suppose we simulate in K umbrellas, centered at
     positions :math:`y_0,...,y_{K-1}` with bias energies
 
     .. math::
@@ -613,7 +615,7 @@ def wham(
 
     Example
     -------
-    **Umbrella sampling**. Suppose we simulate in K umbrellas, centered at
+    **Umbrella sampling**: Suppose we simulate in K umbrellas, centered at
     positions :math:`y_0,...,y_{K-1}` with bias energies
 
     .. math::
