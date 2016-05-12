@@ -232,3 +232,31 @@ def _efficient_traj_join(trajs):
         concat_traj = copy_traj_attributes(concat_traj, traj, start)
         start += traj.n_frames
     return concat_traj
+
+
+def trajectory_set_item(self, idx, value):
+    """
+    :param self: mdtraj.Trajectory
+    :param idx: possible slices over frames,
+    :param value:
+    :return:
+    """
+    import mdtraj
+    assert isinstance(self, mdtraj.Trajectory), type(self)
+    if not isinstance(value, mdtraj.Trajectory):
+        raise TypeError("value to assign is of incorrect type(%s). Should be mdtraj.Trajectory" % type(value))
+    idx = np.index_exp[idx]
+    frames, atoms = None, None
+    if isinstance(idx, (list, tuple)):
+        if len(idx) == 1:
+            frames, atoms = idx[0], slice(None, None, None)
+        if len(idx) == 2:
+            frames, atoms = idx[0], idx[1]
+        if len(idx) >= 3 or len(idx) == 0:
+            raise IndexError("invalid slice by %s" % idx)
+
+    print("frames: %s\tatoms: %s" %(frames, atoms))
+    self.xyz[frames, atoms] = value.xyz
+    self._time[frames] = value.time
+    self.unitcell_lengths[frames] = value.unitcell_lengths
+    self.unitcell_angles[frames] = value.unitcell_angles
