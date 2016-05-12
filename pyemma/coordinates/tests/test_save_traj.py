@@ -165,8 +165,12 @@ class TestSaveTraj(unittest.TestCase):
             self.assertFalse(found_diff, errmsg)
 
     def test_with_fragmented_reader(self):
-        # intenionally group bpti dataset to a fake fragmented traj
-        frag_traj = [[self.trajfiles[0], self.trajfiles[1]], self.trajfiles[2]]
+        traj = md.load(self.trajfiles[0], top=self.pdbfile)
+        f = tempfile.mktemp(suffix='.xtc')
+        traj.save_xtc(f)
+
+        # intentionally group bpti dataset to a fake fragmented traj
+        frag_traj = [[self.trajfiles[0], f], self.trajfiles[2]]
         reader = coor.source(frag_traj, top=self.pdbfile)
 
         traj = save_traj(reader, self.sets, None)
@@ -174,6 +178,19 @@ class TestSaveTraj(unittest.TestCase):
 
         # Check for diffs
         (found_diff, errmsg) = compare_coords_md_trajectory_objects(traj, traj_ref, atom=0)
+        np.testing.assert_almost_equal(traj.xyz, traj_ref.xyz, err_msg=errmsg)
+
+    def test_with_fragmented_reader_chunksize_0(self):
+        # intentionally group bpti dataset to a fake fragmented traj
+        frag_traj = [[self.trajfiles[0], self.trajfiles[1]], self.trajfiles[2]]
+        reader = coor.source(frag_traj, top=self.pdbfile, chunk_size=0)
+        assert reader.chunksize == 0
+        traj = save_traj(reader, self.sets, None)
+        traj_ref = save_traj_w_md_load_frame(self.reader, self.sets)
+        # Check for diffs
+        (found_diff, errmsg) = compare_coords_md_trajectory_objects(traj, traj_ref, atom=0)
+
+        np.testing.assert_equal(traj.xyz, traj_ref.xyz)
         self.assertFalse(found_diff, errmsg)
 
 if __name__ == "__main__":
