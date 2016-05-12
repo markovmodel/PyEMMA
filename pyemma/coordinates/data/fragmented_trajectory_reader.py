@@ -15,10 +15,12 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import numpy as np
 import itertools
 
+import numpy as np
+
 from pyemma.coordinates.data._base.datasource import DataSource, DataSourceIterator
+from pyemma.coordinates.data.util.reader_utils import preallocate_empty_trajectory
 
 
 class _FragmentedTrajectoryIterator(object):
@@ -54,6 +56,16 @@ class _FragmentedTrajectoryIterator(object):
     def __iter__(self):
         return self
 
+    def _allocate_chunk(self, expected_length, ndim):
+        if (hasattr(self._reader_it._data_source, 'return_traj_obj') and
+                self._reader_it._data_source.return_traj_obj):
+            X = preallocate_empty_trajectory(n_frames=expected_length,
+                                             top=self._reader_it._data_source.featurizer.topology)
+        else:
+            X = np.empty((expected_length, ndim), dtype=self._frag_reader.output_type())
+
+        return X
+
     def __next__(self):
         skip = self._skip if self._t == 0 else 0
         if self._chunksize == 0:
@@ -84,7 +96,7 @@ class _FragmentedTrajectoryIterator(object):
             else:
                 ndim = len(np.zeros(self._readers[0].dimension())[0::])
                 expected_length = self.__get_chunk_expected_length()
-                X = np.empty((expected_length, ndim), dtype=self._frag_reader.output_type())
+                X = self._allocate_chunk(expected_length, ndim)
                 read = 0
                 while read < expected_length or expected_length == 0:
                     # reader has data left:
@@ -92,8 +104,6 @@ class _FragmentedTrajectoryIterator(object):
                     if reader_trajlen - self._reader_t > 0:
                         chunk = next(self._reader_it)
                         L = len(chunk)
-                        print("L:", L)
-                        print("read:", read)
                         X[read:read + L, :] = chunk[:]
                         read += L
                         self._reader_t += L
@@ -148,12 +158,22 @@ class _FragmentedTrajectoryIterator(object):
     def next(self):
         return self.__next__()
 
+    def _allocate_chunk(self, expected_length, ndim):
+        from pyemma.coordinates.data.feature_reader import FeatureReader
+        if all(isinstance(r, FeatureReader) and r.return_traj_obj for r in self._readers):
+            X = preallocate_empty_trajectory(n_frames=expected_length,
+                                             top=self._readers[0].featurizer.topology)
+        else:
+            X = np.empty((expected_length, ndim), dtype=self._frag_reader.output_type())
+
+        return X
+
     def _read_full(self, skip):
         if self._ra_indices is not None:
             fragment_indices = self.__get_ra_index_indices()
             ndim = len(np.zeros(self._readers[0].dimension())[0::])
             length = len(self.ra_indices)
-            X = np.empty((length, ndim), dtype=self._frag_reader.output_type())
+            X = self._allocate_chunk(length, ndim)
             L = 0
             for ifrag, r in enumerate(self._readers):
                 indices = self.__get_ifrag_ra_indices(fragment_indices, ifrag)
@@ -161,7 +181,7 @@ class _FragmentedTrajectoryIterator(object):
                     ifrag_data = None
                     for ifrag_data in r.iterator(chunk=0, stride=indices, return_trajindex=False):
                         pass
-                    l = ifrag_data.shape[0]
+                    l = len(ifrag_data)
                     X[L:L+l, :] = ifrag_data[:]
                     L += l
             return X
@@ -170,7 +190,7 @@ class _FragmentedTrajectoryIterator(object):
             self._skip = overlap
             ndim = len(np.zeros(self._readers[0].dimension())[0::])
             length = sum(self._traj_lengths(self._stride))
-            X = np.empty((length, ndim), dtype=self._frag_reader.output_type())
+            X = self._allocate_chunk(length, ndim)
             for idx, r in enumerate(self._readers):
                 _skip = overlap
                 # if stride doesn't divide length, one has to offset the next trajectory
@@ -262,7 +282,7 @@ class FragmentIterator(DataSourceIterator):
         X = next(self._it, None)
         if X is None:
             raise StopIteration()
-        self._t += X.shape[0]
+        self._t += len(X)
         if self._t >= self._data_source.trajectory_length(self._itraj, stride=self.stride):
             self._itraj += 1
             self._it.close()
@@ -289,7 +309,7 @@ class FragmentedTrajectoryReader(DataSource):
     
     """
 
-    def __init__(self, trajectories, topologyfile=None, chunksize=100, featurizer=None):
+    def __init__(self, trajectories, topologyfile=None, chunksize=1000, featurizer=None):
         # sanity checks
         assert isinstance(trajectories, (list, tuple)), "input trajectories should be of list or tuple type"
         # if it contains no further list: treat as single trajectory
