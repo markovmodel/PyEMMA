@@ -35,7 +35,7 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
     of trajectories is generally unknown for Iterable.
     """
 
-    def __init__(self, chunksize=100):
+    def __init__(self, chunksize=1000):
         super(DataSource, self).__init__(chunksize=chunksize)
 
         # following properties have to be set in subclass
@@ -355,6 +355,7 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
 
     @abstractmethod
     def close(self):
+        """ closes the reader"""
         pass
 
     def reset(self):
