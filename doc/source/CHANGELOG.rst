@@ -1,7 +1,7 @@
 Changelog
 =========
 
-2.1.2 (5-4-2016)
+2.2 ()
 ----------------
 
 **New features**:
@@ -9,11 +9,13 @@ Changelog
 - thermo: show convergence progress during estimation.
 
 **Fixes**:
-- clustering: fix for memory leak in minRMSD cluster assignment.
+- clustering: fix parallel cluster assignment with minRMSD metric.
 - base: during estimation the model was accessed in an inappropriate way,
   which led to the crash "AttributeError: object has no attribute '_model'" #764.
 - coordinates.io: fixed a bug when trying to pyemma.coordinates.load certain MD formats.
   The iterator could have returned None in some cases #790.
+- coordiantes.save_traj(s): use new backend introduced in 2.1, speed up for non random
+  accessible trajectory formats like XTC.
 
 
 2.1.1 (4-18-2016)
