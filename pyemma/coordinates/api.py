@@ -69,8 +69,8 @@ def featurizer(topfile):
 
     Parameters
     ----------
-    topfile : str
-        path to topology file (e.g pdb file)
+    topfile : str or mdtraj.Topology instance
+        path to topology file (e.g pdb file) or a mdtraj.Topology object
 
     Returns
     -------
@@ -87,6 +87,10 @@ def featurizer(topfile):
     >>> feat.add_backbone_torsions() # doctest: +SKIP
     >>> reader = pyemma.coordinates.source(["my_traj01.xtc", "my_traj02.xtc"], features=feat) # doctest: +SKIP
 
+    or
+
+    >>> traj = mdtraj.load('my_protein.pdb') # # doctest: +SKIP
+    >>> feat = pyemma.coordinates.featurizer(traj.topology) # doctest: +SKIP
 
     .. autoclass:: pyemma.coordinates.data.featurization.featurizer.MDFeaturizer
         :members:
