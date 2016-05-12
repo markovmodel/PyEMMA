@@ -89,8 +89,8 @@ def featurizer(topfile):
 
     or
 
-    >>> top = mdtraj.load('my_protein.pdb') # # doctest: +SKIP
-    >>> feat = pyemma.coordinates.featurizer(top) # doctest: +SKIP
+    >>> traj = mdtraj.load('my_protein.pdb') # # doctest: +SKIP
+    >>> feat = pyemma.coordinates.featurizer(traj.topology) # doctest: +SKIP
 
     .. autoclass:: pyemma.coordinates.data.featurization.featurizer.MDFeaturizer
         :members:
