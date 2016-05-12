@@ -336,7 +336,7 @@ def source(inp, features=None, top=None, chunk_size=None, **kw):
     if isinstance(inp, _string_types) or (
             isinstance(inp, (list, tuple))
             and (any(isinstance(item, (list, tuple, _string_types)) for item in inp) or len(inp) is 0)):
-        reader = create_file_reader(inp, top, features, chunk_size=chunk_size if chunk_size else 100, **kw)
+        reader = create_file_reader(inp, top, features, chunk_size=chunk_size if chunk_size is not None else 100, **kw)
 
     elif isinstance(inp, _np.ndarray) or (isinstance(inp, (list, tuple))
                                           and (any(isinstance(item, _np.ndarray) for item in inp) or len(inp) is 0)):
