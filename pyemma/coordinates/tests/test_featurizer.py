@@ -495,6 +495,28 @@ class TestFeaturizer(unittest.TestCase):
         assert np.allclose(D, Dref)
         assert len(self.feat.describe())==self.feat.dimension()
 
+    def test_Residue_Mindist_Ca_array_periodic(self):
+        traj = mdtraj.load(pdbfile)
+        # Atoms most far appart in Z
+        atom_minz = traj.xyz.argmin(1).squeeze()[-1]
+        atom_maxz = traj.xyz.argmax(1).squeeze()[-1]
+        # Residues with the atoms most far appart in Z
+        res_minz = traj.topology.atom(atom_minz).residue.index
+        res_maxz = traj.topology.atom(atom_maxz).residue.index
+        contacts=np.array([[res_minz, res_maxz]])
+        # Tweak the trajectory so that a (bogus) PBC exists (otherwise traj._have_unitcell is False)
+        traj.unitcell_angles = [90,90,90]
+        traj.unitcell_lengths = [1, 1, 1]
+        self.feat.add_residue_mindist(scheme='ca', residue_pairs=contacts, periodic=False)
+        D = self.feat.transform(traj)
+        Dperiodic_true  = mdtraj.compute_contacts(traj, scheme='ca', contacts=contacts, periodic=True)[0]
+        Dperiodic_false = mdtraj.compute_contacts(traj, scheme='ca', contacts=contacts, periodic=False)[0]
+        # This asserts that the periodic option is having an effect at all
+        assert not np.allclose(Dperiodic_false, Dperiodic_true, )
+        # This asserts that the periodic option is being handled correctly by pyemma
+        assert np.allclose(D, Dperiodic_false)
+        assert len(self.feat.describe())==self.feat.dimension()
+
     def test_Group_Mindist_One_Group(self):
         group0= [0,20,30,0]
         self.feat.add_group_mindist(group_definitions=[group0]) # Even with duplicates
