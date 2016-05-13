@@ -105,7 +105,10 @@ def frames_from_files(files, top, frames, chunksize=1000, stride=1, verbose=Fals
             length = reader.trajectory_length(itraj)
         else:
             fn = reader.filenames_flat[itraj]
-            fn_reader_tuple = (fn, reader.reader_by_filename(fn))
+            fn_readers = reader.reader_by_filename(fn)
+            if isinstance(fn_readers, (list, tuple)) and len(fn_readers) > 1:
+                fn_readers = fn_readers[0]
+            fn_reader_tuple = (fn, fn_readers)
             length = TrajectoryInfoCache.instance()[fn_reader_tuple].length
         if length < largest_ind_in_traj:
             raise ValueError("largest specified index (%i * stride=%i * %i=%i) "
@@ -115,12 +118,14 @@ def frames_from_files(files, top, frames, chunksize=1000, stride=1, verbose=Fals
                               length))
 
     if isinstance(reader, FeatureReader):
-        reader.return_traj_obj = True
+        reader._return_traj_obj = True
     elif isinstance(reader, FragmentedTrajectoryReader):
         for file in reader.filenames_flat:
             r = reader.reader_by_filename(file)
             if isinstance(r, FeatureReader):
-                r.return_traj_obj = True
+                r = [r]
+            for _r in r:
+                _r._return_traj_obj = True
 
     it = reader.iterator(chunk=chunksize, stride=sorted_inds, return_trajindex=False)
     reporter = ProgressReporter()

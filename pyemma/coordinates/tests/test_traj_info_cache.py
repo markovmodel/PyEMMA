@@ -40,7 +40,7 @@ from pyemma.coordinates.data.feature_reader import FeatureReader
 from pyemma.coordinates.data.numpy_filereader import NumPyFileReader
 from pyemma.coordinates.data.py_csv_reader import PyCSVReader
 from pyemma.coordinates.data.util.traj_info_cache import TrajectoryInfoCache
-from pyemma.coordinates.tests.test_featurereader import create_traj
+from pyemma.coordinates.tests.util import create_traj
 from pyemma.datasets import get_bpti_test_data
 from pyemma.util import config
 from pyemma.util.files import TemporaryDirectory

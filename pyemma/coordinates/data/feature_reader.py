@@ -57,11 +57,6 @@ class FeatureReader(DataSource):
     featurizer: MDFeaturizer
         a preconstructed featurizer
 
-
-    return_traj_obj : boolean, default=False
-        if True the FeatureReader will not calculate anything but instead
-        just return mdtraj.Trajectory objects.
-
     Examples
     --------
     >>> from pyemma.datasets import get_bpti_test_data
@@ -89,7 +84,7 @@ class FeatureReader(DataSource):
     """
     SUPPORTED_RANDOM_ACCESS_FORMATS = (".h5", ".dcd", ".binpos", ".nc", ".xtc", ".trr")
 
-    def __init__(self, trajectories, topologyfile=None, chunksize=100, featurizer=None, return_traj_obj=False):
+    def __init__(self, trajectories, topologyfile=None, chunksize=100, featurizer=None):
         assert (topologyfile is not None) or (featurizer is not None), \
             "Needs either a topology file or a featurizer for instantiation"
 
@@ -97,7 +92,7 @@ class FeatureReader(DataSource):
         self._is_reader = True
         self.topfile = topologyfile
         self.filenames = trajectories
-        self.return_traj_obj = return_traj_obj
+        self._return_traj_obj = False
 
         self._is_random_accessible = all(
             (f.endswith(FeatureReader.SUPPORTED_RANDOM_ACCESS_FORMATS)
@@ -348,7 +343,7 @@ class FeatureReaderIterator(DataSourceIterator, Loggable):
         # 1. raw mdtraj.Trajectory objects
         # 2. plain reshaped coordinates
         # 3. extracted features
-        if self._data_source.return_traj_obj:
+        if self._data_source._return_traj_obj:
             return chunk
         else:
             # map data

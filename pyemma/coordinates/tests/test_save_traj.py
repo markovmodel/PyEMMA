@@ -40,6 +40,8 @@ from pyemma.coordinates.data.util.reader_utils import single_traj_from_n_files, 
 from pyemma.coordinates.api import save_traj
 from six.moves import range
 
+from pyemma.coordinates.tests.util import create_traj, get_top
+
 
 class TestSaveTraj(unittest.TestCase):
 
@@ -55,11 +57,13 @@ class TestSaveTraj(unittest.TestCase):
         # Create random sets of files and frames to be retrieved from trajfiles
         n_members_set1 = 10
         n_members_set2 = 20
-        set_1 = np.vstack((np.random.permutation([0, 2] * n_members_set1)[:n_members_set1],
-                           np.random.randint(32, size=n_members_set1))).T
+        from pyemma.util.contexts import numpy_random_seed
+        with numpy_random_seed(34):
+            set_1 = np.vstack((np.random.permutation([0, 2] * n_members_set1)[:n_members_set1],
+                               np.random.randint(32, size=n_members_set1))).T
 
-        set_2 = np.vstack((np.random.permutation([0, 2] * n_members_set2)[:n_members_set2],
-                           np.random.randint(32, size=n_members_set2))).T
+            set_2 = np.vstack((np.random.permutation([0, 2] * n_members_set2)[:n_members_set2],
+                               np.random.randint(32, size=n_members_set2))).T
 
         self.sets = [set_1, set_2]
 
@@ -165,24 +169,36 @@ class TestSaveTraj(unittest.TestCase):
             self.assertFalse(found_diff, errmsg)
 
     def test_with_fragmented_reader(self):
-        traj = md.load(self.trajfiles[0], top=self.pdbfile)
-        f = tempfile.mktemp(suffix='.xtc')
-        traj.save_xtc(f)
+        from pyemma.util.files import TemporaryDirectory
+        trajlen = 35
+        ra_indices = np.array([[1, 0], [1, 1], [1,2], [1, 10], [1, trajlen*3*3+1], [2, 5]], dtype=int)
+        with TemporaryDirectory() as td:
 
-        # intentionally group bpti dataset to a fake fragmented traj
-        frag_traj = [[self.trajfiles[0], f], self.trajfiles[2]]
-        reader = coor.source(frag_traj, top=self.pdbfile)
+            trajfiles = []
+            xyzs = []
+            for i in range(3):
+                tf, xyz, _ = create_traj(start=i * 10, dir=td, length=trajlen)
+                trajfiles.append(tf)
+                xyzs.append(xyz)
 
-        traj = save_traj(reader, self.sets, None)
-        traj_ref = save_traj_w_md_load_frame(self.reader, self.sets)
+            topfile = get_top()
+            frag_traj = [trajfiles[2], [trajfiles[0], trajfiles[1]], trajfiles[0]]
 
-        # Check for diffs
-        (found_diff, errmsg) = compare_coords_md_trajectory_objects(traj, traj_ref, atom=0)
-        np.testing.assert_almost_equal(traj.xyz, traj_ref.xyz, err_msg=errmsg)
+            expected = xyzs[0][np.array([0, 1, 2, 10]), :], np.array([xyzs[1][1, :]]), np.array([(xyzs[2][5, :])])
+            expected = np.vstack(expected)
+
+            reader = coor.source(frag_traj, top=topfile)
+
+            traj = save_traj(reader, ra_indices, None, chunksize=3)
+
+
+            # Check for diffs
+            (found_diff, errmsg) = compare_coords_md_trajectory_objects(traj, traj_ref, atom=0)
+            np.testing.assert_almost_equal(traj.xyz, expected.xyz, err_msg=errmsg)
 
     def test_with_fragmented_reader_chunksize_0(self):
         # intentionally group bpti dataset to a fake fragmented traj
-        frag_traj = [[self.trajfiles[0], self.trajfiles[1]], self.trajfiles[2]]
+        frag_traj = [[self.trajfiles[0], self.trajfiles[1]], self.trajfiles[2], self.trajfiles[2]]
         reader = coor.source(frag_traj, top=self.pdbfile, chunk_size=0)
         assert reader.chunksize == 0
         traj = save_traj(reader, self.sets, None)

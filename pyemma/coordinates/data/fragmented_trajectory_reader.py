@@ -57,8 +57,8 @@ class _FragmentedTrajectoryIterator(object):
         return self
 
     def _allocate_chunk(self, expected_length, ndim):
-        if (hasattr(self._reader_it._data_source, 'return_traj_obj') and
-                self._reader_it._data_source.return_traj_obj):
+        if (hasattr(self._reader_it._data_source, '_return_traj_obj') and
+                self._reader_it._data_source._return_traj_obj):
             X = preallocate_empty_trajectory(n_frames=expected_length,
                                              top=self._reader_it._data_source.featurizer.topology)
         else:
@@ -94,7 +94,7 @@ class _FragmentedTrajectoryIterator(object):
                 return X
             # chunk has to be collected from subsequent readers
             else:
-                ndim = len(np.zeros(self._readers[0].dimension())[0::])
+                ndim = self._readers[0].ndim
                 expected_length = self.__get_chunk_expected_length()
                 X = self._allocate_chunk(expected_length, ndim)
                 read = 0
@@ -160,7 +160,7 @@ class _FragmentedTrajectoryIterator(object):
 
     def _allocate_chunk(self, expected_length, ndim):
         from pyemma.coordinates.data.feature_reader import FeatureReader
-        if all(isinstance(r, FeatureReader) and r.return_traj_obj for r in self._readers):
+        if all(isinstance(r, FeatureReader) and r._return_traj_obj for r in self._readers):
             X = preallocate_empty_trajectory(n_frames=expected_length,
                                              top=self._readers[0].featurizer.topology)
         else:
@@ -171,7 +171,7 @@ class _FragmentedTrajectoryIterator(object):
     def _read_full(self, skip):
         if self._ra_indices is not None:
             fragment_indices = self.__get_ra_index_indices()
-            ndim = len(np.zeros(self._readers[0].dimension())[0::])
+            ndim = self._readers[0].ndim
             length = len(self.ra_indices)
             X = self._allocate_chunk(length, ndim)
             L = 0
@@ -199,7 +199,7 @@ class _FragmentedTrajectoryIterator(object):
                 it = r._create_iterator(stride=self._stride, skip=_skip, chunk=chunksize, return_trajindex=True)
                 with it:
                     for itraj, data in it:
-                        L = data.shape[0]
+                        L = len(data)
                         if L > 0:
                             X[self._t:self._t + L, :] = data[:]
                         self._t += L
@@ -288,6 +288,9 @@ class FragmentIterator(DataSourceIterator):
             self._it.close()
             self._it = None
             self._t = 0
+        while (not self.uniform_stride) and (self._itraj not in self.traj_keys or self._t >= self.ra_trajectory_length(self._itraj)) \
+                and self._itraj < self.number_of_trajectories():
+            self._itraj += 1
         return X
 
     def close(self):
