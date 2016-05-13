@@ -22,6 +22,12 @@ from pyemma.thermo import DTRAM as _DTRAM
 from pyemma.thermo import TRAM as _TRAM
 from pyemma.msm import MSM as _MSM
 
+__all__ = [
+    'plot_increments',
+    'plot_loglikelihoods',
+    'plot_convergence_info',
+    'plot_memm_implied_timescales']
+
 def get_estimator_label(thermo_estimator):
     if isinstance(thermo_estimator, _WHAM):
         return "WHAM"
