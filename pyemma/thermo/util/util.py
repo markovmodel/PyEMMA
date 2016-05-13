@@ -106,7 +106,7 @@ def _ensure_force_constant(candidate, dimension):
             return _np.diag(candidate).astype(dtype=_np.float64)
         else:
             raise TypeError("usupported shape")
-    elif isinstance(candidate, (int, long, float)):
+    elif isinstance(candidate, (int, float)):
         return candidate * _np.ones(shape=(dimension, dimension), dtype=_np.float64)
     else:
         raise TypeError("unsupported type")
@@ -155,7 +155,7 @@ def _get_umbrella_sampling_parameters(
     umbrella_centers = _np.array(umbrella_centers, dtype=_np.float64)
     force_constants = _np.array(force_constants, dtype=_np.float64)
     if kT is not None:
-        assert isinstance(kT, (int, long, float))
+        assert isinstance(kT, (int, float))
         assert kT > 0.0
         force_constants /= kT
     return ttrajs, umbrella_centers, force_constants, unbiased_state
@@ -311,7 +311,7 @@ def get_multi_temperature_data(
     if reference_temperature is None:
         reference_temperature = temperatures.min()
     else:
-        assert isinstance(reference_temperature, (int, long, float)), \
+        assert isinstance(reference_temperature, (int, float)), \
             'reference_temperature must be numeric'
         assert reference_temperature > 0.0, 'reference_temperature must be positive'
     btrajs = _get_multi_temperature_bias_sequences(
