@@ -116,7 +116,7 @@ def estimate_umbrella_sampling(
 
     Returns
     -------
-    _estimator : MEMM or list of MEMMs
+    estimator_obj : MEMM or list of MEMMs
         The requested estimator/model object, i.e., WHAM, DTRAM or TRAM. If multiple lag times are
         given, a list of objects is returned (one MEMM per lag time).
 
@@ -149,9 +149,9 @@ def estimate_umbrella_sampling(
         us_trajs, us_centers, us_force_constants, md_trajs=md_trajs, kT=kT)
     if md_dtrajs is None:
         md_dtrajs = []
-    _estimator = None
+    estimator_obj = None
     if estimator == 'wham':
-        _estimator = wham(
+        estimator_obj = wham(
             ttrajs, us_dtrajs + md_dtrajs,
             _get_averaged_bias_matrix(btrajs, us_dtrajs + md_dtrajs),
             maxiter=maxiter, maxerr=maxerr,
@@ -159,7 +159,7 @@ def estimate_umbrella_sampling(
     elif estimator == 'dtram':
         allowed_keys = ['count_mode', 'connectivity']
         parsed_kwargs = dict([(i, kwargs[i]) for i in allowed_keys if i in kwargs])
-        _estimator = dtram(
+        estimator_obj = dtram(
             ttrajs, us_dtrajs + md_dtrajs,
             _get_averaged_bias_matrix(btrajs, us_dtrajs + md_dtrajs),
             lag, unbiased_state=unbiased_state,
@@ -171,19 +171,19 @@ def estimate_umbrella_sampling(
             'count_mode', 'connectivity', 'connectivity_factor','nn',
             'direct_space', 'N_dtram_accelerations']
         parsed_kwargs = dict([(i, kwargs[i]) for i in allowed_keys if i in kwargs])
-        _estimator = tram(
+        estimator_obj = tram(
             ttrajs, us_dtrajs + md_dtrajs, btrajs, lag, unbiased_state=unbiased_state,
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
             dt_traj=dt_traj, init=init, init_maxiter=init_maxiter, init_maxerr=init_maxerr,
             **parsed_kwargs)
     try:
-        _estimator.umbrella_centers = umbrella_centers
-        _estimator.force_constants = force_constants
+        estimator_obj.umbrella_centers = umbrella_centers
+        estimator_obj.force_constants = force_constants
     except AttributeError:
-        for obj in _estimator:
+        for obj in estimator_obj:
             obj.umbrella_centers = umbrella_centers
             obj.force_constants = force_constants
-    return _estimator
+    return estimator_obj
 
 
 def estimate_multi_temperature(
@@ -262,7 +262,7 @@ def estimate_multi_temperature(
 
     Returns
     -------
-    _estimator : MEMM or list of MEMMs
+    estimator_obj : MEMM or list of MEMMs
         The requested estimator/model object, i.e., WHAM, DTRAM or TRAM. If multiple lag times are
         given, a list of objects is returned (one MEMM per lag time).
 
@@ -289,9 +289,9 @@ def estimate_multi_temperature(
     ttrajs, btrajs, temperatures, unbiased_state = _get_multi_temperature_data(
         energy_trajs, temp_trajs, energy_unit, temp_unit,
         reference_temperature=reference_temperature)
-    _estimator = None
+    estimator_obj = None
     if estimator == 'wham':
-        _estimator = wham(
+        estimator_obj = wham(
             ttrajs, dtrajs,
             _get_averaged_bias_matrix(btrajs, dtrajs),
             maxiter=maxiter, maxerr=maxerr,
@@ -299,7 +299,7 @@ def estimate_multi_temperature(
     elif estimator == 'dtram':
         allowed_keys = ['count_mode', 'connectivity']
         parsed_kwargs = dict([(i, kwargs[i]) for i in allowed_keys if i in kwargs])
-        _estimator = dtram(
+        estimator_obj = dtram(
             ttrajs, dtrajs,
             _get_averaged_bias_matrix(btrajs, dtrajs),
             lag, unbiased_state=unbiased_state,
@@ -311,17 +311,17 @@ def estimate_multi_temperature(
             'count_mode', 'connectivity', 'connectivity_factor','nn',
             'direct_space', 'N_dtram_accelerations']
         parsed_kwargs = dict([(i, kwargs[i]) for i in allowed_keys if i in kwargs])
-        _estimator = tram(
+        estimator_obj = tram(
             ttrajs, dtrajs, btrajs, lag, unbiased_state=unbiased_state,
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
             dt_traj=dt_traj, init=init, init_maxiter=init_maxiter, init_maxerr=init_maxerr,
             **parsed_kwargs)
     try:
-        _estimator.temperatures = temperatures
+        estimator_obj.temperatures = temperatures
     except AttributeError:
-        for obj in _estimator:
+        for obj in estimator_obj:
             obj.temperatures = temperatures
-    return _estimator
+    return estimator_obj
 
 # ==================================================================================================
 # wrappers for the estimators
