@@ -435,7 +435,35 @@ def tram(
     [ (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...),  (1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ...), ... ]
 
     Because trajectory 1 stays in umbrella 1 (index 0), trajectory 2 stays in umbrella 2 (index 1),
-    and so forth...
+    and so forth.
+
+    The bias would be a list of :math:`T \times K` arrays which specify each frame's bias energy in
+    all thermodynamic states:
+
+    [ ((0, 1.7, 2.3, 6.1, ...), ...), ((0, 2.4, 3.1, 9,5, ...), ...), ... ]
+
+    Let us try the above example:
+
+    >>> from pyemma.thermo import tram
+    >>> import numpy as np
+    >>> ttrajs = [np.array([0,0,0,0,0,0,0]), np.array([1,1,1,1,1,1,1])]
+    >>> dtrajs = [np.array([0,0,0,0,1,1,1]), np.array([0,1,0,1,0,1,1])]
+    >>> bias = [np.array([[1,0],[1,0],[0,0],[0,0],[0,0],[0,0],[0,0]],dtype=np.float64), np.array([[1,0],[0,0],[0,0],[1,0],[0,0],[1,0],[1,0]],dtype=np.float64)]
+    >>> tram_obj = tram(ttrajs, dtrajs, bias, 1)
+    >>> tram_obj.log_likelihood() # doctest: +ELLIPSIS
+    -29.111...
+    >>> tram_obj.count_matrices # doctest: +SKIP
+    array([[[1 1]
+            [0 4]]
+           [[0 3]
+            [2 1]]], dtype=int32)
+    >>> tram_obj.stationary_distribution # doctest: +ELLIPSIS
+    array([ 0.38...  0.61...])
+
+    References
+    ----------
+    .. [1] Wu, H. et al 2016
+        in press
 
     """
     # prepare trajectories
@@ -590,6 +618,12 @@ def dtram(
     >>> dtram_obj.stationary_distribution # doctest: +ELLIPSIS
     array([ 0.38...,  0.61...])
 
+    References
+    ----------
+    .. [1] Wu, H. et al 2014
+        Statistically optimal analysis of state-discretized trajectory data from multiple thermodynamic states
+        J. Chem. Phys. 141, 214106
+
     """
     # prepare trajectories
     ttrajs = _types.ensure_dtraj_list(ttrajs)
@@ -708,7 +742,13 @@ def wham(
            [5, 5]])
     >>> wham_obj.stationary_distribution # doctest: +ELLIPSIS +REPORT_NDIFF
     array([ 0.5...,  0.4...])
-    
+
+    References
+    ----------
+    .. [1] Kumar, S. et al 1992
+        The Weighted Histogram Analysis Method for Free-Energy Calculations on Biomolecules. I. The Method
+        J. Comp. Chem. 13, 1011--1021
+
     """
     # check trajectories
     ttrajs = _types.ensure_dtraj_list(ttrajs)
