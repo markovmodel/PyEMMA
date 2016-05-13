@@ -79,6 +79,13 @@ class WHAM(_Estimator, _MEMM, _ProgressReporter):
     array([ 0.5...,  0.4...])
     >>> wham.meval('stationary_distribution') # doctest: +ELLIPSIS +REPORT_NDIFF
     [array([ 0.5...,  0.4...]), array([ 0.6...,  0.3...])]
+
+    References
+    ----------
+    .. [1] Kumar, S. et al 1992
+        The Weighted Histogram Analysis Method for Free-Energy Calculations on Biomolecules. I. The Method
+        J. Comp. Chem. 13, 1011--1021
+
     """
     def __init__(
         self, bias_energies_full,

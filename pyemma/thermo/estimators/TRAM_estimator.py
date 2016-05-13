@@ -109,6 +109,12 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
         The maximum number of self-consistent iterations during the initialization.
     init_maxerr : float, optional, default=1.0E-8
         Convergence criterion for the initialization.
+
+    References
+    ----------
+    .. [1] Wu, H. et al 2016
+        in press
+
     """
     def __init__(
         self, lag, count_mode='sliding',

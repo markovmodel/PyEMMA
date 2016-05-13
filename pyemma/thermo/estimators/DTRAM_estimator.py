@@ -106,6 +106,13 @@ class DTRAM(_Estimator, _MEMM, _ProgressReporter):
     array([ 0.38...,  0.61...])
     >>> dtram.meval('stationary_distribution') # doctest: +ELLIPSIS
     [array([ 0.38...,  0.61...]), array([ 0.50...,  0.49...])]
+
+    References
+    ----------
+    .. [1] Wu, H. et al 2014
+        Statistically optimal analysis of state-discretized trajectory data from multiple thermodynamic states
+        J. Chem. Phys. 141, 214106
+
     """
     def __init__(
         self, bias_energies_full, lag, count_mode='sliding', connectivity='largest',
