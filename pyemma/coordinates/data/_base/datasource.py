@@ -300,6 +300,9 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
         self.state.stride = stride
         if isinstance(stride, np.ndarray):
             keys = stride[:, 0]
+            if keys.max() >= self.number_of_trajectories():
+                raise ValueError("provided too large trajectory index in stride argument (given max index: %s, "
+                                 "allowed: %s)" % (keys.max(), self.number_of_trajectories() - 1))
             self.state.traj_keys, self.state.trajectory_lengths = np.unique(keys, return_counts=True)
             self.state.ra_indices_for_traj_dict = {}
             for traj in self.state.traj_keys:
