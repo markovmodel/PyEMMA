@@ -571,7 +571,7 @@ def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=1000, 
         A (T x 2) array for writing a trajectory of T time steps. Each row
         contains two indexes (i, t), where i is the index of the trajectory
         from the input and t is the index of the time step within the trajectory.
-        If a list of index arrays are given, these will be simply concatenated,
+        If a list of index arrays is given, these will be simply concatenated,
         i.e. they will be written subsequently in the same trajectory file.
 
     outfile : str.
