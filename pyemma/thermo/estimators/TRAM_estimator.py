@@ -109,6 +109,13 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
         The maximum number of self-consistent iterations during the initialization.
     init_maxerr : float, optional, default=1.0E-8
         Convergence criterion for the initialization.
+
+    References
+    ----------
+
+    .. [1] Wu, H. et al 2016
+        in press
+
     """
     def __init__(
         self, lag, count_mode='sliding',
@@ -138,7 +145,6 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
         self.init = init
         self.init_maxiter = init_maxiter
         self.init_maxerr = init_maxerr
-
         self.active_set = None
         self.biased_conf_energies = None
         self.mbar_therm_energies = None
@@ -240,6 +246,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
                     callback=_ConvergenceProgressIndicatorCallBack(
                         self, 'MBAR init.', self.init_maxiter, self.init_maxerr),
                     n_conf_states=self.nstates_full)
+            self._progress_force_finish(stage='MBAR init.')
             self.biased_conf_energies = self.mbar_biased_conf_energies.copy()
 
         # run estimator
@@ -260,13 +267,14 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
                 callback=_ConvergenceProgressIndicatorCallBack(
                     self, 'TRAM', self.maxiter, self.maxerr),
                 N_dtram_accelerations=self.N_dtram_accelerations)
-
+        self._progress_force_finish(stage='TRAM')
         self.btrajs = btrajs
 
         # compute models
-        fmsms = [_tram.estimate_transition_matrix(
-            self.log_lagrangian_mult, self.biased_conf_energies,
-            self.count_matrices, None, K) for K in range(self.nthermo)]
+        fmsms = [_np.ascontiguousarray((
+            _tram.estimate_transition_matrix(
+                self.log_lagrangian_mult, self.biased_conf_energies, self.count_matrices, None,
+                K)[self.active_set, :])[:, self.active_set]) for K in range(self.nthermo)]
 
         self.model_active_set = [_largest_connected_set(msm, directed=False) for msm in fmsms]
         fmsms = [_np.ascontiguousarray(

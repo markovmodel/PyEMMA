@@ -106,6 +106,14 @@ class DTRAM(_Estimator, _MEMM, _ProgressReporter):
     array([ 0.38...,  0.61...])
     >>> dtram.meval('stationary_distribution') # doctest: +ELLIPSIS
     [array([ 0.38...,  0.61...]), array([ 0.50...,  0.49...])]
+
+    References
+    ----------
+
+    .. [1] Wu, H. et al 2014
+        Statistically optimal analysis of state-discretized trajectory data from multiple thermodynamic states
+        J. Chem. Phys. 141, 214106
+
     """
     def __init__(
         self, bias_energies_full, lag, count_mode='sliding', connectivity='largest',
@@ -195,6 +203,7 @@ class DTRAM(_Estimator, _MEMM, _ProgressReporter):
                         therm_energies=self.therm_energies, conf_energies=self.conf_energies,
                         callback=_ConvergenceProgressIndicatorCallBack(
                             self, 'WHAM init.', self.init_maxiter, self.init_maxerr))
+                self._progress_force_finish(stage='WHAM init.')
 
         # run estimator
         self.therm_energies, self.conf_energies, self.log_lagrangian_mult, \
@@ -206,6 +215,7 @@ class DTRAM(_Estimator, _MEMM, _ProgressReporter):
                 save_convergence_info=self.save_convergence_info,
                 callback=_ConvergenceProgressIndicatorCallBack(
                     self, 'DTRAM', self.maxiter, self.maxerr))
+        self._progress_force_finish(stage='DTRAM')
 
         # compute models
         models = [_dtram.estimate_transition_matrix(

@@ -79,6 +79,18 @@ class WHAM(_Estimator, _MEMM, _ProgressReporter):
     array([ 0.5...,  0.4...])
     >>> wham.meval('stationary_distribution') # doctest: +ELLIPSIS +REPORT_NDIFF
     [array([ 0.5...,  0.4...]), array([ 0.6...,  0.3...])]
+
+    References
+    ----------
+    
+    .. [1] Ferrenberg, A.M. and Swensen, R.H. 1988.
+        New Monte Carlo Technique for Studying Phase Transitions.
+        Phys. Rev. Lett. 23, 2635--2638
+
+    .. [2] Kumar, S. et al 1992.
+        The Weighted Histogram Analysis Method for Free-Energy Calculations on Biomolecules. I. The Method.
+        J. Comp. Chem. 13, 1011--1021
+
     """
     def __init__(
         self, bias_energies_full,
@@ -142,6 +154,7 @@ class WHAM(_Estimator, _MEMM, _ProgressReporter):
                 save_convergence_info=self.save_convergence_info,
                 callback=_ConvergenceProgressIndicatorCallBack(
                     self, 'WHAM', self.maxiter, self.maxerr))
+        self._progress_force_finish(stage='WHAM')
 
         # get stationary models
         models = [_StationaryModel(

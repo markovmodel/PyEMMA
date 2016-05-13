@@ -18,6 +18,7 @@
 import numpy as _np
 from pyemma.util import types as _types
 from .util import get_averaged_bias_matrix as _get_averaged_bias_matrix
+from .util import assign_unbiased_state_label as _assign_unbiased_state_label
 
 __docformat__ = "restructuredtext en"
 __author__ = "Frank Noe, Christoph Wehmeyer"
@@ -43,31 +44,33 @@ def estimate_umbrella_sampling(
     estimator='wham', lag=1, dt_traj='1 step', init=None, init_maxiter=10000, init_maxerr=1.0E-8,
     **kwargs):
     r"""
-    Wraps umbrella sampling data or a mix of umbrella sampling and and direct molecular dynamics.
+    This function acts as a wrapper for ``tram()``, ``dtram()``, and ``wham()`` and handles the
+    calculation of bias energies (``bias``) and thermodynamic state trajectories (``ttrajs``)
+    when the data comes from umbrella sampling and (optional) unbiased simulations.
 
     Parameters
     ----------
     us_trajs : list of N arrays, each of shape (T_i, d)
         List of arrays, each having T_i rows, one for each time step, and d columns where d is the
-        dimension in which umbrella sampling was applied. Often d=1, and thus us_trajs will
-        be a list of 1d-arrays.
+        dimensionality of the subspace in which umbrella sampling was applied. Often d=1, and thus
+        us_trajs will be a list of 1d-arrays.
     us_dtrajs : list of N int arrays, each of shape (T_i,)
         The integers are indexes in 0,...,n-1 enumerating the n discrete states or the bins the
-        trajectory is in at any time.
+        umbrella sampling trajectory is in at any time.
     us_centers : array-like of size N
         List or array of N center positions. Each position must be a d-dimensional vector. For 1d
         umbrella sampling, one can simply pass a list of centers, e.g. [-5.0, -4.0, -3.0, ... ].
     us_force_constants : float or array-like of float
-        The force constants used in the umbrellas, unit-less (e.g. kT per length unit). If different
-        force constants were used for different umbrellas, a list or array of N force constants
-        can be given. For multidimensional umbrella sampling, the force matrix must be used.
+        The force constants used in the umbrellas, unit-less (e.g. kT per squared length unit). For
+        multidimensional umbrella sampling, the force matrix must be used.
     md_trajs : list of M arrays, each of shape (T_i, d), optional, default=None
-        Unbiased molecular dynamics simulations. Format like umbrella_trajs.
+        Unbiased molecular dynamics simulations; format like us_trajs.
     md_dtrajs : list of M int arrays, each of shape (T_i,)
         The integers are indexes in 0,...,n-1 enumerating the n discrete states or the bins the
-        trajectory is in at any time.
-    kT : float (optinal)
-        Use this attribute if the supplied force constants are NOT unit-less.
+        unbiased trajectory is in at any time.
+    kT : float or None, optional, default=None
+        Use this attribute if the supplied force constants are NOT unit-less; kT must have the same
+        energy unit as the force constants.
     maxiter : int, optional, default=10000
         The maximum number of self-consistent iterations before the estimator exits unsuccessfully.
     maxerr : float, optional, default=1.0E-15
@@ -107,22 +110,48 @@ def estimate_umbrella_sampling(
         The maximum number of self-consistent iterations during the initialization.
     init_maxerr : float, optional, default=1.0E-8
         Convergence criterion for the initialization.
+    **kwargs : dict, optional
+        You can use this to pass estimator-specific named parameters to the chosen estimator, which
+        are not already coverd by ``estimate_umbrella_sampling()``.
 
     Returns
     -------
-    _estimator : MEMM or list of MEMMs
+    estimator_obj : MEMM or list of MEMMs
         The requested estimator/model object, i.e., WHAM, DTRAM or TRAM. If multiple lag times are
         given, a list of objects is returned (one MEMM per lag time).
+
+    Example
+    -------
+    We look at a 1D umbrella sampling simulation with two umbrellas at 1.1 and 1.3 on the reaction
+    coordinate with spring constant of 1.0; additionally, we have two unbiased simulations.
+
+    We start with a joint clustering and use TRAM for the estimation:
+
+    >>> from pyemma.coordinates import cluster_regspace as regspace
+    >>> from pyemma.thermo import estimate_umbrella_sampling as estimate_us
+    >>> import numpy as np
+    >>> us_centers = [1.1, 1.3]
+    >>> us_force_constants = [1.0, 1.0]
+    >>> us_trajs = [np.array([1.0, 1.1, 1.2, 1.1, 1.0, 1.1]).reshape((-1, 1)), np.array([1.3, 1.2, 1.3, 1.4, 1.4, 1.3]).reshape((-1, 1))]
+    >>> md_trajs = [np.array([0.9, 1.0, 1.1, 1.2, 1.3, 1.4]).reshape((-1, 1)), np.array([1.5, 1.4, 1.3, 1.4, 1.4, 1.5]).reshape((-1, 1))]
+    >>> cluster = regspace(data=us_trajs+md_trajs, max_centers=10, dmin=0.15)
+    >>> us_dtrajs = cluster.dtrajs[:2]
+    >>> md_dtrajs = cluster.dtrajs[2:]
+    >>> centers = cluster.clustercenters
+    >>> tram = estimate_us(us_trajs, us_dtrajs, us_centers, us_force_constants, md_trajs=md_trajs, md_dtrajs=md_dtrajs, estimator='tram', lag=1)
+    >>> tram.f # doctest: +ELLIPSIS
+    array([ 0.63...,  1.60...,  1.31...])
+
     """
     assert estimator in ['wham', 'dtram', 'tram'], "unsupported estimator: %s" % estimator
     from .util import get_umbrella_sampling_data as _get_umbrella_sampling_data
-    ttrajs, btrajs, umbrella_centers, force_constants = _get_umbrella_sampling_data(
+    ttrajs, btrajs, umbrella_centers, force_constants, unbiased_state = _get_umbrella_sampling_data(
         us_trajs, us_centers, us_force_constants, md_trajs=md_trajs, kT=kT)
     if md_dtrajs is None:
         md_dtrajs = []
-    _estimator = None
+    estimator_obj = None
     if estimator == 'wham':
-        _estimator = wham(
+        estimator_obj = wham(
             ttrajs, us_dtrajs + md_dtrajs,
             _get_averaged_bias_matrix(btrajs, us_dtrajs + md_dtrajs),
             maxiter=maxiter, maxerr=maxerr,
@@ -130,10 +159,10 @@ def estimate_umbrella_sampling(
     elif estimator == 'dtram':
         allowed_keys = ['count_mode', 'connectivity']
         parsed_kwargs = dict([(i, kwargs[i]) for i in allowed_keys if i in kwargs])
-        _estimator = dtram(
+        estimator_obj = dtram(
             ttrajs, us_dtrajs + md_dtrajs,
             _get_averaged_bias_matrix(btrajs, us_dtrajs + md_dtrajs),
-            lag,
+            lag, unbiased_state=unbiased_state,
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
             dt_traj=dt_traj, init=init, init_maxiter=init_maxiter, init_maxerr=init_maxerr,
             **parsed_kwargs)
@@ -142,19 +171,19 @@ def estimate_umbrella_sampling(
             'count_mode', 'connectivity', 'connectivity_factor','nn',
             'direct_space', 'N_dtram_accelerations']
         parsed_kwargs = dict([(i, kwargs[i]) for i in allowed_keys if i in kwargs])
-        _estimator = tram(
-            ttrajs, us_dtrajs + md_dtrajs, btrajs, lag,
+        estimator_obj = tram(
+            ttrajs, us_dtrajs + md_dtrajs, btrajs, lag, unbiased_state=unbiased_state,
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
             dt_traj=dt_traj, init=init, init_maxiter=init_maxiter, init_maxerr=init_maxerr,
             **parsed_kwargs)
     try:
-        _estimator.umbrella_centers = umbrella_centers
-        _estimator.force_constants = force_constants
+        estimator_obj.umbrella_centers = umbrella_centers
+        estimator_obj.force_constants = force_constants
     except AttributeError:
-        for obj in _estimator:
+        for obj in estimator_obj:
             obj.umbrella_centers = umbrella_centers
             obj.force_constants = force_constants
-    return _estimator
+    return estimator_obj
 
 
 def estimate_multi_temperature(
@@ -163,9 +192,10 @@ def estimate_multi_temperature(
     maxiter=10000, maxerr=1.0E-15, save_convergence_info=0,
     estimator='wham', lag=1, dt_traj='1 step', init=None, init_maxiter=10000, init_maxerr=1e-8,
     **kwargs):
-    # TODO: fix docstring
     r"""
-    Wraps multi-temperature data.
+    This function acts as a wrapper for ``tram()``, ``dtram()``, and ``wham()`` and handles the
+    calculation of bias energies (``bias``) and thermodynamic state trajectories (``ttrajs``)
+    when the data comes from multi-temperature simulations.
 
     Parameters
     ----------
@@ -226,21 +256,42 @@ def estimate_multi_temperature(
         The maximum number of self-consistent iterations during the initialization.
     init_maxerr : float, optional, default=1.0E-8
         Convergence criterion for the initialization.
+    **kwargs : dict, optional
+        You can use this to pass estimator-specific named parameters to the chosen estimator, which
+        are not already coverd by ``estimate_multi_temperature()``.
 
     Returns
     -------
-    _estimator : MEMM or list of MEMMs
+    estimator_obj : MEMM or list of MEMMs
         The requested estimator/model object, i.e., WHAM, DTRAM or TRAM. If multiple lag times are
         given, a list of objects is returned (one MEMM per lag time).
+
+    Example
+    -------
+    We look at 1D simulations at two different kT values 1.0 and 2.0, already clustered data, and
+    we use TRAM for the estimation:
+
+    >>> from pyemma.thermo import estimate_multi_temperature as estimate_mt
+    >>> import numpy as np
+    >>> energy_trajs = [np.array([1.6, 1.4, 1.0, 1.0, 1.2, 1.0, 1.0]), np.array([0.8, 0.7, 0.5, 0.6, 0.7, 0.8, 0.7])]
+    >>> temp_trajs = [np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]), np.array([2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0])]
+    >>> dtrajs = [np.array([0, 1, 2, 2, 2, 2, 2]), np.array([0, 1, 2, 2, 1, 0, 1])]
+    >>> tram = estimate_mt(energy_trajs, temp_trajs, dtrajs, energy_unit='kT', temp_unit='kT', estimator='tram', lag=1)
+    >>> tram.f # doctest: +ELLIPSIS
+    array([ 2.90...,  1.72...,  0.26...])
+
+    Note that alhough we only used one temperature per trajectory, ``estimate_multi_temperature()``
+    can handle temperature changes as well.
+
     """
     assert estimator in ['wham', 'dtram', 'tram'], "unsupported estimator: %s" % estimator
     from .util import get_multi_temperature_data as _get_multi_temperature_data
-    ttrajs, btrajs, temperatures = _get_multi_temperature_data(
+    ttrajs, btrajs, temperatures, unbiased_state = _get_multi_temperature_data(
         energy_trajs, temp_trajs, energy_unit, temp_unit,
         reference_temperature=reference_temperature)
-    _estimator = None
+    estimator_obj = None
     if estimator == 'wham':
-        _estimator = wham(
+        estimator_obj = wham(
             ttrajs, dtrajs,
             _get_averaged_bias_matrix(btrajs, dtrajs),
             maxiter=maxiter, maxerr=maxerr,
@@ -248,10 +299,10 @@ def estimate_multi_temperature(
     elif estimator == 'dtram':
         allowed_keys = ['count_mode', 'connectivity']
         parsed_kwargs = dict([(i, kwargs[i]) for i in allowed_keys if i in kwargs])
-        _estimator = dtram(
+        estimator_obj = dtram(
             ttrajs, dtrajs,
             _get_averaged_bias_matrix(btrajs, dtrajs),
-            lag,
+            lag, unbiased_state=unbiased_state,
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
             dt_traj=dt_traj, init=init, init_maxiter=init_maxiter, init_maxerr=init_maxerr,
             **parsed_kwargs)
@@ -260,24 +311,24 @@ def estimate_multi_temperature(
             'count_mode', 'connectivity', 'connectivity_factor','nn',
             'direct_space', 'N_dtram_accelerations']
         parsed_kwargs = dict([(i, kwargs[i]) for i in allowed_keys if i in kwargs])
-        _estimator = tram(
-            ttrajs, dtrajs, btrajs, lag,
+        estimator_obj = tram(
+            ttrajs, dtrajs, btrajs, lag, unbiased_state=unbiased_state,
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
             dt_traj=dt_traj, init=init, init_maxiter=init_maxiter, init_maxerr=init_maxerr,
             **parsed_kwargs)
     try:
-        _estimator.temperatures = temperatures
+        estimator_obj.temperatures = temperatures
     except AttributeError:
-        for obj in _estimator:
+        for obj in estimator_obj:
             obj.temperatures = temperatures
-    return _estimator
+    return estimator_obj
 
 # ==================================================================================================
 # wrappers for the estimators
 # ==================================================================================================
 
 def tram(
-    ttrajs, dtrajs, bias, lag,
+    ttrajs, dtrajs, bias, lag, unbiased_state=None,
     count_mode='sliding', connectivity='summed_count_matrix',
     maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step',
     connectivity_factor=1.0, nn=None, direct_space=False, N_dtram_accelerations=0, callback=None,
@@ -291,7 +342,7 @@ def tram(
         A single discrete trajectory or a list of discrete trajectories. The integers are
         indexes in 0,...,num_therm_states-1 enumerating the thermodynamic states the trajectory is
         in at any time.
-    dtrajs : ndarray(T), or list of ndarray(T_i)
+    dtrajs : numpy.ndarray(T) of int, or list of numpy.ndarray(T_i) of int
         A single discrete trajectory or a list of discrete trajectories. The integers are indexes
         in 0,...,num_conf_states-1 enumerating the num_conf_states Markov states or the bins the
         trajectory is in at any time.
@@ -299,7 +350,7 @@ def tram(
         A single reduced bias energy trajectory or a list of reduced bias energy trajectories.
         For every simulation frame seen in trajectory i and time step t, btrajs[i][t, k] is the
         reduced bias energy of that frame evaluated in the k'th thermodynamic state (i.e. at
-        the k'th Umbrella/Hamiltonian/temperature)
+        the k'th umbrella/Hamiltonian/temperature)
     lag : int or list of int, optional, default=1
         Integer lag time at which transitions are counted. Providing a list of lag times will
         trigger one estimation per lag time.
@@ -323,6 +374,7 @@ def tram(
         |  'us',   'microsecond*'
         |  'ms',   'millisecond*'
         |  's',    'second*'
+
     connectivity : str, optional, default='summed_count_matrix'
         One of 'summed_count_matrix', 'strong_in_every_ensemble',
         'neighbors', 'post_hoc_RE' or 'BAR_variance'.
@@ -350,6 +402,7 @@ def tram(
 
         | None:    use a hard-coded guess for free energies and Lagrangian multipliers
         | 'wham':  perform a short WHAM estimate to initialize the free energies
+
     init_maxiter : int, optional, default=10000
         The maximum number of self-consistent iterations during the initialization.
     init_maxerr : float, optional, default=1.0E-8
@@ -363,25 +416,56 @@ def tram(
 
     Example
     -------
-    **Example: Umbrella sampling**. Suppose we simulate in K umbrellas, centered at
-    positions :math:`y_1,...,y_K` with bias energies
+    **Umbrella sampling**: Suppose we simulate in K umbrellas, centered at
+    positions :math:`y_0,...,y_{K-1}` with bias energies
+
     .. math::
-        b_k(x) = 0.5 * c_k * (x - y_k)^2 / kT
-    Suppose we have one simulation of length T in each umbrella, and they are ordered from 1 to K.
+        b_k(x) = \frac{c_k}{2 \textrm{kT}} \cdot (x - y_k)^2
+
+    Suppose we have one simulation of length T in each umbrella, and they are ordered from 0 to K-1.
     We have discretized the x-coordinate into 100 bins.
     Then dtrajs and ttrajs should each be a list of :math:`K` arrays.
-    dtrajs would look for example like this:
-    [ (1, 2, 2, 3, 2, ...),  (2, 4, 5, 4, 4, ...), ... ]
+    dtrajs would look for example like this::
+
+    [ (0, 0, 0, 0, 1, 1, 1, 0, 0, 0, ...),  (0, 1, 0, 1, 0, 1, 1, 0, 0, 1, ...), ... ]
+
     where each array has length T, and is the sequence of bins (in the range 0 to 99) visited along
-    the trajectory. ttrajs would look like this:
-    [ (0, 0, 0, 0, 0, ...),  (1, 1, 1, 1, 1, ...), ... ]
+    the trajectory. ttrajs would look like this::
+
+    [ (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...),  (1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ...), ... ]
+
     Because trajectory 1 stays in umbrella 1 (index 0), trajectory 2 stays in umbrella 2 (index 1),
-    and so forth. bias is a :math:`K \times n` matrix with all reduced bias energies evaluated at
-    all centers:
-    [[b_0(y_0), b_0(y_1), ..., b_0(y_n)],
-     [b_1(y_0), b_1(y_1), ..., b_1(y_n)],
-     ...
-     [b_K(y_0), b_K(y_1), ..., b_K(y_n)]]
+    and so forth.
+
+    The bias would be a list of :math:`T \times K` arrays which specify each frame's bias energy in
+    all thermodynamic states:
+
+    [ ((0, 1.7, 2.3, 6.1, ...), ...), ((0, 2.4, 3.1, 9,5, ...), ...), ... ]
+
+    Let us try the above example:
+
+    >>> from pyemma.thermo import tram
+    >>> import numpy as np
+    >>> ttrajs = [np.array([0,0,0,0,0,0,0]), np.array([1,1,1,1,1,1,1])]
+    >>> dtrajs = [np.array([0,0,0,0,1,1,1]), np.array([0,1,0,1,0,1,1])]
+    >>> bias = [np.array([[1,0],[1,0],[0,0],[0,0],[0,0],[0,0],[0,0]],dtype=np.float64), np.array([[1,0],[0,0],[0,0],[1,0],[0,0],[1,0],[1,0]],dtype=np.float64)]
+    >>> tram_obj = tram(ttrajs, dtrajs, bias, 1)
+    >>> tram_obj.log_likelihood() # doctest: +ELLIPSIS
+    -29.111...
+    >>> tram_obj.count_matrices # doctest: +SKIP
+    array([[[1 1]
+            [0 4]]
+           [[0 3]
+            [2 1]]], dtype=int32)
+    >>> tram_obj.stationary_distribution # doctest: +ELLIPSIS
+    array([ 0.38...  0.61...])
+
+    References
+    ----------
+
+    .. [1] Wu, H. et al 2016
+        in press
+
     """
     # prepare trajectories
     ttrajs = _types.ensure_dtraj_list(ttrajs)
@@ -403,13 +487,14 @@ def tram(
             direct_space=direct_space, N_dtram_accelerations=N_dtram_accelerations,
             callback=callback, init='mbar', init_maxiter=init_maxiter,
             init_maxerr=init_maxerr).estimate((ttrajs, dtrajs, bias)) for _lag in lags]
+    _assign_unbiased_state_label(tram_estimators, unbiased_state)
     # return
     if len(tram_estimators) == 1:
         return tram_estimators[0]
     return tram_estimators
 
 def dtram(
-    ttrajs, dtrajs, bias, lag,
+    ttrajs, dtrajs, bias, lag, unbiased_state=None,
     count_mode='sliding', connectivity='largest',
     maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step',
     init=None, init_maxiter=10000, init_maxerr=1.0E-8):
@@ -422,7 +507,7 @@ def dtram(
         A single discrete trajectory or a list of discrete trajectories. The integers are
         indexes in 0,...,num_therm_states-1 enumerating the thermodynamic states the trajectory is
         in at any time.
-    dtrajs : ndarray(T) of int, or list of ndarray(T_i) of int
+    dtrajs : numpy.ndarray(T) of int, or list of numpy.ndarray(T_i) of int
         A single discrete trajectory or a list of discrete trajectories. The integers are indexes
         in 0,...,num_conf_states-1 enumerating the num_conf_states Markov states or the bins the
         trajectory is in at any time.
@@ -434,12 +519,14 @@ def dtram(
         trigger one estimation per lag time.
     count_mode : str, optional, default='sliding'
         Mode to obtain count matrices from discrete trajectories. Should be one of:
+
         * 'sliding' : a trajectory of length T will have :math:`T-\tau` counts at time indexes
-              .. math::
+            .. math::
                  (0 \rightarrow \tau), (1 \rightarrow \tau+1), ..., (T-\tau-1 \rightarrow T-1)
         * 'sample' : a trajectory of length T will have :math:`T/\tau` counts at time indexes
-              .. math::
+            .. math::
                     (0 \rightarrow \tau), (\tau \rightarrow 2 \tau), ..., ((T/\tau-1) \tau \rightarrow T)
+
         Currently only 'sliding' is supported.
     connectivity : str, optional, default='largest'
         Defines what should be considered a connected set in the joint space of conformations and
@@ -464,11 +551,13 @@ def dtram(
         |  'us',   'microsecond*'
         |  'ms',   'millisecond*'
         |  's',    'second*'
+
     init : str, optional, default=None
         Use a specific initialization for self-consistent iteration:
 
         | None:    use a hard-coded guess for free energies and Lagrangian multipliers
         | 'wham':  perform a short WHAM estimate to initialize the free energies
+
     init_maxiter : int, optional, default=10000
         The maximum number of self-consistent iterations during the initialization.
     init_maxerr : float, optional, default=1.0E-8
@@ -482,25 +571,61 @@ def dtram(
 
     Example
     -------
-    **Example: Umbrella sampling**. Suppose we simulate in K umbrellas, centered at
-    positions :math:`y_1,...,y_K` with bias energies
+    **Umbrella sampling**: Suppose we simulate in K umbrellas, centered at
+    positions :math:`y_0,...,y_{K-1}` with bias energies
+
     .. math::
-        b_k(x) = 0.5 * c_k * (x - y_k)^2 / kT
-    Suppose we have one simulation of length T in each umbrella, and they are ordered from 1 to K.
+        b_k(x) = \frac{c_k}{2 \textrm{kT}} \cdot (x - y_k)^2
+
+    Suppose we have one simulation of length T in each umbrella, and they are ordered from 0 to K-1.
     We have discretized the x-coordinate into 100 bins.
     Then dtrajs and ttrajs should each be a list of :math:`K` arrays.
-    dtrajs would look for example like this:
-    [ (1, 2, 2, 3, 2, ...),  (2, 4, 5, 4, 4, ...), ... ]
+    dtrajs would look for example like this::
+
+    [ (0, 0, 0, 0, 1, 1, 1, 0, 0, 0, ...),  (0, 1, 0, 1, 0, 1, 1, 0, 0, 1, ...), ... ]
+
     where each array has length T, and is the sequence of bins (in the range 0 to 99) visited along
-    the trajectory. ttrajs would look like this:
-    [ (0, 0, 0, 0, 0, ...),  (1, 1, 1, 1, 1, ...), ... ]
+    the trajectory. ttrajs would look like this::
+
+    [ (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...),  (1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ...), ... ]
+
     Because trajectory 1 stays in umbrella 1 (index 0), trajectory 2 stays in umbrella 2 (index 1),
     and so forth. bias is a :math:`K \times n` matrix with all reduced bias energies evaluated at
     all centers:
-    [[b_0(y_0), b_0(y_1), ..., b_0(y_n)],
-     [b_1(y_0), b_1(y_1), ..., b_1(y_n)],
-     ...
-     [b_K(y_0), b_K(y_1), ..., b_K(y_n)]]
+
+    .. math::
+        \left(\begin{array}{cccc}
+            b_0(y_0) &  b_0(y_1) &  ... &  b_0(y_{n-1}) \\
+            b_1(y_0) &  b_1(y_1) &  ... &  b_1(y_{n-1}) \\
+            ... \\
+            b_{K-1}(y_0) &  b_{K-1}(y_1) &  ... &  b_{K-1}(y_{n-1})
+        \end{array}\right)
+
+    Let us try the above example:
+
+    >>> from pyemma.thermo import dtram
+    >>> import numpy as np
+    >>> ttrajs = [np.array([0,0,0,0,0,0,0,0,0,0]), np.array([1,1,1,1,1,1,1,1,1,1])]
+    >>> dtrajs = [np.array([0,0,0,0,1,1,1,0,0,0]), np.array([0,1,0,1,0,1,1,0,0,1])]
+    >>> bias = np.array([[0.0, 0.0], [0.5, 1.0]])
+    >>> dtram_obj = dtram(ttrajs, dtrajs, bias, 1)
+    >>> dtram_obj.log_likelihood() # doctest: +ELLIPSIS
+    -9.805...
+    >>> dtram_obj.count_matrices # doctest: +SKIP
+    array([[[5, 1],
+            [1, 2]],
+           [[1, 4],
+            [3, 1]]], dtype=int32)
+    >>> dtram_obj.stationary_distribution # doctest: +ELLIPSIS
+    array([ 0.38...,  0.61...])
+
+    References
+    ----------
+
+    .. [1] Wu, H. et al 2014
+        Statistically optimal analysis of state-discretized trajectory data from multiple thermodynamic states
+        J. Chem. Phys. 141, 214106
+
     """
     # prepare trajectories
     ttrajs = _types.ensure_dtraj_list(ttrajs)
@@ -519,6 +644,7 @@ def dtram(
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
             dt_traj=dt_traj, init=init, init_maxiter=init_maxiter,
             init_maxerr=init_maxerr).estimate((ttrajs, dtrajs)) for _lag in lags]
+    _assign_unbiased_state_label(dtram_estimators, unbiased_state)
     # return
     if len(dtram_estimators) == 1:
         return dtram_estimators[0]
@@ -537,7 +663,7 @@ def wham(
         A single discrete trajectory or a list of discrete trajectories. The integers are
         indexes in 0,...,num_therm_states-1 enumerating the thermodynamic states the trajectory is
         in at any time.
-    dtrajs : ndarray(T) of int, or list of ndarray(T_i) of int
+    dtrajs : numpy.ndarray(T) of int, or list of numpy.ndarray(T_i) of int
         A single discrete trajectory or a list of discrete trajectories. The integers are indexes
         in 0,...,num_conf_states-1 enumerating the num_conf_states Markov states or the bins the
         trajectory is in at any time.
@@ -573,29 +699,62 @@ def wham(
 
     Example
     -------
-    **Example: Umbrella sampling**. Suppose we simulate in K umbrellas, centered at
-    positions :math:`y_1,...,y_K` with bias energies
+    **Umbrella sampling**: Suppose we simulate in K umbrellas, centered at
+    positions :math:`y_0,...,y_{K-1}` with bias energies
 
     .. math::
-        b_k(x) = 0.5 * c_k * (x - y_k)^2 / kT
+        b_k(x) = \frac{c_k}{2 \textrm{kT}} \cdot (x - y_k)^2
 
-    Suppose we have one simulation of length T in each umbrella, and they are ordered from 1 to K.
+    Suppose we have one simulation of length T in each umbrella, and they are ordered from 0 to K-1.
     We have discretized the x-coordinate into 100 bins.
     Then dtrajs and ttrajs should each be a list of :math:`K` arrays.
     dtrajs would look for example like this::
     
-    [ (1, 2, 2, 3, 2, ...),  (2, 4, 5, 4, 4, ...), ... ]
+    [ (0, 0, 0, 0, 1, 1, 1, 0, 0, 0, ...),  (0, 1, 0, 1, 0, 1, 1, 0, 0, 1, ...), ... ]
+    
     where each array has length T, and is the sequence of bins (in the range 0 to 99) visited along
-    the trajectory. ttrajs would look like this:
-    [ (0, 0, 0, 0, 0, ...),  (1, 1, 1, 1, 1, ...), ... ]
+    the trajectory. ttrajs would look like this::
+
+    [ (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...),  (1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ...), ... ]
+    
     Because trajectory 1 stays in umbrella 1 (index 0), trajectory 2 stays in umbrella 2 (index 1),
     and so forth. bias is a :math:`K \times n` matrix with all reduced bias energies evaluated at
-    all centers::
+    all centers:
 
-    [[b_0(y_0), b_0(y_1), ..., b_0(y_n)],
-     [b_1(y_0), b_1(y_1), ..., b_1(y_n)],
-     ...
-     [b_K(y_0), b_K(y_1), ..., b_K(y_n)]]
+    .. math::
+        \left(\begin{array}{cccc}
+            b_0(y_0) &  b_0(y_1) &  ... &  b_0(y_{n-1}) \\
+            b_1(y_0) &  b_1(y_1) &  ... &  b_1(y_{n-1}) \\
+            ... \\
+            b_{K-1}(y_0) &  b_{K-1}(y_1) &  ... &  b_{K-1}(y_{n-1})
+        \end{array}\right)
+
+    Let us try the above example:
+
+    >>> from pyemma.thermo import wham
+    >>> import numpy as np
+    >>> ttrajs = [np.array([0,0,0,0,0,0,0,0,0,0]), np.array([1,1,1,1,1,1,1,1,1,1])]
+    >>> dtrajs = [np.array([0,0,0,0,1,1,1,0,0,0]), np.array([0,1,0,1,0,1,1,0,0,1])]
+    >>> bias = np.array([[0.0, 0.0], [0.5, 1.0]])
+    >>> wham_obj = wham(ttrajs, dtrajs, bias)
+    >>> wham_obj.log_likelihood() # doctest: +ELLIPSIS
+    -6.6...
+    >>> wham_obj.state_counts # doctest: +SKIP
+    array([[7, 3],
+           [5, 5]])
+    >>> wham_obj.stationary_distribution # doctest: +ELLIPSIS +REPORT_NDIFF
+    array([ 0.5...,  0.4...])
+
+    References
+    ----------
+    
+    .. [1] Ferrenberg, A.M. and Swensen, R.H. 1988.
+        New Monte Carlo Technique for Studying Phase Transitions.
+        Phys. Rev. Lett. 23, 2635--2638
+
+    .. [2] Kumar, S. et al 1992.
+        The Weighted Histogram Analysis Method for Free-Energy Calculations on Biomolecules. I. The Method.
+        J. Comp. Chem. 13, 1011--1021
 
     """
     # check trajectories

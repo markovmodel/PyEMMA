@@ -77,23 +77,25 @@ def plot_implied_timescales(ITS, ax=None, outfile=None, show_mle=True, show_mean
     ax : Axes object containing the plot
 
     """
-    import matplotlib.pylab as _plt
-
+    import matplotlib.pyplot as _plt
     # check input
-    if (ax is None):
+    if ax is None:
         ax = _plt.gca()
-    colors = ['blue','red','green','cyan','purple','orange','violet']
+    colors = ['blue', 'red', 'green', 'cyan', 'purple', 'orange', 'violet']
     lags = ITS.lagtimes
     xmax = _np.max(lags)
-
+    srt = _np.argsort(lags)
     # Check the processes to be shown
     if process is not None:
         if nits != -1:
-            raise TypeError('optional arguments nits and process are mutually exclusive:', nits, process)
+            raise TypeError(
+                'optional arguments nits and process are mutually exclusive:', nits, process)
         if not _is_iterable_of_int(process):
             raise ValueError('process has to be an iterable of integers')
         if _np.max(process)+1 > ITS.number_of_timescales:
-            raise ValueError('requested process %u, whereas ITS only contains %u timescales'%(_np.max(process), ITS.number_of_timescales))
+            raise ValueError(
+                'requested process %u, whereas ITS only contains %u timescales' % (
+                    _np.max(process), ITS.number_of_timescales))
         # Now that it's for sure that nits==-1, process is iter_of_ints, and the requested processes exist in its object:
         its_idx = process
     else:
@@ -102,54 +104,56 @@ def plot_implied_timescales(ITS, ax=None, outfile=None, show_mle=True, show_mean
         if nits == -1:
             nits = ITS.number_of_timescales
         its_idx = _np.arange(ITS.number_of_timescales)[:nits]
-
     # Check units and dt for user error.
-    if isinstance(units,list) and len(units)!=2:
+    if isinstance(units, list) and len(units) != 2:
         raise TypeError("If units is a list, len(units) has to be = 2")
-    if isinstance(dt,list) and len(dt)!=2:
+    if isinstance(dt, list) and len(dt) != 2:
         raise TypeError("If dt is a list, len(dt) has to be = 2")
-
     # Create list of units and dts for different axis
-    if isinstance(units,str):
-        units = [units]*2
-    if isinstance(dt,(float, int)):
-        dt = [dt]*2
-
+    if isinstance(units, str):
+        units = [units] * 2
+    if isinstance(dt, (float, int)):
+        dt = [dt] * 2
     #ymin = min(_np.min(lags), _np.min(ITS.get_timescales()))
     #ymax = 1.5*_np.min(ITS.get_timescales())
     for i in its_idx:
         # plot estimate
         if show_mle:
-            ax.plot(lags*dt[0], ITS.get_timescales(process=i)*dt[1], color=colors[i % len(colors)], **kwargs)
+            ax.plot(
+                lags[srt] * dt[0], ITS.get_timescales(process=i)[srt] * dt[1],
+                color=colors[i % len(colors)], **kwargs)
         # sample available?
-        if (ITS.samples_available):# and ITS.sample_number_of_timescales > i):
+        if ITS.samples_available:# and ITS.sample_number_of_timescales > i):
             # plot sample mean
             if show_mean:
-                ax.plot(lags*dt[0], ITS.get_sample_mean(process=i)*dt[1], marker='o',
-                        color=colors[i % len(colors)], linestyle='dashed')
+                ax.plot(
+                    lags[srt] * dt[0], ITS.get_sample_mean(process=i)[srt] * dt[1], marker='o',
+                    color=colors[i % len(colors)], linestyle='dashed')
             (lconf, rconf) = ITS.get_sample_conf(confidence, i)
-            ax.fill_between(lags*dt[0], lconf*dt[1], rconf*dt[1], alpha=0.2, color=colors[i % len(colors)])
+            ax.fill_between(
+                lags[srt] * dt[0], lconf[srt] * dt[1], rconf[srt] * dt[1],
+                alpha=0.2, color=colors[i % len(colors)])
         # reference available?
-        if (refs is not None):
-            tref = refs[i]*dt[1]
-            ax.plot([0,min(tref,xmax)*dt[0]], [tref,tref], color='black', linewidth=1)
+        if refs is not None:
+            tref = refs[i] * dt[1]
+            ax.plot([0, min(tref, xmax) * dt[0]], [tref, tref], color='black', linewidth=1)
     # cutoff
-    ax.plot(lags*dt[0], lags*dt[1], linewidth=2, color='black')
-    ax.set_xlim([1*dt[0], xmax*dt[0]])
+    ax.plot(lags[srt] * dt[0], lags[srt] * dt[1], linewidth=2, color='black')
+    ax.set_xlim([1.0 * dt[0], xmax * dt[0]])
     #ax.set_ylim([ymin,ymax])
-    ax.fill_between(lags*dt[0], ax.get_ylim()[0]*_np.ones(len(lags))*dt[1], lags*dt[1], alpha=0.5, color='grey')
+    ax.fill_between(
+        lags[srt] * dt[0], ax.get_ylim()[0]*_np.ones(len(lags))*dt[1], lags[srt] * dt[1],
+        alpha=0.5, color='grey')
     # formatting
-    ax.set_xlabel('lag time / %s'%units[0])
-    ax.set_ylabel('timescale / %s'%units[1])
+    ax.set_xlabel('lag time / %s' % units[0])
+    ax.set_ylabel('timescale / %s' % units[1])
     if (xlog):
         ax.set_xscale('log')
     if (ylog):
         ax.set_yscale('log')
-
     # show or save
     # if outfile is None:
     #    _plt.show()
     if outfile is not None:
         _plt.savefig(outfile)
-
     return ax
