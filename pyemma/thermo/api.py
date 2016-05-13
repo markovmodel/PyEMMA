@@ -44,31 +44,33 @@ def estimate_umbrella_sampling(
     estimator='wham', lag=1, dt_traj='1 step', init=None, init_maxiter=10000, init_maxerr=1.0E-8,
     **kwargs):
     r"""
-    Wraps umbrella sampling data or a mix of umbrella sampling and and direct molecular dynamics.
+    This function acts as a wrapper for ``tram()``, ``dtram()``, and ``wham()`` and handles the
+    calculation of bias energies (``bias``) and thermodynamic state trajectories (``ttrajs``)
+    when the data comes from umbrella sampling and (optional) unbiased simulations.
 
     Parameters
     ----------
     us_trajs : list of N arrays, each of shape (T_i, d)
         List of arrays, each having T_i rows, one for each time step, and d columns where d is the
-        dimension in which umbrella sampling was applied. Often d=1, and thus us_trajs will
-        be a list of 1d-arrays.
+        dimensionality of the subspace in which umbrella sampling was applied. Often d=1, and thus
+        us_trajs will be a list of 1d-arrays.
     us_dtrajs : list of N int arrays, each of shape (T_i,)
         The integers are indexes in 0,...,n-1 enumerating the n discrete states or the bins the
-        trajectory is in at any time.
+        umbrella sampling trajectory is in at any time.
     us_centers : array-like of size N
         List or array of N center positions. Each position must be a d-dimensional vector. For 1d
         umbrella sampling, one can simply pass a list of centers, e.g. [-5.0, -4.0, -3.0, ... ].
     us_force_constants : float or array-like of float
-        The force constants used in the umbrellas, unit-less (e.g. kT per length unit). If different
-        force constants were used for different umbrellas, a list or array of N force constants
-        can be given. For multidimensional umbrella sampling, the force matrix must be used.
+        The force constants used in the umbrellas, unit-less (e.g. kT per squared length unit). For
+        multidimensional umbrella sampling, the force matrix must be used.
     md_trajs : list of M arrays, each of shape (T_i, d), optional, default=None
-        Unbiased molecular dynamics simulations. Format like umbrella_trajs.
+        Unbiased molecular dynamics simulations; format like us_trajs.
     md_dtrajs : list of M int arrays, each of shape (T_i,)
         The integers are indexes in 0,...,n-1 enumerating the n discrete states or the bins the
-        trajectory is in at any time.
-    kT : float (optinal)
-        Use this attribute if the supplied force constants are NOT unit-less.
+        unbiased trajectory is in at any time.
+    kT : float or None, optional, default=None
+        Use this attribute if the supplied force constants are NOT unit-less; kT must have the same
+        energy unit as the force constants.
     maxiter : int, optional, default=10000
         The maximum number of self-consistent iterations before the estimator exits unsuccessfully.
     maxerr : float, optional, default=1.0E-15
@@ -108,12 +110,37 @@ def estimate_umbrella_sampling(
         The maximum number of self-consistent iterations during the initialization.
     init_maxerr : float, optional, default=1.0E-8
         Convergence criterion for the initialization.
+    **kwargs : dict, optional
+        You can use this to pass estimator-specific named parameters to the chosen estimator, which
+        are not already coverd by ``estimate_umbrella_sampling()``.
 
     Returns
     -------
     _estimator : MEMM or list of MEMMs
         The requested estimator/model object, i.e., WHAM, DTRAM or TRAM. If multiple lag times are
         given, a list of objects is returned (one MEMM per lag time).
+
+    Example
+    -------
+    We look at a 1D umbrella sampling simulation with two umbrellas at 1.1 and 1.3 on the reaction
+    coordinate with spring constant of 1.0; additionally, we have two unbiased simulations.
+
+    We start with a joint clustering and use TRAM for the estimation:
+
+    >>> from pyemma.coordinates import cluster_regspace as regspace
+    >>> from pyemma.thermo import estimate_umbrella_sampling as estimate_us
+    >>> import numpy as np
+    >>> us_centers = [1.1, 1.3]
+    >>> us_force_constants = [1.0, 1.0]
+    >>> us_trajs = [np.array([1.0, 1.1, 1.2, 1.1, 1.0, 1.1]).reshape((-1, 1)), np.array([1.3, 1.2, 1.3, 1.4, 1.4, 1.3]).reshape((-1, 1))]
+    >>> md_trajs = [np.array([0.9, 1.0, 1.1, 1.2, 1.3, 1.4]).reshape((-1, 1)), np.array([1.5, 1.4, 1.3, 1.4, 1.4, 1.5]).reshape((-1, 1))]
+    >>> cluster = regspace(data=us_trajs+md_trajs, max_centers=10, dmin=0.15)
+    >>> us_dtrajs = cluster.dtrajs[:2]
+    >>> md_dtrajs = cluster.dtrajs[2:]
+    >>> centers = cluster.clustercenters
+    >>> tram = estimate_us(us_trajs, us_dtrajs, us_centers, us_force_constants, md_trajs=md_trajs, md_dtrajs=md_dtrajs, estimator='tram', lag=1)
+    >>> tram.f # doctest: +ELLIPSIS
+    array([ 0.63...,  1.60...,  1.31...])
 
     """
     assert estimator in ['wham', 'dtram', 'tram'], "unsupported estimator: %s" % estimator
