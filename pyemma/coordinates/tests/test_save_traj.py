@@ -171,7 +171,16 @@ class TestSaveTraj(unittest.TestCase):
     def test_with_fragmented_reader(self):
         from pyemma.util.files import TemporaryDirectory
         trajlen = 35
-        ra_indices = np.array([[1, 0], [1, 1], [1,2], [1, 10], [1, trajlen*3*3+1], [2, 5]], dtype=int)
+        # trajectory 0 (first trajectory, is trajfiles[2])
+        #   -> skipped
+        # trajectory 1 (second trajectory, is {trajfiles[0], trajfiles[1]})
+        #   fragment 1:
+        #       -> frames 0,1,2,10
+        #   fragment 2:
+        #       -> frames 1 (i.e., 36) and 34 (i.e., 69)
+        # trajectory 2 (third trajectory, is trajfiles[2])
+        #   -> frame 5
+        ra_indices = np.array([[1, 0], [1, 1], [1,2], [1, 10], [1, trajlen+1], [1, 2*trajlen-1], [2, 5]], dtype=int)
         with TemporaryDirectory() as td:
 
             trajfiles = []
@@ -182,19 +191,16 @@ class TestSaveTraj(unittest.TestCase):
                 xyzs.append(xyz)
 
             topfile = get_top()
-            frag_traj = [trajfiles[2], [trajfiles[0], trajfiles[1]], trajfiles[0]]
+            frag_traj = [trajfiles[2], [trajfiles[0], trajfiles[1]], trajfiles[2]]
 
-            expected = xyzs[0][np.array([0, 1, 2, 10]), :], np.array([xyzs[1][1, :]]), np.array([(xyzs[2][5, :])])
+            expected = xyzs[0][np.array([0, 1, 2, 10]), :], xyzs[1][np.array([1, 34])], np.array([(xyzs[2][5, :])])
             expected = np.vstack(expected)
 
             reader = coor.source(frag_traj, top=topfile)
 
-            traj = save_traj(reader, ra_indices, None, chunksize=3)
-
-
-            # Check for diffs
-            (found_diff, errmsg) = compare_coords_md_trajectory_objects(traj, traj_ref, atom=0)
-            np.testing.assert_almost_equal(traj.xyz, expected.xyz, err_msg=errmsg)
+            for cs in range(1,10):
+                traj = save_traj(reader, ra_indices, None, chunksize=cs)
+                np.testing.assert_almost_equal(traj.xyz, expected)
 
     def test_with_fragmented_reader_chunksize_0(self):
         # intentionally group bpti dataset to a fake fragmented traj

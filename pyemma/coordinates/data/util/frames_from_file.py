@@ -103,7 +103,10 @@ def frames_from_files(files, top, frames, chunksize=1000, stride=1, verbose=Fals
         largest_ind_in_traj = np.max(inds_by_traj)
         if isinstance(reader, FeatureReader):
             length = reader.trajectory_length(itraj)
+        elif isinstance(reader, FragmentedTrajectoryReader):
+            length = reader._lengths[itraj]
         else:
+            # TODO: Do we really need this? Perhaps the other cases can be collapsed into the first if-branch.
             fn = reader.filenames_flat[itraj]
             fn_readers = reader.reader_by_filename(fn)
             if isinstance(fn_readers, (list, tuple)) and len(fn_readers) > 1:
