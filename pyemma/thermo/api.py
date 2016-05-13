@@ -192,9 +192,10 @@ def estimate_multi_temperature(
     maxiter=10000, maxerr=1.0E-15, save_convergence_info=0,
     estimator='wham', lag=1, dt_traj='1 step', init=None, init_maxiter=10000, init_maxerr=1e-8,
     **kwargs):
-    # TODO: fix docstring
     r"""
-    Wraps multi-temperature data.
+    This function acts as a wrapper for ``tram()``, ``dtram()``, and ``wham()`` and handles the
+    calculation of bias energies (``bias``) and thermodynamic state trajectories (``ttrajs``)
+    when the data comes from multi-temperature simulations.
 
     Parameters
     ----------
@@ -255,12 +256,32 @@ def estimate_multi_temperature(
         The maximum number of self-consistent iterations during the initialization.
     init_maxerr : float, optional, default=1.0E-8
         Convergence criterion for the initialization.
+    **kwargs : dict, optional
+        You can use this to pass estimator-specific named parameters to the chosen estimator, which
+        are not already coverd by ``estimate_multi_temperature()``.
 
     Returns
     -------
     _estimator : MEMM or list of MEMMs
         The requested estimator/model object, i.e., WHAM, DTRAM or TRAM. If multiple lag times are
         given, a list of objects is returned (one MEMM per lag time).
+
+    Example
+    -------
+    We look at 1D simulations at two different kT values 1.0 and 2.0, already clustered data, and
+    we use TRAM for the estimation:
+
+    >>> from pyemma.thermo import estimate_multi_temperature as estimate_mt
+    >>> import numpy as np
+    >>> energy_trajs = [np.array([1.6, 1.4, 1.0, 1.0, 1.2, 1.0, 1.0]), np.array([0.8, 0.7, 0.5, 0.6, 0.7, 0.8, 0.7])]
+    >>> temp_trajs = [np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]), np.array([2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0])]
+    >>> dtrajs = [np.array([0, 1, 2, 2, 2, 2, 2]), np.array([0, 1, 2, 2, 1, 0, 1])]
+    >>> tram = estimate_mt(energy_trajs, temp_trajs, dtrajs, energy_unit='kT', temp_unit='kT', estimator='tram', lag=1)
+    >>> tram.f # doctest: +ELLIPSIS
+    array([ 2.90...,  1.72...,  0.26...])
+
+    Note that alhough we only used one temperature per trajectory, ``estimate_multi_temperature()``
+    can handle temperature changes as well.
 
     """
     assert estimator in ['wham', 'dtram', 'tram'], "unsupported estimator: %s" % estimator
