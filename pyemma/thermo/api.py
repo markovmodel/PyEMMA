@@ -462,6 +462,7 @@ def tram(
 
     References
     ----------
+
     .. [1] Wu, H. et al 2016
         in press
 
@@ -620,6 +621,7 @@ def dtram(
 
     References
     ----------
+
     .. [1] Wu, H. et al 2014
         Statistically optimal analysis of state-discretized trajectory data from multiple thermodynamic states
         J. Chem. Phys. 141, 214106
@@ -745,8 +747,13 @@ def wham(
 
     References
     ----------
-    .. [1] Kumar, S. et al 1992
-        The Weighted Histogram Analysis Method for Free-Energy Calculations on Biomolecules. I. The Method
+    
+    .. [1] Ferrenberg, A.M. and Swensen, R.H. 1988.
+        New Monte Carlo Technique for Studying Phase Transitions.
+        Phys. Rev. Lett. 23, 2635--2638
+
+    .. [2] Kumar, S. et al 1992.
+        The Weighted Histogram Analysis Method for Free-Energy Calculations on Biomolecules. I. The Method.
         J. Comp. Chem. 13, 1011--1021
 
     """

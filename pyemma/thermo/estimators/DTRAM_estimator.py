@@ -109,6 +109,7 @@ class DTRAM(_Estimator, _MEMM, _ProgressReporter):
 
     References
     ----------
+
     .. [1] Wu, H. et al 2014
         Statistically optimal analysis of state-discretized trajectory data from multiple thermodynamic states
         J. Chem. Phys. 141, 214106

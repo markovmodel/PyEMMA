@@ -112,6 +112,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
 
     References
     ----------
+
     .. [1] Wu, H. et al 2016
         in press
 
