@@ -111,7 +111,7 @@ def featurizer(topfile):
 
 
 # TODO: DOC - which topology file formats does mdtraj support? Find out and complete docstring
-def load(trajfiles, features=None, top=None, stride=1, chunk_size=100, **kw):
+def load(trajfiles, features=None, top=None, stride=1, chunk_size=None, **kw):
     r""" Loads coordinate features into memory.
 
     If your memory is not big enough consider the use of **pipeline**, or use
@@ -203,7 +203,7 @@ def load(trajfiles, features=None, top=None, stride=1, chunk_size=100, **kw):
         isinstance(trajfiles, (list, tuple))
             and (any(isinstance(item, (list, tuple, _string_types)) for item in trajfiles)
                  or len(trajfiles) is 0)):
-        reader = create_file_reader(trajfiles, top, features, chunk_size=chunk_size, **kw)
+        reader = create_file_reader(trajfiles, top, features, chunk_size=chunk_size if chunk_size is not None else 0, **kw)
         trajs = reader.get_output(stride=stride)
         if len(trajs) == 1:
             return trajs[0]
