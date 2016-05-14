@@ -406,7 +406,7 @@ c.ExecutePreprocessor.timeout = -1
 # Consumes nbconvert output and produces files.
 
 # Directory to write output to.  Leave blank to output to the current directory
-# c.FilesWriter.build_directory = ''
+c.FilesWriter.build_directory = 'source/generated/'
 
 # When copying files that the notebook depends on, copy them in relation to this
 # path, such that the destination filename will be os.path.relpath(filename,
