@@ -18,13 +18,10 @@
 
 from __future__ import absolute_import
 
-from pyemma import config
-from pyemma._base.logging import Loggable
 from pyemma.coordinates.data.featurization.featurizer import MDFeaturizer
 from pyemma.coordinates.util import patches
 from pyemma.util.annotators import deprecated
 import mdtraj
-import six
 
 from pyemma.coordinates.data._base.datasource import DataSourceIterator, DataSource
 from pyemma.coordinates.data._base.random_accessible import RandomAccessStrategy
@@ -297,7 +294,7 @@ class FeatureReaderLinearRandomAccessStrategy(RandomAccessStrategy):
         return data[frames_order]
 
 
-class FeatureReaderIterator(DataSourceIterator, Loggable):
+class FeatureReaderIterator(DataSourceIterator):
     def __init__(self, data_source, skip=0, chunk=0, stride=1, return_trajindex=False, cols=None):
         # TODO: optimize cols access (eg. omit features, before calculating em
         super(FeatureReaderIterator, self).__init__(
@@ -367,6 +364,5 @@ class FeatureReaderIterator(DataSourceIterator, Loggable):
             )
 
     def _create_patched_iter(self, filename, skip=0, stride=1, atom_indices=None):
-        self._logger.debug("opening trajectory \"%s\"" % filename)
         return patches.iterload(filename, chunk=self.chunksize, top=self._data_source.topfile,
                                 skip=skip, stride=stride, atom_indices=atom_indices)
