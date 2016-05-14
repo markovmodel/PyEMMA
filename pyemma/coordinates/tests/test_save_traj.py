@@ -215,5 +215,13 @@ class TestSaveTraj(unittest.TestCase):
         np.testing.assert_equal(traj.xyz, traj_ref.xyz)
         self.assertFalse(found_diff, errmsg)
 
+    def test_invalid_maximum_traj_index(self):
+        data = [np.array([[1, 2, 3], [4, 5, 6], [[1, 2, 3], [8, 9]]])]
+        set = [[0,2], [0,1], [2,42]]
+        reader = FragmentedTrajectoryReader(data)
+        with self.assertRaises(ValueError):
+            save_traj(reader, set)
+
+
 if __name__ == "__main__":
     unittest.main()

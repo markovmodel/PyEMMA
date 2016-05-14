@@ -17,6 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import absolute_import
 
+import itertools
 from logging import getLogger
 
 import mdtraj as md
@@ -29,7 +30,6 @@ from pyemma.coordinates.data.fragmented_trajectory_reader import FragmentedTraje
 from pyemma.coordinates.data.util.reader_utils import (copy_traj_attributes as _copy_traj_attributes,
                                                        preallocate_empty_trajectory as _preallocate_empty_trajectory,
                                                        enforce_top as _enforce_top)
-from pyemma.coordinates.data.util.traj_info_cache import TrajectoryInfoCache
 from pyemma.util.annotators import deprecated
 
 __all__ = ['frames_from_files']
@@ -39,6 +39,7 @@ log = getLogger(__name__)
 
 def frames_from_files(files, top, frames, chunksize=1000, stride=1, verbose=False, copy_not_join=None, reader=None):
     """
+    Constructs a Trajectory object out of given frames collected from files (or given reader).
 
     :param files: source files
     :param top: topology file
@@ -48,12 +49,14 @@ def frames_from_files(files, top, frames, chunksize=1000, stride=1, verbose=Fals
     :param verbose:
     :param copy_not_join: not used
     :param reader: if a reader is given, ignore files and top param!
-    :return:
+    :return: mdtra.Trajectory consisting out of frames indices.
     """
     # Enforce topology to be a md.Topology object
     if reader is None:
         top = _enforce_top(top)
     else:
+        if not reader.number_of_trajectories():
+            raise ValueError("need at least one trajectory file in reader.")
         if isinstance(reader, FragmentedTrajectoryReader):
             top = reader._readers[0][0].featurizer.topology
         elif isinstance(reader, FeatureReader):
@@ -88,7 +91,6 @@ def frames_from_files(files, top, frames, chunksize=1000, stride=1, verbose=Fals
         # filter out files, we would never read, because no indices are pointing to them
         reader = source(np.array(files)[file_inds_unique].tolist(), top=top)
         # re-map indices to reflect filtered files:
-        import itertools
         for itraj, c in zip(file_inds_unique, itertools.count(0)):
             mask = sorted_inds[:, 0] == itraj
             sorted_inds[mask, 0] = c
@@ -101,18 +103,7 @@ def frames_from_files(files, top, frames, chunksize=1000, stride=1, verbose=Fals
     for itraj in inds_to_check:
         inds_by_traj = sorted_inds[sorted_inds[:, 0] == itraj]
         largest_ind_in_traj = np.max(inds_by_traj)
-        if isinstance(reader, FeatureReader):
-            length = reader.trajectory_length(itraj)
-        elif isinstance(reader, FragmentedTrajectoryReader):
-            length = reader._lengths[itraj]
-        else:
-            # TODO: Do we really need this? Perhaps the other cases can be collapsed into the first if-branch.
-            fn = reader.filenames_flat[itraj]
-            fn_readers = reader.reader_by_filename(fn)
-            if isinstance(fn_readers, (list, tuple)) and len(fn_readers) > 1:
-                fn_readers = fn_readers[0]
-            fn_reader_tuple = (fn, fn_readers)
-            length = TrajectoryInfoCache.instance()[fn_reader_tuple].length
+        length = reader.trajectory_length(itraj)
         if length < largest_ind_in_traj:
             raise ValueError("largest specified index (%i * stride=%i * %i=%i) "
                              "is larger than trajectory length '%s' = %i" %
@@ -120,6 +111,7 @@ def frames_from_files(files, top, frames, chunksize=1000, stride=1, verbose=Fals
                               stride, largest_ind_in_traj, reader.filenames[itraj],
                               length))
 
+    # we want the FeatureReader to return mdtraj.Trajectory objects
     if isinstance(reader, FeatureReader):
         reader._return_traj_obj = True
     elif isinstance(reader, FragmentedTrajectoryReader):
@@ -148,7 +140,7 @@ def frames_from_files(files, top, frames, chunksize=1000, stride=1, verbose=Fals
     return dest
 
 
-@deprecated("use_frame_from_files")
+@deprecated("use_frames_from_files")
 def frames_from_file(file_name, top, frames, chunksize=100,
                      stride=1, verbose=False, copy_not_join=False):
     r"""Reads one "file_name" molecular trajectory and returns an mdtraj trajectory object 

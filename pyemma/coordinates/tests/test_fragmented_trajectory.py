@@ -175,6 +175,3 @@ class TestFragmentedTrajectory(unittest.TestCase):
         data = [self.d, np.array([[1,2,3], [4,5,6]])]
         with self.assertRaises(ValueError):
             FragmentedTrajectoryReader(data)
-
-    def test_invalid_maximum_traj_index(self):
-        raise NotImplementedError()

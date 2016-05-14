@@ -40,10 +40,6 @@ from pyemma.coordinates.data.util.reader_utils import compare_coords_md_trajecto
 
 class TestFramesFromFile(unittest.TestCase):
 
-    @classmethod
-    def setUpClass(cls):
-        super(TestFramesFromFile, cls).setUpClass()
-
     def setUp(self):
         self.eps = 1e-10
         path = pkg_resources.resource_filename(__name__, 'data') + os.path.sep
