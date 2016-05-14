@@ -130,6 +130,7 @@ def frames_from_files(files, top, frames, chunksize=1000, stride=1, verbose=Fals
         for x in it:
             collected_frames.append(x)
             reporter._progress_update(1)
+    reporter._progress_force_finish()
 
     dest = _preallocate_empty_trajectory(top, len(frames))
     i = 0

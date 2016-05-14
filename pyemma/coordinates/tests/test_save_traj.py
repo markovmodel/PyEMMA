@@ -33,6 +33,8 @@ import tempfile
 import pkg_resources
 
 import numpy as np
+import pyemma
+
 import pyemma.coordinates as coor
 import mdtraj as md
 from pyemma.coordinates.data.util.reader_utils import single_traj_from_n_files, save_traj_w_md_load_frame, \
@@ -216,12 +218,21 @@ class TestSaveTraj(unittest.TestCase):
         self.assertFalse(found_diff, errmsg)
 
     def test_invalid_maximum_traj_index(self):
-        data = [np.array([[1, 2, 3], [4, 5, 6], [[1, 2, 3], [8, 9]]])]
+        frag_traj = [[self.trajfiles[0], self.trajfiles[1]], self.trajfiles[2], self.trajfiles[2]]
         set = [[0,2], [0,1], [2,42]]
-        reader = FragmentedTrajectoryReader(data)
-        with self.assertRaises(ValueError):
-            save_traj(reader, set)
+        from pyemma.coordinates.data.fragmented_trajectory_reader import FragmentedTrajectoryReader
+        reader = FragmentedTrajectoryReader(frag_traj, topologyfile=self.pdbfile)
+        with self.assertRaises(ValueError) as cm:
+            save_traj(reader, set, None)
+        self.assertIn("larger than", cm.exception.args[0])
 
+    def test_invalid_readers_in_frag_traj(self):
+        data = [np.array([[[1,2], [3,4]],[0,1]])]
+        from pyemma.coordinates.data.fragmented_trajectory_reader import FragmentedTrajectoryReader
+        reader = FragmentedTrajectoryReader(data)
+        with self.assertRaises(ValueError) as cm:
+            save_traj(reader, self.sets, None)
+        self.assertIn("FeatureReader", cm.exception.args[0])
 
 if __name__ == "__main__":
     unittest.main()

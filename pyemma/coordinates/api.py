@@ -611,12 +611,16 @@ def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=1000, 
     from pyemma.coordinates.data.fragmented_trajectory_reader import FragmentedTrajectoryReader
     from pyemma.coordinates.data.util.frames_from_file import frames_from_files
     from pyemma.coordinates.data.util.reader_utils import enforce_top
+    import itertools
 
     # Determine the type of input and extract necessary parameters
     if isinstance(traj_inp, (FeatureReader, FragmentedTrajectoryReader)):
         if isinstance(traj_inp, FragmentedTrajectoryReader):
+            # lengths array per reader
+            if not all(isinstance(reader, FeatureReader)
+                                     for reader in itertools.chain.from_iterable(traj_inp._readers)):
+                raise ValueError("Only FeatureReaders (MD-data) are supported for fragmented trajectories.")
             trajfiles = traj_inp.filenames_flat
-            # TODO: this could fail in case first reader is not a FeatureReader
             top = traj_inp._readers[0][0].featurizer.topology
         else:
             top = traj_inp.featurizer.topology
