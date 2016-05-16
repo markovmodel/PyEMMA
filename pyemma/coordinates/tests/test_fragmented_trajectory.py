@@ -74,7 +74,7 @@ class TestFragmentedTrajectory(unittest.TestCase):
                 np.testing.assert_array_almost_equal(data[lag::stride], Y)
 
     def test_fragmented_xtc(self):
-        from pyemma.coordinates.tests.test_featurereader import create_traj
+        from pyemma.coordinates.tests.util import create_traj
 
         top_file = pkg_resources.resource_filename(__name__, 'data/test.pdb')
         trajfiles = []
@@ -112,7 +112,6 @@ class TestFragmentedTrajectory(unittest.TestCase):
             out_full_trajectory_mode = reader.get_output(chunk=chunk_size, stride=indices)
             for i in range(3):
                 np.testing.assert_array_equal(expected[i], out_full_trajectory_mode[i].squeeze())
-
 
     def test_multiple_input_trajectories(self):
         reader = FragmentedTrajectoryReader([[self.d, self.d], self.d, [self.d, self.d]])

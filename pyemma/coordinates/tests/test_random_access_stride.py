@@ -30,7 +30,8 @@ from six.moves import range
 import pyemma.coordinates.api as coor
 from pyemma.coordinates.data import DataInMemory, FeatureReader
 from pyemma.coordinates.data.fragmented_trajectory_reader import FragmentedTrajectoryReader
-from pyemma.coordinates.tests.test_featurereader import create_traj
+from pyemma.coordinates.tests.util import create_traj, get_top
+from pyemma.util.files import TemporaryDirectory
 
 
 class TestRandomAccessStride(TestCase):
@@ -226,10 +227,10 @@ class TestRandomAccessStride(TestCase):
         assert ctx.is_stride_sorted()
         assert ctx.traj_keys is None
 
-        ctx = dim.iterator(stride=np.asarray([[0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [1, 3]])).state
+        ctx = dim.iterator(stride=np.asarray([[0, 0], [0, 1], [0, 2]])).state
         assert not ctx.uniform_stride
         assert ctx.is_stride_sorted()
-        np.testing.assert_array_equal(ctx.traj_keys, np.array([0, 1]))
+        np.testing.assert_array_equal(ctx.traj_keys, np.array([0]))
 
         # require sorted random access
         dim._needs_sorted_random_access_stride = True
@@ -243,7 +244,6 @@ class TestRandomAccessStride(TestCase):
             dim.iterator(stride=np.asarray([[0, 0], [0, 1], [0, 2], [1, 1], [1, 5], [1, 3]]))
 
         np.testing.assert_array_equal(ctx.ra_indices_for_traj(0), np.array([0, 1, 2]))
-        np.testing.assert_array_equal(ctx.ra_indices_for_traj(1), np.array([1, 2, 3]))
 
     def test_data_in_memory_random_access(self):
         # access with a chunk_size that is larger than the largest index list of stride
@@ -367,6 +367,68 @@ class TestRandomAccessStride(TestCase):
                 except EnvironmentError:
                     pass
 
+    def test_fragmented_reader_random_access(self):
+        with TemporaryDirectory() as td:
+            trajfiles = []
+            for i in range(3):
+                trajfiles.append(create_traj(start=i * 10, dir=td, length=20)[0])
+            topfile = get_top()
+
+            trajfiles = [trajfiles[0], (trajfiles[0], trajfiles[1]), trajfiles[2]]
+
+            source = coor.source(trajfiles, top=topfile)
+            assert isinstance(source, FragmentedTrajectoryReader)
+
+            for chunksize in [0, 2, 3, 100000]:
+                out = source.get_output(stride=self.stride, chunk=chunksize)
+                keys = np.unique(self.stride[:, 0])
+                for i, coords in enumerate(out):
+                    if i in keys:
+                        traj = mdtraj.load(trajfiles[i], top=topfile)
+                        np.testing.assert_equal(coords,
+                                                traj.xyz[
+                                                    np.array(self.stride[self.stride[:, 0] == i][:, 1])
+                                                ].reshape(-1, 3 * 3))
+
+    def test_fragmented_reader_random_access1(self):
+        with TemporaryDirectory() as td:
+            trajfiles = []
+            for i in range(3):
+                trajfiles.append(create_traj(start=i * 10, dir=td, length=20)[0])
+            topfile = get_top()
+            trajfiles = [(trajfiles[0], trajfiles[1]), trajfiles[0],  trajfiles[2]]
+
+            source = coor.source(trajfiles, top=topfile)
+            assert isinstance(source, FragmentedTrajectoryReader)
+
+            for r in source._readers:
+                if not isinstance(r, (list, tuple)):
+                    r = r[0]
+                for _r in r:
+                    _r._return_traj_obj = True
+
+            from collections import defaultdict
+            for chunksize in [0, 2, 3, 100000]:
+                frames = defaultdict(list)
+                with source.iterator(chunk=chunksize, return_trajindex=True, stride=self.stride) as it:
+                    for itraj, t in it:
+                        frames[itraj].append(t)
+
+                dest = []
+                for itraj in frames.keys():
+                    dest.append(frames[itraj][0])
+
+                    for t in frames[itraj][1:]:
+                        dest[-1] = dest[-1].join(t)
+
+                keys = np.unique(self.stride[:, 0])
+                for i, coords in enumerate(dest):
+                    if i in keys:
+                        traj = mdtraj.load(trajfiles[i], top=topfile)
+                        np.testing.assert_equal(coords.xyz,
+                                                traj.xyz[
+                                                    np.array(self.stride[self.stride[:, 0] == i][:, 1])
+                                                ], err_msg="not equal for chunksize=%s" % chunksize)
 
 if __name__ == '__main__':
     unittest.main()

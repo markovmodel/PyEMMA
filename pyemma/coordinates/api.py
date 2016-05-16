@@ -28,7 +28,7 @@ from pyemma.util import types as _types
 # lift this function to the api
 from pyemma.coordinates.util.stat import histogram
 
-from six import string_types
+from six import string_types as _string_types
 from six.moves import range, zip
 
 _logger = _logging.getLogger(__name__)
@@ -111,7 +111,7 @@ def featurizer(topfile):
 
 
 # TODO: DOC - which topology file formats does mdtraj support? Find out and complete docstring
-def load(trajfiles, features=None, top=None, stride=1, chunk_size=100, **kw):
+def load(trajfiles, features=None, top=None, stride=1, chunk_size=None, **kw):
     r""" Loads coordinate features into memory.
 
     If your memory is not big enough consider the use of **pipeline**, or use
@@ -199,11 +199,11 @@ def load(trajfiles, features=None, top=None, stride=1, chunk_size=100, **kw):
     """
     from pyemma.coordinates.data.util.reader_utils import create_file_reader
 
-    if isinstance(trajfiles, string_types) or (
+    if isinstance(trajfiles, _string_types) or (
         isinstance(trajfiles, (list, tuple))
-            and (any(isinstance(item, (list, tuple, string_types)) for item in trajfiles)
+            and (any(isinstance(item, (list, tuple, _string_types)) for item in trajfiles)
                  or len(trajfiles) is 0)):
-        reader = create_file_reader(trajfiles, top, features, chunk_size=chunk_size, **kw)
+        reader = create_file_reader(trajfiles, top, features, chunk_size=chunk_size if chunk_size is not None else 0, **kw)
         trajs = reader.get_output(stride=stride)
         if len(trajs) == 1:
             return trajs[0]
@@ -333,10 +333,10 @@ def source(inp, features=None, top=None, chunk_size=None, **kw):
     from pyemma.coordinates.data.util.reader_utils import create_file_reader
     # CASE 1: input is a string or list of strings
     # check: if single string create a one-element list
-    if isinstance(inp, string_types) or (
+    if isinstance(inp, _string_types) or (
             isinstance(inp, (list, tuple))
-            and (any(isinstance(item, (list, tuple, string_types)) for item in inp) or len(inp) is 0)):
-        reader = create_file_reader(inp, top, features, chunk_size=chunk_size if chunk_size else 100, **kw)
+            and (any(isinstance(item, (list, tuple, _string_types)) for item in inp) or len(inp) is 0)):
+        reader = create_file_reader(inp, top, features, chunk_size=chunk_size if chunk_size is not None else 100, **kw)
 
     elif isinstance(inp, _np.ndarray) or (isinstance(inp, (list, tuple))
                                           and (any(isinstance(item, _np.ndarray) for item in inp) or len(inp) is 0)):
@@ -571,7 +571,7 @@ def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=1000, 
         A (T x 2) array for writing a trajectory of T time steps. Each row
         contains two indexes (i, t), where i is the index of the trajectory
         from the input and t is the index of the time step within the trajectory.
-        If a list of index arrays are given, these will be simply concatenated,
+        If a list of index arrays is given, these will be simply concatenated,
         i.e. they will be written subsequently in the same trajectory file.
 
     outfile : str.
@@ -605,31 +605,38 @@ def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=1000, 
     traj : :py:obj:`mdtraj.Trajectory` object
         Will only return this object if :py:obj:`outfile` is None
     """
-    from mdtraj import Topology as _Topology, Trajectory as _Trajectory
+    from mdtraj import Topology, Trajectory
 
-    from pyemma.coordinates.data.feature_reader import FeatureReader as FeatureReader
+    from pyemma.coordinates.data.feature_reader import FeatureReader
     from pyemma.coordinates.data.fragmented_trajectory_reader import FragmentedTrajectoryReader
     from pyemma.coordinates.data.util.frames_from_file import frames_from_files
     from pyemma.coordinates.data.util.reader_utils import enforce_top
+    import itertools
 
     # Determine the type of input and extract necessary parameters
     if isinstance(traj_inp, (FeatureReader, FragmentedTrajectoryReader)):
         if isinstance(traj_inp, FragmentedTrajectoryReader):
+            # lengths array per reader
+            if not all(isinstance(reader, FeatureReader)
+                                     for reader in itertools.chain.from_iterable(traj_inp._readers)):
+                raise ValueError("Only FeatureReaders (MD-data) are supported for fragmented trajectories.")
             trajfiles = traj_inp.filenames_flat
-            top = traj_inp._readers[0][0].topfile
+            top = traj_inp._readers[0][0].featurizer.topology
         else:
-            top = traj_inp.topfile
+            top = traj_inp.featurizer.topology
             trajfiles = traj_inp.filenames
         chunksize = traj_inp.chunksize
+        reader = traj_inp
     else:
         # Do we have what we need?
-        if not isinstance(traj_inp, list):
+        if not isinstance(traj_inp, (list, tuple)):
             raise TypeError("traj_inp has to be of type list, not %s" % type(traj_inp))
-        if not isinstance(top, (string_types, _Topology, _Trajectory)):
+        if not isinstance(top, (_string_types, Topology, Trajectory)):
             raise TypeError("traj_inp cannot be a list of files without an input "
                             "top of type str (eg filename.pdb), mdtraj.Trajectory or mdtraj.Topology. "
                             "Got type %s instead" % type(top))
         trajfiles = traj_inp
+        reader = None
 
     # Enforce the input topology to actually be an md.Topology object
     top = enforce_top(top)
@@ -638,12 +645,12 @@ def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=1000, 
     indexes = _np.vstack(indexes)
 
     # Check that we've been given enough filenames
-    if (len(trajfiles) < indexes[:, 0].max()):
+    if len(trajfiles) < indexes[:, 0].max():
         raise ValueError("traj_inp contains %u trajfiles, "
                          "but indexes will ask for file nr. %u"
                          % (len(trajfiles), indexes[0].max()))
 
-    traj = frames_from_files(trajfiles, top, indexes, chunksize, stride)
+    traj = frames_from_files(trajfiles, top, indexes, chunksize, stride, reader=reader)
 
     # Return to memory as an mdtraj trajectory object
     if outfile is None:
@@ -757,11 +764,11 @@ def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None,
     if not inmemory:
         for i_indexes, outfile in zip(indexes, outfiles):
             # TODO: use **kwargs to parse to save_traj
-            save_traj(traj_inp, i_indexes, outfile, stride = stride, verbose=verbose)
+            save_traj(traj_inp, i_indexes, outfile, stride=stride, verbose=verbose)
 
     # This implementation is "one file - one pass" but might temporally create huge memory objects
     else:
-        traj = save_traj(traj_inp, indexes, outfile=None, stride = stride, verbose=verbose)
+        traj = save_traj(traj_inp, indexes, outfile=None, stride=stride, verbose=verbose)
         i_idx = 0
         for i_indexes, outfile in zip(indexes, outfiles):
             # Create indices for slicing the mdtraj trajectory object

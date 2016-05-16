@@ -33,15 +33,12 @@ import os
 from numpy.random import randint
 from numpy import floor, allclose
 import mdtraj as md
-from pyemma.coordinates.data.util.frames_from_file import frames_from_file as _frames_from_file
+
+from pyemma.coordinates.data.util.frames_from_file import frames_from_files as _frames_from_file
 from pyemma.coordinates.data.util.reader_utils import compare_coords_md_trajectory_objects
 
 
 class TestFramesFromFile(unittest.TestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        super(TestFramesFromFile, cls).setUpClass()
 
     def setUp(self):
         self.eps = 1e-10
@@ -134,7 +131,7 @@ class TestFramesFromFile(unittest.TestCase):
 
             (found_diff, errmsg) = compare_coords_md_trajectory_objects(traj_test, traj_ref, atom=0, mess=False)
             self.assertFalse(found_diff, errmsg)
-	
+
     def test_gets_the_right_frames_with_stride_with_copy(self):
 
         for stride in [2, 3, 5, 6, 10, 15]:
