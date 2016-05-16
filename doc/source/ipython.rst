@@ -46,6 +46,15 @@ In this section we will give you in-depth tutorials on specific methods or conce
    generated/tpt
 
 
+Multi-Ensemble Markov state models
+----------------------------------
+
+.. toctree::
+   :maxdepth: 1
+
+   generated/PyEMMA.thermo.estimate_multi_temperatur_-_asymmetric_double_well
+   generated/PyEMMA.thermo.estimate_umbrella_sampling_-_asymmetric_double_well.rst
+
 Estimation with fixed equilibrium distribution
 ----------------------------------------------
 
