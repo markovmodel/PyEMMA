@@ -12,6 +12,8 @@ class TestMSMSimple(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.old_filters = warnings.filters[:]
+        if sys.version_info.major == 2:
+            warnings.filters = []
 
     @classmethod
     def tearDownClass(cls):
