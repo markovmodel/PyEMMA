@@ -1,11 +1,12 @@
  .. _ref-notebooks:
 
-=====================================
-Jupyter (IPython) notebooks Tutorials
-=====================================
+==========================
+Jupyter Notebook Tutorials
+==========================
 
-These Jupyter (http://jupyter.org) notebooks show the usage of the PyEMMA API in
-action and also describe the workflow of Markov model building.
+These Jupyter (http://jupyter.org), former IPython notebooks show the usage of
+the PyEMMA API in action and also describe the workflow of Markov model
+building.
 
 You can download a copy of all notebooks and most of the used data
 `here <https://github.com/markovmodel/PyEMMA_IPython/archive/devel.zip>`_.
