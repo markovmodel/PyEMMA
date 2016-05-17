@@ -84,14 +84,21 @@ Low-level functions for estimation and analysis of transition matrices and io.
    msm.flux
 
 """
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import as _
 
 #####################################################
 # Low-level MSM functions (imported from msmtools)
 # backward compatibility to PyEMMA 1.2.x
-from msmtools import analysis, estimation, generation, dtraj, flux
-from msmtools.analysis.dense.pcca import PCCA
+# TODO: finally remove this stuff...
+import warnings as _warnings
+from pyemma.util._ext.shimmodule import ShimWarning as _ShimWarning
+with _warnings.catch_warnings():
+    _warnings.filterwarnings('ignore', category=_ShimWarning)
+    from . import analysis, estimation, generation, dtraj, flux
 io = dtraj
+del _warnings, _ShimWarning
+######################################################
+from msmtools.analysis.dense.pcca import PCCA
 
 #####################################################
 # Estimators and models
