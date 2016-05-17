@@ -8,6 +8,8 @@ import pyemma
 
 
 class TestMSMSimple(unittest.TestCase):
+
+    @classmethod
     def setUpClass(cls):
         import logging
         logging.getLogger('pyemma').info("warning filters: %s" % warnings.filters)
