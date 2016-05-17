@@ -1,5 +1,9 @@
 import unittest
 import warnings
+
+import mock
+import sys
+
 import pyemma
 
 
@@ -19,6 +23,14 @@ class TestMSMSimple(unittest.TestCase):
             pyemma.msm.analysis.is_transition_matrix
         self.assertEqual(len(cm), 1)
         self.assertIn('analysis', cm[0].message.args[0])
+
+    def test_warn_was_called(self):
+        shim_mod = sys.modules['pyemma.msm.analysis']
+        with mock.patch.object(shim_mod, '_warn') as m:
+            from pyemma.msm import analysis
+            analysis.is_transition_matrix
+
+        m.assert_called_once()
 
     def test_estimation(self):
         with warnings.catch_warnings(record=True) as cm:
