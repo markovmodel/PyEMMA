@@ -65,3 +65,8 @@ class ParserWarning(UserWarning):
 class ConfigDirectoryException(Exception):
     """ Some operation with PyEMMAs configuration directory went wrong. """
     pass
+
+
+class PyEMMA_DeprecationWarning(UserWarning):
+    """You are using a feature, which will be removed in a future release. You have been warned!"""
+    pass

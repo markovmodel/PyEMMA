@@ -102,6 +102,7 @@ class ShimModule(types.ModuleType):
     @property
     def __spec__(self):
         """Don't produce __spec__ until requested"""
+        self._warn()
         return __import__(self._mirror).__spec__
 
     def __dir__(self):
@@ -111,8 +112,8 @@ class ShimModule(types.ModuleType):
     @property
     def __all__(self):
         """Ensure __all__ is always defined"""
+        self._warn()
         mod = __import__(self._mirror)
-        #self._warn()
         try:
             return mod.__all__
         except AttributeError:
@@ -129,4 +130,5 @@ class ShimModule(types.ModuleType):
             raise AttributeError(key)
 
     def _warn(self):
-        warnings.warn(self.msg if self.msg else self.default_msg, ShimWarning)
+        from pyemma.util.exceptions import PyEMMA_DeprecationWarning
+        warnings.warn(self.msg if self.msg else self.default_msg, PyEMMA_DeprecationWarning)
