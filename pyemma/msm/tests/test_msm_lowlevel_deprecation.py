@@ -11,8 +11,11 @@ class TestMSMSimple(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        import logging
-        logging.getLogger('pyemma').info("warning filters: %s" % warnings.filters)
+        cls.old_filters = warnings.filters[:]
+
+    @classmethod
+    def tearDownClass(cls):
+        warnings.filters = cls.old_filters
 
     def test_analysis(self):
         with warnings.catch_warnings(record=True) as cm:
