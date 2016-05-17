@@ -91,12 +91,12 @@ from __future__ import absolute_import as _
 # backward compatibility to PyEMMA 1.2.x
 # TODO: finally remove this stuff...
 import warnings as _warnings
-from pyemma.util._ext.shimmodule import ShimWarning as _ShimWarning
+from pyemma.util.exceptions import PyEMMA_DeprecationWarning as _dep_warning
 with _warnings.catch_warnings():
-    _warnings.filterwarnings('ignore', category=_ShimWarning)
+    _warnings.filterwarnings('ignore', category=_dep_warning)
     from . import analysis, estimation, generation, dtraj, flux
 io = dtraj
-del _warnings, _ShimWarning
+del _warnings, _dep_warning
 ######################################################
 from msmtools.analysis.dense.pcca import PCCA
 

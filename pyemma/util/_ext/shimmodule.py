@@ -37,10 +37,6 @@ def import_item(name):
         return __import__(parts[0])
 
 
-class ShimWarning(Warning):
-    """A warning to show when a module has moved, and a shim is in its place."""
-
-
 class ShimImporter(object):
     """Import hook for a shim.
 
@@ -131,4 +127,5 @@ class ShimModule(types.ModuleType):
 
     def _warn(self):
         from pyemma.util.exceptions import PyEMMA_DeprecationWarning
-        warnings.warn(self.msg if self.msg else self.default_msg, PyEMMA_DeprecationWarning)
+        warnings.warn(self.msg if self.msg else self.default_msg,
+                      category=PyEMMA_DeprecationWarning)
