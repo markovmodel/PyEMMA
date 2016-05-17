@@ -7,6 +7,6 @@ warnings.warn("The pyemma.msm.dtraj module has been deprecated. "
               "You should import msmtools.dtraj now.", ShimWarning)
 
 sys.modules['pyemma.msm.dtraj'] = ShimModule(src='pyemma.msm.dtraj', mirror='msmtools.dtraj')
-sys.modules['pyemma.msm.io'] = sys.modules['pyemma.msm.dtraj']
+#sys.modules['pyemma.msm.io'] = sys.modules['pyemma.msm.dtraj']
 
 from msmtools.dtraj import *
