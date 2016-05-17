@@ -25,20 +25,20 @@ from __future__ import absolute_import
 from __future__ import division
 import unittest
 import numpy as np
-from msmtools.util.numeric import assert_allclose
+from numpy.testing import assert_allclose
 
-from msmtools.flux import api as msmapi
+from pyemma import msm as msmapi
 import msmtools.analysis as msmana
 
 
 class TestReactiveFluxFunctions(unittest.TestCase):
     def setUp(self):
         # 5-state toy system
-        self.P = np.array([[0.8, 0.15, 0.05, 0.0, 0.0],
+        self.P = msmapi.MSM(np.array([[0.8, 0.15, 0.05, 0.0, 0.0],
                            [0.1, 0.75, 0.05, 0.05, 0.05],
                            [0.05, 0.1, 0.8, 0.0, 0.05],
                            [0.0, 0.2, 0.0, 0.8, 0.0],
-                           [0.0, 0.02, 0.02, 0.0, 0.96]])
+                           [0.0, 0.02, 0.02, 0.0, 0.96]]))
         self.A = [0]
         self.B = [4]
         self.I = [1, 2, 3]
@@ -95,8 +95,7 @@ class TestReactiveFluxFunctions(unittest.TestCase):
         # make reversible
         C = np.dot(np.diag(pstat2_nonrev), P2_nonrev)
         Csym = C + C.T
-        self.P2 = Csym / np.sum(Csym, axis=1)[:, np.newaxis]
-        pstat2 = msmana.statdist(self.P2)
+        self.P2 = msmapi.MSM(Csym / np.sum(Csym, axis=1)[:, np.newaxis])
         self.A2 = [0, 4]
         self.B2 = [11, 15]
         self.coarsesets2 = [[2, 3, 6, 7], [10, 11, 14, 15], [0, 1, 4, 5], [8, 9, 12, 13], ]
@@ -126,9 +125,8 @@ class TestReactiveFluxFunctions(unittest.TestCase):
         # Testing
         self.tpt2 = msmapi.tpt(self.P2, self.A2, self.B2)
 
-
     def test_nstates(self):
-        self.assertEqual(self.tpt1.nstates, np.shape(self.P)[0])
+        self.assertEqual(self.tpt1.nstates, self.P.nstates)
 
     def test_A(self):
         self.assertEqual(self.tpt1.A, self.A)
@@ -196,9 +194,9 @@ class TestReactiveFluxFunctions(unittest.TestCase):
         assert_allclose(cgRF.committor, self.ref2_cgcommittor)
         assert_allclose(cgRF.forward_committor, self.ref2_cgcommittor)
         assert_allclose(cgRF.backward_committor, self.ref2_cgbackwardcommittor)
-        assert_allclose(cgRF.flux, self.ref2_cgnetflux)
-        assert_allclose(cgRF.net_flux, self.ref2_cgnetflux)
-        assert_allclose(cgRF.gross_flux, self.ref2_cggrossflux)
+        assert_allclose(cgRF.flux, self.ref2_cgnetflux, rtol=1.e-5, atol=1.e-8)
+        assert_allclose(cgRF.net_flux, self.ref2_cgnetflux, rtol=1.e-5, atol=1.e-8)
+        assert_allclose(cgRF.gross_flux, self.ref2_cggrossflux, rtol=1.e-5, atol=1.e-8)
 
 
 if __name__ == "__main__":
