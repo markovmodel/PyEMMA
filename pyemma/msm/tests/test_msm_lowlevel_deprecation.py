@@ -5,6 +5,7 @@ import mock
 import sys
 
 import pyemma
+from pyemma.util.exceptions import PyEMMA_DeprecationWarning
 
 
 class TestMSMSimple(unittest.TestCase):
@@ -26,12 +27,15 @@ class TestMSMSimple(unittest.TestCase):
             analysis.is_transition_matrix
 
         self.assertEqual(len(cm), 1)
+        self.assertTrue(isinstance(cm[0], PyEMMA_DeprecationWarning))
         self.assertIn('analysis', cm[0].message.args[0])
 
         with warnings.catch_warnings(record=True) as cm:
             warnings.simplefilter("always")
             pyemma.msm.analysis.is_transition_matrix
         self.assertEqual(len(cm), 1)
+        self.assertTrue(isinstance(cm[0], PyEMMA_DeprecationWarning))
+        self.assert
         self.assertIn('analysis', cm[0].message.args[0])
 
     def test_warn_was_called(self):
@@ -49,12 +53,14 @@ class TestMSMSimple(unittest.TestCase):
             estimation.count_matrix
 
         self.assertEqual(len(cm), 1)
+        self.assertTrue(isinstance(cm[0], PyEMMA_DeprecationWarning))
         self.assertIn('estimation', cm[0].message.args[0])
 
         with warnings.catch_warnings(record=True) as cm:
             warnings.simplefilter("always")
             pyemma.msm.estimation.count_matrix
         self.assertEqual(len(cm), 1)
+        self.assertTrue(isinstance(cm[0], PyEMMA_DeprecationWarning))
         self.assertIn('estimation', cm[0].message.args[0])
 
     def test_generation(self):
@@ -64,12 +70,14 @@ class TestMSMSimple(unittest.TestCase):
             generation.generate_traj
     
         self.assertEqual(len(cm), 1)
+        self.assertTrue(isinstance(cm[0], PyEMMA_DeprecationWarning))
         self.assertIn('generation', cm[0].message.args[0])
     
         with warnings.catch_warnings(record=True) as cm:
             warnings.simplefilter("always")
             pyemma.msm.generation.generate_traj
         self.assertEqual(len(cm), 1)
+        self.assertTrue(isinstance(cm[0], PyEMMA_DeprecationWarning))
         self.assertIn('generation', cm[0].message.args[0])
 
     def test_dtraj(self):
@@ -79,12 +87,14 @@ class TestMSMSimple(unittest.TestCase):
             dtraj.load_discrete_trajectory
     
         self.assertEqual(len(cm), 1)
+        self.assertTrue(isinstance(cm[0], PyEMMA_DeprecationWarning))
         self.assertIn('dtraj', cm[0].message.args[0])
     
         with warnings.catch_warnings(record=True) as cm:
             warnings.simplefilter("always")
             pyemma.msm.dtraj.load_discrete_trajectory
         self.assertEqual(len(cm), 1)
+        self.assertTrue(isinstance(cm[0], PyEMMA_DeprecationWarning))
         self.assertIn('dtraj', cm[0].message.args[0])
 
     def test_io(self):
@@ -94,12 +104,14 @@ class TestMSMSimple(unittest.TestCase):
             dtraj.load_discrete_trajectory
 
         self.assertEqual(len(cm), 1)
+        self.assertTrue(isinstance(cm[0], PyEMMA_DeprecationWarning))
         self.assertIn('dtraj', cm[0].message.args[0])
 
         with warnings.catch_warnings(record=True) as cm:
             warnings.simplefilter("always")
             pyemma.msm.dtraj.load_discrete_trajectory
         self.assertEqual(len(cm), 1)
+        self.assertTrue(isinstance(cm[0], PyEMMA_DeprecationWarning))
         self.assertIn('dtraj', cm[0].message.args[0])
 
     def test_flux(self):
@@ -109,10 +121,12 @@ class TestMSMSimple(unittest.TestCase):
             flux.total_flux
     
         self.assertEqual(len(cm), 1)
+        self.assertTrue(isinstance(cm[0], PyEMMA_DeprecationWarning))
         self.assertIn('flux', cm[0].message.args[0])
     
         with warnings.catch_warnings(record=True) as cm:
             warnings.simplefilter("always")
             pyemma.msm.flux.total_flux
         self.assertEqual(len(cm), 1)
+        self.assertTrue(isinstance(cm[0], PyEMMA_DeprecationWarning))
         self.assertIn('flux', cm[0].message.args[0])
