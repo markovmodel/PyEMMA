@@ -1,12 +1,14 @@
 Changelog
 =========
 
-2.2 ()
-----------------
+2.2 (5-17-16)
+-------------
 
 **New features**:
 
 - thermo: added TRAM estimation.
+- thermo: added plotting feature for implied timescales.
+- thermo: added Jupyter notebook examples: :ref:`ref-notebooks`.
 - thermo: show convergence progress during estimation.
 
 **Fixes**:
