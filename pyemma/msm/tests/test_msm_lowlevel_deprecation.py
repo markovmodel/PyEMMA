@@ -8,7 +8,7 @@ import pyemma
 from pyemma.util.exceptions import PyEMMA_DeprecationWarning
 
 
-
+@unittest.skipIf(sys.version_info.major == 2, "disabled on py2 for nosetest stupidness")
 class TestShowDeprecationWarningOnLowLevelAPIUsage(unittest.TestCase):
 
     @classmethod
