@@ -90,7 +90,6 @@ from __future__ import absolute_import, print_function
 # Low-level MSM functions (imported from msmtools)
 # backward compatibility to PyEMMA 1.2.x
 from msmtools import analysis, estimation, generation, dtraj, flux
-from msmtools.flux import ReactiveFlux
 from msmtools.analysis.dense.pcca import PCCA
 io = dtraj
 
@@ -101,7 +100,7 @@ from .estimators import MaximumLikelihoodHMSM, BayesianHMSM
 from .estimators import ImpliedTimescales
 from .estimators import ChapmanKolmogorovValidator
 
-from .models import MSM, HMSM, SampledMSM, SampledHMSM
+from .models import MSM, HMSM, SampledMSM, SampledHMSM, ReactiveFlux
 
 # high-level api
 from .api import *

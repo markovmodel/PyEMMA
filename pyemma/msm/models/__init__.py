@@ -23,3 +23,4 @@ from .msm import MSM
 from .msm_sampled import SampledMSM
 from .hmsm import HMSM
 from .hmsm_sampled import SampledHMSM
+from .reactive_flux import ReactiveFlux
