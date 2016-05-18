@@ -137,6 +137,7 @@ Load a configuration file
 -------------------------
 
 In order to load a pre-saved configuration file, use the :py:func:`load` method:
+
 >>> from pyemma import config # doctest: +SKIP
 >>> config.load('pyemma_silent.cfg') # doctest: +SKIP
 
