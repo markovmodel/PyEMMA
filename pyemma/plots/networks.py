@@ -218,6 +218,7 @@ class NetworkPlot(object):
         elif arrow_labels is None:
             L = np.empty(np.shape(self.A), dtype=object)
             L[:, :] = ''
+            arrow_label_format = '%s'
         else:
             rcParams['font.size'] = old_fontsize
             raise ValueError('invalid arrow labels')
