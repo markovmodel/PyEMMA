@@ -1,14 +1,15 @@
+import sys
 import unittest
 import warnings
 
 import mock
-import sys
 
 import pyemma
 from pyemma.util.exceptions import PyEMMA_DeprecationWarning
 
 
-class TestMSMSimple(unittest.TestCase):
+
+class TestShowDeprecationWarningOnLowLevelAPIUsage(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
