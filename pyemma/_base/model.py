@@ -21,13 +21,14 @@ import numpy as _np
 #import inspect
 import warnings
 
+from pyemma._base.serialization.serialization import SerializableMixIn
 from pyemma.util.statistics import confidence_interval
 from pyemma.util.reflection import call_member, getargspec_no_self
 
 __author__ = 'noe'
 
 
-class Model(object):
+class Model(SerializableMixIn):
     """ Base class for pyEMMA models
 
     This class is inspired by sklearn's BaseEstimator class. However, we define parameter names not by the
@@ -103,6 +104,17 @@ class Model(object):
                 out.update((key + '__' + k, val) for k, val in deep_items)
             out[key] = value
         return out
+
+    def __getstate__(self):
+        return self.get_model_params()
+
+    # we do not need set state here, because it is trivial.
+
+    def __setstate__(self, state):
+        self.update_model_params(**state)
+
+    def __eq__(self, other):
+        return self.get_model_params() == other.get_model_params()
 
     # def set_model_params(self, **params):
     #     """Set the parameters of this estimator.
