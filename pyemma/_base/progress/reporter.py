@@ -205,3 +205,7 @@ class ProgressReporter(object):
         pg._eta.eta_epoch = 0
         _show_progressbar(pg, description=self._prog_rep_descriptions[stage])
         _hide_progressbar(pg)
+
+    # unpickleable
+    def __getstate__(self):
+        return {}
