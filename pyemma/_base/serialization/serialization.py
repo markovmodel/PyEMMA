@@ -29,11 +29,11 @@ class SerializableMixIn(object):
 
     """
 
-    def save(self, filename_or_filelike):
+    def save(self, filename):
         """
         Parameters
         -----------
-        filename_or_filelike: str or file like
+        filename: str or file like
             path to desired output file or a type which implements the file protocol.
         """
         try:
@@ -47,7 +47,7 @@ class SerializableMixIn(object):
         flattened = bytes(flattened)
 
         import bz2
-        with contextlib.closing(bz2.BZ2File(filename_or_filelike, 'w')) as fh:
+        with contextlib.closing(bz2.BZ2File(filename, 'w')) as fh:
             try:
                 fh.write(flattened)
             except:
