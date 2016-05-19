@@ -42,6 +42,7 @@ from pyemma.util import types as _types
 
 class MSM(_Model):
     r"""Markov model with a given transition matrix"""
+    _version = 0
 
     def __init__(self, P, pi=None, reversible=None, dt_model='1 step', neig=None, ncv=None):
         r"""Markov model with a given transition matrix
@@ -88,7 +89,9 @@ class MSM(_Model):
         self.set_model_params(P=P, pi=pi, reversible=reversible, dt_model=dt_model, neig=neig)
         self.ncv = ncv
 
-
+        #self._eigenvalues = None
+        # TODO: this changes behaviour!
+        #self._P = None
 
     # TODO: maybe rename to parametrize in order to avoid confusion with set_params that has a different behavior?
     def set_model_params(self, P=None, pi=None, reversible=None, dt_model='1 step', neig=None):
@@ -167,6 +170,25 @@ class MSM(_Model):
                     self.neig = 10
                 else:
                     self.neig = self._nstates
+
+    def __getstate__(self):
+        return self.__dict__
+
+    def __setstate__(self, state):
+        self.__dict__ = state
+
+    # def __getstate__(self):
+    #     res = {'_n_states': self._nstates,
+    #            }
+    #     if hasattr(self, '_eigenvalues'):
+    #         res['_eigenvalues'] = self._eigenvalues
+    #     try:
+    #         res['P'] = self.transition_matrix
+    #     except AttributeError:
+    #         pass
+    #
+    #     return res
+
 
     ################################################################################
     # Basic attributes

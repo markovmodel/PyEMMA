@@ -30,9 +30,11 @@ from pyemma.msm.models.msm import MSM as _MSM
 from pyemma.util.units import TimeUnit as _TimeUnit
 from pyemma.util import types as _types
 
+
 @aliased
 class MaximumLikelihoodMSM(_Estimator, _MSM):
     r"""Maximum likelihood estimator for MSMs given discrete trajectory statistics"""
+    _version = 0
 
     def __init__(self, lag=1, reversible=True, statdist_constraint=None,
                  count_mode='sliding', sparse=False,
@@ -163,6 +165,12 @@ class MaximumLikelihoodMSM(_Estimator, _MSM):
         # convergence parameters
         self.maxiter = maxiter
         self.maxerr = maxerr
+
+    def __getstate__(self):
+        return self.__dict__
+
+    def __setstate__(self, state):
+        self.__dict__ = state
 
     def _prepare_input_revpi(self, C, pi):
         """Max. state index visited by trajectories"""
