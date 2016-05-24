@@ -20,6 +20,7 @@ from pyemma._base.serialization.jsonpickler_handlers import register_ndarray_han
 from pyemma._base.logging import Loggable
 from pyemma.util.types import is_string
 import contextlib
+import six
 
 _reg_np_handler()
 
@@ -38,7 +39,10 @@ def load(file_like):
         file_like = bz2.BZ2File(file_like)
     with contextlib.closing(file_like) as file_like:
         inp = file_like.read()
-        inp = str(inp, encoding='ascii')
+        kw = {}
+        if six.PY3:
+            kw['encoding'] = 'ascii'
+        inp = str(inp, **kw)
         obj = jsonpickle.loads(inp)
 
     return obj
@@ -64,7 +68,8 @@ class SerializableMixIn(object):
                                       'the following error occured' % e)
             raise
 
-        flattened = bytes(flattened, encoding='ascii')
+        if six.PY3:
+            flattened = bytes(flattened, encoding='ascii')
 
         import bz2
         with contextlib.closing(bz2.BZ2File(filename, 'w')) as fh:
