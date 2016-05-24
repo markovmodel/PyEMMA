@@ -32,7 +32,7 @@ from pyemma.util import types as _types
 
 
 @aliased
-class MaximumLikelihoodMSM(_Estimator, _MSM):
+class MaximumLikelihoodMSM(_MSM, _Estimator):
     r"""Maximum likelihood estimator for MSMs given discrete trajectory statistics"""
     _version = 0
 
