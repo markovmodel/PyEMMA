@@ -49,10 +49,6 @@ class Model(SerializableMixIn):
                 raise RuntimeError("pyEMMA models should always specify their parameters in the signature"
                                    " of their set_model_params (no varargs). %s doesn't follow this convention."
                                    % (self, ))
-            # Remove 'self'
-            # XXX: This is going to fail if the init is a staticmethod, but
-            # who would do this?
-            args.pop(0)
             args.sort()
             return args
         else:
@@ -105,13 +101,12 @@ class Model(SerializableMixIn):
             out[key] = value
         return out
 
+    #  serialization protocol
     def __getstate__(self):
         return self.get_model_params()
 
-    # we do not need set state here, because it is trivial.
-
     def __setstate__(self, state):
-        self.update_model_params(**state)
+        self.set_model_params(**state)
 
     # def set_model_params(self, **params):
     #     """Set the parameters of this estimator.
@@ -159,18 +154,15 @@ class SampledModel(Model):
 
     # TODO: maybe rename to parametrize in order to avoid confusion with set_params that has a different behavior?
     def set_model_params(self, samples=None, conf=0.95):
-        print("set model params sampled model")
         self.update_model_params(samples=samples, conf=conf)
         if samples is not None:
             self.nsamples = len(samples)
+        else:
+            self.nsamples = 0
 
     def _check_samples_available(self):
         if self.samples is None:
             raise AttributeError('Model samples not available in '+str(self)+'. Call set_model_params with samples.')
-
-#    def mean_model(self):
-#        """Computes the mean model from the given samples"""
-#        raise NotImplementedError('mean_model is not implemented in class '+str(self.__class__))
 
     def sample_f(self, f, *args, **kwargs):
         r"""Evaluated method f for all samples
