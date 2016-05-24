@@ -91,5 +91,10 @@ class Loggable(object):
         return remove_logger
 
     def __getstate__(self):
-        # do not pickle Loggable's stuff (we want to recreate instead)
-        return {}
+        # do not pickle the logger instance
+        d = dict(self.__dict__)
+        try:
+            del d['_logger_instance']
+        except KeyError:
+            pass
+        return d
