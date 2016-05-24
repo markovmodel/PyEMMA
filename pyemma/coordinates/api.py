@@ -1461,7 +1461,7 @@ def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1, metric='euc
     if dmin == -1:
         raise ValueError("provide a minimum distance for clustering, e.g. 2.0")
     from pyemma.coordinates.clustering.regspace import RegularSpaceClustering as _RegularSpaceClustering
-    res = _RegularSpaceClustering(dmin, max_centers=max_centers, metric=metric, n_jobs=n_jobs)
+    res = _RegularSpaceClustering(dmin, max_centers=max_centers, metric=metric, n_jobs=n_jobs, stride=stride)
     return _param_stage(data, res, stride=stride, chunk_size=chunk_size)
 
 
@@ -1549,7 +1549,7 @@ def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True,
         raise ValueError('You have to provide centers in form of a filename'
                          ' or NumPy array or a reader created by source function')
     from pyemma.coordinates.clustering.assign import AssignCenters
-    res = AssignCenters(centers, metric=metric, n_jobs=n_jobs)
+    res = AssignCenters(centers, metric=metric, n_jobs=n_jobs, stride=stride)
 
     parametrized_stage = _param_stage(data, res, stride=stride, chunk_size=chunk_size)
     if return_dtrajs and data is not None:
