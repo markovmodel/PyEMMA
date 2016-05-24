@@ -11,12 +11,12 @@ import base64
 import quopri
 import sys
 
-import jsonpickle.util as util
-import jsonpickle.tags as tags
-import jsonpickle.handlers as handlers
+from . import util
+from . import tags
+from . import handlers
 
-from jsonpickle.compat import numeric_types, set, unicode
-from jsonpickle.backend import JSONBackend
+from .compat import numeric_types, set, unicode
+from .backend import JSONBackend
 
 
 def decode(string, backend=None, context=None, keys=False, reset=True,
@@ -180,7 +180,9 @@ class Unpickler(object):
         reduce_val = obj[tags.REDUCE]
         f, args, state, listitems, dictitems = map(self._restore, reduce_val)
 
-        if f == tags.NEWOBJ or f.__name__ == '__newobj__':
+        print("f: ", str(f))
+
+        if f == tags.NEWOBJ or isinstance(f, dict) or f.__name__ == '__newobj__':
             # mandated special case
             cls = args[0]
             stage1 = cls.__new__(cls, *args[1:])
