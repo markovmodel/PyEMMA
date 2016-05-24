@@ -180,9 +180,7 @@ class Unpickler(object):
         reduce_val = obj[tags.REDUCE]
         f, args, state, listitems, dictitems = map(self._restore, reduce_val)
 
-        print("f: ", str(f))
-
-        if f == tags.NEWOBJ or isinstance(f, dict) or f.__name__ == '__newobj__':
+        if f == tags.NEWOBJ or f.__name__ == '__newobj__':
             # mandated special case
             cls = args[0]
             stage1 = cls.__new__(cls, *args[1:])

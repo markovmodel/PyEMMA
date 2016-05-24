@@ -177,17 +177,8 @@ class MSM(_Model):
     def __setstate__(self, state):
         self.__dict__ = state
 
-    # def __getstate__(self):
-    #     res = {'_n_states': self._nstates,
-    #            }
-    #     if hasattr(self, '_eigenvalues'):
-    #         res['_eigenvalues'] = self._eigenvalues
-    #     try:
-    #         res['P'] = self.transition_matrix
-    #     except AttributeError:
-    #         pass
-    #
-    #     return res
+    def __eq__(self, other):
+        return np.allclose(self.transition_matrix, other.transition_matrix)
 
 
     ################################################################################

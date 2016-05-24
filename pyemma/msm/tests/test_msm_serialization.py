@@ -54,7 +54,4 @@ class TestMSMSerialization(unittest.TestCase):
             self.bmsm_rev.save(f.name)
             new_obj = load_model(f.name)
 
-        self.assertEqual(new_obj, self.bmsm_rev)
-
-        np.testing.assert_equal(new_obj.transition_matrix, self.bmsm_rev.transition_matrix)
-        self.assertEqual(new_obj._samples, self.bmsm_rev._samples)
+        np.testing.assert_equal(new_obj.samples, self.bmsm_rev.samples)

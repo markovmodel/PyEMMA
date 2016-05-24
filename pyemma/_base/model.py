@@ -113,9 +113,6 @@ class Model(SerializableMixIn):
     def __setstate__(self, state):
         self.update_model_params(**state)
 
-    def __eq__(self, other):
-        return self.get_model_params() == other.get_model_params()
-
     # def set_model_params(self, **params):
     #     """Set the parameters of this estimator.
     #     The method works on simple estimators as well as on nested objects
@@ -162,6 +159,7 @@ class SampledModel(Model):
 
     # TODO: maybe rename to parametrize in order to avoid confusion with set_params that has a different behavior?
     def set_model_params(self, samples=None, conf=0.95):
+        print("set model params sampled model")
         self.update_model_params(samples=samples, conf=conf)
         if samples is not None:
             self.nsamples = len(samples)

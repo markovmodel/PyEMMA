@@ -7,26 +7,26 @@ This module contains custom serialization handlers for jsonpickle to flatten and
 import numpy as np
 from io import BytesIO
 
-from jsonpickle import handlers
-from jsonpickle import util
+from pyemma._ext.jsonpickle import handlers
+from pyemma._ext.jsonpickle import util
+from pyemma._ext.jsonpickle.handlers import unregister as _unregister
+from pyemma._ext.jsonpickle.ext.numpy import (register_handlers as _register_handlers,
+                                              unregister_handlers as _unregister_handlers)
 
 
 def register_ndarray_handler():
     """ Override jsonpickle handler for numpy arrays with compressed NPZ handler.
     First unregisters the default handler
     """
-    from jsonpickle.ext.numpy import unregister_handlers
-    unregister_handlers()
+    _unregister_handlers()
     NumpyNPZHandler.handles(np.ndarray)
 
 
 def unregister_ndarray_handler():
     """ Restore jsonpickle default numpy array handler.
     """
-    from jsonpickle.handlers import unregister
-    from jsonpickle.ext.numpy import register_handlers
-    unregister(np.ndarray)
-    register_handlers()
+    _unregister(np.ndarray)
+    _register_handlers()
 
 
 class NumpyNPZHandler(handlers.BaseHandler):
