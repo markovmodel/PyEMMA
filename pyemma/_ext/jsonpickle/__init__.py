@@ -59,7 +59,7 @@ from .backend import JSONBackend
 from .version import VERSION
 
 # ensure built-in handlers are loaded
-__import__('jsonpickle.handlers')
+__import__('pyemma._ext.jsonpickle.handlers')
 
 __all__ = ('encode', 'decode')
 __version__ = VERSION
