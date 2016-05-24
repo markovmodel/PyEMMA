@@ -38,6 +38,24 @@ from . import plots
 from . import thermo
 
 
+def load(filename):
+    """ Restores a previously saved model or estimator from disk.
+
+    Parameters
+    ----------
+    filename : str
+        path to filename, where the model has been stored.
+
+    Returns
+    -------
+    obj : Model or Estimator
+        the instance containing the same parameters as the saved model/estimator.
+
+    """
+    from ._base.serialization.serialization import load as _load
+    return _load(filename)
+
+
 def setup_package():
     # purpose is for nose testing only to silence progress bars etc.
     import warnings

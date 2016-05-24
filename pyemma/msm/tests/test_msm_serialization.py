@@ -1,11 +1,28 @@
+# This file is part of PyEMMA.
+#
+# Copyright (c) 2016, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+#
+# PyEMMA is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import unittest
 from tempfile import NamedTemporaryFile
 
-from pyemma import datasets
-from pyemma.msm import MSM, bayesian_markov_model
 import numpy as np
 
-from pyemma.msm.api import load_model
+from pyemma import datasets
+from pyemma.msm import bayesian_markov_model
+from pyemma import load
 
 
 class TestMSMSerialization(unittest.TestCase):
@@ -39,19 +56,23 @@ class TestMSMSerialization(unittest.TestCase):
     def test_msm_save_load(self):
         with NamedTemporaryFile(delete=False) as f:
             self.msm.save(f.name)
-            new_obj = load_model(f.name)
-
-        # test for equality of model params
-        self.assertEqual(new_obj, self.msm)
+            new_obj = load(f.name)
 
         np.testing.assert_equal(new_obj.transition_matrix, self.msm.transition_matrix)
         self.assertEqual(new_obj.nstates, self.msm.nstates)
         self.assertEqual(new_obj.is_sparse, self.msm.is_sparse)
         self.assertEqual(new_obj.is_reversible, self.msm.is_reversible)
 
+        self.assertEqual(new_obj, self.msm)
+
     def test_sampled_MSM_save_load(self):
         with NamedTemporaryFile(delete=False) as f:
             self.bmsm_rev.save(f.name)
-            new_obj = load_model(f.name)
+            new_obj = load(f.name)
 
         np.testing.assert_equal(new_obj.samples, self.bmsm_rev.samples)
+
+        np.testing.assert_equal(new_obj.transition_matrix, self.bmsm_rev.transition_matrix)
+        self.assertEqual(new_obj.nstates, self.bmsm_rev.nstates)
+        self.assertEqual(new_obj.is_sparse, self.bmsm_rev.is_sparse)
+        self.assertEqual(new_obj.is_reversible, self.bmsm_rev.is_reversible)

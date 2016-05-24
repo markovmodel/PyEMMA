@@ -54,18 +54,6 @@ __all__ = ['markov_model',
 # MARKOV STATE MODELS - flat Markov chains on discrete observation space
 # =============================================================================
 
-def load_model(filename):
-    """ Restores a previously saved model from disk.
-
-    Parameters
-    ----------
-    filename : str
-        path to filename, where the model has been stored.
-
-    """
-    return _load(filename)
-
-
 @shortcut('its')
 def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True,
                    errors=None, nsamples=50, n_jobs=1, show_progress=True):
