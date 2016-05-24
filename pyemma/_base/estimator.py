@@ -21,6 +21,7 @@ from __future__ import absolute_import, print_function
 from six.moves import range
 import inspect, sys
 
+from pyemma._base.serialization.serialization import SerializableMixIn
 from pyemma._ext.sklearn.base import BaseEstimator as _BaseEstimator
 from pyemma._ext.sklearn.parameter_search import ParameterGrid
 from pyemma.util import types as _types
@@ -312,7 +313,7 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
         return res
 
 
-class Estimator(_BaseEstimator, Loggable):
+class Estimator(_BaseEstimator, SerializableMixIn, Loggable):
     """ Base class for pyEMMA estimators
 
     """
@@ -378,3 +379,37 @@ class Estimator(_BaseEstimator, Loggable):
         except AttributeError:
             raise AttributeError(
                 'Model has not yet been estimated. Call estimate(X) or fit(X) first')
+
+    def __getstate__(self):
+        res = self.get_params()
+        # remember if it has been estimated.
+        res['_estimated'] = self._estimated
+        # if this estimator has been estimated, store the model.
+        if self._estimated:
+            if self.model is self:
+                from pyemma._base.model import Model
+                res.update(Model.__getstate__(self))
+                res['model'] = ()  # this should indicate (self.model is self) for purpose of restoring
+            else:
+                res['model'] = self.model
+        else:
+            res['model'] = None
+
+        return res
+
+    def __setstate__(self, state):
+        self._estimated = state.pop('_estimated')
+
+        # if we have a model, it can be (), which means (self.model is self).
+        # When this is the case, we update its model parameters.
+        model = state.pop('model')
+        if model is ():
+            model = self
+            self.update_model_params(**state)
+        self._model = model
+
+        # first set parameters of estimator, items in state which are not estimator parameters
+        names = self._get_param_names()
+        new_state = {key: state[key] for key in names if key in state}
+        self.set_params(**new_state)
+

@@ -89,10 +89,6 @@ class MSM(_Model):
         self.set_model_params(P=P, pi=pi, reversible=reversible, dt_model=dt_model, neig=neig)
         self.ncv = ncv
 
-        #self._eigenvalues = None
-        # TODO: this changes behaviour!
-        #self._P = None
-
     # TODO: maybe rename to parametrize in order to avoid confusion with set_params that has a different behavior?
     def set_model_params(self, P=None, pi=None, reversible=None, dt_model='1 step', neig=None):
         """ Call to set all basic model parameters.
@@ -171,15 +167,13 @@ class MSM(_Model):
                 else:
                     self.neig = self._nstates
 
-    def __getstate__(self):
-        return self.__dict__
-
-    def __setstate__(self, state):
-        self.__dict__ = state
-
     def __eq__(self, other):
-        return np.allclose(self.transition_matrix, other.transition_matrix)
-
+        if not isinstance(other, MSM):
+            return False
+        return (np.allclose(self.transition_matrix, other.transition_matrix) and
+                self.sparse == other.sparse and self.neig == other.neig and
+                self.reversible == other.reversible and
+                self.timestep_model == other.timestep_model)
 
     ################################################################################
     # Basic attributes

@@ -18,10 +18,10 @@
 
 from __future__ import absolute_import
 import numpy as _np
-#import inspect
 import warnings
 
 from pyemma._base.serialization.serialization import SerializableMixIn
+from pyemma._ext.sklearn.base import _pprint
 from pyemma.util.statistics import confidence_interval
 from pyemma.util.reflection import call_member, getargspec_no_self
 
@@ -103,10 +103,15 @@ class Model(SerializableMixIn):
 
     #  serialization protocol
     def __getstate__(self):
-        return self.get_model_params()
+        state = self.get_model_params()
+        return state
 
     def __setstate__(self, state):
-        self.set_model_params(**state)
+        # remove items in state which are not model parameters
+        names = self._get_model_param_names()
+        new_state = {key: state[key] for key in names}
+
+        self.update_model_params(**new_state)
 
     # def set_model_params(self, **params):
     #     """Set the parameters of this estimator.
@@ -140,11 +145,10 @@ class Model(SerializableMixIn):
     #             setattr(self, key, value)
     #     return self
 
-    # FIXME: __repr__ is incompatible with Estimator __repr__. Need a general fix for a nice representation
-#    def __repr__(self):
-#        class_name = self.__class__.__name__
-#        return '%s(%s)' % (class_name, _pprint(self.get_model_params(deep=False),
-#                                               offset=len(class_name),),)
+    def __repr__(self):
+        class_name = self.__class__.__name__
+        return '%s(%s)' % (class_name, _pprint(self.get_model_params(deep=False),
+                                               offset=len(class_name),),)
 
 
 class SampledModel(Model):
@@ -157,8 +161,6 @@ class SampledModel(Model):
         self.update_model_params(samples=samples, conf=conf)
         if samples is not None:
             self.nsamples = len(samples)
-        else:
-            self.nsamples = 0
 
     def _check_samples_available(self):
         if self.samples is None:
