@@ -1016,3 +1016,19 @@ class MSM(_Model):
         # are we ready?
         self._assert_metastable()
         return self._metastable_assignments
+
+    def __getstate__(self):
+        parent_state = super(MSM, self).__getstate__()
+
+        parent_state['_nstates'] = self._nstates
+        parent_state['sparse'] = self.sparse
+        parent_state['_timeunit_model'] = self._timeunit_model
+
+        return parent_state
+
+    def __setstate__(self, state):
+        super(MSM, self).__setstate__(state)
+
+        self._nstates = state['_nstates']
+        self.sparse = state['sparse']
+        self._timeunit_model = state['_timeunit_model']
