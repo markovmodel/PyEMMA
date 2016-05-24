@@ -19,16 +19,15 @@
 from __future__ import absolute_import
 from six.moves import range
 
-__author__ = 'noe'
-
 from pyemma.msm.models.msm import MSM as _MSM
 from pyemma.msm.estimators.maximum_likelihood_msm import MaximumLikelihoodMSM as _MLMSM
 from pyemma.msm.models.msm_sampled import SampledMSM as _SampledMSM
 from pyemma.util.types import ensure_dtraj_list
-from pyemma._base.progress import ProgressReporter
+
+__author__ = 'noe'
 
 
-class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporter):
+class BayesianMSM(_MLMSM, _SampledMSM):
     r"""Bayesian Markov state model estimator"""
 
     def __init__(self, lag=1, nsamples=100, nsteps=None, reversible=True,
@@ -190,8 +189,8 @@ class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporter):
 
         # construct sampled MSMs
         samples = []
-        for i in range(self.nsamples):
-            samples.append(_MSM(sample_Ps[i], pi=sample_mus[i], reversible=self.reversible, dt_model=self.dt_model))
+        for i, sample in enumerate(sample_Ps):
+            samples.append(_MSM(sample, pi=sample_mus[i], reversible=self.reversible, dt_model=self.dt_model))
 
         # update self model
         self.update_model_params(samples=samples)
