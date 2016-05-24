@@ -76,3 +76,7 @@ class TestMSMSerialization(unittest.TestCase):
         self.assertEqual(new_obj.nstates, self.bmsm_rev.nstates)
         self.assertEqual(new_obj.is_sparse, self.bmsm_rev.is_sparse)
         self.assertEqual(new_obj.is_reversible, self.bmsm_rev.is_reversible)
+
+
+if __name__ == '__main__':
+    unittest.main()

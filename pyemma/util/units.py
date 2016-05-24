@@ -24,6 +24,7 @@ __author__ = 'noe'
 import numpy as np
 import math
 
+
 class TimeUnit(object):
 
     _UNIT_STEP = -1
@@ -90,6 +91,9 @@ class TimeUnit(object):
             return str(self._factor)+' step'
         else:
             return str(self._factor)+' '+self._unit_names[self._unit]
+
+    def __repr__(self):
+        return str(self)
 
     @property
     def dt(self):
