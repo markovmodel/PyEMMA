@@ -39,11 +39,11 @@ def load(file_like):
         file_like = bz2.BZ2File(file_like)
     with contextlib.closing(file_like) as file_like:
         inp = file_like.read()
-        kw = {}
-        if six.PY3:
-            kw['encoding'] = 'ascii'
-        inp = str(inp, **kw)
-        obj = jsonpickle.loads(inp)
+    kw = {}
+    if six.PY3:
+        kw['encoding'] = 'ascii'
+    inp = str(inp, **kw)
+    obj = jsonpickle.loads(inp)
 
     return obj
 
