@@ -166,12 +166,6 @@ class MaximumLikelihoodMSM(_Estimator, _MSM):
         self.maxiter = maxiter
         self.maxerr = maxerr
 
-    def __getstate__(self):
-        return self.__dict__
-
-    def __setstate__(self, state):
-        self.__dict__ = state
-
     def _prepare_input_revpi(self, C, pi):
         """Max. state index visited by trajectories"""
         nC = C.shape[0]
