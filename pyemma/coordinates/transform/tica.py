@@ -40,7 +40,12 @@ __all__ = ['TICA']
 
 
 class TICAModel(Model):
-    pass
+    def set_model_params(self, mean=None, cov_tau=None, cov=None,
+                         cumvar=None, eigenvalues=None, eigenvectors=None):
+        self.update_model_params(cov=cov, cov_tau=cov_tau,
+                                 mean=mean, cumvar=cumvar,
+                                 eigenvalues=eigenvalues,
+                                 eigenvectors=eigenvectors)
 
 
 @decorator

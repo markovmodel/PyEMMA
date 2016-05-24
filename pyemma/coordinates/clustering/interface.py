@@ -63,6 +63,9 @@ class AbstractClustering(StreamingTransformer, Model, ClusterMixin):
         self._index_states = []
         self.n_jobs = n_jobs
 
+    def set_model_params(self, clustercenters=None):
+        self.clustercenters = clustercenters
+
     @property
     def n_jobs(self):
         """ Returns number of jobs/threads to use during assignment of data.
