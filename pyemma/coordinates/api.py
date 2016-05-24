@@ -1142,7 +1142,7 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, stride=1,
         warnings.warn("user provided mean for TICA is deprecated and its value is ignored.")
 
     res = TICA(lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map,
-               mean=mean, remove_mean=remove_mean)
+               mean=mean, remove_mean=remove_mean, stride=stride)
     return _param_stage(data, res, stride=stride)
 
 
