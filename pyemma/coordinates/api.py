@@ -1305,7 +1305,8 @@ def cluster_kmeans(data=None, k=None, max_iter=10, tolerance=1e-5, stride=1,
     """
     from pyemma.coordinates.clustering.kmeans import KmeansClustering
     res = KmeansClustering(n_clusters=k, max_iter=max_iter, metric=metric, tolerance=tolerance,
-                           init_strategy=init_strategy, fixed_seed=fixed_seed, n_jobs=n_jobs)
+                           init_strategy=init_strategy, fixed_seed=fixed_seed, n_jobs=n_jobs,
+                           stride=stride)
     return _param_stage(data, res, stride=stride, chunk_size=chunk_size)
 
 
