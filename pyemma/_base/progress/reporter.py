@@ -20,7 +20,7 @@ Created on 16.07.2015
 @author: marscher
 '''
 
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import
 
 from pyemma._base.progress.bar import ProgressBar as _ProgressBar
 from pyemma._base.progress.bar import show_progressbar as _show_progressbar
@@ -205,7 +205,3 @@ class ProgressReporter(object):
         pg._eta.eta_epoch = 0
         _show_progressbar(pg, description=self._prog_rep_descriptions[stage])
         _hide_progressbar(pg)
-
-    # unpickleable
-    def __getstate__(self):
-        return {}
