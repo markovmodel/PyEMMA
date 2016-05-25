@@ -191,7 +191,7 @@ class ProgressReporter(object):
             for callback in self._prog_rep_callbacks[stage]:
                 callback(stage, pg, **kw)
 
-    def _progress_force_finish(self, stage=0):
+    def _progress_force_finish(self, stage=0, description=None):
         """ forcefully finish the progress for given stage """
         if not self.show_progress:
             return
@@ -203,5 +203,11 @@ class ProgressReporter(object):
             return
         pg.numerator = pg.denominator
         pg._eta.eta_epoch = 0
-        _show_progressbar(pg, description=self._prog_rep_descriptions[stage])
+
+        if description is not None:
+            pg.description = description
+        else:
+            description = self._prog_rep_descriptions[stage]
+
+        _show_progressbar(pg, description=description)
         _hide_progressbar(pg)
