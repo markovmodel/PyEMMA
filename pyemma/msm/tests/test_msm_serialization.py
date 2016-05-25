@@ -19,6 +19,7 @@ import unittest
 from tempfile import NamedTemporaryFile
 
 import numpy as np
+import pyemma
 
 from pyemma import datasets
 from pyemma.msm import bayesian_markov_model
@@ -26,7 +27,6 @@ from pyemma import load
 
 
 class TestMSMSerialization(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls):
         data = datasets.load_2well_discrete()
@@ -76,6 +76,27 @@ class TestMSMSerialization(unittest.TestCase):
         self.assertEqual(new_obj.nstates, self.bmsm_rev.nstates)
         self.assertEqual(new_obj.is_sparse, self.bmsm_rev.is_sparse)
         self.assertEqual(new_obj.is_reversible, self.bmsm_rev.is_reversible)
+
+    def test_ML_MSM_estimated(self):
+        self.lag = {'dtrajs':
+                        [[0, 1, 2, 2, 2, 2, 1, 2, 2, 2, 1, 0, 0, 0, 0, 0, 0, 0],
+                         [0, 0, 0, 0, 1, 1, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0]],
+                    'lag': 2}
+        params = self.lag
+        ml_msm = pyemma.msm.estimate_markov_model(**params)
+        assert isinstance(ml_msm, pyemma.msm.MaximumLikelihoodMSM)
+
+        with NamedTemporaryFile(delete=False) as f:
+            ml_msm.save(f.name)
+            new_obj = load(f.name)
+
+
+        self.assertEqual(new_obj._estimated, new_obj._estimated)
+        np.testing.assert_equal(new_obj.transition_matrix, ml_msm.transition_matrix)
+        np.testing.assert_equal(new_obj.count_matrix_active, ml_msm.count_matrix_active)
+        np.testing.assert_equal(new_obj.active_set, ml_msm.active_set)
+        np.testing.assert_equal(new_obj.ncv, ml_msm.ncv)
+        np.testing.assert_equal(new_obj.discrete_trajectories_full, ml_msm.discrete_trajectories_full)
 
 
 if __name__ == '__main__':
