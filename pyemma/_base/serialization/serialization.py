@@ -100,7 +100,29 @@ class SerializableMixIn(object):
             raise DeveloperError("your class does not implement the deserialization protocol of PyEMMA.")
 
         if obj._version != cls._version:
-            pass
-            #raise LoadedObjectVersionMismatchException("Version mismatch")
+            raise LoadedObjectVersionMismatchException("Version mismatch")
 
         return obj
+
+    def _get_state_of_serializeable_fields(self, klass):
+        """ :return a dictionary {k:v} for k in self.serialize_fields and v=getattr(self, k)"""
+        if not hasattr(self, '_serialize_fields'):
+            return {}
+        res = {}
+        for field in klass._serialize_fields:
+            # only try to get fields, we actually have.
+            if hasattr(self, field):
+                res[field] = getattr(self, field)
+        return res
+
+    def _set_state_from_serializeable_fields_and_state(self, state, klass):
+        """ set only fields from state, which are present in klass.serialize_fields """
+        for field in klass._serialize_fields:
+            if field in state:
+                setattr(self, field, state[field])
+
+    def __getstate__(self):
+        return {'_version': self._version}
+
+    def __setstate__(self, state):
+        self._version = state.pop('_version')
