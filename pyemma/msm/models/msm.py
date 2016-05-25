@@ -44,6 +44,12 @@ class MSM(_Model):
     r"""Markov model with a given transition matrix"""
     _version = 0
 
+    _serialize_fields = ('_R', '_D', '_L', '_eigenvalues', 'ncv',
+                         '_timeunit_model', 'sparse',
+                         '_metastable_assignments', '_metastable_computed', '_metastable_distributions',
+                         '_metastable_memberships', '_metastable_sets', '_pcca',
+                         '_nstates', '_timeunit_model')
+
     def __init__(self, P, pi=None, reversible=None, dt_model='1 step', neig=None, ncv=None):
         r"""Markov model with a given transition matrix
 
@@ -285,7 +291,7 @@ class MSM(_Model):
             if m < neig:
                 # not enough eigenpairs present - recompute:
                 self._compute_eigendecomposition(neig)
-        except:
+        except AttributeError:
             # no eigendecomposition yet - compute:
             self._compute_eigendecomposition(neig)
 
@@ -866,7 +872,7 @@ class MSM(_Model):
             if self._pcca.n_metastable != m:
                 # incorrect number of states - recompute
                 self._pcca = PCCA(self.transition_matrix, m)
-        except:
+        except AttributeError:
             # didn't have a pcca object yet - compute
             self._pcca = PCCA(self.transition_matrix, m)
 
@@ -1020,15 +1026,19 @@ class MSM(_Model):
     def __getstate__(self):
         parent_state = super(MSM, self).__getstate__()
 
-        parent_state['_nstates'] = self._nstates
-        parent_state['sparse'] = self.sparse
-        parent_state['_timeunit_model'] = self._timeunit_model
+        # ML_MSM doesn't call init of MSM, so we do not have nstates
+        if hasattr(self, '_nstates'):
+            parent_state['_nstates'] = self._nstates
+
+        parent_state.update(self._get_state_of_serializeable_fields(MSM))
 
         return parent_state
 
     def __setstate__(self, state):
         super(MSM, self).__setstate__(state)
 
-        self._nstates = state['_nstates']
-        self.sparse = state['sparse']
-        self._timeunit_model = state['_timeunit_model']
+        # ML_MSM doesn't call init of MSM, so we do not have nstates
+        if '_nstates' in state:
+            self._nstates = state['_nstates']
+
+        self._set_state_from_serializeable_fields_and_state(state, klass=MSM)

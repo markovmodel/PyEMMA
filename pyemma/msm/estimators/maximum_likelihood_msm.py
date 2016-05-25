@@ -34,7 +34,13 @@ from pyemma.util import types as _types
 @aliased
 class MaximumLikelihoodMSM(_MSM, _Estimator):
     r"""Maximum likelihood estimator for MSMs given discrete trajectory statistics"""
+    # version for serialization
     _version = 0
+    # internal fields (eg. no estimator [ctor] or model parameter [set_model_params])
+    _serialize_fields = ('_C_active', '_C_full', '_active_set', '_active_state_indexes', '_connected_sets',
+                         '_dtrajs_full',  # we dont want _dtraj_active, since it is recomputed every time...
+                         '_nstates_full',
+                         )
 
     def __init__(self, lag=1, reversible=True, statdist_constraint=None,
                  count_mode='sliding', sparse=False,
@@ -160,11 +166,16 @@ class MaximumLikelihoodMSM(_MSM, _Estimator):
 
         # time step
         self.dt_traj = dt_traj
-        self.timestep_traj = _TimeUnit(dt_traj)
+        self._timeunit_model = _TimeUnit(dt_traj)
 
         # convergence parameters
         self.maxiter = maxiter
         self.maxerr = maxerr
+
+    @property
+    # TODO: maybe use the same field as in MSM?
+    def timestep_traj(self):
+        return self._timeunit_model
 
     def _prepare_input_revpi(self, C, pi):
         """Max. state index visited by trajectories"""
@@ -218,8 +229,8 @@ class MaximumLikelihoodMSM(_MSM, _Estimator):
             # check if this MSM seems too large to be dense
             if dtrajstats.nstates > 4000 and not self.sparse:
                 self.logger.warning('Building a dense MSM with ' + str(dtrajstats.nstates) + ' states. This can be '
-                                  'inefficient or unfeasible in terms of both runtime and memory consumption. '
-                                  'Consider using sparse=True.')
+                                                                                             'inefficient or unfeasible in terms of both runtime and memory consumption. '
+                                                                                             'Consider using sparse=True.')
 
         # count lagged
         dtrajstats.count_lagged(self.lag, count_mode=self.count_mode)
@@ -241,9 +252,9 @@ class MaximumLikelihoodMSM(_MSM, _Estimator):
             # for 'None' and 'all' all visited states are active
             self.active_set = dtrajstats.visited_set
 
-        # FIXME: setting is_estimated before so that we can start using the parameters just set, but this is not clean!
+        # FIXME: setting _estimated before so that we can start using the parameters just set, but this is not clean!
         # is estimated
-        self._is_estimated = True
+        self._estimated = True
 
         # if active set is empty, we can't do anything.
         if _np.size(self.active_set) == 0:
@@ -303,7 +314,7 @@ class MaximumLikelihoodMSM(_MSM, _Estimator):
         return self
 
     def _check_is_estimated(self):
-        assert self._is_estimated, 'You tried to access model parameters before estimating it - run estimate first!'
+        assert self._estimated, 'You tried to access model parameters before estimating it - run estimate first!'
 
     ################################################################################
     # Basic attributes
@@ -552,7 +563,7 @@ class MaximumLikelihoodMSM(_MSM, _Estimator):
         self._check_is_estimated()
         try:  # if we have this attribute, return it
             return self._active_state_indexes
-        except:  # didn't exist? then create it.
+        except AttributeError:  # didn't exist? then create it.
             import pyemma.util.discrete_trajectories as dt
 
             self._active_state_indexes = dt.index_states(self.discrete_trajectories_full, subset=self.active_set)
@@ -707,10 +718,10 @@ class MaximumLikelihoodMSM(_MSM, _Estimator):
             timescale_ratios = self.timescales()[:-1] / self.timescales()[1:]
             if timescale_ratios[nhidden-2] < 1.5:
                 self.logger.warning('Requested coarse-grained model with ' + str(nhidden) + ' metastable states at ' +
-                                 'lag=' + str(self.lag) + '.' + 'The ratio of relaxation timescales between ' +
-                                 str(nhidden) + ' and ' + str(nhidden+1) + ' states is only ' +
-                                 str(timescale_ratios[nhidden-2]) + ' while we recommend at least 1.5. ' +
-                                 ' It is possible that the resulting HMM is inaccurate. Handle with caution.')
+                                    'lag=' + str(self.lag) + '.' + 'The ratio of relaxation timescales between ' +
+                                    str(nhidden) + ' and ' + str(nhidden+1) + ' states is only ' +
+                                    str(timescale_ratios[nhidden-2]) + ' while we recommend at least 1.5. ' +
+                                    ' It is possible that the resulting HMM is inaccurate. Handle with caution.')
         # run HMM estimate
         from pyemma.msm.estimators.maximum_likelihood_hmsm import MaximumLikelihoodHMSM
         estimator = MaximumLikelihoodHMSM(lag=self.lagtime, nstates=nhidden, msm_init=self,
@@ -802,3 +813,22 @@ class MaximumLikelihoodMSM(_MSM, _Estimator):
                                         err_est=err_est, show_progress=show_progress)
         ck.estimate(self._dtrajs_full)
         return ck
+
+    def __getstate__(self):
+        # get state of model and estimator
+        model_state = _MSM.__getstate__(self)
+        estimator_state = _Estimator.__getstate__(self)
+
+        model_state.update(estimator_state)
+
+        res_fields = self._get_state_of_serializeable_fields(MaximumLikelihoodMSM)
+        model_state.update(res_fields)
+
+        return model_state
+
+    def __setstate__(self, state):
+        _Estimator.__setstate__(self, state)
+        _MSM.__setstate__(self, state)
+
+        self._set_state_from_serializeable_fields_and_state(state, klass=MaximumLikelihoodMSM)
+
