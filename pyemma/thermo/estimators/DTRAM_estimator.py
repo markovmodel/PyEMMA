@@ -203,7 +203,7 @@ class DTRAM(_Estimator, _MEMM, _ProgressReporter):
                         therm_energies=self.therm_energies, conf_energies=self.conf_energies,
                         callback=_ConvergenceProgressIndicatorCallBack(
                             self, 'WHAM init.', self.init_maxiter, self.init_maxerr))
-                self._progress_force_finish(stage='WHAM init.')
+                self._progress_force_finish(stage='WHAM init.', description='WHAM init.')
 
         # run estimator
         self.therm_energies, self.conf_energies, self.log_lagrangian_mult, \
@@ -215,7 +215,7 @@ class DTRAM(_Estimator, _MEMM, _ProgressReporter):
                 save_convergence_info=self.save_convergence_info,
                 callback=_ConvergenceProgressIndicatorCallBack(
                     self, 'DTRAM', self.maxiter, self.maxerr))
-        self._progress_force_finish(stage='DTRAM')
+        self._progress_force_finish(stage='DTRAM', description='DTRAM')
 
         # compute models
         models = [_dtram.estimate_transition_matrix(
