@@ -22,6 +22,7 @@ class _ProgressIndicatorCallBack(object):
     def __init__(self):
         self.time = 0.0
 
+    # TODO: unify this concept in ProgressReporter (but make it adaptive)
     def waiting(self):
         now = time.time()
         if now - self.time < .2:
