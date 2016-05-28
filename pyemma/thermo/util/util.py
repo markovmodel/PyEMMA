@@ -88,8 +88,8 @@ def get_averaged_bias_matrix(bias_sequences, dtrajs, nstates=None):
 
 def _ensure_umbrella_center(candidate, dimension):
     if isinstance(candidate, (_np.ndarray)):
-        assert candidate.ndim == 1
-        assert candidate.shape[0] == dimension
+        assert candidate.ndim == 1, str(candidate) + " has ndim %d" % candidate.ndim
+        assert candidate.shape[0] == dimension, str(candidate) + "has shape[0] %d" % candidate.shape[0]
         return candidate.astype(_np.float64)
     elif types.is_int(candidate) or types.is_float(candidate):
         return candidate * _np.ones(shape=(dimension,), dtype=_np.float64)
@@ -98,9 +98,9 @@ def _ensure_umbrella_center(candidate, dimension):
 
 def _ensure_force_constant(candidate, dimension):
     if isinstance(candidate, (_np.ndarray)):
-        assert candidate.shape[0] == dimension
+        assert candidate.shape[0] == dimension, str(candidate) + " has shape[0] %d" % candidate.shape[0]
         if candidate.ndim == 2:
-            assert candidate.shape[1] == dimension
+            assert candidate.shape[1] == dimension, str(candidate) + " has shape[1] %d" % candidate.shape[1]
             return candidate.astype(_np.float64)
         elif candidate.ndim == 1:
             return _np.diag(candidate).astype(dtype=_np.float64)
@@ -155,8 +155,8 @@ def _get_umbrella_sampling_parameters(
     umbrella_centers = _np.array(umbrella_centers, dtype=_np.float64)
     force_constants = _np.array(force_constants, dtype=_np.float64)
     if kT is not None:
-        assert isinstance(kT, (int, float))
-        assert kT > 0.0
+        assert isinstance(kT, (int, float)),  "kT has wrong type:" + str(type(kT))
+        assert kT > 0.0, "non-positive kT: %f" % kT
         force_constants /= kT
     return ttrajs, umbrella_centers, force_constants, unbiased_state
 
@@ -340,5 +340,5 @@ def assign_unbiased_state_label(memm_list, unbiased_state):
     if unbiased_state is None:
         return
     for memm in memm_list:
-        assert 0 <= unbiased_state < len(memm.models)
+        assert 0 <= unbiased_state < len(memm.models), "invalid state: " + str(unbiased_state)
         memm._unbiased_state = unbiased_state
