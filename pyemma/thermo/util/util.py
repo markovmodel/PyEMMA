@@ -87,14 +87,10 @@ def get_averaged_bias_matrix(bias_sequences, dtrajs, nstates=None):
 # ==================================================================================================
 
 def _ensure_umbrella_center(candidate, dimension):
-    if isinstance(candidate, (_np.ndarray)):
-        assert candidate.ndim == 1, str(candidate) + " has ndim %d" % candidate.ndim
-        assert candidate.shape[0] == dimension, str(candidate) + "has shape[0] %d" % candidate.shape[0]
-        return candidate.astype(_np.float64)
-    elif types.is_int(candidate) or types.is_float(candidate):
-        return candidate * _np.ones(shape=(dimension,), dtype=_np.float64)
-    else:
-        raise TypeError("unsupported type")
+    candidate = _np.asarray(candidate).astype(_np.float64).reshape((-1,))
+    if candidate.shape[0] == 1 and dimension > 1:
+        return candidate[0] * _np.ones(shape=(dimension,), dtype=_np.float64)
+    return candidate
 
 def _ensure_force_constant(candidate, dimension):
     if isinstance(candidate, (_np.ndarray)):
