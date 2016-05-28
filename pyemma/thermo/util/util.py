@@ -93,19 +93,23 @@ def _ensure_umbrella_center(candidate, dimension):
     return candidate
 
 def _ensure_force_constant(candidate, dimension):
-    if isinstance(candidate, (_np.ndarray)):
-        assert candidate.shape[0] == dimension, str(candidate) + " has shape[0] %d" % candidate.shape[0]
-        if candidate.ndim == 2:
-            assert candidate.shape[1] == dimension, str(candidate) + " has shape[1] %d" % candidate.shape[1]
-            return candidate.astype(_np.float64)
-        elif candidate.ndim == 1:
-            return _np.diag(candidate).astype(dtype=_np.float64)
-        else:
-            raise TypeError("usupported shape")
-    elif isinstance(candidate, (int, float)):
-        return candidate * _np.ones(shape=(dimension, dimension), dtype=_np.float64)
+    candidate = _np.asarray(candidate).astype(_np.float64)
+    if candidate.ndim == 0:
+        candidate = candidate * _np.ones(shape=(dimension,), dtype=_np.float64)
+    if candidate.ndim == 1:
+        assert candidate.shape[0] == dimension, \
+            str(candidate) + " has shape[0] %d" % candidate.shape[0]
+        _candidate = _np.zeros(shape=(dimension, dimension), dtype=_np.float64)
+        for i, x in enumerate(candidate):
+            _candidate[i, i] = x
+        candidate = _candidate
     else:
-        raise TypeError("unsupported type")
+        assert candidate.ndim == 2, str(candidate) + " has wrong ndim %d" % candidate.ndim
+        assert candidate.shape[0] == dimension, \
+            str(candidate) + " has shape[0] %d" % candidate.shape[0]
+        assert candidate.shape[1] == dimension, \
+            str(candidate) + " has shape[1] %d" % candidate.shape[1]
+    return candidate
 
 def _get_umbrella_sampling_parameters(
     us_trajs, us_centers, us_force_constants, md_trajs=None, kT=None):
