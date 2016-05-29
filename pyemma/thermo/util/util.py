@@ -174,6 +174,8 @@ def _get_umbrella_bias_sequences(trajs, umbrella_centers, force_constants):
     from thermotools.util import get_umbrella_bias as _get_umbrella_bias
     bias_sequences = []
     for traj in trajs:
+        if traj.ndim == 1:
+            traj = traj.reshape((-1, 1))
         bias_sequences.append(
             _get_umbrella_bias(traj, umbrella_centers, force_constants))
     return bias_sequences
