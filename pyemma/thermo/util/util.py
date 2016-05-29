@@ -118,12 +118,22 @@ def _get_umbrella_sampling_parameters(
     ttrajs = []
     nthermo = 0
     unbiased_state = None
-    for i in range(len(us_trajs)):
+    dimension = None
+    for i, traj in enumerate(us_trajs):
         state = None
+        try:
+            _dimension = traj.shape[1]
+        except IndexError:
+            _dimension = 1
+        if dimension is None:
+            dimension = _dimension
+        else:
+            assert dimension == _dimension, "trajectory %i has unmatching dimension %d!=%d" % (
+                i, _dimension, dimension)
         this_center = _ensure_umbrella_center(
-            us_centers[i], us_trajs[i].shape[1])
+            us_centers[i], dimension)
         this_force_constant = _ensure_force_constant(
-            us_force_constants[i], us_trajs[i].shape[1])
+            us_force_constants[i], dimension)
         if _np.all(this_force_constant == 0.0):
             this_center *= 0.0
         for j in range(nthermo):
@@ -134,10 +144,10 @@ def _get_umbrella_sampling_parameters(
         if state is None:
             umbrella_centers.append(this_center.copy())
             force_constants.append(this_force_constant.copy())
-            ttrajs.append(nthermo * _np.ones(shape=(us_trajs[i].shape[0],), dtype=_np.intc))
+            ttrajs.append(nthermo * _np.ones(shape=(traj.shape[0],), dtype=_np.intc))
             nthermo += 1
         else:
-            ttrajs.append(state * _np.ones(shape=(us_trajs[i].shape[0],), dtype=_np.intc))
+            ttrajs.append(state * _np.ones(shape=(traj.shape[0],), dtype=_np.intc))
     if md_trajs is not None:
         this_center = umbrella_centers[-1] * 0.0
         this_force_constant = force_constants[-1] * 0.0
@@ -150,8 +160,8 @@ def _get_umbrella_sampling_parameters(
             force_constants.append(this_force_constant.copy())
             unbiased_state = nthermo
             nthermo += 1
-        for md_traj in md_trajs:
-            ttrajs.append(unbiased_state * _np.ones(shape=(md_traj.shape[0],), dtype=_np.intc))
+        for traj in md_trajs:
+            ttrajs.append(unbiased_state * _np.ones(shape=(traj.shape[0],), dtype=_np.intc))
     umbrella_centers = _np.array(umbrella_centers, dtype=_np.float64)
     force_constants = _np.array(force_constants, dtype=_np.float64)
     if kT is not None:
