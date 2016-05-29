@@ -248,6 +248,39 @@ class TestProtectedUmbrellaSamplingParameters(unittest.TestCase):
             [np.array([0, 0, 0]), np.array([1, 1, 1]), np.array([2, 2, 2])],
             ref_umbrella_centers, ref_force_constants, 2)
 
+class TestProtectedUmbrellaSamplingBiasSequence(unittest.TestCase):
+
+    def _assert_bias_sequences(self, bias_sequences, ref_bias_sequences):
+        self.assertTrue(len(bias_sequences) == len(ref_bias_sequences))
+        for bs, rbs in zip(bias_sequences, ref_bias_sequences):
+            np.testing.assert_array_equal(bs, rbs)
+
+    def test_umbrella_sampling_bias_sequences_1x0(self):
+        trajs = [np.array([0.0, 0.5, 1.0])]
+        umbrella_centers = np.array([
+            util._ensure_umbrella_center(0.0, 1),
+            util._ensure_umbrella_center(1.0, 1)], dtype=np.float64)
+        force_constants = np.array([
+            util._ensure_force_constant(1.0, 1),
+            util._ensure_force_constant(2.0, 1)], dtype=np.float64)
+        self._assert_bias_sequences(
+            util._get_umbrella_bias_sequences(trajs, umbrella_centers, force_constants),
+            [np.array([[0.0, 1.0], [0.125, 0.25], [0.5, 0.0]])])
+
+    def test_umbrella_sampling_bias_sequences_1x1(self):
+        trajs = [np.array([[0.0], [0.5], [1.0]])]
+        umbrella_centers = np.array([
+            util._ensure_umbrella_center(0.0, 1),
+            util._ensure_umbrella_center(1.0, 1)], dtype=np.float64)
+        force_constants = np.array([
+            util._ensure_force_constant(1.0, 1),
+            util._ensure_force_constant(2.0, 1)], dtype=np.float64)
+        self._assert_bias_sequences(
+            util._get_umbrella_bias_sequences(trajs, umbrella_centers, force_constants),
+            [np.array([[0.0, 1.0], [0.125, 0.25], [0.5, 0.0]])])
+
+
+#bias_sequences = _get_umbrella_bias_sequences(trajs, umbrella_centers, force_constants)
 
 
 
