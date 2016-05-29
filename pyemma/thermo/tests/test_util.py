@@ -19,6 +19,7 @@ import unittest
 import numpy as np
 from pyemma.thermo.util.util import _ensure_umbrella_center
 from pyemma.thermo.util.util import _ensure_force_constant
+from pyemma.thermo.util.util import _get_umbrella_sampling_parameters
 
 # ==================================================================================================
 # tests for protected umbrella sampling convenience functions
@@ -175,6 +176,85 @@ class TestProtectedUmbrellaSamplingForceMatrices(unittest.TestCase):
         self._assert_us_force_matrix(us_force_matrix, 2)
         np.testing.assert_array_equal(
             us_force_matrix, np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float64))
+
+
+class TestProtectedUmbrellaSamplingParameters(unittest.TestCase):
+
+    def _assert_parameters(self,
+        ttrajs, umbrella_centers, force_constants, unbiased_state,
+        ref_ttrajs, ref_umbrella_centers, ref_force_constants, ref_unbiased_state):
+        for ttraj, ref_ttraj in zip(ttrajs, ref_ttrajs):
+            np.testing.assert_array_equal(ttraj, ref_ttraj)
+        for center, ref_center in zip(umbrella_centers, ref_umbrella_centers):
+            np.testing.assert_array_equal(center, ref_center)
+        for force_constant, ref_force_constant in zip(force_constants, ref_force_constants):
+            np.testing.assert_array_equal(force_constant, ref_force_constant)
+        self.assertTrue(unbiased_state == ref_unbiased_state)
+
+    def test_umbrella_sampling_data_1x0(self):
+        ref_umbrella_centers = [0.0, 1.0]
+        ref_force_constants = [1.0, 1.0]
+        us_trajs = [np.array([0.0, 0.1, 0.2]), np.array([0.9, 1.0, 1.1])]
+        # no md data
+        ttrajs, umbrella_centers, force_constants, unbiased_state = \
+            _get_umbrella_sampling_parameters(
+                us_trajs, ref_umbrella_centers, ref_force_constants)
+        self._assert_parameters(
+            ttrajs, umbrella_centers, force_constants, unbiased_state,
+            [np.array([0, 0, 0]), np.array([1, 1, 1])],
+            ref_umbrella_centers, ref_force_constants, None)
+        # add md data
+        md_trajs = [np.array([0.0, 0.5, 1.0])]
+        ttrajs, umbrella_centers, force_constants, unbiased_state = \
+            _get_umbrella_sampling_parameters(
+                us_trajs, ref_umbrella_centers, ref_force_constants, md_trajs=md_trajs)
+        self._assert_parameters(
+            ttrajs, umbrella_centers, force_constants, unbiased_state,
+            [np.array([0, 0, 0]), np.array([1, 1, 1]), np.array([2, 2, 2])],
+            ref_umbrella_centers, ref_force_constants, 2)
+        # with kT parameter
+        ttrajs, umbrella_centers, force_constants, unbiased_state = \
+            _get_umbrella_sampling_parameters(
+                us_trajs, ref_umbrella_centers, ref_force_constants, md_trajs=md_trajs, kT=2.0)
+        self._assert_parameters(
+            ttrajs, umbrella_centers, force_constants * 2.0, unbiased_state,
+            [np.array([0, 0, 0]), np.array([1, 1, 1]), np.array([2, 2, 2])],
+            ref_umbrella_centers, ref_force_constants, 2)
+
+    def test_umbrella_sampling_data_1x1(self):
+        ref_umbrella_centers = [0.0, 1.0]
+        ref_force_constants = [1.0, 1.0]
+        us_trajs = [np.array([[0.0], [0.1], [0.2]]), np.array([[0.9], [1.0], [1.1]])]
+        ttrajs, umbrella_centers, force_constants, unbiased_state = \
+            _get_umbrella_sampling_parameters(
+                us_trajs, ref_umbrella_centers, ref_force_constants)
+        self._assert_parameters(
+            ttrajs, umbrella_centers, force_constants, unbiased_state,
+            [np.array([0, 0, 0]), np.array([1, 1, 1])],
+            ref_umbrella_centers, ref_force_constants, None)
+        # add md data
+        md_trajs = [np.array([[0.0], [0.5], [1.0]])]
+        ttrajs, umbrella_centers, force_constants, unbiased_state = \
+            _get_umbrella_sampling_parameters(
+                us_trajs, ref_umbrella_centers, ref_force_constants, md_trajs=md_trajs)
+        self._assert_parameters(
+            ttrajs, umbrella_centers, force_constants, unbiased_state,
+            [np.array([0, 0, 0]), np.array([1, 1, 1]), np.array([2, 2, 2])],
+            ref_umbrella_centers, ref_force_constants, 2)
+        # with kT parameter
+        ttrajs, umbrella_centers, force_constants, unbiased_state = \
+            _get_umbrella_sampling_parameters(
+                us_trajs, ref_umbrella_centers, ref_force_constants, md_trajs=md_trajs, kT=2.0)
+        self._assert_parameters(
+            ttrajs, umbrella_centers, force_constants * 2.0, unbiased_state,
+            [np.array([0, 0, 0]), np.array([1, 1, 1]), np.array([2, 2, 2])],
+            ref_umbrella_centers, ref_force_constants, 2)
+
+
+
+
+
+
 
 
 
