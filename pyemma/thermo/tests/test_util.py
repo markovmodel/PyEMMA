@@ -17,9 +17,7 @@
 
 import unittest
 import numpy as np
-from pyemma.thermo.util.util import _ensure_umbrella_center
-from pyemma.thermo.util.util import _ensure_force_constant
-from pyemma.thermo.util.util import _get_umbrella_sampling_parameters
+import pyemma.thermo.util.util as util
 
 # ==================================================================================================
 # tests for protected umbrella sampling convenience functions
@@ -35,64 +33,64 @@ class TestProtectedUmbrellaSamplingCenters(unittest.TestCase):
 
     def test_ensure_umbrella_center_from_scalar(self):
         # dimension=1
-        us_center = _ensure_umbrella_center(1.0, 1)
+        us_center = util._ensure_umbrella_center(1.0, 1)
         self._assert_us_center(us_center, 1)
         np.testing.assert_array_equal(us_center, np.array([1.0], dtype=np.float64))
         # dimension=3
-        us_center = _ensure_umbrella_center(1.0, 3)
+        us_center = util._ensure_umbrella_center(1.0, 3)
         self._assert_us_center(us_center, 3)
         np.testing.assert_array_equal(us_center, np.array([1.0, 1.0, 1.0], dtype=np.float64))
 
     def test_ensure_umbrella_center_from_tuple(self):
         # dimension=1, type=tuple
-        us_center = _ensure_umbrella_center((1.0,), 1)
+        us_center = util._ensure_umbrella_center((1.0,), 1)
         self._assert_us_center(us_center, 1)
         np.testing.assert_array_equal(us_center, np.array([1.0], dtype=np.float64))
         # dimension=3, uniform
-        us_center = _ensure_umbrella_center((1.0, 1.0, 1.0), 3)
+        us_center = util._ensure_umbrella_center((1.0, 1.0, 1.0), 3)
         self._assert_us_center(us_center, 3)
         np.testing.assert_array_equal(us_center, np.array([1.0, 1.0, 1.0], dtype=np.float64))
         # dimension=4, not uniform
-        us_center = _ensure_umbrella_center((1.0, 2.0, 3.0, 4.0), 4)
+        us_center = util._ensure_umbrella_center((1.0, 2.0, 3.0, 4.0), 4)
         self._assert_us_center(us_center, 4)
         np.testing.assert_array_equal(us_center, np.array([1.0, 2.0, 3.0, 4.0], dtype=np.float64))
         # dimension=4x1, not uniform
-        us_center = _ensure_umbrella_center(((1.0, 2.0, 3.0, 4.0),), 4)
+        us_center = util._ensure_umbrella_center(((1.0, 2.0, 3.0, 4.0),), 4)
         self._assert_us_center(us_center, 4)
         np.testing.assert_array_equal(us_center, np.array([1.0, 2.0, 3.0, 4.0], dtype=np.float64))
 
     def test_ensure_umbrella_center_from_list(self):
         # dimension=1
-        us_center = _ensure_umbrella_center([1.0], 1)
+        us_center = util._ensure_umbrella_center([1.0], 1)
         self._assert_us_center(us_center, 1)
         np.testing.assert_array_equal(us_center, np.array([1.0], dtype=np.float64))
         # dimension=3, uniform
-        us_center = _ensure_umbrella_center([1.0, 1.0, 1.0], 3)
+        us_center = util._ensure_umbrella_center([1.0, 1.0, 1.0], 3)
         self._assert_us_center(us_center, 3)
         # dimension=4, not uniform
-        us_center = _ensure_umbrella_center([1.0, 2.0, 3.0, 4.0], 4)
+        us_center = util._ensure_umbrella_center([1.0, 2.0, 3.0, 4.0], 4)
         self._assert_us_center(us_center, 4)
         np.testing.assert_array_equal(us_center, np.array([1.0, 2.0, 3.0, 4.0], dtype=np.float64))
         # dimension=4x1, not uniform
-        us_center = _ensure_umbrella_center([[1.0, 2.0, 3.0, 4.0],], 4)
+        us_center = util._ensure_umbrella_center([[1.0, 2.0, 3.0, 4.0],], 4)
         self._assert_us_center(us_center, 4)
         np.testing.assert_array_equal(us_center, np.array([1.0, 2.0, 3.0, 4.0], dtype=np.float64))
 
     def test_ensure_umbrella_center_from_ndarray(self):
         # dimension=1
-        us_center = _ensure_umbrella_center(np.array([1.0]), 1)
+        us_center = util._ensure_umbrella_center(np.array([1.0]), 1)
         self._assert_us_center(us_center, 1)
         np.testing.assert_array_equal(us_center, np.array([1.0], dtype=np.float64))
         # dimension=3, uniform
-        us_center = _ensure_umbrella_center(np.array([1.0, 1.0, 1.0]), 3)
+        us_center = util._ensure_umbrella_center(np.array([1.0, 1.0, 1.0]), 3)
         self._assert_us_center(us_center, 3)
         np.testing.assert_array_equal(us_center, np.array([1.0, 1.0, 1.0], dtype=np.float64))
         # dimension=4, not uniform
-        us_center = _ensure_umbrella_center(np.array([1.0, 2.0, 3.0, 4.0]), 4)
+        us_center = util._ensure_umbrella_center(np.array([1.0, 2.0, 3.0, 4.0]), 4)
         self._assert_us_center(us_center, 4)
         np.testing.assert_array_equal(us_center, np.array([1.0, 2.0, 3.0, 4.0], dtype=np.float64))
         # dimension=4x1, not uniform
-        us_center = _ensure_umbrella_center(np.array([[1.0, 2.0, 3.0, 4.0],]), 4)
+        us_center = util._ensure_umbrella_center(np.array([[1.0, 2.0, 3.0, 4.0],]), 4)
         self._assert_us_center(us_center, 4)
         np.testing.assert_array_equal(us_center, np.array([1.0, 2.0, 3.0, 4.0], dtype=np.float64))
 
@@ -108,71 +106,71 @@ class TestProtectedUmbrellaSamplingForceMatrices(unittest.TestCase):
 
     def test_ensure_umbrella_force_matrix_from_scalar(self):
         # dimension=1
-        us_force_matrix = _ensure_force_constant(1.0, 1)
+        us_force_matrix = util._ensure_force_constant(1.0, 1)
         self._assert_us_force_matrix(us_force_matrix, 1)
         np.testing.assert_array_equal(us_force_matrix, np.array([[1.0]], dtype=np.float64))
         # dimension=2
-        us_force_matrix = _ensure_force_constant(1.0, 2)
+        us_force_matrix = util._ensure_force_constant(1.0, 2)
         self._assert_us_force_matrix(us_force_matrix, 2)
         np.testing.assert_array_equal(
             us_force_matrix, np.array([[1.0, 0.0], [0.0, 1.0]], dtype=np.float64))
 
     def test_ensure_umbrella_force_matrix_from_tuple(self):
         # dimension=1
-        us_force_matrix = _ensure_force_constant((1.0,), 1)
+        us_force_matrix = util._ensure_force_constant((1.0,), 1)
         self._assert_us_force_matrix(us_force_matrix, 1)
         np.testing.assert_array_equal(us_force_matrix, np.array([[1.0]], dtype=np.float64))
         # dimension=1x1
-        us_force_matrix = _ensure_force_constant(((1.0,),), 1)
+        us_force_matrix = util._ensure_force_constant(((1.0,),), 1)
         self._assert_us_force_matrix(us_force_matrix, 1)
         np.testing.assert_array_equal(us_force_matrix, np.array([[1.0]], dtype=np.float64))
         # dimension=2, not uniform, diagonal
-        us_force_matrix = _ensure_force_constant((1.0, 2.0), 2)
+        us_force_matrix = util._ensure_force_constant((1.0, 2.0), 2)
         self._assert_us_force_matrix(us_force_matrix, 2)
         np.testing.assert_array_equal(
             us_force_matrix, np.array([[1.0, 0.0], [0.0, 2.0]], dtype=np.float64))
         # dimension=2, not uniform, not diagonal
-        us_force_matrix = _ensure_force_constant(((1.0, 2.0), (3.0, 4.0)), 2)
+        us_force_matrix = util._ensure_force_constant(((1.0, 2.0), (3.0, 4.0)), 2)
         self._assert_us_force_matrix(us_force_matrix, 2)
         np.testing.assert_array_equal(
             us_force_matrix, np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float64))
 
     def test_ensure_umbrella_force_matrix_from_list(self):
         # dimension=1
-        us_force_matrix = _ensure_force_constant([1.0], 1)
+        us_force_matrix = util._ensure_force_constant([1.0], 1)
         self._assert_us_force_matrix(us_force_matrix, 1)
         np.testing.assert_array_equal(us_force_matrix, np.array([[1.0]], dtype=np.float64))
         # dimension=1x1
-        us_force_matrix = _ensure_force_constant([[1.0]], 1)
+        us_force_matrix = util._ensure_force_constant([[1.0]], 1)
         self._assert_us_force_matrix(us_force_matrix, 1)
         np.testing.assert_array_equal(us_force_matrix, np.array([[1.0]], dtype=np.float64))
         # dimension=2, not uniform, diagonal
-        us_force_matrix = _ensure_force_constant([1.0, 2.0], 2)
+        us_force_matrix = util._ensure_force_constant([1.0, 2.0], 2)
         self._assert_us_force_matrix(us_force_matrix, 2)
         np.testing.assert_array_equal(
             us_force_matrix, np.array([[1.0, 0.0], [0.0, 2.0]], dtype=np.float64))
         # dimension=2, not uniform, not diagonal
-        us_force_matrix = _ensure_force_constant([[1.0, 2.0], [3.0, 4.0]], 2)
+        us_force_matrix = util._ensure_force_constant([[1.0, 2.0], [3.0, 4.0]], 2)
         self._assert_us_force_matrix(us_force_matrix, 2)
         np.testing.assert_array_equal(
             us_force_matrix, np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float64))
 
     def test_ensure_umbrella_force_matrix_from_ndarray(self):
         # dimension=1
-        us_force_matrix = _ensure_force_constant(np.array([1.0]), 1)
+        us_force_matrix = util._ensure_force_constant(np.array([1.0]), 1)
         self._assert_us_force_matrix(us_force_matrix, 1)
         np.testing.assert_array_equal(us_force_matrix, np.array([[1.0]], dtype=np.float64))
         # dimension=1x1
-        us_force_matrix = _ensure_force_constant(np.array([[1.0]]), 1)
+        us_force_matrix = util._ensure_force_constant(np.array([[1.0]]), 1)
         self._assert_us_force_matrix(us_force_matrix, 1)
         np.testing.assert_array_equal(us_force_matrix, np.array([[1.0]], dtype=np.float64))
         # dimension=2, not uniform, diagonal
-        us_force_matrix = _ensure_force_constant(np.array([1.0, 2.0]), 2)
+        us_force_matrix = util._ensure_force_constant(np.array([1.0, 2.0]), 2)
         self._assert_us_force_matrix(us_force_matrix, 2)
         np.testing.assert_array_equal(
             us_force_matrix, np.array([[1.0, 0.0], [0.0, 2.0]], dtype=np.float64))
         # dimension=2, not uniform, not diagonal
-        us_force_matrix = _ensure_force_constant(np.array([[1.0, 2.0], [3.0, 4.0]]), 2)
+        us_force_matrix = util._ensure_force_constant(np.array([[1.0, 2.0], [3.0, 4.0]]), 2)
         self._assert_us_force_matrix(us_force_matrix, 2)
         np.testing.assert_array_equal(
             us_force_matrix, np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float64))
@@ -197,7 +195,7 @@ class TestProtectedUmbrellaSamplingParameters(unittest.TestCase):
         us_trajs = [np.array([0.0, 0.1, 0.2]), np.array([0.9, 1.0, 1.1])]
         # no md data
         ttrajs, umbrella_centers, force_constants, unbiased_state = \
-            _get_umbrella_sampling_parameters(
+            util._get_umbrella_sampling_parameters(
                 us_trajs, ref_umbrella_centers, ref_force_constants)
         self._assert_parameters(
             ttrajs, umbrella_centers, force_constants, unbiased_state,
@@ -206,7 +204,7 @@ class TestProtectedUmbrellaSamplingParameters(unittest.TestCase):
         # add md data
         md_trajs = [np.array([0.0, 0.5, 1.0])]
         ttrajs, umbrella_centers, force_constants, unbiased_state = \
-            _get_umbrella_sampling_parameters(
+            util._get_umbrella_sampling_parameters(
                 us_trajs, ref_umbrella_centers, ref_force_constants, md_trajs=md_trajs)
         self._assert_parameters(
             ttrajs, umbrella_centers, force_constants, unbiased_state,
@@ -214,7 +212,7 @@ class TestProtectedUmbrellaSamplingParameters(unittest.TestCase):
             ref_umbrella_centers, ref_force_constants, 2)
         # with kT parameter
         ttrajs, umbrella_centers, force_constants, unbiased_state = \
-            _get_umbrella_sampling_parameters(
+            util._get_umbrella_sampling_parameters(
                 us_trajs, ref_umbrella_centers, ref_force_constants, md_trajs=md_trajs, kT=2.0)
         self._assert_parameters(
             ttrajs, umbrella_centers, force_constants * 2.0, unbiased_state,
@@ -226,7 +224,7 @@ class TestProtectedUmbrellaSamplingParameters(unittest.TestCase):
         ref_force_constants = [1.0, 1.0]
         us_trajs = [np.array([[0.0], [0.1], [0.2]]), np.array([[0.9], [1.0], [1.1]])]
         ttrajs, umbrella_centers, force_constants, unbiased_state = \
-            _get_umbrella_sampling_parameters(
+            util._get_umbrella_sampling_parameters(
                 us_trajs, ref_umbrella_centers, ref_force_constants)
         self._assert_parameters(
             ttrajs, umbrella_centers, force_constants, unbiased_state,
@@ -235,7 +233,7 @@ class TestProtectedUmbrellaSamplingParameters(unittest.TestCase):
         # add md data
         md_trajs = [np.array([[0.0], [0.5], [1.0]])]
         ttrajs, umbrella_centers, force_constants, unbiased_state = \
-            _get_umbrella_sampling_parameters(
+            util._get_umbrella_sampling_parameters(
                 us_trajs, ref_umbrella_centers, ref_force_constants, md_trajs=md_trajs)
         self._assert_parameters(
             ttrajs, umbrella_centers, force_constants, unbiased_state,
@@ -243,7 +241,7 @@ class TestProtectedUmbrellaSamplingParameters(unittest.TestCase):
             ref_umbrella_centers, ref_force_constants, 2)
         # with kT parameter
         ttrajs, umbrella_centers, force_constants, unbiased_state = \
-            _get_umbrella_sampling_parameters(
+            util._get_umbrella_sampling_parameters(
                 us_trajs, ref_umbrella_centers, ref_force_constants, md_trajs=md_trajs, kT=2.0)
         self._assert_parameters(
             ttrajs, umbrella_centers, force_constants * 2.0, unbiased_state,
