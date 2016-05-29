@@ -189,7 +189,7 @@ class TestProtectedUmbrellaSamplingParameters(unittest.TestCase):
             np.testing.assert_array_equal(force_constant, ref_force_constant)
         self.assertTrue(unbiased_state == ref_unbiased_state)
 
-    def test_umbrella_sampling_data_1x0(self):
+    def test_umbrella_sampling_parameters_1x0(self):
         ref_umbrella_centers = [0.0, 1.0]
         ref_force_constants = [1.0, 1.0]
         us_trajs = [np.array([0.0, 0.1, 0.2]), np.array([0.9, 1.0, 1.1])]
@@ -219,7 +219,7 @@ class TestProtectedUmbrellaSamplingParameters(unittest.TestCase):
             [np.array([0, 0, 0]), np.array([1, 1, 1]), np.array([2, 2, 2])],
             ref_umbrella_centers, ref_force_constants, 2)
 
-    def test_umbrella_sampling_data_1x1(self):
+    def test_umbrella_sampling_parameters_1x1(self):
         ref_umbrella_centers = [0.0, 1.0]
         ref_force_constants = [1.0, 1.0]
         us_trajs = [np.array([[0.0], [0.1], [0.2]]), np.array([[0.9], [1.0], [1.1]])]
@@ -247,9 +247,6 @@ class TestProtectedUmbrellaSamplingParameters(unittest.TestCase):
             ttrajs, umbrella_centers, force_constants * 2.0, unbiased_state,
             [np.array([0, 0, 0]), np.array([1, 1, 1]), np.array([2, 2, 2])],
             ref_umbrella_centers, ref_force_constants, 2)
-
-
-
 
 
 
