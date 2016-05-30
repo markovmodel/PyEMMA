@@ -68,7 +68,7 @@ class TestTrajectoryInfoCache(unittest.TestCase):
         TrajectoryInfoCache._instance = self.db
 
     def tearDown(self):
-        del self.db
+        self.db.close()
         os.unlink(self.tmpfile)
 
         import shutil
