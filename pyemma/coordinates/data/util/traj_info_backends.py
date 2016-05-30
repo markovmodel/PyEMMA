@@ -141,6 +141,7 @@ class SqliteDB(AbstractDB):
         except sqlite3.DatabaseError:
             bak = filename + ".bak"
             warnings.warn("TrajInfo database corrupted. Backing up file to %s and start with new one." % bak)
+            self._database.close()
             import shutil
             shutil.move(filename, bak)
             SqliteDB.__init__(self, filename)
