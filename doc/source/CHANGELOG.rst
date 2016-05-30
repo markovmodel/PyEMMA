@@ -1,6 +1,16 @@
 Changelog
 =========
 
+2.2.1 ()
+--------
+
+**New features**:
+- ...
+
+**Fixes**:
+
+- clustering: fixed KMeans with minRMSD metric. #814
+
 2.2 (5-17-16)
 -------------
 

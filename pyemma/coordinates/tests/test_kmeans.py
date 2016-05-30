@@ -172,5 +172,8 @@ class TestKmeans(unittest.TestCase):
         self.assertGreaterEqual(np.inner(np.array([0, -144337500, -102061250], dtype=float), res) + 353560531, 0)
         self.assertGreaterEqual(np.inner(np.array([0, 0, -10000], dtype=float), res) + 17321, 0)
 
+    def test_with_n_jobs_minrmsd(self):
+        kmeans = cluster_kmeans(np.random.rand(500,3), 10, metric='minRMSD')
+
 if __name__ == "__main__":
     unittest.main()
