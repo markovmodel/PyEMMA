@@ -147,7 +147,7 @@ class SqliteDB(AbstractDB):
 
     def _create_new_db(self):
         # assumes self.database is a sqlite3.Connection
-        create_version_table = "CREATE TABLE version (num INTEGER PRIMARY KEY) WITHOUT ROWID;"
+        create_version_table = "CREATE TABLE version (num INTEGER PRIMARY KEY);"
         create_info_table = """CREATE TABLE traj_info(
             hash VARCHAR(64) PRIMARY KEY,
             length INTEGER,
