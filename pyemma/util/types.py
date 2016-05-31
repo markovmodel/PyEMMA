@@ -450,7 +450,7 @@ def ensure_ndarray_or_None(A, shape=None, uniform=None, ndim=None, size=None, dt
 # ======================================================================================================================
 
 def ensure_traj(traj):
-    r"""Makes sure that dtraj is a discrete trajectory (array of float)
+    r"""Makes sure that traj is a trajectory (array of float)
 
     """
     if is_float_matrix(traj) or is_bool_matrix(traj):
