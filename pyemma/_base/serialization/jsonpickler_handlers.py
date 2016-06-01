@@ -24,7 +24,7 @@ def register_ndarray_handler():
     NumpyNPZHandler.handles(np.ndarray)
 
 
-def unregister_ndarray_handler():
+def unregister_ndarray_npz_handler():
     """ Restore jsonpickle default numpy array handler.
     """
     _register_handlers()

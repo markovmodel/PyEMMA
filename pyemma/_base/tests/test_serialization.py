@@ -4,7 +4,7 @@ import unittest
 import numpy as np
 from jsonpickle import dumps, loads
 
-from pyemma._base.serialization.jsonpickler_handlers import register_ndarray_handler, unregister_ndarray_handler
+from pyemma._base.serialization.jsonpickler_handlers import register_ndarray_handler, unregister_ndarray_npz_handler
 from pyemma._base.serialization.serialization import SerializableMixIn
 
 
@@ -29,7 +29,7 @@ class TestSerialisation(unittest.TestCase):
 
             np.testing.assert_equal(actual, x)
         finally:
-            unregister_ndarray_handler()
+            unregister_ndarray_npz_handler()
 
     def test_save_interface(self):
         inst = test_cls()
