@@ -1,6 +1,6 @@
 package:
   name: pyemma-dev
-  #version: 0 
+  version: {{ environ.get('PYEMMA_SETUP_VERSION', '') }}
 source:
   path: ../..
 
