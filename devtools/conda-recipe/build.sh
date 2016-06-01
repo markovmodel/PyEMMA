@@ -1,5 +1,4 @@
 #!/bin/bash
 $PYTHON setup.py install
-stmnt="from __future__ import print_statement; import pyemma; print(pyemma.version)"
-export PYEMMA_SETUP_VERSION $($PYTHON -c $stmnt)
-
+version=$($PYTHON -c "from __future__ import print_function; import pyemma; print(pyemma.__version__)")
+export PYEMMA_VERSION $version 
