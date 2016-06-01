@@ -18,14 +18,15 @@ def register_ndarray_handler():
     """ Override jsonpickle handler for numpy arrays with compressed NPZ handler.
     First unregisters the default handler
     """
-    _unregister_handlers()
+    # register jsonpickle default numpy handlers
+    _register_handlers()
+    # now override with our own
     NumpyNPZHandler.handles(np.ndarray)
 
 
 def unregister_ndarray_handler():
     """ Restore jsonpickle default numpy array handler.
     """
-    _unregister(np.ndarray)
     _register_handlers()
 
 
