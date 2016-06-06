@@ -87,28 +87,38 @@ def get_averaged_bias_matrix(bias_sequences, dtrajs, nstates=None):
 # ==================================================================================================
 
 def _ensure_umbrella_center(candidate, dimension):
-    candidate = _np.asarray(candidate).astype(_np.float64).reshape((-1,))
+    try:
+        candidate = _np.asarray(candidate).astype(_np.float64).reshape((-1,))
+    except ValueError:
+        raise ValueError("Umbrella center " + str(candidate) + " cannot be cast as numpy.ndarray")
     if candidate.shape[0] == 1 and dimension > 1:
         return candidate[0] * _np.ones(shape=(dimension,), dtype=_np.float64)
+    elif candidate.shape[0] != dimension:
+        raise ValueError("Unmatching dimensions: umbrella center " + str(candidate) + \
+            " is not compatible with dimension %d" % dimension)
     return candidate
 
 def _ensure_force_constant(candidate, dimension):
-    candidate = _np.asarray(candidate).astype(_np.float64)
+    try:
+        candidate = _np.asarray(candidate).astype(_np.float64)
+    except ValueError:
+        raise ValueError("Force constant " + str(candidate) + " cannot be cast as numpy.ndarray")
     if candidate.ndim == 0:
         candidate = candidate * _np.ones(shape=(dimension,), dtype=_np.float64)
+    if candidate.shape[0] != dimension:
+        raise ValueError("Force constant " + str(candidate) + \
+            " has shape[0]=%d instead of %d" % (candidate.shape[0], dimension))
     if candidate.ndim == 1:
-        assert candidate.shape[0] == dimension, \
-            str(candidate) + " has shape[0] %d" % candidate.shape[0]
         _candidate = _np.zeros(shape=(dimension, dimension), dtype=_np.float64)
         for i, x in enumerate(candidate):
             _candidate[i, i] = x
         candidate = _candidate
+    elif candidate.ndim == 2:
+        if candidate.shape[0] != dimension:
+            raise ValueError("Force constant " + str(candidate) + \
+                " has shape[1]=%d instead of %d" % (candidate.shape[1], dimension))
     else:
-        assert candidate.ndim == 2, str(candidate) + " has wrong ndim %d" % candidate.ndim
-        assert candidate.shape[0] == dimension, \
-            str(candidate) + " has shape[0] %d" % candidate.shape[0]
-        assert candidate.shape[1] == dimension, \
-            str(candidate) + " has shape[1] %d" % candidate.shape[1]
+        raise ValueError("Force constant " + str(candidate) + " must be a 2d numpy.ndarray")
     return candidate
 
 def _get_umbrella_sampling_parameters(
@@ -173,9 +183,33 @@ def _get_umbrella_sampling_parameters(
 def _get_umbrella_bias_sequences(trajs, umbrella_centers, force_constants):
     from thermotools.util import get_umbrella_bias as _get_umbrella_bias
     bias_sequences = []
-    for traj in trajs:
+    if not isinstance(umbrella_centers, _np.ndarray):
+        raise TypeError("umbrella_centers is not a numpy.ndarray: " + str(type(umbrella_centers)))
+    if not isinstance(force_constants, _np.ndarray):
+        raise TypeError("force_constants is not a numpy.ndarray: " + str(type(force_constants)))
+    if umbrella_centers.ndim != 2:
+        raise ValueError("umbrella_centers is not a 2d numpy.ndarray: " + \
+            str(umbrella_centers.shape))
+    if force_constants.ndim != 3:
+        raise ValueError("force_constants is not a 3d numpy.ndarray: " + \
+            str(force_constants.shape))
+    if umbrella_centers.shape[0] != force_constants.shape[0]:
+        raise ValueError("Unmatching number of umbrella centers and force constants: %d != %d" % (
+            umbrella_centers.shape[0], force_constants.shape[0]))
+    dimension = umbrella_centers.shape[1]
+    if force_constants.shape[1] != dimension or force_constants.shape[2] != dimension:
+        raise ValueError("Dimension of force_constants does not match dimension of " + \
+            "umbrella_centers: %d != %d,%d" % (dimension,
+                force_constants.shape[1], force_constants.shape[2]))
+    for i, traj in enumerate(trajs):
+        if not isinstance(traj, _np.ndarray):
+            raise TypeError("Trajectory %d is not a numpy.ndarray: " % i + str(
+                type(traj)))
         if traj.ndim == 1:
             traj = traj.reshape((-1, 1))
+        if traj.shape[1] != dimension:
+            raise ValueError("Trajectory %d has unmatching dimension: %d!=%d" % (
+                i, traj.shape[1], dimension))
         bias_sequences.append(
             _get_umbrella_bias(traj, umbrella_centers, force_constants))
     return bias_sequences
