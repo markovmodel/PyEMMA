@@ -129,6 +129,19 @@ def _get_umbrella_sampling_parameters(
     nthermo = 0
     unbiased_state = None
     dimension = None
+    if not isinstance(us_trajs, (list, tuple)):
+        us_trajs = [us_trajs]
+    if not isinstance(us_centers, (list, tuple)):
+        us_centers = [us_centers]
+    if not isinstance(us_force_constants, (list, tuple)):
+        us_force_constants = [us_force_constants]
+    if len(us_trajs) != len(us_centers):
+        raise ValueError("Unmatching number of umbrella sampling trajectories and centers: %d!=%d" \
+            % (len(us_trajs), len(us_centers)))
+    if len(us_trajs) != len(us_force_constants):
+        raise ValueError(
+            "Unmatching number of umbrella sampling trajectories and force constants: %d!=%d" \
+                % (len(us_trajs), len(us_force_constants)))
     for i, traj in enumerate(us_trajs):
         state = None
         try:
@@ -159,6 +172,8 @@ def _get_umbrella_sampling_parameters(
         else:
             ttrajs.append(state * _np.ones(shape=(traj.shape[0],), dtype=_np.intc))
     if md_trajs is not None:
+        if not isinstance(md_trajs, (list, tuple)):
+            md_trajs = [md_trajs]
         this_center = umbrella_centers[-1] * 0.0
         this_force_constant = force_constants[-1] * 0.0
         for j in range(nthermo):
