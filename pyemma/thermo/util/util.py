@@ -175,8 +175,10 @@ def _get_umbrella_sampling_parameters(
     umbrella_centers = _np.array(umbrella_centers, dtype=_np.float64)
     force_constants = _np.array(force_constants, dtype=_np.float64)
     if kT is not None:
-        assert isinstance(kT, (int, float)),  "kT has wrong type:" + str(type(kT))
-        assert kT > 0.0, "non-positive kT: %f" % kT
+        if not isinstance(kT, (int, float)):
+            raise ValueError("kT has wrong type:" + str(type(kT)))
+        if kT <= 0.0:
+            raise ValueError("non-positive kT: %f" % kT)
         force_constants /= kT
     return ttrajs, umbrella_centers, force_constants, unbiased_state
 

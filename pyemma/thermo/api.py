@@ -143,7 +143,8 @@ def estimate_umbrella_sampling(
     array([ 0.63...,  1.60...,  1.31...])
 
     """
-    assert estimator in ['wham', 'dtram', 'tram'], "unsupported estimator: %s" % estimator
+    if estimator not in ['wham', 'dtram', 'tram']:
+        raise ValueError("unsupported estimator: %s" % estimator)
     from .util import get_umbrella_sampling_data as _get_umbrella_sampling_data
     ttrajs, btrajs, umbrella_centers, force_constants, unbiased_state = _get_umbrella_sampling_data(
         us_trajs, us_centers, us_force_constants, md_trajs=md_trajs, kT=kT)
@@ -284,7 +285,8 @@ def estimate_multi_temperature(
     can handle temperature changes as well.
 
     """
-    assert estimator in ['wham', 'dtram', 'tram'], "unsupported estimator: %s" % estimator
+    if estimator not in ['wham', 'dtram', 'tram']:
+        ValueError("unsupported estimator: %s" % estimator)
     from .util import get_multi_temperature_data as _get_multi_temperature_data
     ttrajs, btrajs, temperatures, unbiased_state = _get_multi_temperature_data(
         energy_trajs, temp_trajs, energy_unit, temp_unit,
@@ -470,11 +472,19 @@ def tram(
     # prepare trajectories
     ttrajs = _types.ensure_dtraj_list(ttrajs)
     dtrajs = _types.ensure_dtraj_list(dtrajs)
-    assert len(ttrajs) == len(dtrajs)
-    assert len(ttrajs) == len(bias)
+    if len(ttrajs) != len(dtrajs):
+        raise ValueError("Unmatching number of dtraj/ttraj elements: %d!=%d" % (
+            len(dtrajs), len(ttrajs)))
+    if len(ttrajs) != len(bias):
+        raise ValueError("Unmatching number of ttraj/bias elements: %d!=%d" % (
+            len(ttrajs), len(bias)))
     for ttraj, dtraj, btraj in zip(ttrajs, dtrajs, bias):
-        assert len(ttraj) == len(dtraj)
-        assert len(ttraj) == btraj.shape[0]
+        if len(ttraj) != len(dtraj):
+            raise ValueError("Unmatching number of data points in ttraj/dtraj: %d!=%d" % (
+                len(ttraj), len(dtraj)))
+        if len(ttraj) != btraj.shape[0]:
+            raise ValueError("Unmatching number of data points in ttraj/bias trajectory: %d!=%d" % (
+                len(ttraj), len(btraj)))
     # check lag time(s)
     lags = _np.asarray(lag, dtype=_np.intc).reshape((-1,)).tolist()
     # build TRAM and run estimation
@@ -630,9 +640,13 @@ def dtram(
     # prepare trajectories
     ttrajs = _types.ensure_dtraj_list(ttrajs)
     dtrajs = _types.ensure_dtraj_list(dtrajs)
-    assert len(ttrajs) == len(dtrajs)
+    if len(ttrajs) != len(dtrajs):
+        raise ValueError("Unmatching number of dtraj/ttraj elements: %d!=%d" % (
+            len(dtrajs), len(ttrajs)) )
     for ttraj, dtraj in zip(ttrajs, dtrajs):
-        assert len(ttraj) == len(dtraj)
+        if len(ttraj) != len(dtraj):
+            raise ValueError("Unmatching number of data points in ttraj/dtraj: %d!=%d" % (
+                len(ttraj), len(dtraj)))
     # check lag time(s)
     lags = _np.asarray(lag, dtype=_np.intc).reshape((-1,)).tolist()
     # build DTRAM and run estimation
@@ -760,9 +774,13 @@ def wham(
     # check trajectories
     ttrajs = _types.ensure_dtraj_list(ttrajs)
     dtrajs = _types.ensure_dtraj_list(dtrajs)
-    assert len(ttrajs) == len(dtrajs)
+    if len(ttrajs) != len(dtrajs):
+        raise ValueError("Unmatching number of dtraj/ttraj elements: %d!=%d" % (
+            len(dtrajs), len(ttrajs)) )
     for ttraj, dtraj in zip(ttrajs, dtrajs):
-        assert len(ttrajs) == len(dtrajs)
+        if len(ttraj) != len(dtraj):
+            raise ValueError("Unmatching number of data points in ttraj/dtraj: %d!=%d" % (
+                len(ttraj), len(dtraj)))
     # build WHAM
     from pyemma.thermo import WHAM
     wham_estimator = WHAM(
