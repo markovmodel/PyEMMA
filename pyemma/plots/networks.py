@@ -538,7 +538,7 @@ def plot_flux(flux, pos=None, state_sizes=None, flux_scale=1.0,
 
 
 def plot_network(weights, pos=None, xpos=None, ypos=None, state_sizes=None,
-                state_scale=1.0, state_colors='#ff5500', minflux=1e-9,
+                state_scale=1.0, state_colors='#ff5500', state_labels='auto',
                 arrow_scale=1.0, arrow_curvature=1.0, arrow_labels='weights',
                 arrow_label_format='%2.e', max_width=12, max_height=12,
                 figpadding=0.2, attribute_to_plot='net_flux',
@@ -553,8 +553,8 @@ def plot_network(weights, pos=None, xpos=None, ypos=None, state_sizes=None,
 
     Parameters
     ----------
-    flux : :class:`ReactiveFlux <pyemma.msm.flux.ReactiveFlux>`
-        reactive flux object
+    weights : ndarray(n, n)
+        weight matrix
     pos : ndarray(n,2), optional, default=None
         User-defined positions to draw the states on.
     xpos : ndarray(n,), optional, default=None
@@ -575,8 +575,6 @@ def plot_network(weights, pos=None, xpos=None, ypos=None, state_sizes=None,
     state_labels : list of strings, optional, default is 'auto'
         A list with a label for each state, to be displayed at the center
         of each node/state. If left to 'auto', the labels are automatically set to the state indices.
-    minflux : float, optional, default=1e-9
-        The minimal flux for a transition to be drawn
     arrow_scale : float, optional, default=1.0
         Relative arrow scale. Set to a value different from 1 to increase or
         decrease the arrow width.
@@ -630,7 +628,7 @@ def plot_network(weights, pos=None, xpos=None, ypos=None, state_sizes=None,
     """
     plot = NetworkPlot(weights, pos=pos, xpos=xpos, ypos=ypos)
     ax = plot.plot_network(state_sizes=state_sizes, state_scale=state_scale,
-                           state_colors=state_colors,
+                           state_colors=state_colors, state_labels=state_labels,
                            arrow_scale=arrow_scale, arrow_curvature=arrow_curvature,
                            arrow_labels=arrow_labels,
                            arrow_label_format=arrow_label_format,
