@@ -208,13 +208,6 @@ class MSM(_Model):
             raise AttributeError('MSM has not yet been parametrized.'
                                  'Call "MSM(P)", set_model_params(P=P) or set transition matrix')
 
-    @transition_matrix.setter
-    def transition_matrix(self, P):
-        from msmtools.analysis import is_transition_matrix
-        if not is_transition_matrix(P):
-            raise ValueError("given matrix P is not a valid transition matrix.")
-        self.P = P
-
     ################################################################################
     # Spectral quantities
     ################################################################################
