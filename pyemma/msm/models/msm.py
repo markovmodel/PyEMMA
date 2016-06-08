@@ -88,8 +88,6 @@ class MSM(_Model):
         self.set_model_params(P=P, pi=pi, reversible=reversible, dt_model=dt_model, neig=neig)
         self.ncv = ncv
 
-
-
     # TODO: maybe rename to parametrize in order to avoid confusion with set_params that has a different behavior?
     def set_model_params(self, P=None, pi=None, reversible=None, dt_model='1 step', neig=None):
         """ Call to set all basic model parameters.
@@ -206,8 +204,16 @@ class MSM(_Model):
         """
         try:
             return self.P
-        except:
-            raise AttributeError('MSM has not yet been parametrized. Call __init__ or set transition matrix')
+        except AttributeError:
+            raise AttributeError('MSM has not yet been parametrized.'
+                                 'Call "MSM(P)", set_model_params(P=P) or set transition matrix')
+
+    @transition_matrix.setter
+    def transition_matrix(self, P):
+        from msmtools.analysis import is_transition_matrix
+        if not is_transition_matrix(P):
+            raise ValueError("given matrix P is not a valid transition matrix.")
+        self.P = P
 
     ################################################################################
     # Spectral quantities
@@ -243,7 +249,7 @@ class MSM(_Model):
             if m < neig:
                 # not enough eigenpairs present - recompute:
                 self._compute_eigenvalues(neig)
-        except:
+        except AttributeError:
             # no eigendecomposition yet - compute:
             self._compute_eigenvalues(neig)
 
@@ -278,7 +284,7 @@ class MSM(_Model):
             if m < neig:
                 # not enough eigenpairs present - recompute:
                 self._compute_eigendecomposition(neig)
-        except:
+        except AttributeError:
             # no eigendecomposition yet - compute:
             self._compute_eigendecomposition(neig)
 
@@ -810,7 +816,7 @@ class MSM(_Model):
         try:
             if not self._metastable_computed:
                 raise ValueError('Metastable decomposition has not yet been computed. Please call pcca(m) first.')
-        except:
+        except AttributeError:
             raise ValueError('Metastable decomposition has not yet been computed. Please call pcca(m) first.')
 
     def pcca(self, m):
@@ -847,6 +853,7 @@ class MSM(_Model):
             (2): 147-179
 
         """
+        m = int(m)
         # can we do it?
         if not self.reversible:
             raise ValueError(
@@ -859,7 +866,7 @@ class MSM(_Model):
             if self._pcca.n_metastable != m:
                 # incorrect number of states - recompute
                 self._pcca = PCCA(self.transition_matrix, m)
-        except:
+        except AttributeError:
             # didn't have a pcca object yet - compute
             self._pcca = PCCA(self.transition_matrix, m)
 
