@@ -57,10 +57,10 @@ def estimate_umbrella_sampling(
     us_dtrajs : list of N int arrays, each of shape (T_i,)
         The integers are indexes in 0,...,n-1 enumerating the n discrete states or the bins the
         umbrella sampling trajectory is in at any time.
-    us_centers : array-like of size N
+    us_centers : list of N floats or d-dimensional arrays of floats
         List or array of N center positions. Each position must be a d-dimensional vector. For 1d
         umbrella sampling, one can simply pass a list of centers, e.g. [-5.0, -4.0, -3.0, ... ].
-    us_force_constants : float or array-like of float
+    us_force_constants : list of N floats or d- or dxd-dimensional arrays of floats
         The force constants used in the umbrellas, unit-less (e.g. kT per squared length unit). For
         multidimensional umbrella sampling, the force matrix must be used.
     md_trajs : list of M arrays, each of shape (T_i, d), optional, default=None
@@ -148,6 +148,9 @@ def estimate_umbrella_sampling(
     from .util import get_umbrella_sampling_data as _get_umbrella_sampling_data
     ttrajs, btrajs, umbrella_centers, force_constants, unbiased_state = _get_umbrella_sampling_data(
         us_trajs, us_centers, us_force_constants, md_trajs=md_trajs, kT=kT)
+    for traj, dtraj in zip(us_trajs, us_dtrajs):
+        if traj.shape[0] != dtraj.shape[0]:
+            raise ValueError("unmatching trajectory lengths")
     if md_dtrajs is None:
         md_dtrajs = []
     estimator_obj = None
