@@ -148,11 +148,31 @@ def estimate_umbrella_sampling(
     from .util import get_umbrella_sampling_data as _get_umbrella_sampling_data
     ttrajs, btrajs, umbrella_centers, force_constants, unbiased_state = _get_umbrella_sampling_data(
         us_trajs, us_centers, us_force_constants, md_trajs=md_trajs, kT=kT)
+    if len(us_trajs) != len(us_dtrajs):
+            raise ValueError(
+                "Number of continuous and discrete umbrella sampling trajectories does not " + \
+                "match: %d!=%d" % (len(us_trajs), len(us_dtrajs)))
+    i = 0
     for traj, dtraj in zip(us_trajs, us_dtrajs):
         if traj.shape[0] != dtraj.shape[0]:
-            raise ValueError("unmatching trajectory lengths")
+            raise ValueError(
+                "Lengths of continuous and discrete umbrella sampling trajectories with " + \
+                "index %d does not match: %d!=%d" % (i, len(us_trajs), len(us_dtrajs)))
+        i += 1
     if md_dtrajs is None:
         md_dtrajs = []
+    else:
+        if len(md_trajs) != len(md_dtrajs):
+            raise ValueError(
+                "Number of continuous and discrete unbiased trajectories does not " + \
+                "match: %d!=%d" % (len(md_trajs), len(md_dtrajs)))
+        i = 0
+        for traj, dtraj in zip(md_trajs, md_dtrajs):
+            if traj.shape[0] != dtraj.shape[0]:
+                raise ValueError(
+                    "Lengths of continuous and discrete unbiased trajectories with " + \
+                    "index %d does not match: %d!=%d" % (i, len(md_trajs), len(md_dtrajs)))
+            i += 1
     estimator_obj = None
     if estimator == 'wham':
         estimator_obj = wham(
