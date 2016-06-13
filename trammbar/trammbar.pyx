@@ -64,14 +64,18 @@ cdef extern from "../tram/_tram.h":
         double *log_lagrangian_mult, double *conf_energies, int *count_matrix,
         int n_conf_states, double *scratch_M, double *transition_matrix)
     double _tram_discrete_log_likelihood_lower_bound(
-        double *log_lagrangian_mult, double *biased_conf_energies, double *therm_energies,
-        int *count_matrices,  int *state_counts, int *equilibrium_therm_state_counts,
-        int n_therm_states, int n_conf_states, double *scratch_M, double *scratch_MM,
+        double *log_lagrangian_mult, double *biased_conf_energies,
+        int *count_matrices,  int *state_counts, int n_therm_states, int n_conf_states,
+        double *scratch_M, double *scratch_MM,
+        # TRAMMBAR below
+        double *therm_energies, int *equilibrium_therm_state_counts,
         double overcounting_factor)
     void _tram_get_log_Ref_K_i(
-        double *log_lagrangian_mult, double *biased_conf_energies, double *therm_energies,
-        int *count_matrices, int *state_counts, int *equilibrium_therm_state_counts,
-        int n_therm_states, int n_conf_states, double *scratch_M, double *log_R_K_i,
+        double *log_lagrangian_mult, double *biased_conf_energies, int *count_matrices,
+        int *state_counts, int n_therm_states, int n_conf_states, double *scratch_M,
+        double *log_R_K_i,
+        # TRAMMBAR below
+        double *therm_energies, int *equilibrium_therm_state_counts,
         double overcounting_factor)
     void _tram_get_pointwise_unbiased_free_energies(
         int k, double *bias_energy_sequence, double *therm_energies, int *state_sequence,
@@ -134,21 +138,22 @@ def update_lagrangian_mult(
 def update_biased_conf_energies(
     _np.ndarray[double, ndim=2, mode="c"] log_lagrangian_mult not None,
     _np.ndarray[double, ndim=2, mode="c"] biased_conf_energies not None,
-    _np.ndarray[double, ndim=1, mode="c"] therm_energies not None,
     _np.ndarray[int, ndim=3, mode="c"] count_matrices not None,
     bias_energy_sequences,
     state_sequences,
-    equilibrium_bias_energy_sequences,
-    equilibrium_state_sequences,
     _np.ndarray[int, ndim=2, mode="c"] state_counts not None,
-    _np.ndarray[int, ndim=1, mode="c"] equilibrium_therm_state_counts,
     _np.ndarray[double, ndim=2, mode="c"] log_R_K_i not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_M not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_T not None,
     _np.ndarray[double, ndim=2, mode="c"] new_biased_conf_energies not None,
     _np.ndarray[double, ndim=2, mode="c"] scratch_MM,
-    double overcounting_factor=1.0,
-    return_log_L=False):
+    return_log_L=False,
+    # TRAMMBAR below
+    _np.ndarray[double, ndim=1, mode="c"] therm_energies=None,
+    equilibrium_bias_energy_sequences=None,
+    equilibrium_state_sequences=None,
+    _np.ndarray[int, ndim=1, mode="c"] equilibrium_therm_state_counts=None,
+    double overcounting_factor=1.0):
     r"""
     Update the reduced unbiased free energies
 
@@ -158,22 +163,14 @@ def update_biased_conf_energies(
         log of the Lagrangian multipliers
     biased_conf_energies : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         reduced free energies
-    therm_energies : numpy.ndarray(shape=(T), dtype=numpy.float64)
-        reduced thermodynamic free energies, must match `biased_conf_energies`
     count_matrices : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
         multistate count matrix
     bias_energy_sequences : list of numpy.ndarray(shape=(X_i, T), dtype=numpy.float64)
         reduced bias energies in the T thermodynamic states for all X samples
     state_sequences : list of numpy.ndarray(shape=(X_i,), dtype=numpy.intc)
         Markov state indices for all X samples
-    equilibrium_bias_energy_sequences : list of numpy.ndarray(shape=(X_i, T), dtype=numpy.float64), optional
-        reduced bias energies in the T thermodynamic states for all X equilibrium samples
-    equilibrium_state_sequences : list of numpy.ndarray(shape=(X_i,), dtype=numpy.intc), optional
-        Markov state indices for all X equilibrium samples
     state_counts : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
         number of visits to thermodynamic state K and Markov state i
-    equilibrium_therm_state_counts : numpy.ndarray(shape=(T), dtype=numpy.intc)
-        number of equilibrium frames per thermodynamic state, can be zero
     log_R_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         scratch array for sum of TRAM log pseudo-counts and biased_conf_energies
     scratch_M : numpy.ndarray(shape=(M), dtype=numpy.float64)
@@ -185,17 +182,30 @@ def update_biased_conf_energies(
     scratch_MM : numpy.ndarray(shape=(M, M), dtype=numpy.float64), optional
         scratch array for likelihood computation (only needed when
         return_log_L = True)
+    return_log_L : bool
+        If true, retrun the TRAM-log-likelihood.
+
+    TRAMMBAR parameters
+    -------------------
+    therm_energies : numpy.ndarray(shape=(T), dtype=numpy.float64)
+        reduced thermodynamic free energies, must match `biased_conf_energies`
+    equilibrium_bias_energy_sequences : list of numpy.ndarray(shape=(X_i, T), dtype=numpy.float64), optional
+        reduced bias energies in the T thermodynamic states for all X equilibrium samples
+    equilibrium_state_sequences : list of numpy.ndarray(shape=(X_i,), dtype=numpy.intc), optional
+        Markov state indices for all X equilibrium samples
+    equilibrium_therm_state_counts : numpy.ndarray(shape=(T), dtype=numpy.intc)
+        number of equilibrium frames per thermodynamic state, can be zero
     overcounting_factor : double, default = 1.0
         Sets the relative statistical weight of equilibrium and non-equilibrium
         frames. An overcounting_factor of value n means that every
         non-equilibrium frame is assumed to be repeated n times in the data.
-    return_log_L : bool
-        If true, retrun the TRAM-log-likelihood.
     """
     new_biased_conf_energies[:] = _np.inf
-    get_log_Ref_K_i(log_lagrangian_mult, biased_conf_energies, therm_energies,
-                    count_matrices, state_counts, equilibrium_therm_state_counts,
-                    scratch_M, log_R_K_i, overcounting_factor)
+    get_log_Ref_K_i(log_lagrangian_mult, biased_conf_energies, count_matrices,
+                    state_counts, scratch_M, log_R_K_i,
+                    therm_energies=therm_energies,
+                    equilibrium_therm_state_counts=equilibrium_therm_state_counts,
+                    overcounting_factor=overcounting_factor)
     log_L = 0.0
     for i in range(len(bias_energy_sequences)):
         log_L += _tram_update_biased_conf_energies(
@@ -232,26 +242,27 @@ def update_biased_conf_energies(
         log_L += _tram_discrete_log_likelihood_lower_bound(
             <double*> _np.PyArray_DATA(log_lagrangian_mult),
             <double*> _np.PyArray_DATA(new_biased_conf_energies),
-            <double*> _np.PyArray_DATA(therm_energies),
             <int*> _np.PyArray_DATA(count_matrices),
             <int*> _np.PyArray_DATA(state_counts),
-            <int*> _np.PyArray_DATA(equilibrium_therm_state_counts) if equilibrium_therm_state_counts is not None else NULL,
             state_counts.shape[0],
             state_counts.shape[1],
             <double*> _np.PyArray_DATA(scratch_M),
             <double*> _np.PyArray_DATA(scratch_MM),
+            <double*> _np.PyArray_DATA(therm_energies) if therm_energies is not None else NULL,
+            <int*> _np.PyArray_DATA(equilibrium_therm_state_counts) if equilibrium_therm_state_counts is not None else NULL,
             overcounting_factor)
         return log_L
 
 def get_log_Ref_K_i(
     _np.ndarray[double, ndim=2, mode="c"] log_lagrangian_mult not None,
     _np.ndarray[double, ndim=2, mode="c"] biased_conf_energies not None,
-    _np.ndarray[double, ndim=1, mode="c"] therm_energies not None,
     _np.ndarray[int, ndim=3, mode="c"] count_matrices not None,
     _np.ndarray[int, ndim=2, mode="c"] state_counts not None,
-    _np.ndarray[int, ndim=1, mode="c"] equilibrium_therm_state_counts,
     _np.ndarray[double, ndim=1, mode="c"] scratch_M not None,
     _np.ndarray[double, ndim=2, mode="c"] log_R_K_i not None,
+    # TRAMMBAR below
+    _np.ndarray[double, ndim=1, mode="c"] therm_energies=None,
+    _np.ndarray[int, ndim=1, mode="c"] equilibrium_therm_state_counts=None,
     double overcounting_factor=1.0):
     r"""
     Computes the sum of TRAM log pseudo-counts and biased_conf_energies.
@@ -262,18 +273,21 @@ def get_log_Ref_K_i(
         log of the Lagrangian multipliers
     biased_conf_energies : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         reduced free energies
-    therm_energies : numpy.ndarray(shape=(T), dtype=numpy.float64)
-        reduced thermodynamic free energies, must match `biased_conf_energies`
     count_matrices : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
         multistate count matrix
     state_counts : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
         number of visits to thermodynamic state K and Markov state i
-    equilibrium_therm_state_counts : numpy.ndarray(shape=(T), dtype=numpy.intc)
-        number of equilibrium frames per thermodynamic state, can be zero
     scratch_M : numpy.ndarray(shape=(M), dtype=numpy.float64)
         scratch array for logsumexp operations
     log_R_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         target array for sum of TRAM log pseudo-counts and biased_conf_energies
+
+    TRAMMBAR parameters
+    -------------------
+    therm_energies : numpy.ndarray(shape=(T), dtype=numpy.float64)
+        reduced thermodynamic free energies, must match `biased_conf_energies`
+    equilibrium_therm_state_counts : numpy.ndarray(shape=(T), dtype=numpy.intc)
+        number of equilibrium frames per thermodynamic state, can be zero
     overcounting_factor : double, default = 1.0
         Sets the relative statistical weight of equilibrium and non-equilibrium
         frames. An overcounting_factor of value n means that every
@@ -284,23 +298,24 @@ def get_log_Ref_K_i(
     _tram_get_log_Ref_K_i(
         <double*> _np.PyArray_DATA(log_lagrangian_mult),
         <double*> _np.PyArray_DATA(biased_conf_energies),
-        <double*> _np.PyArray_DATA(therm_energies),
         <int*> _np.PyArray_DATA(count_matrices),
         <int*> _np.PyArray_DATA(state_counts),
-        <int*> _np.PyArray_DATA(equilibrium_therm_state_counts) if equilibrium_therm_state_counts is not None else NULL,
         log_lagrangian_mult.shape[0],
         log_lagrangian_mult.shape[1],
         <double*> _np.PyArray_DATA(scratch_M),
         <double*> _np.PyArray_DATA(log_R_K_i),
+        <double*> _np.PyArray_DATA(therm_energies) if therm_energies is not None else NULL,
+        <int*> _np.PyArray_DATA(equilibrium_therm_state_counts) if equilibrium_therm_state_counts is not None else NULL,
         overcounting_factor)
 
 def get_conf_energies(
     bias_energy_sequences,
     state_sequences,
-    equilibrium_bias_energy_sequences,
-    equilibrium_state_sequences,
     _np.ndarray[double, ndim=2, mode="c"] log_R_K_i not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_T not None,
+    # TRAMMBAR below
+    equilibrium_bias_energy_sequences=None,
+    equilibrium_state_sequences=None,
     double overcounting_factor=1.0):
     r"""
     Update the reduced unbiased free energies
@@ -311,14 +326,17 @@ def get_conf_energies(
         reduced bias energies in the T thermodynamic states for all X samples
     state_sequence : list of numpy.ndarray(shape=(X_i,), dtype=numpy.intc)
         Markov state indices for all X samples
-    equilibrium_bias_energy_sequences : list of numpy.ndarray(shape=(X_i, T), dtype=numpy.float64), optional
-        reduced bias energies in the T thermodynamic states for all X equilibrium samples
-    equilibrium_state_sequences : list of numpy.ndarray(shape=(X_i,), dtype=numpy.intc), optional
-        Markov state indices for all X equilibrium samples
     log_R_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         precomputed sum of TRAM log pseudo-counts and biased_conf_energies
     scratch_T : numpy.ndarray(shape=(T), dtype=numpy.float64)
         scratch array for logsumexp operations
+
+    TRAMMBAR parameters
+    -------------------
+    equilibrium_bias_energy_sequences : list of numpy.ndarray(shape=(X_i, T), dtype=numpy.float64), optional
+        reduced bias energies in the T thermodynamic states for all X equilibrium samples
+    equilibrium_state_sequences : list of numpy.ndarray(shape=(X_i,), dtype=numpy.intc), optional
+        Markov state indices for all X equilibrium samples
     overcounting_factor : double, default = 1.0
         Sets the relative statistical weight of equilibrium and non-equilibrium
         frames. An overcounting_factor of value n means that every
@@ -422,10 +440,11 @@ def get_pointwise_unbiased_free_energies(
     bias_energy_sequences,
     state_sequences,
     _np.ndarray[int, ndim=2, mode="c"] state_counts not None,
-    _np.ndarray[int, ndim=1, mode="c"] equilibrium_therm_state_counts,
     _np.ndarray[double, ndim=1, mode="c"] scratch_M,
     _np.ndarray[double, ndim=1, mode="c"] scratch_T,
     pointwise_unbiased_free_energies,
+    # TRAMMBAR below
+    _np.ndarray[int, ndim=1, mode="c"] equilibrium_therm_state_counts=None,
     double overcounting_factor=1.0):
     r'''
     Compute the pointwise free energies :math:`\mu^{k}(x)` for all x.
@@ -449,14 +468,17 @@ def get_pointwise_unbiased_free_energies(
         Markov state indices for all X samples
     state_counts : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
         number of visits to thermodynamic state K and Markov state i
-    equilibrium_therm_state_counts : numpy.ndarray(shape=(T), dtype=numpy.intc), optional
-        number of equilibrium frames per thermodynamic state, can be zero
     scratch_M : numpy.ndarray(shape=(M), dtype=numpy.float64)
         scratch array for logsumexp operations
     scratch_T : numpy.ndarray(shape=(T), dtype=numpy.float64)
         scratch array for logsumexp operations
     pointwise_unbiased_free_energies : list of numpy.ndarray(shape=(X_i), dtype=numpy.float64)
         target arrays for the pointwise free energies
+
+    TRAMMBAR parameters
+    -------------------
+    equilibrium_therm_state_counts : numpy.ndarray(shape=(T), dtype=numpy.intc), optional
+        number of equilibrium frames per thermodynamic state, can be zero
     overcounting_factor : double, default = 1.0
         Sets the relative statistical weight of equilibrium and non-equilibrium
         frames. An overcounting_factor of value n means that every
@@ -469,8 +491,11 @@ def get_pointwise_unbiased_free_energies(
     if scratch_M is None:
         scratch_M = _np.zeros(shape=(state_counts.shape[1]), dtype=_np.float64)
     get_log_Ref_K_i(
-        log_lagrangian_mult, biased_conf_energies, therm_energies,
-        count_matrices, state_counts, equilibrium_therm_state_counts, scratch_M, log_R_K_i, overcounting_factor)
+        log_lagrangian_mult, biased_conf_energies, count_matrices,
+        state_counts, scratch_M, log_R_K_i,
+        therm_energies=therm_energies,
+        equilibrium_therm_state_counts=equilibrium_therm_state_counts,
+        overcounting_factor=overcounting_factor)
     if k is None:
         k = -1
     assert len(state_sequences) == len(bias_energy_sequences) == len(pointwise_unbiased_free_energies)
@@ -576,19 +601,20 @@ def estimate_transition_matrix(
 def log_likelihood_lower_bound(
     _np.ndarray[double, ndim=2, mode="c"] log_lagrangian_mult not None,
     _np.ndarray[double, ndim=2, mode="c"] biased_conf_energies not None,
-    _np.ndarray[double, ndim=1, mode="c"] therm_energies not None,
     _np.ndarray[int, ndim=3, mode="c"] count_matrices not None,
     bias_energy_sequences,
     state_sequences,
-    equilibrium_bias_energy_sequences,
-    equilibrium_state_sequences,
     _np.ndarray[int, ndim=2, mode="c"] state_counts not None,
-    _np.ndarray[int, ndim=1, mode="c"] equilibrium_therm_state_counts,
     _np.ndarray[double, ndim=2, mode="c"] log_R_K_i,
     _np.ndarray[double, ndim=1, mode="c"] scratch_M,
     _np.ndarray[double, ndim=1, mode="c"] scratch_T,
     _np.ndarray[double, ndim=2, mode="c"] scratch_TM,
     _np.ndarray[double, ndim=2, mode="c"] scratch_MM,
+    # TRAMMBAR below
+    _np.ndarray[double, ndim=1, mode="c"] therm_energies=None,
+    equilibrium_bias_energy_sequences=None,
+    equilibrium_state_sequences=None,
+    _np.ndarray[int, ndim=1, mode="c"] equilibrium_therm_state_counts=None,
     double overcounting_factor=1.0):
     r"""
     Computes a lower bound on the TRAM log-likelihood
@@ -599,22 +625,14 @@ def log_likelihood_lower_bound(
         log of the Lagrangian multipliers
     biased_conf_energies : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         reduced free energies
-    therm_energies : numpy.ndarray(shape=(T), dtype=numpy.float64)
-        reduced thermodynamic free energies, must match `biased_conf_energies`
     count_matrices : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
         multistate count matrix
     bias_energy_sequences : list of numpy.ndarray(shape=(X_i, T), dtype=numpy.float64)
         reduced bias energies in the T thermodynamic states for all X samples
     state_sequences : list of numpy.ndarray(shape=(X_i,), dtype=numpy.intc)
         Markov state indices for all X samples
-    equilibrium_bias_energy_sequences : list of numpy.ndarray(shape=(X_i, T), dtype=numpy.float64), optional
-        reduced bias energies in the T thermodynamic states for all X equilibrium samples
-    equilibrium_state_sequences : list of numpy.ndarray(shape=(X_i,), dtype=numpy.intc), optional
-        Markov state indices for all X equilibrium samples
     state_counts : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
         number of visits to thermodynamic state K and Markov state i
-    equilibrium_therm_state_counts : numpy.ndarray(shape=(T), dtype=numpy.intc)
-        number of equilibrium frames per thermodynamic state, can be zero
     log_R_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         scratch array for sum of TRAM log pseudo-counts and biased_conf_energies
     scratch_M : numpy.ndarray(shape=(M), dtype=numpy.float64)
@@ -625,6 +643,17 @@ def log_likelihood_lower_bound(
         scratch array for logsumexp operations
     scratch_MM : numpy.ndarray(shape=(M, M), dtype=numpy.float64)
         scratch array for likelihood computation
+
+    TRAMMBAR parameters
+    -------------------
+    therm_energies : numpy.ndarray(shape=(T), dtype=numpy.float64)
+        reduced thermodynamic free energies, must match `biased_conf_energies`
+    equilibrium_bias_energy_sequences : list of numpy.ndarray(shape=(X_i, T), dtype=numpy.float64), optional
+        reduced bias energies in the T thermodynamic states for all X equilibrium samples
+    equilibrium_state_sequences : list of numpy.ndarray(shape=(X_i,), dtype=numpy.intc), optional
+        Markov state indices for all X equilibrium samples
+    equilibrium_therm_state_counts : numpy.ndarray(shape=(T), dtype=numpy.intc)
+        number of equilibrium frames per thermodynamic state, can be zero
     overcounting_factor : double, default = 1.0
         Sets the relative statistical weight of equilibrium and non-equilibrium
         frames. An overcounting_factor of value n means that every
@@ -659,20 +688,21 @@ def log_likelihood_lower_bound(
     if scratch_MM is None:
         scratch_MM = _np.zeros((M, M), dtype=_np.float64)
     return update_biased_conf_energies(
-        log_lagrangian_mult, biased_conf_energies, therm_energies,
-        count_matrices, bias_energy_sequences, state_sequences,
-        equilibrium_bias_energy_sequences, equilibrium_state_sequences,
-        state_counts, equilibrium_therm_state_counts, log_R_K_i,
+        log_lagrangian_mult, biased_conf_energies, count_matrices,
+        bias_energy_sequences, state_sequences, state_counts, log_R_K_i,
         scratch_M, scratch_T, scratch_TM, scratch_MM, return_log_L=True,
+        therm_energies=therm_energies,
+        equilibrium_bias_energy_sequences=equilibrium_bias_energy_sequences,
+        equilibrium_state_sequences=equilibrium_state_sequences,
+        equilibrium_therm_state_counts=equilibrium_therm_state_counts,
         overcounting_factor=overcounting_factor)
 
-def estimate(count_matrices, state_counts,
-    bias_energy_sequences, state_sequences,
+def estimate(count_matrices, state_counts, bias_energy_sequences, state_sequences,
+    maxiter=1000, maxerr=1.0E-8, save_convergence_info=0,
+    biased_conf_energies=None, log_lagrangian_mult=None, callback=None, N_dtram_accelerations=0,
     equilibrium_therm_state_counts=None,
     equilibrium_bias_energy_sequences=None, equilibrium_state_sequences=None,
-    maxiter=1000, maxerr=1.0E-8, save_convergence_info=0,
-    biased_conf_energies=None, log_lagrangian_mult=None, callback=None,
-    N_dtram_accelerations=0, overcounting_factor = 1.0):
+    overcounting_factor = 1.0):
     r"""
     Estimate the reduced discrete state free energies and thermodynamic free energies
 
@@ -686,12 +716,6 @@ def estimate(count_matrices, state_counts,
         reduced bias energies in the T thermodynamic states for all X samples
     state_sequences : list of numpy.ndarray(shape=(X_i), dtype=numpy.float64)
         discrete state indices for all X samples
-    equilibrium_therm_state_counts : numpy.ndarray(shape=(T,), dtype=numpy.intc), optional
-        number of equilibrium frames per thermodynamic state, can be zero
-    equilibrium_bias_energy_sequences : list of numpy.ndarray(shape=(X_i, T), dtype=numpy.float64), optional
-        reduced bias energies in the T thermodynamic states for all X equilibrium samples
-    equilibrium_state_sequences : list of numpy.ndarray(shape=(X_i), dtype=numpy.float64), optional
-        discrete Markov state indices for all X equilibrium samples
     maxiter : int
         maximum number of iterations
     maxerr : float
@@ -705,6 +729,15 @@ def estimate(count_matrices, state_counts,
         initial guess for the logarithm of the Lagrangian multipliers
     N_dtram_accelerations : int
         not used
+
+    TRAMMBAR parameters
+    -------------------
+    equilibrium_therm_state_counts : numpy.ndarray(shape=(T,), dtype=numpy.intc), optional
+        number of equilibrium frames per thermodynamic state, can be zero
+    equilibrium_bias_energy_sequences : list of numpy.ndarray(shape=(X_i, T), dtype=numpy.float64), optional
+        reduced bias energies in the T thermodynamic states for all X equilibrium samples
+    equilibrium_state_sequences : list of numpy.ndarray(shape=(X_i), dtype=numpy.float64), optional
+        discrete Markov state indices for all X equilibrium samples
     overcounting_factor : double, default = 1.0
         Sets the relative statistical weight of equilibrium and non-equilibrium
         frames. An overcounting_factor of value n means that every
@@ -738,10 +771,7 @@ def estimate(count_matrices, state_counts,
     if log_lagrangian_mult is None:
         log_lagrangian_mult = _np.zeros(shape=state_counts.shape, dtype=_np.float64)
         init_lagrangian_mult(count_matrices, log_lagrangian_mult)
-    if TRAMMBAR:
-        if equilibrium_therm_state_counts is None:
-            equilibrium_therm_state_counts = _np.zeros(shape=(count_matrices.shape[0],), dtype=_np.intc)
-    else:
+    if not TRAMMBAR:
         assert equilibrium_therm_state_counts is None
     increments = []
     loglikelihoods = []
@@ -786,12 +816,15 @@ def estimate(count_matrices, state_counts,
             old_log_lagrangian_mult, biased_conf_energies, count_matrices, state_counts,
             scratch_M, log_lagrangian_mult)
         l = update_biased_conf_energies(
-            log_lagrangian_mult, old_biased_conf_energies, old_therm_energies, count_matrices,
-            bias_energy_sequences, state_sequences, equilibrium_bias_energy_sequences,
-            equilibrium_state_sequences, state_counts, equilibrium_therm_state_counts,
+            log_lagrangian_mult, old_biased_conf_energies, count_matrices,
+            bias_energy_sequences, state_sequences, state_counts,
             log_R_K_i, scratch_M, scratch_T, biased_conf_energies,
-            scratch_MM, overcounting_factor=overcounting_factor,
-            return_log_L=(sci_count == save_convergence_info))
+            scratch_MM, return_log_L=(sci_count == save_convergence_info),
+            therm_energies=old_therm_energies,
+            equilibrium_bias_energy_sequences=equilibrium_bias_energy_sequences,
+            equilibrium_state_sequences=equilibrium_state_sequences,
+            equilibrium_therm_state_counts=equilibrium_therm_state_counts,
+            overcounting_factor=overcounting_factor)
 
         therm_energies = get_therm_energies(biased_conf_energies, scratch_M)
         stat_vectors = _np.exp(therm_energies[:, _np.newaxis] - biased_conf_energies)
@@ -827,9 +860,10 @@ def estimate(count_matrices, state_counts,
             old_log_lagrangian_mult[:] = log_lagrangian_mult[:]
             old_therm_energies[:] = therm_energies[:] - shift
             old_stat_vectors[:] = stat_vectors[:]
-    conf_energies = get_conf_energies(bias_energy_sequences, state_sequences,
-                         equilibrium_bias_energy_sequences, equilibrium_state_sequences,
-                         log_R_K_i, scratch_T, overcounting_factor=overcounting_factor)
+    conf_energies = get_conf_energies(bias_energy_sequences, state_sequences, log_R_K_i, scratch_T,
+                         equilibrium_bias_energy_sequences=equilibrium_bias_energy_sequences,
+                         equilibrium_state_sequences=equilibrium_state_sequences,
+                         overcounting_factor=overcounting_factor)
     therm_energies = get_therm_energies(biased_conf_energies, scratch_M)
     normalize(conf_energies, biased_conf_energies, therm_energies, scratch_M)
     if err >= maxerr:
