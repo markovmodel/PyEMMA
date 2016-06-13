@@ -138,8 +138,9 @@ def _get_umbrella_sampling_parameters(
         if dimension is None:
             dimension = _dimension
         else:
-            assert dimension == _dimension, "trajectory %i has unmatching dimension %d!=%d" % (
-                i, _dimension, dimension)
+            if dimension != _dimension:
+                raise ValueError(
+                    "Trajectory %i has unmatching dimension %d!=%d" % (i, _dimension, dimension))
         this_center = _ensure_umbrella_center(
             us_centers[i], dimension)
         this_force_constant = _ensure_force_constant(
@@ -207,8 +208,7 @@ def _get_umbrella_bias_sequences(trajs, umbrella_centers, force_constants):
                 force_constants.shape[1], force_constants.shape[2]))
     for i, traj in enumerate(trajs):
         if not isinstance(traj, _np.ndarray):
-            raise TypeError("Trajectory %d is not a numpy.ndarray: " % i + str(
-                type(traj)))
+            raise TypeError("Trajectory %d is not a numpy.ndarray: " % i + str(type(traj)))
         if traj.ndim == 1:
             traj = traj.reshape((-1, 1))
         if traj.shape[1] != dimension:
