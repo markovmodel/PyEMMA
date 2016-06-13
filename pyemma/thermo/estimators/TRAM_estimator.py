@@ -385,7 +385,8 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
                 self.log_lagrangian_mult, self.biased_conf_energies,
                 self.therm_energies, self.count_matrices,
                 self.btrajs+self.equilibrium_btrajs, self.dtrajs+self.equilibrium_dtrajs,
-                self.state_counts, self.equilibrium_state_counts.sum(axis=1).astype(_np.intc), None, None, mu)
+                self.state_counts, None, None, mu,
+                equilibrium_therm_state_counts=self.equilibrium_state_counts.sum(axis=1).astype(_np.intc))
         return mu
 
     def mbar_pointwise_free_energies(self, therm_state=None):
