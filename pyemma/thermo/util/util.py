@@ -144,6 +144,9 @@ def _get_umbrella_sampling_parameters(
         raise ValueError(
             "Unmatching number of umbrella sampling trajectories and force constants: %d!=%d" \
                 % (len(us_trajs), len(us_force_constants)))
+    if md_trajs is not None:
+        if not isinstance(md_trajs, (list, tuple)):
+            raise ValueError("The parameter md_trajs must be a list of numpy.ndarray objects")
     for i, traj in enumerate(us_trajs):
         state = None
         try:
