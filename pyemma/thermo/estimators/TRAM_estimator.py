@@ -307,7 +307,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
         else: # use trammbar
             # TODO: direct space TRAMMBAR
             self.biased_conf_energies, conf_energies, self.therm_energies, self.log_lagrangian_mult, \
-                self.increments, self.loglikelihoods = _trammbar.estimate(
+                self.increments, self.loglikelihoods = _trammbar.estimate( # TODO: argument order!
                     self.count_matrices, self.state_counts, self.btrajs, self.dtrajs,
                     equilibrium_therm_state_counts=self.equilibrium_state_counts.sum(axis=1).astype(_np.intc),
                     equilibrium_bias_energy_sequences=self.equilibrium_btrajs, equilibrium_state_sequences=self.equilibrium_dtrajs,
@@ -386,7 +386,8 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
                 self.therm_energies, self.count_matrices,
                 self.btrajs+self.equilibrium_btrajs, self.dtrajs+self.equilibrium_dtrajs,
                 self.state_counts, None, None, mu,
-                equilibrium_therm_state_counts=self.equilibrium_state_counts.sum(axis=1).astype(_np.intc))
+                equilibrium_therm_state_counts=self.equilibrium_state_counts.sum(axis=1).astype(_np.intc),
+                overcounting_factor=1.0 / self.lag)
         return mu
 
     def mbar_pointwise_free_energies(self, therm_state=None):
