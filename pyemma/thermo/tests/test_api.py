@@ -74,5 +74,21 @@ class TestProtectedUmbrellaSamplingCenters(unittest.TestCase):
             estimate_umbrella_sampling(
                 us_trajs, us_dtrajs, us_centers, us_force_constants,
                 md_trajs=md_trajs_x, md_dtrajs=md_dtrajs)
-
+        # unmatching md_trajs/md_dtrajs cases
+        with self.assertRaises(ValueError):
+            estimate_umbrella_sampling(
+                us_trajs, us_dtrajs, us_centers, us_force_constants,
+                md_trajs=None, md_dtrajs=md_dtrajs)
+        with self.assertRaises(ValueError):
+            estimate_umbrella_sampling(
+                us_trajs, us_dtrajs, us_centers, us_force_constants,
+                md_trajs=md_trajs, md_dtrajs=None)
+        # single trajectory cases
+        with self.assertRaises(ValueError):
+            estimate_umbrella_sampling(
+                us_trajs[0], us_dtrajs[0], us_centers[0], us_force_constants[0])
+        with self.assertRaises(ValueError):
+            estimate_umbrella_sampling(
+                us_trajs, us_dtrajs, us_centers, us_force_constants,
+                md_trajs=md_trajs[0], md_dtrajs=md_dtrajs[0])
 
