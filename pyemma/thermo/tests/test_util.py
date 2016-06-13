@@ -292,6 +292,15 @@ class TestProtectedUmbrellaSamplingParameters(unittest.TestCase):
             [np.array([0, 0, 0]), np.array([1, 1, 1]), np.array([2, 2, 2])],
             ref_umbrella_centers, ref_force_constants, 2)
 
+    def test_umbrella_sampling_parameters_unmatching_dimensions(self):
+        ref_umbrella_centers = [0.0, 1.0]
+        ref_force_constants = [1.0, 1.0]
+        us_trajs_x = [
+            np.array([[0.0], [0.1], [0.2]]), np.array([[0.9, 0.0], [1.0, 0.0], [1.1, 0.0]])]
+        with self.assertRaises(ValueError):
+            util._get_umbrella_sampling_parameters(
+                us_trajs_x, ref_umbrella_centers, ref_force_constants)
+
 
 class TestProtectedUmbrellaSamplingBiasSequence(unittest.TestCase):
 
