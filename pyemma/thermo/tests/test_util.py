@@ -256,18 +256,6 @@ class TestProtectedUmbrellaSamplingParameters(unittest.TestCase):
             ttrajs, umbrella_centers, force_constants * 2.0, unbiased_state,
             [np.array([0, 0, 0]), np.array([1, 1, 1]), np.array([2, 2, 2])],
             ref_umbrella_centers, ref_force_constants, 2)
-        # single trajectory outside list
-        ref_umbrella_centers = 1.0
-        ref_force_constants = 1.0
-        us_trajs = np.array([0.0, 0.1, 0.2])
-        md_trajs = np.array([0.0, 0.5, 1.0])
-        ttrajs, umbrella_centers, force_constants, unbiased_state = \
-            util._get_umbrella_sampling_parameters(
-                us_trajs, ref_umbrella_centers, ref_force_constants, md_trajs=md_trajs, kT=2.0)
-        self._assert_parameters(
-            ttrajs, umbrella_centers, force_constants * 2.0, unbiased_state,
-            [np.array([0, 0, 0]), np.array([1, 1, 1])],
-            [ref_umbrella_centers], [ref_force_constants], 1)
 
     def test_umbrella_sampling_parameters_1x1(self):
         ref_umbrella_centers = [0.0, 1.0]
@@ -303,18 +291,6 @@ class TestProtectedUmbrellaSamplingParameters(unittest.TestCase):
             ttrajs, umbrella_centers, force_constants * 2.0, unbiased_state,
             [np.array([0, 0, 0]), np.array([1, 1, 1]), np.array([2, 2, 2])],
             ref_umbrella_centers, ref_force_constants, 2)
-        # single trajectory outside list
-        ref_umbrella_centers = 1.0
-        ref_force_constants = 1.0
-        us_trajs = np.array([[0.0], [0.1], [0.2]])
-        md_trajs = np.array([[0.0], [0.5], [1.0]])
-        ttrajs, umbrella_centers, force_constants, unbiased_state = \
-            util._get_umbrella_sampling_parameters(
-                us_trajs, ref_umbrella_centers, ref_force_constants, md_trajs=md_trajs, kT=2.0)
-        self._assert_parameters(
-            ttrajs, umbrella_centers, force_constants * 2.0, unbiased_state,
-            [np.array([0, 0, 0]), np.array([1, 1, 1])],
-            [ref_umbrella_centers], [ref_force_constants], 1)
 
 
 class TestProtectedUmbrellaSamplingBiasSequence(unittest.TestCase):

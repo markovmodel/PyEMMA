@@ -130,11 +130,13 @@ def _get_umbrella_sampling_parameters(
     unbiased_state = None
     dimension = None
     if not isinstance(us_trajs, (list, tuple)):
-        us_trajs = [us_trajs]
+        raise ValueError("The parameter us_trajs must be a list of numpy.ndarray objects")
     if not isinstance(us_centers, (list, tuple)):
-        us_centers = [us_centers]
+        raise ValueError(
+            "The parameter us_centers must be a list of floats or numpy.ndarray objects")
     if not isinstance(us_force_constants, (list, tuple)):
-        us_force_constants = [us_force_constants]
+        raise ValueError(
+            "The parameter us_force_constants must be a list of floats or numpy.ndarray objects")
     if len(us_trajs) != len(us_centers):
         raise ValueError("Unmatching number of umbrella sampling trajectories and centers: %d!=%d" \
             % (len(us_trajs), len(us_centers)))
