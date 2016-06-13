@@ -10,6 +10,7 @@ Changelog
 **Fixes**:
 
 - clustering: fixed KMeans with minRMSD metric. #814
+- thermo: made estimate_umbrella_sampling more robust w.r.t. input and fixed doumentation. #812 #827
 
 2.2 (5-17-16)
 -------------
