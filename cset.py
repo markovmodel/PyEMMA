@@ -317,7 +317,7 @@ def _compute_csets(
         # between all visited conformational states within the same thermodynamic state.
         if equilibrium_state_counts is not None:
             for k in range(n_therm_states):
-                vertices = np.where(equilibrium_state_counts[k, :]>0)[0]
+                vertices = _np.where(equilibrium_state_counts[k, :]>0)[0]
                 # add bidirectional chain that links all states
                 chain = (vertices[0:-1], vertices[1:])
                 i_s += list(chain[0] + k * n_conf_states)
