@@ -16,20 +16,20 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 r"""
-Python interface to the BAR ratio initialisation
+Python interface to the BAR ratio initialisation.
 """
 
-import numpy as np
-cimport numpy as np
+import numpy as _np
+cimport numpy as _np
 
 __all__ = ['df']
 
 cdef extern from "_bar.h":
     double _bar_df(double *db_IJ, int L1, double *db_JI, int L2, double *scratch)
 
-def df(np.ndarray[double, ndim=1, mode="c"] db_IJ not None,
-       np.ndarray[double, ndim=1, mode="c"] db_JI not None,
-       np.ndarray[double, ndim=1, mode="c"] scratch not None):
+def df(_np.ndarray[double, ndim=1, mode="c"] db_IJ not None,
+       _np.ndarray[double, ndim=1, mode="c"] db_JI not None,
+       _np.ndarray[double, ndim=1, mode="c"] scratch not None):
     
     """ Free energy differences between two thermodynamic states using Bennett's 
     acceptance ratio (BAR).
@@ -43,11 +43,11 @@ def df(np.ndarray[double, ndim=1, mode="c"] db_IJ not None,
 
     Parameters
     ----------
-    db_IJ : numpy.ndarray(shape=(L1,), dtype=np.float64)
+    db_IJ : numpy.ndarray(shape=(L1,), dtype=numpy.float64)
         Reduced biased energy differences for samples generated in thermodynamic state I.
-    db_JI : numpy.ndarray(shape=(L2,), dtype=np.float64)
+    db_JI : numpy.ndarray(shape=(L2,), dtype=numpy.float64)
         Reduced biased energy differences for samples generated in thermodynamic state J.
-    sctatch : numpy.ndarray(shape=(max(L1,L2)), dtryp=np.float64)
+    sctatch : numpy.ndarray(shape=(max(L1, L2)), dtype=numpy.float64)
         Empty scatch array for internal data processing
 
     Returns
@@ -61,8 +61,8 @@ def df(np.ndarray[double, ndim=1, mode="c"] db_IJ not None,
         Monte Carlo Data. J. Comput. Phys. 22, 245-268 (1976)
     """
     return _bar_df(
-        <double*> np.PyArray_DATA(db_IJ),
+        <double*> _np.PyArray_DATA(db_IJ),
         db_IJ.shape[0],
-        <double*> np.PyArray_DATA(db_JI), 
+        <double*> _np.PyArray_DATA(db_JI), 
         db_JI.shape[0],
-        <double*> np.PyArray_DATA(scratch))
+        <double*> _np.PyArray_DATA(scratch))
