@@ -1,8 +1,57 @@
 Changelog
 =========
 
-2.1rc1 (19-2-2016)
-------------------
+2.2.1 ()
+--------
+
+**New features**:
+- ...
+
+**Fixes**:
+
+- clustering: fixed KMeans with minRMSD metric. #814
+
+2.2 (5-17-16)
+-------------
+
+**New features**:
+
+- thermo: added TRAM estimation.
+- thermo: added plotting feature for implied timescales.
+- thermo: added Jupyter notebook examples: :ref:`ref-notebooks`.
+- thermo: show convergence progress during estimation.
+
+**Fixes**:
+
+- clustering: fix parallel cluster assignment with minRMSD metric.
+- base: during estimation the model was accessed in an inappropriate way,
+  which led to the crash "AttributeError: object has no attribute '_model'" #764.
+- coordinates.io: fixed a bug when trying to pyemma.coordinates.load certain MD formats.
+  The iterator could have returned None in some cases #790.
+- coordiantes.save_traj(s): use new backend introduced in 2.1, speed up for non random
+  accessible trajectory formats like XTC. Avoids reading trajectory info for files not
+  being indexed by the input mapping. Fixes #788.
+
+
+2.1.1 (4-18-2016)
+-----------------
+Service release. Fixes some
+
+**New features**:
+
+- clustering: parallelized clustering assignment. Especially useful for expensive to
+  compute metrics like minimum RMSD. Clustering objects now a **n_jobs** attribute
+  to set the desired number of threads. For a high job number one should use a
+  considerable high chunk size as well.
+
+**Fixes**:
+- In parallel environments (clusters with shared filesystem) there will be no
+  crashes due to the config module, which tried to write files in users home
+  directory. Config files are optional by now.
+
+
+2.1 (3-29-2016)
+---------------
 
 **New features**:
 
@@ -50,8 +99,9 @@ Changelog
     (reported as Warnings).
 
 - coordinates:
-
-  - Added trajectory info cache
+  - Completly re-designed class hierachy (user-code/API unaffected).
+  - Added trajectory info cache to avoid re-computing lengths, dimensions and
+    byte offsets of data sets.
   - Random access strategies supported (eg. via slices).
   - FeatureReader supports random access for XTC and TRR (in conjunction with mdtraj-1.6).
   - Re-design API to support scikit-learn interface (fit, transform).
@@ -69,11 +119,11 @@ Changelog
 - Progressbars now auto-hide, when work is done.
 
 
-2.0.4 (9-2-2016)
+2.0.4 (2-9-2016)
 ----------------
 Patch release to address DeprecationWarning flood in conjunction with Jupyther notebook.
 
-2.0.3 (29-1-2016)
+2.0.3 (1-29-2016)
 -----------------
 
 **New features**:

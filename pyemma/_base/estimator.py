@@ -129,9 +129,12 @@ def _estimate_param_scan_worker(estimator, params, X, evaluate, evaluate_args,
     # run estimation
     model = None
     try:  # catch any exception
-        model = estimator.estimate(X, **params)
+        estimator.estimate(X, **params)
+        model = estimator.model
     except:
-        e = sys.exc_info()[0]
+        e = sys.exc_info()[1]
+        if isinstance(estimator, Loggable):
+            estimator.logger.warning("Ignored error during estimation: %s" % e)
         if failfast:
             raise  # re-raise
         else:
@@ -155,7 +158,7 @@ def _estimate_param_scan_worker(estimator, params, X, evaluate, evaluate_args,
             # evaluate
             try:
                 # try calling method/property/attribute
-                value = _call_member(model, name, args=args)
+                value = _call_member(estimator.model, name, args=args)
             # couldn't find method/property/attribute
             except AttributeError as e:
                 if failfast:
@@ -166,6 +169,7 @@ def _estimate_param_scan_worker(estimator, params, X, evaluate, evaluate_args,
         # if we only have one value, unpack it
         if len(values) == 1:
             values = values[0]
+        res.append(values)
     else:
         raise ValueError('Invalid setting for evaluate: ' + str(evaluate))
 
@@ -334,8 +338,8 @@ class Estimator(_BaseEstimator, Loggable):
 
         Returns
         -------
-        model : object
-            The estimated model.
+        estimator : object
+            The estimated estimator with the model being available.
 
         """
         # set params
@@ -343,7 +347,7 @@ class Estimator(_BaseEstimator, Loggable):
             self.set_params(**params)
         self._model = self._estimate(X)
         self._estimated = True
-        return self._model
+        return self
 
     def _estimate(self, X):
         raise NotImplementedError(
@@ -359,11 +363,12 @@ class Estimator(_BaseEstimator, Loggable):
 
         Returns
         -------
-        model : object
-            The estimated model.
+        estimator : object
+            The estimator (self) with estimated model.
 
         """
-        return self.estimate(X)
+        self.estimate(X)
+        return self
 
     @property
     def model(self):

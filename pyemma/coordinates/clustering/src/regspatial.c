@@ -29,7 +29,7 @@ static PyObject *cluster(PyObject *self, PyObject *args) {
     float cutoff, mindist;
     float d;
     float *buffer_a, *buffer_b;
-    float (*distance)(float*, float*, size_t, float*, float*);
+    float (*distance)(float*, float*, size_t, float*, float*, float*);
 
     py_centers = NULL; py_item = NULL; py_res = NULL;
     np_chunk = NULL; np_item = NULL;
@@ -92,7 +92,7 @@ static PyObject *cluster(PyObject *self, PyObject *args) {
     for(i = 0; i < N_frames; ++i) {
         mindist = FLT_MAX;
         for(j = 0; j < N_centers; ++j) {
-            d = distance(&chunk[i*dim], centers[j], dim, buffer_a, buffer_b);
+            d = distance(&chunk[i*dim], centers[j], dim, buffer_a, buffer_b, NULL);
             if(d<mindist) mindist = d;
         }
         if(mindist > cutoff) {

@@ -29,6 +29,7 @@ import numpy as np
 from pyemma.plots.networks import plot_flux, plot_markov_model
 #from pyemma.msm.flux.api import tpt
 from msmtools.flux import tpt
+from msmtools.analysis import mfpt
 import msmtools
 import matplotlib
 
@@ -45,6 +46,11 @@ class TestNetworkPlot(unittest.TestCase):
                           [0.0, 0.02, 0.02, 0.0, 0.96]])
         cls.A = [0]
         cls.B = [4]
+
+        cls.P_mfpt = np.zeros_like(cls.P)
+        for ii in np.arange(cls.P.shape[0]):
+            for jj in np.arange(cls.P.shape[1]):
+                cls.P_mfpt[ii,jj] = mfpt(cls.P, [ii], [jj])
         return cls
 
     def test_flux(self):
@@ -63,6 +69,18 @@ class TestNetworkPlot(unittest.TestCase):
 
     def test_plot_markov_model(self):
         fig, pos = plot_markov_model(self.P)
+        assert type(fig) is matplotlib.figure.Figure
+
+    def test_forced_no_arrows_labels(self):
+        fig, pos = plot_markov_model(self.P, arrow_labels=None)
+        assert type(fig) is matplotlib.figure.Figure
+
+    def test_numeric_arrow_labels(self):
+        fig, pos = plot_markov_model(self.P, arrow_labels=self.P)
+        assert type(fig) is matplotlib.figure.Figure
+
+    def test_alphanumeric_arrow_labels(self):
+        fig, pos = plot_markov_model(self.P, arrow_labels=self.P_mfpt, arrow_label_format='mfpts = %f frames')
         assert type(fig) is matplotlib.figure.Figure
 
 if __name__ == "__main__":

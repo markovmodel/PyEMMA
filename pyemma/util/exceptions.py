@@ -55,3 +55,18 @@ class NotConvergedWarning(RuntimeWarning):
 class EfficiencyWarning(UserWarning):
     r"""Some operation or input data leads to a lack of efficiency"""
     pass
+
+
+class ParserWarning(UserWarning):
+    """ Some user defined variable could not be parsed and is ignored/replaced. """
+    pass
+
+
+class ConfigDirectoryException(Exception):
+    """ Some operation with PyEMMAs configuration directory went wrong. """
+    pass
+
+
+class PyEMMA_DeprecationWarning(UserWarning):
+    """You are using a feature, which will be removed in a future release. You have been warned!"""
+    pass

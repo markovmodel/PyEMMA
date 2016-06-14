@@ -1,7 +1,7 @@
 # additional for building the sphinx doc and ipython notebook rst conversion
-matplotlib>=1.3.1
--e git://github.com/sphinx-doc/sphinx@stable#egg=sphinx
-ipython>=2.1.0
+matplotlib>=1.5
+sphinx>=1.4
+nbconvert>=4.2.0
 
 # sphinx_rtd_theme from git
 -e git://github.com/snide/sphinx_rtd_theme.git#egg=sphinx_rtd_theme

@@ -95,8 +95,6 @@ import math, sys, numbers
 import numpy as np
 from .covar_c import covartools
 
-__author__ = 'noe'
-
 
 def _is_zero(x):
     """ Returns True if x is numerically 0 or an array with 0's. """
@@ -187,8 +185,8 @@ def _sparsify_pair(X, Y, remove_mean=False, modify_data=False, symmetrize=False,
     Y0, mask_Y, yconst = _sparsify(Y, sparse_mode=sparse_mode, sparse_tol=sparse_tol)
     # if we have nonzero constant columns and the number of samples is too small, do not treat as
     # sparse, because then the const-specialized dot product function doesn't pay off.
-    is_const = not (_is_zero(xconst) and _is_zero(yconst))
-    if is_const and (symmetrize or not remove_mean) and 10*T < N:
+    # is_var = mask_X is None or mask_Y is None
+    if mask_X is None or mask_Y is None:  # removed clauses: (is_var or 10*T < N):  # (symmetrize or not remove_mean)
         return X, None, None, Y, None, None
     else:
         return X0, mask_X, xconst, Y0, mask_Y, yconst
@@ -428,12 +426,6 @@ def _M2_const(Xvar, mask_X, xvarsum, xconst, Yvar, mask_Y, yvarsum, yconst):
         Unnormalized covariance matrix.
 
     """
-    # check input
-    if mask_X is None:
-        mask_X = np.ones(Xvar.shape[1], dtype=np.bool)
-    elif mask_Y is None:
-        mask_Y = np.ones(Yvar.shape[1], dtype=np.bool)
-
     C = np.zeros((len(mask_X), len(mask_Y)))
     # Block 11
     C[np.ix_(mask_X, mask_Y)] = np.dot(Xvar.T, Yvar)

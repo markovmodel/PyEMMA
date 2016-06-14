@@ -251,9 +251,15 @@ class TICA(StreamingTransformer):
             self._logger.debug("Running TICA with tau=%i; Estimating two covariance matrices"
                                " with dimension (%i, %i)" % (self._lag, indim, indim))
 
-        if not partial_fit and not any(iterable.trajectory_lengths(self.stride) > self.lag):
-            raise ValueError("None single dataset [longest=%i] is longer than"
-                             " lag time [%i]." % (max(iterable.trajectory_lengths(self.stride)), self.lag))
+        if not any(iterable.trajectory_lengths(stride=self.stride, skip=self.lag) > 0):
+            if partial_fit:
+                self.logger.warn("Could not use data passed to partial_fit(), "
+                                 "because no single data set [longest=%i] is longer than lag time [%i]"
+                                 % (max(iterable.trajectory_lengths(self.stride)), self.lag))
+                return self
+            else:
+                raise ValueError("None single dataset [longest=%i] is longer than"
+                                 " lag time [%i]." % (max(iterable.trajectory_lengths(self.stride)), self.lag))
 
         it = iterable.iterator(lag=self.lag, return_trajindex=False)
         with it:
@@ -270,6 +276,10 @@ class TICA(StreamingTransformer):
 
         if not partial_fit:
             self._diagonalize()
+        else:
+            if not hasattr(self, "_used_data"):
+                self._used_data = 0
+            self._used_data += len(it)
 
         return self._model
 

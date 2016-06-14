@@ -1,6 +1,7 @@
 # Makefile for Sphinx documentation
 #
 
+SHELL := /bin/bash
 PYVER = 2.7
 PYTHON = python$(PYVER)
 
@@ -17,8 +18,8 @@ PAPEROPT_letter = -D latex_paper_size=letter
 ALLSPHINXOPTS   = -d build/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) source
 
 # ipython notebook index file
-F			 = source/generated/ipynb-list.rst
-HEADER = '.. toctree:: \n   :maxdepth: 1 \n'
+NBCONVERT_CONFIG = $(realpath jupyter_nbconvert_config.py)
+NBCONVERT_CMD = jupyter nbconvert $(nbflags) --config $(NBCONVERT_CONFIG)
 
 .PHONY: help clean html ipython-rst
 
@@ -42,20 +43,11 @@ source/generated:
 	mkdir -p source/generated
 
 ipython-rst: source/generated
-	# find all ipython notebooks (without their checkpoints)
-	@$(eval notebooks:= $$(shell cd source/generated && \
-                               find ../../../pyemma-ipython/ -name \*.ipynb \
-                                    -and -not -name \*-checkpoint.ipynb))
-	# convert notebooks to rst
-	cd source/generated; ipython nbconvert --to rst $(notebooks)
-	# strip directory part and extensions
-	#@$(eval notebooks=$$(notdir $(notebooks)))
-	#@$(eval notebooks=$$(basename $(notebooks)))
-	# write header
-	#@echo $(HEADER) > $(F)
-	# put every notebook as a link in index file
-	#@$(foreach n,$(notebooks), echo "   $n" >> $(F);)
-
+	@$(eval nb_names:= $$(shell grep generated source/ipython.rst | sed -re 's/\s+generated\/(.+)/\/\1.ipynb|/g'))
+	@$(eval notebooks:= $$(shell find ../pyemma-ipython -name *.ipynb | grep -E "$(nb_names)" ))
+	cd source/generated
+	pwd
+	set -x; for nb in $(notebooks); do $(NBCONVERT_CMD) $$nb || true; done
 	@echo "Conversion finished."
 
 latex:
@@ -64,3 +56,4 @@ latex:
 
 html_check: 
 	$(SPHINXBUILD) -b linkcheck $(ALLSPHINXOPTS) build/html $(FILES)
+

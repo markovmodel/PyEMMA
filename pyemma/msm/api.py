@@ -27,7 +27,6 @@ from .estimators import BayesianHMSM as _Bayes_HMSM
 from .estimators import MaximumLikelihoodMSM as _ML_MSM
 from .estimators import ImpliedTimescales as _ImpliedTimescales
 
-from msmtools.flux import tpt as tpt_factory
 from .models import MSM
 from pyemma.util.annotators import shortcut
 from pyemma.util import types as _types
@@ -1199,9 +1198,7 @@ def bayesian_hidden_markov_model(dtrajs, nstates, lag, nsamples=100, reversible=
                                   dt_traj=dt_traj, conf=conf, store_hidden=store_hidden, show_progress=show_progress)
     return bhmsm_estimator.estimate(dtrajs)
 
-# TODO: need code examples
-#     Examples
-#     --------
+
 def tpt(msmobj, A, B):
     r""" A->B reactive flux from transition path theory (TPT)
 
@@ -1221,29 +1218,29 @@ def tpt(msmobj, A, B):
 
     Returns
     -------
-    tptobj : :class:`ReactiveFlux <msmtools.flux.ReactiveFlux>` object
+    tptobj : :class:`ReactiveFlux <pyemma.msm.reactive_flux.ReactiveFlux>` object
         An object containing the reactive A->B flux network
         and several additional quantities, such as the stationary probability,
         committors and set definitions.
 
     See also
     --------
-    :class:`ReactiveFlux <msmtools.flux.ReactiveFlux>`
-        Reactive Flux object
+    :class:`ReactiveFlux <pyemma.msm.reactive_flux.ReactiveFlux>`
+        Reactive Flux model
 
 
-    .. autoclass:: msmtools.flux.reactive_flux.ReactiveFlux
+    .. autoclass:: pyemma.msm.reactive_flux.ReactiveFlux
         :members:
         :undoc-members:
 
         .. rubric:: Methods
 
-        .. autoautosummary:: msmtools.flux.reactive_flux.ReactiveFlux
+        .. autoautosummary:: pyemma.msm.reactive_flux.ReactiveFlux
            :methods:
 
         .. rubric:: Attributes
 
-        .. autoautosummary:: msmtools.flux.reactive_flux.ReactiveFlux
+        .. autoautosummary:: pyemma.msm.reactive_flux.ReactiveFlux
             :attributes:
 
     References
@@ -1268,10 +1265,88 @@ def tpt(msmobj, A, B):
         from Short Off-Equilibrium Simulations.
         Proc. Natl. Acad. Sci. USA, 106, 19011-19016 (2009)
 
+
+    Computes the A->B reactive flux using transition path theory (TPT)
+
+    Parameters
+    ----------
+    T : (M, M) ndarray or scipy.sparse matrix
+        Transition matrix (default) or Rate matrix (if rate_matrix=True)
+    A : array_like
+        List of integer state labels for set A
+    B : array_like
+        List of integer state labels for set B
+    mu : (M,) ndarray (optional)
+        Stationary vector
+    qminus : (M,) ndarray (optional)
+        Backward committor for A->B reaction
+    qplus : (M,) ndarray (optional)
+        Forward committor for A-> B reaction
+    rate_matrix = False : boolean
+        By default (False), T is a transition matrix.
+        If set to True, T is a rate matrix.
+
+    Returns
+    -------
+    tpt: msmtools.flux.ReactiveFlux object
+        A python object containing the reactive A->B flux network
+        and several additional quantities, such as stationary probability,
+        committors and set definitions.
+
+    Notes
+    -----
+    The central object used in transition path theory is
+    the forward and backward comittor function.
+
+    TPT (originally introduced in [1]) for continous systems has a
+    discrete version outlined in [2]. Here, we use the transition
+    matrix formulation described in [3].
+
+    See also
+    --------
+    msmtools.analysis.committor, ReactiveFlux
+
+    References
+    ----------
+    .. [1] W. E and E. Vanden-Eijnden.
+        Towards a theory of transition paths.
+        J. Stat. Phys. 123: 503-523 (2006)
+    .. [2] P. Metzner, C. Schuette and E. Vanden-Eijnden.
+        Transition Path Theory for Markov Jump Processes.
+        Multiscale Model Simul 7: 1192-1219 (2009)
+    .. [3] F. Noe, Ch. Schuette, E. Vanden-Eijnden, L. Reich and T. Weikl:
+        Constructing the Full Ensemble of Folding Pathways from Short Off-Equilibrium Simulations.
+        Proc. Natl. Acad. Sci. USA, 106, 19011-19016 (2009)
+
     """
+    from msmtools.flux import flux_matrix, to_netflux
+    import msmtools.analysis as msmana
+
     T = msmobj.transition_matrix
     mu = msmobj.stationary_distribution
     A = _types.ensure_ndarray(A, kind='i')
     B = _types.ensure_ndarray(B, kind='i')
-    tptobj = tpt_factory(T, A, B, mu=mu)
-    return tptobj
+
+    if len(A) == 0 or len(B) == 0:
+        raise ValueError('set A or B is empty')
+    n = T.shape[0]
+    if len(A) > n or len(B) > n or max(A) > n or max(B) > n:
+        raise ValueError('set A or B defines more states, than given transition matrix.')
+
+    # forward committor
+    qplus = msmana.committor(T, A, B, forward=True)
+    # backward committor
+    if msmana.is_reversible(T, mu=mu):
+        qminus = 1.0 - qplus
+    else:
+        qminus = msmana.committor(T, A, B, forward=False, mu=mu)
+    # gross flux
+    grossflux = flux_matrix(T, mu, qminus, qplus, netflux=False)
+    # net flux
+    netflux = to_netflux(grossflux)
+
+    # construct flux object
+    from .models.reactive_flux import ReactiveFlux
+
+    F = ReactiveFlux(A, B, netflux, mu=mu, qminus=qminus, qplus=qplus, gross_flux=grossflux)
+    return F

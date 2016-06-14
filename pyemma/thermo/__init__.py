@@ -24,7 +24,7 @@ For most users, the following high-level functions are sufficient to
 estimate models from data.
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: generated/thermo-api
 
    estimate_umbrella_sampling
    estimate_multi_temperature
@@ -38,7 +38,7 @@ Thermo classes
 use the API functions above.
 
 .. autosummary::
-    :toctree: generated/
+    :toctree: generated/thermo-estimators
 
     StationaryModel
     MEMM

@@ -39,6 +39,8 @@ import warnings
 from decorator import decorator, decorate
 from inspect import stack
 
+from pyemma.util.exceptions import PyEMMA_DeprecationWarning
+
 __all__ = ['alias',
            'aliased',
            'deprecated',
@@ -213,7 +215,7 @@ def deprecated(*optional_message):
 
         warnings.warn_explicit(
             user_msg,
-            category=DeprecationWarning,
+            category=PyEMMA_DeprecationWarning,
             filename=filename,
             lineno=lineno
         )

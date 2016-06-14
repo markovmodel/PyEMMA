@@ -1,6 +1,6 @@
 package:
-  name: pyemma
-  version: !!str dev
+  name: pyemma-dev
+  #version: 0 
 source:
   path: ../..
 
@@ -13,13 +13,14 @@ requirements:
     - setuptools
     - cython >=0.20
 
-    - bhmm <0.7
-    - joblib ==0.8.4
+    - bhmm >=0.6,<0.7
+    - joblib >0.8.4
     - matplotlib
-    - mdtraj >=1.5
-    - mock # [py27]
+    - mdtraj >=1.7
+    - mock
+    - funcsigs
     - msmtools
-    - thermotools >=0.1.14
+    - thermotools >=0.2.0
     - nose
     - numpy x.x 
     - pyyaml
@@ -31,13 +32,14 @@ requirements:
   run:
     - python
     - setuptools
-    - bhmm <0.7
-    - joblib ==0.8.4
+    - bhmm >=0.6,<0.7
+    - joblib >0.8.4
     - matplotlib
-    - mdtraj >=1.5
-    - mock # [py27]
+    - mdtraj >=1.7
+    - mock
+    - funcsigs
     - msmtools
-    - thermotools >=0.1.14
+    - thermotools >=0.2.0
     - numpy x.x
     - pyyaml
     - scipy

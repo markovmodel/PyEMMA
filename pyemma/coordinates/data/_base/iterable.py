@@ -25,7 +25,7 @@ from pyemma._base.progress import ProgressReporter
 
 class Iterable(six.with_metaclass(ABCMeta, ProgressReporter, Loggable)):
 
-    def __init__(self, chunksize=100):
+    def __init__(self, chunksize=1000):
         super(Iterable, self).__init__()
         self._default_chunksize = chunksize
         if self.default_chunksize < 0:
@@ -144,6 +144,7 @@ class Iterable(six.with_metaclass(ABCMeta, ProgressReporter, Loggable)):
                 self._logger.debug("get_output(): created output trajs with shapes: %s"
                                    % [x.shape for x in trajs])
             # fetch data
+            self.logger.debug("nchunks :%s, chunksize=%s" % (it._n_chunks, it.chunksize))
             self._progress_register(it._n_chunks,
                                     description='getting output of %s' % self.__class__.__name__,
                                     stage=1)
@@ -185,6 +186,7 @@ class Iterable(six.with_metaclass(ABCMeta, ProgressReporter, Loggable)):
         Example
         -------
         Assume you want to save features calculated by some FeatureReader to ASCII:
+        
         >>> import numpy as np, pyemma
         >>> from pyemma.util.files import TemporaryDirectory
         >>> import os
@@ -211,7 +213,7 @@ class Iterable(six.with_metaclass(ABCMeta, ProgressReporter, Loggable)):
                          in range(self.number_of_trajectories())]
         else:
             raise TypeError("filename should be str or None")
-        print("filenames", filenames)
+        self.logger.debug("write_to_csv, filenames=%s" % filenames)
         # check files before starting to write
         import errno
         for f in filenames:
@@ -236,9 +238,11 @@ class Iterable(six.with_metaclass(ABCMeta, ProgressReporter, Loggable)):
                     if f is not None:
                         f.close()
                     fn = filenames[it.current_trajindex]
-                    self.logger.debug("opening file %s for writing csv.")
+                    self.logger.debug("opening file %s for writing csv." % fn)
                     f = open(fn, 'wb')
-                np.savetxt(f, X)
+                    oldtraj = it.current_trajindex
+                np.savetxt(f, X, **kw)
+                f.flush()
                 self._progress_update(1, 0)
         if f is not None:
             f.close()
@@ -275,6 +279,9 @@ class LaggedIterator(object):
         n1 = self._it._n_chunks
         n2 = self._it_lagged._n_chunks
         return min(n1, n2)
+
+    def __len__(self):
+        return min(self._it.trajectory_lengths(), self._it_lagged.trajectory_lengths())
 
     def __iter__(self):
         return self

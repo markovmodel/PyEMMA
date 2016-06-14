@@ -84,15 +84,22 @@ Low-level functions for estimation and analysis of transition matrices and io.
    msm.flux
 
 """
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import as _
 
 #####################################################
 # Low-level MSM functions (imported from msmtools)
 # backward compatibility to PyEMMA 1.2.x
-from msmtools import analysis, estimation, generation, dtraj, flux
-from msmtools.flux import ReactiveFlux
-from msmtools.analysis.dense.pcca import PCCA
+# TODO: finally remove this stuff...
+from pyemma.util._ext.shimmodule import ShimModule
+analysis = ShimModule(src='pyemma.msm.analysis', mirror='msmtools.analysis')
+estimation = ShimModule(src='pyemma.msm.estimation', mirror='msmtools.estimation')
+generation = ShimModule(src='pyemma.msm.generation', mirror='msmtools.generation')
+dtraj = ShimModule(src='pyemma.msm.dtraj', mirror='msmtools.dtraj')
 io = dtraj
+flux = ShimModule(src='pyemma.msm.flux', mirror='msmtools.flux')
+del ShimModule
+######################################################
+from msmtools.analysis.dense.pcca import PCCA
 
 #####################################################
 # Estimators and models
@@ -101,7 +108,7 @@ from .estimators import MaximumLikelihoodHMSM, BayesianHMSM
 from .estimators import ImpliedTimescales
 from .estimators import ChapmanKolmogorovValidator
 
-from .models import MSM, HMSM, SampledMSM, SampledHMSM
+from .models import MSM, HMSM, SampledMSM, SampledHMSM, ReactiveFlux
 
 # high-level api
 from .api import *

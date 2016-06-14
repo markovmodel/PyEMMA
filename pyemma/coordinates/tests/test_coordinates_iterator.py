@@ -149,12 +149,19 @@ class TestCoordinatesIterator(unittest.TestCase):
                 np.save(fn, x)
             reader = source(fns)
             assert reader.filenames == fns
-            tica_obj = tica(reader, lag=1)
-            tica_obj.write_to_csv(extension=".exotic")
+            tica_obj = tica(reader, lag=1, dim=2)
+            tica_obj.write_to_csv(extension=".exotic", chunksize=3)
             res = sorted([os.path.abspath(x) for x in glob(td + os.path.sep + '*.exotic')])
             self.assertEqual(len(res), len(fns))
             desired_fns = sorted([s.replace('.npy', '.exotic') for s in fns])
             self.assertEqual(res, desired_fns)
+
+            # compare written results
+            expected = tica_obj.get_output()
+            actual = source(list(s.replace('.npy', '.exotic') for s in fns)).get_output()
+            assert len(actual) == len(fns)
+            for a, e in zip(actual, expected):
+                np.testing.assert_allclose(a, e)
 
 if __name__ == '__main__':
     unittest.main()

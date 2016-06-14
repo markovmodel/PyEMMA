@@ -22,7 +22,7 @@ function upload($file) {
 
 function run {
     cd $env:APPVEYOR_BUILD_FOLDER
-    $stylesheet =  "tools/ci/appveyor/transform_xunit_to_appveyor.xsl"
+    $stylesheet =  "devtools/ci/appveyor/transform_xunit_to_appveyor.xsl"
     $input = "nosetests.xml"
     $output = "transformed.xml"
     

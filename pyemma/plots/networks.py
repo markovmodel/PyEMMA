@@ -20,6 +20,7 @@
 from __future__ import absolute_import
 import math
 import numpy as np
+import six
 
 from pyemma.util import types as _types
 from six.moves import range
@@ -71,6 +72,15 @@ class NetworkPlot(object):
                           " time for large networks! It is recommended to"
                           " coarse grain your model first!")
         self.A = A
+        if pos is not None and len(pos) < len(A):
+            raise ValueError('Given less positions (%i) than states (%i)'
+                             % (len(pos), len(A)))
+        if xpos is not None and len(xpos) < len(A):
+            raise ValueError('Given less positions (%i) than states (%i)'
+                             % (len(xpos), len(A)))
+        if ypos is not None and len(ypos) < len(A):
+            raise ValueError('Given less positions (%i) than states (%i)'
+                             % (len(ypos), len(A)))
         self.pos = pos
         self.xpos = xpos
         self.ypos = ypos
@@ -199,20 +209,19 @@ class NetworkPlot(object):
             state_colors = [plt.cm.binary(int(256.0 * colorscales[i])) for i in range(n)]
         except:
             pass  # assume we have a list of strings now.
+
         # set arrow labels
         if isinstance(arrow_labels, np.ndarray):
             L = arrow_labels
-        else:
+        elif isinstance(arrow_labels, six.string_types) and arrow_labels.lower() == 'weights':
+            L = self.A[:, :]
+        elif arrow_labels is None:
             L = np.empty(np.shape(self.A), dtype=object)
-        if arrow_labels is None:
             L[:, :] = ''
-        elif arrow_labels.lower() == 'weights':
-            for i in range(n):
-                for j in range(n):
-                    L[i, j] = arrow_label_format % self.A[i, j]
+            arrow_label_format = '%s'
         else:
             rcParams['font.size'] = old_fontsize
-            raise ValueError('invalid arrow label format')
+            raise ValueError('invalid arrow labels')
 
         # Set the default values for the text dictionary
         textkwargs.setdefault('size', 14)
@@ -241,7 +250,7 @@ class NetworkPlot(object):
                 if (abs(self.A[i, j]) > 0):
                     self._draw_arrow(self.pos[i, 0], self.pos[i, 1],
                                      self.pos[j, 0], self.pos[j, 1], Dx, Dy,
-                                     label=str(L[i, j]),
+                                     label=arrow_label_format%L[i, j],
                                      width=arrow_scale * self.A[i, j],
                                      arrow_curvature=arrow_curvature,
                                      patchA=circles[i], patchB=circles[j],
@@ -249,7 +258,7 @@ class NetworkPlot(object):
                 if (abs(self.A[j, i]) > 0):
                     self._draw_arrow(self.pos[j, 0], self.pos[j, 1],
                                      self.pos[i, 0], self.pos[i, 1], Dx, Dy,
-                                     label=str(L[j, i]),
+                                     label=arrow_label_format%L[j, i],
                                      width=arrow_scale * self.A[j, i],
                                      arrow_curvature=arrow_curvature,
                                      patchA=circles[j], patchB=circles[i],
@@ -529,7 +538,7 @@ def plot_flux(flux, pos=None, state_sizes=None, flux_scale=1.0,
 
 
 def plot_network(weights, pos=None, xpos=None, ypos=None, state_sizes=None,
-                state_scale=1.0, state_colors='#ff5500', minflux=1e-9,
+                state_scale=1.0, state_colors='#ff5500', state_labels='auto',
                 arrow_scale=1.0, arrow_curvature=1.0, arrow_labels='weights',
                 arrow_label_format='%2.e', max_width=12, max_height=12,
                 figpadding=0.2, attribute_to_plot='net_flux',
@@ -544,8 +553,8 @@ def plot_network(weights, pos=None, xpos=None, ypos=None, state_sizes=None,
 
     Parameters
     ----------
-    flux : :class:`ReactiveFlux <pyemma.msm.flux.ReactiveFlux>`
-        reactive flux object
+    weights : ndarray(n, n)
+        weight matrix
     pos : ndarray(n,2), optional, default=None
         User-defined positions to draw the states on.
     xpos : ndarray(n,), optional, default=None
@@ -566,8 +575,6 @@ def plot_network(weights, pos=None, xpos=None, ypos=None, state_sizes=None,
     state_labels : list of strings, optional, default is 'auto'
         A list with a label for each state, to be displayed at the center
         of each node/state. If left to 'auto', the labels are automatically set to the state indices.
-    minflux : float, optional, default=1e-9
-        The minimal flux for a transition to be drawn
     arrow_scale : float, optional, default=1.0
         Relative arrow scale. Set to a value different from 1 to increase or
         decrease the arrow width.
@@ -621,7 +628,7 @@ def plot_network(weights, pos=None, xpos=None, ypos=None, state_sizes=None,
     """
     plot = NetworkPlot(weights, pos=pos, xpos=xpos, ypos=ypos)
     ax = plot.plot_network(state_sizes=state_sizes, state_scale=state_scale,
-                           state_colors=state_colors,
+                           state_colors=state_colors, state_labels=state_labels,
                            arrow_scale=arrow_scale, arrow_curvature=arrow_curvature,
                            arrow_labels=arrow_labels,
                            arrow_label_format=arrow_label_format,

@@ -30,31 +30,16 @@ from pyemma.coordinates import api
 from pyemma.coordinates.api import discretizer, tica, source
 from pyemma.coordinates.data.data_in_memory import DataInMemoryIterator
 from pyemma.coordinates.data.feature_reader import FeatureReader
-from pyemma.util.log import getLogger
+from logging import getLogger
 import mdtraj
 import pkg_resources
 
 from six.moves import range
 import numpy as np
 
+from pyemma.coordinates.tests.util import create_traj
 
 log = getLogger('pyemma.' + 'TestFeatureReader')
-
-
-def create_traj(top, format='.xtc', dir=None, length=1666):
-    trajfile = tempfile.mktemp(suffix=format, dir=dir)
-    n_frames = length  # np.random.randint(500, 1500)
-    log.debug("create traj with %i frames" % n_frames)
-    xyz = np.arange(n_frames * 3 * 3).reshape((n_frames, 3, 3))
-
-    t = mdtraj.load(top)
-    t.xyz = xyz
-    t.unitcell_vectors = np.array(n_frames * [[0, 0, 1], [0, 1, 0], [1, 0, 0]]).reshape(n_frames, 3, 3)
-    t.time = np.arange(n_frames)
-    t.save(trajfile)
-
-    return trajfile, xyz, n_frames
-
 
 def create_loader_case(traj_file, top):
     def test_format_loading_via_feature_reader(self):

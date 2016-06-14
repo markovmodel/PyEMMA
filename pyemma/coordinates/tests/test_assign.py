@@ -21,7 +21,7 @@ import os
 import unittest
 
 from pyemma.util.files import TemporaryDirectory
-from pyemma.util.log import getLogger
+from logging import getLogger
 from six.moves import range
 import numpy as np
 import pyemma.coordinates as coor
@@ -62,7 +62,7 @@ class TestClusterAssign(unittest.TestCase):
                                 [1,-1],
                                 [4,2]])
         # assignment
-        cls.ass = coor.assign_to_centers(data = cls.X, centers=cls.centers, return_dtrajs=False)
+        cls.ass = coor.assign_to_centers(data = cls.X, centers=cls.centers, return_dtrajs=False, n_jobs=1)
 
     def test_chunksize(self):
         assert types.is_int(self.ass.chunksize)
@@ -187,6 +187,82 @@ class TestClusterAssign(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             c = coor.assign_to_centers(data, centers)
+
+    def test_threads_env_num_threads_fixed(self):
+        import os
+        old_val = os.getenv('OMP_NUM_THREADS', '')
+        os.environ['OMP_NUM_THREADS'] = '4'
+        desired_n_jobs=2
+        try:
+            assert os.environ['OMP_NUM_THREADS'] == "4"
+            X = np.random.random((1000, 3))
+            centers = X[np.random.choice(1000, 10)]
+            res = coor.assign_to_centers(X, centers, n_jobs=desired_n_jobs, return_dtrajs=False)
+            self.assertEqual(res.n_jobs, desired_n_jobs)
+        finally:
+            del os.environ['OMP_NUM_THREADS']
+
+    def test_threads_env_num_threads_fixed_def_arg(self):
+        import os
+        desired_n_jobs = 3
+        os.environ['OMP_NUM_THREADS'] = str(desired_n_jobs)
+        try:
+            assert os.environ['OMP_NUM_THREADS'] == str(desired_n_jobs)
+            X = np.random.random((1000, 3))
+            centers = X[np.random.choice(1000, 10)]
+            # note: we want another job number here, but it will be ignored!
+            res = coor.assign_to_centers(X, centers, n_jobs=None, return_dtrajs=False)
+            self.assertEqual(res.n_jobs, desired_n_jobs)
+        finally:
+            del os.environ['OMP_NUM_THREADS']
+
+    def test_threads_omp_env_arg_borked(self):
+        import os
+        os.environ['OMP_NUM_THREADS'] = 'this is not right'
+        try:
+            import psutil
+            X = np.random.random((1000, 3))
+            centers = X[np.random.choice(1000, 10)]
+            # note: we want another job number here, but it will be ignored!
+            res = coor.assign_to_centers(X, centers, n_jobs=None, return_dtrajs=False)
+            self.assertEqual(res.n_jobs, psutil.cpu_count())
+        finally:
+            del os.environ['OMP_NUM_THREADS']
+
+    def test_threads_cpu_count_def_arg(self):
+        import psutil
+        X = np.random.random((1000, 3))
+        centers = X[np.random.choice(1000, 10)]
+        # note: we want another job number here, but it will be ignored!
+        res = coor.assign_to_centers(X, centers, return_dtrajs=False)
+        self.assertEqual(res.n_jobs, psutil.cpu_count())
+
+    def test_assignment_multithread(self):
+        # re-do assignment with multiple threads and compare results
+        n = 10000
+        dim = 100
+        chunksize=1000
+        X = np.random.random((n, dim))
+        centers = X[np.random.choice(n, dim)]
+
+        assignment_mp = coor.assign_to_centers(X, centers, n_jobs=4, chunk_size=chunksize)
+        assignment_sp = coor.assign_to_centers(X, centers, n_jobs=1, chunk_size=chunksize)
+
+        np.testing.assert_equal(assignment_mp, assignment_sp)
+
+    def test_assignment_multithread_minrsmd(self):
+        # re-do assignment with multiple threads and compare results
+        n = 10000
+        dim = 100
+        chunksize = 1000
+        X = np.random.random((n, dim))
+        centers = X[np.random.choice(n, dim)]
+
+        assignment_mp = coor.assign_to_centers(X, centers, n_jobs=4, chunk_size=chunksize, metric='minRMSD')
+        assignment_sp = coor.assign_to_centers(X, centers, n_jobs=1, chunk_size=chunksize, metric='minRMSD')
+
+        np.testing.assert_equal(assignment_mp, assignment_sp)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -38,7 +38,7 @@ __all__ = ['Transformer', 'StreamingTransformer']
 __author__ = 'noe, marscher'
 
 
-class Transformer(six.with_metaclass(ABCMeta, Estimator, TransformerMixin)):
+class Transformer(six.with_metaclass(ABCMeta, TransformerMixin)):
     """ A transformer takes data and transforms it """
 
     @abstractmethod
@@ -106,7 +106,7 @@ class Transformer(six.with_metaclass(ABCMeta, Estimator, TransformerMixin)):
         pass
 
 
-class StreamingTransformer(Transformer, DataSource, NotifyOnChangesMixIn):
+class StreamingTransformer(Transformer, Estimator, DataSource, NotifyOnChangesMixIn):
 
     r""" Basis class for pipelined Transformers
 
@@ -116,9 +116,8 @@ class StreamingTransformer(Transformer, DataSource, NotifyOnChangesMixIn):
         the chunksize used to batch process underlying data
 
     """
-
     def __init__(self, chunksize=1000):
-        super(StreamingTransformer, self).__init__(chunksize)
+        super(StreamingTransformer, self).__init__(chunksize=chunksize)
         self._estimated = False
         self._data_producer = None
 
@@ -176,18 +175,17 @@ class StreamingTransformer(Transformer, DataSource, NotifyOnChangesMixIn):
                                             return_trajindex=return_trajindex, cols=cols)
 
     def estimate(self, X, **kwargs):
-        # TODO: X is either Iterable of an array
         if not isinstance(X, Iterable):
-            if isinstance(X, np.ndarray):
+            if isinstance(X, np.ndarray) or \
+                    (isinstance(X, (list, tuple)) and len(X) > 0 and all([isinstance(x, np.ndarray) for x in X])):
                 X = DataInMemory(X, self.chunksize)
                 self.data_producer = X
             else:
-                raise ValueError("no array given")
+                raise ValueError("no np.ndarray or non-empty list of np.ndarrays given")
 
-        model = None
         # run estimation
         try:
-            model = super(StreamingTransformer, self).estimate(X, **kwargs)
+            super(StreamingTransformer, self).estimate(X, **kwargs)
         except NotConvergedWarning as ncw:
             self._logger.info(
                 "Presumely finished estimation. Message: %s" % ncw)
@@ -198,7 +196,7 @@ class StreamingTransformer(Transformer, DataSource, NotifyOnChangesMixIn):
 
         self._estimated = True
 
-        return model
+        return self
 
     def get_output(self, dimensions=slice(0, None), stride=1, skip=0, chunk=0):
         if not self._estimated:
@@ -206,7 +204,6 @@ class StreamingTransformer(Transformer, DataSource, NotifyOnChangesMixIn):
 
         return super(StreamingTransformer, self).get_output(dimensions, stride, skip, chunk)
 
-    #@deprecated("Please use estimate")
     def parametrize(self, stride=1):
         if self._data_producer is None:
             raise RuntimeError(
@@ -214,14 +211,12 @@ class StreamingTransformer(Transformer, DataSource, NotifyOnChangesMixIn):
 
         return self.estimate(self.data_producer, stride=stride)
 
-    # get lengths etc. info from parent
-
-    @DataSource.chunksize.getter
+    @property
     def chunksize(self):
         """chunksize defines how much data is being processed at once."""
         return self.data_producer.chunksize
 
-    @DataSource.chunksize.setter
+    @chunksize.setter
     def chunksize(self, size):
         if not size >= 0:
             raise ValueError("chunksize has to be positive")

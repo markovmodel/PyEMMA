@@ -22,6 +22,13 @@ PyEMMA - Emma's Markov Model Algorithms
 =======================================
 """
 from __future__ import absolute_import
+
+# set version from versioneer.
+from ._version import get_versions
+__version__ = get_versions()['version']
+version = __version__
+del get_versions
+
 from .util import config
 
 from . import coordinates
@@ -29,10 +36,6 @@ from . import msm
 from . import util
 from . import plots
 from . import thermo
-
-from ._version import get_versions
-__version__ = get_versions()['version']
-del get_versions
 
 
 def setup_package():

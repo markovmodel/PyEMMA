@@ -35,7 +35,7 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
     of trajectories is generally unknown for Iterable.
     """
 
-    def __init__(self, chunksize=100):
+    def __init__(self, chunksize=1000):
         super(DataSource, self).__init__(chunksize=chunksize)
 
         # following properties have to be set in subclass
@@ -178,7 +178,8 @@ class DataSource(Iterable, TrajectoryRandomAccessible):
             length of trajectory
         """
         if itraj >= self._ntraj:
-            raise IndexError
+            raise IndexError("given index (%s) exceeds number of data sets (%s)."
+                             " Zero based indexing!" % (itraj, self._ntraj))
         if isinstance(stride, np.ndarray):
             selection = stride[stride[:, 0] == itraj][:, 0]
             return 0 if itraj not in selection else len(selection)
@@ -237,7 +238,6 @@ class IteratorState(object):
         self.chunk = chunk
         self.return_trajindex = return_trajindex
         self.itraj = 0
-        self.current_itraj = 0
         self.ntraj = ntraj
         self.t = 0
         self.pos = 0
@@ -300,6 +300,9 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
         self.state.stride = stride
         if isinstance(stride, np.ndarray):
             keys = stride[:, 0]
+            if keys.max() >= self.number_of_trajectories():
+                raise ValueError("provided too large trajectory index in stride argument (given max index: %s, "
+                                 "allowed: %s)" % (keys.max(), self.number_of_trajectories() - 1))
             self.state.traj_keys, self.state.trajectory_lengths = np.unique(keys, return_counts=True)
             self.state.ra_indices_for_traj_dict = {}
             for traj in self.state.traj_keys:
@@ -355,6 +358,7 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
 
     @abstractmethod
     def close(self):
+        """ closes the reader"""
         pass
 
     def reset(self):
@@ -444,6 +448,8 @@ class DataSourceIterator(six.with_metaclass(ABCMeta)):
         value : int
             The upcoming trajectory index.
         """
+        if value > self.state.ntraj:  # we never want to increase this value larger than ntraj.
+            raise StopIteration()
         self.state.itraj = value
 
     @skip.setter

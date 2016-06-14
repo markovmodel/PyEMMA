@@ -58,6 +58,16 @@ ATOM    574  CD2 LEU A  70      22.853  -3.108  -4.147  1.00 24.47           C
 
 """ *2 ### asn-leu-asn-leu
 
+bogus_geom_pdbfile = """
+ATOM    000  MW  ACE A  00      0.0000   0.000  0.0000  1.00 0.000           X
+ATOM    001  CA  ASN A  01      1.0000   0.000  0.0000  1.00 0.000           C
+ATOM    002  MW  ACE A  02      2.0000   0.000  0.0000  1.00 0.000           X
+ATOM    003  CA  ASN A  03      3.0000   0.000  0.0000  1.00 0.000           C
+ATOM    004  MW  ACE A  04      4.0000   0.000  0.0000  1.00 0.000           X
+ATOM    005  CA  ASN A  05      5.0000   0.000  0.0000  1.00 0.000           C
+ATOM    006  MW  ACE A  06      6.0000   0.000  0.0000  1.00 0.000           X
+ATOM    007  CA  ASN A  07      7.0000   0.000  0.0000  1.00 0.000           C
+"""
 
 def verbose_assertion_minrmsd(ref_Y, test_Y, test_obj):
     for jj in np.arange(test_Y.shape[1]):
@@ -81,6 +91,10 @@ class TestFeaturizer(unittest.TestCase):
 
         cls.asn_leu_traj = tempfile.mktemp(suffix='.xtc')
 
+        cls.bogus_geom_pdbfile = tempfile.mkstemp(suffix=".pdb")[1]
+        with open(cls.bogus_geom_pdbfile, 'w') as fh:
+            fh.write(bogus_geom_pdbfile)
+
         # create traj for asn_leu
         n_frames = 4001
         traj = mdtraj.load(cls.asn_leu_pdbfile)
@@ -100,6 +114,12 @@ class TestFeaturizer(unittest.TestCase):
             os.unlink(cls.asn_leu_pdbfile)
         except EnvironmentError:
             pass
+
+        try:
+            os.unlink(cls.bogus_geom_pdbfile)
+        except EnvironmentError:
+            pass
+
         super(TestFeaturizer, cls).tearDownClass()
 
     def setUp(self):
@@ -185,6 +205,63 @@ class TestFeaturizer(unittest.TestCase):
         feat_just_ca.add_distances(ca_pairs)
         D_ca = feat_just_ca.transform(mdtraj.load(pdbfile_ops_Ca))
         assert(np.allclose(D_aa, D_ca))
+
+    def test_ca_distances_with_residues_not_containing_cas_no_exclusions(self):
+        # Load test geom
+        geom = mdtraj.load(self.pdbfile)
+        # No exclusions
+        feat_EN0 = MDFeaturizer(self.bogus_geom_pdbfile)
+        feat_EN0.add_distances_ca(excluded_neighbors=0)
+        ENO_pairs = [[1,3],[1,5],[1,7],
+                     [3,5], [3,7],
+                     [5,7]
+                     ]
+
+        # Check indices
+        assert (np.allclose(ENO_pairs, feat_EN0.active_features[0].distance_indexes))
+        # Check distances
+        D = mdtraj.compute_distances(geom, ENO_pairs)
+        assert (np.allclose(D, feat_EN0.transform(geom)))
+
+        # excluded_neighbors=1 ## will yield the same as before, because the first neighbor
+        # doesn't conting CA's anyway
+        feat_EN1 = MDFeaturizer(self.bogus_geom_pdbfile)
+        feat_EN1.add_distances_ca(excluded_neighbors=1)
+        EN1_pairs = [[1,3],[1,5],[1,7],
+                     [3,5], [3,7],
+                     [5,7]
+                     ]
+        assert (np.allclose(EN1_pairs, feat_EN1.active_features[0].distance_indexes))
+        D = mdtraj.compute_distances(geom, EN1_pairs)
+        assert (np.allclose(D, feat_EN1.transform(geom)))
+
+    def test_ca_distances_with_residues_not_containing_cas_with_exclusions(self):
+        # Load test geom
+        geom = mdtraj.load(self.pdbfile)
+        # No exclusions
+        feat_EN2 = MDFeaturizer(self.bogus_geom_pdbfile)
+        feat_EN2.add_distances_ca(excluded_neighbors=2)
+        EN2_pairs = [[1,5],[1,7],
+                     [3,7],
+                     ]
+
+        # Check indices
+        assert (np.allclose(EN2_pairs, feat_EN2.active_features[0].distance_indexes))
+        # Check distances
+        D = mdtraj.compute_distances(geom, EN2_pairs)
+        assert (np.allclose(D, feat_EN2.transform(geom)))
+
+        # excluded_neighbors=1 ## will yield the same as before, because the first neighbor
+        # doesn't conting CA's anyway
+        feat_EN1 = MDFeaturizer(self.bogus_geom_pdbfile)
+        feat_EN1.add_distances_ca(excluded_neighbors=1)
+        EN1_pairs = [[1,3],[1,5],[1,7],
+                     [3,5], [3,7],
+                     [5,7]
+                     ]
+        assert (np.allclose(EN1_pairs, feat_EN1.active_features[0].distance_indexes))
+        D = mdtraj.compute_distances(geom, EN1_pairs)
+        assert (np.allclose(D, feat_EN1.transform(geom)))
 
     def test_contacts(self):
         sel = np.array([1, 2, 5, 20], dtype=int)
@@ -418,6 +495,28 @@ class TestFeaturizer(unittest.TestCase):
         assert np.allclose(D, Dref)
         assert len(self.feat.describe())==self.feat.dimension()
 
+    def test_Residue_Mindist_Ca_array_periodic(self):
+        traj = mdtraj.load(pdbfile)
+        # Atoms most far appart in Z
+        atom_minz = traj.xyz.argmin(1).squeeze()[-1]
+        atom_maxz = traj.xyz.argmax(1).squeeze()[-1]
+        # Residues with the atoms most far appart in Z
+        res_minz = traj.topology.atom(atom_minz).residue.index
+        res_maxz = traj.topology.atom(atom_maxz).residue.index
+        contacts=np.array([[res_minz, res_maxz]])
+        # Tweak the trajectory so that a (bogus) PBC exists (otherwise traj._have_unitcell is False)
+        traj.unitcell_angles = [90,90,90]
+        traj.unitcell_lengths = [1, 1, 1]
+        self.feat.add_residue_mindist(scheme='ca', residue_pairs=contacts, periodic=False)
+        D = self.feat.transform(traj)
+        Dperiodic_true  = mdtraj.compute_contacts(traj, scheme='ca', contacts=contacts, periodic=True)[0]
+        Dperiodic_false = mdtraj.compute_contacts(traj, scheme='ca', contacts=contacts, periodic=False)[0]
+        # This asserts that the periodic option is having an effect at all
+        assert not np.allclose(Dperiodic_false, Dperiodic_true, )
+        # This asserts that the periodic option is being handled correctly by pyemma
+        assert np.allclose(D, Dperiodic_false)
+        assert len(self.feat.describe())==self.feat.dimension()
+
     def test_Group_Mindist_One_Group(self):
         group0= [0,20,30,0]
         self.feat.add_group_mindist(group_definitions=[group0]) # Even with duplicates
@@ -494,6 +593,7 @@ class TestFeaturizer(unittest.TestCase):
         assert np.allclose(D.squeeze(), Dref)
         assert len(self.feat.describe())==self.feat.dimension()
 
+
 class TestFeaturizerNoDubs(unittest.TestCase):
 
     def testAddFeaturesWithDuplicates(self):
@@ -541,7 +641,7 @@ class TestFeaturizerNoDubs(unittest.TestCase):
         my_feature = CustomFeature(my_func)
         my_feature.dimension = 3
         featurizer.add_custom_feature(my_feature)
-        
+
         self.assertEqual(len(featurizer.active_features), expected_active)
         featurizer.add_custom_feature(my_feature)
         self.assertEqual(len(featurizer.active_features), expected_active)
@@ -557,22 +657,22 @@ class TestFeaturizerNoDubs(unittest.TestCase):
         ref = mdtraj.load(xtcfile, top=pdbfile)
         featurizer.add_minrmsd_to_ref(ref)
         featurizer.add_minrmsd_to_ref(ref)
-        self.assertEquals(len(featurizer.active_features), expected_active)
+        self.assertEqual(len(featurizer.active_features), expected_active)
 
         expected_active += 1
         featurizer.add_minrmsd_to_ref(pdbfile)
         featurizer.add_minrmsd_to_ref(pdbfile)
-        self.assertEquals(len(featurizer.active_features), expected_active)
+        self.assertEqual(len(featurizer.active_features), expected_active)
 
         expected_active += 1
         featurizer.add_residue_mindist()
         featurizer.add_residue_mindist()
-        self.assertEquals(len(featurizer.active_features), expected_active)
+        self.assertEqual(len(featurizer.active_features), expected_active)
 
         expected_active += 1
         featurizer.add_group_mindist([[0,1],[0,2]])
         featurizer.add_group_mindist([[0,1],[0,2]])
-        self.assertEquals(len(featurizer.active_features), expected_active)
+        self.assertEqual(len(featurizer.active_features), expected_active)
 
     def test_labels(self):
         """ just checks for exceptions """

@@ -29,16 +29,22 @@ from pyemma.util import log
 from pyemma.util import config
 import six
 if six.PY2:
-    import mock
+    try:
+       import mock
+    except ImportError:
+       have_mock = False
+    else:
+       have_mock = True
 else:
     from unittest import mock
+    have_mock = True
 
-
+@unittest.skipIf(not have_mock, "dont have mock library")
 class TestNonWriteableLogFile(unittest.TestCase):
 
     def tearDown(self):
         # reset logging
-        log.setupLogging(config)
+        log.setup_logging(config)
 
     @unittest.skipIf('win32' in sys.platform, "disabled on win")
     def test(self):
@@ -65,8 +71,30 @@ loggers:
             with mock.patch('pyemma.util.log.open', create=True) as mock_open:
                 mock_open.return_value = open(f.name)
 
-                log.setupLogging(config)
+                log.setup_logging(config)
                 assert logging.getLogger('pyemma').handlers[0].baseFilename.startswith(config.cfg_dir)
+
+    @unittest.skip("not yet functional")
+    def test_set_new_log_conf(self):
+        import logging, copy, tempfile
+        old_handlers = copy.copy(logging.getLogger('pyemma').handlers)
+        log_file = tempfile.mktemp()
+        file_handler = {'my_filehandler': {'class': 'logging.FileHandler', 'filename': log_file}, }
+        new_conf = {'handlers': file_handler}
+
+        from pyemma import config
+        config.logging_config = new_conf
+
+        logger = logging.getLogger('pyemma')
+        log_str = "test-test-test-test-" + self.test_set_new_log_conf.__name__
+        logger.info(log_str)
+        for h in logger.handlers:
+            h.flush()
+
+        with open(log_file) as fh:
+            out = fh.read()
+
+        self.assertIn(log_str, out)
 
 if __name__ == "__main__":
     unittest.main()

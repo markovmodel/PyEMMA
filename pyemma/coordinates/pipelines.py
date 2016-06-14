@@ -21,7 +21,7 @@ from __future__ import absolute_import
 from pyemma.coordinates.transform.transformer import StreamingTransformer
 from pyemma.coordinates.data.feature_reader import FeatureReader
 
-from pyemma.util.log import getLogger
+from logging import getLogger
 from pyemma.coordinates.data._base.iterable import Iterable
 from pyemma.coordinates.data._base.datasource import DataSource
 
