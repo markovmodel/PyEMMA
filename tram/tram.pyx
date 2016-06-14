@@ -131,8 +131,8 @@ def update_biased_conf_energies(
     _np.ndarray[double, ndim=2, mode="c"] log_lagrangian_mult not None,
     _np.ndarray[double, ndim=2, mode="c"] biased_conf_energies not None,
     _np.ndarray[int, ndim=3, mode="c"] count_matrices not None,
-    bias_energy_sequences, # _np.ndarray[double, ndim=2, mode="c"]
-    state_sequences, # _np.ndarray[int, ndim=1, mode="c"]
+    bias_energy_sequences,
+    state_sequences,
     _np.ndarray[int, ndim=2, mode="c"] state_counts not None,
     _np.ndarray[double, ndim=2, mode="c"] log_R_K_i not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_M not None,
@@ -174,7 +174,7 @@ def update_biased_conf_energies(
     new_biased_conf_energies[:] = _np.inf
     get_log_Ref_K_i(log_lagrangian_mult, biased_conf_energies, 
                     count_matrices, state_counts, scratch_M, log_R_K_i)
-    log_L = 0
+    log_L = 0.0
     for i in range(len(bias_energy_sequences)):
         log_L += _tram_update_biased_conf_energies(
             <double*> _np.PyArray_DATA(bias_energy_sequences[i]),
@@ -235,8 +235,8 @@ def get_log_Ref_K_i(
         <double*> _np.PyArray_DATA(log_R_K_i))
 
 def get_conf_energies(
-    bias_energy_sequences, # _np.ndarray[double, ndim=2, mode="c"]
-    state_sequences, # _np.ndarray[int, ndim=1, mode="c"] 
+    bias_energy_sequences,
+    state_sequences,
     _np.ndarray[double, ndim=2, mode="c"] log_R_K_i not None,
     _np.ndarray[double, ndim=1, mode="c"] scratch_T not None):
     r"""
@@ -332,12 +332,12 @@ def get_pointwise_unbiased_free_energies(
     _np.ndarray[double, ndim=2, mode="c"] biased_conf_energies not None,
     _np.ndarray[double, ndim=1, mode="c"] therm_energies not None,
     _np.ndarray[int, ndim=3, mode="c"] count_matrices not None,
-    bias_energy_sequences, # _np.ndarray[double, ndim=2, mode="c"]
-    state_sequences, # _np.ndarray[int, ndim=1, mode="c"]
+    bias_energy_sequences,
+    state_sequences,
     _np.ndarray[int, ndim=2, mode="c"] state_counts not None,
-    _np.ndarray[double, ndim=1, mode="c"] scratch_M,    
+    _np.ndarray[double, ndim=1, mode="c"] scratch_M,
     _np.ndarray[double, ndim=1, mode="c"] scratch_T,
-    pointwise_unbiased_free_energies): # _np.ndarray[double, ndim=1, mode="c"] 
+    pointwise_unbiased_free_energies):
     r'''
     Compute the pointwise free energies :math:`\mu^{k}(x)` for all x.
 
