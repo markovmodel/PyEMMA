@@ -59,9 +59,15 @@ void _tram_direct_update_lagrangian_mult(
 
 void _tram_direct_get_Ref_K_i(
     double *lagrangian_mult, double *biased_conf_weights, int *count_matrices,
-    int *state_counts, int n_therm_states, int n_conf_states, double *R_K_i)
+    int *state_counts, int n_therm_states, int n_conf_states, double *R_K_i
+#ifdef TRAMMBAR
+    ,
+    double *therm_weights, int *equilibrium_therm_state_counts,
+    double overcounting_factor
+#endif
+    )
 {
-    int i, j, K, Ki, Kj, KMM;
+    int i, j, K, Ki, Kj, KM, KMM;
     int CCT_Kij, CKi;
 
     /* compute R */
@@ -98,6 +104,30 @@ void _tram_direct_get_Ref_K_i(
             if(0 < R_K_i[Ki]) R_K_i[Ki] /= biased_conf_weights[Ki];
         }
     }
+
+#ifdef TRAMMBAR
+    if(equilibrium_therm_state_counts && therm_weights)
+    {
+        for(K=0; K<n_therm_states; ++K)
+        {
+            KM = K * n_conf_states;
+            for(i=0; i<n_conf_states; ++i)
+                R_K_i[KM + i] *= log(overcounting_factor);
+        }
+        for(K=0; K<n_therm_states; ++K)
+        {
+            if(0 < equilibrium_therm_state_counts[K])
+            {
+                KM = K * n_conf_states;
+                for(i=0; i<n_conf_states; ++i)
+                {
+                    Ki = KM + i;
+                    R_K_i[Ki] += equilibrium_therm_state_counts[K] / therm_weights[K];
+                }
+            }
+        }
+    }
+#endif
 }
 
 void _tram_direct_update_biased_conf_weights(
