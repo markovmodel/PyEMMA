@@ -197,7 +197,18 @@ class TestNumPyFileReader(unittest.TestCase):
         with it:
             for x in it:
                 np.testing.assert_equal(x, self.d2[:, cols])
-        
+
+    def test_different_shapes_value_error(self):
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.npy') as f:
+            x=np.zeros((3, 42))
+            np.save(f.name, x)
+            myfiles = self.files2d[:]
+            myfiles.insert(1, f.name)
+
+            with self.assertRaises(ValueError) as cm:
+                NumPyFileReader(myfiles)
+            self.assertIn("different dimensions", cm.exception.args[0])
+            print (cm.exception.args)
 
 
 if __name__ == "__main__":
