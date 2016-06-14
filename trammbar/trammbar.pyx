@@ -201,8 +201,8 @@ def update_biased_conf_energies(
         non-equilibrium frame is assumed to be repeated n times in the data.
     """
     new_biased_conf_energies[:] = _np.inf
-    get_log_Ref_K_i(log_lagrangian_mult, biased_conf_energies, count_matrices,
-                    state_counts, scratch_M, log_R_K_i,
+    get_log_Ref_K_i(log_lagrangian_mult, biased_conf_energies,
+                    count_matrices, state_counts, scratch_M, log_R_K_i,
                     therm_energies=therm_energies,
                     equilibrium_therm_state_counts=equilibrium_therm_state_counts,
                     overcounting_factor=overcounting_factor)
@@ -459,7 +459,7 @@ def get_pointwise_unbiased_free_energies(
     biased_conf_energies : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         reduced free energies
     therm_energies : numpy.ndarray(shape=(T), dtype=numpy.float64)
-        reduced thermodynamic free energies, must match `biased_conf_energies`
+        reduced thermodynamic free energies
     count_matrices : numpy.ndarray(shape=(T, M, M), dtype=numpy.intc)
         multistate count matrix
     bias_energy_sequences : list of numpy.ndarray(shape=(X_i, T), dtype=numpy.float64)
@@ -491,8 +491,8 @@ def get_pointwise_unbiased_free_energies(
     if scratch_M is None:
         scratch_M = _np.zeros(shape=(state_counts.shape[1]), dtype=_np.float64)
     get_log_Ref_K_i(
-        log_lagrangian_mult, biased_conf_energies, count_matrices,
-        state_counts, scratch_M, log_R_K_i,
+        log_lagrangian_mult, biased_conf_energies,
+        count_matrices, state_counts, scratch_M, log_R_K_i,
         therm_energies=therm_energies,
         equilibrium_therm_state_counts=equilibrium_therm_state_counts,
         overcounting_factor=overcounting_factor)
@@ -689,8 +689,8 @@ def log_likelihood_lower_bound(
         scratch_MM = _np.zeros((M, M), dtype=_np.float64)
     return update_biased_conf_energies(
         log_lagrangian_mult, biased_conf_energies, count_matrices,
-        bias_energy_sequences, state_sequences, state_counts, log_R_K_i,
-        scratch_M, scratch_T, scratch_TM, scratch_MM, return_log_L=True,
+        bias_energy_sequences, state_sequences, state_counts,
+        log_R_K_i, scratch_M, scratch_T, scratch_TM, scratch_MM, True,
         therm_energies=therm_energies,
         equilibrium_bias_energy_sequences=equilibrium_bias_energy_sequences,
         equilibrium_state_sequences=equilibrium_state_sequences,
@@ -819,7 +819,7 @@ def estimate(count_matrices, state_counts, bias_energy_sequences, state_sequence
             log_lagrangian_mult, old_biased_conf_energies, count_matrices,
             bias_energy_sequences, state_sequences, state_counts,
             log_R_K_i, scratch_M, scratch_T, biased_conf_energies,
-            scratch_MM, return_log_L=(sci_count == save_convergence_info),
+            scratch_MM, sci_count == save_convergence_info,
             therm_energies=old_therm_energies,
             equilibrium_bias_energy_sequences=equilibrium_bias_energy_sequences,
             equilibrium_state_sequences=equilibrium_state_sequences,
