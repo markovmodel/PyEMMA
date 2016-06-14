@@ -317,7 +317,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
                     log_lagrangian_mult=self.log_lagrangian_mult,
                     callback=_ConvergenceProgressIndicatorCallBack(self, 'TRAM', self.maxiter, self.maxerr),
                     N_dtram_accelerations=self.N_dtram_accelerations,
-                    overcounting_factor=1.0 / self.lag) # naive guess for sliding window)
+                    overcounting_factor=self.lag) # naive guess for sliding window)
 
         # compute models
         fmsms = [_tram.estimate_transition_matrix(
@@ -387,7 +387,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
                 self.btrajs+self.equilibrium_btrajs, self.dtrajs+self.equilibrium_dtrajs,
                 self.state_counts, None, None, mu,
                 equilibrium_therm_state_counts=self.equilibrium_state_counts.sum(axis=1).astype(_np.intc),
-                overcounting_factor=1.0 / self.lag)
+                overcounting_factor=self.lag)
         return mu
 
     def mbar_pointwise_free_energies(self, therm_state=None):
