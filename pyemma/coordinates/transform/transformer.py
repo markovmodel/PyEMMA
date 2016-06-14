@@ -214,6 +214,8 @@ class StreamingTransformer(Transformer, Estimator, DataSource, NotifyOnChangesMi
     @property
     def chunksize(self):
         """chunksize defines how much data is being processed at once."""
+        if not self.data_producer:
+            return self._default_chunksize
         return self.data_producer.chunksize
 
     @chunksize.setter
