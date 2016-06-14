@@ -24,7 +24,6 @@ __all__ = [
     'compute_csets_dTRAM',
     'restrict_to_csets']
 
-
 import numpy as _np
 import scipy as _sp
 import scipy.sparse as _sps
@@ -33,11 +32,10 @@ import bar as _bar
 import util as _util
 import collections as _collections
 
-
 def compute_csets_TRAM(
     connectivity, state_counts, count_matrices, equilibrium_state_counts=None,
     ttrajs=None, dtrajs=None, bias_trajs=None, nn=None, factor=1.0, callback=None):
-    r'''
+    r"""
     Computes the largest connected sets for TRAM data.
 
     Parameters
@@ -132,14 +130,14 @@ def compute_csets_TRAM(
     glass simulations, J. Phys. Soc. Jan. 65, 1604 (1996)
     [2]_ Shirts and Chodera, Statistically optimal analysis of samples
     from multiple equilibrium states, J. Chem. Phys. 129, 124105 (2008)
-    '''
+    """
     return _compute_csets(
         connectivity, state_counts, count_matrices, ttrajs, dtrajs, bias_trajs,
         nn=nn, equilibrium_state_counts=equilibrium_state_counts,
         factor=factor, callback=callback)
 
 def compute_csets_dTRAM(connectivity, count_matrices, nn=None, callback=None):
-    r'''
+    r"""
     Computes the largest connected sets for dTRAM data.
 
     Parameters
@@ -191,7 +189,7 @@ def compute_csets_dTRAM(connectivity, count_matrices, nn=None, callback=None):
     projected_cset : numpy.ndarray(M_prime, dtype=int)
         The overall connected set. This is the union of the individual
         connected sets of the thermodynamic states.
-    '''
+    """
     if connectivity=='post_hoc_RE' or connectivity=='BAR_variance':
         raise Exception('Connectivity type %s not supported for dTRAM data.'%connectivity)
     state_counts =  _np.maximum(count_matrices.sum(axis=1), count_matrices.sum(axis=2))
@@ -346,7 +344,7 @@ def _compute_csets(
 
 def restrict_to_csets(
     csets, state_counts=None, count_matrices=None, ttrajs=None, dtrajs=None, bias_trajs=None):
-    r'''
+    r"""
     Delete or deactivate elements that are not in the connected sets.
 
     Parameters
@@ -383,7 +381,7 @@ def restrict_to_csets(
     Same as input but with frames removed where the combination
     of thermodynamic state and Markov state as given in ttrajs and
     dtrajs is not in the connected sets.
-    '''
+    """
     if state_counts is not None:
         new_state_counts = _np.zeros_like(state_counts, order='C', dtype=_np.intc)
         for k,cset in enumerate(csets):
