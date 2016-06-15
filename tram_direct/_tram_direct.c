@@ -112,7 +112,7 @@ void _tram_direct_get_Ref_K_i(
         {
             KM = K * n_conf_states;
             for(i=0; i<n_conf_states; ++i)
-                R_K_i[KM + i] *= log(overcounting_factor);
+                R_K_i[KM + i] *= overcounting_factor;
         }
         for(K=0; K<n_therm_states; ++K)
         {
