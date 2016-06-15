@@ -28,6 +28,7 @@ from pyemma.thermo.estimators._callback import _IterationProgressIndicatorCallBa
 from thermotools import tram as _tram
 from thermotools import tram_direct as _tram_direct
 from thermotools import trammbar as _trammbar
+from thermotools import trammbar_direct as _trammbar_direct
 from thermotools import mbar as _mbar
 from thermotools import mbar_direct as _mbar_direct
 from thermotools import util as _util
@@ -301,8 +302,10 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
         # run estimator
         if self.direct_space:
             tram = _tram_direct
+            trammbar = _trammbar_direct
         else:
             tram = _tram
+            trammbar = _trammbar
         #import warnings
         #with warnings.catch_warnings() as cm:
         # warnings.filterwarnings('ignore', RuntimeWarning)
@@ -318,9 +321,8 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
                         self, 'TRAM', self.maxiter, self.maxerr),
                     N_dtram_accelerations=self.N_dtram_accelerations)
         else: # use trammbar
-            # TODO: direct space TRAMMBAR
             self.biased_conf_energies, conf_energies, self.therm_energies, self.log_lagrangian_mult, \
-                self.increments, self.loglikelihoods = _trammbar.estimate( # TODO: argument order!
+                self.increments, self.loglikelihoods = trammbar.estimate( # TODO: argument order!
                     self.count_matrices, self.state_counts, self.btrajs, self.dtrajs,
                     equilibrium_therm_state_counts=self.equilibrium_state_counts.sum(axis=1).astype(_np.intc),
                     equilibrium_bias_energy_sequences=self.equilibrium_btrajs, equilibrium_state_sequences=self.equilibrium_dtrajs,
@@ -331,7 +333,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
                     callback=_ConvergenceProgressIndicatorCallBack(
                         self, 'TRAM', self.maxiter, self.maxerr),
                     N_dtram_accelerations=self.N_dtram_accelerations,
-                    overcounting_factor=self.lag) # naive guess for sliding window)
+                    overcounting_factor=1.0/self.lag) # naive guess for sliding window)
 
         # compute models
         fmsms = [_np.ascontiguousarray((
@@ -404,7 +406,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
                 self.btrajs+self.equilibrium_btrajs, self.dtrajs+self.equilibrium_dtrajs,
                 self.state_counts, None, None, mu,
                 equilibrium_therm_state_counts=self.equilibrium_state_counts.sum(axis=1).astype(_np.intc),
-                overcounting_factor=self.lag)
+                overcounting_factor=1.0/self.lag)
         return mu
 
     def mbar_pointwise_free_energies(self, therm_state=None):

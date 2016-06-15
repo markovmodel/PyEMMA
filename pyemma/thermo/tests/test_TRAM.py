@@ -218,7 +218,7 @@ class TestTRAMwithTRAMmodel(unittest.TestCase):
         n_therm_states_total = max(therm_states)+1
         n_conf_states = 3
         n_micro_states = 50
-        traj_length = 20000
+        traj_length = 30000
 
         mu = np.zeros((n_therm_states_total, n_micro_states))
         for k in therm_states:
@@ -315,8 +315,11 @@ class TestTRAMwithTRAMmodel(unittest.TestCase):
     def test_with_TRAM_model_log_space(self):
         self.with_TRAM_model(False, False)
 
-    def test_TRAMMBAR(self):
+    def test_TRAMMBAR_log_space(self):
         self.with_TRAM_model(False, True)
+
+    def test_TRAMMBAR_direct_space(self):
+        self.with_TRAM_model(True, True)
 
     def with_TRAM_model(self, direct_space, test_trammbar):
         # run TRAM
