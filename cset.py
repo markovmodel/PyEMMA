@@ -213,15 +213,18 @@ def _compute_csets(
     connectivity, state_counts, count_matrices, ttrajs, dtrajs, bias_trajs, nn,
     equilibrium_state_counts=None, factor=1.0, callback=None):
     n_therm_states, n_conf_states = state_counts.shape
+
+    if equilibrium_state_counts is not None:
+        all_state_counts = state_counts + equilibrium_state_counts
+    else:
+        all_state_counts = state_counts
+
     if connectivity == 'summed_count_matrix':
         # assume _direct_ overlap between all umbrellas
         C_sum = count_matrices.sum(axis=0)
         if equilibrium_state_counts is not None:
             eq_states = _np.where(equilibrium_state_counts.sum(axis=0) > 0)[0]
             C_sum[eq_states, eq_states[:, _np.newaxis]] = 1
-            all_state_counts = state_counts + equilibrium_state_counts
-        else:
-            all_state_counts = state_counts
         cset_projected = _msmtools.estimation.largest_connected_set(C_sum, directed=True)
         csets = []
         for k in range(n_therm_states):
@@ -264,7 +267,7 @@ def _compute_csets(
                 # can take a very long time, allow to report progress via callback
                 if callback is not None:
                     callback(maxiter=n_conf_states, iteration_step=i)
-                therm_states = _np.where(state_counts[:, i] > 0)[0] # therm states that have samples
+                therm_states = _np.where(all_state_counts[:, i] > 0)[0] # therm states that have samples
                 # prepare list of indices for all thermodynamic states
                 traj_indices = {}
                 frame_indices = {}
@@ -298,7 +301,7 @@ def _compute_csets(
                     callback(maxiter=nn, iteration_step=l)
                 for k in range(n_therm_states - l):
                     w = _np.where(_np.logical_and(
-                        state_counts[k, :] > 0, state_counts[k + l, :] > 0))[0]
+                        all_state_counts[k, :] > 0, all_state_counts[k + l, :] > 0))[0]
                     a = w + k * n_conf_states
                     b = w + (k + l) * n_conf_states
                     i_s += list(a) # bi
