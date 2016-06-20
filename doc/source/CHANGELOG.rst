@@ -9,6 +9,9 @@ Changelog
 
 **Fixes**:
 
+- clustering: fixed serious bug in **minRMSD** distance calculation, which led to
+  lots of empty clusters. The bug was introduced in version 2.1. If you used
+  this metric, please re-assign your trajectories. #825
 - clustering: fixed KMeans with minRMSD metric. #814
 
 2.2 (5-17-16)
