@@ -1,11 +1,8 @@
 Changelog
 =========
 
-2.2.1 ()
---------
-
-**New features**:
-- ...
+2.2.1 (6-21-16)
+---------------
 
 **Fixes**:
 
@@ -14,6 +11,7 @@ Changelog
   this metric, please re-assign your trajectories. #825
 - clustering: fixed KMeans with minRMSD metric. #814
 - thermo: made estimate_umbrella_sampling more robust w.r.t. input and fixed doumentation. #812 #827
+- msm: low-level api usage deprecation warnings only show up when actually used.
 
 2.2 (5-17-16)
 -------------
