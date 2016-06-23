@@ -545,7 +545,7 @@ def discretizer(reader,
     return disc
 
 
-def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=1000, verbose=False):
+def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=1000, image_molecules=False, verbose=False):
     r""" Saves a sequence of frames as a single trajectory.
 
     Extracts the specified sequence of time/trajectory indexes from traj_inp
@@ -596,6 +596,11 @@ def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=1000, 
         The chunksize for reading input trajectory files. If :py:obj:`traj_inp`
         is a :py:func:`pyemma.coordinates.data.feature_reader.FeatureReader` object,
         this input variable will be ignored and :py:obj:`traj_inp.chunksize` will be used instead.
+
+    image_molecules: boolean, default is False
+        If set to true, :py:obj:`save_traj` will call the method traj.image_molecules and try to correct for broken
+        molecules accross periodic boundary conditions.
+        (http://mdtraj.org/1.7.2/api/generated/mdtraj.Trajectory.html#mdtraj.Trajectory.image_molecules)
 
     verbose : boolean, default is False
         Verbose output while looking for :py:obj`indexes` in the :py:obj:`traj_inp.trajfiles`
@@ -648,9 +653,13 @@ def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=1000, 
     if len(trajfiles) < indexes[:, 0].max():
         raise ValueError("traj_inp contains %u trajfiles, "
                          "but indexes will ask for file nr. %u"
-                         % (len(trajfiles), indexes[0].max()))
+                         % (len(trajfiles), indexes[:,0].max()))
 
     traj = frames_from_files(trajfiles, top, indexes, chunksize, stride, reader=reader)
+
+    # Avoid broken molecules
+    if image_molecules:
+        traj.image_molecules(inplace=True)
 
     # Return to memory as an mdtraj trajectory object
     if outfile is None:
