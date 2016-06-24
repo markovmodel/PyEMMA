@@ -122,6 +122,10 @@ class SerializableMixIn(object):
                 setattr(self, field, state[field])
 
     def __getstate__(self):
+        # TODO: this pattern (getting only the version in parent will omit all other attrs)!
+        if not hasattr(self, '_version'):
+            raise DeveloperError("your class should define a _version attribute")
+
         return {'_version': self._version}
 
     def __setstate__(self, state):
