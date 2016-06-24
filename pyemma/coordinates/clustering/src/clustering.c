@@ -24,8 +24,9 @@
     #include <omp.h>
 #endif
 
+
 float euclidean_distance(float *SKP_restrict a, float *SKP_restrict b, size_t n, float *buffer_a, float *buffer_b,
-float*dummy)
+                         float* dummy)
 {
     double sum;
     size_t i;
@@ -37,35 +38,38 @@ float*dummy)
     return sqrt(sum);
 }
 
-void in_place_center(float* a, size_t n) {
-    float trace;
-    inplace_center_and_trace_atom_major(a, &trace, 1, n/3);
-}
 
-
+/*
+ * minRMSD distance function
+ * a: centers
+ * b: frames
+ * n: dimension of one frame
+ * buffer_a: pre-allocated buffer to store a copy of centers
+ * buffer_b: pre-allocated buffer to store a copy of frames
+ * trace_a_precalc: pre-calculated trace to centers (pointer to one value)
+ */
 float minRMSD_distance(float *SKP_restrict a, float *SKP_restrict b, size_t n,
                        float *SKP_restrict buffer_a, float *SKP_restrict buffer_b,
-                       float* trace_a_precalc)
+                       float *trace_a_precalc)
 {
     float msd;
     float trace_a, trace_b;
 
     if (! trace_a_precalc) {
-    	memcpy(buffer_a, a, n*sizeof(float));
-    	memcpy(buffer_b, b, n*sizeof(float));
-
-    	inplace_center_and_trace_atom_major(buffer_a, &trace_a, 1, n/3);
-    	inplace_center_and_trace_atom_major(buffer_b, &trace_b, 1, n/3);
-
-    	msd = msd_atom_major(n/3, n/3, buffer_a, buffer_b, trace_a, trace_b, 0, NULL);
-    } else {
-    	// only copy b, since a has been pre-centered,
+        memcpy(buffer_a, a, n*sizeof(float));
         memcpy(buffer_b, b, n*sizeof(float));
+
+        inplace_center_and_trace_atom_major(buffer_a, &trace_a, 1, n/3);
         inplace_center_and_trace_atom_major(buffer_b, &trace_b, 1, n/3);
 
-        msd = msd_atom_major(n/3, n/3, a, buffer_b, *trace_a_precalc, trace_b, 0, NULL);
+    } else {
+        // only copy b, since a has been pre-centered,
+        memcpy(buffer_b, b, n*sizeof(float));
+        inplace_center_and_trace_atom_major(buffer_b, &trace_b, 1, n/3);
+        trace_a = *trace_a_precalc;
     }
 
+    msd = msd_atom_major(n/3, n/3, a, buffer_b, trace_a, trace_b, 0, NULL);
     return sqrt(msd);
 }
 
@@ -79,7 +83,8 @@ int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric,
     float *buffer_a, *buffer_b;
     float *centers_precentered;
     float *trace_centers_p;
-    float* dists;
+    float *dists;
+    // distance function pointer:
     float (*distance)(float*, float*, size_t, float*, float*, float*);
     float *SKP_restrict chunk_p;
 
@@ -106,19 +111,22 @@ int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric,
     } else if(strcmp(metric, "minRMSD")==0) {
         distance = minRMSD_distance;
         centers_precentered = malloc(N_centers*dim*sizeof(float));
+        trace_centers_p = malloc(N_centers*sizeof(float));
         dists = malloc(N_centers*sizeof(float));
-        if(!centers_precentered || !dists) {
+        if(!centers_precentered || !dists || !trace_centers_p) {
             ret = ASSIGN_ERR_NO_MEMORY;
         }
 
         if (ret == ASSIGN_SUCCESS) {
             memcpy(centers_precentered, centers, N_centers*dim*sizeof(float));
 
-	        /* Parallelize centering of cluster generators */
-	        /* Note that this is already OpenMP-enabled */
-	        inplace_center_and_trace_atom_major(centers_precentered, &trace_centers, 1, dim/3);
-                trace_centers_p = &trace_centers;
-                centers = centers_precentered;
+            /* Parallelize centering of cluster generators */
+            /* Note that this is already OpenMP-enabled */
+            for (j = 0; j < N_centers; ++j) {
+                inplace_center_and_trace_atom_major(&centers_precentered[j*dim],
+                                                    &trace_centers_p[j], 1, dim/3);
+            }
+            centers = centers_precentered;
             }
     } else {
         ret = ASSIGN_ERR_INVALID_METRIC;
@@ -129,14 +137,14 @@ int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric,
         /* Allocate thread storage */
         buffer_a = malloc(dim*sizeof(float));
         buffer_b = malloc(dim*sizeof(float));
-	    #pragma omp critical
+        #pragma omp critical
         if(!buffer_a || !buffer_b) {
           ret = ASSIGN_ERR_NO_MEMORY;
         }
         #pragma omp barrier
         #pragma omp flush(ret)
 
-	    /* Only proceed if no error occurred. */
+        /* Only proceed if no error occurred. */
         if (ret == ASSIGN_SUCCESS) {
 
             /* Assign each frame */
@@ -146,7 +154,7 @@ int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric,
                 /* Parallelize distance calculations to cluster centers to avoid cache misses */
                 #pragma omp for
                 for(j = 0; j < N_centers; ++j) {
-                    dists[j] = distance(&centers[j*dim], chunk_p, dim, buffer_a, buffer_b, trace_centers_p);
+                    dists[j] = distance(&centers[j*dim], chunk_p, dim, buffer_a, buffer_b, &trace_centers_p[j]);
                 }
                 #pragma omp flush(dists)
 
@@ -160,8 +168,8 @@ int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric,
                     dtraj[i] = argmin;
                 }
 
-		    /* Have all threads synchronize in progress through cluster assignments */
-		    #pragma omp barrier
+            /* Have all threads synchronize in progress through cluster assignments */
+            #pragma omp barrier
             }
 
             /* Clean up thread storage*/
@@ -173,6 +181,7 @@ int c_assign(float *chunk, float *centers, npy_int32 *dtraj, char* metric,
     /* Clean up global storage */
     if (dists) free(dists);
     if (centers_precentered) free(centers_precentered);
+    if (trace_centers_p) free(trace_centers_p);
     return ret;
 }
 
