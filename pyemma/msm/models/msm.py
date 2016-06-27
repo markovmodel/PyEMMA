@@ -42,7 +42,7 @@ from pyemma.util import types as _types
 
 class MSM(_Model):
     r"""Markov model with a given transition matrix"""
-    _version = 0
+    _serialize_version = 0
 
     _serialize_fields = ('_R', '_D', '_L', '_eigenvalues', 'ncv',
                          '_timeunit_model', 'sparse',

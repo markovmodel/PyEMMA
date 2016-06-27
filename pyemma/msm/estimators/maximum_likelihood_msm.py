@@ -35,7 +35,7 @@ from pyemma.util import types as _types
 class MaximumLikelihoodMSM(_MSM, _Estimator):
     r"""Maximum likelihood estimator for MSMs given discrete trajectory statistics"""
     # version for serialization
-    _version = 0
+    _serialize_version = 0
     # internal fields (eg. no estimator [ctor] or model parameter [set_model_params])
     _serialize_fields = ('_C_active', '_C_full', '_active_set', '_active_state_indexes', '_connected_sets',
                          '_dtrajs_full',  # we dont want _dtraj_active, since it is recomputed every time...
