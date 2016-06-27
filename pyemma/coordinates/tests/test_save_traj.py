@@ -94,6 +94,10 @@ class TestSaveTraj(unittest.TestCase):
         self.assertTrue(isinstance(save_traj(self.reader, self.sets, None),
                           md.Trajectory))
 
+    def test_reader_input_returns_trajectory_w_image_molecules(self):
+        self.assertTrue(isinstance(save_traj(self.reader, self.sets, None, image_molecules=True),
+                          md.Trajectory))
+
     def test_list_input_save_IO(self):
         # Test that we're saving to disk alright
         save_traj(self.trajfiles, self.sets, self.outfile, top=self.pdbfile)
