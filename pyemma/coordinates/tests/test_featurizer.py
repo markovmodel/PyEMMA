@@ -106,8 +106,6 @@ class TestFeaturizer(unittest.TestCase):
         traj.time=np.arange(n_frames)
         traj.save(cls.asn_leu_traj)
 
-        super(TestFeaturizer, cls).setUpClass()
-
     @classmethod
     def tearDownClass(cls):
         try:
@@ -119,8 +117,6 @@ class TestFeaturizer(unittest.TestCase):
             os.unlink(cls.bogus_geom_pdbfile)
         except EnvironmentError:
             pass
-
-        super(TestFeaturizer, cls).tearDownClass()
 
     def setUp(self):
         self.pdbfile = pdbfile
@@ -379,6 +375,14 @@ class TestFeaturizer(unittest.TestCase):
         desc = self.feat.describe()
         self.assertEqual(len(desc), self.feat.dimension())
 
+        # test ordering of indices
+        backbone_feature = self.feat.active_features[0]
+        angle_indices = backbone_feature.angle_indexes
+        np.testing.assert_equal(angle_indices[0], backbone_feature._phi_inds[0])
+        np.testing.assert_equal(angle_indices[1], backbone_feature._psi_inds[0])
+        np.testing.assert_equal(angle_indices[2], backbone_feature._phi_inds[1])
+        np.testing.assert_equal(angle_indices[3], backbone_feature._psi_inds[1])
+
     def test_backbone_dihedrals_deg(self):
         self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
         self.feat.add_backbone_torsions(deg=True)
@@ -400,9 +404,9 @@ class TestFeaturizer(unittest.TestCase):
         assert(np.alltrue(Y >= -np.pi))
         assert(np.alltrue(Y <= np.pi))
         desc = self.feat.describe()
-        assert "COS" in desc[0]
-        assert "SIN" in desc[1]
-        self.assertEqual(len(desc), self.feat.dimension())
+        self.assertEqual(len(desc), self.feat.dimension(), msg=desc)
+        self.assertIn("COS", desc[0])
+        self.assertIn("SIN", desc[1])
 
     def test_backbone_dihedrials_chi(self):
         self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
