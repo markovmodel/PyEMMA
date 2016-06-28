@@ -91,7 +91,6 @@ class TestMSMSerialization(unittest.TestCase):
             ml_msm.save(f.name)
             new_obj = load(f.name)
 
-
         self.assertEqual(new_obj._estimated, new_obj._estimated)
         np.testing.assert_equal(new_obj.transition_matrix, ml_msm.transition_matrix)
         np.testing.assert_equal(new_obj.count_matrix_active, ml_msm.count_matrix_active)

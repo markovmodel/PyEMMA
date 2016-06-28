@@ -49,9 +49,31 @@ def load(file_like):
 
 
 class SerializableMixIn(object):
-    """
+    """ Base class of serializable classes.
+
+    Derive from this class to make your class serializable. Do not forget to
+    add a version number to your class to distinguish old and new copies of the
+    source code:
+
+    >>> import tempfile, pyemma, os
+    >>> class MyClass(SerializableMixIn):
+    ...    _serialize_version = 0
+    ...    def __init__(self, x=42):
+    ...        self.x = x
+
+    >>> inst = MyClass()
+    >>> file = tempfile.NamedTemporaryFile()
+    >>> inst.save(file.name)
+    >>> inst_restored = pyemma.load(file.name)
+    >>> assert inst_restored.x == inst.x
+    >>> os.unlink(file.name)
+
+    In case
 
     """
+
+    _serialize_fields = ()
+    """ attribute names to serialize """
 
     def save(self, filename):
         """
@@ -96,10 +118,10 @@ class SerializableMixIn(object):
         if obj.__class__ != cls:
             raise ValueError("Given file '%s' did not contain the right type:"
                              " desired(%s) vs. actual(%s)" % (file_like, cls, obj.__class__))
-        if not hasattr(cls, '_version'):
+        if not hasattr(cls, '_serialize_version'):
             raise DeveloperError("your class does not implement the deserialization protocol of PyEMMA.")
 
-        if obj._version != cls._version:
+        if obj._version != cls._serialize_version:
             raise LoadedObjectVersionMismatchException("Version mismatch")
 
         return obj
@@ -116,17 +138,19 @@ class SerializableMixIn(object):
         return res
 
     def _set_state_from_serializeable_fields_and_state(self, state, klass):
-        """ set only fields from state, which are present in klass.serialize_fields """
+        """ set only fields from state, which are present in klass._serialize_fields """
         for field in klass._serialize_fields:
             if field in state:
                 setattr(self, field, state[field])
 
     def __getstate__(self):
-        # TODO: this pattern (getting only the version in parent will omit all other attrs)!
-        if not hasattr(self, '_version'):
+     if not hasattr(self, '_version'):
             raise DeveloperError("your class should define a _version attribute")
+     return {'_serialize_version': self._version,
+                '_serialize_fields': self._serialize_fields}
 
-        return {'_version': self._version}
 
     def __setstate__(self, state):
-        self._version = state.pop('_version')
+        self._version = state.pop('_serialize_version')
+        self._serialize_fields = state.pop('_serialize_fields', ())
+
