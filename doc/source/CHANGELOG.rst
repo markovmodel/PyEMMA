@@ -1,6 +1,13 @@
 Changelog
 =========
 
+2.2.2 ()
+--------
+
+*Fixes**:
+
+- coordinates: set chunksize correctly. #846
+
 2.2.1 (6-21-16)
 ---------------
 
