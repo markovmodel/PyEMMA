@@ -135,7 +135,7 @@ class RegularSpaceClustering(AbstractClustering):
         it = iterable.iterator(return_trajindex=False)
         used_frames = 0
         try:
-            with iterable.iterator(return_trajindex=False) as it:
+            with iterable.iterator(return_trajindex=False, stride=self.stride, chunk=self.chunksize) as it:
                 for X in it:
                     used_frames += len(X)
                     regspatial.cluster(X.astype(np.float32, order='C', copy=False),

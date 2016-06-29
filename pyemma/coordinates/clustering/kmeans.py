@@ -138,7 +138,7 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
     def _estimate(self, iterable, **kw):
         self._init_estimate()
 
-        with iterable.iterator(return_trajindex=True, stride=self.stride) as iter:
+        with iterable.iterator(return_trajindex=True, stride=self.stride, chunk=self.chunksize) as iter:
             # first pass: gather data and run k-means
             first_chunk = True
             for itraj, X in iter:
