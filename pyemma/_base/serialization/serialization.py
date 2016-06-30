@@ -24,6 +24,7 @@ import six
 import logging
 
 logger = logging.getLogger(__name__)
+_debug = True
 
 _reg_np_handler()
 
@@ -168,12 +169,15 @@ class SerializableMixIn(object):
         state_version = state['_serialize_version']
         for key in self._serialize_interpolation_map.keys():
             if not(self._serialize_version > key >= state_version):
-                logger.debug("skipped interpolation rules for version %s" % key)
+                if _debug:
+                    logger.debug("skipped interpolation rules for version %s" % key)
                 continue
-            logger.debug("processing rules for version %s" % key)
+            if _debug:
+                logger.debug("processing rules for version %s" % key)
             actions = self._serialize_interpolation_map[key]
             for a in actions:
-                logger.debug("processing rule: %s" % str(a))
+                if _debug:
+                    logger.debug("processing rule: %s" % str(a))
                 if a[0] == 'set':
                     state[a[1]] = a[2]
                 elif a[0] == 'mv':
@@ -185,11 +189,13 @@ class SerializableMixIn(object):
                                              "store an attribute named '{}'".format(a[1]))
                 elif a[0] == 'rm':
                     state.pop(a[1], None)
-        logger.debug("interpolated state: %s" % state)
+        if _debug:
+            logger.debug("interpolated state: %s" % state)
 
     def _set_state_from_serializeable_fields_and_state(self, state, klass):
         """ set only fields from state, which are present in klass._serialize_fields """
-        logger.debug("restoring state for class %s" % klass)
+        if _debug:
+            logger.debug("restoring state for class %s" % klass)
         if '_serialize_version' not in state:
             raise DeveloperError("your class should define a _serialize_version attribute")
 
@@ -201,7 +207,8 @@ class SerializableMixIn(object):
             if field in state:
                 setattr(self, field, state[field])
             else:
-                logger.debug("skipped %s, because it is not declared in _serialize_fields" % field)
+                if _debug:
+                    logger.debug("skipped %s, because it is not declared in _serialize_fields" % field)
 
     def __getstate__(self):
         # We just dump the version number for comparison with the actual class.
@@ -211,6 +218,4 @@ class SerializableMixIn(object):
             raise DeveloperError('The "{klass}" should define a static "_serialize_version" attribute.'
                                  .format(klass=self.__class__))
         res = {'_serialize_version': self._serialize_version}
-        #if hasattr(self, '_serialize_interpolation_map'):
-        #    res['_serialize_interpolation_map'] = self._serialize_interpolation_map
         return res
