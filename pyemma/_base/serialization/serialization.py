@@ -171,28 +171,23 @@ class SerializableMixIn(object):
 
     def _set_state_from_serializeable_fields_and_state(self, state, klass):
         """ set only fields from state, which are present in klass._serialize_fields """
+        if '_serialize_version' not in state:
+            raise DeveloperError("your class should define a _serialize_version attribute")
 
-        if (state['_serialize_version'] < klass._serialize_version
-            and hasattr(self, '_serialize_interpolation_map')):
+        if (state['_serialize_version'] < klass._serialize_version and
+                hasattr(self, '_serialize_interpolation_map')):
             self.__interpolate(state)
-            logger.debug("intepolated state: %s" % state)
 
-        logger.debug("serialize fields: %s" % str(klass._serialize_fields))
         for field in klass._serialize_fields:
             if field in state:
                 setattr(self, field, state[field])
             else:
-                logger.info("skipped %s, because it is not declared in _serialize_fields")
+                logger.debug("skipped %s, because it is not declared in _serialize_fields" % field)
 
     def __getstate__(self):
-        # we just dump the version number for comparison with the actual class.
+        # We just dump the version number for comparison with the actual class.
+        # Note: we do not want to set the version number in __setstate__,
+        # since we obtain it from the actual definition.
         if not hasattr(self, '_serialize_version'):
             raise DeveloperError("your class should define a _serialize_version attribute")
         return {'_serialize_version': self._serialize_version}
-                #, '_serialize_fields': self._serialize_fields}
-
-    def __setstate__(self, state):
-        pass
-        #self._serialize_fields = state.pop('_serialize_fields', ())
-
-
