@@ -18,16 +18,17 @@
 from pyemma._ext import jsonpickle
 from pyemma._base.serialization.jsonpickler_handlers import register_ndarray_handler as _reg_np_handler
 from pyemma._base.logging import Loggable
-from pyemma.util.types import is_string
+from pyemma.util.types import is_string, is_int
 import contextlib
 import six
+import logging
+
+logger = logging.getLogger(__name__)
 
 _reg_np_handler()
 
-
-class LoadedObjectVersionMismatchException(Exception):
-    """ the version does not match the current version of the library. """
-
+_renamed_classes = {}
+""" this dict performs a mapping between old and new names. A class can be renamed multiple times. """
 
 class DeveloperError(Exception):
     """ the devs has done something wrong. """
@@ -43,6 +44,7 @@ def load(file_like):
     if six.PY3:
         kw['encoding'] = 'ascii'
     inp = str(inp, **kw)
+    # TODO: this is the place to check for renamed classed and substitute it in the inp string.
     obj = jsonpickle.loads(inp)
 
     return obj
@@ -121,9 +123,6 @@ class SerializableMixIn(object):
         if not hasattr(cls, '_serialize_version'):
             raise DeveloperError("your class does not implement the deserialization protocol of PyEMMA.")
 
-        if obj._version != cls._serialize_version:
-            raise LoadedObjectVersionMismatchException("Version mismatch")
-
         return obj
 
     def _get_state_of_serializeable_fields(self, klass):
@@ -137,20 +136,63 @@ class SerializableMixIn(object):
                 res[field] = getattr(self, field)
         return res
 
+    def __validate_interpolation_map(self):
+        inter_map = self._serialize_interpolation_map
+        assert all(is_int(k) for k in inter_map) # all version keys are integers
+
+        # version numbers should be sorted?
+        # assert sorted
+
+        # check for valid operations: add, rm, mv
+
+    def __interpolate(self, state):
+        # Lookup attributes in interpolation map according to version number of the class.
+        # Drag in all prior versions attributes
+        self.__validate_interpolation_map()
+
+        for key in self._serialize_interpolation_map.keys():
+            if key < self._serialize_version:
+                actions = self._serialize_interpolation_map[key]
+                assert isinstance(actions, list)
+                for a in actions:
+                    logger.debug("processing rule: %s" % str(a))
+                    if a[0] == 'set':
+                        state[a[1]] = a[2]
+                    elif a[0] == 'mv':
+                        value = state.pop(a[1], None)
+                        state[a[2]] = value
+                    elif a[0] == 'rm':
+                        state.pop(a[1], None)
+                    else:
+                        raise Exception("this should have been catched in validate!")
+            else:
+                # TODO: this should not happen?
+                print("interpolation version not used, since it is newer than the class itself!")
+
     def _set_state_from_serializeable_fields_and_state(self, state, klass):
         """ set only fields from state, which are present in klass._serialize_fields """
+
+        if (state['_serialize_version'] < klass._serialize_version
+            and hasattr(self, '_serialize_interpolation_map')):
+            self.__interpolate(state)
+            logger.debug("intepolated state: %s" % state)
+
+        logger.debug("serialize fields: %s" % str(klass._serialize_fields))
         for field in klass._serialize_fields:
             if field in state:
                 setattr(self, field, state[field])
+            else:
+                logger.info("skipped %s, because it is not declared in _serialize_fields")
 
     def __getstate__(self):
-     if not hasattr(self, '_version'):
-            raise DeveloperError("your class should define a _version attribute")
-     return {'_serialize_version': self._version,
-                '_serialize_fields': self._serialize_fields}
-
+        # we just dump the version number for comparison with the actual class.
+        if not hasattr(self, '_serialize_version'):
+            raise DeveloperError("your class should define a _serialize_version attribute")
+        return {'_serialize_version': self._serialize_version}
+                #, '_serialize_fields': self._serialize_fields}
 
     def __setstate__(self, state):
-        self._version = state.pop('_serialize_version')
-        self._serialize_fields = state.pop('_serialize_fields', ())
+        pass
+        #self._serialize_fields = state.pop('_serialize_fields', ())
+
 
