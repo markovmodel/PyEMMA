@@ -189,5 +189,6 @@ class SerializableMixIn(object):
         # Note: we do not want to set the version number in __setstate__,
         # since we obtain it from the actual definition.
         if not hasattr(self, '_serialize_version'):
-            raise DeveloperError("your class should define a _serialize_version attribute")
+            raise DeveloperError('The "{klass}" should define a static "_serialize_version" attribute.'
+                                 .format(klass=self.__class__))
         return {'_serialize_version': self._serialize_version}
