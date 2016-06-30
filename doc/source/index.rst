@@ -33,7 +33,7 @@ Technical features:
 * Subscribe to the newsletter `here <https://lists.fu-berlin.de/listinfo/pyemma-newsletter#subscribe>`_. News will be sent only after major releases / fixes.
 
 Citation |DOI for Citing PyEMMA|
---------------------------------
+================================
 
 If you use PyEMMA in scientific software, please cite the following paper: ::
 

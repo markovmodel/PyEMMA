@@ -812,7 +812,7 @@ def _get_input_stage(previous_stage):
     return inputstage
 
 
-def _param_stage(previous_stage, this_stage, stride=1, chunk_size=0):
+def _param_stage(previous_stage, this_stage, stride=1, chunk_size=None):
     r""" Parametrizes the given pipelining stage if a valid source is given.
 
     Parameters
@@ -829,12 +829,10 @@ def _param_stage(previous_stage, this_stage, stride=1, chunk_size=0):
         return this_stage
 
     input_stage = _get_input_stage(previous_stage)
-    input_stage.chunksize = chunk_size
-    assert input_stage.default_chunksize == chunk_size
+    if chunk_size is not None:
+        input_stage.chunksize = chunk_size
     # parametrize transformer
     this_stage.data_producer = input_stage
-    this_stage.chunksize = input_stage.chunksize
-    assert this_stage.chunksize == chunk_size
     this_stage.estimate(X=input_stage, stride=stride)
     return this_stage
 
