@@ -30,8 +30,9 @@ _reg_np_handler()
 _renamed_classes = {}
 """ this dict performs a mapping between old and new names. A class can be renamed multiple times. """
 
+
 class DeveloperError(Exception):
-    """ the devs has done something wrong. """
+    """ the devs have done something wrong. """
 
 
 def load(file_like):
@@ -136,41 +137,59 @@ class SerializableMixIn(object):
                 res[field] = getattr(self, field)
         return res
 
-    def __validate_interpolation_map(self):
-        inter_map = self._serialize_interpolation_map
-        assert all(is_int(k) for k in inter_map) # all version keys are integers
+    def _validate_interpolation_map(self):
+        # version numbers should be sorted
+        from collections import OrderedDict
+        inter_map = OrderedDict(sorted(self._serialize_interpolation_map.iteritems()))
 
-        # version numbers should be sorted?
-        # assert sorted
+        # all version keys are integers
+        if not all(is_int(k) for k in inter_map):
+            raise DeveloperError("all keys of _serialize_interpolation_map have to be of type int.")
+
+        # check mapping operations are contained in an iterable type
+        if not all(isinstance(x, (list, tuple)) for x in inter_map.itervalues()):
+            raise DeveloperError("all operations in _serialize_interpolation_map have "
+                                 "to be contained in a list or tuple.")
 
         # check for valid operations: add, rm, mv
+        valid_ops = ('set', 'rm', 'mv')
+        if not all(action[0] in valid_ops for actions in inter_map.itervalues() for action in actions):
+            raise DeveloperError("Your _serialize_interpolation_map contains invalid operations. "
+                                 "Valid ops are: {}".format(valid_ops))
+
+        self._serialize_interpolation_map = inter_map
 
     def __interpolate(self, state):
         # Lookup attributes in interpolation map according to version number of the class.
         # Drag in all prior versions attributes
-        self.__validate_interpolation_map()
+        self._validate_interpolation_map()
 
+        logger.debug("input state: %s" % state)
+        state_version = state['_serialize_version']
         for key in self._serialize_interpolation_map.keys():
-            if key < self._serialize_version:
-                actions = self._serialize_interpolation_map[key]
-                assert isinstance(actions, list)
-                for a in actions:
-                    logger.debug("processing rule: %s" % str(a))
-                    if a[0] == 'set':
-                        state[a[1]] = a[2]
-                    elif a[0] == 'mv':
-                        value = state.pop(a[1], None)
+            if not(self._serialize_version > key >= state_version):
+                logger.debug("skipped interpolation rules for version %s" % key)
+                continue
+            logger.debug("processing rules for version %s" % key)
+            actions = self._serialize_interpolation_map[key]
+            for a in actions:
+                logger.debug("processing rule: %s" % str(a))
+                if a[0] == 'set':
+                    state[a[1]] = a[2]
+                elif a[0] == 'mv':
+                    try:
+                        value = state.pop(a[1])
                         state[a[2]] = value
-                    elif a[0] == 'rm':
-                        state.pop(a[1], None)
-                    else:
-                        raise Exception("this should have been catched in validate!")
-            else:
-                # TODO: this should not happen?
-                print("interpolation version not used, since it is newer than the class itself!")
+                    except KeyError:
+                        raise DeveloperError("the previous version didn't "
+                                             "store an attribute named '{}'".format(a[1]))
+                elif a[0] == 'rm':
+                    state.pop(a[1], None)
+        logger.debug("interpolated state: %s" % state)
 
     def _set_state_from_serializeable_fields_and_state(self, state, klass):
         """ set only fields from state, which are present in klass._serialize_fields """
+        logger.debug("restoring state for class %s" % klass)
         if '_serialize_version' not in state:
             raise DeveloperError("your class should define a _serialize_version attribute")
 
@@ -191,4 +210,7 @@ class SerializableMixIn(object):
         if not hasattr(self, '_serialize_version'):
             raise DeveloperError('The "{klass}" should define a static "_serialize_version" attribute.'
                                  .format(klass=self.__class__))
-        return {'_serialize_version': self._serialize_version}
+        res = {'_serialize_version': self._serialize_version}
+        #if hasattr(self, '_serialize_interpolation_map'):
+        #    res['_serialize_interpolation_map'] = self._serialize_interpolation_map
+        return res
