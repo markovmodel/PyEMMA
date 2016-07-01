@@ -336,7 +336,8 @@ class Pickler(object):
         if has_getstate:
             try:
                 state = obj.__getstate__()
-            except TypeError:
+            except TypeError as t:
+                print(t)
                 # Has getstate but it cannot be called, e.g. file descriptors
                 # in Python3
                 self._pickle_warning(obj)

@@ -381,7 +381,9 @@ class Estimator(_BaseEstimator, SerializableMixIn, Loggable):
                 'Model has not yet been estimated. Call estimate(X) or fit(X) first')
 
     def __getstate__(self):
+        parent_state = super(Estimator, self).__getstate__()
         res = self.get_params()
+        res.update(parent_state)
         # remember if it has been estimated.
         res['_estimated'] = self._estimated
         # if this estimator has been estimated, store the model.
@@ -393,6 +395,7 @@ class Estimator(_BaseEstimator, SerializableMixIn, Loggable):
             else:
                 res['model'] = self.model
         else:
+            # TODO: some classes rely on the fact that the model is not set (raises AttributeError), if not estimated yet.
             res['model'] = None
 
         return res
