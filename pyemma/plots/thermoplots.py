@@ -16,7 +16,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as _np
-import matplotlib.pyplot as _plt
 from pyemma.thermo import WHAM as _WHAM
 from pyemma.thermo import DTRAM as _DTRAM
 from pyemma.thermo import TRAM as _TRAM
@@ -28,6 +27,7 @@ __all__ = [
     'plot_convergence_info',
     'plot_memm_implied_timescales']
 
+
 def get_estimator_label(thermo_estimator):
     if isinstance(thermo_estimator, _WHAM):
         return "WHAM"
@@ -37,8 +37,10 @@ def get_estimator_label(thermo_estimator):
         return "TRAM, lag=%d" % thermo_estimator.lag
     return None
 
+
 def plot_increments(thermo_estimator, ax=None):
     # TODO: write docstring
+    import matplotlib.pyplot as _plt
     if ax is None:
         fig, ax = _plt.subplots()
     else:
@@ -57,8 +59,10 @@ def plot_increments(thermo_estimator, ax=None):
     ax.legend(loc=1, fancybox=True, framealpha=0.5)
     return ax
 
+
 def plot_loglikelihoods(thermo_estimator, ax=None):
     # TODO: write docstring
+    import matplotlib.pyplot as _plt
     if ax is None:
         fig, ax = _plt.subplots()
     else:
@@ -77,8 +81,10 @@ def plot_loglikelihoods(thermo_estimator, ax=None):
     ax.legend(loc=1, fancybox=True, framealpha=0.5)
     return ax
 
+
 def plot_convergence_info(thermo_estimator, axes=None):
     # TODO: write docstring
+    import matplotlib.pyplot as _plt
     if axes is None:
         fs = _plt.rcParams['figure.figsize']
         fig, axes = _plt.subplots(2, 1, figsize=(fs[0], fs[1] * 1.5), sharex=True)
@@ -92,9 +98,11 @@ def plot_convergence_info(thermo_estimator, axes=None):
         axes[0].set_xlabel('')
     return axes
 
+
 def plot_memm_implied_timescales(thermo_estimators,
     ax=None, nits=None, therm_state=None, xlog=False, ylog=True, units='steps', dt=1.0, refs=None,
     annotate=True, **kwargs):
+    import matplotlib.pyplot as _plt
     colors = ['blue', 'red', 'green', 'cyan', 'purple', 'orange', 'violet']
     # Check units and dt for user error.
     if isinstance(units, list) and len(units) != 2:
