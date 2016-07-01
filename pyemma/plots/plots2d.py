@@ -19,15 +19,15 @@
 from __future__ import absolute_import
 
 import numpy as _np
-from scipy.interpolate import griddata as gd
 
 __author__ = 'noe'
 
 
 def contour(x, y, z, ncontours = 50, colorbar=True, fig=None, ax=None, method='linear', zlim=None, cmap=None):
     import matplotlib.pylab as _plt
+    from scipy.interpolate import griddata as gd
     # check input
-    if (ax is None):
+    if ax is None:
         if fig is None:
             ax = _plt.gca()
         else:
