@@ -151,24 +151,28 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
         self.log_lagrangian_mult = None
         self.loglikelihoods = None
 
-    def _estimate(self, X):
+    def estimate(self, X):
         """
         Parameters
         ----------
         X : tuple of (ttrajs, dtrajs, btrajs)
             Simulation trajectories. ttrajs contain the indices of the thermodynamic state, dtrajs
             contains the indices of the configurational states and btrajs contain the biases.
-        ttrajs : list of numpy.ndarray(X_i, dtype=int)
-            Every elements is a trajectory (time series). ttrajs[i][t] is the index of the
-            thermodynamic state visited in trajectory i at time step t.
-        dtrajs : list of numpy.ndarray(X_i, dtype=int)
-            dtrajs[i][t] is the index of the configurational state (Markov state) visited in
-            trajectory i at time step t.
-        btrajs : list of numpy.ndarray((X_i, T), dtype=numpy.float64)
-            For every simulation frame seen in trajectory i and time step t, btrajs[i][t,k] is the
-            bias energy of that frame evaluated in the k'th thermodynamic state (i.e. at the k'th
-            Umbrella/Hamiltonian/temperature).
+
+            ttrajs : list of numpy.ndarray(X_i, dtype=int)
+                Every elements is a trajectory (time series). ttrajs[i][t] is the index of the
+                thermodynamic state visited in trajectory i at time step t.
+            dtrajs : list of numpy.ndarray(X_i, dtype=int)
+                dtrajs[i][t] is the index of the configurational state (Markov state) visited in
+                trajectory i at time step t.
+            btrajs : list of numpy.ndarray((X_i, T), dtype=numpy.float64)
+                For every simulation frame seen in trajectory i and time step t, btrajs[i][t,k] is the
+                bias energy of that frame evaluated in the k'th thermodynamic state (i.e. at the k'th
+                Umbrella/Hamiltonian/temperature).
         """
+        return super(TRAM, self).estimate(trajs)
+
+    def _estimate(self, X):
         ttrajs, dtrajs_full, btrajs = X
         # shape and type checks
         assert len(ttrajs) == len(dtrajs_full) == len(btrajs)
