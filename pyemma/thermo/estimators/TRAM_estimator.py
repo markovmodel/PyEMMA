@@ -170,7 +170,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
                 bias energy of that frame evaluated in the k'th thermodynamic state (i.e. at the k'th
                 Umbrella/Hamiltonian/temperature).
         """
-        return super(TRAM, self).estimate(trajs)
+        return super(TRAM, self).estimate(X)
 
     def _estimate(self, X):
         ttrajs, dtrajs_full, btrajs = X
