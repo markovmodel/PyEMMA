@@ -38,6 +38,12 @@ extern "C" {
 #include <stdio.h>
 #include <float.h>
 
+
+#ifndef NULL
+#warning null defined manually...
+#define NULL 0x0
+#endif
+
 #if defined(__GNUC__) && ((__GNUC__ > 3) || (__GNUC__ == 3 && __GNUC_MINOR__ >= 1))
 #   define SKP_restrict __restrict
 #elif defined(_MSC_VER) && _MSC_VER >= 1400

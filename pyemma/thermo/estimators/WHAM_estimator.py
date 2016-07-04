@@ -108,21 +108,24 @@ class WHAM(_Estimator, _MEMM, _ProgressReporter):
         self.therm_energies = None
         self.conf_energies = None
 
-    def _estimate(self, trajs):
-        # TODO: fix docstring
+    def estimate(self, trajs):
         """
         Parameters
         ----------
         X : tuple of (ttrajs, dtrajs)
             Simulation trajectories. ttrajs contain the indices of the thermodynamic state and
             dtrajs contains the indices of the configurational states.
-        ttrajs : list of numpy.ndarray(X_i, dtype=int)
-            Every elements is a trajectory (time series). ttrajs[i][t] is the index of the
-            thermodynamic state visited in trajectory i at time step t.
-        dtrajs : list of numpy.ndarray(X_i, dtype=int)
-            dtrajs[i][t] is the index of the configurational state (Markov state) visited in
-            trajectory i at time step t.
+
+            ttrajs : list of numpy.ndarray(X_i, dtype=int)
+                Every elements is a trajectory (time series). ttrajs[i][t] is the index of the
+                thermodynamic state visited in trajectory i at time step t.
+            dtrajs : list of numpy.ndarray(X_i, dtype=int)
+                dtrajs[i][t] is the index of the configurational state (Markov state) visited in
+                trajectory i at time step t.
         """
+        return super(WHAM, self).estimate(trajs)
+
+    def _estimate(self, trajs):
         # check input
         assert isinstance(trajs, (tuple, list))
         assert len(trajs) == 2

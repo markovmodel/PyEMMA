@@ -33,6 +33,7 @@ from pyemma.coordinates import api
 
 from pyemma.coordinates.data.data_in_memory import DataInMemory
 from pyemma.coordinates import source, tica
+from pyemma.coordinates.transform import TICA as _internal_tica
 from pyemma.util.contexts import numpy_random_seed
 from logging import getLogger
 import pyemma.util.types as types
@@ -91,6 +92,12 @@ class TestTICA_Basic(unittest.TestCase):
 
         assert tica_obj.eigenvectors.dtype == np.float64
         assert tica_obj.eigenvalues.dtype == np.float64
+
+    def test_fit_transform(self):
+        X = np.random.randn(100, 2)
+        tica = _internal_tica(1, 1)
+        out = tica.fit_transform(X)
+        np.testing.assert_array_almost_equal(out, api.tica(data=X, lag=1, dim=1).get_output()[0])
 
     def test_duplicated_data_in_fit_transform(self):
         X = np.random.randn(100, 2)

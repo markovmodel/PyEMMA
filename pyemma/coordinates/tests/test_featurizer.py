@@ -28,7 +28,7 @@ from itertools import combinations, product
 
 # from pyemma.coordinates.data import featurizer as ft
 from pyemma.coordinates.data.featurization.featurizer import MDFeaturizer, CustomFeature
-from pyemma.coordinates.data.featurization.util import _parse_pairwise_input
+from pyemma.coordinates.data.featurization.util import _parse_pairwise_input, _describe_atom
 from six.moves import range
 import pkg_resources
 
@@ -63,10 +63,10 @@ ATOM    000  MW  ACE A  00      0.0000   0.000  0.0000  1.00 0.000           X
 ATOM    001  CA  ASN A  01      1.0000   0.000  0.0000  1.00 0.000           C
 ATOM    002  MW  ACE A  02      2.0000   0.000  0.0000  1.00 0.000           X
 ATOM    003  CA  ASN A  03      3.0000   0.000  0.0000  1.00 0.000           C
-ATOM    004  MW  ACE A  04      4.0000   0.000  0.0000  1.00 0.000           X
-ATOM    005  CA  ASN A  05      5.0000   0.000  0.0000  1.00 0.000           C
-ATOM    006  MW  ACE A  06      6.0000   0.000  0.0000  1.00 0.000           X
-ATOM    007  CA  ASN A  07      7.0000   0.000  0.0000  1.00 0.000           C
+ATOM    004  MW  ACE B  04      4.0000   0.000  0.0000  1.00 0.000           X
+ATOM    005  CA  ASN B  05      5.0000   0.000  0.0000  1.00 0.000           C
+ATOM    006  MW  ACE B  06      6.0000   0.000  0.0000  1.00 0.000           X
+ATOM    007  CA  ASN B  07      7.0000   0.000  0.0000  1.00 0.000           C
 """
 
 def verbose_assertion_minrmsd(ref_Y, test_Y, test_obj):
@@ -106,8 +106,6 @@ class TestFeaturizer(unittest.TestCase):
         traj.time=np.arange(n_frames)
         traj.save(cls.asn_leu_traj)
 
-        super(TestFeaturizer, cls).setUpClass()
-
     @classmethod
     def tearDownClass(cls):
         try:
@@ -119,8 +117,6 @@ class TestFeaturizer(unittest.TestCase):
             os.unlink(cls.bogus_geom_pdbfile)
         except EnvironmentError:
             pass
-
-        super(TestFeaturizer, cls).tearDownClass()
 
     def setUp(self):
         self.pdbfile = pdbfile
@@ -379,6 +375,14 @@ class TestFeaturizer(unittest.TestCase):
         desc = self.feat.describe()
         self.assertEqual(len(desc), self.feat.dimension())
 
+        # test ordering of indices
+        backbone_feature = self.feat.active_features[0]
+        angle_indices = backbone_feature.angle_indexes
+        np.testing.assert_equal(angle_indices[0], backbone_feature._phi_inds[0])
+        np.testing.assert_equal(angle_indices[1], backbone_feature._psi_inds[0])
+        np.testing.assert_equal(angle_indices[2], backbone_feature._phi_inds[1])
+        np.testing.assert_equal(angle_indices[3], backbone_feature._psi_inds[1])
+
     def test_backbone_dihedrals_deg(self):
         self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
         self.feat.add_backbone_torsions(deg=True)
@@ -400,9 +404,9 @@ class TestFeaturizer(unittest.TestCase):
         assert(np.alltrue(Y >= -np.pi))
         assert(np.alltrue(Y <= np.pi))
         desc = self.feat.describe()
-        assert "COS" in desc[0]
-        assert "SIN" in desc[1]
-        self.assertEqual(len(desc), self.feat.dimension())
+        self.assertEqual(len(desc), self.feat.dimension(), msg=desc)
+        self.assertIn("COS", desc[0])
+        self.assertIn("SIN", desc[1])
 
     def test_backbone_dihedrials_chi(self):
         self.feat = MDFeaturizer(topfile=self.asn_leu_pdbfile)
@@ -743,6 +747,38 @@ class TestPairwiseInputParser(unittest.TestCase):
                                             np.unique(group2[:-2])
                                             )))
         assert np.allclose(dist_list, _parse_pairwise_input(group1, group2, self.feat._logger))
+
+class TestUtils(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        import tempfile
+        cls.bogus_geom_pdbfile = tempfile.mkstemp(suffix=".pdb")[1]
+        print(cls.bogus_geom_pdbfile)
+        with open(cls.bogus_geom_pdbfile, 'w') as fh:
+            fh.write(bogus_geom_pdbfile)
+        super(TestUtils, cls).setUpClass()
+
+
+    @classmethod
+    def tearDownClass(cls):
+        try:
+            os.unlink(cls.bogus_geom_pdbfile)
+        except EnvironmentError:
+            pass
+
+        super(TestUtils, cls).tearDownClass()
+
+    @classmethod
+    def setUp(self):
+        self.traj = mdtraj.load(self.bogus_geom_pdbfile)
+
+    def test_describe_atom(self):
+        str1 = _describe_atom(self.traj.topology, 0)
+        str2 = _describe_atom(self.traj.topology,self.traj.n_atoms-1)
+        assert len(str1.split()) >=4
+        assert len(str2.split()) >=4
+        assert str1.split()[-1] == '0'
+        assert str2.split()[-1] == '1'
 
 class TestStaticMethods(unittest.TestCase):
 

@@ -64,7 +64,7 @@ static PyObject *cluster(PyObject *self, PyObject *args) {
     int i, j;
     int closest_center_index;
     npy_intp dims[2];
-    float (*distance)(float*, float*, size_t, float*, float*);
+    float (*distance)(float*, float*, size_t, float*, float*, float*);
     PyObject* return_new_centers;
     debug = 0;
     if(debug) printf("KMEANS: \n----------- cluster called ----------\n");
@@ -160,7 +160,7 @@ static PyObject *cluster(PyObject *self, PyObject *args) {
     for (i = 0; i < N_frames; i++) {
         mindist = FLT_MAX;
         for(j = 0; j < N_centers; ++j) {
-            d = distance(&chunk[i*dim], centers[j], dim, buffer_a, buffer_b);
+            d = distance(&chunk[i*dim], centers[j], dim, buffer_a, buffer_b, NULL);
             if(d<mindist) {
                 mindist = d;
                 closest_center_index = j;
@@ -220,7 +220,7 @@ static PyObject* costFunction(PyObject *self, PyObject *args) {
     PyObject *ret_cost;
     Py_ssize_t dim, n_frames;
     PyArrayObject *np_data, *np_centers;
-    float (*distance)(float*, float*, size_t, float*, float*);
+    float (*distance)(float*, float*, size_t, float*, float*, float*);
     float *buffer_a, *buffer_b;
 
     k = 0; r = 0; i = 0; j = 0; value = 0.0; d = 0.0;
@@ -250,7 +250,7 @@ static PyObject* costFunction(PyObject *self, PyObject *args) {
     for(r = 0; r < k; r++) {
         centers = PyArray_DATA(PyList_GetItem(np_centers,r));
         for(i = 0; i < n_frames; i++) {
-            value += pow(distance(&data[i*dim], &centers[0], dim, buffer_a, buffer_b), 2);
+            value += pow(distance(&data[i*dim], &centers[0], dim, buffer_a, buffer_b, NULL), 2);
         }
     }
     ret_cost = Py_BuildValue("f", value);
@@ -281,7 +281,7 @@ static PyObject* initCentersKMpp(PyObject *self, PyObject *args) {
     float *buffer_a, *buffer_b;
     void *arr_data;
     float *squared_distances;
-    float (*distance)(float*, float*, size_t, float*, float*);
+    float (*distance)(float*, float*, size_t, float*, float*, float*);
 
     ret_init_centers = Py_BuildValue("");
     py_callback_result = NULL;
@@ -365,7 +365,7 @@ static PyObject* initCentersKMpp(PyObject *self, PyObject *args) {
     /* squared_distances[i] = distance(x_j, x_i)*distance(x_j, x_i) */
     for(i = 0; i < n_frames; i++) {
         if(i != first_center_index) {
-            d = pow(distance(&data[i*dim], &data[first_center_index*dim], dim, buffer_a, buffer_b), 2);
+            d = pow(distance(&data[i*dim], &data[first_center_index*dim], dim, buffer_a, buffer_b, NULL), 2);
             squared_distances[i] = d;
             /* build up dist_sum which keeps the sum of all squared distances */
             dist_sum += d;
@@ -407,7 +407,7 @@ static PyObject* initCentersKMpp(PyObject *self, PyObject *args) {
                 for(j = 0; j < n_trials; j++) {
                     if(next_center_candidates[j] == -1) break;
                     if(next_center_candidates[j] != i) {
-                        d = pow(distance(&data[i*dim], &data[next_center_candidates[j]*dim], dim, buffer_a, buffer_b), 2);
+                        d = pow(distance(&data[i*dim], &data[next_center_candidates[j]*dim], dim, buffer_a, buffer_b, NULL), 2);
                         if(d < squared_distances[i]) {
                             next_center_candidates_potential[j] += d;
                         } else {
@@ -464,7 +464,7 @@ static PyObject* initCentersKMpp(PyObject *self, PyObject *args) {
                 /* the new one. */
                 for(i = 0; i < n_frames; i++) {
                     if(!taken_points[i]) {
-                        d = pow(distance(&data[i*dim], &data[best_candidate*dim], dim, buffer_a, buffer_b), 2);
+                        d = pow(distance(&data[i*dim], &data[best_candidate*dim], dim, buffer_a, buffer_b, NULL), 2);
                         if(d < squared_distances[i]) {
                             dist_sum += d - squared_distances[i];
                             squared_distances[i] = d;

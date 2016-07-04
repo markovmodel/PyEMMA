@@ -198,7 +198,7 @@ class PCA(StreamingTransformer, ProgressReporter):
     def _estimate(self, iterable, **kw):
         partial_fit = 'partial' in kw
 
-        with iterable.iterator(return_trajindex=False) as it:
+        with iterable.iterator(return_trajindex=False, chunk=self.chunksize) as it:
             n_chunks = it._n_chunks
             self._progress_register(n_chunks, "calc mean+cov", 0)
             self._init_covar(partial_fit, n_chunks)

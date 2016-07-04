@@ -266,7 +266,7 @@ class TICA(StreamingTransformer):
                 raise ValueError("None single dataset [longest=%i] is longer than"
                                  " lag time [%i]." % (max(iterable.trajectory_lengths(self.stride)), self.lag))
 
-        it = iterable.iterator(lag=self.lag, return_trajindex=False)
+        it = iterable.iterator(lag=self.lag, return_trajindex=False, chunk=self.chunksize)
         with it:
             self._progress_register(it._n_chunks, "calculate mean+cov", 0)
             self._init_covar(partial_fit, it._n_chunks)

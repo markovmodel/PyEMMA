@@ -219,8 +219,9 @@ class MSM(_Model):
         """
         try:
             return self.P
-        except:
-            raise AttributeError('MSM has not yet been parametrized. Call __init__ or set transition matrix')
+        except AttributeError:
+            raise AttributeError('MSM has not yet been parametrized.'
+                                 'Call "MSM(P)", set_model_params(P=P) or set transition matrix')
 
     ################################################################################
     # Spectral quantities
@@ -256,7 +257,7 @@ class MSM(_Model):
             if m < neig:
                 # not enough eigenpairs present - recompute:
                 self._compute_eigenvalues(neig)
-        except:
+        except AttributeError:
             # no eigendecomposition yet - compute:
             self._compute_eigenvalues(neig)
 
@@ -823,7 +824,7 @@ class MSM(_Model):
         try:
             if not self._metastable_computed:
                 raise ValueError('Metastable decomposition has not yet been computed. Please call pcca(m) first.')
-        except:
+        except AttributeError:
             raise ValueError('Metastable decomposition has not yet been computed. Please call pcca(m) first.')
 
     def pcca(self, m):
@@ -860,6 +861,7 @@ class MSM(_Model):
             (2): 147-179
 
         """
+        m = int(m)
         # can we do it?
         if not self.reversible:
             raise ValueError(

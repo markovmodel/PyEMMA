@@ -57,10 +57,10 @@ def estimate_umbrella_sampling(
     us_dtrajs : list of N int arrays, each of shape (T_i,)
         The integers are indexes in 0,...,n-1 enumerating the n discrete states or the bins the
         umbrella sampling trajectory is in at any time.
-    us_centers : array-like of size N
+    us_centers : list of N floats or d-dimensional arrays of floats
         List or array of N center positions. Each position must be a d-dimensional vector. For 1d
         umbrella sampling, one can simply pass a list of centers, e.g. [-5.0, -4.0, -3.0, ... ].
-    us_force_constants : float or array-like of float
+    us_force_constants : list of N floats or d- or dxd-dimensional arrays of floats
         The force constants used in the umbrellas, unit-less (e.g. kT per squared length unit). For
         multidimensional umbrella sampling, the force matrix must be used.
     md_trajs : list of M arrays, each of shape (T_i, d), optional, default=None
@@ -143,13 +143,62 @@ def estimate_umbrella_sampling(
     array([ 0.63...,  1.60...,  1.31...])
 
     """
-    assert estimator in ['wham', 'dtram', 'tram'], "unsupported estimator: %s" % estimator
     from .util import get_umbrella_sampling_data as _get_umbrella_sampling_data
-    ttrajs, btrajs, umbrella_centers, force_constants, unbiased_state = _get_umbrella_sampling_data(
-        us_trajs, us_centers, us_force_constants, md_trajs=md_trajs, kT=kT)
+    # sanity checks
+    if estimator not in ['wham', 'dtram', 'tram']:
+        raise ValueError("unsupported estimator: %s" % estimator)
+    if not isinstance(us_trajs, (list, tuple)):
+        raise ValueError("The parameter us_trajs must be a list of numpy.ndarray objects")
+    if not isinstance(us_centers, (list, tuple)):
+        raise ValueError(
+            "The parameter us_centers must be a list of floats or numpy.ndarray objects")
+    if not isinstance(us_force_constants, (list, tuple)):
+        raise ValueError(
+            "The parameter us_force_constants must be a list of floats or numpy.ndarray objects")
+    if len(us_trajs) != len(us_centers):
+        raise ValueError("Unmatching number of umbrella sampling trajectories and centers: %d!=%d" \
+            % (len(us_trajs), len(us_centers)))
+    if len(us_trajs) != len(us_force_constants):
+        raise ValueError(
+            "Unmatching number of umbrella sampling trajectories and force constants: %d!=%d" \
+                % (len(us_trajs), len(us_force_constants)))
+    if len(us_trajs) != len(us_dtrajs):
+            raise ValueError(
+                "Number of continuous and discrete umbrella sampling trajectories does not " + \
+                "match: %d!=%d" % (len(us_trajs), len(us_dtrajs)))
+    i = 0
+    for traj, dtraj in zip(us_trajs, us_dtrajs):
+        if traj.shape[0] != dtraj.shape[0]:
+            raise ValueError(
+                "Lengths of continuous and discrete umbrella sampling trajectories with " + \
+                "index %d does not match: %d!=%d" % (i, len(us_trajs), len(us_dtrajs)))
+        i += 1
+    if md_trajs is not None:
+        if not isinstance(md_trajs, (list, tuple)):
+            raise ValueError("The parameter md_trajs must be a list of numpy.ndarray objects")
+        if md_dtrajs is None:
+            raise ValueError("You have provided md_trajs, but md_dtrajs is None")
     if md_dtrajs is None:
         md_dtrajs = []
+    else:
+        if md_trajs is None:
+            raise ValueError("You have provided md_dtrajs, but md_trajs is None")
+        if len(md_trajs) != len(md_dtrajs):
+            raise ValueError(
+                "Number of continuous and discrete unbiased trajectories does not " + \
+                "match: %d!=%d" % (len(md_trajs), len(md_dtrajs)))
+        i = 0
+        for traj, dtraj in zip(md_trajs, md_dtrajs):
+            if traj.shape[0] != dtraj.shape[0]:
+                raise ValueError(
+                    "Lengths of continuous and discrete unbiased trajectories with " + \
+                    "index %d does not match: %d!=%d" % (i, len(md_trajs), len(md_dtrajs)))
+            i += 1
+    # data preparation
+    ttrajs, btrajs, umbrella_centers, force_constants, unbiased_state = _get_umbrella_sampling_data(
+        us_trajs, us_centers, us_force_constants, md_trajs=md_trajs, kT=kT)
     estimator_obj = None
+    # estimation
     if estimator == 'wham':
         estimator_obj = wham(
             ttrajs, us_dtrajs + md_dtrajs,
@@ -176,6 +225,7 @@ def estimate_umbrella_sampling(
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
             dt_traj=dt_traj, init=init, init_maxiter=init_maxiter, init_maxerr=init_maxerr,
             **parsed_kwargs)
+    # adding thermodynamic state information and return results
     try:
         estimator_obj.umbrella_centers = umbrella_centers
         estimator_obj.force_constants = force_constants
@@ -284,7 +334,8 @@ def estimate_multi_temperature(
     can handle temperature changes as well.
 
     """
-    assert estimator in ['wham', 'dtram', 'tram'], "unsupported estimator: %s" % estimator
+    if estimator not in ['wham', 'dtram', 'tram']:
+        ValueError("unsupported estimator: %s" % estimator)
     from .util import get_multi_temperature_data as _get_multi_temperature_data
     ttrajs, btrajs, temperatures, unbiased_state = _get_multi_temperature_data(
         energy_trajs, temp_trajs, energy_unit, temp_unit,
@@ -470,11 +521,19 @@ def tram(
     # prepare trajectories
     ttrajs = _types.ensure_dtraj_list(ttrajs)
     dtrajs = _types.ensure_dtraj_list(dtrajs)
-    assert len(ttrajs) == len(dtrajs)
-    assert len(ttrajs) == len(bias)
+    if len(ttrajs) != len(dtrajs):
+        raise ValueError("Unmatching number of dtraj/ttraj elements: %d!=%d" % (
+            len(dtrajs), len(ttrajs)))
+    if len(ttrajs) != len(bias):
+        raise ValueError("Unmatching number of ttraj/bias elements: %d!=%d" % (
+            len(ttrajs), len(bias)))
     for ttraj, dtraj, btraj in zip(ttrajs, dtrajs, bias):
-        assert len(ttraj) == len(dtraj)
-        assert len(ttraj) == btraj.shape[0]
+        if len(ttraj) != len(dtraj):
+            raise ValueError("Unmatching number of data points in ttraj/dtraj: %d!=%d" % (
+                len(ttraj), len(dtraj)))
+        if len(ttraj) != btraj.shape[0]:
+            raise ValueError("Unmatching number of data points in ttraj/bias trajectory: %d!=%d" % (
+                len(ttraj), len(btraj)))
     # check lag time(s)
     lags = _np.asarray(lag, dtype=_np.intc).reshape((-1,)).tolist()
     # build TRAM and run estimation
@@ -630,9 +689,13 @@ def dtram(
     # prepare trajectories
     ttrajs = _types.ensure_dtraj_list(ttrajs)
     dtrajs = _types.ensure_dtraj_list(dtrajs)
-    assert len(ttrajs) == len(dtrajs)
+    if len(ttrajs) != len(dtrajs):
+        raise ValueError("Unmatching number of dtraj/ttraj elements: %d!=%d" % (
+            len(dtrajs), len(ttrajs)) )
     for ttraj, dtraj in zip(ttrajs, dtrajs):
-        assert len(ttraj) == len(dtraj)
+        if len(ttraj) != len(dtraj):
+            raise ValueError("Unmatching number of data points in ttraj/dtraj: %d!=%d" % (
+                len(ttraj), len(dtraj)))
     # check lag time(s)
     lags = _np.asarray(lag, dtype=_np.intc).reshape((-1,)).tolist()
     # build DTRAM and run estimation
@@ -760,9 +823,13 @@ def wham(
     # check trajectories
     ttrajs = _types.ensure_dtraj_list(ttrajs)
     dtrajs = _types.ensure_dtraj_list(dtrajs)
-    assert len(ttrajs) == len(dtrajs)
+    if len(ttrajs) != len(dtrajs):
+        raise ValueError("Unmatching number of dtraj/ttraj elements: %d!=%d" % (
+            len(dtrajs), len(ttrajs)) )
     for ttraj, dtraj in zip(ttrajs, dtrajs):
-        assert len(ttrajs) == len(dtrajs)
+        if len(ttraj) != len(dtraj):
+            raise ValueError("Unmatching number of data points in ttraj/dtraj: %d!=%d" % (
+                len(ttraj), len(dtraj)))
     # build WHAM
     from pyemma.thermo import WHAM
     wham_estimator = WHAM(

@@ -198,7 +198,7 @@ class StreamingTransformer(Transformer, Estimator, DataSource, NotifyOnChangesMi
 
         return self
 
-    def get_output(self, dimensions=slice(0, None), stride=1, skip=0, chunk=0):
+    def get_output(self, dimensions=slice(0, None), stride=1, skip=0, chunk=None):
         if not self._estimated:
             self.estimate(self.data_producer, stride=stride)
 
@@ -214,6 +214,8 @@ class StreamingTransformer(Transformer, Estimator, DataSource, NotifyOnChangesMi
     @property
     def chunksize(self):
         """chunksize defines how much data is being processed at once."""
+        if not self.data_producer:
+            return self._default_chunksize
         return self.data_producer.chunksize
 
     @chunksize.setter

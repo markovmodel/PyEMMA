@@ -78,11 +78,12 @@ class ShimImporter(object):
 class ShimModule(types.ModuleType):
     def __init__(self, *args, **kwargs):
         self._mirror = kwargs.pop("mirror")
+        self._from = self._mirror.split('.')
         src = kwargs.pop("src", None)
         if src:
             kwargs['name'] = src.rsplit('.', 1)[-1]
         super(ShimModule, self).__init__(*args, **kwargs)
-        # add import hook for descendent modules
+        # add import hook for descendant modules
         if src:
             sys.meta_path.append(
                 ShimImporter(src=src, mirror=self._mirror)
@@ -98,18 +99,18 @@ class ShimModule(types.ModuleType):
     @property
     def __spec__(self):
         """Don't produce __spec__ until requested"""
-        self._warn()
-        return __import__(self._mirror).__spec__
+        self._warn('__spec__')
+        return import_item(self._mirror).__spec__
 
     def __dir__(self):
-        self._warn()
-        return dir(__import__(self._mirror))
+        self._warn('__dir__')
+        return dir(import_item(self._mirror))
 
     @property
     def __all__(self):
         """Ensure __all__ is always defined"""
-        self._warn()
-        mod = __import__(self._mirror)
+        self._warn('__all__')
+        mod = import_item(self._mirror)
         try:
             return mod.__all__
         except AttributeError:
@@ -120,12 +121,12 @@ class ShimModule(types.ModuleType):
         name = "%s.%s" % (self._mirror, key)
         try:
             item = import_item(name)
-            self._warn()
+            self._warn('__getattr__')
             return item
         except ImportError:
             raise AttributeError(key)
 
-    def _warn(self):
+    def _warn(self, called_from):
         from pyemma.util.exceptions import PyEMMA_DeprecationWarning
         warnings.warn(self.msg if self.msg else self.default_msg,
                       category=PyEMMA_DeprecationWarning)

@@ -213,7 +213,7 @@ metadata = dict(
     # runtime dependencies
     install_requires=['numpy>=1.7.0',
                       'scipy>=0.11',
-                      'mdtraj>=1.5.0',
+                      'mdtraj>=1.7.0',
                       'matplotlib',
                       'msmtools',
                       'thermotools>=0.2.0',
@@ -238,7 +238,7 @@ if len(sys.argv) == 1 or (len(sys.argv) >= 2 and ('--help' in sys.argv[1:] or
 else:
     # setuptools>=2.2 can handle setup_requires
     metadata['setup_requires'] = ['numpy>=1.7.0',
-                                  'mdtraj>=1.5.0',
+                                  'mdtraj>=1.7.0',
                                   'nose',
                                   ]
     if sys.version_info.major == 2:

@@ -1,6 +1,6 @@
 package:
   name: pyemma-dev
-  version: {{ environ.get('PYEMMA_VERSION', "unknown") }} 
+  version: {{ environ.get('GIT_DESCRIBE_TAG','')+environ.get('GIT_BUILD_STR', 'unknown')[1:] }}
 source:
   path: ../..
 
