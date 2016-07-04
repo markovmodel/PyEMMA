@@ -616,8 +616,6 @@ class MaximumLikelihoodMSM(_Estimator, _MSM):
 
         Parameters
         ----------
-        N : int
-            Number of time steps in the output trajectory. The total simulation time is stride * lag time * N
         nsample : int
             Number of samples per state. If replace = False, the number of returned samples per state could be smaller
             if less than nsample indexes are available for a state.
@@ -625,8 +623,6 @@ class MaximumLikelihoodMSM(_Estimator, _MSM):
             array of states to be indexed. By default all states in the connected set will be used
         replace : boolean, optional
             Whether the sample is with or without replacement
-        start : int, optional, default = None
-            starting state. If not given, will sample from the stationary distribution of P
 
         Returns
         -------
