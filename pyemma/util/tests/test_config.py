@@ -147,5 +147,11 @@ class TestConfig(unittest.TestCase):
         # TODO: impl
         pass
 
+    def test_traj_info_max_entries(self):
+        assert isinstance(self.config_inst.traj_info_max_entries, int)
+        self.config_inst.traj_info_max_entries = 1
+        self.assertEqual(self.config_inst.traj_info_max_entries, 1)
+
+
 if __name__ == "__main__":
     unittest.main()
