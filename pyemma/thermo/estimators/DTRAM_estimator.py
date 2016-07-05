@@ -234,7 +234,8 @@ class DTRAM(_Estimator, _MEMM, _ProgressReporter):
         models = []
         for msm, acs in zip(fmsms, active_sets):
             models.append(_ThermoMSM(
-                msm, acs, self.nstates_full, dt_model=self.timestep_traj.get_scaled(self.lag)))
+                msm, self.active_set[acs], self.nstates_full,
+                dt_model=self.timestep_traj.get_scaled(self.lag)))
 
         # set model parameters to self
         self.set_model_params(
