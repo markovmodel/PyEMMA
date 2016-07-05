@@ -289,6 +289,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
         active_sets = [_largest_connected_set(msm, directed=False) for msm in fmsms]
         fmsms = [_np.ascontiguousarray(
             (msm[lcc, :])[:, lcc]) for msm, lcc in zip(fmsms, active_sets)]
+
         models = []
         for msm, acs in zip(fmsms, active_sets):
             models.append(_ThermoMSM(
