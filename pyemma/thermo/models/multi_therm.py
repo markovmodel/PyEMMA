@@ -14,6 +14,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import numpy as _np
 from pyemma.thermo.models.stationary import StationaryModel as _StationaryModel
 from pyemma._base.model import call_member as _call_member

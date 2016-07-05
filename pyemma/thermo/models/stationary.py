@@ -1,6 +1,6 @@
 # This file is part of PyEMMA.
 #
-# Copyright (c) 2015 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+# Copyright (c) 2015, 2016 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
 #
 # PyEMMA is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -14,15 +14,17 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import numpy as _np
 from pyemma._base.model import Model as _Model
+from pyemma._base.model import SubSet as _SubSet
 from pyemma.util import types as _types
 from thermotools.util import logsumexp as _logsumexp
 
 __author__ = 'noe'
 
 
-class StationaryModel(_Model):
+class StationaryModel(_Model, _SubSet):
     r""" StationaryModel combines a stationary vector with discrete-state free energies.
 
     Parameters
