@@ -20,7 +20,7 @@ from six.moves import range
 from pyemma._base.estimator import Estimator as _Estimator
 from pyemma._base.progress import ProgressReporter as _ProgressReporter
 from pyemma.thermo import MEMM as _MEMM
-from pyemma.msm import MSM as _MSM
+from pyemma.thermo.models.memm import ThermoMSM as _ThermoMSM
 from pyemma.util import types as _types
 from pyemma.util.units import TimeUnit as _TimeUnit
 from pyemma.thermo.estimators._callback import _ConvergenceProgressIndicatorCallBack
@@ -120,7 +120,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
     def __init__(
         self, lag, count_mode='sliding',
         connectivity='summed_count_matrix',
-        ground_state=None,
+        ground_state=None, nstates_full=None,
         maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step',
         nn=None, connectivity_factor=1.0, direct_space=False, N_dtram_accelerations=0,
         callback=None,
@@ -135,6 +135,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
         self.dt_traj = dt_traj
         self.timestep_traj = _TimeUnit(dt_traj)
         self.ground_state = ground_state
+        self.nstates_full = nstates_full
         self.maxiter = maxiter
         self.maxerr = maxerr
         self.direct_space = direct_space
@@ -183,8 +184,13 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
         for b in btrajs:
             _types.assert_array(b, ndim=2, kind='f')
         # find dimensions
-        self.nstates_full = max(_np.max(d) for d in dtrajs_full)+1
-        self.nthermo = max(_np.max(t) for t in ttrajs)+1
+        nstates_full = max(_np.max(d) for d in dtrajs_full) + 1
+        if self.nstates_full is None:
+            self.nstates_full = nstates_full
+        elif self.nstates_full < nstates_full:
+            raise RuntimeError("Found more states (%d) than specified by nstates_full (%d)" % (
+                nstates_full, self.nstates_full))
+        self.nthermo = max(_np.max(t) for t in ttrajs) + 1
         # dimensionality checks
         for t, d, b, in zip(ttrajs, dtrajs_full, btrajs):
             assert t.shape[0] == d.shape[0] == b.shape[0]
@@ -280,10 +286,13 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
                 self.log_lagrangian_mult, self.biased_conf_energies, self.count_matrices, None,
                 K)[self.active_set, :])[:, self.active_set]) for K in range(self.nthermo)]
 
-        self.model_active_set = [_largest_connected_set(msm, directed=False) for msm in fmsms]
+        active_sets = [_largest_connected_set(msm, directed=False) for msm in fmsms]
         fmsms = [_np.ascontiguousarray(
-            (msm[lcc, :])[:, lcc]) for msm, lcc in zip(fmsms, self.model_active_set)]
-        models = [_MSM(msm, dt_model=self.timestep_traj.get_scaled(self.lag)) for msm in fmsms]
+            (msm[lcc, :])[:, lcc]) for msm, lcc in zip(fmsms, active_sets)]
+        models = []
+        for msm, acs in zip(fmsms, active_sets):
+            models.append(_ThermoMSM(
+                msm, acs, self.nstates_full, dt_model=self.timestep_traj.get_scaled(self.lag)))
 
         # set model parameters to self
         self.set_model_params(
