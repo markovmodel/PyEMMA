@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import numpy as _np
 from pyemma.msm import MSM as _MSM
 from pyemma._base.subset import SubSet as _SubSet
 
@@ -26,3 +27,9 @@ class ThermoMSM(_MSM, _SubSet):
             P, pi=pi, reversible=reversible, dt_model=dt_model, neig=neig, ncv=ncv)
         self.active_set = active_set
         self.nstates_full = nstates_full
+    @property
+    def f(self):
+        return self.free_energies
+    @property
+    def free_energies(self):
+        return -_np.log(self.stationary_distribution)
