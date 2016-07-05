@@ -31,8 +31,11 @@ class SubSet(object):
     @property
     def nstates_full(self):
         if not hasattr(self, "_nstates_full"):
-            self._nstates_full = len(self.active_set)
+            self._nstates_full = None
         return self._nstates_full
     @nstates_full.setter
     def nstates_full(self, nstates_full):
-        self._nstates_full = int(nstates_full)
+        try:
+            self._nstates_full = int(nstates_full)
+        except TypeError:
+            self._nstates_full = None
