@@ -25,6 +25,8 @@ class SubSet(object):
         return self._active_set
     @active_set.setter
     def active_set(self, active_set):
+        if active_set is None:
+            active_set = []
         self._active_set = _np.asarray(active_set, dtype=_np.intc)
     @property
     def nstates_full(self):
