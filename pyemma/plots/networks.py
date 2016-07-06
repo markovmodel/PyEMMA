@@ -1,7 +1,6 @@
-
 # This file is part of PyEMMA.
 #
-# Copyright (c) 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+# Copyright (c) 2014-2016 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
 #
 # PyEMMA is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -64,7 +63,7 @@ class NetworkPlot(object):
         <matplotlib.figure.Figure...
 
         """
-        from matplotlib import pylab as plt
+        from matplotlib import pyplot as plt
 
         if A.shape[0] >= 50:
             import warnings
@@ -150,6 +149,7 @@ class NetworkPlot(object):
         textkwargs.setdefault('horizontalalignment', 'center')
         textkwargs.setdefault('verticalalignment', 'center')
         textkwargs.setdefault('color', 'black')
+        # remove the temporary key 'arrow_label_size' as it cannot be parsed by plt.text!
         arrow_label_size = textkwargs.pop('arrow_label_size', textkwargs['size'])
 
         plt = self.plt
@@ -376,8 +376,12 @@ def plot_markov_model(P, pos=None, state_sizes=None, state_scale=1.0,
         The relative figure size used for the padding
     show_frame: boolean (default=False)
         Draw a frame around the network.
-    textkwargs : optional argument for the text of the state labels.
-        See http://matplotlib.org/api/text_api.html#matplotlib.text.Text for more info
+    textkwargs : optional argument for the text of the state and arrow labels.
+        See http://matplotlib.org/api/text_api.html#matplotlib.text.Text for more info. The
+        parameter 'size' refers to the size of the state and arrow labels and overwrites the
+        matplotlib default. The parameter 'arrow_label_size' is only used for the arrow labels;
+        please note that 'arrow_label_size' is not part of matplotlib.text.Text's set of parameters
+        and will raise an exception when passed to matplotlib.text.Text directly.
 
     Returns
     -------
@@ -409,7 +413,7 @@ def plot_markov_model(P, pos=None, state_sizes=None, state_scale=1.0,
         I, J = np.where(F < minflux)
         P[I, J] = 0.0
     plot = NetworkPlot(P, pos=pos)
-    ax = plot.plot_network(state_sizes=state_sizes, state_scale=state_scale,
+    fig = plot.plot_network(state_sizes=state_sizes, state_scale=state_scale,
                            state_colors=state_colors, state_labels=state_labels,
                            arrow_scale=arrow_scale, arrow_curvature=arrow_curvature,
                            arrow_labels=arrow_labels,
@@ -417,7 +421,7 @@ def plot_markov_model(P, pos=None, state_sizes=None, state_scale=1.0,
                            max_width=max_width, max_height=max_height,
                            figpadding=figpadding, xticks=False, yticks=False, show_frame=show_frame,
                            **textkwargs)
-    return ax, plot.pos
+    return fig, plot.pos
 
 
 def plot_flux(flux, pos=None, state_sizes=None, flux_scale=1.0,
@@ -481,8 +485,12 @@ def plot_flux(flux, pos=None, state_sizes=None, flux_scale=1.0,
         Draw a frame around the network.
     show_committor: boolean (default=False)
         Print the committor value on the x-axis.
-    textkwargs : optional argument for the text of the state labels.
-        See http://matplotlib.org/api/text_api.html#matplotlib.text.Text for more info
+    textkwargs : optional argument for the text of the state and arrow labels.
+        See http://matplotlib.org/api/text_api.html#matplotlib.text.Text for more info. The
+        parameter 'size' refers to the size of the state and arrow labels and overwrites the
+        matplotlib default. The parameter 'arrow_label_size' is only used for the arrow labels;
+        please note that 'arrow_label_size' is not part of matplotlib.text.Text's set of parameters
+        and will raise an exception when passed to matplotlib.text.Text directly.
 
     Returns
     -------
@@ -522,7 +530,7 @@ def plot_flux(flux, pos=None, state_sizes=None, flux_scale=1.0,
     if minflux > 0:
         I, J = np.where(F < minflux)
         F[I, J] = 0.0
-    ax = plot.plot_network(state_sizes=state_sizes, state_scale=state_scale,
+    fig = plot.plot_network(state_sizes=state_sizes, state_scale=state_scale,
                            state_colors=state_colors, state_labels=state_labels,
                            arrow_scale=arrow_scale, arrow_curvature=arrow_curvature,
                            arrow_labels=arrow_labels,
@@ -533,7 +541,7 @@ def plot_flux(flux, pos=None, state_sizes=None, flux_scale=1.0,
     if show_committor:
         
         plt.xlabel('Committor probability')
-    return ax, plot.pos
+    return fig, plot.pos
 
 
 def plot_network(weights, pos=None, xpos=None, ypos=None, state_sizes=None,
@@ -598,6 +606,12 @@ def plot_network(weights, pos=None, xpos=None, ypos=None, state_sizes=None,
         Show x ticks
     yticks: boolean (default=False)
         Show y ticks
+    textkwargs : optional argument for the text of the state and arrow labels.
+        See http://matplotlib.org/api/text_api.html#matplotlib.text.Text for more info. The
+        parameter 'size' refers to the size of the state and arrow labels and overwrites the
+        matplotlib default. The parameter 'arrow_label_size' is only used for the arrow labels;
+        please note that 'arrow_label_size' is not part of matplotlib.text.Text's set of parameters
+        and will raise an exception when passed to matplotlib.text.Text directly.
 
     Returns
     -------
@@ -626,7 +640,7 @@ def plot_network(weights, pos=None, xpos=None, ypos=None, state_sizes=None,
 
     """
     plot = NetworkPlot(weights, pos=pos, xpos=xpos, ypos=ypos)
-    ax = plot.plot_network(state_sizes=state_sizes, state_scale=state_scale,
+    fig = plot.plot_network(state_sizes=state_sizes, state_scale=state_scale,
                            state_colors=state_colors, state_labels=state_labels,
                            arrow_scale=arrow_scale, arrow_curvature=arrow_curvature,
                            arrow_labels=arrow_labels,
@@ -634,4 +648,4 @@ def plot_network(weights, pos=None, xpos=None, ypos=None, state_sizes=None,
                            max_width=max_width, max_height=max_height,
                            figpadding=figpadding, xticks=xticks, yticks=yticks, show_frame=show_frame,
                            **textkwargs)
-    return ax, plot.pos
+    return fig, plot.pos
