@@ -7,6 +7,9 @@ Changelog
 *Fixes**:
 
 - coordinates: set chunksize correctly. #846
+- plots: new optional parameter **arrow_label_size** for network plotting functions to use a custom
+  font size for the arrow labels; the default state and arrow label sizes are now determined by the
+  matplotlib default.
 
 2.2.1 (6-21-16)
 ---------------
