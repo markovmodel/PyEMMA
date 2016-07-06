@@ -88,7 +88,8 @@ class NetworkPlot(object):
 
     def _draw_arrow(self, x1, y1, x2, y2, Dx, Dy, label="", width=1.0,
                     arrow_curvature=1.0, color="grey",
-                    patchA=None, patchB=None, shrinkA=0, shrinkB=0):
+                    patchA=None, patchB=None, shrinkA=0, shrinkB=0,
+                    arrow_label_size=None):
         """
         Draws a slightly curved arrow from (x1,y1) to (x2,y2).
         Will allow the given patches at start end end.
@@ -128,7 +129,7 @@ class NetworkPlot(object):
             ((vabs[0] / (vabs[0] + vabs[1]))
              * Dx + (vabs[1] / (vabs[0] + vabs[1])) * Dy)
         ptext = center + offset * vnorm
-        plt.text(ptext[0], ptext[1], label, size=14,
+        plt.text(ptext[0], ptext[1], label, size=arrow_label_size,
                  horizontalalignment='center', verticalalignment='center', zorder=1)
 
     def plot_network(self,
@@ -143,6 +144,14 @@ class NetworkPlot(object):
         The thicknesses and labels of the arrows are taken from the off-diagonal matrix elements in A.
 
         """
+
+        # Set the default values for the text dictionary
+        textkwargs.setdefault('size', None)
+        textkwargs.setdefault('horizontalalignment', 'center')
+        textkwargs.setdefault('verticalalignment', 'center')
+        textkwargs.setdefault('color', 'black')
+        arrow_label_size = textkwargs.pop('arrow_label_size', textkwargs['size'])
+
         plt = self.plt
 
         if self.pos is None:
@@ -179,10 +188,6 @@ class NetworkPlot(object):
             figsize = (Dx / Dy * max_height, max_height)
         fig = plt.gcf()
         fig.set_size_inches(figsize, forward=True)
-        # font sizes
-        from matplotlib import rcParams
-        old_fontsize = rcParams['font.size']
-        rcParams['font.size'] = 20
         # remove axis labels
         frame = plt.gca()
         if not xticks:
@@ -220,14 +225,7 @@ class NetworkPlot(object):
             L[:, :] = ''
             arrow_label_format = '%s'
         else:
-            rcParams['font.size'] = old_fontsize
             raise ValueError('invalid arrow labels')
-
-        # Set the default values for the text dictionary
-        textkwargs.setdefault('size', 14)
-        textkwargs.setdefault('horizontalalignment', 'center')
-        textkwargs.setdefault('verticalalignment', 'center')
-        textkwargs.setdefault('color','black')
 
         # draw circles
         circles = []
@@ -254,7 +252,8 @@ class NetworkPlot(object):
                                      width=arrow_scale * self.A[i, j],
                                      arrow_curvature=arrow_curvature,
                                      patchA=circles[i], patchB=circles[j],
-                                     shrinkA=3, shrinkB=0)
+                                     shrinkA=3, shrinkB=0,
+                                     arrow_label_size=arrow_label_size)
                 if (abs(self.A[j, i]) > 0):
                     self._draw_arrow(self.pos[j, 0], self.pos[j, 1],
                                      self.pos[i, 0], self.pos[i, 1], Dx, Dy,
@@ -262,12 +261,12 @@ class NetworkPlot(object):
                                      width=arrow_scale * self.A[j, i],
                                      arrow_curvature=arrow_curvature,
                                      patchA=circles[j], patchB=circles[i],
-                                     shrinkA=3, shrinkB=0)
+                                     shrinkA=3, shrinkB=0,
+                                     arrow_label_size=arrow_label_size)
 
         # plot
         plt.xlim(xmin, xmax)
         plt.ylim(ymin, ymax)
-        rcParams['font.size'] = old_fontsize
         return fig
 
     def _find_best_positions(self, G):
@@ -543,7 +542,7 @@ def plot_network(weights, pos=None, xpos=None, ypos=None, state_sizes=None,
                 arrow_label_format='%2.e', max_width=12, max_height=12,
                 figpadding=0.2, attribute_to_plot='net_flux',
                 show_frame=False, xticks=False, yticks=False,
-                ):
+                **textkwargs):
     r"""Network representation of given matrix
 
     This visualization is not optimized for large networks. It is meant to be
@@ -633,5 +632,6 @@ def plot_network(weights, pos=None, xpos=None, ypos=None, state_sizes=None,
                            arrow_labels=arrow_labels,
                            arrow_label_format=arrow_label_format,
                            max_width=max_width, max_height=max_height,
-                           figpadding=figpadding, xticks=xticks, yticks=yticks, show_frame=show_frame)
+                           figpadding=figpadding, xticks=xticks, yticks=yticks, show_frame=show_frame,
+                           **textkwargs)
     return ax, plot.pos
