@@ -31,7 +31,7 @@ class SubSet(object):
     @property
     def nstates_full(self):
         if not hasattr(self, "_nstates_full"):
-            self._nstates_full = None
+            self._nstates_full = len(self.active_set)
         return self._nstates_full
     @nstates_full.setter
     def nstates_full(self, nstates_full):
@@ -39,3 +39,85 @@ class SubSet(object):
             self._nstates_full = int(nstates_full)
         except TypeError:
             self._nstates_full = None
+
+
+def print_args(func):
+    def wrap(*args, **kwargs):
+        print("called %s with:" % func)
+        print("args:", args)
+        if kwargs:
+            print("kw:", kwargs)
+        return func(*args, **kwargs)
+    return wrap
+
+
+@print_args
+def globalise(data, axis, active_set, default_value, n_centers):
+    shape_org = _np.shape(data)
+    ndim = data.ndim
+    n = n_centers if ndim == 1 else n_centers*shape_org[1]
+    array = _np.asarray([default_value]).repeat(n)
+    if ndim == 1:
+        array[active_set] = data
+    elif ndim == 2:
+        array = array.reshape(-1, shape_org[1])
+        if axis == 0:
+            array[active_set, :] = data
+        elif axis == 1:
+            array[:, active_set] = data
+        else:
+            raise NotImplementedError()
+    else:
+        raise NotImplementedError()
+    return array
+
+
+def add_full_state_methods(class_with_globalize_methods):
+    assert hasattr(class_with_globalize_methods, 'active_set')
+    assert hasattr(class_with_globalize_methods, 'nstates_full')
+    from .estimator import _call_member
+    from types import MethodType
+
+    def mk_f(name, default_value, axis):
+        def alias_to_full_state(self, *args, **kw):
+            data = _call_member(self, name, *args, **kw)
+            data = _np.asarray(data)
+            return globalise(data, axis, self.active_set, default_value, self.nstates_full)
+        return alias_to_full_state
+
+    original_methods = class_with_globalize_methods.__dict__.copy()
+    for name, method in original_methods.iteritems():
+        if not hasattr(method, '_map_to_full_state_def_arg'):
+            continue
+
+        default_value = method._map_to_full_state_def_arg
+        axis = method._map_to_full_state_along_axis
+        alias_to_full_state = mk_f(name, default_value, axis)
+
+        alias_to_full_state.__doc__ = method.__doc__
+        name += "_full_state"
+        new_method = MethodType(alias_to_full_state, None, class_with_globalize_methods)
+        setattr(class_with_globalize_methods, name, new_method)
+    return class_with_globalize_methods
+
+
+class map_to_full_state(object):
+    """ adds a copy of decorated method/property to be passed to the full state interpolation function
+    Parameters
+    ----------
+    default_arg: object
+        the default argument to interpolate missing values with.
+    extend_along_axis : int, default=0
+        extend along given axis for multi-dimensional data.
+    """
+    def __init__(self, default_arg, extend_along_axis=0):
+        self.default_arg = default_arg
+        self.extend_along_axis = extend_along_axis
+
+    def __call__(self, func):
+        if isinstance(func, property):
+            raise TypeError("property decorator has to be given first.")
+
+        func._map_to_full_state_def_arg = self.default_arg
+        func._map_to_full_state_along_axis = self.extend_along_axis
+        return func

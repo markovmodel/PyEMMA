@@ -85,7 +85,7 @@ def param_grid(pargrid):
     return ParameterGrid(pargrid)
 
 
-def _call_member(obj, name, args=None, failfast=True):
+def _call_member(obj, name, failfast=True, *args, **kwargs):
     """ Calls the specified method, property or attribute of the given object
 
     Parameters
@@ -94,29 +94,33 @@ def _call_member(obj, name, args=None, failfast=True):
         The object that will be used
     name : str
         Name of method, property or attribute
-    args : dict, optional, default=None
-        Arguments to be passed to the method (if any)
     failfast : bool
         If True, will raise an exception when trying a method that doesn't exist. If False, will simply return None
         in that case
+    args : list, optional, default=[]
+        Arguments to be passed to the method (if any)
+
+    kwargs: dict
     """
     try:
-        method = getattr(obj, name)
+        attr = getattr(obj, name)
     except AttributeError as e:
         if failfast:
             raise e
         else:
             return None
-
-    if inspect.ismethod(object):  # call function
-        if args is None:
-            return method()
+    try:
+        if inspect.ismethod(attr):  # call function
+            return attr(*args, **kwargs)
+        elif isinstance(attr, property):  # call property
+                return obj.attr
+        else:  # now it's an Attribute, so we can just return its value
+            return attr
+    except Exception as e:
+        if failfast:
+            raise e
         else:
-            return method(*args)
-    elif isinstance(type(obj).name, property):  # call property
-        return method
-    else:  # now it's an Attribute, so we can just return its value
-        return method
+            return None
 
 
 def _estimate_param_scan_worker(estimator, params, X, evaluate, evaluate_args,
