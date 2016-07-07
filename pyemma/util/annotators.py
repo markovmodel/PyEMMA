@@ -33,19 +33,21 @@ __all__ = ['alias',
 
 def fix_docs(cls):
     """ copies docstrings of derived attributes (methods, properties, attrs) from parent classes."""
-    for name, func in vars(cls).items():
-        if not func.__doc__ and not name.startswith('_'):
-            for parent in cls.mro()[1:]:
-                parfunc = getattr(parent, name, None)
-                if parfunc and getattr(parfunc, '__doc__', None):
-                    if isinstance(func, property):
-                        # copy property, since its doc attribute is read-only
-                        new_prop = property(fget=func.fget, fset=func.fset,
-                                            fdel=func.fdel, doc=parfunc.__doc__)
-                        cls.func = new_prop
-                    else:
-                        func.__doc__ = parfunc.__doc__
-                    break
+    public_undocumented_members = {name: func for name, func in vars(cls).items()
+                                   if not name.startswith('_') and not func.__doc__}
+
+    for name, func in public_undocumented_members.iteritems():
+        for parent in cls.mro()[1:]:
+            parfunc = getattr(parent, name, None)
+            if parfunc and getattr(parfunc, '__doc__', None):
+                if isinstance(func, property):
+                    # copy property, since its doc attribute is read-only
+                    new_prop = property(fget=func.fget, fset=func.fset,
+                                        fdel=func.fdel, doc=parfunc.__doc__)
+                    cls.func = new_prop
+                else:
+                    func.__doc__ = parfunc.__doc__
+                break
     return cls
 
 
@@ -171,6 +173,10 @@ def deprecated(*optional_message):
             lineno=lineno
         )
         return func(*args, **kw)
+
+    # add deprecation notice to func docstring:
+
+
     if len(optional_message) == 1 and callable(optional_message[0]):
         # this is the function itself, decorate!
         msg = ""
