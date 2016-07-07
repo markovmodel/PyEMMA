@@ -92,6 +92,48 @@ class Iterable(six.with_metaclass(ABCMeta, ProgressReporter, Loggable)):
         self._mapping_to_mem_active = False
 
     def iterator(self, stride=1, lag=0, chunk=None, return_trajindex=True, cols=None):
+        """ creates an iterator to stream over the (transformed) data.
+
+        If your data is too large to fit into memory and you want to incrementally compute
+        some quantities on it, you can create an iterator on a reader or transformer (eg. TICA)
+        to avoid memory overflows.
+
+        Parameters
+        ----------
+
+        stride : int, default=1
+            Take only every stride'th frame.
+        lag: int, default=0
+            how many frame to omit for each file.
+        chunk: int, default=None
+            How many frames to process at once. If not given obtain the chunk size
+            from the source.
+        return_trajindex: boolean, default=True
+            a chunk of data if return_trajindex is False, otherwise a tuple of (trajindex, data).
+        cols: array like, default=None
+            return only the given columns.
+
+        Returns
+        -------
+        iter : instance of DataSourceIterator
+            a implementation of a DataSourceIterator to stream over the data
+
+        Examples
+        --------
+
+        >>> from pyemma.coordinates import source; import numpy as np
+        >>> data = [np.arange(3), np.arange(4, 7)]
+        >>> reader = source(data)
+        >>> iterator = reader.iterator(chunk=1)
+        >>> for array_index, chunk in iterator:
+        ...     print(array_index, chunk)
+        0 [[0]]
+        0 [[1]]
+        0 [[2]]
+        1 [[4]]
+        1 [[5]]
+        1 [[6]]
+        """
         if self.in_memory:
             from pyemma.coordinates.data.data_in_memory import DataInMemory
             return DataInMemory(self._Y).iterator(
@@ -221,7 +263,7 @@ class Iterable(six.with_metaclass(ABCMeta, ProgressReporter, Loggable)):
         >>> filename = "distances_{itraj}.dat"
         >>> with TemporaryDirectory() as td:
         ...    os.chdir(td)
-        ...    reader.write_to_csv(filename, header='', delim=';')
+        ...    reader.write_to_csv(filename, header='', delimiter=';')
         ...    print(os.listdir('.'))
         ['distances_2.dat', 'distances_1.dat', 'distances_0.dat']
         """
