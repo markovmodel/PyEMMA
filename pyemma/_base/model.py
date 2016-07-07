@@ -165,7 +165,7 @@ class SampledModel(Model):
     def sample_f(self, f, *args, **kwargs):
         r"""Evaluated method f for all samples
 
-        Calls f(*args, **kwargs) on all samples.
+        Calls f(\*args, \*\*kwargs) on all samples.
 
         Parameters
         ----------
@@ -190,7 +190,7 @@ class SampledModel(Model):
     def sample_mean(self, f, *args, **kwargs):
         r"""Sample mean of numerical method f over all samples
 
-        Calls f(*args, **kwargs) on all samples and computes the mean.
+        Calls f(\*args, \*\*kwargs) on all samples and computes the mean.
         f must return a numerical value or an ndarray.
 
         Parameters
@@ -214,7 +214,7 @@ class SampledModel(Model):
     def sample_std(self, f, *args, **kwargs):
         r"""Sample standard deviation of numerical method f over all samples
 
-        Calls f(*args, **kwargs) on all samples and computes the standard deviation.
+        Calls f(\*args, \*\*kwargs) on all samples and computes the standard deviation.
         f must return a numerical value or an ndarray.
 
         Parameters
@@ -238,7 +238,7 @@ class SampledModel(Model):
     def sample_conf(self, f, *args, **kwargs):
         r"""Sample confidence interval of numerical method f over all samples
 
-        Calls f(*args, **kwargs) on all samples and computes the confidence interval.
+        Calls f(\*args, \*\*kwargs) on all samples and computes the confidence interval.
         Size of confidence interval is given in the construction of the
         SampledModel. f must return a numerical value or an ndarray.
 

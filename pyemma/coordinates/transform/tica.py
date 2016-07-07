@@ -22,17 +22,16 @@ Created on 19.01.2015
 
 from __future__ import absolute_import
 
+from math import log
+
+import numpy as np
 from decorator import decorator
-from math import ceil, log
 
 from pyemma._base.model import Model
 from pyemma.coordinates.estimators.covar.running_moments import running_covar
-from pyemma.util.annotators import doc_inherit, deprecated
+from pyemma.util.annotators import fix_docs, deprecated
 from pyemma.util.linalg import eig_corr
 from pyemma.util.reflection import get_default_args
-
-import numpy as np
-
 from .transformer import StreamingTransformer
 
 
@@ -40,7 +39,10 @@ __all__ = ['TICA']
 
 
 class TICAModel(Model):
-    pass
+    def set_model_params(self, mean, cov, cov_tau):
+        self.mean = mean
+        self.cov = cov
+        self.cov_tau = cov_tau
 
 
 @decorator
@@ -52,6 +54,7 @@ def _lazy_estimation(func, *args, **kw):
     return func(*args, **kw)
 
 
+@fix_docs
 class TICA(StreamingTransformer):
     r""" Time-lagged independent component analysis (TICA)"""
 
@@ -145,7 +148,6 @@ class TICA(StreamingTransformer):
     def lag(self, new_tau):
         self._lag = new_tau
 
-    @doc_inherit
     def describe(self):
         try:
             dim = self.dimension()
@@ -180,6 +182,7 @@ class TICA(StreamingTransformer):
     @property
     @deprecated('please use the "mean" property')
     def mu(self):
+        """DEPRECATED: please use the "mean" property"""
         return self.mean
 
     @mean.setter
@@ -188,6 +191,7 @@ class TICA(StreamingTransformer):
 
     @property
     def cov(self):
+        """ covariance matrix of input data. """
         return self._model.cov
 
     @cov.setter
@@ -196,6 +200,7 @@ class TICA(StreamingTransformer):
 
     @property
     def cov_tau(self):
+        """ covariance matrix of time-lagged input data. """
         return self._model.cov_tau
 
     @cov_tau.setter
@@ -207,6 +212,17 @@ class TICA(StreamingTransformer):
         self._model.cov = value
 
     def partial_fit(self, X):
+        """ incrementally update the covariances and mean.
+
+        Parameters
+        ----------
+        X: array, list of arrays, PyEMMA reader
+            input data.
+
+        Notes
+        -----
+        The projection matrix is first being calculated upon its first access.
+        """
         from pyemma.coordinates import source
         iterable = source(X)
 
@@ -231,13 +247,16 @@ class TICA(StreamingTransformer):
                 self._covar.storage_XX.nsave = nsave
                 self._covar.storage_XY.nsave = nsave
 
-    def _estimate(self, iterable, **kw):
+    def estimate(self, X, **kwargs):
         r"""
         Chunk-based parameterization of TICA. Iterates over all data and estimates
         the mean, covariance and time lagged covariance. Finally, the
         generalized eigenvalue problem is solved to determine
         the independent components.
         """
+        return super(TICA, self).estimate(X, **kwargs)
+
+    def _estimate(self, iterable, **kw):
         partial_fit = 'partial' in kw
         indim = iterable.dimension()
         if not indim:

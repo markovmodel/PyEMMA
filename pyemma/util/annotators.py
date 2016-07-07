@@ -15,26 +15,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-"""
-doc_inherit decorator
-
-Usage:
-
-class Foo(object):
-    def foo(self):
-        "Frobber"
-        pass
-
-class Bar(Foo):
-    @doc_inherit
-    def foo(self):
-        pass
-
-Now, Bar.foo.__doc__ == Bar().foo.__doc__ == Foo.foo.__doc__ == "Frobber"
-"""
 from __future__ import absolute_import
-from functools import wraps
 import warnings
 from decorator import decorator, decorate
 from inspect import stack
@@ -44,59 +25,29 @@ from pyemma.util.exceptions import PyEMMA_DeprecationWarning
 __all__ = ['alias',
            'aliased',
            'deprecated',
-           'doc_inherit',
            'shortcut',
+           'fix_docs',
+           'estimation_required',
            ]
 
 
-class DocInherit(object):
+def fix_docs(cls):
+    """ copies docstrings of derived attributes (methods, properties, attrs) from parent classes."""
+    for name, func in vars(cls).items():
+        if not func.__doc__ and not name.startswith('_'):
+            for parent in cls.mro()[1:]:
+                parfunc = getattr(parent, name, None)
+                if parfunc and getattr(parfunc, '__doc__', None):
+                    if isinstance(func, property):
+                        # copy property, since its doc attribute is read-only
+                        new_prop = property(fget=func.fget, fset=func.fset,
+                                            fdel=func.fdel, doc=parfunc.__doc__)
+                        cls.func = new_prop
+                    else:
+                        func.__doc__ = parfunc.__doc__
+                    break
+    return cls
 
-    """
-    Docstring inheriting method descriptor
-
-    The class itself is also used as a decorator
-    """
-
-    def __init__(self, mthd):
-        self.mthd = mthd
-        self.name = mthd.__name__
-
-    def __get__(self, obj, cls):
-        if obj:
-            return self.get_with_inst(obj, cls)
-        else:
-            return self.get_no_inst(cls)
-
-    def get_with_inst(self, obj, cls):
-
-        overridden = getattr(super(cls, obj), self.name, None)
-
-        @wraps(self.mthd, assigned=('__name__', '__module__'))
-        def f(*args, **kwargs):
-            return self.mthd(obj, *args, **kwargs)
-
-        return self.use_parent_doc(f, overridden)
-
-    def get_no_inst(self, cls):
-
-        for parent in cls.__mro__[1:]:
-            overridden = getattr(parent, self.name, None)
-            if overridden:
-                break
-
-        @wraps(self.mthd, assigned=('__name__', '__module__'))
-        def f(*args, **kwargs):
-            return self.mthd(*args, **kwargs)
-
-        return self.use_parent_doc(f, overridden)
-
-    def use_parent_doc(self, func, source):
-        if source is None:
-            raise NameError("Can't find '%s' in parents" % self.name)
-        func.__doc__ = source.__doc__
-        return func
-
-doc_inherit = DocInherit
 
 class alias(object):
     """

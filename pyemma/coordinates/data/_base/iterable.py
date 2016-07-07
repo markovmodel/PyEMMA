@@ -43,6 +43,7 @@ class Iterable(six.with_metaclass(ABCMeta, ProgressReporter, Loggable)):
 
     @property
     def default_chunksize(self):
+        """ How much data will be processed at once, in case no chunksize has been provided."""
         return self._default_chunksize
 
     @property
@@ -107,6 +108,28 @@ class Iterable(six.with_metaclass(ABCMeta, ProgressReporter, Loggable)):
         return it
 
     def get_output(self, dimensions=slice(0, None), stride=1, skip=0, chunk=None):
+        """Maps all input data of this transformer and returns it as an array or list of arrays
+
+        Parameters
+        ----------
+        dimensions : list-like of indexes or slice, default=all
+           indices of dimensions you like to keep.
+        stride : int, default=1
+           only take every n'th frame.
+        skip : int, default=0
+            initially skip n frames of each file.
+        chunk: int, default=None
+            How many frames to process at once. If not given obtain the chunk size
+            from the source.
+
+        Returns
+        -------
+        output : list of ndarray(T_i, d)
+           the mapped data, where T is the number of time steps of the input data, or if stride > 1,
+           floor(T_in / stride). d is the output dimension of this transformer.
+           If the input consists of a list of trajectories, Y will also be a corresponding list of trajectories
+
+        """
         if isinstance(dimensions, int):
             ndim = 1
             dimensions = slice(dimensions, dimensions + 1)

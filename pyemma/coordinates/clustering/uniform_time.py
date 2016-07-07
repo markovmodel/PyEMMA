@@ -21,15 +21,16 @@ from __future__ import absolute_import, division
 
 import math
 
-from pyemma.coordinates.clustering.interface import AbstractClustering
-
 import numpy as np
 
+from pyemma.coordinates.clustering.interface import AbstractClustering
+from pyemma.util.annotators import fix_docs
 
 __author__ = 'noe'
 __all__ = ['UniformTimeClustering']
 
 
+@fix_docs
 class UniformTimeClustering(AbstractClustering):
     r"""Uniform time clustering"""
 
