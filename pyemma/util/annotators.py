@@ -36,7 +36,7 @@ def fix_docs(cls):
     public_undocumented_members = {name: func for name, func in vars(cls).items()
                                    if not name.startswith('_') and not func.__doc__}
 
-    for name, func in public_undocumented_members.iteritems():
+    for name, func in public_undocumented_members.items():
         for parent in cls.mro()[1:]:
             parfunc = getattr(parent, name, None)
             if parfunc and getattr(parfunc, '__doc__', None):
