@@ -192,7 +192,7 @@ class MaximumLikelihoodMSM(_Estimator, _MSM):
         lcc = msmest.largest_connected_set(C_pos, directed=False)
         return pos[lcc]
 
-    def _estimate(self, dtrajs):
+    def estimate(self, dtrajs, **parms):
         """
         Parameters
         ----------
@@ -207,6 +207,9 @@ class MaximumLikelihoodMSM(_Estimator, _MSM):
         MSM : :class:`pyemma.msm.MaximumlikelihoodMSM`
 
         """
+        return super(MaximumLikelihoodMSM, self).estimate(dtrajs, **parms)
+
+    def _estimate(self, dtrajs):
         # ensure right format
         dtrajs = ensure_dtraj_list(dtrajs)
         # harvest discrete statistics

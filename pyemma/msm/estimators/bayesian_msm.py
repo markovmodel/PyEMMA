@@ -142,7 +142,7 @@ class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporter):
         self.conf = conf
         self.show_progress = show_progress
 
-    def estimate(self, dtrajs):
+    def estimate(self, dtrajs, **kw):
         """
 
         Parameters
@@ -151,13 +151,16 @@ class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporter):
             discrete trajectories, stored as integer ndarrays (arbitrary size)
             or a single ndarray for only one trajectory.
 
+        kw : dict
+            Other Parameters. See documentation of class.
+
         Return
         ------
         msm : :class:`BayesianMSM <pyemma.msm.BayesianMSM>`
             Estimated Hidden Markov state model
 
         """
-        return super(BayesianMSM, self).estimate(dtrajs)
+        return super(BayesianMSM, self).estimate(dtrajs, **kw)
 
     def _estimate(self, dtrajs):
         # ensure right format
