@@ -17,19 +17,22 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import, print_function
-from six.moves import range
 
 import numpy as _np
-from pyemma.util.types import ensure_dtraj_list
+from six.moves import range
+
+from pyemma._base.progress import ProgressReporter
 from pyemma.msm.estimators.maximum_likelihood_hmsm import MaximumLikelihoodHMSM as _MaximumLikelihoodHMSM
 from pyemma.msm.models.hmsm import HMSM as _HMSM
 from pyemma.msm.models.hmsm_sampled import SampledHMSM as _SampledHMSM
-from pyemma._base.progress import ProgressReporter
+from pyemma.util.annotators import fix_docs
+from pyemma.util.types import ensure_dtraj_list
 from pyemma.util.units import TimeUnit
 
 __author__ = 'noe'
 
 
+@fix_docs
 class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporter):
     r"""Estimator for a Bayesian Hidden Markov state model"""
 
@@ -64,17 +67,19 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporter):
             the stationary distribution of the transition matrix).
             Currently implements different versions of the Dirichlet prior that
             is conjugate to the Dirichlet distribution of p0. p0 is sampled from:
+
             .. math:
                 p0 \sim \prod_i (p0)_i^{a_i + n_i - 1}
             where :math:`n_i` are the number of times a hidden trajectory was in
             state :math:`i` at time step 0 and :math:`a_i` is the prior count.
             Following options are available:
-            |  'mixed' (default),  :math:`a_i = p_{0,init}`, where :math:`p_{0,init}`
-                is the initial distribution of initial_model.
-            |  ndarray(n) or float,
-                the given array will be used as A.
-            |  'uniform',  :math:`a_i = 1`
-            |  None,  :math:`a_i = 0`. This option ensures coincidence between
+
+            * 'mixed' (default),  :math:`a_i = p_{0,init}`, where :math:`p_{0,init}`
+              is the initial distribution of initial_model.
+            *  ndarray(n) or float,
+               the given array will be used as A.
+            *  'uniform',  :math:`a_i = 1`
+            *   None,  :math:`a_i = 0`. This option ensures coincidence between
                 sample mean an MLE. Will sooner or later lead to sampling problems,
                 because as soon as zero trajectories are drawn from a given state,
                 the sampler cannot recover and that state will never serve as a starting
@@ -86,22 +91,24 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporter):
             Currently implements Dirichlet priors if reversible=False and reversible
             transition matrix priors as described in [3]_ if reversible=True. For the
             nonreversible case the posterior of transition matrix :math:`P` is:
+
             .. math:
                 P \sim \prod_{i,j} p_{ij}^{b_{ij} + c_{ij} - 1}
             where :math:`c_{ij}` are the number of transitions found for hidden
             trajectories and :math:`b_{ij}` are prior counts.
-            |  'mixed' (default),  :math:`b_{ij} = p_{ij,init}`, where :math:`p_{ij,init}`
-                is the transition matrix of initial_model. That means one prior
-                count will be used per row.
-            |  ndarray(n, n) or broadcastable,
-                the given array will be used as B.
-            |  'uniform',  :math:`b_{ij} = 1`
-            |  None,  :math:`b_ij = 0`. This option ensures coincidence between
-                sample mean an MLE. Will sooner or later lead to sampling problems,
-                because as soon as a transition :math:`ij` will not occur in a
-                sample, the sampler cannot recover and that transition will never
-                be sampled again. This option is not recommended unless you have
-                a small HMM and a lot of data.
+
+            * 'mixed' (default),  :math:`b_{ij} = p_{ij,init}`, where :math:`p_{ij,init}`
+              is the transition matrix of initial_model. That means one prior
+              count will be used per row.
+            * ndarray(n, n) or broadcastable,
+              the given array will be used as B.
+            * 'uniform',  :math:`b_{ij} = 1`
+            * None,  :math:`b_ij = 0`. This option ensures coincidence between
+              sample mean an MLE. Will sooner or later lead to sampling problems,
+              because as soon as a transition :math:`ij` will not occur in a
+              sample, the sampler cannot recover and that transition will never
+              be sampled again. This option is not recommended unless you have
+              a small HMM and a lot of data.
         init_hmsm : :class:`HMSM <pyemma.msm.models.HMSM>`, default=None
             Single-point estimate of HMSM object around which errors will be evaluated.
             If None is give an initial estimate will be automatically generated using the
@@ -140,14 +147,6 @@ class BayesianHMSM(_MaximumLikelihoodHMSM, _SampledHMSM, ProgressReporter):
         self.show_progress = show_progress
 
     def _estimate(self, dtrajs):
-        """
-
-        Return
-        ------
-        hmsm : :class:`EstimatedHMSM <pyemma.msm.estimators.hmsm_estimated.EstimatedHMSM>`
-            Estimated Hidden Markov state model
-
-        """
         # ensure right format
         dtrajs = ensure_dtraj_list(dtrajs)
 

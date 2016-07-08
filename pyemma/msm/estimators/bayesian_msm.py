@@ -17,17 +17,20 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import
+
 from six.moves import range
+
+from pyemma._base.progress import ProgressReporter
+from pyemma.msm.estimators.maximum_likelihood_msm import MaximumLikelihoodMSM as _MLMSM
+from pyemma.msm.models.msm import MSM as _MSM
+from pyemma.msm.models.msm_sampled import SampledMSM as _SampledMSM
+from pyemma.util.annotators import fix_docs
+from pyemma.util.types import ensure_dtraj_list
 
 __author__ = 'noe'
 
-from pyemma.msm.models.msm import MSM as _MSM
-from pyemma.msm.estimators.maximum_likelihood_msm import MaximumLikelihoodMSM as _MLMSM
-from pyemma.msm.models.msm_sampled import SampledMSM as _SampledMSM
-from pyemma.util.types import ensure_dtraj_list
-from pyemma._base.progress import ProgressReporter
 
-
+@fix_docs
 class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporter):
     r"""Bayesian Markov state model estimator"""
 
@@ -139,7 +142,7 @@ class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporter):
         self.conf = conf
         self.show_progress = show_progress
 
-    def _estimate(self, dtrajs):
+    def estimate(self, dtrajs):
         """
 
         Parameters
@@ -150,10 +153,13 @@ class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporter):
 
         Return
         ------
-        hmsm : :class:`EstimatedHMSM <pyemma.msm.estimators.hmsm_estimated.EstimatedHMSM>`
+        msm : :class:`BayesianMSM <pyemma.msm.BayesianMSM>`
             Estimated Hidden Markov state model
 
         """
+        return super(BayesianMSM, self).estimate(dtrajs)
+
+    def _estimate(self, dtrajs):
         # ensure right format
         dtrajs = ensure_dtraj_list(dtrajs)
         # conduct MLE estimation (superclass) first

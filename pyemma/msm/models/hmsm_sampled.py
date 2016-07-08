@@ -27,12 +27,8 @@ and provides them for later access.
 
 from __future__ import absolute_import
 
-__docformat__ = "restructuredtext en"
-
-import numpy as _np
-
-from pyemma.msm.models.hmsm import HMSM as _HMSM
 from pyemma._base.model import SampledModel as _SampledModel
+from pyemma.msm.models.hmsm import HMSM as _HMSM
 from pyemma.util.types import is_iterable
 
 

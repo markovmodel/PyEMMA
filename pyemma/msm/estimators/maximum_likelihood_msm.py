@@ -22,7 +22,7 @@ from six.moves import range
 import numpy as _np
 from msmtools import estimation as msmest
 
-from pyemma.util.annotators import alias, aliased
+from pyemma.util.annotators import alias, aliased, fix_docs
 from pyemma.util.types import ensure_dtraj_list
 from pyemma._base.estimator import Estimator as _Estimator
 from pyemma.msm.estimators._dtraj_stats import DiscreteTrajectoryStats as _DiscreteTrajectoryStats
@@ -30,6 +30,8 @@ from pyemma.msm.models.msm import MSM as _MSM
 from pyemma.util.units import TimeUnit as _TimeUnit
 from pyemma.util import types as _types
 
+
+@fix_docs
 @aliased
 class MaximumLikelihoodMSM(_Estimator, _MSM):
     r"""Maximum likelihood estimator for MSMs given discrete trajectory statistics"""
@@ -202,7 +204,7 @@ class MaximumLikelihoodMSM(_Estimator, _MSM):
 
         Returns
         -------
-        MSM : :class:`pyemma.msm.EstimatedMSM` or :class:`pyemma.msm.MSM`
+        MSM : :class:`pyemma.msm.MaximumlikelihoodMSM`
 
         """
         # ensure right format

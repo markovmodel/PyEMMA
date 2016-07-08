@@ -18,7 +18,7 @@
 
 from __future__ import absolute_import
 # from six.moves import range
-from pyemma.util.annotators import alias, aliased
+from pyemma.util.annotators import alias, aliased, fix_docs
 
 import numpy as _np
 import msmtools.estimation as msmest
@@ -29,16 +29,11 @@ from pyemma.util import types as _types
 from pyemma.util.units import TimeUnit
 
 
-# TODO: This parameter was in the docstring but is not used:
-#     store_data : bool
-#         True: estimate() returns an :class:`pyemma.msm.EstimatedMSM` object
-#         with discrete trajectories and counts stored. False: estimate() returns
-#         a plain :class:`pyemma.msm.MSM` object that only contains the
-#         transition matrix and quantities derived from it.
 # TODO: currently, it's not possible to start with disconnected matrices.
 
 
 @aliased
+@fix_docs
 class MaximumLikelihoodHMSM(_Estimator, _HMSM):
     r"""Maximum likelihood estimator for a Hidden MSM given a MSM"""
 
@@ -64,9 +59,10 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
             stride in order to have statistically uncorrelated trajectories.
             Setting stride = 'effective' uses the largest neglected timescale as
             an estimate for the correlation time and sets the stride accordingly
-        msm_init : str or :class:`MSM <pyemma.msm.estimators.msm_estimated.MSM>`
+        msm_init : str or :class:`MSM <pyemma.msm.MSM>`
             MSM object to initialize the estimation, or one of following keywords:
-            * 'largest-strong' | None (default) : Estimate MSM on the largest
+
+            * 'largest-strong' or None (default) : Estimate MSM on the largest
                 strongly connected set and use spectral clustering to generate an
                 initial HMM
             * 'all' : Estimate MSM(s) on the full state space to initialize the
@@ -86,12 +82,12 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
             matrix, stationary distribution, etc) are only defined on this subset
             and are correspondingly smaller than nstates.
             Following modes are available:
+
             * None or 'all' : The active set is the full set of states.
               Estimation is done on all weakly connected subsets separately. The
               resulting transition matrix may be disconnected.
             * 'largest' : The active set is the largest reversibly connected set.
-            * 'populous' : The active set is the reversibly connected set with
-               most counts.
+            * 'populous' : The active set is the reversibly connected set with most counts.
         mincount_connectivity : float or '1/n'
             minimum number of counts to consider a connection between two states.
             Counts lower than that will count zero in the connectivity check and
@@ -146,20 +142,8 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
         self.accuracy = accuracy
         self.maxit = maxit
 
-
     #TODO: store_data is mentioned but not implemented or used!
     def _estimate(self, dtrajs):
-        """
-
-        Parameters
-        ----------
-
-        Return
-        ------
-        hmsm : :class:`EstimatedHMSM <pyemma.msm.estimators.hmsm_estimated.EstimatedHMSM>`
-            Estimated Hidden Markov state model
-
-        """
         import bhmm
         # ensure right format
         dtrajs = _types.ensure_dtraj_list(dtrajs)
@@ -494,10 +478,6 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
         """
         return self.submodel(mincount_connectivity=mincount_connectivity)
 
-    ################################################################################
-    # TODO: there is redundancy between this code and EstimatedMSM
-    ################################################################################
-
     def trajectory_weights(self):
         r"""Uses the HMSM to assign a probability weight to each trajectory frame.
 
@@ -506,11 +486,13 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
         Returns a list of weight arrays, one for each trajectory, and with a number of elements equal to
         trajectory frames. Given :math:`N` trajectories of lengths :math:`T_1` to :math:`T_N`, this function
         returns corresponding weights:
+
         .. math::
 
             (w_{1,1}, ..., w_{1,T_1}), (w_{N,1}, ..., w_{N,T_N})
 
         that are normalized to one:
+
         .. math::
 
             \sum_{i=1}^N \sum_{t=1}^{T_i} w_{i,t} = 1
@@ -518,12 +500,14 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
         Suppose you are interested in computing the expectation value of a function :math:`a(x)`, where :math:`x`
         are your input configurations. Use this function to compute the weights of all input configurations and
         obtain the estimated expectation by:
+
         .. math::
 
             \langle a \rangle = \sum_{i=1}^N \sum_{t=1}^{T_i} w_{i,t} a(x_{i,t})
 
         Or if you are interested in computing the time-lagged correlation between functions :math:`a(x)` and
         :math:`b(x)` you could do:
+
         .. math::
 
             \langle a(t) b(t+\tau) \rangle_t = \sum_{i=1}^N \sum_{t=1}^{T_i} w_{i,t} a(x_{i,t}) a(x_{i,t+\tau})
@@ -532,6 +516,7 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
         -------
         The normalized trajectory weights. Given :math:`N` trajectories of lengths :math:`T_1` to :math:`T_N`,
         returns the corresponding weights:
+
         .. math::
 
             (w_{1,1}, ..., w_{1,T_1}), (w_{N,1}, ..., w_{N,T_N})
@@ -567,7 +552,7 @@ class MaximumLikelihoodHMSM(_Estimator, _HMSM):
         """
         try:  # if we have this attribute, return it
             return self._observable_state_indexes
-        except:  # didn't exist? then create it.
+        except AttributeError:  # didn't exist? then create it.
             import pyemma.util.discrete_trajectories as dt
 
             self._observable_state_indexes = dt.index_states(self.discrete_trajectories_obs)

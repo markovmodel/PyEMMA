@@ -26,16 +26,16 @@ and provides them for later access.
 """
 
 from __future__ import absolute_import
-from six.moves import range
-
-__docformat__ = "restructuredtext en"
 
 import numpy as _np
+from six.moves import range
 
 from pyemma.msm.models.msm import MSM as _MSM
 from pyemma.util import types as _types
+from pyemma.util.annotators import fix_docs
 
 
+@fix_docs
 class HMSM(_MSM):
     r""" Hidden Markov model on discrete states.
 
@@ -184,7 +184,9 @@ class HMSM(_MSM):
 
         Computes the product
 
-        ..1:            p_k = p_0^T P^k
+        .. math::
+
+            p_k = p_0^T P^k
 
         If the lag time of transition matrix :math:`P` is :math:`\tau`, this
         will provide the probability distribution at time :math:`k \tau`.
