@@ -39,6 +39,7 @@ class ProgressReporter(object):
 
     @property
     def show_progress(self):
+        """ whether to show the progress of heavy calculations on this object. """
         if not hasattr(self, "_show_progress"):
             from pyemma import config
             val = config.show_progress_bars

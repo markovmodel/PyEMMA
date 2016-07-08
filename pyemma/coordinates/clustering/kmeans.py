@@ -30,7 +30,7 @@ import tempfile
 
 from pyemma._base.progress.reporter import ProgressReporter
 from pyemma.coordinates.clustering.interface import AbstractClustering
-from pyemma.util.annotators import doc_inherit
+from pyemma.util.annotators import fix_docs
 from pyemma.util.units import bytes_to_string
 
 from pyemma.util.contexts import conditional, random_seed
@@ -43,6 +43,7 @@ from . import kmeans_clustering
 __all__ = ['KmeansClustering']
 
 
+@fix_docs
 class KmeansClustering(AbstractClustering, ProgressReporter):
     r"""k-means clustering"""
 
@@ -128,7 +129,6 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
         empty = np.empty(shape=(1, self.data_producer.dimension()), order='C', dtype=np.float32)
         return empty[0, :].nbytes * size
 
-    @doc_inherit
     def describe(self):
         return "[Kmeans, k=%i, inp_dim=%i]" % (self.n_clusters, self.data_producer.dimension())
 
