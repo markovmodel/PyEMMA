@@ -39,6 +39,8 @@ __all__ = ['TICA']
 
 
 class TICAModel(Model):
+    _serialize_version = 42
+
     def set_model_params(self, mean=None, cov_tau=None, cov=None,
                          cumvar=None, eigenvalues=None, eigenvectors=None):
         self.update_model_params(cov=cov, cov_tau=cov_tau,
@@ -59,6 +61,7 @@ def _lazy_estimation(func, *args, **kw):
 @fix_docs
 class TICA(StreamingTransformer):
     r""" Time-lagged independent component analysis (TICA)"""
+    _serialize_version = 0
 
     def __init__(self, lag, dim=-1, var_cutoff=0.95, kinetic_map=True, epsilon=1e-6,
                  mean=None, stride=1, remove_mean=True):

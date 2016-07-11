@@ -33,6 +33,7 @@ __all__ = ['UniformTimeClustering']
 @fix_docs
 class UniformTimeClustering(AbstractClustering):
     r"""Uniform time clustering"""
+    _serialize_version = 0
 
     def __init__(self, n_clusters=2, metric='euclidean', stride=1, n_jobs=None):
         """r

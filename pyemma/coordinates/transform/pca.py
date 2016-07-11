@@ -24,7 +24,7 @@ import math
 from pyemma._base.model import Model
 from pyemma._base.progress.reporter import ProgressReporter
 from pyemma.coordinates.transform.transformer import StreamingTransformer
-from pyemma.util.annotators import fix_docs
+from pyemma.util.annotators import fix_docs, deprecated
 from pyemma.util.reflection import get_default_args
 
 from pyemma.coordinates.estimators.covar.running_moments import running_covar
@@ -33,24 +33,27 @@ from decorator import decorator
 
 
 __all__ = ['PCA']
-__author__ = 'noe'
+__author__ = 'noe, marscher'
 
 
 @decorator
 def _lazy_estimation(func, *args, **kw):
     assert isinstance(args[0], PCA)
-    tica_obj = args[0]
-    if not tica_obj._estimated:
-        tica_obj._diagonalize()
+    obj = args[0]
+    if not obj._estimated:
+        obj._diagonalize()
     return func(*args, **kw)
 
 
 class PCAModel(Model):
     _serialize_version = 0
 
-    def set_model_params(self, mean, eigenvectors):
+    def set_model_params(self, mean, eigenvectors, eigenvalues, cov, cumvar):
         self.mean = mean
         self.eigenvectors = eigenvectors
+        self.eigenvalues = eigenvalues
+        self.cov = cov
+        self.cumvar = cumvar
 
 
 @fix_docs
@@ -124,6 +127,17 @@ class PCA(StreamingTransformer, ProgressReporter):
         return d
 
     @property
+    def mean(self):
+        """ mean of input features """
+        return self._model.mean
+
+    @property
+    @deprecated('please use the "mean" property')
+    def mu(self):
+        """DEPRECATED: please use the "mean" property"""
+        return self.mean
+
+    @property
     @_lazy_estimation
     def cumvar(self):
         return self._model.cumvar
@@ -157,6 +171,14 @@ class PCA(StreamingTransformer, ProgressReporter):
     @mean.setter
     def mean(self, value):
         self._model.mean = value
+
+    @property
+    def cov(self):
+        return self._model.cov
+
+    @cov.setter
+    def cov(self, value):
+        self._model.cov = value
 
     def partial_fit(self, X):
         from pyemma.coordinates import source
@@ -210,10 +232,7 @@ class PCA(StreamingTransformer, ProgressReporter):
                 self._covar.add(chunk)
                 self._progress_update(1, 0)
 
-        self.cov = self._covar.cov_XX()
-        self.mu = self._covar.mean_X()
-
-        self._model.update_model_params(mean=self._covar.mean_X())
+        self._model.update_model_params(mean=self._covar.mean_X(), cov=self._covar.cov_XX())
         if not partial_fit:
             self._diagonalize()
 
