@@ -24,12 +24,14 @@ Created on 18.02.2015
 
 from __future__ import absolute_import
 
+import numpy as np
 import six
 
 from pyemma.coordinates.clustering.interface import AbstractClustering
-import numpy as np
+from pyemma.util.annotators import fix_docs
 
 
+@fix_docs
 class AssignCenters(AbstractClustering):
 
     """Assigns given (pre-calculated) cluster centers. If you already have

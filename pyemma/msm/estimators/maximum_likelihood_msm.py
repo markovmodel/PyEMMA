@@ -22,7 +22,7 @@ from six.moves import range
 import numpy as _np
 from msmtools import estimation as msmest
 
-from pyemma.util.annotators import alias, aliased
+from pyemma.util.annotators import alias, aliased, fix_docs
 from pyemma.util.types import ensure_dtraj_list
 from pyemma._base.estimator import Estimator as _Estimator
 from pyemma.msm.estimators._dtraj_stats import DiscreteTrajectoryStats as _DiscreteTrajectoryStats
@@ -31,6 +31,7 @@ from pyemma.util.units import TimeUnit as _TimeUnit
 from pyemma.util import types as _types
 
 
+@fix_docs
 @aliased
 class MaximumLikelihoodMSM(_MSM, _Estimator):
     r"""Maximum likelihood estimator for MSMs given discrete trajectory statistics"""
@@ -203,7 +204,7 @@ class MaximumLikelihoodMSM(_MSM, _Estimator):
         lcc = msmest.largest_connected_set(C_pos, directed=False)
         return pos[lcc]
 
-    def _estimate(self, dtrajs):
+    def estimate(self, dtrajs, **parms):
         """
         Parameters
         ----------
@@ -215,9 +216,12 @@ class MaximumLikelihoodMSM(_MSM, _Estimator):
 
         Returns
         -------
-        MSM : :class:`pyemma.msm.EstimatedMSM` or :class:`pyemma.msm.MSM`
+        MSM : :class:`pyemma.msm.MaximumlikelihoodMSM`
 
         """
+        return super(MaximumLikelihoodMSM, self).estimate(dtrajs, **parms)
+
+    def _estimate(self, dtrajs):
         # ensure right format
         dtrajs = ensure_dtraj_list(dtrajs)
         # harvest discrete statistics
@@ -629,8 +633,6 @@ class MaximumLikelihoodMSM(_MSM, _Estimator):
 
         Parameters
         ----------
-        N : int
-            Number of time steps in the output trajectory. The total simulation time is stride * lag time * N
         nsample : int
             Number of samples per state. If replace = False, the number of returned samples per state could be smaller
             if less than nsample indexes are available for a state.
@@ -638,8 +640,6 @@ class MaximumLikelihoodMSM(_MSM, _Estimator):
             array of states to be indexed. By default all states in the connected set will be used
         replace : boolean, optional
             Whether the sample is with or without replacement
-        start : int, optional, default = None
-            starting state. If not given, will sample from the stationary distribution of P
 
         Returns
         -------

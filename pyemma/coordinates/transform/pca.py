@@ -24,7 +24,7 @@ import math
 from pyemma._base.model import Model
 from pyemma._base.progress.reporter import ProgressReporter
 from pyemma.coordinates.transform.transformer import StreamingTransformer
-from pyemma.util.annotators import doc_inherit
+from pyemma.util.annotators import fix_docs
 from pyemma.util.reflection import get_default_args
 
 from pyemma.coordinates.estimators.covar.running_moments import running_covar
@@ -46,10 +46,12 @@ def _lazy_estimation(func, *args, **kw):
 
 
 class PCAModel(Model):
-    # todo: do we really want this?
-    pass
+    def set_model_params(self, mean, eigenvectors):
+        self.mean = mean
+        self.eigenvectors = eigenvectors
 
 
+@fix_docs
 class PCA(StreamingTransformer, ProgressReporter):
     r""" Principal component analysis."""
 
@@ -100,7 +102,6 @@ class PCA(StreamingTransformer, ProgressReporter):
         self.set_params(dim=dim, var_cutoff=var_cutoff, mean=mean)
         self._model = PCAModel()
 
-    @doc_inherit
     def describe(self):
         return "[PCA, output dimension = %i]" % self.dim
 

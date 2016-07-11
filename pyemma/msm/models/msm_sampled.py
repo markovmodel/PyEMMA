@@ -17,11 +17,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import
-__author__ = 'noe'
 
 from pyemma._base.model import SampledModel
 from pyemma.msm.models.msm import MSM
 from pyemma.util.types import is_iterable
+__author__ = 'noe'
+
 
 
 class SampledMSM(MSM, SampledModel):
@@ -34,7 +35,7 @@ class SampledMSM(MSM, SampledModel):
         ----------
         samples : list of MSM
             Sampled MSM objects
-        ref : EstimatedMSM
+        ref : obj of type :class:`pyemma.msm.MaximumLikelihoodMSM` or :class:`pyemma.msm.BayesianMSM`
             Single-point estimator, e.g. containing a maximum likelihood or mean MSM
         conf : float, optional, default=0.95
             Confidence interval. By default two-sigma (95.4%) is used. Use 95.4% for two sigma or 99.7% for three sigma.

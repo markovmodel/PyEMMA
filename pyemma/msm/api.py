@@ -986,10 +986,6 @@ def estimate_hidden_markov_model(dtrajs, nstates, lag, reversible=True, stationa
     >>> print(mm.mfpt(0, 1))  # doctest: +ELLIPSIS
     6.3...
 
-    See also
-    --------
-    EstimatedHMSM : A discrete HMM object that has been estimated from data
-
 
     .. autoclass:: pyemma.msm.estimators.maximum_likelihood_hmsm.MaximumLikelihoodHMSM
         :members:
