@@ -101,20 +101,6 @@ class Model(SerializableMixIn):
             out[key] = value
         return out
 
-    #  serialization protocol
-    def __getstate__(self):
-        parent_state = SerializableMixIn.__getstate__(self)
-        state = self.get_model_params()
-        state.update(parent_state)
-        return state
-
-    def __setstate__(self, state):
-        # remove items in state which are not model parameters
-        names = self._get_model_param_names()
-        new_state = {key: state[key] for key in names}
-
-        self.update_model_params(**new_state)
-
     # def set_model_params(self, **params):
     #     """Set the parameters of this estimator.
     #     The method works on simple estimators as well as on nested objects
@@ -154,6 +140,8 @@ class Model(SerializableMixIn):
 
 
 class SampledModel(Model):
+
+    #_serialize_version = 0
 
     def __init__(self, samples, conf=0.95):
         self.set_model_params(samples=samples, conf=conf)

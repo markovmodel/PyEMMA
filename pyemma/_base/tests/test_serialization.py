@@ -19,14 +19,6 @@ class test_cls_v1(SerializableMixIn):
         self.x = 'foo'
         self.y = 0.0
 
-    def __getstate__(self):
-        state = super(test_cls_v1, self).__getstate__()
-        state.update(self._get_state_of_serializeable_fields(klass=test_cls_v1))
-        return state
-
-    def __setstate__(self, state):
-        self._set_state_from_serializeable_fields_and_state(state, test_cls_v1)
-
     def __eq__(self, other):
         return np.allclose(self.a, other.a) and self.x == other.x and self.y == other.y
 
@@ -43,14 +35,6 @@ class test_cls_v2(SerializableMixIn):
         self.b = np.random.random((3, 2))
         self.y = 0.0
         self.z = 42
-
-    def __getstate__(self):
-        state = super(test_cls_v2, self).__getstate__()
-        state.update(self._get_state_of_serializeable_fields(klass=test_cls_v2))
-        return state
-
-    def __setstate__(self, state):
-        self._set_state_from_serializeable_fields_and_state(state, test_cls_v2)
 
     def __eq__(self, other):
         return np.allclose(self.b, other.b) and self.y == other.y and self.z == other.z
@@ -71,14 +55,6 @@ class test_cls_v3(SerializableMixIn):
     def __init__(self):
         self.c = np.random.random((3, 2))
         self.z = 23
-
-    def __getstate__(self):
-        state = super(test_cls_v3, self).__getstate__()
-        state.update(self._get_state_of_serializeable_fields(klass=test_cls_v3))
-        return state
-
-    def __setstate__(self, state):
-        self._set_state_from_serializeable_fields_and_state(state, test_cls_v3)
 
     def __eq__(self, other):
         return np.allclose(self.c, other.c) and self.y == other.y and self.z == other.z

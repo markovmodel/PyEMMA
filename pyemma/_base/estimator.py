@@ -379,27 +379,3 @@ class Estimator(_BaseEstimator, SerializableMixIn, Loggable):
         except AttributeError:
             raise AttributeError(
                 'Model has not yet been estimated. Call estimate(X) or fit(X) first')
-
-    def __getstate__(self):
-        parent_state = super(Estimator, self).__getstate__()
-        res = self.get_params()
-        res.update(parent_state)
-        # remember if it has been estimated.
-        res['_estimated'] = self._estimated
-        try:
-            res['model'] = self._model
-        except AttributeError:
-            pass
-
-        return res
-
-    def __setstate__(self, state):
-        self._estimated = state.pop('_estimated')
-        model = state.pop('model', None)
-        self._model = model
-
-        # first set parameters of estimator, items in state which are not estimator parameters
-        names = self._get_param_names()
-        new_state = {key: state[key] for key in names if key in state}
-        self.set_params(**new_state)
-

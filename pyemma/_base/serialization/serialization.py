@@ -15,13 +15,15 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from pyemma._ext import jsonpickle
-from pyemma._base.serialization.jsonpickler_handlers import register_ndarray_handler as _reg_np_handler
-from pyemma._base.logging import Loggable
-from pyemma.util.types import is_string, is_int
 import contextlib
-import six
 import logging
+
+import six
+
+from pyemma._base.logging import Loggable
+from pyemma._base.serialization.jsonpickler_handlers import register_ndarray_handler as _reg_np_handler
+from pyemma._ext import jsonpickle
+from pyemma.util.types import is_string, is_int
 
 logger = logging.getLogger(__name__)
 _debug = True
@@ -168,7 +170,7 @@ class SerializableMixIn(object):
         logger.debug("input state: %s" % state)
         state_version = state['_serialize_version']
         for key in self._serialize_interpolation_map.keys():
-            if not(self._serialize_version > key >= state_version):
+            if not (self._serialize_version > key >= state_version):
                 if _debug:
                     logger.debug("skipped interpolation rules for version %s" % key)
                 continue
@@ -196,11 +198,9 @@ class SerializableMixIn(object):
         """ set only fields from state, which are present in klass._serialize_fields """
         if _debug:
             logger.debug("restoring state for class %s" % klass)
-        if '_serialize_version' not in state:
-            raise DeveloperError("your class should define a _serialize_version attribute")
 
-        if (state['_serialize_version'] < klass._serialize_version and
-                hasattr(self, '_serialize_interpolation_map')):
+        klass_version = state['_serialize_version']#state['__serialize_class_versions'][klass.__name__]
+        if klass_version < klass._serialize_version and hasattr(self, '_serialize_interpolation_map'):
             self.__interpolate(state)
 
         for field in klass._serialize_fields:
@@ -217,10 +217,73 @@ class SerializableMixIn(object):
         if not hasattr(self, '_serialize_version'):
             raise DeveloperError('The "{klass}" should define a static "_serialize_version" attribute.'
                                  .format(klass=self.__class__))
-        return {'_serialize_version': self._serialize_version,
-                '_serialize_fields': self._serialize_fields}
+
+        from pyemma._base.estimator import Estimator
+        from pyemma._base.model import Model
+
+        res = {'_serialize_version': self._serialize_version,
+               # TODO: do we really need to store fields here?
+               '_serialize_fields': self._serialize_fields}
+
+        classes_to_inspect = [c for c in self.__class__.mro() if hasattr(c, '_serialize_fields')
+                              and c != SerializableMixIn and c != object and c != Estimator and c != Model]
+        if _debug:
+            logger.debug("classes to inspect during setstate: \n%s" % classes_to_inspect)
+        res['__serialize_class_versions'] = {}
+        for klass in classes_to_inspect:
+            if hasattr(klass, '_serialize_fields') and klass._serialize_fields and not klass == SerializableMixIn:
+                inc = self._get_state_of_serializeable_fields(klass)
+                res.update(inc)
+
+
+        res['_serialize_version'] = self.__class__.mro()[0]._serialize_version
+        # for klass in self.__class__.mro():
+        #     if hasattr(klass, '_serialize_version'):
+        #         res['__serialize_class_versions'][klass.__name__] = klass._serialize_version
+
+        if _debug:
+            logger.debug("versions: %s" % res['__serialize_class_versions'])
+
+        # handle special cases Estimator and Model, just use their parameters.
+        if isinstance(self, Estimator):
+            res.update(self.get_params())
+            # remember if it has been estimated.
+            res['_estimated'] = self._estimated
+            try:
+                res['model'] = self._model
+            except AttributeError:
+                pass
+
+        if isinstance(self, Model):
+            state = self.get_model_params()
+            res.update(state)
+
+        return res
 
     def __setstate__(self, state):
-        self._serialize_version = state.pop('_serialize_version')
-        self._serialize_fields = state.pop('_serialize_fields', ())
+        from pyemma._base.estimator import Estimator
+        from pyemma._base.model import Model
 
+        classes_to_inspect = [c for c in self.__class__.mro() if hasattr(c, '_serialize_fields')
+                              and c != SerializableMixIn and c != object and c != Estimator and c != Model]
+
+        for klass in classes_to_inspect:
+            if hasattr(klass, '_serialize_fields') and not klass == SerializableMixIn:
+                self._set_state_from_serializeable_fields_and_state(state, klass=klass)
+
+        if isinstance(self, Model):
+            # remove items in state which are not model parameters
+            names = self._get_model_param_names()
+            new_state = {key: state[key] for key in names}
+
+            self.update_model_params(**new_state)
+
+        if isinstance(self, Estimator):
+            self._estimated = state.pop('_estimated')
+            model = state.pop('model', None)
+            self._model = model
+
+            # first set parameters of estimator, items in state which are not estimator parameters
+            names = self._get_param_names()
+            new_state = {key: state[key] for key in names if key in state}
+            self.set_params(**new_state)

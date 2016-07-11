@@ -412,7 +412,7 @@ class MaximumLikelihoodMSM(_MSM, _Estimator):
         For example, for connectivity='largest', the count matrix is given only on the largest reversibly connected set.
         Attention: This count matrix has been obtained by sliding a window of length tau across the data. It contains
         a factor of tau more counts than are statistically uncorrelated. It's fine to use this matrix for maximum
-        likelihood estimated, but it will give far too small errors if you use it for uncertainty calculations. In order
+        likelihood estimation, but it will give far too small errors if you use it for uncertainty calculations. In order
         to do uncertainty calculations, use the effective count matrix, see:
         :attr:`effective_count_matrix`
 
@@ -813,26 +813,3 @@ class MaximumLikelihoodMSM(_MSM, _Estimator):
                                         err_est=err_est, show_progress=show_progress)
         ck.estimate(self._dtrajs_full)
         return ck
-
-    def __getstate__(self):
-        # get state of model and estimator
-        assert issubclass(self.__class__, _MSM)
-        assert issubclass(self.__class__, _Estimator)
-        model_state = _MSM.__getstate__(self)
-        estimator_state = _Estimator.__getstate__(self)
-
-        model_state.update(estimator_state)
-
-        res_fields = self._get_state_of_serializeable_fields(MaximumLikelihoodMSM)
-        model_state.update(res_fields)
-
-        return model_state
-
-    def __setstate__(self, state):
-        assert issubclass(self.__class__, _MSM)
-        assert issubclass(self.__class__, _Estimator)
-        _Estimator.__setstate__(self, state)
-        _MSM.__setstate__(self, state)
-
-        self._set_state_from_serializeable_fields_and_state(state, klass=MaximumLikelihoodMSM)
-

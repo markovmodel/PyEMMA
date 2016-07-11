@@ -1024,12 +1024,3 @@ class MSM(_Model):
         # are we ready?
         self._assert_metastable()
         return self._metastable_assignments
-
-    def __getstate__(self):
-        parent_state = super(MSM, self).__getstate__()
-        parent_state.update(self._get_state_of_serializeable_fields(MSM))
-        return parent_state
-
-    def __setstate__(self, state):
-        super(MSM, self).__setstate__(state)
-        self._set_state_from_serializeable_fields_and_state(state, klass=MSM)

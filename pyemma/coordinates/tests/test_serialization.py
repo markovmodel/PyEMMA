@@ -135,3 +135,6 @@ class TestSerializationCoordinates(unittest.TestCase):
         params['eigenvectors'] = t.eigenvectors
 
         self.compare(t, params)
+
+    def test_featurizer(self):
+        f = pyemma.coordinates.featurizer()
