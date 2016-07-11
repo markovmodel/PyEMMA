@@ -136,5 +136,6 @@ class TestSerializationCoordinates(unittest.TestCase):
 
         self.compare(t, params)
 
+    @unittest.skip("not yet impled.")
     def test_featurizer(self):
         f = pyemma.coordinates.featurizer()

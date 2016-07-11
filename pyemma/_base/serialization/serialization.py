@@ -199,7 +199,7 @@ class SerializableMixIn(object):
         if _debug:
             logger.debug("restoring state for class %s" % klass)
 
-        klass_version = state['_serialize_version']#state['__serialize_class_versions'][klass.__name__]
+        klass_version = state['_serialize_version']  # state['__serialize_class_versions'][klass.__name__]
         if klass_version < klass._serialize_version and hasattr(self, '_serialize_interpolation_map'):
             self.__interpolate(state)
 
@@ -235,7 +235,6 @@ class SerializableMixIn(object):
                 inc = self._get_state_of_serializeable_fields(klass)
                 res.update(inc)
 
-
         res['_serialize_version'] = self.__class__.mro()[0]._serialize_version
         # for klass in self.__class__.mro():
         #     if hasattr(klass, '_serialize_version'):
@@ -268,7 +267,7 @@ class SerializableMixIn(object):
                               and c != SerializableMixIn and c != object and c != Estimator and c != Model]
 
         for klass in classes_to_inspect:
-            if hasattr(klass, '_serialize_fields') and not klass == SerializableMixIn:
+            if hasattr(klass, '_serialize_fields') and klass._serialize_fields and hasattr(klass, '_serialize_version'):
                 self._set_state_from_serializeable_fields_and_state(state, klass=klass)
 
         if isinstance(self, Model):
