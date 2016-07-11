@@ -46,6 +46,8 @@ def _lazy_estimation(func, *args, **kw):
 
 
 class PCAModel(Model):
+    _serialize_version = 0
+
     def set_model_params(self, mean, eigenvectors):
         self.mean = mean
         self.eigenvectors = eigenvectors
@@ -54,6 +56,7 @@ class PCAModel(Model):
 @fix_docs
 class PCA(StreamingTransformer, ProgressReporter):
     r""" Principal component analysis."""
+    _serialize_version = 0
 
     def __init__(self, dim=-1, var_cutoff=0.95, mean=None, stride=1):
         r""" Principal component analysis.
@@ -99,8 +102,7 @@ class PCA(StreamingTransformer, ProgressReporter):
             raise ValueError('Trying to set both the number of dimension and the subspace variance. Use either or.')
 
         self._model = PCAModel()
-        self.set_params(dim=dim, var_cutoff=var_cutoff, mean=mean)
-        self._model = PCAModel()
+        self.set_params(dim=dim, var_cutoff=var_cutoff, mean=mean, stride=stride)
 
     def describe(self):
         return "[PCA, output dimension = %i]" % self.dim
