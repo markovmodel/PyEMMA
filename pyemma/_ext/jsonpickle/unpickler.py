@@ -159,7 +159,6 @@ class Unpickler(object):
             restore = self._restore_dict
         else:
             restore = lambda x: x
-        print("restore function:", str(restore))
         return restore(obj)
 
     def _restore_base64(self, obj):
