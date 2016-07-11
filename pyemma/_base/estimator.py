@@ -386,29 +386,16 @@ class Estimator(_BaseEstimator, SerializableMixIn, Loggable):
         res.update(parent_state)
         # remember if it has been estimated.
         res['_estimated'] = self._estimated
-        # if this estimator has been estimated, store the model.
-        if self._estimated:
-            if self.model is self:
-                from pyemma._base.model import Model
-                res.update(Model.__getstate__(self))
-                res['model'] = ()  # this should indicate (self.model is self) for purpose of restoring
-            else:
-                res['model'] = self.model
-        else:
-            # TODO: some classes rely on the fact that the model is not set (raises AttributeError), if not estimated yet.
-            res['model'] = None
+        try:
+            res['model'] = self._model
+        except AttributeError:
+            pass
 
         return res
 
     def __setstate__(self, state):
         self._estimated = state.pop('_estimated')
-
-        # if we have a model, it can be (), which means (self.model is self).
-        # When this is the case, we update its model parameters.
-        model = state.pop('model')
-        if model is ():
-            model = self
-            self.update_model_params(**state)
+        model = state.pop('model', None)
         self._model = model
 
         # first set parameters of estimator, items in state which are not estimator parameters

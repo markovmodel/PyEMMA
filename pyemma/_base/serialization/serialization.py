@@ -217,5 +217,10 @@ class SerializableMixIn(object):
         if not hasattr(self, '_serialize_version'):
             raise DeveloperError('The "{klass}" should define a static "_serialize_version" attribute.'
                                  .format(klass=self.__class__))
-        res = {'_serialize_version': self._serialize_version}
-        return res
+        return {'_serialize_version': self._serialize_version,
+                '_serialize_fields': self._serialize_fields}
+
+    def __setstate__(self, state):
+        self._serialize_version = state.pop('_serialize_version')
+        self._serialize_fields = state.pop('_serialize_fields', ())
+

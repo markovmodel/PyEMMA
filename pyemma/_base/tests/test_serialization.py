@@ -193,3 +193,7 @@ class TestSerialisation(unittest.TestCase):
             s._validate_interpolation_map()
 
         self.assertIn("contain", cm.exception.args[0])
+
+
+if __name__ == '__main__':
+    unittest.main()
