@@ -1346,6 +1346,9 @@ def cluster_uniform_time(data=None, k=None, stride=1, metric='euclidean', n_jobs
         object is independent, so you can parametrize at a long stride, and
         still map all frames through the transformer.
 
+    metric : str
+        metric to use during clustering ('euclidean', 'minRMSD')
+
     n_jobs : int or None, default None
         Number of threads to use during assignment of the data.
         If None, all available CPUs will be used.
