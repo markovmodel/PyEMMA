@@ -103,7 +103,9 @@ class Model(SerializableMixIn):
 
     #  serialization protocol
     def __getstate__(self):
+        parent_state = SerializableMixIn.__getstate__(self)
         state = self.get_model_params()
+        state.update(parent_state)
         return state
 
     def __setstate__(self, state):

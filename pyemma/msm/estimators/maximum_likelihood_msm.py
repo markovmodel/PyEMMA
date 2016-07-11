@@ -816,6 +816,8 @@ class MaximumLikelihoodMSM(_MSM, _Estimator):
 
     def __getstate__(self):
         # get state of model and estimator
+        assert issubclass(self.__class__, _MSM)
+        assert issubclass(self.__class__, _Estimator)
         model_state = _MSM.__getstate__(self)
         estimator_state = _Estimator.__getstate__(self)
 
@@ -827,6 +829,8 @@ class MaximumLikelihoodMSM(_MSM, _Estimator):
         return model_state
 
     def __setstate__(self, state):
+        assert issubclass(self.__class__, _MSM)
+        assert issubclass(self.__class__, _Estimator)
         _Estimator.__setstate__(self, state)
         _MSM.__setstate__(self, state)
 

@@ -1027,20 +1027,9 @@ class MSM(_Model):
 
     def __getstate__(self):
         parent_state = super(MSM, self).__getstate__()
-
-        # ML_MSM doesn't call init of MSM, so we do not have nstates
-        if hasattr(self, '_nstates'):
-            parent_state['_nstates'] = self._nstates
-
         parent_state.update(self._get_state_of_serializeable_fields(MSM))
-
         return parent_state
 
     def __setstate__(self, state):
         super(MSM, self).__setstate__(state)
-
-        # ML_MSM doesn't call init of MSM, so we do not have nstates
-        if '_nstates' in state:
-            self._nstates = state['_nstates']
-
         self._set_state_from_serializeable_fields_and_state(state, klass=MSM)
