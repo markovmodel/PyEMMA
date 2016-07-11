@@ -14,16 +14,16 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+import os
+import tempfile
 import unittest
-from tempfile import NamedTemporaryFile
 
 import numpy as np
-import pyemma
 
+import pyemma
 from pyemma import datasets
-from pyemma.msm import bayesian_markov_model
 from pyemma import load
+from pyemma.msm import bayesian_markov_model
 
 
 class TestMSMSerialization(unittest.TestCase):
@@ -53,10 +53,18 @@ class TestMSMSerialization(unittest.TestCase):
         cls.bmsm_rev = bayesian_markov_model(obs_macro, cls.lag,
                                              reversible=True, nsamples=cls.nsamples)
 
+    def setUp(self):
+        self.f = tempfile.mktemp()
+
+    def tearDown(self):
+        try:
+            os.unlink(self.f)
+        except:
+            pass
+
     def test_msm_save_load(self):
-        with NamedTemporaryFile(delete=False) as f:
-            self.msm.save(f.name)
-            new_obj = load(f.name)
+        self.msm.save(self.f)
+        new_obj = load(self.f)
 
         np.testing.assert_equal(new_obj.transition_matrix, self.msm.transition_matrix)
         self.assertEqual(new_obj.nstates, self.msm.nstates)
@@ -66,9 +74,8 @@ class TestMSMSerialization(unittest.TestCase):
         self.assertEqual(new_obj, self.msm)
 
     def test_sampled_MSM_save_load(self):
-        with NamedTemporaryFile(delete=False) as f:
-            self.bmsm_rev.save(f.name)
-            new_obj = load(f.name)
+        self.bmsm_rev.save(self.f)
+        new_obj = load(self.f)
 
         np.testing.assert_equal(new_obj.samples, self.bmsm_rev.samples)
 
@@ -77,7 +84,11 @@ class TestMSMSerialization(unittest.TestCase):
         self.assertEqual(new_obj.is_sparse, self.bmsm_rev.is_sparse)
         self.assertEqual(new_obj.is_reversible, self.bmsm_rev.is_reversible)
 
-    @unittest.skip("be silent")
+        self.assertEqual(new_obj.nsamples, self.bmsm_rev.nsamples)
+        self.assertEqual(new_obj.nsteps, self.bmsm_rev.nsteps)
+        self.assertEqual(new_obj.conf, self.bmsm_rev.conf)
+        self.assertEqual(new_obj.show_progress, self.bmsm_rev.show_progress)
+
     def test_ML_MSM_estimated(self):
         self.lag = {'dtrajs':
                         [[0, 1, 2, 2, 2, 2, 1, 2, 2, 2, 1, 0, 0, 0, 0, 0, 0, 0],
@@ -87,9 +98,8 @@ class TestMSMSerialization(unittest.TestCase):
         ml_msm = pyemma.msm.estimate_markov_model(**params)
         assert isinstance(ml_msm, pyemma.msm.MaximumLikelihoodMSM)
 
-        with NamedTemporaryFile(delete=False) as f:
-            ml_msm.save(f.name)
-            new_obj = load(f.name)
+        ml_msm.save(self.f)
+        new_obj = load(self.f)
 
         self.assertEqual(new_obj._estimated, new_obj._estimated)
         np.testing.assert_equal(new_obj.transition_matrix, ml_msm.transition_matrix)
