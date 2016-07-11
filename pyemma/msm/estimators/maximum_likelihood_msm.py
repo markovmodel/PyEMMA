@@ -124,7 +124,7 @@ class MaximumLikelihoodMSM(_MSM, _Estimator):
             |  'ms',  'millisecond*'
             |  's',   'second*'
 
-        maxiter: int, optioanl, default = 1000000
+        maxiter: int, optional, default = 1000000
             Optional parameter with reversible = True. maximum number of iterations
             before the transition matrix estimation method exits
         maxerr : float, optional, default = 1e-8
