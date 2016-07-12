@@ -39,7 +39,7 @@ __all__ = ['TICA']
 
 
 class TICAModel(Model):
-    _serialize_version = 42
+    _serialize_version = 0
 
     def set_model_params(self, mean=None, cov_tau=None, cov=None,
                          cumvar=None, eigenvalues=None, eigenvectors=None):

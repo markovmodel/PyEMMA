@@ -58,9 +58,9 @@ class MaximumLikelihoodMSM(_MSM, _Estimator):
         reversible : bool, optional, default = True
             If true compute reversible MSM, else non-reversible MSM
 
-        statdist : (M,) ndarray, optional
+        statdist_constraint : (M,) ndarray, optional
             Stationary vector on the full set of states. Estimation will be
-            made such the the resulting transition matrix has this distribution
+            made such that the resulting transition matrix has this distribution
             as an equilibrium distribution. Set probabilities to zero if these
             states should be excluded from the analysis.
 
@@ -174,7 +174,6 @@ class MaximumLikelihoodMSM(_MSM, _Estimator):
         self.maxerr = maxerr
 
     @property
-    # TODO: maybe use the same field as in MSM?
     def timestep_traj(self):
         return self._timeunit_model
 
@@ -232,9 +231,9 @@ class MaximumLikelihoodMSM(_MSM, _Estimator):
             dtrajstats = _DiscreteTrajectoryStats(dtrajs)
             # check if this MSM seems too large to be dense
             if dtrajstats.nstates > 4000 and not self.sparse:
-                self.logger.warning('Building a dense MSM with ' + str(dtrajstats.nstates) + ' states. This can be '
-                                                                                             'inefficient or unfeasible in terms of both runtime and memory consumption. '
-                                                                                             'Consider using sparse=True.')
+                self.logger.warning('Building a dense MSM with {nstates} states. This can be '
+                                    'inefficient or unfeasible in terms of both runtime and memory consumption. '
+                                    'Consider using sparse=True.'.format(nstates=dtrajstats.nstates))
 
         # count lagged
         dtrajstats.count_lagged(self.lag, count_mode=self.count_mode)

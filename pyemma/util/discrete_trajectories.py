@@ -153,7 +153,7 @@ def count_states(dtrajs, ignore_negative=False):
     Returns
     -------
     count : ndarray((n), dtype=int)
-        the number of occurrances of each state. n=max+1 where max is the largest state index found.
+        the number of occurrences of each state. n=max+1 where max is the largest state index found.
 
     """
     # format input
