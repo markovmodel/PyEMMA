@@ -57,7 +57,7 @@ class TestSerializationCoordinates(unittest.TestCase):
         obj.save(fn)
         restored = pyemma.load(fn)
 
-        for k, v in params.iteritems():
+        for k, v in params.items():
             actual = getattr(restored, k)
             expected = getattr(obj, k)
             if isinstance(actual, np.ndarray):
@@ -139,3 +139,6 @@ class TestSerializationCoordinates(unittest.TestCase):
     @unittest.skip("not yet impled.")
     def test_featurizer(self):
         f = pyemma.coordinates.featurizer()
+
+if __name__ == '__main__':
+    unittest.main()
