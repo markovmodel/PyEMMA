@@ -235,13 +235,9 @@ class SerializableMixIn(object):
                 inc = self._get_state_of_serializeable_fields(klass)
                 res.update(inc)
 
+        # We only store the version of the most specialized class
         res['_serialize_version'] = self.__class__.mro()[0]._serialize_version
-        # for klass in self.__class__.mro():
-        #     if hasattr(klass, '_serialize_version'):
-        #         res['__serialize_class_versions'][klass.__name__] = klass._serialize_version
-
-        if _debug:
-            logger.debug("versions: %s" % res['__serialize_class_versions'])
+        assert res['_serialize_version'] == self._serialize_version
 
         # handle special cases Estimator and Model, just use their parameters.
         if isinstance(self, Estimator):
@@ -271,7 +267,6 @@ class SerializableMixIn(object):
                 self._set_state_from_serializeable_fields_and_state(state, klass=klass)
 
         if isinstance(self, Model):
-            # remove items in state which are not model parameters
             names = self._get_model_param_names()
             new_state = {key: state[key] for key in names}
 

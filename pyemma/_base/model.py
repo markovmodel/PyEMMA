@@ -141,8 +141,6 @@ class Model(SerializableMixIn):
 
 class SampledModel(Model):
 
-    #_serialize_version = 0
-
     def __init__(self, samples, conf=0.95):
         self.set_model_params(samples=samples, conf=conf)
 
