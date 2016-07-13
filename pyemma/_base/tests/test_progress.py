@@ -91,5 +91,15 @@ class TestProgress(unittest.TestCase):
             worker._progress_update(1, stage=0)
         self.assertEqual(self.has_been_called, amount_of_work)
 
+    def test_force_finish(self):
+        import warnings
+        worker = ProgressReporter()
+        worker._progress_register(100)
+        # intentionally overshoot registered work
+        with warnings.catch_warnings(record=True) as cm:
+            worker._progress_update(101)
+        self.assertIn("more work than registered", cm[0].message[0])
+        worker._progress_force_finish()
+
 if __name__ == "__main__":
     unittest.main()

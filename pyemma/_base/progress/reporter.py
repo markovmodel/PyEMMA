@@ -202,7 +202,10 @@ class ProgressReporter(object):
         pg = self._prog_rep_progressbars[stage]
         if not isinstance(pg, _ProgressBar):
             return
-        pg.numerator = pg.denominator
+
+        if pg.numerator < pg.denominator:
+            pg.numerator = pg.denominator
+
         pg._eta.eta_epoch = 0
 
         if description is not None:
