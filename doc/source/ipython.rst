@@ -9,7 +9,7 @@ the PyEMMA API in action and also describe the workflow of Markov model
 building.
 
 You can download a copy of all notebooks and most of the used data
-`here <https://github.com/markovmodel/PyEMMA_IPython/archive/devel.zip>`_.
+`here <https://github.com/markovmodel/PyEMMA_IPython/archive/master.zip>`_.
 Note that the trajectory of the D.E. Shaw BPTI simulation trajectory is not included
 in this archive, since we're not permitted to share this data. Thus the corresponding
 notebooks can't be run without obtaining the simulation trajectory independently.
