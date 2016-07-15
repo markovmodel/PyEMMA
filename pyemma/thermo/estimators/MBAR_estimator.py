@@ -144,7 +144,10 @@ class MBAR(_Estimator, _MEMM, _ProgressReporter):
                 callback=_ConvergenceProgressIndicatorCallBack(
                     self, 'MBAR', self.maxiter, self.maxerr),
                 n_conf_states=self.nstates_full)
-        self.loglikelihoods = _np.nan * self.increments
+        try:
+            self.loglikelihoods = _np.nan * self.increments
+        except TypeError:
+            self.loglikelihoods = None
         self._progress_force_finish(stage='MBAR', description='MBAR')
 
         # get stationary models
