@@ -49,7 +49,7 @@ use the API functions above.
 """
 
 from pyemma.thermo.models import StationaryModel, MEMM
-from pyemma.thermo.estimators import WHAM, DTRAM, TRAM, EmptyState
+from pyemma.thermo.estimators import WHAM, MBAR, DTRAM, TRAM, EmptyState
 
 # high-level api
 from .api import *

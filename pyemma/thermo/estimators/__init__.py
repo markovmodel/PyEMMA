@@ -16,5 +16,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from .WHAM_estimator import WHAM
+from .MBAR_estimator import MBAR
 from .DTRAM_estimator import DTRAM
 from .TRAM_estimator import TRAM, EmptyState
