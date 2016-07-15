@@ -39,6 +39,7 @@ class ProgressReporter(object):
 
     @property
     def show_progress(self):
+        """ whether to show the progress of heavy calculations on this object. """
         if not hasattr(self, "_show_progress"):
             from pyemma import config
             val = config.show_progress_bars
@@ -201,7 +202,10 @@ class ProgressReporter(object):
         pg = self._prog_rep_progressbars[stage]
         if not isinstance(pg, _ProgressBar):
             return
-        pg.numerator = pg.denominator
+
+        if pg.numerator < pg.denominator:
+            pg.numerator = pg.denominator
+
         pg._eta.eta_epoch = 0
 
         if description is not None:

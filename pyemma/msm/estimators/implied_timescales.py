@@ -419,7 +419,8 @@ class ImpliedTimescales(Estimator, ProgressReporter):
 
         **Be aware**: this fraction refers to the **full count matrix**, and not that of the largest connected
         set. Hence, the output is not necessarily the **active** fraction. For that, use the
-        :py:func:`EstimatedMSM.active_count_fraction` function of the :py:class:`EstimatedMSM` class object.
+        :py:meth:`activte_count_fraction <pyemma.msm.MaximumLikelihoodMSM.active_count_fraction>` function of
+        the :py:class:`pyemma.msm.MaximumLikelihoodMSM` class object or for HMM respectively.
         """
         # TODO : implement fraction_of_active_frames
         # Are we computing this for the first time?
