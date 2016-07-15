@@ -31,6 +31,7 @@ __all__ = [
     'estimate_umbrella_sampling',
     'estimate_multi_temperature',
     'dtram',
+    'mbar',
     'wham',
     'tram']
 
@@ -83,6 +84,7 @@ def estimate_umbrella_sampling(
         Specify one of the available estimators
 
         | 'wham':   use WHAM
+        | 'mbar':   use MBAR
         | 'dtram':  use the discrete version of TRAM
         | 'tram':  use TRAM
     lag : int or list of int, optional, default=1
@@ -145,7 +147,7 @@ def estimate_umbrella_sampling(
     """
     from .util import get_umbrella_sampling_data as _get_umbrella_sampling_data
     # sanity checks
-    if estimator not in ['wham', 'dtram', 'tram']:
+    if estimator not in ['wham', 'mbar', 'dtram', 'tram']:
         raise ValueError("unsupported estimator: %s" % estimator)
     if not isinstance(us_trajs, (list, tuple)):
         raise ValueError("The parameter us_trajs must be a list of numpy.ndarray objects")
@@ -205,6 +207,13 @@ def estimate_umbrella_sampling(
             _get_averaged_bias_matrix(btrajs, us_dtrajs + md_dtrajs),
             maxiter=maxiter, maxerr=maxerr,
             save_convergence_info=save_convergence_info, dt_traj=dt_traj)
+    elif estimator == 'mbar':
+        allowed_keys = ['direct_space']
+        parsed_kwargs = dict([(i, kwargs[i]) for i in allowed_keys if i in kwargs])
+        estimator_obj = mbar(
+            ttrajs, us_dtrajs + md_dtrajs, btrajs,
+            maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
+            dt_traj=dt_traj, **parsed_kwargs)
     elif estimator == 'dtram':
         allowed_keys = ['count_mode', 'connectivity']
         parsed_kwargs = dict([(i, kwargs[i]) for i in allowed_keys if i in kwargs])
@@ -279,6 +288,7 @@ def estimate_multi_temperature(
         Specify one of the available estimators
 
         | 'wham':   use WHAM
+        | 'mbar':   use MBAR
         | 'dtram':  use the discrete version of TRAM
         | 'tram':  use TRAM
     lag : int or list of int, optional, default=1
@@ -334,7 +344,7 @@ def estimate_multi_temperature(
     can handle temperature changes as well.
 
     """
-    if estimator not in ['wham', 'dtram', 'tram']:
+    if estimator not in ['wham', 'mbar', 'dtram', 'tram']:
         ValueError("unsupported estimator: %s" % estimator)
     from .util import get_multi_temperature_data as _get_multi_temperature_data
     ttrajs, btrajs, temperatures, unbiased_state = _get_multi_temperature_data(
@@ -347,6 +357,13 @@ def estimate_multi_temperature(
             _get_averaged_bias_matrix(btrajs, dtrajs),
             maxiter=maxiter, maxerr=maxerr,
             save_convergence_info=save_convergence_info, dt_traj=dt_traj)
+    elif estimator == 'mbar':
+        allowed_keys = ['direct_space']
+        parsed_kwargs = dict([(i, kwargs[i]) for i in allowed_keys if i in kwargs])
+        estimator_obj = mbar(
+            ttrajs, dtrajs, btrajs,
+            maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
+            dt_traj=dt_traj, **parsed_kwargs)
     elif estimator == 'dtram':
         allowed_keys = ['count_mode', 'connectivity']
         parsed_kwargs = dict([(i, kwargs[i]) for i in allowed_keys if i in kwargs])
@@ -397,7 +414,7 @@ def tram(
         A single discrete trajectory or a list of discrete trajectories. The integers are indexes
         in 0,...,num_conf_states-1 enumerating the num_conf_states Markov states or the bins the
         trajectory is in at any time.
-    btrajs : numpy.ndarray(T, num_therm_states), or list of numpy.ndarray(T_i, num_therm_states)
+    bias : numpy.ndarray(T, num_therm_states), or list of numpy.ndarray(T_i, num_therm_states)
         A single reduced bias energy trajectory or a list of reduced bias energy trajectories.
         For every simulation frame seen in trajectory i and time step t, btrajs[i][t, k] is the
         reduced bias energy of that frame evaluated in the k'th thermodynamic state (i.e. at
@@ -515,7 +532,8 @@ def tram(
     ----------
 
     .. [1] Wu, H. et al 2016
-        in press
+        Multiensemble Markov models of molecular thermodynamics and kinetics
+        Proc. Natl. Acad. Sci. USA 113 E3221--E3230
 
     """
     # prepare trajectories
@@ -716,7 +734,6 @@ def dtram(
 def wham(
     ttrajs, dtrajs, bias,
     maxiter=100000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step'):
-    #TODO fix docstring
     r"""
     Weighted histogram analysis method
 
@@ -838,3 +855,128 @@ def wham(
         save_convergence_info=save_convergence_info, dt_traj=dt_traj)
     # run estimation
     return wham_estimator.estimate((ttrajs, dtrajs))
+
+def mbar(
+    ttrajs, dtrajs, bias,
+    maxiter=100000, maxerr=1.0E-15, save_convergence_info=0,
+    dt_traj='1 step', direct_space=False):
+    r"""
+    Multi-state Bennet acceptance ratio
+
+    Parameters
+    ----------
+    ttrajs : numpy.ndarray(T) of int, or list of numpy.ndarray(T_i) of int
+        A single discrete trajectory or a list of discrete trajectories. The integers are
+        indexes in 0,...,num_therm_states-1 enumerating the thermodynamic states the trajectory is
+        in at any time.
+    dtrajs : numpy.ndarray(T) of int, or list of numpy.ndarray(T_i) of int
+        A single discrete trajectory or a list of discrete trajectories. The integers are indexes
+        in 0,...,num_conf_states-1 enumerating the num_conf_states Markov states or the bins the
+        trajectory is in at any time.
+    bias : numpy.ndarray(T, num_therm_states), or list of numpy.ndarray(T_i, num_therm_states)
+        A single reduced bias energy trajectory or a list of reduced bias energy trajectories.
+        For every simulation frame seen in trajectory i and time step t, btrajs[i][t, k] is the
+        reduced bias energy of that frame evaluated in the k'th thermodynamic state (i.e. at
+        the k'th umbrella/Hamiltonian/temperature)
+    maxiter : int, optional, default=10000
+        The maximum number of dTRAM iterations before the estimator exits unsuccessfully.
+    maxerr : float, optional, default=1e-15
+        Convergence criterion based on the maximal free energy change in a self-consistent
+        iteration step.
+    save_convergence_info : int, optional, default=0
+        Every save_convergence_info iteration steps, store the actual increment
+        and the actual loglikelihood; 0 means no storage.
+    dt_traj : str, optional, default='1 step'
+        Description of the physical time corresponding to the lag. May be used by analysis
+        algorithms such as plotting tools to pretty-print the axes. By default '1 step', i.e.
+        there is no physical time unit.  Specify by a number, whitespace and unit. Permitted
+        units are (* is an arbitrary string):
+
+        |  'fs',   'femtosecond*'
+        |  'ps',   'picosecond*'
+        |  'ns',   'nanosecond*'
+        |  'us',   'microsecond*'
+        |  'ms',   'millisecond*'
+        |  's',    'second*'
+
+    direct_space : bool, optional, default=False
+        Whether to perform the self-consitent iteration with Boltzmann factors
+        (direct space) or free energies (log-space). When analyzing data from
+        multi-temperature simulations, direct-space is not recommended.
+
+    Returns
+    -------
+    sm : StationaryModel
+        A stationary model which consists of thermodynamic quantities at all
+        temperatures/thermodynamic states.
+
+    Example
+    -------
+    **Umbrella sampling**: Suppose we simulate in K umbrellas, centered at
+    positions :math:`y_0,...,y_{K-1}` with bias energies
+
+    .. math::
+        b_k(x) = \frac{c_k}{2 \textrm{kT}} \cdot (x - y_k)^2
+
+    Suppose we have one simulation of length T in each umbrella, and they are ordered from 0 to K-1.
+    We have discretized the x-coordinate into 100 bins.
+    Then dtrajs and ttrajs should each be a list of :math:`K` arrays.
+    dtrajs would look for example like this::
+
+    [ (0, 0, 0, 0, 1, 1, 1, 0, 0, 0, ...),  (0, 1, 0, 1, 0, 1, 1, 0, 0, 1, ...), ... ]
+
+    where each array has length T, and is the sequence of bins (in the range 0 to 99) visited along
+    the trajectory. ttrajs would look like this::
+
+    [ (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...),  (1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ...), ... ]
+
+    Because trajectory 1 stays in umbrella 1 (index 0), trajectory 2 stays in umbrella 2 (index 1),
+    and so forth.
+
+    The bias would be a list of :math:`T \times K` arrays which specify each frame's bias energy in
+    all thermodynamic states:
+
+    [ ((0, 1.7, 2.3, 6.1, ...), ...), ((0, 2.4, 3.1, 9,5, ...), ...), ... ]
+
+    Let us try the above example:
+
+    >>> from pyemma.thermo import mbar
+    >>> import numpy as np
+    >>> ttrajs = [np.array([0,0,0,0,0,0,0]), np.array([1,1,1,1,1,1,1])]
+    >>> dtrajs = [np.array([0,0,0,0,1,1,1]), np.array([0,1,0,1,0,1,1])]
+    >>> bias = [np.array([[1,0],[1,0],[0,0],[0,0],[0,0],[0,0],[0,0]],dtype=np.float64), np.array([[1,0],[0,0],[0,0],[1,0],[0,0],[1,0],[1,0]],dtype=np.float64)]
+    >>> mbar_obj = mbar(ttrajs, dtrajs, bias, maxiter=1000000, maxerr=1.0E-14)
+    >>> mbar_obj.stationary_distribution # doctest: +ELLIPSIS
+    array([ 0.5...  0.5...])
+
+    References
+    ----------
+    
+    .. [1] Shirts, M.R. and Chodera, J.D. 2008
+        Statistically optimal analysis of samples from multiple equilibrium states
+        J. Chem. Phys. 129, 124105
+
+    """
+    # check trajectories
+    ttrajs = _types.ensure_dtraj_list(ttrajs)
+    dtrajs = _types.ensure_dtraj_list(dtrajs)
+    if len(ttrajs) != len(dtrajs):
+        raise ValueError("Unmatching number of dtraj/ttraj elements: %d!=%d" % (
+            len(dtrajs), len(ttrajs)))
+    if len(ttrajs) != len(bias):
+        raise ValueError("Unmatching number of ttraj/bias elements: %d!=%d" % (
+            len(ttrajs), len(bias)))
+    for ttraj, dtraj, btraj in zip(ttrajs, dtrajs, bias):
+        if len(ttraj) != len(dtraj):
+            raise ValueError("Unmatching number of data points in ttraj/dtraj: %d!=%d" % (
+                len(ttraj), len(dtraj)))
+        if len(ttraj) != btraj.shape[0]:
+            raise ValueError("Unmatching number of data points in ttraj/bias trajectory: %d!=%d" % (
+                len(ttraj), len(btraj)))
+    # build MBAR
+    from pyemma.thermo import MBAR
+    mbar_estimator = MBAR(
+        maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
+        dt_traj=dt_traj, direct_space=direct_space)
+    # run estimation
+    return mbar_estimator.estimate((ttrajs, dtrajs, bias))

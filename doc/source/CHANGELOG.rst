@@ -1,6 +1,13 @@
 Changelog
 =========
 
+2.2.3 ()
+---------------
+
+**New features**:
+- thermo: added MBAR estimation
+
+
 2.2.2 (7-14-16)
 ---------------
 
