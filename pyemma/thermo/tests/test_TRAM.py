@@ -193,27 +193,29 @@ class TestTRAMasReversibleMSM(unittest.TestCase):
         # lower bound on the log-likelihood must be maximal at convergence
         assert np.all(tram.log_likelihood()+1.E-5 >= tram.loglikelihoods[0:-1])
 
-class TestTRAMwithTRAMmodel(unittest.TestCase):
+
+class TRAMandTRAMMBARBaseClass(object):
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls, init_trammbar):
         # (1-D FEL) TRAM unit test
         # (1) define mu(k,x) on a fine grid, k=0 is defined as unbiased
         # (2) define coarse grid (of Markov states) on x
-        # (3) -> compute pi from it and the conditional mu_i^k
+        # (3) -> compute pi from the grid definition and mu. Compute the conditional mu_i^k
         # (4) -> from pi, generate transtion matrix
         # (5) -> run two-level stochastic process to generate the bias trajectories
         # (6) optional if init_trammbar=True, add a global equilibrium trajectory for TRAMMBAR
 
-        init_trammbar = True
+        cls.test_trammbar = init_trammbar
 
         # (1)
-        therm_states_local = [0, 1, 3]
-        n_therm_states_local = len(therm_states_local)
         if init_trammbar:
-            therm_states_global = [1, 2]
+            therm_states_local = [0, 1, 3] # 2 has only equilibrium data
+            therm_states_global = [1, 2] # 1 has both kinds of data
         else:
+            therm_states_local = [0, 1, 2]
             therm_states_global = []
         therm_states = list(set(therm_states_local).union(therm_states_global))
+        n_therm_states_local = len(therm_states_local)
         n_therm_states_global = len(therm_states_global)
         n_therm_states_total = max(therm_states)+1
         n_conf_states = 3
@@ -309,31 +311,17 @@ class TestTRAMwithTRAMmodel(unittest.TestCase):
         cls.mu = mu
         cls.xes = xes
 
-    def test_with_TRAM_model_direct(self):
-        self.with_TRAM_model(True, False)
-
-    def test_with_TRAM_model_log_space(self):
-        self.with_TRAM_model(False, False)
-
-    def test_TRAMMBAR_log_space(self):
-        self.with_TRAM_model(False, True)
-
-    def test_TRAMMBAR_direct_space(self):
-        self.with_TRAM_model(True, True)
-
-    def with_TRAM_model(self, direct_space, test_trammbar):
+    def with_TRAM_model(self, direct_space):
         # run TRAM
         tram = pyemma.thermo.TRAM(lag=1, maxerr=1E-12, save_convergence_info=10, direct_space=direct_space, nn=None, init='mbar')
-        if not test_trammbar:
+        if not self.test_trammbar:
             tram.estimate((self.ttrajs, self.dtrajs, self.btrajs))
-            therm_states = self.therm_states_local
         else:
             tram.estimate((self.ttrajs + self.eq_ttrajs, self.dtrajs + self.eq_dtrajs, self.btrajs + self.eq_btrajs),
                 equilibrium=self.eq)
-            therm_states = list(set(self.therm_states_local).union(self.therm_states_global))
 
         # csets must include all states
-        for k in therm_states:
+        for k in self.therm_states:
             assert len(tram.csets[k]) == self.n_conf_states
 
         # check exact identities
@@ -349,14 +337,14 @@ class TestTRAMwithTRAMmodel(unittest.TestCase):
         # (2') for TRAMMBAR: sum_jk v^k_j T^k_ji + sum_k N^k,eq pi_i^k = sum_jk c^k_ji + N_i^eq
         # TODO: include overcounting factor
         pi_biased = np.exp(-tram.biased_conf_energies + tram.therm_energies[:, np.newaxis])
-        for k in therm_states:
+        for k in self.therm_states:
             lagrangian_mult = np.exp(tram.log_lagrangian_mult[k,:])
             transition_matrix = tram.models[k].transition_matrix
             if transition_matrix.shape[0] > 1: # skip equilibrium-only thermodynamic states
                 total += lagrangian_mult.T.dot(transition_matrix)
-            if test_trammbar:
+            if self.test_trammbar:
                 total += tram.equilibrium_state_counts[k,:].sum()*pi_biased[k,:]
-        if not test_trammbar:
+        if not self.test_trammbar:
             assert np.allclose(total, self.C.sum(axis=0).sum(axis=0))
         else:
             assert np.allclose(total, self.C.sum(axis=0).sum(axis=0) + tram.equilibrium_state_counts.sum(axis=0))
@@ -376,18 +364,43 @@ class TestTRAMwithTRAMmodel(unittest.TestCase):
         assert np.all(tram.log_likelihood()+1.E-5 >= tram.loglikelihoods[0:-1])
 
         # check mu
-        for k in therm_states:
+        for k in self.therm_states:
             # reference
             f0 = -np.log(self.mu[k, :].sum())
             reference_fel = self.energy[k, :] - f0
             # TRAM result
             test_p_f_es = np.concatenate(tram.pointwise_free_energies(k))
-            if not test_trammbar:
+            if not self.test_trammbar:
                 counts,_ = np.histogram(self.xes, weights=np.exp(-test_p_f_es), bins=self.n_micro_states)
             else:
                 counts, _ = np.histogram(np.concatenate((self.xes, self.eq_xes)), weights=np.exp(-test_p_f_es), bins=self.n_micro_states)
             test_fel = -np.log(counts) + np.log(counts.sum())
             assert np.allclose(reference_fel, test_fel, atol=0.1)
+
+
+class TestTRAMwithTRAMmodel(unittest.TestCase, TRAMandTRAMMBARBaseClass):
+    @classmethod
+    def setUpClass(cls):
+        TRAMandTRAMMBARBaseClass.setUpClass(False)
+
+    def test_with_TRAM_model_direct(self):
+        self.with_TRAM_model(True)
+
+    def test_with_TRAM_model_log_space(self):
+        self.with_TRAM_model(False)
+
+
+class TestTRAMMBARwithTRAMMBARmodel(unittest.TestCase, TRAMandTRAMMBARBaseClass):
+    @classmethod
+    def setUpClass(cls):
+        TRAMandTRAMMBARBaseClass.setUpClass(True)
+
+    def test_TRAMMBAR_log_space(self):
+        self.with_TRAM_model(False)
+
+    def test_TRAMMBAR_direct_space(self):
+        self.with_TRAM_model(True)
+
 
 if __name__ == "__main__":
     unittest.main()
