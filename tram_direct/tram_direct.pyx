@@ -233,7 +233,7 @@ def estimate(
     scratch_M_int = _np.zeros(shape=n_conf_states, dtype=_np.intc)
     occupied = _np.where(state_counts > 0)
     if _np.any(_np.isinf(biased_conf_energies[occupied])):
-        print >>sys.stderr, 'Warning: detected inf in biased_conf_energies.' # TODO: possible Python3 violation
+        _warn("Detected inf in biased_conf_energies.", RuntimeWarning)
     old_biased_conf_weights = biased_conf_weights.copy()
     old_lagrangian_mult = lagrangian_mult.copy()
     old_biased_conf_energies = biased_conf_energies.copy()
