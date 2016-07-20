@@ -155,7 +155,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
         self.log_lagrangian_mult = None
         self.loglikelihoods = None
 
-    def estimate(self, X):
+    def estimate(self, X, equilibrium=None, **params):
         """
         Parameters
         ----------
@@ -174,8 +174,6 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
                 bias energy of that frame evaluated in the k'th thermodynamic state (i.e. at the k'th
                 Umbrella/Hamiltonian/temperature).
 
-        In addition, the `equilibrium` parameter which is related to X can be set in __init__.
-
         equilibrium : list of booleans, optional
              For every trajectory triple (ttraj[i], dtraj[i], btraj[i]), indicates
              whether to assume global equilibrium. If true, the triple is not used
@@ -183,7 +181,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
              By default, no trajectory is assumed to be in global equilibrium.
              This is the TRAMMBAR extension.
         """
-        return super(TRAM, self).estimate(X)
+        return super(TRAM, self).estimate(X, equilibrium=equilibrium, **params)
 
     def _estimate(self, X):
         ttrajs, dtrajs_full, btrajs = X
