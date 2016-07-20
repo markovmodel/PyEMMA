@@ -116,9 +116,9 @@ class DTRAM(_Estimator, _MEMM, _ProgressReporter):
 
     """
     def __init__(
-        self, bias_energies_full, lag, count_mode='sliding', connectivity='largest',
-        maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step',
-        init=None, init_maxiter=10000, init_maxerr=1.0E-8):
+            self, bias_energies_full, lag, count_mode='sliding', connectivity='largest',
+            maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step',
+            init=None, init_maxiter=10000, init_maxerr=1.0E-8):
         # set all parameters
         self.bias_energies_full = _types.ensure_ndarray(bias_energies_full, ndim=2, kind='numeric')
         self.lag = lag
@@ -142,21 +142,25 @@ class DTRAM(_Estimator, _MEMM, _ProgressReporter):
         self.conf_energies = None
         self.log_lagrangian_mult = None
 
-    def _estimate(self, trajs):
+    def estimate(self, trajs):
         """
         Parameters
         ----------
         X : tuple of (ttrajs, dtrajs)
             Simulation trajectories. ttrajs contain the indices of the thermodynamic state and
             dtrajs contains the indices of the configurational states.
-        ttrajs : list of numpy.ndarray(X_i, dtype=int)
-            Every elements is a trajectory (time series). ttrajs[i][t] is the index of the
-            thermodynamic state visited in trajectory i at time step t.
-        dtrajs : list of numpy.ndarray(X_i, dtype=int)
-            dtrajs[i][t] is the index of the configurational state (Markov state) visited in
-            trajectory i at time step t.
+
+            ttrajs : list of numpy.ndarray(X_i, dtype=int)
+                Every elements is a trajectory (time series). ttrajs[i][t] is the index of the
+                thermodynamic state visited in trajectory i at time step t.
+            dtrajs : list of numpy.ndarray(X_i, dtype=int)
+                dtrajs[i][t] is the index of the configurational state (Markov state) visited in
+                trajectory i at time step t.
 
         """
+        return super(DTRAM, self).estimate(trajs)
+
+    def _estimate(self, trajs):
         # check input
         assert isinstance(trajs, (tuple, list))
         assert len(trajs) == 2
@@ -207,14 +211,14 @@ class DTRAM(_Estimator, _MEMM, _ProgressReporter):
 
         # run estimator
         self.therm_energies, self.conf_energies, self.log_lagrangian_mult, \
-            self.increments, self.loglikelihoods = _dtram.estimate(
-                self.count_matrices, self.bias_energies,
-                maxiter=self.maxiter, maxerr=self.maxerr,
-                log_lagrangian_mult=self.log_lagrangian_mult,
-                conf_energies=self.conf_energies,
-                save_convergence_info=self.save_convergence_info,
-                callback=_ConvergenceProgressIndicatorCallBack(
-                    self, 'DTRAM', self.maxiter, self.maxerr))
+        self.increments, self.loglikelihoods = _dtram.estimate(
+            self.count_matrices, self.bias_energies,
+            maxiter=self.maxiter, maxerr=self.maxerr,
+            log_lagrangian_mult=self.log_lagrangian_mult,
+            conf_energies=self.conf_energies,
+            save_convergence_info=self.save_convergence_info,
+            callback=_ConvergenceProgressIndicatorCallBack(
+                self, 'DTRAM', self.maxiter, self.maxerr))
         self._progress_force_finish(stage='DTRAM', description='DTRAM')
 
         # compute models

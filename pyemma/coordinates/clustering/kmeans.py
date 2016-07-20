@@ -30,7 +30,7 @@ import tempfile
 
 from pyemma._base.progress.reporter import ProgressReporter
 from pyemma.coordinates.clustering.interface import AbstractClustering
-from pyemma.util.annotators import doc_inherit
+from pyemma.util.annotators import fix_docs
 from pyemma.util.units import bytes_to_string
 
 from pyemma.util.contexts import conditional, random_seed
@@ -43,6 +43,7 @@ from . import kmeans_clustering
 __all__ = ['KmeansClustering']
 
 
+@fix_docs
 class KmeansClustering(AbstractClustering, ProgressReporter):
     r"""k-means clustering"""
 
@@ -63,7 +64,7 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
         tolerance : float
             stop iteration when the relative change in the cost function
 
-            ..1:                C(S) = \sum_{i=1}^{k} \sum_{\mathbf x \in S_i} \left\| \mathbf x - \boldsymbol\mu_i \right\|^2
+            .. math:: C(S) = \sum_{i=1}^{k} \sum_{\mathbf x \in S_i} \left\| \mathbf x - \boldsymbol\mu_i \right\|^2
 
             is smaller than tolerance.
         metric : str
@@ -128,7 +129,6 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
         empty = np.empty(shape=(1, self.data_producer.dimension()), order='C', dtype=np.float32)
         return empty[0, :].nbytes * size
 
-    @doc_inherit
     def describe(self):
         return "[Kmeans, k=%i, inp_dim=%i]" % (self.n_clusters, self.data_producer.dimension())
 
@@ -138,7 +138,7 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
     def _estimate(self, iterable, **kw):
         self._init_estimate()
 
-        with iterable.iterator(return_trajindex=True, stride=self.stride) as iter:
+        with iterable.iterator(return_trajindex=True, stride=self.stride, chunk=self.chunksize) as iter:
             # first pass: gather data and run k-means
             first_chunk = True
             for itraj, X in iter:

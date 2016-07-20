@@ -24,11 +24,14 @@ from __future__ import absolute_import
 
 import functools
 
-from pyemma.coordinates.data._base.datasource import DataSourceIterator, DataSource
-from pyemma.coordinates.data.util.traj_info_cache import TrajInfo
 import numpy as np
 
+from pyemma.coordinates.data._base.datasource import DataSourceIterator, DataSource
+from pyemma.coordinates.data.util.traj_info_cache import TrajInfo
+from pyemma.util.annotators import fix_docs
 
+
+@fix_docs
 class NumPyFileReader(DataSource):
 
     """reads NumPy files in chunks. Supports .npy files
@@ -87,7 +90,7 @@ class NumPyFileReader(DataSource):
 
     def _load_file(self, itraj):
         filename = self._filenames[itraj]
-        self._logger.debug("opening file %s" % filename)
+        #self._logger.debug("opening file %s" % filename)
 
         if filename.endswith('.npy'):
             x = np.load(filename, mmap_mode=self.mmap_mode)

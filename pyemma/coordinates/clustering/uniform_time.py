@@ -21,15 +21,16 @@ from __future__ import absolute_import, division
 
 import math
 
-from pyemma.coordinates.clustering.interface import AbstractClustering
-
 import numpy as np
 
+from pyemma.coordinates.clustering.interface import AbstractClustering
+from pyemma.util.annotators import fix_docs
 
 __author__ = 'noe'
 __all__ = ['UniformTimeClustering']
 
 
+@fix_docs
 class UniformTimeClustering(AbstractClustering):
     r"""Uniform time clustering"""
 
@@ -84,7 +85,7 @@ class UniformTimeClustering(AbstractClustering):
         linspace = self.stride * np.arange(next_t, T - next_t + 1, (T - 2*next_t + 1) // self.n_clusters)[:self.n_clusters]
         # random access matrix
         ra_stride = np.array([UniformTimeClustering._idx_to_traj_idx(x, cumsum) for x in linspace])
-        with iterable.iterator(stride=ra_stride, return_trajindex=False) as it:
+        with iterable.iterator(stride=ra_stride, return_trajindex=False, chunk=self.chunksize) as it:
             self.clustercenters = np.concatenate([X for X in it])
 
         assert len(self.clustercenters) == self.n_clusters

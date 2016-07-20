@@ -22,18 +22,15 @@ Created on 30.04.2015
 
 from __future__ import absolute_import
 
+from contextlib import contextmanager
 from tempfile import NamedTemporaryFile
 
-try:
-    import bsddb
-    have_bsddb = True
-except ImportError:
-    have_bsddb = False
 
 import os
-import six
 import tempfile
 import unittest
+
+import mock
 
 from pyemma.coordinates import api
 from pyemma.coordinates.data.feature_reader import FeatureReader
@@ -49,12 +46,6 @@ import pkg_resources
 import pyemma
 import numpy as np
 
-if six.PY2:
-    import dumbdbm
-    import mock
-else:
-    from dbm import dumb as dumbdbm
-    from unittest import mock
 
 xtcfiles = get_bpti_test_data()['trajs']
 pdbfile = get_bpti_test_data()['top']
@@ -64,30 +55,36 @@ class TestTrajectoryInfoCache(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.work_dir = tempfile.mkdtemp("traj_cache_test")
+        cls.old_instance = TrajectoryInfoCache.instance()
+        cls.old_show_pg = config.show_progress_bars
+        config.show_progress_bars = False
 
     def setUp(self):
+        self.work_dir = tempfile.mkdtemp("traj_cache_test")
         self.tmpfile = tempfile.mktemp(dir=self.work_dir)
         self.db = TrajectoryInfoCache(self.tmpfile)
 
-        assert len(self.db._database) == 1, len(self.db._database)
-        assert 'db_version' in self.db._database
-        assert int(self.db._database['db_version']) >= 1
+        # overwrite TrajectoryInfoCache._instance with self.db...
+        TrajectoryInfoCache._instance = self.db
 
     def tearDown(self):
-        del self.db
+        self.db.close()
+        os.unlink(self.tmpfile)
+
+        import shutil
+        shutil.rmtree(self.work_dir, ignore_errors=True)
 
     @classmethod
     def tearDownClass(cls):
-        import shutil
-        shutil.rmtree(cls.work_dir, ignore_errors=True)
+        TrajectoryInfoCache._instance = cls.old_instance
+        config.show_progress_bars = cls.old_show_pg
 
     def test_get_instance(self):
         # test for exceptions in singleton creation
         inst = TrajectoryInfoCache.instance()
         inst.current_db_version
+        self.assertIs(inst, self.db)
 
-    @unittest.skip("persistence currently disabled.")
     def test_store_load_traj_info(self):
         x = np.random.random((10, 3))
         my_conf = config()
@@ -97,8 +94,8 @@ class TestTrajectoryInfoCache(unittest.TestCase):
                 np.savetxt(fh.name, x)
                 reader = api.source(fh.name)
                 info = self.db[fh.name, reader]
-                self.db._database.close()
-                self.db._database = dumbdbm.open(self.db.database_filename, 'r')
+                self.db.close()
+                self.db.__init__(self.db._database.filename)
                 info2 = self.db[fh.name, reader]
                 self.assertEqual(info2, info)
 
@@ -106,7 +103,7 @@ class TestTrajectoryInfoCache(unittest.TestCase):
         # in accessible files
         not_existant = ''.join(
             chr(i) for i in np.random.random_integers(65, 90, size=10)) + '.npy'
-        bad = [not_existant]  # should be unaccessible or non existant
+        bad = [not_existant]  # should be unaccessible or non existent
         with self.assertRaises(ValueError) as cm:
             api.source(bad)
             assert bad[0] in cm.exception.message
@@ -207,7 +204,7 @@ class TestTrajectoryInfoCache(unittest.TestCase):
         # make sure cache is not used for data in memory!
         data = [np.empty((3, 3))] * 3
         api.source(data)
-        assert len(self.db._database) == 1
+        self.assertEqual(self.db.num_entries, 0)
 
     def test_old_db_conversion(self):
         # prior 2.1, database only contained lengths (int as string) entries
@@ -219,7 +216,9 @@ class TestTrajectoryInfoCache(unittest.TestCase):
             f.close() # windows sucks
             reader = api.source(fn)
             hash = db._get_file_hash(fn)
-            db._database = {hash: str(3)}
+            from pyemma.coordinates.data.util.traj_info_backends import DictDB
+            db._database = DictDB()
+            db._database.db_version = 0
 
             info = db[fn, reader]
             assert info.length == 3
@@ -231,11 +230,73 @@ class TestTrajectoryInfoCache(unittest.TestCase):
             f.write("makes no sense!!!!")
             f.close()
         name = f.name
-        db = TrajectoryInfoCache(name)
+        import warnings
+        with warnings.catch_warnings(record=True) as cm:
+            warnings.simplefilter('always')
+            db = TrajectoryInfoCache(name)
+            assert len(cm) == 1
+            assert "corrupted" in str(cm[-1].message)
 
         # ensure we can perform lookups on the broken db without exception.
         r = api.source(xtcfiles[0], top=pdbfile)
         db[xtcfiles[0], r]
+
+    def test_n_entries(self):
+        self.assertEqual(self.db.num_entries, 0)
+        assert TrajectoryInfoCache._instance is self.db
+        pyemma.coordinates.source(xtcfiles, top=pdbfile)
+        self.assertEqual(self.db.num_entries, len(xtcfiles))
+
+    def test_max_n_entries(self):
+        data = [np.random.random((10, 3)) for _ in range(20)]
+        max_entries = 10
+        config.traj_info_max_entries = max_entries
+        files = []
+        with TemporaryDirectory() as td:
+            for i, arr in enumerate(data):
+                f = os.path.join(td, "%s.npy" % i)
+                np.save(f, arr)
+                files.append(f)
+            pyemma.coordinates.source(files)
+        self.assertLessEqual(self.db.num_entries, max_entries)
+        self.assertGreater(self.db.num_entries, 0)
+
+    def test_max_size(self):
+        data = [np.random.random((150, 10)) for _ in range(150)]
+        max_size = 1
+
+        @contextmanager
+        def size_ctx(new_size):
+            old_size = config.traj_info_max_size
+            config.traj_info_max_size = new_size
+            yield
+            config.traj_info_max_size = old_size
+
+        files = []
+        config.show_progress_bars=False
+        with TemporaryDirectory() as td, size_ctx(max_size):
+            for i, arr in enumerate(data):
+                f = os.path.join(td, "%s.txt" % i)
+                # save as txt to enforce creation of offsets
+                np.savetxt(f, arr)
+                files.append(f)
+            pyemma.coordinates.source(files)
+
+        self.assertLessEqual(os.stat(self.db.database_filename).st_size / 1024, config.traj_info_max_size)
+        self.assertGreater(self.db.num_entries, 0)
+
+    @unittest.skip("not yet functional")
+    def test_no_sqlite(self):
+        def import_mock(name, *args):
+            if name == 'sqlite3':
+                raise ImportError("we pretend not to have this")
+            return __import__(name, *args)
+
+        from pyemma.coordinates.data.util import traj_info_cache
+        with mock.patch('pyemma.coordinates.data.util.traj_info_cache', '__import__',
+                        side_effect=import_mock, create=True):
+            TrajectoryInfoCache._instance = None
+            TrajectoryInfoCache(self.tempfile)
 
 if __name__ == "__main__":
     unittest.main()

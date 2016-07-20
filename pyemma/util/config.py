@@ -43,6 +43,8 @@ __all__ = (
            'show_progress_bars',
            'used_filenames',
            'use_trajectory_lengths_cache',
+           'traj_info_max_entries',
+           'traj_info_max_size',
            )
 
 if six.PY2:
@@ -322,6 +324,22 @@ In order to load a pre-saved configuration file, use the :py:func:`load` method:
     #   #config['incremental'] = True
     #    setup_logging(self, config)
 
+    @property
+    def traj_info_max_entries(self):
+        return self._conf_values.getint('pyemma', 'traj_info_max_entries')
+
+    @traj_info_max_entries.setter
+    def traj_info_max_entries(self, val):
+        self._conf_values.set('pyemma', 'traj_info_max_entries', str(val))
+
+    @property
+    def traj_info_max_size(self):
+        return self._conf_values.getint('pyemma', 'traj_info_max_size')
+
+    @traj_info_max_size.setter
+    def traj_info_max_size(self, val):
+        val = str(int(val))
+        self._conf_values.set('pyemma', 'traj_info_max_size', val)
     @property
     def show_progress_bars(self):
         return self._conf_values.getboolean('pyemma', 'show_progress_bars')

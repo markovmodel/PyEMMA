@@ -29,6 +29,7 @@ from pyemma.coordinates.data._base.iterable import Iterable
 from pyemma.coordinates.data._base.random_accessible import RandomAccessStrategy
 from pyemma.coordinates.util.change_notification import (inform_children_upon_change,
                                                          NotifyOnChangesMixIn)
+from pyemma.util.annotators import fix_docs
 from pyemma.util.exceptions import NotConvergedWarning
 from six.moves import range
 import numpy as np
@@ -106,6 +107,7 @@ class Transformer(six.with_metaclass(ABCMeta, TransformerMixin)):
         pass
 
 
+@fix_docs
 class StreamingTransformer(Transformer, Estimator, DataSource, NotifyOnChangesMixIn):
 
     r""" Basis class for pipelined Transformers
@@ -198,7 +200,7 @@ class StreamingTransformer(Transformer, Estimator, DataSource, NotifyOnChangesMi
 
         return self
 
-    def get_output(self, dimensions=slice(0, None), stride=1, skip=0, chunk=0):
+    def get_output(self, dimensions=slice(0, None), stride=1, skip=0, chunk=None):
         if not self._estimated:
             self.estimate(self.data_producer, stride=stride)
 
@@ -226,65 +228,15 @@ class StreamingTransformer(Transformer, Estimator, DataSource, NotifyOnChangesMi
         self.data_producer.chunksize = int(size)
 
     def number_of_trajectories(self):
-        r"""
-        Returns the number of trajectories.
-
-        Returns
-        -------
-            int : number of trajectories
-        """
         return self.data_producer.number_of_trajectories()
 
     def trajectory_length(self, itraj, stride=1, skip=None):
-        r"""
-        Returns the length of trajectory of the requested index.
-
-        Parameters
-        ----------
-        itraj : int
-            trajectory index
-        stride : int
-            return value is the number of frames in the trajectory when
-            running through it with a step size of `stride`.
-
-        Returns
-        -------
-        int : length of trajectory
-        """
         return self.data_producer.trajectory_length(itraj, stride=stride, skip=skip)
 
     def trajectory_lengths(self, stride=1, skip=0):
-        r"""
-        Returns the length of each trajectory.
-
-        Parameters
-        ----------
-        stride : int
-            return value is the number of frames of the trajectories when
-            running through them with a step size of `stride`.
-        skip : int
-            skip parameter
-
-        Returns
-        -------
-        array(dtype=int) : containing length of each trajectory
-        """
         return self.data_producer.trajectory_lengths(stride=stride, skip=skip)
 
     def n_frames_total(self, stride=1):
-        r"""
-        Returns total number of frames.
-
-        Parameters
-        ----------
-        stride : int
-            return value is the number of frames in trajectories when
-            running through them with a step size of `stride`.
-
-        Returns
-        -------
-        int : n_frames_total
-        """
         return self.data_producer.n_frames_total(stride=stride)
 
 

@@ -1,6 +1,37 @@
 Changelog
 =========
 
+2.2.3 ()
+---------------
+
+**New features**:
+- thermo: added MBAR estimation
+
+
+2.2.2 (7-14-16)
+---------------
+
+**New features**:
+- coordinates: SQLite backend for trajectory info data. This enables fast access to this data
+  on parallel filesystems where multiple processes are writing to the database. This greatly
+  speeds ups reader construction and enables fast random access for formats which usually do not
+  support it. #798
+- plots: new optional parameter **arrow_label_size** for network plotting functions to use a custom
+  font size for the arrow labels; the default state and arrow label sizes are now determined by the
+  matplotlib default. #858
+- coordinates: save_trajs takes optional parameter "image_molecules" to correct for broken
+  molecules across periodic boundary conditions. #841
+
+**Fixes**:
+
+- coordinates: set chunksize correctly. #846
+- coordinates: For angle features it was possible to use both cossin=True and deg=True, which
+  makes not sense. #857
+- coordinates: fixed a memory error in kmeans clustering which affected large data sets (>=64GB). #839
+- base: fixed a bug in ProgressReporter (_progress_force_finish in stack trace). #869
+- docs: fixed a lot of docstrings for inherited classes both in coordinates and msm package.
+
+
 2.2.1 (6-21-16)
 ---------------
 

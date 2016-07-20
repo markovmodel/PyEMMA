@@ -33,7 +33,7 @@ from logging import getLogger
 
 _logger = None
 
-SIGNAL_STACKTRACE = 42
+SIGNAL_STACKTRACE = 23
 SIGNAL_PDB = 43
 
 

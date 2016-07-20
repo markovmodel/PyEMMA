@@ -29,7 +29,7 @@ import warnings
 
 from pyemma.coordinates.clustering import regspatial
 from pyemma.coordinates.clustering.interface import AbstractClustering
-from pyemma.util.annotators import doc_inherit
+from pyemma.util.annotators import fix_docs
 from pyemma.util.exceptions import NotConvergedWarning
 
 import numpy as np
@@ -38,6 +38,7 @@ import numpy as np
 __all__ = ['RegularSpaceClustering']
 
 
+@fix_docs
 class RegularSpaceClustering(AbstractClustering):
     r"""Regular space clustering"""
 
@@ -82,7 +83,6 @@ class RegularSpaceClustering(AbstractClustering):
 
         self.set_params(dmin=dmin, metric=metric, max_centers=max_centers, stride=stride)
 
-    @doc_inherit
     def describe(self):
         return "[RegularSpaceClustering dmin=%f, inp_dim=%i]" % (self._dmin, self.data_producer.dimension())
 
@@ -135,7 +135,7 @@ class RegularSpaceClustering(AbstractClustering):
         it = iterable.iterator(return_trajindex=False)
         used_frames = 0
         try:
-            with iterable.iterator(return_trajindex=False) as it:
+            with iterable.iterator(return_trajindex=False, stride=self.stride, chunk=self.chunksize) as it:
                 for X in it:
                     used_frames += len(X)
                     regspatial.cluster(X.astype(np.float32, order='C', copy=False),
