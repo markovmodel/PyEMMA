@@ -184,9 +184,6 @@ def update_biased_conf_energies(
         return_log_L = True)
     return_log_L : bool
         If true, retrun the TRAM-log-likelihood.
-
-    TRAMMBAR parameters
-    -------------------
     therm_energies : numpy.ndarray(shape=(T), dtype=numpy.float64)
         reduced thermodynamic free energies, must match `biased_conf_energies`
     equilibrium_bias_energy_sequences : list of numpy.ndarray(shape=(X_i, T), dtype=numpy.float64), optional
@@ -281,9 +278,6 @@ def get_log_Ref_K_i(
         scratch array for logsumexp operations
     log_R_K_i : numpy.ndarray(shape=(T, M), dtype=numpy.float64)
         target array for sum of TRAM log pseudo-counts and biased_conf_energies
-
-    TRAMMBAR parameters
-    -------------------
     therm_energies : numpy.ndarray(shape=(T), dtype=numpy.float64)
         reduced thermodynamic free energies, must match `biased_conf_energies`
     equilibrium_therm_state_counts : numpy.ndarray(shape=(T), dtype=numpy.intc)
@@ -330,9 +324,6 @@ def get_conf_energies(
         precomputed sum of TRAM log pseudo-counts and biased_conf_energies
     scratch_T : numpy.ndarray(shape=(T), dtype=numpy.float64)
         scratch array for logsumexp operations
-
-    TRAMMBAR parameters
-    -------------------
     equilibrium_bias_energy_sequences : list of numpy.ndarray(shape=(X_i, T), dtype=numpy.float64), optional
         reduced bias energies in the T thermodynamic states for all X equilibrium samples
     equilibrium_state_sequences : list of numpy.ndarray(shape=(X_i,), dtype=numpy.intc), optional
@@ -474,9 +465,6 @@ def get_pointwise_unbiased_free_energies(
         scratch array for logsumexp operations
     pointwise_unbiased_free_energies : list of numpy.ndarray(shape=(X_i), dtype=numpy.float64)
         target arrays for the pointwise free energies
-
-    TRAMMBAR parameters
-    -------------------
     equilibrium_therm_state_counts : numpy.ndarray(shape=(T), dtype=numpy.intc), optional
         number of equilibrium frames per thermodynamic state, can be zero
     overcounting_factor : double, default = 1.0
@@ -643,9 +631,6 @@ def log_likelihood_lower_bound(
         scratch array for logsumexp operations
     scratch_MM : numpy.ndarray(shape=(M, M), dtype=numpy.float64)
         scratch array for likelihood computation
-
-    TRAMMBAR parameters
-    -------------------
     therm_energies : numpy.ndarray(shape=(T), dtype=numpy.float64)
         reduced thermodynamic free energies, must match `biased_conf_energies`
     equilibrium_bias_energy_sequences : list of numpy.ndarray(shape=(X_i, T), dtype=numpy.float64), optional
@@ -729,9 +714,6 @@ def estimate(count_matrices, state_counts, bias_energy_sequences, state_sequence
         initial guess for the logarithm of the Lagrangian multipliers
     N_dtram_accelerations : int
         not used
-
-    TRAMMBAR parameters
-    -------------------
     equilibrium_therm_state_counts : numpy.ndarray(shape=(T,), dtype=numpy.intc), optional
         number of equilibrium frames per thermodynamic state, can be zero
     equilibrium_bias_energy_sequences : list of numpy.ndarray(shape=(X_i, T), dtype=numpy.float64), optional
@@ -758,10 +740,13 @@ def estimate(count_matrices, state_counts, bias_energy_sequences, state_sequence
     loglikelihoods : numpy.ndarray(dtype=numpy.float64, ndim=1)
         stored sequence of loglikelihoods
 
-    Termination
-    -----------
+    Note
+    ----
     The self-consitent iteration terminates when
-    .. math:: max\{\max_{i,k}{\Delta \pi_i^k}, \max_k \Delta f^k \}<\mathrm{maxerr}.
+
+    .. math::
+       \max\{\max_{i,k}{\Delta \pi_i^k}, \max_k \Delta f^k \}<\mathrm{maxerr}.
+
     Different termination criteria can be implemented with the callback
     function. Raising `CallbackInterrupt` in the callback will cleanly
     terminate the iteration.

@@ -596,10 +596,13 @@ def estimate(count_matrices, state_counts, bias_energy_sequences, state_sequence
     loglikelihoods : numpy.ndarray(dtype=numpy.float64, ndim=1)
         stored sequence of loglikelihoods
 
-    Termination
-    -----------
+    Note
+    ----
     The self-consitent iteration terminates when
-    .. math:: max\{\max_{i,k}{\Delta \pi_i^k}, \max_k \Delta f^k \}<\mathrm{maxerr}.
+
+    .. math::
+       \max\{\max_{i,k}{\Delta \pi_i^k}, \max_k \Delta f^k \}<\mathrm{maxerr}.
+
     Different termination criteria can be implemented with the callback
     function. Raising `CallbackInterrupt` in the callback will cleanly
     terminate the iteration.
