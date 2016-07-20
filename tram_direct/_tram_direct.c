@@ -67,7 +67,10 @@ void _tram_direct_get_Ref_K_i(
 #endif
     )
 {
-    int i, j, K, Ki, Kj, KM, KMM;
+    int i, j, K, Ki, Kj, KMM;
+#ifdef TRAMMBAR
+    int KM;
+#endif
     int CCT_Kij, CKi;
 
     /* compute R */
