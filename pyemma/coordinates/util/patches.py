@@ -24,8 +24,9 @@ Created on 13.03.2015
 
 from __future__ import absolute_import
 import numpy as np
+from mdtraj import Topology
 from mdtraj.utils.validation import cast_indices
-from mdtraj.core.trajectory import load, _TOPOLOGY_EXTS, _get_extension, open as md_open, load_topology_cached
+from mdtraj.core.trajectory import load, _TOPOLOGY_EXTS, _get_extension, open as md_open, load_topology
 
 from itertools import groupby
 from operator import itemgetter
@@ -36,10 +37,12 @@ from six.moves import map
 
 def _cache_mdtraj_topology(args):
     import hashlib
-    from mdtraj import load_topology_cached as md_load_topology
+    from mdtraj import load_topology as md_load_topology
     _top_cache = {}
 
     def wrap(top_file):
+        if isinstance(top_file, Topology):
+            return top_file
         hasher = hashlib.md5()
         with open(top_file) as f:
             hasher.update(f.read())
@@ -53,7 +56,7 @@ def _cache_mdtraj_topology(args):
         return top
     return wrap
 
-load_topology_cached = _cache_mdtraj_topology(load_topology_cached)
+load_topology_cached = _cache_mdtraj_topology(load_topology)
 
 
 class iterload(object):
@@ -163,6 +166,8 @@ class iterload(object):
         if self._closed:
             raise StopIteration()
 
+        # apply skip offset only once.
+        # (we want to do this here, since we want to be able to re-set self.skip)
         if not self._seeked:
             self._f.seek(self.skip)
             self._seeked = True
