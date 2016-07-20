@@ -151,7 +151,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
         self.log_lagrangian_mult = None
         self.loglikelihoods = None
 
-    def estimate(self, X):
+    def estimate(self, X, **params):
         """
         Parameters
         ----------
@@ -170,7 +170,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
                 bias energy of that frame evaluated in the k'th thermodynamic state (i.e. at the k'th
                 Umbrella/Hamiltonian/temperature).
         """
-        return super(TRAM, self).estimate(X)
+        return super(TRAM, self).estimate(X, **params)
 
     def _estimate(self, X):
         ttrajs, dtrajs_full, btrajs = X
