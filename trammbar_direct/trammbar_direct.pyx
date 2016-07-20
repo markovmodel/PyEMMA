@@ -190,7 +190,7 @@ def estimate(
         transition count matrices for all T thermodynamic states
     state_counts : numpy.ndarray(shape=(T, M), dtype=numpy.intc)
         state counts for all M discrete and T thermodynamic states
-    bias_energy_sequences : lift of numpy.ndarray(shape=(X_i, T), dtype=numpy.float64)
+    bias_energy_sequences : list of numpy.ndarray(shape=(X_i, T), dtype=numpy.float64)
         reduced bias energies in the T thermodynamic states for all X samples
     state_sequences : list of numpy.ndarray(shape=(X_i), dtype=numpy.float64)
         discrete state indices for all X samples
