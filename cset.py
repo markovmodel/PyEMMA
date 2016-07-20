@@ -413,8 +413,8 @@ def restrict_to_csets(
             assert len(t) == len(d)
             new_d = _np.array(d, dtype=_np.intc, copy=True, order='C', ndmin=1)
             bad = invalid[t, d]
-            new_d[bad] = new_d[bad] - n_conf_states # 'numpy equivalent' indices as in x[i]==x[i-len(x)]
-            assert _np.all(new_d[bad] - n_conf_states < 0)
+            new_d[bad] = new_d[bad] - n_conf_states # 'numpy equivalent' indices as in x[i]==x[i+len(x)]
+            assert _np.all(new_d[bad] < 0)
             new_dtrajs.append(new_d)
     else:
         new_dtrajs = None
