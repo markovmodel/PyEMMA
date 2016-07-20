@@ -44,7 +44,7 @@ def _cache_mdtraj_topology(args):
         if isinstance(top_file, Topology):
             return top_file
         hasher = hashlib.md5()
-        with open(top_file) as f:
+        with open(top_file, 'rb') as f:
             hasher.update(f.read())
         hash = hasher.hexdigest()
 
