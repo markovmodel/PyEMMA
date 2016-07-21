@@ -23,58 +23,27 @@ Created on 29.07.2015
 '''
 
 from __future__ import absolute_import
+
 import unittest
+
+from six.moves import range
+
 from pyemma._base.progress import ProgressReporter
 from pyemma._base.progress.bar import ProgressBar
-from six.moves import range
+from pyemma import config
 
 
 class TestProgress(unittest.TestCase):
 
-    # FIXME: does not work with nose (because nose already captures stdout)
-    """
-    def test_silenced(self):
-        reporter = ProgressReporter()
-        reporter._register(1)
-        reporter.silence_progress = True
+    @classmethod
+    def setUpClass(cls):
+        config.show_progress_bars = True
 
-        from StringIO import StringIO
-
-        saved_stdout = sys.stdout
-        try:
-            out = StringIO()
-            sys.stdout = out
-            # call the update method to potentially create output
-            reporter._update(1)
-            output = out.getvalue().strip()
-            # in silence mode we do not want any output!
-            assert output == ''
-        finally:
-            sys.stdout = saved_stdout
-
-    def test_not_silenced(self):
-        reporter = ProgressReporter()
-        reporter._register(1)
-        reporter.silence_progress = False
-
-        from StringIO import StringIO
-
-        saved_stdout = sys.stdout
-        try:
-            out = StringIO()
-            sys.stdout = out
-            # call the update method to potentially create output
-            reporter._update(1)
-            output = out.getvalue().strip()
-            # in silence mode we do not want any output!
-            print output
-            assert output is not ''
-        finally:
-            sys.stdout = saved_stdout
-    """
+    @classmethod
+    def tearDownClass(cls):
+        config.show_progress_bars = False
 
     def test_callback(self):
-
         self.has_been_called = 0
 
         def call_back(stage, progressbar, *args, **kw):
