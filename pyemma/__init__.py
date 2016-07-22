@@ -55,10 +55,18 @@ def load(filename):
     from ._base.serialization.serialization import load as _load
     return _load(filename)
 
-
-def setup_package():
-    # purpose is for nose testing only to silence progress bars etc.
-    import warnings
-    warnings.warn('You should never see this, only in unit testing!'
-                  ' This switches off progress bars')
+def _setup_testing():
+    # setup function for testing
+    from pyemma.util import config
+    # do not cache trajectory info in user directory (temp traj files)
+    config.use_trajectory_lengths_cache = False
     config.show_progress_bars = False
+
+import unittest as _unittest
+# override unittests base class constructor to achieve same behaviour without nose.
+_old_init = _unittest.TestCase.__init__
+def _new_init(self, *args, **kwargs):
+    _old_init(self, *args, **kwargs)
+    _setup_testing()
+
+_unittest.TestCase.__init__ = _new_init

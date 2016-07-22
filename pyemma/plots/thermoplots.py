@@ -17,6 +17,7 @@
 
 import numpy as _np
 from pyemma.thermo import WHAM as _WHAM
+from pyemma.thermo import MBAR as _MBAR
 from pyemma.thermo import DTRAM as _DTRAM
 from pyemma.thermo import TRAM as _TRAM
 from pyemma.msm import MSM as _MSM
@@ -31,6 +32,8 @@ __all__ = [
 def get_estimator_label(thermo_estimator):
     if isinstance(thermo_estimator, _WHAM):
         return "WHAM"
+    if isinstance(thermo_estimator, _MBAR):
+        return "MBAR"
     elif isinstance(thermo_estimator, _DTRAM):
         return "dTRAM, lag=%d" % thermo_estimator.lag
     elif isinstance(thermo_estimator, _TRAM):
