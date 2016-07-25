@@ -7,11 +7,16 @@ Changelog
 **New features**:
 - thermo: added MBAR estimation
 
+**Fixes**:
+- coordinates: In case a configuration directory has not been created yet, the LRU cache
+  of the TrajInfo database was failed to be created.
+
 
 2.2.2 (7-14-16)
 ---------------
 
 **New features**:
+
 - coordinates: SQLite backend for trajectory info data. This enables fast access to this data
   on parallel filesystems where multiple processes are writing to the database. This greatly
   speeds ups reader construction and enables fast random access for formats which usually do not
