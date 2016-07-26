@@ -35,6 +35,7 @@ from pyemma.coordinates import api
 from pyemma.coordinates.data.feature_reader import FeatureReader
 from pyemma.coordinates.data.numpy_filereader import NumPyFileReader
 from pyemma.coordinates.data.py_csv_reader import PyCSVReader
+from pyemma.coordinates.data.util.traj_info_backends import SqliteDB
 from pyemma.coordinates.data.util.traj_info_cache import TrajectoryInfoCache
 from pyemma.coordinates.tests.util import create_traj
 from pyemma.datasets import get_bpti_test_data
@@ -275,6 +276,15 @@ class TestTrajectoryInfoCache(unittest.TestCase):
 
         self.assertLessEqual(os.stat(self.db.database_filename).st_size / 1024, config.traj_info_max_size)
         self.assertGreater(self.db.num_entries, 0)
+
+    def test_no_working_directory(self):
+        import sqlite3
+        # this is the case as long as the user has not yet created a config directory via config.save()
+        self.db._database = SqliteDB(filename=None)
+
+
+        # trigger caching
+        pyemma.coordinates.source(xtcfiles, top=pdbfile)
 
     @unittest.skip("not yet functional")
     def test_no_sqlite(self):
