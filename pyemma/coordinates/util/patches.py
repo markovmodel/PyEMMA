@@ -172,7 +172,7 @@ class iterload(object):
             try:
                 self._f.seek(self.skip)
                 self._seeked = True
-            except IndexError:
+            except IndexError:  # TODO: we may only catch this for XTC!
                 raise StopIteration("too short trajectory")
 
         if not isinstance(self._stride, np.ndarray) and self._chunksize == 0:
@@ -181,7 +181,7 @@ class iterload(object):
             # TODO: this will first apply stride, then skip!
             if self._extension not in _TOPOLOGY_EXTS:
                 self._kwargs['top'] = self._top
-            return load(self._filename, stride=self._stride, **self._kwargs)[self._skip:]
+            traj = load(self._filename, stride=self._stride, **self._kwargs)[self.skip:]
         elif isinstance(self._stride, np.ndarray):
             return next(self._ra_it)
         else:
@@ -192,10 +192,10 @@ class iterload(object):
                 traj = self._f.read_as_traj(n_frames=self._chunksize*self._stride,
                                             stride=self._stride, atom_indices=self._atom_indices, **self._kwargs)
 
-            if len(traj) == 0:
-                raise StopIteration()
+        if len(traj) == 0:
+            raise StopIteration("eof")
 
-            return traj
+        return traj
 
     def __enter__(self):
         return self
