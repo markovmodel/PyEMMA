@@ -1,15 +1,17 @@
 Changelog
 =========
 
-2.2.3 ()
+2.2.3 (7-28-16)
 ---------------
 
 **New features**:
+
 - thermo: added MBAR estimation
 
 **Fixes**:
+
 - coordinates: In case a configuration directory has not been created yet, the LRU cache
-  of the TrajInfo database was failed to be created.
+  of the TrajInfo database was failed to be created. #882
 
 
 2.2.2 (7-14-16)
