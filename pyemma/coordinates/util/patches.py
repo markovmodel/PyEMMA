@@ -169,8 +169,11 @@ class iterload(object):
         # apply skip offset only once.
         # (we want to do this here, since we want to be able to re-set self.skip)
         if not self._seeked:
-            self._f.seek(self.skip)
-            self._seeked = True
+            try:
+                self._f.seek(self.skip)
+                self._seeked = True
+            except IndexError:
+                raise StopIteration("too short trajectory")
 
         if not isinstance(self._stride, np.ndarray) and self._chunksize == 0:
             # If chunk was 0 then we want to avoid filetype-specific code

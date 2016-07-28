@@ -62,7 +62,7 @@ class TestFeatureReader(unittest.TestCase):
         cls.trajfile2, cls.xyz2, cls.n_frames2 = create_traj(cls.topfile, dir=cls.tmpdir)
         traj = mdtraj.load(cls.trajfile, top=cls.topfile)
         for fo in traj._savers():
-            if fo in ('.crd', '.mdcrd', '.h5', '.ncrst', '.lh5'):
+            if fo in ('.crd', '.mdcrd', '.h5', '.ncrst', '.lh5',):
                 continue
             log.debug("creating traj for " + fo)
             traj_file = create_traj(cls.topfile, format=fo, dir=cls.tmpdir)[0]
@@ -94,6 +94,14 @@ class TestFeatureReader(unittest.TestCase):
         data.reshape(self.xyz.shape)
 
         self.assertTrue(np.allclose(data, self.xyz.reshape(-1, 9)))
+
+    def test_lagged_iterator_short_trajs(self):
+        trajs = [create_traj(self.topfile, '.xtc', dir=self.tmpdir, length=20)[0],
+                 create_traj(self.topfile, '.xtc', dir=self.tmpdir, length=25)[0]
+                 ]
+        reader = api.source(trajs, top=self.topfile)
+        for itraj, X, Y in reader.iterator(lag=22):
+            raise RuntimeError("should never get here!!!")
 
     def testIteratorAccess2(self):
         reader = FeatureReader([self.trajfile, self.trajfile2], self.topfile)
