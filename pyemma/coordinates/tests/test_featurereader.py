@@ -95,14 +95,6 @@ class TestFeatureReader(unittest.TestCase):
 
         self.assertTrue(np.allclose(data, self.xyz.reshape(-1, 9)))
 
-    def test_lagged_iterator_short_trajs(self):
-        trajs = [create_traj(self.topfile, '.xtc', dir=self.tmpdir, length=20)[0],
-                 create_traj(self.topfile, '.xtc', dir=self.tmpdir, length=25)[0]
-                 ]
-        reader = api.source(trajs, top=self.topfile)
-        for itraj, X, Y in reader.iterator(lag=22):
-            raise RuntimeError("should never get here!!!")
-
     def testIteratorAccess2(self):
         reader = FeatureReader([self.trajfile, self.trajfile2], self.topfile)
         reader.chunksize = 100
@@ -271,6 +263,22 @@ class TestFeatureReader(unittest.TestCase):
                 chunks[1] = np.vstack(chunks[1])
                 np.testing.assert_almost_equal(
                     chunks[1], self.xyz2.reshape(-1, 9)[lag::stride], err_msg=err_msg % (stride, lag))
+
+    def test_lagged_access_small_files(self):
+        """ itraj 0 should be skipped, since it is too short."""
+        top = self.topfile
+        trajs = [create_traj(top=top, length=10, format='.xtc', dir=self.tmpdir)[0],
+                 create_traj(top=top, length=20, format='.xtc', dir=self.tmpdir)[0]]
+
+        reader = source(trajs, top=top)
+        it = reader.iterator(lag=11, chunk=0)
+        res = {}
+        with it:
+            for itraj, x, y in it:
+                res[itraj] = (x.shape, y.shape)
+
+        self.assertNotIn(0, res)
+        self.assertIn(1, res)
 
 if __name__ == "__main__":
     unittest.main()
