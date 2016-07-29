@@ -172,7 +172,7 @@ class iterload(object):
             try:
                 self._f.seek(self.skip)
                 self._seeked = True
-            except IndexError:  # TODO: we may only catch this for XTC!
+            except (IOError, IndexError):
                 raise StopIteration("too short trajectory")
 
         if not isinstance(self._stride, np.ndarray) and self._chunksize == 0:
