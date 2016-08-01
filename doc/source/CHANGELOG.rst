@@ -1,6 +1,16 @@
 Changelog
 =========
 
+2.2.4 ()
+--------
+
+**New features**:
+
+
+**Fixes**:
+
+- base: fix progress bars for modern joblib versions.
+
 2.2.3 (7-28-16)
 ---------------
 
