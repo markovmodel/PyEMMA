@@ -41,18 +41,10 @@ from pyemma.coordinates.tests.util import create_traj
 
 log = getLogger('pyemma.' + 'TestFeatureReader')
 
-def create_loader_case(traj_file, top):
-    def test_format_loading_via_feature_reader(self):
-        reader = source(traj_file, top=top, dir=self.tmpdir)
-        reader.get_output()
-
-    return test_format_loading_via_feature_reader
-
 
 class TestFeatureReader(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        c = super(TestFeatureReader, cls).setUpClass()
         # create a fake trajectory which has 3 atoms and coordinates are just a range
         # over all frames.
         cls.tmpdir = tempfile.mkdtemp('test_feature_reader')
@@ -60,17 +52,8 @@ class TestFeatureReader(unittest.TestCase):
         cls.topfile = pkg_resources.resource_filename(__name__, 'data/test.pdb')
         cls.trajfile, cls.xyz, cls.n_frames = create_traj(cls.topfile, dir=cls.tmpdir)
         cls.trajfile2, cls.xyz2, cls.n_frames2 = create_traj(cls.topfile, dir=cls.tmpdir)
-        traj = mdtraj.load(cls.trajfile, top=cls.topfile)
-        for fo in traj._savers():
-            if fo in ('.crd', '.mdcrd', '.h5', '.ncrst', '.lh5',):
-                continue
-            log.debug("creating traj for " + fo)
-            traj_file = create_traj(cls.topfile, format=fo, dir=cls.tmpdir)[0]
-            test_mtd = create_loader_case(traj_file, cls.topfile)
-            test_mtd.__name__ = 'test_loader_' + fo
-            setattr(cls, test_mtd.__name__, test_mtd)
 
-        return c
+        return cls
 
     @classmethod
     def tearDownClass(cls):
