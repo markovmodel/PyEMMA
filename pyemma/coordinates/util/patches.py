@@ -24,14 +24,39 @@ Created on 13.03.2015
 
 from __future__ import absolute_import
 import numpy as np
+from mdtraj import Topology
 from mdtraj.utils.validation import cast_indices
-from mdtraj.core.trajectory import load, _parse_topology, _TOPOLOGY_EXTS, _get_extension, open
+from mdtraj.core.trajectory import load, _TOPOLOGY_EXTS, _get_extension, open as md_open, load_topology
 
 from itertools import groupby
 from operator import itemgetter
 
 from pyemma.coordinates.data.util.reader_utils import copy_traj_attributes, preallocate_empty_trajectory
 from six.moves import map
+
+
+def _cache_mdtraj_topology(args):
+    import hashlib
+    from mdtraj import load_topology as md_load_topology
+    _top_cache = {}
+
+    def wrap(top_file):
+        if isinstance(top_file, Topology):
+            return top_file
+        hasher = hashlib.md5()
+        with open(top_file, 'rb') as f:
+            hasher.update(f.read())
+        hash = hasher.hexdigest()
+
+        if hash in _top_cache:
+            top = _top_cache[hash]
+        else:
+            top = md_load_topology(top_file)
+            _top_cache[hash] = top
+        return top
+    return wrap
+
+load_topology_cached = _cache_mdtraj_topology(load_topology)
 
 
 class iterload(object):
@@ -90,29 +115,26 @@ class iterload(object):
         self._chunksize = chunk
         self._extension = _get_extension(self._filename)
         self._closed = False
+        self._seeked = False
         if self._extension not in _TOPOLOGY_EXTS:
-            self._topology = _parse_topology(self._top)
+            self._topology = load_topology_cached(self._top)
         else:
             self._topology = self._top
 
         self._mode = None
-        if self._chunksize > 0 and self._extension in ('.pdb', '.pdb.gz'):
-            self._mode = 'pdb'
-            self._t = load(self._filename, stride=self._stride, atom_indices=self._atom_indices)
-            self._i = 0
-        elif isinstance(self._stride, np.ndarray):
+        if isinstance(self._stride, np.ndarray):
             self._mode = 'random_access'
             self._f = (lambda x:
-                       open(x, n_atoms=self._topology.n_atoms)
+                       md_open(x, n_atoms=self._topology.n_atoms)
                        if self._extension in ('.crd', '.mdcrd')
-                       else open(self._filename))(self._filename)
+                       else md_open(self._filename))(self._filename)
             self._ra_it = self._random_access_generator(self._f)
         else:
             self._mode = 'traj'
             self._f = (
-                lambda x: open(x, n_atoms=self._topology.n_atoms)
+                lambda x: md_open(x, n_atoms=self._topology.n_atoms)
                 if self._extension in ('.crd', '.mdcrd')
-                else open(self._filename)
+                else md_open(self._filename)
             )(self._filename)
 
             # offset array handling
@@ -120,16 +142,20 @@ class iterload(object):
             if hasattr(self._f, 'offsets') and offsets is not None:
                 self._f.offsets = offsets
 
-            if self._skip > 0:
-                self._f.seek(self._skip)
+    @property
+    def skip(self):
+        return self._skip
+
+    @skip.setter
+    def skip(self, value):
+        assert self._mode == 'traj'
+        self._skip = value
 
     def __iter__(self):
         return self
 
     def close(self):
-        if hasattr(self, '_t'):
-            self._t.close()
-        elif hasattr(self, '_f'):
+        if hasattr(self, '_f'):
             self._f.close()
         self._closed = True
 
@@ -139,33 +165,37 @@ class iterload(object):
     def next(self):
         if self._closed:
             raise StopIteration()
+
+        # apply skip offset only once.
+        # (we want to do this here, since we want to be able to re-set self.skip)
+        if not self._seeked:
+            try:
+                self._f.seek(self.skip)
+                self._seeked = True
+            except (IOError, IndexError):
+                raise StopIteration("too short trajectory")
+
         if not isinstance(self._stride, np.ndarray) and self._chunksize == 0:
             # If chunk was 0 then we want to avoid filetype-specific code
             # in case of undefined behavior in various file parsers.
             # TODO: this will first apply stride, then skip!
             if self._extension not in _TOPOLOGY_EXTS:
                 self._kwargs['top'] = self._top
-            return load(self._filename, stride=self._stride, **self._kwargs)[self._skip:]
-        elif self._mode is 'pdb':
-            # the PDBTrajectortFile class doesn't follow the standard API. Fixing it
-            # to support iterload could be worthwhile, but requires a deep refactor.
-            X = self._t[self._i:self._i+self._chunksize]
-            self._i += self._chunksize
-            return X
+            traj = load(self._filename, stride=self._stride, **self._kwargs)[self.skip:]
         elif isinstance(self._stride, np.ndarray):
             return next(self._ra_it)
         else:
             if self._extension not in _TOPOLOGY_EXTS:
                 traj = self._f.read_as_traj(self._topology, n_frames=self._chunksize*self._stride,
-                                      stride=self._stride, atom_indices=self._atom_indices, **self._kwargs)
+                                            stride=self._stride, atom_indices=self._atom_indices, **self._kwargs)
             else:
                 traj = self._f.read_as_traj(n_frames=self._chunksize*self._stride,
-                                      stride=self._stride, atom_indices=self._atom_indices, **self._kwargs)
+                                            stride=self._stride, atom_indices=self._atom_indices, **self._kwargs)
 
-            if len(traj) == 0:
-                raise StopIteration()
+        if len(traj) == 0:
+            raise StopIteration("eof")
 
-            return traj
+        return traj
 
     def __enter__(self):
         return self
