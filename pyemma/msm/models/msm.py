@@ -519,7 +519,7 @@ class MSM(_Model):
 
         .. math::
 
-            a_i & = \frac{1}{N_i} \sum_{x_t \in S_i} f(x_t)
+            a_i = \frac{1}{N_i} \sum_{x_t \in S_i} f(x_t)
 
         where :math:`S_i` is the set of configurations belonging to MSM state
         :math:`i` and :math:`f()` is a function that computes the experimental
