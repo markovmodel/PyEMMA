@@ -181,7 +181,10 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
              By default, no trajectory is assumed to be in global equilibrium.
              This is the TRAMMBAR extension.
         """
-        return super(TRAM, self).estimate(X, equilibrium=equilibrium, **params)
+        if equilibrium is not None:
+            return super(TRAM, self).estimate(X, equilibrium=equilibrium, **params)
+        else:
+            return super(TRAM, self).estimate(X, **params)
 
     def _estimate(self, X):
         ttrajs, dtrajs_full, btrajs = X

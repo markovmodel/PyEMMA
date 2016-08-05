@@ -313,12 +313,11 @@ class TRAMandTRAMMBARBaseClass(object):
 
     def with_TRAM_model(self, direct_space):
         # run TRAM
-        tram = pyemma.thermo.TRAM(lag=1, maxerr=1E-12, save_convergence_info=10, direct_space=direct_space, nn=None, init='mbar')
+        tram = pyemma.thermo.TRAM(lag=1, maxerr=1E-12, save_convergence_info=10, direct_space=direct_space, nn=None, init='mbar', equilibrium=self.eq)
         if not self.test_trammbar:
             tram.estimate((self.ttrajs, self.dtrajs, self.btrajs))
         else:
-            tram.estimate((self.ttrajs + self.eq_ttrajs, self.dtrajs + self.eq_dtrajs, self.btrajs + self.eq_btrajs),
-                equilibrium=self.eq)
+            tram.estimate((self.ttrajs + self.eq_ttrajs, self.dtrajs + self.eq_dtrajs, self.btrajs + self.eq_btrajs))
 
         # csets must include all states
         for k in self.therm_states:
