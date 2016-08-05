@@ -155,7 +155,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
         self.log_lagrangian_mult = None
         self.loglikelihoods = None
 
-    def estimate(self, X, equilibrium=None, **params):
+    def estimate(self, X, **params):
         """
         Parameters
         ----------
@@ -181,10 +181,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
              By default, no trajectory is assumed to be in global equilibrium.
              This is the TRAMMBAR extension.
         """
-        if equilibrium is not None:
-            return super(TRAM, self).estimate(X, equilibrium=equilibrium, **params)
-        else:
-            return super(TRAM, self).estimate(X, **params)
+        return super(TRAM, self).estimate(X, **params)
 
     def _estimate(self, X):
         ttrajs, dtrajs_full, btrajs = X
