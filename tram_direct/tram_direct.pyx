@@ -262,7 +262,7 @@ def estimate(
             increments.append(err)
             with _np.errstate(divide='ignore'):
                 log_lagrangian_mult = _np.log(lagrangian_mult)
-            biased_conf_energies = shift[:, _np.newaxis] - _np.log(biased_conf_weights)
+                biased_conf_energies = shift[:, _np.newaxis] - _np.log(biased_conf_weights) # can contain -inf for empty state
             logL = _tram.log_likelihood_lower_bound(
                 log_lagrangian_mult, biased_conf_energies, count_matrices,
                 bias_energy_sequences, state_sequences, state_counts,
@@ -291,8 +291,8 @@ def estimate(
             old_biased_conf_weights[:] = biased_conf_weights[:]
             old_therm_energies[:] = therm_energies[:] + _np.log(normalization_factor)
             old_stat_vectors[:] = stat_vectors[:]
-    biased_conf_energies = shift[:, _np.newaxis] - _np.log(biased_conf_weights)
     with _np.errstate(divide='ignore'):
+        biased_conf_energies = shift[:, _np.newaxis] - _np.log(biased_conf_weights) # can contain -inf for empty states
         log_lagrangian_mult = _np.log(lagrangian_mult)
         log_R_K_i = _np.log(R_K_i) + shift[:, _np.newaxis]
     conf_energies = _tram.get_conf_energies(
