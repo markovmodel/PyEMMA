@@ -1009,3 +1009,50 @@ class MSM(_Model):
         # are we ready?
         self._assert_metastable()
         return self._metastable_assignments
+
+
+        ################################################################################
+        # Simulation
+        ################################################################################
+
+    def simulate(self, time_steps, initial_states=None , num_traj=1):
+        """
+        Generates trajectories of the underlying model.
+        There are two possibilities to use this function:
+
+        Either
+            * given parameter num_traj the function returns an amount of (num_traj) trajectories.
+        Or
+            * given parameter initial_states the function return an amount of (initial_states) size trajectory regarding the supplied starting states.
+            The parameter num_traj is ignored.
+        ----------
+        time_steps : int
+           number of time steps to simulate
+        initial_states : int array, optional, default=None
+            set of initial state indices
+        num_traj : int, optional, default = 1
+            number of trajectories
+
+        Returns
+        -------
+        trajectories : ndarray
+            An np.ndarray of simulated trajectories
+        """
+
+        import msmtools.generation as msmgen
+
+        trajectories = None
+        if num_traj is not None:
+            trajectories = np.ndarray(shape=(num_traj, time_steps + 1), dtype=int)
+            for i in range(0, num_traj):
+                traj = msmgen.generate_traj(P=self.transition_matrix, N=time_steps + 1)
+                trajectories[i] = traj
+
+        elif initial_states is not None:
+            num_initial_states = np.size(initial_states)
+            trajectories = np.ndarray(shape=(num_initial_states, time_steps + 1))
+            for i in range(0, num_initial_states):
+                traj = msmgen.generate_traj(P=self.transition_matrix, N=time_steps + 1, start=initial_states[i])
+                trajectories[i] = traj
+
+        return trajectories
