@@ -1041,7 +1041,6 @@ class MSM(_Model):
 
         import msmtools.generation as msmgen
 
-        trajectories = None
         if num_traj is not None:
             trajectories = np.ndarray(shape=(num_traj, time_steps + 1), dtype=int)
             for i in range(0, num_traj):
@@ -1054,5 +1053,8 @@ class MSM(_Model):
             for i in range(0, num_initial_states):
                 traj = msmgen.generate_traj(P=self.transition_matrix, N=time_steps + 1, start=initial_states[i])
                 trajectories[i] = traj
+
+        else:
+            raise ValueError('Please specify either num_traj or initial_states to simulate a trajectory')
 
         return trajectories

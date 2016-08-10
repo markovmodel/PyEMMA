@@ -435,3 +435,52 @@ class HMSM(_MSM):
 
         """
         return _np.argmax(self.observation_probabilities, axis=0)
+
+
+    def simulate(self, time_steps, initial_states=None , num_traj=1):
+        """
+        Generates trajectories of the underlying model.
+        There are two possibilities to use this function:
+
+        Either
+            * given parameter num_traj the function returns an amount of (num_traj) trajectories.
+        Or
+            * given parameter initial_states the function return an amount of (initial_states) size trajectory regarding the supplied starting states.
+            The parameter num_traj is ignored.
+        ----------
+        time_steps : int
+           number of time steps to simulate
+        initial_states : int array, optional, default=None
+            set of initial state indices
+        num_traj : int, optional, default = 1
+            number of trajectories
+
+        Returns
+        -------
+        trajectories :
+            An tuple of hidden trajectories and the observables
+        """
+        import scipy.stats
+        if num_traj is not None:
+            M = _MSM(self.P)
+            hidden_trajectories = M.simulate(time_steps=time_steps,num_traj=num_traj)
+
+
+        elif initial_states is not None:
+            M = _MSM(self.P)
+            hidden_trajectories = M.simulate(time_steps=time_steps, initial_states=initial_states)
+
+        else:
+            raise ValueError('Please specify either num_traj or initial_states to simulate a trajectory')
+
+        observables = _np.ndarray(_np.shape(hidden_trajectories), int)
+        kr = _np.shape(observables)[0]
+        kc = _np.shape(observables)[1]
+        for i in range(0, kr):
+            for j in range(0, kc):
+                hs = hidden_trajectories[i, j]
+                x = scipy.stats.rv_discrete(values=(range(_np.size(self.pobs[hs])), self.pobs[hs]))
+                random_nr_gen = x.rvs()
+                observables[i, j] = random_nr_gen
+
+        return (hidden_trajectories, observables)
