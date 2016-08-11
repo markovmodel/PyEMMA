@@ -437,50 +437,41 @@ class HMSM(_MSM):
         return _np.argmax(self.observation_probabilities, axis=0)
 
 
-    def simulate(self, time_steps, initial_states=None , num_traj=1):
+    def simulate(self, N, start=None, stop=None, dt=1):
         """
-        Generates trajectories of the underlying model.
-        There are two possibilities to use this function:
+        Generates a realization of the Hidden Markov Model
 
-        Either
-            * given parameter num_traj the function returns an amount of (num_traj) trajectories.
-        Or
-            * given parameter initial_states the function return an amount of (initial_states) size trajectory regarding the supplied starting states.
-            The parameter num_traj is ignored.
+        Parameters
         ----------
-        time_steps : int
-           number of time steps to simulate
-        initial_states : int array, optional, default=None
-            set of initial state indices
-        num_traj : int, optional, default = 1
-            number of trajectories
+        N : int
+            trajectory length in steps of the lag time
+        start : int, optional, default = None
+            starting hidden state. If not given, will sample from the stationary
+            distribution of the hidden transition matrix.
+        stop : int or int-array-like, optional, default = None
+            stopping hidden set. If given, the trajectory will be stopped before
+            N steps once a hidden state of the stop set is reached
+        dt : int
+            trajectory will be saved every dt time steps.
+            Internally, the dt'th power of P is taken to ensure a more efficient simulation.
 
         Returns
         -------
-        trajectories :
-            An tuple of hidden trajectories and the observables
+        htraj : (N/dt, ) ndarray
+            The hidden state trajectory with length N/dt
+        otraj : (N/dt, ) ndarray
+            The observable state discrete trajectory with length N/dt
+
         """
-        import scipy.stats
-        if num_traj is not None:
-            M = _MSM(self.P)
-            hidden_trajectories = M.simulate(time_steps=time_steps,num_traj=num_traj)
 
-
-        elif initial_states is not None:
-            M = _MSM(self.P)
-            hidden_trajectories = M.simulate(time_steps=time_steps, initial_states=initial_states)
-
-        else:
-            raise ValueError('Please specify either num_traj or initial_states to simulate a trajectory')
-
-        observables = _np.ndarray(_np.shape(hidden_trajectories), int)
-        kr = _np.shape(observables)[0]
-        kc = _np.shape(observables)[1]
-        for i in range(0, kr):
-            for j in range(0, kc):
-                hs = hidden_trajectories[i, j]
-                x = scipy.stats.rv_discrete(values=(range(_np.size(self.pobs[hs])), self.pobs[hs]))
-                random_nr_gen = x.rvs()
-                observables[i, j] = random_nr_gen
-
-        return (hidden_trajectories, observables)
+        from scipy import stats
+        import msmtools.generation as msmgen
+        # generate output distributions
+        output_distributions = [stats.rv_discrete(values=(_np.arange(self.pobs.shape[1]), pobs_i)) for pobs_i in self.pobs]
+        # sample hidden trajectory
+        htraj = msmgen.generate_traj(self.transition_matrix, N, start=start, stop=stop, dt=dt)
+        otraj = _np.zeros(htraj.size, dtype=int)
+        # for each time step, sample microstate
+        for t, h in enumerate(htraj):
+            otraj[t] = output_distributions[h].rvs()  # current cluster
+        return htraj, otraj

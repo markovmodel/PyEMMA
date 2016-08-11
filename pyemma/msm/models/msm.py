@@ -1011,50 +1011,32 @@ class MSM(_Model):
         return self._metastable_assignments
 
 
-        ################################################################################
-        # Simulation
-        ################################################################################
-
-    def simulate(self, time_steps, initial_states=None , num_traj=1):
+    
+    def simulate(self,  N, start=None, stop=None, dt=1):
         """
-        Generates trajectories of the underlying model.
-        There are two possibilities to use this function:
+        Generates a realization of the Markov Model
 
-        Either
-            * given parameter num_traj the function returns an amount of (num_traj) trajectories.
-        Or
-            * given parameter initial_states the function return an amount of (initial_states) size trajectory regarding the supplied starting states.
-            The parameter num_traj is ignored.
+        Parameters
         ----------
-        time_steps : int
-           number of time steps to simulate
-        initial_states : int array, optional, default=None
-            set of initial state indices
-        num_traj : int, optional, default = 1
-            number of trajectories
+        N : int
+            trajectory length in steps of the lag time
+        start : int, optional, default = None
+            starting hidden state. If not given, will sample from the stationary
+            distribution of the hidden transition matrix.
+        stop : int or int-array-like, optional, default = None
+            stopping hidden set. If given, the trajectory will be stopped before
+            N steps once a hidden state of the stop set is reached
+        dt : int
+            trajectory will be saved every dt time steps.
+            Internally, the dt'th power of P is taken to ensure a more efficient simulation.
+
 
         Returns
         -------
-        trajectories : ndarray
-            An np.ndarray of simulated trajectories
+        htraj: (N/dt, ) ndarray
+            The state trajectory with length N/dt
         """
 
         import msmtools.generation as msmgen
 
-        if num_traj is not None:
-            trajectories = np.ndarray(shape=(num_traj, time_steps + 1), dtype=int)
-            for i in range(0, num_traj):
-                traj = msmgen.generate_traj(P=self.transition_matrix, N=time_steps + 1)
-                trajectories[i] = traj
-
-        elif initial_states is not None:
-            num_initial_states = np.size(initial_states)
-            trajectories = np.ndarray(shape=(num_initial_states, time_steps + 1))
-            for i in range(0, num_initial_states):
-                traj = msmgen.generate_traj(P=self.transition_matrix, N=time_steps + 1, start=initial_states[i])
-                trajectories[i] = traj
-
-        else:
-            raise ValueError('Please specify either num_traj or initial_states to simulate a trajectory')
-
-        return trajectories
+        return msmgen.generate_traj(self.transition_matrix,  N, start=start, stop=stop, dt=dt)
