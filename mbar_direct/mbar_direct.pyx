@@ -30,6 +30,7 @@ from .callback import CallbackInterrupt
 
 __all__ = [
     'update_therm_weights',
+    'estimate_therm_energies',
     'estimate']
 
 cdef extern from "_mbar_direct.h":
@@ -66,6 +67,83 @@ def update_therm_weights(
             bias_weight_sequences[i].shape[0],
             <double*> _np.PyArray_DATA(new_therm_weights))
     new_therm_weights /= new_therm_weights[0]
+
+def estimate_therm_energies(
+    therm_state_counts, bias_energy_sequences,
+    maxiter=1000, maxerr=1.0E-8, therm_energies=None,
+    save_convergence_info=0, callback=None):
+    r"""
+    Estimate the thermodynamic free energies
+        
+    Parameters
+    ----------
+    therm_state_counts : numpy.ndarray(shape=(T), dtype=numpy.intc)
+        numbers of samples in the T thermodynamic states
+    bias_energy_sequences : list of numpy.ndarray(shape=(X_i, T), dtype=numpy.float64)
+        reduced bias energies in the T thermodynamic states for all X samples
+    maxiter : int
+        maximum number of iterations
+    maxerr : float
+        convergence criterion based on absolute change in free energies
+    therm_energies : numpy.ndarray(shape=(T), dtype=numpy.float64), OPTIONAL
+        initial guess for the reduced free energies of the T thermodynamic states
+    save_convergence_info : int, optional
+        every save_convergence_info iteration steps, store the actual increment
+
+    Returns
+    -------
+    therm_energies : numpy.ndarray(shape=(T), dtype=numpy.float64)
+        reduced free energies of the T thermodynamic states
+    increments : numpy.ndarray(dtype=numpy.float64, ndim=1)
+        stored sequence of increments
+    """
+    T = therm_state_counts.shape[0]
+    therm_state_counts = therm_state_counts.astype(_np.intc)
+    log_therm_state_counts = _np.log(therm_state_counts)
+    shift = _np.min([_np.min(b, axis=0) for b in bias_energy_sequences], axis=0)
+    if therm_energies is None:
+        therm_energies = _np.zeros(shape=(T,), dtype=_np.float64)
+        therm_weights = _np.ones(shape=(T,), dtype=_np.float64)
+    else:
+        therm_weights = _np.exp(shift - therm_energies)
+    bias_weight_sequences = [_np.exp(shift - b) for b in bias_energy_sequences]
+    old_therm_energies = therm_energies.copy()
+    old_therm_weights = therm_weights.copy()
+    increments = []
+    sci_count = 0
+    for m in range(maxiter):
+        sci_count += 1
+        update_therm_weights(
+            therm_state_counts, old_therm_weights, bias_weight_sequences, therm_weights)
+        therm_energies = -_np.log(therm_weights)
+        delta_therm_energies = _np.abs(therm_energies - old_therm_energies)
+        err = _np.max(delta_therm_energies)
+        if sci_count == save_convergence_info:
+            sci_count = 0
+            increments.append(err)
+        if callback is not None:
+            try:
+                callback(iteration_step = m,
+                         therm_weights = therm_weights,
+                         old_therm_weights = old_therm_weights,
+                         err=err,
+                         maxerr=maxerr,
+                         maxiter=maxiter)
+            except CallbackInterrupt:
+                break
+        if err < maxerr:
+            break
+        else:
+            old_therm_weights[:] = therm_weights[:]
+            old_therm_energies[:] = therm_energies[:]
+    therm_energies = shift - _np.log(therm_weights)
+    if err >= maxerr:
+        _warn("MBAR did not converge: last increment = %.5e" % err, _NotConvergedWarning)
+    if save_convergence_info == 0:
+        increments = None
+    else:
+        increments = _np.array(increments, dtype=_np.float64)
+    return therm_energies, increments
 
 def estimate(
     therm_state_counts, bias_energy_sequences, conf_state_sequences,
@@ -130,48 +208,15 @@ def estimate(
     else:
         therm_weights = _np.exp(shift - therm_energies)
     bias_weight_sequences = [_np.exp(shift - b) for b in bias_energy_sequences]
-    old_therm_energies = therm_energies.copy()
-    old_therm_weights = therm_weights.copy()
-    increments = []
-    sci_count = 0
     scratch_M = _np.zeros(shape=(M,), dtype=_np.float64)
     scratch_T = _np.zeros(shape=(T,), dtype=_np.float64)
-    stop = False
-    for m in range(maxiter):
-        sci_count += 1
-        update_therm_weights(
-            therm_state_counts, old_therm_weights, bias_weight_sequences, therm_weights)
-        therm_energies = -_np.log(therm_weights)
-        delta_therm_energies = _np.abs(therm_energies - old_therm_energies)
-        err = _np.max(delta_therm_energies)
-        if sci_count == save_convergence_info:
-            sci_count = 0
-            increments.append(err)
-        if callback is not None:
-            try:
-                callback(iteration_step = m,
-                         therm_weights = therm_weights,
-                         old_therm_weights = old_therm_weights,
-                         err=err,
-                         maxerr=maxerr,
-                         maxiter=maxiter)
-            except CallbackInterrupt:
-                break
-        if err < maxerr:
-            break
-        else:
-            old_therm_weights[:] = therm_weights[:]
-            old_therm_energies[:] = therm_energies[:]
-    therm_energies = shift - _np.log(therm_weights)
+    therm_energies, increments = estimate_therm_energies(
+        therm_state_counts, bias_energy_sequences,
+        maxiter=maxiter, maxerr=maxerr, therm_energies=therm_energies,
+        save_convergence_info=save_convergence_info, callback=callback)
     conf_energies, biased_conf_energies = _mbar.get_conf_energies(
         log_therm_state_counts, therm_energies,
         bias_energy_sequences, conf_state_sequences, scratch_T, M)
     _mbar.normalize(
         scratch_M, therm_energies, conf_energies, biased_conf_energies)
-    if err >= maxerr:
-        _warn("MBAR did not converge: last increment = %.5e" % err, _NotConvergedWarning)
-    if save_convergence_info == 0:
-        increments = None
-    else:
-        increments = _np.array(increments, dtype=_np.float64)
     return therm_energies, conf_energies, biased_conf_energies, increments
