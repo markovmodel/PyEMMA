@@ -438,4 +438,3 @@ class TestHMMSpecialCases(unittest.TestCase):
 
 if __name__=="__main__":
     unittest.main()
-    TestMLHMM.test_simulate_HMSM()

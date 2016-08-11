@@ -1011,7 +1011,7 @@ class MSM(_Model):
         return self._metastable_assignments
 
 
-    
+
     def simulate(self,  N, start=None, stop=None, dt=1):
         """
         Generates a realization of the Markov Model
