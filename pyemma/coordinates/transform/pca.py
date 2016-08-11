@@ -22,7 +22,7 @@ from __future__ import absolute_import
 import math
 
 from pyemma._base.model import Model
-from progress_reporter import ProgressReporter
+from pyemma._base.progress.reporter import ProgressReporter
 from pyemma.coordinates.transform.transformer import StreamingTransformer
 from pyemma.util.annotators import fix_docs
 from pyemma.util.reflection import get_default_args

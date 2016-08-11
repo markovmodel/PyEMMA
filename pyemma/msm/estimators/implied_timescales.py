@@ -31,7 +31,7 @@ from pyemma.util.annotators import estimation_required
 from pyemma.util.statistics import confidence_interval
 from pyemma.util import types as _types
 from pyemma._base.estimator import Estimator, get_estimator, param_grid, estimate_param_scan
-from progress_reporter import ProgressReporter
+from pyemma._base.progress import ProgressReporter
 from pyemma._base.model import SampledModel
 
 __docformat__ = "restructuredtext en"
