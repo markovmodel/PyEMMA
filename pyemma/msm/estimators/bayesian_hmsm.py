@@ -21,7 +21,7 @@ from __future__ import absolute_import, print_function
 import numpy as _np
 from six.moves import range
 
-from pyemma._base.progress import ProgressReporter
+from progress_reporter import ProgressReporter
 from pyemma.msm.estimators.maximum_likelihood_hmsm import MaximumLikelihoodHMSM as _MaximumLikelihoodHMSM
 from pyemma.msm.models.hmsm import HMSM as _HMSM
 from pyemma.msm.models.hmsm_sampled import SampledHMSM as _SampledHMSM

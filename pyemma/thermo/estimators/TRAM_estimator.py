@@ -18,7 +18,7 @@
 import numpy as _np
 from six.moves import range
 from pyemma._base.estimator import Estimator as _Estimator
-from pyemma._base.progress import ProgressReporter as _ProgressReporter
+from progress_reporter import ProgressReporter as _ProgressReporter
 from pyemma.thermo import MEMM as _MEMM
 from pyemma.msm import MSM as _MSM
 from pyemma.util import types as _types

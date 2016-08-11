@@ -20,7 +20,7 @@ from __future__ import absolute_import
 
 from six.moves import range
 
-from pyemma._base.progress import ProgressReporter
+from progress_reporter import ProgressReporter
 from pyemma.msm.estimators.maximum_likelihood_msm import MaximumLikelihoodMSM as _MLMSM
 from pyemma.msm.models.msm import MSM as _MSM
 from pyemma.msm.models.msm_sampled import SampledMSM as _SampledMSM
