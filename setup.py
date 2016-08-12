@@ -222,7 +222,7 @@ metadata = dict(
                       'pyyaml',
                       'psutil>=3.1.1',
                       'decorator>=4.0.0',
-                      'progress_reporter',
+                      'progress-reporter',
                       ],
     zip_safe=False,
 )

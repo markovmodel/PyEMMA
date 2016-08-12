@@ -3,7 +3,7 @@ from progress_reporter import ProgressReporter as _impl
 
 class ProgressReporter(_impl):
 
-    @property
+    @_impl.show_progress.getter
     def show_progress(self):
         """ whether to show the progress of heavy calculations on this object. """
         if not hasattr(self, "_show_progress"):
@@ -11,7 +11,3 @@ class ProgressReporter(_impl):
             val = config.show_progress_bars
             self._show_progress = val
         return self._show_progress
-
-    @show_progress.setter
-    def show_progress(self, val):
-        self._show_progress = bool(val)
