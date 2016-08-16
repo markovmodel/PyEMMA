@@ -102,7 +102,7 @@ class TestCoordinatesIteratorBase(unittest.TestCase):
             out[itraj].append(X)
 
         out = [np.concatenate(chunks) for chunks in out.values()]
-        np.testing.assert_allclose(out, desired)
+        np.testing.assert_allclose(out, desired, atol=self.atol, rtol=self.rtol)
 
     def test_chunksize(self):
         cs = np.arange(1, 17)
@@ -146,14 +146,14 @@ class TestCoordinatesIteratorBase(unittest.TestCase):
         assert it.return_traj_index is False
         itraj = 0
         for tup in it:
-            np.testing.assert_allclose(tup, self.d[itraj])
+            np.testing.assert_allclose(tup, self.d[itraj], atol=self.atol, rtol=self.rtol)
             itraj += 1
 
         for tup in self.reader.iterator(return_trajindex=True):
             self.assertEqual(len(tup), 2)
         itraj = 0
         for tup in self.reader.iterator(return_trajindex=False):
-            np.testing.assert_allclose(tup, self.d[itraj])
+            np.testing.assert_allclose(tup, self.d[itraj], atol=self.atol, rtol=self.rtol)
             itraj += 1
 
     def test_pos(self):
@@ -193,11 +193,13 @@ class TestDataInMem(TestCoordinatesIteratorBase, unittest.TestCase):
             actual = source(list(s.replace('.npy', '.exotic') for s in fns)).get_output()
             self.assertEqual(len(actual), len(fns))
             for a, e in zip(actual, expected):
-                np.testing.assert_allclose(a, e)
+                np.testing.assert_allclose(a, e, atol=self.atol, rtol=self.rtol)
 
 
 class TestTrajectoryFormatAbstract(object):
     _format = None
+    atol = 1e-8
+    rtol= 1e-6
 
     @classmethod
     def setUpClass(cls):
@@ -212,7 +214,6 @@ class TestTrajectoryFormatAbstract(object):
     @classmethod
     def tearDownClass(cls):
         import shutil
-        print("rm")
         shutil.rmtree(cls.tdir)
 
     @property
