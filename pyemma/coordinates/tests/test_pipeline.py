@@ -189,5 +189,14 @@ class TestPipeline(unittest.TestCase):
         api.pipeline([reader_xtc, api.cluster_regspace(dmin=10)])._chain[-1].get_output()
         api.pipeline([reader_xtc, api.cluster_uniform_time()])._chain[-1].get_output()
 
+    def test_chunksize(self):
+        reader_xtc = api.source(self.traj_files, top=self.pdb_file)
+        chunksize = 1001
+        chain = [reader_xtc, api.tica(), api.cluster_mini_batch_kmeans()]
+        p = api.pipeline(chain, chunksize=chunksize)
+        assert p.chunksize == chunksize
+        for e in p._chain:
+            assert e.chunksize == chunksize
+
 if __name__ == "__main__":
     unittest.main()
