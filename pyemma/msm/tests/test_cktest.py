@@ -156,7 +156,7 @@ class TestCK_MSM(unittest.TestCase):
                                 [0, 0, 1],
                                 [0, 0, 1],
                                 [0, 0, 1]])
-        for nj in [2]:
+        for nj in np.arange(2,5):
             ck = self.MSM.cktest(3, memberships=memberships, n_jobs=nj)
             p_MSM = np.vstack([ck.predictions[:, 0, 0], ck.predictions[:, 2, 2]]).T
             assert_allclose(p_MSM, self.p_MSM)
