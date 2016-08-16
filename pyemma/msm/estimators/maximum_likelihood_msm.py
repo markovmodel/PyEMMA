@@ -750,7 +750,7 @@ class MaximumLikelihoodMSM(_Estimator, _MSM):
     ################################################################################
 
     def cktest(self, nsets, memberships=None, mlags=10, conf=0.95, err_est=False,
-               show_progress=True):
+               n_jobs=1, show_progress=True):
         """ Conducts a Chapman-Kolmogorow test.
 
         Parameters
@@ -771,6 +771,8 @@ class MaximumLikelihoodMSM(_Estimator, _MSM):
             compute errors also for all estimations (computationally expensive)
             If False, only the prediction will get error bars, which is often
             sufficient to validate a model.
+        n_jobs : int, default=1
+            how many jobs to use during calculation
         show_progress : bool, optional
             Show progress bars for calculation?
 
@@ -798,6 +800,6 @@ class MaximumLikelihoodMSM(_Estimator, _MSM):
             self.pcca(nsets)
             memberships = self.metastable_memberships
         ck = ChapmanKolmogorovValidator(self, self, memberships, mlags=mlags, conf=conf,
-                                        err_est=err_est, show_progress=show_progress)
+                                        n_jobs=n_jobs, err_est=err_est, show_progress=show_progress)
         ck.estimate(self._dtrajs_full)
         return ck
