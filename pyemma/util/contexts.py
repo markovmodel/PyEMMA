@@ -62,3 +62,25 @@ def random_seed(seed=42):
         yield
     finally:
         random.setstate(old_state)
+
+
+@contextmanager
+def settings(**kwargs):
+    """ apply given PyEMMA config values temporarily within the given context."""
+    from pyemma import config
+    # validate:
+    valid_keys = config.keys()
+    for k in kwargs.keys():
+        if k not in valid_keys:
+            raise ValueError("not a valid settings: {key}".format(key=k))
+
+    old_settings = {}
+    for k, v in kwargs.items():
+        old_settings[k] = getattr(config, k)
+        setattr(config, k, v)
+
+    yield
+
+    # restore old settings
+    for k, v in old_settings.items():
+        setattr(config, k, v)

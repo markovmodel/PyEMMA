@@ -148,7 +148,6 @@ class TestFramesFromFile(unittest.TestCase):
 
             (found_diff, errmsg) = compare_coords_md_trajectory_objects(traj_test, traj_ref, atom=0, mess=False)
             self.assertFalse(found_diff, errmsg)
-            assert allclose(traj_test.time, traj_ref.time)
             assert allclose(traj_test.unitcell_lengths, traj_ref.unitcell_lengths)
             assert allclose(traj_test.unitcell_angles, traj_ref.unitcell_angles)
 

@@ -22,7 +22,6 @@ Created on 30.04.2015
 
 from __future__ import absolute_import
 
-from contextlib import contextmanager
 from tempfile import NamedTemporaryFile
 
 
@@ -36,10 +35,12 @@ from pyemma.coordinates import api
 from pyemma.coordinates.data.feature_reader import FeatureReader
 from pyemma.coordinates.data.numpy_filereader import NumPyFileReader
 from pyemma.coordinates.data.py_csv_reader import PyCSVReader
+from pyemma.coordinates.data.util.traj_info_backends import SqliteDB
 from pyemma.coordinates.data.util.traj_info_cache import TrajectoryInfoCache
 from pyemma.coordinates.tests.util import create_traj
 from pyemma.datasets import get_bpti_test_data
 from pyemma.util import config
+from pyemma.util.contexts import settings
 from pyemma.util.files import TemporaryDirectory
 import mdtraj
 import pkg_resources
@@ -56,8 +57,7 @@ class TestTrajectoryInfoCache(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.old_instance = TrajectoryInfoCache.instance()
-        cls.old_show_pg = config.show_progress_bars
-        config.show_progress_bars = False
+        config.use_trajectory_lengths_cache = True
 
     def setUp(self):
         self.work_dir = tempfile.mkdtemp("traj_cache_test")
@@ -77,7 +77,7 @@ class TestTrajectoryInfoCache(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         TrajectoryInfoCache._instance = cls.old_instance
-        config.show_progress_bars = cls.old_show_pg
+        config.use_trajectory_lengths_cache = False
 
     def test_get_instance(self):
         # test for exceptions in singleton creation
@@ -117,9 +117,8 @@ class TestTrajectoryInfoCache(unittest.TestCase):
 
     def test_featurereader_xtc(self):
         # cause cache failures
-        config['use_trajectory_lengths_cache'] = False
-        reader = FeatureReader(xtcfiles, pdbfile)
-        config['use_trajectory_lengths_cache'] = True
+        with settings(use_trajectory_lengths_cache=False):
+            reader = FeatureReader(xtcfiles, pdbfile)
 
         results = {}
         for f in xtcfiles:
@@ -265,16 +264,9 @@ class TestTrajectoryInfoCache(unittest.TestCase):
         data = [np.random.random((150, 10)) for _ in range(150)]
         max_size = 1
 
-        @contextmanager
-        def size_ctx(new_size):
-            old_size = config.traj_info_max_size
-            config.traj_info_max_size = new_size
-            yield
-            config.traj_info_max_size = old_size
-
         files = []
         config.show_progress_bars=False
-        with TemporaryDirectory() as td, size_ctx(max_size):
+        with TemporaryDirectory() as td, settings(traj_info_max_size=max_size):
             for i, arr in enumerate(data):
                 f = os.path.join(td, "%s.txt" % i)
                 # save as txt to enforce creation of offsets
@@ -284,6 +276,15 @@ class TestTrajectoryInfoCache(unittest.TestCase):
 
         self.assertLessEqual(os.stat(self.db.database_filename).st_size / 1024, config.traj_info_max_size)
         self.assertGreater(self.db.num_entries, 0)
+
+    def test_no_working_directory(self):
+        import sqlite3
+        # this is the case as long as the user has not yet created a config directory via config.save()
+        self.db._database = SqliteDB(filename=None)
+
+
+        # trigger caching
+        pyemma.coordinates.source(xtcfiles, top=pdbfile)
 
     @unittest.skip("not yet functional")
     def test_no_sqlite(self):

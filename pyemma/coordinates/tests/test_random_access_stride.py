@@ -34,6 +34,34 @@ from pyemma.coordinates.tests.util import create_traj, get_top
 from pyemma.util.files import TemporaryDirectory
 
 
+def _test_ra_with_format(format, stride):
+    from pyemma.coordinates.tests.test_featurereader import create_traj
+
+    topfile = pkg_resources.resource_filename(__name__, 'data/test.pdb')
+    trajfiles = []
+    for _ in range(3):
+        f, _, _ = create_traj(topfile, format=format)
+        trajfiles.append(f)
+    try:
+        source = coor.source(trajfiles, top=topfile)
+        source.chunksize = 2
+
+        out = source.get_output(stride=stride)
+        keys = np.unique(stride[:, 0])
+        for i, coords in enumerate(out):
+            if i in keys:
+                traj = mdtraj.load(trajfiles[i], top=topfile)
+                np.testing.assert_equal(coords,
+                                        traj.xyz[
+                                            np.array(stride[stride[:, 0] == i][:, 1])
+                                        ].reshape(-1, 9))
+    finally:
+        for t in trajfiles:
+            try:
+                os.unlink(t)
+            except EnvironmentError:
+                pass
+
 class TestRandomAccessStride(TestCase):
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp('test_random_access')
@@ -339,33 +367,31 @@ class TestRandomAccessStride(TestCase):
                     "Expected to get exactly %s elements of trajectory %s, but got %s for chunksize=%s" \
                     % (expected, key, ref_stride[key], cs)
 
-    def test_feature_reader_random_access(self):
-        from pyemma.coordinates.tests.test_featurereader import create_traj
+    def test_feature_reader_random_access_xtc(self):
+        _test_ra_with_format('.xtc', self.stride)
 
-        topfile = pkg_resources.resource_filename(__name__, 'data/test.pdb')
-        trajfiles = []
-        for _ in range(3):
-            f, _, _ = create_traj(topfile)
-            trajfiles.append(f)
-        try:
-            source = coor.source(trajfiles, top=topfile)
-            source.chunksize = 2
+    def test_feature_reader_random_access_dcd(self):
+        _test_ra_with_format('.dcd', self.stride)
 
-            out = source.get_output(stride=self.stride)
-            keys = np.unique(self.stride[:, 0])
-            for i, coords in enumerate(out):
-                if i in keys:
-                    traj = mdtraj.load(trajfiles[i], top=topfile)
-                    np.testing.assert_equal(coords,
-                                            traj.xyz[
-                                                np.array(self.stride[self.stride[:, 0] == i][:, 1])
-                                            ].reshape(-1, 9))
-        finally:
-            for t in trajfiles:
-                try:
-                    os.unlink(t)
-                except EnvironmentError:
-                    pass
+    def test_feature_reader_random_access_trr(self):
+        _test_ra_with_format('.trr', self.stride)
+
+    def test_feature_reader_random_access_hdf5(self):
+        _test_ra_with_format('.h5', self.stride)
+
+    def test_feature_reader_random_access_xyz(self):
+        _test_ra_with_format('.xyz', self.stride)
+
+    @unittest.skip("gro has no len()")
+    def test_feature_reader_random_access_gro(self):
+        _test_ra_with_format('.gro', self.stride)
+
+    def test_feature_reader_random_access_netcdf(self):
+        _test_ra_with_format('.nc', self.stride)
+
+    @unittest.skip("lammpstrj has no len()")
+    def test_feature_reader_random_access_lampstr(self):
+        _test_ra_with_format('.lammpstrj', self.stride)
 
     def test_fragmented_reader_random_access(self):
         with TemporaryDirectory() as td:

@@ -298,5 +298,15 @@ class TestCSVReader(unittest.TestCase):
             result = reader.get_output()[0]
             np.testing.assert_allclose(result, desired)
 
+    def test_reset(self):
+        reader = CSVReader((self.filename1, self.filename2))
+        it = reader.iterator()
+
+        data = [chunk for chunk in it]
+        it.reset()
+        data2 = [chunk for chunk in it]
+        np.testing.assert_equal(data, data2)
+
+
 if __name__ == '__main__':
     unittest.main()

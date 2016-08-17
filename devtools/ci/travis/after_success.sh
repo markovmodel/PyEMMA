@@ -22,5 +22,10 @@ for filename in $FILES; do
 done
 popd
 
-# call cleanup
-python devtools/ci/travis/dev_pkgs_del_old.py
+# call cleanup only for py35, numpy111
+if [[ "$CONDA_PY" == "3.5" && "$CONDA_NPY" == "111" && "$TRAVIS_OS_NAME" == "linux" ]]; then
+    python devtools/ci/travis/dev_pkgs_del_old.py
+else
+   echo "only executing cleanup script for py35 && npy111 && linux"
+fi
+

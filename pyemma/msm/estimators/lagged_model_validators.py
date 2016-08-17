@@ -24,7 +24,7 @@ import numpy as np
 
 from pyemma._base.estimator import Estimator, estimate_param_scan, param_grid
 from pyemma._base.model import SampledModel
-from pyemma._base.progress.reporter import ProgressReporter
+from pyemma._base.progress import ProgressReporter
 from pyemma.util.statistics import confidence_interval
 from pyemma.util import types
 
@@ -373,7 +373,7 @@ class ChapmanKolmogorovValidator(LaggedModelValidator):
             return np.eye(self.nsets)
         # otherwise compute or predict them by model.propagate
         pk_on_set = np.zeros((self.nsets, self.nsets))
-        subset = self._full2active[estimator.active_set]  # find subset we are now working on
+        subset = self._full2active[model.active_set]  # find subset we are now working on
         for i in range(self.nsets):
             p0 = self.P0[:, i]  # starting distribution on reference active set
             p0sub = p0[subset]  # map distribution to new active set
