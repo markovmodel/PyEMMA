@@ -70,7 +70,6 @@ class MEMM(_MultiThermModel):
     # THIS CLASS EXTENDS MultiThermModel AND JUST ADDS ANOTHER GETTER
     @property
     def msm(self):
-        try:
-            return self.models[self.unbiased_state]
-        except TypeError:
+        if self.unbiased_state is None:
             return None
+        return self.models[self.unbiased_state]
