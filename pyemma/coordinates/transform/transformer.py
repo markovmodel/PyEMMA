@@ -172,7 +172,7 @@ class StreamingTransformer(Transformer, Estimator, DataSource, NotifyOnChangesMi
         super(StreamingTransformer, self)._clear_in_memory()
         self._set_random_access_strategies()
 
-    def _create_iterator(self, skip=0, chunk=0, stride=1, return_trajindex=True, cols=None):
+    def _create_iterator_impl(self, skip=0, chunk=0, stride=1, return_trajindex=True, cols=None):
         return StreamingTransformerIterator(self, skip=skip, chunk=chunk, stride=stride,
                                             return_trajindex=return_trajindex, cols=cols)
 
