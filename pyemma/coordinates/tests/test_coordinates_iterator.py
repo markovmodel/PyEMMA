@@ -1,31 +1,33 @@
+import os
+import tempfile
 import unittest
-from abc import abstractmethod
+from glob import glob
 
 import numpy as np
-
 from pyemma.coordinates.data import DataInMemory
 from pyemma.coordinates.tests.util import create_top, create_traj_given_xyz
 from pyemma.util.files import TemporaryDirectory
-import os
-from glob import glob
 
 
-class TestCoordinatesIteratorBase(unittest.TestCase):
+class CoordinatesIteratorBase(object):
     rtol = 1e-7
     atol = 0
 
     def __init__(self, *args, **kwargs):
-        super(TestCoordinatesIteratorBase, self).__init__(*args, **kwargs)
+        super(CoordinatesIteratorBase, self).__init__(*args, **kwargs)
         self.helper = None
         # Kludge alert: We want this class to carry test cases without being run
         # by the unit test framework, so the `run' method is overridden to do
         # nothing.  But in order for sub-classes to be able to do something when
         # run is invoked, the constructor will rebind `run' from TestCase.
-        if self.__class__ != TestCoordinatesIteratorBase:
+        if self.__class__ != CoordinatesIteratorBase:
             # Rebind `run' from the parent class.
             self.run = unittest.TestCase.run.__get__(self, self.__class__)
         else:
-            self.run = lambda self, *args, **kwargs: None
+            def fake_run(*args, **kw):
+                pass
+
+            self.run = fake_run
 
     @classmethod
     def setUpClass(cls):
@@ -65,6 +67,10 @@ class TestCoordinatesIteratorBase(unittest.TestCase):
         it4.skip = 5
         # 3 full chunks and 1 chunk of 5 frames per trajectory
         self.assertEqual(it4._n_chunks, 3 * 4)
+
+        it42 = self.reader.iterator(chunk=30, stride=2)
+        for itraj, X in it42:
+            print(itraj, X.shape)
 
         # test for lagged iterator
         for stride in range(1, 5):
@@ -167,7 +173,7 @@ class TestCoordinatesIteratorBase(unittest.TestCase):
                 t = 0
 
 
-class TestDataInMem(TestCoordinatesIteratorBase, unittest.TestCase):
+class DataInMem(CoordinatesIteratorBase, unittest.TestCase):
     def setUp(self):
         self.reader = DataInMemory(self.d)
 
@@ -199,17 +205,13 @@ class TestDataInMem(TestCoordinatesIteratorBase, unittest.TestCase):
 class TestTrajectoryFormatAbstract(object):
     _format = None
     atol = 1e-8
-    rtol= 1e-6
+    rtol = 1e-6
 
     @classmethod
     def setUpClass(cls):
-        cls.d = [np.random.random((100, 3)) for _ in range(3)]
-
         super(TestTrajectoryFormatAbstract, cls).setUpClass()
-        import tempfile
         cls.tdir = tempfile.mkdtemp("test_coor_iter_{}".format(cls._format))
         cls.top = create_top(1)
-        cls._trajs = []
 
     @classmethod
     def tearDownClass(cls):
@@ -218,7 +220,7 @@ class TestTrajectoryFormatAbstract(object):
 
     @property
     def trajs(self):
-        if self._format is not None:
+        if self._format is not None and not hasattr(self, '_trajs'):
             self._trajs = [create_traj_given_xyz(xyz=xyz, top=self.top,
                                                  format=self._format, directory=self.tdir) for
                            xyz in self.d]
@@ -229,19 +231,19 @@ class TestTrajectoryFormatAbstract(object):
         self.reader = FeatureReader(self.trajs, self.top)
 
 
-class TestXTC(TestTrajectoryFormatAbstract, TestCoordinatesIteratorBase, unittest.TestCase):
+class XTC(TestTrajectoryFormatAbstract, CoordinatesIteratorBase, unittest.TestCase):
     _format = '.xtc'
 
 
-class TestDCD(TestTrajectoryFormatAbstract, TestCoordinatesIteratorBase, unittest.TestCase):
+class DCD(TestTrajectoryFormatAbstract, CoordinatesIteratorBase, unittest.TestCase):
     _format = '.dcd'
 
 
-class TestH5(TestTrajectoryFormatAbstract, TestCoordinatesIteratorBase, unittest.TestCase):
+class H5(TestTrajectoryFormatAbstract, CoordinatesIteratorBase, unittest.TestCase):
     _format = '.h5'
 
 
-class TestBinPos(TestTrajectoryFormatAbstract, TestCoordinatesIteratorBase, unittest.TestCase):
+class BinPos(TestTrajectoryFormatAbstract, CoordinatesIteratorBase, unittest.TestCase):
     _format = '.binpos'
 
 
