@@ -368,6 +368,10 @@ def get_multi_temperature_data(
         energy_trajs, temp_trajs, temperatures, reference_temperature, energy_unit, temp_unit)
     if reference_temperature in temperatures:
         unbiased_state = _np.where(temperatures == reference_temperature)[0]
+        try:
+            unbiased_state = unbiased_state[0]
+        except IndexError:
+            unbiased_state = None
     else:
         unbiased_state = None
     return ttrajs, btrajs, temperatures, unbiased_state
