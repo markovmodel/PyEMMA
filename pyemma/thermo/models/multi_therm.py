@@ -24,8 +24,8 @@ from pyemma.util import types as _types
 __author__ = 'noe'
 
 
-class MEMM(_StationaryModel):
-    r""" Coupled set of Models at multiple thermodynamic states
+class MultiThermModel(_StationaryModel):
+    r""" Coupled set of models at multiple thermodynamic states
 
     Parameters
     ----------
@@ -65,13 +65,6 @@ class MEMM(_StationaryModel):
         try:
             return self._unbiased_state
         except AttributeError:
-            return None
-
-    @property
-    def msm(self):
-        try:
-            return self.models[self.unbiased_state]
-        except TypeError:
             return None
 
     def set_model_params(self, models=None, f_therm=None, pi=None, f=None, label='ground state'):

@@ -30,10 +30,10 @@ __email__ = "christoph.wehmeyer@fu-berlin.de"
 __all__ = [
     'estimate_umbrella_sampling',
     'estimate_multi_temperature',
+    'tram',
     'dtram',
-    'mbar',
     'wham',
-    'tram']
+    'mbar']
 
 # ==================================================================================================
 # wrappers for specific simulation types
@@ -118,9 +118,9 @@ def estimate_umbrella_sampling(
 
     Returns
     -------
-    estimator_obj : MEMM or list of MEMMs
-        The requested estimator/model object, i.e., WHAM, DTRAM or TRAM. If multiple lag times are
-        given, a list of objects is returned (one MEMM per lag time).
+    estimator_obj : MEMM or MultiThermModel or list thereof
+        The requested estimator/model object, i.e., WHAM, MBAR, DTRAM or TRAM. If multiple lag times
+        are given, a list of objects is returned (one MEMM per lag time).
 
     Example
     -------
@@ -322,9 +322,9 @@ def estimate_multi_temperature(
 
     Returns
     -------
-    estimator_obj : MEMM or list of MEMMs
-        The requested estimator/model object, i.e., WHAM, DTRAM or TRAM. If multiple lag times are
-        given, a list of objects is returned (one MEMM per lag time).
+    estimator_obj : MEMM or MultiThermModel or list thereof
+        The requested estimator/model object, i.e., WHAM, MBAR, DTRAM or TRAM. If multiple lag times
+        are given, a list of objects is returned (one MEMM per lag time).
 
     Example
     -------
@@ -478,7 +478,7 @@ def tram(
 
     Returns
     -------
-    memm : MEMM or list of MEMMs
+    tram_estimators : MEMM or list of MEMMs
         A multi-ensemble Markov state model (for each given lag time) which consists of stationary
         and kinetic quantities at all temperatures/thermodynamic states.
 
@@ -642,7 +642,7 @@ def dtram(
 
     Returns
     -------
-    memm : MEMM or list of MEMMs
+    dtram_estimators : MEMM or list of MEMMs
         A multi-ensemble Markov state model (for each given lag time) which consists of stationary
         and kinetic quantities at all temperatures/thermodynamic states.
 
@@ -773,7 +773,7 @@ def wham(
 
     Returns
     -------
-    sm : StationaryModel
+    wham_estimator : MultiThermModel
         A stationary model which consists of thermodynamic quantities at all
         temperatures/thermodynamic states.
 
@@ -906,7 +906,7 @@ def mbar(
 
     Returns
     -------
-    sm : StationaryModel
+    mbar_estimator : MultiThermModel
         A stationary model which consists of thermodynamic quantities at all
         temperatures/thermodynamic states.
 
