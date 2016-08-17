@@ -400,7 +400,7 @@ def tram(
     count_mode='sliding', connectivity='summed_count_matrix',
     maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step',
     connectivity_factor=1.0, nn=None, direct_space=False, N_dtram_accelerations=0, callback=None,
-    init='mbar', init_maxiter=10000, init_maxerr=1e-8):
+    init='mbar', init_maxiter=10000, init_maxerr=1e-8, equilibrium=None):
     r"""
     Transition-based reweighting analysis method
 
@@ -562,8 +562,8 @@ def tram(
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
             dt_traj=dt_traj, connectivity_factor=connectivity_factor, nn=nn,
             direct_space=direct_space, N_dtram_accelerations=N_dtram_accelerations,
-            callback=callback, init='mbar', init_maxiter=init_maxiter,
-            init_maxerr=init_maxerr).estimate((ttrajs, dtrajs, bias)) for _lag in lags]
+            callback=callback, init='mbar', init_maxiter=init_maxiter, init_maxerr=init_maxerr,
+            equilibrium=equilibrium).estimate((ttrajs, dtrajs, bias)) for _lag in lags]
     _assign_unbiased_state_label(tram_estimators, unbiased_state)
     # return
     if len(tram_estimators) == 1:
