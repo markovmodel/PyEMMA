@@ -116,7 +116,8 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
     ----------
 
     .. [1] Wu, H. et al 2016
-        in press
+        Multiensemble Markov models of molecular thermodynamics and kinetics
+        Proc. Natl. Acad. Sci. USA 113 E3221--E3230
 
     """
     def __init__(
