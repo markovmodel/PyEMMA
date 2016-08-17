@@ -60,6 +60,22 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
               .. math::
                     (0 \rightarrow \tau), (\tau \rightarrow 2 \tau), ..., ((T/\tau-1) \tau \rightarrow T)
         Currently only 'sliding' is supported.
+    connectivity : str, optional, default='summed_count_matrix'
+        One of 'summed_count_matrix', 'strong_in_every_ensemble',
+        'neighbors', 'post_hoc_RE' or 'BAR_variance'.
+        Defines what should be considered a connected set in the joint space
+        of conformations and thermodynamic ensembles.
+        For details see thermotools.cset.compute_csets_TRAM.
+    ground_state : int, optional, default=None
+        Index of the unbiased thermodynamic state or None if there is no unbiased data available.
+    nstates_full : int, optional, default=None
+        Number of cluster centers, i.e., the size of the full set of states.
+    equilibrium : list of booleans, optional 
+        For every trajectory triple (ttraj[i], dtraj[i], btraj[i]), indicates
+        whether to assume global equilibrium. If true, the triple is not used
+        for computing kinetic quantities (but only thermodynamic quantities).
+        By default, no trajectory is assumed to be in global equilibrium.
+        This is the TRAMMBAR extension.
     maxiter : int, optional, default=10000
         The maximum number of self-consistent iterations before the estimator exits unsuccessfully.
     maxerr : float, optional, default=1E-15
@@ -80,12 +96,6 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
         |  'us',   'microsecond*'
         |  'ms',   'millisecond*'
         |  's',    'second*'
-    connectivity : str, optional, default='summed_count_matrix'
-        One of 'summed_count_matrix', 'strong_in_every_ensemble',
-        'neighbors', 'post_hoc_RE' or 'BAR_variance'.
-        Defines what should be considered a connected set in the joint space
-        of conformations and thermodynamic ensembles.
-        For details see thermotools.cset.compute_csets_TRAM.
     nn : int, optional, default=None
         Only needed if connectivity='neighbors'
         See thermotools.cset.compute_csets_TRAM.
@@ -174,13 +184,6 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
                 For every simulation frame seen in trajectory i and time step t, btrajs[i][t,k] is the
                 bias energy of that frame evaluated in the k'th thermodynamic state (i.e. at the k'th
                 Umbrella/Hamiltonian/temperature).
-
-        equilibrium : list of booleans, optional
-             For every trajectory triple (ttraj[i], dtraj[i], btraj[i]), indicates
-             whether to assume global equilibrium. If true, the triple is not used
-             for computing kinetic quantities (but only thermodynamic quantities).
-             By default, no trajectory is assumed to be in global equilibrium.
-             This is the TRAMMBAR extension.
         """
         return super(TRAM, self).estimate(X, **params)
 
