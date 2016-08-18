@@ -17,7 +17,7 @@
 
 import numpy as _np
 from pyemma.msm import MSM as _MSM
-from pyemma._base.subset import SubSet as _SubSet
+from pyemma.msm.util.subset import SubSet as _SubSet
 from pyemma.thermo.models.multi_therm import MultiThermModel as _MultiThermModel
 
 class ThermoMSM(_MSM, _SubSet):

@@ -1,6 +1,6 @@
 import unittest
 
-from pyemma._base.subset import add_full_state_methods, map_to_full_state, SubSet
+from pyemma.msm.util.subset import add_full_state_methods, map_to_full_state, SubSet
 import numpy as np
 
 import types

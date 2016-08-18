@@ -68,8 +68,7 @@ def globalise(data, axis, active_set, default_value, n_centers):
 def add_full_state_methods(class_with_globalize_methods):
     assert hasattr(class_with_globalize_methods, 'active_set')
     assert hasattr(class_with_globalize_methods, 'nstates_full')
-    from .estimator import _call_member
-    from types import MethodType
+    from pyemma._base.estimator import _call_member
 
     def mk_f(name, default_value, axis):
         def alias_to_full_state(self, *args, **kw):

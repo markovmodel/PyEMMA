@@ -17,7 +17,7 @@
 
 import numpy as _np
 from pyemma._base.model import Model as _Model
-from pyemma._base.subset import SubSet as _SubSet
+from pyemma.msm.util.subset import SubSet as _SubSet
 from pyemma.util import types as _types
 from thermotools.util import logsumexp as _logsumexp
 
