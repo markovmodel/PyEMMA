@@ -1,143 +1,181 @@
-import unittest
-import numpy as np
-
-from pyemma.coordinates.data import DataInMemory
-from pyemma.util.files import TemporaryDirectory
 import os
+import tempfile
+import unittest
 from glob import glob
 
+import numpy as np
+from pyemma.coordinates.data import DataInMemory
+from pyemma.coordinates.tests.util import create_top, create_traj_given_xyz
+from pyemma.util.files import TemporaryDirectory
 
-class TestCoordinatesIterator(unittest.TestCase):
+
+class CoordinatesIteratorBase(object):
+    rtol = 1e-7
+    atol = 0
+
+    def __init__(self, *args, **kwargs):
+        super(CoordinatesIteratorBase, self).__init__(*args, **kwargs)
+        self.helper = None
+        # Kludge alert: We want this class to carry test cases without being run
+        # by the unit test framework, so the `run' method is overridden to do
+        # nothing.  But in order for sub-classes to be able to do something when
+        # run is invoked, the constructor will rebind `run' from TestCase.
+        if self.__class__ != CoordinatesIteratorBase:
+            # Rebind `run' from the parent class.
+            self.run = unittest.TestCase.run.__get__(self, self.__class__)
+        else:
+            def fake_run(*args, **kw):
+                pass
+
+            self.run = fake_run
 
     @classmethod
     def setUpClass(cls):
         cls.d = [np.random.random((100, 3)) for _ in range(3)]
 
     def test_current_trajindex(self):
-        r = DataInMemory(self.d)
+
         expected_itraj = 0
-        for itraj, X in r.iterator(chunk=0):
-            assert itraj == expected_itraj
+        for itraj, X in self.reader.iterator(chunk=0):
+            self.assertEqual(itraj, expected_itraj)
             expected_itraj += 1
 
         expected_itraj = -1
-        it = r.iterator(chunk=16)
+        it = self.reader.iterator(chunk=16)
         for itraj, X in it:
             if it.pos == 0:
                 expected_itraj += 1
-            assert itraj == expected_itraj == it.current_trajindex
+            self.assertEqual(itraj, expected_itraj)  # ,  it.current_trajindex)
 
     def test_n_chunks(self):
-        r = DataInMemory(self.d)
 
-        it0 = r.iterator(chunk=0)
-        assert it0._n_chunks == 3  # 3 trajs
+        it0 = self.reader.iterator(chunk=0)
+        self.assertEqual(it0._n_chunks, 3)  # 3 trajs
 
-        it1 = r.iterator(chunk=50)
-        assert it1._n_chunks == 3 * 2  # 2 chunks per trajectory
+        it1 = self.reader.iterator(chunk=50)
+        self.assertEqual(it1._n_chunks, 3 * 2)  # 2 chunks per trajectory
 
-        it2 = r.iterator(chunk=30)
+        it2 = self.reader.iterator(chunk=30)
         # 3 full chunks and 1 small chunk per trajectory
-        assert it2._n_chunks == 3 * 4
+        self.assertEqual(it2._n_chunks, 3 * 4)
 
-        it3 = r.iterator(chunk=30)
+        it3 = self.reader.iterator(chunk=30)
         it3.skip = 10
-        assert it3._n_chunks == 3 * 3  # 3 full chunks per traj
+        self.assertEqual(it3._n_chunks, 3 * 3)  # 3 full chunks per traj
 
-        it4 = r.iterator(chunk=30)
+        it4 = self.reader.iterator(chunk=30)
         it4.skip = 5
         # 3 full chunks and 1 chunk of 5 frames per trajectory
-        assert it4._n_chunks == 3 * 4
+        self.assertEqual(it4._n_chunks, 3 * 4)
+
+        it42 = self.reader.iterator(chunk=30, stride=2)
+        for itraj, X in it42:
+            print(itraj, X.shape)
 
         # test for lagged iterator
         for stride in range(1, 5):
             for lag in range(0, 18):
-                it = r.iterator(
+                it = self.reader.iterator(
                     lag=lag, chunk=30, stride=stride, return_trajindex=False)
                 chunks = 0
                 for _ in it:
                     chunks += 1
-                assert chunks == it._n_chunks
+                self.assertEqual(chunks, it._n_chunks, "stride={s}, lag={t}".format(s=stride, t=lag))
 
     def test_skip(self):
-        r = DataInMemory(self.d)
-        lagged_it = r.iterator(lag=5)
-        assert lagged_it._it.skip == 0
-        assert lagged_it._it_lagged.skip == 5
+        lagged_it = self.reader.iterator(lag=5)
+        self.assertEqual(lagged_it._it.skip, 0)
+        self.assertEqual(lagged_it._it_lagged.skip, 5)
 
-        it = r.iterator()
+        it = self.reader.iterator()
         for itraj, X in it:
             if itraj == 0:
                 it.skip = 5
             if itraj == 1:
-                assert it.skip == 5
+                self.assertEqual(it.skip, 5)
+
+    def test_skip_with_offset(self):
+        skip = 3
+        r2 = DataInMemory(self.d)
+
+        desired = r2.get_output(skip=skip)
+
+        self.reader.skip = skip
+        it = self.reader.iterator(return_trajindex=True)
+        from collections import defaultdict
+        out = defaultdict(list)
+        for itraj, X in it:
+            out[itraj].append(X)
+
+        out = [np.concatenate(chunks) for chunks in out.values()]
+        np.testing.assert_allclose(out, desired, atol=self.atol, rtol=self.rtol)
 
     def test_chunksize(self):
-        r = DataInMemory(self.d)
         cs = np.arange(1, 17)
         i = 0
-        it = r.iterator(chunk=cs[i])
+        it = self.reader.iterator(chunk=cs[i])
         for itraj, X in it:
             if not it.last_chunk_in_traj:
-                assert len(X) == it.chunksize
+                self.assertEqual(len(X), it.chunksize)
             else:
                 assert len(X) <= it.chunksize
             i += 1
             i %= len(cs)
             it.chunksize = cs[i]
-            assert it.chunksize == cs[i]
+            self.assertEqual(it.chunksize, cs[i])
 
     def test_last_chunk(self):
-        r = DataInMemory(self.d)
-        it = r.iterator(chunk=0)
+        it = self.reader.iterator(chunk=0)
         for itraj, X in it:
             assert it.last_chunk_in_traj
             if itraj == 2:
                 assert it.last_chunk
 
     def test_stride(self):
-        r = DataInMemory(self.d)
         stride = np.arange(1, 17)
         i = 0
-        it = r.iterator(stride=stride[i], chunk=1)
+        it = self.reader.iterator(stride=stride[i], chunk=1)
         for _ in it:
             i += 1
             i %= len(stride)
             it.stride = stride[i]
-            assert it.stride == stride[i]
+            self.assertEqual(it.stride, stride[i])
 
     def test_return_trajindex(self):
-        r = DataInMemory(self.d)
-        it = r.iterator(chunk=0)
+        it = self.reader.iterator(chunk=0)
         it.return_traj_index = True
         assert it.return_traj_index is True
         for tup in it:
-            assert len(tup) == 2
+            self.assertEqual(len(tup), 2)
         it.reset()
         it.return_traj_index = False
         assert it.return_traj_index is False
         itraj = 0
         for tup in it:
-            np.testing.assert_equal(tup, self.d[itraj])
+            np.testing.assert_allclose(tup, self.d[itraj], atol=self.atol, rtol=self.rtol)
             itraj += 1
 
-        for tup in r.iterator(return_trajindex=True):
-            assert len(tup) == 2
+        for tup in self.reader.iterator(return_trajindex=True):
+            self.assertEqual(len(tup), 2)
         itraj = 0
-        for tup in r.iterator(return_trajindex=False):
-            np.testing.assert_equal(tup, self.d[itraj])
+        for tup in self.reader.iterator(return_trajindex=False):
+            np.testing.assert_allclose(tup, self.d[itraj], atol=self.atol, rtol=self.rtol)
             itraj += 1
 
     def test_pos(self):
-        r = DataInMemory(self.d)
-        r.chunksize = 17
-        it = r.iterator()
+        self.reader.chunksize = 17
+        it = self.reader.iterator()
         t = 0
         for itraj, X in it:
-            assert t == it.pos
+            self.assertEqual(t, it.pos)
             t += len(X)
             if it.last_chunk_in_traj:
                 t = 0
+
+
+class DataInMem(CoordinatesIteratorBase, unittest.TestCase):
+    def setUp(self):
+        self.reader = DataInMemory(self.d)
 
     def test_write_to_csv_propagate_filenames(self):
         from pyemma.coordinates import source, tica
@@ -147,9 +185,9 @@ class TestCoordinatesIterator(unittest.TestCase):
                    for f in ('blah.npy', 'blub.npy', 'foo.npy')]
             for x, fn in zip(data, fns):
                 np.save(fn, x)
-            reader = source(fns)
-            assert reader.filenames == fns
-            tica_obj = tica(reader, lag=1, dim=2)
+            self.reader = source(fns)
+            self.assertEqual(self.reader.filenames, fns)
+            tica_obj = tica(self.reader, lag=1, dim=2)
             tica_obj.write_to_csv(extension=".exotic", chunksize=3)
             res = sorted([os.path.abspath(x) for x in glob(td + os.path.sep + '*.exotic')])
             self.assertEqual(len(res), len(fns))
@@ -159,9 +197,55 @@ class TestCoordinatesIterator(unittest.TestCase):
             # compare written results
             expected = tica_obj.get_output()
             actual = source(list(s.replace('.npy', '.exotic') for s in fns)).get_output()
-            assert len(actual) == len(fns)
+            self.assertEqual(len(actual), len(fns))
             for a, e in zip(actual, expected):
-                np.testing.assert_allclose(a, e)
+                np.testing.assert_allclose(a, e, atol=self.atol, rtol=self.rtol)
+
+
+class TestTrajectoryFormatAbstract(object):
+    _format = None
+    atol = 1e-8
+    rtol = 1e-6
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestTrajectoryFormatAbstract, cls).setUpClass()
+        cls.tdir = tempfile.mkdtemp("test_coor_iter_{}".format(cls._format))
+        cls.top = create_top(1)
+
+    @classmethod
+    def tearDownClass(cls):
+        import shutil
+        shutil.rmtree(cls.tdir)
+
+    @property
+    def trajs(self):
+        if self._format is not None and not hasattr(self, '_trajs'):
+            self._trajs = [create_traj_given_xyz(xyz=xyz, top=self.top,
+                                                 format=self._format, directory=self.tdir) for
+                           xyz in self.d]
+        return self._trajs
+
+    def setUp(self):
+        from pyemma.coordinates.data.feature_reader import FeatureReader
+        self.reader = FeatureReader(self.trajs, self.top)
+
+
+class XTC(TestTrajectoryFormatAbstract, CoordinatesIteratorBase, unittest.TestCase):
+    _format = '.xtc'
+
+
+class DCD(TestTrajectoryFormatAbstract, CoordinatesIteratorBase, unittest.TestCase):
+    _format = '.dcd'
+
+
+class H5(TestTrajectoryFormatAbstract, CoordinatesIteratorBase, unittest.TestCase):
+    _format = '.h5'
+
+
+class BinPos(TestTrajectoryFormatAbstract, CoordinatesIteratorBase, unittest.TestCase):
+    _format = '.binpos'
+
 
 if __name__ == '__main__':
     unittest.main()
