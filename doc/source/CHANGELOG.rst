@@ -6,9 +6,6 @@ Changelog
 
 **New features**:
 
-- coordinates: readers now have the ability to skip the initial n frames. The skip
-  parameter of iterators will be added up to the prior one.
-
 
 **Fixes**:
 
