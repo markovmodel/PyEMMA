@@ -46,14 +46,14 @@ class SubSet(object):
 
 
 def globalise(data, axis, active_set, default_value, n_centers):
-    shape_org = _np.shape(data)
-    ndim = data.ndim
-    n = n_centers if ndim == 1 else n_centers * shape_org[1]
-    array = _np.asarray([default_value]).repeat(n)
-    if ndim == 1:
+    if data.ndim == 1:
+        array = _np.asarray([default_value]).repeat(n_centers)
         array[active_set] = data
-    elif ndim == 2:
-        array = array.reshape(-1, shape_org[1])
+    elif data.ndim == 2:
+        expanded_shape = list(data.shape)
+        expanded_shape[axis] = n_centers
+        array = _np.asarray([default_value]).repeat(
+            expanded_shape[0] * expanded_shape[1]).reshape(expanded_shape)
         if axis == 0:
             array[active_set, :] = data
         elif axis == 1:

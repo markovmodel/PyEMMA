@@ -45,26 +45,22 @@ class TestSubset(unittest.TestCase):
         inst = test_class()
         expected = np.zeros(inst.nstates_full)
         expected[inst.active_set] = inst.eigenvalues(k=k_global)
-
         np.testing.assert_equal(inst.eigenvalues_full_state(k=k_global), expected)
 
     def test_shape_left_ev(self):
         inst = test_class(np.arange(start=23, stop=32), nstates_full=60)
-        shape = inst.right_eigenvectors().shape
-
+        shape = inst.left_eigenvectors().shape
         result = inst.left_eigenvectors_full_state()
-        expected = np.array([np.inf]*shape[1]*inst.nstates_full).reshape(-1, shape[1])
-        expected[inst.active_set, :] = inst.left_eigenvectors()
-
+        expected = np.array([np.inf] * shape[0] * inst.nstates_full).reshape(shape[0], -1)
+        expected[:, inst.active_set] = inst.left_eigenvectors()
         np.testing.assert_equal(expected, result)
 
     def test_shape_right_ev(self):
         inst = test_class(np.arange(start=3, stop=12), nstates_full=60)
         shape = inst.right_eigenvectors().shape
         result = inst.right_eigenvectors_full_state()
-        expected = np.array([np.inf] * inst.nstates_full*shape[1]).reshape(-1, shape[1])
+        expected = np.array([np.inf] * inst.nstates_full * shape[1]).reshape(-1, shape[1])
         expected[inst.active_set, :] = inst.right_eigenvectors()
-
         np.testing.assert_equal(expected, result)
 
 if __name__ == '__main__':
