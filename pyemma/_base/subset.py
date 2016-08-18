@@ -80,7 +80,7 @@ def add_full_state_methods(class_with_globalize_methods):
         return alias_to_full_state
 
     original_methods = class_with_globalize_methods.__dict__.copy()
-    for name, method in original_methods.iteritems():
+    for name, method in original_methods.items():
         if not hasattr(method, '_map_to_full_state_def_arg'):
             continue
 
@@ -90,8 +90,7 @@ def add_full_state_methods(class_with_globalize_methods):
 
         alias_to_full_state.__doc__ = method.__doc__
         name += "_full_state"
-        new_method = MethodType(alias_to_full_state, None, class_with_globalize_methods)
-        setattr(class_with_globalize_methods, name, new_method)
+        setattr(class_with_globalize_methods, name, alias_to_full_state)
     return class_with_globalize_methods
 
 

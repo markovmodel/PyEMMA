@@ -10,7 +10,7 @@ k_global = 3
 
 @add_full_state_methods
 class test_class(SubSet):
-    def __init__(self, active_set=[2, 3, 4], nstates_full=10):
+    def __init__(self, active_set=(2, 3, 4), nstates_full=10):
         self.active_set = active_set
         self.nstates_full = nstates_full
 
@@ -66,4 +66,7 @@ class TestSubset(unittest.TestCase):
         expected[inst.active_set, :] = inst.right_eigenvectors()
 
         np.testing.assert_equal(expected, result)
+
+if __name__ == '__main__':
+    unittest.main()
 
