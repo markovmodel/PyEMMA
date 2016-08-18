@@ -197,12 +197,8 @@ class iterload(object):
             return next(self._ra_it)
         else:
             if self._extension not in _TOPOLOGY_EXTS:
-                if self._extension in ('.dcd'):
-                    traj = self._f.read_as_traj(self._topology, n_frames=self._chunksize,
-                                                stride=self._stride, atom_indices=self._atom_indices, **self._kwargs)
-                else:
-                    traj = self._f.read_as_traj(self._topology, n_frames=self._chunksize * self._stride,
-                                                stride=self._stride, atom_indices=self._atom_indices, **self._kwargs)
+                traj = self._f.read_as_traj(self._topology, n_frames=self._chunksize * self._stride,
+                                            stride=self._stride, atom_indices=self._atom_indices, **self._kwargs)
             else:
                 traj = self._f.read_as_traj(n_frames=self._chunksize * self._stride,
                                             stride=self._stride, atom_indices=self._atom_indices, **self._kwargs)

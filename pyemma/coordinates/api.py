@@ -111,7 +111,7 @@ def featurizer(topfile):
 
 
 # TODO: DOC - which topology file formats does mdtraj support? Find out and complete docstring
-def load(trajfiles, features=None, top=None, stride=1, chunk_size=None, skip=0, **kw):
+def load(trajfiles, features=None, top=None, stride=1, chunk_size=None, **kw):
     r""" Loads coordinate features into memory.
 
     If your memory is not big enough consider the use of **pipeline**, or use
@@ -168,9 +168,6 @@ def load(trajfiles, features=None, top=None, stride=1, chunk_size=None, skip=0, 
     chunk_size: int, optional, default = 100
         The chunk size at which the input file is being processed.
 
-    skip: int, optional, default = 0
-        If given 'skip' the first n frames of each file.
-
     Returns
     -------
     data : ndarray or list of ndarray
@@ -207,7 +204,7 @@ def load(trajfiles, features=None, top=None, stride=1, chunk_size=None, skip=0, 
             and (any(isinstance(item, (list, tuple, _string_types)) for item in trajfiles)
                  or len(trajfiles) is 0)):
         reader = create_file_reader(trajfiles, top, features, chunk_size=chunk_size if chunk_size is not None else 0, **kw)
-        trajs = reader.get_output(stride=stride, skip=skip)
+        trajs = reader.get_output(stride=stride)
         if len(trajs) == 1:
             return trajs[0]
         else:
@@ -216,7 +213,7 @@ def load(trajfiles, features=None, top=None, stride=1, chunk_size=None, skip=0, 
         raise ValueError('unsupported type (%s) of input' % type(trajfiles))
 
 
-def source(inp, features=None, top=None, chunk_size=None, skip=0, **kw):
+def source(inp, features=None, top=None, chunk_size=None, **kw):
     r""" Defines trajectory data source
 
     This function defines input trajectories without loading them. You can pass
@@ -271,9 +268,6 @@ def source(inp, features=None, top=None, chunk_size=None, skip=0, **kw):
     chunk_size: int, optional, default = 100 for file readers and 5000 for
         already loaded data The chunk size at which the input file is being
         processed.
-
-    skip: int, optional, default = 0
-        If given 'skip' the first n frames of each file.
 
     Returns
     -------
@@ -357,7 +351,6 @@ def source(inp, features=None, top=None, chunk_size=None, skip=0, **kw):
     else:
         raise ValueError('unsupported type (%s) of input' % type(inp))
 
-    reader.skip = skip
     return reader
 
 
