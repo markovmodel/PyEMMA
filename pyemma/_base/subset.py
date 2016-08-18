@@ -17,22 +17,26 @@
 
 import numpy as _np
 
+
 class SubSet(object):
     @property
     def active_set(self):
         if not hasattr(self, "_active_set"):
             self._active_set = []
         return self._active_set
+
     @active_set.setter
     def active_set(self, active_set):
         if active_set is None:
             active_set = []
         self._active_set = _np.asarray(active_set, dtype=_np.intc)
+
     @property
     def nstates_full(self):
         if not hasattr(self, "_nstates_full"):
             self._nstates_full = len(self.active_set)
         return self._nstates_full
+
     @nstates_full.setter
     def nstates_full(self, nstates_full):
         try:
@@ -41,21 +45,10 @@ class SubSet(object):
             self._nstates_full = None
 
 
-def print_args(func):
-    def wrap(*args, **kwargs):
-        print("called %s with:" % func)
-        print("args:", args)
-        if kwargs:
-            print("kw:", kwargs)
-        return func(*args, **kwargs)
-    return wrap
-
-
-@print_args
 def globalise(data, axis, active_set, default_value, n_centers):
     shape_org = _np.shape(data)
     ndim = data.ndim
-    n = n_centers if ndim == 1 else n_centers*shape_org[1]
+    n = n_centers if ndim == 1 else n_centers * shape_org[1]
     array = _np.asarray([default_value]).repeat(n)
     if ndim == 1:
         array[active_set] = data
@@ -83,6 +76,7 @@ def add_full_state_methods(class_with_globalize_methods):
             data = _call_member(self, name, *args, **kw)
             data = _np.asarray(data)
             return globalise(data, axis, self.active_set, default_value, self.nstates_full)
+
         return alias_to_full_state
 
     original_methods = class_with_globalize_methods.__dict__.copy()
@@ -110,6 +104,7 @@ class map_to_full_state(object):
     extend_along_axis : int, default=0
         extend along given axis for multi-dimensional data.
     """
+
     def __init__(self, default_arg, extend_along_axis=0):
         self.default_arg = default_arg
         self.extend_along_axis = extend_along_axis
