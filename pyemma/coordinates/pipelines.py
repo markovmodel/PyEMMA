@@ -79,8 +79,8 @@ class Pipeline(object):
         Appends the given element to the end of the current chain.
         """
         if not isinstance(e, Iterable):
-            raise TypeError("given element is not iterable in terms of "
-                            "PyEMMAs coordinate pipeline.")
+            raise TypeError("given element {} is not iterable in terms of "
+                            "PyEMMAs coordinate pipeline.".format(e))
 
         # only if we have more than one element
         if not e.is_reader and len(self._chain) >= 1:
