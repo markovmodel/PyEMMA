@@ -14,8 +14,10 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from functools import wraps
 
 import numpy as _np
+from decorator import decorator, decorate
 
 
 class SubSet(object):
@@ -78,23 +80,28 @@ def add_full_state_methods(class_with_globalize_methods):
 
         return alias_to_full_state
 
-    original_methods = class_with_globalize_methods.__dict__.copy()
-    for name, method in original_methods.items():
-        if not hasattr(method, '_map_to_full_state_def_arg'):
+    for name, method in class_with_globalize_methods.__dict__.copy().items():
+        if isinstance(method, property) and hasattr(method.fget, '_map_to_full_state_def_arg'):
+            default_value = method.fget._map_to_full_state_def_arg
+            axis = method.fget._map_to_full_state_along_axis
+            new_getter = mk_f(name, default_value, axis)
+            alias_to_full_state_inst = property(new_getter)
+        elif hasattr(method, '_map_to_full_state_def_arg'):
+            default_value = method._map_to_full_state_def_arg
+            axis = method._map_to_full_state_along_axis
+            alias_to_full_state_inst = mk_f(name, default_value, axis)
+        else:
             continue
 
-        default_value = method._map_to_full_state_def_arg
-        axis = method._map_to_full_state_along_axis
-        alias_to_full_state = mk_f(name, default_value, axis)
-
-        alias_to_full_state.__doc__ = method.__doc__
         name += "_full_state"
-        setattr(class_with_globalize_methods, name, alias_to_full_state)
+        setattr(class_with_globalize_methods, name, alias_to_full_state_inst)
+
     return class_with_globalize_methods
 
 
 class map_to_full_state(object):
     """ adds a copy of decorated method/property to be passed to the full state interpolation function
+
     Parameters
     ----------
     default_arg: object
@@ -109,8 +116,9 @@ class map_to_full_state(object):
 
     def __call__(self, func):
         if isinstance(func, property):
-            raise TypeError("property decorator has to be given first.")
-
-        func._map_to_full_state_def_arg = self.default_arg
-        func._map_to_full_state_along_axis = self.extend_along_axis
+            func.fget._map_to_full_state_def_arg = self.default_arg
+            func.fget._map_to_full_state_along_axis = self.extend_along_axis
+        else:
+            func._map_to_full_state_def_arg = self.default_arg
+            func._map_to_full_state_along_axis = self.extend_along_axis
         return func

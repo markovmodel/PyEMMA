@@ -22,8 +22,8 @@ class test_class(SubSet):
     def left_eigenvectors(self):
         return np.arange(27).reshape(-1, 3).T
 
+    @map_to_full_state(default_arg=-1)
     @property
-    @map_to_full_state(default_arg=None)
     def test_property(self):
         return [4, 5, 6]
 
@@ -36,6 +36,12 @@ class TestSubset(unittest.TestCase):
         assert hasattr(inst, 'test_property_full_state')
         assert hasattr(test_class, 'test_property_full_state')
         self.assertIsInstance(inst.left_eigenvectors_full_state, types.MethodType)
+
+    def test_property(self):
+        inst = test_class()
+        expected = np.ones(inst.nstates_full)*-1
+        expected[inst.active_set] = inst.test_property
+        np.testing.assert_equal(inst.test_property_full_state, expected)
         self.assertIsInstance(test_class.test_property_full_state, property)
 
     def test_shape_left_ev(self):
