@@ -6,8 +6,6 @@ Changelog
 
 **New features**:
 
-- coordinates: readers now have the ability to skip the initial n frames. The skip
-  parameter of iterators will be added up to the prior one.
 - thermo: TRAM supports the new parameter equilibrium which triggers a TRAMMBAR estimation.
 - thermo: the model_active_set and msm_active_set attributes in estimated MEMMs is deprecated; every
   MSM in models now contains its own active_set.
