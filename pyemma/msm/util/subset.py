@@ -14,10 +14,8 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from functools import wraps
 
 import numpy as _np
-from decorator import decorator, decorate
 
 
 class SubSet(object):
@@ -47,7 +45,7 @@ class SubSet(object):
             self._nstates_full = None
 
 
-def globalise(data, axis, active_set, default_value, n_centers):
+def _globalize(data, axis, active_set, default_value, n_centers):
     if data.ndim == 1:
         array = _np.asarray([default_value]).repeat(n_centers)
         array[active_set] = data
@@ -67,29 +65,40 @@ def globalise(data, axis, active_set, default_value, n_centers):
     return array
 
 
-def add_full_state_methods(class_with_globalize_methods):
-    assert hasattr(class_with_globalize_methods, 'active_set')
-    assert hasattr(class_with_globalize_methods, 'nstates_full')
+def _wrap_to_full_state(name, default_value, axis):
     from pyemma._base.estimator import _call_member
 
-    def mk_f(name, default_value, axis):
-        def alias_to_full_state(self, *args, **kw):
-            data = _call_member(self, name, *args, **kw)
-            data = _np.asarray(data)
-            return globalise(data, axis, self.active_set, default_value, self.nstates_full)
+    def alias_to_full_state(self, *args, **kw):
+        data = _call_member(self, name, *args, **kw)
+        data = _np.asarray(data)
+        return _globalize(data, axis, self.active_set, default_value, self.nstates_full)
 
-        return alias_to_full_state
+    return alias_to_full_state
+
+
+def add_full_state_methods(class_with_globalize_methods):
+    """
+    class decorator to create "_full_state" methods/properties on the class (so they
+    are valid for all instances created from this class).
+
+    Parameters
+    ----------
+    class_with_globalize_methods
+
+    """
+    assert hasattr(class_with_globalize_methods, 'active_set')
+    assert hasattr(class_with_globalize_methods, 'nstates_full')
 
     for name, method in class_with_globalize_methods.__dict__.copy().items():
         if isinstance(method, property) and hasattr(method.fget, '_map_to_full_state_def_arg'):
             default_value = method.fget._map_to_full_state_def_arg
             axis = method.fget._map_to_full_state_along_axis
-            new_getter = mk_f(name, default_value, axis)
+            new_getter = _wrap_to_full_state(name, default_value, axis)
             alias_to_full_state_inst = property(new_getter)
         elif hasattr(method, '_map_to_full_state_def_arg'):
             default_value = method._map_to_full_state_def_arg
             axis = method._map_to_full_state_along_axis
-            alias_to_full_state_inst = mk_f(name, default_value, axis)
+            alias_to_full_state_inst = _wrap_to_full_state(name, default_value, axis)
         else:
             continue
 
