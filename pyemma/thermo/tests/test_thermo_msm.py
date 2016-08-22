@@ -48,8 +48,10 @@ class TestThermoMSM(unittest.TestCase):
         cls.msm = ThermoMSM(cls.P, cls.active_set, cls.nstates_full, cls.pi)
 
     def test_f(self):
-        npt.assert_array_equal(self.msm.free_energies, self.msm.f)
+        npt.assert_array_equal(self.msm.free_energies, self.f)
         npt.assert_array_equal(self.msm.free_energies_full_state, self.f_full)
+        npt.assert_array_equal(self.msm.f, self.f)
+        npt.assert_array_equal(self.msm.f_full_state, self.f_full)
 
 
 
