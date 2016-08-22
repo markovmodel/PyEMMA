@@ -42,7 +42,7 @@ __all__ = ['RegularSpaceClustering']
 class RegularSpaceClustering(AbstractClustering):
     r"""Regular space clustering"""
 
-    def __init__(self, dmin, max_centers=1000, metric='euclidean', stride=1, n_jobs=None):
+    def __init__(self, dmin, max_centers=1000, metric='euclidean', stride=1, n_jobs=None, skip=0):
         """Clusters data objects in such a way, that cluster centers are at least in
         distance of dmin to each other according to the given metric.
         The assignment of data objects to cluster centers is performed by
@@ -81,7 +81,8 @@ class RegularSpaceClustering(AbstractClustering):
         """
         super(RegularSpaceClustering, self).__init__(metric=metric, n_jobs=n_jobs)
 
-        self.set_params(dmin=dmin, metric=metric, max_centers=max_centers, stride=stride)
+        self.set_params(dmin=dmin, metric=metric,
+                        max_centers=max_centers, stride=stride, skip=skip)
 
     def describe(self):
         return "[RegularSpaceClustering dmin=%f, inp_dim=%i]" % (self._dmin, self.data_producer.dimension())
@@ -132,10 +133,11 @@ class RegularSpaceClustering(AbstractClustering):
         ########
         # temporary list to store cluster centers
         clustercenters = []
-        it = iterable.iterator(return_trajindex=False)
         used_frames = 0
+        it = iterable.iterator(return_trajindex=False, stride=self.stride,
+                               chunk=self.chunksize, skip=self.skip)
         try:
-            with iterable.iterator(return_trajindex=False, stride=self.stride, chunk=self.chunksize) as it:
+            with it:
                 for X in it:
                     used_frames += len(X)
                     regspatial.cluster(X.astype(np.float32, order='C', copy=False),

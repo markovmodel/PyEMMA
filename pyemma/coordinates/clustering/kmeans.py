@@ -49,7 +49,7 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
 
     def __init__(self, n_clusters, max_iter=5, metric='euclidean',
                  tolerance=1e-5, init_strategy='kmeans++', fixed_seed=False,
-                 oom_strategy='memmap', stride=1, n_jobs=None):
+                 oom_strategy='memmap', stride=1, n_jobs=None, skip=0):
         r"""Kmeans clustering
 
         Parameters
@@ -97,7 +97,7 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
 
         self.set_params(n_clusters=n_clusters, max_iter=max_iter, tolerance=tolerance,
                         init_strategy=init_strategy, oom_strategy=oom_strategy,
-                        fixed_seed=fixed_seed, stride=stride,
+                        fixed_seed=fixed_seed, stride=stride, skip=skip
                         )
 
         self._cluster_centers_iter = None
@@ -138,7 +138,8 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
     def _estimate(self, iterable, **kw):
         self._init_estimate()
 
-        with iterable.iterator(return_trajindex=True, stride=self.stride, chunk=self.chunksize) as iter:
+        with iterable.iterator(return_trajindex=True, stride=self.stride,
+                               chunk=self.chunksize, skip=self.skip) as iter:
             # first pass: gather data and run k-means
             first_chunk = True
             for itraj, X in iter:
@@ -209,7 +210,7 @@ class KmeansClustering(AbstractClustering, ProgressReporter):
         self._cluster_centers_iter = []
         self._init_centers_indices = {}
         self._t_total = 0
-        traj_lengths = self.trajectory_lengths(stride=stride)
+        traj_lengths = self.trajectory_lengths(stride=stride, skip=self.skip)
         total_length = sum(traj_lengths)
         if not self.n_clusters:
             self.n_clusters = min(int(math.sqrt(total_length)), 5000)
@@ -256,7 +257,7 @@ class MiniBatchKmeansClustering(KmeansClustering):
     r"""Mini-batch k-means clustering"""
 
     def __init__(self, n_clusters, max_iter=5, metric='euclidean', tolerance=1e-5, init_strategy='kmeans++',
-                 batch_size=0.2, oom_strategy='memmap', fixed_seed=False, stride=None, n_jobs=None):
+                 batch_size=0.2, oom_strategy='memmap', fixed_seed=False, stride=None, n_jobs=None, skip=0):
 
         if stride is not None:
             raise ValueError("stride is a dummy value in MiniBatch Kmeans")
@@ -268,7 +269,7 @@ class MiniBatchKmeansClustering(KmeansClustering):
 
         super(MiniBatchKmeansClustering, self).__init__(n_clusters, max_iter, metric,
                                                         tolerance, init_strategy, False,
-                                                        oom_strategy, stride=stride, n_jobs=n_jobs)
+                                                        oom_strategy, stride=stride, n_jobs=n_jobs, skip=skip)
 
         self.set_params(batch_size=batch_size)
 
@@ -293,7 +294,7 @@ class MiniBatchKmeansClustering(KmeansClustering):
         return self._random_access_stride
 
     def _init_estimate(self):
-        self._traj_lengths = self.trajectory_lengths()
+        self._traj_lengths = self.trajectory_lengths(skip=self.skip)
         self._total_length = sum(self._traj_lengths)
         samples = int(math.ceil(self._total_length * self.batch_size))
         self._n_samples = 0
@@ -316,7 +317,7 @@ class MiniBatchKmeansClustering(KmeansClustering):
         prev_cost = 0
 
         ra_stride = self._draw_mini_batch_sample()
-        with iterable.iterator(return_trajindex=False, stride=ra_stride) as iterator:
+        with iterable.iterator(return_trajindex=False, stride=ra_stride, skip=self.skip) as iterator:
             while not (converged_in_max_iter or i_pass + 1 >= self.max_iter):
                 first_chunk = True
                 # draw new sample and re-use existing iterator instance.

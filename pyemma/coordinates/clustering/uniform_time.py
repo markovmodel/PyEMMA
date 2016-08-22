@@ -34,7 +34,7 @@ __all__ = ['UniformTimeClustering']
 class UniformTimeClustering(AbstractClustering):
     r"""Uniform time clustering"""
 
-    def __init__(self, n_clusters=2, metric='euclidean', stride=1, n_jobs=None):
+    def __init__(self, n_clusters=2, metric='euclidean', stride=1, n_jobs=None, skip=0):
         """r
         Uniform time clustering
 
@@ -51,9 +51,11 @@ class UniformTimeClustering(AbstractClustering):
         n_jobs : int or None, default None
             Number of threads to use during assignment of the data.
             If None, all available CPUs will be used.
+        skip : int, default=0
+            skip the first initial n frames per trajectory.
         """
         super(UniformTimeClustering, self).__init__(metric=metric, n_jobs=n_jobs)
-        self.set_params(n_clusters=n_clusters, metric=metric, stride=stride)
+        self.set_params(n_clusters=n_clusters, metric=metric, stride=stride, skip=skip)
 
     def describe(self):
         return "[Uniform time clustering, k = %i, inp_dim=%i]" \
@@ -62,14 +64,14 @@ class UniformTimeClustering(AbstractClustering):
     def _estimate(self, iterable, **kw):
 
         if self.n_clusters is None:
-            traj_lengths = self.trajectory_lengths(stride=self.stride)
+            traj_lengths = self.trajectory_lengths(stride=self.stride, skip=self.skip)
             total_length = sum(traj_lengths)
             self.n_clusters = min(int(math.sqrt(total_length)), 5000)
             self._logger.info("The number of cluster centers was not specified, "
                               "using min(sqrt(N), 5000)=%s as n_clusters." % self.n_clusters)
 
         # initialize time counters
-        T = iterable.n_frames_total(stride=self.stride)
+        T = iterable.n_frames_total(stride=self.stride, skip=self.skip)
         if self.n_clusters > T:
             self.n_clusters = T
             self._logger.info('Requested more clusters (k = %i'
@@ -80,12 +82,12 @@ class UniformTimeClustering(AbstractClustering):
         # first data point in the middle of the time segment
         next_t = (T // self.n_clusters) // 2
         # cumsum of lenghts
-        cumsum = np.cumsum(self.trajectory_lengths())
+        cumsum = np.cumsum(self.trajectory_lengths(skip=self.skip))
         # distribution of integers, truncate if n_clusters is too large
         linspace = self.stride * np.arange(next_t, T - next_t + 1, (T - 2*next_t + 1) // self.n_clusters)[:self.n_clusters]
         # random access matrix
         ra_stride = np.array([UniformTimeClustering._idx_to_traj_idx(x, cumsum) for x in linspace])
-        with iterable.iterator(stride=ra_stride, return_trajindex=False, chunk=self.chunksize) as it:
+        with iterable.iterator(stride=ra_stride, return_trajindex=False, chunk=self.chunksize, skip=self.skip) as it:
             self.clustercenters = np.concatenate([X for X in it])
 
         assert len(self.clustercenters) == self.n_clusters

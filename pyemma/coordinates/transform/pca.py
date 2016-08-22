@@ -55,7 +55,7 @@ class PCAModel(Model):
 class PCA(StreamingTransformer, ProgressReporter):
     r""" Principal component analysis."""
 
-    def __init__(self, dim=-1, var_cutoff=0.95, mean=None, stride=1):
+    def __init__(self, dim=-1, var_cutoff=0.95, mean=None, stride=1, skip=0):
         r""" Principal component analysis.
 
         Given a sequence of multivariate data :math:`X_t`,
@@ -99,8 +99,7 @@ class PCA(StreamingTransformer, ProgressReporter):
             raise ValueError('Trying to set both the number of dimension and the subspace variance. Use either or.')
 
         self._model = PCAModel()
-        self.set_params(dim=dim, var_cutoff=var_cutoff, mean=mean)
-        self._model = PCAModel()
+        self.set_params(dim=dim, var_cutoff=var_cutoff, mean=mean, stride=stride, skip=skip)
 
     def describe(self):
         return "[PCA, output dimension = %i]" % self.dim
@@ -199,7 +198,8 @@ class PCA(StreamingTransformer, ProgressReporter):
     def _estimate(self, iterable, **kw):
         partial_fit = 'partial' in kw
 
-        with iterable.iterator(return_trajindex=False, chunk=self.chunksize) as it:
+        with iterable.iterator(return_trajindex=False, chunk=self.chunksize,
+                               stride=self.stride, skip=self.skip) as it:
             n_chunks = it._n_chunks
             self._progress_register(n_chunks, "calc mean+cov", 0)
             self._init_covar(partial_fit, n_chunks)
