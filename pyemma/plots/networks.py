@@ -146,7 +146,6 @@ class NetworkPlot(object):
         textkwargs.setdefault('color', 'black')
         # remove the temporary key 'arrow_label_size' as it cannot be parsed by plt.text!
         arrow_label_size = textkwargs.pop('arrow_label_size', textkwargs['size'])
-
         if self.pos is None:
             self.layout_automatic()
         # number of nodes
@@ -314,7 +313,7 @@ def plot_markov_model(
     P, pos=None, state_sizes=None, state_scale=1.0, state_colors='#ff5500', state_labels='auto',
     minflux=1e-6, arrow_scale=1.0, arrow_curvature=1.0, arrow_labels='weights',
     arrow_label_format='%2.e', max_width=12, max_height=12, figpadding=0.2, show_frame=False,
-    **textkwargs):
+    ax=None, **textkwargs):
     r"""Network representation of MSM transition matrix
 
     This visualization is not optimized for large matrices. It is meant to be
@@ -403,7 +402,7 @@ def plot_markov_model(
         F = _np.dot(_np.diag(msmana.stationary_distribution(P)), P)
         I, J = _np.where(F < minflux)
         P[I, J] = 0.0
-    plot = NetworkPlot(P, pos=pos)
+    plot = NetworkPlot(P, pos=pos, ax=ax)
     fig = plot.plot_network(
         state_sizes=state_sizes, state_scale=state_scale, state_colors=state_colors,
         state_labels=state_labels, arrow_scale=arrow_scale, arrow_curvature=arrow_curvature,
@@ -417,7 +416,7 @@ def plot_flux(
     flux, pos=None, state_sizes=None, flux_scale=1.0, state_scale=1.0, state_colors='#ff5500',
     state_labels='auto', minflux=1e-9, arrow_scale=1.0, arrow_curvature=1.0, arrow_labels='weights',
     arrow_label_format='%2.e', max_width=12, max_height=12, figpadding=0.2,
-    attribute_to_plot='net_flux', show_frame=False, show_committor=True, **textkwargs):
+    attribute_to_plot='net_flux', show_frame=False, show_committor=True, ax=None, **textkwargs):
     r"""Network representation of reactive flux
 
     This visualization is not optimized for large fluxes. It is meant to be used
@@ -515,7 +514,7 @@ def plot_flux(
     c = flux.committor
     if state_sizes is None:
         state_sizes = flux.stationary_distribution
-    plot = NetworkPlot(F, pos=pos, xpos=c)
+    plot = NetworkPlot(F, pos=pos, xpos=c, ax=ax)
     if minflux > 0:
         I, J = _np.where(F < minflux)
         F[I, J] = 0.0
@@ -535,7 +534,8 @@ def plot_network(
     weights, pos=None, xpos=None, ypos=None, state_sizes=None, state_scale=1.0,
     state_colors='#ff5500', state_labels='auto', arrow_scale=1.0, arrow_curvature=1.0,
     arrow_labels='weights', arrow_label_format='%2.e', max_width=12, max_height=12, figpadding=0.2,
-    attribute_to_plot='net_flux', show_frame=False, xticks=False, yticks=False, **textkwargs):
+    attribute_to_plot='net_flux', show_frame=False, xticks=False, yticks=False, ax=None,
+    **textkwargs):
     r"""Network representation of given matrix
 
     This visualization is not optimized for large networks. It is meant to be
@@ -626,7 +626,7 @@ def plot_network(
     (<matplotlib.figure.Figure..., array...)
 
     """
-    plot = NetworkPlot(weights, pos=pos, xpos=xpos, ypos=ypos)
+    plot = NetworkPlot(weights, pos=pos, xpos=xpos, ypos=ypos, ax=ax)
     fig = plot.plot_network(
         state_sizes=state_sizes, state_scale=state_scale, state_colors=state_colors,
         state_labels=state_labels, arrow_scale=arrow_scale, arrow_curvature=arrow_curvature,
