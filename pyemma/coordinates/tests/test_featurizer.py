@@ -130,7 +130,7 @@ class TestFeaturizer(unittest.TestCase):
         inds = self.feat.select_Backbone()
     
     def test_select_non_symmetry_heavy_atoms(self):
-        inds = self.feat.select_non_symmetry_related_heavy_atoms()
+        inds = self.feat.select_Heavy(exclude_symmetry_related=True)
 
     def test_select_all(self):
         self.feat.add_all()
