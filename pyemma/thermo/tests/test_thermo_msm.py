@@ -53,6 +53,12 @@ class TestThermoMSM(unittest.TestCase):
         npt.assert_array_equal(self.msm.f, self.f)
         npt.assert_array_equal(self.msm.f_full_state, self.f_full)
 
+    def test_pi(self):
+        npt.assert_array_equal(self.msm.pi, self.pi)
+        npt.assert_array_equal(self.msm.pi_full_state, self.pi_full)
+        npt.assert_array_equal(self.msm.stationary_distribution, self.pi)
+        npt.assert_array_equal(self.msm.stationary_distribution_full_state, self.pi_full)
+
 
 
 
