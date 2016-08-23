@@ -43,6 +43,8 @@ class NetworkPlot(object):
             user-defined x-positions
         ypos : ndarray(n,)
             user-defined y-positions
+        ax : matplotlib Axes object, optional, default=None
+            The axes to plot to. When set to None a new Axes (and Figure) object will be used.
 
         Examples
         --------
@@ -366,6 +368,8 @@ def plot_markov_model(
         The relative figure size used for the padding
     show_frame: boolean (default=False)
         Draw a frame around the network.
+    ax : matplotlib Axes object, optional, default=None
+        The axes to plot to. When set to None a new Axes (and Figure) object will be used.
     textkwargs : optional argument for the text of the state and arrow labels.
         See http://matplotlib.org/api/text_api.html#matplotlib.text.Text for more info. The
         parameter 'size' refers to the size of the state and arrow labels and overwrites the
@@ -473,6 +477,8 @@ def plot_flux(
         Draw a frame around the network.
     show_committor: boolean (default=False)
         Print the committor value on the x-axis.
+    ax : matplotlib Axes object, optional, default=None
+        The axes to plot to. When set to None a new Axes (and Figure) object will be used.
     textkwargs : optional argument for the text of the state and arrow labels.
         See http://matplotlib.org/api/text_api.html#matplotlib.text.Text for more info. The
         parameter 'size' refers to the size of the state and arrow labels and overwrites the
@@ -593,6 +599,8 @@ def plot_network(
         Show x ticks
     yticks: boolean (default=False)
         Show y ticks
+    ax : matplotlib Axes object, optional, default=None
+        The axes to plot to. When set to None a new Axes (and Figure) object will be used.
     textkwargs : optional argument for the text of the state and arrow labels.
         See http://matplotlib.org/api/text_api.html#matplotlib.text.Text for more info. The
         parameter 'size' refers to the size of the state and arrow labels and overwrites the
