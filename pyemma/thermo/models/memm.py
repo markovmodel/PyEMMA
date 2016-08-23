@@ -89,6 +89,15 @@ class ThermoMSM(_MSM, _SubSet):
     def free_energies(self):
         return -_np.log(self.stationary_distribution)
 
+    @property
+    @_map_to_full_state(default_arg=0.0)
+    def stationary_distribution(self):
+        return super(ThermoMSM, self).stationary_distribution
+
+    @property
+    def pi_full_state(self):
+        return self.stationary_distribution_full_state
+
 
 class MEMM(_MultiThermModel):
     r""" Coupled set of Markov state models at multiple thermodynamic states
