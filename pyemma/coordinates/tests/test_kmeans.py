@@ -175,5 +175,8 @@ class TestKmeans(unittest.TestCase):
     def test_with_n_jobs_minrmsd(self):
         kmeans = cluster_kmeans(np.random.rand(500,3), 10, metric='minRMSD')
 
+    def test_skip(self):
+        cluster_kmeans(np.random.rand(100, 3), skip=42)
+
 if __name__ == "__main__":
     unittest.main()

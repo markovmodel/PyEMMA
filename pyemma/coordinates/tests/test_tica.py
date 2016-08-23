@@ -155,6 +155,10 @@ class TestTICA_Basic(unittest.TestCase):
         with self.assertRaises(ValueError):
             tica(trajs, lag=100)
 
+    def test_with_skip(self):
+        data = np.random.random((100, 10))
+        tica_obj = api.tica(lag=10, dim=1, skip=1)
+
 
 class TestTICAExtensive(unittest.TestCase):
     @classmethod

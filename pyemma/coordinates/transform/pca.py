@@ -105,7 +105,7 @@ class PCA(StreamingTransformer, ProgressReporter):
             raise ValueError('Trying to set both the number of dimension and the subspace variance. Use either or.')
 
         self._model = PCAModel()
-        self.set_params(dim=dim, var_cutoff=var_cutoff, mean=mean, stride=stride)
+        self.set_params(dim=dim, var_cutoff=var_cutoff, mean=mean, stride=stride, skip=skip)
 
     def describe(self):
         return "[PCA, output dimension = %i]" % self.dim
@@ -223,7 +223,8 @@ class PCA(StreamingTransformer, ProgressReporter):
     def _estimate(self, iterable, **kw):
         partial_fit = 'partial' in kw
 
-        with iterable.iterator(return_trajindex=False, chunk=self.chunksize) as it:
+        with iterable.iterator(return_trajindex=False, chunk=self.chunksize,
+                               stride=self.stride, skip=self.skip) as it:
             n_chunks = it._n_chunks
             self._progress_register(n_chunks, "calc mean+cov", 0)
             self._init_covar(partial_fit, n_chunks)

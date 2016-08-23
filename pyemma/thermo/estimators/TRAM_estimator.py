@@ -27,6 +27,8 @@ from pyemma.thermo.estimators._callback import _ConvergenceProgressIndicatorCall
 from pyemma.thermo.estimators._callback import _IterationProgressIndicatorCallBack
 from thermotools import tram as _tram
 from thermotools import tram_direct as _tram_direct
+from thermotools import trammbar as _trammbar
+from thermotools import trammbar_direct as _trammbar_direct
 from thermotools import mbar as _mbar
 from thermotools import mbar_direct as _mbar_direct
 from thermotools import util as _util
@@ -121,6 +123,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
         self, lag, count_mode='sliding',
         connectivity='summed_count_matrix',
         ground_state=None,
+        equilibrium=None,
         maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step',
         nn=None, connectivity_factor=1.0, direct_space=False, N_dtram_accelerations=0,
         callback=None,
@@ -135,6 +138,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
         self.dt_traj = dt_traj
         self.timestep_traj = _TimeUnit(dt_traj)
         self.ground_state = ground_state
+        self.equilibrium = equilibrium
         self.maxiter = maxiter
         self.maxerr = maxerr
         self.direct_space = direct_space
@@ -160,7 +164,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
             contains the indices of the configurational states and btrajs contain the biases.
 
             ttrajs : list of numpy.ndarray(X_i, dtype=int)
-                Every elements is a trajectory (time series). ttrajs[i][t] is the index of the
+                Every element is a trajectory (time series). ttrajs[i][t] is the index of the
                 thermodynamic state visited in trajectory i at time step t.
             dtrajs : list of numpy.ndarray(X_i, dtype=int)
                 dtrajs[i][t] is the index of the configurational state (Markov state) visited in
@@ -169,6 +173,13 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
                 For every simulation frame seen in trajectory i and time step t, btrajs[i][t,k] is the
                 bias energy of that frame evaluated in the k'th thermodynamic state (i.e. at the k'th
                 Umbrella/Hamiltonian/temperature).
+
+        equilibrium : list of booleans, optional
+             For every trajectory triple (ttraj[i], dtraj[i], btraj[i]), indicates
+             whether to assume global equilibrium. If true, the triple is not used
+             for computing kinetic quantities (but only thermodynamic quantities).
+             By default, no trajectory is assumed to be in global equilibrium.
+             This is the TRAMMBAR extension.
         """
         return super(TRAM, self).estimate(X, **params)
 
@@ -195,15 +206,38 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
         dtrajs_full = [_np.require(d, dtype=_np.intc, requirements='C') for d in dtrajs_full]
         btrajs = [_np.require(b, dtype=_np.float64, requirements='C') for b in btrajs]
 
+        # if equilibrium information is given, separate the trajectories
+        if self.equilibrium is not None:
+            assert len(self.equilibrium) == len(ttrajs)
+            _ttrajs, _dtrajs_full, _btrajs = ttrajs, dtrajs_full, btrajs
+            ttrajs = [ttraj for eq, ttraj in zip(self.equilibrium, _ttrajs) if not eq]
+            dtrajs_full = [dtraj for eq, dtraj in zip(self.equilibrium, _dtrajs_full) if not eq]
+            self.btrajs = [btraj for eq, btraj in zip(self.equilibrium, _btrajs) if not eq]
+            equilibrium_ttrajs = [ttraj for eq, ttraj in zip(self.equilibrium, _ttrajs) if eq]
+            equilibrium_dtrajs_full = [dtraj for eq, dtraj in zip(self.equilibrium, _dtrajs_full) if eq]
+            self.equilibrium_btrajs = [btraj for eq, btraj in zip(self.equilibrium, _btrajs) if eq]
+        else: # set dummy values
+            equilibrium_ttrajs = []
+            equilibrium_dtrajs_full = []
+            self.equilibrium_btrajs = []
+            self.btrajs = btrajs
+
         # find state visits and transition counts
-        state_counts_full = _util.state_counts(ttrajs, dtrajs_full)
+        state_counts_full = _util.state_counts(ttrajs, dtrajs_full, nstates=self.nstates_full, nthermo=self.nthermo)
         count_matrices_full = _util.count_matrices(ttrajs, dtrajs_full,
-            self.lag, sliding=self.count_mode, sparse_return=False, nstates=self.nstates_full)
+            self.lag, sliding=self.count_mode, sparse_return=False, nstates=self.nstates_full, nthermo=self.nthermo)
         self.therm_state_counts_full = state_counts_full.sum(axis=1)
+
+        if self.equilibrium is not None:
+            self.equilibrium_state_counts_full = _util.state_counts(equilibrium_ttrajs, equilibrium_dtrajs_full,
+                nstates=self.nstates_full, nthermo=self.nthermo)
+        else:
+            self.equilibrium_state_counts_full = _np.zeros((self.nthermo, self.nstates_full), dtype=_np.float64)
 
         self.csets, pcset = _cset.compute_csets_TRAM(
             self.connectivity, state_counts_full, count_matrices_full,
-            ttrajs=ttrajs, dtrajs=dtrajs_full, bias_trajs=btrajs,
+            equilibrium_state_counts=self.equilibrium_state_counts_full,
+            ttrajs=ttrajs+equilibrium_ttrajs, dtrajs=dtrajs_full+equilibrium_dtrajs_full, bias_trajs=self.btrajs+self.equilibrium_btrajs,
             nn=self.nn, factor=self.connectivity_factor,
             callback=_IterationProgressIndicatorCallBack(self, 'finding connected set', 'cset'))
         self.active_set = pcset
@@ -221,6 +255,14 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
             state_counts=state_counts_full, count_matrices=count_matrices_full,
             ttrajs=ttrajs, dtrajs=dtrajs_full)
 
+        if self.equilibrium is not None:
+            self.equilibrium_state_counts, _, self.equilibrium_dtrajs, _ =  _cset.restrict_to_csets(
+                self.csets,
+                state_counts=self.equilibrium_state_counts_full, ttrajs=equilibrium_ttrajs, dtrajs=equilibrium_dtrajs_full)
+        else:
+            self.equilibrium_state_counts = _np.zeros((self.nthermo, self.nstates_full), dtype=_np.intc) # (remember: no relabeling)
+            self.equilibrium_dtrajs = []
+
         # self-consistency tests
         assert _np.all(self.state_counts >= _np.maximum(self.count_matrices.sum(axis=1), \
             self.count_matrices.sum(axis=2)))
@@ -230,13 +272,20 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
         assert _np.all(_np.sum(
             [_np.bincount(t[d>=0], minlength=self.nthermo) for t, d in zip(ttrajs, self.dtrajs)],
             axis=0) == self.state_counts.sum(axis=1))
+        if self.equilibrium is not None:
+            assert _np.all(_np.sum(
+                [_np.bincount(d[d >= 0], minlength=self.nstates_full) for d in self.equilibrium_dtrajs],
+                axis=0) == self.equilibrium_state_counts.sum(axis=0))
+            assert _np.all(_np.sum(
+                [_np.bincount(t[d >= 0], minlength=self.nthermo) for t, d in zip(equilibrium_ttrajs, self.equilibrium_dtrajs)],
+                axis=0) ==  self.equilibrium_state_counts.sum(axis=1))
 
         # check for empty states
         for k in range(self.state_counts.shape[0]):
-            if self.count_matrices[k, :, :].sum() == 0:
+            if self.count_matrices[k, :, :].sum() == 0 and self.equilibrium_state_counts[k, :].sum()==0:
                 _warnings.warn(
                     'Thermodynamic state %d' % k \
-                    + 'contains no transitions after reducing to the connected set.', EmptyState)
+                    + ' contains no transitions and no equilibrium data after reducing to the connected set.', EmptyState)
 
         if self.init == 'mbar' and self.biased_conf_energies is None:
             if self.direct_space:
@@ -245,7 +294,8 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
                 mbar = _mbar
             self.mbar_therm_energies, self.mbar_unbiased_conf_energies, \
                 self.mbar_biased_conf_energies, _ = mbar.estimate(
-                    state_counts_full.sum(axis=1), btrajs, dtrajs_full,
+                    (state_counts_full.sum(axis=1)+self.equilibrium_state_counts_full.sum(axis=1)).astype(_np.intc),
+                    self.btrajs+self.equilibrium_btrajs, dtrajs_full+equilibrium_dtrajs_full,
                     maxiter=self.init_maxiter, maxerr=self.init_maxerr,
                     callback=_ConvergenceProgressIndicatorCallBack(
                         self, 'MBAR init.', self.init_maxiter, self.init_maxerr),
@@ -256,23 +306,38 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
         # run estimator
         if self.direct_space:
             tram = _tram_direct
+            trammbar = _trammbar_direct
         else:
             tram = _tram
+            trammbar = _trammbar
         #import warnings
         #with warnings.catch_warnings() as cm:
         # warnings.filterwarnings('ignore', RuntimeWarning)
-        self.biased_conf_energies, conf_energies, self.therm_energies, self.log_lagrangian_mult, \
-            self.increments, self.loglikelihoods = tram.estimate(
-                self.count_matrices, self.state_counts, btrajs, self.dtrajs,
-                maxiter=self.maxiter, maxerr=self.maxerr,
-                biased_conf_energies=self.biased_conf_energies,
-                log_lagrangian_mult=self.log_lagrangian_mult,
-                save_convergence_info=self.save_convergence_info,
-                callback=_ConvergenceProgressIndicatorCallBack(
-                    self, 'TRAM', self.maxiter, self.maxerr),
-                N_dtram_accelerations=self.N_dtram_accelerations)
-        self._progress_force_finish(stage='TRAM', description='TRAM')
-        self.btrajs = btrajs
+        if self.equilibrium is None:
+            self.biased_conf_energies, conf_energies, self.therm_energies, self.log_lagrangian_mult, \
+                self.increments, self.loglikelihoods = tram.estimate(
+                    self.count_matrices, self.state_counts, self.btrajs, self.dtrajs,
+                    maxiter=self.maxiter, maxerr=self.maxerr,
+                    biased_conf_energies=self.biased_conf_energies,
+                    log_lagrangian_mult=self.log_lagrangian_mult,
+                    save_convergence_info=self.save_convergence_info,
+                    callback=_ConvergenceProgressIndicatorCallBack(
+                        self, 'TRAM', self.maxiter, self.maxerr),
+                    N_dtram_accelerations=self.N_dtram_accelerations)
+        else: # use trammbar
+            self.biased_conf_energies, conf_energies, self.therm_energies, self.log_lagrangian_mult, \
+                self.increments, self.loglikelihoods = trammbar.estimate( # TODO: argument order!
+                    self.count_matrices, self.state_counts, self.btrajs, self.dtrajs,
+                    equilibrium_therm_state_counts=self.equilibrium_state_counts.sum(axis=1).astype(_np.intc),
+                    equilibrium_bias_energy_sequences=self.equilibrium_btrajs, equilibrium_state_sequences=self.equilibrium_dtrajs,
+                    maxiter=self.maxiter, maxerr=self.maxerr,
+                    save_convergence_info=self.save_convergence_info,
+                    biased_conf_energies=self.biased_conf_energies,
+                    log_lagrangian_mult=self.log_lagrangian_mult,
+                    callback=_ConvergenceProgressIndicatorCallBack(
+                        self, 'TRAM', self.maxiter, self.maxerr),
+                    N_dtram_accelerations=self.N_dtram_accelerations,
+                    overcounting_factor=1.0/self.lag) # naive guess for sliding window)
 
         # compute models
         fmsms = [_np.ascontiguousarray((
@@ -329,13 +394,23 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
             'MEMM has to be estimate()\'d before pointwise free energies can be calculated.'
         if therm_state is not None:
             assert therm_state<=self.nthermo
-        mu = [_np.zeros(d.shape[0], dtype=_np.float64) for d in self.dtrajs]
-        _tram.get_pointwise_unbiased_free_energies(
-            therm_state,
-            self.log_lagrangian_mult, self.biased_conf_energies,
-            self.therm_energies, self.count_matrices,
-            self.btrajs, self.dtrajs,
-            self.state_counts, None, None, mu)
+        mu = [_np.zeros(d.shape[0], dtype=_np.float64) for d in self.dtrajs+self.equilibrium_dtrajs]
+        if self.equilibrium is None:
+            _tram.get_pointwise_unbiased_free_energies(
+                therm_state,
+                self.log_lagrangian_mult, self.biased_conf_energies,
+                self.therm_energies, self.count_matrices,
+                self.btrajs, self.dtrajs,
+                self.state_counts, None, None, mu)
+        else:
+            _trammbar.get_pointwise_unbiased_free_energies(
+                therm_state,
+                self.log_lagrangian_mult, self.biased_conf_energies,
+                self.therm_energies, self.count_matrices,
+                self.btrajs+self.equilibrium_btrajs, self.dtrajs+self.equilibrium_dtrajs,
+                self.state_counts, None, None, mu,
+                equilibrium_therm_state_counts=self.equilibrium_state_counts.sum(axis=1).astype(_np.intc),
+                overcounting_factor=1.0/self.lag)
         return mu
 
     def mbar_pointwise_free_energies(self, therm_state=None):
@@ -343,8 +418,8 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
             'MEMM has to be estimate()\'d with init=\'mbar\' before pointwise free energies can be calculated.'
         if therm_state is not None:
             assert therm_state<=self.nthermo
-        mu = [_np.zeros(d.shape[0], dtype=_np.float64) for d in self.dtrajs]
+        mu = [_np.zeros(d.shape[0], dtype=_np.float64) for d in self.dtrajs+self.equilibrium_dtrajs]
         _mbar.get_pointwise_unbiased_free_energies(therm_state,
-            _np.log(self.therm_state_counts_full), self.btrajs, 
-            self.mbar_therm_energies, None, mu)
+            _np.log(self.therm_state_counts_full + self.equilibrium_state_counts_full.sum(axis=1)).astype(_np.float64),
+            self.btrajs+self.equilibrium_btrajs, self.mbar_therm_energies, None, mu)
         return mu

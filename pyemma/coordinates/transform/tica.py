@@ -64,7 +64,7 @@ class TICA(StreamingTransformer):
     _serialize_version = 0
 
     def __init__(self, lag, dim=-1, var_cutoff=0.95, kinetic_map=True, epsilon=1e-6,
-                 mean=None, stride=1, remove_mean=True):
+                 mean=None, stride=1, remove_mean=True, skip=0):
         r""" Time-lagged independent component analysis (TICA) [1]_, [2]_, [3]_.
 
         Parameters
@@ -90,6 +90,8 @@ class TICA(StreamingTransformer):
             This option is deprecated
         remove_mean: bool, optional, default True
             remove mean during covariance estimation. Should not be turned off.
+        skip : int, default=0
+            skip the first initial n frames per trajectory.
 
         Notes
         -----
@@ -142,7 +144,7 @@ class TICA(StreamingTransformer):
         # empty dummy model instance
         self._model = TICAModel()
         self.set_params(lag=lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map,
-                        epsilon=epsilon, mean=mean, stride=stride, remove_mean=remove_mean)
+                        epsilon=epsilon, mean=mean, stride=stride, remove_mean=remove_mean, skip=skip)
 
     @property
     def lag(self):
@@ -275,17 +277,20 @@ class TICA(StreamingTransformer):
             self._logger.debug("Running TICA with tau=%i; Estimating two covariance matrices"
                                " with dimension (%i, %i)" % (self._lag, indim, indim))
 
-        if not any(iterable.trajectory_lengths(stride=self.stride, skip=self.lag) > 0):
+        if not any(iterable.trajectory_lengths(stride=self.stride, skip=self.lag+self.skip) > 0):
             if partial_fit:
                 self.logger.warn("Could not use data passed to partial_fit(), "
                                  "because no single data set [longest=%i] is longer than lag time [%i]"
-                                 % (max(iterable.trajectory_lengths(self.stride)), self.lag))
+                                 % (max(iterable.trajectory_lengths(self.stride, skip=self.skip)), self.lag))
                 return self
             else:
                 raise ValueError("None single dataset [longest=%i] is longer than"
-                                 " lag time [%i]." % (max(iterable.trajectory_lengths(self.stride)), self.lag))
+                                 " lag time [%i]." % (max(iterable.trajectory_lengths(self.stride, skip=self.skip)), self.lag))
 
-        it = iterable.iterator(lag=self.lag, return_trajindex=False, chunk=self.chunksize)
+        self.logger.debug("will use {} total frames for {}".
+                          format(iterable.trajectory_lengths(self.stride, skip=self.skip), self.name))
+
+        it = iterable.iterator(lag=self.lag, return_trajindex=False, chunk=self.chunksize, skip=self.skip)
         with it:
             self._progress_register(it._n_chunks, "calculate mean+cov", 0)
             self._init_covar(partial_fit, it._n_chunks)

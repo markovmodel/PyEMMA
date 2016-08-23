@@ -227,7 +227,7 @@ def estimate_umbrella_sampling(
     elif estimator == 'tram':
         allowed_keys = [
             'count_mode', 'connectivity', 'connectivity_factor','nn',
-            'direct_space', 'N_dtram_accelerations']
+            'direct_space', 'N_dtram_accelerations', 'equilibrium']
         parsed_kwargs = dict([(i, kwargs[i]) for i in allowed_keys if i in kwargs])
         estimator_obj = tram(
             ttrajs, us_dtrajs + md_dtrajs, btrajs, lag, unbiased_state=unbiased_state,
@@ -377,7 +377,7 @@ def estimate_multi_temperature(
     elif estimator == 'tram':
         allowed_keys = [
             'count_mode', 'connectivity', 'connectivity_factor','nn',
-            'direct_space', 'N_dtram_accelerations']
+            'direct_space', 'N_dtram_accelerations', 'equilibrium']
         parsed_kwargs = dict([(i, kwargs[i]) for i in allowed_keys if i in kwargs])
         estimator_obj = tram(
             ttrajs, dtrajs, btrajs, lag, unbiased_state=unbiased_state,

@@ -107,7 +107,7 @@ def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True
     -------
     >>> from pyemma import msm
     >>> dtraj = [0,1,1,2,2,2,1,2,2,2,1,0,0,1,1,1,2,2,1,1,2,1,1,0,0,0,1,1,2,2,1]   # mini-trajectory
-    >>> ts = msm.its(dtraj, [1,2,3,4,5])
+    >>> ts = msm.its(dtraj, [1,2,3,4,5], show_progress=False)
     >>> print(ts.timescales)  # doctest: +ELLIPSIS
     [[ 1.5...  0.2...]
      [ 3.1...  1.0...]
@@ -606,7 +606,7 @@ def bayesian_markov_model(dtrajs, lag, reversible=True, statdist=None,
 
     >>> from pyemma import msm
     >>> dtrajs = [[0,1,2,2,2,2,1,2,2,2,1,0,0,0,0,0,0,0], [0,0,0,0,1,1,2,2,2,2,2,2,2,1,0,0]]
-    >>> mm = msm.bayesian_markov_model(dtrajs, 2)
+    >>> mm = msm.bayesian_markov_model(dtrajs, 2, show_progress=False)
 
     The resulting Model is an MSM just like you get with estimate_markov_model
     Its transition matrix does also come from a maximum likelihood estimation,
@@ -783,7 +783,7 @@ def timescales_hmsm(dtrajs, nstates, lags=None, nits=None, reversible=True, stat
     >>> import numpy as np
     >>> np.set_printoptions(precision=3)
     >>> dtraj = [0,1,1,0,0,0,1,1,0,0,0,1,2,2,2,2,2,2,2,2,2,1,1,0,0,0,1,1,0,1,0]   # mini-trajectory
-    >>> ts = msm.timescales_hmsm(dtraj, 2, [1,2,3,4])
+    >>> ts = msm.timescales_hmsm(dtraj, 2, [1,2,3,4], show_progress=False)
     >>> print(ts.timescales) # doctest: +ELLIPSIS
     [[ 5.786]
      [ 5.143]
@@ -1130,7 +1130,7 @@ def bayesian_hidden_markov_model(dtrajs, nstates, lag, nsamples=100, reversible=
 
     >>> from pyemma import msm
     >>> dtrajs = [[0,1,2,2,2,2,1,2,2,2,1,0,0,0,0,0,0,0], [0,0,0,0,1,1,2,2,2,2,2,2,2,1,0,0]]  # two trajectories
-    >>> mm = msm.bayesian_hidden_markov_model(dtrajs, 2, 2)
+    >>> mm = msm.bayesian_hidden_markov_model(dtrajs, 2, 2, show_progress=False)
 
     We compute the stationary distribution (here given by the maximum
     likelihood estimate), and the 1-sigma uncertainty interval. You can see

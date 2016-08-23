@@ -1,17 +1,36 @@
 Changelog
 =========
 
-2.2.3 ()
+2.2.4 ()
+--------
+
+**New features**:
+
+
+**Fixes**:
+
+- coordinates: MiniBatchKmeans with MD-data is now memory efficient
+  and successfully converges. It used to only one batch during iteration. #887 #890
+- base: fix progress bars for modern joblib versions.
+
+2.2.3 (7-28-16)
 ---------------
 
 **New features**:
+
 - thermo: added MBAR estimation
+
+**Fixes**:
+
+- coordinates: In case a configuration directory has not been created yet, the LRU cache
+  of the TrajInfo database was failed to be created. #882
 
 
 2.2.2 (7-14-16)
 ---------------
 
 **New features**:
+
 - coordinates: SQLite backend for trajectory info data. This enables fast access to this data
   on parallel filesystems where multiple processes are writing to the database. This greatly
   speeds ups reader construction and enables fast random access for formats which usually do not

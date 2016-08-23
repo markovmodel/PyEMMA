@@ -236,8 +236,8 @@ class StreamingTransformer(Transformer, Estimator, DataSource, NotifyOnChangesMi
     def trajectory_lengths(self, stride=1, skip=0):
         return self.data_producer.trajectory_lengths(stride=stride, skip=skip)
 
-    def n_frames_total(self, stride=1):
-        return self.data_producer.n_frames_total(stride=stride)
+    def n_frames_total(self, stride=1, skip=0):
+        return self.data_producer.n_frames_total(stride=stride, skip=skip)
 
 
 class StreamingTransformerIterator(DataSourceIterator):

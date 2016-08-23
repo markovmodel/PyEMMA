@@ -23,16 +23,23 @@ Created on 13.03.2015
 '''
 
 from __future__ import absolute_import
+
+from collections import namedtuple
+
 import numpy as np
-from mdtraj import Topology
+from mdtraj import FormatRegistry
+from mdtraj import Topology, Trajectory
+from mdtraj.utils import in_units_of
 from mdtraj.utils.validation import cast_indices
 from mdtraj.core.trajectory import load, _TOPOLOGY_EXTS, _get_extension, open as md_open, load_topology
 
 from itertools import groupby
-from operator import itemgetter
+from operator import itemgetter, attrgetter
 
 from pyemma.coordinates.data.util.reader_utils import copy_traj_attributes, preallocate_empty_trajectory
 from six.moves import map
+
+TrajData = namedtuple("traj_data", ('xyz', 'unitcell_lengths', 'unitcell_angles', 'box'))
 
 
 def _cache_mdtraj_topology(args):
@@ -54,14 +61,15 @@ def _cache_mdtraj_topology(args):
             top = md_load_topology(top_file)
             _top_cache[hash] = top
         return top
+
     return wrap
+
 
 load_topology_cached = _cache_mdtraj_topology(load_topology)
 
 
 class iterload(object):
-
-    def __init__(self, filename, chunk=100, **kwargs):
+    def __init__(self, filename, chunk=1000, **kwargs):
         """An iterator over a trajectory from one or more files on disk, in fragments
 
         This may be more memory efficient than loading an entire trajectory at
@@ -121,6 +129,9 @@ class iterload(object):
         else:
             self._topology = self._top
 
+        if self._extension in ('pdb', 'pdb.gz'):
+            raise Exception("Not supported as trajectory format {ext}".format(ext=self._extension))
+
         self._mode = None
         if isinstance(self._stride, np.ndarray):
             self._mode = 'random_access'
@@ -164,13 +175,16 @@ class iterload(object):
 
     def next(self):
         if self._closed:
-            raise StopIteration()
+            raise StopIteration("closed file")
 
         # apply skip offset only once.
         # (we want to do this here, since we want to be able to re-set self.skip)
-        if not self._seeked:
-            self._f.seek(self.skip)
-            self._seeked = True
+        if self.skip > 0 and not self._seeked:
+            try:
+                self._f.seek(self.skip)
+                self._seeked = True
+            except (IOError, IndexError):
+                raise StopIteration("too short trajectory")
 
         if not isinstance(self._stride, np.ndarray) and self._chunksize == 0:
             # If chunk was 0 then we want to avoid filetype-specific code
@@ -178,21 +192,21 @@ class iterload(object):
             # TODO: this will first apply stride, then skip!
             if self._extension not in _TOPOLOGY_EXTS:
                 self._kwargs['top'] = self._top
-            return load(self._filename, stride=self._stride, **self._kwargs)[self._skip:]
+            traj = load(self._filename, stride=self._stride, **self._kwargs)[self.skip:]
         elif isinstance(self._stride, np.ndarray):
             return next(self._ra_it)
         else:
             if self._extension not in _TOPOLOGY_EXTS:
-                traj = self._f.read_as_traj(self._topology, n_frames=self._chunksize*self._stride,
+                traj = self._f.read_as_traj(self._topology, n_frames=self._chunksize * self._stride,
                                             stride=self._stride, atom_indices=self._atom_indices, **self._kwargs)
             else:
-                traj = self._f.read_as_traj(n_frames=self._chunksize*self._stride,
+                traj = self._f.read_as_traj(n_frames=self._chunksize * self._stride,
                                             stride=self._stride, atom_indices=self._atom_indices, **self._kwargs)
 
-            if len(traj) == 0:
-                raise StopIteration()
+        if len(traj) == 0:
+            raise StopIteration("eof")
 
-            return traj
+        return traj
 
     def __enter__(self):
         return self
@@ -203,7 +217,7 @@ class iterload(object):
     def _random_access_generator(self, f):
         with f:
             curr_size = 0
-            traj = []
+            coords = []
             leftovers = []
             chunksize = self._chunksize
             if chunksize == 0:
@@ -216,49 +230,126 @@ class iterload(object):
                 if curr_size + group_size > chunksize:
                     leftovers = grouped_stride
                 else:
-                    local_traj = _get_local_traj_object(
-                        self._atom_indices, self._extension, f, group_size, self._topology, **self._kwargs)
-                    traj.append(local_traj)
+                    local_traj_data = _read_traj_data(self._atom_indices, f, group_size, **self._kwargs)
+                    coords.append(local_traj_data)
                     curr_size += len(grouped_stride)
                 if curr_size == chunksize:
-                    yield _efficient_traj_join(traj)
+                    yield _join_traj_data(coords, self._topology)
                     curr_size = 0
-                    traj = []
+                    coords = []
                 while leftovers:
                     local_chunk = leftovers[:min(chunksize, len(leftovers))]
-                    local_traj = _get_local_traj_object(
-                        self._atom_indices, self._extension, f, len(local_chunk), self._topology, **self._kwargs)
-                    traj.append(local_traj)
+                    local_traj_data = _read_traj_data(self._atom_indices, f, len(local_chunk), **self._kwargs)
+                    coords.append(local_traj_data)
                     leftovers = leftovers[min(chunksize, len(leftovers)):]
                     curr_size += len(local_chunk)
                     if curr_size == chunksize:
-                        yield _efficient_traj_join(traj)
+                        yield _join_traj_data(coords, self._topology)
                         curr_size = 0
-                        traj = []
-            if traj:
-                yield _efficient_traj_join(traj)
-            raise StopIteration()
+                        coords = []
+            if coords:
+                yield _join_traj_data(coords, self._topology)
+
+            raise StopIteration("delivered all RA indices")
 
 
-def _get_local_traj_object(atom_indices, extension, f, n_frames, topology, **kwargs):
-    if extension not in _TOPOLOGY_EXTS:
-        traj = f.read_as_traj(topology, n_frames=n_frames, stride=1, atom_indices=atom_indices, **kwargs)
+def _read_traj_data(atom_indices, f, n_frames, **kwargs):
+    """
+    
+    Parameters
+    ----------
+    atom_indices
+    f : file handle of mdtraj
+    n_frames
+    kwargs
+
+    Returns
+    -------
+    data : TrajData(xyz, unitcell_length, unitcell_angles, box)
+    
+    Format read() return values:
+     amber_netcdf_restart_f: xyz [Ang], time, cell_l, cell_a
+     amber restart: xyz[Ang], time, cell_l, cell_a
+
+     hdf5: xyz[nm], time, cell_l, cell_a
+     dtr: xyz[Ang], time, cell_l, cell_a
+     netcdf: xyz [ang], time, cell_l, cell_a
+
+     lammps: xyz, cell_l, cell_a
+     dcd: xyz[Ang], cell_l, cell_a
+
+     mdcrd: xyz [ang], cell_l (can be none?)
+
+     gro: xyz[nm], time, unit_cell_vectors [in nano meters] ....
+
+     trr: xyz[nm], time, step, box (n, 3, 3), lambd?
+     xtc: xyz[nm], time, step, box
+     
+     xyz: xyz
+     lh5: xyz [nm]
+     arc: xyz[Ang]
+     binpos: xyz[Ang]
+
+    """
+    res = f.read(n_frames=n_frames, stride=1, atom_indices=atom_indices, **kwargs)
+    if isinstance(res, np.ndarray):
+        res = [res]
+
+    # first element is always xyz coords array.
+    xyz = res[0]
+
+    # hopefully this works for all formats?
+    xyz = in_units_of(xyz, f.distance_unit, Trajectory._distance_unit, inplace=True)
+
+    box = cell_lengths = cell_angles = None
+
+    from mdtraj.formats import (XTCTrajectoryFile, TRRTrajectoryFile, GroTrajectoryFile, MDCRDTrajectoryFile,
+                                LAMMPSTrajectoryFile, DCDTrajectoryFile, HDF5TrajectoryFile, DTRTrajectoryFile,
+                                NetCDFTrajectoryFile)
+
+    if isinstance(f, (XTCTrajectoryFile, TRRTrajectoryFile)):
+        box = res[3]
+    elif isinstance(f, GroTrajectoryFile):
+        box = res[2]
+    elif isinstance(f, MDCRDTrajectoryFile):
+        cell_lengths = res[1]
+        if cell_lengths is None:
+            cell_angles = None
+        else:
+            # Assume that its a rectilinear box
+            cell_angles = 90.0 * np.ones_like(cell_lengths)
+    elif isinstance(f, (LAMMPSTrajectoryFile, DCDTrajectoryFile)):
+        cell_lengths, cell_angles = res[1:]
+    elif len(res) == 4 or isinstance(f, (HDF5TrajectoryFile, DTRTrajectoryFile, NetCDFTrajectoryFile)):
+        cell_lengths, cell_angles = res[2:4]
     else:
-        traj = f.read_as_traj(n_frames=n_frames, stride=1, atom_indices=atom_indices, **kwargs)
+        assert len(res) == 1, "len:{l}, type={t}".format(l=len(res), t=f)
+        #raise NotImplementedError("format read function not handled..." + str(f))
+
+    box = in_units_of(box, f.distance_unit, Trajectory._distance_unit, inplace=True)
+
+    return TrajData(xyz, cell_lengths, cell_angles, box)
+
+
+def _join_traj_data(traj_data, top_file):
+    top = load_topology_cached(top_file)
+    xyz = np.concatenate(tuple(map(itemgetter(0), traj_data)))
+
+    traj = Trajectory(xyz, top)
+
+    if all(t.unitcell_lengths is not None for t in traj_data):
+        unitcell_lengths = np.concatenate(tuple(map(itemgetter(1), traj_data)))
+        traj.unitcell_lengths = unitcell_lengths
+
+    if all(t.box is not None for t in traj_data):
+        boxes = np.concatenate(tuple(map(itemgetter(-1), traj_data)))
+        traj.unitcell_vectors = boxes
+
+    if all(t.unitcell_angles is not None for t in traj_data):
+        angles = np.concatenate(tuple(map(itemgetter(2), traj_data)))
+        traj.unitcell_angles = angles
+
     return traj
-
-
-def _efficient_traj_join(trajs):
-    assert trajs
-
-    n_frames = sum(t.n_frames for t in trajs)
-    concat_traj = preallocate_empty_trajectory(trajs[0].top, n_frames)
-
-    start = 0
-    for traj in trajs:
-        concat_traj = copy_traj_attributes(concat_traj, traj, start)
-        start += traj.n_frames
-    return concat_traj
 
 
 def trajectory_set_item(self, idx, value):
@@ -282,7 +373,6 @@ def trajectory_set_item(self, idx, value):
         if len(idx) >= 3 or len(idx) == 0:
             raise IndexError("invalid slice by %s" % idx)
 
-    print("frames: %s\tatoms: %s" %(frames, atoms))
     self.xyz[frames, atoms] = value.xyz
     self._time[frames] = value.time
     self.unitcell_lengths[frames] = value.unitcell_lengths

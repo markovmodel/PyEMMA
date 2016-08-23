@@ -41,11 +41,15 @@ class AssignCenters(AbstractClustering):
     ----------
     clustercenters : path to file (csv) or npyfile or ndarray
         cluster centers to use in assignment of data
-
     metric : str
         metric to use during clustering ('euclidean', 'minRMSD')
-
-
+    stride : int
+        stride
+    n_jobs : int or None, default None
+        Number of threads to use during assignment of the data.
+        If None, all available CPUs will be used.
+    skip : int, default=0
+        skip the first initial n frames per trajectory.
     Examples
     --------
     Assuming you have stored your centers in a CSV file:
@@ -59,7 +63,7 @@ class AssignCenters(AbstractClustering):
 
     """
 
-    def __init__(self, clustercenters, metric='euclidean', stride=1, n_jobs=None):
+    def __init__(self, clustercenters, metric='euclidean', stride=1, n_jobs=None, skip=0):
         super(AssignCenters, self).__init__(metric=metric, n_jobs=n_jobs)
 
         if isinstance(clustercenters, six.string_types):
@@ -73,9 +77,9 @@ class AssignCenters(AbstractClustering):
         if not clustercenters.ndim == 2:
             raise ValueError('cluster centers have to be 2d')
 
-        self.set_params(clustercenters=clustercenters, metric=metric, stride=stride)
+        self.set_params(clustercenters=clustercenters, metric=metric, stride=stride, skip=skip)
 
-        # since we provided centers, this transformer is already parametrized.
+        # since we provided centers, no estimation is required.
         self._estimated = True
 
     def describe(self):

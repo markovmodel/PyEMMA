@@ -260,19 +260,27 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
                                              description="estimating %s" % str(estimator.__class__.__name__))
 
         if n_jobs > 1:
-            class CallBack(object):
-                def __init__(self, index, parallel):
-                    self.index = index
-                    self.parallel = parallel
-                    self.reporter = progress_reporter
+            try:
+                from joblib.parallel import BatchCompletionCallBack
+                batch_comp_call_back = True
+            except ImportError:
+                from joblib.parallel import CallBack as BatchCompletionCallBack
+                batch_comp_call_back = False
 
-                def __call__(self, index):
-                    if self.reporter is not None:
-                        self.reporter._progress_update(1, stage=0)
-                    if self.parallel._original_iterable:
-                        self.parallel.dispatch_next()
+            class CallBack(BatchCompletionCallBack):
+                def __init__(self, *args, **kw):
+                    self.reporter = progress_reporter
+                    super(CallBack, self).__init__(*args, **kw)
+
+                def __call__(self, *args, **kw):
+                    self.reporter._progress_update(1, stage=0)
+                    super(CallBack, self).__call__(*args, **kw)
+
             import joblib.parallel
-            joblib.parallel.CallBack = CallBack
+            if batch_comp_call_back:
+                joblib.parallel.BatchCompletionCallBack = CallBack
+            else:
+                joblib.parallel.CallBack = CallBack
         else:
             def _print(msg, msg_args):
                 # NOTE: this is a ugly hack, because if we only use one job,

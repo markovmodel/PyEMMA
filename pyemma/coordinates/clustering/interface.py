@@ -246,8 +246,9 @@ class AbstractClustering(StreamingTransformer, Model, ClusterMixin):
             if self._previous_stride is stride and len(self._dtrajs) > 0:
                 return self._dtrajs
             self._previous_stride = stride
+            skip = self.skip if hasattr(self, 'skip') else 0
             # map to column vectors
-            mapped = self.get_output(stride=stride, chunk=self.chunksize)
+            mapped = self.get_output(stride=stride, chunk=self.chunksize, skip=skip)
             # flatten and save
             self._dtrajs = [np.transpose(m)[0] for m in mapped]
             # return

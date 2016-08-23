@@ -24,7 +24,6 @@ from __future__ import absolute_import
 
 from tempfile import NamedTemporaryFile
 
-
 import os
 import tempfile
 import unittest
@@ -35,6 +34,7 @@ from pyemma.coordinates import api
 from pyemma.coordinates.data.feature_reader import FeatureReader
 from pyemma.coordinates.data.numpy_filereader import NumPyFileReader
 from pyemma.coordinates.data.py_csv_reader import PyCSVReader
+from pyemma.coordinates.data.util.traj_info_backends import SqliteDB
 from pyemma.coordinates.data.util.traj_info_cache import TrajectoryInfoCache
 from pyemma.coordinates.tests.util import create_traj
 from pyemma.datasets import get_bpti_test_data
@@ -46,13 +46,11 @@ import pkg_resources
 import pyemma
 import numpy as np
 
-
 xtcfiles = get_bpti_test_data()['trajs']
 pdbfile = get_bpti_test_data()['top']
 
 
 class TestTrajectoryInfoCache(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls):
         cls.old_instance = TrajectoryInfoCache.instance()
@@ -101,7 +99,7 @@ class TestTrajectoryInfoCache(unittest.TestCase):
     def test_exceptions(self):
         # in accessible files
         not_existant = ''.join(
-            chr(i) for i in np.random.random_integers(65, 90, size=10)) + '.npy'
+            chr(i) for i in np.random.randint(65, 90, size=10)) + '.npy'
         bad = [not_existant]  # should be unaccessible or non existent
         with self.assertRaises(ValueError) as cm:
             api.source(bad)
@@ -211,7 +209,7 @@ class TestTrajectoryInfoCache(unittest.TestCase):
             db = TrajectoryInfoCache(None)
             fn = f.name
             np.save(fn, [1, 2, 3])
-            f.close() # windows sucks
+            f.close()  # windows sucks
             reader = api.source(fn)
             hash = db._get_file_hash(fn)
             from pyemma.coordinates.data.util.traj_info_backends import DictDB
@@ -264,7 +262,7 @@ class TestTrajectoryInfoCache(unittest.TestCase):
         max_size = 1
 
         files = []
-        config.show_progress_bars=False
+        config.show_progress_bars = False
         with TemporaryDirectory() as td, settings(traj_info_max_size=max_size):
             for i, arr in enumerate(data):
                 f = os.path.join(td, "%s.txt" % i)
@@ -276,18 +274,57 @@ class TestTrajectoryInfoCache(unittest.TestCase):
         self.assertLessEqual(os.stat(self.db.database_filename).st_size / 1024, config.traj_info_max_size)
         self.assertGreater(self.db.num_entries, 0)
 
-    @unittest.skip("not yet functional")
-    def test_no_sqlite(self):
-        def import_mock(name, *args):
-            if name == 'sqlite3':
-                raise ImportError("we pretend not to have this")
-            return __import__(name, *args)
+    def test_no_working_directory(self):
+        # this is the case as long as the user has not yet created a config directory via config.save()
+        self.db._database = SqliteDB(filename=None)
 
-        from pyemma.coordinates.data.util import traj_info_cache
-        with mock.patch('pyemma.coordinates.data.util.traj_info_cache', '__import__',
-                        side_effect=import_mock, create=True):
-            TrajectoryInfoCache._instance = None
-            TrajectoryInfoCache(self.tempfile)
+        # trigger caching
+        pyemma.coordinates.source(xtcfiles, top=pdbfile)
+
+    def test_no_sqlite(self):
+        # create new instance (init has to be called, install temporary import hook to raise importerror for sqlite3
+        import sys
+        del sys.modules['sqlite3']
+
+        class meta_ldr(object):
+            def find_module(self, fullname, path):
+                if fullname.startswith('sqlite3'):
+                    return self
+
+            def load_module(self, fullname, path=None):
+                raise ImportError()
+
+        import warnings
+        try:
+            sys.meta_path.insert(0, meta_ldr())
+            # import sqlite3
+            with warnings.catch_warnings(record=True) as cw:
+                db = TrajectoryInfoCache()
+                self.assertNotIsInstance(db._database, SqliteDB)
+            self.assertEqual(len(cw), 1)
+            self.assertIn("sqlite3 package not available", cw[0].message.args[0])
+        finally:
+            del sys.meta_path[0]
+
+    def test_in_memory_db(self):
+        """ new instance, not yet saved to disk, no lru cache avail """
+        old_cfg_dir = config.cfg_dir
+        try:
+            config._cfg_dir = ''
+            db = TrajectoryInfoCache()
+            reader = pyemma.coordinates.source(xtcfiles, top=pdbfile)
+
+            info = db[xtcfiles[0], reader]
+            self.assertIsInstance(db._database, SqliteDB)
+
+            directory = db._database._database_from_key(info.hash_value)
+            assert directory is None
+        finally:
+            from pyemma.util.exceptions import ConfigDirectoryException
+            try:
+                config.cfg_dir = old_cfg_dir
+            except ConfigDirectoryException:
+                pass
 
 if __name__ == "__main__":
     unittest.main()
