@@ -32,6 +32,7 @@ from msmtools.flux import tpt
 from msmtools.analysis import mfpt
 import msmtools
 import matplotlib
+import matplotlib.pyplot as plt
 
 
 class TestNetworkPlot(unittest.TestCase):
@@ -66,6 +67,7 @@ class TestNetworkPlot(unittest.TestCase):
         P = msmtools.estimation.transition_matrix(C, reversible=True)
         r = tpt(P, [0], [len(C)-1])
         fig, pos = plot_flux(r)
+        assert type(fig) is matplotlib.figure.Figure
 
     def test_plot_markov_model(self):
         fig, pos = plot_markov_model(self.P)
@@ -80,8 +82,16 @@ class TestNetworkPlot(unittest.TestCase):
         assert type(fig) is matplotlib.figure.Figure
 
     def test_alphanumeric_arrow_labels(self):
-        fig, pos = plot_markov_model(self.P, arrow_labels=self.P_mfpt, arrow_label_format='mfpts = %f frames')
+        fig, pos = plot_markov_model(
+            self.P, arrow_labels=self.P_mfpt, arrow_label_format='mfpts = %f frames')
         assert type(fig) is matplotlib.figure.Figure
+
+    def test_alphanumeric_arrow_labels_using_ax(self):
+        orig_fig, ax = plt.subplots()
+        fig, pos = plot_markov_model(
+            self.P, arrow_labels=self.P_mfpt, arrow_label_format='mfpts = %f frames', ax=ax)
+        assert type(fig) is matplotlib.figure.Figure
+        assert fig == orig_fig
 
 if __name__ == "__main__":
     unittest.main()
