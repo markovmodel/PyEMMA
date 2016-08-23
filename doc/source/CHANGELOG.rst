@@ -6,6 +6,7 @@ Changelog
 
 **New features**:
 
+- plots: network plots can now be plotted using a given Axes object.
 
 **Fixes**:
 
