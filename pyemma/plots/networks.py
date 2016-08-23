@@ -22,7 +22,6 @@ import six
 import warnings
 from pyemma.util import types as _types
 from six.moves import range
-from matplotlib import pyplot as _plt
 from math import sqrt as _sqrt
 
 __author__ = 'noe, marscher'
@@ -140,6 +139,7 @@ class NetworkPlot(object):
         """
 
         # Set the default values for the text dictionary
+        from matplotlib import pyplot as _plt
         textkwargs.setdefault('size', None)
         textkwargs.setdefault('horizontalalignment', 'center')
         textkwargs.setdefault('verticalalignment', 'center')
@@ -179,12 +179,6 @@ class NetworkPlot(object):
             figsize = (max_width, Dy * (max_width / Dx))
         else:
             figsize = (Dx / Dy * max_height, max_height)
-
-
-
-
-
-
         if self.ax is None:
             fig, self.ax = _plt.subplots(figsize=figsize)
         else:
