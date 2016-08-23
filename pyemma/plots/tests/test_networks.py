@@ -1,7 +1,7 @@
 
 # This file is part of PyEMMA.
 #
-# Copyright (c) 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+# Copyright (c) 2014-2016 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
 #
 # PyEMMA is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -57,7 +57,7 @@ class TestNetworkPlot(unittest.TestCase):
         r = tpt(self.P, self.A, self.B)
         fig, pos = plot_flux(r)
         assert type(fig) is matplotlib.figure.Figure
-#        matplotlib.pyplot.show(fig)
+        # matplotlib.pyplot.show(fig)
         # x values should be close to committor
         np.testing.assert_allclose(pos[:,0], r.committor)
 
