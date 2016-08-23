@@ -181,7 +181,7 @@ class NetworkPlot(object):
         if self.ax is None:
             fig, self.ax = _plt.subplots(figsize=figsize)
         else:
-            fig = ax.figure()
+            fig = self.ax.figure
         if not xticks:
             self.ax.get_xaxis().set_ticks([])
         if not yticks:
