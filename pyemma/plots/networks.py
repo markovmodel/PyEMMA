@@ -184,6 +184,16 @@ class NetworkPlot(object):
             fig, self.ax = _plt.subplots(figsize=figsize)
         else:
             fig = self.ax.figure
+            window_extend = self.ax.get_window_extent()
+            axes_ratio = window_extend.height / window_extend.width
+            data_ratio = (ymax - ymin) / (xmax - xmin)
+            q = axes_ratio / data_ratio
+            if q > 1.0:
+                ymin *= q
+                ymax *= q
+            else:
+                xmin /= q
+                xmax /= q
         if not xticks:
             self.ax.get_xaxis().set_ticks([])
         if not yticks:
