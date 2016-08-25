@@ -291,8 +291,25 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
 
     # iterate over parameter settings
     from joblib import Parallel
-    import joblib
-    pool = Parallel(n_jobs=n_jobs)
+    import joblib, mock, six
+
+    if six.PY34:
+        from multiprocessing import get_context
+        try:
+            ctx = get_context(method='forkserver')
+        except ValueError:  # forkserver NA
+            try:
+                # this is slower in creation, but will not use as much memory!
+                ctx = get_context(method='spawn')
+            except ValueError:
+                ctx = get_context(None)
+                print("WARNING: using default multiprocessing start method {}. "
+                      "This could potentially lead to memory issues.".format(ctx))
+
+        with mock.patch('joblib.parallel.DEFAULT_MP_CONTEXT', ctx):
+            pool = Parallel(n_jobs=n_jobs)
+    else:
+        pool = Parallel(n_jobs=n_jobs)
 
     if progress_reporter is not None and n_jobs == 1:
         pool._print = _print
