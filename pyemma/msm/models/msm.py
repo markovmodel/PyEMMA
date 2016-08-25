@@ -137,7 +137,8 @@ class MSM(_Model):
         list of this function (by mandatory or keyword arguments)
 
         """
-        self.P = P
+        if P is not None:
+            self.P = P
         self.pi = pi
         self.reversible = reversible
         self.dt_model = dt_model
@@ -155,6 +156,8 @@ class MSM(_Model):
 
     @P.setter
     def P(self, value):
+        if value is None:
+            print("P IS NOOONE!!!!!!!!!!!!11")
         self._P = value
         import msmtools.analysis as msmana
         # check input
@@ -299,6 +302,14 @@ class MSM(_Model):
             self._L = self._L.real
         else:
             self._R, self._D, self._L = rdl_decomposition(self.transition_matrix, k=neig, norm='standard', ncv=self.ncv)
+            # if the imaginary parts are zero, discard them.
+            if _np.all(self._R.imag == 0):
+                self._R = _np.real(self._R)
+            if _np.all(self._D.imag == 0):
+                self._D = _np.real(self._D)
+            if _np.all(self._L.imag == 0):
+                self._L = _np.real(self._L)
+
         self._eigenvalues = _np.diag(self._D)
 
     def _ensure_eigendecomposition(self, neig=None):
