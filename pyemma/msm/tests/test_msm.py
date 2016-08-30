@@ -926,6 +926,15 @@ class TestMSMDoubleWell(unittest.TestCase):
         self._trajectory_weights(self.msmrevpi_sparse)
         self._trajectory_weights(self.msm_sparse)
 
+    def test_simulate_MSM(self):
+        msm = self.msm
+        N=400
+        start=1
+        traj = msm.simulate(N=N, start=start)
+        assert (len(traj) <= N)
+        assert (len(np.unique(traj)) <= len(msm.transition_matrix))
+        assert (start == traj[0])
+
     # ----------------------------------
     # MORE COMPLEX TESTS / SANITY CHECKS
     # ----------------------------------
