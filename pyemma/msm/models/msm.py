@@ -407,7 +407,9 @@ class MSM(_Model):
             self._ensure_eigendecomposition(self.nstates)
             from pyemma.util.linalg import mdot
             pk = mdot(p0.T,
-                      self.eigenvectors_right(), np.diag(np.power(self.eigenvalues(), k)), self.eigenvectors_left())
+                      self.eigenvectors_right(),
+                      np.diag(np.power(self.eigenvalues(), k)),
+                      self.eigenvectors_left()).real
         # normalize to 1.0 and return
         return pk / pk.sum()
 
@@ -1010,8 +1012,6 @@ class MSM(_Model):
         self._assert_metastable()
         return self._metastable_assignments
 
-
-
     def simulate(self,  N, start=None, stop=None, dt=1):
         """
         Generates a realization of the Markov Model
@@ -1036,7 +1036,5 @@ class MSM(_Model):
         htraj: (N/dt, ) ndarray
             The state trajectory with length N/dt
         """
-
         import msmtools.generation as msmgen
-
         return msmgen.generate_traj(self.transition_matrix,  N, start=start, stop=stop, dt=dt)
