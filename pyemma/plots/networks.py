@@ -114,7 +114,7 @@ class NetworkPlot(object):
         v = _np.array([x2 - x1, y2 - y1])  # 1->2 vector
         vabs = _np.abs(v)
         vnorm = _np.array([v[1], -v[0]])  # orthogonal vector
-        vnorm /= _sqrt(_np.dot(vnorm, vnorm))  # normalize
+        vnorm = _np.divide(vnorm, _np.linalg.norm(vnorm))  # normalize
         # cross product to determine the direction into which vnorm points
         z = _np.cross(v, vnorm)
         if z < 0:
@@ -405,7 +405,7 @@ def plot_markov_model(
     (<matplotlib.figure.Figure..., array...)
 
     """
-    from pyemma.msm import analysis as msmana
+    from msmtools import analysis as msmana
     if isinstance(P, _np.ndarray):
         P = P.copy()
     else:
