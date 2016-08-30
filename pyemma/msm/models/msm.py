@@ -258,11 +258,17 @@ class MSM(_Model):
             from msmtools.analysis import stationary_distribution as _statdist
             value = _statdist(self.P)
         elif self.P is not None:
-            pass
             # check input
-            #_np.testing.assert_allclose(_np.dot(self.P, value), value,
-            #                            atol=1e-14, rtol=0.01, err_msg='given stationary distribution '
-            #                                                           'is not a valid unique measure.')
+            # this only holds for a unique measure...
+            try:
+                _np.testing.assert_allclose(_np.dot(self.P, value), value,
+                                        atol=1e-14, rtol=0.01, err_msg='given stationary distribution '
+                                                                           'is not a valid unique measure.')
+
+            except AssertionError:
+                import logging
+                logger = logging.getLogger('pyemma.msm')
+                logger.exception("pi not valid/unique")
         self._pi = value
 
     def _compute_eigenvalues(self, neig):
