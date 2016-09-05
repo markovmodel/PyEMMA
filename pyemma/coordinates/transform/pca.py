@@ -61,7 +61,7 @@ class PCA(StreamingTransformer, ProgressReporter):
     r""" Principal component analysis."""
     _serialize_version = 0
 
-    def __init__(self, dim=-1, var_cutoff=0.95, mean=None, stride=1):
+    def __init__(self, dim=-1, var_cutoff=0.95, mean=None, stride=1, skip=0):
         r""" Principal component analysis.
 
         Given a sequence of multivariate data :math:`X_t`,
@@ -97,6 +97,9 @@ class PCA(StreamingTransformer, ProgressReporter):
         mean : ndarray, optional, default None
             Optionally pass pre-calculated means to avoid their re-computation.
             The shape has to match the input dimension.
+
+        skip: int, default 0
+            skip the first n frames of each trajectory.
 
         """
         super(PCA, self).__init__()
