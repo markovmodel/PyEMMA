@@ -156,8 +156,6 @@ class MSM(_Model):
 
     @P.setter
     def P(self, value):
-        if value is None:
-            print("P IS NOOONE!!!!!!!!!!!!11")
         self._P = value
         import msmtools.analysis as msmana
         # check input
@@ -262,13 +260,14 @@ class MSM(_Model):
             # this only holds for a unique measure...
             try:
                 _np.testing.assert_allclose(_np.dot(self.P, value), value,
-                                        atol=1e-14, rtol=0.01, err_msg='given stationary distribution '
+                                            atol=1e-14, rtol=0.01, err_msg='given stationary distribution '
                                                                            'is not a valid unique measure.')
 
             except AssertionError:
-                import logging
-                logger = logging.getLogger('pyemma.msm')
-                logger.exception("pi not valid/unique")
+                pass
+                # import logging
+                # logger = logging.getLogger('pyemma.msm')
+                # logger.exception("pi not valid/unique")
         self._pi = value
 
     def _compute_eigenvalues(self, neig):
@@ -280,6 +279,9 @@ class MSM(_Model):
                                        reversible=True, mu=self.stationary_distribution)
         else:
             self._eigenvalues = anaeig(self.transition_matrix, k=neig, ncv=self.ncv, reversible=False)
+
+        if _np.all(self._eigenvalues.imag == 0):
+            self._eigenvalues = self._eigenvalues.real
 
     def _ensure_eigenvalues(self, neig=None):
         """ Ensures that at least neig eigenvalues have been computed """
