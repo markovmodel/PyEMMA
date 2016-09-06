@@ -97,6 +97,15 @@ class ThermoMSM(_MSM, _SubSet):
     @property
     def pi_full_state(self):
         return self.stationary_distribution_full_state
+    
+    @_map_to_full_state(default_arg=_np.inf)
+    def eigenvectors_right(self, k=None):
+        return super(ThermoMSM, self).eigenvectors_right(k=k)
+    
+    @_map_to_full_state(default_arg=_np.inf, extend_along_axis=1)
+    def eigenvectors_left(self, k=None):
+        return super(ThermoMSM, self).eigenvectors_left(k=k)
+
 
 
 class MEMM(_MultiThermModel):
