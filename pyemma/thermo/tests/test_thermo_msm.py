@@ -26,9 +26,9 @@ class TestThermoMSM(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.nstates_full = 6 + np.random.randint(2)
+        cls.nstates_full = 10 + np.random.randint(10)
         cls.P_full = np.eye(cls.nstates_full)
-        cls.nstates = 3 + np.random.randint(3)
+        cls.nstates = 6 + np.random.randint(4)
         cls.active_set = np.sort(np.random.permutation(np.arange(cls.nstates_full))[:cls.nstates])
         cls.P = 1.0E-5 + np.random.rand(cls.nstates, cls.nstates)
         cls.P += cls.P.T
@@ -40,11 +40,13 @@ class TestThermoMSM(unittest.TestCase):
         cls.pi_full = np.zeros(cls.nstates_full)
         cls.pi_full[cls.active_set] = cls.pi
         cls.f = -np.log(cls.pi)
-        cls.f_full = -np.log(cls.pi_full)
+        cls.f_full = np.inf * np.ones(cls.nstates_full)
+        cls.f_full[cls.active_set] = cls.f
         msm = MSM(cls.P)
-        cls.eigval = msm.eigenvalues(k=cls.nstates-1)
-        cls.eigvec_l = msm.eigenvectors_left(k=cls.nstates-1)
-        cls.eigvec_r = msm.eigenvectors_right(k=cls.nstates-1)
+        cls.eigvec_l_full = np.inf * np.ones(shape=(cls.nstates-1, cls.nstates_full))
+        cls.eigvec_r_full = np.inf * np.ones(shape=(cls.nstates_full, cls.nstates-1))
+        cls.eigvec_l_full[:, cls.active_set] = msm.eigenvectors_left(k=cls.nstates-1)
+        cls.eigvec_r_full[cls.active_set, :] = msm.eigenvectors_right(k=cls.nstates-1)
         cls.msm = ThermoMSM(cls.P, cls.active_set, cls.nstates_full, cls.pi)
 
     def test_f(self):
@@ -59,13 +61,8 @@ class TestThermoMSM(unittest.TestCase):
         npt.assert_array_equal(self.msm.stationary_distribution, self.pi)
         npt.assert_array_equal(self.msm.stationary_distribution_full_state, self.pi_full)
 
-
-
-
-
-
-
-
-
-
-
+    def test_eigenvectors(self):
+        npt.assert_array_equal(
+            self.msm.eigenvectors_left_full_state(k=self.nstates-1), self.eigvec_l_full)
+        npt.assert_array_equal(
+            self.msm.eigenvectors_right_full_state(k=self.nstates-1), self.eigvec_r_full)
