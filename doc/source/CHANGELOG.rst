@@ -14,6 +14,7 @@ Changelog
   and successfully converges. It used to only one batch during iteration. #887 #890
 - base: fix progress bars for modern joblib versions.
 - plots: fix regression in plot_markov_model with newer NumPy versions #907. Thanks @ghoti687.
+- estimation: for n_jobs=1 no multi-processing is used.
 
 2.2.3 (7-28-16)
 ---------------

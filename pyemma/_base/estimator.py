@@ -316,16 +316,25 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
         # NOTE: verbose has to be set, otherwise our print hack does not work.
         pool.verbose = 50
 
-    task_iter = (joblib.delayed(_estimate_param_scan_worker)(estimators[i],
-                                                             param_sets[i], X,
-                                                             evaluate,
-                                                             evaluate_args,
-                                                             failfast,
-                                                             )
-                 for i in range(len(param_sets)))
+    if n_jobs > 1:
+        # if n_jobs=1 don't invoke the pool, but directly dispatch the iterator
+        task_iter = (joblib.delayed(_estimate_param_scan_worker)(estimators[i],
+                                                                 param_sets[i], X,
+                                                                 evaluate,
+                                                                 evaluate_args,
+                                                                 failfast,
+                                                                 )
+                     for i in range(len(param_sets)))
 
-    # container for model or function evaluations
-    res = pool(task_iter)
+        # container for model or function evaluations
+        res = pool(task_iter)
+    else:
+        res = []
+        for i, param in enumerate(param_sets):
+            res.append(_estimate_param_scan_worker(estimators[i], param, X,
+                                                   evaluate, evaluate_args, failfast))
+            if progress_reporter is not None:
+                progress_reporter._progress_update(1, stage=0)
 
     if progress_reporter is not None:
         progress_reporter._progress_force_finish(0)
