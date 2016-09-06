@@ -76,7 +76,10 @@ class alias(object):
         decorator, this method must return the callable that will wrap the
         decorated function.
         """
-        f._aliases = self.aliases
+        if isinstance(f, property):
+            f.fget._aliases = self.aliases
+        else:
+            f._aliases = self.aliases
         return f
 
 
@@ -92,21 +95,37 @@ def aliased(aliased_class):
     original ones.
 
     Usage:
-        @aliased
-        class MyClass(object):
-            @alias('coolMethod', 'myKinkyMethod')
-            def boring_method(self):
-                # ...
 
-        i = MyClass()
-        i.coolMethod() # equivalent to i.myKinkyMethod() and i.boring_method()
+    >>> @aliased
+    ... class MyClass(object):
+    ...     @alias('coolMethod', 'myKinkyMethod')
+    ...     def boring_method(self):
+    ...        pass
+    ...
+    ...     @property
+    ...     @alias('my_prop_alias')
+    ...     def my_prop(self):
+    ...        return "hi"
+
+    >>> i = MyClass()
+    >>> i.coolMethod() # equivalent to i.myKinkyMethod() and i.boring_method()
+    >>> i.my_prop == i.my_prop_alias
+    True
+
     """
     original_methods = aliased_class.__dict__.copy()
+    original_methods_set = set(original_methods)
     for name, method in original_methods.items():
-        if hasattr(method, '_aliases'):
+        aliases = None
+        if isinstance(method, property) and hasattr(method.fget, '_aliases'):
+            aliases = method.fget._aliases
+        elif hasattr(method, '_aliases'):
+            aliases = method._aliases
+
+        if aliases:
             # Add the aliases for 'method', but don't override any
             # previously-defined attribute of 'aliased_class'
-            for alias in method._aliases - set(original_methods):
+            for alias in aliases - original_methods_set:
                 setattr(aliased_class, alias, method)
     return aliased_class
 

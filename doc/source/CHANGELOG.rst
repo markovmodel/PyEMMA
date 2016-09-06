@@ -6,6 +6,7 @@ Changelog
 
 **New features**:
 
+- plots: network plots can now be plotted using a given Axes object.
 - thermo: TRAM supports the new parameter equilibrium which triggers a TRAMMBAR estimation.
 - thermo: the model_active_set and msm_active_set attributes in estimated MEMMs is deprecated; every
   MSM in models now contains its own active_set.
@@ -17,6 +18,7 @@ Changelog
 - coordinates: MiniBatchKmeans with MD-data is now memory efficient
   and successfully converges. It used to only one batch during iteration. #887 #890
 - base: fix progress bars for modern joblib versions.
+- plots: fix regression in plot_markov_model with newer NumPy versions #907. Thanks @ghoti687.
 
 2.2.3 (7-28-16)
 ---------------
