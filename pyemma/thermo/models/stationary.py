@@ -1,6 +1,6 @@
 # This file is part of PyEMMA.
 #
-# Copyright (c) 2015 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
+# Copyright (c) 2015, 2016 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
 #
 # PyEMMA is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -14,15 +14,19 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import numpy as _np
 from pyemma._base.model import Model as _Model
+from pyemma.msm.util.subset import SubSet as _SubSet
+from pyemma.msm.util.subset import add_full_state_methods as _add_full_state_methods
+from pyemma.msm.util.subset import map_to_full_state as _map_to_full_state
 from pyemma.util import types as _types
 from thermotools.util import logsumexp as _logsumexp
 
 __author__ = 'noe'
 
-
-class StationaryModel(_Model):
+@_add_full_state_methods
+class StationaryModel(_Model, _SubSet):
     r""" StationaryModel combines a stationary vector with discrete-state free energies.
 
     Parameters
@@ -101,14 +105,24 @@ class StationaryModel(_Model):
         return self._nstates
 
     @property
+    @_map_to_full_state(default_arg=0.0)
     def stationary_distribution(self):
         """The stationary distribution"""
         return self.pi
 
     @property
+    def pi_full_state(self):
+        return self.stationary_distribution_full_state
+
+    @property
+    @_map_to_full_state(default_arg=_np.inf)
     def free_energies(self):
-        """The free energies of discrete states"""
         return self.f
+
+    @property
+    def f_full_state(self):
+        """The free energies of discrete states"""
+        return self.free_energies_full_state
 
     def expectation(self, a):
         r"""Equilibrium expectation value of a given observable.

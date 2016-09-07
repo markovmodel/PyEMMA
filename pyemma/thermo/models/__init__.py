@@ -16,4 +16,5 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from .stationary import StationaryModel
-from .multi_therm import MEMM
+from .multi_therm import MultiThermModel
+from .memm import MEMM

@@ -7,6 +7,11 @@ Changelog
 **New features**:
 
 - plots: network plots can now be plotted using a given Axes object.
+- thermo: TRAM supports the new parameter equilibrium which triggers a TRAMMBAR estimation.
+- thermo: the model_active_set and msm_active_set attributes in estimated MEMMs is deprecated; every
+  MSM in models now contains its own active_set.
+- thermo: WHAM and MBAR estimations return MultiThermModel objects; return of MEMMs is reserved for
+  TRAM/TRAMMBAR/DTRAM estimations.
 
 **Fixes**:
 
