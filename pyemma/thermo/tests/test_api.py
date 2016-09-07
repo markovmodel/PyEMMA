@@ -48,6 +48,21 @@ def run_mcmc(x, length, delta=0.2, kT=1.0, spring_constant=0.0, spring_center=0.
             etraj.append(etraj[-1])
     return np.array(xtraj[1:], dtype=np.float64), np.array(etraj[1:], dtype=np.float64)
 
+def validate_thermodynamics(obj, estimator, strict=True):
+    pi = [estimator.pi_full_state[s].sum() for s in obj.metastable_sets]
+    f = [-logsumexp((-1.0) * estimator.f_full_state[s]) for s in obj.metastable_sets]
+    if strict:
+        npt.assert_allclose(pi, obj.pi, rtol=0.1, atol=0.2)
+        npt.assert_allclose(f, obj.f, rtol=0.5, atol=0.5)
+    else:
+        npt.assert_allclose(pi, obj.pi, rtol=0.5, atol=0.4)
+        npt.assert_allclose(f, obj.f, rtol=0.5, atol=1.0)
+
+def validate_kinetics(obj, estimator):
+    ms = [[i for i in s if i in estimator.msm.active_set] for s in obj.metastable_sets]
+    mfpt = [[estimator.msm.mfpt(i, j) for j in ms] for i in ms]
+    npt.assert_allclose(mfpt, obj.mfpt, rtol=0.5, atol=200)
+
 # ==================================================================================================
 # tests for the umbrella sampling API
 # ==================================================================================================
@@ -147,50 +162,58 @@ class TestUmbrellaSampling(unittest.TestCase):
         cls.us_dtrajs = assign_to_centers(cls.us_trajs, centers=cls.centers)
         cls.md_dtrajs = assign_to_centers(cls.md_trajs, centers=cls.centers)
 
-    def validate_thermodynamics(self, estimator, strict=True):
-        pi = [estimator.pi_full_state[s].sum() for s in self.metastable_sets]
-        f = [-logsumexp((-1.0) * estimator.f_full_state[s]) for s in self.metastable_sets]
-        if strict:
-            npt.assert_allclose(pi, self.pi, rtol=0.1, atol=0.2)
-            npt.assert_allclose(f, self.f, rtol=0.5, atol=0.5)
-        else:
-            npt.assert_allclose(pi, self.pi, rtol=0.5, atol=0.4)
-            npt.assert_allclose(f, self.f, rtol=0.5, atol=1.0)
-
-    def validate_kinetics(self, estimator):
-        ms = [[i for i in s if i in estimator.msm.active_set] for s in self.metastable_sets]
-        mfpt = [[estimator.msm.mfpt(i, j) for j in ms] for i in ms]
-        npt.assert_allclose(mfpt, self.mfpt, rtol=0.5, atol=200)
-
     def test_wham(self):
         wham = estimate_umbrella_sampling(
             self.us_trajs, self.us_dtrajs, self.us_centers, self.us_force_constants,
             md_trajs=self.md_trajs, md_dtrajs=self.md_dtrajs,
             maxiter=100000, maxerr=1e-13, estimator='wham')
-        self.validate_thermodynamics(wham, strict=False)
+        validate_thermodynamics(self, wham, strict=False)
 
     def test_mbar(self):
         mbar = estimate_umbrella_sampling(
             self.us_trajs, self.us_dtrajs, self.us_centers, self.us_force_constants,
             md_trajs=self.md_trajs, md_dtrajs=self.md_dtrajs,
             maxiter=50000, maxerr=1e-13, estimator='mbar')
-        self.validate_thermodynamics(mbar, strict=False)
+        validate_thermodynamics(self, mbar, strict=False)
 
     def test_dtram(self):
         dtram = estimate_umbrella_sampling(
             self.us_trajs, self.us_dtrajs, self.us_centers, self.us_force_constants,
             md_trajs=self.md_trajs, md_dtrajs=self.md_dtrajs,
             maxiter=50000, maxerr=1e-10, estimator='dtram', lag=10)
-        self.validate_thermodynamics(dtram)
-        self.validate_kinetics(dtram)
+        validate_thermodynamics(self, dtram)
+        validate_kinetics(self, dtram)
 
     def test_tram(self):
         tram = estimate_umbrella_sampling(
             self.us_trajs, self.us_dtrajs, self.us_centers, self.us_force_constants,
             md_trajs=self.md_trajs, md_dtrajs=self.md_dtrajs,
             maxiter=10000, maxerr=1e-10, estimator='tram', lag=10)
-        self.validate_thermodynamics(tram)
-        self.validate_kinetics(tram)
+        validate_thermodynamics(self, tram)
+        validate_kinetics(self, tram)
+
+# ==================================================================================================
+# tests for the multiple temperature API
+# ==================================================================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
