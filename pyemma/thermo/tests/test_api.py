@@ -18,7 +18,7 @@
 import unittest
 import numpy as np
 import numpy.testing as npt
-from pyemma.thermo import estimate_umbrella_sampling
+from pyemma.thermo import estimate_umbrella_sampling, estimate_multi_temperature
 from pyemma.coordinates import cluster_regspace, assign_to_centers
 from thermotools.util import logsumexp
 
@@ -53,10 +53,10 @@ def validate_thermodynamics(obj, estimator, strict=True):
     f = [-logsumexp((-1.0) * estimator.f_full_state[s]) for s in obj.metastable_sets]
     if strict:
         npt.assert_allclose(pi, obj.pi, rtol=0.1, atol=0.2)
-        npt.assert_allclose(f, obj.f, rtol=0.5, atol=0.5)
+        npt.assert_allclose(f, obj.f, rtol=0.3, atol=0.5)
     else:
-        npt.assert_allclose(pi, obj.pi, rtol=0.5, atol=0.4)
-        npt.assert_allclose(f, obj.f, rtol=0.5, atol=1.0)
+        npt.assert_allclose(pi, obj.pi, rtol=0.3, atol=0.4)
+        npt.assert_allclose(f, obj.f, rtol=0.5, atol=0.7)
 
 def validate_kinetics(obj, estimator):
     ms = [[i for i in s if i in estimator.msm.active_set] for s in obj.metastable_sets]
@@ -167,14 +167,14 @@ class TestUmbrellaSampling(unittest.TestCase):
             self.us_trajs, self.us_dtrajs, self.us_centers, self.us_force_constants,
             md_trajs=self.md_trajs, md_dtrajs=self.md_dtrajs,
             maxiter=100000, maxerr=1e-13, estimator='wham')
-        validate_thermodynamics(self, wham, strict=False)
+        validate_thermodynamics(self, wham, strict=False) # not strict because out of global eq.
 
     def test_mbar(self):
         mbar = estimate_umbrella_sampling(
             self.us_trajs, self.us_dtrajs, self.us_centers, self.us_force_constants,
             md_trajs=self.md_trajs, md_dtrajs=self.md_dtrajs,
             maxiter=50000, maxerr=1e-13, estimator='mbar')
-        validate_thermodynamics(self, mbar, strict=False)
+        validate_thermodynamics(self, mbar, strict=False) # not strict because out of global eq.
 
     def test_dtram(self):
         dtram = estimate_umbrella_sampling(
@@ -193,13 +193,66 @@ class TestUmbrellaSampling(unittest.TestCase):
         validate_kinetics(self, tram)
 
 # ==================================================================================================
-# tests for the multiple temperature API
+# tests for the multi temperature API
 # ==================================================================================================
 
+class TestMultiTemperature(unittest.TestCase):
 
+    @classmethod
+    def setUpClass(cls):
+        cls.centers = (np.linspace(-1.6, 1.4, 40, endpoint=False) + 0.0375).reshape((-1, 1))
+        cls.metastable_sets = [np.arange(22, 40), np.arange(0, 22)]
+        cls.pi = [0.308479845114, 0.691520154886] # MSM(tau=10) on 10^6 steps + PCCA
+        cls.f = -np.log(cls.pi)
+        cls.mfpt = [[0.0, 176.885753716], [433.556388454, 0.0]] # MSM(tau=10) on 10^6 steps + PCCA
+        cls.energy_trajs = [[], []]
+        cls.temp_trajs = [[], []]
+        trajs = [[0.13], [0.13]]
+        kT = [1.0, 7.0]
+        length = 100
+        for _repetition in range(50):
+            for i in [0, 1]:
+                print trajs[i][-1], kT[i]
+                x, u = run_mcmc(trajs[i][-1], 100, kT=kT[i])
+                trajs[i] += x.tolist()
+                cls.energy_trajs[i] += u.tolist()
+                cls.temp_trajs[i] += [kT[i]] * length
+            delta = (kT[0] - kT[1]) * (cls.energy_trajs[0][-1] - cls.energy_trajs[0][-1])
+            if delta < 0.0 or np.random.rand() < np.exp(delta):
+                kT = kT[::-1]
+        cls.energy_trajs = np.asarray(cls.energy_trajs, dtype=np.float64)
+        cls.temp_trajs = np.asarray(cls.temp_trajs, dtype=np.float64)
+        cls.dtrajs = [assign_to_centers(traj[1:], centers=cls.centers)[0] for traj in trajs]
 
+    def test_wham(self):
+        wham = estimate_multi_temperature(
+            self.energy_trajs, self.temp_trajs, self.dtrajs,
+            energy_unit='kT', temp_unit='kT',
+            maxiter=100000, maxerr=1.0E-13, estimator='wham')
+        validate_thermodynamics(self, wham)
 
+    def test_mbar(self):
+        mbar = estimate_multi_temperature(
+            self.energy_trajs, self.temp_trajs, self.dtrajs,
+            energy_unit='kT', temp_unit='kT',
+            maxiter=50000, maxerr=1.0E-13, estimator='mbar')
+        validate_thermodynamics(self, mbar)
 
+    def test_dtram(self):
+        dtram = estimate_multi_temperature(
+            self.energy_trajs, self.temp_trajs, self.dtrajs,
+            energy_unit='kT', temp_unit='kT',
+            maxiter=50000, maxerr=1.0E-10, estimator='dtram', lag=10)
+        validate_thermodynamics(self, dtram)
+        validate_kinetics(self, dtram)
+
+    def test_tram(self):
+        tram = estimate_multi_temperature(
+            self.energy_trajs, self.temp_trajs, self.dtrajs,
+            energy_unit='kT', temp_unit='kT',
+            maxiter=10000, maxerr=1.0E-10, estimator='tram', lag=10)
+        validate_thermodynamics(self, tram)
+        validate_kinetics(self, tram)
 
 
 
