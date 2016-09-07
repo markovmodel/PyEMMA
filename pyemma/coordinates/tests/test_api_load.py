@@ -110,5 +110,13 @@ class TestAPILoad(unittest.TestCase):
         with self.assertRaises(ValueError):
             load([], top=pdb_file)
 
+    def test_load_features_pass_trajectory_as_topology(self):
+        import mdtraj
+        t = mdtraj.load(pdb_file)
+        features = api.featurizer(t)
+
+        traj_files = [f for f in self.bpti_mini_files if f.endswith('.netcdf')]
+        load(traj_files, features=features)
+
 if __name__ == "__main__":
     unittest.main()
