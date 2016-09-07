@@ -348,13 +348,14 @@ def estimate(
         assert s.flags.c_contiguous
         assert b.flags.c_contiguous
     increments = []
-    scratch = _np.zeros(shape=(M,), dtype=_np.float64)
+    scratch_M = _np.zeros(shape=(M,), dtype=_np.float64)
+    scratch_T = _np.zeros(shape=(T,), dtype=_np.float64)
     therm_energies, increments = estimate_therm_energies(
         therm_state_counts, bias_energy_sequences,
         maxiter=maxiter, maxerr=maxerr, therm_energies=therm_energies,
         save_convergence_info=save_convergence_info, callback=callback)
     conf_energies, biased_conf_energies = get_conf_energies(
         _np.log(therm_state_counts), therm_energies, bias_energy_sequences, conf_state_sequences,
-        scratch, M)
-    normalize(scratch, therm_energies, conf_energies, biased_conf_energies)
+        scratch_T, M)
+    normalize(scratch_M, therm_energies, conf_energies, biased_conf_energies)
     return therm_energies, conf_energies, biased_conf_energies, increments
