@@ -212,7 +212,6 @@ class TestMultiTemperature(unittest.TestCase):
         length = 100
         for _repetition in range(50):
             for i in [0, 1]:
-                print trajs[i][-1], kT[i]
                 x, u = run_mcmc(trajs[i][-1], 100, kT=kT[i])
                 trajs[i] += x.tolist()
                 cls.energy_trajs[i] += u.tolist()
