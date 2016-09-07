@@ -17,8 +17,36 @@
 
 import unittest
 import numpy as np
+import numpy.testing as npt
 from pyemma.thermo import estimate_umbrella_sampling
-from pyemma.coordinates import cluster_regspace
+from pyemma.coordinates import cluster_regspace, assign_to_centers
+from thermotools.util import logsumexp
+
+# ==================================================================================================
+# helper functions
+# ==================================================================================================
+
+def potential_energy(x, kT=1.0, spring_constant=0.0, spring_center=0.0):
+    if x < -1.6 or x > 1.4:
+        return np.inf
+    return (x * (0.5 + x * (x * x - 2.0)) + 0.5 * spring_constant * (x - spring_center)**2) / kT
+
+def run_mcmc(x, length, delta=0.2, kT=1.0, spring_constant=0.0, spring_center=0.0):
+    xtraj = [x]
+    etraj = [potential_energy(
+        x, kT=kT, spring_constant=spring_constant, spring_center=spring_center)]
+    delta_x2 = delta * 2
+    for _i in range(length):
+        x_candidate = xtraj[-1] + delta_x2 * (np.random.rand() - 0.5)
+        e_candidate = potential_energy(
+            x_candidate, kT=kT, spring_constant=spring_constant, spring_center=spring_center)
+        if e_candidate < etraj[-1] or np.random.rand() < np.exp(etraj[-1] - e_candidate):
+            xtraj.append(x_candidate)
+            etraj.append(e_candidate)
+        else:
+            xtraj.append(xtraj[-1])
+            etraj.append(etraj[-1])
+    return np.array(xtraj[1:], dtype=np.float64), np.array(etraj[1:], dtype=np.float64)
 
 # ==================================================================================================
 # tests for the umbrella sampling API
@@ -91,4 +119,93 @@ class TestProtectedUmbrellaSamplingCenters(unittest.TestCase):
             estimate_umbrella_sampling(
                 us_trajs, us_dtrajs, us_centers, us_force_constants,
                 md_trajs=md_trajs[0], md_dtrajs=md_dtrajs[0])
+
+class TestUmbrellaSampling(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.centers = (np.linspace(-1.6, 1.4, 40, endpoint=False) + 0.0375).reshape((-1, 1))
+        cls.metastable_sets = [np.arange(22, 40), np.arange(0, 22)]
+        cls.pi = [0.308479845114, 0.691520154886] # MSM(tau=10) on 10^6 steps + PCCA
+        cls.f = -np.log(cls.pi)
+        cls.mfpt = [[0.0, 176.885753716], [433.556388454, 0.0]] # MSM(tau=10) on 10^6 steps + PCCA
+        cls.us_trajs = []
+        cls.us_centers = []
+        cls.us_force_constants = []
+        spring_constant = 3.0
+        for spring_center in [-0.4, 0.2, 0.8]:
+            x, u = run_mcmc(
+                spring_constant, 1000,
+                spring_constant=spring_constant, spring_center=spring_center)
+            cls.us_trajs.append(x)
+            cls.us_centers.append(spring_center)
+            cls.us_force_constants.append(spring_constant)
+        cls.md_trajs = []
+        for _repetition in range(7):
+            x, u = run_mcmc(0.13, 1000)
+            cls.md_trajs.append(x)
+        cls.us_dtrajs = assign_to_centers(cls.us_trajs, centers=cls.centers)
+        cls.md_dtrajs = assign_to_centers(cls.md_trajs, centers=cls.centers)
+
+    def validate_thermodynamics(self, estimator, strict=True):
+        pi = [estimator.pi_full_state[s].sum() for s in self.metastable_sets]
+        f = [-logsumexp((-1.0) * estimator.f_full_state[s]) for s in self.metastable_sets]
+        if strict:
+            npt.assert_allclose(pi, self.pi, rtol=0.1, atol=0.2)
+            npt.assert_allclose(f, self.f, rtol=0.5, atol=0.5)
+        else:
+            npt.assert_allclose(pi, self.pi, rtol=0.5, atol=0.4)
+            npt.assert_allclose(f, self.f, rtol=0.5, atol=1.0)
+
+    def validate_kinetics(self, estimator):
+        ms = [[i for i in s if i in estimator.msm.active_set] for s in self.metastable_sets]
+        mfpt = [[estimator.msm.mfpt(i, j) for j in ms] for i in ms]
+        npt.assert_allclose(mfpt, self.mfpt, rtol=0.5, atol=200)
+
+    def test_wham(self):
+        wham = estimate_umbrella_sampling(
+            self.us_trajs, self.us_dtrajs, self.us_centers, self.us_force_constants,
+            md_trajs=self.md_trajs, md_dtrajs=self.md_dtrajs,
+            maxiter=100000, maxerr=1e-13, estimator='wham')
+        self.validate_thermodynamics(wham, strict=False)
+
+    def test_mbar(self):
+        mbar = estimate_umbrella_sampling(
+            self.us_trajs, self.us_dtrajs, self.us_centers, self.us_force_constants,
+            md_trajs=self.md_trajs, md_dtrajs=self.md_dtrajs,
+            maxiter=50000, maxerr=1e-13, estimator='mbar')
+        self.validate_thermodynamics(mbar, strict=False)
+
+    def test_dtram(self):
+        dtram = estimate_umbrella_sampling(
+            self.us_trajs, self.us_dtrajs, self.us_centers, self.us_force_constants,
+            md_trajs=self.md_trajs, md_dtrajs=self.md_dtrajs,
+            maxiter=50000, maxerr=1e-10, estimator='dtram', lag=10)
+        self.validate_thermodynamics(dtram)
+        self.validate_kinetics(dtram)
+
+    def test_tram(self):
+        tram = estimate_umbrella_sampling(
+            self.us_trajs, self.us_dtrajs, self.us_centers, self.us_force_constants,
+            md_trajs=self.md_trajs, md_dtrajs=self.md_dtrajs,
+            maxiter=10000, maxerr=1e-10, estimator='tram', lag=10)
+        self.validate_thermodynamics(tram)
+        self.validate_kinetics(tram)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
