@@ -186,7 +186,7 @@ class PCA(StreamingTransformer, ProgressReporter):
             for each PC.
         """
         feature_sigma = np.array(np.sqrt(np.diag(self.cov)), ndmin=2)
-        PC_sigma = np.array(np.sqrt(self.eigenvalues), ndmin=2)
+        PC_sigma = np.array(np.sqrt(self.eigenvalues[:self.dimension()]), ndmin=2)
         return np.dot(self.cov, self.eigenvectors[:, : self.dimension()]) / feature_sigma.T.dot(PC_sigma)
 
     def _init_covar(self, partial_fit, n_chunks):
