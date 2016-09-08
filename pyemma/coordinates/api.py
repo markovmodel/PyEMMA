@@ -159,8 +159,10 @@ def load(trajfiles, features=None, top=None, stride=1, chunk_size=None, **kw):
         a featurizer object specifying how molecular dynamics files should
         be read (e.g. intramolecular distances, angles, dihedrals, etc).
 
-    top : str, optional, default = None
-        A molecular topology file, e.g. in PDB (.pdb) format
+    top : str, mdtraj.Trajectory or mdtraj.Topology, optional, default = None
+        A molecular topology file, e.g. in PDB (.pdb) format or an already
+        loaded mdtraj.Topology object. If it is an mdtraj.Trajectory object, the topology
+        will be extracted from it.
 
     stride : int, optional, default = 1
         Load only every stride'th frame. By default, every frame is loaded
@@ -260,10 +262,12 @@ def source(inp, features=None, top=None, chunk_size=None, **kw):
         dynamics trajectories or data, and will otherwise create a warning and
         have no effect.
 
-    top : str, optional, default = None
+    top : str, mdtraj.Trajectory or mdtraj.Topology, optional, default = None
         A topology file name. This is needed when molecular dynamics
         trajectories are given and no featurizer is given.
-        In this case, only the Cartesian coordinates will be read.
+        In this case, only the Cartesian coordinates will be read. You can also pass an already
+        loaded mdtraj.Topology object. If it is an mdtraj.Trajectory object, the topology
+        will be extracted from it.
 
     chunk_size: int, optional, default = 100 for file readers and 5000 for
         already loaded data The chunk size at which the input file is being
