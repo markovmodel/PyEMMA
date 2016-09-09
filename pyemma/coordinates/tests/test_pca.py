@@ -25,10 +25,12 @@ Created on 02.02.2015
 
 from __future__ import absolute_import
 import unittest
+import os
+import pkg_resources
 
 import numpy as np
 
-from pyemma.coordinates import pca
+from pyemma.coordinates import pca, source
 from logging import getLogger
 import pyemma.util.types as types
 from six.moves import range
@@ -184,6 +186,41 @@ class TestPCAExtensive(unittest.TestCase):
 
         np.testing.assert_allclose(pca_part.eigenvalues, ref.eigenvalues)
         np.testing.assert_allclose(pca_part.eigenvectors, ref.eigenvectors)
+
+    def test_feature_correlation_MD(self):
+        # Copying from the test_MD_data
+        path = pkg_resources.resource_filename(__name__, 'data') + os.path.sep
+        self.pdb_file = os.path.join(path, 'bpti_ca.pdb')
+        self.xtc_file = os.path.join(path, 'bpti_mini.xtc')
+        inp = source(self.xtc_file, top=self.pdb_file)
+        pcamini = pca(inp)
+
+        feature_traj =  pcamini.data_producer.get_output()[0]
+        nfeat = feature_traj.shape[1]
+        pca_traj    =  pcamini.get_output()[0]
+        npcs = pca_traj.shape[1]
+
+        test_corr = pcamini.feature_PC_correlation
+        true_corr = np.corrcoef(feature_traj.T, pca_traj.T)[:nfeat,-npcs:]
+        np.testing.assert_allclose(test_corr, true_corr, atol=1.E-8)
+
+    def test_feature_correlation_data(self):
+        # Create features with some correlation
+        feature_traj = np.zeros((100, 3))
+        feature_traj[:,0] = np.linspace(-.5,.5,len(feature_traj))
+        feature_traj[:,1] = (feature_traj[:,0]+np.random.randn(len(feature_traj))*.5)**1
+        feature_traj[:,2] = np.random.randn(len(feature_traj))
+        nfeat = feature_traj.shape[1]
+
+        # PCA
+        pca_obj = pca(data = feature_traj, dim = 3)
+        pca_traj = pca_obj.get_output()[0]
+        npcs = pca_traj.shape[1]
+
+        # Create correlations
+        test_corr = pca_obj.feature_PC_correlation
+        true_corr = np.corrcoef(feature_traj.T, pca_traj.T)[:nfeat,-npcs:]
+        np.testing.assert_allclose(test_corr, true_corr, atol=1.E-8)
 
 if __name__ == "__main__":
     unittest.main()

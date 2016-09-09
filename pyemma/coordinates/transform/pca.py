@@ -164,6 +164,31 @@ class PCA(StreamingTransformer, ProgressReporter):
 
         return self
 
+    @property
+    def feature_PC_correlation(self):
+        r"""Instantaneous correlation matrix between input features and PCs
+
+        Denoting the input features as :math:`X_i` and the PCs as :math:`\theta_j`, the instantaneous, linear correlation
+        between them can be written as
+
+        .. math::
+
+            \mathbf{Corr}(X_i, \mathbf{\theta}_j) = \frac{1}{\sigma_{X_i}}\sum_l \sigma_{X_iX_l} \mathbf{U}_{li}
+
+        The matrix :math:`\mathbf{U}` is the matrix containing, as column vectors, the eigenvectors of the input-feature
+        covariance-maxtrix.
+
+
+        Returns
+        -------
+        feature_PC_correlation : ndarray(n,m)
+            correlation matrix between input features and PCs. There is a row for each feature and a column
+            for each PC.
+        """
+        feature_sigma = np.array(np.sqrt(np.diag(self.cov)), ndmin=2)
+        PC_sigma = np.array(np.sqrt(self.eigenvalues[:self.dimension()]), ndmin=2)
+        return np.dot(self.cov, self.eigenvectors[:, : self.dimension()]) / feature_sigma.T.dot(PC_sigma)
+
     def _init_covar(self, partial_fit, n_chunks):
         nsave = int(max(math.log(n_chunks, 2), 2))
         # in case we do a one shot estimation, we want to re-initialize running_covar
