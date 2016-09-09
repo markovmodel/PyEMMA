@@ -50,6 +50,8 @@ def _cache_mdtraj_topology(args):
     def wrap(top_file):
         if isinstance(top_file, Topology):
             return top_file
+        if isinstance(top_file, Trajectory):
+            return top_file.topology
         hasher = hashlib.md5()
         with open(top_file, 'rb') as f:
             hasher.update(f.read())

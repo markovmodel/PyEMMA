@@ -17,6 +17,7 @@ Changelog
 
 - coordinates: MiniBatchKmeans with MD-data is now memory efficient
   and successfully converges. It used to only one batch during iteration. #887 #890
+- coordinates: source and load function accept mdtraj.Trajectory objects to extract topology. #922. Thanks @jeiros
 - base: fix progress bars for modern joblib versions.
 - plots: fix regression in plot_markov_model with newer NumPy versions #907. Thanks @ghoti687.
 - estimation: for n_jobs=1 no multi-processing is used.
