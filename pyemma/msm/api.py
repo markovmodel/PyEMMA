@@ -1344,5 +1344,5 @@ def tpt(msmobj, A, B):
     # construct flux object
     from .models.reactive_flux import ReactiveFlux
 
-    F = ReactiveFlux(A, B, netflux, mu=mu, qminus=qminus, qplus=qplus, gross_flux=grossflux)
+    F = ReactiveFlux(A, B, netflux, mu=mu, qminus=qminus, qplus=qplus, gross_flux=grossflux, dt_model=msmobj.dt_model)
     return F
