@@ -270,7 +270,7 @@ class MSM(_Model):
                 # logger = logging.getLogger('pyemma.msm')
                 # logger.exception("pi not valid/unique")
             # check sum is one
-            _np.testing.assert_equal(_np.sum(value), 1)
+            _np.testing.assert_allclose(_np.sum(value), 1, atol=1e-14)
         self._pi = value
 
     def _compute_eigenvalues(self, neig):
