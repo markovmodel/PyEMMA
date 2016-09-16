@@ -20,7 +20,7 @@ from six.moves import range
 from pyemma._base.estimator import Estimator as _Estimator
 from pyemma._base.progress import ProgressReporter as _ProgressReporter
 from pyemma.thermo import MEMM as _MEMM
-from pyemma.msm import MSM as _MSM
+from pyemma.thermo.models.memm import ThermoMSM as _ThermoMSM
 from pyemma.util import types as _types
 from pyemma.util.units import TimeUnit as _TimeUnit
 from pyemma.thermo.estimators._callback import _ConvergenceProgressIndicatorCallBack
@@ -60,6 +60,22 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
               .. math::
                     (0 \rightarrow \tau), (\tau \rightarrow 2 \tau), ..., ((T/\tau-1) \tau \rightarrow T)
         Currently only 'sliding' is supported.
+    connectivity : str, optional, default='summed_count_matrix'
+        One of 'summed_count_matrix', 'strong_in_every_ensemble',
+        'neighbors', 'post_hoc_RE' or 'BAR_variance'.
+        Defines what should be considered a connected set in the joint space
+        of conformations and thermodynamic ensembles.
+        For details see thermotools.cset.compute_csets_TRAM.
+    ground_state : int, optional, default=None
+        Index of the unbiased thermodynamic state or None if there is no unbiased data available.
+    nstates_full : int, optional, default=None
+        Number of cluster centers, i.e., the size of the full set of states.
+    equilibrium : list of booleans, optional 
+        For every trajectory triple (ttraj[i], dtraj[i], btraj[i]), indicates
+        whether to assume global equilibrium. If true, the triple is not used
+        for computing kinetic quantities (but only thermodynamic quantities).
+        By default, no trajectory is assumed to be in global equilibrium.
+        This is the TRAMMBAR extension.
     maxiter : int, optional, default=10000
         The maximum number of self-consistent iterations before the estimator exits unsuccessfully.
     maxerr : float, optional, default=1E-15
@@ -80,12 +96,6 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
         |  'us',   'microsecond*'
         |  'ms',   'millisecond*'
         |  's',    'second*'
-    connectivity : str, optional, default='summed_count_matrix'
-        One of 'summed_count_matrix', 'strong_in_every_ensemble',
-        'neighbors', 'post_hoc_RE' or 'BAR_variance'.
-        Defines what should be considered a connected set in the joint space
-        of conformations and thermodynamic ensembles.
-        For details see thermotools.cset.compute_csets_TRAM.
     nn : int, optional, default=None
         Only needed if connectivity='neighbors'
         See thermotools.cset.compute_csets_TRAM.
@@ -116,14 +126,14 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
     ----------
 
     .. [1] Wu, H. et al 2016
-        in press
+        Multiensemble Markov models of molecular thermodynamics and kinetics
+        Proc. Natl. Acad. Sci. USA 113 E3221--E3230
 
     """
     def __init__(
         self, lag, count_mode='sliding',
         connectivity='summed_count_matrix',
-        ground_state=None,
-        equilibrium=None,
+        ground_state=None, nstates_full=None, equilibrium=None,
         maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step',
         nn=None, connectivity_factor=1.0, direct_space=False, N_dtram_accelerations=0,
         callback=None,
@@ -138,6 +148,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
         self.dt_traj = dt_traj
         self.timestep_traj = _TimeUnit(dt_traj)
         self.ground_state = ground_state
+        self.nstates_full = nstates_full
         self.equilibrium = equilibrium
         self.maxiter = maxiter
         self.maxerr = maxerr
@@ -173,13 +184,6 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
                 For every simulation frame seen in trajectory i and time step t, btrajs[i][t,k] is the
                 bias energy of that frame evaluated in the k'th thermodynamic state (i.e. at the k'th
                 Umbrella/Hamiltonian/temperature).
-
-        equilibrium : list of booleans, optional
-             For every trajectory triple (ttraj[i], dtraj[i], btraj[i]), indicates
-             whether to assume global equilibrium. If true, the triple is not used
-             for computing kinetic quantities (but only thermodynamic quantities).
-             By default, no trajectory is assumed to be in global equilibrium.
-             This is the TRAMMBAR extension.
         """
         return super(TRAM, self).estimate(X, **params)
 
@@ -194,8 +198,13 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
         for b in btrajs:
             _types.assert_array(b, ndim=2, kind='f')
         # find dimensions
-        self.nstates_full = max(_np.max(d) for d in dtrajs_full)+1
-        self.nthermo = max(_np.max(t) for t in ttrajs)+1
+        nstates_full = max(_np.max(d) for d in dtrajs_full) + 1
+        if self.nstates_full is None:
+            self.nstates_full = nstates_full
+        elif self.nstates_full < nstates_full:
+            raise RuntimeError("Found more states (%d) than specified by nstates_full (%d)" % (
+                nstates_full, self.nstates_full))
+        self.nthermo = max(_np.max(t) for t in ttrajs) + 1
         # dimensionality checks
         for t, d, b, in zip(ttrajs, dtrajs_full, btrajs):
             assert t.shape[0] == d.shape[0] == b.shape[0]
@@ -345,10 +354,15 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
                 self.log_lagrangian_mult, self.biased_conf_energies, self.count_matrices, None,
                 K)[self.active_set, :])[:, self.active_set]) for K in range(self.nthermo)]
 
-        self.model_active_set = [_largest_connected_set(msm, directed=False) for msm in fmsms]
+        active_sets = [_largest_connected_set(msm, directed=False) for msm in fmsms]
         fmsms = [_np.ascontiguousarray(
-            (msm[lcc, :])[:, lcc]) for msm, lcc in zip(fmsms, self.model_active_set)]
-        models = [_MSM(msm, dt_model=self.timestep_traj.get_scaled(self.lag)) for msm in fmsms]
+            (msm[lcc, :])[:, lcc]) for msm, lcc in zip(fmsms, active_sets)]
+
+        models = []
+        for msm, acs in zip(fmsms, active_sets):
+            models.append(_ThermoMSM(
+                msm, self.active_set[acs], self.nstates_full,
+                dt_model=self.timestep_traj.get_scaled(self.lag)))
 
         # set model parameters to self
         self.set_model_params(

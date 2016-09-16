@@ -86,7 +86,7 @@ def param_grid(pargrid):
     return ParameterGrid(pargrid)
 
 
-def _call_member(obj, name, args=None, failfast=True):
+def _call_member(obj, name, failfast=True, *args, **kwargs):
     """ Calls the specified method, property or attribute of the given object
 
     Parameters
@@ -95,29 +95,33 @@ def _call_member(obj, name, args=None, failfast=True):
         The object that will be used
     name : str
         Name of method, property or attribute
-    args : dict, optional, default=None
-        Arguments to be passed to the method (if any)
     failfast : bool
         If True, will raise an exception when trying a method that doesn't exist. If False, will simply return None
         in that case
+    args : list, optional, default=[]
+        Arguments to be passed to the method (if any)
+
+    kwargs: dict
     """
     try:
-        method = getattr(obj, name)
+        attr = getattr(obj, name)
     except AttributeError as e:
         if failfast:
             raise e
         else:
             return None
-
-    if inspect.ismethod(object):  # call function
-        if args is None:
-            return method()
+    try:
+        if inspect.ismethod(attr):  # call function
+            return attr(*args, **kwargs)
+        elif isinstance(attr, property):  # call property
+                return obj.attr
+        else:  # now it's an Attribute, so we can just return its value
+            return attr
+    except Exception as e:
+        if failfast:
+            raise e
         else:
-            return method(*args)
-    elif isinstance(type(obj).name, property):  # call property
-        return method
-    else:  # now it's an Attribute, so we can just return its value
-        return method
+            return None
 
 
 def _estimate_param_scan_worker(estimator, params, X, evaluate, evaluate_args,
@@ -292,24 +296,50 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
 
     # iterate over parameter settings
     from joblib import Parallel
-    import joblib
-    pool = Parallel(n_jobs=n_jobs)
+    import joblib, mock, six
+
+    if six.PY34:
+        from multiprocessing import get_context
+        try:
+            ctx = get_context(method='forkserver')
+        except ValueError:  # forkserver NA
+            try:
+                # this is slower in creation, but will not use as much memory!
+                ctx = get_context(method='spawn')
+            except ValueError:
+                ctx = get_context(None)
+                print("WARNING: using default multiprocessing start method {}. "
+                      "This could potentially lead to memory issues.".format(ctx))
+
+        with mock.patch('joblib.parallel.DEFAULT_MP_CONTEXT', ctx):
+            pool = Parallel(n_jobs=n_jobs)
+    else:
+        pool = Parallel(n_jobs=n_jobs)
 
     if progress_reporter is not None and n_jobs == 1:
         pool._print = _print
         # NOTE: verbose has to be set, otherwise our print hack does not work.
         pool.verbose = 50
 
-    task_iter = (joblib.delayed(_estimate_param_scan_worker)(estimators[i],
-                                                             param_sets[i], X,
-                                                             evaluate,
-                                                             evaluate_args,
-                                                             failfast,
-                                                             )
-                 for i in range(len(param_sets)))
+    if n_jobs > 1:
+        # if n_jobs=1 don't invoke the pool, but directly dispatch the iterator
+        task_iter = (joblib.delayed(_estimate_param_scan_worker)(estimators[i],
+                                                                 param_sets[i], X,
+                                                                 evaluate,
+                                                                 evaluate_args,
+                                                                 failfast,
+                                                                 )
+                     for i in range(len(param_sets)))
 
-    # container for model or function evaluations
-    res = pool(task_iter)
+        # container for model or function evaluations
+        res = pool(task_iter)
+    else:
+        res = []
+        for i, param in enumerate(param_sets):
+            res.append(_estimate_param_scan_worker(estimators[i], param, X,
+                                                   evaluate, evaluate_args, failfast))
+            if progress_reporter is not None:
+                progress_reporter._progress_update(1, stage=0)
 
     if progress_reporter is not None:
         progress_reporter._progress_force_finish(0)

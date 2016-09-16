@@ -19,7 +19,7 @@ import numpy as _np
 from six.moves import range
 from pyemma._base.estimator import Estimator as _Estimator
 from pyemma._base.progress import ProgressReporter as _ProgressReporter
-from pyemma.thermo import MEMM as _MEMM
+from pyemma.thermo import MultiThermModel as _MultiThermModel
 from pyemma.thermo import StationaryModel as _StationaryModel
 from pyemma.thermo.estimators._callback import _ConvergenceProgressIndicatorCallBack
 from pyemma.util import types as _types
@@ -31,7 +31,7 @@ from thermotools import util as _util
 __author__ = 'wehmeyer'
 
 
-class MBAR(_Estimator, _MEMM, _ProgressReporter):
+class MBAR(_Estimator, _MultiThermModel, _ProgressReporter):
     r"""Multi-state Bennet Acceptance Ratio Method
 
     Parameters

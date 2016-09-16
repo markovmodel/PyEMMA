@@ -397,6 +397,15 @@ class TestMLHMM(unittest.TestCase):
             for row in samples:
                 assert (row[0] == 0)  # right trajectory
 
+
+    def test_simulate_HMSM(self):
+        hmsm = self.hmsm_lag10
+        N=400
+        start = 1
+        traj, obs = hmsm.simulate(N=N, start=start)
+        assert (len(traj) <= N)
+        assert (len(np.unique(traj)) <= len(hmsm.transition_matrix))
+
     # ----------------------------------
     # MORE COMPLEX TESTS / SANITY CHECKS
     # ----------------------------------
