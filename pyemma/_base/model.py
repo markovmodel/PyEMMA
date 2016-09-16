@@ -185,6 +185,7 @@ class SampledModel(Model):
 
         """
         self._check_samples_available()
+        # TODO: can we use np.fromiter here? We would ne the same shape of every member for this!
         return [call_member(M, f, *args, **kwargs) for M in self.samples]
 
     def sample_mean(self, f, *args, **kwargs):
