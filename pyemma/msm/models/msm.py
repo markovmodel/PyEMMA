@@ -467,7 +467,7 @@ class MSM(_Model):
             from pyemma.util.linalg import mdot
             pk = mdot(p0.T,
                       self.eigenvectors_right(),
-                      np.diag(np.power(self.eigenvalues(), k)),
+                      _np.diag(_np.power(self.eigenvalues(), k)),
                       self.eigenvectors_left()).real
         # normalize to 1.0 and return
         return pk / pk.sum()
