@@ -29,7 +29,7 @@ import unittest
 import numpy as np
 from pyemma.util.numeric import assert_allclose
 
-from pyemma.msm import markov_model, tpt
+from pyemma.msm import markov_model, estimate_markov_model, tpt
 import msmtools.analysis as msmana
 
 
@@ -215,6 +215,36 @@ class TestReactiveFluxFunctions(unittest.TestCase):
         assert_allclose(cgRF.flux, self.ref2_cgnetflux)
         assert_allclose(cgRF.net_flux, self.ref2_cgnetflux)
         assert_allclose(cgRF.gross_flux, self.ref2_cggrossflux)
+
+    def test_time_units(self):
+        dtraj = np.random.randint(0, 4, 1000)
+        tau = 12
+        dt = 0.456
+        msmobj = estimate_markov_model(dtraj, lag=tau, dt_traj='%f ns' % dt)
+
+        # check MFPT consistency
+        mfpt_ref = msmobj.mfpt([0], [1])
+        tptobj = tpt(msmobj, [0], [1])
+        assert_allclose(tptobj.mfpt, mfpt_ref)
+        assert_allclose(msmana.mfpt(msmobj.P, [1], [0], tau=tau) * dt, mfpt_ref)
+        assert_allclose(np.dot(msmobj.stationary_distribution, tptobj.backward_committor) / tptobj.total_flux, mfpt_ref)
+
+        # check flux consistency
+        total_flux_ref = tptobj.total_flux
+        A = tptobj.A
+        B = tptobj.B
+        I = tptobj.I
+        assert_allclose(tptobj.gross_flux[A, :][:, B].sum() + tptobj.gross_flux[A, :][:, I].sum(),
+                        total_flux_ref)
+        assert_allclose(tptobj.net_flux[A, :][:, B].sum() + tptobj.net_flux[A, :][:, I].sum(), total_flux_ref)
+        assert_allclose(tptobj.flux[A, :][:, B].sum() + tptobj.flux[A, :][:, I].sum(), total_flux_ref)
+        mf = tptobj.major_flux(1.0)
+        assert_allclose(mf[A, :][:, B].sum() + mf[A, :][:, I].sum(), total_flux_ref)
+
+        # check that the coarse-grained version is consistent too
+        _, tptobj2 = tptobj.coarse_grain([A, I, B])
+        assert_allclose(tptobj2.total_flux, total_flux_ref)
+        assert_allclose(tptobj2.mfpt, mfpt_ref)
 
 
 if __name__ == "__main__":

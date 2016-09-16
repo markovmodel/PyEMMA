@@ -1,4 +1,3 @@
-
 # This file is part of PyEMMA.
 #
 # Copyright (c) 2016, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
@@ -76,7 +75,7 @@ class ReactiveFlux(Model):
     """
 
     def __init__(self, A, B, flux,
-                 mu=None, qminus=None, qplus=None, gross_flux=None):
+                 mu=None, qminus=None, qplus=None, gross_flux=None, dt_model='1 step'):
         # set data
         self._A = A
         self._B = B
@@ -85,6 +84,9 @@ class ReactiveFlux(Model):
         self._qminus = qminus
         self._qplus = qplus
         self._gross_flux = gross_flux
+        from pyemma.util.units import TimeUnit
+        self.dt_model = dt_model
+        self._timeunit_model = TimeUnit(self.dt_model)
         # compute derived quantities:
         self._totalflux = tptapi.total_flux(flux, A)
         self._kAB = tptapi.rate(self._totalflux, mu, qminus)
@@ -135,19 +137,19 @@ class ReactiveFlux(Model):
     def flux(self):
         r"""Returns the effective or net flux
         """
-        return self._flux
+        return self._flux / self._timeunit_model.dt
 
     @property
     def net_flux(self):
         r"""Returns the effective or net flux
         """
-        return self._flux
+        return self._flux / self._timeunit_model.dt
 
     @property
     def gross_flux(self):
         r"""Returns the gross A-->B flux
         """
-        return self._gross_flux
+        return self._gross_flux / self._timeunit_model.dt
 
     @property
     def committor(self):
@@ -171,19 +173,19 @@ class ReactiveFlux(Model):
     def total_flux(self):
         r"""Returns the total flux
         """
-        return self._totalflux
+        return self._totalflux / self._timeunit_model.dt
 
     @property
     def rate(self):
         r"""Returns the rate (inverse mfpt) of A-->B transitions
         """
-        return self._kAB
+        return self._kAB / self._timeunit_model.dt
 
     @property
     def mfpt(self):
         r"""Returns the rate (inverse mfpt) of A-->B transitions
         """
-        return 1.0 / self._kAB
+        return self._timeunit_model.dt / self._kAB
 
     def pathways(self, fraction=1.0, maxiter=1000):
         r"""Decompose flux network into dominant reaction paths.
@@ -374,5 +376,6 @@ class ReactiveFlux(Model):
             backward_committor_coarse[i] = np.dot(partialI, self._qminus[I])
 
         res = ReactiveFlux(Aindexes, Bindexes, Fnet_coarse, mu=pstat_coarse,
-                           qminus=backward_committor_coarse, qplus=forward_committor_coarse, gross_flux=F_coarse)
+                           qminus=backward_committor_coarse, qplus=forward_committor_coarse, gross_flux=F_coarse,
+                           dt_model=self.dt_model)
         return (tpt_sets, res)
