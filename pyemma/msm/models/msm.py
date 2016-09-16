@@ -259,7 +259,8 @@ class MSM(_Model):
             # check input
             # this only holds for a unique measure...
             try:
-                _np.testing.assert_allclose(_np.dot(self.P, value), value,
+                test_unique = self.P.dot(value)
+                _np.testing.assert_allclose(test_unique, value,
                                             atol=1e-14, rtol=0.01, err_msg='given stationary distribution '
                                                                            'is not a valid unique measure.')
 
@@ -268,6 +269,8 @@ class MSM(_Model):
                 # import logging
                 # logger = logging.getLogger('pyemma.msm')
                 # logger.exception("pi not valid/unique")
+            # check sum is one
+            _np.testing.assert_equal(_np.sum(value), 1)
         self._pi = value
 
     def _compute_eigenvalues(self, neig):
