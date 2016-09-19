@@ -549,7 +549,7 @@ def discretizer(reader,
     return disc
 
 
-def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=1000, image_molecules=False, verbose=False):
+def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=1000, image_molecules=False, verbose=True):
     r""" Saves a sequence of frames as a single trajectory.
 
     Extracts the specified sequence of time/trajectory indexes from traj_inp
@@ -606,8 +606,8 @@ def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=1000, 
         molecules accross periodic boundary conditions.
         (http://mdtraj.org/1.7.2/api/generated/mdtraj.Trajectory.html#mdtraj.Trajectory.image_molecules)
 
-    verbose : boolean, default is False
-        Verbose output while looking for :py:obj`indexes` in the :py:obj:`traj_inp.trajfiles`
+    verbose : boolean, default is True
+        Inform about created filenames
 
     Returns
     -------
@@ -671,8 +671,8 @@ def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=1000, 
     # or to disk as a molecular trajectory file
     else:
         traj.save(outfile)
-
-    _logger.info("Created file %s" % outfile)
+    if verbose:
+        _logger.info("Created file %s" % outfile)
 
 
 def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None,
