@@ -1,7 +1,14 @@
 Changelog
 =========
 
-2.2.4 (9-24-16)
+2.2.5 (9-21-16)
+---------------
+
+**Fixes**:
+
+- msm: fixed setting of 'reversible' attribute. #935
+
+2.2.4 (9-20-16)
 ---------------
 
 **New features**:
