@@ -137,10 +137,11 @@ class MSM(_Model):
         list of this function (by mandatory or keyword arguments)
 
         """
+        # we set reversible first, so it can be derived from P, if None was given.
+        self.reversible = reversible
         if P is not None:
             self.P = P
         self.pi = pi
-        self.reversible = reversible
         self.dt_model = dt_model
         self.neig = neig
 
@@ -164,7 +165,8 @@ class MSM(_Model):
                 raise ValueError('T is not a transition matrix.')
             # set states
             self.nstates = _np.shape(self._P)[0]
-            self.reversible = msmana.is_reversible(self._P, tol=1e-10)
+            if self.reversible is None:
+                self.reversible = msmana.is_reversible(self._P)
 
             from scipy.sparse import issparse
             self.sparse = issparse(self._P)
