@@ -138,7 +138,7 @@ class MSM(_Model):
 
         """
         # we set reversible first, so it can be derived from P, if None was given.
-        self.reversible = reversible
+        self.update_model_params(reversible=reversible)
         if P is not None:
             self.P = P
         self.pi = pi
@@ -182,8 +182,6 @@ class MSM(_Model):
     @reversible.setter
     def reversible(self, value):
         # allow to set it to None, so it can be derived from P in set_model_params
-        if value is not None:
-            value = bool(value)
         self._reversible = value
 
     @property
