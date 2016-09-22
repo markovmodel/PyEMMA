@@ -139,11 +139,9 @@ class MSM(_Model):
         """
         # we set reversible first, so it can be derived from P, if None was given.
         self.update_model_params(reversible=reversible)
-        if P is not None:
-            self.P = P
-        self.pi = pi
-        self.dt_model = dt_model
-        self.neig = neig
+        self.update_model_params(P=P)
+        # pi might be derived from P, if None was given.
+        self.update_model_params(pi=pi, dt_model=dt_model, neig=neig)
 
     ################################################################################
     # Basic attributes
@@ -181,7 +179,6 @@ class MSM(_Model):
 
     @reversible.setter
     def reversible(self, value):
-        # allow to set it to None, so it can be derived from P in set_model_params
         self._reversible = value
 
     @property
