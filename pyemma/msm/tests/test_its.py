@@ -107,38 +107,38 @@ class TestITS_MSM(unittest.TestCase):
         dtraj = [[0, 1, 1, 1, 0]]
         lags = [1, 2, 3, 4, 5, 6, 7, 8]
         expected_lags = [1, 2]  # 3, 4 is impossible because no finite timescales.
-        its = msm.timescales_msm(dtraj, lags=lags, reversible=False)
-        # TODO: should catch warnings!
-        # with warnings.catch_warnings(record=True) as w:
-        # warnings.simplefilter("always")
-        # assert issubclass(w[-1].category, UserWarning)
+        import warnings
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            its = msm.timescales_msm(dtraj, lags=lags, reversible=False)
+            # FIXME: we do not trigger a UserWarning, but msmtools.exceptions.SpectralWarning, intended?
+            #assert issubclass(w[-1].category, UserWarning)
         got_lags = its.lagtimes
-        assert (np.shape(got_lags) == np.shape(expected_lags))
-        assert (np.allclose(got_lags, expected_lags))
+        np.testing.assert_equal(got_lags, expected_lags)
 
     def test_2(self):
         t2 = timescales(self.P2)[1]
         lags = [1, 2, 3, 4, 5]
         its = msm.timescales_msm([self.dtraj2], lags=lags)
         est = its.timescales[0]
-        assert (np.alltrue(est < t2 + 2.0))
-        assert (np.alltrue(est > t2 - 2.0))
+        np.testing.assert_array_less(est, t2 + 2.0)
+        np.testing.assert_array_less(t2 - 2.0, est)
 
     def test_2_parallel(self):
         t2 = timescales(self.P2)[1]
         lags = [1, 2, 3, 4, 5]
         its = timescales_msm([self.dtraj2], lags=lags, n_jobs=2)
         est = its.timescales[0]
-        assert (np.alltrue(est < t2 + 2.0))
-        assert (np.alltrue(est > t2 - 2.0))
+        np.testing.assert_array_less(est, t2 + 2.0)
+        np.testing.assert_array_less(t2 - 2.0, est)
 
     def test_4_2(self):
         t4 = timescales(self.P4)[1]
         lags = [int(t4)]
         its = msm.timescales_msm([self.dtraj4_2], lags=lags)
         est = its.timescales[0]
-        assert (np.alltrue(est < t4 + 20.0))
-        assert (np.alltrue(est > t4 - 20.0))
+        np.testing.assert_array_less(est, t4 + 20.0)
+        np.testing.assert_array_less(t4 - 20.0, est)
 
     def test_fraction_of_frames(self):
         dtrajs = [
