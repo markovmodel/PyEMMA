@@ -181,7 +181,10 @@ class MSM(_Model):
 
     @reversible.setter
     def reversible(self, value):
-        self._reversible = bool(value)
+        # allow to set it to None, so it can be derived from P in set_model_params
+        if value is not None:
+            value = bool(value)
+        self._reversible = value
 
     @property
     @alias('is_sparse')
