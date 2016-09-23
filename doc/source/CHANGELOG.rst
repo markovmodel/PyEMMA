@@ -1,6 +1,17 @@
 Changelog
 =========
 
+2.2.6 (9-23-16)
+---------------
+
+**Fixes**:
+
+- msm: restored old behaviour of updating MSM parameters (only update if not set yet).
+  Note that this bug was introduced in 2.2.4 and leads to strange bugs, eg. if the MSM estimator
+  is passed to the Chapman Kolmogorov validator, the reversible property got overwritten.
+- coordinates/TICA: Cast the output of the transformation to float. Used to be double. #941
+- coordinates/TICA: fixed a VisibleDeprecationWarning. #941. Thanks @stefdoerr
+
 2.2.5 (9-21-16)
 ---------------
 
