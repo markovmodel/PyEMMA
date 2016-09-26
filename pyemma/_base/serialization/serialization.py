@@ -274,7 +274,7 @@ class SerializableMixIn(object):
             names = self._get_model_param_names()
             new_state = {key: state[key] for key in names}
 
-            self.update_model_params(**new_state)
+            self.set_model_params(**new_state)
 
         if isinstance(self, Estimator):
             self._estimated = state.pop('_estimated')
