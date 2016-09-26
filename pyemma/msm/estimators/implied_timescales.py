@@ -26,7 +26,6 @@ Created on Jul 26, 2014
 from __future__ import absolute_import, print_function
 
 import numpy as np
-from pyemma._base.serialization.serialization import SerializableMixIn
 from pyemma.util.annotators import estimation_required
 
 from pyemma.util.statistics import confidence_interval
@@ -68,7 +67,7 @@ def _generate_lags(maxlag, multiplier):
 # TODO: build a generic implied timescales estimate in _base, and make this a subclass (for dtrajs)
 # TODO: Timescales should be assigned by similar eigenvectors rather than by order
 # TODO: when requesting too long lagtimes, throw a warning and exclude lagtime from calculation, but compute the rest
-class ImpliedTimescales(Estimator, ProgressReporter, SerializableMixIn):
+class ImpliedTimescales(Estimator, ProgressReporter):
     r"""Implied timescales for a series of lag times.
 
     Parameters
