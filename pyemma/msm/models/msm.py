@@ -152,10 +152,16 @@ class MSM(_Model):
     def __eq__(self, other):
         if not isinstance(other, MSM):
             return False
-        return (_np.allclose(self.transition_matrix, other.transition_matrix) and
-                             self.sparse == other.sparse and self.neig == other.neig and
-                             self.reversible == other.reversible and
-                             self.timestep_model == other.timestep_model)
+        if id(self) == id(other):
+            return True
+        if self.P is not None and other.P is not None:
+            P_equal = _np.allclose(self.P, other.P)
+        else:
+            P_equal = True
+        return (P_equal and
+                self.sparse == other.sparse and self.neig == other.neig and
+                self.reversible == other.reversible and
+                self.timestep_model == other.timestep_model)
 
     ################################################################################
     # Basic attributes
@@ -165,7 +171,10 @@ class MSM(_Model):
     @alias('transition_matrix')
     def P(self):
         """ The transition matrix on the active set. """
-        return self._P
+        try:
+            return self._P
+        except AttributeError:
+            return None
 
     @P.setter
     def P(self, value):
@@ -224,16 +233,22 @@ class MSM(_Model):
     @property
     def neig(self):
         """ number of eigenvalues to compute. """
-        return self._neig
+        try:
+            return self._neig
+        except AttributeError:
+            return None
 
     @neig.setter
     def neig(self, value):
         # set or correct eig param
         if value is None:
-            if self.sparse:
+            if hasattr(self, '_sparse') and self.sparse:
                 value = 10
             else:
-                value = self._nstates
+                if hasattr(self, '_nstates'):
+                    value = self._nstates
+                else:
+                    value = None
 
         # set ncv for consistency
         if not hasattr(self, 'ncv'):
@@ -247,6 +262,8 @@ class MSM(_Model):
 
     @dt_model.setter
     def dt_model(self, value):
+        if not value:
+            value = '1 step'
         self._dt_model = value
 
         # this is only used internally?
@@ -266,11 +283,14 @@ class MSM(_Model):
     @pi.setter
     def pi(self, value):
         """The stationary distribution on the MSM states"""
+        # check sum is one
+        if value is not None:
+            _np.testing.assert_allclose(_np.sum(value), 1, atol=1e-14,
+                                        err_msg='A stationary distribution should sum up to one.')
+
         if value is None and self.P is not None:
             from msmtools.analysis import stationary_distribution as _statdist
             value = _statdist(self.P)
-        # check sum is one
-        _np.testing.assert_allclose(_np.sum(value), 1, atol=1e-14)
         self._pi = value
 
     def _compute_eigenvalues(self, neig):

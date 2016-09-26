@@ -26,6 +26,7 @@ Created on Jul 26, 2014
 from __future__ import absolute_import, print_function
 
 import numpy as np
+from pyemma._base.serialization.serialization import SerializableMixIn
 from pyemma.util.annotators import estimation_required
 
 from pyemma.util.statistics import confidence_interval
@@ -67,32 +68,36 @@ def _generate_lags(maxlag, multiplier):
 # TODO: build a generic implied timescales estimate in _base, and make this a subclass (for dtrajs)
 # TODO: Timescales should be assigned by similar eigenvectors rather than by order
 # TODO: when requesting too long lagtimes, throw a warning and exclude lagtime from calculation, but compute the rest
-class ImpliedTimescales(Estimator, ProgressReporter):
-    r"""Implied timescales for a series of lag times."""
+class ImpliedTimescales(Estimator, ProgressReporter, SerializableMixIn):
+    r"""Implied timescales for a series of lag times.
+
+    Parameters
+    ----------
+    estimator : Estimator
+        Estimator to be used for estimating timescales at each lag time.
+
+    lags : array-like with integers or None, optional
+        integer lag times at which the implied timescales will be calculated. If set to None (default)
+        as list of lagtimes will be automatically generated.
+
+    nits : int, optional
+        maximum number of implied timescales to be computed and stored. If less
+        timescales are available, nits will be set to a smaller value during
+        estimation. None means the number of timescales will be automatically
+        determined.
+
+    n_jobs: int, optional
+        how many subprocesses to start to estimate the models for each lag time.
+
+    """
+
+    _serialize_version = 0
+    _serialize_fields = ('_models', '_estimators', '_successful_lag_indexes',
+                         '_its', '_its_samples',
+                         )
 
     def __init__(self, estimator, lags=None, nits=None, n_jobs=1,
                  show_progress=True):
-        r"""Implied timescales for a series of lag times.
-
-        Parameters
-        ----------
-        estimator : Estimator
-            Estimator to be used for estimating timescales at each lag time.
-
-        lags : array-like with integers or None, optional
-            integer lag times at which the implied timescales will be calculated. If set to None (default)
-            as list of lagtimes will be automatically generated.
-
-        nits : int, optional
-            maximum number of implied timescales to be computed and stored. If less
-            timescales are available, nits will be set to a smaller value during
-            estimation. None means the number of timescales will be automatically
-            determined.
-
-        n_jobs: int, optional
-            how many subprocesses to start to estimate the models for each lag time.
-
-        """
         # initialize
         self.estimator = get_estimator(estimator)
         self.nits = nits
@@ -220,6 +225,10 @@ class ImpliedTimescales(Estimator, ProgressReporter):
 
         """
         return self._lags[self._successful_lag_indexes]
+
+    @lags.setter
+    def lags(self, value):
+        self._lags = value
 
     @property
     def number_of_timescales(self):
@@ -385,7 +394,7 @@ class ImpliedTimescales(Estimator, ProgressReporter):
 
         """
         if self._its_samples is None:
-            raise RuntimeError('Cannot compute sample mean, because no samples were generated ' +
+            raise RuntimeError('Cannot compute sample mean, because no samples were generated '
                                ' try calling bootstrap() before')
         # OK, go:
         if process is None:
