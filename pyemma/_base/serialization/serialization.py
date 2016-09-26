@@ -92,8 +92,8 @@ class SerializableMixIn(object):
             flattened = jsonpickle.dumps(self)
         except Exception as e:
             if isinstance(self, Loggable):
-                self.logger.exception('During saving the object ("%s") '
-                                      'the following error occured' % e)
+                self.logger.exception('During saving the object ("{error}") '
+                                      'the following error occurred'.format(error=e))
             raise
 
         if six.PY3:
@@ -253,6 +253,10 @@ class SerializableMixIn(object):
             state = self.get_model_params()
             res.update(state)
 
+        # store the current software version
+        from pyemma import version
+        state['_pyemma_version'] = version
+
         return res
 
     def __setstate__(self, state):
@@ -281,3 +285,6 @@ class SerializableMixIn(object):
             names = self._get_param_names()
             new_state = {key: state[key] for key in names if key in state}
             self.set_params(**new_state)
+
+        if hasattr(state, '_pyemma_version'):
+            self._pyemma_version = state['_pyemma_version']
