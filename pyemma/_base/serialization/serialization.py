@@ -255,7 +255,7 @@ class SerializableMixIn(object):
 
         # store the current software version
         from pyemma import version
-        state['_pyemma_version'] = version
+        res['_pyemma_version'] = version
 
         return res
 
