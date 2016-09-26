@@ -46,8 +46,7 @@ class MSM(_Model):
     r"""Markov model with a given transition matrix"""
     _serialize_version = 0
 
-    _serialize_fields = ('_R', '_D', '_L', '_eigenvalues', 'ncv',
-                         '_timeunit_model', 'sparse',
+    _serialize_fields = ('_R', '_D', '_L', '_eigenvalues',
                          '_metastable_assignments', '_metastable_computed', '_metastable_distributions',
                          '_metastable_memberships', '_metastable_sets', '_pcca',
                          '_nstates', '_timeunit_model')
@@ -150,6 +149,14 @@ class MSM(_Model):
         # pi might be derived from P, if None was given.
         self.update_model_params(pi=pi, dt_model=dt_model, neig=neig)
 
+    def __eq__(self, other):
+        if not isinstance(other, MSM):
+            return False
+        return (_np.allclose(self.transition_matrix, other.transition_matrix) and
+                             self.sparse == other.sparse and self.neig == other.neig and
+                             self.reversible == other.reversible and
+                             self.timestep_model == other.timestep_model)
+
     ################################################################################
     # Basic attributes
     ################################################################################
@@ -170,7 +177,7 @@ class MSM(_Model):
                 raise ValueError('T is not a transition matrix.')
             # set states
             self.nstates = _np.shape(self._P)[0]
-            if self.reversible is None:
+            if not hasattr(self, '_reversible') or self.reversible is None:
                 self.reversible = msmana.is_reversible(self._P)
 
             from scipy.sparse import issparse
@@ -262,22 +269,8 @@ class MSM(_Model):
         if value is None and self.P is not None:
             from msmtools.analysis import stationary_distribution as _statdist
             value = _statdist(self.P)
-        elif self.P is not None:
-            # check input
-            # this only holds for a unique measure...
-            try:
-                test_unique = self.P.dot(value)
-                _np.testing.assert_allclose(test_unique, value,
-                                            atol=1e-14, rtol=0.01, err_msg='given stationary distribution '
-                                                                           'is not a valid unique measure.')
-
-            except AssertionError:
-                pass
-                # import logging
-                # logger = logging.getLogger('pyemma.msm')
-                # logger.exception("pi not valid/unique")
-            # check sum is one
-            _np.testing.assert_allclose(_np.sum(value), 1, atol=1e-14)
+        # check sum is one
+        _np.testing.assert_allclose(_np.sum(value), 1, atol=1e-14)
         self._pi = value
 
     def _compute_eigenvalues(self, neig):
