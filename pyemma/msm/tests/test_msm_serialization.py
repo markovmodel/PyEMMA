@@ -140,5 +140,17 @@ class TestMSMSerialization(unittest.TestCase):
         np.testing.assert_equal(restored.timescales, its.timescales)
         np.testing.assert_equal(restored.sample_mean, its.sample_mean)
 
+    def test_cktest(self):
+        ck = self.bmsm_rev.cktest(nsets=2, mlags=[1, 3])
+
+        ck.save(self.f)
+        restored = load(self.f)
+
+        np.testing.assert_equal(restored.lagtimes, ck.lagtimes)
+        np.testing.assert_equal(restored.predictions, ck.predictions)
+        np.testing.assert_equal(restored.predictions_conf, ck.predictions_conf)
+        np.testing.assert_equal(restored.estimates, ck.estimates)
+        np.testing.assert_equal(restored.estimates_conf, ck.estimates_conf)
+
 if __name__ == '__main__':
     unittest.main()
