@@ -56,7 +56,6 @@ __all__ = ['markov_model',
 @shortcut('its')
 def timescales_msm(dtrajs, lags=None, nits=None, reversible=True, connected=True,
                    errors=None, nsamples=50, n_jobs=1, show_progress=True):
-    # format data
     r""" Implied timescales from Markov state models estimated at a series of lag times.
 
     Parameters

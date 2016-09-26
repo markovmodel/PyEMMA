@@ -57,7 +57,7 @@ class Model(SerializableMixIn):
 
     def update_model_params(self, **params):
         r"""Update given model parameter if they are set to specific values"""
-        for key, value in list(params.items()):
+        for key, value in params.items():
             if not hasattr(self, key):
                 setattr(self, key, value)  # set parameter for the first time.
             elif getattr(self, key) is None:
