@@ -90,7 +90,7 @@ class TestBMSM(unittest.TestCase):
         import msmtools.analysis as msmana
         for P in Psamples:
             assert msmana.is_transition_matrix(P)
-            assert msmana.is_reversible(P)
+            assert msmana.is_reversible(P, tol=1e-10)
 
     def test_transition_matrix_stats(self):
         self._transition_matrix_stats(self.bmsm_rev)
