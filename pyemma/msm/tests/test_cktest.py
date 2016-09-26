@@ -198,8 +198,11 @@ class TestCK_AllEstimators(unittest.TestCase):
         assert ck.predictions_conf[1] is None
 
     def test_its_bmsm(self):
-        BMSM = msm.bayesian_markov_model([self.double_well_data.dtraj_T100K_dt10_n6good], 40)
+        BMSM = msm.bayesian_markov_model([self.double_well_data.dtraj_T100K_dt10_n6good], 40, reversible=True)
+        # also ensure that reversible bit does not flip during cktest
+        assert BMSM.reversible
         ck = BMSM.cktest(2, mlags=[0,1,10])
+        assert BMSM.reversible
         estref = np.array([[[ 1.,          0.        ],
                             [ 0.,          1.        ]],
                            [[ 0.89722931,  0.10277069],

@@ -180,7 +180,7 @@ class BayesianMSM(_MLMSM, _SampledMSM, ProgressReporter):
         else:
             # Use the stationary distribution on the active set of states
             statdist_active = self.pi
-            # We can not uise the MLE as T0. Use the initialization in the reversible pi sampler
+            # We can not use the MLE as T0. Use the initialization in the reversible pi sampler
             tsampler = tmatrix_sampler(self.count_matrix_active, reversible=self.reversible,
                                        mu=statdist_active, nsteps=self.nsteps)
 

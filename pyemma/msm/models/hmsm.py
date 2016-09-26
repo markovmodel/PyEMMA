@@ -63,7 +63,7 @@ class HMSM(_MSM):
         """
         # construct superclass and check input
         _MSM.__init__(self, P, dt_model=dt_model)
-        self.set_model_params(pobs=pobs, pi=pi, dt_model=dt_model)
+        self.set_model_params(P=P, pobs=pobs, pi=pi, dt_model=dt_model)
 
     def set_model_params(self, P=None, pobs=None, pi=None, reversible=None, dt_model='1 step', neig=None):
         """

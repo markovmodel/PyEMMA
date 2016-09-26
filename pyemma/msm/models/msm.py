@@ -26,12 +26,14 @@ and provides them for later access.
 """
 
 from __future__ import absolute_import
+
+from pyemma.util.annotators import aliased, alias
 from six.moves import range
 
 __docformat__ = "restructuredtext en"
 
 import copy
-import numpy as np
+import numpy as _np
 from math import ceil
 from pyemma._base.model import Model as _Model
 from pyemma.util import types as _types
@@ -39,7 +41,7 @@ from pyemma.util import types as _types
 
 # TODO: Explain concept of an active set
 
-
+@aliased
 class MSM(_Model):
     r"""Markov model with a given transition matrix"""
     _serialize_version = 0
@@ -96,7 +98,7 @@ class MSM(_Model):
         self.ncv = ncv
 
     # TODO: maybe rename to parametrize in order to avoid confusion with set_params that has a different behavior?
-    def set_model_params(self, P=None, pi=None, reversible=None, dt_model='1 step', neig=None):
+    def set_model_params(self, P, pi=None, reversible=None, dt_model='1 step', neig=None):
         """ Call to set all basic model parameters.
 
         Sets or updates given model parameters. This argument list of this
@@ -142,58 +144,59 @@ class MSM(_Model):
         list of this function (by mandatory or keyword arguments)
 
         """
-        import msmtools.analysis as msmana
-        # check input
-        if P is not None:
-            if not msmana.is_transition_matrix(P, tol=1e-8):
-                raise ValueError('T is not a transition matrix.')
-
-        # update all parameters
-        self.update_model_params(P=P, pi=pi, reversible=reversible, dt_model=dt_model, neig=neig)
-        # set ncv for consistency
-        if not hasattr(self, 'ncv'):
-            self.ncv = None
-        # update derived quantities
-        from pyemma.util.units import TimeUnit
-        self._timeunit_model = TimeUnit(self.dt_model)
-
-        # set P and derived quantities if available
-        if P is not None:
-            from scipy.sparse import issparse
-            # set states
-            self._nstates = np.shape(P)[0]
-            if self.reversible is None:
-                self.reversible = msmana.is_reversible(P)
-            self.sparse = issparse(P)
-
-            # set or correct eig param
-            if neig is None:
-                if self.sparse:
-                    self.neig = 10
-                else:
-                    self.neig = self._nstates
-
-    def __eq__(self, other):
-        if not isinstance(other, MSM):
-            return False
-        return (np.allclose(self.transition_matrix, other.transition_matrix) and
-                self.sparse == other.sparse and self.neig == other.neig and
-                self.reversible == other.reversible and
-                self.timestep_model == other.timestep_model)
+        # we set reversible first, so it can be derived from P, if None was given.
+        self.update_model_params(reversible=reversible)
+        self.update_model_params(P=P)
+        # pi might be derived from P, if None was given.
+        self.update_model_params(pi=pi, dt_model=dt_model, neig=neig)
 
     ################################################################################
     # Basic attributes
     ################################################################################
 
     @property
-    def is_reversible(self):
-        """Returns whether the MSM is reversible """
-        return self.reversible
+    @alias('transition_matrix')
+    def P(self):
+        """ The transition matrix on the active set. """
+        return self._P
+
+    @P.setter
+    def P(self, value):
+        self._P = value
+        import msmtools.analysis as msmana
+        # check input
+        if self._P is not None:
+            if not msmana.is_transition_matrix(self._P, tol=1e-8):
+                raise ValueError('T is not a transition matrix.')
+            # set states
+            self.nstates = _np.shape(self._P)[0]
+            if self.reversible is None:
+                self.reversible = msmana.is_reversible(self._P)
+
+            from scipy.sparse import issparse
+            self.sparse = issparse(self._P)
+
+        # TODO: if spectral decomp etc. already has been computed, reset its state.
 
     @property
-    def is_sparse(self):
+    @alias('is_reversible')
+    def reversible(self):
+        """Returns whether the MSM is reversible """
+        return self._reversible
+
+    @reversible.setter
+    def reversible(self, value):
+        self._reversible = value
+
+    @property
+    @alias('is_sparse')
+    def sparse(self):
         """Returns whether the MSM is sparse """
-        return self.sparse
+        return self._sparse
+
+    @sparse.setter
+    def sparse(self, value):
+        self._sparse = bool(value)
 
     @property
     def timestep_model(self):
@@ -212,30 +215,70 @@ class MSM(_Model):
         self._nstates = n
 
     @property
-    def transition_matrix(self):
-        r"""
-        The transition matrix on the active set.
+    def neig(self):
+        """ number of eigenvalues to compute. """
+        return self._neig
 
-        """
-        try:
-            return self.P
-        except AttributeError:
-            raise AttributeError('MSM has not yet been parametrized.'
-                                 'Call "MSM(P)", set_model_params(P=P) or set transition matrix')
+    @neig.setter
+    def neig(self, value):
+        # set or correct eig param
+        if value is None:
+            if self.sparse:
+                value = 10
+            else:
+                value = self._nstates
+
+        # set ncv for consistency
+        if not hasattr(self, 'ncv'):
+            self.ncv = None
+
+        self._neig = value
+
+    @property
+    def dt_model(self):
+        return self._dt_model
+
+    @dt_model.setter
+    def dt_model(self, value):
+        self._dt_model = value
+
+        # this is only used internally?
+        from pyemma.util.units import TimeUnit
+        self._timeunit_model = TimeUnit(self.dt_model)
+
 
     ################################################################################
     # Spectral quantities
     ################################################################################
 
     @property
-    def stationary_distribution(self):
+    @alias('stationary_distribution')
+    def pi(self):
+        return self._pi
+
+    @pi.setter
+    def pi(self, value):
         """The stationary distribution on the MSM states"""
-        if self.pi is not None:
-            return self.pi
-        else:
+        if value is None and self.P is not None:
             from msmtools.analysis import stationary_distribution as _statdist
-            self.pi = _statdist(self.transition_matrix)
-            return self.pi
+            value = _statdist(self.P)
+        elif self.P is not None:
+            # check input
+            # this only holds for a unique measure...
+            try:
+                test_unique = self.P.dot(value)
+                _np.testing.assert_allclose(test_unique, value,
+                                            atol=1e-14, rtol=0.01, err_msg='given stationary distribution '
+                                                                           'is not a valid unique measure.')
+
+            except AssertionError:
+                pass
+                # import logging
+                # logger = logging.getLogger('pyemma.msm')
+                # logger.exception("pi not valid/unique")
+            # check sum is one
+            _np.testing.assert_allclose(_np.sum(value), 1, atol=1e-14)
+        self._pi = value
 
     def _compute_eigenvalues(self, neig):
         """ Conducts the eigenvalue decomposition and stores k eigenvalues, left and right eigenvectors """
@@ -246,6 +289,9 @@ class MSM(_Model):
                                        reversible=True, mu=self.stationary_distribution)
         else:
             self._eigenvalues = anaeig(self.transition_matrix, k=neig, ncv=self.ncv, reversible=False)
+
+        if _np.all(self._eigenvalues.imag == 0):
+            self._eigenvalues = self._eigenvalues.real
 
     def _ensure_eigenvalues(self, neig=None):
         """ Ensures that at least neig eigenvalues have been computed """
@@ -274,7 +320,15 @@ class MSM(_Model):
             self._L = self._L.real
         else:
             self._R, self._D, self._L = rdl_decomposition(self.transition_matrix, k=neig, norm='standard', ncv=self.ncv)
-        self._eigenvalues = np.diag(self._D)
+            # if the imaginary parts are zero, discard them.
+            if _np.all(self._R.imag == 0):
+                self._R = _np.real(self._R)
+            if _np.all(self._D.imag == 0):
+                self._D = _np.real(self._D)
+            if _np.all(self._L.imag == 0):
+                self._L = _np.real(self._L)
+
+        self._eigenvalues = _np.diag(self._D)
 
     def _ensure_eigendecomposition(self, neig=None):
         """Ensures that eigendecomposition has been performed with at least neig eigenpairs
@@ -288,7 +342,7 @@ class MSM(_Model):
             neig = self.neig
         # ensure that eigenvalue decomposition with k components is done.
         try:
-            m = self._D.shape[0]  # this will raise and exception if self._D # doesn't exist yet.
+            m = self._D.shape[0]  # this will raise and exception if self._D doesn't exist yet.
             if m < neig:
                 # not enough eigenpairs present - recompute:
                 self._compute_eigendecomposition(neig)
@@ -415,15 +469,15 @@ class MSM(_Model):
             return p0 / p0.sum()
 
         if self.is_sparse:  # sparse: we don't have a full eigenvalue set, so just propagate
-            pk = np.array(p0)
+            pk = _np.array(p0)
             for i in range(k):
-                pk = np.dot(pk.T, self.transition_matrix)
+                pk = _np.dot(pk.T, self.transition_matrix)
         else:  # dense: employ eigenvalue decomposition
             self._ensure_eigendecomposition(self.nstates)
             from pyemma.util.linalg import mdot
             pk = mdot(p0.T,
                       self.eigenvectors_right(),
-                      np.diag(np.power(self.eigenvalues(), k)),
+                      _np.diag(_np.power(self.eigenvalues(), k)),
                       self.eigenvectors_left()).real
         # normalize to 1.0 and return
         return pk / pk.sum()
@@ -441,7 +495,7 @@ class MSM(_Model):
         A : int or int array
             set of states
         """
-        assert np.max(A) < self._nstates, 'Chosen set contains states that are not included in the active set.'
+        assert _np.max(A) < self._nstates, 'Chosen set contains states that are not included in the active set.'
 
     def _mfpt(self, P, A, B, mu=None):
         self._assert_in_active(A)
@@ -524,7 +578,7 @@ class MSM(_Model):
         """
         # check input and go
         a = _types.ensure_ndarray(a, ndim=1, size=self.nstates, kind='numeric')
-        return np.dot(a, self.stationary_distribution)
+        return _np.dot(a, self.stationary_distribution)
 
     def correlation(self, a, b=None, maxtime=None, k=None, ncv=None):
         r"""Time-correlation for equilibrium experiment.
@@ -637,7 +691,7 @@ class MSM(_Model):
         if maxtime is None:
             # by default, use five times the longest relaxation time, because then we have relaxed to equilibrium.
             maxtime = 5 * self.timescales()[0]
-        steps = np.arange(int(ceil(float(maxtime) / self._timeunit_model.dt)))
+        steps = _np.arange(int(ceil(float(maxtime) / self._timeunit_model.dt)))
         # compute correlation
         from msmtools.analysis import correlation as _correlation
         # TODO: this could be improved. If we have already done an eigenvalue decomposition, we could provide it.
@@ -764,7 +818,7 @@ class MSM(_Model):
             # by default, use five times the longest relaxation time, because then we have relaxed to equilibrium.
             maxtime = 5 * self.timescales()[0]
         kmax = int(ceil(float(maxtime) / self._timeunit_model.dt))
-        steps = np.array(list(range(kmax)), dtype=int)
+        steps = _np.array(list(range(kmax)), dtype=int)
         # compute relaxation function
         from msmtools.analysis import relaxation as _relaxation
         # TODO: this could be improved. If we have already done an eigenvalue decomposition, we could provide it.

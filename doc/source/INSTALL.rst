@@ -20,12 +20,15 @@ but play at your own risk.
 
 If you already have a conda installation, directly go to step 3:
 
-1. Download and install miniconda for Python 2.7, 32 or 64 bit depending on your system:
+1. Download and install miniconda for Python 2.7 or 3+, 32 or 64 bit depending on your system. Note that
+   you can still use Python 2.7, however we recommend to use Python3:
+
    http://conda.pydata.org/miniconda.html
 
 
    For Windows users, who do not know what to choose for 32 or 64 bit, it is strongly
    recommended to read the second question of this FAQ first:
+
    http://windows.microsoft.com/en-us/windows/32-bit-and-64-bit-windows
 
 
@@ -110,7 +113,7 @@ If you refuse to use Anaconda, you will build PyEMMA from the
 source. In this approach, all PyEMMA dependencies will be built from the source too.
 Building these from source is sometimes (if not usually) tricky, takes a
 long time and is error prone - though it is **not** recommended nor supported
-by us. If unsure, use the anaconda installation.
+by us. If unsure, use the Anaconda installation.
 
 1. Ensure that you fulfill the following prerequisites:
 
@@ -219,8 +222,8 @@ Frequently Asked Questions (FAQ)
      Possible answer 2: Do you have Python2 and Python3 on the same computer?
      To figure that you, open a cmd prompt and type in::
 
-     where python
-     "X:\somepath\miniconda2\Scripts\python.exe"
+         where python
+         "X:\\somepath\\miniconda2\\Scripts\\python.exe"
     
      This should only display one line like. If it is displaying more than one .exe,
      you either know what you are doing or you should remove one installation (eg. decide,

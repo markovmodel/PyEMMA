@@ -345,7 +345,7 @@ class TICA(StreamingTransformer):
         Y = np.dot(X_meanfree, self.eigenvectors[:, 0:self.dimension()])
         if self.kinetic_map:  # scale by eigenvalues
             Y *= self.eigenvalues[0:self.dimension()]
-        return Y
+        return Y.astype(self.output_type())
 
     @property
     def feature_TIC_correlation(self):
