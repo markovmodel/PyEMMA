@@ -101,6 +101,58 @@ class TestMSMSerialization(unittest.TestCase):
         np.testing.assert_equal(new_obj.ncv, ml_msm.ncv)
         np.testing.assert_equal(new_obj.discrete_trajectories_full, ml_msm.discrete_trajectories_full)
 
+    def _compare_MLHMM(self, actual, desired):
+        np.testing.assert_equal(actual.P, desired.P)
+        from pyemma.msm import BayesianHMSM
+        if not isinstance(desired, BayesianHMSM):
+            np.testing.assert_equal(actual.pobs, desired.pobs)
+
+        np.testing.assert_equal(actual.discrete_trajectories_full, desired.discrete_trajectories_full)
+        np.testing.assert_equal(actual.discrete_trajectories_obs, desired.discrete_trajectories_obs)
+        np.testing.assert_equal(actual.discrete_trajectories_lagged, desired.discrete_trajectories_lagged)
+
+        np.testing.assert_equal(actual.active_set, desired.active_set)
+
+        self.assertEqual(actual.nstates, desired.nstates)
+        np.testing.assert_equal(actual.nstates_obs, desired.nstates_obs)
+
+        # no public property, but used internally to map states
+        np.testing.assert_equal(actual._nstates_obs_full, desired._nstates_obs_full)
+        np.testing.assert_equal(actual.observable_set, desired.observable_set)
+
+        self.assertEqual(actual.accuracy, desired.accuracy)
+        self.assertEqual(actual.connectivity, desired.connectivity)
+
+        np.testing.assert_equal(actual.count_matrix, desired.count_matrix)
+        np.testing.assert_equal(actual.count_matrix_EM, desired.count_matrix_EM)
+
+        self.assertEqual(actual.dt_traj, desired.dt_traj)
+
+        np.testing.assert_equal(actual.hidden_state_probabilities, desired.hidden_state_probabilities)
+        self.assertEqual(actual.hidden_state_trajectories.shape, desired.hidden_state_trajectories.shape)
+        for x, y in zip(actual.hidden_state_trajectories, desired.hidden_state_trajectories):
+            np.testing.assert_equal(x, y)
+
+        np.testing.assert_equal(actual.initial_count, desired.initial_count)
+        np.testing.assert_equal(actual.initial_distribution, desired.initial_distribution)
+        np.testing.assert_equal(actual.likelihood, desired.likelihood)
+        np.testing.assert_equal(actual.likelihoods, desired.likelihoods)
+        np.testing.assert_equal(actual.initial_count, desired.initial_count)
+
+        self.assertEqual(actual.lag, desired.lag)
+        if not isinstance(desired, BayesianHMSM):
+            self.assertEqual(actual.maxit, desired.maxit)
+            self.assertEqual(actual.msm_init, desired.msm_init)
+        self.assertEqual(actual.mincount_connectivity, desired.mincount_connectivity)
+        self.assertEqual(actual.observe_nonempty, desired.observe_nonempty)
+
+        self.assertEqual(actual.reversible, desired.reversible)
+
+        self.assertEqual(actual.separate, desired.separate)
+        self.assertEqual(actual.stationary, desired.stationary)
+        self.assertEqual(actual.stride, desired.stride)
+        self.assertEqual(actual.timestep_traj, desired.timestep_traj)
+
     def test_hmsm(self):
         params = {'dtrajs':
                       [[0, 1, 2, 2, 2, 2, 1, 2, 2, 2, 1, 0, 0, 0, 0, 0, 0, 0],
@@ -112,10 +164,22 @@ class TestMSMSerialization(unittest.TestCase):
         hmm.save(self.f)
 
         new_obj = load(self.f)
+        self._compare_MLHMM(new_obj, hmm)
 
-        np.testing.assert_equal(new_obj.P, hmm.P)
-        np.testing.assert_equal(new_obj.pobs, hmm.pobs)
-        # the other attributes are derived from MSM, which is also tested.
+    def test_bhmm(self):
+        params = {'dtrajs':
+                      [[0, 1, 2, 2, 2, 2, 1, 2, 2, 2, 1, 0, 0, 0, 0, 0, 0, 0],
+                       [0, 0, 0, 0, 1, 1, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0]],
+                  'lag': 2,
+                  'nstates': 2
+                  }
+        hmm = pyemma.msm.bayesian_hidden_markov_model(**params)
+        hmm.save(self.f)
+
+        new_obj = load(self.f)
+        self._compare_MLHMM(new_obj, hmm)
+        # compare samples
+        self.assertEqual(new_obj.samples, hmm.samples)
 
     def test_its(self):
         lags = [1, 2, 3]

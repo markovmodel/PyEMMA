@@ -81,6 +81,10 @@ class HMSM(_MSM):
             stationary or distribution. Can be optionally given in case if
             it was already computed, e.g. by the estimator.
 
+        reversible : bool, optional, default=None
+            whether P is reversible with respect to its stationary distribution.
+            If None (default), will be determined from P
+
         dt_model : str, optional, default='1 step'
             time step of the model
 

@@ -95,6 +95,9 @@ class TimeUnit(object):
     def __repr__(self):
         return str(self)
 
+    def __eq__(self, other):
+        return isinstance(other, TimeUnit) and self.dt == other.dt and self.unit == other.unit
+
     @property
     def dt(self):
         return self._factor
@@ -143,6 +146,7 @@ class TimeUnit(object):
 
         # nothing to do
         return times, self._unit
+
 
 def bytes_to_string(num, suffix='B'):
     """
