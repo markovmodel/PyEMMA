@@ -62,6 +62,8 @@ class TestSerializationCoordinates(unittest.TestCase):
             expected = getattr(obj, k)
             if isinstance(actual, np.ndarray):
                 np.testing.assert_equal(actual, expected)
+            elif isinstance(actual, list):
+                self.assertListEqual(actual, expected)
             else:
                 self.assertEqual(actual, expected)
 
@@ -136,9 +138,34 @@ class TestSerializationCoordinates(unittest.TestCase):
 
         self.compare(t, params)
 
-    @unittest.skip("not yet impled.")
+    def test_featurizer_empty(self):
+        from pyemma.datasets import get_bpti_test_data
+        top = get_bpti_test_data()['top']
+        f = pyemma.coordinates.featurizer(top)
+        params = {}
+        params['topologyfile'] = top
+
+        self.compare(f, params)
+
     def test_featurizer(self):
-        f = pyemma.coordinates.featurizer()
+        from pyemma.datasets import get_bpti_test_data
+        top = get_bpti_test_data()['top']
+        f = pyemma.coordinates.featurizer(top)
+        f.add_distances_ca()
+        params = {}
+        params['topologyfile'] = top
+        params['active_features'] = f.active_features
+        self.maxDiff = None
+        self.compare(f, params)
+
+    def test_feature_reader(self):
+        from pyemma.datasets import get_bpti_test_data
+        top = get_bpti_test_data()['top']
+        trajs = get_bpti_test_data()['trajs']
+        r = pyemma.coordinates.source(trajs, top=top)
+        r.featurizer.add_distances_ca()
+
+        params = {'filenames': trajs}
 
 if __name__ == '__main__':
     unittest.main()
