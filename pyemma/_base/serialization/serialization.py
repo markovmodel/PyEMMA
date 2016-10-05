@@ -26,7 +26,7 @@ from pyemma._ext import jsonpickle
 from pyemma.util.types import is_string, is_int
 
 logger = logging.getLogger(__name__)
-_debug = True
+_debug = False
 
 _reg_np_handler()
 
@@ -229,7 +229,6 @@ class SerializableMixIn(object):
                               and c != SerializableMixIn and c != object and c != Estimator and c != Model]
         if _debug:
             logger.debug("classes to inspect during setstate: \n%s" % classes_to_inspect)
-        res['__serialize_class_versions'] = {}
         for klass in classes_to_inspect:
             if hasattr(klass, '_serialize_fields') and klass._serialize_fields and not klass == SerializableMixIn:
                 inc = self._get_state_of_serializeable_fields(klass)
@@ -240,7 +239,7 @@ class SerializableMixIn(object):
         assert res['_serialize_version'] == self._serialize_version
 
         # handle special cases Estimator and Model, just use their parameters.
-        if isinstance(self, Estimator):
+        if hasattr(self, 'get_params'):
             res.update(self.get_params())
             # remember if it has been estimated.
             res['_estimated'] = self._estimated
@@ -249,7 +248,7 @@ class SerializableMixIn(object):
             except AttributeError:
                 pass
 
-        if isinstance(self, Model):
+        if hasattr(self, 'get_model_params'):
             state = self.get_model_params()
             res.update(state)
 
@@ -270,13 +269,13 @@ class SerializableMixIn(object):
             if hasattr(klass, '_serialize_fields') and klass._serialize_fields and hasattr(klass, '_serialize_version'):
                 self._set_state_from_serializeable_fields_and_state(state, klass=klass)
 
-        if isinstance(self, Model):
+        if hasattr(self, 'set_model_params') and hasattr(self, '_get_model_param_names'):
             names = self._get_model_param_names()
             new_state = {key: state[key] for key in names}
 
             self.set_model_params(**new_state)
 
-        if isinstance(self, Estimator):
+        if hasattr(self, 'set_params') and hasattr(self, '_get_param_names'):
             self._estimated = state.pop('_estimated')
             model = state.pop('model', None)
             self._model = model
