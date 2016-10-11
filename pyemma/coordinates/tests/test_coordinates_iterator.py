@@ -59,19 +59,6 @@ class TestCoordinatesIterator(unittest.TestCase):
                     chunks += 1
                 assert chunks == it._n_chunks
 
-    def test_skip(self):
-        r = DataInMemory(self.d)
-        lagged_it = r.iterator(lag=5)
-        assert lagged_it._it.skip == 0
-        assert lagged_it._it_lagged.skip == 5
-
-        it = r.iterator()
-        for itraj, X in it:
-            if itraj == 0:
-                it.skip = 5
-            if itraj == 1:
-                assert it.skip == 5
-
     def test_chunksize(self):
         r = DataInMemory(self.d)
         cs = np.arange(1, 17)
