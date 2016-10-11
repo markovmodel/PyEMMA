@@ -188,21 +188,19 @@ class iterload(object):
             except (IOError, IndexError):
                 raise StopIteration("too short trajectory")
 
-        if not isinstance(self._stride, np.ndarray) and self._chunksize == 0:
-            # If chunk was 0 then we want to avoid filetype-specific code
-            # in case of undefined behavior in various file parsers.
-            # TODO: this will first apply stride, then skip!
-            if self._extension not in _TOPOLOGY_EXTS:
-                self._kwargs['top'] = self._top
-            traj = load(self._filename, stride=self._stride, **self._kwargs)[self.skip:]
-        elif isinstance(self._stride, np.ndarray):
+        if isinstance(self._stride, np.ndarray):
             return next(self._ra_it)
         else:
+            if self._chunksize == 0:
+                n_frames = None  # read all frames
+            else:
+                n_frames = self._chunksize * self._stride
+
             if self._extension not in _TOPOLOGY_EXTS:
-                traj = self._f.read_as_traj(self._topology, n_frames=self._chunksize * self._stride,
+                traj = self._f.read_as_traj(self._topology, n_frames=n_frames,
                                             stride=self._stride, atom_indices=self._atom_indices, **self._kwargs)
             else:
-                traj = self._f.read_as_traj(n_frames=self._chunksize * self._stride,
+                traj = self._f.read_as_traj(n_frames=n_frames,
                                             stride=self._stride, atom_indices=self._atom_indices, **self._kwargs)
 
         if len(traj) == 0:
