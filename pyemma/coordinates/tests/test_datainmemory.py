@@ -174,8 +174,8 @@ class TestDataInMemory(unittest.TestCase):
 
     def test_lagged_iterator_1d(self):
         n = 57
-        chunksize = 10
-        lag = 1
+        chunksize = 7
+        lag = 2
 
         data = [np.arange(n), np.arange(50), np.arange(30)]
         input_lens = [x.shape[0] for x in data]
@@ -197,10 +197,13 @@ class TestDataInMemory(unittest.TestCase):
         lagged_trajs = [np.vstack(ichunks) for ichunks in chunked_lagged_trajs]
 
         # unlagged data
+        tttraj = 0
         for traj, input_traj in zip(trajs, data):
             # do not consider chunks that have no lagged counterpart
             input_shape = input_traj.shape
-            np.testing.assert_equal(traj.reshape((input_shape[0] - lag,)), input_traj[:len(input_traj) - lag])
+            np.testing.assert_equal(traj.reshape((input_shape[0] - lag,)), input_traj[:len(input_traj) - lag],
+                                    err_msg="failed for traj=%s"%tttraj)
+            tttraj += 1
 
         # lagged data
         lagged_0 = [d[lag:] for d in data]
