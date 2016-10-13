@@ -173,14 +173,15 @@ class TestDataInMemory(unittest.TestCase):
             assert ch.shape[0] <= cs, ch.shape
 
     def test_lagged_iterator_1d(self):
-        n = 57
-        chunksize = 7
-        lag = 2
+        n = 30
+        chunksize = 5
+        lag = 3
+        stride = 2
 
-        data = [np.arange(n), np.arange(50), np.arange(30)]
+        data = [np.arange(n), np.arange(50), np.arange(33)]
         input_lens = [x.shape[0] for x in data]
-        reader = DataInMemory(data)
-        reader.chunksize = chunksize
+        reader = DataInMemory(data, chunksize=chunksize)
+        assert reader.chunksize == chunksize
 
         self.assertEqual(reader.n_frames_total(), sum(input_lens))
 
@@ -189,7 +190,7 @@ class TestDataInMemory(unittest.TestCase):
         chunked_lagged_trajs = [[] for _ in range(len(data))]
 
         # iterate over data
-        for itraj, X, Y in reader.iterator(lag=lag):
+        for itraj, X, Y in reader.iterator(lag=lag, stride=stride):
             chunked_trajs[itraj].append(X)
             chunked_lagged_trajs[itraj].append(Y)
 
@@ -197,58 +198,15 @@ class TestDataInMemory(unittest.TestCase):
         lagged_trajs = [np.vstack(ichunks) for ichunks in chunked_lagged_trajs]
 
         # unlagged data
-        tttraj = 0
-        for traj, input_traj in zip(trajs, data):
+        for idx, (traj, input_traj) in enumerate(zip(trajs, data)):
             # do not consider chunks that have no lagged counterpart
             input_shape = input_traj.shape
-            np.testing.assert_equal(traj.reshape((input_shape[0] - lag,)), input_traj[:len(input_traj) - lag],
-                                    err_msg="failed for traj=%s"%tttraj)
-            tttraj += 1
+            np.testing.assert_equal(traj.T.squeeze(), input_traj[::stride][:len(lagged_trajs[idx])].squeeze(), err_msg="failed for traj=%s"%idx)
 
         # lagged data
-        lagged_0 = [d[lag:] for d in data]
-
-        for traj, input_traj in zip(lagged_trajs, lagged_0):
-            np.testing.assert_equal(traj.reshape(input_traj.shape), input_traj)
-
-    def test_lagged_iterator_2d(self):
-        chunksize = 10
-        lag = 1
-
-        data = [np.arange(300).reshape((100, 3)),
-                np.arange(29 * 3).reshape((29, 3)),
-                np.arange(150).reshape(50, 3)]
-        input_lens = [x.shape[0] for x in data]
-        # print data[0].shape
-        reader = DataInMemory(data)
-        reader.chunksize = chunksize
-
-        self.assertEqual(reader.n_frames_total(), sum(input_lens))
-
-        # store results by traj
-        chunks = [[] for _ in range(len(data))]
-        lagged_chunks = [[] for _ in range(len(data))]
-
-        # iterate over data
-        for itraj, X, Y in reader.iterator(lag=lag):
-            chunks[itraj].append(X)
-            lagged_chunks[itraj].append(Y)
-
-        trajs = [np.vstack(ichunks) for ichunks in chunks]
-
-        lagged_trajs = [np.vstack(ichunks) for ichunks in lagged_chunks]
-
-        # unlagged data
-        for traj, input_traj in zip(trajs, data):
-            # do not consider chunks that have no lagged counterpart
-            input_shape = input_traj.shape
-            np.testing.assert_equal(traj.reshape((input_shape[0] - lag, 3)), input_traj[:len(input_traj) - lag])
-
-        # lagged data
-        lagged_0 = [d[lag:] for d in data]
-
-        for traj, input_traj in zip(lagged_trajs, lagged_0):
-            np.testing.assert_equal(traj.reshape(input_traj.shape), input_traj)
+        for idx, (traj, input_traj) in enumerate(zip(lagged_trajs, data)):
+            np.testing.assert_equal(traj.T.squeeze(), input_traj[lag::stride].squeeze(),
+                                    err_msg="failed for traj=%s" % idx)
 
     def test_lagged_stridden_access(self):
         data = np.random.random((1000, 2))
