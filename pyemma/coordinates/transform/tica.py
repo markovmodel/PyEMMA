@@ -347,7 +347,12 @@ class TICA(StreamingTransformer):
         if self.kinetic_map:  # scale by eigenvalues
             Y *= self.eigenvalues[0:self.dimension()]
         if self.commute_map:
-            Y *= np.sqrt(self.timescales[0:self.dimension()] / 2)
+            timescales = self.timescales[0:self.dimension()]
+
+            # dampen timescales smaller than the lag time, as in section 2.5 of ref. [5]
+            regularized_timescales = 0.5 * timescales * np.tanh(np.pi * ((timescales - self.lag) / self.lag) + 1)
+
+            Y *= np.sqrt(regularized_timescales / 2)
         return Y.astype(self.output_type())
 
     @property
