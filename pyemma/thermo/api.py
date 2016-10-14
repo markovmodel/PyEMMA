@@ -30,10 +30,10 @@ __email__ = "christoph.wehmeyer@fu-berlin.de"
 __all__ = [
     'estimate_umbrella_sampling',
     'estimate_multi_temperature',
+    'tram',
     'dtram',
-    'mbar',
     'wham',
-    'tram']
+    'mbar']
 
 # ==================================================================================================
 # wrappers for specific simulation types
@@ -118,9 +118,9 @@ def estimate_umbrella_sampling(
 
     Returns
     -------
-    estimator_obj : MEMM or list of MEMMs
-        The requested estimator/model object, i.e., WHAM, DTRAM or TRAM. If multiple lag times are
-        given, a list of objects is returned (one MEMM per lag time).
+    estimator_obj : MEMM or MultiThermModel or list thereof
+        The requested estimator/model object, i.e., WHAM, MBAR, DTRAM or TRAM. If multiple lag times
+        are given, a list of objects is returned (one MEMM per lag time).
 
     Example
     -------
@@ -227,7 +227,7 @@ def estimate_umbrella_sampling(
     elif estimator == 'tram':
         allowed_keys = [
             'count_mode', 'connectivity', 'connectivity_factor','nn',
-            'direct_space', 'N_dtram_accelerations']
+            'direct_space', 'N_dtram_accelerations', 'equilibrium']
         parsed_kwargs = dict([(i, kwargs[i]) for i in allowed_keys if i in kwargs])
         estimator_obj = tram(
             ttrajs, us_dtrajs + md_dtrajs, btrajs, lag, unbiased_state=unbiased_state,
@@ -322,9 +322,9 @@ def estimate_multi_temperature(
 
     Returns
     -------
-    estimator_obj : MEMM or list of MEMMs
-        The requested estimator/model object, i.e., WHAM, DTRAM or TRAM. If multiple lag times are
-        given, a list of objects is returned (one MEMM per lag time).
+    estimator_obj : MEMM or MultiThermModel or list thereof
+        The requested estimator/model object, i.e., WHAM, MBAR, DTRAM or TRAM. If multiple lag times
+        are given, a list of objects is returned (one MEMM per lag time).
 
     Example
     -------
@@ -377,7 +377,7 @@ def estimate_multi_temperature(
     elif estimator == 'tram':
         allowed_keys = [
             'count_mode', 'connectivity', 'connectivity_factor','nn',
-            'direct_space', 'N_dtram_accelerations']
+            'direct_space', 'N_dtram_accelerations', 'equilibrium']
         parsed_kwargs = dict([(i, kwargs[i]) for i in allowed_keys if i in kwargs])
         estimator_obj = tram(
             ttrajs, dtrajs, btrajs, lag, unbiased_state=unbiased_state,
@@ -400,7 +400,7 @@ def tram(
     count_mode='sliding', connectivity='summed_count_matrix',
     maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step',
     connectivity_factor=1.0, nn=None, direct_space=False, N_dtram_accelerations=0, callback=None,
-    init='mbar', init_maxiter=10000, init_maxerr=1e-8):
+    init='mbar', init_maxiter=10000, init_maxerr=1e-8, equilibrium=None):
     r"""
     Transition-based reweighting analysis method
 
@@ -478,7 +478,7 @@ def tram(
 
     Returns
     -------
-    memm : MEMM or list of MEMMs
+    tram_estimators : MEMM or list of MEMMs
         A multi-ensemble Markov state model (for each given lag time) which consists of stationary
         and kinetic quantities at all temperatures/thermodynamic states.
 
@@ -562,8 +562,8 @@ def tram(
             maxiter=maxiter, maxerr=maxerr, save_convergence_info=save_convergence_info,
             dt_traj=dt_traj, connectivity_factor=connectivity_factor, nn=nn,
             direct_space=direct_space, N_dtram_accelerations=N_dtram_accelerations,
-            callback=callback, init='mbar', init_maxiter=init_maxiter,
-            init_maxerr=init_maxerr).estimate((ttrajs, dtrajs, bias)) for _lag in lags]
+            callback=callback, init='mbar', init_maxiter=init_maxiter, init_maxerr=init_maxerr,
+            equilibrium=equilibrium).estimate((ttrajs, dtrajs, bias)) for _lag in lags]
     _assign_unbiased_state_label(tram_estimators, unbiased_state)
     # return
     if len(tram_estimators) == 1:
@@ -642,7 +642,7 @@ def dtram(
 
     Returns
     -------
-    memm : MEMM or list of MEMMs
+    dtram_estimators : MEMM or list of MEMMs
         A multi-ensemble Markov state model (for each given lag time) which consists of stationary
         and kinetic quantities at all temperatures/thermodynamic states.
 
@@ -773,7 +773,7 @@ def wham(
 
     Returns
     -------
-    sm : StationaryModel
+    wham_estimator : MultiThermModel
         A stationary model which consists of thermodynamic quantities at all
         temperatures/thermodynamic states.
 
@@ -906,7 +906,7 @@ def mbar(
 
     Returns
     -------
-    sm : StationaryModel
+    mbar_estimator : MultiThermModel
         A stationary model which consists of thermodynamic quantities at all
         temperatures/thermodynamic states.
 

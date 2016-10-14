@@ -159,8 +159,10 @@ def load(trajfiles, features=None, top=None, stride=1, chunk_size=None, **kw):
         a featurizer object specifying how molecular dynamics files should
         be read (e.g. intramolecular distances, angles, dihedrals, etc).
 
-    top : str, optional, default = None
-        A molecular topology file, e.g. in PDB (.pdb) format
+    top : str, mdtraj.Trajectory or mdtraj.Topology, optional, default = None
+        A molecular topology file, e.g. in PDB (.pdb) format or an already
+        loaded mdtraj.Topology object. If it is an mdtraj.Trajectory object, the topology
+        will be extracted from it.
 
     stride : int, optional, default = 1
         Load only every stride'th frame. By default, every frame is loaded
@@ -260,10 +262,12 @@ def source(inp, features=None, top=None, chunk_size=None, **kw):
         dynamics trajectories or data, and will otherwise create a warning and
         have no effect.
 
-    top : str, optional, default = None
+    top : str, mdtraj.Trajectory or mdtraj.Topology, optional, default = None
         A topology file name. This is needed when molecular dynamics
         trajectories are given and no featurizer is given.
-        In this case, only the Cartesian coordinates will be read.
+        In this case, only the Cartesian coordinates will be read. You can also pass an already
+        loaded mdtraj.Topology object. If it is an mdtraj.Trajectory object, the topology
+        will be extracted from it.
 
     chunk_size: int, optional, default = 100 for file readers and 5000 for
         already loaded data The chunk size at which the input file is being
@@ -354,7 +358,7 @@ def source(inp, features=None, top=None, chunk_size=None, **kw):
     return reader
 
 
-def pipeline(stages, run=True, stride=1, chunksize=100):
+def pipeline(stages, run=True, stride=1, chunksize=1000):
     r""" Data analysis pipeline.
 
     Constructs a data analysis :class:`Pipeline <pyemma.coordinates.pipelines.Pipeline>` and parametrizes it
@@ -441,7 +445,7 @@ def discretizer(reader,
                 cluster=None,
                 run=True,
                 stride=1,
-                chunksize=100):
+                chunksize=1000):
     r""" Specialized pipeline: From trajectories to clustering.
 
     Constructs a pipeline that consists of three stages:
@@ -545,7 +549,7 @@ def discretizer(reader,
     return disc
 
 
-def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=1000, image_molecules=False, verbose=False):
+def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=1000, image_molecules=False, verbose=True):
     r""" Saves a sequence of frames as a single trajectory.
 
     Extracts the specified sequence of time/trajectory indexes from traj_inp
@@ -602,8 +606,8 @@ def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=1000, 
         molecules accross periodic boundary conditions.
         (http://mdtraj.org/1.7.2/api/generated/mdtraj.Trajectory.html#mdtraj.Trajectory.image_molecules)
 
-    verbose : boolean, default is False
-        Verbose output while looking for :py:obj`indexes` in the :py:obj:`traj_inp.trajfiles`
+    verbose : boolean, default is True
+        Inform about created filenames
 
     Returns
     -------
@@ -667,8 +671,8 @@ def save_traj(traj_inp, indexes, outfile, top=None, stride = 1, chunksize=1000, 
     # or to disk as a molecular trajectory file
     else:
         traj.save(outfile)
-
-    _logger.info("Created file %s" % outfile)
+    if verbose:
+        _logger.info("Created file %s" % outfile)
 
 
 def save_trajs(traj_inp, indexes, prefix='set_', fmt=None, outfiles=None,
@@ -833,11 +837,12 @@ def _param_stage(previous_stage, this_stage, stride=1, chunk_size=None):
         input_stage.chunksize = chunk_size
     # parametrize transformer
     this_stage.data_producer = input_stage
+    # TODO: do we need stride here? since it is an estimation parameter (eg. ctor param)
     this_stage.estimate(X=input_stage, stride=stride)
     return this_stage
 
 
-def pca(data=None, dim=-1, var_cutoff=0.95, stride=1, mean=None):
+def pca(data=None, dim=-1, var_cutoff=0.95, stride=1, mean=None, skip=0):
     r""" Principal Component Analysis (PCA).
 
     PCA is a linear transformation method that finds coordinates of maximal
@@ -975,12 +980,12 @@ def pca(data=None, dim=-1, var_cutoff=0.95, stride=1, mean=None):
         import warnings
         warnings.warn("provided mean ignored", DeprecationWarning)
 
-    res = PCA(dim=dim, var_cutoff=var_cutoff, mean=None)
+    res = PCA(dim=dim, var_cutoff=var_cutoff, mean=None, skip=skip)
     return _param_stage(data, res, stride=stride)
 
 
 def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, stride=1,
-         force_eigenvalues_le_one=False, mean=None, remove_mean=True):
+         force_eigenvalues_le_one=False, mean=None, remove_mean=True, skip=0):
     r""" Time-lagged independent component analysis (TICA).
 
     TICA is a linear transformation method. In contrast to PCA, which finds
@@ -1049,6 +1054,8 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, stride=1,
     remove_mean: bool, optional, default True
         remove mean during covariance estimation. Should not be turned off.
 
+    skip : int, default=0
+        skip the first initial n frames per trajectory.
 
     Returns
     -------
@@ -1149,7 +1156,7 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, stride=1,
         warnings.warn("user provided mean for TICA is deprecated and its value is ignored.")
 
     res = TICA(lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map,
-               mean=mean, remove_mean=remove_mean)
+               mean=mean, remove_mean=remove_mean, skip=skip)
     return _param_stage(data, res, stride=stride)
 
 
@@ -1160,7 +1167,7 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, stride=1,
 # =========================================================================
 
 def cluster_mini_batch_kmeans(data=None, k=100, max_iter=10, batch_size=0.2, metric='euclidean',
-                              init_strategy='kmeans++', n_jobs=None, chunk_size=5000):
+                              init_strategy='kmeans++', n_jobs=None, chunk_size=5000, skip=0):
     r"""k-means clustering with mini-batch strategy
 
     Mini-batch k-means is an approximation to k-means which picks a randomly
@@ -1199,12 +1206,13 @@ def cluster_mini_batch_kmeans(data=None, k=100, max_iter=10, batch_size=0.2, met
     """
     from pyemma.coordinates.clustering.kmeans import MiniBatchKmeansClustering
     res = MiniBatchKmeansClustering(n_clusters=k, max_iter=max_iter, metric=metric, init_strategy=init_strategy,
-                                    batch_size=batch_size, n_jobs=n_jobs)
+                                    batch_size=batch_size, n_jobs=n_jobs, skip=skip)
     return _param_stage(data, res, stride=1, chunk_size=chunk_size)
 
 
 def cluster_kmeans(data=None, k=None, max_iter=10, tolerance=1e-5, stride=1,
-                   metric='euclidean', init_strategy='kmeans++', fixed_seed=False, n_jobs=None, chunk_size=5000):
+                   metric='euclidean', init_strategy='kmeans++', fixed_seed=False,
+                   n_jobs=None, chunk_size=5000, skip=0):
     r"""k-means clustering
 
     If data is given, it performs a k-means clustering and then assigns the
@@ -1261,6 +1269,9 @@ def cluster_kmeans(data=None, k=None, max_iter=10, tolerance=1e-5, stride=1,
         Number of data frames to process at once. Choose a higher value here,
         to optimize thread usage and gain processing speed.
 
+    skip : int, default=0
+        skip the first initial n frames per trajectory.
+
     Returns
     -------
     kmeans : a :class:`KmeansClustering <pyemma.coordinates.clustering.KmeansClustering>` clustering object
@@ -1312,11 +1323,12 @@ def cluster_kmeans(data=None, k=None, max_iter=10, tolerance=1e-5, stride=1,
     """
     from pyemma.coordinates.clustering.kmeans import KmeansClustering
     res = KmeansClustering(n_clusters=k, max_iter=max_iter, metric=metric, tolerance=tolerance,
-                           init_strategy=init_strategy, fixed_seed=fixed_seed, n_jobs=n_jobs)
+                           init_strategy=init_strategy, fixed_seed=fixed_seed, n_jobs=n_jobs, skip=skip)
     return _param_stage(data, res, stride=stride, chunk_size=chunk_size)
 
 
-def cluster_uniform_time(data=None, k=None, stride=1, metric='euclidean', n_jobs=None, chunk_size=5000):
+def cluster_uniform_time(data=None, k=None, stride=1, metric='euclidean',
+                         n_jobs=None, chunk_size=5000, skip=0):
     r"""Uniform time clustering
 
     If given data, performs a clustering that selects data points uniformly in
@@ -1345,6 +1357,9 @@ def cluster_uniform_time(data=None, k=None, stride=1, metric='euclidean', n_jobs
         object is independent, so you can parametrize at a long stride, and
         still map all frames through the transformer.
 
+    metric : str
+        metric to use during clustering ('euclidean', 'minRMSD')
+
     n_jobs : int or None, default None
         Number of threads to use during assignment of the data.
         If None, all available CPUs will be used.
@@ -1352,6 +1367,9 @@ def cluster_uniform_time(data=None, k=None, stride=1, metric='euclidean', n_jobs
     chunk_size: int, default=5000
         Number of data frames to process at once. Choose a higher value here,
         to optimize thread usage and gain processing speed.
+
+    skip : int, default=0
+        skip the first initial n frames per trajectory.
 
     Returns
     -------
@@ -1376,11 +1394,12 @@ def cluster_uniform_time(data=None, k=None, stride=1, metric='euclidean', n_jobs
 
     """
     from pyemma.coordinates.clustering.uniform_time import UniformTimeClustering 
-    res = UniformTimeClustering(k, metric=metric, n_jobs=n_jobs)
+    res = UniformTimeClustering(k, metric=metric, n_jobs=n_jobs, skip=skip)
     return _param_stage(data, res, stride=stride, chunk_size=chunk_size)
 
 
-def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1, metric='euclidean', n_jobs=None, chunk_size=5000):
+def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1, metric='euclidean',
+                     n_jobs=None, chunk_size=5000, skip=0):
     r"""Regular space clustering
 
     If given data, it performs a regular space clustering [1]_ and returns a
@@ -1467,12 +1486,13 @@ def cluster_regspace(data=None, dmin=-1, max_centers=1000, stride=1, metric='euc
     if dmin == -1:
         raise ValueError("provide a minimum distance for clustering, e.g. 2.0")
     from pyemma.coordinates.clustering.regspace import RegularSpaceClustering as _RegularSpaceClustering
-    res = _RegularSpaceClustering(dmin, max_centers=max_centers, metric=metric, n_jobs=n_jobs)
+    res = _RegularSpaceClustering(dmin, max_centers=max_centers, metric=metric,
+                                  n_jobs=n_jobs, stride=stride, skip=skip)
     return _param_stage(data, res, stride=stride, chunk_size=chunk_size)
 
 
 def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True,
-                      metric='euclidean', n_jobs=None, chunk_size=5000):
+                      metric='euclidean', n_jobs=None, chunk_size=5000, skip=0):
     r"""Assigns data to the nearest cluster centers
 
     Creates a Voronoi partition with the given cluster centers. If given
@@ -1555,7 +1575,7 @@ def assign_to_centers(data=None, centers=None, stride=1, return_dtrajs=True,
         raise ValueError('You have to provide centers in form of a filename'
                          ' or NumPy array or a reader created by source function')
     from pyemma.coordinates.clustering.assign import AssignCenters
-    res = AssignCenters(centers, metric=metric, n_jobs=n_jobs)
+    res = AssignCenters(centers, metric=metric, n_jobs=n_jobs, skip=skip)
 
     parametrized_stage = _param_stage(data, res, stride=stride, chunk_size=chunk_size)
     if return_dtrajs and data is not None:

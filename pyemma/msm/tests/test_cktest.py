@@ -147,6 +147,22 @@ class TestCK_MSM(unittest.TestCase):
         assert_allclose(p_MD, self.p_MD)
         #assert_allclose(eps_MD, self.eps_MD)
 
+    def test_cktest_njobs(self):
+        # introduce a (fake) third set in order to model incomplete partition.
+        memberships = np.array([[1, 0, 0],
+                                [1, 0, 0],
+                                [1, 0, 0],
+                                [0, 1, 0],
+                                [0, 0, 1],
+                                [0, 0, 1],
+                                [0, 0, 1]])
+        for nj in np.arange(2,5):
+            ck = self.MSM.cktest(3, memberships=memberships, n_jobs=nj)
+            p_MSM = np.vstack([ck.predictions[:, 0, 0], ck.predictions[:, 2, 2]]).T
+            assert_allclose(p_MSM, self.p_MSM)
+            p_MD = np.vstack([ck.estimates[:, 0, 0], ck.estimates[:, 2, 2]]).T
+            assert_allclose(p_MD, self.p_MD)
+            #assert_allclose(eps_MD, self.eps_MD)
 
 class TestCK_AllEstimators(unittest.TestCase):
     """ Integration tests for various estimators
@@ -182,8 +198,11 @@ class TestCK_AllEstimators(unittest.TestCase):
         assert ck.predictions_conf[1] is None
 
     def test_its_bmsm(self):
-        BMSM = msm.bayesian_markov_model([self.double_well_data.dtraj_T100K_dt10_n6good], 40)
+        BMSM = msm.bayesian_markov_model([self.double_well_data.dtraj_T100K_dt10_n6good], 40, reversible=True)
+        # also ensure that reversible bit does not flip during cktest
+        assert BMSM.reversible
         ck = BMSM.cktest(2, mlags=[0,1,10])
+        assert BMSM.reversible
         estref = np.array([[[ 1.,          0.        ],
                             [ 0.,          1.        ]],
                            [[ 0.89722931,  0.10277069],

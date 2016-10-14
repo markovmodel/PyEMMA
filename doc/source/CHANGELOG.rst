@@ -1,17 +1,46 @@
 Changelog
 =========
 
-2.2.4 ()
---------
+2.2.6 (9-23-16)
+---------------
+
+**Fixes**:
+
+- msm: restored old behaviour of updating MSM parameters (only update if not set yet).
+  Note that this bug was introduced in 2.2.4 and leads to strange bugs, eg. if the MSM estimator
+  is passed to the Chapman Kolmogorov validator, the reversible property got overwritten.
+- coordinates/TICA: Cast the output of the transformation to float. Used to be double. #941
+- coordinates/TICA: fixed a VisibleDeprecationWarning. #941. Thanks @stefdoerr
+
+2.2.5 (9-21-16)
+---------------
+
+**Fixes**:
+
+- msm: fixed setting of 'reversible' attribute. #935
+
+2.2.4 (9-20-16)
+---------------
 
 **New features**:
 
+- plots: network plots can now be plotted using a given Axes object.
+- thermo: TRAM supports the new parameter equilibrium which triggers a TRAMMBAR estimation.
+- thermo: the model_active_set and msm_active_set attributes in estimated MEMMs is deprecated; every
+  MSM in models now contains its own active_set.
+- thermo: WHAM and MBAR estimations return MultiThermModel objects; return of MEMMs is reserved for
+  TRAM/TRAMMBAR/DTRAM estimations.
 
 **Fixes**:
 
 - coordinates: MiniBatchKmeans with MD-data is now memory efficient
   and successfully converges. It used to only one batch during iteration. #887 #890
+- coordinates: source and load function accept mdtraj.Trajectory objects to extract topology. #922. Thanks @jeiros
 - base: fix progress bars for modern joblib versions.
+- plots: fix regression in plot_markov_model with newer NumPy versions #907. Thanks @ghoti687.
+- estimation: for n_jobs=1 no multi-processing is used.
+- msm: scale transition path times by time unit of MSM object in order to get
+  physical time scales. #929
 
 2.2.3 (7-28-16)
 ---------------

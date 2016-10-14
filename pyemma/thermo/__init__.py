@@ -28,9 +28,10 @@ estimate models from data.
 
    estimate_umbrella_sampling
    estimate_multi_temperature
+   tram
    dtram
    wham
-   tram
+   mbar
 
 Thermo classes
 ==============
@@ -41,14 +42,16 @@ use the API functions above.
     :toctree: generated/thermo-estimators
 
     StationaryModel
+    MultiThermModel
     MEMM
     WHAM
+    MBAR
     DTRAM
     TRAM
 
 """
 
-from pyemma.thermo.models import StationaryModel, MEMM
+from pyemma.thermo.models import StationaryModel, MultiThermModel, MEMM
 from pyemma.thermo.estimators import WHAM, MBAR, DTRAM, TRAM, EmptyState
 
 # high-level api

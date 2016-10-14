@@ -54,6 +54,16 @@ class TestUniformTimeClustering(unittest.TestCase):
         c.data_producer = reader
         c.parametrize()
 
+    def test_2d_skip(self):
+        x = np.random.random((300, 3))
+        reader = DataInMemory(x)
+
+        k = 2
+        c = api.cluster_uniform_time(k=k, skip=100)
+
+        c.data_producer = reader
+        c.parametrize()
+
     def test_big_k(self):
         x = np.random.random((300, 3))
         reader = DataInMemory(x)

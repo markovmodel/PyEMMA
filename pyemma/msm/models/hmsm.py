@@ -63,7 +63,7 @@ class HMSM(_MSM):
         """
         # construct superclass and check input
         _MSM.__init__(self, P, dt_model=dt_model)
-        self.set_model_params(pobs=pobs, pi=pi, dt_model=dt_model)
+        self.set_model_params(P=P, pobs=pobs, pi=pi, dt_model=dt_model)
 
     def set_model_params(self, P=None, pobs=None, pi=None, reversible=None, dt_model='1 step', neig=None):
         """
@@ -435,3 +435,43 @@ class HMSM(_MSM):
 
         """
         return _np.argmax(self.observation_probabilities, axis=0)
+
+
+    def simulate(self, N, start=None, stop=None, dt=1):
+        """
+        Generates a realization of the Hidden Markov Model
+
+        Parameters
+        ----------
+        N : int
+            trajectory length in steps of the lag time
+        start : int, optional, default = None
+            starting hidden state. If not given, will sample from the stationary
+            distribution of the hidden transition matrix.
+        stop : int or int-array-like, optional, default = None
+            stopping hidden set. If given, the trajectory will be stopped before
+            N steps once a hidden state of the stop set is reached
+        dt : int
+            trajectory will be saved every dt time steps.
+            Internally, the dt'th power of P is taken to ensure a more efficient simulation.
+
+        Returns
+        -------
+        htraj : (N/dt, ) ndarray
+            The hidden state trajectory with length N/dt
+        otraj : (N/dt, ) ndarray
+            The observable state discrete trajectory with length N/dt
+
+        """
+
+        from scipy import stats
+        import msmtools.generation as msmgen
+        # generate output distributions
+        output_distributions = [stats.rv_discrete(values=(_np.arange(self.pobs.shape[1]), pobs_i)) for pobs_i in self.pobs]
+        # sample hidden trajectory
+        htraj = msmgen.generate_traj(self.transition_matrix, N, start=start, stop=stop, dt=dt)
+        otraj = _np.zeros(htraj.size, dtype=int)
+        # for each time step, sample microstate
+        for t, h in enumerate(htraj):
+            otraj[t] = output_distributions[h].rvs()  # current cluster
+        return htraj, otraj

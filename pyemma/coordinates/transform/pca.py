@@ -27,7 +27,7 @@ from pyemma.coordinates.transform.transformer import StreamingTransformer
 from pyemma.util.annotators import fix_docs
 from pyemma.util.reflection import get_default_args
 
-from pyemma.coordinates.estimators.covar.running_moments import running_covar
+from pyemma._ext.variational.running_moments import running_covar
 import numpy as np
 from decorator import decorator
 
@@ -55,7 +55,7 @@ class PCAModel(Model):
 class PCA(StreamingTransformer, ProgressReporter):
     r""" Principal component analysis."""
 
-    def __init__(self, dim=-1, var_cutoff=0.95, mean=None, stride=1):
+    def __init__(self, dim=-1, var_cutoff=0.95, mean=None, stride=1, skip=0):
         r""" Principal component analysis.
 
         Given a sequence of multivariate data :math:`X_t`,
@@ -99,8 +99,7 @@ class PCA(StreamingTransformer, ProgressReporter):
             raise ValueError('Trying to set both the number of dimension and the subspace variance. Use either or.')
 
         self._model = PCAModel()
-        self.set_params(dim=dim, var_cutoff=var_cutoff, mean=mean)
-        self._model = PCAModel()
+        self.set_params(dim=dim, var_cutoff=var_cutoff, mean=mean, stride=stride, skip=skip)
 
     def describe(self):
         return "[PCA, output dimension = %i]" % self.dim
@@ -165,6 +164,31 @@ class PCA(StreamingTransformer, ProgressReporter):
 
         return self
 
+    @property
+    def feature_PC_correlation(self):
+        r"""Instantaneous correlation matrix between input features and PCs
+
+        Denoting the input features as :math:`X_i` and the PCs as :math:`\theta_j`, the instantaneous, linear correlation
+        between them can be written as
+
+        .. math::
+
+            \mathbf{Corr}(X_i, \mathbf{\theta}_j) = \frac{1}{\sigma_{X_i}}\sum_l \sigma_{X_iX_l} \mathbf{U}_{li}
+
+        The matrix :math:`\mathbf{U}` is the matrix containing, as column vectors, the eigenvectors of the input-feature
+        covariance-maxtrix.
+
+
+        Returns
+        -------
+        feature_PC_correlation : ndarray(n,m)
+            correlation matrix between input features and PCs. There is a row for each feature and a column
+            for each PC.
+        """
+        feature_sigma = np.array(np.sqrt(np.diag(self.cov)), ndmin=2)
+        PC_sigma = np.array(np.sqrt(self.eigenvalues[:self.dimension()]), ndmin=2)
+        return np.dot(self.cov, self.eigenvectors[:, : self.dimension()]) / feature_sigma.T.dot(PC_sigma)
+
     def _init_covar(self, partial_fit, n_chunks):
         nsave = int(max(math.log(n_chunks, 2), 2))
         # in case we do a one shot estimation, we want to re-initialize running_covar
@@ -199,7 +223,8 @@ class PCA(StreamingTransformer, ProgressReporter):
     def _estimate(self, iterable, **kw):
         partial_fit = 'partial' in kw
 
-        with iterable.iterator(return_trajindex=False, chunk=self.chunksize) as it:
+        with iterable.iterator(return_trajindex=False, chunk=self.chunksize,
+                               stride=self.stride, skip=self.skip) as it:
             n_chunks = it._n_chunks
             self._progress_register(n_chunks, "calc mean+cov", 0)
             self._init_covar(partial_fit, n_chunks)

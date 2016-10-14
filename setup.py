@@ -127,10 +127,10 @@ def extensions():
                   extra_compile_args=['-std=c99'])
 
     covar_module = \
-        Extension('pyemma.coordinates.estimators.covar.covar_c.covartools',
-                  sources=['pyemma/coordinates/estimators/covar/covar_c/covartools.pyx',
-                           'pyemma/coordinates/estimators/covar/covar_c/_covartools.c'],
-                  include_dirs=['pyemma/coordinates/estimators/covar/covar_c/',
+        Extension('pyemma._ext.variational.covar_c.covartools',
+                  sources=['pyemma/_ext/variational/covar_c/covartools.pyx',
+                           'pyemma/_ext/variational/covar_c/_covartools.c'],
+                  include_dirs=['pyemma/_ext/variational/covar_c/',
                                 np_inc,
                                 ],
                   extra_compile_args=['-std=c99', '-O3'])
@@ -215,13 +215,14 @@ metadata = dict(
                       'scipy>=0.11',
                       'mdtraj>=1.7.0',
                       'matplotlib',
-                      'msmtools',
-                      'thermotools>=0.2.0',
+                      'msmtools>=1.1.3',
+                      'thermotools>=0.2.3',
                       'bhmm>=0.6,<0.7',
                       'joblib>0.8.4',
                       'pyyaml',
                       'psutil>=3.1.1',
                       'decorator>=4.0.0',
+                      'progress-reporter',
                       ],
     zip_safe=False,
 )

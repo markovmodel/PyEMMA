@@ -175,3 +175,37 @@ class TestFragmentedTrajectory(unittest.TestCase):
         data = [self.d, np.array([[1,2,3], [4,5,6]])]
         with self.assertRaises(ValueError):
             FragmentedTrajectoryReader(data)
+
+    def test_with_save_traj(self):
+        path = pkg_resources.resource_filename(__name__, 'data') + os.path.sep
+
+        pdb_file = os.path.join(path, 'bpti_ca.pdb')
+        traj_files = [
+            os.path.join(path, 'bpti_001-033.xtc'),
+            os.path.join(path, 'bpti_034-066.xtc'),
+            os.path.join(path, 'bpti_067-100.xtc')
+        ]
+
+        source_frag = coor.source([traj_files], top=pdb_file)
+        full_data = source_frag.get_output()[0]
+        last_frame_fragment_0 = [0,32]
+        first_frame_fragment_1 = [0,33]
+        first_frame_fragment_2 = [0,66]
+
+        reshape = lambda f: f.xyz.reshape((f.xyz.shape[0],f.xyz.shape[1] * f.xyz.shape[2])).squeeze()
+
+        # Frames in the first fragment:
+        frames = coor.save_traj(source_frag, [last_frame_fragment_0], None)
+        np.testing.assert_equal(reshape(frames), full_data[32])
+
+        # Frames the first and second fragments
+        frames = coor.save_traj(source_frag, [last_frame_fragment_0, first_frame_fragment_1], None)
+        np.testing.assert_equal(reshape(frames), full_data[np.array([32, 33])])
+
+        # Frames only in the second fragment
+        frames = coor.save_traj(source_frag, [first_frame_fragment_1], None)
+        np.testing.assert_equal(reshape(frames), full_data[33])
+
+        # Frames only in the second and third fragment
+        frames = coor.save_traj(source_frag, [first_frame_fragment_1, first_frame_fragment_2], None)
+        np.testing.assert_equal(reshape(frames), full_data[np.array([33, 66])])

@@ -20,7 +20,7 @@ from six.moves import range
 from pyemma._base.estimator import Estimator as _Estimator
 from pyemma._base.progress import ProgressReporter as _ProgressReporter
 from pyemma.thermo import MEMM as _MEMM
-from pyemma.msm import MSM as _MSM
+from pyemma.thermo.models.memm import ThermoMSM as _ThermoMSM
 from pyemma.util import types as _types
 from pyemma.util.units import TimeUnit as _TimeUnit
 from pyemma.thermo.estimators._callback import _ConvergenceProgressIndicatorCallBack
@@ -222,18 +222,24 @@ class DTRAM(_Estimator, _MEMM, _ProgressReporter):
         self._progress_force_finish(stage='DTRAM', description='DTRAM')
 
         # compute models
-        models = [_dtram.estimate_transition_matrix(
+        fmsms = [_dtram.estimate_transition_matrix(
             self.log_lagrangian_mult, self.bias_energies, self.conf_energies,
             self.count_matrices, _np.zeros(
                 shape=self.conf_energies.shape, dtype=_np.float64), K) for K in range(self.nthermo)]
-        self.model_active_set = [_largest_connected_set(msm, directed=False) for msm in models]
-        models = [_np.ascontiguousarray(
-            (msm[lcc, :])[:, lcc]) for msm, lcc in zip(models, self.model_active_set)]
+
+        active_sets = [_largest_connected_set(msm, directed=False) for msm in fmsms]
+        fmsms = [_np.ascontiguousarray(
+            (msm[lcc, :])[:, lcc]) for msm, lcc in zip(fmsms, active_sets)]
+
+        models = []
+        for msm, acs in zip(fmsms, active_sets):
+            models.append(_ThermoMSM(
+                msm, self.active_set[acs], self.nstates_full,
+                dt_model=self.timestep_traj.get_scaled(self.lag)))
 
         # set model parameters to self
         self.set_model_params(
-            models=[_MSM(msm, dt_model=self.timestep_traj.get_scaled(self.lag)) for msm in models],
-            f_therm=self.therm_energies, f=self.conf_energies)
+            models=models, f_therm=self.therm_energies, f=self.conf_energies)
 
         # done
         return self
