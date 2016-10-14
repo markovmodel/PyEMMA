@@ -58,7 +58,7 @@ def _lazy_estimation(func, *args, **kw):
 class TICA(StreamingTransformer):
     r""" Time-lagged independent component analysis (TICA)"""
 
-    def __init__(self, lag, dim=-1, var_cutoff=0.95, kinetic_map=True, epsilon=1e-6,
+    def __init__(self, lag, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_map=False, epsilon=1e-6,
                  mean=None, stride=1, remove_mean=True, skip=0):
         r""" Time-lagged independent component analysis (TICA) [1]_, [2]_, [3]_.
 
@@ -77,6 +77,9 @@ class TICA(StreamingTransformer):
         kinetic_map : bool, optional, default True
             Eigenvectors will be scaled by eigenvalues. As a result, Euclidean distances in the transformed data
             approximate kinetic distances [4]_. This is a good choice when the data is further processed by clustering.
+        commute_map : bool, optional, default False
+            Eigenvector_i will be scaled by sqrt(timescale_i / 2). As a result, Euclidean distances in the transformed
+            data will approximate commute distances [5]_.
         epsilon : float
             eigenvalue norm cutoff. Eigenvalues of C0 with norms <= epsilon will be
             cut off. The remaining number of eigenvalues define the size
@@ -125,12 +128,15 @@ class TICA(StreamingTransformer):
         .. [4] Noe, F. and C. Clementi. 2015.
             Kinetic distance and kinetic maps from molecular dynamics simulation
             http://arxiv.org/abs/1506.06259
+        .. [5] Noe, F., Banisch, R., Clementi, C. 2016. Commute maps: separating slowly-mixing molecular configurations
+           for kinetic modeling. J. Chem. Theory. Comput. doi:10.1021/acs.jctc.6b00762
 
         """
         default_var_cutoff = get_default_args(self.__init__)['var_cutoff']
         if dim != -1 and var_cutoff != default_var_cutoff:
             raise ValueError('Trying to set both the number of dimension and the subspace variance. Use either or.')
-
+        if kinetic_map and commute_map:
+            raise ValueError('Trying to use both kinetic_map and commute_map. Use either or.')
         super(TICA, self).__init__()
 
         if dim > -1:
@@ -138,7 +144,7 @@ class TICA(StreamingTransformer):
 
         # empty dummy model instance
         self._model = TICAModel()
-        self.set_params(lag=lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map,
+        self.set_params(lag=lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map, commute_map=commute_map,
                         epsilon=epsilon, mean=mean, stride=stride, remove_mean=remove_mean, skip=skip)
 
     @property
@@ -340,6 +346,8 @@ class TICA(StreamingTransformer):
         Y = np.dot(X_meanfree, self.eigenvectors[:, 0:self.dimension()])
         if self.kinetic_map:  # scale by eigenvalues
             Y *= self.eigenvalues[0:self.dimension()]
+        if self.commute_map:
+            Y *= np.sqrt(self.timescales[0:self.dimension()] / 2)
         return Y.astype(self.output_type())
 
     @property
