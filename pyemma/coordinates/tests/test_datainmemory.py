@@ -172,15 +172,59 @@ class TestDataInMemory(unittest.TestCase):
         for i, ch in source.iterator():
             assert ch.shape[0] <= cs, ch.shape
 
-    def test_lagged_iterator_1d(self):
+    def test_lagged_iterator_1d_legacy(self):
         n = 30
         chunksize = 5
-        lag = 3
+        lag = 9
         stride = 2
 
         data = [np.arange(n), np.arange(50), np.arange(33)]
         input_lens = [x.shape[0] for x in data]
         reader = DataInMemory(data, chunksize=chunksize)
+        it = reader.iterator(chunk=chunksize, stride=stride, lag=lag)
+        # lag > chunksize, so we expect a LegacyLaggedIter
+        from pyemma.coordinates.data._base.iterable import _LegacyLaggedIterator
+        self.assertIsInstance(it, _LegacyLaggedIterator)
+        assert reader.chunksize == chunksize
+
+        self.assertEqual(reader.n_frames_total(), sum(input_lens))
+
+        # store results by traj
+        chunked_trajs = [[] for _ in range(len(data))]
+        chunked_lagged_trajs = [[] for _ in range(len(data))]
+
+        # iterate over data
+        for itraj, X, Y in reader.iterator(lag=lag, stride=stride):
+            chunked_trajs[itraj].append(X)
+            chunked_lagged_trajs[itraj].append(Y)
+
+        trajs = [np.vstack(ichunks) for ichunks in chunked_trajs]
+        lagged_trajs = [np.vstack(ichunks) for ichunks in chunked_lagged_trajs]
+
+        # unlagged data
+        for idx, (traj, input_traj) in enumerate(zip(trajs, data)):
+            # do not consider chunks that have no lagged counterpart
+            input_shape = input_traj.shape
+            np.testing.assert_equal(traj.T.squeeze(), input_traj[::stride][:len(lagged_trajs[idx])].squeeze(), err_msg="failed for traj=%s"%idx)
+
+        # lagged data
+        for idx, (traj, input_traj) in enumerate(zip(lagged_trajs, data)):
+            np.testing.assert_equal(traj.T.squeeze(), input_traj[lag::stride].squeeze(),
+                                    err_msg="failed for traj=%s" % idx)
+
+    def test_lagged_iterator_1d(self):
+        n = 30
+        chunksize = 10
+        lag = 9
+        stride = 2
+
+        data = [np.arange(n), np.arange(50), np.arange(33)]
+        input_lens = [x.shape[0] for x in data]
+        reader = DataInMemory(data, chunksize=chunksize)
+        it = reader.iterator(chunk=chunksize, stride=stride, lag=lag)
+        # lag < chunksize, so we expect a LaggedIter
+        from pyemma.coordinates.data._base.iterable import _LaggedIterator
+        self.assertIsInstance(it, _LaggedIterator)
         assert reader.chunksize == chunksize
 
         self.assertEqual(reader.n_frames_total(), sum(input_lens))
