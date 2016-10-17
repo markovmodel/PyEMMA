@@ -86,18 +86,6 @@ Low-level functions for estimation and analysis of transition matrices and io.
 """
 from __future__ import absolute_import as _
 
-#####################################################
-# Low-level MSM functions (imported from msmtools)
-# backward compatibility to PyEMMA 1.2.x
-# TODO: finally remove this stuff...
-from pyemma.util._ext.shimmodule import ShimModule
-analysis = ShimModule(src='pyemma.msm.analysis', mirror='msmtools.analysis')
-estimation = ShimModule(src='pyemma.msm.estimation', mirror='msmtools.estimation')
-generation = ShimModule(src='pyemma.msm.generation', mirror='msmtools.generation')
-dtraj = ShimModule(src='pyemma.msm.dtraj', mirror='msmtools.dtraj')
-io = dtraj
-flux = ShimModule(src='pyemma.msm.flux', mirror='msmtools.flux')
-del ShimModule
 ######################################################
 from msmtools.analysis.dense.pcca import PCCA
 
