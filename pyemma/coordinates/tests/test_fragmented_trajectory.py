@@ -28,7 +28,7 @@ from six.moves import range
 class TestFragmentedTrajectory(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        d = np.array([[i] for i in range(0, 100)])
+        d = np.array([[i] for i in range(0, 100)]) # np.atleast_2d(np.arange(100))
         cls.d = d
         return cls
 
@@ -139,7 +139,10 @@ class TestFragmentedTrajectory(unittest.TestCase):
                         for itraj, X, Y in reader.iterator(stride=stride, lag=lag):
                             collected = X if collected is None else np.vstack((collected, X))
                             collected_lagged = Y if collected_lagged is None else np.vstack((collected_lagged, Y))
-                        np.testing.assert_array_almost_equal(data[::stride][0:len(collected_lagged)], collected)
+                        np.testing.assert_array_almost_equal(data[::stride][0:len(collected_lagged)], collected,
+                                                             err_msg="lag={}, stride={}, cs={}".format(
+                                                                 lag, stride, chunksize
+                                                             ))
                         np.testing.assert_array_almost_equal(data[lag::stride], collected_lagged)
                     else:
                         collected = None

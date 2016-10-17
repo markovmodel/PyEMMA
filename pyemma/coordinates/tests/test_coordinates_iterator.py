@@ -57,20 +57,10 @@ class TestCoordinatesIterator(unittest.TestCase):
                 chunks = 0
                 for _ in it:
                     chunks += 1
+                np.testing.assert_equal(it._n_chunks, chunks,
+                                        err_msg="Expected number of chunks did not agree with what the iterator "
+                                                "returned for stride=%s, lag=%s" % (stride, lag))
                 assert chunks == it._n_chunks
-
-    def test_skip(self):
-        r = DataInMemory(self.d)
-        lagged_it = r.iterator(lag=5)
-        assert lagged_it._it.skip == 0
-        assert lagged_it._it_lagged.skip == 5
-
-        it = r.iterator()
-        for itraj, X in it:
-            if itraj == 0:
-                it.skip = 5
-            if itraj == 1:
-                assert it.skip == 5
 
     def test_chunksize(self):
         r = DataInMemory(self.d)

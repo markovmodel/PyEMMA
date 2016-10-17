@@ -203,7 +203,10 @@ class TestCSVReader(unittest.TestCase):
                 chunks = np.vstack(chunks)
                 chunks_lag = np.vstack(chunks_lag)
                 actual_lagged = self.data[t::s]
-                np.testing.assert_almost_equal(chunks, self.data[::s][0:len(actual_lagged)])
+                np.testing.assert_almost_equal(chunks, self.data[::s][0:len(actual_lagged)],
+                                               err_msg="output is not equal for"
+                                                       " lag %i and stride %i" % (t, s)
+                                               )
                 np.testing.assert_almost_equal(chunks_lag, self.data[t::s],
                                                err_msg="output is not equal for"
                                                        " lag %i and stride %i" % (t, s))
