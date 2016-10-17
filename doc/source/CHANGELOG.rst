@@ -1,6 +1,16 @@
 Changelog
 =========
 
+2.3 (tba)
+---------
+
+**New features**:
+
+- coordinates: for lag < chunksize improved speed (50%) for TICA. #960
+
+**Fixes**:
+- msm: low-level api removed (use msmtools for now, if you really need it). #550, 
+
 2.2.6 (9-23-16)
 ---------------
 
