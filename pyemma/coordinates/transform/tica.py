@@ -125,9 +125,8 @@ class TICA(StreamingTransformer):
         .. [3] L. Molgedey and H. G. Schuster. 1994.
            Separation of a mixture of independent signals using time delayed correlations
            Phys. Rev. Lett. 72, 3634.
-        .. [4] Noe, F. and C. Clementi. 2015.
-            Kinetic distance and kinetic maps from molecular dynamics simulation
-            http://arxiv.org/abs/1506.06259
+        .. [4] Noe, F. and Clementi, C. 2015. Kinetic distance and kinetic maps from molecular dynamics simulation.
+            J. Chem. Theory. Comput. doi:10.1021/acs.jctc.5b00553
         .. [5] Noe, F., Banisch, R., Clementi, C. 2016. Commute maps: separating slowly-mixing molecular configurations
            for kinetic modeling. J. Chem. Theory. Comput. doi:10.1021/acs.jctc.6b00762
 
