@@ -344,9 +344,11 @@ class TICA(StreamingTransformer):
         """
         X_meanfree = X - self.mean
         Y = np.dot(X_meanfree, self.eigenvectors[:, 0:self.dimension()])
+        if self.kinetic_map and self.commute_map:
+            raise ValueError('Trying to use both kinetic_map and commute_map. Use either or.')
         if self.kinetic_map:  # scale by eigenvalues
             Y *= self.eigenvalues[0:self.dimension()]
-        if self.commute_map:
+        if self.commute_map:  # scale by (regularized) timescales
             timescales = self.timescales[0:self.dimension()]
 
             # dampen timescales smaller than the lag time, as in section 2.5 of ref. [5]
