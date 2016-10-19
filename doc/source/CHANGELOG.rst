@@ -10,7 +10,7 @@ Changelog
    - for lag < chunksize improved speed (50%) for TICA. #960
    - new config variable "coordinates_check_output" to test for "NaN" and "inf" values in
      iterator output for every chunk. The option is disabled by default. It gives insight
-     during debugging where faulty values are introduced into the pipeline.
+     during debugging where faulty values are introduced into the pipeline. #967
 
 
 **Fixes**:
