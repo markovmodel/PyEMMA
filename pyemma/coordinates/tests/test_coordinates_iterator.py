@@ -2,6 +2,7 @@ import unittest
 import numpy as np
 
 from pyemma.coordinates.data import DataInMemory
+from pyemma.util.contexts import settings
 from pyemma.util.files import TemporaryDirectory
 import os
 from glob import glob
@@ -152,6 +153,26 @@ class TestCoordinatesIterator(unittest.TestCase):
             assert len(actual) == len(fns)
             for a, e in zip(actual, expected):
                 np.testing.assert_allclose(a, e)
+
+    def test_invalid_data_in_input_nan(self):
+        self.d[0][-1] = np.nan
+        r = DataInMemory(self.d)
+        it = r.iterator()
+        from pyemma.coordinates.data._base.datasource import InvalidDataInStreamException
+        with settings(coordinates_check_output=True):
+            with self.assertRaises(InvalidDataInStreamException):
+                for itraj, X in it:
+                    pass
+
+    def test_invalid_data_in_input_inf(self):
+        self.d[1][-1] = np.inf
+        r = DataInMemory(self.d, chunksize=5)
+        it = r.iterator()
+        from pyemma.coordinates.data._base.datasource import InvalidDataInStreamException
+        with settings(coordinates_check_output=True):
+            with self.assertRaises(InvalidDataInStreamException) as cm:
+                for itraj, X in it:
+                    pass
 
 if __name__ == '__main__':
     unittest.main()
