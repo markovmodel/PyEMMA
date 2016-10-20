@@ -32,6 +32,7 @@ import os
 
 from numpy.random import randint
 from numpy import floor, allclose
+import numpy as np
 import mdtraj as md
 
 from pyemma.coordinates.data.util.frames_from_file import frames_from_files as _frames_from_file
@@ -151,6 +152,17 @@ class TestFramesFromFile(unittest.TestCase):
             assert allclose(traj_test.unitcell_lengths, traj_ref.unitcell_lengths)
             assert allclose(traj_test.unitcell_angles, traj_ref.unitcell_angles)
 
+    def test_trajs_larger_than_frame_index(self):
+        """ file list is larger than largest traj file """
+        from pyemma.coordinates.tests.util import create_traj, get_top
+        files = [create_traj(length=10)[0] for _ in range(20)]
+        inds = np.vstack((np.arange(20), np.arange(20))).T
+
+        with self.assertRaises(ValueError) as cm:
+            _frames_from_file(files, top=get_top(), frames=inds)
+        import re
+        matches = re.fullmatch(".*10\).*is larger than trajectory length.*\= 10", cm.exception.args[0])
+        assert matches
 
 if __name__ == "__main__":
     unittest.main()
