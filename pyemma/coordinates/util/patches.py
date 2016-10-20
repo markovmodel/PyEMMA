@@ -327,6 +327,7 @@ def _read_traj_data(atom_indices, f, n_frames, **kwargs):
         #raise NotImplementedError("format read function not handled..." + str(f))
 
     box = in_units_of(box, f.distance_unit, Trajectory._distance_unit, inplace=True)
+    cell_lengths = in_units_of(cell_lengths, f.distance_unit, Trajectory._distance_unit, inplace=True)
 
     return TrajData(xyz, cell_lengths, cell_angles, box)
 
