@@ -298,8 +298,7 @@ def _read_traj_data(atom_indices, f, n_frames, **kwargs):
     # first element is always xyz coords array.
     xyz = res[0]
 
-    # hopefully this works for all formats?
-    xyz = in_units_of(xyz, f.distance_unit, Trajectory._distance_unit, inplace=True)
+    in_units_of(xyz, f.distance_unit, Trajectory._distance_unit, inplace=True)
 
     box = cell_lengths = cell_angles = None
 
@@ -326,7 +325,9 @@ def _read_traj_data(atom_indices, f, n_frames, **kwargs):
         assert len(res) == 1, "len:{l}, type={t}".format(l=len(res), t=f)
         #raise NotImplementedError("format read function not handled..." + str(f))
 
-    box = in_units_of(box, f.distance_unit, Trajectory._distance_unit, inplace=True)
+    in_units_of(box, f.distance_unit, Trajectory._distance_unit, inplace=True)
+    if cell_lengths is not None:
+        in_units_of(cell_lengths, f.distance_unit, Trajectory._distance_unit, inplace=True)
 
     return TrajData(xyz, cell_lengths, cell_angles, box)
 

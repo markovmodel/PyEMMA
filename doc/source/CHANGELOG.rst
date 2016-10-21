@@ -1,12 +1,12 @@
 Changelog
 =========
 
-2.3 (tba)
----------
+2.2.7 (10-21-16)
+----------------
 
 **New features**:
 
-- coordinates
+- coordinates:
    - for lag < chunksize improved speed (50%) for TICA. #960
    - new config variable "coordinates_check_output" to test for "NaN" and "inf" values in
      iterator output for every chunk. The option is disabled by default. It gives insight
@@ -15,7 +15,12 @@ Changelog
 
 **Fixes**:
 
-- msm: low-level api removed (use msmtools for now, if you really need it). #550, 
+- coordinates:
+   - save_trajs, frames_from_files: fix input indices checking. #958
+   - FeatureReader: fix random access iterator unitcell_lengths scaling.
+     This lead to an error in conjunction with distance calculations, where
+     frames are collected in a random access pattern. #968
+- msm: low-level api removed (use msmtools for now, if you really need it). #550
 
 2.2.6 (9-23-16)
 ---------------
