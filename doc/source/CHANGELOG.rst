@@ -6,9 +6,15 @@ Changelog
 
 **New features**:
 
-- coordinates: for lag < chunksize improved speed (50%) for TICA. #960
+- coordinates
+   - for lag < chunksize improved speed (50%) for TICA. #960
+   - new config variable "coordinates_check_output" to test for "NaN" and "inf" values in
+     iterator output for every chunk. The option is disabled by default. It gives insight
+     during debugging where faulty values are introduced into the pipeline. #967
+
 
 **Fixes**:
+
 - msm: low-level api removed (use msmtools for now, if you really need it). #550, 
 
 2.2.6 (9-23-16)
@@ -136,6 +142,7 @@ Service release. Fixes some
   considerable high chunk size as well.
 
 **Fixes**:
+
 - In parallel environments (clusters with shared filesystem) there will be no
   crashes due to the config module, which tried to write files in users home
   directory. Config files are optional by now.
@@ -190,19 +197,18 @@ Service release. Fixes some
     (reported as Warnings).
 
 - coordinates:
-  - Completly re-designed class hierachy (user-code/API unaffected).
-  - Added trajectory info cache to avoid re-computing lengths, dimensions and
-    byte offsets of data sets.
-  - Random access strategies supported (eg. via slices).
-  - FeatureReader supports random access for XTC and TRR (in conjunction with mdtraj-1.6).
-  - Re-design API to support scikit-learn interface (fit, transform).
-  - Pipeline elements (former Transformer class) now uses iterator pattern to
-    obtain data and therefore supports now pipeline trees.
-  - pipeline elements support writing their output to csv files.
-  - TICA/PCA uses covartools to estimate covariance matrices.
-    - This now saves one pass over the data set.
-    - Supports sparsification data on the fly.
-
+    - Completely re-designed class hierachy (user-code/API unaffected).
+    - Added trajectory info cache to avoid re-computing lengths, dimensions and
+      byte offsets of data sets.
+    - Random access strategies supported (eg. via slices).
+    - FeatureReader supports random access for XTC and TRR (in conjunction with mdtraj-1.6).
+    - Re-design API to support scikit-learn interface (fit, transform).
+    - Pipeline elements (former Transformer class) now uses iterator pattern to
+      obtain data and therefore supports now pipeline trees.
+    - pipeline elements support writing their output to csv files.
+    - TICA/PCA uses covartools to estimate covariance matrices:
+        + This now saves one pass over the data set.
+        + Supports sparsification data on the fly.
 
 **Fixes**:
 
@@ -342,7 +348,7 @@ reorganization of the code.
 - coordinates package: allow metrics to be passed to cluster algorithms.
 - coordinates package: cache trajectory lengths by default
                        (uncached led to 1 pass of reading for non indexed (XTC) formats).
-  This avoids re-reading e.g XTC files to determine their lengths.
+                       This avoids re-reading e.g XTC files to determine their lengths.
 - coordinates package: enable passing chunk size to readers and pipelines in API.
 - coordinates package: assign_to_centers now allows all supported file formats as centers input.
 - coordinates package: save_traj(s) now handles stride parameter.
