@@ -984,7 +984,7 @@ def pca(data=None, dim=-1, var_cutoff=0.95, stride=1, mean=None, skip=0):
     return _param_stage(data, res, stride=stride)
 
 
-def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, stride=1,
+def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_map=False, stride=1,
          force_eigenvalues_le_one=False, mean=None, remove_mean=True, skip=0):
     r""" Time-lagged independent component analysis (TICA).
 
@@ -1034,6 +1034,10 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, stride=1,
         Eigenvectors will be scaled by eigenvalues. As a result, Euclidean
         distances in the transformed data approximate kinetic distances [4]_.
         This is a good choice when the data is further processed by clustering.
+
+    commute_map : bool, optional, default False
+        Eigenvector_i will be scaled by sqrt(timescale_i / 2). As a result, Euclidean distances in the transformed
+        data will approximate commute distances [5]_.
 
     stride : int, optional, default = 1
         If set to 1, all input data will be used for estimation. Note that this
@@ -1145,9 +1149,11 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, stride=1,
        Improvements in Markov State Model Construction Reveal Many Non-Native Interactions in the Folding of NTL9
        J. Chem. Theory. Comput. 9, 2000-2009. doi:10.1021/ct300878a
 
-    .. [4] Noe, F. and C. Clementi. 2015.
-        Kinetic distance and kinetic maps from molecular dynamics simulation
-        (in preparation).
+    .. [4] Noe, F. and Clementi, C. 2015. Kinetic distance and kinetic maps from molecular dynamics simulation.
+        J. Chem. Theory. Comput. doi:10.1021/acs.jctc.5b00553
+
+    .. [5] Noe, F., Banisch, R., Clementi, C. 2016. Commute maps: separating slowly-mixing molecular configurations
+       for kinetic modeling. J. Chem. Theory. Comput. doi:10.1021/acs.jctc.6b00762
 
     """
     from pyemma.coordinates.transform.tica import TICA
@@ -1155,7 +1161,7 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, stride=1,
         import warnings
         warnings.warn("user provided mean for TICA is deprecated and its value is ignored.")
 
-    res = TICA(lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map,
+    res = TICA(lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map, commute_map=commute_map,
                mean=mean, remove_mean=remove_mean, skip=skip)
     return _param_stage(data, res, stride=stride)
 

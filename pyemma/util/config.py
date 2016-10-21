@@ -45,6 +45,7 @@ __all__ = (
            'use_trajectory_lengths_cache',
            'traj_info_max_entries',
            'traj_info_max_size',
+           'coordinates_check_output',
            )
 
 if six.PY2:
@@ -363,6 +364,14 @@ In order to load a pre-saved configuration file, use the :py:func:`load` method:
     @show_config_notification.setter
     def show_config_notification(self, val):
         self._conf_values.set('pyemma', 'show_config_notification', str(val))
+
+    @property
+    def coordinates_check_output(self):
+        return self._conf_values.getboolean('pyemma', 'coordinates_check_output')
+
+    @coordinates_check_output.setter
+    def coordinates_check_output(self, val):
+        self._conf_values.set('pyemma', 'coordinates_check_output', str(val))
 
     ### FIlE HANDLING
 

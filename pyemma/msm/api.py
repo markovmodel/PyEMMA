@@ -1198,7 +1198,7 @@ def bayesian_hidden_markov_model(dtrajs, nstates, lag, nsamples=100, reversible=
 def tpt(msmobj, A, B):
     r""" A->B reactive flux from transition path theory (TPT)
 
-    The returned :class:`ReactiveFlux <msmtools.flux.ReactiveFlux>` object
+    The returned :class:`ReactiveFlux <pyemma.msm.models.ReactiveFlux>` object
     can be used to extract various quantities of the flux, as well as to
     compute A -> B transition pathways, their weights, and to coarse-grain
     the flux onto sets of states.
@@ -1214,29 +1214,29 @@ def tpt(msmobj, A, B):
 
     Returns
     -------
-    tptobj : :class:`ReactiveFlux <pyemma.msm.reactive_flux.ReactiveFlux>` object
+    tptobj : :class:`ReactiveFlux <pyemma.msm.models.ReactiveFlux>` object
         An object containing the reactive A->B flux network
         and several additional quantities, such as the stationary probability,
         committors and set definitions.
 
     See also
     --------
-    :class:`ReactiveFlux <pyemma.msm.reactive_flux.ReactiveFlux>`
+    :class:`ReactiveFlux <pyemma.msm.models.ReactiveFlux>`
         Reactive Flux model
 
 
-    .. autoclass:: pyemma.msm.reactive_flux.ReactiveFlux
+    .. autoclass:: pyemma.msm.models.ReactiveFlux
         :members:
         :undoc-members:
 
         .. rubric:: Methods
 
-        .. autoautosummary:: pyemma.msm.reactive_flux.ReactiveFlux
+        .. autoautosummary:: pyemma.msm.models.ReactiveFlux
            :methods:
 
         .. rubric:: Attributes
 
-        .. autoautosummary:: pyemma.msm.reactive_flux.ReactiveFlux
+        .. autoautosummary:: pyemma.msm.models.ReactiveFlux
             :attributes:
 
     References
@@ -1282,13 +1282,6 @@ def tpt(msmobj, A, B):
         By default (False), T is a transition matrix.
         If set to True, T is a rate matrix.
 
-    Returns
-    -------
-    tpt: msmtools.flux.ReactiveFlux object
-        A python object containing the reactive A->B flux network
-        and several additional quantities, such as stationary probability,
-        committors and set definitions.
-
     Notes
     -----
     The central object used in transition path theory is
@@ -1330,6 +1323,7 @@ def tpt(msmobj, A, B):
         raise ValueError('set A or B defines more states, than given transition matrix.')
 
     # forward committor
+    #msmobj.
     qplus = msmana.committor(T, A, B, forward=True)
     # backward committor
     if msmana.is_reversible(T, mu=mu):
