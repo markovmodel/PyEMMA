@@ -23,6 +23,7 @@ import numbers
 from pyemma._base.logging import Loggable
 from pyemma._base.progress import ProgressReporter
 from pyemma.util.contexts import attribute
+from pyemma.util.types import is_int
 
 
 class Iterable(six.with_metaclass(ABCMeta, ProgressReporter, Loggable)):
@@ -365,7 +366,7 @@ class _LaggedIterator(object):
     def __init__(self, it, lag, return_trajindex, actual_stride):
         self._it = it
         self._lag = lag
-        assert isinstance(lag, numbers.Integral)
+        assert is_int(lag)
         self._return_trajindex = return_trajindex
         self._overlap = None
         self._actual_stride = actual_stride
