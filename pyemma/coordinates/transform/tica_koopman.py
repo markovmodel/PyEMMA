@@ -148,27 +148,15 @@ class Koopman(StreamingTransformer):
         """ mean of input features """
         return self._model.mean
 
-    @mean.setter
-    def mean(self, value):
-        self._model.mean = value
-
     @property
     def cov(self):
         """ covariance matrix of input data. """
         return self._model.cov
 
-    @cov.setter
-    def cov(self, value):
-        self._model.cov = value
-
     @property
     def cov_tau(self):
         """ covariance matrix of time-lagged input data. """
         return self._model.cov_tau
-
-    @cov_tau.setter
-    def cov_tau(self, value):
-        self._model.cov_tau = value
 
     def _init_covar(self, n_chunks, xy=True):
         nsave = int(max(log(n_chunks, 2), 2))
@@ -224,6 +212,8 @@ class Koopman(StreamingTransformer):
                 frames += X.shape[0]
                 # counting chunks and log of eta
                 self._progress_update(1, stage=0)
+        mean_x /= (1.0 * frames)
+        mean_y /= (1.0 * frames)
 
         it = iterable.iterator(lag=self.lag, return_trajindex=False, chunk=self.chunksize, skip=self.skip)
         with it:
@@ -239,11 +229,16 @@ class Koopman(StreamingTransformer):
         evmin = np.min(s)
         if evmin < 0:
             ep0 = np.maximum(self.epsilon, -evmin)
+        else:
+            ep0 = self.epsilon
         # Cut-off small or negative eigenvalues:
         s, Q = sort_by_norm(s, Q)
         ind = np.where(np.abs(s) > ep0)[0]
         s = s[ind]
         Q = Q[:, ind]
+        for j in range(Q.shape[1]):
+            jj = np.argmax(np.abs(Q[:, j]))
+            Q[:, j] *= np.sign(Q[jj, j])
         # Compute the whitening transformation:
         R = np.dot(Q, np.diag(s**-0.5))
         # Set the new correlation matrix:
@@ -305,7 +300,7 @@ class Koopman(StreamingTransformer):
             input coordinates were available. However, less eigenvalues will be returned if the TICA matrices
             were not full rank or :py:obj:`var_cutoff` was parsed
         """
-        return -self.lag / np.log(np.abs(self.eigenvalues))
+        return -self.lag / np.log(np.abs(self.eigenvalues[1:]))
 
     @property
     def eigenvalues(self):
@@ -358,7 +353,8 @@ class EquilibriumKoopman(Koopman):
             skip the first initial n frames per trajectory.
 
         """
-    def __init__(self, koopman_estimator, dim=-1, var_cutoff=0.95, kinetic_map=True, epsilon=1e-6, stride=1, skip=0):
+    def __init__(self, lag, koopman_estimator, dim=-1, var_cutoff=0.95, kinetic_map=True, epsilon=1e-6, stride=1,
+                 skip=0):
         default_var_cutoff = get_default_args(self.__init__)['var_cutoff']
         if dim != -1 and var_cutoff != default_var_cutoff:
             raise ValueError('Trying to set both the number of dimension and the subspace variance. Use either or.')
@@ -370,13 +366,13 @@ class EquilibriumKoopman(Koopman):
 
         # empty dummy model instance
         self._model = KoopmanModel()
-        self.set_params(dim=dim, koopman_estimator=koopman_estimator, var_cutoff=var_cutoff, kinetic_map=kinetic_map,
-                        epsilon=epsilon, stride=stride, skip=skip)
+        self.set_params(lag=lag, dim=dim, koopman_estimator=koopman_estimator, var_cutoff=var_cutoff,
+                        kinetic_map=kinetic_map, epsilon=epsilon, stride=stride, skip=skip)
 
     def _estimate(self, iterable, **kw):
         self._init_estimate(iterable)
-        K = self.koopman_estimator._model.K
-        u = compute_u(K)
+        K0 = self.koopman_estimator._model.K
+        u = compute_u(K0)
         it = iterable.iterator(lag=self.lag, return_trajindex=False, chunk=self.chunksize, skip=self.skip)
         with it:
             self._progress_register(it._n_chunks, "Re-weighting", 0)
@@ -394,23 +390,30 @@ class EquilibriumKoopman(Koopman):
         evmin = np.min(s)
         if evmin < 0:
             ep0 = np.maximum(self.epsilon, -evmin)
+        else:
+            ep0 = self.epsilon
         # Cut-off small or negative eigenvalues:
         s, Q = sort_by_norm(s, Q)
         ind = np.where(np.abs(s) > ep0)[0]
         s = s[ind]
         Q = Q[:, ind]
+        for j in range(Q.shape[1]):
+            jj = np.argmax(np.abs(Q[:, j]))
+            Q[:, j] *= np.sign(Q[jj, j])
         # Determine whitening transformation at equilibrium:
         R = np.dot(Q, np.diag(s**-0.5))
-        # Compute Ks:
-        K = np.dot(R.T, np.dot(C0_eq, np.dot(K, R)))
-        # Reversibility modification:
-        K = 0.5 * (K + K.T)
+        # Compute reversible Ctau and K:
+        Ctau_eq = 0.5 * (np.dot(C0_eq, K0) + np.dot(K0.T, C0_eq))
+        K = np.dot(R.T, np.dot(Ctau_eq, R))
 
-        self._model.update_model_params(cov=self._covar.cov_XX(), K=K, R=R)
+        self._model.update_model_params(mean_pc=C0_eq[:, -1], cov_pc=C0_eq, cov_tau_pc=Ctau_eq,
+                                        K=K, R=R, u=u)
 
         self._model._diagonalize(method="s")
 
         self._estimated = True
+
+        return self._model
 
     def _transform_array(self, X):
         r"""Projects the data onto the dominant independent components.
@@ -426,9 +429,46 @@ class EquilibriumKoopman(Koopman):
             the projected data
         """
         X_decor = self.koopman_estimator._model._decorrelate_basis(X)
-        Y = np.dot(X_decor, self.eigenvectors[:, 0:self.dimension()])
+        Y = np.dot(X_decor, np.dot(self._model.R, self.eigenvectors[:, 0:self.dimension()]))
         return Y.astype(self.output_type())
 
+    def reweighting_factors(self, skip=0, stride=1):
+        it = self.data_producer.iterator(lag=0, return_trajindex=True, stride=stride, chunk=self.chunksize, skip=skip)
+        weights = [np.zeros(trajlen) for trajlen in self.data_producer.trajectory_lengths(stride=stride, skip=skip)]
+        with it:
+            for ii, X in it:
+                X = self.koopman_estimator._model._decorrelate_basis(X)
+                w = np.dot(X, self._model.u)
+                weights[ii][it.pos:(it.pos+w.shape[0])] = w
+        return weights
+
     @property
-    def non_equilibrium_model(self):
-        return self.koopman_estimator._model
+    def non_equilibrium_estimator(self):
+        return self.koopman_estimator
+
+    @property
+    def mean_pc(self):
+        return self._model.mean_pc
+
+    @property
+    def cov_pc(self):
+        return self._model.cov_pc
+
+    @property
+    def cov_tau_pc(self):
+        return self._model.cov_tau_pc
+
+    @property
+    def mean(self):
+        """ mean of input features """
+        raise NotImplementedError("Equilibrium mean for original basis is not implemented.")
+
+    @property
+    def cov(self):
+        """ covariance matrix of input data. """
+        raise NotImplementedError("Equilibrium correlations for original basis are not implemented.")
+
+    @property
+    def cov_tau(self):
+        """ covariance matrix of time-lagged input data. """
+        raise NotImplementedError("Equilibrium correlations for original basis are not implemented.")

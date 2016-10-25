@@ -50,6 +50,7 @@ __all__ = ['featurizer',  # IO
            'save_trajs',
            'pca',  # transform
            'tica',
+           'koopman',
            'cluster_regspace',  # cluster
            'cluster_kmeans',
            'cluster_mini_batch_kmeans',
@@ -1327,15 +1328,15 @@ def koopman(data=None, lag=10, eq=False, dim=-1, var_cutoff=0.95, kinetic_map=Fa
     """
     from pyemma.coordinates.transform.tica_koopman import Koopman, EquilibriumKoopman
 
-    if eq==False and (var_cutoff != 0.95 or kinetic_map==True):
+    if eq == False and (var_cutoff != 0.95 or kinetic_map == True):
         import warnings
         warnings.warn("Variance cutoff or kinetic map have no effect for non-equilibrium estimation.")
-    if eq==False:
+    if eq == False:
         res = Koopman(lag, dim=dim, skip=skip)
         return _param_stage(data, res, stride=stride)
     else:
         res1 = Koopman(lag, dim=dim, skip=skip)
-        res2 = EquilibriumKoopman(lag, koopman_estimator=res1, var_cutoff=var_cutoff, kinetic_map=kinetic_map,
+        res2 = EquilibriumKoopman(lag, res1, var_cutoff=var_cutoff, kinetic_map=kinetic_map,
                                   dim=dim, skip=skip)
         _param_stage(data, res1, stride=stride)
         return _param_stage(data, res2, stride=stride)
