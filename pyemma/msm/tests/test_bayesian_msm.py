@@ -92,10 +92,10 @@ class TestBMSM(unittest.TestCase):
             assert msmana.is_transition_matrix(P)
             try:
                 #TODO: shouldn't we pass the already computed pi of the sample here?
-                assert msmana.is_reversible(P)
+                assert msmana.is_reversible(P, mu=msm.pi)
             except AssertionError:
                 # re-do calculation msmtools just performed to get details
-                X = Psamples.pi[:, np.newaxis] * P
+                X = msm.pi[:, np.newaxis] * P
                 np.testing.assert_allclose(X, np.transpose(X), atol=1e-12,
                                            err_msg="P not reversible, given_pi={}".format(given_pi))
 
