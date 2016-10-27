@@ -34,9 +34,13 @@ def coverage_report():
     with open(dest, 'w+') as fh:
        fh.write(data)
 
+# hacky but should work, install nose-randomly via pip in testing env
+subprocess.check_call("pip install nose-randomly".split(' '))
+
 nose_run = "nosetests {test_pkg} -vv" \
            " --with-coverage --cover-inclusive --cover-package={cover_pkg}" \
            " --with-doctest --doctest-options=+NORMALIZE_WHITESPACE,+ELLIPSIS" \
+           " --with-randomly" \
            .format(test_pkg=test_pkg, cover_pkg=cover_pkg).split(' ')
 
 res = subprocess.call(nose_run)
