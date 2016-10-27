@@ -6,6 +6,7 @@ from pyemma.util.contexts import settings
 from pyemma.util.files import TemporaryDirectory
 import os
 from glob import glob
+from six.moves import range
 
 
 class TestCoordinatesIterator(unittest.TestCase):
@@ -32,36 +33,60 @@ class TestCoordinatesIterator(unittest.TestCase):
         r = DataInMemory(self.d)
 
         it0 = r.iterator(chunk=0)
-        assert it0._n_chunks == 3  # 3 trajs
+        assert it0.n_chunks == 3  # 3 trajs
 
         it1 = r.iterator(chunk=50)
-        assert it1._n_chunks == 3 * 2  # 2 chunks per trajectory
+        assert it1.n_chunks == 3 * 2  # 2 chunks per trajectory
 
         it2 = r.iterator(chunk=30)
         # 3 full chunks and 1 small chunk per trajectory
-        assert it2._n_chunks == 3 * 4
+        assert it2.n_chunks == 3 * 4
 
         it3 = r.iterator(chunk=30)
         it3.skip = 10
-        assert it3._n_chunks == 3 * 3  # 3 full chunks per traj
+        assert it3.n_chunks == 3 * 3  # 3 full chunks per traj
 
         it4 = r.iterator(chunk=30)
         it4.skip = 5
         # 3 full chunks and 1 chunk of 5 frames per trajectory
-        assert it4._n_chunks == 3 * 4
+        assert it4.n_chunks == 3 * 4
 
         # test for lagged iterator
         for stride in range(1, 5):
             for lag in range(0, 18):
                 it = r.iterator(
                     lag=lag, chunk=30, stride=stride, return_trajindex=False)
-                chunks = 0
-                for _ in it:
-                    chunks += 1
-                np.testing.assert_equal(it._n_chunks, chunks,
+                chunks = sum(1 for _ in it)
+                np.testing.assert_equal(it.n_chunks, chunks,
                                         err_msg="Expected number of chunks did not agree with what the iterator "
                                                 "returned for stride=%s, lag=%s" % (stride, lag))
-                assert chunks == it._n_chunks
+                assert chunks == it.n_chunks
+
+    def _count_chunks(self, it):
+        with it:
+            it.reset()
+            nchunks = sum(1 for _ in it)
+        self.assertEqual(it.n_chunks, nchunks, msg="{it}".format(it=it))
+
+    def test_n_chunks_ra(self):
+        """ """
+        r = DataInMemory(self.d)
+
+        def gen_sorted_stride(n):
+            frames = np.random.randint(0, 99, size=n)
+            trajs = np.random.randint(0, 3, size=n)
+
+            stride = np.sort(np.stack((trajs, frames)).T, axis=1)
+            # sort by file and frame index
+            sort_inds = np.lexsort((stride[:, 1], stride[:, 0]))
+            return stride[sort_inds]
+
+        strides = [gen_sorted_stride(np.random.randint(1, 99)) for _ in range(10)]
+        lengths = [len(x) for x in strides]
+        for chunk in range(0, 100):#max(lengths)):
+            for stride in strides:
+                it = r.iterator(chunk=chunk, stride=stride)
+                self._count_chunks(it)
 
     def test_chunksize(self):
         r = DataInMemory(self.d)
