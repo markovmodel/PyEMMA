@@ -293,8 +293,8 @@ class TICA(StreamingTransformer):
         it = iterable.iterator(lag=self.lag, return_trajindex=False,
                                chunk=self.chunksize if not partial_fit else 0, skip=self.skip)
         with it:
-            self._progress_register(it._n_chunks, "calculate mean+cov", 0)
-            self._init_covar(partial_fit, it._n_chunks)
+            self._progress_register(it.n_chunks, "calculate mean+cov", 0)
+            self._init_covar(partial_fit, it.n_chunks)
             for X, Y in it:
                 self._covar.add(X, Y)
                 # counting chunks and log of eta
