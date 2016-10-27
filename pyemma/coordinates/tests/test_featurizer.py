@@ -848,7 +848,43 @@ class TestCustomFeature(unittest.TestCase):
                                   self.means,
                                   self.U
                                   )
-        self.feat.describe()
+        desc = self.feat.describe()
+        self.assertEqual(len(desc), self.feat.dimension())
+
+    def test_describe_given(self):
+        self.feat.add_custom_func(some_call_to_mdtraj_some_operations_some_linalg, self.U.shape[1],
+                                  self.pairs,
+                                  self.means,
+                                  self.U, description=['foo']*self.U.shape[1]
+                                  )
+        desc = self.feat.describe()
+        self.assertIn('foo', desc)
+        self.assertEqual(len(desc), self.feat.dimension())
+
+    def test_describe_given_str(self):
+        self.feat.add_custom_func(some_call_to_mdtraj_some_operations_some_linalg, self.U.shape[1],
+                                  self.pairs,
+                                  self.means,
+                                  self.U, description='test')
+        desc = self.feat.describe()
+        self.assertIn('test', desc)
+        self.assertEqual(len(desc), self.feat.dimension())
+
+    def test_describe_given_wrong(self):
+        """ either a list matching input dim, or 1 element iterable allowed"""
+        with self.assertRaises(ValueError) as cm:
+            self.feat.add_custom_func(some_call_to_mdtraj_some_operations_some_linalg, self.U.shape[1]+1,
+                                      self.pairs,
+                                      self.means,
+                                      self.U, description=['ff', 'ff'])
+
+    def test_describe_1_element_expand(self):
+        self.feat.add_custom_func(some_call_to_mdtraj_some_operations_some_linalg, self.U.shape[1] + 1,
+                                  self.pairs,
+                                  self.means,
+                                  self.U, description=['test'])
+        desc = self.feat.describe()
+        self.assertEqual(desc, ['test']*3)
 
     def test_dimensionality(self):
         self.feat.add_custom_func(some_call_to_mdtraj_some_operations_some_linalg, self.U.shape[1],
