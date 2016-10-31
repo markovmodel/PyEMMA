@@ -30,7 +30,6 @@ import os
 import tempfile
 import unittest
 
-from nose.plugins.attrib import attr
 import mdtraj
 
 from pyemma.coordinates.api import tica
@@ -52,7 +51,6 @@ def random_invertible(n, eps=0.01):
     return u.dot(np.diag(s)).dot(v)
 
 
-@attr(slow=True)
 class TestFeatureReaderAndTICAProjection(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

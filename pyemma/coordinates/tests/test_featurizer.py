@@ -130,7 +130,12 @@ class TestFeaturizer(unittest.TestCase):
         inds = self.feat.select_Backbone()
     
     def test_select_non_symmetry_heavy_atoms(self):
-        inds = self.feat.select_Heavy(exclude_symmetry_related=True)
+        try:
+            inds = self.feat.select_Heavy(exclude_symmetry_related=True)
+        except RuntimeError as e:
+            if "recursion depth" in e.args:
+                import sys
+                raise Exception("recursion limit reached. Interpreter limit: {}".format(sys.getrecursionlimit()))
 
     def test_select_all(self):
         self.feat.add_all()
