@@ -18,7 +18,6 @@
 
 from __future__ import absolute_import
 from six.moves import range
-__author__ = 'noe'
 
 import numpy as np
 
@@ -26,6 +25,9 @@ from msmtools import estimation as msmest
 from pyemma.util.annotators import alias, aliased
 from pyemma.util.linalg import submatrix
 from pyemma.util.discrete_trajectories import visited_set
+
+__author__ = 'noe'
+
 
 @aliased
 class DiscreteTrajectoryStats(object):
@@ -53,6 +55,55 @@ class DiscreteTrajectoryStats(object):
         # not yet estimated
         self._counted_at_lag = False
 
+    def to_coreset(self, core_set, in_place=True):
+        """
+
+        Parameters
+        ----------
+        core_set: an array of micro-states to include as core-sets
+
+        in_place: boolean, default=True
+            if True, replace the current dtrajs
+            if False, return a copy
+
+        Returns
+        -------
+        dtrajs
+        """
+        import copy
+        dtrajs = self._dtrajs if in_place else copy.deepcopy(self._dtrajs)
+
+        core_set = np.array(core_set, dtype=int)
+        # build a boolean expression to create a mask of indices within the core set.
+        expr = ['(d == {i})'.format(i=i) for i in core_set]
+        expr = '|'.join(expr)
+
+        def to_ranges(a):
+            # return a list of consecutive ranges in array a.
+            cons = np.split(a, np.where(np.diff(a) != 1)[0] + 1)
+            ranges = [range(np.min(x), np.max(x)+1) if len(x) > 1
+                      else range(x[0], x[0]+1) for x in cons]
+            return ranges
+
+        for d in dtrajs:
+            within_core_set = eval(expr)
+            outside_core_set = np.logical_not(within_core_set)
+            inds_within_set = np.where(within_core_set)[0]
+            inds_outside_set = np.where(outside_core_set)[0]
+            # determine ranges to update, which lies outside the core set.
+            ranges = to_ranges(inds_outside_set)
+
+            # start with first valid core set value.
+            for r in ranges:
+                start, stop = r.start, r.stop
+                core_set = d[start - 1] if start > 0 else inds_within_set[0]
+                d[r] = core_set
+
+        # re-initialize
+        if in_place:
+            self.__init__(dtrajs)
+
+        return dtrajs
 
     def count_lagged(self, lag, count_mode='sliding'):
         r""" Counts transitions at given lag time
