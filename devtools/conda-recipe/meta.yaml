@@ -54,8 +54,7 @@ test:
   requires:
     - pytest 
     - pytest-cov
-    - pytest-xdist
-    - coverage ==4
+      #  - pytest-xdist
   imports:
     - pyemma
 
