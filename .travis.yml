@@ -30,9 +30,9 @@ before_install:
 script:
 - conda build -q devtools/conda-recipe
 
-#after_success:
-#- pwd; ls -alh
+after_success:
+- pwd; ls -alh
 #- bash <(curl -s https://codecov.io/bash) -s $HOME
-#- pip install codecov
-#- codecov --file $HOME/.coverage
+- pip install codecov
+- codecov --file $HOME/coverage.xml
 

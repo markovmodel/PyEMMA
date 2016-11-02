@@ -24,8 +24,8 @@ with open('matplotlibrc', 'w') as fh:
 
 pytest_args = ("-v --pyargs {test_pkg} "
                "--cov={cover_pkg} "
-               #"--cov-report=xml "
-               "--doctest-modules " 
+               "--cov-report=xml "
+               "--doctest-modules "
                #"-n 2 -p no:xdist" # disable xdist in favour of coverage plugin
                "--junit-xml={junit_xml} "
                "-c {pytest_cfg} "
@@ -36,7 +36,7 @@ print("args:", pytest_args)
 res = pytest.main(pytest_args)
 
 # copy it to home, so we can process it with codecov etc.
-shutil.copy('.coverage', os.getenv('HOME'))
+shutil.copy('coverage.xml', os.path.expanduser('~/'))
 
 sys.exit(res)
 
