@@ -170,17 +170,21 @@ def deprecated(*optional_message):
 
     """
     def _deprecated(func, *args, **kw):
-        caller_stack = stack()[1:]
-        while len(caller_stack) > 0:
-            frame = caller_stack.pop(0)
-            filename = frame[1]
-            # skip callee frames if they are other decorators or this file(func)
-            if 'decorator' in filename or __file__ in filename:
-                continue
-            else: break
-        lineno = frame[2]
-        # avoid cyclic references!
-        del caller_stack, frame
+        try:
+            caller_stack = stack()[1:]
+            while len(caller_stack) > 0:
+                frame = caller_stack.pop(0)
+                filename = frame[1]
+                # skip callee frames if they are other decorators or this file(func)
+                if 'decorator' in filename or __file__ in filename:
+                    continue
+                else: break
+            lineno = frame[2]
+            # avoid cyclic references!
+            del caller_stack, frame
+        except OSError:  # eg. os.getcwd() fails in conda-test, since cwd gets deleted.
+            filename = 'unknown'
+            lineno = -1
 
         user_msg = 'Call to deprecated function "%s". Called from %s line %i. %s' \
                    % (func.__name__, filename, lineno, msg)

@@ -19,6 +19,9 @@ global-exclude *.orig
 include versioneer.py
 include pyemma/_version.py
 
+# extensions.json file for stub-loader test ignoring.
+include pyemma/_extensions.json
+
 # setup stuff
 include setup_util.py
 

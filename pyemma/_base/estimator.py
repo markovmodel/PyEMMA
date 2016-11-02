@@ -73,7 +73,7 @@ def param_grid(pargrid):
     Generates parameter sets with all combinations of several parameter values:
 
     >>> grid = param_grid({'lag':[1,10,100], 'reversible':[False,True]})
-    >>> for p in grid: print(p)
+    >>> for p in grid: print(sorted(p)) # doctest: +SKIP
     {'reversible': False, 'lag': 1}
     {'reversible': True, 'lag': 1}
     {'reversible': False, 'lag': 10}

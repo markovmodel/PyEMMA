@@ -53,4 +53,3 @@ def _new_init(self, *args, **kwargs):
     _setup_testing()
 
 _unittest.TestCase.__init__ = _new_init
-

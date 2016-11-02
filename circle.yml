@@ -1,0 +1,24 @@
+machine:
+  environment:
+    PATH: $HOME/miniconda/bin:$PATH
+    PYTHONHASHSEED: 0
+
+dependencies:
+  cache_directories:
+    - $HOME/miniconda/
+
+checkout:
+  post:
+    - git fetch --unshallow || true
+
+dependencies:
+  override:
+    - devtools/ci/circle/install_miniconda.sh
+    - conda config --add channels conda-forge
+    - conda config --set always_yes true
+    - conda install conda-build
+
+test:
+  override:
+    - conda build devtools/conda-recipe --numpy=111 
+
