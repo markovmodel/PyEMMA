@@ -79,3 +79,7 @@ class TestDtrajStats(unittest.TestCase):
 
         expected = naive(dtrajs, core_set)
         np.testing.assert_equal(actual, expected)
+
+
+if __name__ == '__main__':
+    unittest.main()

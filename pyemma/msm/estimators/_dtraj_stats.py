@@ -82,23 +82,21 @@ class DiscreteTrajectoryStats(object):
         def to_ranges(a):
             # return a list of consecutive ranges in array a.
             cons = np.split(a, np.where(np.diff(a) != 1)[0] + 1)
-            ranges = [range(np.min(x), np.max(x)+1) if len(x) > 1
-                      else range(x[0], x[0]+1) for x in cons]
+            ranges = [(np.min(x), np.max(x)+1) if len(x) > 1
+                      else (x[0], x[0]+1) for x in cons]
             return ranges
 
         for d in dtrajs:
             within_core_set = eval(expr)
             outside_core_set = np.logical_not(within_core_set)
-            inds_within_set = np.where(within_core_set)[0]
             inds_outside_set = np.where(outside_core_set)[0]
             # determine ranges to update, which lies outside the core set.
             ranges = to_ranges(inds_outside_set)
 
             # start with first valid core set value.
-            for r in ranges:
-                start, stop = r.start, r.stop
-                core_set = d[start - 1] if start > 0 else -1#inds_within_set[0]
-                d[r] = core_set
+            for start, stop in ranges:
+                core_set = d[start - 1] if start > 0 else -1
+                d[start:stop] = core_set
 
         # re-initialize
         if in_place:
