@@ -46,7 +46,8 @@ class DiscreteTrajectoryStats(object):
 
         ## basic count statistics
         # histogram
-        self._hist = msmest.count_states(self._dtrajs)
+        from msmtools.dtraj import count_states
+        self._hist = count_states(self._dtrajs, ignore_negative=True)
         # total counts
         self._total_count = np.sum(self._hist)
         # number of states
@@ -96,7 +97,7 @@ class DiscreteTrajectoryStats(object):
             # start with first valid core set value.
             for r in ranges:
                 start, stop = r.start, r.stop
-                core_set = d[start - 1] if start > 0 else inds_within_set[0]
+                core_set = d[start - 1] if start > 0 else -1#inds_within_set[0]
                 d[r] = core_set
 
         # re-initialize

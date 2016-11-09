@@ -7,7 +7,7 @@ from pyemma.msm.estimators._dtraj_stats import DiscreteTrajectoryStats
 class TestDtrajStats(unittest.TestCase):
     def test_core_sets(self):
         dtrajs   = [np.array([0, 0, 2, 0, 0, 3, 0, 5, 5, 5, 0, 0, 6, 8, 4, 1, 2, 0, 3])]
-        expected = [np.array([2, 2, 2, 2, 2, 3, 3, 5, 5, 5, 5, 5, 6, 6, 4, 4, 2, 2, 3])]
+        expected = [np.array([-1, -1, 2, 2, 2, 3, 3, 5, 5, 5, 5, 5, 6, 6, 4, 4, 2, 2, 3])]
         core_set = np.arange(2, 7)
         dts = DiscreteTrajectoryStats(dtrajs)
         dts.to_coreset(core_set=core_set)
@@ -16,17 +16,19 @@ class TestDtrajStats(unittest.TestCase):
 
     def test_core_sets_2(self):
         dtrajs = [np.array([0, 0, 2, 1, 2])]
+        expected = [np.array([-1, -1, 2, 1, 2])]
         dts = DiscreteTrajectoryStats(dtrajs)
         dts.to_coreset(np.arange(1, 3))
         np.testing.assert_equal(dts.discrete_trajectories,
-                                [np.array([2, 2, 2, 1, 2])])
+                                expected)
 
     def test_core_sets_3(self):
         dtrajs = [np.array([2, 0, 1, 1, 2])]
+        expected = [np.array([2, 2, 1, 1, 2])]
         dts = DiscreteTrajectoryStats(dtrajs)
         dts.to_coreset(np.arange(1, 3))
         np.testing.assert_equal(dts.discrete_trajectories,
-                                [np.array([2, 2, 1, 1, 2])])
+                                expected)
 
     def test_core_sets_4(self):
         dtrajs = [np.array([2, 0, 0, 2, 0, 2, 0, 2])]
@@ -74,6 +76,9 @@ class TestDtrajStats(unittest.TestCase):
                         newtraj.append(oldmicro)
                     elif newmicro is not None:
                         newtraj.append(newmicro)
+                    else:
+                        print("hi there")
+                        newtraj.append(-1)
                 newdiscretetraj.append(np.array(newtraj, dtype=int))
 
             return newdiscretetraj
