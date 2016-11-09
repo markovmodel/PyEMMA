@@ -984,7 +984,7 @@ def pca(data=None, dim=-1, var_cutoff=0.95, stride=1, mean=None, skip=0):
     return _param_stage(data, res, stride=stride)
 
 
-def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, stride=1,
+def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_map=True, stride=1,
          force_eigenvalues_le_one=False, mean=None, remove_mean=True, skip=0):
     r""" Time-lagged independent component analysis (TICA).
 
