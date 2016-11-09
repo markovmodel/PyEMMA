@@ -192,7 +192,7 @@ class TestNumPyFileReader(unittest.TestCase):
 
     def test_usecols(self):
         reader = NumPyFileReader(self.f4)
-        cols=(0, 2)
+        cols = (0, 2)
         it = reader.iterator(chunk=0, return_trajindex=False, cols=cols)
         with it:
             for x in it:
@@ -200,7 +200,7 @@ class TestNumPyFileReader(unittest.TestCase):
 
     def test_different_shapes_value_error(self):
         with tempfile.NamedTemporaryFile(delete=False, suffix='.npy') as f:
-            x=np.zeros((3, 42))
+            x = np.zeros((3, 42))
             np.save(f.name, x)
             myfiles = self.files2d[:]
             myfiles.insert(1, f.name)
@@ -208,7 +208,6 @@ class TestNumPyFileReader(unittest.TestCase):
             with self.assertRaises(ValueError) as cm:
                 NumPyFileReader(myfiles)
             self.assertIn("different dimensions", cm.exception.args[0])
-            print (cm.exception.args)
 
 
 if __name__ == "__main__":

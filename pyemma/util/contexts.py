@@ -84,3 +84,14 @@ def settings(**kwargs):
     # restore old settings
     for k, v in old_settings.items():
         setattr(config, k, v)
+
+@contextmanager
+def attribute(obj, attr, val):
+    previous = getattr(obj, attr)
+    setattr(obj, attr, val)
+    try:
+        yield
+    except:
+        raise
+    finally:
+        setattr(obj, attr, previous)

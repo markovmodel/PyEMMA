@@ -8,7 +8,7 @@ EMMA (Emma's Markov Model Algorithms)
    :target: https://pypi.python.org/pypi/pyemma
 .. image:: https://img.shields.io/pypi/dm/pyemma.svg
    :target: https://pypi.python.org/pypi/pyemma
-.. image:: https://anaconda.org/xavier/binstar/badges/downloads.svg
+.. image:: https://anaconda.org/omnia/pyemma/badges/downloads.svg
    :target: https://anaconda.org/omnia/pyemma
 .. image:: https://anaconda.org/omnia/pyemma/badges/installer/conda.svg
    :target: https://conda.anaconda.org/omnia

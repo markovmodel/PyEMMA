@@ -74,7 +74,7 @@ def param_grid(pargrid):
     Generates parameter sets with all combinations of several parameter values:
 
     >>> grid = param_grid({'lag':[1,10,100], 'reversible':[False,True]})
-    >>> for p in grid: print(p)
+    >>> for p in grid: print(sorted(p)) # doctest: +SKIP
     {'reversible': False, 'lag': 1}
     {'reversible': True, 'lag': 1}
     {'reversible': False, 'lag': 10}
@@ -154,16 +154,19 @@ def _estimate_param_scan_worker(estimator, params, X, evaluate, evaluate_args,
     # we want to evaluate function(s) of the model
     elif _types.is_iterable(evaluate):
         values = []  # the function values the model
-        for ieval in range(len(evaluate)):
+        for ieval, name in enumerate(evaluate):
             # get method/attribute name and arguments to be evaluated
             name = evaluate[ieval]
-            args = None
+            args = ()
             if evaluate_args is not None:
                 args = evaluate_args[ieval]
+                # wrap single arguments in an iterable again to pass them.
+                if _types.is_string(args):
+                    args = (args, )
             # evaluate
             try:
                 # try calling method/property/attribute
-                value = _call_member(estimator.model, name, args=args)
+                value = _call_member(estimator.model, name, failfast, *args)
             # couldn't find method/property/attribute
             except AttributeError as e:
                 if failfast:
@@ -184,7 +187,7 @@ def _estimate_param_scan_worker(estimator, params, X, evaluate, evaluate_args,
 
 
 def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=None, failfast=True,
-                        return_estimators=False, n_jobs=1, progress_reporter=None):
+                        return_estimators=False, n_jobs=1, progress_reporter=None, show_progress=True):
     """ Runs multiple estimations using a list of parameter settings
 
     Parameters
@@ -203,15 +206,25 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
         parameters in estimate(X, **params). All other parameter settings will
         be taken from the default settings in the estimator object.
 
-    evaluate : str or list of str
+    evaluate : str or list of str, optional
         The given methods or properties will be called on the estimated
         models, and their results will be returned instead of the full models.
         This may be useful for reducing memory overhead.
+
+    evaluate_args: iterable of iterable, optional
+        Arguments to be passed to evaluated methods. Note, that size has to match to the size of evaluate.
 
     failfast : bool
         If True, will raise an exception when estimation failed with an exception
         or trying to calls a method that doesn't exist. If False, will simply
         return None in these cases.
+
+    return_estimators: bool
+        If True, return a list estimators in addition to the models.
+
+    show_progress: bool
+        if the given estimator supports show_progress interface, we set the flag
+        prior doing estimations.
 
     Return
     ------
@@ -228,25 +241,32 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
 
     Estimate a maximum likelihood Markov model at lag times 1, 2, 3.
 
-    >>> from pyemma.msm.estimators import MaximumLikelihoodMSM
+    >>> from pyemma.msm.estimators import MaximumLikelihoodMSM, BayesianMSM
     >>>
     >>> dtraj = [0,0,1,2,1,0,1,0,1,2,2,0,0,0,1,1,2,1,0,0,1,2,1,0,0,0,1,1,0,1,2]  # mini-trajectory
     >>> param_sets=param_grid({'lag': [1,2,3]})
     >>>
     >>> estimate_param_scan(MaximumLikelihoodMSM, dtraj, param_sets, evaluate='timescales')
-    [array([ 1.24113167,  0.77454377]), array([ 2.65266703,  1.42909841]), array([ 5.34810395,  1.14784446])]
+    [array([ 1.24113168,  0.77454377]), array([ 2.48226337,  1.54908754]), array([ 3.72339505,  2.32363131])]
 
-    Try also getting samples of the timescales
-
-    >>> estimate_param_scan(MaximumLikelihoodMSM, dtraj, param_sets, evaluate=['timescales', 'timescales_samples'])
-    [[array([ 1.24113167,  0.77454377]), None], [array([ 2.65266703,  1.42909841]), None], [array([ 5.34810395,  1.14784446]), None],
+    Now we also want to get samples of the timescales using the BayesianMSM.
+    >>> estimate_param_scan(MaximumLikelihoodMSM, dtraj, param_sets, failfast=False,
+    ...     evaluate=['timescales', 'timescales_samples']) # doctest: +SKIP
+    [[array([ 1.24113168,  0.77454377]), None], [array([ 2.48226337,  1.54908754]), None], [array([ 3.72339505,  2.32363131]), None]]
 
     We get Nones because the MaximumLikelihoodMSM estimator doesn't provide timescales_samples. Use for example
     a Bayesian estimator for that.
 
+    Now we also want to get samples of the timescales using the BayesianMSM.
+    >>> estimate_param_scan(BayesianMSM, dtraj, param_sets, show_progress=False,
+    ...     evaluate=['timescales', 'sample_f'], evaluate_args=((), ('timescales', ))) # doctest: +SKIP
+    [[array([ 1.24357685,  0.77609028]), [array([ 1.5963252 ,  0.73877883]), array([ 1.29915847,  0.49004912]), array([ 0.90058583,  0.73841786]), ... ]]
+
     """
     # make sure we have an estimator object
     estimator = get_estimator(estimator)
+    if hasattr(estimator, 'show_progress'):
+        estimator.show_progress = show_progress
     # if we want to return estimators, make clones. Otherwise just copy references.
     # For parallel processing we always need clones
     if return_estimators or n_jobs > 1 or n_jobs is None:
@@ -257,9 +277,14 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
     # if we evaluate, make sure we have a list of functions to evaluate
     if _types.is_string(evaluate):
         evaluate = [evaluate]
+    if _types.is_string(evaluate_args):
+        evaluate_args = [evaluate_args]
+
+    if evaluate is not None and evaluate_args is not None and len(evaluate) != len(evaluate_args):
+        raise ValueError("length mismatch: evaluate ({}) and evaluate_args ({})".format(len(evaluate), len(evaluate_args)))
 
     # set call back for joblib
-    if progress_reporter is not None:
+    if progress_reporter is not None and show_progress:
         progress_reporter._progress_register(len(estimators), stage=0,
                                              description="estimating %s" % str(estimator.__class__.__name__))
 
@@ -338,10 +363,10 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
         for i, param in enumerate(param_sets):
             res.append(_estimate_param_scan_worker(estimators[i], param, X,
                                                    evaluate, evaluate_args, failfast))
-            if progress_reporter is not None:
+            if progress_reporter is not None and show_progress:
                 progress_reporter._progress_update(1, stage=0)
 
-    if progress_reporter is not None:
+    if progress_reporter is not None and show_progress:
         progress_reporter._progress_force_finish(0)
 
     # done

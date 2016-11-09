@@ -34,14 +34,14 @@ def combinations(seq, k):
     >>> x = np.arange(3)
     >>> c1 = combinations(x, 2)
     >>> print(c1)
-       [[0 1]
-       [0 2]
-       [1 2]]
+    [[0 1]
+     [0 2]
+     [1 2]]
     >>> c2 = np.array(tuple(iter_comb(x, 2)))
     >>> print(c2)
-       [[0 1]
-       [0 2]
-       [1 2]]
+    [[0 1]
+     [0 2]
+     [1 2]]
     """
     from itertools import combinations as _combinations, chain
     from scipy.misc import comb

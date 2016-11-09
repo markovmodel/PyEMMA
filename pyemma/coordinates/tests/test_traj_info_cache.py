@@ -63,6 +63,7 @@ class TestTrajectoryInfoCache(unittest.TestCase):
 
         # overwrite TrajectoryInfoCache._instance with self.db...
         TrajectoryInfoCache._instance = self.db
+        config.use_trajectory_lengths_cache = True
 
     def tearDown(self):
         self.db.close()
@@ -238,6 +239,7 @@ class TestTrajectoryInfoCache(unittest.TestCase):
         db[xtcfiles[0], r]
 
     def test_n_entries(self):
+        assert config.use_trajectory_lengths_cache
         self.assertEqual(self.db.num_entries, 0)
         assert TrajectoryInfoCache._instance is self.db
         pyemma.coordinates.source(xtcfiles, top=pdbfile)

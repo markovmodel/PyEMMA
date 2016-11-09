@@ -188,21 +188,19 @@ class iterload(object):
             except (IOError, IndexError):
                 raise StopIteration("too short trajectory")
 
-        if not isinstance(self._stride, np.ndarray) and self._chunksize == 0:
-            # If chunk was 0 then we want to avoid filetype-specific code
-            # in case of undefined behavior in various file parsers.
-            # TODO: this will first apply stride, then skip!
-            if self._extension not in _TOPOLOGY_EXTS:
-                self._kwargs['top'] = self._top
-            traj = load(self._filename, stride=self._stride, **self._kwargs)[self.skip:]
-        elif isinstance(self._stride, np.ndarray):
+        if isinstance(self._stride, np.ndarray):
             return next(self._ra_it)
         else:
+            if self._chunksize == 0:
+                n_frames = None  # read all frames
+            else:
+                n_frames = self._chunksize * self._stride
+
             if self._extension not in _TOPOLOGY_EXTS:
-                traj = self._f.read_as_traj(self._topology, n_frames=self._chunksize * self._stride,
+                traj = self._f.read_as_traj(self._topology, n_frames=n_frames,
                                             stride=self._stride, atom_indices=self._atom_indices, **self._kwargs)
             else:
-                traj = self._f.read_as_traj(n_frames=self._chunksize * self._stride,
+                traj = self._f.read_as_traj(n_frames=n_frames,
                                             stride=self._stride, atom_indices=self._atom_indices, **self._kwargs)
 
         if len(traj) == 0:
@@ -237,6 +235,7 @@ class iterload(object):
                     curr_size += len(grouped_stride)
                 if curr_size == chunksize:
                     yield _join_traj_data(coords, self._topology)
+                    chunksize = self._chunksize
                     curr_size = 0
                     coords = []
                 while leftovers:
@@ -300,8 +299,7 @@ def _read_traj_data(atom_indices, f, n_frames, **kwargs):
     # first element is always xyz coords array.
     xyz = res[0]
 
-    # hopefully this works for all formats?
-    xyz = in_units_of(xyz, f.distance_unit, Trajectory._distance_unit, inplace=True)
+    in_units_of(xyz, f.distance_unit, Trajectory._distance_unit, inplace=True)
 
     box = cell_lengths = cell_angles = None
 
@@ -328,7 +326,9 @@ def _read_traj_data(atom_indices, f, n_frames, **kwargs):
         assert len(res) == 1, "len:{l}, type={t}".format(l=len(res), t=f)
         #raise NotImplementedError("format read function not handled..." + str(f))
 
-    box = in_units_of(box, f.distance_unit, Trajectory._distance_unit, inplace=True)
+    in_units_of(box, f.distance_unit, Trajectory._distance_unit, inplace=True)
+    if cell_lengths is not None:
+        in_units_of(cell_lengths, f.distance_unit, Trajectory._distance_unit, inplace=True)
 
     return TrajData(xyz, cell_lengths, cell_angles, box)
 

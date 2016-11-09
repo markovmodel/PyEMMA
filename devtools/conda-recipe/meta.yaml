@@ -14,7 +14,6 @@ requirements:
     - python
     - setuptools
     - cython >=0.20
-
     - bhmm >=0.6,<0.7
     - joblib >0.8.4
     - matplotlib
@@ -46,15 +45,16 @@ requirements:
     - numpy x.x
     - pyyaml
     - scipy
-    - six
+    - six >=1.10
     - psutil >=3.1.1
     - decorator >=4.0.0
     - progress_reporter
 
 test:
   requires:
-    - nose
-    - coverage ==4
+    - pytest 
+    - pytest-cov
+    - pytest-xdist
   imports:
     - pyemma
 

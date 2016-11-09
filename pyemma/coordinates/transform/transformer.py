@@ -253,6 +253,12 @@ class StreamingTransformerIterator(DataSourceIterator):
     def close(self):
         self._it.close()
 
+    def reset(self):
+        self._it.reset()
+
+    def _select_file(self, itraj):
+        self._it._select_file(0)
+
     def _next_chunk(self):
         X = self._it._next_chunk()
         return self._data_source._transform_array(X)

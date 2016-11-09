@@ -127,10 +127,10 @@ def extensions():
                   extra_compile_args=['-std=c99'])
 
     covar_module = \
-        Extension('pyemma.coordinates.estimators.covar.covar_c.covartools',
-                  sources=['pyemma/coordinates/estimators/covar/covar_c/covartools.pyx',
-                           'pyemma/coordinates/estimators/covar/covar_c/_covartools.c'],
-                  include_dirs=['pyemma/coordinates/estimators/covar/covar_c/',
+        Extension('pyemma._ext.variational.covar_c.covartools',
+                  sources=['pyemma/_ext/variational/covar_c/covartools.pyx',
+                           'pyemma/_ext/variational/covar_c/_covartools.c'],
+                  include_dirs=['pyemma/_ext/variational/covar_c/',
                                 np_inc,
                                 ],
                   extra_compile_args=['-std=c99', '-O3'])
@@ -186,6 +186,40 @@ def get_cmdclass():
 
     versioneer_cmds['sdist'] = sdist
 
+    from setuptools.command.test import test as TestCommand
+
+    class PyTest(TestCommand):
+        user_options = [('pytest-args=', 'a', "Arguments to pass to py.test")]
+
+        def initialize_options(self):
+            TestCommand.initialize_options(self)
+            self.pytest_args = ['pyemma']
+
+        def run_tests(self):
+            # import here, cause outside the eggs aren't loaded
+            import pytest
+            errno = pytest.main(self.pytest_args)
+            sys.exit(errno)
+
+    versioneer_cmds['test'] = PyTest
+
+    from setuptools.command.egg_info import egg_info
+
+    class extensions_json(egg_info):
+        def run(self):
+            f = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pyemma', '_extensions.json')
+            print("Generating {}".format(f))
+            extension_names = [e.name for e in extensions()]
+
+            with open(f, 'wb') as fp:
+                import json
+                s = json.dumps(extension_names).encode('ascii')
+                fp.write(s)
+
+            egg_info.run(self)
+
+    versioneer_cmds['egg_info'] = extensions_json
+
     return versioneer_cmds
 
 
@@ -208,14 +242,13 @@ metadata = dict(
     # install default emma.cfg into package.
     package_data=dict(pyemma=['pyemma.cfg']),
     cmdclass=get_cmdclass(),
-    tests_require=['nose'],
-    test_suite='nose.collector',
+    tests_require=['pytest'],
     # runtime dependencies
     install_requires=['numpy>=1.7.0',
                       'scipy>=0.11',
                       'mdtraj>=1.7.0',
                       'matplotlib',
-                      'msmtools>=1.1.3',
+                      'msmtools>=1.1.4',
                       'thermotools>=0.2.3',
                       'bhmm>=0.6,<0.7',
                       'joblib>0.8.4',
@@ -242,13 +275,9 @@ else:
                                   'mdtraj>=1.7.0',
                                   'nose',
                                   ]
-    if sys.version_info.major == 2:
-        # kick it since causes headages with conda recently...
-        #metadata['install_requires'] += ['mock']
-        pass
 
     metadata['package_data'] = {
-                                'pyemma': ['pyemma.cfg', 'logging.yml'],
+                                'pyemma': ['pyemma.cfg', 'logging.yml', '_extensions.json'],
                                 'pyemma.coordinates.tests': ['data/*'],
                                 'pyemma.datasets': ['*.npz'],
                                 'pyemma.util.tests': ['data/*'],

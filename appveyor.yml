@@ -6,6 +6,7 @@ environment:
     # See: http://stackoverflow.com/a/13751649/163740
     CMD_IN_ENV: "cmd /E:ON /V:ON /C .\\devtools\\ci\\appveyor\\run_with_env.cmd"
     CONDA_NPY: "110"
+    PYTHONHASHSEED: "0"
 
   matrix:
     - MINICONDA_PYTHON: "C:\\Miniconda"
@@ -27,7 +28,8 @@ install:
 
   - conda config --set always_yes true 
   - conda config --add channels omnia 
-  - conda install -q conda-build jinja2 
+  - conda config --add channels conda-forge
+  - conda install -q conda-build=2.0.1 jinja2
 
   # use agg backend in matplotlib to avoid gui popup, which can not be closed.
   - echo %userprofile%

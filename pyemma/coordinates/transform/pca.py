@@ -27,7 +27,7 @@ from pyemma.coordinates.transform.transformer import StreamingTransformer
 from pyemma.util.annotators import fix_docs, deprecated
 from pyemma.util.reflection import get_default_args
 
-from pyemma.coordinates.estimators.covar.running_moments import running_covar
+from pyemma._ext.variational.running_moments import running_covar
 import numpy as np
 from decorator import decorator
 
@@ -253,7 +253,7 @@ class PCA(StreamingTransformer, ProgressReporter):
 
         with iterable.iterator(return_trajindex=False, chunk=self.chunksize,
                                stride=self.stride, skip=self.skip) as it:
-            n_chunks = it._n_chunks
+            n_chunks = it.n_chunks
             self._progress_register(n_chunks, "calc mean+cov", 0)
             self._init_covar(partial_fit, n_chunks)
 

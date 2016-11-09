@@ -1,21 +1,3 @@
-
-# This file is part of PyEMMA.
-#
-# Copyright (c) 2015, 2014 Computational Molecular Biology Group, Freie Universitaet Berlin (GER)
-#
-# PyEMMA is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 """
 
 Data Types
@@ -91,7 +73,9 @@ take the following actions:
 """
 from __future__ import absolute_import
 
-import math, sys, numbers
+__author__ = 'noe'
+
+import math, sys, numbers, warnings
 import numpy as np
 from .covar_c import covartools
 
@@ -185,8 +169,8 @@ def _sparsify_pair(X, Y, remove_mean=False, modify_data=False, symmetrize=False,
     Y0, mask_Y, yconst = _sparsify(Y, sparse_mode=sparse_mode, sparse_tol=sparse_tol)
     # if we have nonzero constant columns and the number of samples is too small, do not treat as
     # sparse, because then the const-specialized dot product function doesn't pay off.
-    # is_var = mask_X is None or mask_Y is None
-    if mask_X is None or mask_Y is None:  # removed clauses: (is_var or 10*T < N):  # (symmetrize or not remove_mean)
+    is_const = not (_is_zero(xconst) and _is_zero(yconst))
+    if is_const and (symmetrize or not remove_mean) and 10*T < N:
         return X, None, None, Y, None, None
     else:
         return X0, mask_X, xconst, Y0, mask_Y, yconst
@@ -245,7 +229,8 @@ def _sum_sparse(xsum, mask_X, xconst, T):
     return s
 
 
-def _sum(X, xmask=None, xconst=None, Y=None, ymask=None, yconst=None, symmetric=False, remove_mean=False):
+def _sum(X, xmask=None, xconst=None, Y=None, ymask=None, yconst=None, symmetric=False, remove_mean=False,
+         weights=None):
     """ Computes the column sums and centered column sums.
 
     If symmetric = False, the sums will be determined as
@@ -276,6 +261,11 @@ def _sum(X, xmask=None, xconst=None, Y=None, ymask=None, yconst=None, symmetric=
 
     """
     T = X.shape[0]
+    # Check if weights are given:
+    if weights is not None:
+        X = weights[:, None] * X
+        if Y is not None:
+            Y = weights[:, None] * Y
     # compute raw sums on variable data
     sx_raw = X.sum(axis=0)  # this is the mean before subtracting it.
     sy_raw = 0
@@ -284,24 +274,37 @@ def _sum(X, xmask=None, xconst=None, Y=None, ymask=None, yconst=None, symmetric=
 
     # expand raw sums to full data
     if xmask is not None:
-        sx_raw = _sum_sparse(sx_raw, xmask, xconst, T)
+        if weights is not None:
+            sx_raw = _sum_sparse(sx_raw, xmask, xconst, weights.sum())
+        else:
+            sx_raw = _sum_sparse(sx_raw, xmask, xconst, T)
     if ymask is not None:
-        sy_raw = _sum_sparse(sy_raw, ymask, yconst, T)
+        if weights is not None:
+            sy_raw = _sum_sparse(sy_raw, ymask, yconst, weights.sum())
+        else:
+            sy_raw = _sum_sparse(sy_raw, ymask, yconst, T)
 
     # compute effective sums and centered sums
     if Y is not None and symmetric:
         sx = sx_raw + sy_raw
         sy = sx
-        w = 2 * T
+        if weights is not None:
+            w = 2*np.sum(weights)
+        else:
+            w = 2 * T
     else:
         sx = sx_raw
         sy = sy_raw
-        w = T
+        if weights is not None:
+            w = np.sum(weights)
+        else:
+            w = T
 
-    sx_raw_centered = sx_raw
-    sy_raw_centered = sy_raw
+    sx_raw_centered = sx_raw.copy()
+    if Y is not None:
+        sy_raw_centered = sy_raw.copy()
 
-    # center mean
+    # center mean.
     if remove_mean:
         if Y is not None and symmetric:
             sx_raw_centered -= 0.5 * sx
@@ -360,16 +363,19 @@ def _center(X, w, s, mask=None, const=None, inplace=True):
 # SECOND MOMENT MATRICES / COVARIANCES
 # ====================================================================================
 
-def _M2_dense(X, Y):
+def _M2_dense(X, Y, weights=None):
     """ 2nd moment matrix using dense matrix computations.
 
     This function is encapsulated such that we can make easy modifications of the basic algorithms
 
     """
-    return np.dot(X.T, Y)
+    if weights is not None:
+        return np.dot((weights[:, None] * X).T, Y)
+    else:
+        return np.dot(X.T, Y)
 
 
-def _M2_const(Xvar, mask_X, xvarsum, xconst, Yvar, mask_Y, yvarsum, yconst):
+def _M2_const(Xvar, mask_X, xvarsum, xconst, Yvar, mask_Y, yvarsum, yconst, weights=None):
     """ Computes the unnormalized covariance matrix between X and Y, exploiting constant input columns
 
     Computes the unnormalized covariance matrix :math:`C = X^\top Y`
@@ -404,21 +410,21 @@ def _M2_const(Xvar, mask_X, xvarsum, xconst, Yvar, mask_Y, yvarsum, yconst):
     mask_X : ndarray (M)
         Boolean array of size M of the full columns. False for constant column,
         True for variable column in X.
+    xvarsum : ndarray (m)
+        Column sum of variable part of data matrix X
+    xconst : ndarray (M-m)
+        Values of the constant part of data matrix X
     Yvar : ndarray (T, n)
         Part of the data matrix Y with :math:`n \le N` variable columns.
     mask_Y : ndarray (N)
         Boolean array of size N of the full columns. False for constant column,
         True for variable column in Y.
-    xsum : ndarray (m)
-        Column sum of variable part of data matrix X
-    xconst : ndarray (M-m)
-        Values of the constant part of data matrix X
-    ysum : ndarray (n)
+    yvarsum : ndarray (n)
         Column sum of variable part of data matrix Y
     yconst : ndarray (N-n)
         Values of the constant part of data matrix Y
-    symmetrize : bool
-        Compute symmetric mean and covariance matrix.
+    weights : None or ndarray (N)
+        weights for all time steps.
 
     Returns
     -------
@@ -426,9 +432,14 @@ def _M2_const(Xvar, mask_X, xvarsum, xconst, Yvar, mask_Y, yvarsum, yconst):
         Unnormalized covariance matrix.
 
     """
+    # check input
+    if mask_X is None:
+        mask_X = np.ones(Xvar.shape[1], dtype=np.bool)
+    elif mask_Y is None:
+        mask_Y = np.ones(Yvar.shape[1], dtype=np.bool)
     C = np.zeros((len(mask_X), len(mask_Y)))
     # Block 11
-    C[np.ix_(mask_X, mask_Y)] = np.dot(Xvar.T, Yvar)
+    C[np.ix_(mask_X, mask_Y)] = _M2_dense(Xvar, Yvar, weights=weights)
     # other blocks
     xsum_is_0 = _is_zero(xvarsum)
     ysum_is_0 = _is_zero(yvarsum)
@@ -438,23 +449,29 @@ def _M2_const(Xvar, mask_X, xvarsum, xconst, Yvar, mask_Y, yvarsum, yconst):
     # TODO: if not zero, we could still exploit the zeros in const and compute (and write!) this outer product
     # TODO: only to a sub-matrix
     # Block 12 and 21
+    if weights is not None:
+        wsum = np.sum(weights)
+        xvarsum = np.sum(weights[:, None] * Xvar, axis=0)
+        yvarsum = np.sum(weights[:, None] * Yvar, axis=0)
+    else:
+        wsum = Xvar.shape[0]
     if not (xsum_is_0 or yconst_is_0) or not (ysum_is_0 or xconst_is_0):
         C[np.ix_(mask_X, ~mask_Y)] = np.outer(xvarsum, yconst)
         C[np.ix_(~mask_X, mask_Y)] = np.outer(xconst, yvarsum)
     # Block 22
     if not (xconst_is_0 or yconst_is_0):
-        C[np.ix_(~mask_X, ~mask_Y)] = np.outer(Xvar.shape[0]*xconst, yconst)
+        C[np.ix_(~mask_X, ~mask_Y)] = np.outer(wsum*xconst, yconst)
     return C
 
 
-def _M2_sparse(Xvar, mask_X, Yvar, mask_Y):
+def _M2_sparse(Xvar, mask_X, Yvar, mask_Y, weights=None):
     """ 2nd moment matrix exploiting zero input columns """
     C = np.zeros((len(mask_X), len(mask_Y)))
-    C[np.ix_(mask_X, mask_Y)] = np.dot(Xvar.T, Yvar)
+    C[np.ix_(mask_X, mask_Y)] = _M2_dense(Xvar, Yvar, weights=weights)
     return C
 
 
-def _M2_sparse_sym(Xvar, mask_X, Yvar, mask_Y):
+def _M2_sparse_sym(Xvar, mask_X, Yvar, mask_Y, weights=None):
     """ 2nd self-symmetric moment matrix exploiting zero input columns
 
     Computes X'X + Y'Y and X'Y + Y'X
@@ -463,42 +480,45 @@ def _M2_sparse_sym(Xvar, mask_X, Yvar, mask_Y):
     assert len(mask_X) == len(mask_Y), 'X and Y need to have equal sizes for symmetrization'
 
     Cxxyy = np.zeros((len(mask_X), len(mask_Y)))
-    Cxxyy[np.ix_(mask_X, mask_X)] = np.dot(Xvar.T, Xvar)
-    Cxxyy[np.ix_(mask_Y, mask_Y)] += np.dot(Yvar.T, Yvar)
+    Cxxyy[np.ix_(mask_X, mask_X)] = _M2_dense(Xvar, Xvar, weights=weights)
+    Cxxyy[np.ix_(mask_Y, mask_Y)] += _M2_dense(Yvar, Yvar, weights=weights)
 
     Cxyyx = np.zeros((len(mask_X), len(mask_Y)))
-    Cxy = np.dot(Xvar.T, Yvar)
+    Cxy = _M2_dense(Xvar, Yvar, weights=weights)
+    Cyx = _M2_dense(Yvar, Xvar, weights=weights)
     Cxyyx[np.ix_(mask_X, mask_Y)] = Cxy
-    Cxyyx[np.ix_(mask_Y, mask_X)] += Cxy.T
+    Cxyyx[np.ix_(mask_Y, mask_X)] += Cyx
 
     return Cxxyy, Cxyyx
 
 
-def _M2(Xvar, Yvar, mask_X=None, mask_Y=None, xsum=0, xconst=0, ysum=0, yconst=0):
+def _M2(Xvar, Yvar, mask_X=None, mask_Y=None, xsum=0, xconst=0, ysum=0, yconst=0, weights=None):
     """ direct (nonsymmetric) second moment matrix. Decide if we need dense, sparse, const"""
     if mask_X is None and mask_Y is None:
-        return _M2_dense(Xvar, Yvar)
+        return _M2_dense(Xvar, Yvar, weights=weights)
     elif _is_zero(xsum) and _is_zero(ysum) or _is_zero(xconst) and _is_zero(yconst):
-        return _M2_sparse(Xvar, mask_X, Yvar, mask_Y)
+        return _M2_sparse(Xvar, mask_X, Yvar, mask_Y, weights=weights)
     else:
-        return _M2_const(Xvar, mask_X, xsum[mask_X], xconst, Yvar, mask_Y, ysum[mask_Y], yconst)
+        return _M2_const(Xvar, mask_X, xsum[mask_X], xconst, Yvar, mask_Y, ysum[mask_Y], yconst, weights=weights)
 
 
-def _M2_symmetric(Xvar, Yvar, mask_X=None, mask_Y=None, xsum=0, xconst=0, ysum=0, yconst=0):
+def _M2_symmetric(Xvar, Yvar, mask_X=None, mask_Y=None, xsum=0, xconst=0, ysum=0, yconst=0, weights=None):
     """ symmetric second moment matrices. Decide if we need dense, sparse, const"""
     if mask_X is None and mask_Y is None:
-        Cxxyy = _M2_dense(Xvar, Xvar) + _M2_dense(Yvar, Yvar)
-        Cxy = _M2_dense(Xvar, Yvar)
-        Cxyyx = Cxy + Cxy.T
+        Cxxyy = _M2_dense(Xvar, Xvar, weights=weights) + _M2_dense(Yvar, Yvar, weights=weights)
+        Cxy = _M2_dense(Xvar, Yvar, weights=weights)
+        Cyx = _M2_dense(Yvar, Xvar, weights=weights)
+        Cxyyx = Cxy + Cyx
     elif _is_zero(xsum) and _is_zero(ysum) or _is_zero(xconst) and _is_zero(yconst):
-        Cxxyy, Cxyyx = _M2_sparse_sym(Xvar, mask_X, Yvar, mask_Y)
+        Cxxyy, Cxyyx = _M2_sparse_sym(Xvar, mask_X, Yvar, mask_Y, weights=weights)
     else:
         xvarsum = xsum[mask_X]  # to variable part
         yvarsum = ysum[mask_Y]  # to variable part
-        Cxxyy = _M2_const(Xvar, mask_X, xvarsum, xconst, Xvar, mask_X, xvarsum, xconst) \
-                + _M2_const(Yvar, mask_Y, yvarsum, yconst, Yvar, mask_Y, yvarsum, yconst)
-        Cxy = _M2_const(Xvar, mask_X, xvarsum, xconst, Yvar, mask_Y, yvarsum, yconst)
-        Cxyyx = Cxy + Cxy.T
+        Cxxyy = _M2_const(Xvar, mask_X, xvarsum, xconst, Xvar, mask_X, xvarsum, xconst, weights=weights) \
+                + _M2_const(Yvar, mask_Y, yvarsum, yconst, Yvar, mask_Y, yvarsum, yconst, weights=weights)
+        Cxy = _M2_const(Xvar, mask_X, xvarsum, xconst, Yvar, mask_Y, yvarsum, yconst, weights=weights)
+        Cyx = _M2_const(Yvar, mask_Y, yvarsum, yconst, Xvar, mask_X, xvarsum, xconst, weights=weights)
+        Cxyyx = Cxy + Cyx
     return Cxxyy, Cxyyx
 
 
@@ -507,7 +527,7 @@ def _M2_symmetric(Xvar, Yvar, mask_X=None, mask_Y=None, xsum=0, xconst=0, ysum=0
 # =================================================
 
 
-def moments_XX(X, remove_mean=False, modify_data=False, sparse_mode='auto', sparse_tol=0.0):
+def moments_XX(X, remove_mean=False, modify_data=False, weights=None, sparse_mode='auto', sparse_tol=0.0):
     """ Computes the first two unnormalized moments of X
 
     Computes :math:`s = \sum_t x_t` and :math:`C = X^\top X` while exploiting
@@ -523,6 +543,9 @@ def moments_XX(X, remove_mean=False, modify_data=False, sparse_mode='auto', spar
         If remove_mean=True, the mean will be removed in the data matrix X,
         without creating an independent copy. This option is faster but might
         lead to surprises because your input array is changed.
+    weights: None or ndarray(T, )
+        weights assigned to each trajectory point. If None, all data points have weight one.
+        If ndarray, each data point is assigned a separate weight.
     sparse_mode : str
         one of:
             * 'dense' : always use dense mode
@@ -546,6 +569,9 @@ def moments_XX(X, remove_mean=False, modify_data=False, sparse_mode='auto', spar
         unnormalized covariance matrix
 
     """
+    # Check consistency of inputs:
+    if weights is not None:
+        assert X.shape[0] == weights.shape[0], 'X and weights_x must have equal length'
     # sparsify
     X0, mask_X, xconst = _sparsify(X, remove_mean=remove_mean, modify_data=modify_data,
                                    sparse_mode=sparse_mode, sparse_tol=sparse_tol)
@@ -555,18 +581,20 @@ def moments_XX(X, remove_mean=False, modify_data=False, sparse_mode='auto', spar
     X0, xconst = _copy_convert(X0, const=xconst, remove_mean=remove_mean,
                                copy=is_sparse or (remove_mean and not modify_data))
     # sum / center
-    w, sx, sx0_centered = _sum(X0, xmask=mask_X, xconst=xconst, symmetric=False, remove_mean=remove_mean)
+    w, sx, sx0_centered = _sum(X0, xmask=mask_X, xconst=xconst, symmetric=False, remove_mean=remove_mean,
+                               weights=weights)
     if remove_mean:
         _center(X0, w, sx, mask=mask_X, const=xconst, inplace=True)  # fast in-place centering
     # TODO: we could make a second const check here. If after summation not enough zeros have appeared in the
     # TODO: consts, we switch back to dense treatment here.
     # compute covariance matrix
-    C = _M2(X0, X0, mask_X=mask_X, mask_Y=mask_X, xsum=sx0_centered, xconst=xconst, ysum=sx0_centered, yconst=xconst)
+    C = _M2(X0, X0, mask_X=mask_X, mask_Y=mask_X, xsum=sx0_centered, xconst=xconst, ysum=sx0_centered, yconst=xconst,
+            weights=weights)
     return w, sx, C
 
 
-def moments_XXXY(X, Y, remove_mean=False, modify_data=False, symmetrize=False,
-                 sparse_mode='auto', sparse_tol=0.0):
+def moments_XXXY(X, Y, remove_mean=False, symmetrize=False, weights=None,
+                 modify_data=False, sparse_mode='auto', sparse_tol=0.0):
     """ Computes the first two unnormalized moments of X and Y
 
     If symmetrize is False, computes
@@ -594,12 +622,17 @@ def moments_XXXY(X, Y, remove_mean=False, modify_data=False, symmetrize=False,
         Second data matrix
     remove_mean : bool
         True: remove column mean from the data, False: don't remove mean.
+    symmetrize : bool
+        Computes symmetrized means and moments (see above)
+    weights : None or ndarray(T, )
+        weights assigned to each trajectory point of X. If None, all data points have weight one.
+        If ndarray, each data point is assigned a separate weight.
+    time_lagged : bool,
+        indicates that Y is a time-lagged version of X.
     modify_data : bool
         If remove_mean=True, the mean will be removed in the data matrix X,
         without creating an independent copy. This option is faster but might
         lead to surprises because your input array is changed.
-    symmetrize : bool
-        Computes symmetrized means and moments (see above)
     sparse_mode : str
         one of:
             * 'dense' : always use dense mode
@@ -627,6 +660,11 @@ def moments_XXXY(X, Y, remove_mean=False, modify_data=False, symmetrize=False,
         unnormalized covariance matrix of XY
 
     """
+    # Check consistency of inputs:
+    if Y is not None:
+        assert Y.shape[0] == X.shape[0], 'X and Y must have equal length.'
+    if weights is not None:
+        assert X.shape[0] == weights.shape[0], 'X and weights_x must have equal length'
     # sparsify
     X0, mask_X, xconst, Y0, mask_Y, yconst = _sparsify_pair(X, Y, remove_mean=remove_mean, modify_data=modify_data,
                                                             symmetrize=symmetrize, sparse_mode=sparse_mode, sparse_tol=sparse_tol)
@@ -637,24 +675,25 @@ def moments_XXXY(X, Y, remove_mean=False, modify_data=False, symmetrize=False,
     Y0, yconst = _copy_convert(Y0, const=yconst, remove_mean=remove_mean, copy=copy)
     # sum / center
     w, sx, sx_centered, sy, sy_centered = _sum(X0, xmask=mask_X, xconst=xconst, Y=Y0, ymask=mask_Y, yconst=yconst,
-                                               symmetric=symmetrize, remove_mean=remove_mean)
+                                               symmetric=symmetrize, remove_mean=remove_mean, weights=weights)
     if remove_mean:
         _center(X0, w, sx, mask=mask_X, const=xconst, inplace=True)  # fast in-place centering
         _center(Y0, w, sy, mask=mask_Y, const=yconst, inplace=True)  # fast in-place centering
 
     if symmetrize:
         Cxx, Cxy = _M2_symmetric(X0, Y0, mask_X=mask_X, mask_Y=mask_Y,
-                                 xsum=sx_centered, xconst=xconst, ysum=sy_centered, yconst=yconst)
+                                 xsum=sx_centered, xconst=xconst, ysum=sy_centered, yconst=yconst, weights=weights)
     else:
         Cxx = _M2(X0, X0, mask_X=mask_X, mask_Y=mask_X,
-                  xsum=sx_centered, xconst=xconst, ysum=sx_centered, yconst=xconst)
+                  xsum=sx_centered, xconst=xconst, ysum=sx_centered, yconst=xconst, weights=weights)
         Cxy = _M2(X0, Y0, mask_X=mask_X, mask_Y=mask_Y,
-                  xsum=sx_centered, xconst=xconst, ysum=sy_centered, yconst=yconst)
+                  xsum=sx_centered, xconst=xconst, ysum=sy_centered, yconst=yconst, weights=weights)
 
     return w, sx, sy, Cxx, Cxy
 
 
-def moments_block(X, Y, remove_mean=False, modify_data=False, sparse_mode='auto', sparse_tol=0.0):
+def moments_block(X, Y, remove_mean=False, modify_data=False,
+                  sparse_mode='auto', sparse_tol=0.0):
     """ Computes the first two unnormalized moments of X and Y
 
     Computes
@@ -729,7 +768,7 @@ def moments_block(X, Y, remove_mean=False, modify_data=False, sparse_mode='auto'
     return w, [sx, sy], [[Cxx, Cxy], [Cxy.T, Cyy]]
 
 
-def covar(X, remove_mean=False, modify_data=False, sparse_mode='auto', sparse_tol=0.0):
+def covar(X, remove_mean=False, modify_data=False, weights=None, sparse_mode='auto', sparse_tol=0.0):
     """ Computes the covariance matrix of X
 
     Computes
@@ -751,6 +790,9 @@ def covar(X, remove_mean=False, modify_data=False, sparse_mode='auto', sparse_to
         If remove_mean=True, the mean will be removed in the data matrix X,
         without creating an independent copy. This option is faster but might
         lead to surprises because your input array is changed.
+    weights : None or ndarray(T, )
+        weights assigned to each trajectory point of X. If None, all data points have weight one.
+        If ndarray, each data point is assigned a separate weight.
     sparse_mode : str
         one of:
             * 'dense' : always use dense mode
@@ -774,12 +816,13 @@ def covar(X, remove_mean=False, modify_data=False, sparse_mode='auto', sparse_to
     moments_XX
 
     """
-    w, s, M = moments_XX(X, remove_mean=remove_mean, modify_data=modify_data,
+    w, s, M = moments_XX(X, remove_mean=remove_mean, weights=weights, modify_data=modify_data,
                          sparse_mode=sparse_mode, sparse_tol=sparse_tol)
     return M / float(w)
 
 
-def covars(X, Y, remove_mean=False, modify_data=False, symmetrize=False, sparse_mode='auto', sparse_tol=0.0):
+def covars(X, Y, remove_mean=False, modify_data=False, symmetrize=False, weights=None, sparse_mode='auto',
+           sparse_tol=0.0):
     """ Computes the covariance and cross-covariance matrix of X and Y
 
     If symmetrize is False, computes
@@ -812,6 +855,9 @@ def covars(X, Y, remove_mean=False, modify_data=False, symmetrize=False, sparse_
         lead to surprises because your input array is changed.
     symmetrize : bool
         Computes symmetrized means and moments (see above)
+    weights : None or ndarray(T, )
+        weights assigned to each trajectory point of X. If None, all data points have weight one.
+        If ndarray, each data point is assigned a separate weight.
     sparse_mode : str
         one of:
             * 'dense' : always use dense mode
@@ -837,6 +883,6 @@ def covars(X, Y, remove_mean=False, modify_data=False, symmetrize=False, sparse_
     moments_XXXY
 
     """
-    w, sx, sy, Mxx, Mxy = moments_XXXY(X, Y, remove_mean=remove_mean, modify_data=modify_data,
+    w, sx, sy, Mxx, Mxy = moments_XXXY(X, Y, remove_mean=remove_mean, modify_data=modify_data, weights=weights,
                                        symmetrize=symmetrize, sparse_mode=sparse_mode, sparse_tol=sparse_tol)
     return Mxx / float(w), Mxy / float(w)
