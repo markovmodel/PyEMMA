@@ -57,13 +57,7 @@ class TestDtrajStats(unittest.TestCase):
             dtrajs = copy.deepcopy(dtrajs)
             newdiscretetraj = []
             for t, st in enumerate(dtrajs):
-                ws = []
-                for co in core_set:
-                    w = np.where(st == co)[0]
-                    if w.size > 0:
-                        w = min(w)
-                    ws.append(w)
-                oldmicro = min(ws)
+                oldmicro = -1
                 newtraj = []
                 for f, micro in enumerate(st):
                     newmicro = None
