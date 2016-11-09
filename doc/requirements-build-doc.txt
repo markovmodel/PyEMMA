@@ -4,5 +4,5 @@ sphinx>=1.4
 nbconvert>=4.2.0
 sphinxcontrib-issuetracker
 
-# sphinx_rtd_theme from git
--e git://github.com/snide/sphinx_rtd_theme.git#egg=sphinx_rtd_theme
+# theme 
+msmb_theme>=1.2

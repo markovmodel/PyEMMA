@@ -117,11 +117,17 @@ mathjax_path = ("https://cdn.mathjax.org/mathjax/latest/MathJax.js?"
 
 # -- Options for HTML output ---------------------------------------------
 
-# rtd theme
+# theme
 try:
+    html_context = {
+        'versions_json_url': 'http://emma-project.org/versions.json'
+    }
+    # msmb_theme extends rtd_theme
+    import msmb_theme
     import sphinx_rtd_theme
-    html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
-    html_theme = 'sphinx_rtd_theme'
+    html_theme_path = [msmb_theme.get_html_theme_path(),
+                       sphinx_rtd_theme.get_html_theme_path()]
+    html_theme = 'msmb_theme'
 except ImportError:
     html_theme = 'default'
 
