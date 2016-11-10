@@ -5,4 +5,5 @@ nbconvert>=4.2.0
 sphinxcontrib-issuetracker
 
 # theme 
+sphinx_rtd_theme
 msmb_theme>=1.2
