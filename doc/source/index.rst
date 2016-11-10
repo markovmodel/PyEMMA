@@ -22,7 +22,7 @@ examples:
 
 Technical features:
 
-* Code is implemented in Python (supports 2.7, 3.3/3.4) and C.
+* Code is implemented in Python (supports 2.7, 3.4/3.5) and C.
 * Runs on Linux (64 bit), Windows (32 or 64 bit) or MacOS (64 bit).
 * MD data can be either loaded (fast processing but high memory requirements) or streamed (slower processing but
   low memory requirements).
