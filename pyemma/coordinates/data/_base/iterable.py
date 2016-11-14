@@ -19,7 +19,6 @@ from __future__ import print_function
 from abc import ABCMeta, abstractmethod
 import six
 import numpy as np
-import numbers
 
 from pyemma._base.logging import Loggable
 from pyemma._base.progress import ProgressReporter
