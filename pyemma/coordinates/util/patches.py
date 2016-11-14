@@ -235,6 +235,7 @@ class iterload(object):
                     curr_size += len(grouped_stride)
                 if curr_size == chunksize:
                     yield _join_traj_data(coords, self._topology)
+                    chunksize = self._chunksize
                     curr_size = 0
                     coords = []
                 while leftovers:

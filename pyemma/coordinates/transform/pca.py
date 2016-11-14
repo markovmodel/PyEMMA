@@ -225,7 +225,7 @@ class PCA(StreamingTransformer, ProgressReporter):
 
         with iterable.iterator(return_trajindex=False, chunk=self.chunksize,
                                stride=self.stride, skip=self.skip) as it:
-            n_chunks = it._n_chunks
+            n_chunks = it.n_chunks
             self._progress_register(n_chunks, "calc mean+cov", 0)
             self._init_covar(partial_fit, n_chunks)
 

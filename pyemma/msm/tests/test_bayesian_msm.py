@@ -79,10 +79,10 @@ class TestBMSM(unittest.TestCase):
         assert msm.nstates == self.nstates
 
     def test_transition_matrix_samples(self):
-        self._transition_matrix_samples(self.bmsm_rev)
-        self._transition_matrix_samples(self.bmsm_revpi)
+        self._transition_matrix_samples(self.bmsm_rev, given_pi=False)
+        self._transition_matrix_samples(self.bmsm_revpi, given_pi=True)
 
-    def _transition_matrix_samples(self, msm):
+    def _transition_matrix_samples(self, msm, given_pi):
         Psamples = msm.sample_f('transition_matrix')
         # shape
         assert np.array_equal(np.shape(Psamples), (self.nsamples, self.nstates, self.nstates))
@@ -90,7 +90,15 @@ class TestBMSM(unittest.TestCase):
         import msmtools.analysis as msmana
         for P in Psamples:
             assert msmana.is_transition_matrix(P)
-            assert msmana.is_reversible(P)
+            try:
+                assert msmana.is_reversible(P)
+            except AssertionError:
+                # re-do calculation msmtools just performed to get details
+                from msmtools.analysis import stationary_distribution
+                mu = stationary_distribution(P)
+                X = mu[:, np.newaxis] * P
+                np.testing.assert_allclose(X, np.transpose(X), atol=1e-12,
+                                           err_msg="P not reversible, given_pi={}".format(given_pi))
 
     def test_transition_matrix_stats(self):
         self._transition_matrix_stats(self.bmsm_rev)

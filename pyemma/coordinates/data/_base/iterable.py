@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import print_function
 from abc import ABCMeta, abstractmethod
 import six
 import numpy as np
@@ -223,8 +224,8 @@ class Iterable(six.with_metaclass(ABCMeta, ProgressReporter, Loggable)):
                 self._logger.debug("get_output(): created output trajs with shapes: %s"
                                    % [x.shape for x in trajs])
             # fetch data
-            self.logger.debug("nchunks :%s, chunksize=%s" % (it._n_chunks, it.chunksize))
-            self._progress_register(it._n_chunks,
+            self.logger.debug("nchunks :%s, chunksize=%s" % (it.n_chunks, it.chunksize))
+            self._progress_register(it.n_chunks,
                                     description='getting output of %s' % self.__class__.__name__,
                                     stage=1)
             for itraj, chunk in it:
@@ -273,10 +274,10 @@ class Iterable(six.with_metaclass(ABCMeta, ProgressReporter, Loggable)):
         >>> reader = pyemma.coordinates.source(data)
         >>> filename = "distances_{itraj}.dat"
         >>> with TemporaryDirectory() as td:
-        ...    os.chdir(td)
-        ...    reader.write_to_csv(filename, header='', delimiter=';')
-        ...    print(os.listdir('.'))
-        ['distances_2.dat', 'distances_1.dat', 'distances_0.dat']
+        ...    out = os.path.join(td, filename)
+        ...    reader.write_to_csv(out, header='', delimiter=';')
+        ...    print(sorted(os.listdir(td)))
+        ['distances_0.dat', 'distances_1.dat', 'distances_2.dat']
         """
         import os
         if not filename:
@@ -310,7 +311,7 @@ class Iterable(six.with_metaclass(ABCMeta, ProgressReporter, Loggable)):
                 continue
         f = None
         with self.iterator(stride, chunk=chunksize, return_trajindex=False) as it:
-            self._progress_register(it._n_chunks, "saving to csv")
+            self._progress_register(it.n_chunks, "saving to csv")
             oldtraj = -1
             for X in it:
                 if oldtraj != it.current_trajindex:
@@ -375,7 +376,7 @@ class _LaggedIterator(object):
                                                if x > lag]
 
     @property
-    def _n_chunks(self):
+    def n_chunks(self):
         cs = self._it.chunksize
         n1 = self._it._data_source.n_chunks(cs, stride=self._actual_stride, skip=self._lag)
         n2 = self._it._data_source.n_chunks(cs, stride=self._actual_stride, skip=0)
@@ -457,9 +458,9 @@ class _LegacyLaggedIterator(object):
         self._return_trajindex = return_trajindex
 
     @property
-    def _n_chunks(self):
-        n1 = self._it._n_chunks
-        n2 = self._it_lagged._n_chunks
+    def n_chunks(self):
+        n1 = self._it.n_chunks
+        n2 = self._it_lagged.n_chunks
         return min(n1, n2)
 
     def __len__(self):
