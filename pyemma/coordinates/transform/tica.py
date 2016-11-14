@@ -301,7 +301,7 @@ class TICA(StreamingTransformer):
                 except MemoryError:
                     raise MemoryError('TICA covariance matrix does not fit into memory. '
                                       'Input is too high-dimensional ({} dimensions). '
-                                      'Please use a lower-dimensional projection of the simulations.'.format(X.shape[1])) from None
+                                      'Please use a lower-dimensional projection of the simulations.'.format(X.shape[1]))
                 # counting chunks and log of eta
                 self._progress_update(1, stage=0)
 
