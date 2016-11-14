@@ -2,7 +2,7 @@
 EMMA (Emma's Markov Model Algorithms)
 =====================================
 
-.. image:: https://travis-ci.org/markovmodel/PyEMMA.svg?branch=devel
+.. image:: https://img.shields.io/travis/markovmodel/PyEMMA/master.svg
    :target: https://travis-ci.org/markovmodel/PyEMMA
 .. image:: https://badge.fury.io/py/pyemma.svg
    :target: https://pypi.python.org/pypi/pyemma
@@ -12,8 +12,8 @@ EMMA (Emma's Markov Model Algorithms)
    :target: https://anaconda.org/omnia/pyemma
 .. image:: https://anaconda.org/omnia/pyemma/badges/installer/conda.svg
    :target: https://conda.anaconda.org/omnia
-.. image:: https://coveralls.io/repos/markovmodel/PyEMMA/badge.svg?branch=devel
-   :target: https://coveralls.io/r/markovmodel/PyEMMA?branch=devel
+.. image:: https://img.shields.io/codecov/c/github/markovmodel/PyEMMA/devel.svg
+   :target: https://codecov.io/gh/markovmodel/PyEMMA/branch/devel
 
 
 What is it?
