@@ -255,20 +255,7 @@ class MSM(_Model):
         if value is None and self.P is not None:
             from msmtools.analysis import stationary_distribution as _statdist
             value = _statdist(self.P)
-        elif self.P is not None:
-            # check input
-            # this only holds for a unique measure...
-            try:
-                test_unique = self.P.dot(value)
-                _np.testing.assert_allclose(test_unique, value,
-                                            atol=1e-14, rtol=0.01, err_msg='given stationary distribution '
-                                                                           'is not a valid unique measure.')
-
-            except AssertionError:
-                pass
-                # import logging
-                # logger = logging.getLogger('pyemma.msm')
-                # logger.exception("pi not valid/unique")
+        elif value is not None:
             # check sum is one
             _np.testing.assert_allclose(_np.sum(value), 1, atol=1e-14)
         self._pi = value
