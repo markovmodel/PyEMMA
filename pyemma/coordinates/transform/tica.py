@@ -296,7 +296,12 @@ class TICA(StreamingTransformer):
             self._progress_register(it.n_chunks, "calculate mean+cov", 0)
             self._init_covar(partial_fit, it.n_chunks)
             for X, Y in it:
-                self._covar.add(X, Y)
+                try:
+                    self._covar.add(X, Y)
+                except MemoryError:
+                    raise MemoryError('TICA covariance matrix does not fit into memory. '
+                                      'Input is too high-dimensional ({} dimensions). '
+                                      'Please use a lower-dimensional projection of the simulations.'.format(X.shape[1]))
                 # counting chunks and log of eta
                 self._progress_update(1, stage=0)
 
