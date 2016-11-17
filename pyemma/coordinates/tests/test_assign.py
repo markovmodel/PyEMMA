@@ -19,7 +19,10 @@ from __future__ import absolute_import
 
 import os
 import unittest
+from contextlib import contextmanager
 
+import psutil
+from mock import patch
 from pyemma.util.files import TemporaryDirectory
 from logging import getLogger
 from six.moves import range
@@ -31,12 +34,21 @@ import pyemma.util.types as types
 logger = getLogger('pyemma.'+'TestCluster')
 
 
+@contextmanager
+def temporary_env(var, value):
+    old_val = os.getenv(var, None)
+    os.environ[var] = str(value)
+    yield
+    if old_val is not None:
+        os.environ[var] = old_val
+    else:
+        del os.environ[var]
+
+
 class TestClusterAssign(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        super(TestClusterAssign, cls).setUpClass()
-
         # generate Gaussian mixture
         means = [np.array([-3,0]),
                  np.array([-1,1]),
@@ -56,13 +68,14 @@ class TestClusterAssign(unittest.TestCase):
             cls.X[i*cls.nsample:(i+1)*cls.nsample,0] = widths[i][0] * np.random.randn() + means[i][0]
             cls.X[i*cls.nsample:(i+1)*cls.nsample,1] = widths[i][1] * np.random.randn() + means[i][1]
         # try assigning actual centers:
-        cls.centers = np.array([[-3,0],
-                                [-1,1],
-                                [0,0],
-                                [1,-1],
-                                [4,2]])
+        cls.centers = np.array([[-3, 0],
+                                [-1, 1],
+                                [0, 0],
+                                [1, -1],
+                                [4, 2]])
+        cls.centers_big = cls.X[np.random.choice(cls.nsample, 100)]
         # assignment
-        cls.ass = coor.assign_to_centers(data = cls.X, centers=cls.centers, return_dtrajs=False, n_jobs=1)
+        cls.ass = coor.assign_to_centers(data=cls.X, centers=cls.centers, return_dtrajs=False, n_jobs=1)
 
     def test_chunksize(self):
         assert types.is_int(self.ass.chunksize)
@@ -189,77 +202,49 @@ class TestClusterAssign(unittest.TestCase):
             c = coor.assign_to_centers(data, centers)
 
     def test_threads_env_num_threads_fixed(self):
-        import os
-        old_val = os.getenv('OMP_NUM_THREADS', '')
-        os.environ['OMP_NUM_THREADS'] = '4'
-        desired_n_jobs=2
-        try:
-            assert os.environ['OMP_NUM_THREADS'] == "4"
-            X = np.random.random((1000, 3))
-            centers = X[np.random.choice(1000, 10)]
-            res = coor.assign_to_centers(X, centers, n_jobs=desired_n_jobs, return_dtrajs=False)
+        desired_n_jobs = 2
+        with temporary_env('OMP_NUM_THREADS', 0):
+            assert os.environ['OMP_NUM_THREADS'] == '0'
+            res = coor.assign_to_centers(self.X, self.centers_big, n_jobs=desired_n_jobs, return_dtrajs=False)
             self.assertEqual(res.n_jobs, desired_n_jobs)
-        finally:
-            del os.environ['OMP_NUM_THREADS']
 
     def test_threads_env_num_threads_fixed_def_arg(self):
-        import os
+        """ tests that if no njobs arg is given (None) we fall back to OMP_NUM_THREADS """
         desired_n_jobs = 3
-        os.environ['OMP_NUM_THREADS'] = str(desired_n_jobs)
-        try:
+        with temporary_env('OMP_NUM_THREADS', desired_n_jobs):
             assert os.environ['OMP_NUM_THREADS'] == str(desired_n_jobs)
-            X = np.random.random((1000, 3))
-            centers = X[np.random.choice(1000, 10)]
             # note: we want another job number here, but it will be ignored!
-            res = coor.assign_to_centers(X, centers, n_jobs=None, return_dtrajs=False)
+            res = coor.assign_to_centers(self.X, self.centers_big, n_jobs=None, return_dtrajs=False)
             self.assertEqual(res.n_jobs, desired_n_jobs)
-        finally:
-            del os.environ['OMP_NUM_THREADS']
 
     def test_threads_omp_env_arg_borked(self):
-        import os
-        os.environ['OMP_NUM_THREADS'] = 'this is not right'
-        try:
-            import psutil
-            X = np.random.random((1000, 3))
-            centers = X[np.random.choice(1000, 10)]
-            # note: we want another job number here, but it will be ignored!
-            res = coor.assign_to_centers(X, centers, n_jobs=None, return_dtrajs=False)
-            self.assertEqual(res.n_jobs, psutil.cpu_count())
-        finally:
-            del os.environ['OMP_NUM_THREADS']
+        """ if the env var can not be interpreted as int, fall back to one thread. """
+        expected = 3
+        with patch('psutil.cpu_count', lambda: expected), temporary_env('OMP_NUM_THREADS', 'this is not right'):
+            res = coor.assign_to_centers(self.X, self.centers_big, n_jobs=None, return_dtrajs=False)
+            self.assertEqual(res.n_jobs, expected)
 
     def test_threads_cpu_count_def_arg(self):
-        import psutil
-        X = np.random.random((1000, 3))
-        centers = X[np.random.choice(1000, 10)]
-        # note: we want another job number here, but it will be ignored!
-        res = coor.assign_to_centers(X, centers, return_dtrajs=False)
-        self.assertEqual(res.n_jobs, psutil.cpu_count())
+        expected = 3
+        with patch('psutil.cpu_count', lambda: expected):
+            res = coor.assign_to_centers(self.X, self.centers_big, return_dtrajs=False)
+        self.assertEqual(res.n_jobs, expected)
 
     def test_assignment_multithread(self):
         # re-do assignment with multiple threads and compare results
-        n = 10000
-        dim = 100
-        chunksize=1000
-        X = np.random.random((n, dim))
-        centers = X[np.random.choice(n, dim)]
+        chunksize = 1000
 
-        assignment_mp = coor.assign_to_centers(X, centers, n_jobs=4, chunk_size=chunksize)
-        assignment_sp = coor.assign_to_centers(X, centers, n_jobs=1, chunk_size=chunksize)
+        assignment_mp = coor.assign_to_centers(self.X, self.centers_big, n_jobs=2, chunk_size=chunksize)
+        assignment_sp = coor.assign_to_centers(self.X, self.centers_big, n_jobs=1, chunk_size=chunksize)
 
         np.testing.assert_equal(assignment_mp, assignment_sp)
 
     def test_assignment_multithread_minrsmd(self):
         # re-do assignment with multiple threads and compare results
-        n = 10000
-        dim = 100
         chunksize = 1000
-        X = np.random.random((n, dim))
-        centers = X[np.random.choice(n, dim)]
 
-        assignment_mp = coor.assign_to_centers(X, centers, n_jobs=4, chunk_size=chunksize, metric='minRMSD')
-        assignment_sp = coor.assign_to_centers(X, centers, n_jobs=1, chunk_size=chunksize, metric='minRMSD')
+        assignment_mp = coor.assign_to_centers(self.X, self.centers_big, n_jobs=2, chunk_size=chunksize, metric='minRMSD')
+        assignment_sp = coor.assign_to_centers(self.X, self.centers_big, n_jobs=1, chunk_size=chunksize, metric='minRMSD')
 
         np.testing.assert_equal(assignment_mp, assignment_sp)
 
