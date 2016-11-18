@@ -76,13 +76,14 @@ def _version_check(current, testing=False):
     import json
     import platform
     import six
+    import os
     from six.moves.urllib.request import urlopen, Request
     from distutils.version import LooseVersion as parse
     from contextlib import closing
     import threading
 
     import sys
-    if 'pytest' in sys.modules:
+    if 'pytest' in sys.modules or os.getenv('CI', False):
         testing = True
 
     def _impl():
