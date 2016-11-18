@@ -55,7 +55,7 @@ def _new_init(self, *args, **kwargs):
 _unittest.TestCase.__init__ = _new_init
 
 
-def _version_check(current):
+def _version_check(current, testing=False):
     """ checks latest version online from http://emma-project.org.
 
     Can be disabled by setting config.check_version = False.
@@ -65,7 +65,7 @@ def _version_check(current):
     >>> with warnings.catch_warnings(record=True) as cw, patch('pyemma.version', '0.1'):
     ...     warnings.simplefilter('always', UserWarning)
     ...     v = pyemma.version
-    ...     t = pyemma._version_check(v)
+    ...     t = pyemma._version_check(v, testing=True)
     ...     t.start()
     ...     t.join()
     ...     assert cw, "no warning captured"
@@ -81,12 +81,16 @@ def _version_check(current):
     from contextlib import closing
     import threading
 
+    import sys
+    if 'pytest' in sys.modules:
+        testing = True
+
     def _impl():
         try:
             r = Request('http://emma-project.org/versions.json',
                         headers={'User-Agent': 'PyEMMA-{emma_version}-Py-{python_version}-{platform}'
                         .format(emma_version=current, python_version=platform.python_version(),
-                                platform=platform.platform(terse=True))})
+                                platform=platform.platform(terse=True))} if not testing else {})
             encoding_args = {} if six.PY2 else {'encoding': 'ascii'}
             with closing(urlopen(r, timeout=5)) as response:
                 payload = str(response.read(), **encoding_args)
