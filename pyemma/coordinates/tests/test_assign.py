@@ -225,7 +225,7 @@ class TestClusterAssign(unittest.TestCase):
             self.assertEqual(res.n_jobs, expected)
 
     def test_threads_cpu_count_def_arg(self):
-        expected = os.getenv('OMP_NUM_THREADS', 3)
+        expected = int(os.getenv('OMP_NUM_THREADS', 3))
         with patch('psutil.cpu_count', lambda: expected):
             res = coor.assign_to_centers(self.X, self.centers_big, return_dtrajs=False)
         self.assertEqual(res.n_jobs, expected)
