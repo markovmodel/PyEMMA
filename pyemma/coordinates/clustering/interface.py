@@ -107,7 +107,8 @@ class AbstractClustering(StreamingTransformer, Model, ClusterMixin):
                                      " 'OMP_NUM_THREADS'=%s" % omp_threads_from_env)
                 except ValueError as ve:
                     self.logger.warning("could not parse env variable 'OMP_NUM_THREADS'."
-                                        "Value='%s'. Error=%s" % (omp_threads_from_env, ve))
+                                        " Value='{}'. Error={}. Will use {} jobs."
+                                        .format(omp_threads_from_env, ve, n_cpus))
                     self._n_jobs = n_cpus
             else:
                 self._n_jobs = n_cpus

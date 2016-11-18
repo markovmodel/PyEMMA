@@ -53,3 +53,60 @@ def _new_init(self, *args, **kwargs):
     _setup_testing()
 
 _unittest.TestCase.__init__ = _new_init
+
+
+def _version_check(current, testing=False):
+    """ checks latest version online from http://emma-project.org.
+
+    Can be disabled by setting config.check_version = False.
+
+    >>> from mock import patch
+    >>> import warnings, pyemma
+    >>> with warnings.catch_warnings(record=True) as cw, patch('pyemma.version', '0.1'):
+    ...     warnings.simplefilter('always', UserWarning)
+    ...     v = pyemma.version
+    ...     t = pyemma._version_check(v, testing=True)
+    ...     t.start()
+    ...     t.join()
+    ...     assert cw, "no warning captured"
+    ...     assert "latest release" in str(cw[0].message), "wrong msg"
+    """
+    if not config.check_version:
+        return
+    import json
+    import platform
+    import six
+    import os
+    from six.moves.urllib.request import urlopen, Request
+    from distutils.version import LooseVersion as parse
+    from contextlib import closing
+    import threading
+
+    import sys
+    if 'pytest' in sys.modules or os.getenv('CI', False):
+        testing = True
+
+    def _impl():
+        try:
+            r = Request('http://emma-project.org/versions.json',
+                        headers={'User-Agent': 'PyEMMA-{emma_version}-Py-{python_version}-{platform}'
+                        .format(emma_version=current, python_version=platform.python_version(),
+                                platform=platform.platform(terse=True))} if not testing else {})
+            encoding_args = {} if six.PY2 else {'encoding': 'ascii'}
+            with closing(urlopen(r, timeout=30)) as response:
+                payload = str(response.read(), **encoding_args)
+            versions = json.loads(payload)
+            latest_json = tuple(filter(lambda x: x['latest'], versions))[0]['version']
+            latest = parse(latest_json)
+            if parse(current) < latest:
+                import warnings
+                warnings.warn("You are not using the latest release of PyEMMA."
+                              " Latest is {latest}, you have {current}."
+                              .format(latest=latest, current=current), category=UserWarning)
+        except Exception:
+            import logging
+            logging.getLogger('pyemma').exception("error during version check")
+    return threading.Thread(target=_impl)
+
+# start check in background
+_version_check(version).start()
