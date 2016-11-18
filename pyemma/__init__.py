@@ -92,7 +92,7 @@ def _version_check(current, testing=False):
                         .format(emma_version=current, python_version=platform.python_version(),
                                 platform=platform.platform(terse=True))} if not testing else {})
             encoding_args = {} if six.PY2 else {'encoding': 'ascii'}
-            with closing(urlopen(r, timeout=5)) as response:
+            with closing(urlopen(r, timeout=30)) as response:
                 payload = str(response.read(), **encoding_args)
             versions = json.loads(payload)
             latest_json = tuple(filter(lambda x: x['latest'], versions))[0]['version']
