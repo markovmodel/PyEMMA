@@ -21,15 +21,14 @@ from __future__ import absolute_import
 
 import math
 
-from pyemma._base.model import Model
-from pyemma._base.progress.reporter import ProgressReporter
-from pyemma.coordinates.transform.transformer import StreamingTransformer
-from pyemma.util.annotators import fix_docs
-from pyemma.util.reflection import get_default_args
-
-from pyemma._ext.variational.running_moments import running_covar
 import numpy as np
 from decorator import decorator
+from pyemma._base.model import Model
+from pyemma._base.progress.reporter import ProgressReporter
+from pyemma._ext.variational.running_moments import running_covar
+from pyemma.coordinates.data._base.transformer import StreamingTransformer
+from pyemma.util.annotators import fix_docs
+from pyemma.util.reflection import get_default_args
 
 
 __all__ = ['PCA']

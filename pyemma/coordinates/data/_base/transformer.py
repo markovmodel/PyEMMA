@@ -19,20 +19,17 @@
 from __future__ import absolute_import
 
 from abc import ABCMeta, abstractmethod
-import six
 
-from pyemma._base.estimator import Estimator
+import numpy as np
+import six
 from pyemma._ext.sklearn.base import TransformerMixin
-from pyemma.coordinates.data import DataInMemory
 from pyemma.coordinates.data._base.datasource import DataSource, DataSourceIterator
-from pyemma.coordinates.data._base.iterable import Iterable
 from pyemma.coordinates.data._base.random_accessible import RandomAccessStrategy
+from pyemma.coordinates.data._base.streaming_estimator import StreamingEstimator
 from pyemma.coordinates.util.change_notification import (inform_children_upon_change,
                                                          NotifyOnChangesMixIn)
-from pyemma.util.annotators import fix_docs
-from pyemma.util.exceptions import NotConvergedWarning
+from pyemma.util.annotators import fix_docs, deprecated
 from six.moves import range
-import numpy as np
 
 
 __all__ = ['Transformer', 'StreamingTransformer']
@@ -108,14 +105,14 @@ class Transformer(six.with_metaclass(ABCMeta, TransformerMixin)):
 
 
 @fix_docs
-class StreamingTransformer(Transformer, Estimator, DataSource, NotifyOnChangesMixIn):
+class StreamingTransformer(Transformer, StreamingEstimator, DataSource, NotifyOnChangesMixIn):
 
-    r""" Basis class for pipelined Transformers
+    r""" Basis class for pipelined Transformers, which perform also estimation.
 
     Parameters
     ----------
     chunksize : int (optional)
-        the chunksize used to batch process underlying data
+        the chunksize used to batch process underlying data.
 
     """
     def __init__(self, chunksize=1000):
@@ -176,36 +173,13 @@ class StreamingTransformer(Transformer, Estimator, DataSource, NotifyOnChangesMi
         return StreamingTransformerIterator(self, skip=skip, chunk=chunk, stride=stride,
                                             return_trajindex=return_trajindex, cols=cols)
 
-    def estimate(self, X, **kwargs):
-        if not isinstance(X, Iterable):
-            if isinstance(X, np.ndarray) or \
-                    (isinstance(X, (list, tuple)) and len(X) > 0 and all([isinstance(x, np.ndarray) for x in X])):
-                X = DataInMemory(X, self.chunksize)
-                self.data_producer = X
-            else:
-                raise ValueError("no np.ndarray or non-empty list of np.ndarrays given")
-
-        # run estimation
-        try:
-            super(StreamingTransformer, self).estimate(X, **kwargs)
-        except NotConvergedWarning as ncw:
-            self._logger.info(
-                "Presumely finished estimation. Message: %s" % ncw)
-        # memory mode? Then map all results. Avoid recursion here, if parametrization
-        # is triggered from get_output
-        if self.in_memory and not self._mapping_to_mem_active:
-            self._map_to_memory()
-
-        self._estimated = True
-
-        return self
-
     def get_output(self, dimensions=slice(0, None), stride=1, skip=0, chunk=None):
         if not self._estimated:
             self.estimate(self.data_producer, stride=stride)
 
         return super(StreamingTransformer, self).get_output(dimensions, stride, skip, chunk)
 
+    @deprecated('use fit or estimate')
     def parametrize(self, stride=1):
         if self._data_producer is None:
             raise RuntimeError(
