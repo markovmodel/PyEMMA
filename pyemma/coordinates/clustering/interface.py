@@ -33,12 +33,13 @@ from pyemma._base.model import Model
 from pyemma._ext.sklearn.base import ClusterMixin
 from pyemma.coordinates.clustering import regspatial
 from pyemma.coordinates.transform.transformer import StreamingTransformer
-from pyemma.util.annotators import fix_docs
+from pyemma.util.annotators import fix_docs, aliased, alias
 from pyemma.util.discrete_trajectories import index_states, sample_indexes_by_state
 from pyemma.util.files import mkdir_p
 
 
 @fix_docs
+@aliased
 class AbstractClustering(StreamingTransformer, Model, ClusterMixin):
 
     """
@@ -116,6 +117,7 @@ class AbstractClustering(StreamingTransformer, Model, ClusterMixin):
             self._n_jobs = int(val)
 
     @property
+    @alias('labels_')  # sk-learn compat.
     def clustercenters(self):
         """ Array containing the coordinates of the calculated cluster centers. """
         return self._clustercenters
