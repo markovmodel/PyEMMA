@@ -26,7 +26,7 @@ from __future__ import absolute_import
 import unittest
 import numpy as np
 
-from pyemma.plots.networks import plot_flux, plot_markov_model
+from pyemma.plots.networks import plot_flux, plot_markov_model, plot_network
 #from pyemma.msm.flux.api import tpt
 from msmtools.flux import tpt
 from msmtools.analysis import mfpt
@@ -92,6 +92,15 @@ class TestNetworkPlot(unittest.TestCase):
             self.P, arrow_labels=self.P_mfpt, arrow_label_format='mfpts = %f frames', ax=ax)
         assert type(fig) is matplotlib.figure.Figure
         assert fig == orig_fig
+
+    def test_string_arrow_labels_using_ax(self):
+        orig_fig, ax = plt.subplots()
+        labels = np.array([['A2A', 'A2B'],
+                           ['B2A', 'B2B']]
+                  )
+        fig, pos = plot_network(
+            self.P[:2,:2], arrow_labels=labels, ax=ax)
+        assert type(fig) is matplotlib.figure.Figure
 
 if __name__ == "__main__":
     unittest.main()
