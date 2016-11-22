@@ -121,6 +121,14 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
         The maximum number of self-consistent iterations during the initialization.
     init_maxerr : float, optional, default=1.0E-8
         Convergence criterion for the initialization.
+    overcounting_factor : double, default = 1.0
+        Only needed if equilibrium contains True (TRAMMBAR).
+        Sets the relative statistical weight of equilibrium and non-equilibrium
+        frames. An overcounting_factor of value n means that every
+        non-equilibrium frame is counted n times. Values larger than 1 increase
+        the relative weight of the non-equilibrium data. Values less than 1
+        increase the relative weight of the equilibrium data.
+
 
     References
     ----------
@@ -137,7 +145,8 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
         maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step',
         nn=None, connectivity_factor=1.0, direct_space=False, N_dtram_accelerations=0,
         callback=None,
-        init='mbar', init_maxiter=5000, init_maxerr=1.0E-8):
+        init='mbar', init_maxiter=5000, init_maxerr=1.0E-8,
+        overcounting_factor=1.0):
 
         self.lag = lag
         assert count_mode == 'sliding', 'Currently the only implemented count_mode is \'sliding\''
@@ -160,6 +169,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
         self.init = init
         self.init_maxiter = init_maxiter
         self.init_maxerr = init_maxerr
+        self.overcounting_factor = overcounting_factor
         self.active_set = None
         self.biased_conf_energies = None
         self.mbar_therm_energies = None
@@ -335,7 +345,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
                     N_dtram_accelerations=self.N_dtram_accelerations)
         else: # use trammbar
             self.biased_conf_energies, conf_energies, self.therm_energies, self.log_lagrangian_mult, \
-                self.increments, self.loglikelihoods = trammbar.estimate( # TODO: argument order!
+                self.increments, self.loglikelihoods = trammbar.estimate(
                     self.count_matrices, self.state_counts, self.btrajs, self.dtrajs,
                     equilibrium_therm_state_counts=self.equilibrium_state_counts.sum(axis=1).astype(_np.intc),
                     equilibrium_bias_energy_sequences=self.equilibrium_btrajs, equilibrium_state_sequences=self.equilibrium_dtrajs,
@@ -346,7 +356,7 @@ class TRAM(_Estimator, _MEMM, _ProgressReporter):
                     callback=_ConvergenceProgressIndicatorCallBack(
                         self, 'TRAM', self.maxiter, self.maxerr),
                     N_dtram_accelerations=self.N_dtram_accelerations,
-                    overcounting_factor=1.0/self.lag) # naive guess for sliding window)
+                    overcounting_factor=self.overcounting_factor)
 
         # compute models
         fmsms = [_np.ascontiguousarray((
