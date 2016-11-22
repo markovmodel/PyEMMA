@@ -27,7 +27,8 @@ from math import log
 import numpy as np
 from decorator import decorator
 from pyemma._base.model import Model
-from pyemma._ext.variational.running_moments import running_covar
+#from pyemma._ext.variational.running_moments import running_covar
+from pyemma.coordinates.estimation.covariance import CovarEstimator
 from pyemma.coordinates.data._base.transformer import StreamingTransformer, StreamingEstimationTransformer
 from pyemma.util.annotators import fix_docs, deprecated
 from pyemma.util.linalg import eig_corr
@@ -242,16 +243,15 @@ class TICA(StreamingEstimationTransformer):
         # in case we do a one shot estimation, we want to re-initialize running_covar
         if not hasattr(self, '_covar') or not partial_fit:
             self._logger.debug("using %s moments for %i chunks" % (nsave, n_chunks))
-            self._covar = running_covar(xx=True, xy=True, yy=False,
-                                        remove_mean=self.remove_mean,
-                                        symmetrize=True, nsave=nsave)
+            self._covar = CovarEstimator(xx=True, xy=True, yy=False,
+                                         remove_mean=self.remove_mean,
+                                         symmetrize=True, nsave=nsave)
         else:
             # check storage size vs. n_chunks of the new iterator
             old_nsave = self._covar.storage_XX.nsave
-            if old_nsave < nsave or old_nsave > nsave:
+            if old_nsave < nsave: # or old_nsave > nsave: # second case questionable
                 self.logger.info("adopting storage size")
-                self._covar.storage_XX.nsave = nsave
-                self._covar.storage_XY.nsave = nsave
+                self._covar.nsave = nsave
 
     def estimate(self, X, **kwargs):
         r"""
