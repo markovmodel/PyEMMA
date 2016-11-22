@@ -227,7 +227,7 @@ def estimate_umbrella_sampling(
     elif estimator == 'tram':
         allowed_keys = [
             'count_mode', 'connectivity', 'connectivity_factor','nn',
-            'direct_space', 'N_dtram_accelerations', 'equilibrium']
+            'direct_space', 'N_dtram_accelerations', 'equilibrium', 'overcounting_factor']
         parsed_kwargs = dict([(i, kwargs[i]) for i in allowed_keys if i in kwargs])
         estimator_obj = tram(
             ttrajs, us_dtrajs + md_dtrajs, btrajs, lag, unbiased_state=unbiased_state,
@@ -377,7 +377,7 @@ def estimate_multi_temperature(
     elif estimator == 'tram':
         allowed_keys = [
             'count_mode', 'connectivity', 'connectivity_factor','nn',
-            'direct_space', 'N_dtram_accelerations', 'equilibrium']
+            'direct_space', 'N_dtram_accelerations', 'equilibrium', 'overcounting_factor']
         parsed_kwargs = dict([(i, kwargs[i]) for i in allowed_keys if i in kwargs])
         estimator_obj = tram(
             ttrajs, dtrajs, btrajs, lag, unbiased_state=unbiased_state,
@@ -400,7 +400,7 @@ def tram(
     count_mode='sliding', connectivity='summed_count_matrix',
     maxiter=10000, maxerr=1.0E-15, save_convergence_info=0, dt_traj='1 step',
     connectivity_factor=1.0, nn=None, direct_space=False, N_dtram_accelerations=0, callback=None,
-    init='mbar', init_maxiter=10000, init_maxerr=1e-8, equilibrium=None):
+    init='mbar', init_maxiter=10000, init_maxerr=1e-8, equilibrium=None, overcounting_factor=1.0):
     r"""
     Transition-based reweighting analysis method
 
@@ -563,7 +563,7 @@ def tram(
             dt_traj=dt_traj, connectivity_factor=connectivity_factor, nn=nn,
             direct_space=direct_space, N_dtram_accelerations=N_dtram_accelerations,
             callback=callback, init='mbar', init_maxiter=init_maxiter, init_maxerr=init_maxerr,
-            equilibrium=equilibrium).estimate((ttrajs, dtrajs, bias)) for _lag in lags]
+            equilibrium=equilibrium, overcounting_factor=overcounting_factor).estimate((ttrajs, dtrajs, bias)) for _lag in lags]
     _assign_unbiased_state_label(tram_estimators, unbiased_state)
     # return
     if len(tram_estimators) == 1:
