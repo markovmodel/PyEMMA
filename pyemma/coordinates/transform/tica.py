@@ -28,9 +28,10 @@ import numpy as np
 from decorator import decorator
 from pyemma._base.model import Model
 from pyemma.coordinates.estimation.covariance import CovarEstimator
-from pyemma.coordinates.data._base.transformer import  StreamingEstimationTransformer
+from pyemma.coordinates.estimation.koopman import _KoopmanEstimator
+from pyemma.coordinates.data._base.transformer import StreamingEstimationTransformer
 from pyemma.util.annotators import fix_docs, deprecated
-from pyemma.util.linalg import eig_corr
+from variational.solvers.direct import eig_corr
 from pyemma.util.reflection import get_default_args
 
 
@@ -58,7 +59,7 @@ class TICA(StreamingEstimationTransformer):
     r""" Time-lagged independent component analysis (TICA)"""
 
     def __init__(self, lag, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_map=False, epsilon=1e-6,
-                 mean=None, stride=1, remove_mean=True, skip=0):
+                 mean=None, stride=1, remove_mean=True, skip=0, reversible=True):
         r""" Time-lagged independent component analysis (TICA) [1]_, [2]_, [3]_.
 
         Parameters
@@ -135,18 +136,20 @@ class TICA(StreamingEstimationTransformer):
             raise ValueError('Trying to set both the number of dimension and the subspace variance. Use either or.')
         if kinetic_map and commute_map:
             raise ValueError('Trying to use both kinetic_map and commute_map. Use either or.')
+        if (kinetic_map or commute_map) and not reversible:
+            raise NotImplementedError('kinetic_map and commute_map are not yet implemented for irreversible processes.')
         super(TICA, self).__init__()
 
         if dim > -1:
             var_cutoff = 1.0
 
-        self._covar = CovarEstimator(xx=True, xy=True, yy=False, remove_data_mean=remove_mean, symmetrize=True,
+        self._covar = CovarEstimator(xx=True, xy=True, yy=False, remove_data_mean=remove_mean, reversible=reversible,
                                      lag=lag, stride=stride, skip=skip)
 
         # empty dummy model instance
         self._model = TICAModel()
         self.set_params(lag=lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map, commute_map=commute_map,
-                        epsilon=epsilon, mean=mean, stride=stride, remove_mean=remove_mean, skip=skip)
+                        epsilon=epsilon, mean=mean, remove_mean=remove_mean, reversible=reversible, stride=stride, skip=skip)
 
     @property
     def lag(self):
@@ -235,15 +238,13 @@ class TICA(StreamingEstimationTransformer):
         from pyemma.coordinates import source
         iterable = source(X)
 
-        #self._estimate(iterable, partial=True)
         indim = iterable.dimension()
-
         if not self.dim <= indim:
             raise RuntimeError("requested more output dimensions (%i) than dimension"
                                " of input data (%i)" % (self.dim, indim))
 
         self._covar.partial_fit(iterable)
-        self._model.update_model_params(mean=self._covar.mean,
+        self._model.update_model_params(mean=self._covar.mean, # TODO: inefficient, fixme
                                         cov=self._covar.cov,
                                         cov_tau=self._covar.cov_tau)
 
@@ -283,11 +284,12 @@ class TICA(StreamingEstimationTransformer):
     def _diagonalize(self):
         # diagonalize with low rank approximation
         self._logger.debug("diagonalize Cov and Cov_tau.")
-        eigenvalues, eigenvectors = eig_corr(self.cov, self.cov_tau, self.epsilon)
+
+        eigenvalues, eigenvectors = eig_corr(self._covar.cov, self.cov_tau, self.epsilon)
         self._logger.debug("finished diagonalisation.")
 
         # compute cumulative variance
-        cumvar = np.cumsum(eigenvalues ** 2)
+        cumvar = np.cumsum(np.abs(eigenvalues) ** 2)
         cumvar /= cumvar[-1]
 
         self._model.update_model_params(cumvar=cumvar,
@@ -401,3 +403,53 @@ class TICA(StreamingEstimationTransformer):
         cumvar: 1D np.array
         """
         return self._model.cumvar
+
+    def output_type(self):
+        # TODO: handle the case of conjugate pairs if leading eigenvalues ar real
+        if np.all(np.isreal(self.eigenvectors[:, 0:self.dimension()])) or \
+            np.allclose(np.imag(self.eigenvectors[:, 0:self.dimension()]), 0):
+            return super(TICA, self).output_type()
+        else:
+            return np.complex64
+
+
+class _KoopmanWeights(object):
+    def __init__(self, u):
+        self._u = u
+
+    def weights(self, X):
+        return X.dot(self._u[:-1]) + self._u[-1]
+
+
+@fix_docs
+class EquilibriumTICA(TICA):
+    def _estimate(self, iterable, **kwargs):
+        koop = _KoopmanEstimator(lag=self.lag, reversible=self.reversible, remove_data_mean=True,
+                                 stride=self.stride, skip=self.skip)
+        koop.estimate(iterable, **kwargs)
+        u = koop.u
+        K = koop.K
+        R = koop.R
+        x_mean_0 = koop.mean
+
+        self._covar = CovarEstimator(lag=self.lag, weight=_KoopmanWeights(u), remove_constant_mean=x_mean_0, xy=False,
+                                     remove_data_mean=False, reversible=self.reversible, stride=self.stride,
+                                     skip=self.skip)
+        self._covar.estimate(iterable, **kwargs)
+
+        #C_0_eq =
+
+        C_tau_eq = K
+        # find R_eq s.t. R_eq.T.dot(C_0_eq).dot(R_eq) = np.eye(s)
+        K_eq = 0.5 * R_eq.T.dot(C_0_eq.dot(K) + K.T.dot(C_0_eq)).dot(R_eq)
+        # find V s.t. K_eq = V.dot(Lambda).dot(V.T)
+        W = R_eq.dot(V)
+        self._tr = R.dot(W[1:r, :])
+        self._tr_c = W[1, r+1] - x_mean_0.T.dot(R).dot(W[1:r, :])
+
+    def _transform_array(self, X):
+        return X.dot(self._tr) + self._tr_c
+
+    @property
+    def eigenvalues(self):
+        return self._eigenvalues
