@@ -27,9 +27,8 @@ from math import log
 import numpy as np
 from decorator import decorator
 from pyemma._base.model import Model
-#from pyemma._ext.variational.running_moments import running_covar
 from pyemma.coordinates.estimation.covariance import CovarEstimator
-from pyemma.coordinates.data._base.transformer import StreamingTransformer, StreamingEstimationTransformer
+from pyemma.coordinates.data._base.transformer import  StreamingEstimationTransformer
 from pyemma.util.annotators import fix_docs, deprecated
 from pyemma.util.linalg import eig_corr
 from pyemma.util.reflection import get_default_args
@@ -141,6 +140,9 @@ class TICA(StreamingEstimationTransformer):
         if dim > -1:
             var_cutoff = 1.0
 
+        self._covar = CovarEstimator(xx=True, xy=True, yy=False, remove_data_mean=remove_mean, symmetrize=True,
+                                     lag=lag, stride=stride, skip=skip)
+
         # empty dummy model instance
         self._model = TICAModel()
         self.set_params(lag=lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map, commute_map=commute_map,
@@ -233,25 +235,22 @@ class TICA(StreamingEstimationTransformer):
         from pyemma.coordinates import source
         iterable = source(X)
 
-        self._estimate(iterable, partial=True)
+        #self._estimate(iterable, partial=True)
+        indim = iterable.dimension()
+
+        if not self.dim <= indim:
+            raise RuntimeError("requested more output dimensions (%i) than dimension"
+                               " of input data (%i)" % (self.dim, indim))
+
+        self._covar.partial_fit(iterable)
+        self._model.update_model_params(mean=self._covar.mean,
+                                        cov=self._covar.cov,
+                                        cov_tau=self._covar.cov_tau)
+
+        self._used_data = self._covar._used_data
         self._estimated = False
 
         return self
-
-    def _init_covar(self, partial_fit, n_chunks):
-        nsave = int(max(log(n_chunks, 2), 2))
-        # in case we do a one shot estimation, we want to re-initialize running_covar
-        if not hasattr(self, '_covar') or not partial_fit:
-            self._logger.debug("using %s moments for %i chunks" % (nsave, n_chunks))
-            self._covar = CovarEstimator(xx=True, xy=True, yy=False,
-                                         remove_mean=self.remove_mean,
-                                         symmetrize=True, nsave=nsave)
-        else:
-            # check storage size vs. n_chunks of the new iterator
-            old_nsave = self._covar.storage_XX.nsave
-            if old_nsave < nsave: # or old_nsave > nsave: # second case questionable
-                self.logger.info("adopting storage size")
-                self._covar.nsave = nsave
 
     def estimate(self, X, **kwargs):
         r"""
@@ -263,57 +262,21 @@ class TICA(StreamingEstimationTransformer):
         return super(TICA, self).estimate(X, **kwargs)
 
     def _estimate(self, iterable, **kw):
-        partial_fit = 'partial' in kw
         indim = iterable.dimension()
-        if not indim:
-            raise ValueError("zero dimension from data source!")
 
         if not self.dim <= indim:
             raise RuntimeError("requested more output dimensions (%i) than dimension"
                                " of input data (%i)" % (self.dim, indim))
 
-        if not partial_fit and self._logger_is_active(self._loglevel_DEBUG):
+        if self._logger_is_active(self._loglevel_DEBUG):
             self._logger.debug("Running TICA with tau=%i; Estimating two covariance matrices"
                                " with dimension (%i, %i)" % (self._lag, indim, indim))
 
-        if not any(iterable.trajectory_lengths(stride=self.stride, skip=self.lag+self.skip) > 0):
-            if partial_fit:
-                self.logger.warn("Could not use data passed to partial_fit(), "
-                                 "because no single data set [longest=%i] is longer than lag time [%i]"
-                                 % (max(iterable.trajectory_lengths(self.stride, skip=self.skip)), self.lag))
-                return self
-            else:
-                raise ValueError("None single dataset [longest=%i] is longer than"
-                                 " lag time [%i]." % (max(iterable.trajectory_lengths(self.stride, skip=self.skip)), self.lag))
-
-        self.logger.debug("will use {} total frames for {}".
-                          format(iterable.trajectory_lengths(self.stride, skip=self.skip), self.name))
-
-        it = iterable.iterator(lag=self.lag, return_trajindex=False, stride=self.stride,
-                               chunk=self.chunksize if not partial_fit else 0, skip=self.skip)
-        with it:
-            self._progress_register(it.n_chunks, "calculate mean+cov", 0)
-            self._init_covar(partial_fit, it.n_chunks)
-            for X, Y in it:
-                try:
-                    self._covar.add(X, Y)
-                except MemoryError:
-                    raise MemoryError('TICA covariance matrix does not fit into memory. '
-                                      'Input is too high-dimensional ({} dimensions). '
-                                      'Please use a lower-dimensional projection of the simulations.'.format(X.shape[1]))
-                # counting chunks and log of eta
-                self._progress_update(1, stage=0)
-
-        self._model.update_model_params(mean=self._covar.mean_X(),
-                                        cov=self._covar.cov_XX(),
-                                        cov_tau=self._covar.cov_XY())
-
-        if not partial_fit:
-            self._diagonalize()
-        else:
-            if not hasattr(self, "_used_data"):
-                self._used_data = 0
-            self._used_data += len(it)
+        self._covar.estimate(iterable, **kw)
+        self._model.update_model_params(mean=self._covar.mean,
+                                        cov=self._covar.cov,
+                                        cov_tau=self._covar.cov_tau)
+        self._diagonalize()
 
         return self._model
 
