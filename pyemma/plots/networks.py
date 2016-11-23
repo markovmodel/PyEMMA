@@ -224,6 +224,8 @@ class NetworkPlot(object):
         # set arrow labels
         if isinstance(arrow_labels, _np.ndarray):
             L = arrow_labels
+            if isinstance(arrow_labels[0,0], six.string_types):
+                arrow_label_format = '%s'
         elif isinstance(arrow_labels, six.string_types) and arrow_labels.lower() == 'weights':
             L = self.A[:, :]
         elif arrow_labels is None:
