@@ -32,26 +32,23 @@ __all__ = ['CovarEstimator', ]
 
 __author__ = 'paul, nueske'
 
-class _KoopmanWeights(object):
-    def __init__(self, u):
-        self._u = u
-
-    def weights(self, X):
-        return X.dot(self._u[:-1]) + self._u[-1]
-
 
 class CovarEstimator(StreamingEstimator, ProgressReporter, Loggable):
-    def __init__(self, xx=True, xy=False, yy=False, remove_constant_mean=None, remove_data_mean=False, symmetrize=False,
+    def __init__(self, xx=True, xy=False, yy=False, remove_constant_mean=None, remove_data_mean=False, reversible=False,
                  sparse_mode='auto', modify_data=False, lag=0, weight=None, stride=1, skip=0, chunksize=None):
 
         super(CovarEstimator, self).__init__(chunksize=chunksize)
 
         if is_float_vector(weight):
             weight = ensure_float_vector(weight)
+        if remove_constant_mean is not None:
+            remove_constant_mean = ensure_float_vector(remove_constant_mean)
         self.set_params(xx=xx, xy=xy, yy=yy, remove_constant_mean=remove_constant_mean,
-                        remove_data_mean=remove_data_mean, symmetrize=symmetrize,
+                        remove_data_mean=remove_data_mean, reversible=reversible,
                         sparse_mode=sparse_mode, modify_data=modify_data, lag=lag,
                         weight=weight, stride=stride, skip=skip)
+
+        self._used_data = 0
 
     def _compute_weight_series(self, X, it):
         if self.weight is None:
@@ -74,8 +71,8 @@ class CovarEstimator(StreamingEstimator, ProgressReporter, Loggable):
                 self.nsave = nsave
         else:
             self._logger.debug("using %s moments for %i chunks" % (nsave, n_chunks))
-            self._rc = running_covar(xx=self.xx, xy=self.xy, yy=self.yy, #mean=self.remove_constant_mean,
-                                     remove_mean=self.remove_data_mean, symmetrize=self.symmetrize, time_lagged=False,
+            self._rc = running_covar(xx=self.xx, xy=self.xy, yy=self.yy,
+                                     remove_mean=self.remove_data_mean, symmetrize=self.reversible, time_lagged=False,
                                      sparse_mode=self.sparse_mode, modify_data=self.modify_data, nsave=nsave)
     def partial_fit(self, X):
         """ incrementally update the estimates
@@ -85,13 +82,9 @@ class CovarEstimator(StreamingEstimator, ProgressReporter, Loggable):
         X: array, list of arrays, PyEMMA reader
             input data.
         """
-        if isinstance(X, Iterable):
-            iterable = X
-        else:
-            from pyemma.coordinates import source
-            iterable = source(X)
+        from pyemma.coordinates import source
 
-        self._estimate(iterable, partial=True)
+        self._estimate(source(X), partial=True)
 
         return self
 
@@ -125,17 +118,22 @@ class CovarEstimator(StreamingEstimator, ProgressReporter, Loggable):
                     X, Y = data
                 else:
                     X, Y = data, None
+
                 weight_series = self._compute_weight_series(X, it)
+
+                if self.remove_constant_mean is not None:
+                    X -= self.remove_constant_mean[np.newaxis, :]
+                    if Y is not None:
+                        Y -= self.remove_constant_mean[np.newaxis, :]
+
                 try:
-                    self._rc.add(X, Y, weights=weight_series) #fixed_mean=self.remove_constant_mean,
+                    self._rc.add(X, Y, weights=weight_series)
                 except MemoryError:
                     raise MemoryError('Covariance matrix does not fit into memory. '
                                       'Input is too high-dimensional ({} dimensions). '.format(X.shape[1]))
                 self._progress_update(1, stage=0)
 
         if partial_fit:
-            if not hasattr(self, "_used_data"):
-                self._used_data = 0
             self._used_data += len(it)
 
     @property
