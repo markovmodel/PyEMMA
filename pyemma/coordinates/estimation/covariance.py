@@ -22,7 +22,6 @@ import numbers
 from math import log
 from pyemma.util.types import is_float_vector, ensure_float_vector
 from pyemma.coordinates.data._base.streaming_estimator import StreamingEstimator
-from pyemma.coordinates.data._base.iterable import Iterable
 from pyemma._base.logging import Loggable
 from pyemma._base.progress import ProgressReporter
 from pyemma._ext.variational.running_moments import running_covar
@@ -35,41 +34,43 @@ __author__ = 'paul, nueske'
 
 class CovarEstimator(StreamingEstimator, ProgressReporter, Loggable):
     def __init__(self, xx=True, xy=False, yy=False, remove_constant_mean=None, remove_data_mean=False, reversible=False,
-                 sparse_mode='auto', modify_data=False, lag=0, weight=None, stride=1, skip=0, chunksize=None):
+                 sparse_mode='auto', modify_data=False, lag=0, weights=None, stride=1, skip=0, chunksize=None):
 
         super(CovarEstimator, self).__init__(chunksize=chunksize)
 
-        if is_float_vector(weight):
-            weight = ensure_float_vector(weight)
+        if is_float_vector(weights):
+            weight = ensure_float_vector(weights)
+        if remove_constant_mean is not None and remove_data_mean:
+            raise ValueError('Subtracting the data mean and a constant vector simultaneously is not supported.')
         if remove_constant_mean is not None:
             remove_constant_mean = ensure_float_vector(remove_constant_mean)
         self.set_params(xx=xx, xy=xy, yy=yy, remove_constant_mean=remove_constant_mean,
                         remove_data_mean=remove_data_mean, reversible=reversible,
                         sparse_mode=sparse_mode, modify_data=modify_data, lag=lag,
-                        weight=weight, stride=stride, skip=skip)
+                        weights=weights, stride=stride, skip=skip)
 
+        self._rc = None
         self._used_data = 0
 
     def _compute_weight_series(self, X, it):
-        if self.weight is None:
+        if self.weights is None:
             return None
-        elif isinstance(self.weight, numbers.Real): # TODO: list of list + list, number
+        elif isinstance(self.weights, numbers.Real): # TODO: list of list + list, number
             pass
-        elif isinstance(self.weight, np.ndarray):
-            return self.weigth[it.itraj][it.pos:it:]
+        elif isinstance(self.weights, np.ndarray):
+            return self.weigths[it.itraj][it.pos:it:]
         else:
-            return self.weight.weight(X)
+            return self.weights.weight(X)
 
     def _init_covar(self, partial_fit, n_chunks):
         nsave = int(max(log(n_chunks, 2), 2))
-        # in case we do a one shot estimation, we want to re-initialize running_covar
-        if hasattr(self, '_rc') and partial_fit:
+        if self._rc is not None and partial_fit:
             # check storage size vs. n_chunks of the new iterator
             old_nsave = self.nsave
             if old_nsave < nsave:
                 self.logger.info("adapting storage size")
                 self.nsave = nsave
-        else:
+        else: # in case we do a one shot estimation, we want to re-initialize running_covar
             self._logger.debug("using %s moments for %i chunks" % (nsave, n_chunks))
             self._rc = running_covar(xx=self.xx, xy=self.xy, yy=self.yy,
                                      remove_mean=self.remove_data_mean, symmetrize=self.reversible, time_lagged=False,
@@ -167,3 +168,16 @@ class CovarEstimator(StreamingEstimator, ProgressReporter, Loggable):
         if self.xy:
             if self._rc.storage_XY.nsave <= ns:
                 self._rc.storage_XY.nsave = ns
+
+
+class EquilibriumCovarEstimator(CovarEstimator):
+    # TODO: do not support partial_fit
+    def _estimate(self, iterable, **kwargs):
+        from pyemma.coordinates.estimation.koopman import _KoopmanEstimator
+        koop = _KoopmanEstimator(lag=self.lag, stride=self.stride, skip=self.skip)
+        koop.estimate(iterable, **kwargs)
+        self._covar = CovarEstimator(xx=self.xx, xy=self.xy, yy=self.yy, remove_constant_mean=self.remove_constant_mean,
+                                     remove_data_mean=self.remove_data_mean, reversible=self.reversible,
+                                     sparse_mode=self.sparse_mode, modify_data=self.modify_data, lag=self.lag,
+                                     weights=koop.weights, stride=self.stride, skip=self.skip)
+        self._covar.estimate(iterable, **kwargs)
