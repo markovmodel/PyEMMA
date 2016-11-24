@@ -425,21 +425,24 @@ class EquilibriumCorrectedTICA(_TICA):
     def _estimate(self, iterable, **kwargs):
         koop = _KoopmanEstimator(lag=self.lag, stride=self.stride, skip=self.skip)
         koop.estimate(iterable, **kwargs)
-        u = koop.u
         K = koop.K
         R = koop.R
-        x_mean_0 = koop.mean
-        weights = koop.weights
 
-        self._covar = CovarEstimator(lag=self.lag, weights=weights, remove_constant_mean=x_mean_0, xy=False,
+        x_mean_0 = koop.mean
+
+        self._covar = CovarEstimator(lag=self.lag, weights=koop.weights, remove_constant_mean=x_mean_0, xy=False,
                                      remove_data_mean=False, reversible=self.reversible, stride=self.stride,
                                      skip=self.skip)
         self._covar.estimate(iterable, **kwargs)
+        C0 = self._covar.cov
 
-        #C_0_eq =
-
+        C_0_eq = np.hstack((
+                    np.vstack((R.T.C0.dot(R), x_mean_0.dot(R))),
+                    np.vstack((x_mean_0.dot(R), 1.0))
+                 ))
         C_tau_eq = K
         # find R_eq s.t. R_eq.T.dot(C_0_eq).dot(R_eq) = np.eye(s)
+        R_eq =
         K_eq = 0.5 * R_eq.T.dot(C_0_eq.dot(K) + K.T.dot(C_0_eq)).dot(R_eq)
         # find V s.t. K_eq = V.dot(Lambda).dot(V.T)
         W = R_eq.dot(V)
