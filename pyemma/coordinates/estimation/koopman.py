@@ -52,11 +52,12 @@ def compute_u(K):
 
 
 class _KoopmanWeights(object):
-    def __init__(self, u):
+    def __init__(self, u, u_const):
         self._u = u
+        self._u_const = u_const
 
     def weights(self, X):
-        return X.dot(self._u[:-1]) + self._u[-1]
+        return X.dot(self._u) + self._u_const
 
 
 class _KoopmanEstimator(StreamingEstimator):
@@ -128,9 +129,10 @@ class _KoopmanEstimator(StreamingEstimator):
     @property
     def weights(self):
         'weights in the input basis (encapsulated in an object)'
-        u_modified = self.u
-        u_input = None # TODO: compute u + constant term of u in the input basis
-        return _KoopmanWeights(u_input)
+        u_mod = self.u # in modified basis
+        u_input = self._R.dot(u_mod[0:-1]) # in input basis
+        u_input_const = u_mod[-1] - self.mean.dot(self._R.dot(u_mod[0:-1]))
+        return _KoopmanWeights(u_input, u_input_const)
 
     @property
     def R(self):
