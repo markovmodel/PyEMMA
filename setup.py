@@ -92,7 +92,9 @@ def extensions():
 
     import mdtraj
     from numpy import get_include as _np_inc
+    from scipy import get_include as _sc_inc
     np_inc = _np_inc()
+    sc_inc = _sc_inc()
 
     exts = []
 
@@ -127,17 +129,24 @@ def extensions():
                   extra_compile_args=['-std=c99'])
 
     covar_module = \
-        Extension('pyemma._ext.variational.covar_c.covartools',
-                  sources=['pyemma/_ext/variational/covar_c/covartools.pyx',
-                           'pyemma/_ext/variational/covar_c/_covartools.c'],
-                  include_dirs=['pyemma/_ext/variational/covar_c/',
+        Extension('pyemma._ext.variational.estimators.covar_c.covartools',
+                  sources=['pyemma/_ext/variational/estimators/covar_c/covartools.pyx',
+                           'pyemma/_ext/variational/estimators/covar_c/_covartools.c'],
+                  include_dirs=['pyemma/_ext/variational/estimators/covar_c/',
                                 np_inc,
                                 ],
+                  extra_compile_args=['-std=c99', '-O3'])
+
+    eig_qr_module = \
+        Extension('pyemma._ext.variational.solvers.eig_qr.eig_qr',
+                  sources=['pyemma/_ext/variational/solvers/eig_qr/eig_qr.pyx'],
+                  include_dirs=['pyemma/_ext/variational/solvers/eig_qr/', np_inc, sc_inc],
                   extra_compile_args=['-std=c99', '-O3'])
 
     exts += [regspatial_module,
              kmeans_module,
              covar_module,
+             eig_qr_module
              ]
 
     if not USE_CYTHON:
@@ -272,6 +281,7 @@ if len(sys.argv) == 1 or (len(sys.argv) >= 2 and ('--help' in sys.argv[1:] or
 else:
     # setuptools>=2.2 can handle setup_requires
     metadata['setup_requires'] = ['numpy>=1.7.0',
+                                  'scipy',
                                   'mdtraj>=1.7.0',
                                   'nose',
                                   ]
