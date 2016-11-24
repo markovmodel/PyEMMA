@@ -54,8 +54,7 @@ def _lazy_estimation(func, *args, **kw):
     return func(*args, **kw)
 
 
-@fix_docs
-class TICA(StreamingEstimationTransformer):
+class _TICA(StreamingEstimationTransformer):
     r""" Time-lagged independent component analysis (TICA)"""
 
     def __init__(self, lag, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_map=False, epsilon=1e-6,
@@ -138,7 +137,7 @@ class TICA(StreamingEstimationTransformer):
             raise ValueError('Trying to use both kinetic_map and commute_map. Use either or.')
         if (kinetic_map or commute_map) and not reversible:
             raise NotImplementedError('kinetic_map and commute_map are not yet implemented for irreversible processes.')
-        super(TICA, self).__init__()
+        super(_TICA, self).__init__()
 
         if dim > -1:
             var_cutoff = 1.0
@@ -223,36 +222,6 @@ class TICA(StreamingEstimationTransformer):
     def cov(self, value):
         self._model.cov = value
 
-    def partial_fit(self, X):
-        """ incrementally update the covariances and mean.
-
-        Parameters
-        ----------
-        X: array, list of arrays, PyEMMA reader
-            input data.
-
-        Notes
-        -----
-        The projection matrix is first being calculated upon its first access.
-        """
-        from pyemma.coordinates import source
-        iterable = source(X)
-
-        indim = iterable.dimension()
-        if not self.dim <= indim:
-            raise RuntimeError("requested more output dimensions (%i) than dimension"
-                               " of input data (%i)" % (self.dim, indim))
-
-        self._covar.partial_fit(iterable)
-        self._model.update_model_params(mean=self._covar.mean, # TODO: inefficient, fixme
-                                        cov=self._covar.cov,
-                                        cov_tau=self._covar.cov_tau)
-
-        self._used_data = self._covar._used_data
-        self._estimated = False
-
-        return self
-
     def estimate(self, X, **kwargs):
         r"""
         Chunk-based parameterization of TICA. Iterates over all data and estimates
@@ -260,7 +229,7 @@ class TICA(StreamingEstimationTransformer):
         generalized eigenvalue problem is solved to determine
         the independent components.
         """
-        return super(TICA, self).estimate(X, **kwargs)
+        return super(_TICA, self).estimate(X, **kwargs)
 
     def _estimate(self, iterable, **kw):
         indim = iterable.dimension()
@@ -408,7 +377,7 @@ class TICA(StreamingEstimationTransformer):
         # TODO: handle the case of conjugate pairs if leading eigenvalues ar real
         if np.all(np.isreal(self.eigenvectors[:, 0:self.dimension()])) or \
             np.allclose(np.imag(self.eigenvectors[:, 0:self.dimension()]), 0):
-            return super(TICA, self).output_type()
+            return super(_TICA, self).output_type()
         else:
             return np.complex64
 
@@ -418,9 +387,41 @@ class TICA(StreamingEstimationTransformer):
     #def K(self):
     #    pass
 
+@fix_docs
+class TICA(_TICA):
+    def partial_fit(self, X):
+        """ incrementally update the covariances and mean.
+
+        Parameters
+        ----------
+        X: array, list of arrays, PyEMMA reader
+            input data.
+
+        Notes
+        -----
+        The projection matrix is first being calculated upon its first access.
+        """
+        from pyemma.coordinates import source
+        iterable = source(X)
+
+        indim = iterable.dimension()
+        if not self.dim <= indim:
+            raise RuntimeError("requested more output dimensions (%i) than dimension"
+                               " of input data (%i)" % (self.dim, indim))
+
+        self._covar.partial_fit(iterable)
+        self._model.update_model_params(mean=self._covar.mean,  # TODO: inefficient, fixme
+                                        cov=self._covar.cov,
+                                        cov_tau=self._covar.cov_tau)
+
+        self._used_data = self._covar._used_data
+        self._estimated = False
+
+        return self
+
 
 @fix_docs
-class EquilibriumTICA(TICA):
+class EquilibriumCorrectedTICA(_TICA):
     def _estimate(self, iterable, **kwargs):
         koop = _KoopmanEstimator(lag=self.lag, stride=self.stride, skip=self.skip)
         koop.estimate(iterable, **kwargs)

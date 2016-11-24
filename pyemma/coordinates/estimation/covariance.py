@@ -32,11 +32,11 @@ __all__ = ['CovarEstimator', ]
 __author__ = 'paul, nueske'
 
 
-class CovarEstimator(StreamingEstimator, ProgressReporter, Loggable):
+class _CovarEstimator(StreamingEstimator, ProgressReporter, Loggable):
     def __init__(self, xx=True, xy=False, yy=False, remove_constant_mean=None, remove_data_mean=False, reversible=False,
                  sparse_mode='auto', modify_data=False, lag=0, weights=None, stride=1, skip=0, chunksize=None):
 
-        super(CovarEstimator, self).__init__(chunksize=chunksize)
+        super(_CovarEstimator, self).__init__(chunksize=chunksize)
 
         if is_float_vector(weights):
             weight = ensure_float_vector(weights)
@@ -73,21 +73,8 @@ class CovarEstimator(StreamingEstimator, ProgressReporter, Loggable):
         else: # in case we do a one shot estimation, we want to re-initialize running_covar
             self._logger.debug("using %s moments for %i chunks" % (nsave, n_chunks))
             self._rc = running_covar(xx=self.xx, xy=self.xy, yy=self.yy,
-                                     remove_mean=self.remove_data_mean, symmetrize=self.reversible, time_lagged=False,
+                                     remove_mean=self.remove_data_mean, symmetrize=self.reversible,
                                      sparse_mode=self.sparse_mode, modify_data=self.modify_data, nsave=nsave)
-    def partial_fit(self, X):
-        """ incrementally update the estimates
-
-        Parameters
-        ----------
-        X: array, list of arrays, PyEMMA reader
-            input data.
-        """
-        from pyemma.coordinates import source
-
-        self._estimate(source(X), partial=True)
-
-        return self
 
     def _estimate(self, iterable, **kw):
         partial_fit = 'partial' in kw
@@ -170,8 +157,23 @@ class CovarEstimator(StreamingEstimator, ProgressReporter, Loggable):
                 self._rc.storage_XY.nsave = ns
 
 
-class EquilibriumCovarEstimator(CovarEstimator):
-    # TODO: do not support partial_fit
+class CovarEstimator(_CovarEstimator):
+    def partial_fit(self, X):
+        """ incrementally update the estimates
+
+        Parameters
+        ----------
+        X: array, list of arrays, PyEMMA reader
+            input data.
+        """
+        from pyemma.coordinates import source
+
+        self._estimate(source(X), partial=True)
+
+        return self
+
+
+class EquilibriumCorrectedCovarEstimator(_CovarEstimator):
     def _estimate(self, iterable, **kwargs):
         from pyemma.coordinates.estimation.koopman import _KoopmanEstimator
         koop = _KoopmanEstimator(lag=self.lag, stride=self.stride, skip=self.skip)
@@ -181,3 +183,4 @@ class EquilibriumCovarEstimator(CovarEstimator):
                                      sparse_mode=self.sparse_mode, modify_data=self.modify_data, lag=self.lag,
                                      weights=koop.weights, stride=self.stride, skip=self.skip)
         self._covar.estimate(iterable, **kwargs)
+
