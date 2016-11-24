@@ -27,7 +27,7 @@ from variational.solvers.direct import sort_by_norm
 __author__ = 'paul, nueske'
 
 
-def compute_u(K): # TODO: reversible = True/False
+def compute_u(K):
     """
     Estimate an approximation of the ratio of stationary over empirical distribution from the basis.
     Parameters:
@@ -51,19 +51,27 @@ def compute_u(K): # TODO: reversible = True/False
     return u
 
 
+class _KoopmanWeights(object):
+    def __init__(self, u):
+        self._u = u
+
+    def weights(self, X):
+        return X.dot(self._u[:-1]) + self._u[-1]
+
+
 class _KoopmanEstimator(StreamingEstimator):
-    def __init__(self, lag, reversible=False, remove_data_mean=False, epsilon=1e-6, stride=1, skip=0, chunksize=None):
+    '''only for computing u
+       The user-accessible way for computing K is TICA()
+    '''
+
+    def __init__(self, lag, epsilon=1e-6, stride=1, skip=0, chunksize=None):
 
         super(_KoopmanEstimator, self).__init__(chunksize=chunksize)
 
-        if reversible:
-            raise NotImplementedError('Reversible estimation of Koopman approximation not yet implemented.')
-
-        self._covar = CovarEstimator(xx=True, xy=True, remove_data_mean=remove_data_mean, reversible=self.reversible,
+        self._covar = CovarEstimator(xx=True, xy=True, remove_data_mean=True, reversible=False,
                                      lag=lag, stride=stride, skip=skip)
 
-        self.set_params(lag=lag, remove_data_mean=remove_data_mean, reversible=reversible, epsilon=epsilon,
-                        stride=stride, skip=skip)
+        self.set_params(lag=lag, epsilon=epsilon, stride=stride, skip=skip)
 
     def partial_fit(self, X):
         from pyemma.coordinates import source
@@ -107,16 +115,26 @@ class _KoopmanEstimator(StreamingEstimator):
 
     @property
     def K(self):
+        'Koopman operator on the modified basis'
         if not self._estimation_finished:
             self._finish_estimation()
         return self._K
 
     @property
     def u(self):
+        'weights in the modified basis'
         return compute_u(self.K)
 
     @property
+    def weights(self):
+        'weights in the input basis (encapsulated in an object)'
+        u_modified = self.u
+        u_input = None # TODO: compute u + constant term of u in the input basis
+        return _KoopmanWeights(u_input)
+
+    @property
     def R(self):
+        'weightening transformation'
         if not self._estimation_finished:
             self._finish_estimation()
         return self._R

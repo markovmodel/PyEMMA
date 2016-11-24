@@ -412,27 +412,25 @@ class TICA(StreamingEstimationTransformer):
         else:
             return np.complex64
 
-
-class _KoopmanWeights(object):
-    def __init__(self, u):
-        self._u = u
-
-    def weights(self, X):
-        return X.dot(self._u[:-1]) + self._u[-1]
+    # TODO
+    #@property
+    #@_lazy_estimation
+    #def K(self):
+    #    pass
 
 
 @fix_docs
 class EquilibriumTICA(TICA):
     def _estimate(self, iterable, **kwargs):
-        koop = _KoopmanEstimator(lag=self.lag, reversible=self.reversible, remove_data_mean=True,
-                                 stride=self.stride, skip=self.skip)
+        koop = _KoopmanEstimator(lag=self.lag, stride=self.stride, skip=self.skip)
         koop.estimate(iterable, **kwargs)
         u = koop.u
         K = koop.K
         R = koop.R
         x_mean_0 = koop.mean
+        weights = koop.weights
 
-        self._covar = CovarEstimator(lag=self.lag, weight=_KoopmanWeights(u), remove_constant_mean=x_mean_0, xy=False,
+        self._covar = CovarEstimator(lag=self.lag, weights=weights, remove_constant_mean=x_mean_0, xy=False,
                                      remove_data_mean=False, reversible=self.reversible, stride=self.stride,
                                      skip=self.skip)
         self._covar.estimate(iterable, **kwargs)
