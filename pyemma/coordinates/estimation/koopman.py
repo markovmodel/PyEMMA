@@ -21,7 +21,7 @@ import numpy as np
 import scipy.linalg as scl
 from pyemma.coordinates.data._base.streaming_estimator import StreamingEstimator
 from pyemma.coordinates.estimation.covariance import CovarEstimator
-from variational.solvers.direct import sort_by_norm
+from pyemma._ext.variational.solvers.direct import sort_by_norm
 
 
 __author__ = 'paul, nueske'
