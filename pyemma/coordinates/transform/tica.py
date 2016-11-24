@@ -31,7 +31,7 @@ from pyemma.coordinates.estimation.covariance import CovarEstimator
 from pyemma.coordinates.estimation.koopman import _KoopmanEstimator
 from pyemma.coordinates.data._base.transformer import StreamingEstimationTransformer
 from pyemma.util.annotators import fix_docs, deprecated
-from variational.solvers.direct import eig_corr
+from pyemma._ext.variational.solvers.direct import eig_corr
 from pyemma.util.reflection import get_default_args
 
 

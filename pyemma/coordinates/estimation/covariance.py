@@ -24,7 +24,7 @@ from pyemma.util.types import is_float_vector, ensure_float_vector
 from pyemma.coordinates.data._base.streaming_estimator import StreamingEstimator
 from pyemma._base.logging import Loggable
 from pyemma._base.progress import ProgressReporter
-from pyemma._ext.variational.running_moments import running_covar
+from pyemma._ext.variational.estimators.running_moments import running_covar
 
 
 __all__ = ['CovarEstimator', ]
