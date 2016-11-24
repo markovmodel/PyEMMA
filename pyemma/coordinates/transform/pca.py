@@ -24,7 +24,7 @@ import math
 import numpy as np
 from decorator import decorator
 from pyemma._base.model import Model
-from pyemma._ext.variational.running_moments import running_covar
+from pyemma._ext.variational.estimators.running_moments import running_covar
 from pyemma.coordinates.data._base.transformer import StreamingEstimationTransformer
 from pyemma.util.annotators import fix_docs
 from pyemma.util.reflection import get_default_args
