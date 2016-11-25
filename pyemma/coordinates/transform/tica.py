@@ -459,7 +459,7 @@ class EquilibriumCorrectedTICA(_TICA):
         self._tr_c = W[r, :] - x_mean_0.T.dot(R).dot(W[0:r, :])
 
         # update model parameters
-        eigenvalues = d
+        eigenvalues = d[1:] # TODO: decide if we want the eigenvalue = 1?
         cumvar = np.cumsum(np.abs(eigenvalues) ** 2)
         cumvar /= cumvar[-1]
 
