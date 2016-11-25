@@ -106,17 +106,25 @@ class _KoopmanEstimator(StreamingEstimator):
         return self._K
 
     @property
-    def u(self):
+    def u_pc_1(self):
         'weights in the modified basis'
         return compute_u(self.K)
 
     @property
+    def u(self):
+        'weights in the input basis'
+        u_mod = self.u_pc_1
+        N = self._R.shape[0]
+        u_input = np.zeros(N+1)
+        u_input[0:N] = self._R.dot(u_mod[0:-1])  # in input basis
+        u_input[N] = u_mod[-1] - self.mean.dot(self._R.dot(u_mod[0:-1]))
+        return u_input
+
+    @property
     def weights(self):
         'weights in the input basis (encapsulated in an object)'
-        u_mod = self.u # in modified basis
-        u_input = self._R.dot(u_mod[0:-1]) # in input basis
-        u_input_const = u_mod[-1] - self.mean.dot(self._R.dot(u_mod[0:-1]))
-        return _KoopmanWeights(u_input, u_input_const)
+        u_input = self.u
+        return _KoopmanWeights(u_input[0:-1], u_input[-1])
 
     @property
     def R(self):

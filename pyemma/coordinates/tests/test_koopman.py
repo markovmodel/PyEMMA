@@ -135,9 +135,10 @@ class TestKoopman(unittest.TestCase):
         #np.testing.assert_allclose(self.koop.koopman_matrix, self.K)
         np.testing.assert_allclose(self.koop_eq.koopman_matrix, self.K_eq, atol=1.e-3) # TODO: lower atol
 
-    @unittest.skip('')
     def test_u(self):
-        np.testing.assert_allclose(self.koop_eq._model.u, self.u)
+        #np.testing.assert_allclose(self.koop_eq._model.u, self.u)
+        np.testing.assert_allclose(self.koop_eq._u_pc_1, self.u) # TODO: compate u in input basis
+
 
     def test_eigenvalues(self):
         np.testing.assert_allclose(self.koop.eigenvalues, self.ln[1:])

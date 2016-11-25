@@ -466,7 +466,9 @@ class EquilibriumCorrectedTICA(_TICA):
         self._model.update_model_params(mean=self._covar.mean,
                                         cumvar=cumvar,
                                         koopman_matrix=K_eq,
+                                        u=koop.u,
                                         eigenvalues=eigenvalues)
+        self._u_pc_1 = koop.u_pc_1
         self._estimated = True
         return self._model
 
@@ -476,6 +478,10 @@ class EquilibriumCorrectedTICA(_TICA):
     @property
     def koopman_matrix(self):
         return self._model.koopman_matrix
+
+    @property
+    def u(self):
+        return self._model.u
 
     @property
     def eigenvalues(self):
