@@ -129,16 +129,15 @@ class TestKoopman(unittest.TestCase):
 
     def test_Ct(self):
         np.testing.assert_allclose(self.koop.cov_tau, self.Ct)
-        #np.testing.assert_allclose(self.koop_eq._cov_tau_pc_1, self.Ct_eq)
+        np.testing.assert_allclose(self.koop_eq._cov_tau_pc_1, self.Ct_eq, rtol=1e-5)
 
     def test_K(self):
-        #np.testing.assert_allclose(self.koop.koopman_matrix, self.K)
-        np.testing.assert_allclose(self.koop_eq.koopman_matrix, self.K_eq, atol=1.e-3) # TODO: lower atol
+        np.testing.assert_allclose(self.koop.koopman_matrix, self.K[0:-1,:][:,0:-1])
+        np.testing.assert_allclose(self.koop_eq.koopman_matrix, self.K_eq, atol=1.e-3) # TODO: lower atol, related to Bessel's correction
 
     def test_u(self):
         #np.testing.assert_allclose(self.koop_eq._model.u, self.u)
         np.testing.assert_allclose(self.koop_eq._u_pc_1, self.u) # TODO: compate u in input basis
-
 
     def test_eigenvalues(self):
         np.testing.assert_allclose(self.koop.eigenvalues, self.ln[1:])

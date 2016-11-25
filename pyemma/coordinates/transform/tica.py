@@ -231,12 +231,6 @@ class _TICA(StreamingEstimationTransformer):
         else:
             return np.complex64
 
-    # TODO
-    #@property
-    #@_lazy_estimation
-    #def koopman_matrix(self):
-    #    pass
-
 
 @decorator
 def _lazy_estimation(func, *args, **kw):
@@ -417,13 +411,19 @@ class TICA(_TICA):
         """
         return self._model.cumvar
 
+    @property
+    @_lazy_estimation
+    def koopman_matrix(self):
+        R = spd_inv_split(self._covar.cov, epsilon=self.epsilon, canonical_signs=True)
+        return np.dot(R.T, np.dot((self._covar.cov_tau), R))
+
 
 @fix_docs
 class EquilibriumCorrectedTICA(_TICA):
     def _estimate(self, iterable, **kwargs):
         koop = _KoopmanEstimator(lag=self.lag, epsilon=self.epsilon, stride=self.stride, skip=self.skip)
         koop.estimate(iterable, **kwargs)
-        K = koop.K
+        K = koop.K_pc_1
         R = koop.R
         r = R.shape[1]
 
@@ -448,9 +448,10 @@ class EquilibriumCorrectedTICA(_TICA):
         # find R_eq s.t. R_eq.T.dot(C_0_eq).dot(R_eq) = np.eye(s)
         R_eq = spd_inv_split(C_0_eq, epsilon=self.epsilon, canonical_signs=True)
 
+
         # Compute equilibrium K:
         K_eq = 0.5 * R_eq.T.dot(C_0_eq.dot(K) + K.T.dot(C_0_eq)).dot(R_eq)
-        self._cov_tau_pc_1 = K_eq # for testing
+        self._cov_tau_pc_1 = 0.5*(C_0_eq.dot(K) + K.T.dot(C_0_eq)) # for testing
         # Diagonalize K_eq:
         d, V = scl.eigh(K_eq)
         d, V = sort_by_norm(d, V)
@@ -468,7 +469,7 @@ class EquilibriumCorrectedTICA(_TICA):
                                         koopman_matrix=K_eq,
                                         u=koop.u,
                                         eigenvalues=eigenvalues)
-        self._u_pc_1 = koop.u_pc_1
+        self._u_pc_1 = koop.u_pc_1 # for testing
         self._estimated = True
         return self._model
 

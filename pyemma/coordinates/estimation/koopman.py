@@ -99,7 +99,7 @@ class _KoopmanEstimator(StreamingEstimator):
         return self
 
     @property
-    def K(self):
+    def K_pc_1(self):
         'Koopman operator on the modified basis (PC|1)'
         if not self._estimation_finished:
             self._finish_estimation()
@@ -108,7 +108,7 @@ class _KoopmanEstimator(StreamingEstimator):
     @property
     def u_pc_1(self):
         'weights in the modified basis'
-        return compute_u(self.K)
+        return compute_u(self.K_pc_1)
 
     @property
     def u(self):
