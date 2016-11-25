@@ -21,7 +21,7 @@ import numpy as np
 import scipy.linalg as scl
 from pyemma.coordinates.data._base.streaming_estimator import StreamingEstimator
 from pyemma.coordinates.estimation.covariance import CovarEstimator
-from pyemma._ext.variational.solvers.direct import sort_by_norm
+from pyemma._ext.variational.solvers.direct import sort_by_norm, spd_inv_split
 
 
 __author__ = 'paul, nueske'
@@ -81,23 +81,7 @@ class _KoopmanEstimator(StreamingEstimator):
         return self
 
     def _finish_estimation(self):
-        s, Q = scl.eigh(self._covar.cov)
-        # Determine negative magnitudes:
-        evmin = np.min(s)
-        if evmin < 0:
-            ep0 = np.maximum(self.epsilon, -evmin)
-        else:
-            ep0 = self.epsilon
-        # Cut-off small or negative eigenvalues:
-        s, Q = sort_by_norm(s, Q)
-        ind = np.where(np.abs(s) > ep0)[0]
-        s = s[ind]
-        Q = Q[:, ind]
-        for j in range(Q.shape[1]):
-            jj = np.argmax(np.abs(Q[:, j]))
-            Q[:, j] *= np.sign(Q[jj, j])
-        # Compute the whitening transformation:
-        R = np.dot(Q, np.diag(s ** -0.5))
+        R = spd_inv_split(self._covar.cov, epsilon=self.epsilon, canonical_signs=True)
         # Set the new correlation matrix:
         M = R.shape[1]
         K = np.dot(R.T, np.dot((self._covar.cov_tau), R))
