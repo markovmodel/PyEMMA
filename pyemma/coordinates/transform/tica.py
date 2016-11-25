@@ -22,7 +22,6 @@ Created on 19.01.2015
 
 from __future__ import absolute_import
 
-from math import log
 
 import numpy as np
 import scipy.linalg as scl
@@ -33,7 +32,7 @@ from pyemma.coordinates.estimation.koopman import _KoopmanEstimator
 from pyemma.coordinates.data._base.transformer import StreamingEstimationTransformer
 from pyemma.util.annotators import fix_docs, deprecated
 from pyemma._ext.variational.solvers.direct import eig_corr
-from pyemma._ext.variational.solvers.direct import sort_by_norm
+from pyemma._ext.variational.solvers.direct import sort_by_norm, spd_inv_split
 from pyemma.util.reflection import get_default_args
 
 
@@ -45,15 +44,6 @@ class TICAModel(Model):
         self.mean = mean
         self.cov = cov
         self.cov_tau = cov_tau
-
-
-@decorator
-def _lazy_estimation(func, *args, **kw):
-    assert isinstance(args[0], TICA)
-    tica_obj = args[0]
-    if not tica_obj._estimated:
-        tica_obj._diagonalize()
-    return func(*args, **kw)
 
 
 class _TICA(StreamingEstimationTransformer):
@@ -246,6 +236,16 @@ class _TICA(StreamingEstimationTransformer):
     #@_lazy_estimation
     #def koopman_matrix(self):
     #    pass
+
+
+@decorator
+def _lazy_estimation(func, *args, **kw):
+    assert isinstance(args[0], TICA)
+    tica_obj = args[0]
+    if not tica_obj._estimated:
+        tica_obj._diagonalize()
+    return func(*args, **kw)
+
 
 @fix_docs
 class TICA(_TICA):
@@ -443,19 +443,11 @@ class EquilibriumCorrectedTICA(_TICA):
         C_0_eq[r, 0:r] = self._covar.mean.dot(R)
         C_0_eq[r,r] = 1.0
         self._cov_pc_1 = C_0_eq # for testing
+
         C_tau_eq = K
         # find R_eq s.t. R_eq.T.dot(C_0_eq).dot(R_eq) = np.eye(s)
-        s, Q = scl.eigh(C_0_eq)
-        evmin = np.min(s)
-        if evmin < 0:
-            ep0 = np.maximum(self.epsilon, -evmin)
-        else:
-            ep0 = self.epsilon
-        s, Q = sort_by_norm(s, Q)
-        ind = np.where(np.abs(s) > ep0)[0]
-        s = s[ind]
-        Q = Q[:, ind]
-        R_eq = np.dot(Q, np.diag(s ** -0.5))
+        R_eq = spd_inv_split(C_0_eq, epsilon=self.epsilon, canonical_signs=True)
+
         # Compute equilibrium K:
         K_eq = 0.5 * R_eq.T.dot(C_0_eq.dot(K) + K.T.dot(C_0_eq)).dot(R_eq)
         self._cov_tau_pc_1 = K_eq # for testing
@@ -473,16 +465,17 @@ class EquilibriumCorrectedTICA(_TICA):
 
         self._model.update_model_params(mean=self._covar.mean,
                                         cumvar=cumvar,
+                                        koopman_matrix=K_eq,
                                         eigenvalues=eigenvalues)
         self._estimated = True
-        return self
+        return self._model
 
     def _transform_array(self, X):
         return X.dot(self._tr) + self._tr_c
 
     @property
     def koopman_matrix(self):
-        pass
+        return self._model.koopman_matrix
 
     @property
     def eigenvalues(self):
