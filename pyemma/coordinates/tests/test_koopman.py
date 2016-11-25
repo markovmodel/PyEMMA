@@ -116,20 +116,20 @@ class TestKoopman(unittest.TestCase):
         # Set up the model:
         cls.koop = pco.transform.tica.TICA(lag=cls.tau, reversible=False, kinetic_map=False) # TODO: test api
         cls.koop.estimate(cls.data)
-        cls.koop_eq = pco.transform.tica.EquilibriumCorrectedTICA(lag=cls.tau) # TODO: test api
+        cls.koop_eq = pco.transform.tica.EquilibriumCorrectedTICA(lag=cls.tau, reversible=False, kinetic_map=False) # TODO: test api
         cls.koop_eq.estimate(cls.data)
 
     def test_mean_x(self):
         np.testing.assert_allclose(self.koop.mean, self.mean_x)
-        #np.testing.assert_allclose(self.koop_eq.mean_pc, self.mean_eq)
+        np.testing.assert_allclose(self.koop_eq._mean_pc_1, self.mean_eq, rtol=1e-5)
 
     def test_C0(self):
         np.testing.assert_allclose(self.koop.cov, self.C0)
-        #np.testing.assert_allclose(self.koop_eq.cov_pc, self.C0_eq)
+        np.testing.assert_allclose(self.koop_eq._cov_pc_1, self.C0_eq, rtol=1e-5)
 
     def test_Ct(self):
         np.testing.assert_allclose(self.koop.cov_tau, self.Ct)
-        #np.testing.assert_allclose(self.koop_eq.cov_tau_pc, self.Ct_eq)
+        np.testing.assert_allclose(self.koop_eq._cov_tau_pc_1, self.Ct_eq)
 
     @unittest.skip('')
     def test_K(self):

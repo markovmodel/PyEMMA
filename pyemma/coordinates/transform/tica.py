@@ -435,11 +435,14 @@ class EquilibriumCorrectedTICA(_TICA):
         self._covar.estimate(iterable, **kwargs)
         C0 = self._covar.cov
 
-        C_0_eq = np.zeros(shape=(r+1, r+1)) # in modified basis
+        self._mean_pc_1 = np.concatenate((self._covar.mean.dot(R), [1.0])) # for testing
+
+        C_0_eq = np.zeros(shape=(r+1, r+1)) # in modified basis (PC|1)
         C_0_eq[0:r,0:r] = R.T.dot(C0).dot(R)
         C_0_eq[0:r, r] = self._covar.mean.dot(R)
         C_0_eq[r, 0:r] = self._covar.mean.dot(R)
         C_0_eq[r,r] = 1.0
+        self._cov_pc_1 = C_0_eq # for testing
         C_tau_eq = K
         # find R_eq s.t. R_eq.T.dot(C_0_eq).dot(R_eq) = np.eye(s)
         s, Q = scl.eigh(C_0_eq)
@@ -455,6 +458,7 @@ class EquilibriumCorrectedTICA(_TICA):
         R_eq = np.dot(Q, np.diag(s ** -0.5))
         # Compute equilibrium K:
         K_eq = 0.5 * R_eq.T.dot(C_0_eq.dot(K) + K.T.dot(C_0_eq)).dot(R_eq)
+        self._cov_tau_pc_1 = K_eq # for testing
         # Diagonalize K_eq:
         d, V = scl.eigh(K_eq)
         d, V = sort_by_norm(d, V)
