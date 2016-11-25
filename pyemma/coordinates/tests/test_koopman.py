@@ -7,6 +7,8 @@ import pyemma.coordinates as pco
 import pyemma.coordinates.transform
 
 from pyemma._ext.variational.solvers.direct import sort_by_norm
+from pyemma.coordinates.api import _param_stage
+
 
 class TestKoopman(unittest.TestCase):
     @classmethod
@@ -115,9 +117,11 @@ class TestKoopman(unittest.TestCase):
 
         # Set up the model:
         cls.koop = pco.transform.tica.TICA(lag=cls.tau, reversible=False, kinetic_map=False) # TODO: test api
-        cls.koop.estimate(cls.data)
+        _param_stage(cls.data, cls.koop)
+        #cls.koop.estimate(cls.data)
         cls.koop_eq = pco.transform.tica.EquilibriumCorrectedTICA(lag=cls.tau, reversible=False, kinetic_map=False) # TODO: test api
-        cls.koop_eq.estimate(cls.data)
+        #cls.koop_eq.estimate(cls.data)
+        _param_stage(cls.data, cls.koop_eq)
 
     def test_mean_x(self):
         np.testing.assert_allclose(self.koop.mean, self.mean_x)
@@ -143,6 +147,10 @@ class TestKoopman(unittest.TestCase):
         np.testing.assert_allclose(self.koop.eigenvalues, self.ln[1:])
         np.testing.assert_allclose(self.koop_eq.eigenvalues, self.lr[1:])
 
+    def test_get_output(self):
+        # just calling
+        self.koop.get_output()
+        self.koop_eq.get_output()
 
 if __name__ == "__main__":
     unittest.main()

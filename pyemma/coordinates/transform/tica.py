@@ -223,14 +223,6 @@ class _TICA(StreamingEstimationTransformer):
         """
         return -self.lag / np.log(np.abs(self.eigenvalues))
 
-    def output_type(self):
-        # TODO: handle the case of conjugate pairs
-        if np.all(np.isreal(self.eigenvectors[:, 0:self.dimension()])) or \
-            np.allclose(np.imag(self.eigenvectors[:, 0:self.dimension()]), 0):
-            return super(_TICA, self).output_type()
-        else:
-            return np.complex64
-
 
 @decorator
 def _lazy_estimation(func, *args, **kw):
@@ -417,6 +409,14 @@ class TICA(_TICA):
         R = spd_inv_split(self._covar.cov, epsilon=self.epsilon, canonical_signs=True)
         return np.dot(R.T, np.dot((self._covar.cov_tau), R))
 
+    def output_type(self):
+        # TODO: handle the case of conjugate pairs
+        if np.all(np.isreal(self.eigenvectors[:, 0:self.dimension()])) or \
+                np.allclose(np.imag(self.eigenvectors[:, 0:self.dimension()]), 0):
+            return super(_TICA, self).output_type()
+        else:
+            return np.complex64
+
 
 @fix_docs
 class EquilibriumCorrectedTICA(_TICA):
@@ -474,7 +474,7 @@ class EquilibriumCorrectedTICA(_TICA):
         return self._model
 
     def _transform_array(self, X):
-        return X.dot(self._tr) + self._tr_c
+        return X.dot(self._tr)[:, 0:self.dimension()] + self._tr_c[0:self.dimension()]
 
     @property
     def koopman_matrix(self):
