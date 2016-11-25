@@ -3,8 +3,8 @@ import scipy.linalg as scl
 import unittest
 import pkg_resources
 
-import pyemma
 import pyemma.coordinates as pco
+import pyemma.coordinates.transform
 
 from pyemma._ext.variational.solvers.direct import sort_by_norm
 
@@ -114,40 +114,36 @@ class TestKoopman(unittest.TestCase):
         cls.lr, cls.Rr = sort_by_norm(cls.lr, cls.Rr)
 
         # Set up the model:
-        cls.koop = pyemma.coordinates.tica(lag=cls.tau) # TODO: test api
-        #cls.koop_eq = pyemma.coordinates.transform.tica.TICA(lag=cls.tau)
+        cls.koop = pco.transform.tica.TICA(lag=cls.tau, reversible=False, kinetic_map=False) # TODO: test api
         cls.koop.estimate(cls.data)
-        cls.koop_eq = pyemma.coordinates.transform.tica.EquilibriumCorrectedTICA(lag=cls.tau) # TODO: test api
+        cls.koop_eq = pco.transform.tica.EquilibriumCorrectedTICA(lag=cls.tau) # TODO: test api
         cls.koop_eq.estimate(cls.data)
 
-    @unittest.skip('')
     def test_mean_x(self):
-        assert np.allclose(self.koop.mean, self.mean_x)
-        assert np.allclose(self.koop_eq.mean_pc, self.mean_eq)
+        np.testing.assert_allclose(self.koop.mean, self.mean_x)
+        #np.testing.assert_allclose(self.koop_eq.mean_pc, self.mean_eq)
 
-    @unittest.skip('')
     def test_C0(self):
-        assert np.allclose(self.koop.cov, self.C0)
-        assert np.allclose(self.koop_eq.cov_pc, self.C0_eq)
+        np.testing.assert_allclose(self.koop.cov, self.C0)
+        #np.testing.assert_allclose(self.koop_eq.cov_pc, self.C0_eq)
 
-    @unittest.skip('')
     def test_Ct(self):
-        assert np.allclose(self.koop.cov_tau, self.Ct)
-        assert np.allclose(self.koop_eq.cov_tau_pc, self.Ct_eq)
+        np.testing.assert_allclose(self.koop.cov_tau, self.Ct)
+        #np.testing.assert_allclose(self.koop_eq.cov_tau_pc, self.Ct_eq)
 
     @unittest.skip('')
     def test_K(self):
-        assert np.allclose(self.koop.koopman_matrix, self.K)
-        assert np.allclose(self.koop_eq.koopman_matrix, self.K_eq)
+        np.testing.assert_allclose(self.koop.koopman_matrix, self.K)
+        np.testing.assert_allclose(self.koop_eq.koopman_matrix, self.K_eq)
 
     @unittest.skip('')
     def test_u(self):
-        assert np.allclose(self.koop_eq._model.u, self.u)
+        np.testing.assert_allclose(self.koop_eq._model.u, self.u)
 
     @unittest.skip('')
     def test_eigenvalues(self):
-        assert np.allclose(self.koop.eigenvalues, self.ln)
-        assert np.allclose(self.koop_eq.eigenvalues, self.lr)
+        np.testing.assert_allclose(self.koop.eigenvalues, self.ln)
+        np.testing.assert_allclose(self.koop_eq.eigenvalues, self.lr)
 
 
 if __name__ == "__main__":
