@@ -37,7 +37,7 @@ from pyemma._ext.variational.solvers.direct import sort_by_norm
 from pyemma.util.reflection import get_default_args
 
 
-__all__ = ['TICA']
+__all__ = ['TICA', 'EquilibriumCorrectedTICA']
 
 
 class TICAModel(Model):
@@ -202,28 +202,6 @@ class _TICA(StreamingEstimationTransformer):
     def mean(self, value):
         self._model.mean = value
 
-    @property
-    def cov(self):
-        """ covariance matrix of input data. """
-        return self._model.cov
-
-    @cov.setter
-    def cov(self, value):
-        self._model.cov = value
-
-    @property
-    def cov_tau(self):
-        """ covariance matrix of time-lagged input data. """
-        return self._model.cov_tau
-
-    @cov_tau.setter
-    def cov_tau(self, value):
-        self._model.cov_tau = value
-
-    @cov.setter
-    def cov(self, value):
-        self._model.cov = value
-
     def estimate(self, X, **kwargs):
         r"""
         Chunk-based parameterization of TICA. Iterates over all data and estimates
@@ -232,6 +210,74 @@ class _TICA(StreamingEstimationTransformer):
         the independent components.
         """
         return super(_TICA, self).estimate(X, **kwargs)
+
+    @property
+    def timescales(self):
+        r"""Implied timescales of the TICA transformation
+
+        For each :math:`i`-th eigenvalue, this returns
+
+        .. math::
+
+            t_i = -\frac{\tau}{\log(|\lambda_i|)}
+
+        where :math:`\tau` is the :py:obj:`lag` of the TICA object and :math:`\lambda_i` is the `i`-th
+        :py:obj:`eigenvalue <eigenvalues>` of the TICA object.
+
+        Returns
+        -------
+        timescales: 1D np.array
+            numpy array with the implied timescales. In principle, one should expect as many timescales as
+            input coordinates were available. However, less eigenvalues will be returned if the TICA matrices
+            were not full rank or :py:obj:`var_cutoff` was parsed
+        """
+        return -self.lag / np.log(np.abs(self.eigenvalues))
+
+    def output_type(self):
+        # TODO: handle the case of conjugate pairs
+        if np.all(np.isreal(self.eigenvectors[:, 0:self.dimension()])) or \
+            np.allclose(np.imag(self.eigenvectors[:, 0:self.dimension()]), 0):
+            return super(_TICA, self).output_type()
+        else:
+            return np.complex64
+
+    # TODO
+    #@property
+    #@_lazy_estimation
+    #def koopman_matrix(self):
+    #    pass
+
+@fix_docs
+class TICA(_TICA):
+    def partial_fit(self, X):
+        """ incrementally update the covariances and mean.
+
+        Parameters
+        ----------
+        X: array, list of arrays, PyEMMA reader
+            input data.
+
+        Notes
+        -----
+        The projection matrix is first being calculated upon its first access.
+        """
+        from pyemma.coordinates import source
+        iterable = source(X)
+
+        indim = iterable.dimension()
+        if not self.dim <= indim:
+            raise RuntimeError("requested more output dimensions (%i) than dimension"
+                               " of input data (%i)" % (self.dim, indim))
+
+        self._covar.partial_fit(iterable)
+        self._model.update_model_params(mean=self._covar.mean,  # TODO: inefficient, fixme
+                                        cov=self._covar.cov,
+                                        cov_tau=self._covar.cov_tau)
+
+        self._used_data = self._covar._used_data
+        self._estimated = False
+
+        return self
 
     def _estimate(self, iterable, **kw):
         indim = iterable.dimension()
@@ -321,26 +367,22 @@ class _TICA(StreamingEstimationTransformer):
         return np.dot(self.cov, self.eigenvectors[:, : self.dimension()]) / feature_sigma[:, np.newaxis]
 
     @property
-    def timescales(self):
-        r"""Implied timescales of the TICA transformation
+    def cov(self):
+        """ covariance matrix of input data. """
+        return self._model.cov
 
-        For each :math:`i`-th eigenvalue, this returns
+    @cov.setter
+    def cov(self, value):
+        self._model.cov = value
 
-        .. math::
+    @property
+    def cov_tau(self):
+        """ covariance matrix of time-lagged input data. """
+        return self._model.cov_tau
 
-            t_i = -\frac{\tau}{\log(|\lambda_i|)}
-
-        where :math:`\tau` is the :py:obj:`lag` of the TICA object and :math:`\lambda_i` is the `i`-th
-        :py:obj:`eigenvalue <eigenvalues>` of the TICA object.
-
-        Returns
-        -------
-        timescales: 1D np.array
-            numpy array with the implied timescales. In principle, one should expect as many timescales as
-            input coordinates were available. However, less eigenvalues will be returned if the TICA matrices
-            were not full rank or :py:obj:`var_cutoff` was parsed
-        """
-        return -self.lag / np.log(np.abs(self.eigenvalues))
+    @cov_tau.setter
+    def cov_tau(self, value):
+        self._model.cov_tau = value
 
     @property
     @_lazy_estimation
@@ -375,57 +417,11 @@ class _TICA(StreamingEstimationTransformer):
         """
         return self._model.cumvar
 
-    def output_type(self):
-        # TODO: handle the case of conjugate pairs if leading eigenvalues ar real
-        if np.all(np.isreal(self.eigenvectors[:, 0:self.dimension()])) or \
-            np.allclose(np.imag(self.eigenvectors[:, 0:self.dimension()]), 0):
-            return super(_TICA, self).output_type()
-        else:
-            return np.complex64
-
-    # TODO
-    #@property
-    #@_lazy_estimation
-    #def K(self):
-    #    pass
-
-@fix_docs
-class TICA(_TICA):
-    def partial_fit(self, X):
-        """ incrementally update the covariances and mean.
-
-        Parameters
-        ----------
-        X: array, list of arrays, PyEMMA reader
-            input data.
-
-        Notes
-        -----
-        The projection matrix is first being calculated upon its first access.
-        """
-        from pyemma.coordinates import source
-        iterable = source(X)
-
-        indim = iterable.dimension()
-        if not self.dim <= indim:
-            raise RuntimeError("requested more output dimensions (%i) than dimension"
-                               " of input data (%i)" % (self.dim, indim))
-
-        self._covar.partial_fit(iterable)
-        self._model.update_model_params(mean=self._covar.mean,  # TODO: inefficient, fixme
-                                        cov=self._covar.cov,
-                                        cov_tau=self._covar.cov_tau)
-
-        self._used_data = self._covar._used_data
-        self._estimated = False
-
-        return self
-
 
 @fix_docs
 class EquilibriumCorrectedTICA(_TICA):
     def _estimate(self, iterable, **kwargs):
-        koop = _KoopmanEstimator(lag=self.lag, stride=self.stride, skip=self.skip)
+        koop = _KoopmanEstimator(lag=self.lag, epsilon=self.epsilon, stride=self.stride, skip=self.skip)
         koop.estimate(iterable, **kwargs)
         K = koop.K
         R = koop.R
@@ -439,8 +435,8 @@ class EquilibriumCorrectedTICA(_TICA):
         self._covar.estimate(iterable, **kwargs)
         C0 = self._covar.cov
 
-        C_0_eq = np.hstack((
-                    np.vstack((R.T. C0.dot(R), self._covar.mean.dot(R))),
+        C_0_eq = np.hstack(( # in modified basis
+                    np.vstack((R.T.dot(C0).dot(R), self._covar.mean.dot(R))),
                     np.vstack((self._covar.mean.dot(R), 1.0))
                  ))
         C_tau_eq = K
@@ -465,9 +461,40 @@ class EquilibriumCorrectedTICA(_TICA):
         self._tr = R.dot(W[1:r, :])
         self._tr_c = W[r, :] - x_mean_0.T.dot(R).dot(W[1:r, :])
 
+        # update model parameters
+        eigenvalues = d
+        cumvar = np.cumsum(np.abs(eigenvalues) ** 2)
+        cumvar /= cumvar[-1]
+
+        self._model.update_model_params(mean=self._covar.mean,
+                                        cumvar=cumvar,
+                                        eigenvalues=eigenvalues)
+        self._estimated = True
+        return self
+
     def _transform_array(self, X):
         return X.dot(self._tr) + self._tr_c
 
     @property
+    def koopman_matrix(self):
+        pass
+
+    @property
     def eigenvalues(self):
-        return self._eigenvalues
+        r"""Eigenvalues of the TICA problem (usually denoted :math:`\lambda`
+
+        Returns
+        -------
+        eigenvalues: 1D np.array
+        """
+        return self._model.eigenvalues
+
+    @property
+    def cumvar(self):
+        r"""Cumulative sum of the the TICA eigenvalues
+
+        Returns
+        -------
+        cumvar: 1D np.array
+        """
+        return self._model.cumvar
