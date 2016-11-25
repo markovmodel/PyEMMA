@@ -25,6 +25,7 @@ from __future__ import absolute_import
 from math import log
 
 import numpy as np
+import scipy.linalg as scl
 from decorator import decorator
 from pyemma._base.model import Model
 from pyemma.coordinates.estimation.covariance import CovarEstimator
@@ -32,6 +33,7 @@ from pyemma.coordinates.estimation.koopman import _KoopmanEstimator
 from pyemma.coordinates.data._base.transformer import StreamingEstimationTransformer
 from pyemma.util.annotators import fix_docs, deprecated
 from pyemma._ext.variational.solvers.direct import eig_corr
+from pyemma._ext.variational.solvers.direct import sort_by_norm
 from pyemma.util.reflection import get_default_args
 
 
@@ -427,6 +429,7 @@ class EquilibriumCorrectedTICA(_TICA):
         koop.estimate(iterable, **kwargs)
         K = koop.K
         R = koop.R
+        r = R.shape[1]
 
         x_mean_0 = koop.mean
 
@@ -437,17 +440,30 @@ class EquilibriumCorrectedTICA(_TICA):
         C0 = self._covar.cov
 
         C_0_eq = np.hstack((
-                    np.vstack((R.T.C0.dot(R), x_mean_0.dot(R))),
-                    np.vstack((x_mean_0.dot(R), 1.0))
+                    np.vstack((R.T. C0.dot(R), self._covar.mean.dot(R))),
+                    np.vstack((self._covar.mean.dot(R), 1.0))
                  ))
         C_tau_eq = K
         # find R_eq s.t. R_eq.T.dot(C_0_eq).dot(R_eq) = np.eye(s)
-        R_eq =
+        s, Q = scl.eigh(C_0_eq)
+        evmin = np.min(s)
+        if evmin < 0:
+            ep0 = np.maximum(self.epsilon, -evmin)
+        else:
+            ep0 = self.epsilon
+        s, Q = sort_by_norm(s, Q)
+        ind = np.where(np.abs(s) > ep0)[0]
+        s = s[ind]
+        Q = Q[:, ind]
+        R_eq = np.dot(Q, np.diag(s ** -0.5))
+        # Compute equilibrium K:
         K_eq = 0.5 * R_eq.T.dot(C_0_eq.dot(K) + K.T.dot(C_0_eq)).dot(R_eq)
-        # find V s.t. K_eq = V.dot(Lambda).dot(V.T)
+        # Diagonalize K_eq:
+        d, V = scl.eigh(K_eq)
+        d, V = sort_by_norm(d, V)
         W = R_eq.dot(V)
         self._tr = R.dot(W[1:r, :])
-        self._tr_c = W[1, r+1] - x_mean_0.T.dot(R).dot(W[1:r, :])
+        self._tr_c = W[r, :] - x_mean_0.T.dot(R).dot(W[1:r, :])
 
     def _transform_array(self, X):
         return X.dot(self._tr) + self._tr_c
