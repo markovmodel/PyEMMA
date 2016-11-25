@@ -131,7 +131,6 @@ class TestKoopman(unittest.TestCase):
         np.testing.assert_allclose(self.koop.cov_tau, self.Ct)
         #np.testing.assert_allclose(self.koop_eq._cov_tau_pc_1, self.Ct_eq)
 
-    @unittest.skip('')
     def test_K(self):
         #np.testing.assert_allclose(self.koop.koopman_matrix, self.K)
         np.testing.assert_allclose(self.koop_eq.koopman_matrix, self.K_eq, atol=1.e-3) # TODO: lower atol
@@ -140,10 +139,9 @@ class TestKoopman(unittest.TestCase):
     def test_u(self):
         np.testing.assert_allclose(self.koop_eq._model.u, self.u)
 
-    @unittest.skip('')
     def test_eigenvalues(self):
-        np.testing.assert_allclose(self.koop.eigenvalues, self.ln)
-        np.testing.assert_allclose(self.koop_eq.eigenvalues, self.lr)
+        np.testing.assert_allclose(self.koop.eigenvalues, self.ln[1:])
+        np.testing.assert_allclose(self.koop_eq.eigenvalues, self.lr[1:])
 
 
 if __name__ == "__main__":
