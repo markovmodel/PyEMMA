@@ -27,7 +27,7 @@ from pyemma._base.progress import ProgressReporter
 from pyemma._ext.variational.estimators.running_moments import running_covar
 
 
-__all__ = ['CovarEstimator', ]
+__all__ = ['CovarEstimator', 'EquilibriumCorrectedCovarEstimator']
 
 __author__ = 'paul, nueske'
 
@@ -60,7 +60,7 @@ class _CovarEstimator(StreamingEstimator, ProgressReporter, Loggable):
         elif isinstance(self.weights, np.ndarray):
             return self.weigths[it.itraj][it.pos:it:]
         else:
-            return self.weights.weight(X)
+            return self.weights.weights(X)
 
     def _init_covar(self, partial_fit, n_chunks):
         nsave = int(max(log(n_chunks, 2), 2))
