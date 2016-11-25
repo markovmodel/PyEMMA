@@ -435,10 +435,11 @@ class EquilibriumCorrectedTICA(_TICA):
         self._covar.estimate(iterable, **kwargs)
         C0 = self._covar.cov
 
-        C_0_eq = np.hstack(( # in modified basis
-                    np.vstack((R.T.dot(C0).dot(R), self._covar.mean.dot(R))),
-                    np.vstack((self._covar.mean.dot(R), 1.0))
-                 ))
+        C_0_eq = np.zeros(shape=(r+1, r+1)) # in modified basis
+        C_0_eq[0:r,0:r] = R.T.dot(C0).dot(R)
+        C_0_eq[0:r, r] = self._covar.mean.dot(R)
+        C_0_eq[r, 0:r] = self._covar.mean.dot(R)
+        C_0_eq[r,r] = 1.0
         C_tau_eq = K
         # find R_eq s.t. R_eq.T.dot(C_0_eq).dot(R_eq) = np.eye(s)
         s, Q = scl.eigh(C_0_eq)
@@ -458,8 +459,8 @@ class EquilibriumCorrectedTICA(_TICA):
         d, V = scl.eigh(K_eq)
         d, V = sort_by_norm(d, V)
         W = R_eq.dot(V)
-        self._tr = R.dot(W[1:r, :])
-        self._tr_c = W[r, :] - x_mean_0.T.dot(R).dot(W[1:r, :])
+        self._tr = R.dot(W[0:r, :])
+        self._tr_c = W[r, :] - x_mean_0.T.dot(R).dot(W[0:r, :])
 
         # update model parameters
         eigenvalues = d
