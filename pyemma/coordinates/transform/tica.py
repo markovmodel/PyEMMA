@@ -288,7 +288,7 @@ class TICA(_TICA):
         # diagonalize with low rank approximation
         self._logger.debug("diagonalize Cov and Cov_tau.")
 
-        eigenvalues, eigenvectors = eig_corr(self._covar.cov, self.cov_tau, self.epsilon)
+        eigenvalues, eigenvectors = eig_corr(self._covar.cov, self._covar.cov_tau, self.epsilon)
         self._logger.debug("finished diagonalisation.")
 
         # compute cumulative variance
