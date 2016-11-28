@@ -39,7 +39,7 @@ class _CovarEstimator(StreamingEstimator, ProgressReporter, Loggable):
         super(_CovarEstimator, self).__init__(chunksize=chunksize)
 
         if is_float_vector(weights):
-            weight = ensure_float_vector(weights)
+            weights = ensure_float_vector(weights)
         if remove_constant_mean is not None and remove_data_mean:
             raise ValueError('Subtracting the data mean and a constant vector simultaneously is not supported.')
         if remove_constant_mean is not None:
@@ -55,10 +55,10 @@ class _CovarEstimator(StreamingEstimator, ProgressReporter, Loggable):
     def _compute_weight_series(self, X, it):
         if self.weights is None:
             return None
-        elif isinstance(self.weights, numbers.Real): # TODO: list of list + list, number
-            pass
-        elif isinstance(self.weights, np.ndarray):
-            return self.weigths[it.itraj][it.pos:it:]
+        elif isinstance(self.weights, numbers.Real):
+            return self.weights
+        elif isinstance(self.weights, list): # TODO: make more general
+            return self.weigths[it.itraj][it.pos:it.pos+X.shape[0]]
         else:
             return self.weights.weights(X)
 
@@ -98,6 +98,8 @@ class _CovarEstimator(StreamingEstimator, ProgressReporter, Loggable):
 
         it = iterable.iterator(lag=self.lag, return_trajindex=False, stride=self.stride, skip=self.skip, chunk = self.chunksize if not partial_fit else 0)
 
+        # TODO: we could possibly optimize the case lag>0 and xy=False using skip.
+        # Access how much iterator hassle this would be.
         with it:
             self._progress_register(it.n_chunks, "calculate covariances", 0)
             self._init_covar(partial_fit, it.n_chunks)

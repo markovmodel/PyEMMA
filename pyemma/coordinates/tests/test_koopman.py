@@ -152,5 +152,35 @@ class TestKoopman(unittest.TestCase):
         self.koop.get_output()
         self.koop_eq.get_output()
 
+    def test_self_consistency(self): # doesn't work
+        from pyemma.coordinates.estimation.covariance import CovarEstimator
+        # TODO: do the self-consitency test: C_0 and C_tau of the ICs (weighted with the corresponding weights shoulb be diagonal)
+        ce = CovarEstimator(xx=True, xy=True, remove_data_mean=True, reversible=False, lag=self.tau)
+
+        ics = self.koop.get_output()
+        ce.fit(pco.source(ics))
+        import sys
+        print >> sys.stderr, self.koop.dimension(), self.koop.output_type()
+        print >>sys.stderr, ce.cov # should be diagonal
+        print >> sys.stderr, ce.cov_tau # should be diagonal
+
+        koop2 = pco.transform.tica.TICA(lag=self.tau, reversible=False, kinetic_map=False)
+        koop2.estimate(pco.source(ics))
+        print >> sys.stderr, koop2.cov  # should be diagonal
+        print >> sys.stderr, koop2.cov_tau  # should be diagonal
+
+
+        #from pyemma.coordinates.estimation.koopman import _KoopmanWeights
+        #ce_eq = CovarEstimator(xx=True, xy=True, remove_data_mean=False, reversible=False, lag=self.tau, weigths=_KoopmanWeights(self.koop_eq.u))
+        #ics_eq = self.koop_eq.get_output()
+        #ce_eq.fit(pco.source(ics_eq))
+        #ce_eq.cov and ce_eq.cov_tau should be diagonal
+
+
+
+
+
+
+
 if __name__ == "__main__":
     unittest.main()
