@@ -135,12 +135,13 @@ class _TICA(StreamingEstimationTransformer):
             var_cutoff = 1.0
 
         self._covar = CovarEstimator(xx=True, xy=True, yy=False, remove_data_mean=remove_mean, reversible=reversible,
-                                     lag=lag, stride=stride, skip=skip)
+                                     lag=lag, bessels_correction=False, stride=stride, skip=skip)
 
         # empty dummy model instance
         self._model = TICAModel()
         self.set_params(lag=lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map, commute_map=commute_map,
-                        epsilon=epsilon, mean=mean, remove_mean=remove_mean, reversible=reversible, stride=stride, skip=skip)
+                        epsilon=epsilon, mean=mean, remove_mean=remove_mean, reversible=reversible,
+                        stride=stride, skip=skip)
 
     @property
     def lag(self):
@@ -430,8 +431,8 @@ class EquilibriumCorrectedTICA(_TICA):
         x_mean_0 = koop.mean
 
         self._covar = CovarEstimator(lag=self.lag, weights=koop.weights, remove_constant_mean=x_mean_0, xy=False,
-                                     remove_data_mean=False, reversible=self.reversible, stride=self.stride,
-                                     skip=self.skip)
+                                     remove_data_mean=False, reversible=self.reversible, bessels_correction=False,
+                                     stride=self.stride, skip=self.skip)
         self._covar.estimate(iterable, **kwargs)
         C0 = self._covar.cov
 

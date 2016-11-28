@@ -34,7 +34,8 @@ __author__ = 'paul, nueske'
 
 class _CovarEstimator(StreamingEstimator, ProgressReporter, Loggable):
     def __init__(self, xx=True, xy=False, yy=False, remove_constant_mean=None, remove_data_mean=False, reversible=False,
-                 sparse_mode='auto', modify_data=False, lag=0, weights=None, stride=1, skip=0, chunksize=None):
+                 bessels_correction=True, sparse_mode='auto', modify_data=False, lag=0, weights=None, stride=1, skip=0,
+                 chunksize=None):
 
         super(_CovarEstimator, self).__init__(chunksize=chunksize)
 
@@ -47,6 +48,7 @@ class _CovarEstimator(StreamingEstimator, ProgressReporter, Loggable):
         self.set_params(xx=xx, xy=xy, yy=yy, remove_constant_mean=remove_constant_mean,
                         remove_data_mean=remove_data_mean, reversible=reversible,
                         sparse_mode=sparse_mode, modify_data=modify_data, lag=lag,
+                        bessels_correction=bessels_correction,
                         weights=weights, stride=stride, skip=skip)
 
         self._rc = None
@@ -136,11 +138,11 @@ class _CovarEstimator(StreamingEstimator, ProgressReporter, Loggable):
 
     @property
     def cov(self):
-        return self._rc.cov_XX()
+        return self._rc.cov_XX(bessels_correction=self.bessels_correction)
 
     @property
     def cov_tau(self):
-        return self._rc.cov_XY()
+        return self._rc.cov_XY(bessels_correction=self.bessels_correction)
 
     @property
     def nsave(self):

@@ -70,7 +70,7 @@ class _KoopmanEstimator(StreamingEstimator):
         super(_KoopmanEstimator, self).__init__(chunksize=chunksize)
 
         self._covar = CovarEstimator(xx=True, xy=True, remove_data_mean=True, reversible=False,
-                                     lag=lag, stride=stride, skip=skip)
+                                     lag=lag, bessels_correction=False, stride=stride, skip=skip)
 
         self.set_params(lag=lag, epsilon=epsilon, stride=stride, skip=skip)
 
