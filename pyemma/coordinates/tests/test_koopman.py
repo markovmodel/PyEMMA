@@ -118,6 +118,8 @@ class TestKoopman(unittest.TestCase):
         # Set up the model:
         cls.koop = pco.transform.tica.TICA(lag=cls.tau, reversible=False, kinetic_map=False) # TODO: test api
         _param_stage(cls.data, cls.koop)
+        print cls.koop.eigenvalues
+        print cls.ln
         #cls.koop.estimate(cls.data)
         cls.koop_eq = pco.transform.tica.EquilibriumCorrectedTICA(lag=cls.tau, reversible=False, kinetic_map=False) # TODO: test api
         #cls.koop_eq.estimate(cls.data)
@@ -148,34 +150,11 @@ class TestKoopman(unittest.TestCase):
         np.testing.assert_allclose(self.koop_eq.eigenvalues, self.lr[1:])
 
     def test_get_output(self):
-        # just calling
-        self.koop.get_output()
-        self.koop_eq.get_output()
-
-    @unittest.skip('')
-    def test_self_consistency(self): # doesn't work
-        from pyemma.coordinates.estimation.covariance import CovarEstimator
-        # TODO: do the self-consitency test: C_0 and C_tau of the ICs (weighted with the corresponding weights shoulb be diagonal)
-        ce = CovarEstimator(xx=True, xy=True, remove_data_mean=True, reversible=False, lag=self.tau)
-
-        ics = self.koop.get_output()
-        ce.fit(pco.source(ics))
-        import sys
-        print >> sys.stderr, self.koop.dimension(), self.koop.output_type()
-        print >>sys.stderr, ce.cov # should be diagonal
-        print >> sys.stderr, ce.cov_tau # should be diagonal
-
-        koop2 = pco.transform.tica.TICA(lag=self.tau, reversible=False, kinetic_map=False)
-        koop2.estimate(pco.source(ics))
-        print >> sys.stderr, koop2.cov  # should be diagonal
-        print >> sys.stderr, koop2.cov_tau  # should be diagonal
-
-
-        #from pyemma.coordinates.estimation.koopman import _KoopmanWeights
-        #ce_eq = CovarEstimator(xx=True, xy=True, remove_data_mean=False, reversible=False, lag=self.tau, weigths=_KoopmanWeights(self.koop_eq.u))
-        #ics_eq = self.koop_eq.get_output()
-        #ce_eq.fit(pco.source(ics_eq))
-        #ce_eq.cov and ce_eq.cov_tau should be diagonal
+        traj = self.data[0]
+        traj = np.hstack((np.dot(traj - self.mean_x[None, :], self.R), np.ones((traj.shape[0], 1))))
+        traj = np.dot(traj, self.Rn[:, 1:3])
+        out_traj = self.koop.get_output()[0]
+        np.testing.assert_allclose(out_traj, traj)
 
 
 
