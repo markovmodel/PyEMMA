@@ -59,8 +59,6 @@ class _CovarEstimator(StreamingEstimator, ProgressReporter, Loggable):
             return None
         elif isinstance(self.weights, numbers.Real):
             return self.weights
-        elif isinstance(self.weights, list): # TODO: make more general
-            return self.weigths[it.itraj][it.pos:it.pos+X.shape[0]]
         else:
             return self.weights.weights(X)
 
@@ -114,9 +112,9 @@ class _CovarEstimator(StreamingEstimator, ProgressReporter, Loggable):
                 weight_series = self._compute_weight_series(X, it)
 
                 if self.remove_constant_mean is not None:
-                    X -= self.remove_constant_mean[np.newaxis, :]
+                    X = X - self.remove_constant_mean[np.newaxis, :]
                     if Y is not None:
-                        Y -= self.remove_constant_mean[np.newaxis, :]
+                        Y = Y - self.remove_constant_mean[np.newaxis, :]
 
                 try:
                     self._rc.add(X, Y, weights=weight_series)
@@ -130,18 +128,22 @@ class _CovarEstimator(StreamingEstimator, ProgressReporter, Loggable):
 
     @property
     def mean(self):
+        self._check_estimated()
         return self._rc.mean_X()
 
     @property
     def mean_tau(self):
+        self._check_estimated()
         return self._rc.mean_Y()
 
     @property
     def cov(self):
+        self._check_estimated()
         return self._rc.cov_XX(bessels_correction=self.bessels_correction)
 
     @property
     def cov_tau(self):
+        self._check_estimated()
         return self._rc.cov_XY(bessels_correction=self.bessels_correction)
 
     @property

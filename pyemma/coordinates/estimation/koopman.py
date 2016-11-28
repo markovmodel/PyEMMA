@@ -73,11 +73,13 @@ class _KoopmanEstimator(StreamingEstimator):
                                      lag=lag, bessels_correction=False, stride=stride, skip=skip)
 
         self.set_params(lag=lag, epsilon=epsilon, stride=stride, skip=skip)
+        self._estimation_finished = False
 
     def partial_fit(self, X):
         from pyemma.coordinates import source
         self._covar.partial_fit(source(X))
         self._estimation_finished = False
+        self._estimated = True
         return self
 
     def _finish_estimation(self):
@@ -92,6 +94,7 @@ class _KoopmanEstimator(StreamingEstimator):
         self._R = R
 
         self._estimation_finished = True
+        self._estimated = True
 
     def _estimate(self, iterable, **kwargs):
         self._covar.estimate(iterable, **kwargs)
@@ -101,6 +104,7 @@ class _KoopmanEstimator(StreamingEstimator):
     @property
     def K_pc_1(self):
         'Koopman operator on the modified basis (PC|1)'
+        self._check_estimated()
         if not self._estimation_finished:
             self._finish_estimation()
         return self._K
@@ -108,11 +112,13 @@ class _KoopmanEstimator(StreamingEstimator):
     @property
     def u_pc_1(self):
         'weights in the modified basis'
+        self._check_estimated()
         return compute_u(self.K_pc_1)
 
     @property
     def u(self):
         'weights in the input basis'
+        self._check_estimated()
         u_mod = self.u_pc_1
         N = self._R.shape[0]
         u_input = np.zeros(N+1)
@@ -123,16 +129,19 @@ class _KoopmanEstimator(StreamingEstimator):
     @property
     def weights(self):
         'weights in the input basis (encapsulated in an object)'
+        self._check_estimated()
         u_input = self.u
         return _KoopmanWeights(u_input[0:-1], u_input[-1])
 
     @property
     def R(self):
         'weightening transformation'
+        self._check_estimated()
         if not self._estimation_finished:
             self._finish_estimation()
         return self._R
 
     @property
     def mean(self):
+        self._check_estimated()
         return self._covar.mean
