@@ -178,15 +178,21 @@ class CovarEstimator(_CovarEstimator):
 
         return self
 
-
+# TODO Trigger warning that weights will be ignored.
+# TODO lag=0 does not make sense.
 class EquilibriumCorrectedCovarEstimator(_CovarEstimator):
+    def __init__(self, xx=True, xy=False, yy=False, remove_constant_mean=None, remove_data_mean=False, reversible=False,
+                 bessels_correction=True, sparse_mode='auto', modify_data=False, lag=0, stride=1, skip=0, weights=None,
+                 chunksize=None):
+        super(EquilibriumCorrectedCovarEstimator, self).__init__(xx=xx, xy=xy, yy=yy,
+                                                                 remove_constant_mean=remove_constant_mean,
+                                     remove_data_mean=remove_data_mean, reversible=reversible,
+                                     sparse_mode=sparse_mode, modify_data=modify_data, lag=lag,
+                                     weights=weights, stride=stride, skip=skip)
     def _estimate(self, iterable, **kwargs):
         from pyemma.coordinates.estimation.koopman import _KoopmanEstimator
         koop = _KoopmanEstimator(lag=self.lag, stride=self.stride, skip=self.skip)
         koop.estimate(iterable, **kwargs)
-        self._covar = CovarEstimator(xx=self.xx, xy=self.xy, yy=self.yy, remove_constant_mean=self.remove_constant_mean,
-                                     remove_data_mean=self.remove_data_mean, reversible=self.reversible,
-                                     sparse_mode=self.sparse_mode, modify_data=self.modify_data, lag=self.lag,
-                                     weights=koop.weights, stride=self.stride, skip=self.skip)
-        self._covar.estimate(iterable, **kwargs)
+        self.weights = koop.weights
+        return super(EquilibriumCorrectedCovarEstimator, self)._estimate(iterable, **kwargs)
 
