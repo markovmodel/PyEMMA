@@ -33,14 +33,25 @@ from msmtools.generation import generate_traj, generate_trajs
 
 class TestItsPlot(unittest.TestCase):
 
-    def test_plot(self):
+    @classmethod
+    def setUpClass(cls):
         P = np.array([[0.5, .25, .25, 0.],
-                      [0., .25, .5, .25],
-                      [.25, .25, .5, 0],
-                      [.25, .25, .25, .25],
-                      ])
+                  [0., .25, .5, .25],
+                  [.25, .25, .5, 0],
+                  [.25, .25, .25, .25],
+                  ])
         dtrajs = generate_trajs(P, 5, 1000)
         msm_obj = pyemma.msm.MaximumLikelihoodMSM()
         msm_obj.estimate(dtrajs)
-        ck = msm_obj.cktest(3)
-        plot_cktest(ck)
+        cls.ck = msm_obj.cktest(3)
+    def test_plot(self):
+        plot_cktest(self.ck)
+
+    def test_plot_kwargs(self):
+        plot_cktest(self.ck, marker='o', markerfacecolor='red', linewidth=2, label='testlabel')
+
+    def test_plot_kwargs_no_def_overriding(self):
+        plot_cktest(self.ck, marker='o', markerfacecolor='red', linewidth=2, label='testlabel',
+                    color='blue', linestyle='solid'
+                    )
+
