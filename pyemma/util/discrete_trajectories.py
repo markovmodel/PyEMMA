@@ -387,7 +387,7 @@ def sample_indexes_by_distribution(indexes, distributions, nsample):
     n = len(indexes)
     for dist in distributions:
         if len(dist) != n:
-            raise('Size error: Distributions must all be of length n (number of states).')
+            raise ValueError('Size error: Distributions must all be of length n (number of states).')
 
     # list of states
     res = np.ndarray((len(distributions)), dtype=object)
