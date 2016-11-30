@@ -164,5 +164,12 @@ class TestFramesFromFile(unittest.TestCase):
         matches = re.match(".*10\).*is larger than trajectory length.*\= 10", cm.exception.args[0])
         assert matches
 
+    def test_pass_reader(self):
+        from pyemma.coordinates import source
+        reader = source(self.trajfiles, top=self.pdbfile)
+        reader.in_memory=True
+        inds = np.vstack((np.random.randint(0,1),  np.random.randint(0, 100))).T
+        traj_test = _frames_from_file(reader.filenames, self.pdbfile, inds, reader=reader)
+
 if __name__ == "__main__":
     unittest.main()
