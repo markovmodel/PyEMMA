@@ -62,14 +62,16 @@ class Moments(object):
     def mean_y(self):
         return self.sy / self.w
 
-    @property
-    def covar(self):
+    def covar(self, bessels_correction):
         """ Returns M / (w-1)
 
         Careful: The normalization w-1 assumes that we have counts as weights.
 
         """
-        return self.Mxy/ (self.w-1)
+        if bessels_correction:
+            return self.Mxy/ (self.w-1)
+        else:
+            return self.Mxy / self.w
 
 
 class MomentsStorage(object):
@@ -164,11 +166,6 @@ class RunningCovar(object):
             * 'dense' : always use dense mode
             * 'sparse' : always use sparse mode if possible
             * 'auto' : automatic
-    time_lagged : bool
-        Set to True if estimator is used for time-lagged correlations between the
-        same time-series.
-    lag : int (only if time_lagged == True)
-        lag time to be used for time-lagged correlations.
     nsave : int
         Depth of Moment storage. Moments computed from each chunk will be
         combined with Moments of similar statistical weight using the pairwise
@@ -182,19 +179,14 @@ class RunningCovar(object):
 
     # to get the Y mean, but this is currently not stored.
     def __init__(self, compute_XX=True, compute_XY=False, compute_YY=False,
-                 remove_mean=False, symmetrize=False, time_lagged=False, lag=1,
-                 sparse_mode='auto', modify_data=False, nsave=5):
+                 remove_mean=False, symmetrize=False, sparse_mode='auto', modify_data=False, nsave=5):
         # check input
         if not compute_XX and not compute_XY:
             raise ValueError('One of compute_XX or compute_XY must be True.')
         if symmetrize and compute_YY:
             raise ValueError('Combining compute_YY and symmetrize=True is meaningless.')
-        if time_lagged and compute_YY:
-            raise ValueError('Combining time_lagged and compute_YY is meaningless.')
         if symmetrize and not compute_XY:
             warnings.warn('symmetrize=True has no effect with compute_XY=False.')
-        if time_lagged and not compute_XY:
-            warnings.warn('time_lagged=True has no effect with compute_XY=False.')
         # storage
         self.compute_XX = compute_XX
         if compute_XX:
@@ -211,8 +203,6 @@ class RunningCovar(object):
         # flags
         self.sparse_mode = sparse_mode
         self.modify_data = modify_data
-        self.time_lagged = time_lagged
-        self.lag = lag
 
     def add(self, X, Y=None, weights=None):
         """
@@ -237,12 +227,7 @@ class RunningCovar(object):
             assert Y.shape[0] == T, 'X and Y must have equal length'
         # Weights cannot be used for compute_YY:
         if weights is not None and self.compute_YY:
-            raise ValueError('Cannot use weights when compute_YY is True')
-        # Check consistency for time-lagged case:
-        if self.time_lagged and Y is not None:
-            warnings.warn('Argument Y will be ignored because time-lagged is True')
-        if self.time_lagged and T < self.lag + 1:
-            raise ValueError('Input array X is too short for lag time %d'%(self.lag))
+            raise ValueError('Use of weights is not implemented for compute_YY==True')
         if weights is not None:
             # Convert to array of length T if weights is a single number:
             if isinstance(weights, numbers.Real):
@@ -257,17 +242,9 @@ class RunningCovar(object):
             w, s_X, C_XX = moments_XX(X, remove_mean=self.remove_mean, weights=weights, sparse_mode=self.sparse_mode, modify_data=self.modify_data)
             self.storage_XX.store(Moments(w, s_X, s_X, C_XX))
         elif self.compute_XX and self.compute_XY:
-            if self.time_lagged:
-                Y1 = X[self.lag:, :]
-                X1 = X[:-self.lag, :]
-                if weights is not None:
-                    weights = weights[:-self.lag]
-                w, s_X, s_Y, C_XX, C_XY = moments_XXXY(X1, Y1, remove_mean=self.remove_mean, symmetrize=self.symmetrize,
-                                                       weights=weights, sparse_mode=self.sparse_mode, modify_data=self.modify_data)
-            else:
-                assert Y is not None
-                w, s_X, s_Y, C_XX, C_XY = moments_XXXY(X, Y, remove_mean=self.remove_mean, symmetrize=self.symmetrize,
-                                                       weights=weights, sparse_mode=self.sparse_mode, modify_data=self.modify_data)
+            assert Y is not None
+            w, s_X, s_Y, C_XX, C_XY = moments_XXXY(X, Y, remove_mean=self.remove_mean, symmetrize=self.symmetrize,
+                                                   weights=weights, sparse_mode=self.sparse_mode, modify_data=self.modify_data)
             # make copy in order to get independently mergeable moments
             self.storage_XX.store(Moments(w, s_X, s_X, C_XX))
             self.storage_XY.store(Moments(w, s_X, s_Y, C_XY))
@@ -331,18 +308,18 @@ class RunningCovar(object):
     def moments_YY(self):
         return self.storage_YY.moments.Mxy
 
-    def cov_XX(self):
-        return self.storage_XX.moments.covar
+    def cov_XX(self, bessels_correction):
+        return self.storage_XX.moments.covar(bessels_correction=bessels_correction)
 
-    def cov_XY(self):
-        return self.storage_XY.moments.covar
+    def cov_XY(self, bessels_correction):
+        return self.storage_XY.moments.covar(bessels_correction=bessels_correction)
 
-    def cov_YY(self):
-        return self.storage_YY.moments.covar
+    def cov_YY(self, bessels_correction):
+        return self.storage_YY.moments.covar(bessels_correction=bessels_correction)
 
 
-def running_covar(xx=True, xy=False, yy=False, remove_mean=False, symmetrize=False, time_lagged=False,
-                  sparse_mode='auto', modify_data=False, lag=1, nsave=5):
+def running_covar(xx=True, xy=False, yy=False, remove_mean=False, symmetrize=False, sparse_mode='auto',
+                  modify_data=False, nsave=5):
     """ Returns a running covariance estimator
 
     Returns an estimator object that can be fed chunks of X and Y data, and
@@ -371,8 +348,6 @@ def running_covar(xx=True, xy=False, yy=False, remove_mean=False, symmetrize=Fal
             * 'dense' : always use dense mode
             * 'sparse' : always use sparse mode if possible
             * 'auto' : automatic
-    lag : int, default=1
-        lag time between x and y
     nsave : int
         Depth of Moment storage. Moments computed from each chunk will be
         combined with Moments of similar statistical weight using the pairwise
@@ -383,6 +358,5 @@ def running_covar(xx=True, xy=False, yy=False, remove_mean=False, symmetrize=Fal
     .. [1] http://i.stanford.edu/pub/cstr/reports/cs/tr/79/773/CS-TR-79-773.pdf
 
     """
-    return RunningCovar(compute_XX=xx, compute_XY=xy, compute_YY=yy, time_lagged=time_lagged, lag=lag,
-                        sparse_mode=sparse_mode, modify_data=modify_data,
+    return RunningCovar(compute_XX=xx, compute_XY=xy, compute_YY=yy, sparse_mode=sparse_mode, modify_data=modify_data,
                         remove_mean=remove_mean, symmetrize=symmetrize, nsave=nsave)

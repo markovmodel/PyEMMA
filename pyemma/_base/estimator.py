@@ -430,8 +430,7 @@ class Estimator(_BaseEstimator, Loggable):
             The estimator (self) with estimated model.
 
         """
-        self.estimate(X)
-        return self
+        return self.estimate(X)
 
     @property
     def model(self):
@@ -441,3 +440,7 @@ class Estimator(_BaseEstimator, Loggable):
         except AttributeError:
             raise AttributeError(
                 'Model has not yet been estimated. Call estimate(X) or fit(X) first')
+
+    def _check_estimated(self):
+        if not self._estimated:
+            raise Exception("Estimator is not parametrized.")

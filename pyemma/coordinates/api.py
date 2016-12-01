@@ -334,6 +334,7 @@ def source(inp, features=None, top=None, chunk_size=None, **kw):
             :attributes:
 
     """
+    from pyemma.coordinates.data._base.iterable import Iterable
     from pyemma.coordinates.data.util.reader_utils import create_file_reader
     # CASE 1: input is a string or list of strings
     # check: if single string create a one-element list
@@ -352,6 +353,10 @@ def source(inp, features=None, top=None, chunk_size=None, **kw):
         # create MemoryReader
         from pyemma.coordinates.data.data_in_memory import DataInMemory as _DataInMemory
         reader = _DataInMemory(inp, chunksize=chunk_size if chunk_size else 5000, **kw)
+    elif isinstance(inp, Iterable):
+        if chunk_size is not None:
+            inp.chunk = chunk_size
+        return inp
     else:
         raise ValueError('unsupported type (%s) of input' % type(inp))
 

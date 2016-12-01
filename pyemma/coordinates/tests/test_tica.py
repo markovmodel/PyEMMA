@@ -366,13 +366,13 @@ class TestTICAExtensive(unittest.TestCase):
         tica_obj = tica(lag=lag)
         from pyemma.util.testing_tools import MockLoggingHandler
         log_handler = MockLoggingHandler()
-        tica_obj.logger.addHandler(log_handler)
+        tica_obj._covar.logger.addHandler(log_handler)
         for x in data:
             tica_obj.partial_fit(x)
 
         self.assertEqual(tica_obj._used_data, 20 - lag)
         self.assertEqual(len(log_handler.messages['warning']), 1)
-        self.assertIn("longer than lag time", log_handler.messages['warning'][0])
+        self.assertIn("longer than lag", log_handler.messages['warning'][0])
 
 
 if __name__ == "__main__":
