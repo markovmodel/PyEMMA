@@ -2,6 +2,7 @@ machine:
   environment:
     PATH: $HOME/miniconda/bin:$PATH
     PYTHONHASHSEED: 0
+    OMP_NUM_THREADS: 2
 
 dependencies:
   cache_directories:
