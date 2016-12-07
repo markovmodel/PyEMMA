@@ -126,6 +126,18 @@ def extensions():
                   library_dirs=[mdtraj.capi()['lib_dir']],
                   extra_compile_args=['-std=c99'])
 
+    kmeans_kmc = \
+        Extension('pyemma._ext.kmc.kmc2',
+                  sources=['pyemma/_ext/kmc/kmc2.pyx'],
+                  include_dirs=[
+                      mdtraj.capi()['include_dir'],
+                      np_inc,
+                      'pyemma/coordinates/clustering/include',
+                  ],
+                  libraries=[lib_prefix + 'theobald'],
+                  library_dirs=[mdtraj.capi()['lib_dir']],
+                  )
+
     covar_module = \
         Extension('pyemma._ext.variational.covar_c.covartools',
                   sources=['pyemma/_ext/variational/covar_c/covartools.pyx',
@@ -143,6 +155,7 @@ def extensions():
 
     exts += [regspatial_module,
              kmeans_module,
+             kmeans_kmc,
              covar_module,
              orderedset,
              ]
