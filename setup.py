@@ -135,9 +135,16 @@ def extensions():
                                 ],
                   extra_compile_args=['-std=c99', '-O3'])
 
+    orderedset = \
+        Extension('pyemma._ext.orderedset._orderedset',
+                  sources=['pyemma/_ext/orderedset/_orderedset.pyx'],
+                  include_dirs=[np_inc],
+                  extra_compile_args=['-O3'])
+
     exts += [regspatial_module,
              kmeans_module,
              covar_module,
+             orderedset,
              ]
 
     if not USE_CYTHON:
