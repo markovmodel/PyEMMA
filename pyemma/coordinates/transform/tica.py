@@ -34,6 +34,7 @@ from pyemma.util.annotators import fix_docs, deprecated
 from pyemma._ext.variational.solvers.direct import eig_corr
 from pyemma._ext.variational.solvers.direct import sort_by_norm, spd_inv_split
 from pyemma.util.reflection import get_default_args
+import warnings
 
 
 __all__ = ['TICA', 'EquilibriumCorrectedTICA']
@@ -289,7 +290,7 @@ class TICA(_TICA):
         # diagonalize with low rank approximation
         self._logger.debug("diagonalize Cov and Cov_tau.")
 
-        eigenvalues, eigenvectors = eig_corr(self._covar.cov, self._covar.cov_tau, self.epsilon)
+        eigenvalues, eigenvectors = eig_corr(self._covar.cov, self._covar.cov_tau, self.epsilon, sign_maxelement=True)
         self._logger.debug("finished diagonalisation.")
 
         # compute cumulative variance
@@ -404,12 +405,6 @@ class TICA(_TICA):
         """
         return self._model.cumvar
 
-    @property
-    @_lazy_estimation
-    def koopman_matrix(self):
-        R = spd_inv_split(self._covar.cov, epsilon=self.epsilon, canonical_signs=True)
-        return np.dot(R.T, np.dot((self._covar.cov_tau), R))
-
     def output_type(self):
         # TODO: handle the case of conjugate pairs
         if np.all(np.isreal(self.eigenvectors[:, 0:self.dimension()])) or \
@@ -420,87 +415,54 @@ class TICA(_TICA):
 
 
 @fix_docs
-class EquilibriumCorrectedTICA(_TICA):
+class EquilibriumCorrectedTICA(TICA):
+
+    def __init__(self, lag, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_map=False, epsilon=1e-6,
+                 mean=None, stride=1, remove_mean=True, skip=0, reversible=True, weights=None):
+        # Check argument settings for var_cutoff, kinetic_map and commute_map:
+        default_var_cutoff = get_default_args(self.__init__)['var_cutoff']
+        if dim != -1 and var_cutoff != default_var_cutoff:
+            raise ValueError('Trying to set both the number of dimension and the subspace variance. Use either or.')
+        if kinetic_map and commute_map:
+            raise ValueError('Trying to use both kinetic_map and commute_map. Use either or.')
+        super(_TICA, self).__init__()
+        if dim > -1:
+            var_cutoff = 1.0
+
+        # Disallow non-reversible estimation:
+        if not reversible:
+            warnings.warn("Non-reversible estimation is presently not supported for equilibrium corrected TICA. Using"
+                          " reversible estimation instead.")
+            reversible = True
+        # Set weights:
+        self._weights = weights
+        # Set covar estimator:
+        self._covar = CovarEstimator(xx=True, xy=True, yy=False, remove_data_mean=remove_mean, reversible=reversible,
+                                     lag=lag, bessels_correction=False, stride=stride, skip=skip)
+
+        # empty dummy model instance
+        self._model = TICAModel()
+        self.set_params(lag=lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map, commute_map=commute_map,
+                        epsilon=epsilon, mean=mean, remove_mean=remove_mean, reversible=reversible,
+                        stride=stride, skip=skip)
+
+
     def _estimate(self, iterable, **kwargs):
-        koop = _KoopmanEstimator(lag=self.lag, epsilon=self.epsilon, stride=self.stride, skip=self.skip)
-        koop.estimate(iterable, **kwargs)
-        K = koop.K_pc_1
-        R = koop.R
-        r = R.shape[1]
+        # Compute weights by KoopmanEstimator if they are not specified:
+        if self._weights is None:
+            koop = _KoopmanEstimator(lag=self.lag, epsilon=self.epsilon, stride=self.stride, skip=self.skip)
+            koop.estimate(iterable, **kwargs)
+            self._weights = koop.weights
 
-        x_mean_0 = koop.mean
-
-        self._covar = CovarEstimator(lag=self.lag, weights=koop.weights, remove_constant_mean=x_mean_0, xy=False,
-                                     remove_data_mean=False, reversible=self.reversible, bessels_correction=False,
-                                     stride=self.stride, skip=self.skip)
+        # Recompute C0, Ctau
+        self._covar = CovarEstimator(lag=self.lag, weights=self._weights, xy=True, remove_data_mean=True,
+                                     reversible=self.reversible, bessels_correction=False, stride=self.stride,
+                                     skip=self.skip)
         self._covar.estimate(iterable, **kwargs)
-        C0 = self._covar.cov
-
-        self._mean_pc_1 = np.concatenate((self._covar.mean.dot(R), [1.0])) # for testing
-
-        C_0_eq = np.zeros(shape=(r+1, r+1)) # in modified basis (PC|1)
-        C_0_eq[0:r,0:r] = R.T.dot(C0).dot(R)
-        C_0_eq[0:r, r] = self._covar.mean.dot(R)
-        C_0_eq[r, 0:r] = self._covar.mean.dot(R)
-        C_0_eq[r,r] = 1.0
-        self._cov_pc_1 = C_0_eq # for testing
-
-        C_tau_eq = K
-        # find R_eq s.t. R_eq.T.dot(C_0_eq).dot(R_eq) = np.eye(s)
-        R_eq = spd_inv_split(C_0_eq, epsilon=self.epsilon, canonical_signs=True)
-
-
-        # Compute equilibrium K:
-        K_eq = 0.5 * R_eq.T.dot(C_0_eq.dot(K) + K.T.dot(C_0_eq)).dot(R_eq)
-        self._cov_tau_pc_1 = 0.5*(C_0_eq.dot(K) + K.T.dot(C_0_eq)) # for testing
-        # Diagonalize K_eq:
-        d, V = scl.eigh(K_eq)
-        d, V = sort_by_norm(d, V)
-        W = R_eq.dot(V)
-        self._tr = R.dot(W[0:r, :])
-        self._tr_c = W[r, :] - x_mean_0.T.dot(R).dot(W[0:r, :])
-
-        # update model parameters
-        eigenvalues = d[1:] # TODO: decide if we want the eigenvalue = 1?
-        cumvar = np.cumsum(np.abs(eigenvalues) ** 2)
-        cumvar /= cumvar[-1]
 
         self._model.update_model_params(mean=self._covar.mean,
-                                        cumvar=cumvar,
-                                        koopman_matrix=K_eq,
-                                        u=koop.u,
-                                        eigenvalues=eigenvalues)
-        self._u_pc_1 = koop.u_pc_1 # for testing
-        self._estimated = True
+                                        cov=self._covar.cov,
+                                        cov_tau=self._covar.cov_tau)
+        self._diagonalize()
+
         return self._model
-
-    def _transform_array(self, X):
-        return X.dot(self._tr)[:, 0:self.dimension()] + self._tr_c[0:self.dimension()]
-
-    @property
-    def koopman_matrix(self):
-        return self._model.koopman_matrix
-
-    @property
-    def u(self):
-        return self._model.u
-
-    @property
-    def eigenvalues(self):
-        r"""Eigenvalues of the TICA problem (usually denoted :math:`\lambda`
-
-        Returns
-        -------
-        eigenvalues: 1D np.array
-        """
-        return self._model.eigenvalues
-
-    @property
-    def cumvar(self):
-        r"""Cumulative sum of the the TICA eigenvalues
-
-        Returns
-        -------
-        cumvar: 1D np.array
-        """
-        return self._model.cumvar
