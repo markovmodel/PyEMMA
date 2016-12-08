@@ -236,6 +236,7 @@ def get_cmdclass():
                 s = json.dumps(extension_names).encode('ascii')
                 fp.write(s)
             super(extensions_json, self).run()
+    versioneer_cmds['egg_info'] = extensions_json
 
     return versioneer_cmds
 
