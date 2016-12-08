@@ -187,14 +187,14 @@ def get_cmdclass():
     versioneer_cmds = versioneer.get_cmdclass()
 
     sdist_class = versioneer_cmds['sdist']
-    class sdist(sdist_class):
+    class sdist(sdist_class, object):
         """ensure cython files are compiled to c, when distributing"""
 
         def run(self):
             # only run if .git is present
             if not os.path.exists('.git'):
                 print("Not on git, can not create source distribution")
-                return
+                sys.exit(1)
 
             try:
                 from Cython.Build import cythonize
@@ -202,7 +202,7 @@ def get_cmdclass():
                 cythonize(extensions())
             except ImportError:
                 warnings.warn('sdist cythonize failed')
-            return sdist_class.run(self)
+            return super(sdist, self).run()
 
     versioneer_cmds['sdist'] = sdist
 
@@ -244,8 +244,8 @@ def get_cmdclass():
             subprocess.check_call("git submodule update --init --recursive".split(' '))
 
         def run(self):
-            super(git_submodule_init, self).run()
             self.init_submodules()
+            return super(git_submodule_init, self).run()
 
     versioneer_cmds['egg_info'] = git_submodule_init
 
