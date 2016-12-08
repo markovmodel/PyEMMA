@@ -175,6 +175,7 @@ class CovarEstimator(_CovarEstimator):
         from pyemma.coordinates import source
 
         self._estimate(source(X), partial=True)
+        self._estimated = True
 
         return self
 
