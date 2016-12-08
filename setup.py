@@ -224,8 +224,8 @@ def get_cmdclass():
     versioneer_cmds['test'] = PyTest
 
     from setuptools.command.egg_info import egg_info
-
-    class extensions_json(egg_info):
+    # derive from object too, so we can use super calls instead of old-style explicit invocation.
+    class extensions_json(egg_info, object):
         def run(self):
             f = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pyemma', '_extensions.json')
             print("Generating {}".format(f))
@@ -235,10 +235,19 @@ def get_cmdclass():
                 import json
                 s = json.dumps(extension_names).encode('ascii')
                 fp.write(s)
+            super(extensions_json, self).run()
 
-            egg_info.run(self)
+    class git_submodule_init(extensions_json):
+        def init_submodules(self):
+            print("init submodules")
+            import subprocess
+            subprocess.check_call("git submodule update --init --recursive".split(' '))
 
-    versioneer_cmds['egg_info'] = extensions_json
+        def run(self):
+            super(git_submodule_init, self).run()
+            self.init_submodules()
+
+    versioneer_cmds['egg_info'] = git_submodule_init
 
     return versioneer_cmds
 
