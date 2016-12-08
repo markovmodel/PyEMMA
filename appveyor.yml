@@ -24,7 +24,6 @@ environment:
       ARCH: "64"
 
 install:
-  - git submodule update --init --recursive
   - "SET PATH=%MINICONDA_PYTHON%;%MINICONDA_PYTHON%\\Scripts;%PATH%;"
 
   - conda config --set always_yes true 
