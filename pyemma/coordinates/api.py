@@ -31,6 +31,9 @@ from pyemma.coordinates.util.stat import histogram
 from six import string_types as _string_types
 from six.moves import range, zip
 
+from pyemma.util.exceptions import PyEMMA_DeprecationWarning
+import warnings
+
 _logger = _logging.getLogger(__name__)
 
 __docformat__ = "restructuredtext en"
@@ -1164,10 +1167,19 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
     from pyemma.coordinates.transform.tica import TICA
     if mean is not None:
         import warnings
-        warnings.warn("user provided mean for TICA is deprecated and its value is ignored.")
+        warnings.warn("user provided mean for TICA is deprecated and its value is ignored.",
+                               category=PyEMMA_DeprecationWarning)
+    if not remove_mean:
+        import warnings
+        user_msg = 'remove_mean option is deprecated. The mean is removed from the data by default, otherwise it' \
+                   'cannot be guaranteed that all eigenvalues will be smaller than one. Some functionalities might' \
+                   'become useless in this case (e.g. commute_maps). Also, not removing the mean will not result in' \
+                   'a significant speed up of calculations.'
+        warnings.warn(
+            user_msg,
+            category=PyEMMA_DeprecationWarning)
 
-    res = TICA(lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map, commute_map=commute_map,
-               mean=mean, remove_mean=remove_mean, skip=skip)
+    res = TICA(lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map, commute_map=commute_map, skip=skip)
     return _param_stage(data, res, stride=stride)
 
 

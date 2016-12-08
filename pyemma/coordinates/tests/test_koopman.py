@@ -172,10 +172,11 @@ class TestKoopman(unittest.TestCase):
         _param_stage(cls.data, cls.koop)
         cls.koop_rev = pco.transform.tica.TICA(lag=cls.tau, reversible=True, kinetic_map=False)
         _param_stage(cls.data, cls.koop_rev)
-        cls.koop_eq = pco.transform.tica.EquilibriumCorrectedTICA(lag=cls.tau, reversible=True, kinetic_map=False)
+        cls.koop_eq = pco.transform.tica.EquilibriumCorrectedTICA(lag=cls.tau, kinetic_map=False)
         _param_stage(cls.data, cls.koop_eq)
-        cls.koop_eq_direct = pco.transform.tica.EquilibriumCorrectedTICA(lag=cls.tau, reversible=True,
-                                                                         weights=weight_obj, kinetic_map=False)
+        # Test the model by supplying weights directly:
+        cls.koop_eq_direct = pco.transform.tica.EquilibriumCorrectedTICA(lag=cls.tau, weights=weight_obj,
+                                                                         kinetic_map=False)
         _param_stage(cls.data, cls.koop_eq_direct)
 
     def test_mean_x(self):
