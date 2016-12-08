@@ -237,18 +237,6 @@ def get_cmdclass():
                 fp.write(s)
             super(extensions_json, self).run()
 
-    class git_submodule_init(extensions_json):
-        def init_submodules(self):
-            print("init submodules")
-            import subprocess
-            subprocess.check_call("git submodule update --init --recursive".split(' '))
-
-        def run(self):
-            self.init_submodules()
-            return super(git_submodule_init, self).run()
-
-    versioneer_cmds['egg_info'] = git_submodule_init
-
     return versioneer_cmds
 
 
@@ -316,6 +304,13 @@ else:
     if os.path.exists('.git'):
         warnings.warn('using git, require cython')
         metadata['setup_requires'] += ['cython>=0.22']
+
+
+    def init_submodules(self):
+        print("init submodules")
+        import subprocess
+        subprocess.check_call("git submodule update --init --recursive".split(' '))
+    init_submodules()
 
     # only require numpy and extensions in case of building/installing
     metadata['ext_modules'] = lazy_cythonize(callback=extensions)
