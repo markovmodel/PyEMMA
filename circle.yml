@@ -11,6 +11,8 @@ dependencies:
 checkout:
   post:
     - git fetch --unshallow || true
+    - git submodule sync
+    - git submodule update --init -- pyemma/_ext/kmc
 
 dependencies:
   override:
