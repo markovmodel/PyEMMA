@@ -306,7 +306,7 @@ else:
         metadata['setup_requires'] += ['cython>=0.22']
 
 
-    def init_submodules(self):
+    def init_submodules():
         print("init submodules")
         import subprocess
         subprocess.check_call("git submodule update --init --recursive".split(' '))
