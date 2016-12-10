@@ -20,7 +20,7 @@ from __future__ import absolute_import
 import numpy as np
 import scipy.linalg as scl
 from pyemma.coordinates.data._base.streaming_estimator import StreamingEstimator
-from pyemma.coordinates.estimation.covariance import CovarEstimator
+from pyemma.coordinates.estimation.covariance import EmpiricalCovariance
 from pyemma._ext.variational.solvers.direct import sort_by_norm, spd_inv_split
 
 
@@ -69,8 +69,8 @@ class _KoopmanEstimator(StreamingEstimator):
 
         super(_KoopmanEstimator, self).__init__(chunksize=chunksize)
 
-        self._covar = CovarEstimator(xx=True, xy=True, remove_data_mean=True, reversible=False,
-                                     lag=lag, bessels_correction=False, stride=stride, skip=skip)
+        self._covar = EmpiricalCovariance(xx=True, xy=True, remove_data_mean=True, reversible=False,
+                                          lag=lag, bessel=False, stride=stride, skip=skip)
 
         self.set_params(lag=lag, epsilon=epsilon, stride=stride, skip=skip)
         self._estimation_finished = False

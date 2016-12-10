@@ -27,14 +27,14 @@ from pyemma._base.progress import ProgressReporter
 from pyemma._ext.variational.estimators.running_moments import running_covar
 
 
-__all__ = ['CovarEstimator', 'EquilibriumCorrectedCovarEstimator']
+__all__ = ['EmpiricalCovariance', 'KoopmanEquilibriumCovariance']
 
 __author__ = 'paul, nueske'
 
 
 class _CovarEstimator(StreamingEstimator, ProgressReporter, Loggable):
     def __init__(self, xx=True, xy=False, yy=False, remove_constant_mean=None, remove_data_mean=False, reversible=False,
-                 bessels_correction=True, sparse_mode='auto', modify_data=False, lag=0, weights=None, stride=1, skip=0,
+                 bessel=True, sparse_mode='auto', modify_data=False, lag=0, weights=None, stride=1, skip=0,
                  chunksize=None):
 
         super(_CovarEstimator, self).__init__(chunksize=chunksize)
@@ -48,7 +48,7 @@ class _CovarEstimator(StreamingEstimator, ProgressReporter, Loggable):
         self.set_params(xx=xx, xy=xy, yy=yy, remove_constant_mean=remove_constant_mean,
                         remove_data_mean=remove_data_mean, reversible=reversible,
                         sparse_mode=sparse_mode, modify_data=modify_data, lag=lag,
-                        bessels_correction=bessels_correction,
+                        bessel=bessel,
                         weights=weights, stride=stride, skip=skip)
 
         self._rc = None
@@ -139,12 +139,12 @@ class _CovarEstimator(StreamingEstimator, ProgressReporter, Loggable):
     @property
     def cov(self):
         self._check_estimated()
-        return self._rc.cov_XX(bessels_correction=self.bessels_correction)
+        return self._rc.cov_XX(bessel=self.bessel)
 
     @property
     def cov_tau(self):
         self._check_estimated()
-        return self._rc.cov_XY(bessels_correction=self.bessels_correction)
+        return self._rc.cov_XY(bessel=self.bessel)
 
     @property
     def nsave(self):
@@ -163,7 +163,7 @@ class _CovarEstimator(StreamingEstimator, ProgressReporter, Loggable):
                 self._rc.storage_XY.nsave = ns
 
 
-class CovarEstimator(_CovarEstimator):
+class EmpiricalCovariance(_CovarEstimator):
     def partial_fit(self, X):
         """ incrementally update the estimates
 
@@ -181,13 +181,13 @@ class CovarEstimator(_CovarEstimator):
 
 # TODO Trigger warning that weights will be ignored.
 # TODO lag=0 does not make sense.
-class EquilibriumCorrectedCovarEstimator(_CovarEstimator):
+class KoopmanEquilibriumCovariance(_CovarEstimator):
     def __init__(self, xx=True, xy=False, yy=False, remove_constant_mean=None, remove_data_mean=False, reversible=False,
-                 bessels_correction=True, sparse_mode='auto', modify_data=False, lag=0, stride=1, skip=0, weights=None,
+                 bessel=True, sparse_mode='auto', modify_data=False, lag=0, stride=1, skip=0, weights=None,
                  chunksize=None):
-        super(EquilibriumCorrectedCovarEstimator, self).__init__(xx=xx, xy=xy, yy=yy,
+        super(KoopmanEquilibriumCovariance, self).__init__(xx=xx, xy=xy, yy=yy,
                                                                  remove_constant_mean=remove_constant_mean,
-                                     remove_data_mean=remove_data_mean, reversible=reversible,
+                                     remove_data_mean=remove_data_mean, reversible=reversible, bessel=bessel,
                                      sparse_mode=sparse_mode, modify_data=modify_data, lag=lag,
                                      weights=weights, stride=stride, skip=skip)
     def _estimate(self, iterable, **kwargs):
@@ -195,5 +195,5 @@ class EquilibriumCorrectedCovarEstimator(_CovarEstimator):
         koop = _KoopmanEstimator(lag=self.lag, stride=self.stride, skip=self.skip)
         koop.estimate(iterable, **kwargs)
         self.weights = koop.weights
-        return super(EquilibriumCorrectedCovarEstimator, self)._estimate(iterable, **kwargs)
+        return super(KoopmanEquilibriumCovariance, self)._estimate(iterable, **kwargs)
 

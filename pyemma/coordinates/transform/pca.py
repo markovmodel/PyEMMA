@@ -231,7 +231,7 @@ class PCA(StreamingEstimationTransformer):
                 self._covar.add(chunk)
                 self._progress_update(1, 0)
 
-        self.cov = self._covar.cov_XX(bessels_correction=True)
+        self.cov = self._covar.cov_XX(bessel=True)
         self.mu = self._covar.mean_X()
 
         self._model.update_model_params(mean=self._covar.mean_X())

@@ -30,3 +30,6 @@ doc/source/api/generated/
 
 # generated from setup.py
 pyemma/_extensions.json
+
+# generated c-files:
+pyemma/_ext/variational/estimators/covar_c/covartools.c

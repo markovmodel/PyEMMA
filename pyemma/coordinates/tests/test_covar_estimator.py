@@ -149,38 +149,38 @@ class TestCovarEstimator(unittest.TestCase):
 
     def test_XX_withmean(self):
         # many passes
-        cc = pcov.CovarEstimator(remove_data_mean=False, bessels_correction=False, chunksize=self.chunksize)
+        cc = pcov.EmpiricalCovariance(remove_data_mean=False, bessel=False, chunksize=self.chunksize)
         cc.estimate(self.source_obj)
         assert np.allclose(cc.mean, self.mx_lag0)
         assert np.allclose(cc.cov, self.Mxx_lag0)
 
     def test_XX_meanfree(self):
         # many passes
-        cc = pcov.CovarEstimator(remove_data_mean=True, bessels_correction=False, chunksize=self.chunksize)
+        cc = pcov.EmpiricalCovariance(remove_data_mean=True, bessel=False, chunksize=self.chunksize)
         cc.estimate(self.source_obj)
         assert np.allclose(cc.mean, self.mx_lag0)
         assert np.allclose(cc.cov, self.Mxx0_lag0)
 
     def test_XX_weightobj_withmean(self):
         # many passes
-        cc = pcov.CovarEstimator(remove_data_mean=False, weights=self.wobj, bessels_correction=False,
-                                 chunksize=self.chunksize)
+        cc = pcov.EmpiricalCovariance(remove_data_mean=False, weights=self.wobj, bessel=False,
+                                      chunksize=self.chunksize)
         cc.estimate(self.source_obj)
         assert np.allclose(cc.mean, self.mx_wobj_lag0)
         assert np.allclose(cc.cov, self.Mxx_wobj_lag0)
 
     def test_XX_weightobj_meanfree(self):
         # many passes
-        cc = pcov.CovarEstimator(remove_data_mean=True, weights=self.wobj, bessels_correction=False,
-                                 chunksize=self.chunksize)
+        cc = pcov.EmpiricalCovariance(remove_data_mean=True, weights=self.wobj, bessel=False,
+                                      chunksize=self.chunksize)
         cc.estimate(self.source_obj)
         assert np.allclose(cc.mean, self.mx_wobj_lag0)
         assert np.allclose(cc.cov, self.Mxx0_wobj_lag0)
 
     def test_XXXY_withmean(self):
         # many passes
-        cc = pcov.CovarEstimator(remove_data_mean=False, xy=True, lag=self.lag, bessels_correction=False,
-                                 chunksize=self.chunksize)
+        cc = pcov.EmpiricalCovariance(remove_data_mean=False, xy=True, lag=self.lag, bessel=False,
+                                      chunksize=self.chunksize)
         cc.estimate(self.source_obj)
         assert np.allclose(cc.mean, self.mx)
         assert np.allclose(cc.mean_tau, self.my)
@@ -189,8 +189,8 @@ class TestCovarEstimator(unittest.TestCase):
 
     def test_XXXY_meanfree(self):
         # many passes
-        cc = pcov.CovarEstimator(remove_data_mean=True, xy=True, lag=self.lag, bessels_correction=False,
-                                 chunksize=self.chunksize)
+        cc = pcov.EmpiricalCovariance(remove_data_mean=True, xy=True, lag=self.lag, bessel=False,
+                                      chunksize=self.chunksize)
         cc.estimate(self.source_obj)
         assert np.allclose(cc.mean, self.mx)
         assert np.allclose(cc.mean_tau, self.my)
@@ -199,8 +199,8 @@ class TestCovarEstimator(unittest.TestCase):
 
     def test_XXXY_weightobj_withmean(self):
         # many passes
-        cc = pcov.CovarEstimator(remove_data_mean=False, xy=True, lag=self.lag, weights=self.wobj,
-                                 bessels_correction=False, chunksize=self.chunksize)
+        cc = pcov.EmpiricalCovariance(remove_data_mean=False, xy=True, lag=self.lag, weights=self.wobj,
+                                      bessel=False, chunksize=self.chunksize)
         cc.estimate(self.source_obj)
         assert np.allclose(cc.mean, self.mx_wobj)
         assert np.allclose(cc.mean_tau, self.my_wobj)
@@ -209,8 +209,8 @@ class TestCovarEstimator(unittest.TestCase):
 
     def test_XXXY_weightobj_meanfree(self):
         # many passes
-        cc = pcov.CovarEstimator(remove_data_mean=True, xy=True, lag=self.lag, weights=self.wobj,
-                                 bessels_correction=False, chunksize=self.chunksize)
+        cc = pcov.EmpiricalCovariance(remove_data_mean=True, xy=True, lag=self.lag, weights=self.wobj,
+                                      bessel=False, chunksize=self.chunksize)
         cc.estimate(self.source_obj)
         assert np.allclose(cc.mean, self.mx_wobj)
         assert np.allclose(cc.mean_tau, self.my_wobj)
@@ -219,8 +219,8 @@ class TestCovarEstimator(unittest.TestCase):
 
     def test_XXXY_sym_withmean(self):
         # many passes
-        cc = pcov.CovarEstimator(remove_data_mean=False, xy=True, lag=self.lag, reversible=True,
-                                 bessels_correction=False, chunksize=self.chunksize)
+        cc = pcov.EmpiricalCovariance(remove_data_mean=False, xy=True, lag=self.lag, reversible=True,
+                                      bessel=False, chunksize=self.chunksize)
         cc.estimate(self.source_obj)
         assert np.allclose(cc.mean, self.m_sym)
         assert np.allclose(cc.cov, self.Mxx_sym)
@@ -228,8 +228,8 @@ class TestCovarEstimator(unittest.TestCase):
 
     def test_XXXY_sym_meanfree(self):
         # many passes
-        cc = pcov.CovarEstimator(remove_data_mean=True, xy=True, lag=self.lag, reversible=True,
-                                 bessels_correction=False, chunksize=self.chunksize)
+        cc = pcov.EmpiricalCovariance(remove_data_mean=True, xy=True, lag=self.lag, reversible=True,
+                                      bessel=False, chunksize=self.chunksize)
         cc.estimate(self.source_obj)
         assert np.allclose(cc.mean, self.m_sym)
         assert np.allclose(cc.cov, self.Mxx0_sym)
@@ -237,8 +237,8 @@ class TestCovarEstimator(unittest.TestCase):
 
     def test_XXXY_weightobj_sym_withmean(self):
         # many passes
-        cc = pcov.CovarEstimator(remove_data_mean=False, xy=True, lag=self.lag, reversible=True,
-                                 bessels_correction=False, weights=self.wobj, chunksize=self.chunksize)
+        cc = pcov.EmpiricalCovariance(remove_data_mean=False, xy=True, lag=self.lag, reversible=True,
+                                      bessel=False, weights=self.wobj, chunksize=self.chunksize)
         cc.estimate(self.source_obj)
         assert np.allclose(cc.mean, self.m_sym_wobj)
         assert np.allclose(cc.cov, self.Mxx_sym_wobj)
@@ -246,30 +246,30 @@ class TestCovarEstimator(unittest.TestCase):
 
     def test_XXXY_weightobj_sym_meanfree(self):
         # many passes
-        cc = pcov.CovarEstimator(remove_data_mean=True, xy=True, lag=self.lag, reversible=True,
-                                 bessels_correction=False, weights=self.wobj, chunksize=self.chunksize)
+        cc = pcov.EmpiricalCovariance(remove_data_mean=True, xy=True, lag=self.lag, reversible=True,
+                                      bessel=False, weights=self.wobj, chunksize=self.chunksize)
         cc.estimate(self.source_obj)
         assert np.allclose(cc.mean, self.m_sym_wobj)
         assert np.allclose(cc.cov, self.Mxx0_sym_wobj)
         assert np.allclose(cc.cov_tau, self.Mxy0_sym_wobj)
 
     def test_XX_meanconst(self):
-        cc = pcov.CovarEstimator(remove_constant_mean=self.mean_const, bessels_correction=False,
-                                 chunksize=self.chunksize)
+        cc = pcov.EmpiricalCovariance(remove_constant_mean=self.mean_const, bessel=False,
+                                      chunksize=self.chunksize)
         cc.estimate(self.source_obj)
         assert np.allclose(cc.mean, self.mx_c_lag0)
         assert np.allclose(cc.cov, self.Mxx_c_lag0)
 
     def test_XX_weighted_meanconst(self):
-        cc = pcov.CovarEstimator(remove_constant_mean=self.mean_const, weights=self.wobj, bessels_correction=False,
-                                 chunksize=self.chunksize)
+        cc = pcov.EmpiricalCovariance(remove_constant_mean=self.mean_const, weights=self.wobj, bessel=False,
+                                      chunksize=self.chunksize)
         cc.estimate(self.source_obj)
         assert np.allclose(cc.mean, self.mx_c_wobj_lag0)
         assert np.allclose(cc.cov, self.Mxx_c_wobj_lag0)
 
     def test_XY_meanconst(self):
-        cc = pcov.CovarEstimator(remove_constant_mean=self.mean_const, xy=True, lag=self.lag, bessels_correction=False,
-                                 chunksize=self.chunksize)
+        cc = pcov.EmpiricalCovariance(remove_constant_mean=self.mean_const, xy=True, lag=self.lag, bessel=False,
+                                      chunksize=self.chunksize)
         cc.estimate(self.source_obj)
         assert np.allclose(cc.mean, self.mx_c)
         assert np.allclose(cc.mean_tau, self.my_c)
@@ -277,8 +277,8 @@ class TestCovarEstimator(unittest.TestCase):
         assert np.allclose(cc.cov_tau, self.Mxy_c)
 
     def test_XY_weighted_meanconst(self):
-        cc = pcov.CovarEstimator(remove_constant_mean=self.mean_const, xy=True, weights=self.wobj, lag=self.lag,
-                                 bessels_correction=False, chunksize=self.chunksize)
+        cc = pcov.EmpiricalCovariance(remove_constant_mean=self.mean_const, xy=True, weights=self.wobj, lag=self.lag,
+                                      bessel=False, chunksize=self.chunksize)
         cc.estimate(self.source_obj)
         assert np.allclose(cc.mean, self.mx_c_wobj)
         assert np.allclose(cc.mean_tau, self.my_c_wobj)
@@ -286,16 +286,16 @@ class TestCovarEstimator(unittest.TestCase):
         assert np.allclose(cc.cov_tau, self.Mxy_c_wobj)
 
     def test_XY_sym_meanconst(self):
-        cc = pcov.CovarEstimator(remove_constant_mean=self.mean_const, xy=True, reversible=True, lag=self.lag,
-                                 bessels_correction=False, chunksize=self.chunksize)
+        cc = pcov.EmpiricalCovariance(remove_constant_mean=self.mean_const, xy=True, reversible=True, lag=self.lag,
+                                      bessel=False, chunksize=self.chunksize)
         cc.estimate(self.source_obj)
         assert np.allclose(cc.mean, self.m_c_sym)
         assert np.allclose(cc.cov, self.Mxx_c_sym)
         assert np.allclose(cc.cov_tau, self.Mxy_c_sym)
 
     def test_XY_sym_weighted_meanconst(self):
-        cc = pcov.CovarEstimator(remove_constant_mean=self.mean_const, xy=True, reversible=True, weights=self.wobj,
-                                 lag=self.lag, bessels_correction=False, chunksize=self.chunksize)
+        cc = pcov.EmpiricalCovariance(remove_constant_mean=self.mean_const, xy=True, reversible=True, weights=self.wobj,
+                                      lag=self.lag, bessel=False, chunksize=self.chunksize)
         cc.estimate(self.source_obj)
         assert np.allclose(cc.mean, self.m_c_sym_wobj)
         assert np.allclose(cc.cov, self.Mxx_c_sym_wobj)

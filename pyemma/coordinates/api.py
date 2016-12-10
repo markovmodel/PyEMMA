@@ -993,7 +993,7 @@ def pca(data=None, dim=-1, var_cutoff=0.95, stride=1, mean=None, skip=0):
 
 
 def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_map=False, stride=1,
-         force_eigenvalues_le_one=False, mean=None, remove_mean=True, skip=0):
+        remove_mean=True, skip=0):
     r""" Time-lagged independent component analysis (TICA).
 
     TICA is a linear transformation method. In contrast to PCA, which finds
@@ -1055,13 +1055,6 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
         that the stride option in the get_output() function of the returned
         object is independent, so you can parametrize at a long stride, and
         still map all frames through the transformer.
-
-    force_eigenvalues_le_one : boolean, deprecated (eigenvalues are always <= 1, since 2.1)
-        Compute covariance matrix and time-lagged covariance matrix such
-        that the generalized eigenvalues are always guaranteed to be <= 1.
-
-    mean : ndarray, optional, default None
-        This option is deprecated, and setting this value is non-effective.
 
     remove_mean: bool, optional, default True
         remove mean during covariance estimation. Should not be turned off.
@@ -1165,10 +1158,6 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
 
     """
     from pyemma.coordinates.transform.tica import TICA
-    if mean is not None:
-        import warnings
-        warnings.warn("user provided mean for TICA is deprecated and its value is ignored.",
-                               category=PyEMMA_DeprecationWarning)
     if not remove_mean:
         import warnings
         user_msg = 'remove_mean option is deprecated. The mean is removed from the data by default, otherwise it' \

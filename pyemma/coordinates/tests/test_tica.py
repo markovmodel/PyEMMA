@@ -346,16 +346,6 @@ class TestTICAExtensive(unittest.TestCase):
         np.testing.assert_allclose(test_corr, true_corr, atol=1.E-8)
         #assert np.isclose(test_corr, true_corr).all()
 
-    def test_provided_means(self):
-        data = np.random.random((300, 3))
-        mean = data.mean(axis=0)
-        tica_obj = tica(data, mean=mean)
-        tica_calc_mean = tica(data)
-
-        np.testing.assert_allclose(tica_obj.mean, tica_calc_mean.mean)
-        np.testing.assert_allclose(tica_obj.cov, tica_calc_mean.cov)
-        np.testing.assert_allclose(tica_obj.cov_tau, tica_calc_mean.cov_tau)
-
     def test_timescales(self):
         its = -self.tica_obj.lag/np.log(np.abs(self.tica_obj.eigenvalues))
         assert np.allclose(self.tica_obj.timescales, its)

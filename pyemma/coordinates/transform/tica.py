@@ -27,7 +27,7 @@ import numpy as np
 import scipy.linalg as scl
 from decorator import decorator
 from pyemma._base.model import Model
-from pyemma.coordinates.estimation.covariance import CovarEstimator
+from pyemma.coordinates.estimation.covariance import EmpiricalCovariance
 from pyemma.coordinates.estimation.koopman import _KoopmanEstimator
 from pyemma.coordinates.data._base.transformer import StreamingEstimationTransformer
 from pyemma.util.annotators import fix_docs, deprecated
@@ -144,8 +144,8 @@ class _TICA(StreamingEstimationTransformer):
         if dim > -1:
             var_cutoff = 1.0
 
-        self._covar = CovarEstimator(xx=True, xy=True, yy=False, remove_data_mean=True, reversible=reversible,
-                                     lag=lag, bessels_correction=False, stride=stride, skip=skip)
+        self._covar = EmpiricalCovariance(xx=True, xy=True, yy=False, remove_data_mean=True, reversible=reversible,
+                                          lag=lag, bessel=False, stride=stride, skip=skip)
 
         # empty dummy model instance
         self._model = TICAModel()
@@ -539,9 +539,9 @@ class EquilibriumCorrectedTICA(_TICA):
             self.weights = koop.weights
 
         # Recompute C0, Ctau
-        self._covar = CovarEstimator(lag=self.lag, weights=self.weights, xy=True, remove_data_mean=True,
-                                     reversible=True, bessels_correction=False, stride=self.stride,
-                                     skip=self.skip)
+        self._covar = EmpiricalCovariance(lag=self.lag, weights=self.weights, xy=True, remove_data_mean=True,
+                                          reversible=True, bessel=False, stride=self.stride,
+                                          skip=self.skip)
         self._covar.estimate(iterable, **kwargs)
 
         self._model.update_model_params(mean=self._covar.mean,
