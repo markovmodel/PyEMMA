@@ -27,7 +27,7 @@ from pyemma._ext.variational.solvers.direct import sort_by_norm, spd_inv_split
 __author__ = 'paul, nueske'
 
 
-def compute_u(K):
+def _compute_u(K):
     """
     Estimate an approximation of the ratio of stationary over empirical distribution from the basis.
     Parameters:
