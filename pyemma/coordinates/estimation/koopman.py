@@ -113,7 +113,7 @@ class _KoopmanEstimator(StreamingEstimator):
     def u_pc_1(self):
         'weights in the modified basis'
         self._check_estimated()
-        return compute_u(self.K_pc_1)
+        return _compute_u(self.K_pc_1)
 
     @property
     def u(self):
