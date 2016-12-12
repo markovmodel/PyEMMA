@@ -53,6 +53,7 @@ __all__ = ['featurizer',  # IO
            'save_trajs',
            'pca',  # transform
            'tica',
+           'lagged_covariance',
            'cluster_regspace',  # cluster
            'cluster_kmeans',
            'cluster_mini_batch_kmeans',
@@ -992,8 +993,8 @@ def pca(data=None, dim=-1, var_cutoff=0.95, stride=1, mean=None, skip=0):
     return _param_stage(data, res, stride=stride)
 
 
-def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_map=False, stride=1,
-        remove_mean=True, skip=0):
+def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_map=False, reweighting='empirical',
+         stride=1, remove_mean=True, skip=0, reversible=True):
     r""" Time-lagged independent component analysis (TICA).
 
     TICA is a linear transformation method. In contrast to PCA, which finds
@@ -1055,6 +1056,14 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
         that the stride option in the get_output() function of the returned
         object is independent, so you can parametrize at a long stride, and
         still map all frames through the transformer.
+
+    reweighting : optional, default="empirical"
+             Re-weighting strategy to be used in order to compute equilibrium covariances from non-equilibrium data.
+                * "empirical":  no re-weighting
+                * "koopman":    use re-weighting procedure from [1]_
+                * weights:      An object that allows to compute re-weighting factors. It must possess a method
+                                weights(X) that accepts a trajectory X (np.ndarray(T, n)) and returns a vector of
+                                re-weighting factors (np.ndarray(T,)).
 
     remove_mean: bool, optional, default True
         remove mean during covariance estimation. Should not be turned off.
@@ -1156,8 +1165,30 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
     .. [5] Noe, F., Banisch, R., Clementi, C. 2016. Commute maps: separating slowly-mixing molecular configurations
        for kinetic modeling. J. Chem. Theory. Comput. doi:10.1021/acs.jctc.6b00762
 
+    .. [6] Wu, H., Nueske, F., Paul, F., Klus, S., Koltai, P., and Noe, F. 2016. Bias reduced variational
+        approximation of molecular kinetics from short off-equilibrium simulations. J. Chem. Phys. (submitted)
+
     """
     from pyemma.coordinates.transform.tica import TICA
+    from pyemma.coordinates.estimation.koopman import _KoopmanEstimator
+    from pyemma.coordinates.estimation.koopman import _Weights
+    import six
+    if isinstance(reweighting, six.string_types):
+        if reweighting=="koopman":
+            if data is None:
+                raise ValueError("Data must be supplied for reweighting='koopman'")
+            koop = _KoopmanEstimator(lag=lag, stride=stride, skip=skip)
+            _param_stage(data, koop, stride=stride)
+            weights = koop.weights
+        elif reweighting=="empirical":
+            weights = None
+        else:
+            raise ValueError("reweighting must be either 'empirical', 'koopman' or an instance of _Weights.")
+    elif isinstance(reweighting, _Weights):
+        weights = reweighting
+    else:
+        raise ValueError("reweighting must be either 'empirical', 'koopman' or an instance of _Weights.")
+
     if not remove_mean:
         import warnings
         user_msg = 'remove_mean option is deprecated. The mean is removed from the data by default, otherwise it' \
@@ -1168,8 +1199,93 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
             user_msg,
             category=PyEMMA_DeprecationWarning)
 
-    res = TICA(lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map, commute_map=commute_map, skip=skip)
+    res = TICA(lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map, commute_map=commute_map, skip=skip,
+               weights=weights, reversible=reversible)
     return _param_stage(data, res, stride=stride)
+
+
+def lagged_covariance(data=None, c00=True, c0t=True, ctt=False, remove_constant_mean=None, remove_data_mean=False,
+                      reversible=False, bessel=True, lag=0, reweighting="empirical", stride=1, skip=0, chunksize=None):
+    """
+        Compute lagged covariances between time series. If data is available as an array of size (TxN), where T is the
+        number of time steps and N the number of dimensions, this function can compute lagged covariances like
+
+        .. math::
+
+            C_00 &=      X_t X \\
+            C_{0t} &= X_t Y \\
+            C_{tt} &= Y_t Y,
+
+        where X comprises the first T-lag time steps and Y the last T-lag time steps. It is also possible to use more
+        than one time series, the number of time steps in each time series can also vary.
+
+        Parameters
+        ----------
+        data : ndarray (T, d) or list of ndarray (T_i, d) or a reader created by
+            source function array with the data, if available. When given, the covariances are immediately computed.
+        c00 : bool, optional, default=True
+            compute instantaneous correlations over the first part of the data. If lag==0, use all of the data.
+        c0t : bool, optional, default=False
+            compute lagged correlations. Does not work with lag==0.
+        ctt : bool, optional, default=False
+            compute instantaneous correlations over the second part of the data. Does not work with lag==0.
+        remove_constant_mean : ndarray(N,), optional, default=None
+            substract a constant vector of mean values from time series.
+        remove_data_mean : bool, optional, default=False
+            substract the sample mean from the time series (mean-free correlations).
+        reversible : bool, optional, default=False
+            symmetrize correlations.
+        bessel : bool, optional, default=True
+            use Bessel's correction for correlations in order to use an unbiased estimator
+        lag : int, optional, default=0
+            lag time. Does not work with xy=True or yy=True.
+        reweighting : optional, default="empirical"
+             Re-weighting strategy to be used in order to compute equilibrium covariances from non-equilibrium data.
+                * "empirical":  no re-weighting
+                * "koopman":    use re-weighting procedure from [1]_
+                * weights:      An object that allows to compute re-weighting factors. It must possess a method
+                                weights(X) that accepts a trajectory X (np.ndarray(T, n)) and returns a vector of
+                                re-weighting factors (np.ndarray(T,)).
+        stride: int, optional, default = 1
+            Use only every stride-th time step. By default, every time step is used.
+        skip : int, optional, default=0
+            skip the first initial n frames per trajectory.
+        chunksize : int, optional, default=None
+            The chunk size at which the input files are being processed.
+
+        Returns
+        -------
+        lc : a :class:`LaggedCovariance <pyemma.coordinates.estimation.covariance.LaggedCovariance>` object.
+
+        .. [1] Wu, H., Nueske, F., Paul, F., Klus, S., Koltai, P., and Noe, F. 2016. Bias reduced variational
+        approximation of molecular kinetics from short off-equilibrium simulations. J. Chem. Phys. (submitted)
+
+        """
+
+    from pyemma.coordinates.estimation.covariance import LaggedCovariance
+    from pyemma.coordinates.estimation.koopman import _KoopmanEstimator
+    from pyemma.coordinates.estimation.koopman import _Weights
+    import six
+    if isinstance(reweighting, six.string_types):
+        if reweighting=="koopman":
+            if data is None:
+                raise ValueError("Data must be supplied for reweighting='koopman'")
+            koop = _KoopmanEstimator(lag=lag, stride=stride, skip=skip)
+            _param_stage(data, koop, stride=stride)
+            weights = koop.weights
+        elif reweighting=="empirical":
+            weights = None
+        else:
+            raise ValueError("reweighting must be either 'empirical', 'koopman' or an instance of _Weights.")
+    elif isinstance(reweighting, _Weights):
+        weights = reweighting
+    else:
+        raise ValueError("reweighting must be either 'empirical', 'koopman' or an instance of _Weights.")
+
+    lc = LaggedCovariance(xx=c00, xy=c0t, yy=ctt, remove_constant_mean=remove_constant_mean,
+                          remove_data_mean=remove_data_mean, reversible=reversible, bessel=bessel, lag=lag,
+                          weights=weights, stride=stride, skip=skip, chunksize=chunksize)
+    return _param_stage(data, lc, stride=stride)
 
 
 # =========================================================================

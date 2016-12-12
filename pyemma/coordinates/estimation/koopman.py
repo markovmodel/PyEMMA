@@ -20,7 +20,7 @@ from __future__ import absolute_import
 import numpy as np
 import scipy.linalg as scl
 from pyemma.coordinates.data._base.streaming_estimator import StreamingEstimator
-from pyemma.coordinates.estimation.covariance import EmpiricalCovariance
+from pyemma.coordinates.estimation.covariance import LaggedCovariance
 from pyemma._ext.variational.solvers.direct import sort_by_norm, spd_inv_split
 
 
@@ -51,7 +51,12 @@ def _compute_u(K):
     return u
 
 
-class _KoopmanWeights(object):
+class _Weights(object):
+
+    def weights(self, X):
+        raise NotImplementedError("weights function not implemented.")
+
+class _KoopmanWeights(_Weights):
     def __init__(self, u, u_const):
         self._u = u
         self._u_const = u_const
@@ -69,7 +74,7 @@ class _KoopmanEstimator(StreamingEstimator):
 
         super(_KoopmanEstimator, self).__init__(chunksize=chunksize)
 
-        self._covar = EmpiricalCovariance(xx=True, xy=True, remove_data_mean=True, reversible=False,
+        self._covar = LaggedCovariance(xx=True, xy=True, remove_data_mean=True, reversible=False,
                                           lag=lag, bessel=False, stride=stride, skip=skip)
 
         self.set_params(lag=lag, epsilon=epsilon, stride=stride, skip=skip)

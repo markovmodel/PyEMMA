@@ -27,7 +27,7 @@ import numpy as np
 import scipy.linalg as scl
 from decorator import decorator
 from pyemma._base.model import Model
-from pyemma.coordinates.estimation.covariance import EmpiricalCovariance
+from pyemma.coordinates.estimation.covariance import LaggedCovariance
 from pyemma.coordinates.estimation.koopman import _KoopmanEstimator
 from pyemma.coordinates.data._base.transformer import StreamingEstimationTransformer
 from pyemma.util.annotators import fix_docs, deprecated
@@ -150,7 +150,7 @@ class TICA(StreamingEstimationTransformer):
         if dim > -1:
             var_cutoff = 1.0
 
-        self._covar = EmpiricalCovariance(xx=True, xy=True, yy=False, remove_data_mean=True, reversible=reversible,
+        self._covar = LaggedCovariance(xx=True, xy=True, yy=False, remove_data_mean=True, reversible=reversible,
                                           lag=lag, bessel=False, stride=stride, skip=skip, weights=weights)
 
         # empty dummy model instance
@@ -417,139 +417,3 @@ class TICA(StreamingEstimationTransformer):
             return super(TICA, self).output_type()
         else:
             return np.complex64
-
-
-# @fix_docs
-# class EquilibriumCorrectedTICA(_TICA):
-#
-#     def __init__(self, lag, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_map=False, epsilon=1e-6,
-#                  stride=1, skip=0, weights=None):
-#         r""" Time-lagged independent component analysis (TICA) using equilibrium corrected estimates of
-#          correlation matrices [1]_, [2]_, [3]_, [6]_.
-#
-#         Parameters
-#         ----------
-#         lag : int
-#             lag time
-#         dim : int, optional, default -1
-#             Maximum number of significant independent components to use to reduce dimension of input data. -1 means
-#             all numerically available dimensions (see epsilon) will be used unless reduced by var_cutoff.
-#             Setting dim to a positive value is exclusive with var_cutoff.
-#         var_cutoff : float in the range [0,1], optional, default 0.95
-#             Determines the number of output dimensions by including dimensions until their cumulative kinetic variance
-#             exceeds the fraction subspace_variance. var_cutoff=1.0 means all numerically available dimensions
-#             (see epsilon) will be used, unless set by dim. Setting var_cutoff smaller than 1.0 is exclusive with dim
-#         kinetic_map : bool, optional, default True
-#             Eigenvectors will be scaled by eigenvalues. As a result, Euclidean distances in the transformed data
-#             approximate kinetic distances [4]_. This is a good choice when the data is further processed by clustering.
-#         commute_map : bool, optional, default False
-#             Eigenvector_i will be scaled by sqrt(timescale_i / 2). As a result, Euclidean distances in the transformed
-#             data will approximate commute distances [5]_.
-#         epsilon : float
-#             eigenvalue norm cutoff. Eigenvalues of C0 with norms <= epsilon will be
-#             cut off. The remaining number of eigenvalues define the size
-#             of the output.
-#         stride: int, optional, default = 1
-#             Use only every stride-th time step. By default, every time step is used.
-#         skip : int, default=0
-#             skip the first initial n frames per trajectory.
-#         weights: object, optional, default = None
-#             An object that allows to compute re-weighting factors to estimate equilibrium means and correlations from
-#             off-equilibrium data. The only requirement is that weights possesses a method weights(X), that accepts a
-#             trajectory X (np.ndarray(T, n)) and returns a vector of re-weighting factors (np.ndarray(T,)). By default,
-#             the re-weighting formalism from [6]_ is used.
-#
-#         Notes
-#         -----
-#         Given a sequence of multivariate data :math:`X_t`, computes the mean-free
-#         covariance and time-lagged covariance matrix:
-#
-#         .. math::
-#
-#             C_0 &=      (X_t - \mu)^T (X_t - \mu) \\
-#             C_{\tau} &= (X_t - \mu)^T (X_{t + \tau} - \mu)
-#
-#         and solves the eigenvalue problem
-#
-#         .. math:: C_{\tau} r_i = C_0 \lambda_i(tau) r_i,
-#
-#         where :math:`r_i` are the independent components and :math:`\lambda_i(tau)` are
-#         their respective normalized time-autocorrelations. The eigenvalues are
-#         related to the relaxation timescale by
-#
-#         .. math:: t_i(tau) = -\tau / \ln |\lambda_i|.
-#
-#         When used as a dimension reduction method, the input data is projected
-#         onto the dominant independent components.
-#
-#         For data sampled from a reversible process with equilibrium distribution :math:'\pi', the correlations above
-#         should correspond to expectation values with respect to the distribution :math:'\pi'. In practice, simulations
-#         often do not sample from the correct distribution, but from some empirical distribution :math:'\rho'. By the
-#         principle of importance sampling, the expectations can be corrected if there is a re-weighting function
-#         :math:'w' that approximates the ratio :math:'\frac{\pi}{\rho}':
-#
-#         .. math::
-#             mu &=       \frac{1}{T} \sum_{t=1}^T w_t X_t \\
-#             C_0 &=      (X_t - \mu)^T \mathrm{diag}(w) (X_t - \mu) \\
-#             C_{\tau} &= (X_t - \mu)^T \mathrm{diag}(w)(X_{t + \tau} - \mu)
-#
-#         Here, the re-weighting function can either be supplied by the user, or it is calculated using the formalism
-#         described in [6]_.
-#
-#         References
-#         ----------
-#         .. [1] Perez-Hernandez G, F Paul, T Giorgino, G De Fabritiis and F Noe. 2013.
-#            Identification of slow molecular order parameters for Markov model construction
-#            J. Chem. Phys. 139, 015102. doi:10.1063/1.4811489
-#         .. [2] Schwantes C, V S Pande. 2013.
-#            Improvements in Markov State Model Construction Reveal Many Non-Native Interactions in the Folding of NTL9
-#            J. Chem. Theory. Comput. 9, 2000-2009. doi:10.1021/ct300878a
-#         .. [3] L. Molgedey and H. G. Schuster. 1994.
-#            Separation of a mixture of independent signals using time delayed correlations
-#            Phys. Rev. Lett. 72, 3634.
-#         .. [4] Noe, F. and Clementi, C. 2015. Kinetic distance and kinetic maps from molecular dynamics simulation.
-#             J. Chem. Theory. Comput. doi:10.1021/acs.jctc.5b00553
-#         .. [5] Noe, F., Banisch, R., Clementi, C. 2016. Commute maps: separating slowly-mixing molecular configurations
-#            for kinetic modeling. J. Chem. Theory. Comput. doi:10.1021/acs.jctc.6b00762
-#         .. [6] Wu, H., Nueske, F., Paul, F., Klus, S., Koltai, P., and Noe, F. 2016. Bias reduced variational
-#             approximation of molecular kinetics from short off-equilibrium simulations. J. Chem. Phys. (submitted)
-#
-#         """
-#         # Check argument settings for var_cutoff, kinetic_map and commute_map:
-#         default_var_cutoff = get_default_args(self.__init__)['var_cutoff']
-#         if dim != -1 and var_cutoff != default_var_cutoff:
-#             raise ValueError('Trying to set both the number of dimension and the subspace variance. Use either or.')
-#         if kinetic_map and commute_map:
-#             raise ValueError('Trying to use both kinetic_map and commute_map. Use either or.')
-#         super(_TICA, self).__init__()
-#         if dim > -1:
-#             var_cutoff = 1.0
-#
-#         # Set reversible to True:
-#         reversible = True
-#
-#         # empty dummy model instance
-#         self._model = TICAModel()
-#         self.set_params(lag=lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map, commute_map=commute_map,
-#                         epsilon=epsilon, stride=stride, skip=skip, weights=weights)
-#
-#
-#     def _estimate(self, iterable, **kwargs):
-#         # Compute weights by KoopmanEstimator if they are not specified:
-#         if self.weights is None:
-#             koop = _KoopmanEstimator(lag=self.lag, epsilon=self.epsilon, stride=self.stride, skip=self.skip)
-#             koop.estimate(iterable, **kwargs)
-#             self.weights = koop.weights
-#
-#         # Recompute C0, Ctau
-#         self._covar = EmpiricalCovariance(lag=self.lag, weights=self.weights, xy=True, remove_data_mean=True,
-#                                           reversible=True, bessel=False, stride=self.stride,
-#                                           skip=self.skip)
-#         self._covar.estimate(iterable, **kwargs)
-#
-#         self._model.update_model_params(mean=self._covar.mean,
-#                                         cov=self._covar.cov,
-#                                         cov_tau=self._covar.cov_tau)
-#         self._diagonalize()
-#
-#         return self._model

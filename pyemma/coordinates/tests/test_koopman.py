@@ -6,6 +6,7 @@ import pkg_resources
 import pyemma.coordinates as pco
 import pyemma.coordinates.transform
 
+from pyemma.coordinates.estimation.koopman import _KoopmanWeights
 from pyemma._ext.variational.solvers.direct import sort_by_norm
 from pyemma.coordinates.api import _param_stage
 
@@ -27,14 +28,6 @@ def scale_eigenvectors(V):
         jj = np.argmax(np.abs(V[:, j]))
         V[:, j] *= np.sign(V[jj, j])
     return V
-
-class _KoopmanWeights(object):
-    def __init__(self, u, u_const):
-        self._u = u
-        self._u_const = u_const
-
-    def weights(self, X):
-        return X.dot(self._u) + self._u_const
 
 class TestKoopman(unittest.TestCase):
     @classmethod
@@ -168,53 +161,49 @@ class TestKoopman(unittest.TestCase):
         cls.tsr = -cls.tau / np.log(np.abs(cls.lr))
 
         # Set up the model:
-        cls.koop_rev = pco.transform.tica.TICA(lag=cls.tau, reversible=True, kinetic_map=False)
-        _param_stage(cls.data, cls.koop_rev)
-        #cls.koop_eq = pco.transform.tica.EquilibriumCorrectedTICA(lag=cls.tau, kinetic_map=False)
-        #_param_stage(cls.data, cls.koop_eq)
+        cls.koop_rev = pco.tica(cls.data, lag=cls.tau, kinetic_map=False)
+        cls.koop_eq = pco.tica(cls.data, lag=cls.tau, kinetic_map=False, reweighting='koopman')
         # Test the model by supplying weights directly:
-        #cls.koop_eq_direct = pco.transform.tica.EquilibriumCorrectedTICA(lag=cls.tau, weights=weight_obj,
-        #                                                                 kinetic_map=False)
-        #_param_stage(cls.data, cls.koop_eq_direct)
+        cls.koop_eq_direct = pco.tica(cls.data, lag=cls.tau, reweighting=weight_obj, kinetic_map=False)
 
     def test_mean_x(self):
         np.testing.assert_allclose(self.koop_rev.mean, self.mean_rev)
-        #np.testing.assert_allclose(self.koop_eq.mean, self.mean_eq)
-        #np.testing.assert_allclose(self.koop_eq_direct.mean, self.mean_eq)
+        np.testing.assert_allclose(self.koop_eq.mean, self.mean_eq)
+        np.testing.assert_allclose(self.koop_eq_direct.mean, self.mean_eq)
 
     def test_C0(self):
         np.testing.assert_allclose(self.koop_rev.cov, self.C0_rev)
-        #np.testing.assert_allclose(self.koop_eq.cov, self.C0_eq)
-        #np.testing.assert_allclose(self.koop_eq_direct.cov, self.C0_eq)
+        np.testing.assert_allclose(self.koop_eq.cov, self.C0_eq)
+        np.testing.assert_allclose(self.koop_eq_direct.cov, self.C0_eq)
 
     def test_Ct(self):
         np.testing.assert_allclose(self.koop_rev.cov_tau, self.Ct_rev)
-        #np.testing.assert_allclose(self.koop_eq.cov_tau, self.Ct_eq)
-        #np.testing.assert_allclose(self.koop_eq_direct.cov_tau, self.Ct_eq)
+        np.testing.assert_allclose(self.koop_eq.cov_tau, self.Ct_eq)
+        np.testing.assert_allclose(self.koop_eq_direct.cov_tau, self.Ct_eq)
 
     def test_eigenvalues(self):
         np.testing.assert_allclose(self.koop_rev.eigenvalues, self.ls)
-        #np.testing.assert_allclose(self.koop_eq.eigenvalues, self.lr)
+        np.testing.assert_allclose(self.koop_eq.eigenvalues, self.lr)
         np.testing.assert_allclose(self.koop_rev.timescales, self.tss)
-        #np.testing.assert_allclose(self.koop_eq.timescales, self.tsr)
+        np.testing.assert_allclose(self.koop_eq.timescales, self.tsr)
 
     def test_eigenvectors(self):
         np.testing.assert_allclose(self.koop_rev.eigenvectors, self.Rs)
-        #np.testing.assert_allclose(self.koop_eq.eigenvectors, self.Rr)
+        np.testing.assert_allclose(self.koop_eq.eigenvectors, self.Rr)
 
     def test_get_output(self):
         traj = self.data[0] - self.mean_rev[None, :]
         ev_traj_rev = np.dot(traj, self.Rs)[:, :2]
         out_traj_rev = self.koop_rev.get_output()[0]
-        #traj = self.data[0] - self.mean_eq[None, :]
-        #ev_traj_eq = np.dot(traj, self.Rr)[:, :2]
-        #out_traj_eq = self.koop_eq.get_output()[0]
+        traj = self.data[0] - self.mean_eq[None, :]
+        ev_traj_eq = np.dot(traj, self.Rr)[:, :2]
+        out_traj_eq = self.koop_eq.get_output()[0]
         np.testing.assert_allclose(out_traj_rev, ev_traj_rev)
-        #np.testing.assert_allclose(out_traj_eq, ev_traj_eq)
+        np.testing.assert_allclose(out_traj_eq, ev_traj_eq)
 
     def test_error_reversible(self):
         with self.assertRaises(NotImplementedError):
-            pco.transform.tica.TICA(lag=self.tau, reversible=False, kinetic_map=False)
+            pco.tica(self.data, lag=self.tau, reversible=False, kinetic_map=False)
 
 
 
