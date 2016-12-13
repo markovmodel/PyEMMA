@@ -3,7 +3,7 @@ import scipy.linalg as scl
 import unittest
 import pkg_resources
 
-from pyemma.coordinates import lagged_covariance
+from pyemma.coordinates import covariance_lagged
 from pyemma.coordinates.estimation.koopman import _KoopmanEstimator
 from pyemma.coordinates import source
 
@@ -108,36 +108,36 @@ class TestEqCovar(unittest.TestCase):
         cls.Mxy0_sym /= 2*cls.wt
 
     def test_XX(self):
-        cc = lagged_covariance(data=self.data, c0t=False, lag=self.tau, bessel=False, reweighting="koopman")
-        cc1 = lagged_covariance(data=self.data, c0t=False, lag=self.tau, bessel=False, reweighting=self.weight_object)
+        cc = covariance_lagged(data=self.data, c0t=False, lag=self.tau, bessel=False, weights="koopman")
+        cc1 = covariance_lagged(data=self.data, c0t=False, lag=self.tau, bessel=False, weights=self.weight_object)
         assert np.allclose(cc.mean, self.mx)
         assert np.allclose(cc.cov, self.Mxx)
         assert np.allclose(cc1.mean, self.mx)
         assert np.allclose(cc1.cov, self.Mxx)
 
     def test_XX_removeconstantmean(self):
-        cc = lagged_covariance(data=self.data, c0t=False, lag=self.tau, remove_constant_mean=self.mean_constant,
-                                                     bessel=False, reweighting="koopman")
-        cc1 = lagged_covariance(data=self.data, c0t=False, lag=self.tau, remove_constant_mean=self.mean_constant,
-                                                     bessel=False, reweighting=self.weight_object)
+        cc = covariance_lagged(data=self.data, c0t=False, lag=self.tau, remove_constant_mean=self.mean_constant,
+                               bessel=False, weights="koopman")
+        cc1 = covariance_lagged(data=self.data, c0t=False, lag=self.tau, remove_constant_mean=self.mean_constant,
+                                bessel=False, weights=self.weight_object)
         assert np.allclose(cc.mean, self.mx_c)
         assert np.allclose(cc.cov, self.Mxx_c)
         assert np.allclose(cc1.mean, self.mx_c)
         assert np.allclose(cc1.cov, self.Mxx_c)
 
     def test_XX_removedatamean(self):
-        cc = lagged_covariance(data=self.data, c0t=False, lag=self.tau, remove_data_mean=True, bessel=False,
-                               reweighting="koopman")
-        cc1 = lagged_covariance(data=self.data, c0t=False, lag=self.tau, remove_data_mean=True, bessel=False,
-                               reweighting=self.weight_object)
+        cc = covariance_lagged(data=self.data, c0t=False, lag=self.tau, remove_data_mean=True, bessel=False,
+                               weights="koopman")
+        cc1 = covariance_lagged(data=self.data, c0t=False, lag=self.tau, remove_data_mean=True, bessel=False,
+                                weights=self.weight_object)
         assert np.allclose(cc.mean, self.mx)
         assert np.allclose(cc.cov, self.Mxx0)
         assert np.allclose(cc1.mean, self.mx)
         assert np.allclose(cc1.cov, self.Mxx0)
 
     def test_XY(self):
-        cc = lagged_covariance(data=self.data, lag=self.tau, c0t=True, bessel=False, reweighting="koopman")
-        cc1 = lagged_covariance(data=self.data, lag=self.tau, c0t=True, bessel=False, reweighting=self.weight_object)
+        cc = covariance_lagged(data=self.data, lag=self.tau, c0t=True, bessel=False, weights="koopman")
+        cc1 = covariance_lagged(data=self.data, lag=self.tau, c0t=True, bessel=False, weights=self.weight_object)
         assert np.allclose(cc.mean, self.mx)
         assert np.allclose(cc.mean_tau, self.my)
         assert np.allclose(cc.cov, self.Mxx)
@@ -149,10 +149,10 @@ class TestEqCovar(unittest.TestCase):
 
 
     def test_XY_removeconstantmean(self):
-        cc = lagged_covariance(data=self.data, lag=self.tau, c0t=True, remove_constant_mean=self.mean_constant,
-                                                     bessel=False, reweighting="koopman")
-        cc1 = lagged_covariance(data=self.data, lag=self.tau, c0t=True, remove_constant_mean=self.mean_constant,
-                                                     bessel=False, reweighting="koopman")
+        cc = covariance_lagged(data=self.data, lag=self.tau, c0t=True, remove_constant_mean=self.mean_constant,
+                               bessel=False, weights="koopman")
+        cc1 = covariance_lagged(data=self.data, lag=self.tau, c0t=True, remove_constant_mean=self.mean_constant,
+                                bessel=False, weights="koopman")
         assert np.allclose(cc.mean, self.mx_c)
         assert np.allclose(cc.mean_tau, self.my_c)
         assert np.allclose(cc.cov, self.Mxx_c)
@@ -163,10 +163,10 @@ class TestEqCovar(unittest.TestCase):
         assert np.allclose(cc1.cov_tau, self.Mxy_c)
 
     def test_XY_removedatamean(self):
-        cc = lagged_covariance(data=self.data, lag=self.tau, c0t=True, remove_data_mean=True, bessel=False,
-                               reweighting="koopman")
-        cc1 = lagged_covariance(data=self.data, lag=self.tau, c0t=True, remove_data_mean=True, bessel=False,
-                               reweighting=self.weight_object)
+        cc = covariance_lagged(data=self.data, lag=self.tau, c0t=True, remove_data_mean=True, bessel=False,
+                               weights="koopman")
+        cc1 = covariance_lagged(data=self.data, lag=self.tau, c0t=True, remove_data_mean=True, bessel=False,
+                                weights=self.weight_object)
         assert np.allclose(cc.mean, self.mx)
         assert np.allclose(cc.mean_tau, self.my)
         assert np.allclose(cc.cov, self.Mxx0)
@@ -177,10 +177,10 @@ class TestEqCovar(unittest.TestCase):
         assert np.allclose(cc1.cov_tau, self.Mxy0)
 
     def test_XY_sym(self):
-        cc = lagged_covariance(data=self.data, lag=self.tau, c0t=True, reversible=True, bessel=False,
-                               reweighting="koopman")
-        cc1 = lagged_covariance(data=self.data, lag=self.tau, c0t=True, reversible=True, bessel=False,
-                               reweighting=self.weight_object)
+        cc = covariance_lagged(data=self.data, lag=self.tau, c0t=True, reversible=True, bessel=False,
+                               weights="koopman")
+        cc1 = covariance_lagged(data=self.data, lag=self.tau, c0t=True, reversible=True, bessel=False,
+                                weights=self.weight_object)
         assert np.allclose(cc.mean, self.msym)
         assert np.allclose(cc.cov, self.Mxx_sym)
         assert np.allclose(cc.cov_tau, self.Mxy_sym)
@@ -189,10 +189,10 @@ class TestEqCovar(unittest.TestCase):
         assert np.allclose(cc1.cov_tau, self.Mxy_sym)
 
     def test_XY_sym_removeconstantmean(self):
-        cc = lagged_covariance(data=self.data, lag=self.tau, c0t=True, reversible=True,
-                               remove_constant_mean=self.mean_constant, bessel=False, reweighting="koopman")
-        cc1 = lagged_covariance(data=self.data, lag=self.tau, c0t=True, reversible=True,
-                               remove_constant_mean=self.mean_constant, bessel=False, reweighting=self.weight_object)
+        cc = covariance_lagged(data=self.data, lag=self.tau, c0t=True, reversible=True,
+                               remove_constant_mean=self.mean_constant, bessel=False, weights="koopman")
+        cc1 = covariance_lagged(data=self.data, lag=self.tau, c0t=True, reversible=True,
+                                remove_constant_mean=self.mean_constant, bessel=False, weights=self.weight_object)
         assert np.allclose(cc.mean, self.msym_c)
         assert np.allclose(cc.cov, self.Mxx_c_sym)
         assert np.allclose(cc.cov_tau, self.Mxy_c_sym)
@@ -201,10 +201,10 @@ class TestEqCovar(unittest.TestCase):
         assert np.allclose(cc1.cov_tau, self.Mxy_c_sym)
 
     def test_XY_sym_removedatamean(self):
-        cc = lagged_covariance(data=self.data, lag=self.tau, c0t=True, reversible=True, remove_data_mean=True,
-                               bessel=False, reweighting="koopman")
-        cc1 = lagged_covariance(data=self.data, lag=self.tau, c0t=True, reversible=True, remove_data_mean=True,
-                               bessel=False, reweighting=self.weight_object)
+        cc = covariance_lagged(data=self.data, lag=self.tau, c0t=True, reversible=True, remove_data_mean=True,
+                               bessel=False, weights="koopman")
+        cc1 = covariance_lagged(data=self.data, lag=self.tau, c0t=True, reversible=True, remove_data_mean=True,
+                                bessel=False, weights=self.weight_object)
         assert np.allclose(cc.mean, self.msym)
         assert np.allclose(cc.cov, self.Mxx0_sym)
         assert np.allclose(cc.cov_tau, self.Mxy0_sym)

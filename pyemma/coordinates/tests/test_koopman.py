@@ -162,9 +162,9 @@ class TestKoopman(unittest.TestCase):
 
         # Set up the model:
         cls.koop_rev = pco.tica(cls.data, lag=cls.tau, kinetic_map=False)
-        cls.koop_eq = pco.tica(cls.data, lag=cls.tau, kinetic_map=False, reweighting='koopman')
+        cls.koop_eq = pco.tica(cls.data, lag=cls.tau, kinetic_map=False, weights='koopman')
         # Test the model by supplying weights directly:
-        cls.koop_eq_direct = pco.tica(cls.data, lag=cls.tau, reweighting=weight_obj, kinetic_map=False)
+        cls.koop_eq_direct = pco.tica(cls.data, lag=cls.tau, weights=weight_obj, kinetic_map=False)
 
     def test_mean_x(self):
         np.testing.assert_allclose(self.koop_rev.mean, self.mean_rev)

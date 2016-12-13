@@ -33,7 +33,7 @@ __author__ = 'paul, nueske'
 
 
 class LaggedCovariance(StreamingEstimator, ProgressReporter, Loggable):
-    def __init__(self, xx=True, xy=False, yy=False, remove_constant_mean=None, remove_data_mean=False, reversible=False,
+    def __init__(self, c00=True, c0t=False, ctt=False, remove_constant_mean=None, remove_data_mean=False, reversible=False,
                  bessel=True, sparse_mode='auto', modify_data=False, lag=0, weights=None, stride=1, skip=0,
                  chunksize=None):
         """
@@ -41,11 +41,11 @@ class LaggedCovariance(StreamingEstimator, ProgressReporter, Loggable):
 
         Parameters
         ----------
-        xx : bool, optional, default=True
+        c00 : bool, optional, default=True
             compute instantaneous correlations over the first part of the data. If lag==0, use all of the data.
-        xy : bool, optional, default=False
+        c0t : bool, optional, default=False
             compute lagged correlations. Does not work with lag==0.
-        xx : bool, optional, default=False
+        ctt : bool, optional, default=False
             compute instantaneous correlations over the second part of the data. Does not work with lag==0.
         remove_constant_mean : ndarray(N,), optional, default=None
             substract a constant vector of mean values from time series.
@@ -64,7 +64,7 @@ class LaggedCovariance(StreamingEstimator, ProgressReporter, Loggable):
             If remove_data_mean=True, the mean will be removed in the input data, without creating an independent copy.
             This option is faster but should only be selected if the input data is not used elsewhere.
         lag : int, optional, default=0
-            lag time. Does not work with xy=True or yy=True.
+            lag time. Does not work with c0t=True or ctt=True.
         weights : trajectory weights.
             one of:
                 * None :    all frames have weight one.
@@ -82,15 +82,15 @@ class LaggedCovariance(StreamingEstimator, ProgressReporter, Loggable):
 
         super(LaggedCovariance, self).__init__(chunksize=chunksize)
 
-        if (xy or yy) and lag == 0:
-            raise ValueError("lag must be positive if xy=True or yy=True")
+        if (c0t or ctt) and lag == 0:
+            raise ValueError("lag must be positive if c0t=True or ctt=True")
         if is_float_vector(weights):
             weights = ensure_float_vector(weights)
         if remove_constant_mean is not None and remove_data_mean:
             raise ValueError('Subtracting the data mean and a constant vector simultaneously is not supported.')
         if remove_constant_mean is not None:
             remove_constant_mean = ensure_float_vector(remove_constant_mean)
-        self.set_params(xx=xx, xy=xy, yy=yy, remove_constant_mean=remove_constant_mean,
+        self.set_params(c00=c00, c0t=c0t, ctt=ctt, remove_constant_mean=remove_constant_mean,
                         remove_data_mean=remove_data_mean, reversible=reversible,
                         sparse_mode=sparse_mode, modify_data=modify_data, lag=lag,
                         bessel=bessel,
@@ -117,7 +117,7 @@ class LaggedCovariance(StreamingEstimator, ProgressReporter, Loggable):
                 self.nsave = nsave
         else: # in case we do a one shot estimation, we want to re-initialize running_covar
             self._logger.debug("using %s moments for %i chunks" % (nsave, n_chunks))
-            self._rc = running_covar(xx=self.xx, xy=self.xy, yy=self.yy,
+            self._rc = running_covar(xx=self.c00, xy=self.c0t, yy=self.ctt,
                                      remove_mean=self.remove_data_mean, symmetrize=self.reversible,
                                      sparse_mode=self.sparse_mode, modify_data=self.modify_data, nsave=nsave)
 
@@ -143,7 +143,7 @@ class LaggedCovariance(StreamingEstimator, ProgressReporter, Loggable):
 
         it = iterable.iterator(lag=self.lag, return_trajindex=False, stride=self.stride, skip=self.skip, chunk = self.chunksize if not partial_fit else 0)
 
-        # TODO: we could possibly optimize the case lag>0 and xy=False using skip.
+        # TODO: we could possibly optimize the case lag>0 and c0t=False using skip.
         # Access how much iterator hassle this would be.
         with it:
             self._progress_register(it.n_chunks, "calculate covariances", 0)
@@ -208,16 +208,16 @@ class LaggedCovariance(StreamingEstimator, ProgressReporter, Loggable):
 
     @property
     def nsave(self):
-        if self.xx:
+        if self.c00:
             return self._rc.storage_XX.nsave
-        elif self.xy:
+        elif self.c0t:
             return self._rc.storage_XY.nsave
 
     @nsave.setter
     def nsave(self, ns):
-        if self.xx:
+        if self.c00:
             if self._rc.storage_XX.nsave <= ns:
                 self._rc.storage_XX.nsave = ns
-        if self.xy:
+        if self.c0t:
             if self._rc.storage_XY.nsave <= ns:
                 self._rc.storage_XY.nsave = ns

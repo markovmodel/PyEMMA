@@ -74,8 +74,8 @@ class _KoopmanEstimator(StreamingEstimator):
 
         super(_KoopmanEstimator, self).__init__(chunksize=chunksize)
 
-        self._covar = LaggedCovariance(xx=True, xy=True, remove_data_mean=True, reversible=False,
-                                          lag=lag, bessel=False, stride=stride, skip=skip)
+        self._covar = LaggedCovariance(c00=True, c0t=True, remove_data_mean=True, reversible=False,
+                                       lag=lag, bessel=False, stride=stride, skip=skip)
 
         self.set_params(lag=lag, epsilon=epsilon, stride=stride, skip=skip)
         self._estimation_finished = False

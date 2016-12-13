@@ -150,8 +150,8 @@ class TICA(StreamingEstimationTransformer):
         if dim > -1:
             var_cutoff = 1.0
 
-        self._covar = LaggedCovariance(xx=True, xy=True, yy=False, remove_data_mean=True, reversible=reversible,
-                                          lag=lag, bessel=False, stride=stride, skip=skip, weights=weights)
+        self._covar = LaggedCovariance(c00=True, c0t=True, ctt=False, remove_data_mean=True, reversible=reversible,
+                                       lag=lag, bessel=False, stride=stride, skip=skip, weights=weights)
 
         # empty dummy model instance
         self._model = TICAModel()
