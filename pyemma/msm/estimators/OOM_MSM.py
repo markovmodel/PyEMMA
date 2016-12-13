@@ -2,21 +2,18 @@ import numpy as np
 import scipy.linalg as scl
 import scipy.sparse
 from variational.solvers.direct import sort_by_norm
-import msmtools.estimation as me
 
-def bootstrapping_count_matrix(dtrajs, lag, nstates, nbs=500):
+
+def bootstrapping_count_matrix(Ct, nbs=500):
     """
     Perform bootstrapping on trajectories to estimate uncertainties for singular values of count matrices.
 
     Parameters
     ----------
-    dtrajs : list of discrete trajectories
+    Ct : csr-matrix
+        count matrix of the data.
 
-    lag : int
-        the lag time for count matrix estimation
-    nstates : int
-        the number of states in the discrete trajectories.
-    nbs : int, optional, default=500
+    nbs : int, optional, default=1000
         the number of re-samplings to be drawn from dtrajs
 
     Returns
@@ -25,39 +22,31 @@ def bootstrapping_count_matrix(dtrajs, lag, nstates, nbs=500):
         mean values of singular values
     sdev : ndarray(N,)
         standard deviations of singular values
-    Ct : ndarray(N, N)
-        actual count matrix of the data
     """
-    # Reduce dtrajs by discarding last tau steps:
-    dtrajs_lag = [traj[:-lag] for traj in dtrajs]
-    ntraj = len(dtrajs)
-    # Estimate count matrices for all dtrajs:
-    C = np.zeros((ntraj, nstates, nstates), dtype=int)
-    for i in range(ntraj):
-        C[i, :, :] = me.count_matrix(dtrajs_lag[i], lag, sparse_return=False, nstates=nstates)
+    # Get the number of states:
+    N = Ct.shape[0]
+    # Get the number of transition pairs:
+    T = Ct.sum()
+    # Reshape and normalize the count matrix:
+    p = Ct.toarray()
+    p = np.reshape(p, (N*N,)).astype(np.float)
+    p = p / T
     # Perform the bootstrapping:
-    svals = np.zeros((nbs, nstates))
+    svals = np.zeros((nbs, N))
     for s in range(nbs):
         # Draw sample:
-        sel = np.random.choice(ntraj, ntraj, replace=True)
-        # Determine number of occurences of each traj:
-        uind, uc = np.unique(sel, return_counts=True)
-        ucount = np.zeros(ntraj, dtype=int)
-        ucount[uind] = uc
-        # Multiply each count matrix by its number of occurences and sum up:
-        sC = ucount[:, None, None] * C
-        sC = np.sum(sC, axis=0)
+        sel = np.random.multinomial(T, p)
+        # Compute the count-matrix:
+        sC = np.reshape(sel, (N, N))
         # Compute singular values:
         svals[s, :] = scl.svdvals(sC)
     # Compute mean and uncertainties:
     smean = np.mean(svals, axis=0)
     sdev = np.std(svals, axis=0)
-    # Compute the actual count matrix if needed:
-    Ct = me.count_matrix(dtrajs_lag, lag, sparse_return=False, nstates=nstates)
 
-    return smean, sdev, Ct
+    return smean, sdev
 
-def twostep_count_matrix(dtrajs, lag, nstates):
+def twostep_count_matrix(dtrajs, lag, N):
     """
     Compute all two-step count matrices from discrete trajectories.
 
@@ -67,7 +56,7 @@ def twostep_count_matrix(dtrajs, lag, nstates):
 
     lag : int
         the lag time for count matrix estimation
-    nstates : int
+    N : int
         the number of states in the discrete trajectories.
 
     Returns
@@ -90,9 +79,9 @@ def twostep_count_matrix(dtrajs, lag, nstates):
     state = np.concatenate(states)
     data = np.ones(row.size)
     # Transform the rows and cols into a single list with N*+2 possible values:
-    pair = nstates * row + col
+    pair = N * row + col
     # Estimate sparse matrix:
-    C2t = scipy.sparse.coo_matrix((data, (pair, state)), shape=(nstates*nstates, nstates))
+    C2t = scipy.sparse.coo_matrix((data, (pair, state)), shape=(N*N, N))
 
     return C2t.tocsc()
 
@@ -154,7 +143,7 @@ def oom_components(Ct, C2t, smean, sdev, tol=10.0):
     Xi_S = np.sum(Xi, axis=1)
     l, R = scl.eig(Xi_S.T)
     l, R = sort_by_norm(l, R)
-    omega = R[:, 0]
+    omega = np.real(R[:, 0])
     omega = omega / np.dot(omega, sigma)
 
     return Xi, omega, sigma, l
