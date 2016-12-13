@@ -322,7 +322,7 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
     from joblib import Parallel
     import joblib, mock, six
 
-    if six.PY34:
+    if False:#six.PY34:
         from multiprocessing import get_context
         try:
             ctx = get_context(method='forkserver')
