@@ -2,6 +2,7 @@ import numpy as np
 import scipy.linalg as scl
 import scipy.sparse
 from variational.solvers.direct import sort_by_norm
+import msmtools.estimation as me
 
 
 def bootstrapping_count_matrix(Ct, nbs=500):
@@ -85,7 +86,7 @@ def twostep_count_matrix(dtrajs, lag, N):
 
     return C2t.tocsc()
 
-def oom_components(Ct, C2t, smean, sdev, tol=10.0):
+def oom_components(Ct, C2t, smean, sdev, tol=10.0, lcc=None):
     """
     Compute OOM components and eigenvalues from count matrices:
 
@@ -101,6 +102,9 @@ def oom_components(Ct, C2t, smean, sdev, tol=10.0):
         standard errors of singular values for Ct
     tol : float, optional default
         accept singular values with signal-to-noise ratio >= tol
+    lcc : ndarray(N,)
+        largest connected set of the count-matrix. Two step count matrix
+        will be reduced to this set.
 
     Returns
     -------
@@ -116,7 +120,13 @@ def oom_components(Ct, C2t, smean, sdev, tol=10.0):
     # Determine signal-to-noise ratios of singular values:
     sratio = smean / sdev
     # Decompose count matrix by SVD:
-    V, s, W = scl.svd(Ct, full_matrices=False)
+    if lcc is not None:
+        Ct_svd = me.largest_connected_submatrix(Ct, lcc=lcc)
+        N1 = Ct.shape[0]
+        print N1
+    else:
+        Ct_svd = Ct
+    V, s, W = scl.svd(Ct_svd, full_matrices=False)
     # Make rank decision:
     ind = np.where(sratio >= tol)[0]
     V = V[:, ind]
@@ -128,16 +138,21 @@ def oom_components(Ct, C2t, smean, sdev, tol=10.0):
     F2 = np.dot(W, np.diag(s**-0.5))
 
     # Apply the transformations to C2t:
-    N = Ct.shape[0]
+    N = Ct_svd.shape[0]
     M = F1.shape[1]
     Xi = np.zeros((M, N, M))
     for n in range(N):
-        C2t_n = C2t[:, n].toarray()
-        C2t_n = np.reshape(C2t_n, (N, N))
+        if lcc is not None:
+            C2t_n = C2t[:, lcc[n]].toarray()
+            C2t_n = np.reshape(C2t_n, (N1, N1))
+            C2t_n = me.largest_connected_submatrix(C2t_n, lcc=lcc)
+        else:
+            C2t_n = C2t[:, n].toarray()
+            C2t_n = np.reshape(C2t_n, (N, N))
         Xi[:, n, :] = np.dot(F1.T, np.dot(C2t_n, F2))
 
     # Compute sigma:
-    c = np.sum(Ct, axis=1)
+    c = np.sum(Ct_svd, axis=1)
     sigma = np.dot(F1.T, c)
     # Compute omega and all eigenvalues:
     Xi_S = np.sum(Xi, axis=1)
