@@ -21,6 +21,7 @@ from six.moves import range
 
 import numpy as _np
 from msmtools import estimation as msmest
+import scipy.sparse as scs
 
 from pyemma.util.annotators import alias, aliased, fix_docs
 from pyemma.util.types import ensure_dtraj_list
@@ -29,6 +30,7 @@ from pyemma.msm.estimators._dtraj_stats import DiscreteTrajectoryStats as _Discr
 from pyemma.msm.models.msm import MSM as _MSM
 from pyemma.util.units import TimeUnit as _TimeUnit
 from pyemma.util import types as _types
+from pyemma.msm.estimators._OOM_MSM import *
 
 
 @fix_docs
@@ -887,3 +889,210 @@ class MaximumLikelihoodMSM(_EstimateMSM):
             w /= wtot
         # done
         return W
+
+
+@fix_docs
+@aliased
+class OOM_based_MSM(_EstimateMSM):
+    r"""OOM based estimator for MSMs given discrete trajectory statistics"""
+
+    def __init__(self, lag=1, reversible=True, count_mode='sliding', sparse=False, connectivity='largest',
+                 dt_traj='1 step', nbs=10000, tol_rank=10.0):
+        r"""Maximum likelihood estimator for MSMs given discrete trajectory statistics
+
+        Parameters
+        ----------
+        lag : int
+            lag time at which transitions are counted and the transition matrix is
+            estimated.
+
+        reversible : bool, optional, default = True
+            If true compute reversible MSM, else non-reversible MSM
+
+        count_mode : str, optional, default='sliding'
+            mode to obtain count matrices from discrete trajectories. Should be
+            one of:
+
+            * 'sliding' : A trajectory of length T will have :math:`T-tau` counts
+              at time indexes
+
+              .. math::
+
+                 (0 \rightarrow \tau), (1 \rightarrow \tau+1), ..., (T-\tau-1 \rightarrow T-1)
+            * 'sample' : A trajectory of length T will have :math:`T/tau` counts
+              at time indexes
+
+              .. math::
+
+                    (0 \rightarrow \tau), (\tau \rightarrow 2 \tau), ..., (((T/tau)-1) \tau \rightarrow T)
+
+        sparse : bool, optional, default = False
+            If true compute count matrix, transition matrix and all derived
+            quantities using sparse matrix algebra. In this case python sparse
+            matrices will be returned by the corresponding functions instead of
+            numpy arrays. This behavior is suggested for very large numbers of
+            states (e.g. > 4000) because it is likely to be much more efficient.
+        connectivity : str, optional, default = 'largest'
+            Connectivity mode. Three methods are intended (currently only 'largest'
+            is implemented)
+
+            * 'largest' : The active set is the largest reversibly connected set.
+              All estimation will be done on this subset and all quantities
+              (transition matrix, stationary distribution, etc) are only defined
+              on this subset and are correspondingly smaller than the full set
+              of states
+            * 'all' : The active set is the full set of states. Estimation will be
+              conducted on each reversibly connected set separately. That means
+              the transition matrix will decompose into disconnected submatrices,
+              the stationary vector is only defined within subsets, etc.
+              Currently not implemented.
+            * 'none' : The active set is the full set of states. Estimation will
+              be conducted on the full set of
+              states without ensuring connectivity. This only permits
+              nonreversible estimation. Currently not implemented.
+
+        dt_traj : str, optional, default='1 step'
+            Description of the physical time of the input trajectories. May be used
+            by analysis algorithms such as plotting tools to pretty-print the axes.
+            By default '1 step', i.e. there is no physical time unit. Specify by a
+            number, whitespace and unit. Permitted units are (* is an arbitrary
+            string):
+
+            |  'fs',  'femtosecond*'
+            |  'ps',  'picosecond*'
+            |  'ns',  'nanosecond*'
+            |  'us',  'microsecond*'
+            |  'ms',  'millisecond*'
+            |  's',   'second*'
+
+        nbs : int, optional, default=10000
+            number of re-samplings for rank decision in OOM estimation.
+
+        tol_rank: float, optional, default = 10.0
+            signal-to-noise threshold for rank decision.
+
+        """
+        # Check count mode:
+        self.count_mode = str(count_mode).lower()
+        if self.count_mode not in ('sliding', 'sample'):
+            raise ValueError('count mode ' + count_mode + ' is unknown. Only \'sliding\' and \'sample\' are allowed.')
+
+        super(OOM_based_MSM, self).__init__(lag=lag, reversible=reversible, count_mode=count_mode, sparse=sparse,
+                                            connectivity=connectivity, dt_traj=dt_traj)
+        self.nbs = nbs
+        self.tol_rank = tol_rank
+
+    def _estimate(self, dtrajs):
+        # ensure right format
+        dtrajs = ensure_dtraj_list(dtrajs)
+        # remove last lag steps from dtrajs:
+        dtrajs_lag = [traj[:-self.lag] for traj in dtrajs]
+        # compute and store discrete trajectory statistics
+        dtrajstats = _DiscreteTrajectoryStats(dtrajs_lag)
+        # check if this MSM seems too large to be dense
+        if dtrajstats.nstates > 4000 and not self.sparse:
+            self.logger.warning('Building a dense MSM with ' + str(dtrajstats.nstates) + ' states. This can be '
+                              'inefficient or unfeasible in terms of both runtime and memory consumption. '
+                              'Consider using sparse=True.')
+
+        # count lagged
+        dtrajstats.count_lagged(self.lag, count_mode=self.count_mode)
+
+        # full count matrix and number of states
+        self._C_full = dtrajstats.count_matrix()
+        self._nstates_full = self._C_full.shape[0]
+
+        # set active set. This is at the same time a mapping from active to full
+        if self.connectivity == 'largest':
+            self.active_set = dtrajstats.largest_connected_set
+        else:
+            raise NotImplementedError('OOM based MSM estimation is only implemented for connectivity=\'largest\'.')
+
+        # FIXME: setting is_estimated before so that we can start using the parameters just set, but this is not clean!
+        # is estimated
+        self._is_estimated = True
+
+        # if active set is empty, we can't do anything.
+        if _np.size(self.active_set) == 0:
+            raise RuntimeError('Active set is empty. Cannot estimate MSM.')
+
+        # active count matrix and number of states
+        self._C_active = dtrajstats.count_matrix(subset=self.active_set)
+        self._nstates = self._C_active.shape[0]
+
+        # computed derived quantities
+        # back-mapping from full to lcs
+        self._full2active = -1 * _np.ones((dtrajstats.nstates), dtype=int)
+        self._full2active[self.active_set] = _np.arange(len(self.active_set))
+
+        # Estimate transition matrix
+        if self.connectivity == 'largest':
+            # Re-sampling:
+            smean, sdev = bootstrapping_count_matrix(self._C_active, nbs=self.nbs)
+            # Estimate two step count matrices:
+            C2t = twostep_count_matrix(dtrajs, self.lag, self._nstates_full)
+            # Estimate OOM components:
+            Xi, omega, sigma, l = oom_components(self._C_full, C2t, smean, sdev, self.active_set, tol_svd=self.tol_rank)
+            # Compute transition matrix:
+            P = equilibrium_transition_matrix(Xi, omega, sigma, reversible=self.reversible)
+        else:
+            raise NotImplementedError('OOM based MSM estimation is only implemented for connectivity=\'largest\'.')
+
+        # continue sparse or dense?
+        if not self.sparse:
+            # converting count matrices to arrays. As a result the
+            # transition matrix and all subsequent properties will be
+            # computed using dense arrays and dense matrix algebra.
+            self._C_full = self._C_full.toarray()
+            self._C_active = self._C_active.toarray()
+        if self.sparse:
+            P = scs.csr_matrix(P)
+
+        # Done. We set our own model parameters, so this estimator is
+        # equal to the estimated model.
+        self._dtrajs_full = dtrajs
+        self._connected_sets = msmest.connected_sets(self._C_full)
+        self._Xi = Xi
+        self._omega = omega
+        self._sigma = sigma
+        self._eigenvalues_OOM = l
+        self.set_model_params(P=P, pi=None, reversible=self.reversible,
+                              dt_model=self.timestep_traj.get_scaled(self.lag))
+
+        return self
+
+    @property
+    def eigenvalues_OOM(self):
+        """
+            System eigenvalues estimated by OOM.
+
+        """
+        self._check_is_estimated()
+        return self._eigenvalues_OOM
+
+    @property
+    def OOM_components(self):
+        """
+            Return OOM components.
+
+        """
+        self._check_is_estimated()
+        return self._Xi
+
+    @property
+    def OOM_omega(self):
+        """
+            Return OOM initial state vector.
+
+        """
+        self._check_is_estimated()
+        return self._omega
+
+    @property
+    def OOM_sigma(self):
+        """
+            Return OOM evaluator vector.
+
+        """
+        self._check_is_estimated()
+        return self._sigma

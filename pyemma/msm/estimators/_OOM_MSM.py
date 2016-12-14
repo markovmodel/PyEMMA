@@ -4,6 +4,9 @@ import scipy.sparse
 from variational.solvers.direct import sort_by_norm
 import msmtools.estimation as me
 
+__all__ = ['bootstrapping_count_matrix', 'twostep_count_matrix',
+           'oom_components', 'equilibrium_transition_matrix']
+
 
 def bootstrapping_count_matrix(Ct, nbs=500):
     """
@@ -124,8 +127,8 @@ def oom_components(Ct, C2t, smean, sdev, lcc=None, tol_svd=10.0, tol_one=1e-2):
     # Decompose count matrix by SVD:
     if lcc is not None:
         Ct_svd = me.largest_connected_submatrix(Ct, lcc=lcc)
+        Ct_svd = Ct_svd.toarray()
         N1 = Ct.shape[0]
-        print N1
     else:
         Ct_svd = Ct
     V, s, W = scl.svd(Ct_svd, full_matrices=False)
@@ -170,7 +173,7 @@ def oom_components(Ct, C2t, smean, sdev, lcc=None, tol_svd=10.0, tol_one=1e-2):
 
     return Xi, omega, sigma, l
 
-def equilibrium_transition_matrix(Xi, omega, sigma):
+def equilibrium_transition_matrix(Xi, omega, sigma, reversible=True):
     """
     Compute equilibrium transition matrix from OOM components:
 
@@ -182,6 +185,9 @@ def equilibrium_transition_matrix(Xi, omega, sigma):
         information state vector of OOM
     sigma : ndarray(M,)
         evaluator of OOM
+    reversible : bool, optional, default=True
+        symmetrize corrected count matrix in order to obtain
+        a reversible transition matrix.
 
     Returns
     -------
@@ -194,8 +200,11 @@ def equilibrium_transition_matrix(Xi, omega, sigma):
     Ct_Eq[Ct_Eq < 0.0] = 0.0
     # Compute transition matrix after symmetrization:
     pi_r = np.sum(Ct_Eq, axis=0)
-    pi_c = np.sum(Ct_Eq, axis=1)
-    pi_sym = np.dot(np.diag(pi_r + pi_c), np.ones(Ct_Eq.shape))
-    Tt_Eq = (Ct_Eq + Ct_Eq.T) / pi_sym
+    if reversible:
+        pi_c = np.sum(Ct_Eq, axis=1)
+        pi_sym = pi_r + pi_c
+        Tt_Eq = (Ct_Eq + Ct_Eq.T) / pi_sym[:, None]
+    else:
+        Tt_Eq = Ct_Eq / pi_r[:, None]
 
     return Tt_Eq
