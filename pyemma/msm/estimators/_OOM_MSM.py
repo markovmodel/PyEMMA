@@ -86,7 +86,7 @@ def twostep_count_matrix(dtrajs, lag, N):
 
     return C2t.tocsc()
 
-def oom_components(Ct, C2t, smean, sdev, tol=10.0, lcc=None):
+def oom_components(Ct, C2t, smean, sdev, lcc=None, tol_svd=10.0, tol_one=1e-2):
     """
     Compute OOM components and eigenvalues from count matrices:
 
@@ -100,11 +100,13 @@ def oom_components(Ct, C2t, smean, sdev, tol=10.0, lcc=None):
         mean values of singular values for Ct
     sdev : ndarray(N,)
         standard errors of singular values for Ct
-    tol : float, optional default
-        accept singular values with signal-to-noise ratio >= tol
     lcc : ndarray(N,)
         largest connected set of the count-matrix. Two step count matrix
         will be reduced to this set.
+    tol_svd : float, optional default=10
+        accept singular values with signal-to-noise ratio >= tol_svd
+    tol_one : float, optiona, default=1e-2
+        keep eigenvalues of absolute value less or equal 1+tol_one.
 
     Returns
     -------
@@ -128,7 +130,7 @@ def oom_components(Ct, C2t, smean, sdev, tol=10.0, lcc=None):
         Ct_svd = Ct
     V, s, W = scl.svd(Ct_svd, full_matrices=False)
     # Make rank decision:
-    ind = np.where(sratio >= tol)[0]
+    ind = np.where(sratio >= tol_svd)[0]
     V = V[:, ind]
     s = s[ind]
     W = W[ind, :].T
@@ -154,9 +156,14 @@ def oom_components(Ct, C2t, smean, sdev, tol=10.0, lcc=None):
     # Compute sigma:
     c = np.sum(Ct_svd, axis=1)
     sigma = np.dot(F1.T, c)
-    # Compute omega and all eigenvalues:
+    # Compute eigenvalues:
     Xi_S = np.sum(Xi, axis=1)
     l, R = scl.eig(Xi_S.T)
+    # Restrict eigenvalues to reasonable range:
+    ind = np.where(np.logical_and(np.abs(l) <= (1+tol_one), np.real(l) >= 0.0))[0]
+    l = l[ind]
+    R = R[:, ind]
+    # Sort and extract omega
     l, R = sort_by_norm(l, R)
     omega = np.real(R[:, 0])
     omega = omega / np.dot(omega, sigma)

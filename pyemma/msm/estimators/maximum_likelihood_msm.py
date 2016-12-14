@@ -33,13 +33,11 @@ from pyemma.util import types as _types
 
 @fix_docs
 @aliased
-class MaximumLikelihoodMSM(_Estimator, _MSM):
-    r"""Maximum likelihood estimator for MSMs given discrete trajectory statistics"""
+class _EstimateMSM(_Estimator, _MSM):
+    r"""Base class for different MSM estimators given discrete trajectory statistics"""
 
-    def __init__(self, lag=1, reversible=True, statdist_constraint=None,
-                 count_mode='sliding', sparse=False,
-                 connectivity='largest', dt_traj='1 step', maxiter=1000000,
-                 maxerr=1e-8):
+    def __init__(self, lag=1, reversible=True, count_mode='sliding', sparse=False,
+                 connectivity='largest', dt_traj='1 step'):
         r"""Maximum likelihood estimator for MSMs given discrete trajectory statistics
 
         Parameters
@@ -50,12 +48,6 @@ class MaximumLikelihoodMSM(_Estimator, _MSM):
 
         reversible : bool, optional, default = True
             If true compute reversible MSM, else non-reversible MSM
-
-        statdist : (M,) ndarray, optional
-            Stationary vector on the full set of states. Estimation will be
-            made such the the resulting transition matrix has this distribution
-            as an equilibrium distribution. Set probabilities to zero if these
-            states should be excluded from the analysis.
 
         count_mode : str, optional, default='sliding'
             mode to obtain count matrices from discrete trajectories. Should be
@@ -117,27 +109,11 @@ class MaximumLikelihoodMSM(_Estimator, _MSM):
             |  'ms',  'millisecond*'
             |  's',   'second*'
 
-        maxiter: int, optioanl, default = 1000000
-            Optional parameter with reversible = True. maximum number of iterations
-            before the transition matrix estimation method exits
-        maxerr : float, optional, default = 1e-8
-            Optional parameter with reversible = True.
-            convergence tolerance for transition matrix estimation.
-            This specifies the maximum change of the Euclidean norm of relative
-            stationary probabilities (:math:`x_i = \sum_k x_{ik}`). The relative
-            stationary probability changes
-            :math:`e_i = (x_i^{(1)} - x_i^{(2)})/(x_i^{(1)} + x_i^{(2)})` are used
-            in order to track changes in small probabilities. The Euclidean norm
-            of the change vector, :math:`|e_i|_2`, is compared to maxerr.
-
         """
         self.lag = lag
 
         # set basic parameters
         self.reversible = reversible
-        self.statdist_constraint = _types.ensure_ndarray_or_None(statdist_constraint, ndim=None, kind='numeric')
-        if self.statdist_constraint is not None:  # renormalize
-            self.statdist_constraint /= self.statdist_constraint.sum()
 
         # sparse matrix computation wanted?
         self.sparse = sparse
@@ -162,36 +138,6 @@ class MaximumLikelihoodMSM(_Estimator, _MSM):
         self.dt_traj = dt_traj
         self.timestep_traj = _TimeUnit(dt_traj)
 
-        # convergence parameters
-        self.maxiter = maxiter
-        self.maxerr = maxerr
-
-    def _prepare_input_revpi(self, C, pi):
-        """Max. state index visited by trajectories"""
-        nC = C.shape[0]
-        """Max. state index of the stationary vector array"""
-        npi = pi.shape[0]
-        """pi has to be defined on all states visited by the trajectories"""
-        if nC > npi:
-            errstr="""There are visited states for which no stationary
-            probability is given"""
-            raise ValueError(errstr)
-        """Reduce pi to the 'visited set'"""
-        pi_visited = pi[0:nC]
-        """Find visited states with positive stationary probabilities"""
-        pos = _np.where(pi_visited > 0.0)[0]
-        """Reduce C to positive probability states"""
-        C_pos = msmest.connected_cmatrix(C, lcc=pos)
-        if C_pos.sum() == 0.0:
-            errstr = """The set of states with positive stationary
-            probabilities is not visited by the trajectories. A MSM
-            reversible with respect to the given stationary vector can
-            not be estimated"""
-            raise ValueError(errstr)
-        """Compute largest connected set of C_pos, undirected connectivity"""
-        lcc = msmest.largest_connected_set(C_pos, directed=False)
-        return pos[lcc]
-
     def estimate(self, dtrajs, **parms):
         """
         Parameters
@@ -207,103 +153,7 @@ class MaximumLikelihoodMSM(_Estimator, _MSM):
         MSM : :class:`pyemma.msm.MaximumlikelihoodMSM`
 
         """
-        return super(MaximumLikelihoodMSM, self).estimate(dtrajs, **parms)
-
-    def _estimate(self, dtrajs):
-        # ensure right format
-        dtrajs = ensure_dtraj_list(dtrajs)
-        # harvest discrete statistics
-        if isinstance(dtrajs, _DiscreteTrajectoryStats):
-            dtrajstats = dtrajs
-        else:
-            # compute and store discrete trajectory statistics
-            dtrajstats = _DiscreteTrajectoryStats(dtrajs)
-            # check if this MSM seems too large to be dense
-            if dtrajstats.nstates > 4000 and not self.sparse:
-                self.logger.warning('Building a dense MSM with ' + str(dtrajstats.nstates) + ' states. This can be '
-                                  'inefficient or unfeasible in terms of both runtime and memory consumption. '
-                                  'Consider using sparse=True.')
-
-        # count lagged
-        dtrajstats.count_lagged(self.lag, count_mode=self.count_mode)
-
-        # full count matrix and number of states
-        self._C_full = dtrajstats.count_matrix()
-        self._nstates_full = self._C_full.shape[0]
-
-        # set active set. This is at the same time a mapping from active to full
-        if self.connectivity == 'largest':
-            if self.statdist_constraint is None:
-                # statdist not given - full connectivity on all states
-                self.active_set = dtrajstats.largest_connected_set
-            else:
-                active_set = self._prepare_input_revpi(self._C_full,
-                                                       self.statdist_constraint)
-                self.active_set = active_set
-        else:
-            # for 'None' and 'all' all visited states are active
-            self.active_set = dtrajstats.visited_set
-
-        # FIXME: setting is_estimated before so that we can start using the parameters just set, but this is not clean!
-        # is estimated
-        self._is_estimated = True
-
-        # if active set is empty, we can't do anything.
-        if _np.size(self.active_set) == 0:
-            raise RuntimeError('Active set is empty. Cannot estimate MSM.')
-
-        # active count matrix and number of states
-        self._C_active = dtrajstats.count_matrix(subset=self.active_set)
-        self._nstates = self._C_active.shape[0]
-
-        # computed derived quantities
-        # back-mapping from full to lcs
-        self._full2active = -1 * _np.ones((dtrajstats.nstates), dtype=int)
-        self._full2active[self.active_set] = _np.arange(len(self.active_set))
-
-        # restrict stationary distribution to active set
-        if self.statdist_constraint is None:
-            statdist_active = None
-        else:
-            statdist_active = self.statdist_constraint[self.active_set]
-            statdist_active /= statdist_active.sum()  # renormalize
-
-        # Estimate transition matrix
-        if self.connectivity == 'largest':
-            P = msmest.transition_matrix(self._C_active, reversible=self.reversible,
-                                         mu=statdist_active, maxiter=self.maxiter,
-                                         maxerr=self.maxerr)
-        elif self.connectivity == 'none':
-            # reversible mode only possible if active set is connected
-            # - in this case all visited states are connected and thus
-            # this mode is identical to 'largest'
-            if self.reversible and not msmest.is_connected(self._C_active):
-                raise ValueError('Reversible MSM estimation is not possible with connectivity mode "none", '
-                                 'because the set of all visited states is not reversibly connected')
-            P = msmest.transition_matrix(self._C_active, reversible=self.reversible,
-                                         mu=statdist_active,
-                                         maxiter=self.maxiter, maxerr=self.maxerr)
-        else:
-            raise NotImplementedError(
-                'MSM estimation with connectivity=%s is currently not implemented.' % self.connectivity)
-
-        # continue sparse or dense?
-        if not self.sparse:
-            # converting count matrices to arrays. As a result the
-            # transition matrix and all subsequent properties will be
-            # computed using dense arrays and dense matrix algebra.
-            self._C_full = self._C_full.toarray()
-            self._C_active = self._C_active.toarray()
-            P = P.toarray()
-
-        # Done. We set our own model parameters, so this estimator is
-        # equal to the estimated model.
-        self._dtrajs_full = dtrajs
-        self._connected_sets = msmest.connected_sets(self._C_full)
-        self.set_model_params(P=P, pi=statdist_active, reversible=self.reversible,
-                              dt_model=self.timestep_traj.get_scaled(self.lag))
-
-        return self
+        return super(_EstimateMSM, self).estimate(dtrajs, **parms)
 
     def _check_is_estimated(self):
         assert self._is_estimated, 'You tried to access model parameters before estimating it - run estimate first!'
@@ -413,27 +263,6 @@ class MaximumLikelihoodMSM(_Estimator, _MSM):
         self._check_is_estimated()
         return self._C_active
 
-    # TODO: change to statistically effective count matrix!
-    @property
-    def effective_count_matrix(self):
-        """Statistically uncorrelated transition counts within the active set of states
-
-        You can use this count matrix for Bayesian estimation or error perturbation.
-
-        References
-        ----------
-        [1] Noe, F. (2015) Statistical inefficiency of Markov model count matrices
-            http://publications.mi.fu-berlin.de/1699/1/autocorrelation_counts.pdf
-
-        """
-        self._check_is_estimated()
-        import msmtools.estimation as msmest
-        Ceff_full = msmest.effective_count_matrix(self._dtrajs_full, self.lag)
-        from pyemma.util.linalg import submatrix
-        Ceff = submatrix(Ceff_full, self.active_set)
-        return Ceff
-        # return self._C_active / float(self.lag)
-
     @property
     def count_matrix_full(self):
         """
@@ -472,76 +301,6 @@ class MaximumLikelihoodMSM(_Estimator, _MSM):
         hist = count_states(self._dtrajs_full)
         hist_active = hist[self.active_set]
         return float(_np.sum(hist_active)) / float(_np.sum(hist))
-
-    ################################################################################
-    # For general statistics
-    ################################################################################
-
-    def trajectory_weights(self):
-        r"""Uses the MSM to assign a probability weight to each trajectory frame.
-
-        This is a powerful function for the calculation of arbitrary observables in the trajectories one has
-        started the analysis with. The stationary probability of the MSM will be used to reweigh all states.
-        Returns a list of weight arrays, one for each trajectory, and with a number of elements equal to
-        trajectory frames. Given :math:`N` trajectories of lengths :math:`T_1` to :math:`T_N`, this function
-        returns corresponding weights:
-
-        .. math::
-
-            (w_{1,1}, ..., w_{1,T_1}), (w_{N,1}, ..., w_{N,T_N})
-
-        that are normalized to one:
-
-        .. math::
-
-            \sum_{i=1}^N \sum_{t=1}^{T_i} w_{i,t} = 1
-
-        Suppose you are interested in computing the expectation value of a function :math:`a(x)`, where :math:`x`
-        are your input configurations. Use this function to compute the weights of all input configurations and
-        obtain the estimated expectation by:
-
-        .. math::
-
-            \langle a \rangle = \sum_{i=1}^N \sum_{t=1}^{T_i} w_{i,t} a(x_{i,t})
-
-        Or if you are interested in computing the time-lagged correlation between functions :math:`a(x)` and
-        :math:`b(x)` you could do:
-
-        .. math::
-
-            \langle a(t) b(t+\tau) \rangle_t = \sum_{i=1}^N \sum_{t=1}^{T_i} w_{i,t} a(x_{i,t}) a(x_{i,t+\tau})
-
-
-        Returns
-        -------
-        weights : list of ndarray
-            The normalized trajectory weights. Given :math:`N` trajectories of lengths :math:`T_1` to :math:`T_N`,
-            returns the corresponding weights:
-
-            .. math::
-
-                (w_{1,1}, ..., w_{1,T_1}), (w_{N,1}, ..., w_{N,T_N})
-
-        """
-        self._check_is_estimated()
-        # compute stationary distribution, expanded to full set
-        statdist_full = _np.zeros([self._nstates_full])
-        statdist_full[self.active_set] = self.stationary_distribution
-        # histogram observed states
-        import msmtools.dtraj as msmtraj
-        hist = 1.0 * msmtraj.count_states(self.discrete_trajectories_full)
-        # simply read off stationary distribution and accumulate total weight
-        W = []
-        wtot = 0.0
-        for dtraj in self.discrete_trajectories_full:
-            w = statdist_full[dtraj] / hist[dtraj]
-            W.append(w)
-            wtot += _np.sum(w)
-        # normalize
-        for w in W:
-            w /= wtot
-        # done
-        return W
 
     ################################################################################
     # Generation of trajectories and samples
@@ -803,3 +562,328 @@ class MaximumLikelihoodMSM(_Estimator, _MSM):
                                         n_jobs=n_jobs, err_est=err_est, show_progress=show_progress)
         ck.estimate(self._dtrajs_full)
         return ck
+
+
+@fix_docs
+@aliased
+class MaximumLikelihoodMSM(_EstimateMSM):
+    r"""Maximum likelihood estimator for MSMs given discrete trajectory statistics"""
+
+    def __init__(self, lag=1, reversible=True, statdist_constraint=None,
+                 count_mode='sliding', sparse=False,
+                 connectivity='largest', dt_traj='1 step', maxiter=1000000,
+                 maxerr=1e-8):
+        r"""Maximum likelihood estimator for MSMs given discrete trajectory statistics
+
+        Parameters
+        ----------
+        lag : int
+            lag time at which transitions are counted and the transition matrix is
+            estimated.
+
+        reversible : bool, optional, default = True
+            If true compute reversible MSM, else non-reversible MSM
+
+        statdist : (M,) ndarray, optional
+            Stationary vector on the full set of states. Estimation will be
+            made such the the resulting transition matrix has this distribution
+            as an equilibrium distribution. Set probabilities to zero if these
+            states should be excluded from the analysis.
+
+        count_mode : str, optional, default='sliding'
+            mode to obtain count matrices from discrete trajectories. Should be
+            one of:
+
+            * 'sliding' : A trajectory of length T will have :math:`T-tau` counts
+              at time indexes
+
+              .. math::
+
+                 (0 \rightarrow \tau), (1 \rightarrow \tau+1), ..., (T-\tau-1 \rightarrow T-1)
+
+            * 'effective' : Uses an estimate of the transition counts that are
+              statistically uncorrelated. Recommended when used with a
+              Bayesian MSM.
+            * 'sample' : A trajectory of length T will have :math:`T/tau` counts
+              at time indexes
+
+              .. math::
+
+                    (0 \rightarrow \tau), (\tau \rightarrow 2 \tau), ..., (((T/tau)-1) \tau \rightarrow T)
+
+        sparse : bool, optional, default = False
+            If true compute count matrix, transition matrix and all derived
+            quantities using sparse matrix algebra. In this case python sparse
+            matrices will be returned by the corresponding functions instead of
+            numpy arrays. This behavior is suggested for very large numbers of
+            states (e.g. > 4000) because it is likely to be much more efficient.
+        connectivity : str, optional, default = 'largest'
+            Connectivity mode. Three methods are intended (currently only 'largest'
+            is implemented)
+
+            * 'largest' : The active set is the largest reversibly connected set.
+              All estimation will be done on this subset and all quantities
+              (transition matrix, stationary distribution, etc) are only defined
+              on this subset and are correspondingly smaller than the full set
+              of states
+            * 'all' : The active set is the full set of states. Estimation will be
+              conducted on each reversibly connected set separately. That means
+              the transition matrix will decompose into disconnected submatrices,
+              the stationary vector is only defined within subsets, etc.
+              Currently not implemented.
+            * 'none' : The active set is the full set of states. Estimation will
+              be conducted on the full set of
+              states without ensuring connectivity. This only permits
+              nonreversible estimation. Currently not implemented.
+
+        dt_traj : str, optional, default='1 step'
+            Description of the physical time of the input trajectories. May be used
+            by analysis algorithms such as plotting tools to pretty-print the axes.
+            By default '1 step', i.e. there is no physical time unit. Specify by a
+            number, whitespace and unit. Permitted units are (* is an arbitrary
+            string):
+
+            |  'fs',  'femtosecond*'
+            |  'ps',  'picosecond*'
+            |  'ns',  'nanosecond*'
+            |  'us',  'microsecond*'
+            |  'ms',  'millisecond*'
+            |  's',   'second*'
+
+        maxiter: int, optioanl, default = 1000000
+            Optional parameter with reversible = True. maximum number of iterations
+            before the transition matrix estimation method exits
+        maxerr : float, optional, default = 1e-8
+            Optional parameter with reversible = True.
+            convergence tolerance for transition matrix estimation.
+            This specifies the maximum change of the Euclidean norm of relative
+            stationary probabilities (:math:`x_i = \sum_k x_{ik}`). The relative
+            stationary probability changes
+            :math:`e_i = (x_i^{(1)} - x_i^{(2)})/(x_i^{(1)} + x_i^{(2)})` are used
+            in order to track changes in small probabilities. The Euclidean norm
+            of the change vector, :math:`|e_i|_2`, is compared to maxerr.
+
+        """
+        super(MaximumLikelihoodMSM, self).__init__(lag=lag, reversible=reversible, count_mode=count_mode,
+                                                   sparse=sparse, connectivity=connectivity, dt_traj=dt_traj)
+        
+        self.statdist_constraint = _types.ensure_ndarray_or_None(statdist_constraint, ndim=None, kind='numeric')
+        if self.statdist_constraint is not None:  # renormalize
+            self.statdist_constraint /= self.statdist_constraint.sum()
+
+        # convergence parameters
+        self.maxiter = maxiter
+        self.maxerr = maxerr
+
+    def _prepare_input_revpi(self, C, pi):
+        """Max. state index visited by trajectories"""
+        nC = C.shape[0]
+        """Max. state index of the stationary vector array"""
+        npi = pi.shape[0]
+        """pi has to be defined on all states visited by the trajectories"""
+        if nC > npi:
+            errstr="""There are visited states for which no stationary
+            probability is given"""
+            raise ValueError(errstr)
+        """Reduce pi to the 'visited set'"""
+        pi_visited = pi[0:nC]
+        """Find visited states with positive stationary probabilities"""
+        pos = _np.where(pi_visited > 0.0)[0]
+        """Reduce C to positive probability states"""
+        C_pos = msmest.connected_cmatrix(C, lcc=pos)
+        if C_pos.sum() == 0.0:
+            errstr = """The set of states with positive stationary
+            probabilities is not visited by the trajectories. A MSM
+            reversible with respect to the given stationary vector can
+            not be estimated"""
+            raise ValueError(errstr)
+        """Compute largest connected set of C_pos, undirected connectivity"""
+        lcc = msmest.largest_connected_set(C_pos, directed=False)
+        return pos[lcc]
+
+    def _estimate(self, dtrajs):
+        # ensure right format
+        dtrajs = ensure_dtraj_list(dtrajs)
+        # harvest discrete statistics
+        if isinstance(dtrajs, _DiscreteTrajectoryStats):
+            dtrajstats = dtrajs
+        else:
+            # compute and store discrete trajectory statistics
+            dtrajstats = _DiscreteTrajectoryStats(dtrajs)
+            # check if this MSM seems too large to be dense
+            if dtrajstats.nstates > 4000 and not self.sparse:
+                self.logger.warning('Building a dense MSM with ' + str(dtrajstats.nstates) + ' states. This can be '
+                                  'inefficient or unfeasible in terms of both runtime and memory consumption. '
+                                  'Consider using sparse=True.')
+
+        # count lagged
+        dtrajstats.count_lagged(self.lag, count_mode=self.count_mode)
+
+        # full count matrix and number of states
+        self._C_full = dtrajstats.count_matrix()
+        self._nstates_full = self._C_full.shape[0]
+
+        # set active set. This is at the same time a mapping from active to full
+        if self.connectivity == 'largest':
+            if self.statdist_constraint is None:
+                # statdist not given - full connectivity on all states
+                self.active_set = dtrajstats.largest_connected_set
+            else:
+                active_set = self._prepare_input_revpi(self._C_full,
+                                                       self.statdist_constraint)
+                self.active_set = active_set
+        else:
+            # for 'None' and 'all' all visited states are active
+            self.active_set = dtrajstats.visited_set
+
+        # FIXME: setting is_estimated before so that we can start using the parameters just set, but this is not clean!
+        # is estimated
+        self._is_estimated = True
+
+        # if active set is empty, we can't do anything.
+        if _np.size(self.active_set) == 0:
+            raise RuntimeError('Active set is empty. Cannot estimate MSM.')
+
+        # active count matrix and number of states
+        self._C_active = dtrajstats.count_matrix(subset=self.active_set)
+        self._nstates = self._C_active.shape[0]
+
+        # computed derived quantities
+        # back-mapping from full to lcs
+        self._full2active = -1 * _np.ones((dtrajstats.nstates), dtype=int)
+        self._full2active[self.active_set] = _np.arange(len(self.active_set))
+
+        # restrict stationary distribution to active set
+        if self.statdist_constraint is None:
+            statdist_active = None
+        else:
+            statdist_active = self.statdist_constraint[self.active_set]
+            statdist_active /= statdist_active.sum()  # renormalize
+
+        # Estimate transition matrix
+        if self.connectivity == 'largest':
+            P = msmest.transition_matrix(self._C_active, reversible=self.reversible,
+                                         mu=statdist_active, maxiter=self.maxiter,
+                                         maxerr=self.maxerr)
+        elif self.connectivity == 'none':
+            # reversible mode only possible if active set is connected
+            # - in this case all visited states are connected and thus
+            # this mode is identical to 'largest'
+            if self.reversible and not msmest.is_connected(self._C_active):
+                raise ValueError('Reversible MSM estimation is not possible with connectivity mode "none", '
+                                 'because the set of all visited states is not reversibly connected')
+            P = msmest.transition_matrix(self._C_active, reversible=self.reversible,
+                                         mu=statdist_active,
+                                         maxiter=self.maxiter, maxerr=self.maxerr)
+        else:
+            raise NotImplementedError(
+                'MSM estimation with connectivity=%s is currently not implemented.' % self.connectivity)
+
+        # continue sparse or dense?
+        if not self.sparse:
+            # converting count matrices to arrays. As a result the
+            # transition matrix and all subsequent properties will be
+            # computed using dense arrays and dense matrix algebra.
+            self._C_full = self._C_full.toarray()
+            self._C_active = self._C_active.toarray()
+            P = P.toarray()
+
+        # Done. We set our own model parameters, so this estimator is
+        # equal to the estimated model.
+        self._dtrajs_full = dtrajs
+        self._connected_sets = msmest.connected_sets(self._C_full)
+        self.set_model_params(P=P, pi=statdist_active, reversible=self.reversible,
+                              dt_model=self.timestep_traj.get_scaled(self.lag))
+
+        return self
+
+    # TODO: change to statistically effective count matrix!
+    @property
+    def effective_count_matrix(self):
+        """Statistically uncorrelated transition counts within the active set of states
+
+        You can use this count matrix for Bayesian estimation or error perturbation.
+
+        References
+        ----------
+        [1] Noe, F. (2015) Statistical inefficiency of Markov model count matrices
+            http://publications.mi.fu-berlin.de/1699/1/autocorrelation_counts.pdf
+
+        """
+        self._check_is_estimated()
+        import msmtools.estimation as msmest
+        Ceff_full = msmest.effective_count_matrix(self._dtrajs_full, self.lag)
+        from pyemma.util.linalg import submatrix
+        Ceff = submatrix(Ceff_full, self.active_set)
+        return Ceff
+        # return self._C_active / float(self.lag)
+
+        ################################################################################
+    # For general statistics
+    ################################################################################
+
+    def trajectory_weights(self):
+        r"""Uses the MSM to assign a probability weight to each trajectory frame.
+
+        This is a powerful function for the calculation of arbitrary observables in the trajectories one has
+        started the analysis with. The stationary probability of the MSM will be used to reweigh all states.
+        Returns a list of weight arrays, one for each trajectory, and with a number of elements equal to
+        trajectory frames. Given :math:`N` trajectories of lengths :math:`T_1` to :math:`T_N`, this function
+        returns corresponding weights:
+
+        .. math::
+
+            (w_{1,1}, ..., w_{1,T_1}), (w_{N,1}, ..., w_{N,T_N})
+
+        that are normalized to one:
+
+        .. math::
+
+            \sum_{i=1}^N \sum_{t=1}^{T_i} w_{i,t} = 1
+
+        Suppose you are interested in computing the expectation value of a function :math:`a(x)`, where :math:`x`
+        are your input configurations. Use this function to compute the weights of all input configurations and
+        obtain the estimated expectation by:
+
+        .. math::
+
+            \langle a \rangle = \sum_{i=1}^N \sum_{t=1}^{T_i} w_{i,t} a(x_{i,t})
+
+        Or if you are interested in computing the time-lagged correlation between functions :math:`a(x)` and
+        :math:`b(x)` you could do:
+
+        .. math::
+
+            \langle a(t) b(t+\tau) \rangle_t = \sum_{i=1}^N \sum_{t=1}^{T_i} w_{i,t} a(x_{i,t}) a(x_{i,t+\tau})
+
+
+        Returns
+        -------
+        weights : list of ndarray
+            The normalized trajectory weights. Given :math:`N` trajectories of lengths :math:`T_1` to :math:`T_N`,
+            returns the corresponding weights:
+
+            .. math::
+
+                (w_{1,1}, ..., w_{1,T_1}), (w_{N,1}, ..., w_{N,T_N})
+
+        """
+        self._check_is_estimated()
+        # compute stationary distribution, expanded to full set
+        statdist_full = _np.zeros([self._nstates_full])
+        statdist_full[self.active_set] = self.stationary_distribution
+        # histogram observed states
+        import msmtools.dtraj as msmtraj
+        hist = 1.0 * msmtraj.count_states(self.discrete_trajectories_full)
+        # simply read off stationary distribution and accumulate total weight
+        W = []
+        wtot = 0.0
+        for dtraj in self.discrete_trajectories_full:
+            w = statdist_full[dtraj] / hist[dtraj]
+            W.append(w)
+            wtot += _np.sum(w)
+        # normalize
+        for w in W:
+            w /= wtot
+        # done
+        return W
