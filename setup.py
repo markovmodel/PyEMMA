@@ -112,7 +112,7 @@ def extensions():
                   ],
                   libraries=[lib_prefix+'theobald'],
                   library_dirs=[mdtraj.capi()['lib_dir']],
-                  extra_compile_args=['-std=c99', '-g', '-O3', '-pg'])
+                  extra_compile_args=['-std=c99', '-g', '-O3'])
     kmeans_module = \
         Extension('pyemma.coordinates.clustering.kmeans_clustering',
                   sources=[
