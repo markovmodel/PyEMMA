@@ -31,6 +31,7 @@ from pyemma.msm.models.msm import MSM as _MSM
 from pyemma.util.units import TimeUnit as _TimeUnit
 from pyemma.util import types as _types
 from pyemma.msm.estimators._OOM_MSM import *
+import warnings
 
 
 @fix_docs
@@ -1038,6 +1039,17 @@ class OOM_based_MSM(_EstimateMSM):
         else:
             raise NotImplementedError('OOM based MSM estimation is only implemented for connectivity=\'largest\'.')
 
+        # Check if connectivity changed by re-estimation of count-matrix:
+        lcc_new = msmest.largest_connected_set(P)
+        # Update active set and derived quantities:
+        if lcc_new.size < self._nstates:
+            self._active_set = self._active_set[lcc_new]
+            self._C_active = dtrajstats.count_matrix(subset=self.active_set)
+            self._nstates = self._C_active.shape[0]
+            self._full2active = -1 * _np.ones((dtrajstats.nstates), dtype=int)
+            self._full2active[self.active_set] = _np.arange(len(self.active_set))
+            warnings.warn("Caution: Re-estimation of count matrix resulted in reduction of the active set.")
+
         # continue sparse or dense?
         if not self.sparse:
             # converting count matrices to arrays. As a result the
@@ -1056,6 +1068,8 @@ class OOM_based_MSM(_EstimateMSM):
         self._omega = omega
         self._sigma = sigma
         self._eigenvalues_OOM = l
+        self._oom_rank = self._sigma.size
+        self._C2t = C2t
         self.set_model_params(P=P, pi=None, reversible=self.reversible,
                               dt_model=self.timestep_traj.get_scaled(self.lag))
 
@@ -1069,6 +1083,24 @@ class OOM_based_MSM(_EstimateMSM):
         """
         self._check_is_estimated()
         return self._eigenvalues_OOM
+
+    @property
+    def timescales_OOM(self):
+        """
+            System timescales estimated by OOM.
+
+        """
+        self._check_is_estimated()
+        return -self.lag / _np.log(_np.abs(self._eigenvalues_OOM[1:]))
+
+    @property
+    def OOM_rank(self):
+        """
+            Return OOM model rank.
+
+        """
+        self._check_is_estimated()
+        return self._oom_rank
 
     @property
     def OOM_components(self):

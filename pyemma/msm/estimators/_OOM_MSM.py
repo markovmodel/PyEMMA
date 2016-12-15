@@ -203,8 +203,14 @@ def equilibrium_transition_matrix(Xi, omega, sigma, reversible=True):
     if reversible:
         pi_c = np.sum(Ct_Eq, axis=1)
         pi_sym = pi_r + pi_c
+        # Avoid zero row-sums. States with zero row-sums will be eliminated by active set update.
+        ind0 = np.where(pi_sym == 0.0)[0]
+        pi_sym[ind0] = 1.0
         Tt_Eq = (Ct_Eq + Ct_Eq.T) / pi_sym[:, None]
     else:
+        # Avoid zero row-sums. States with zero row-sums will be eliminated by active set update.
+        ind0 = np.where(pi_r == 0.0)[0]
+        pi_r[ind0] = 1.0
         Tt_Eq = Ct_Eq / pi_r[:, None]
 
     return Tt_Eq
