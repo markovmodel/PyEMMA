@@ -17,7 +17,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import
-from six.moves import range
 
 import numpy as _np
 from msmtools import estimation as msmest
@@ -1032,15 +1031,19 @@ class OOM_based_MSM(_EstimateMSM):
             smean, sdev = bootstrapping_count_matrix(self._C_active, nbs=self.nbs)
             # Estimate two step count matrices:
             C2t = twostep_count_matrix(dtrajs, self.lag, self._nstates_full)
+            # Rank decision:
+            rank_ind = rank_decision(smean, sdev, tol=self.tol_rank)
             # Estimate OOM components:
-            Xi, omega, sigma, l = oom_components(self._C_full, C2t, smean, sdev, self.active_set, tol_svd=self.tol_rank)
+            if self.sparse:
+                Xi, omega, sigma, l = oom_components(self._C_full.toarray(), C2t, rank_ind=rank_ind,
+                                                     lcc=self.active_set)
+            else:
+                Xi, omega, sigma, l = oom_components(self._C_full, C2t, rank_ind=rank_ind, lcc=self.active_set)
             # Compute transition matrix:
-            P = equilibrium_transition_matrix(Xi, omega, sigma, reversible=self.reversible)
+            P, lcc_new = equilibrium_transition_matrix(Xi, omega, sigma, reversible=self.reversible)
         else:
             raise NotImplementedError('OOM based MSM estimation is only implemented for connectivity=\'largest\'.')
 
-        # Check if connectivity changed by re-estimation of count-matrix:
-        lcc_new = msmest.largest_connected_set(P)
         # Update active set and derived quantities:
         if lcc_new.size < self._nstates:
             self._active_set = self._active_set[lcc_new]
@@ -1068,6 +1071,7 @@ class OOM_based_MSM(_EstimateMSM):
         self._omega = omega
         self._sigma = sigma
         self._eigenvalues_OOM = l
+        self._rank_ind = rank_ind
         self._oom_rank = self._sigma.size
         self._C2t = C2t
         self.set_model_params(P=P, pi=None, reversible=self.reversible,

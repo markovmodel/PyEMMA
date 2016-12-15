@@ -4,7 +4,7 @@ import scipy.sparse
 from variational.solvers.direct import sort_by_norm
 import msmtools.estimation as me
 
-__all__ = ['bootstrapping_count_matrix', 'twostep_count_matrix',
+__all__ = ['bootstrapping_count_matrix', 'twostep_count_matrix', 'rank_decision',
            'oom_components', 'equilibrium_transition_matrix']
 
 
@@ -89,7 +89,32 @@ def twostep_count_matrix(dtrajs, lag, N):
 
     return C2t.tocsc()
 
-def oom_components(Ct, C2t, smean, sdev, lcc=None, tol_svd=10.0, tol_one=1e-2):
+def rank_decision(smean, sdev, tol=10.0):
+    """
+    Rank decision based on uncertainties of singular values.
+
+    Parameters
+    ----------
+    smean : ndarray(N,)
+        mean values of singular values for Ct
+    sdev : ndarray(N,)
+        standard errors of singular values for Ct
+    tol : float, optional default=10.0
+        accept singular values with signal-to-noise ratio >= tol_svd
+
+    Returns
+    -------
+    ind : ndarray(N, dtype=bool)
+        indicates which singular values are accepted.
+
+    """
+    # Determine signal-to-noise ratios of singular values:
+    sratio = smean / sdev
+    # Return Boolean array of accepted singular values:
+    return sratio >= tol
+
+
+def oom_components(Ct, C2t, rank_ind=None, lcc=None, tol_one=1e-2):
     """
     Compute OOM components and eigenvalues from count matrices:
 
@@ -99,15 +124,12 @@ def oom_components(Ct, C2t, smean, sdev, lcc=None, tol_svd=10.0, tol_one=1e-2):
         count matrix from data
     C2t : sparse csc-matrix (N, N, N)
         two-step count matrix from data for all states
-    smean : ndarray(N,)
-        mean values of singular values for Ct
-    sdev : ndarray(N,)
-        standard errors of singular values for Ct
+    rank_ind : ndarray(N, dtype=bool), optional, default=None
+        indicates which singular values are accepted. By default, all non-
+        zero singular values are accepted.
     lcc : ndarray(N,)
         largest connected set of the count-matrix. Two step count matrix
         will be reduced to this set.
-    tol_svd : float, optional default=10
-        accept singular values with signal-to-noise ratio >= tol_svd
     tol_one : float, optiona, default=1e-2
         keep eigenvalues of absolute value less or equal 1+tol_one.
 
@@ -122,8 +144,6 @@ def oom_components(Ct, C2t, smean, sdev, lcc=None, tol_svd=10.0, tol_one=1e-2):
     l : ndarray(M,)
         eigenvalues from OOM
     """
-    # Determine signal-to-noise ratios of singular values:
-    sratio = smean / sdev
     # Decompose count matrix by SVD:
     if lcc is not None:
         Ct_svd = me.largest_connected_submatrix(Ct, lcc=lcc)
@@ -133,10 +153,11 @@ def oom_components(Ct, C2t, smean, sdev, lcc=None, tol_svd=10.0, tol_one=1e-2):
         Ct_svd = Ct
     V, s, W = scl.svd(Ct_svd, full_matrices=False)
     # Make rank decision:
-    ind = np.where(sratio >= tol_svd)[0]
-    V = V[:, ind]
-    s = s[ind]
-    W = W[ind, :].T
+    if rank_ind is None:
+        ind = (s >= np.finfo(float).eps)
+    V = V[:, rank_ind]
+    s = s[rank_ind]
+    W = W[rank_ind, :].T
 
     # Compute transformations:
     F1 = np.dot(V, np.diag(s**-0.5))
@@ -173,7 +194,7 @@ def oom_components(Ct, C2t, smean, sdev, lcc=None, tol_svd=10.0, tol_one=1e-2):
 
     return Xi, omega, sigma, l
 
-def equilibrium_transition_matrix(Xi, omega, sigma, reversible=True):
+def equilibrium_transition_matrix(Xi, omega, sigma, reversible=True, return_lcc=True):
     """
     Compute equilibrium transition matrix from OOM components:
 
@@ -188,11 +209,15 @@ def equilibrium_transition_matrix(Xi, omega, sigma, reversible=True):
     reversible : bool, optional, default=True
         symmetrize corrected count matrix in order to obtain
         a reversible transition matrix.
+    return_lcc: bool, optional, default=True
+        return indices of largest connected set.
 
     Returns
     -------
     Tt_Eq : ndarray(N, N)
         equilibrium transition matrix
+    lcc : ndarray(M,)
+        the largest connected set of the transition matrix.
     """
     # Compute equilibrium transition matrix:
     Ct_Eq = np.einsum('j,jkl,lmn,n->km', omega, Xi, Xi, sigma)
@@ -213,4 +238,11 @@ def equilibrium_transition_matrix(Xi, omega, sigma, reversible=True):
         pi_r[ind0] = 1.0
         Tt_Eq = Ct_Eq / pi_r[:, None]
 
-    return Tt_Eq
+    # Perform active set update:
+    lcc = me.largest_connected_set(Tt_Eq)
+    Tt_Eq = me.largest_connected_submatrix(Tt_Eq, lcc=lcc)
+
+    if return_lcc:
+        return Tt_Eq, lcc
+    else:
+        return Tt_Eq
