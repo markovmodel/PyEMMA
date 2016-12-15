@@ -1,6 +1,7 @@
 language: c 
 git:
   submodules: false
+  depth: 250
 os:
  - osx
  - linux

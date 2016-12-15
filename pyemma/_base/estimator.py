@@ -18,6 +18,8 @@
 
 from __future__ import absolute_import, print_function
 
+import warnings
+
 from six.moves import range
 import inspect, sys
 
@@ -282,81 +284,34 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
     if evaluate is not None and evaluate_args is not None and len(evaluate) != len(evaluate_args):
         raise ValueError("length mismatch: evaluate ({}) and evaluate_args ({})".format(len(evaluate), len(evaluate_args)))
 
-    # set call back for joblib
-    if progress_reporter is not None and show_progress:
-        progress_reporter._progress_register(len(estimators), stage=0,
-                                             description="estimating %s" % str(estimator.__class__.__name__))
+    if sys.platform == 'win32':
+        warnings.warn("n_jobs currently unsupported under windows.")
+        n_jobs = 1
 
-        if n_jobs > 1:
-            try:
-                from joblib.parallel import BatchCompletionCallBack
-                batch_comp_call_back = True
-            except ImportError:
-                from joblib.parallel import CallBack as BatchCompletionCallBack
-                batch_comp_call_back = False
-
-            class CallBack(BatchCompletionCallBack):
-                def __init__(self, *args, **kw):
-                    self.reporter = progress_reporter
-                    super(CallBack, self).__init__(*args, **kw)
-
-                def __call__(self, *args, **kw):
-                    self.reporter._progress_update(1, stage=0)
-                    super(CallBack, self).__call__(*args, **kw)
-
-            import joblib.parallel
-            if batch_comp_call_back:
-                joblib.parallel.BatchCompletionCallBack = CallBack
-            else:
-                joblib.parallel.CallBack = CallBack
-        else:
-            def _print(msg, msg_args):
-                # NOTE: this is a ugly hack, because if we only use one job,
-                # we do not get the joblib callback interface, as a workaround
-                # we use the Parallel._print function, which is called with
-                # msg_args = (done_jobs, total_jobs)
-                if len(msg_args) == 2:
-                    progress_reporter._progress_update(1, stage=0)
-
-    # iterate over parameter settings
-    from joblib import Parallel
-    import joblib, mock, six
-
-    if six.PY34:
-        from multiprocessing import get_context
-        try:
-            ctx = get_context(method='forkserver')
-        except ValueError:  # forkserver NA
-            try:
-                # this is slower in creation, but will not use as much memory!
-                ctx = get_context(method='spawn')
-            except ValueError:
-                ctx = get_context(None)
-                print("WARNING: using default multiprocessing start method {}. "
-                      "This could potentially lead to memory issues.".format(ctx))
-
-        with mock.patch('joblib.parallel.DEFAULT_MP_CONTEXT', ctx):
-            pool = Parallel(n_jobs=n_jobs)
-    else:
-        pool = Parallel(n_jobs=n_jobs)
-
-    if progress_reporter is not None and n_jobs == 1:
-        pool._print = _print
-        # NOTE: verbose has to be set, otherwise our print hack does not work.
-        pool.verbose = 50
+    from .parallel import _register_progress_bar
+    _register_progress_bar(show_progress, N=len(estimators),
+                           description="estimating %s" % str(estimator.__class__.__name__),
+                           progress_reporter=progress_reporter, n_jobs=n_jobs)
 
     if n_jobs > 1:
-        # if n_jobs=1 don't invoke the pool, but directly dispatch the iterator
-        task_iter = (joblib.delayed(_estimate_param_scan_worker)(estimators[i],
-                                                                 param_sets[i], X,
+        # iterate over parameter settings
+        import joblib
+        task_iter = (joblib.delayed(_estimate_param_scan_worker)(estimator,
+                                                                 param_set, X,
                                                                  evaluate,
                                                                  evaluate_args,
                                                                  failfast,
                                                                  )
-                     for i in range(len(param_sets)))
+                     for estimator, param_set in zip(estimators, param_sets))
 
         # container for model or function evaluations
-        res = pool(task_iter)
+        from .parallel import _init_pool
+        pool = _init_pool(n_jobs)
+        assert pool
+        # the ctx manager will close and remove the processes, so we have to start new ones every time...
+        with pool:
+            res = pool(task_iter)
+    # if n_jobs=1 don't invoke the pool, but directly dispatch the iterator
     else:
         res = []
         for i, param in enumerate(param_sets):
