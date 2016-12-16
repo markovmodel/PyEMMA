@@ -1,7 +1,7 @@
 import numpy as np
 import scipy.linalg as scl
 import scipy.sparse
-from variational.solvers.direct import sort_by_norm
+from pyemma._ext.variational.solvers.direct import sort_by_norm
 import msmtools.estimation as me
 
 __all__ = ['bootstrapping_count_matrix', 'twostep_count_matrix', 'rank_decision',
