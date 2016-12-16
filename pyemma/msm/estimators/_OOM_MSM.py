@@ -223,9 +223,9 @@ def equilibrium_transition_matrix(Xi, omega, sigma, reversible=True, return_lcc=
     # Remove negative entries:
     Ct_Eq[Ct_Eq < 0.0] = 0.0
     # Compute transition matrix after symmetrization:
-    pi_r = np.sum(Ct_Eq, axis=0)
+    pi_r = np.sum(Ct_Eq, axis=1)
     if reversible:
-        pi_c = np.sum(Ct_Eq, axis=1)
+        pi_c = np.sum(Ct_Eq, axis=0)
         pi_sym = pi_r + pi_c
         # Avoid zero row-sums. States with zero row-sums will be eliminated by active set update.
         ind0 = np.where(pi_sym == 0.0)[0]
