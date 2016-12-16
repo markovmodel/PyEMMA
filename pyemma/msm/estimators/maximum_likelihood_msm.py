@@ -1034,11 +1034,8 @@ class OOM_based_MSM(_EstimateMSM):
             # Rank decision:
             rank_ind = rank_decision(smean, sdev, tol=self.tol_rank)
             # Estimate OOM components:
-            if self.sparse:
-                Xi, omega, sigma, l = oom_components(self._C_full.toarray(), C2t, rank_ind=rank_ind,
-                                                     lcc=self.active_set)
-            else:
-                Xi, omega, sigma, l = oom_components(self._C_full, C2t, rank_ind=rank_ind, lcc=self.active_set)
+            Xi, omega, sigma, l = oom_components(self._C_full.toarray(), C2t, rank_ind=rank_ind,
+                                                 lcc=self.active_set)
             # Compute transition matrix:
             P, lcc_new = equilibrium_transition_matrix(Xi, omega, sigma, reversible=self.reversible)
         else:
@@ -1060,8 +1057,6 @@ class OOM_based_MSM(_EstimateMSM):
             # computed using dense arrays and dense matrix algebra.
             self._C_full = self._C_full.toarray()
             self._C_active = self._C_active.toarray()
-        if self.sparse:
-            P = scs.csr_matrix(P)
 
         # Done. We set our own model parameters, so this estimator is
         # equal to the estimated model.

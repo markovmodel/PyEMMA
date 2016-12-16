@@ -147,7 +147,6 @@ def oom_components(Ct, C2t, rank_ind=None, lcc=None, tol_one=1e-2):
     # Decompose count matrix by SVD:
     if lcc is not None:
         Ct_svd = me.largest_connected_submatrix(Ct, lcc=lcc)
-        Ct_svd = Ct_svd.toarray()
         N1 = Ct.shape[0]
     else:
         Ct_svd = Ct
