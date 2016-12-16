@@ -32,6 +32,9 @@ from msmtools.analysis import timescales
 from pyemma.msm.api import timescales_msm
 from six.moves import range
 
+import sys
+on_win = sys.platform == 'win32'
+
 
 class TestITS_MSM(unittest.TestCase):
     def setUp(self):
@@ -124,6 +127,7 @@ class TestITS_MSM(unittest.TestCase):
         np.testing.assert_array_less(est, t2 + 2.0)
         np.testing.assert_array_less(t2 - 2.0, est)
 
+    @unittest.skipIf(on_win, "known to fail for pytest issue")
     def test_2_parallel(self):
         t2 = timescales(self.P2)[1]
         lags = [1, 2, 3, 4, 5]
