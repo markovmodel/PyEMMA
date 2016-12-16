@@ -284,10 +284,6 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
     if evaluate is not None and evaluate_args is not None and len(evaluate) != len(evaluate_args):
         raise ValueError("length mismatch: evaluate ({}) and evaluate_args ({})".format(len(evaluate), len(evaluate_args)))
 
-    if sys.platform == 'win32':
-        warnings.warn("n_jobs currently unsupported under windows.")
-        n_jobs = 1
-
     if progress_reporter is not None:
         from .parallel import _register_progress_bar
         _register_progress_bar(show_progress, N=len(estimators),
