@@ -1,7 +1,7 @@
 import numpy as np
 import scipy.linalg as scl
 import scipy.sparse
-from pyemma._ext.variational.solvers.direct import sort_by_norm
+from pyemma.util.linalg import _sort_by_norm
 import msmtools.estimation as me
 
 __all__ = ['bootstrapping_count_matrix', 'twostep_count_matrix', 'rank_decision',
@@ -187,7 +187,7 @@ def oom_components(Ct, C2t, rank_ind=None, lcc=None, tol_one=1e-2):
     l = l[ind]
     R = R[:, ind]
     # Sort and extract omega
-    l, R = sort_by_norm(l, R)
+    l, R = _sort_by_norm(l, R)
     omega = np.real(R[:, 0])
     omega = omega / np.dot(omega, sigma)
 

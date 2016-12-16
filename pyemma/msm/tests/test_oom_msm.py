@@ -32,7 +32,7 @@ import pkg_resources
 
 from pyemma.msm.estimators import OOM_based_MSM
 from pyemma.msm import markov_model
-from pyemma._ext.variational.solvers.direct import sort_by_norm
+from pyemma.util.linalg import _sort_by_norm
 import msmtools.estimation as msmest
 from six.moves import range
 
@@ -58,7 +58,7 @@ def oom_transformations(Ct, C2t, rank):
     sigma = np.dot(F1.T, c)
     # Compute information state:
     l, R = scl.eig(Xi_full.T)
-    l, R = sort_by_norm(l, R)
+    l, R = _sort_by_norm(l, R)
     omega = np.real(R[:, 0])
     omega = omega / np.dot(omega, sigma)
 
