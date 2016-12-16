@@ -87,7 +87,7 @@ class TestMSMFiveState(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # Load the data:
-        data = np.load(pkg_resources.resource_filename(__name__, "data/TestData_OOM_MSM.npz"))
+        data = np.load(pkg_resources.resource_filename('pyemma.msm.tests', "data/TestData_OOM_MSM.npz"))
         cls.dtrajs = [data['arr_%d'%k] for k in range(1000)]
 
         # Number of states:
@@ -443,7 +443,7 @@ class TestMSM_Incomplete(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # Load the data:
-        data = np.load(pkg_resources.resource_filename(__name__, "data/TestData_OOM_MSM.npz"))
+        data = np.load(pkg_resources.resource_filename('pyemma.msm.tests', "data/TestData_OOM_MSM.npz"))
         indices = np.array([21, 25, 30, 40, 66, 72, 74, 91, 116, 158, 171, 175, 201, 239, 246, 280, 300, 301, 310, 318,
                             322, 323, 339, 352, 365, 368, 407, 412, 444, 475, 486, 494, 510, 529, 560, 617, 623, 637,
                             676, 689, 728, 731, 778, 780, 811, 828, 838, 845, 851, 859, 868, 874, 895, 933, 935, 938,
