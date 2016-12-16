@@ -50,6 +50,7 @@ __all__ = ['featurizer',  # IO
            'save_trajs',
            'pca',  # transform
            'tica',
+           'koopman',
            'cluster_regspace',  # cluster
            'cluster_kmeans',
            'cluster_mini_batch_kmeans',
@@ -1164,6 +1165,188 @@ def tica(data=None, lag=10, dim=-1, var_cutoff=0.95, kinetic_map=True, commute_m
     res = TICA(lag, dim=dim, var_cutoff=var_cutoff, kinetic_map=kinetic_map, commute_map=commute_map,
                mean=mean, remove_mean=remove_mean, skip=skip)
     return _param_stage(data, res, stride=stride)
+
+
+def koopman(data=None, lag=10, eq=False, dim=-1, var_cutoff=0.95, kinetic_map=False, stride=1, skip=0):
+    r""" Time-lagged independent component analysis (TICA).
+
+    TICA is a linear transformation method. In contrast to PCA, which finds
+    coordinates of maximal variance, TICA finds coordinates of maximal
+    autocorrelation at the given lag time. Therefore, TICA is useful in order
+    to find the *slow* components in a dataset and thus an excellent choice to
+    transform molecular dynamics data before clustering data for the
+    construction of a Markov model. When the input data is the result of a
+    Markov process (such as thermostatted molecular dynamics), TICA finds in
+    fact an approximation to the eigenfunctions and eigenvalues of the
+    underlying Markov operator [1]_.
+
+    It estimates a TICA transformation from *data*. When input data is given as
+    an argument, the estimation will be carried out straight away, and the
+    resulting object can be used to obtain eigenvalues, eigenvectors or project
+    input data onto the slowest TICA components. If no data is given, this
+    object is an empty estimator and can be put into a :func:`pipeline` in
+    order to use TICA in the streaming mode.
+
+    Parameters
+    ----------
+    data : ndarray (T, d) or list of ndarray (T_i, d) or a reader created by
+        source function array with the data, if available. When given, the TICA
+        transformation is immediately computed and can be used to transform data.
+
+    lag : int, optional, default = 10
+        the lag time, in multiples of the input time step
+
+    dim : int, optional, default -1
+        the number of dimensions (independent components) to project onto. A
+        call to the :func:`map <pyemma.coordinates.transform.TICA.map>` function
+        reduces the d-dimensional input to only dim dimensions such that the
+        data preserves the maximum possible autocorrelation amongst
+        dim-dimensional linear projections. -1 means all numerically available
+        dimensions will be used unless reduced by var_cutoff.
+        Setting dim to a positive value is exclusive with var_cutoff.
+
+    var_cutoff : float in the range [0,1], optional, default 0.95
+        Determines the number of output dimensions by including dimensions
+        until their cumulative kinetic variance exceeds the fraction
+        subspace_variance. var_cutoff=1.0 means all numerically available
+        dimensions (see epsilon) will be used, unless set by dim. Setting
+        var_cutoff smaller than 1.0 is exclusive with dim
+
+    kinetic_map : bool, optional, default True
+        Eigenvectors will be scaled by eigenvalues. As a result, Euclidean
+        distances in the transformed data approximate kinetic distances [4]_.
+        This is a good choice when the data is further processed by clustering.
+
+    stride : int, optional, default = 1
+        If set to 1, all input data will be used for estimation. Note that this
+        could cause this calculation to be very slow for large data sets. Since
+        molecular dynamics data is usually correlated at short timescales, it is
+        often sufficient to estimate transformations at a longer stride. Note
+        that the stride option in the get_output() function of the returned
+        object is independent, so you can parametrize at a long stride, and
+        still map all frames through the transformer.
+
+    force_eigenvalues_le_one : boolean, deprecated (eigenvalues are always <= 1, since 2.1)
+        Compute covariance matrix and time-lagged covariance matrix such
+        that the generalized eigenvalues are always guaranteed to be <= 1.
+
+    mean : ndarray, optional, default None
+        This option is deprecated, and setting this value is non-effective.
+
+    remove_mean: bool, optional, default True
+        remove mean during covariance estimation. Should not be turned off.
+
+    skip : int, default=0
+        skip the first initial n frames per trajectory.
+
+    Returns
+    -------
+    tica : a :class:`TICA <pyemma.coordinates.transform.TICA>` transformation object
+        Object for time-lagged independent component (TICA) analysis.
+        it contains TICA eigenvalues and eigenvectors, and the projection of
+        input data to the dominant TICA
+
+
+    Notes
+    -----
+    Given a sequence of multivariate data :math:`X_t`, it computes the
+    mean-free covariance and time-lagged covariance matrix:
+
+    .. math::
+
+        C_0 &=      (X_t - \mu)^T (X_t - \mu) \\
+        C_{\tau} &= (X_t - \mu)^T (X_t + \tau - \mu)
+
+    and solves the eigenvalue problem
+
+    .. math:: C_{\tau} r_i = C_0 \lambda_i r_i,
+
+    where :math:`r_i` are the independent components and :math:`\lambda_i` are
+    their respective normalized time-autocorrelations. The eigenvalues are
+    related to the relaxation timescale by
+
+    .. math::
+
+        t_i = -\frac{\tau}{\ln |\lambda_i|}.
+
+    When used as a dimension reduction method, the input data is projected
+    onto the dominant independent components.
+
+    TICA was originally introduced for signal processing in [2]_. It was
+    introduced to molecular dynamics and as a method for the construction
+    of Markov models in [1]_ and [3]_. It was shown in [1]_ that when applied
+    to molecular dynamics data, TICA is an approximation to the eigenvalues
+    and eigenvectors of the true underlying dynamics.
+
+    Examples
+    --------
+    Invoke TICA transformation with a given lag time and output dimension:
+
+    >>> import numpy as np
+    >>> from pyemma.coordinates import tica
+    >>> data = np.random.random((100,3))
+    >>> projected_data = tica(data, lag=2, dim=1).get_output()[0]
+
+    For a brief explaination why TICA outperforms PCA to extract a good reaction
+    coordinate have a look `here
+    <http://docs.markovmodel.org/lecture_tica.html#Example:-TICA-versus-PCA-in-a-stretched-double-well-potential>`_.
+
+    See also
+    --------
+    :class:`TICA <pyemma.coordinates.transform.TICA>` : tica object
+
+    :func:`pca <pyemma.coordinates.pca>` : for principal component analysis
+
+
+    .. autoclass:: pyemma.coordinates.transform.tica.TICA
+        :members:
+        :undoc-members:
+
+        .. rubric:: Methods
+
+        .. autoautosummary:: pyemma.coordinates.transform.tica.TICA
+           :methods:
+
+        .. rubric:: Attributes
+
+        .. autoautosummary:: pyemma.coordinates.transform.tica.TICA
+            :attributes:
+
+    References
+    ----------
+
+    .. [1] Perez-Hernandez G, F Paul, T Giorgino, G De Fabritiis and F Noe. 2013.
+       Identification of slow molecular order parameters for Markov model construction
+       J. Chem. Phys. 139, 015102. doi:10.1063/1.4811489
+
+    .. [2] L. Molgedey and H. G. Schuster. 1994.
+       Separation of a mixture of independent signals using time delayed correlations
+       Phys. Rev. Lett. 72, 3634.
+
+    .. [3] Schwantes C, V S Pande. 2013.
+       Improvements in Markov State Model Construction Reveal Many Non-Native Interactions in the Folding of NTL9
+       J. Chem. Theory. Comput. 9, 2000-2009. doi:10.1021/ct300878a
+
+    .. [4] Noe, F. and C. Clementi. 2015.
+        Kinetic distance and kinetic maps from molecular dynamics simulation
+        (in preparation).
+
+    """
+    from pyemma.coordinates.transform.tica_koopman import Koopman, EquilibriumKoopman
+
+    if eq == False and (var_cutoff != 0.95 or kinetic_map == True):
+        import warnings
+        warnings.warn("Variance cutoff or kinetic map have no effect for non-equilibrium estimation.")
+    if eq == False:
+        res = Koopman(lag, dim=dim, skip=skip)
+        return _param_stage(data, res, stride=stride)
+    else:
+        res1 = Koopman(lag, dim=dim, skip=skip)
+        res2 = EquilibriumKoopman(lag, res1, var_cutoff=var_cutoff, kinetic_map=kinetic_map,
+                                  dim=dim, skip=skip)
+        _param_stage(data, res1, stride=stride)
+        return _param_stage(data, res2, stride=stride)
+
 
 
 # =========================================================================
