@@ -21,15 +21,13 @@ from __future__ import absolute_import
 
 import math
 
-from pyemma._base.model import Model
-from pyemma._base.progress.reporter import ProgressReporter
-from pyemma.coordinates.transform.transformer import StreamingTransformer
-from pyemma.util.annotators import fix_docs
-from pyemma.util.reflection import get_default_args
-
-from pyemma._ext.variational.running_moments import running_covar
 import numpy as np
 from decorator import decorator
+from pyemma._base.model import Model
+from pyemma._ext.variational.running_moments import running_covar
+from pyemma.coordinates.data._base.transformer import StreamingEstimationTransformer
+from pyemma.util.annotators import fix_docs
+from pyemma.util.reflection import get_default_args
 
 
 __all__ = ['PCA']
@@ -52,7 +50,7 @@ class PCAModel(Model):
 
 
 @fix_docs
-class PCA(StreamingTransformer, ProgressReporter):
+class PCA(StreamingEstimationTransformer):
     r""" Principal component analysis."""
 
     def __init__(self, dim=-1, var_cutoff=0.95, mean=None, stride=1, skip=0):
