@@ -288,10 +288,11 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
         warnings.warn("n_jobs currently unsupported under windows.")
         n_jobs = 1
 
-    from .parallel import _register_progress_bar
-    _register_progress_bar(show_progress, N=len(estimators),
-                           description="estimating %s" % str(estimator.__class__.__name__),
-                           progress_reporter=progress_reporter, n_jobs=n_jobs)
+    if progress_reporter is not None:
+        from .parallel import _register_progress_bar
+        _register_progress_bar(show_progress, N=len(estimators),
+                               description="estimating %s" % str(estimator.__class__.__name__),
+                               progress_reporter=progress_reporter, n_jobs=n_jobs)
 
     if n_jobs > 1:
         # iterate over parameter settings
@@ -304,7 +305,6 @@ def estimate_param_scan(estimator, X, param_sets, evaluate=None, evaluate_args=N
                                                                  )
                      for estimator, param_set in zip(estimators, param_sets))
 
-        # container for model or function evaluations
         from .parallel import _init_pool
         pool = _init_pool(n_jobs)
         assert pool
