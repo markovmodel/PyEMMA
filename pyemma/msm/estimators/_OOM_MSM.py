@@ -122,15 +122,16 @@ def oom_components(Ct, C2t, rank_ind=None, lcc=None, tol_one=1e-2):
     ----------
     Ct : ndarray(N, N)
         count matrix from data
-    C2t : sparse csc-matrix (N, N, N)
-        two-step count matrix from data for all states
+    C2t : sparse csc-matrix (N*N, N)
+        two-step count matrix from data for all states, columns enumerate
+        intermediate steps.
     rank_ind : ndarray(N, dtype=bool), optional, default=None
         indicates which singular values are accepted. By default, all non-
         zero singular values are accepted.
-    lcc : ndarray(N,)
+    lcc : ndarray(N,), optional, default=None
         largest connected set of the count-matrix. Two step count matrix
         will be reduced to this set.
-    tol_one : float, optiona, default=1e-2
+    tol_one : float, optional, default=1e-2
         keep eigenvalues of absolute value less or equal 1+tol_one.
 
     Returns
@@ -168,13 +169,13 @@ def oom_components(Ct, C2t, rank_ind=None, lcc=None, tol_one=1e-2):
     Xi = np.zeros((M, N, M))
     for n in range(N):
         if lcc is not None:
-            C2t_n = C2t[:, lcc[n]].toarray()
-            C2t_n = np.reshape(C2t_n, (N1, N1))
+            C2t_n = C2t[:, lcc[n]]
+            C2t_n = _reshape_sparse(C2t_n, (N1, N1))
             C2t_n = me.largest_connected_submatrix(C2t_n, lcc=lcc)
         else:
-            C2t_n = C2t[:, n].toarray()
-            C2t_n = np.reshape(C2t_n, (N, N))
-        Xi[:, n, :] = np.dot(F1.T, np.dot(C2t_n, F2))
+            C2t_n = C2t[:, n]
+            C2t_n = _reshape_sparse(C2t_n, (N, N))
+        Xi[:, n, :] = np.dot(F1.T, C2t_n.dot(F2))
 
     # Compute sigma:
     c = np.sum(Ct_svd, axis=1)
@@ -245,3 +246,16 @@ def equilibrium_transition_matrix(Xi, omega, sigma, reversible=True, return_lcc=
         return Tt_Eq, lcc
     else:
         return Tt_Eq
+
+
+def _reshape_sparse(A, shape):
+    nrows, ncols = A.shape
+    if nrows * ncols != shape[0] * shape[1]:
+        raise ValueError("Matrix dimensions must agree.")
+    rows, cols = A.nonzero()
+    flat_indices = rows * ncols + cols
+    newrows, newcols = divmod(flat_indices, shape[1])
+    data = np.array(A[A.nonzero()].tolist()).flatten()
+    Anew = scipy.sparse.csc_matrix((data, (newrows, newcols)), shape=shape)
+
+    return Anew
