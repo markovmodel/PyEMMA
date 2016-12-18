@@ -25,13 +25,12 @@ from unittest import TestCase
 import mdtraj
 import numpy as np
 import pkg_resources
-from six.moves import range
-
 import pyemma.coordinates.api as coor
 from pyemma.coordinates.data import DataInMemory, FeatureReader
 from pyemma.coordinates.data.fragmented_trajectory_reader import FragmentedTrajectoryReader
 from pyemma.coordinates.tests.util import create_traj, get_top
 from pyemma.util.files import TemporaryDirectory
+from six.moves import range
 
 
 def _test_ra_with_format(format, stride):
@@ -138,7 +137,7 @@ class TestRandomAccessStride(TestCase):
         tica = coor.tica(feature_reader)
         # everything normal
         assert tica.is_random_accessible
-        from pyemma.coordinates.transform.transformer import StreamingTransformerRandomAccessStrategy
+        from pyemma.coordinates.data._base.transformer import StreamingTransformerRandomAccessStrategy
         assert isinstance(tica._ra_jagged, StreamingTransformerRandomAccessStrategy)
 
         # set to memory
@@ -150,7 +149,7 @@ class TestRandomAccessStride(TestCase):
         # not in memory anymore, expect to fall back
         tica.in_memory = False
         assert tica.is_random_accessible
-        from pyemma.coordinates.transform.transformer import StreamingTransformerRandomAccessStrategy
+        from pyemma.coordinates.data._base.transformer import StreamingTransformerRandomAccessStrategy
         assert isinstance(tica._ra_jagged, StreamingTransformerRandomAccessStrategy)
 
         # remove data source

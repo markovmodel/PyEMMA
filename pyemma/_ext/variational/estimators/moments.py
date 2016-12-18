@@ -432,11 +432,6 @@ def _M2_const(Xvar, mask_X, xvarsum, xconst, Yvar, mask_Y, yvarsum, yconst, weig
         Unnormalized covariance matrix.
 
     """
-    # check input
-    if mask_X is None:
-        mask_X = np.ones(Xvar.shape[1], dtype=np.bool)
-    elif mask_Y is None:
-        mask_Y = np.ones(Yvar.shape[1], dtype=np.bool)
     C = np.zeros((len(mask_X), len(mask_Y)))
     # Block 11
     C[np.ix_(mask_X, mask_Y)] = _M2_dense(Xvar, Yvar, weights=weights)
@@ -496,7 +491,15 @@ def _M2(Xvar, Yvar, mask_X=None, mask_Y=None, xsum=0, xconst=0, ysum=0, yconst=0
     """ direct (nonsymmetric) second moment matrix. Decide if we need dense, sparse, const"""
     if mask_X is None and mask_Y is None:
         return _M2_dense(Xvar, Yvar, weights=weights)
-    elif _is_zero(xsum) and _is_zero(ysum) or _is_zero(xconst) and _is_zero(yconst):
+    else:
+        # Check if one of the masks is not None, modify it and also adjust the constant columns:
+        if mask_X is None:
+            mask_X = np.ones(Xvar.shape[1], dtype=np.bool)
+            xconst = np.ones(0, dtype=float)
+        if mask_Y is None:
+            mask_Y = np.ones(Yvar.shape[1], dtype=np.bool)
+            yconst = np.ones(0, dtype=float)
+    if _is_zero(xsum) and _is_zero(ysum) or _is_zero(xconst) and _is_zero(yconst):
         return _M2_sparse(Xvar, mask_X, Yvar, mask_Y, weights=weights)
     else:
         return _M2_const(Xvar, mask_X, xsum[mask_X], xconst, Yvar, mask_Y, ysum[mask_Y], yconst, weights=weights)
@@ -509,16 +512,24 @@ def _M2_symmetric(Xvar, Yvar, mask_X=None, mask_Y=None, xsum=0, xconst=0, ysum=0
         Cxy = _M2_dense(Xvar, Yvar, weights=weights)
         Cyx = _M2_dense(Yvar, Xvar, weights=weights)
         Cxyyx = Cxy + Cyx
-    elif _is_zero(xsum) and _is_zero(ysum) or _is_zero(xconst) and _is_zero(yconst):
-        Cxxyy, Cxyyx = _M2_sparse_sym(Xvar, mask_X, Yvar, mask_Y, weights=weights)
     else:
-        xvarsum = xsum[mask_X]  # to variable part
-        yvarsum = ysum[mask_Y]  # to variable part
-        Cxxyy = _M2_const(Xvar, mask_X, xvarsum, xconst, Xvar, mask_X, xvarsum, xconst, weights=weights) \
-                + _M2_const(Yvar, mask_Y, yvarsum, yconst, Yvar, mask_Y, yvarsum, yconst, weights=weights)
-        Cxy = _M2_const(Xvar, mask_X, xvarsum, xconst, Yvar, mask_Y, yvarsum, yconst, weights=weights)
-        Cyx = _M2_const(Yvar, mask_Y, yvarsum, yconst, Xvar, mask_X, xvarsum, xconst, weights=weights)
-        Cxyyx = Cxy + Cyx
+        # Check if one of the masks is not None, modify it and also adjust the constant columns:
+        if mask_X is None:
+            mask_X = np.ones(Xvar.shape[1], dtype=np.bool)
+            xconst = np.ones(0, dtype=float)
+        if mask_Y is None:
+            mask_Y = np.ones(Yvar.shape[1], dtype=np.bool)
+            yconst = np.ones(0, dtype=float)
+        if _is_zero(xsum) and _is_zero(ysum) or _is_zero(xconst) and _is_zero(yconst):
+            Cxxyy, Cxyyx = _M2_sparse_sym(Xvar, mask_X, Yvar, mask_Y, weights=weights)
+        else:
+            xvarsum = xsum[mask_X]  # to variable part
+            yvarsum = ysum[mask_Y]  # to variable part
+            Cxxyy = _M2_const(Xvar, mask_X, xvarsum, xconst, Xvar, mask_X, xvarsum, xconst, weights=weights) \
+                    + _M2_const(Yvar, mask_Y, yvarsum, yconst, Yvar, mask_Y, yvarsum, yconst, weights=weights)
+            Cxy = _M2_const(Xvar, mask_X, xvarsum, xconst, Yvar, mask_Y, yvarsum, yconst, weights=weights)
+            Cyx = _M2_const(Yvar, mask_Y, yvarsum, yconst, Xvar, mask_X, xvarsum, xconst, weights=weights)
+            Cxyyx = Cxy + Cyx
     return Cxxyy, Cxyyx
 
 

@@ -17,13 +17,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import
-#from pyemma.coordinates.clustering.interface import AbstractClustering
-from pyemma.coordinates.transform.transformer import StreamingTransformer
-from pyemma.coordinates.data.feature_reader import FeatureReader
 
 from logging import getLogger
-from pyemma.coordinates.data._base.iterable import Iterable
+
 from pyemma.coordinates.data._base.datasource import DataSource
+from pyemma.coordinates.data._base.iterable import Iterable
+from pyemma.coordinates.data._base.transformer import StreamingTransformer
+from pyemma.coordinates.data.feature_reader import FeatureReader
 
 __all__ = ['Discretizer',
            'Pipeline',

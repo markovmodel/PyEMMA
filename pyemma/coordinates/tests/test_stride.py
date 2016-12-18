@@ -61,7 +61,7 @@ class TestStride(unittest.TestCase):
     def test_length_and_content_feature_reader_and_TICA(self):
         for stride in range(1, 100, 23):
             r = coor.source(self.trajnames, top=self.temppdb)
-            t = coor.tica(data=r, lag=2, dim=2, force_eigenvalues_le_one=True)
+            t = coor.tica(data=r, lag=2, dim=2)
             # t.data_producer = r
             t.parametrize()
 
@@ -108,7 +108,7 @@ class TestStride(unittest.TestCase):
             r = coor.source(self.trajnames, top=self.temppdb)
             tau = 5
             try:
-                t = coor.tica(r, lag=tau, stride=stride, dim=2, force_eigenvalues_le_one=True)
+                t = coor.tica(r, lag=tau, stride=stride, dim=2)
                 # force_eigenvalues_le_one=True enables an internal consistency check in TICA
                 t.parametrize(stride=stride)
                 self.assertTrue(np.all(t.eigenvalues <= 1.0+1.E-12))
